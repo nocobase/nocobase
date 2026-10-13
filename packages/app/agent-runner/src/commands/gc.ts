@@ -68,9 +68,7 @@ export default class Gc extends RunnerCommand {
     'with the free space on the disk holding them and what the runner keeps free (min-free-disk). Without filters, the ' +
     'directories whose work is over may go; pushed ones whose work goes on only when picked, also while the disk is low. ' +
     'With filters, the directories every filter matches. Nothing is removed without --apply, a directory a run holds ' +
-    'never is. When the application confirms a task is completed or cancelled through a settled directory decision, ' +
-    'its directory is removed even with unpushed commits, changes or untracked files. Other directories with unpushed ' +
-    'work require --force. Manual gc --apply uses one directory decision report, with no second confirmation before removal.';
+    'never is. All local refs and uncommitted work remain protected, even for settled tasks or with --force. Deletion requires fresh authorized remote evidence. Manual gc --apply uses one directory decision report.';
   static override examples: string[] = [
     '<%= config.bin %> gc',
     '<%= config.bin %> gc --apply',
@@ -101,7 +99,7 @@ export default class Gc extends RunnerCommand {
     }),
     force: Flags.boolean({
       description:
-        'Also remove unpushed work in other picked directories; completed or cancelled tasks confirmed by a settled directory decision do not require this flag.',
+        'Select without overriding work protection: unpushed, dirty or unknown work is always preserved.',
     }),
   };
 

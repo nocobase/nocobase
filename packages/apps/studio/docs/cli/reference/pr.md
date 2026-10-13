@@ -222,15 +222,15 @@ For whoever may edit the issue; push the branch first. Opens the pull request on
 nb-studio pr open --title <string>
 ```
 
-| Flag      | Type    | Description                                                                                                                                                                                |
-| --------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--issue` | string  | The issue, such as PM-12; in a run on an issue, that issue by default.                                                                                                                     |
-| `--title` | string  | The title, following the repository’s commit convention, such as "fix(export): keep column order". Studio links the pull request to the issue, so the title needs no issue key. (required) |
-| `--body`  | string  | The description, in Markdown. Write anything longer than a line to a file and pass it with --body-file. (or --body-file <path>)                                                            |
-| `--repo`  | string  | The repository, as owner/name, when the project has several.                                                                                                                               |
-| `--head`  | string  | The branch with the change; your run’s branch by default.                                                                                                                                  |
-| `--base`  | string  | The branch to merge into; the working directory’s default branch by default.                                                                                                               |
-| `--draft` | boolean | Open it as a draft.                                                                                                                                                                        |
+| Flag      | Type    | Description                                                                                                                                                                                          |
+| --------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--issue` | string  | The issue, such as PM-12; in a run on an issue, that issue by default.                                                                                                                               |
+| `--title` | string  | The title, following the repository’s commit convention, such as "fix(export): keep column order". Studio links the pull request to the issue, so the title needs no issue key. (required)           |
+| `--body`  | string  | The description, in Markdown. Write anything longer than a line to a file and pass it with --body-file. (or --body-file <path>)                                                                      |
+| `--repo`  | string  | The repository, as owner/name, when the project has several.                                                                                                                                         |
+| `--head`  | string  | The branch with the change; the repository’s first branch rule for this issue by default. Pass the actual branch explicitly, especially after switching locally; Studio does not inspect local HEAD. |
+| `--base`  | string  | The branch to merge into; the working directory’s default branch by default.                                                                                                                         |
+| `--draft` | boolean | Open it as a draft.                                                                                                                                                                                  |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -322,7 +322,7 @@ nb-studio pr suggestion dismiss <issue> <pr>
 
 Unlink a pull request from an issue
 
-For whoever may edit the issue.
+For a person, scoped key or run that may edit the named issue. Removes only this association without closing the PR or deleting a branch. Automatic matching will not relink it; explicit link or open clears that choice.
 
 ```bash
 nb-studio pr unlink <issue> <pr>
@@ -339,7 +339,7 @@ nb-studio pr unlink <issue> <pr>
 
 **Output:** Nothing; prints `Done.`.
 
-**Who:** People (a sign-in or an API key); needs the action `pm.issues/edit`.
+**Who:** People, and agents in a run; needs the action `studio.git/open-pr`.
 
 **Request:** `DELETE /api/git/pullRequests/{pullRequestId}` (`gitUnlinkPullRequest`)
 

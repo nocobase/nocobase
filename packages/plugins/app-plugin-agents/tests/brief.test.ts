@@ -128,8 +128,8 @@ describe('brief', () => {
     expect(system).toContain(
       'earliest association time, then ascending PR number',
     );
-    expect(system).toContain('push only this branch');
-    expect(system).toContain('never rewrite history already pushed');
+    expect(system).toContain('ordinarily push any branch');
+    expect(system).toContain('rewrite history already pushed');
     expect(system).toContain('comes from a fork');
     expect(system).toContain('unknown head repository');
   });

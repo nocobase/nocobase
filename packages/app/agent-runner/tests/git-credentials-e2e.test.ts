@@ -128,8 +128,10 @@ describe('repository credentials on demand', () => {
           'write expire-now x',
           'bash git push origin HEAD:refs/heads/agent/PM-9',
           'bash git push origin HEAD:refs/heads/agent/PM-9',
-          // And again before the runner pushes the other repository at the end.
+          // The agent explicitly pushes the other repository too; completion never pushes on its behalf.
           'write expire-now x',
+          'bash git -C ../lib push origin HEAD:refs/heads/agent/PM-9',
+          'bash git -C ../lib push origin HEAD:refs/heads/agent/PM-9',
           'say done',
         ].join('\n'),
       },

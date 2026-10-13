@@ -1458,6 +1458,7 @@ export async function createBridgeHarness(
             'input',
             'checkout',
             'prBranches',
+            'multiBranchWorkspaces',
             'directories',
             'skills',
             'secrets',

@@ -13,7 +13,7 @@
 // killing what is left in the unit's cgroup, is what remains for those.
 import { execFile } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile, stat } from 'node:fs/promises';
 import { promisify } from 'node:util';
 
 import { delay } from '../lib/http.ts';
@@ -171,22 +171,61 @@ export function newProcessTag(): string {
   return randomBytes(16).toString('hex');
 }
 
+/** Linux birth ticks are comparable without converting clock units or reading process environments. */
+export async function processStartTicks(
+  pid: number,
+): Promise<string | undefined> {
+  if (process.platform !== 'linux') return undefined;
+  const source = await readFile(`/proc/${pid}/stat`, 'utf8').catch(
+    () => undefined,
+  );
+  const ticks = source
+    ?.slice(source.lastIndexOf(')') + 2)
+    .trim()
+    .split(/\s+/u)[19];
+  return ticks && /^\d+$/u.test(ticks) ? ticks : undefined;
+}
+
 /** The pids of the processes whose environment carries one of `tags`, the calling process left out. */
 export async function taggedProcesses(
   tags: readonly string[],
+  options: { strict?: boolean; minimumStartTicks?: string } = {},
 ): Promise<number[]> {
   const entries = new Set(tags.map((tag) => `${PROCESS_TAG_ENV}=${tag}`));
   const found: number[] = [];
   if (entries.size === 0) return found;
-  const procs = await readdir('/proc').catch(() => undefined);
+  const procs = await readdir('/proc').catch((error: unknown) => {
+    if (options.strict && process.platform === 'linux') throw error;
+    return undefined;
+  });
   if (procs !== undefined && process.platform === 'linux') {
     for (const name of procs) {
       if (!/^\d+$/u.test(name)) continue;
       const pid = Number(name);
       if (pid === process.pid) continue;
+      // Processes born before this worker cannot inherit its newly generated tag. Younger unreadable processes
+      // remain unknown; unrelated older protected processes do not invalidate every run's inspection.
+      if (options.minimumStartTicks !== undefined) {
+        const ticks = await processStartTicks(pid);
+        if (
+          ticks !== undefined &&
+          BigInt(ticks) < BigInt(options.minimumStartTicks)
+        )
+          continue;
+      }
       // Readable for the runner's own processes only, which are the only ones it could have started.
       const environ = await readFile(`/proc/${name}/environ`, 'utf8').catch(
-        () => '',
+        async (error: NodeJS.ErrnoException) => {
+          if (
+            options.strict &&
+            error.code !== 'ENOENT' &&
+            error.code !== 'ESRCH'
+          ) {
+            const info = await stat(`/proc/${name}`).catch(() => undefined);
+            if (info?.uid === process.getuid?.()) throw error;
+          }
+          return '';
+        },
       );
       if (environ.split('\0').some((item) => entries.has(item)))
         found.push(pid);
@@ -208,7 +247,8 @@ export async function taggedProcesses(
       const pid = Number(match[1]);
       if (pid !== process.pid) found.push(pid);
     }
-  } catch {
+  } catch (error) {
+    if (options.strict) throw error;
     // No `ps`: nothing found.
   }
   return found;

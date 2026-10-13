@@ -38,6 +38,8 @@ import {
   groupsBelow,
   killLeftovers,
   killTagged,
+  taggedProcesses,
+  processStartTicks,
   listProcesses,
   newProcessTag,
   PROCESS_TAG_ENV,
@@ -59,6 +61,7 @@ export interface RunRecord {
   /** The first event `seq` of this attempt (`RunPayload.run.firstSeq`). */
   firstSeq: number;
   pid: number;
+  workerStartTicks?: string;
   startedAt: string;
   workDir?: string;
   /** The run's CLI credentials file, once written. */
@@ -351,6 +354,7 @@ export class Supervisor {
     await writeRecord(paths, {
       ...record,
       pid,
+      workerStartTicks: await processStartTicks(pid),
       startedAt,
       processTag,
       phase: 'spawned',
@@ -530,6 +534,48 @@ export async function recoverRun(
   if (record.commandPgid !== undefined && groupAlive(record.commandPgid)) {
     log(`${runId}: killing the job's command group ${record.commandPgid}`);
     await killGroup(record.commandPgid, 0);
+  }
+  // A crash leaves the workspace writer marker set. Clear it only after the recorded group and tagged writers stop.
+  if (
+    record.kind !== 'job' &&
+    record.workDir !== undefined &&
+    !groupAlive(record.pid)
+  ) {
+    try {
+      if (
+        record.processTag === undefined ||
+        (process.platform === 'linux' &&
+          record.workerStartTicks === undefined) ||
+        (
+          await taggedProcesses([record.processTag], {
+            strict: true,
+            ...(record.workerStartTicks === undefined
+              ? {}
+              : { minimumStartTicks: record.workerStartTicks }),
+          })
+        ).length > 0
+      )
+        throw new Error('Writer inspection is incomplete');
+      const { acquireLock, readWorkspaceMeta, writeWorkspaceMeta } =
+        await import('./checkout.ts');
+      const lock = await acquireLock(`${record.workDir}.lock`, {
+        timeoutMs: 0,
+      });
+      try {
+        const meta = await readWorkspaceMeta(paths, record.workDir);
+        if (meta?.lastRunId === record.runId && meta.writerActive)
+          await writeWorkspaceMeta(paths, record.workDir, {
+            ...meta,
+            writerActive: false,
+          });
+      } finally {
+        await lock.release();
+      }
+    } catch (error) {
+      log(
+        `run ${runId}: workspace writer state remains unknown: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
   if (record.credentialsFile !== undefined)
     await deleteRunCredentials(record.credentialsFile);

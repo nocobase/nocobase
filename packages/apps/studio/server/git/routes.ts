@@ -1147,7 +1147,7 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
             },
             head: {
               description:
-                'The branch with the change; your run’s branch by default.',
+                'The branch with the change; the repository’s first branch rule for this issue by default. Pass the actual branch explicitly, especially after switching locally; Studio does not inspect local HEAD.',
             },
             base: {
               description:
@@ -1413,19 +1413,21 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
     );
     routes.delete(
       '/pullRequests/:pullRequestId',
-      person,
+      ...personOrRun,
       describeRoute({
         tags,
         summary: 'Unlink a pull request from an issue',
         operationId: 'gitUnlinkPullRequest',
+        security: personOrRunSecurity,
         ...cliRoute({
           command: 'pr unlink',
           args: PR_POSITIONAL,
           flags: PR_ARGS,
           confirm: 'Unlink this pull request from the issue?',
-          action: 'pm.issues/edit',
+          action: 'studio.git/open-pr',
         }),
-        description: 'For whoever may edit the issue.',
+        description:
+          'For a person, scoped key or run that may edit the named issue. Removes only this association without closing the PR or deleting a branch. Automatic matching will not relink it; explicit link or open clears that choice.',
         responses: {
           204: emptyResponse(),
           ...apiErrorResponses,
@@ -1437,7 +1439,11 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
       async (context) => {
         const { pullRequestId } = context.req.valid('param');
         const { issueId } = context.req.valid('query');
-        await git().unlink(await viewer(context), issueId, pullRequestId);
+        await git().unlink(
+          await callerViewer(context),
+          issueOf(context, issueId),
+          pullRequestId,
+        );
         return context.body(null, 204);
       },
     );

@@ -1,3 +1,5 @@
+import { gcWorkspaces } from '../src/core/checkout.ts';
+import { runnerPaths } from '../src/lib/home.ts';
 // The runner end to end: the real daemon, its worker processes and the echo adapter against the in-memory server.
 import {
   existsSync,
@@ -139,7 +141,7 @@ describe('runner end to end', () => {
     );
   });
 
-  it('runs a read-only step in a work directory of its own while the subject is held, pushes nothing and removes it', async () => {
+  it('runs a read-only step in isolation and preserves stray unpublished work without pushing', async () => {
     const remote = makeRemote(scratch);
     // The run writing the subject's code holds its work directory.
     const held = `${workDirOf('PM-8')}.lock`;
@@ -182,10 +184,11 @@ describe('runner end to end', () => {
     // It pushes nothing, so its directory goes as soon as the run ends; the next read-only run checks it out again.
     const readOnlyDir = String(run.start?.workDir);
     await waitFor(
-      () => !existsSync(readOnlyDir) && !existsSync(`${readOnlyDir}.lock`),
+      () => !existsSync(`${readOnlyDir}.lock`),
       10_000,
-      'the read-only directory to be removed',
+      'the read-only workspace lock to be released',
     );
+    expect(existsSync(readOnlyDir)).toBe(true);
     expect(run.complete?.repos?.[0]).toMatchObject({
       branch: 'agent/PM-8',
       pushed: false,
@@ -194,6 +197,90 @@ describe('runner end to end', () => {
     expect(() =>
       git(['rev-parse', '--verify', '-q', 'refs/heads/agent/PM-8'], bare),
     ).toThrow();
+  });
+
+  it('ends and restarts on B without publishing a clean non-current C, which retention GC preserves', async () => {
+    const remote = makeRemote(scratch);
+    const workspace = {
+      dirs: [
+        {
+          kind: 'repo' as const,
+          url: remote,
+          defaultBranch: 'main',
+          branch: 'agent/PM-multi',
+          path: 'app',
+        },
+      ],
+      env: [],
+    };
+    const first = server.enqueue({
+      subject: { key: 'PM-multi', url: 'http://app.test/PM-multi' },
+      workspace,
+      prompt: {
+        system: '',
+        session: 'fresh',
+        turn: [
+          'bash git switch -c B',
+          'write b.txt B',
+          `bash ${COMMIT} add b.txt && ${COMMIT} commit -q -m B`,
+          'bash git push origin HEAD:refs/heads/B',
+          'bash git switch -c C',
+          'write c.txt C',
+          `bash ${COMMIT} add c.txt && ${COMMIT} commit -q -m C`,
+          'bash git switch B',
+          'say done',
+        ].join('\n'),
+      },
+    });
+    daemon();
+    await waitFor(
+      () => first.status === 'completed',
+      20000,
+      'first completion',
+    );
+    const workDir = workDirOf('PM-multi');
+    const dir = path.join(workDir, 'app');
+    await waitFor(() => !existsSync(`${workDir}.lock`), 10000, 'first release');
+    const sha = git(['rev-parse', 'C'], dir);
+    expect(first.complete?.repos).toMatchObject([
+      {
+        branch: 'B',
+        pushed: false,
+        savedRefs: expect.arrayContaining([
+          expect.objectContaining({ ref: 'refs/heads/C', pushed: false }),
+        ]),
+      },
+    ]);
+    expect(git(['ls-remote', remote, 'refs/heads/agent/PM-multi'], dir)).toBe(
+      '',
+    );
+    const second = server.enqueue({
+      subject: { key: 'PM-multi', url: 'http://app.test/PM-multi' },
+      workspace,
+      prompt: {
+        system: '',
+        session: 'fresh',
+        turn: 'bash git branch --show-current',
+      },
+    });
+    await waitFor(
+      () => second.status === 'completed',
+      20000,
+      'second completion',
+    );
+    await waitFor(
+      () => !existsSync(`${workDir}.lock`),
+      10000,
+      'second release',
+    );
+    expect(git(['branch', '--show-current'], dir)).toBe('B');
+    expect(
+      await gcWorkspaces({
+        paths: runnerPaths(home, workRootOf(home)),
+        now: Date.now() + 31 * 86400000,
+      }),
+    ).not.toContain(workDir);
+    expect(git(['rev-parse', 'C'], dir)).toBe(sha);
   });
 
   it('claims, checks out, starts, streams events, pushes and completes', async () => {
@@ -223,6 +310,7 @@ describe('runner end to end', () => {
           'read /etc/hosts',
           'write notes.txt hello from the agent',
           `bash ${COMMIT} add notes.txt && ${COMMIT} commit -q -m agent-work`,
+          'bash git push origin HEAD:refs/heads/agent/PM-7',
           'say all done',
         ].join('\n'),
       },
@@ -791,6 +879,7 @@ describe('runner end to end', () => {
           'system',
           'write app.txt initialized',
           `bash ${COMMIT} add app.txt && ${COMMIT} commit -q -m Initialize`,
+          'bash git push origin HEAD:refs/heads/main',
           'say done',
         ].join('\n'),
       },

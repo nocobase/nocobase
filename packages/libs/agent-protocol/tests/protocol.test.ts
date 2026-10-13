@@ -166,6 +166,20 @@ describe('agent protocol', () => {
     ).toBe(false);
   });
 
+  it('retains actual head and all saved-ref observations on the wire', () => {
+    const report = {
+      url: 'https://example.test/repo.git',
+      branch: 'B',
+      pushed: false,
+      kind: 'head',
+      savedRefs: [{ ref: 'refs/heads/C', sha: 'a'.repeat(40), pushed: false }],
+    };
+    expect(RepoReportSchema.parse(report)).toEqual(report);
+    expect(
+      RepoReportSchema.safeParse({ ...report, kind: 'invented' }).success,
+    ).toBe(false);
+  });
+
   it('says why a repository was not pushed, and reads a report without it', () => {
     const report = {
       url: 'https://github.com/acme/app.git',

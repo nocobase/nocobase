@@ -114,6 +114,7 @@ export const BASE_FEATURES: readonly RunnerFeature[] = [
   'input',
   'checkout',
   'prBranches',
+  'multiBranchWorkspaces',
   'directories',
   'secrets',
   'skills',

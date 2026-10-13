@@ -64,11 +64,22 @@ import {
 import {
   markDirsPrepared,
   markWorkspaceEnded,
+  readWorkspaceMeta,
+  writeWorkspaceMeta,
   reportRepos,
   RUNNER_DIR,
   type PreparedDir,
 } from '../core/checkout.ts';
 import { deleteRunCredentials } from './credentials.ts';
+import {
+  killLeftovers,
+  killTagged,
+  taggedProcesses,
+  processStartTicks,
+  PROCESS_TAG_ENV,
+  listProcesses,
+  descendantsOf,
+} from '../core/process-tree.ts';
 import { prepareCodexHome } from './codex-home.ts';
 import { SKILLS_PLUGIN_NAME } from './skills.ts';
 import { buildAgentEnv, environmentSecrets, providedVariables } from './env.ts';
@@ -78,7 +89,6 @@ import {
   serveGitCredentials,
   type CredentialServer,
 } from './git-credentials.ts';
-import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { EventSpool } from '../core/events.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { ensurePnpmStore, pnpmImportMethod } from '../core/pnpm-store.ts';
@@ -106,7 +116,7 @@ export interface WorkerDeps {
   log: (message: string) => void;
   /** Overrides the client built from `connection`, for tests. */
   client?: ApiClient;
-  /** Whether to push branches with work on them when the run completes. */
+  /** Legacy source option; completion never pushes. */
   push?: boolean;
 }
 
@@ -158,7 +168,7 @@ export function workspaceNotes(options: {
   ];
   if (dirs.length > 0) {
     lines.push(
-      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}). Once the task is done or cancelled, its working directory is removed, with anything never pushed.`,
+      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}). Cleanup preserves directories with local work or unavailable remote evidence, even after the task ends.`,
     );
     lines.push('Working directories (the first is the primary one):');
     for (const dir of dirs) {
@@ -167,8 +177,8 @@ export function workspaceNotes(options: {
         dir.repo === undefined
           ? `- ${dir.dir}${name}: a directory used in place, not a checkout; there is no branch to push, so leave version control to the people who own it.`
           : options.readOnly === true
-            ? `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (a read-only copy: change, commit and push nothing).`
-            : `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (push only this branch).`,
+            ? `- ${dir.dir}${name}: ${dir.repo.url}, actual state ${dir.repo.actualHead ?? dir.repo.branch}; initial recommendation ${dir.repo.branch} from ${dir.repo.defaultBranch} (a read-only copy: change, commit and push nothing).`
+            : `- ${dir.dir}${name}: ${dir.repo.url}, actual state ${dir.repo.actualHead ?? dir.repo.branch}; initial recommendation ${dir.repo.branch} from ${dir.repo.defaultBranch}. You may switch or create branches and ordinarily push any branch of this repository; never rewrite pushed history or force push. Do not check out or push fork PRs. Manage PRs with the application CLI open / link / unlink; after switching, pass --head <actual-branch> to pr open. The runner reports state at the end and does not push for you.`,
       );
     }
     if (options.readOnly === true)
@@ -330,6 +340,8 @@ export class RunWorker {
   private readonly usage: Usage[] = [];
   private ending: Ending | undefined;
   private handle: AdapterHandle | undefined;
+  private writerStopped = true;
+  private writerLaunched = false;
   private statusTimer: NodeJS.Timeout | undefined;
   private idleTimer: NodeJS.Timeout | undefined;
   private lastActivity = Date.now();
@@ -576,7 +588,8 @@ export class RunWorker {
       // A lost run's events can no longer be delivered; everything else was drained before reporting.
       if (this.spool.size === 0 || this.ending?.kind === 'lost')
         await this.spool.remove();
-      await removeRecord(this.deps.paths, this.runId);
+      // The supervisor must recover records whose tool termination could not be confirmed.
+      if (this.writerStopped) await removeRecord(this.deps.paths, this.runId);
     }
   }
 
@@ -775,6 +788,17 @@ export class RunWorker {
     this.deliverInPrompt(claimed, 'prompt');
     for (;;) {
       this.lastActivity = Date.now();
+      this.writerStopped = false;
+      this.writerLaunched = true;
+      const activeDir = this.prepared?.workspace?.workDir;
+      if (activeDir !== undefined) {
+        const meta = await readWorkspaceMeta(this.deps.paths, activeDir);
+        if (meta)
+          await writeWorkspaceMeta(this.deps.paths, activeDir, {
+            ...meta,
+            writerActive: true,
+          });
+      }
       const handle = adapter.start({
         workDir: cwd,
         prompt,
@@ -818,6 +842,7 @@ export class RunWorker {
       if (this.ending !== undefined) return this.finishEnding();
       const result = await handle.result;
       this.handle = undefined;
+      this.writerStopped = true;
       // Steered inputs the agent never picked up go into the next turn.
       this.steered.clear();
       this.usage.push(...result.usage);
@@ -882,13 +907,17 @@ export class RunWorker {
     if (handle === undefined) return;
     this.handle = undefined;
     const settled = await Promise.race([
-      handle.stop().then(
-        () => true,
-        () => true,
-      ),
+      handle
+        .stop()
+        .then(() => handle.result)
+        .then(
+          () => true,
+          () => false,
+        ),
       delay(this.timings.killGraceMs ?? 5_000).then(() => false),
     ]);
     if (settled) {
+      this.writerStopped = true;
       const result = await handle.result.catch(() => undefined);
       if (result !== undefined) {
         this.usage.push(...result.usage);
@@ -903,11 +932,70 @@ export class RunWorker {
   }
 
   private async repoReports(push: boolean): Promise<RepoReport[]> {
+    await this.stopTool();
+    if (this.writerLaunched && this.writerStopped) {
+      try {
+        await killLeftovers(process.pid, { graceMs: 0 });
+        const tag = process.env[PROCESS_TAG_ENV];
+        if (tag) {
+          const killed = await killTagged([tag]);
+          if (killed > 0)
+            this.spool.push({
+              type: 'status',
+              content: `Stopped ${killed} process(es) the run left behind before reporting.`,
+              meta: { phase: 'reporting', processesStopped: killed },
+            });
+          const ticks = await processStartTicks(process.pid);
+          if (process.platform === 'linux' && ticks === undefined)
+            throw new Error('Writer birth time is unknown');
+          if (
+            (
+              await taggedProcesses([tag], {
+                strict: true,
+                ...(ticks === undefined ? {} : { minimumStartTicks: ticks }),
+              })
+            ).length
+          )
+            throw new Error('Tagged writers remain');
+        }
+        const processes = await listProcesses();
+        if (
+          !processes.some((entry) => entry.pid === process.pid) ||
+          descendantsOf(process.pid, processes).some((entry) => {
+            try {
+              process.kill(entry.pid, 0);
+              return true;
+            } catch {
+              return false;
+            }
+          })
+        )
+          throw new Error('Writer inspection is incomplete');
+      } catch (error) {
+        this.writerStopped = false;
+        this.deps.log(
+          `run ${this.runId}: could not confirm writer cleanup: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
     const repos = (this.prepared?.dirs ?? []).flatMap((dir) =>
       dir.repo === undefined ? [] : [dir.repo],
     );
     const workDir = this.prepared?.workspace?.workDir;
     if (workDir === undefined) return [];
+    if (!this.writerStopped) {
+      this.deps.log(
+        `run ${this.runId}: writer termination is unconfirmed; workspace and prior reports preserved`,
+      );
+      return [];
+    }
+    const meta = await readWorkspaceMeta(this.deps.paths, workDir);
+    if (meta?.writerActive && !this.writerLaunched) return [];
+    if (meta?.writerActive)
+      await writeWorkspaceMeta(this.deps.paths, workDir, {
+        ...meta,
+        writerActive: false,
+      });
     if (repos.length === 0) {
       await markWorkspaceEnded(this.deps.paths, workDir, []);
       return [];
@@ -1020,11 +1108,13 @@ export class RunWorker {
     await this.stopTool();
     switch (ending?.kind) {
       case 'lost':
+        await this.repoReports(false).catch(() => []);
         this.deps.log(
           `run ${this.runId}: lease lost (${ending.code}); tool stopped`,
         );
         return 'leaseLost';
       case 'cancel': {
+        await this.repoReports(false).catch(() => []);
         this.spool.push({
           type: 'status',
           content: 'Cancelled.',

@@ -606,9 +606,16 @@ export const RepoPushFailureSchema: z.ZodType<RepoPushFailure> =
 export interface RepoReport {
   readonly url: string;
   readonly branch: string;
+  /** Multi-branch runners distinguish HEAD and saved refs from branch reports. */
+  readonly kind?: 'branch' | 'head' | 'savedRef' | 'unknown';
+  readonly savedRefs?: readonly {
+    readonly ref: string;
+    readonly sha: string;
+    readonly pushed: boolean;
+  }[];
   readonly pushed: boolean;
   readonly headSha?: string;
-  /** Why it was not pushed, when the runner tried and failed (protocol 9); `message` is redacted and safe to show. */
+  /** Why remote evidence could not be read (or a legacy runner could not push); `message` is redacted and safe to show. */
   readonly failure?: {
     readonly reason: RepoPushFailure;
     readonly message: string;
@@ -618,6 +625,16 @@ export interface RepoReport {
 export const RepoReportSchema: z.ZodType<RepoReport> = z.object({
   url: z.string().min(1),
   branch: z.string().min(1),
+  kind: z.enum(['branch', 'head', 'savedRef', 'unknown']).optional(),
+  savedRefs: z
+    .array(
+      z.object({
+        ref: z.string().min(1),
+        sha: z.string().max(64),
+        pushed: z.boolean(),
+      }),
+    )
+    .optional(),
   pushed: z.boolean(),
   headSha: z.string().max(64).optional(),
   failure: z

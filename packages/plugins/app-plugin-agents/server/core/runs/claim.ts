@@ -176,6 +176,12 @@ class NotForThisRunner extends Error {
   }
 }
 
+class MissingRunnerFeatures extends NotForThisRunner {
+  public constructor(public readonly requires: readonly RunnerFeature[]) {
+    super();
+  }
+}
+
 /** The run gets variables only team runners may receive, and this runner is a personal one. */
 class TeamRunnersOnly extends NotForThisRunner {
   public constructor(public readonly variables: readonly VariableRef[]) {
@@ -273,7 +279,9 @@ export function payloadRequires(
   variables: number,
 ): RunnerFeature[] {
   return [
-    ...(dirs.some((dir) => dir.kind === 'repo') ? ['checkout' as const] : []),
+    ...(dirs.some((dir) => dir.kind === 'repo')
+      ? ['checkout' as const, 'multiBranchWorkspaces' as const]
+      : []),
     ...(dirs.some((dir) => dir.kind === 'repo' && dir.pullRequest)
       ? ['prBranches' as const]
       : []),
@@ -522,7 +530,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       ...view.requires,
       ...payloadRequires(dirs, skills.length, names.length),
     ]) as RunnerFeature[];
-    if (!covers(runner.features, requires)) throw new NotForThisRunner();
+    if (!covers(runner.features, requires))
+      throw new MissingRunnerFeatures(requires);
     // A variable for team runners only keeps a personal runner off the run.
     if (names.length > 0 && runner.trust !== 'team') {
       const teamOnly = await deps.variables.teamOnly(conn, variables);
@@ -1021,6 +1030,14 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         if (result.kind === 'claimed') return result.payload;
       } catch (error) {
         // Rolled back: the run stays queued for a runner it fits.
+        if (error instanceof MissingRunnerFeatures) {
+          await tx.run(async (unit) => {
+            await runsRepo(unit.conn).updateMany({
+              filter: { id: candidate.id, status: 'queued' },
+              values: { requires: [...error.requires] },
+            });
+          });
+        }
         if (error instanceof NotForThisRunner) continue;
         if (!(error instanceof AssemblyError)) throw error;
         await recordFailure(candidate.id, error);

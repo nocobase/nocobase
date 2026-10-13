@@ -15,8 +15,8 @@
  *   runner gets one token at the claim, prepared before the claim's transaction (`prepare`), where a signing failure
  *   prevents the claim. A token connection gives none: the runner pushes with the host's own credentials.
  * - The token reaches every branch of the run's repositories that the host's branch protection leaves writable;
- *   nothing on the runner limits which branch a run pushes. Branch restrictions are instructions to the agent;
- *   the runner installs no push guard.
+ *   nothing on the runner limits which branch a run pushes. The initial checkout is only a starting point;
+ *   agents may ordinarily push any branch of that repository without rewriting published history. There is no push guard.
  */
 import type { Projects } from '@nocobase/app-plugin-projects/server/tokens';
 import type { DatabaseConnection } from '@nocobase/db';

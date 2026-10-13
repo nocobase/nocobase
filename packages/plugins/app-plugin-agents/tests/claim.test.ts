@@ -25,7 +25,7 @@ describe('claiming', () => {
         0,
         0,
       ),
-    ).toEqual(['checkout']);
+    ).toEqual(['checkout', 'multiBranchWorkspaces']);
     h = await createHarness();
     const agent = await h.createAgent();
     h.dirs = [
@@ -42,11 +42,22 @@ describe('claiming', () => {
     const old = await h.registerRunner({ features: ['checkout'] });
     expect(await claim(h, old)).toEqual([]);
     expect((await h.services.runs.get(run)).status).toBe('queued');
-    const modern = await h.registerRunner({
+    expect((await h.services.runs.get(run)).requires).toContain(
+      'multiBranchWorkspaces',
+    );
+    const prOnly = await h.registerRunner({
       features: ['checkout', 'prBranches'],
     });
+    expect(await claim(h, prOnly)).toEqual([]);
+    const modern = await h.registerRunner({
+      features: ['checkout', 'multiBranchWorkspaces', 'prBranches'],
+    });
     const [payload] = await claim(h, modern);
-    expect(payload.run.requires).toEqual(['checkout', 'prBranches']);
+    expect(payload.run.requires).toEqual([
+      'checkout',
+      'multiBranchWorkspaces',
+      'prBranches',
+    ]);
     expect(RunPayloadSchema.parse(payload).workspace.dirs[0]).toMatchObject({
       branch: 'fix/human',
       pullRequest: { number: 42 },
@@ -378,7 +389,11 @@ describe('claiming', () => {
         ]),
       ),
     ).toEqual({ API_URL: 'workdir', ONLY_TEAM: 't', TOKEN: 'agent' });
-    expect(payload.run.requires.sort()).toEqual(['checkout', 'secrets']);
+    expect(payload.run.requires.sort()).toEqual([
+      'checkout',
+      'multiBranchWorkspaces',
+      'secrets',
+    ]);
     const audits = await h.services.variables.audits({
       scope: 'workdir',
       scopeId: 'res-1',

@@ -1030,6 +1030,7 @@ describe('push credentials on demand', () => {
     'skills',
     'secrets',
     'gitCredentials',
+    'multiBranchWorkspaces',
   ];
 
   afterEach(() => vi.useRealTimers());
@@ -1095,6 +1096,7 @@ describe('push credentials on demand', () => {
     const { payload } = await claimed([
       'input',
       'checkout',
+      'multiBranchWorkspaces',
       'directories',
       'skills',
       'secrets',

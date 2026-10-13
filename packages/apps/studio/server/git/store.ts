@@ -24,6 +24,7 @@ import type { PullRequestSnapshot } from './platform.js';
 export const REPOS = 'studioGitRepos';
 export const PULL_REQUESTS = 'studioPullRequests';
 export const LINKS = 'studioIssuePullRequests';
+export const LINK_CHOICES = 'studioPullRequestLinkChoices';
 export const SUGGESTIONS = 'studioPullRequestSuggestions';
 export const DELIVERIES = 'studioGitWebhookDeliveries';
 
@@ -778,7 +779,49 @@ function linkOf(row: Row): LinkRow {
   };
 }
 
-/** Links a pull request to an issue; answers whether the link is new. */
+/** Serialize automatic and explicit choices on the same issue/PR pair. A nested transaction contains unique races. */
+async function lockLinkChoice(
+  conn: DatabaseConnection,
+  issueId: string,
+  pullRequestId: string,
+  suppressed?: boolean,
+): Promise<boolean> {
+  try {
+    await conn.transaction(async (inner) => {
+      await inner.query
+        .insertInto(LINK_CHOICES)
+        .values({
+          id: randomUUID(),
+          issueId,
+          pullRequestId,
+          suppressed: suppressed ?? false,
+          updatedAt: new Date(),
+        })
+        .execute();
+    });
+  } catch (error) {
+    if (!isUniqueViolation(error)) throw error;
+  }
+  // An UPDATE locks the pair on supported dialects, including SQLite, without SELECT FOR UPDATE portability issues.
+  await conn.query
+    .updateTable(LINK_CHOICES)
+    .set({
+      updatedAt: new Date(),
+      ...(suppressed === undefined ? {} : { suppressed }),
+    })
+    .where('issueId', '=', issueId)
+    .where('pullRequestId', '=', pullRequestId)
+    .execute();
+  const choice = await conn.query
+    .selectFrom(LINK_CHOICES)
+    .select('suppressed')
+    .where('issueId', '=', issueId)
+    .where('pullRequestId', '=', pullRequestId)
+    .executeTakeFirst();
+  return bool(choice?.suppressed);
+}
+
+/** Explicit links clear suppression. Automatic links honor the last explicit unlink. */
 export async function insertLink(
   conn: DatabaseConnection,
   input: {
@@ -788,30 +831,28 @@ export async function insertLink(
     readonly linkedById: string | null;
   },
 ): Promise<boolean> {
-  const exists = await conn.query
-    .selectFrom(LINKS)
-    .select('id')
-    .where('issueId', '=', input.issueId)
-    .where('pullRequestId', '=', input.pullRequestId)
-    .executeTakeFirst();
-  if (exists) return false;
-  try {
-    await conn.transaction(async (inner) => {
-      await inner.query
-        .insertInto(LINKS)
-        .values({
-          id: randomUUID(),
-          ...input,
-          autoCompleteDisabled: false,
-          createdAt: new Date(),
-        })
-        .execute();
-    });
-  } catch (error) {
-    if (isUniqueViolation(error)) return false;
-    throw error;
-  }
-  return true;
+  return conn.transaction(async (inner) => {
+    if (
+      await lockLinkChoice(
+        inner,
+        input.issueId,
+        input.pullRequestId,
+        input.linkedByType === 'system' ? undefined : false,
+      )
+    )
+      return false;
+    if (await findLink(inner, input.issueId, input.pullRequestId)) return false;
+    await inner.query
+      .insertInto(LINKS)
+      .values({
+        id: randomUUID(),
+        ...input,
+        autoCompleteDisabled: false,
+        createdAt: new Date(),
+      })
+      .execute();
+    return true;
+  });
 }
 
 export async function deleteLink(
@@ -819,10 +860,18 @@ export async function deleteLink(
   issueId: string,
   pullRequestId: string,
 ): Promise<boolean> {
-  const link = await findLink(conn, issueId, pullRequestId);
-  if (!link) return false;
-  await conn.query.deleteFrom(LINKS).where('id', '=', link.id).execute();
-  return true;
+  return conn.transaction(async (inner) => {
+    // Check visibility/existence in the caller before this operation; failed unlink must not change a choice.
+    const link = await findLink(inner, issueId, pullRequestId);
+    if (!link) return false;
+    await lockLinkChoice(inner, issueId, pullRequestId, true);
+    await inner.query
+      .deleteFrom(LINKS)
+      .where('issueId', '=', issueId)
+      .where('pullRequestId', '=', pullRequestId)
+      .execute();
+    return true;
+  });
 }
 
 export async function findLink(

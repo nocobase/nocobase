@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { RunnerDaemon } from '../src/core/loop.ts';
 import { readConnections, readSettings } from '../src/lib/config.ts';
+import { workspaceRecordPath } from '../src/core/checkout.ts';
 import { runnerPaths } from '../src/lib/home.ts';
 import { FakeServer, waitFor } from './fake-server.ts';
 import {
@@ -47,8 +48,13 @@ describe('cleaning up working directories', () => {
     mkdirSync(path.join(workDir, '.nocobase-runner'), { recursive: true });
     writeFileSync(path.join(workDir, 'notes.txt'), 'x'.repeat(4096));
     const at = new Date(Date.now() - 60_000).toISOString();
+    const record = workspaceRecordPath(
+      runnerPaths(home, workRootOf(home)),
+      workDir,
+    );
+    mkdirSync(path.dirname(record), { recursive: true });
     writeFileSync(
-      path.join(workDir, '.nocobase-runner', 'workspace.json'),
+      record,
       JSON.stringify({
         appKey: APP,
         subjectKey: subject,

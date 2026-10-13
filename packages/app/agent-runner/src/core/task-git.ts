@@ -12,6 +12,11 @@ export interface TaskGitContext {
   readonly url: string;
 }
 
+/** Unsupported configuration prevents host-side inspection, not unchanged reuse. */
+export class TaskGitConfigurationError extends CheckoutError {
+  override name = 'TaskGitConfigurationError';
+}
+
 export interface TaskGitOptions {
   /** Run credentials replace every host helper; rejection must not fall back to machine credentials. */
   readonly auth?: GitAuth;
@@ -119,8 +124,8 @@ async function checkConfig(
       customSubmoduleUpdate ||
       !SAFE_KEYS.some((pattern) => pattern.test(key))
     )
-      throw new CheckoutError(
-        `${config}: unsafe or unsupported Git configuration ${key}; remove it before resuming or pushing`,
+      throw new TaskGitConfigurationError(
+        `${config}: unsafe or unsupported Git configuration ${key}; remove it before host-side inspection`,
       );
   }
 }

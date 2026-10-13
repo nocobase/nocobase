@@ -116,7 +116,7 @@ export function onlineToolRules(
 export const AGENT_LAYER_PREFIX =
   "The following are this agent's own instructions from its owner. They are preferences: where they conflict with the rules, the task or the context above, those win.";
 
-function describeDir(dir: WorkspaceDir): string {
+function describeDir(dir: WorkspaceDir, cli?: string): string {
   const name = dir.name ? ` (${dir.name})` : '';
   if (dir.kind === 'repo') {
     const selected = dir.pullRequest
@@ -129,7 +129,11 @@ function describeDir(dir: WorkspaceDir): string {
           : ` Pull request #${pr.number} (${pr.url}) has an unknown head repository: it is excluded until a host refresh identifies its origin, and nothing is pushed to it.`,
       )
       .join('');
-    return `\`./${dir.path}\`${name}, a checkout of ${dir.url} on branch \`${dir.branch}\` (based on \`${dir.defaultBranch}\`)${selected}; work and commit there and push only this branch, never another branch, and never rewrite history already pushed (no force push, no rebase or amend of pushed commits)${excluded}`;
+    const commands =
+      cli === 'nb-studio'
+        ? 'Manage task PR associations with `nb-studio pr open / link / unlink`.'
+        : `Where offered by ${cli ?? 'the application CLI'}, use its PR open / link / unlink commands to manage associations.`;
+    return `\`./${dir.path}\`${name}, a checkout of ${dir.url}, initially recommended on branch \`${dir.branch}\` (based on \`${dir.defaultBranch}\`)${selected}; new directories start there; reused directories preserve their actual state. You may switch or create branches, commit, and ordinarily push any branch of this repository. ${commands} Pass \`--head <actual-branch>\` when opening a PR, especially after switching. Never rewrite history already pushed (no force push, no rebase or amend of pushed commits)${excluded}`;
   }
   return `\`${dir.path}\`${name}, a directory on this machine you work in as it is: no branch of its own, so leave its version control alone unless the task asks, and do not delete or reset what is there`;
 }
@@ -138,14 +142,15 @@ function describeDir(dir: WorkspaceDir): string {
 export function workspaceSection(
   dirs: readonly WorkspaceDir[],
   noun: string,
+  cli?: string,
 ): string[] {
   const [primary, ...others] = dirs;
   return [
     'Workspace:',
     primary
-      ? `- You start in the primary working directory: ${describeDir(primary)}.`
+      ? `- You start in the primary working directory: ${describeDir(primary, cli)}.`
       : `- You start in an empty working directory kept for this ${noun}; create what the task needs inside it.`,
-    ...others.map((dir) => `- Also: ${describeDir(dir)}.`),
+    ...others.map((dir) => `- Also: ${describeDir(dir, cli)}.`),
     '- Do not clone the repositories again. Keep every file you write inside your working directories.',
     WORKSPACE_NOTES_PLACEHOLDER,
   ];
@@ -218,7 +223,7 @@ export function systemLayer(
     '- Stay inside your working directories: writes anywhere else are refused. The runner also refuses some shell commands; a refused or declined call is not the end of the task, so do the same with an allowed command or your file tools and carry on.',
     ...guidance.rules.map((rule) => `- ${rule}`),
     '',
-    ...workspaceSection(input.dirs ?? [], noun),
+    ...workspaceSection(input.dirs ?? [], noun, cli),
     '',
     ...environmentSection(guidance.whenBlocked ?? DEFAULT_GUIDANCE.whenBlocked),
     ...(input.skills && input.skills.length > 0

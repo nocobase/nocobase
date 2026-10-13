@@ -96,7 +96,7 @@ export const dirsStep: PrepareStep = {
         content:
           dir.repo === undefined
             ? `${dir.dir} (used in place)`
-            : `${dir.repo.url} at ${where} on ${dir.repo.branch}`,
+            : `${dir.repo.url} at ${where}: actual state ${dir.repo.actualHead ?? dir.repo.branch}; initial recommendation ${dir.repo.branch}`,
         meta: {
           kind: dir.kind,
           path: where,
@@ -106,7 +106,9 @@ export const dirsStep: PrepareStep = {
             ? {}
             : {
                 url: dir.repo.url,
-                branch: dir.repo.branch,
+                branch: dir.repo.actualHead ?? dir.repo.branch,
+                initialBranch: dir.repo.branch,
+                actualHead: dir.repo.actualHead ?? dir.repo.branch,
                 ...(dir.repo.initializing ? { initializing: true } : {}),
               }),
         },

@@ -93,8 +93,9 @@ export function isProtocolSupported(version: number): boolean {
  * - `steer`: injects input into the running turn instead of waiting for a turn boundary.
  * - `attachments`: the agent can upload files through the CLI.
  * - `checkout`: checks repositories out before the agent starts (`workspace.dirs` entries of kind `repo`).
- * - `prBranches`: checks out an existing PR branch from its remote, only fast-forwards, and refuses missing or
- *   diverged branches without switching to another branch (`RepoDir.pullRequest`).
+ * - `prBranches`: starts new directories at an existing PR remote branch (`RepoDir.pullRequest`).
+ * - `multiBranchWorkspaces`: reuses actual state, reports without pushing, and protects every local ref and dirty
+ *   file using fresh authorized remote evidence at every cleanup entry point. All repository runs require it.
  * - `directories`: works in a directory that already exists on the runner, in place (entries of kind `directory`).
  * - `secrets`: receives secrets from the server and injects them without writing them to disk.
  * - `skills`: installs the run's skills (`RunPayload.skills`) where its tool finds them.
@@ -113,6 +114,7 @@ export const RUNNER_FEATURES = [
   'attachments',
   'checkout',
   'prBranches',
+  'multiBranchWorkspaces',
   'directories',
   'secrets',
   'skills',

@@ -217,8 +217,8 @@ export interface RepoDir {
   readonly url: string;
   readonly defaultBranch: string;
   /**
-   * The branch the run works on, such as `agent/PM-12`; the only branch the agent may push. Never `defaultBranch`,
-   * except with `initial`.
+   * Initial branch for a new directory, such as `agent/PM-12` or an associated PR branch. Existing directories retain
+   * actual state; agents may ordinarily push any branch of this repository without rewriting published history.
    */
   readonly branch: string;
   /** A selected same-repository PR: its remote branch must exist (requires `prBranches`). */
@@ -354,7 +354,7 @@ export const RepoCredentialSchema: z.ZodType<RepoCredential> = z.object({
  * - `trailers`: lines added to every commit message, such as `Co-authored-by: Agent <agent+1@acme.noreply>`;
  * - `credentials`: short-lived credentials by repository URL, which the runner fetches and pushes that repository with
  *   (a git credential helper for the agent). They live in memory only: never written to disk, gone with the run. The
- *   runner installs no push guard; the application instructs the agent to push only its checkout branch.
+ *   runner installs no push guard; agents may ordinarily push any branch of the authorized repository without rewriting published history.
  * - `onDemand` (runners with the `gitCredentials` feature): repository URLs, each exactly as a `RepoDir` names it, whose
  *   credential the runner asks for whenever git needs one (`RUNNER_ROUTES.gitCredential`) rather than receiving it
  *   here. For these URLs the runner uses nothing else: no credential of the claim and none of the host's.

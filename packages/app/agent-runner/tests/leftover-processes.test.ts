@@ -182,7 +182,13 @@ describe('leftover processes', () => {
     // Well within the 5 s between two looks at the process groups below a worker.
     await waitFor(() => !alive(leftover), 3_000, 'the leftover to be stopped');
     await waitFor(
-      () => daemon.output().includes('process(es) the run left behind'),
+      () =>
+        daemon.output().includes('process(es) the run left behind') ||
+        server
+          .events(run.payload.run.id)
+          .some((event) =>
+            event.content?.includes('process(es) the run left behind'),
+          ),
       5_000,
       'the cleanup to be logged',
     );

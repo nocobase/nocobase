@@ -12,10 +12,12 @@ import path from 'node:path';
 import type { RunnerPaths } from '../lib/home.ts';
 import {
   acquireLock,
+  checkWorkspaceGit,
   readWorkspaceMeta,
   writeWorkspaceMeta,
   type Lock,
 } from './checkout.ts';
+import { taskGit } from './task-git.ts';
 import type { WorkspaceEntry } from './workspaces.ts';
 
 export interface ArtifactOptions {
@@ -39,6 +41,7 @@ export async function findArtifacts(
     for (const entry of entries) {
       // A symbolic link is neither a directory here nor followed.
       if (!entry.isDirectory()) continue;
+      if (entry.name === '.git' || entry.name === '.nocobase-runner') continue;
       const child = path.join(dir, entry.name);
       if (names.has(entry.name)) found.push(child);
       else await walk(child);
@@ -69,13 +72,62 @@ export async function cleanArtifacts(
     try {
       const meta = await readWorkspaceMeta(options.paths, entry.workDir);
       // A run used it since it was read, or it was cleaned since it was last used.
-      if (meta === undefined || meta.lastUsedAt !== entry.lastUsedAt) continue;
+      if (
+        meta === undefined ||
+        meta.lastUsedAt !== entry.lastUsedAt ||
+        meta.generation !== entry.generation
+      )
+        continue;
       if (
         meta.artifactsCleanedAt !== undefined &&
         Date.parse(meta.artifactsCleanedAt) >= usedAt
       )
         continue;
       const found = await findArtifacts(entry.workDir, options.patterns);
+      if (
+        (await checkWorkspaceGit(entry.workDir, meta, options.log)).reason !==
+        'allowed'
+      )
+        continue;
+      let tracked = false;
+      for (const repo of meta.repos) {
+        const dir = path.resolve(entry.workDir, repo.path);
+        for (const artifact of found) {
+          const relative = path.relative(dir, artifact);
+          if (relative.startsWith('..') || path.isAbsolute(relative)) continue;
+          if (
+            relative === '' ||
+            (repo.submodules ?? []).some((child) => {
+              const inside = path.relative(
+                path.resolve(dir, child.path),
+                artifact,
+              );
+              return (
+                inside === '' ||
+                (!inside.startsWith('..') && !path.isAbsolute(inside))
+              );
+            })
+          ) {
+            tracked = true;
+            continue;
+          }
+          if (
+            await taskGit({ ...repo, dir }, [
+              'ls-files',
+              '--cached',
+              '--',
+              relative,
+            ])
+          )
+            tracked = true;
+        }
+      }
+      if (tracked) continue;
+      if (
+        (await checkWorkspaceGit(entry.workDir, meta, options.log)).reason !==
+        'allowed'
+      )
+        continue;
       for (const dir of found) await rm(dir, { recursive: true, force: true });
       await writeWorkspaceMeta(options.paths, entry.workDir, {
         ...meta,

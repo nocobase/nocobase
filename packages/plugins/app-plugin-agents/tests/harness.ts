@@ -633,6 +633,7 @@ export async function createHarness(
             'input',
             'checkout',
             'prBranches',
+            'multiBranchWorkspaces',
             'directories',
             'attachments',
             'skills',
