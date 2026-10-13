@@ -460,9 +460,9 @@ nb-studio issue status list
 
 ## issue subscribe
 
-Follow an issue
+Subscribe to an issue's notifications
 
-Following brings the issue’s comments and status changes to the inbox. `issueId` is an id or an identifier.
+Subscribing brings the issue’s comments and status changes to the inbox. `issueId` is an id or an identifier.
 
 ```bash
 nb-studio issue subscribe <issue>
@@ -480,9 +480,9 @@ nb-studio issue subscribe <issue>
 
 ## issue unsubscribe
 
-Stop following an issue
+Unsubscribe from an issue's notifications
 
-Following brings the issue’s comments and status changes to the inbox. `issueId` is an id or an identifier.
+Subscribing brings the issue’s comments and status changes to the inbox. `issueId` is an id or an identifier.
 
 ```bash
 nb-studio issue unsubscribe <issue>

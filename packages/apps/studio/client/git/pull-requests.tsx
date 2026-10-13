@@ -350,11 +350,14 @@ export function MergeButtons({
   pullRequest,
   onDone,
   size = 'sm',
+  mergeOnly = false,
 }: {
   readonly issue: { readonly id: string; readonly identifier: string };
   readonly pullRequest: MergeTarget;
   readonly onDone?: () => void;
   readonly size?: 'sm' | 'default';
+  /** Merge alone, without the blocker's words and Mark as merged, for a one-line bar. */
+  readonly mergeOnly?: boolean;
 }): ReactElement | null {
   const { t } = useTranslation();
   const actions = useMergeActions(issue, pullRequest, onDone);
@@ -362,7 +365,7 @@ export function MergeButtons({
   const blocker = pullRequest.mergeBlocker;
   return (
     <>
-      {blocker ? (
+      {blocker && !mergeOnly ? (
         <span
           className='text-xs text-muted-foreground'
           data-merge-reason={blocker}
@@ -382,15 +385,17 @@ export function MergeButtons({
         <GitMergeIcon data-icon='inline-start' />
         {t('studioGit.section.merge')}
       </Button>
-      <Button
-        size={size}
-        variant='outline'
-        data-action='mark-merged'
-        disabled={actions.pending}
-        onClick={actions.markMerged}
-      >
-        {t('studioGit.section.markMerged')}
-      </Button>
+      {mergeOnly ? null : (
+        <Button
+          size={size}
+          variant='outline'
+          data-action='mark-merged'
+          disabled={actions.pending}
+          onClick={actions.markMerged}
+        >
+          {t('studioGit.section.markMerged')}
+        </Button>
+      )}
       {actions.dialogs}
     </>
   );
