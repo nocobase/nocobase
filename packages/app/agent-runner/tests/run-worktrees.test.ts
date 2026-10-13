@@ -2,6 +2,7 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { waitFor } from './fake-server.ts';
+import * as processTree from '../src/core/process-tree.ts';
 import { workspaceHolders } from '../src/core/process-tree.ts';
 import * as fsPromises from 'node:fs/promises';
 import * as checkoutModule from '../src/core/checkout.ts';
@@ -123,6 +124,98 @@ describe('per-attempt worktrees', () => {
     });
     return { workDir, repo: prepared.dirs[0]!.repo!, prepared };
   }
+  async function pushedRemoval(id: string) {
+    const a = await start(id);
+    git(['push', a.repo.url, 'HEAD:refs/heads/agent/PM-300'], a.repo.dir);
+    await markWorkspaceEnded(
+      paths,
+      a.workDir,
+      await reportRepos([a.repo], { push: true }),
+    );
+    const meta = (await readWorkspaceMeta(paths, a.workDir))!;
+    await writeWorkspaceMeta(paths, a.workDir, {
+      ...meta,
+      repos: meta.repos.map((repo) => ({ ...repo, removing: true })),
+    });
+    return a;
+  }
+
+  it.each(['detached', 'different-branch', 'git-check-failed'] as const)(
+    'retains actual unpublished commits and files after a removal marker: %s',
+    async (kind) => {
+      const a = await pushedRemoval(kind);
+      if (kind === 'detached') git(['checkout', '--detach'], a.repo.dir);
+      else if (kind === 'different-branch')
+        git(['checkout', '-b', 'recovery-work'], a.repo.dir);
+      writeFileSync(path.join(a.repo.dir, 'unpublished'), 'must survive');
+      git(['add', 'unpublished'], a.repo.dir);
+      git([...COMMIT, 'commit', '-m', 'unpublished actual head'], a.repo.dir);
+      const head = git(['rev-parse', 'HEAD'], a.repo.dir);
+      let spy: ReturnType<typeof vi.spyOn> | undefined;
+      if (kind === 'git-check-failed') {
+        const original = checkoutModule.git;
+        spy = vi
+          .spyOn(checkoutModule, 'git')
+          .mockImplementation(async (args, ...rest) => {
+            if (args.includes('symbolic-ref'))
+              throw new Error('injected Git inspection failure');
+            return original(args, ...rest);
+          });
+      }
+      try {
+        expect(await retryWorkspaceRemoval(paths, a.workDir, () => {})).toBe(
+          false,
+        );
+        const results = await finalizeRunWorktrees(paths, a.workDir, () => {}, {
+          remove: false,
+        });
+        expect(results[0]?.saved).toBe(false);
+        expect(
+          (await readWorkspaceMeta(paths, a.workDir))?.recoveryRequired,
+        ).toBe(true);
+        expect(readFileSync(path.join(a.repo.dir, 'unpublished'), 'utf8')).toBe(
+          'must survive',
+        );
+        expect(git(['rev-parse', 'HEAD'], a.repo.dir)).toBe(head);
+        expect(git(['cat-file', '-t', head], a.repo.cache)).toBe('commit');
+      } finally {
+        spy?.mockRestore();
+      }
+    },
+  );
+
+  it('rechecks actual HEAD after stopping holders and retains new detached work', async () => {
+    const a = await pushedRemoval('changed-after-stop');
+    const spy = vi
+      .spyOn(processTree, 'stopWorkspaceHolders')
+      .mockImplementation(async () => {
+        git(['checkout', '--detach'], a.repo.dir);
+        writeFileSync(path.join(a.repo.dir, 'late-work'), 'keep');
+        git(['add', 'late-work'], a.repo.dir);
+        git([...COMMIT, 'commit', '-m', 'late unpublished work'], a.repo.dir);
+      });
+    try {
+      expect(await retryWorkspaceRemoval(paths, a.workDir, () => {})).toBe(
+        false,
+      );
+      expect(spy).toHaveBeenCalledOnce();
+      expect(readFileSync(path.join(a.repo.dir, 'late-work'), 'utf8')).toBe(
+        'keep',
+      );
+      expect(
+        (await readWorkspaceMeta(paths, a.workDir))?.recoveryRequired,
+      ).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('automatically finishes a pushed removing checkout whose Git metadata survived', async () => {
+    const a = await pushedRemoval('git-survived');
+    expect(await retryWorkspaceRemoval(paths, a.workDir, () => {})).toBe(true);
+    expect(existsSync(a.workDir)).toBe(false);
+  });
+
   async function interruptedRemoval(id: string) {
     const a = await start(id);
     git(['push', a.repo.url, 'HEAD:refs/heads/agent/PM-300'], a.repo.dir);
@@ -374,7 +467,7 @@ describe('per-attempt worktrees', () => {
     await finalizeRunWorktrees(paths, b.workDir, () => {});
   });
 
-  it('finishes an interrupted removal without committing its half-deleted files', async () => {
+  it('retains half-deleted files without pushed evidence and does not commit their deletion', async () => {
     const a = await start('a');
     writeFileSync(path.join(a.repo.dir, 'kept.txt'), 'kept');
     const [saved] = await finalizeRunWorktrees(paths, a.workDir, () => {}, {
@@ -388,8 +481,11 @@ describe('per-attempt worktrees', () => {
     });
     rmSync(path.join(a.repo.dir, 'kept.txt'));
     const [finished] = await finalizeRunWorktrees(paths, a.workDir, () => {});
-    expect(finished?.saved).toBe(true);
-    expect(existsSync(a.workDir)).toBe(false);
+    expect(finished?.saved).toBe(false);
+    expect(existsSync(a.workDir)).toBe(true);
+    expect((await readWorkspaceMeta(paths, a.workDir))?.recoveryRequired).toBe(
+      true,
+    );
     expect(
       git(['rev-parse', `refs/runner/resume/${repo.continuation}`], repo.cache),
     ).toBe(saved?.head);

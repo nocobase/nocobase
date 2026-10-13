@@ -131,20 +131,34 @@ export async function cleanArtifacts(
       let removed = 0;
       for (const dir of safe) {
         if (await options.shouldStop?.()) break;
-        await rm(dir, { recursive: true, force: true });
-        removed += 1;
+        try {
+          await rm(dir, { recursive: true, force: true });
+          removed += 1;
+        } catch (error) {
+          options.log?.(
+            `workspaces: artifact cleanup failed for ${dir}: ${String(error)}`,
+          );
+        }
       }
       if (removed === safe.length)
         await writeWorkspaceMeta(options.paths, entry.workDir, {
           ...meta,
           artifactsCleanedAt: new Date(now).toISOString(),
-        });
+        }).catch((error: unknown) =>
+          options.log?.(
+            `workspaces: artifact cache write failed for ${entry.workDir}: ${String(error)}`,
+          ),
+        );
       if (removed > 0) {
         cleaned.push(entry.workDir);
         options.log?.(
           `workspaces: removed ${removed} regenerable ${removed === 1 ? 'directory' : 'directories'} from ${entry.workDir}, unused since ${entry.lastUsedAt}`,
         );
       }
+    } catch (error) {
+      options.log?.(
+        `workspaces: artifact inspection failed; retained ${entry.workDir}: ${String(error)}`,
+      );
     } finally {
       await lock.release();
     }

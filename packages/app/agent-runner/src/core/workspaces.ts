@@ -137,7 +137,11 @@ export async function inspectWorkspace(
     await recordCheck(paths, workDir, meta, {
       unpushed,
       measuredAt: new Date(now).toISOString(),
-    });
+    }).catch((error: unknown) =>
+      options.log?.(
+        `workspaces: diagnostic cache write failed for ${workDir}: ${String(error)}`,
+      ),
+    );
   }
   return {
     workDir,
@@ -186,10 +190,16 @@ export async function scanWorkspaces(
 ): Promise<WorkspaceEntry[]> {
   const entries: WorkspaceEntry[] = [];
   for (const { workDir, meta } of await listWorkspaceDirs(paths)) {
-    const entry = await inspectWorkspace(paths, workDir, meta, options);
-    const size = await directorySize(workDir).catch(() => undefined);
-    if (size !== undefined) entry.sizeBytes = size;
-    entries.push(entry);
+    try {
+      const entry = await inspectWorkspace(paths, workDir, meta, options);
+      const size = await directorySize(workDir).catch(() => undefined);
+      if (size !== undefined) entry.sizeBytes = size;
+      entries.push(entry);
+    } catch (error) {
+      options.log?.(
+        `workspaces: inspection failed; retained ${workDir}: ${String(error)}`,
+      );
+    }
   }
   return entries;
 }
@@ -574,7 +584,11 @@ export async function removePlanned(
       await writeWorkspaceMeta(paths, entry.workDir, {
         ...meta,
         unpushed: true,
-      });
+      }).catch((error: unknown) =>
+        options.log?.(
+          `workspaces: diagnostic cache write failed for ${entry.workDir}: ${String(error)}`,
+        ),
+      );
       return 'unpushed';
     }
     await removeWorkspace(paths, entry.workDir, meta);
@@ -720,7 +734,6 @@ export async function collectWorkspaces(
       entry,
       log === undefined ? {} : { log },
     ).catch((error: unknown) => {
-      if (entry.disposable !== true) throw error;
       log?.(
         `workspaces: cleanup failed for ${entry.workDir}; retrying next GC: ${String(error)}`,
       );

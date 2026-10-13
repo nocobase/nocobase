@@ -583,7 +583,7 @@ export class RunWorker {
     } finally {
       await this.stopTool();
       // A failed stop/save retains the original directory. No separate recovery protocol is maintained.
-      await this.saveLocal(true).catch((error: unknown) =>
+      await this.saveLocal(!this.retainWorkspace).catch((error: unknown) =>
         log(
           `Directory retained: ${this.prepared?.workspace?.workDir ?? this.record.workDir}: ${String(error)}`,
         ),
@@ -1001,7 +1001,12 @@ export class RunWorker {
 
   private writerStopFailure?: string;
 
-  private async saveLocal(remove = false): Promise<string> {
+  private retainWorkspace = false;
+
+  private async saveLocal(
+    remove = false,
+    bestEffortEvents = false,
+  ): Promise<string> {
     await this.stopTool();
     if (this.writerStopFailure === undefined) {
       try {
@@ -1043,12 +1048,23 @@ export class RunWorker {
           : `Recovery required: ${result.path}: ${result.reason}`,
       )
       .join('\n');
-    if (message !== '')
-      this.spool.push({
-        type: 'status',
-        content: message,
-        meta: { phase: 'localSave' },
-      });
+    if (message !== '') {
+      try {
+        this.spool.push({
+          type: 'status',
+          content: message,
+          meta: { phase: 'localSave' },
+        });
+      } catch (error) {
+        if (!bestEffortEvents) throw error;
+        const failure = this.redactor.text(String(error));
+        this.deps.log(
+          `run ${this.runId}: local save event could not be recorded: ${failure}`,
+        );
+        return `${message}
+Local save event could not be recorded: ${failure}`;
+      }
+    }
     return message;
   }
 
@@ -1126,16 +1142,26 @@ export class RunWorker {
     const detail = this.redactor.text(unredacted);
     await this.updateRecord({ phase: 'reporting' }).catch(() => undefined);
     const repos = await this.repoReports(false).catch(() => []);
-    const saved = await this.saveLocal();
+    let saved: string;
     if (reason === 'runnerDiskFull') {
       this.spool.stop();
+      try {
+        saved = await this.saveLocal(false, true);
+      } catch (error) {
+        this.retainWorkspace = true;
+        saved = `Local preservation did not finish; workspace retained for recovery: ${this.redactor.text(String(error))}`;
+        this.deps.log(`run ${this.runId}: ${saved}`);
+      }
       // A full disk may also prevent writing the event acknowledgement. The final failure still must reach the server.
       await this.drainEvents().catch((error: unknown) =>
         this.deps.log(
           `run ${this.runId}: event drain failed while reporting disk exhaustion: ${this.redactor.text(error instanceof Error ? error.message : String(error))}`,
         ),
       );
-    } else await this.drainEvents();
+    } else {
+      saved = await this.saveLocal();
+      await this.drainEvents();
+    }
 
     try {
       await this.report(routePath(RUNNER_ROUTES.fail, { runId: this.runId }), {

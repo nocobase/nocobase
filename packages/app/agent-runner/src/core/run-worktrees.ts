@@ -191,6 +191,40 @@ async function ref(cache: string, name: string): Promise<string | undefined> {
   return git(['rev-parse', '--verify', `${name}^{commit}`], cache);
 }
 
+async function assertWorktreeIdentity(
+  context: { dir: string; cache: string; url: string },
+  localBranch: string,
+): Promise<void> {
+  const gitDir = await taskGitDir(context);
+  await taskGit(context, ['status', '--porcelain']);
+  if (
+    (await taskGit(context, ['diff', '--name-only', '--diff-filter=U'])) !==
+      '' ||
+    [
+      'MERGE_HEAD',
+      'rebase-merge',
+      'rebase-apply',
+      'CHERRY_PICK_HEAD',
+      'REVERT_HEAD',
+    ].some((name) => existsSync(path.join(gitDir, name)))
+  )
+    throw new CheckoutError(
+      'Unresolved Git operation; keep the original worktree for recovery',
+    );
+  // Retain any initialized submodule, including its unpublished objects. A parent gitlink cannot save them.
+  if ((await taskGit(context, ['submodule', 'status', '--recursive'])) !== '')
+    throw new CheckoutError(
+      'Initialized submodules require recovery in the original worktree; their objects are not saved by a parent commit',
+    );
+  if (
+    (await taskGit(context, ['symbolic-ref', '--short', 'HEAD'])) !==
+    localBranch
+  )
+    throw new CheckoutError(
+      'The agent changed the local branch; keep the worktree for recovery',
+    );
+}
+
 /** The runner's removal marker plus local pushed evidence; never infer safety from a broken checkout alone. */
 export async function canRetryWorkspaceRemoval(
   paths: RunnerPaths,
@@ -236,15 +270,27 @@ export async function canRetryWorkspaceRemoval(
           ))
         )
           return false;
-        // When Git survived, protect new edits too. Missing .git is expected after partial removal.
-        if (
-          existsSync(path.join(dir, '.git')) &&
-          (await taskGit({ dir, cache: repo.cache, url: repo.url }, [
-            'status',
-            '--porcelain',
-          ])) !== ''
-        )
-          return false;
+        // Missing .git is expected after partial removal; surviving Git must prove the actual checkout is saved.
+        if (existsSync(path.join(dir, '.git'))) {
+          const context = { dir, cache: repo.cache, url: repo.url };
+          await assertWorktreeIdentity(context, repo.localBranch);
+          if ((await taskGit(context, ['status', '--porcelain'])) !== '')
+            return false;
+          const actualHead = await taskGit(context, [
+            'rev-parse',
+            '--verify',
+            'HEAD^{commit}',
+          ]);
+          if (
+            !(await taskGitOk(context, [
+              'merge-base',
+              '--is-ancestor',
+              actualHead,
+              repo.pushedSha,
+            ]))
+          )
+            return false;
+        }
       }
     } catch {
       return false;
@@ -587,7 +633,7 @@ export async function finalizeRunWorktrees(
     if (!existsSync(dir)) continue;
     const context = { dir, cache: repo.cache, url: repo.url };
     try {
-      const gitDir = await taskGitDir(context);
+      await taskGitDir(context);
       if (
         !isInside(workDir, dir) ||
         repo.localBranch !== runBranch(workDir, repo.path) ||
@@ -604,41 +650,19 @@ export async function finalizeRunWorktrees(
         );
       // Metadata validation runs before checking/committing; never execute checkout-provided hooks or filters.
       // Saved before an interrupted removal: committing now would record its half-deleted files.
-      if (repo.removing === true) results.push({ path: dir, saved: true });
-      else if (meta.readOnly !== true) {
-        await taskGit(context, ['status', '--porcelain']);
+      if (repo.removing === true) {
         if (
-          (await taskGit(context, [
-            'diff',
-            '--name-only',
-            '--diff-filter=U',
-          ])) !== '' ||
-          [
-            'MERGE_HEAD',
-            'rebase-merge',
-            'rebase-apply',
-            'CHERRY_PICK_HEAD',
-            'REVERT_HEAD',
-          ].some((name) => existsSync(path.join(gitDir, name)))
+          !(await canRetryWorkspaceRemoval(paths, workDir, {
+            ...meta,
+            repos: [repo],
+          }))
         )
           throw new CheckoutError(
-            'Unresolved Git operation; keep the original worktree for recovery',
+            'Removal evidence no longer matches the checkout; keep the worktree for recovery',
           );
-        // Retain any initialized submodule, including its unpublished objects. A parent gitlink cannot save them.
-        if (
-          (await taskGit(context, ['submodule', 'status', '--recursive'])) !==
-          ''
-        )
-          throw new CheckoutError(
-            'Initialized submodules require recovery in the original worktree; their objects are not saved by a parent commit',
-          );
-        if (
-          (await taskGit(context, ['symbolic-ref', '--short', 'HEAD'])) !==
-          repo.localBranch
-        )
-          throw new CheckoutError(
-            'The agent changed the local branch; keep the worktree for recovery',
-          );
+        results.push({ path: dir, saved: true });
+      } else if (meta.readOnly !== true) {
+        await assertWorktreeIdentity(context, repo.localBranch);
         await taskGit(context, ['add', '--all']);
         if (!(await taskGitOk(context, ['diff', '--cached', '--quiet'])))
           await taskGit(context, [
