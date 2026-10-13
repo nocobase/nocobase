@@ -19,3 +19,5 @@ Automatic credential links require an explicitly configured public origin (`app.
 Reject malformed SMTP authentication settings when validating email channel availability.
 
 Keep default SMTP password and Resend API key environment mappings optional and secret in deployment manifests. Applications may explicitly require selected credentials, while enabled email channels still validate their configuration.
+
+Space recovery links on reset error pages in both templates and Studio, allowing them to wrap on narrow screens.

@@ -56,14 +56,14 @@ export default function ResetPasswordPage(): ReactElement {
           disabled={!token}
           error={token ? reset.error?.message : t('auth.invalidResetLink')}
           footer={
-            <>
+            <span className='flex flex-wrap justify-center gap-x-4 gap-y-2 [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary'>
               <Link to='/login'>{t('auth.backToSignIn')}</Link>
               {!token || reset.error ? (
                 <Link to='/forgot-password'>
                   {t('auth.requestNewResetLink')}
                 </Link>
               ) : null}
-            </>
+            </span>
           }
           labels={{
             confirmPassword: t('auth.confirmNewPassword'),
