@@ -125,6 +125,18 @@ export function toIssue(record: IssueRecord): Issue {
   };
 }
 
+/** Complete authorized projections without owner, executor, project or label hydration. */
+export async function hierarchyRecords(
+  conn: DatabaseConnection,
+  filter: RepositoryFilter<IssueRecord>,
+): Promise<Issue[]> {
+  const rows = await issues(conn).findMany({
+    filter,
+    select: (select) => select.fields(...FIELDS),
+  });
+  return rows.map((row) => toIssue({ ...row, priorityRank: 0, deletedById: null }));
+}
+
 function toRow(
   record: IssueRecord & {
     readonly owner?: Named | null;

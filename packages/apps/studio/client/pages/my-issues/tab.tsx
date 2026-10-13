@@ -36,7 +36,7 @@ export function MyIssuesTab({
           hiddenFilters={filters.hiddenFilters}
           viewKey='my-issues'
           views={['board', 'list', 'agent']}
-          defaultView='board'
+          defaultView='list'
           mineToggle={false}
           empty={{
             title: t(`issuesPage.myEmpty.${role}`),

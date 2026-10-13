@@ -262,3 +262,50 @@ describe('inbox', () => {
     expect(await inbox.pending('lead')).toBe(0);
   });
 });
+
+it('returns uncapped safe task decision summaries and excludes resolved, informational and unrelated notices', async () => {
+  const ids = Array.from({ length: 601 }, (_, i) => `task-${i}`);
+  for (const id of ids)
+    await projects.send({
+      ...decision(['lead', 'admin']),
+      key: `question:${id}`,
+      issue: { id, identifier: id },
+      params: { privateText: 'Never expose this' },
+    });
+  await projects.send({
+    ...decision(['admin']),
+    key: 'second-reason',
+    type: 'run_failed_final',
+    issue: { id: ids[0]!, identifier: ids[0]! },
+  });
+  await projects.send({
+    ...decision(['lead']),
+    key: 'information',
+    kind: 'info',
+    issue: { id: 'info', identifier: 'info' },
+  });
+  const summaries = await inbox.taskDecisions([...ids, 'info'], 'lead');
+  expect(summaries).toHaveLength(602);
+  expect(
+    summaries
+      .filter((row) => row.type === 'agent_blocked')
+      .every((row) => row.waitingForViewer),
+  ).toBe(true);
+  expect(summaries.find((row) => row.type === 'run_failed_final')).toEqual({
+    issueId: ids[0],
+    type: 'run_failed_final',
+    waitingForViewer: false,
+  });
+  expect(JSON.stringify(summaries)).not.toMatch(
+    /privateText|Never expose|userIds|decisionKey|notificationId/,
+  );
+  await inbox.resolve({
+    source: 'projects',
+    decisionKey: `question:${ids[0]}`,
+    outcome: 'answered',
+  });
+  expect(await inbox.taskDecisions([ids[0]!], 'lead')).toEqual([
+    { issueId: ids[0], type: 'run_failed_final', waitingForViewer: false },
+  ]);
+  expect(await inbox.taskDecisions([], 'lead')).toEqual([]);
+});

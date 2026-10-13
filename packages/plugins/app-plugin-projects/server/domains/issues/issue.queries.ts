@@ -16,6 +16,7 @@ import {
   type BoardColumn,
   type IssueBoard,
   type IssueDetail,
+  type Issue,
   type IssueListItem,
   type IssueListQuery,
   type IssuePage,
@@ -40,6 +41,7 @@ import {
   findIssue,
   findIssueRow,
   findIssueRows,
+  hierarchyRecords,
   priorityRank,
   statusesOf,
   type IssueRecord,
@@ -53,6 +55,13 @@ export interface IssueQueries {
   /** The fixed statuses, in order. */
   statuses(): StatusDefinition[];
   page(viewer: Viewer, query: IssueListQuery): Promise<IssuePage>;
+  /** Complete live authorized hierarchy and filter matches; no list-page or matching cap. */
+  hierarchy(viewer: Viewer, query: IssueListQuery): Promise<IssueHierarchy>;
+  /** Hydrates a bounded page of IDs after independently rechecking visibility. */
+  hierarchyItems(
+    viewer: Viewer,
+    ids: readonly string[],
+  ): Promise<IssueListItem[]>;
   /** A page per status column; with `statusKey`, that column only, continuing from `cursor`. */
   board(viewer: Viewer, query: IssueListQuery): Promise<IssueBoard>;
   detail(viewer: Viewer, idOrKey: string): Promise<IssueDetail>;
@@ -72,6 +81,13 @@ export interface IssueQueries {
     idOrKey: string,
     options: { readonly cursor?: string; readonly limit?: number },
   ): Promise<ActivityPage>;
+}
+
+export interface IssueHierarchy {
+  readonly issues: readonly Issue[];
+  readonly matchingIds: readonly string[];
+  /** Internal workflow dependency facts, including unreadable blockers; never expose their identities. */
+  readonly blockedIds: ReadonlySet<string>;
 }
 
 /** Which issues `IssueQueries.matching` gathers besides the list's filters. */
@@ -218,6 +234,47 @@ function unknownStatus(key: string): StatusDefinition {
 
 export function createIssueQueries(deps: QueryDeps): IssueQueries {
   return {
+    async hierarchy(viewer, query) {
+      const conn = deps.tx.read();
+      const issues = await hierarchyRecords(conn, (f) =>
+        visibleIssues(f, viewer),
+      );
+      const matches = await hierarchyRecords(
+        conn,
+        listFilter(viewer, { ...query, deleted: false }),
+      );
+      const blockedIds = new Set<string>();
+      // Bound SQL parameter counts while retaining the full scope.
+      for (let at = 0; at < issues.length; at += 100) {
+        const counts = await deps
+          .extras()
+          .listCounts(conn, issues.slice(at, at + 100));
+        for (const [id, value] of counts)
+          if (value.blockedCount > 0) blockedIds.add(id);
+      }
+      return {
+        issues,
+        matchingIds: matches.map((issue) => issue.id),
+        blockedIds,
+      };
+    },
+    async hierarchyItems(viewer, ids) {
+      if (ids.length === 0) return [];
+      if (ids.length > 100)
+        throw new Error('Hierarchy hydration accepts at most 100 tasks.');
+      const conn = deps.tx.read();
+      const rows = await findIssueRows(conn, {
+        filter: (f) =>
+          f.and([
+            visibleIssues(f, viewer),
+            f.or(ids.map((id) => f.string('id').eq(id))),
+          ]),
+        order: 'number',
+        direction: 'asc',
+        limit: ids.length,
+      });
+      return listItems(deps, conn, rows);
+    },
     statuses() {
       return [...deps.statuses.catalog().statuses];
     },

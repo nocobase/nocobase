@@ -38,6 +38,7 @@ import {
   watchFailedRunCards,
 } from '../agents/failed-run-cards.js';
 import { RUN_FAILED_FINAL } from '../agents/notices.js';
+import { PM_REALTIME_TOPIC } from '@nocobase/app-plugin-projects/shared/realtime';
 
 const DEFAULT_CHANNEL = 'inbox';
 
@@ -86,8 +87,17 @@ export default class StudioInboxProvider extends ServiceProvider<Application> {
             ? resolver.resolve(inAppNotificationStoreToken)
             : null,
         channel: channel ?? DEFAULT_CHANNEL,
-        announce: (userId) =>
-          void this.topic?.publishFor(userId, { kind: 'studio.inbox.changed' }),
+        announce: (userId) => {
+          void this.topic?.publishFor(userId, { kind: 'studio.inbox.changed' });
+          // Public invalidation carries no issue, decision or recipient data; every subsequent read is authorized.
+          if (resolver.has(realtimeServiceToken))
+            resolver
+              .resolve(realtimeServiceToken)
+              .publish(PM_REALTIME_TOPIC, {
+                kind: 'pm.changed',
+                domain: 'issues',
+              });
+        },
       }),
     );
     this.app.container.singleton(studioInboxSourceToken, (resolver) =>

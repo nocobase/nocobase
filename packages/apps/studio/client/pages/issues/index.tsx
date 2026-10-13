@@ -93,7 +93,7 @@ export default function IssuesPage(): ReactElement {
         <IssuesView
           viewKey='issues'
           views={['board', 'list', 'agent']}
-          defaultView='board'
+          defaultView='list'
           empty={{
             title: t('issuesPage.emptyTitle'),
             description: t('issuesPage.emptyDescription'),

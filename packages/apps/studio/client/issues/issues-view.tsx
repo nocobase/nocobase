@@ -29,6 +29,7 @@ import { Button } from '@/components/ui/button';
 import { AgentQueueView } from './agent-view.js';
 import { IssueBoardView } from './board-view.js';
 import { IssueListView } from './list-view.js';
+import { GroupedIssueListView } from './grouped-list-view.js';
 import { IssueToolbar, type IssueViewOption } from './toolbar.js';
 import { useIssuesPage } from './use-issues-page.js';
 
@@ -124,12 +125,19 @@ export function IssuesView({
           />
         ) : view === 'board' ? (
           <IssueBoardView page={page} issueHref={issueHref} onOpen={open} />
-        ) : (
+        ) : deleted ? (
           <IssueListView
             page={page}
             issueHref={issueHref}
             onOpen={open}
             deleted={deleted}
+            empty={empty}
+          />
+        ) : (
+          <GroupedIssueListView
+            page={page}
+            issueHref={issueHref}
+            onOpen={open}
             empty={empty}
           />
         )}

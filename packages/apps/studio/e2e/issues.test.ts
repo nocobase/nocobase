@@ -11,15 +11,16 @@ interface Issue {
 }
 
 test.describe('issues', () => {
-  test('the board is the default, beside the list and the Agent queue', async ({
+  test('the table is the default, beside the board and the Agent queue', async ({
     page,
   }) => {
     await open(page, '/issues');
     const views = page.getByRole('group', { name: '视图' });
-    await expect(views.getByRole('button', { name: '看板' })).toHaveAttribute(
+    await expect(views.getByRole('button', { name: '列表' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
+    await views.getByRole('button', { name: '看板' }).click();
     const board = page.getByRole('region', { name: '任务看板' });
     await expect(
       board.getByRole('region', { name: /^进行中 \d+$/ }),
@@ -47,12 +48,12 @@ test.describe('issues', () => {
     ).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('my issues default to the board', async ({ page }) => {
+  test('my issues default to the table', async ({ page }) => {
     await open(page, '/my-issues');
     await expect(
       page
         .getByRole('group', { name: '视图' })
-        .getByRole('button', { name: '看板' }),
+        .getByRole('button', { name: '列表' }),
     ).toHaveAttribute('aria-pressed', 'true');
   });
 
