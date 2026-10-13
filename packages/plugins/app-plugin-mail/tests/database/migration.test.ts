@@ -45,7 +45,7 @@ const MIGRATIONS = [
   '202609210001_normalize_mail_folders',
   '202609260001_add_mail_sync_retry_attempts',
   '202610090001_mail_create_message_participants',
-  '202610120001_mail_imap_message_locations',
+  '202610250001_mail_imap_message_locations',
 ] as const;
 const sources = [
   {

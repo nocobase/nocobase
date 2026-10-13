@@ -12,6 +12,14 @@ const MESSAGE_TABLES = [
   'mailMessageLabels',
   'mailMessageParticipants',
   'mailSyncTombstones',
+  'mailDraftStates',
+  'mailSubmissions',
+  'mailOutboundAttachments',
+  'mailSyncStates',
+  'mailSyncRuns',
+  'mailOutbox',
+  'mailPushPending',
+  'mailAccountRemovals',
 ] as const;
 
 async function assertNoMessages(
@@ -22,14 +30,14 @@ async function assertNoMessages(
     const row = await query.selectFrom(table).selectAll().limit(1).execute();
     if (row.length > 0)
       throw new Error(
-        `Cannot ${action} IMAP message locations while ${table} contains data. This migration supports only a mail store without messages; remove the mail accounts' messages first.`,
+        `Cannot ${action} IMAP message locations while ${table} contains data. This migration supports only a new mail store without mail business data.`,
       );
   }
 }
 
 const migration: MigrationDefinition = defineMigration({
-  name: '202610120001_mail_imap_message_locations',
-  async up({ builder, query }: MigrationContext): Promise<void> {
+  name: '202610250001_mail_imap_message_locations',
+  async up({ builder, query, connection }: MigrationContext): Promise<void> {
     // Refuse before any structural change, so a rejected run leaves no trace.
     await assertNoMessages(query, 'add');
     await builder.alterCollection('mailMessages', (collection) => {
@@ -37,7 +45,10 @@ const migration: MigrationDefinition = defineMigration({
       collection.string('providerDraftMessageIdSource', { length: 20 });
       collection.uuid('imapOrphanRunId');
       // A complete RFC Message-ID header can exceed the previous 1000 characters.
-      collection.alterField('internetMessageId', { type: 'text' });
+      collection.alterField('internetMessageId', {
+        type: 'text',
+        db: connection.dialect === 'mysql' ? { nativeType: 'longtext' } : {},
+      });
       // Target of the locations' account-scoped foreign key.
       collection.unique(['accountId', 'id'], {
         name: 'mail_messages_account_id_unique',
@@ -82,12 +93,25 @@ const migration: MigrationDefinition = defineMigration({
   async down({ builder, query }: MigrationContext): Promise<void> {
     // Restoring the 1000-character Message-ID column must not cut stored values.
     await assertNoMessages(query, 'remove');
+    if (
+      (
+        await query
+          .selectFrom('mailMessageImapLocations')
+          .selectAll()
+          .limit(1)
+          .execute()
+      ).length
+    )
+      throw new Error(
+        'Cannot remove IMAP message locations while location business data exists.',
+      );
     await builder.dropCollection('mailMessageImapLocations');
     await builder.alterCollection('mailMessages', (collection) => {
       collection.dropConstraint('mail_messages_account_id_unique');
       collection.alterField('internetMessageId', {
         type: 'string',
         length: 1000,
+        db: {},
       });
       collection.dropFields(
         'imapIdSource',

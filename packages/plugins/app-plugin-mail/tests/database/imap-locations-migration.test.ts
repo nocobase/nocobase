@@ -8,7 +8,7 @@ import {
 import type { DatabaseConnection, MigrationSource } from '@nocobase/db';
 import { expect } from 'vitest';
 
-const name = '202610120001_mail_imap_message_locations';
+const name = '202610250001_mail_imap_message_locations';
 const previous = '202610090001_mail_create_message_participants';
 const sources: readonly MigrationSource[] = [
   {
@@ -87,9 +87,13 @@ function location(
 }
 
 let accounts: Record<string, unknown>[];
+let previousMessageIdField: unknown;
 describeMigration(name, {
   sources,
   before: async ({ connection }) => {
+    previousMessageIdField = (
+      await connection.collections.get('mailMessages')
+    )?.fields?.find((field) => field.name === 'internetMessageId');
     // Accounts without messages may stay: only message data blocks the change.
     await seedAccount(connection);
     accounts = await connection.query
@@ -126,6 +130,13 @@ describeMigration(name, {
     const messages = expectCollection('mailMessages');
     await messages.toHaveIndex(['accountId', 'id'], { unique: true });
     await messages.toHaveField('internetMessageId', { type: 'text' });
+    const metadata = await connection.collections.get('mailMessages');
+    const field = metadata?.fields?.find(
+      (field) => field.name === 'internetMessageId',
+    );
+    expect(field?.db?.nativeType?.toLowerCase()).toBe(
+      connection.dialect === 'mysql' ? 'longtext' : 'text',
+    );
     for (const field of [
       'imapIdSource',
       'providerDraftMessageIdSource',
@@ -136,13 +147,17 @@ describeMigration(name, {
       await connection.query.selectFrom('mailAccounts').selectAll().execute(),
     ).toEqual(accounts);
   },
-  down: async ({ expectCollection }) => {
+  down: async ({ connection, expectCollection }) => {
     await expectCollection('mailMessageImapLocations').not.toExist();
     const messages = expectCollection('mailMessages');
     await messages.toHaveField('internetMessageId', {
       type: 'string',
       length: 1000,
     });
+    const metadata = await connection.collections.get('mailMessages');
+    expect(
+      metadata?.fields?.find((field) => field.name === 'internetMessageId'),
+    ).toEqual(previousMessageIdField);
     await messages.not.toHaveField('imapIdSource');
     await messages.not.toHaveIndex(['accountId', 'id']);
   },
@@ -188,15 +203,15 @@ test('keeps copies account-scoped, unique per tuple and removed with their messa
   const accountId = await seedAccount(connection);
   const otherAccountId = await seedAccount(connection);
   const messageId = await seedMessage(connection, accountId, {
-    // A long RFC header is stored whole.
-    internetMessageId: `<${'m'.repeat(2000)}@example.com>`,
+    // This exceeds MySQL TEXT's byte capacity and must use LONGTEXT.
+    internetMessageId: `<${'m'.repeat(70000)}@example.com>`,
   });
   const stored = await connection.query
     .selectFrom('mailMessages')
     .select('internetMessageId')
     .where('id', '=', messageId)
     .executeTakeFirst<{ internetMessageId: string }>();
-  expect(stored?.internetMessageId).toHaveLength(2014);
+  expect(stored?.internetMessageId).toHaveLength(70014);
 
   // The full uint32 range fits, and one message may own several UIDs in a folder.
   await connection.query
@@ -240,3 +255,106 @@ test('keeps copies account-scoped, unique per tuple and removed with their messa
       .execute(),
   ).toEqual([]);
 });
+
+const businessRows: Record<
+  string,
+  (accountId: string) => Record<string, unknown>
+> = {
+  mailPushPending: (accountId) => ({
+    accountId,
+    requestToken: 'pending',
+    requestedAt: now,
+  }),
+  mailAccountRemovals: (accountId) => ({
+    accountId,
+    failed: false,
+    availableAt: now,
+  }),
+  mailDraftStates: (accountId) => ({
+    id: randomUUID(),
+    accountId,
+    providerMessageId: 'closed-draft',
+    closed: true,
+  }),
+  mailSubmissions: (accountId) => ({
+    id: randomUUID(),
+    accountId,
+    idempotencyKey: 'key',
+    requestFingerprint: 'fingerprint',
+    status: 'pending',
+    createdAt: now,
+    updatedAt: now,
+  }),
+  mailOutboundAttachments: () => ({
+    id: randomUUID(),
+    userId: 'owner',
+    disk: 'local',
+    key: 'key',
+    fileName: 'test',
+    contentType: 'text/plain',
+    size: 1,
+    createdAt: now,
+    expiresAt: now,
+  }),
+  mailSyncStates: (accountId) => ({
+    accountId,
+    cursor: '{}',
+    lastSyncedAt: now,
+  }),
+  mailSyncRuns: (accountId) => ({
+    id: randomUUID(),
+    accountId,
+    requestedBy: 'owner',
+    mode: 'initial',
+    phase: 'preparing',
+    status: 'queued',
+    policy: '{}',
+    createdAt: now,
+    updatedAt: now,
+  }),
+  mailOutbox: () => ({
+    id: randomUUID(),
+    type: 'syncMailbox',
+    aggregateId: randomUUID(),
+    deduplicationKey: 'task',
+    payload: '{}',
+    status: 'pending',
+    availableAt: now,
+    createdAt: now,
+  }),
+};
+
+for (const [table, values] of Object.entries(businessRows)) {
+  for (const action of ['up', 'down'] as const) {
+    test(`refuses ${action} before any structure or metadata change when only ${table} contains business data`, async ({
+      database,
+      connection,
+    }) => {
+      const migrator = database.createMigrator({ sources });
+      if (action === 'up') await migrator.upTo(previous);
+      else await migrator.latest();
+      await connection.query
+        .insertInto(table)
+        .values(values(await seedAccount(connection)))
+        .execute();
+      const structure = await inspectCollection(connection, 'mailMessages');
+      const metadata = await connection.collections.get('mailMessages');
+      const locations = await inspectCollection(
+        connection,
+        'mailMessageImapLocations',
+      );
+      await expect(
+        action === 'up' ? migrator.latest() : migrator.rollback(),
+      ).rejects.toThrow(`${table} contains data`);
+      expect(await inspectCollection(connection, 'mailMessages')).toEqual(
+        structure,
+      );
+      expect(await connection.collections.get('mailMessages')).toEqual(
+        metadata,
+      );
+      expect(
+        await inspectCollection(connection, 'mailMessageImapLocations'),
+      ).toEqual(locations);
+    });
+  }
+}

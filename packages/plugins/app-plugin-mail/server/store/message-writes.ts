@@ -15,6 +15,9 @@ import {
 import type {
   ImapCopyEvidence,
   ImapLocationChange,
+  ImapStoredLocation,
+  ImapLocationTuple,
+  ImapIdSource,
 } from '../adapters/imap-smtp/types.js';
 import { chunks } from './serialization.js';
 import {
@@ -269,6 +272,80 @@ export async function removeMessagesFromFolders(
 
 const IMAP_LOCATIONS = 'mailMessageImapLocations';
 
+export function validateImapLocation(
+  tuple: ImapLocationTuple,
+  source?: ImapIdSource,
+): void {
+  if (
+    typeof tuple.folder !== 'string' ||
+    !tuple.folder.length ||
+    tuple.folder.length > 500 ||
+    !Number.isSafeInteger(tuple.uid) ||
+    tuple.uid < 1 ||
+    tuple.uid > 4294967295 ||
+    typeof tuple.uidValidity !== 'string' ||
+    !/^[1-9]\d{0,9}$/.test(tuple.uidValidity) ||
+    BigInt(tuple.uidValidity) > 4294967295n ||
+    (source !== undefined &&
+      !['objectid', 'x-gm-msgid', 'rfc-message-id', 'locator'].includes(source))
+  ) {
+    throw new Error('Invalid IMAP location evidence.');
+  }
+}
+
+function unchanged(
+  row: ImapLocationRow | undefined,
+  observed: ImapStoredLocation | undefined,
+): boolean {
+  return row
+    ? Boolean(
+        observed &&
+        row.id === observed.id &&
+        row.messageId === observed.messageId &&
+        row.providerFolderId === observed.folder &&
+        row.uidValidity === observed.uidValidity &&
+        Number(row.uid) === observed.uid &&
+        new Date(row.updatedAt).toISOString() === observed.updatedAt &&
+        row.status === observed.status,
+      )
+    : !observed;
+}
+
+export function validateImapStoredLocation(location: ImapStoredLocation): void {
+  validateImapLocation(location, location.source);
+  if (
+    !['valid', 'pending', 'invalid'].includes(location.status) ||
+    !location.id ||
+    !location.messageId ||
+    !location.providerMessageId ||
+    location.providerMessageId.length > 500 ||
+    !Number.isFinite(Date.parse(location.updatedAt))
+  )
+    throw new Error('Invalid stored IMAP location.');
+}
+
+export function validateImapCopyEvidence(copy: ImapCopyEvidence): void {
+  validateImapLocation(copy, copy.source);
+  if (
+    typeof copy.locationId !== 'string' ||
+    !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(copy.locationId) ||
+    typeof copy.providerMessageId !== 'string' ||
+    !copy.providerMessageId ||
+    copy.providerMessageId.length > 500 ||
+    !['objectid', 'x-gm-msgid', 'rfc-message-id', 'locator'].includes(
+      copy.source,
+    ) ||
+    (copy.flagsOnly !== undefined && typeof copy.flagsOnly !== 'boolean') ||
+    (copy.flagsOnly && !copy.observed) ||
+    typeof copy.read !== 'boolean' ||
+    typeof copy.starred !== 'boolean' ||
+    (copy.receivedAt !== undefined &&
+      (typeof copy.receivedAt !== 'string' ||
+        !Number.isFinite(Date.parse(copy.receivedAt))))
+  )
+    throw new Error('Invalid IMAP copy evidence.');
+}
+
 /**
  * Write one sync step's IMAP copies: one business message per identity, a
  * location per copy, and aggregates derived from every verified copy.
@@ -281,8 +358,66 @@ export async function upsertImapMessages(
   runId: string,
   preserveUpdatedAfter?: string,
 ): Promise<void> {
+  const safe: ImapCopyEvidence[] = [];
+  const mirrors = new Map<string, string>();
+  for (const copy of copies) {
+    validateImapCopyEvidence(copy);
+    const row = await query
+      .selectFrom<ImapLocationRow>(IMAP_LOCATIONS)
+      .selectAll()
+      .where('accountId', '=', accountId)
+      .where('providerFolderId', '=', copy.folder)
+      .where('uidValidity', '=', copy.uidValidity)
+      .where('uid', '=', copy.uid)
+      .executeTakeFirst<ImapLocationRow>();
+    if (!unchanged(row, copy.observed))
+      throw Object.assign(
+        new Error('The IMAP copy changed during synchronization.'),
+        { code: 'IMAP_MESSAGE_COPY_CHANGED' },
+      );
+    const candidates = await query
+      .selectFrom<MessageRow>('mailMessages')
+      .selectAll()
+      .where('accountId', '=', accountId)
+      .where((builder) =>
+        builder.or([
+          builder('providerMessageId', '=', copy.providerMessageId),
+          builder('providerDraftMessageId', '=', copy.providerMessageId),
+        ]),
+      )
+      .execute<MessageRow>();
+    if (candidates.length > 1)
+      throw new Error('The IMAP identity has conflicting owners.');
+    const owner = candidates[0];
+    const mirror =
+      owner?.providerMessageId.startsWith('local-draft:') &&
+      owner.providerDraftMessageId === copy.providerMessageId;
+    const source = mirror
+      ? owner.providerDraftMessageIdSource
+      : owner?.imapIdSource;
+    if (owner && source !== copy.source)
+      throw new Error(
+        'The IMAP identity source conflicts with a stored message.',
+      );
+    if (row && owner?.id !== row.messageId)
+      throw new Error('The IMAP copy belongs to another message.');
+    if (mirror) mirrors.set(copy.providerMessageId, owner.id);
+    if (owner?.scheduledSubmissionId) continue;
+    safe.push(copy);
+  }
+  copies = safe;
   const representatives = new Map<string, NormalizedMailMessage>();
   for (const message of messages) {
+    // A remote draft mirror never overwrites locally authored content or UUID.
+    if (
+      mirrors.has(message.providerMessageId) ||
+      !safe.some(
+        (copy) =>
+          !copy.flagsOnly &&
+          copy.providerMessageId === message.providerMessageId,
+      )
+    )
+      continue;
     const current = representatives.get(message.providerMessageId);
     // An incomplete copy never replaces complete content from another copy.
     if (
@@ -300,7 +435,7 @@ export async function upsertImapMessages(
     preserveUpdatedAfter,
     false,
   );
-  const owners = new Map<string, string>();
+  const owners = new Map<string, string>(mirrors);
   for (const ids of chunks(
     [...new Set(copies.map((copy) => copy.providerMessageId))],
     100,
@@ -321,12 +456,12 @@ export async function upsertImapMessages(
     if (!messageId) continue;
     const existing = await query
       .selectFrom<ImapLocationRow>(IMAP_LOCATIONS)
-      .select(['id', 'messageId'])
+      .selectAll()
       .where('accountId', '=', accountId)
       .where('providerFolderId', '=', copy.folder)
       .where('uidValidity', '=', copy.uidValidity)
       .where('uid', '=', copy.uid)
-      .executeTakeFirst<Pick<ImapLocationRow, 'id' | 'messageId'>>();
+      .executeTakeFirst<ImapLocationRow>();
     // A stored copy keeps its owner; a new identity never takes it over.
     if (existing && existing.messageId !== messageId) continue;
     const values = {
@@ -334,8 +469,14 @@ export async function upsertImapMessages(
       invalidationReason: null,
       read: copy.read,
       starred: copy.starred,
-      receivedAt: copy.receivedAt ?? null,
-      updatedAt: now,
+      receivedAt: copy.flagsOnly
+        ? (existing?.receivedAt ?? null)
+        : (copy.receivedAt ?? null),
+      updatedAt: existing
+        ? new Date(
+            Math.max(Date.now(), Date.parse(existing.updatedAt) + 1),
+          ).toISOString()
+        : now,
     };
     if (existing) {
       await query
@@ -360,7 +501,11 @@ export async function upsertImapMessages(
     }
     await query
       .updateTable<MessageRow>('mailMessages')
-      .set({ imapIdSource: copy.source })
+      .set(
+        mirrors.has(copy.providerMessageId)
+          ? { providerDraftMessageIdSource: copy.source }
+          : { imapIdSource: copy.source },
+      )
       .where('id', '=', messageId)
       .execute();
     touched.add(messageId);
@@ -376,21 +521,56 @@ export async function applyImapLocationChanges(
   runId: string,
 ): Promise<void> {
   const touched = new Set<string>();
-  const now = new Date().toISOString();
   for (const change of changes) {
+    validateImapStoredLocation(change.observed);
+    if (
+      change.id !== change.observed.id ||
+      !['valid', 'pending', 'invalid'].includes(change.status) ||
+      (change.reason !== undefined &&
+        ![
+          'uid-missing',
+          'folder-unavailable',
+          'generation-changed',
+          'generation-replaced',
+        ].includes(change.reason))
+    )
+      throw new Error('Invalid IMAP location change.');
     const row = await query
       .selectFrom<ImapLocationRow>(IMAP_LOCATIONS)
-      .select('messageId')
+      .selectAll()
       .where('accountId', '=', accountId)
       .where('id', '=', change.id)
-      .executeTakeFirst<Pick<ImapLocationRow, 'messageId'>>();
+      .executeTakeFirst<ImapLocationRow>();
+    if (!unchanged(row, change.observed))
+      throw new Error('The IMAP copy changed during verification.');
     if (!row) continue;
+    const owner = await query
+      .selectFrom<MessageRow>('mailMessages')
+      .selectAll()
+      .where('accountId', '=', accountId)
+      .where('id', '=', row.messageId)
+      .executeTakeFirst<MessageRow>();
+    const remote = owner?.providerMessageId.startsWith('local-draft:')
+      ? owner.providerDraftMessageId
+      : owner?.providerMessageId;
+    const source =
+      remote === owner?.providerDraftMessageId
+        ? owner?.providerDraftMessageIdSource
+        : owner?.imapIdSource;
+    if (
+      !owner ||
+      remote !== change.observed.providerMessageId ||
+      source !== change.observed.source
+    )
+      throw new Error('The IMAP identity changed during verification.');
     await query
       .updateTable<ImapLocationRow>(IMAP_LOCATIONS)
       .set({
         status: change.status,
         invalidationReason: change.reason ?? null,
-        updatedAt: now,
+        updatedAt: new Date(
+          Math.max(Date.now(), Date.parse(row.updatedAt) + 1),
+        ).toISOString(),
       })
       .where('id', '=', change.id)
       .execute();
@@ -431,11 +611,14 @@ export async function refreshImapMessages(
       .execute<ImapLocationRow>();
     const messages = await query
       .selectFrom<MessageRow>('mailMessages')
-      .select(['id', 'receivedAt', 'sentAt', 'createdAt'])
+      .select(['id', 'receivedAt', 'sentAt', 'createdAt', 'providerMessageId'])
       .where('accountId', '=', accountId)
       .where('id', 'in', ids)
       .execute<
-        Pick<MessageRow, 'id' | 'receivedAt' | 'sentAt' | 'createdAt'>
+        Pick<
+          MessageRow,
+          'id' | 'receivedAt' | 'sentAt' | 'createdAt' | 'providerMessageId'
+        >
       >();
     for (const message of messages) {
       const own = locations.filter(
@@ -447,9 +630,10 @@ export async function refreshImapMessages(
           location.receivedAt ? Date.parse(String(location.receivedAt)) : NaN,
         )
         .filter((time) => Number.isFinite(time));
-      const receivedAt = times.length
-        ? new Date(Math.min(...times)).toISOString()
-        : message.receivedAt;
+      const receivedAt =
+        !message.providerMessageId.startsWith('local-draft:') && times.length
+          ? new Date(Math.min(...times)).toISOString()
+          : message.receivedAt;
       const values: Partial<MessageRow> = valid.length
         ? {
             read: valid.every((location) => Boolean(location.read)),
@@ -514,6 +698,8 @@ export async function deleteImapOrphans(
     .select(['id', 'providerMessageId'])
     .where('accountId', '=', accountId)
     .where('imapIdSource', 'is not', null)
+    .where('imapOrphanRunId', '=', runId)
+    .where('providerMessageId', 'not like', 'local-draft:%')
     .where('scheduledSubmissionId', 'is', null)
     .where((builder) =>
       builder.not(
@@ -527,18 +713,6 @@ export async function deleteImapOrphans(
       ),
     )
     .execute<Pick<MessageRow, 'id' | 'providerMessageId'>>();
-  for (const batch of chunks(orphans, 100)) {
-    await query
-      .updateTable<MessageRow>('mailMessages')
-      .set({ imapOrphanRunId: runId })
-      .where('accountId', '=', accountId)
-      .where(
-        'id',
-        'in',
-        batch.map((row) => row.id),
-      )
-      .execute();
-  }
   await deleteMessages(
     query,
     accountId,

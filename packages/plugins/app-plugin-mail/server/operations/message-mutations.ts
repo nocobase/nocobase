@@ -70,11 +70,19 @@ export class MailMessageMutations {
       );
       return updated;
     }
-    const adapter = await this.dependencies.adapters.resolve(
+    let adapter = await this.dependencies.adapters.resolve(
       account,
       context.signal,
     );
     const copies = commitsCopies(adapter);
+    if (adapter instanceof ImapSmtpAdapter) {
+      const base = adapter;
+      try {
+        adapter = await base.forMessage(message.id, providerMessageId, 'flags');
+      } finally {
+        await closeAdapter(base);
+      }
+    }
     try {
       if (input.read !== undefined) {
         if (!adapter.setRead)
@@ -213,6 +221,18 @@ export class MailMessageMutations {
             account,
             context.signal,
           );
+          if (adapter instanceof ImapSmtpAdapter) {
+            const base = adapter;
+            try {
+              adapter = await base.forMessage(
+                message.id,
+                message.providerDraftMessageId,
+                'delete',
+              );
+            } finally {
+              await closeAdapter(base);
+            }
+          }
           if (adapter.deleteMessage) {
             await adapter.deleteMessage(
               message.providerDraftMessageId,
@@ -239,7 +259,7 @@ export class MailMessageMutations {
       }
       return;
     }
-    const adapter = await this.dependencies.adapters.resolve(
+    let adapter = await this.dependencies.adapters.resolve(
       account,
       context.signal,
     );
@@ -274,6 +294,18 @@ export class MailMessageMutations {
             this.dependencies.logger,
           );
           return;
+        }
+      }
+      if (adapter instanceof ImapSmtpAdapter) {
+        const base = adapter;
+        try {
+          adapter = await base.forMessage(
+            message.id,
+            message.providerMessageId,
+            'delete',
+          );
+        } finally {
+          await closeAdapter(base);
         }
       }
       if (!adapter.deleteMessage) {

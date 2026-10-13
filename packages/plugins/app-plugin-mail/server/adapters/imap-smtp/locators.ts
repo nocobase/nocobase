@@ -20,7 +20,7 @@ export function folderCursor(
     uidNext === undefined ||
     !Number.isSafeInteger(uidNext) ||
     uidNext < 1 ||
-    uidNext > MAX_IMAP_UID
+    uidNext > MAX_IMAP_UID + 1
   ) {
     throw Object.assign(
       new Error('The IMAP server returned an invalid UIDNEXT.'),
@@ -83,7 +83,17 @@ export function parseSyncCursor(
 
 function isVerifyState(value: unknown): value is ImapVerifyState {
   if (!value || typeof value !== 'object') return false;
-  const record = value as { attempts?: unknown; folders?: unknown };
+  const record = value as {
+    attempts?: unknown;
+    folders?: unknown;
+    excluded?: unknown;
+  };
+  if (
+    record.excluded !== undefined &&
+    (!Array.isArray(record.excluded) ||
+      !record.excluded.every((value) => typeof value === 'string'))
+  )
+    return false;
   if (!Number.isSafeInteger(record.attempts) || (record.attempts as number) < 0)
     return false;
   if (record.folders === undefined) return true;
@@ -117,7 +127,7 @@ function isImapFolderCursor(value: unknown): value is ImapFolderCursor {
     isUidValidity(record.uidValidity) &&
     Number.isSafeInteger(record.uidNext) &&
     (record.uidNext as number) >= 1 &&
-    (record.uidNext as number) <= MAX_IMAP_UID
+    (record.uidNext as number) <= MAX_IMAP_UID + 1
   );
 }
 

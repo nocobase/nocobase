@@ -22,6 +22,7 @@ import {
   type MailMessageChangeNotifier,
 } from '../realtime.js';
 import { ImapSmtpAdapter } from '../adapters/imap-smtp/adapter.js';
+import { closeAdapter } from '../services/provider-lifecycle.js';
 
 export interface SyncMailboxOperationDependencies {
   readonly logger?: MailLogger;
@@ -131,6 +132,14 @@ export class SyncMailboxOperation {
     let adapter: MailProviderAdapter;
     try {
       adapter = await this.dependencies.adapters.resolve(account, signal);
+      if (adapter instanceof ImapSmtpAdapter) {
+        const base = adapter;
+        try {
+          adapter = base.forSync(run);
+        } finally {
+          await closeAdapter(base);
+        }
+      }
     } catch (error) {
       await this.failSyncRun(
         run,

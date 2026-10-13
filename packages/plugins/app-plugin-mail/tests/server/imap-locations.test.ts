@@ -23,12 +23,24 @@ const server = vi.hoisted(() => {
     sourceReads: [] as string[],
     failFlags: new Set<string>(),
     logouts: 0,
+    locks: 0,
+    expunges: [] as string[],
+    onList: undefined as (() => void) | undefined,
+    onFlag: undefined as (() => void) | undefined,
+    onSearch: undefined as (() => number[] | false | undefined) | undefined,
+    selectionModes: [] as boolean[],
     reset(): void {
       this.folders.clear();
       this.capabilities.clear();
       this.sourceReads.length = 0;
       this.failFlags.clear();
       this.logouts = 0;
+      this.locks = 0;
+      this.expunges.length = 0;
+      this.onList = undefined;
+      this.onFlag = undefined;
+      this.onSearch = undefined;
+      this.selectionModes.length = 0;
     },
   };
 });
@@ -66,7 +78,16 @@ vi.mock('imapflow', () => {
   };
   class ImapFlow {
     public capabilities = server.capabilities;
-    public mailbox: { path: string } | false = false;
+    public mailbox: { path: string; uidValidity: bigint } | false = false;
+    public async getMailboxLock(path: string, options: { readOnly?: boolean }) {
+      await this.mailboxOpen(path, options);
+      server.locks += 1;
+      return {
+        release: () => {
+          server.locks -= 1;
+        },
+      };
+    }
     public on(): void {}
     public async connect(): Promise<void> {}
     public async logout(): Promise<void> {
@@ -74,6 +95,7 @@ vi.mock('imapflow', () => {
     }
     public close(): void {}
     public async list(): Promise<unknown[]> {
+      server.onList?.();
       return [...server.folders].map(([path, folder]) => ({
         path,
         name: path,
@@ -87,13 +109,17 @@ vi.mock('imapflow', () => {
         },
       }));
     }
-    public async mailboxOpen(path: string): Promise<unknown> {
+    public async mailboxOpen(
+      path: string,
+      options?: { readOnly?: boolean },
+    ): Promise<unknown> {
       const folder = server.folders.get(path);
       if (!folder)
         throw Object.assign(new Error('Mailbox does not exist'), {
           code: 'NONEXISTENT',
         });
-      this.mailbox = { path };
+      server.selectionModes.push(options?.readOnly === true);
+      this.mailbox = { path, uidValidity: folder.uidValidity };
       return {
         path,
         uidValidity: folder.uidValidity,
@@ -107,6 +133,8 @@ vi.mock('imapflow', () => {
       return folder;
     }
     public async search(query: { uid?: string }): Promise<number[]> {
+      const result = server.onSearch?.();
+      if (result !== undefined) return result as number[];
       const folder = this.selected();
       return query.uid
         ? uidsOf(query.uid, folder)
@@ -149,7 +177,11 @@ vi.mock('imapflow', () => {
       if (query.source) {
         const { start, maxLength } = query.source;
         server.sourceReads.push(`${this.mailbox && this.mailbox.path}:${uid}`);
-        return { uid, source: message.raw.subarray(start, start + maxLength) };
+        return {
+          uid,
+          source: message.raw.subarray(start, start + maxLength),
+          partialOrigins: new Map([['', start]]),
+        };
       }
       if (query.bodyParts) {
         const { header, body } = split(message.raw);
@@ -170,7 +202,11 @@ vi.mock('imapflow', () => {
     }
     private flag(range: string, flags: string[], add: boolean): boolean {
       const path = this.mailbox && this.mailbox.path;
-      if (server.failFlags.has(String(path))) return false;
+      if (
+        server.failFlags.has(String(path)) ||
+        server.failFlags.has(`${path}:${flags[0]}`)
+      )
+        return false;
       const folder = this.selected();
       for (const uid of uidsOf(range, folder))
         for (const flag of flags)
@@ -179,10 +215,22 @@ vi.mock('imapflow', () => {
       return true;
     }
     public async messageFlagsAdd(range: string, flags: string[]) {
-      return this.flag(range, flags, true);
+      const result = this.flag(range, flags, true);
+      server.onFlag?.();
+      return result;
     }
     public async messageFlagsRemove(range: string, flags: string[]) {
       return this.flag(range, flags, false);
+    }
+    public async exec(command: string, attributes: { value: string }[]) {
+      if (command !== 'UID EXPUNGE')
+        throw new Error('Global EXPUNGE is forbidden.');
+      server.expunges.push(command);
+      const folder = this.selected();
+      for (const uid of uidsOf(attributes[0].value, folder))
+        if (folder.messages.get(uid)!.flags.has('\\Deleted'))
+          folder.messages.delete(uid);
+      return { next() {} };
     }
     public async messageDelete(range: string): Promise<boolean> {
       const folder = this.selected();
@@ -315,7 +363,7 @@ async function step(): Promise<boolean> {
     new Date().toISOString(),
     'publisher',
     new Date(Date.now() + 30_000).toISOString(),
-    100,
+    1,
   );
   if (tasks.length === 0) return false;
   expect(tasks).toHaveLength(1);
@@ -333,6 +381,7 @@ async function step(): Promise<boolean> {
 async function sync(): Promise<string> {
   const run = await service().startSync(owner, { accountId });
   for (let index = 0; index < 50 && (await step()); index += 1);
+  expect((await store.getSyncRun(run.id))?.error).toBeUndefined();
   expect(await store.getSyncRun(run.id)).toMatchObject({
     status: 'completed',
   });
@@ -531,9 +580,26 @@ describe('IMAP message identity', () => {
     // An invalid native ID falls back to the Message-ID, never to a synthetic ID.
     deliver('INBOX', { raw: raw('<same@example.com>'), emailId: 'bad id!' });
     deliver('Archive', { raw: raw('<same@example.com>'), emailId: 'bad id!' });
-    const large = raw('<large@example.com>', 'x'.repeat(2 * 1024 * 1024));
-    deliver('INBOX', { raw: large, emailId: 'bad id!' });
-    deliver('Archive', { raw: large, emailId: 'bad id!' });
+    // Keep the MIME proof above 2 MiB without testing unrelated decoded-body column limits.
+    const encoded =
+      'Hello' + '=\r\n'.repeat(Math.floor((2 * 1024 * 1024 - 5) / 3));
+    const large = Buffer.from(
+      raw('<large@example.com>', encoded)
+        .toString()
+        .replace(
+          '\r\n\r\n',
+          '\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n',
+        ),
+    );
+    expect(large.byteLength).toBeGreaterThan(2 * 1024 * 1024);
+    const structure = {
+      type: 'text/plain',
+      part: '1',
+      encoding: 'quoted-printable',
+      size: Buffer.byteLength(encoded),
+    };
+    deliver('INBOX', { raw: large, emailId: 'bad id!', structure });
+    deliver('Archive', { raw: large, emailId: 'bad id!', structure });
     batchSize = 1;
     await sync();
     const rows = await messages();
@@ -883,6 +949,769 @@ describe('IMAP operations on verified copies', () => {
       ).resolves.toMatchObject({
         ok: false,
         error: { code: 'IMAP_ATTACHMENT_NOT_FOUND' },
+      });
+    } finally {
+      await adapter.close?.();
+    }
+  });
+});
+
+describe('IMAP review regressions', () => {
+  it('rechecks an invalid orphan after cancellation when its folder disappears', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<old@example.com>'), emailId: 'OLD' });
+    await sync();
+    const original = (await messages())[0];
+    server.folders.get('INBOX')!.messages.clear();
+    const interrupted = await service().startSync(owner, { accountId });
+    await step();
+    await step();
+    expect((await messages())[0]).toMatchObject({
+      imapOrphanRunId: interrupted.id,
+      locations: [{ status: 'invalid' }],
+    });
+    await store.cancelSyncRun(interrupted.id);
+    server.folders.delete('INBOX');
+    await sync();
+    expect((await messages())[0]).toMatchObject({
+      id: original.id,
+      locations: [{ status: 'pending' }],
+    });
+  });
+
+  it('recovers the UUID of a native object after a new generation is fully rescanned', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<native@example.com>'), emailId: 'NATIVE' });
+    await sync();
+    const original = (await messages())[0];
+    server.folders.get('INBOX')!.uidValidity = 2n;
+    await sync();
+    expect(await messages()).toHaveLength(1);
+    expect((await messages())[0]).toMatchObject({
+      id: original.id,
+      imapOrphanRunId: null,
+    });
+    expect(
+      (await messages())[0].locations.map((location) => location.status).sort(),
+    ).toEqual(['invalid', 'valid']);
+  });
+
+  it('rejects native identity contradictions and preserves the original record', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<native@example.com>'), emailId: 'OLD' });
+    await sync();
+    const before = await messages();
+    server.folders.get('INBOX')!.messages.get(1)!.emailId = 'NEW';
+    const adapter = await adapters.resolve(
+      (await store.getAccount(accountId))!,
+    );
+    try {
+      expect(await adapter.listMessages!({ limit: 100 })).toMatchObject({
+        ok: false,
+        error: { code: 'IMAP_IDENTITY_CONFLICT' },
+      });
+    } finally {
+      await adapter.close?.();
+    }
+    expect(await messages()).toEqual(before);
+  });
+
+  it('retains identity when a native field is temporarily absent', async () => {
+    server.capabilities.add('OBJECTID');
+    server.capabilities.add('X-GM-EXT-1');
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<native@example.com>'), emailId: 'OBJECT' });
+    await sync();
+    const before = (await messages())[0];
+    server.folders.get('INBOX')!.messages.get(1)!.emailId = undefined;
+    const adapter = await adapters.resolve(
+      (await store.getAccount(accountId))!,
+    );
+    try {
+      expect(await adapter.listMessages!({ limit: 100 })).toMatchObject({
+        ok: true,
+        value: { messages: [{ providerMessageId: 'OBJECT' }] },
+      });
+    } finally {
+      await adapter.close?.();
+    }
+    expect((await messages())[0]).toMatchObject({
+      id: before.id,
+      imapIdSource: 'objectid',
+    });
+  });
+
+  it('rejects a source collision instead of hiding it behind a locator', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<first@example.com>'), emailId: '1234' });
+    await sync();
+    server.capabilities.delete('OBJECTID');
+    server.capabilities.add('X-GM-EXT-1');
+    folder('Archive');
+    deliver('Archive', { raw: raw('<second@example.com>'), emailId: '1234' });
+    const adapter = await adapters.resolve(
+      (await store.getAccount(accountId))!,
+    );
+    try {
+      expect(
+        await adapter.listMessages!({
+          providerFolderIds: ['Archive'],
+          limit: 100,
+        }),
+      ).toMatchObject({ ok: false, error: { code: 'IMAP_IDENTITY_CONFLICT' } });
+    } finally {
+      await adapter.close?.();
+    }
+    expect(await messages()).toHaveLength(1);
+  });
+
+  it('rejects a delayed history result after an independently confirmed read operation', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<delayed@example.com>'), emailId: 'DELAYED' });
+    await sync();
+    const original = (await messages())[0];
+    const pending = await service().startSync(owner, { accountId });
+    const queued = (await store.getSyncRun(pending.id))!;
+    const claimed = (await store.claimSyncRun(
+      queued.id,
+      queued.revision,
+      queued.phase,
+      'delayed',
+      new Date(Date.now() + 60000).toISOString(),
+    ))!;
+    const adapter = await adapters.resolve(
+      (await store.getAccount(accountId))!,
+    );
+    try {
+      const page = await adapter.listMessages!({ limit: 100 });
+      if (!page.ok) throw new Error(page.error.message);
+      await service().updateMessage(owner, {
+        accountId,
+        messageId: original.id,
+        read: true,
+      });
+      await expect(
+        (
+          adapter as import('../../server/adapters/imap-smtp/adapter.js').ImapSmtpAdapter
+        ).commitSyncStep({
+          run: claimed,
+          messages: page.value.messages,
+          historyPage: true,
+          phase: claimed.phase,
+          status: 'running',
+          createNextTask: true,
+        }),
+      ).rejects.toThrow('copy changed');
+      expect((await messages())[0]).toMatchObject({
+        id: original.id,
+        read: true,
+      });
+    } finally {
+      await adapter.close?.();
+    }
+  });
+
+  it('rejects stale mutation snapshots including same-millisecond ABA state changes', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<flags@example.com>'), emailId: 'FLAGS' });
+    await sync();
+    const persistence = createImapLocationPersistence(database, accountId);
+    const [snapshot] = await persistence.listValidLocations('FLAGS');
+    await persistence.commitFlags(snapshot, { read: true });
+    const [newer] = await persistence.listValidLocations('FLAGS');
+    expect(Date.parse(newer.updatedAt)).toBeGreaterThan(
+      Date.parse(snapshot.updatedAt),
+    );
+    await persistence.commitFlags(newer, { read: false });
+    await expect(
+      persistence.commitFlags(snapshot, { starred: true }),
+    ).rejects.toThrow('copy changed');
+    expect((await messages())[0]).toMatchObject({
+      read: false,
+      starred: false,
+    });
+  });
+
+  it('binds a mutation to its original UUID and refuses a replacement owner before STORE', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<target@example.com>'), emailId: 'TARGET' });
+    await sync();
+    const original = (await messages())[0];
+    const base = await adapters.resolve((await store.getAccount(accountId))!);
+    const bound = await (
+      base as import('../../server/adapters/imap-smtp/adapter.js').ImapSmtpAdapter
+    ).forMessage(original.id, 'TARGET', 'flags');
+    await base.close?.();
+    const row = (await database
+      .query()
+      .selectFrom('mailMessages')
+      .selectAll()
+      .where('id', '=', original.id)
+      .executeTakeFirst())!;
+    await database
+      .query()
+      .deleteFrom('mailMessages')
+      .where('id', '=', original.id)
+      .execute();
+    await database
+      .query()
+      .insertInto('mailMessages')
+      .values({ ...row, id: randomUUID() })
+      .execute();
+    try {
+      expect(await bound.setRead('TARGET', true)).toMatchObject({ ok: false });
+      expect(
+        server.folders.get('INBOX')!.messages.get(1)!.flags.has('\\Seen'),
+      ).toBe(false);
+    } finally {
+      await bound.close();
+    }
+  });
+
+  it('retains read results when starred fails within the same request', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<partial@example.com>'), emailId: 'PARTIAL' });
+    await sync();
+    const original = (await messages())[0];
+    server.failFlags.add('INBOX:\\Flagged');
+    await expect(
+      service().updateMessage(owner, {
+        accountId,
+        messageId: original.id,
+        read: true,
+        starred: true,
+        note: 'not committed',
+      }),
+    ).rejects.toThrow();
+    expect((await messages())[0]).toMatchObject({
+      id: original.id,
+      read: true,
+      starred: false,
+      note: null,
+    });
+  });
+});
+
+describe('IMAP bounded verification and protocol evidence', () => {
+  it('revokes a second matching pass when LIST changes during traversal', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<moving@example.com>'), emailId: 'MOVING' });
+    await sync();
+    const original = (await messages())[0];
+    server.folders.get('INBOX')!.messages.clear();
+    let adapter = await adapters.resolve((await store.getAccount(accountId))!);
+    const first = await adapter.listChanges!({
+      cursor: await store.getSyncCursor(accountId),
+      limit: 100,
+    });
+    if (!first.ok) throw new Error(first.error.message);
+    expect(first.value.hasMore).toBe(true);
+    await adapter.close?.();
+    let lists = 0;
+    server.onList = () => {
+      if (++lists === 2) {
+        folder('Archive');
+        deliver('Archive', {
+          raw: raw('<moving@example.com>'),
+          emailId: 'MOVING',
+        });
+      }
+    };
+    adapter = await adapters.resolve((await store.getAccount(accountId))!);
+    try {
+      const second = await adapter.listChanges!({
+        cursor: first.value.nextCursor,
+        limit: 100,
+      });
+      expect(second).toMatchObject({ ok: true, value: { hasMore: true } });
+      expect(lists).toBeGreaterThanOrEqual(2);
+      expect((await messages())[0].id).toBe(original.id);
+    } finally {
+      server.onList = undefined;
+      await adapter.close?.();
+    }
+  });
+
+  it('restores an old-date unbound native copy below the saved high-water mark', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    folder('Archive');
+    server.folders.get('Archive')!.uidNext = 10;
+    deliver('INBOX', { raw: raw('<moving@example.com>'), emailId: 'MOVING' });
+    await sync();
+    const original = (await messages())[0];
+    const copied = server.folders.get('INBOX')!.messages.get(1)!;
+    server.folders
+      .get('Archive')!
+      .messages.set(2, { ...copied, date: new Date('2025-01-01T00:00:00Z') });
+    server.folders.get('INBOX')!.messages.clear();
+    await sync();
+    expect(await messages()).toHaveLength(1);
+    expect((await messages())[0]).toMatchObject({
+      id: original.id,
+      folders: ['Archive'],
+      imapOrphanRunId: null,
+    });
+  });
+
+  it.each([2 * 1024 * 1024, 2 * 1024 * 1024 - 1])(
+    'charges candidates, cache and terminal probes against the 8 MiB budget (%s bytes)',
+    async (size) => {
+      folder('INBOX');
+      const headerBytes = raw('<budget@example.com>', '').length;
+      const bytes = raw('<budget@example.com>', 'x'.repeat(size - headerBytes));
+      for (let index = 0; index < 5; index += 1)
+        deliver('INBOX', { raw: bytes });
+      const adapter = await adapters.resolve(
+        (await store.getAccount(accountId))!,
+      );
+      try {
+        const result = await adapter.listMessages!({ limit: 100 });
+        if (!result.ok) throw new Error(result.error.message);
+        const merged = size === 2 * 1024 * 1024 ? 3 : 4;
+        expect(
+          result.value.messages.filter(
+            (message) => message.providerMessageId === '<budget@example.com>',
+          ),
+        ).toHaveLength(merged);
+        expect(server.sourceReads).toHaveLength(merged * 3);
+      } finally {
+        await adapter.close?.();
+      }
+    },
+  );
+
+  it.each([
+    { type: 'multipart/mixed' },
+    {
+      type: 'multipart/alternative',
+      disposition: 'attachment',
+      childNodes: [{ type: 'text/plain' }],
+    },
+    {
+      type: 'multipart/related',
+      id: '<cid>',
+      childNodes: [{ type: 'text/html' }],
+    },
+  ])(
+    'does not download raw attachment or unknown structures to prove RFC identity',
+    async (structure) => {
+      folder('INBOX');
+      for (let index = 0; index < 2; index += 1)
+        deliver('INBOX', { raw: raw('<unknown@example.com>'), structure });
+      const adapter = await adapters.resolve(
+        (await store.getAccount(accountId))!,
+      );
+      try {
+        const result = await adapter.listMessages!({ limit: 100 });
+        if (!result.ok) throw new Error(result.error.message);
+        expect(
+          new Set(
+            result.value.messages.map((message) => message.providerMessageId),
+          ).size,
+        ).toBe(2);
+        expect(server.sourceReads).toEqual([]);
+      } finally {
+        await adapter.close?.();
+      }
+    },
+  );
+
+  it('fails explicitly on an over-budget header instead of trusting ENVELOPE', async () => {
+    folder('INBOX');
+    deliver('INBOX', { raw: raw(`<${'x'.repeat(65536)}@example.com>`) });
+    const adapter = await adapters.resolve(
+      (await store.getAccount(accountId))!,
+    );
+    try {
+      expect(await adapter.listMessages!({ limit: 100 })).toMatchObject({
+        ok: false,
+        error: { code: 'IMAP_HEADER_INCOMPLETE' },
+      });
+      expect(await messages()).toEqual([]);
+    } finally {
+      await adapter.close?.();
+    }
+  });
+});
+
+describe('IMAP production writes and draft protection', () => {
+  it('preserves localized draft UUID, authored content and remote identity source', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('Drafts');
+    deliver('Drafts', {
+      raw: raw('<draft@example.com>'),
+      emailId: 'DRAFT',
+      flags: ['\\Draft'],
+    });
+    await sync();
+    const original = (await messages())[0];
+    await store.localizeDraft(accountId, original.id);
+    await database
+      .query()
+      .updateTable('mailMessages')
+      .set({ text: 'locally authored', attachments: '[]' })
+      .where('id', '=', original.id)
+      .execute();
+    // A new remote copy must remain a mirror, rather than a competing business draft.
+    deliver('Drafts', {
+      raw: raw('<draft@example.com>', 'remote body'),
+      emailId: 'DRAFT',
+      flags: ['\\Draft'],
+    });
+    await sync();
+    const rows = await database
+      .query()
+      .selectFrom('mailMessages')
+      .selectAll()
+      .where('accountId', '=', accountId)
+      .execute();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      id: original.id,
+      text: 'locally authored',
+      imapIdSource: null,
+      providerDraftMessageId: 'DRAFT',
+      providerDraftMessageIdSource: 'objectid',
+    });
+  });
+
+  it('rejects illegal location values at the actual sync transaction entry point', async () => {
+    const queued = await service().startSync(owner, { accountId });
+    const run = (await store.getSyncRun(queued.id))!;
+    const claimed = (await store.claimSyncRun(
+      run.id,
+      run.revision,
+      run.phase,
+      'validation',
+      new Date(Date.now() + 60000).toISOString(),
+    ))!;
+    const persistence = createImapLocationPersistence(database, accountId);
+    const copy = {
+      locationId: randomUUID(),
+      folder: 'INBOX',
+      uidValidity: '1',
+      uid: 1,
+      providerMessageId: 'VALID',
+      source: 'objectid' as const,
+      read: false,
+      starred: false,
+    };
+    const input = {
+      run: claimed,
+      messages: [],
+      phase: claimed.phase,
+      status: 'running' as const,
+      createNextTask: true,
+    };
+    for (const invalid of [
+      { uid: 0 },
+      { uid: 4294967296 },
+      { uid: 1.5 },
+      { uidValidity: '01' },
+      { uidValidity: '0' },
+      { uidValidity: '4294967296' },
+      { source: 'unknown' },
+      { read: 'true' },
+      { receivedAt: 'invalid' },
+    ]) {
+      await expect(
+        persistence.commitSyncStep(input, {
+          copies: [{ ...copy, ...invalid } as typeof copy],
+          changes: [],
+          cleanup: false,
+        }),
+      ).rejects.toThrow('Invalid IMAP');
+    }
+    expect(await messages()).toEqual([]);
+    expect((await store.getSyncRun(run.id))?.revision).toBe(claimed.revision);
+  });
+
+  it('rolls back orphan deletion when the lease expires while waiting for the account lock', async () => {
+    const guard = await import('../../server/store/account-guard.js');
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<fence@example.com>'), emailId: 'FENCE' });
+    await sync();
+    const original = (await messages())[0];
+    const checkpoint = await store.getSyncCursor(accountId);
+    const queued = await service().startSync(owner, { accountId });
+    const run = (await store.getSyncRun(queued.id))!;
+    const expires = Date.now() + 60000;
+    const claimed = (await store.claimSyncRun(
+      run.id,
+      run.revision,
+      run.phase,
+      'fence',
+      new Date(expires).toISOString(),
+    ))!;
+    await database
+      .query()
+      .updateTable('mailMessages')
+      .set({ imapOrphanRunId: run.id })
+      .where('id', '=', original.id)
+      .execute();
+    await database
+      .query()
+      .updateTable('mailMessageImapLocations')
+      .set({ status: 'invalid' })
+      .where('messageId', '=', original.id)
+      .execute();
+    const actualLock = guard.lockWritableAccount;
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const lock = vi
+      .spyOn(guard, 'lockWritableAccount')
+      .mockImplementation(async (query, id) => {
+        await actualLock(query, id);
+        vi.setSystemTime(expires + 1);
+      });
+    try {
+      await expect(
+        createImapLocationPersistence(database, accountId).commitSyncStep(
+          {
+            run: claimed,
+            messages: [],
+            phase: 'completed',
+            status: 'completed',
+            createNextTask: false,
+          },
+          { copies: [], changes: [], cleanup: true },
+        ),
+      ).rejects.toThrow('lease was lost');
+      expect((await messages())[0].id).toBe(original.id);
+      expect(await store.getSyncCursor(accountId)).toEqual(checkpoint);
+      expect((await store.getSyncRun(run.id))?.revision).toBe(claimed.revision);
+    } finally {
+      lock.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('uses the production boot registry and resolver to commit a confirmed copy', async () => {
+    const { ServiceContainer } = await import('@nocobase/service-provider');
+    const { createAppPaths } = await import('@nocobase/app-server/config');
+    const { Hono } = await import('hono');
+    const { databaseManagerToken } = await import('@nocobase/db');
+    const tokens = await import('../../server/tokens.js');
+    const { default: plugin } = await import('../../server/plugin.js');
+    const container = new ServiceContainer();
+    container.instance(databaseManagerToken, database);
+    container.instance(tokens.mailCredentialVaultToken, {
+      put: vi.fn(),
+      get: async <T>() => ({ username: 'u', password: 'p' }) as T,
+      replace: vi.fn(),
+      getOrRefresh: vi.fn(),
+      delete: vi.fn(),
+    });
+    const app = {
+      appName: 'test',
+      publicBasePath: '/test',
+      config: {
+        app: { name: 'test', publicBasePath: '/test' },
+        get: () => ({ providers: { imap: config } }),
+      },
+      paths: createAppPaths({ rootDir: '/missing' }),
+      router: new Hono(),
+      container,
+    };
+    const providers = plugin.serviceProviders.map(
+      (Provider) => new Provider(app),
+    );
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', {
+      raw: raw('<production@example.com>'),
+      emailId: 'PRODUCTION',
+    });
+    await sync();
+    try {
+      for (const provider of providers) await provider.register();
+      for (const provider of providers) await provider.boot();
+      const resolver = container.resolve(
+        tokens.mailProviderAdapterResolverToken,
+      );
+      const adapter = await resolver.resolve(
+        (await store.getAccount(accountId))!,
+      );
+      try {
+        expect(
+          (
+            adapter as import('../../server/adapters/imap-smtp/adapter.js').ImapSmtpAdapter
+          ).persistsLocations,
+        ).toBe(true);
+        expect(await adapter.setRead!('PRODUCTION', true)).toMatchObject({
+          ok: true,
+        });
+        expect((await messages())[0].read).toBe(true);
+      } finally {
+        await adapter.close?.();
+      }
+    } finally {
+      for (const provider of providers.toReversed()) await provider.shutdown();
+    }
+  });
+});
+
+describe('IMAP final scope and mutation safety', () => {
+  it('refreshes previously bound flags without rewriting content', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<flags@example.com>'), emailId: 'FLAGS' });
+    await sync();
+    const original = (await messages())[0];
+    server.folders.get('INBOX')!.messages.get(1)!.flags.add('\\Seen');
+    server.folders.get('INBOX')!.messages.get(1)!.flags.add('\\Flagged');
+    await sync();
+    expect((await messages())[0]).toMatchObject({
+      id: original.id,
+      read: true,
+      starred: true,
+    });
+    expect(
+      (await store.getMessageForAccount(accountId, original.id))?.text,
+    ).toBe('Hello');
+  });
+  it('never chooses global EXPUNGE if UIDPLUS disappears after STORE', async () => {
+    server.capabilities.add('OBJECTID');
+    server.capabilities.add('UIDPLUS');
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<delete@example.com>'), emailId: 'DELETE' });
+    await sync();
+    const original = (await messages())[0];
+    server.onFlag = () => server.capabilities.delete('UIDPLUS');
+    await expect(
+      service().deleteMessage(owner, {
+        accountId,
+        messageId: original.id,
+        permanently: true,
+      }),
+    ).rejects.toThrow();
+    expect(server.expunges).toEqual([]);
+    expect((await messages())[0].id).toBe(original.id);
+  });
+  it('retains the message after a later deletion fails and keeps the confirmed copy invalid', async () => {
+    server.capabilities.add('OBJECTID');
+    server.capabilities.add('UIDPLUS');
+    folder('INBOX');
+    folder('Sent');
+    for (const path of ['INBOX', 'Sent'])
+      deliver(path, {
+        raw: raw('<partial-delete@example.com>'),
+        emailId: 'DELETE',
+      });
+    await sync();
+    const original = (await messages())[0];
+    const ordered = await createImapLocationPersistence(
+      database,
+      accountId,
+    ).listValidLocations(original.providerMessageId);
+    server.failFlags.add(ordered[1].folder);
+    await expect(
+      service().deleteMessage(owner, {
+        accountId,
+        messageId: original.id,
+        permanently: true,
+      }),
+    ).rejects.toThrow();
+    const current = (await messages())[0];
+    expect(current.id).toBe(original.id);
+    expect(
+      current.locations.find((copy) => copy.folder === ordered[0].folder)
+        ?.status,
+    ).toBe('invalid');
+    expect(
+      current.locations.find((copy) => copy.folder === ordered[1].folder)
+        ?.status,
+    ).toBe('valid');
+  });
+  it('does not authorize cleanup from an incomplete final SEARCH', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<search@example.com>'), emailId: 'SEARCH' });
+    await sync();
+    const original = (await messages())[0];
+    server.folders.get('INBOX')!.messages.clear();
+    let calls = 0;
+    server.onSearch = () => (++calls === 2 ? false : undefined);
+    const adapter = await adapters.resolve(
+      (await store.getAccount(accountId))!,
+    );
+    try {
+      expect(
+        await adapter.listChanges!({
+          cursor: await store.getSyncCursor(accountId),
+          limit: 100,
+        }),
+      ).toMatchObject({ ok: false });
+      expect((await messages())[0].id).toBe(original.id);
+    } finally {
+      await adapter.close?.();
+    }
+  });
+});
+
+describe('IMAP verification exhaustion retains evidence', () => {
+  it.each(['response', 'cursor', 'attempts'] as const)(
+    'leaves the run partial without deletion when the %s budget is exhausted',
+    async (budget) => {
+      server.capabilities.add('OBJECTID');
+      folder('INBOX');
+      deliver('INBOX', {
+        raw: raw('<retained@example.com>'),
+        emailId: 'RETAINED',
+      });
+      await sync();
+      const original = (await messages())[0];
+      server.folders.get('INBOX')!.messages.clear();
+      if (budget === 'response')
+        server.onSearch = () => {
+          throw Object.assign(new Error('Response too large'), {
+            code: 'ResponseTooLarge',
+          });
+        };
+      if (budget === 'cursor')
+        server.onSearch = () =>
+          Array.from({ length: 160000 }, (_, index) => 1000000 + index * 2);
+      if (budget === 'attempts')
+        server.onList = () => {
+          server.folders.get('INBOX')!.uidNext += 1;
+        };
+      const run = await service().startSync(owner, { accountId });
+      for (let index = 0; index < 30 && (await step()); index += 1);
+      expect(await store.getSyncRun(run.id)).toMatchObject({
+        status: 'partial',
+      });
+      expect((await messages())[0].id).toBe(original.id);
+    },
+  );
+  it('preserves a complete long header at the exact header budget', async () => {
+    folder('INBOX');
+    const id = `<${'x'.repeat(1200)}@example.com>`;
+    const base = raw(id).subarray(0, raw(id).indexOf('\r\n\r\n'));
+    const prefix = Buffer.concat([base, Buffer.from('\r\nX-Padding: ')]);
+    const bytes = Buffer.concat([
+      prefix,
+      Buffer.alloc(65536 - prefix.length - 4, 97),
+      Buffer.from('\r\n\r\nHello'),
+    ]);
+    deliver('INBOX', { raw: bytes });
+    const adapter = await adapters.resolve(
+      (await store.getAccount(accountId))!,
+    );
+    try {
+      const result = await adapter.listMessages!({ limit: 100 });
+      expect(result).toMatchObject({
+        ok: true,
+        value: { messages: [{ internetMessageId: id }] },
       });
     } finally {
       await adapter.close?.();

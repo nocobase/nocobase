@@ -1,5 +1,6 @@
 import type {
   FetchQueryObject,
+  FetchMessageObject,
   ImapFlow,
   MessageStructureObject,
 } from 'imapflow';
@@ -37,14 +38,42 @@ export function rawComparable(
 ): boolean {
   if (!structure || size === undefined || !Number.isSafeInteger(size))
     return false;
-  if (size < 0 || size > maxBytes) return false;
-  const parts = leaves(structure);
-  return parts.every(
-    (part) =>
-      ['text/plain', 'text/html'].includes(part.type.toLowerCase()) &&
-      !part.id &&
-      !(part.disposition && part.disposition.toLowerCase() !== 'inline'),
-  );
+  if (size < 1 || size > maxBytes) return false;
+  const allowed = (part: MessageStructureObject): boolean => {
+    if (
+      typeof part.type !== 'string' ||
+      part.id ||
+      part.parameters?.name ||
+      part.dispositionParameters?.filename ||
+      (part.disposition && part.disposition.toLowerCase() !== 'inline')
+    )
+      return false;
+    const type = part.type.toLowerCase();
+    if (type.startsWith('multipart/')) {
+      if (
+        ![
+          'multipart/mixed',
+          'multipart/alternative',
+          'multipart/related',
+          'multipart/parallel',
+          'multipart/digest',
+          'multipart/report',
+          'multipart/signed',
+          'multipart/encrypted',
+        ].includes(type)
+      )
+        return false;
+      return (
+        Array.isArray(part.childNodes) &&
+        part.childNodes.length > 0 &&
+        part.childNodes.every((child) => Boolean(child) && allowed(child))
+      );
+    }
+    return (
+      ['text/plain', 'text/html'].includes(type) && !part.childNodes?.length
+    );
+  };
+  return allowed(structure);
 }
 
 /**
@@ -59,23 +88,47 @@ export async function readRawSource(
 ): Promise<Buffer | undefined> {
   const chunks: Buffer[] = [];
   let offset = 0;
-  while (true) {
+  while (offset < size) {
     throwIfAborted(signal);
-    // Probe one byte past the reported size so a short report is detected.
-    const length = Math.min(RAW_WINDOW_BYTES, size + 1 - offset);
+    const length = Math.min(RAW_WINDOW_BYTES, size - offset);
     const fetched = await client.fetchOne(
       uid,
-      { source: { start: offset, maxLength: length } },
+      { uid: true, source: { start: offset, maxLength: length } },
       { uid: true },
     );
     const chunk = fetched ? fetched.source : undefined;
-    if (!chunk || chunk.byteLength > length) return undefined;
+    // ImapFlow retains the server's literal origin as a non-enumerable property.
+    const origins = fetched
+      ? (
+          fetched as FetchMessageObject & {
+            partialOrigins?: ReadonlyMap<string, number>;
+          }
+        ).partialOrigins
+      : undefined;
+    if (!fetched || fetched.uid !== uid || origins?.get('') !== offset)
+      return undefined;
+    if (!chunk || chunk.byteLength !== length) return undefined;
     chunks.push(chunk);
     offset += chunk.byteLength;
-    if (offset > size) return undefined;
-    if (chunk.byteLength < length) break;
   }
-  return offset === size ? Buffer.concat(chunks, offset) : undefined;
+  throwIfAborted(signal);
+  const end = await client.fetchOne(
+    uid,
+    { uid: true, source: { start: size, maxLength: 1 } },
+    { uid: true },
+  );
+  if (!end || !Buffer.isBuffer(end.source) || end.source.byteLength !== 0)
+    return undefined;
+  if (
+    end.uid !== uid ||
+    (
+      end as FetchMessageObject & {
+        partialOrigins?: ReadonlyMap<string, number>;
+      }
+    ).partialOrigins?.get('') !== size
+  )
+    return undefined;
+  return Buffer.concat(chunks, size);
 }
 
 function isAttachment(part: MessageStructureObject): boolean {
@@ -104,7 +157,16 @@ export function attachmentParts(
 export function bodyParts(
   structure?: MessageStructureObject,
 ): MessageStructureObject[] | undefined {
-  return structure
+  const complete = (part: MessageStructureObject): boolean => {
+    if (!part || typeof part.type !== 'string' || !part.type) return false;
+    return (
+      !part.type.toLowerCase().startsWith('multipart/') ||
+      (Array.isArray(part.childNodes) &&
+        part.childNodes.length > 0 &&
+        part.childNodes.every(complete))
+    );
+  };
+  return structure && complete(structure)
     ? leaves(structure).filter((part) => !isAttachment(part))
     : undefined;
 }

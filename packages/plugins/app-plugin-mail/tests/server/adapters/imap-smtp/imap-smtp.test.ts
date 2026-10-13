@@ -14,6 +14,9 @@ const mocks = vi.hoisted(() => {
     list: vi.fn(),
     status: vi.fn(),
     mailboxOpen: vi.fn(),
+    getMailboxLock: vi.fn(),
+    releaseMailboxLock: vi.fn(),
+    mailbox: false as false | { uidValidity: bigint },
     search: vi.fn(),
     fetch: vi.fn(),
     fetchOne: vi.fn(),
@@ -21,6 +24,7 @@ const mocks = vi.hoisted(() => {
     messageFlagsAdd: vi.fn(),
     messageFlagsRemove: vi.fn(),
     messageDelete: vi.fn(),
+    exec: vi.fn(),
     logout: vi.fn(),
     close: vi.fn(),
   };
@@ -87,6 +91,10 @@ describe('IMAP/SMTP mail Provider', () => {
       uidNext: 4,
       uidValidity: 1n,
     });
+    mocks.imap.getMailboxLock.mockImplementation(async (path, options) => {
+      mocks.imap.mailbox = await mocks.imap.mailboxOpen(path, options);
+      return { release: mocks.imap.releaseMailboxLock };
+    });
     mocks.imap.fetchOne
       .mockReset()
       .mockImplementation(
@@ -103,6 +111,8 @@ describe('IMAP/SMTP mail Provider', () => {
               }
             : false,
       );
+    mocks.imap.exec.mockResolvedValue({ next: vi.fn() });
+    mocks.imap.messageFlagsAdd.mockResolvedValue(true);
     mocks.imap.download.mockReset();
     mocks.imap.fetch.mockImplementation(async function* () {});
   });
@@ -514,6 +524,10 @@ describe('IMAP/SMTP mail Provider', () => {
         abort.signal,
       );
       if (!result.ok) throw new Error(result.error.message);
+      expect(mocks.imap.getMailboxLock).toHaveBeenCalledWith('INBOX', {
+        readOnly: true,
+      });
+      expect(mocks.imap.releaseMailboxLock).not.toHaveBeenCalled();
       expect(mocks.imap.download).toHaveBeenCalledWith(1, '2', {
         uid: true,
         chunkSize: 64 * 1024,
@@ -529,6 +543,9 @@ describe('IMAP/SMTP mail Provider', () => {
         await expect(read).rejects.toThrow();
       }
       expect(source.destroyed).toBe(true);
+      await vi.waitFor(() =>
+        expect(mocks.imap.releaseMailboxLock).toHaveBeenCalledTimes(1),
+      );
     },
   );
 
@@ -662,7 +679,7 @@ describe('IMAP/SMTP mail Provider', () => {
         ...fetchedMessage(1),
         internalDate: new Date('2026-09-01T00:00:00Z'),
         headers: Buffer.from(
-          'Date: Mon, 1 Jan 2024 00:00:00 +0000\r\nSubject: boundary\r\n\r\nBody',
+          'Date: Mon, 1 Jan 2024 00:00:00 +0000\r\nSubject: boundary\r\n\r\n',
         ),
       };
       yield {
@@ -736,6 +753,8 @@ describe('IMAP/SMTP mail Provider', () => {
     expect(mocks.imap.mailboxOpen).not.toHaveBeenCalled();
     expect(mocks.imap.messageDelete).not.toHaveBeenCalled();
     Object.assign(mocks.imap, { capabilities: new Set(['UIDPLUS']) });
+    mocks.imap.fetchOne.mockResolvedValue({ uid: 7 });
+    mocks.imap.search.mockResolvedValue([]);
     try {
       await expect(adapter.deleteMessage!(id, true)).resolves.toEqual({
         ok: true,
@@ -744,7 +763,11 @@ describe('IMAP/SMTP mail Provider', () => {
     } finally {
       Object.assign(mocks.imap, { capabilities: undefined });
     }
-    expect(mocks.imap.messageDelete).toHaveBeenCalledWith('7', { uid: true });
+    expect(mocks.imap.messageDelete).not.toHaveBeenCalled();
+    expect(mocks.imap.exec).toHaveBeenCalledWith('UID EXPUNGE', [
+      { type: 'SEQUENCE', value: '7' },
+    ]);
+    expect(mocks.imap.search).toHaveBeenCalledWith({ uid: '7' }, { uid: true });
   });
 
   it('advertises the MVP capability boundary', () => {

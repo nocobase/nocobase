@@ -30,6 +30,14 @@ export type ImapIdSource =
 
 export type ImapLocationStatus = 'valid' | 'pending' | 'invalid';
 
+export interface ImapOperationSnapshot {
+  readonly accountId: string;
+  readonly messageId: string;
+  readonly providerMessageId: string;
+  readonly source: ImapIdSource;
+  readonly operation: 'flags' | 'delete';
+}
+
 export interface ImapLocationTuple {
   readonly folder: string;
   readonly uidValidity: string;
@@ -43,12 +51,15 @@ export interface ImapStoredLocation extends ImapLocationTuple {
   readonly providerMessageId: string;
   readonly source?: ImapIdSource;
   readonly status: ImapLocationStatus;
+  readonly updatedAt: string;
 }
 
 /** One fetched copy, verified in this step, with the identity chosen for it. */
 export interface ImapCopyEvidence extends ImapLocationTuple {
+  readonly flagsOnly?: boolean;
   /** Used only when this tuple has no persisted location yet. */
   readonly locationId: string;
+  readonly observed?: ImapStoredLocation;
   readonly providerMessageId: string;
   readonly source: ImapIdSource;
   readonly read: boolean;
@@ -57,6 +68,7 @@ export interface ImapCopyEvidence extends ImapLocationTuple {
 }
 
 export interface ImapLocationChange {
+  readonly observed: ImapStoredLocation;
   readonly id: string;
   readonly status: ImapLocationStatus;
   readonly reason?: string;
@@ -80,6 +92,7 @@ export interface ImapVerifyFolder {
 /** First verification pass, kept in the change cursor until the second pass compares it. */
 export interface ImapVerifyState {
   readonly attempts: number;
+  readonly excluded?: readonly string[];
   readonly folders?: Readonly<Record<string, ImapVerifyFolder>>;
 }
 
@@ -89,6 +102,21 @@ export interface ImapVerifyState {
  * account and rechecks ownership inside its own transaction.
  */
 export interface ImapLocationPersistence {
+  readonly accountId: string;
+  findAttachment(
+    location: ImapStoredLocation,
+    providerAttachmentId: string,
+  ): Promise<
+    import('../../../shared/mail.js').NormalizedMailAttachment | undefined
+  >;
+  bindMessage(
+    messageId: string,
+    providerMessageId: string,
+    operation: 'flags' | 'delete',
+  ): Promise<{
+    readonly persistence: ImapLocationPersistence;
+    readonly snapshot: ImapOperationSnapshot;
+  }>;
   findLocations(
     tuples: readonly ImapLocationTuple[],
   ): Promise<readonly ImapStoredLocation[]>;
