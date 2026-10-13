@@ -42,6 +42,12 @@ export default defineConfig({
       use: { ...devices['iPhone 13'] },
     },
     {
+      // My follow-ups' desktop columns in Safari's engine.
+      name: 'desktop-webkit',
+      testMatch: 'follow-ups-columns.test.ts',
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
       name: 'screenshots',
       testMatch: 'screenshots/**/*.test.ts',
       // One test per language and colour scheme, each visiting every page in turn.
