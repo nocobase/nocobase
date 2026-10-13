@@ -158,48 +158,55 @@ describe('per-attempt worktrees', () => {
     return a;
   }
 
-  it('GC finishes a pushed interrupted removal without Git metadata and does not block the next run', async () => {
-    const a = await interruptedRemoval('remove-fails');
-    // An actual attempt lock still wins over the removal marker.
-    const lock = await acquireLock(`${a.workDir}.lock`, { timeoutMs: 0 });
-    expect(await retryWorkspaceRemoval(paths, a.workDir, () => {})).toBe(false);
-    expect(existsSync(a.workDir)).toBe(true);
-    await lock.release();
-    const holder = spawn(
-      process.execPath,
-      ['-e', 'setInterval(() => {}, 1000)'],
-      { cwd: a.repo.dir, detached: true, stdio: 'ignore' },
-    );
-    const unrelated = spawn(
-      process.execPath,
-      ['-e', 'setInterval(() => {}, 1000)'],
-      { cwd: root, detached: true, stdio: 'ignore' },
-    );
-    try {
-      await waitFor(async () =>
-        (await workspaceHolders(a.workDir)).includes(holder.pid!),
+  it.skipIf(process.platform !== 'linux')(
+    'GC finishes a pushed interrupted removal without Git metadata and does not block the next run',
+    async () => {
+      const a = await interruptedRemoval('remove-fails');
+      // An actual attempt lock still wins over the removal marker.
+      const lock = await acquireLock(`${a.workDir}.lock`, { timeoutMs: 0 });
+      expect(await retryWorkspaceRemoval(paths, a.workDir, () => {})).toBe(
+        false,
       );
-      const collected = await collectWorkspaces({ paths });
-      await waitFor(
-        () => holder.exitCode !== null || holder.signalCode !== null,
+      expect(existsSync(a.workDir)).toBe(true);
+      await lock.release();
+      const holder = spawn(
+        process.execPath,
+        ['-e', 'setInterval(() => {}, 1000)'],
+        { cwd: a.repo.dir, detached: true, stdio: 'ignore' },
       );
-      expect(unrelated.exitCode).toBeNull();
-      expect(unrelated.signalCode).toBeNull();
-      expect(collected.removed.map((entry) => entry.workDir)).toContain(
-        a.workDir,
+      const unrelated = spawn(
+        process.execPath,
+        ['-e', 'setInterval(() => {}, 1000)'],
+        { cwd: root, detached: true, stdio: 'ignore' },
       );
-      expect(existsSync(a.workDir)).toBe(false);
-      expect(
-        git(['worktree', 'list', '--porcelain'], a.repo.cache),
-      ).not.toContain(a.repo.dir);
-      const b = await start('after-removal');
-      expect(b.repo.warnings?.join(' ')).not.toContain('Recovery work remains');
-      await finalizeRunWorktrees(paths, b.workDir, () => {});
-    } finally {
-      holder.kill('SIGKILL');
-      unrelated.kill('SIGKILL');
-    }
-  });
+      try {
+        await waitFor(async () =>
+          (await workspaceHolders(a.workDir)).includes(holder.pid!),
+        );
+        const collected = await collectWorkspaces({ paths });
+        await waitFor(
+          () => holder.exitCode !== null || holder.signalCode !== null,
+        );
+        expect(unrelated.exitCode).toBeNull();
+        expect(unrelated.signalCode).toBeNull();
+        expect(collected.removed.map((entry) => entry.workDir)).toContain(
+          a.workDir,
+        );
+        expect(existsSync(a.workDir)).toBe(false);
+        expect(
+          git(['worktree', 'list', '--porcelain'], a.repo.cache),
+        ).not.toContain(a.repo.dir);
+        const b = await start('after-removal');
+        expect(b.repo.warnings?.join(' ')).not.toContain(
+          'Recovery work remains',
+        );
+        await finalizeRunWorktrees(paths, b.workDir, () => {});
+      } finally {
+        holder.kill('SIGKILL');
+        unrelated.kill('SIGKILL');
+      }
+    },
+  );
 
   it('records retry failures without demanding recovery, and the next run retries cleanup', async () => {
     const a = await interruptedRemoval('retry-fails');
