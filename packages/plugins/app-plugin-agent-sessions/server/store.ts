@@ -20,6 +20,7 @@ import type {
   SessionState,
   TranscriptEvent,
 } from '../shared/api.js';
+import type { WorkSnapshot } from './work.js';
 import {
   COMPUTER_OFFLINE_MS,
   joinUpdates,
@@ -59,6 +60,10 @@ export interface SessionRecord {
   readonly acpSessionId: string | null;
   readonly state: SessionState | null;
   readonly settings: Readonly<Record<string, string>>;
+  /** What its agent was last told about the work tied to it (`work.ts`). */
+  readonly toldWork: WorkSnapshot | null;
+  /** The language its owner last wrote in. */
+  readonly locale: string | null;
   readonly running: boolean;
   readonly pendingPermissions: number;
   readonly lastSeq: number;

@@ -48,6 +48,8 @@ sessions.registerLinkKind('issue', {
   search: async (query, viewer, { projectId, limit }) => [
     /* { refId, key, title, ... } whose key or title contains query, projectId's first */
   ],
+  progress: async (refIds, viewer) =>
+    new Map(/* refId → how it is going, as JSON for the agent */),
 });
 sessions.registerProjects({
   list: async (viewer) => [
@@ -59,6 +61,10 @@ sessions.registerProjects({
 `key` is the record's short identifier, such as an issue's `ST-58`, which the pages show quietly before its `title`. `resolve` answers only what the viewer may see, in their language (`viewer.locale`); a session shows a record its resolver leaves out as nothing. After a turn that tied records to the session, the conversation shows them in a card where the owner starts the work on those they keep ticked, or chooses not to yet; either way the session stops asking (`POST /api/agentSessions/sessions/{sessionId}/links/decide`). The session list shows each session's records, their groups and how they stand.
 
 With `search`, a person mentions records in a message by typing `#`: the composer offers those matching what follows, the session's project's first, and inserts `#ST-58`. A mentioned record is tied to the session as already decided, so the session shows it without asking to start it, and the agent is told what each mention is beneath the message; the transcript keeps the message as written, its mentions linking to the record.
+
+### What the agent knows of the session's work
+
+The records tied to a session, created in it or mentioned in its messages, are what the person means by "the tasks", and the agent is told so. A message carries the list beneath it whenever it changed since the agent was last told, each record with its standing in the person's language and what is new or changed marked, so that an agent coming back to a session a day later learns what happened meanwhile; a message after which nothing changed carries nothing. Every session's agent also has the tool `list_session_work`, which lists that work with how each is going as the kind's `progress` tells it, and the MCP `initialize` answer lists the work when the agent's session opens. `agentSessions.toldWork` keeps what the agent was last told, and `locale` the language its owner last wrote in.
 
 With `registerProjects`, a new session may work for one of the application's projects (`GET /api/agentSessions/projects`). The session shows its project, the list groups and filters by it, and its tools learn it (`SessionToolContext.projectId`); the MCP `initialize` answer tells the agent to file work there unless the person names another project.
 

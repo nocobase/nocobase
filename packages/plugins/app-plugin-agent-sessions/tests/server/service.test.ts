@@ -810,6 +810,7 @@ describe('AgentSessionsService', () => {
         content: [
           { text: 'see #ST-7' },
           { text: 'Mentioned:\n- #ST-7 Issue ST-7 (Backlog)' },
+          { text: expect.stringContaining('- #ST-7 Issue ST-7: Backlog') },
         ],
       },
     ]);
@@ -817,5 +818,125 @@ describe('AgentSessionsService', () => {
     expect(tied.links).toMatchObject([
       { refId: 'ST-7', decidedAt: '2026-10-13T08:00:00.000Z' },
     ]);
+  });
+
+  test('tells the agent the session’s work, again only when it changed', async ({
+    database,
+  }) => {
+    const { service, started, take } = setup(database);
+    const { computerId, session } = await started();
+    await take(computerId);
+    const status = new Map([
+      ['ST-1', 'Backlog'],
+      ['ST-2', 'Backlog'],
+    ]);
+    service.registerLinkKind('issue', {
+      resolve: (refIds) =>
+        Promise.resolve(
+          new Map(
+            refIds.map((refId) => [
+              refId,
+              {
+                key: refId,
+                title: `Issue ${refId}`,
+                group: null,
+                status: { label: status.get(refId)!, tone: 'idle' as const },
+                href: null,
+                startable: true,
+              },
+            ]),
+          ),
+        ),
+    });
+    const told = async (): Promise<string | undefined> => {
+      await service.prompt(owner, session.id, text('and?'));
+      const [command] = await take(computerId);
+      const content = command?.type === 'prompt' ? command.content : [];
+      return content.length > 1 && content[1]?.type === 'text'
+        ? content[1].text
+        : undefined;
+    };
+
+    await expect(told()).resolves.toBeUndefined();
+    await service.link(session.id, 'issue', 'ST-1');
+    await expect(told()).resolves.toMatch(/\n- #ST-1 Issue ST-1: Backlog$/u);
+    await expect(told()).resolves.toBeUndefined();
+
+    status.set('ST-1', 'In progress');
+    await service.link(session.id, 'issue', 'ST-2');
+    await expect(told()).resolves.toMatch(
+      /\n- #ST-1 Issue ST-1: In progress \(was Backlog\)\n- #ST-2 Issue ST-2: Backlog \(new\)$/u,
+    );
+  });
+
+  test('gives every session’s agent its work and how it is going', async ({
+    database,
+  }) => {
+    const service = new AgentSessionsService({
+      database,
+      now: () => T0,
+      toolTokens: createToolTokens(() => [{ value: 'key' }]),
+    });
+    service.registerLinkKind('issue', {
+      resolve: (refIds, viewer) =>
+        Promise.resolve(
+          new Map(
+            refIds.map((refId) => [
+              refId,
+              {
+                key: refId,
+                title: `Issue ${refId}`,
+                group: 'Studio',
+                status: {
+                  label: `Backlog in ${viewer.locale}`,
+                  tone: 'idle' as const,
+                },
+                href: null,
+                startable: true,
+              },
+            ]),
+          ),
+        ),
+      progress: (refIds) =>
+        Promise.resolve(
+          new Map(refIds.map((refId) => [refId, { waitsFor: 'the owner' }])),
+        ),
+    });
+    const { computerId } = await service.register('u1', {
+      protocol: 1,
+      computerId: null,
+      computer: {
+        name: 'Laptop',
+        platform: 'darwin',
+        arch: 'arm64',
+        host: 'nb-studio 1.0.0',
+        roots: ['/home/zhou'],
+        agents: [{ id: 'codex', name: 'Codex', version: '2.2.2' }],
+      },
+    });
+    const session = await service.createSession(
+      { userId: 'u1', locale: 'zh-CN' },
+      { computerId, agentId: 'codex', cwd: '/home/zhou', content: text('hi') },
+    );
+    await service.link(session.id, 'issue', 'ST-1');
+
+    const caller = { userId: 'u1', sessionId: session.id, projectId: null };
+    const tool = service.toolHost
+      .tools()
+      .find((candidate) => candidate.name === 'list_session_work');
+    await expect(
+      tool?.run({}, { ...caller, link: () => Promise.resolve() }),
+    ).resolves.toEqual([
+      {
+        key: 'ST-1',
+        title: 'Issue ST-1',
+        status: 'Backlog in zh-CN',
+        group: 'Studio',
+        progress: { waitsFor: 'the owner' },
+      },
+    ]);
+    await expect(service.toolHost.instructions(caller)).resolves.toMatch(
+      /- #ST-1 Issue ST-1: Backlog in zh-CN\nCall `list_session_work`/u,
+    );
   });
 });

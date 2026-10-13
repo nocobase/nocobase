@@ -27,6 +27,7 @@ import {
   type SessionTarget,
 } from '@nocobase/acp-bridge/protocol';
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
+import { z } from 'zod';
 
 import type {
   AgentSessionsChange,
@@ -39,6 +40,7 @@ import type {
 } from '../shared/api.js';
 import { AgentSessionsError } from './errors.js';
 import {
+  defineSessionTool,
   TOOLS_PATH,
   type SessionTool,
   type ToolHost,
@@ -59,8 +61,10 @@ import {
   sessionView,
   takeCommands,
   type ComputerRecord,
+  type LinkRecord,
   type SessionRecord,
 } from './store.js';
+import { workName, workNote, workSnapshot, type WorkItem } from './work.js';
 
 /** Who reads: a person, and the language the answer is for. */
 export interface Viewer {
@@ -80,6 +84,14 @@ export interface LinkResolver {
   ): Promise<ReadonlyMap<string, LinkView>>;
   /** Starts the work on `refIds` as the viewer, when the application lets sessions start it. */
   start?(refIds: readonly string[], viewer: Viewer): Promise<void>;
+  /**
+   * What the agent should know of how each of `refIds` is going, as JSON, for the session's `list_session_work` tool:
+   * who works on it, what it waits for, and the like.
+   */
+  progress?(
+    refIds: readonly string[],
+    viewer: Viewer,
+  ): Promise<ReadonlyMap<string, unknown>>;
   /**
    * The records the viewer may mention in a message with `#` whose key or title contains `query`, best first, in
    * `projectId` when given.
@@ -155,6 +167,7 @@ export class AgentSessionsService {
     this.#replies = options.replies ?? memoryReplies();
     this.#publish = options.publish ?? (() => undefined);
     this.#now = options.now ?? Date.now;
+    this.#tools.push(this.#workTool());
   }
 
   /** Lets sessions show, and start, what the application ties to them under `kind`. */
@@ -195,14 +208,19 @@ export class AgentSessionsService {
           : undefined;
       },
       instructions: async (caller) => {
+        const viewer = await this.#ownerOf(caller);
         const project = caller.projectId
-          ? (await this.listProjects({ userId: caller.userId })).find(
+          ? (await this.listProjects(viewer)).find(
               (candidate) => candidate.id === caller.projectId,
             )
           : undefined;
-        return project
-          ? `This session works for the project "${project.name}" (id ${project.id}). File and look for work there unless the person names another project.`
-          : undefined;
+        const work = workNote(await this.#work(viewer, caller.sessionId), null);
+        const lines = [
+          project &&
+            `This session works for the project "${project.name}" (id ${project.id}). File and look for work there unless the person names another project.`,
+          work && `${work}\nCall \`list_session_work\` for how each is going.`,
+        ].filter(Boolean);
+        return lines.length > 0 ? lines.join('\n\n') : undefined;
       },
       link: (sessionId, kind, refId) => this.link(sessionId, kind, refId),
     };
@@ -579,6 +597,8 @@ export class AgentSessionsService {
         acpSessionId: null,
         state: null,
         settings,
+        toldWork: null,
+        locale: viewer.locale ?? null,
         running: false,
         pendingPermissions: 0,
         lastSeq: 0,
@@ -590,7 +610,7 @@ export class AgentSessionsService {
         updatedAt: now,
       },
     });
-    await this.#send(userId, sessionId, input.content, mentioned);
+    await this.#send(viewer, sessionId, input.content, mentioned);
     return this.getSession(viewer, sessionId);
   }
 
@@ -649,7 +669,7 @@ export class AgentSessionsService {
   ): Promise<TranscriptEvent> {
     await this.#writable(viewer.userId, sessionId);
     return this.#send(
-      viewer.userId,
+      viewer,
       sessionId,
       content,
       await this.#mentioned(viewer, mentions),
@@ -690,24 +710,29 @@ export class AgentSessionsService {
   }
 
   async #send(
-    userId: string,
+    viewer: Viewer,
     sessionId: string,
     content: readonly PromptContent[],
     mentioned: readonly (Mention & LinkView)[],
   ): Promise<TranscriptEvent> {
-    const session = await this.#session(userId, sessionId);
+    const session = await this.#session(viewer.userId, sessionId);
     const promptId = randomUUID();
-    // The agent reads what the message mentions; the transcript keeps the message as written.
-    const told: readonly PromptContent[] =
-      mentioned.length === 0
-        ? content
-        : [
-            ...content,
+    const work = await this.#work(viewer, sessionId, mentioned);
+    const note = workNote(work, session.toldWork);
+    // The agent reads what the message mentions, and the session's work when it changed since it was last told; the
+    // transcript keeps the message as written.
+    const told: readonly PromptContent[] = [
+      ...content,
+      ...(mentioned.length > 0
+        ? [
             {
-              type: 'text',
-              text: `Mentioned:\n${mentioned.map((item) => `- ${item.key ? `#${item.key} ` : ''}${item.title}${item.status ? ` (${item.status.label})` : ''}`).join('\n')}`,
+              type: 'text' as const,
+              text: `Mentioned:\n${mentioned.map((item) => `- ${workName(item)}${item.status ? ` (${item.status.label})` : ''}`).join('\n')}`,
             },
-          ];
+          ]
+        : []),
+      ...(note ? [{ type: 'text' as const, text: note }] : []),
+    ];
     const changed = await this.#transaction(async (conn, now) => {
       const locked = (await lockSession(conn, sessionId, now))!;
       const result = await this.#append(
@@ -715,7 +740,10 @@ export class AgentSessionsService {
         locked,
         [{ kind: 'prompt', at: now, promptId, content }],
         now,
-        {},
+        {
+          ...(note ? { toldWork: workSnapshot(work) } : {}),
+          ...(viewer.locale ? { locale: viewer.locale } : {}),
+        },
       );
       for (const item of mentioned) {
         const filter = { sessionId, kind: item.kind, refId: item.refId };
@@ -955,17 +983,7 @@ export class AgentSessionsService {
       filter: (f) => f.or(rows.map((row) => f.string('sessionId').eq(row.id))),
       sort: (sort) => sort.field('seq').asc(),
     });
-    const resolved = new Map<string, LinkView>();
-    for (const [kind, resolver] of this.#linkKinds) {
-      const refIds = [
-        ...new Set(
-          tied.filter((link) => link.kind === kind).map((link) => link.refId),
-        ),
-      ];
-      if (refIds.length === 0) continue;
-      for (const [refId, view] of await resolver.resolve(refIds, viewer))
-        resolved.set(`${kind}:${refId}`, view);
-    }
+    const resolved = await this.#resolve(viewer, tied);
     const projects = rows.some((row) => row.projectId)
       ? new Map(
           (await this.listProjects(viewer)).map((project) => [
@@ -997,6 +1015,93 @@ export class AgentSessionsService {
         }),
       }),
     );
+  }
+
+  /** How each record tied to sessions stands for the viewer, by `kind:refId`; one they may not see is left out. */
+  async #resolve(
+    viewer: Viewer,
+    tied: readonly LinkRecord[],
+  ): Promise<Map<string, LinkView>> {
+    const resolved = new Map<string, LinkView>();
+    for (const [kind, resolver] of this.#linkKinds) {
+      const refIds = [
+        ...new Set(
+          tied.filter((link) => link.kind === kind).map((link) => link.refId),
+        ),
+      ];
+      if (refIds.length === 0) continue;
+      for (const [refId, view] of await resolver.resolve(refIds, viewer))
+        resolved.set(`${kind}:${refId}`, view);
+    }
+    return resolved;
+  }
+
+  /** The work tied to the session, in the order it was tied, with `also` after it when not tied yet. */
+  async #work(
+    viewer: Viewer,
+    sessionId: string,
+    also: readonly (Mention & LinkView)[] = [],
+  ): Promise<WorkItem[]> {
+    const tied = await links(this.#conn()).findMany({
+      filter: { sessionId },
+      sort: (sort) => sort.field('seq').asc(),
+    });
+    const resolved = await this.#resolve(viewer, tied);
+    const item = (kind: string, refId: string, view: LinkView): WorkItem => ({
+      kind,
+      refId,
+      key: view.key,
+      title: view.title,
+      status: view.status?.label ?? null,
+      group: view.group,
+    });
+    const items = tied.flatMap((link) => {
+      const view = resolved.get(`${link.kind}:${link.refId}`);
+      return view ? [item(link.kind, link.refId, view)] : [];
+    });
+    const known = new Set(items.map((entry) => `${entry.kind}:${entry.refId}`));
+    for (const mention of also)
+      if (!known.has(`${mention.kind}:${mention.refId}`))
+        items.push(item(mention.kind, mention.refId, mention));
+    return items;
+  }
+
+  /** The owner a tool is called for, in the language they last wrote to the session in. */
+  async #ownerOf(caller: {
+    readonly userId: string;
+    readonly sessionId: string;
+  }): Promise<Viewer> {
+    const session = await sessions(this.#conn()).findOne({
+      filter: { id: caller.sessionId },
+    });
+    return { userId: caller.userId, locale: session?.locale ?? undefined };
+  }
+
+  /** The tool every session's agent has: the work tied to its session, and how each is going. */
+  #workTool(): SessionTool {
+    return defineSessionTool({
+      name: 'list_session_work',
+      description:
+        'Lists the work tied to this session, what was created in it or mentioned in its messages, with how each stands and, where the application tells, how it is going: who works on it, what it waits for, its pull request. When the person asks about the tasks or their progress without naming others, they mean these: call this first.',
+      input: z.object({}),
+      run: async (_input, caller) => {
+        const viewer = await this.#ownerOf(caller);
+        const work = await this.#work(viewer, caller.sessionId);
+        const progress = new Map<string, unknown>();
+        for (const [kind, resolver] of this.#linkKinds) {
+          const refIds = work
+            .filter((item) => item.kind === kind)
+            .map((item) => item.refId);
+          if (!resolver.progress || refIds.length === 0) continue;
+          for (const [refId, detail] of await resolver.progress(refIds, viewer))
+            progress.set(`${kind}:${refId}`, detail);
+        }
+        return work.map(({ kind, refId, ...item }) => ({
+          ...item,
+          progress: progress.get(`${kind}:${refId}`) ?? null,
+        }));
+      },
+    });
   }
 
   /** The records mentioned, as the viewer sees them; one the viewer cannot see is refused. */

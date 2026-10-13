@@ -1,7 +1,7 @@
 /**
- * Issues as things tied to agent sessions (`issue` links): how each stands for the viewer, in their language, and
- * starting one from the session, which moves it from Backlog to In progress as the viewer, so its default executor (an
- * agent in a runtime) takes it.
+ * Issues as things tied to agent sessions (`issue` links): how each stands for the viewer, in their language, how it is
+ * going for the session's agent, finding them for a `#` mention, and starting one from the session, which moves it from
+ * Backlog to In progress as the viewer, so its default executor (an agent in a runtime) takes it.
  */
 import type {
   LinkResolver,
@@ -18,8 +18,12 @@ import {
   statusCategory,
 } from '@nocobase/app-plugin-projects/shared/statuses';
 
+import { progressOf, type ProgressDeps } from './progress.js';
+
 export interface IssueLinkDeps {
   readonly projects: Projects;
+  /** How issues are going, for the agents; left out where the agents plugin is not installed. */
+  readonly progress?: ProgressDeps | undefined;
   readonly viewerOf: (userId: string) => Promise<Viewer>;
   /** Names statuses in `locale`, or in English without one. */
   readonly statusNames: (
@@ -109,6 +113,15 @@ export function issueLinks(deps: IssueLinkDeps): LinkResolver {
         refId: issue.id,
         ...issueView(issue, reader.userId, statusName),
       }));
+    },
+    async progress(refIds, reader) {
+      if (!deps.progress) return new Map();
+      const { issues } = await deps.projects.issueQueries.matching(
+        await deps.viewerOf(reader.userId),
+        {},
+        { issueIds: [...refIds], limit: refIds.length },
+      );
+      return progressOf(deps.progress, issues, reader.userId);
     },
     async start(refIds, reader) {
       const viewer = await deps.viewerOf(reader.userId);

@@ -16,7 +16,7 @@ describe('@nocobase/app-plugin-agent-sessions', () => {
   it('loads its migrations', async () => {
     await expect(
       validateMigrations(migrations[0]!.directory),
-    ).resolves.toHaveLength(1);
+    ).resolves.toHaveLength(2);
   });
 });
 
@@ -38,5 +38,21 @@ describeMigration('202610130001_agent_sessions_create', {
   },
   down: async ({ expectCollection }) => {
     for (const name of COLLECTIONS) await expectCollection(name).not.toExist();
+  },
+});
+
+describeMigration('202610140001_agent_sessions_told_work', {
+  sources: migrations,
+  up: async ({ expectCollection }) => {
+    await expectCollection('agentSessions').toHaveField('toldWork', {
+      nullable: true,
+    });
+    await expectCollection('agentSessions').toHaveField('locale', {
+      nullable: true,
+    });
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('agentSessions').not.toHaveField('toldWork');
+    await expectCollection('agentSessions').not.toHaveField('locale');
   },
 });

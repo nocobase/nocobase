@@ -4,6 +4,7 @@
  * (`links.ts`), and the agent gets Studio's tools over MCP (`tools.ts`). Both act as the session's owner, through the projects plugin's own services and checks.
  */
 import { agentSessionsToken } from '@nocobase/app-plugin-agent-sessions/server';
+import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
 import {
   projectsAccessToken,
   projectsToken,
@@ -28,6 +29,9 @@ export default class StudioAgentSessionsProvider extends ServiceProvider<Applica
       return Promise.resolve();
     const sessions = container.resolve(agentSessionsToken);
     const projects = container.resolve(projectsToken);
+    const progress = container.has(agentsToken)
+      ? { agents: container.resolve(agentsToken), projects }
+      : undefined;
     const access = container.resolve(projectsAccessToken);
     const i18n = container.has(i18nToken)
       ? container.resolve(i18nToken)
@@ -63,9 +67,12 @@ export default class StudioAgentSessionsProvider extends ServiceProvider<Applica
     });
     sessions.registerLinkKind(
       'issue',
-      issueLinks({ projects, viewerOf, statusNames }),
+      issueLinks({ projects, viewerOf, statusNames, progress }),
     );
-    sessions.registerTools('studio', studioTools({ projects, viewerOf }));
+    sessions.registerTools(
+      'studio',
+      studioTools({ projects, viewerOf, progress }),
+    );
     return Promise.resolve();
   }
 }

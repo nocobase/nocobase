@@ -17,14 +17,19 @@ import {
 } from '@nocobase/app-plugin-projects/shared/statuses';
 import { z } from 'zod';
 
+import { progressOf, type ProgressDeps } from './progress.js';
+
 export interface StudioToolDeps {
   readonly projects: Projects;
   readonly viewerOf: (userId: string) => Promise<Viewer>;
+  /** How issues are going; left out where the agents plugin is not installed. */
+  readonly progress?: ProgressDeps | undefined;
 }
 
 export function studioTools({
   projects,
   viewerOf,
+  progress,
 }: StudioToolDeps): SessionTool[] {
   return [
     defineSessionTool({
@@ -128,7 +133,7 @@ export function studioTools({
     defineSessionTool({
       name: 'get_issue',
       description:
-        'Reads one issue: its description, status, project, owner and executor.',
+        'Reads one issue: its description, status, project, owner and executor, and how it is going: who works on it, what it waits for, its pull request.',
       input: z.object({
         issue: z
           .string()
@@ -150,6 +155,10 @@ export function studioTools({
           executor: issue.executorName,
           createdAt: issue.createdAt,
           updatedAt: issue.updatedAt,
+          progress: progress
+            ? ((await progressOf(progress, [issue], userId)).get(issue.id) ??
+              null)
+            : null,
         };
       },
     }),
