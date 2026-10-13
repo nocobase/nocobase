@@ -1,15 +1,12 @@
 /**
- * Route `/follow-ups`, "My follow-ups": the issues the viewer follows (left), one issue's live activity (middle), and
- * the issues they own with what each needs from them (right); the columns stack on a phone. The issue shown is in the
- * URL (`?issue=<id>`), the first followed one by default. Everything comes from `GET /api/followUps`
+ * Route `/follow-ups`, "My follow-ups": the issues the viewer follows (left), one issue live (middle: the summary, feed
+ * and composer the issue page has too), and the issues they own with what each needs from them (right). On a wide
+ * screen the three columns fill the visible area below the heading and each scrolls on its own; on a phone the lists come first and choosing an issue
+ * shows it alone, with a way back. The issue shown is in the URL (`?issue=<id>`), the first followed one by default. Everything comes from `GET /api/followUps`
  * (`client/follow-ups/`), kept current by the projects plugin's realtime refresh; starring an issue writes what the
  * viewer follows, and showing one records that they looked.
  */
-import {
-  pmKeys,
-  usePmApi,
-  useViewer,
-} from '@nocobase/app-plugin-projects/client/kit';
+import { pmKeys, usePmApi } from '@nocobase/app-plugin-projects/client/kit';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
@@ -19,6 +16,7 @@ import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useMediaQuery } from '@/extensions/nocobase-agent-chat/use-media-query';
 
 import {
   FOLLOW_UPS_MAX,
@@ -27,8 +25,8 @@ import {
 import { useNotify } from '../../access/notify.js';
 import {
   useFollowUps,
+  useFollowIssue,
   useMarkSeen,
-  useSetFollowing,
 } from '../../follow-ups/api.js';
 import { FollowingRail } from '../../follow-ups/following-rail.js';
 import { IssuePanel } from '../../follow-ups/issue-panel.js';
@@ -36,11 +34,17 @@ import {
   DEFAULT_FILTER,
   followedIssues,
   ownedRows,
-  toggledFollowing,
 } from '../../follow-ups/model.js';
 import { OwnedList } from '../../follow-ups/owned-list.js';
-import { StatusPill } from '../../follow-ups/status.js';
-import { useFollowUpStatusName } from '../../follow-ups/status-colors.js';
+import { useFillHeight } from '../../follow-ups/use-fill-height.js';
+import { StatusPill } from '../../issues/live/status.js';
+import { useFollowUpStatusName } from '../../issues/live/status-colors.js';
+
+/** A side column on a wide screen: it stays in view while the middle scrolls, and scrolls on its own. */
+const SIDE_COLUMN = 'lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain';
+
+/** The page's bottom padding on a wide screen (`PageContainer`'s `md:p-8`), kept below the columns. */
+const PAGE_BOTTOM = 32;
 
 /** The statuses the header counts. */
 const COUNTED: readonly FollowUpStatus[] = [
@@ -52,14 +56,13 @@ const COUNTED: readonly FollowUpStatus[] = [
 export default function FollowUpsPage(): ReactElement {
   const { t } = useTranslation();
   const notify = useNotify();
-  const viewer = useViewer();
   const overview = useFollowUps();
   const view = overview.data;
   const [params, setParams] = useSearchParams();
   const [filter, setFilter] =
     useState<readonly FollowUpStatus[]>(DEFAULT_FILTER);
   const [query, setQuery] = useState('');
-  const setFollowing = useSetFollowing((error) =>
+  const followIssue = useFollowIssue((error) =>
     notify.error(error, t('followUps.saveFailed')),
   );
   const markSeen = useMarkSeen();
@@ -70,8 +73,14 @@ export default function FollowUpsPage(): ReactElement {
     () => (view ? ownedRows(view, filter, query) : []),
     [view, filter, query],
   );
-  const selectedId =
-    params.get('issue') ?? followed[0]?.id ?? rows[0]?.id ?? null;
+  const chosen = params.get('issue');
+  const wide = useMediaQuery('(min-width: 64rem)', true);
+  const selectedId = chosen ?? followed[0]?.id ?? rows[0]?.id ?? null;
+  // A phone shows the lists, or the chosen issue alone.
+  const showPanel = wide || chosen !== null;
+  const showLists = wide || chosen === null;
+  // On a wide screen the columns fill the rest of the visible area and scroll on their own.
+  const [columnsHeight, fill] = useFillHeight(wide, PAGE_BOTTOM);
   const summary = view?.issues.find((issue) => issue.id === selectedId) ?? null;
   // The issue shown when the overview does not hold it: the middle column reads it with the same query.
   const pm = usePmApi();
@@ -83,6 +92,18 @@ export default function FollowUpsPage(): ReactElement {
   const following = useMemo(() => view?.following ?? [], [view]);
   const isFollowed = selectedId !== null && following.includes(selectedId);
 
+  const back = useCallback(
+    () =>
+      setParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          next.delete('issue');
+          return next;
+        },
+        { replace: true },
+      ),
+    [setParams],
+  );
   const select = useCallback(
     (issueId: string) =>
       setParams(
@@ -97,10 +118,11 @@ export default function FollowUpsPage(): ReactElement {
   );
   const toggleFollow = useCallback(
     (issueId: string) => {
-      const next = toggledFollowing(following, issueId, FOLLOW_UPS_MAX);
-      if (next.length !== following.length) setFollowing.mutate(next);
+      const followed = following.includes(issueId);
+      if (!followed && following.length >= FOLLOW_UPS_MAX) return;
+      followIssue.mutate({ issueId, follow: !followed });
     },
-    [following, setFollowing],
+    [following, followIssue],
   );
 
   return (
@@ -162,43 +184,54 @@ export default function FollowUpsPage(): ReactElement {
           </div>
         )
       ) : (
-        <div className='grid items-start gap-5 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_minmax(0,22rem)]'>
-          <FollowingRail
-            issues={followed}
-            stored={view.followingStored}
-            selectedId={selectedId}
-            viewing={
-              selectedId && !isFollowed ? (summary ?? shown ?? null) : null
-            }
-            onSelect={select}
-          />
-          {selectedId ? (
+        <div
+          ref={fill}
+          style={columnsHeight === null ? undefined : { height: columnsHeight }}
+          className='grid items-start gap-5 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_minmax(0,22rem)] lg:grid-rows-[minmax(0,1fr)] lg:items-stretch'
+          data-testid='follow-ups-columns'
+        >
+          {showLists ? (
+            <FollowingRail
+              className={SIDE_COLUMN}
+              issues={followed}
+              stored={view.followingStored}
+              selectedId={wide ? selectedId : null}
+              viewing={
+                wide && selectedId && !isFollowed
+                  ? (summary ?? shown ?? null)
+                  : null
+              }
+              onSelect={select}
+            />
+          ) : null}
+          {!showPanel ? null : selectedId ? (
             <IssuePanel
+              className='lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain'
               key={selectedId}
               issueId={selectedId}
               summary={summary}
-              viewerId={viewer?.userId ?? null}
-              followed={isFollowed}
-              followingCount={following.length}
-              onToggleFollow={() => toggleFollow(selectedId)}
               onSeen={markSeen}
+              {...(wide ? {} : { onBack: back })}
             />
           ) : (
             <p className='rounded-xl border border-dashed p-6 text-sm text-muted-foreground'>
               {t('followUps.activity.select')}
             </p>
           )}
-          <OwnedList
-            view={view}
-            rows={rows}
-            filter={filter}
-            onFilter={setFilter}
-            query={query}
-            onQuery={setQuery}
-            selectedId={selectedId}
-            onSelect={select}
-            onToggleFollow={toggleFollow}
-          />
+          {showLists ? (
+            <OwnedList
+              className={SIDE_COLUMN}
+              view={view}
+              rows={rows}
+              filter={filter}
+              onFilter={setFilter}
+              query={query}
+              onQuery={setQuery}
+              selectedId={wide ? selectedId : null}
+              onSelect={select}
+              onToggleFollow={toggleFollow}
+            />
+          ) : null}
         </div>
       )}
     </PageContainer>

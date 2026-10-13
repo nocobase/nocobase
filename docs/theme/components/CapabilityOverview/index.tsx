@@ -8,6 +8,7 @@ import chineseHome from '../FullHome/data.json';
 import englishHome from '../FullHome/data.en.json';
 import { images } from './images';
 import { initializeOverview } from './interactions.mjs';
+import { useLanguageMenu } from '../LanguageMenu';
 import './index.scss';
 
 function moduleId(routePath: string) {
@@ -19,7 +20,7 @@ export function isCapabilityOverview(routePath: string) {
 }
 export function CapabilityOverview({ routePath }: { routePath: string }) {
   const lang = useLang();
-  const header = lang === 'cn' ? chineseHeader : englishHeader;
+  const header = useLanguageMenu(lang === 'cn' ? chineseHeader : englishHeader);
   const homepage = lang === 'cn' ? chineseHome : englishHome;
   const localizedPages = lang === 'cn' ? pages : englishPages;
   const root = useRef<HTMLDivElement>(null);

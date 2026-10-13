@@ -7,7 +7,7 @@
  * `releases`), issue previews and deployment marks join as `StudioPreviewsProvider` joins them, their notices kept in
  * `notices`.
  */
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
@@ -117,6 +117,7 @@ import {
 } from '../../server/agents/conversation/delegation.js';
 import { issueRunsRoutes } from '../../server/agents/run-views.js';
 import { projectManagerRoutes } from '../../server/agents/manager/routes.js';
+import { ownerHandoffRoutes } from '../../server/issues/owner-handoff-routes.js';
 import { followUpsRoutes } from '../../server/follow-ups/routes.js';
 import { createProjectManager } from '../../server/agents/manager/service.js';
 import { studioProjectManagerToken } from '../../server/agents/manager/token.js';
@@ -768,7 +769,7 @@ export async function createBridgeHarness(
     onError: () => undefined,
   });
   const manager = createProjectManager({ agents });
-  bindStudioAgents({
+  const unbindAgents = bindStudioAgents({
     agents,
     delegations,
     kinds: projects.kinds,
@@ -1217,6 +1218,10 @@ export async function createBridgeHarness(
   api.route('/', await inboxRoutes.createRouter(appLike as unknown as never));
   api.route(
     '/',
+    await ownerHandoffRoutes.createRouter(appLike as unknown as never),
+  );
+  api.route(
+    '/',
     await projectManagerRoutes.createRouter(appLike as unknown as never),
   );
   api.route(
@@ -1467,9 +1472,18 @@ export async function createBridgeHarness(
           hostname: 'host',
           os: 'darwin',
           arch: 'arm64',
-          version: '0.0.1',
+          version: JSON.parse(
+            readFileSync(
+              path.resolve(
+                import.meta.dirname,
+                '../../../../app/agent-runner/package.json',
+              ),
+              'utf8',
+            ),
+          ).version,
           protocolVersion: PROTOCOL_VERSION,
           features: (features ?? [
+            'workspaceKey',
             'input',
             'checkout',
             'directories',
@@ -1488,6 +1502,12 @@ export async function createBridgeHarness(
           );
         runnerKey = registered.body.data.runnerKey as string;
         runnerId = registered.body.data.runnerId as string;
+        await database
+          .connection()
+          .query.updateTable('agRunners')
+          .set({ load: { free: 2, slots: 2 } })
+          .where('id', '=', runnerId)
+          .execute();
       }
       const claimed = await request('POST', '/agents/runners/claim', {
         headers: { [HEADERS.runnerKey]: runnerKey },
@@ -1510,6 +1530,7 @@ export async function createBridgeHarness(
         : answer;
     },
     async close() {
+      unbindAgents();
       await delegations.settled();
       await releases?.releases.shutdown();
       await testDatabase.destroy();

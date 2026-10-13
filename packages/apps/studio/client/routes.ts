@@ -22,7 +22,7 @@ import {
   CircleUserRound,
   Cpu,
   FolderKanban,
-  House,
+  InboxIcon,
   LayoutDashboard,
   ListChecks,
   ListTodo,
@@ -88,10 +88,9 @@ function issueDetailRoute(owner?: string): AppClientRouteDefinition {
 }
 
 /**
- * The sidebar: Home (0, the composer that starts a conversation), My agents (0.5) and Dashboard (1), then My
- * follow-ups (1.5) and My issues (2) on top, then the sections Development (4: issues, projects, knowledge), Releases (4.5: Apps, environments)
- * and Agent team (5: agents, runtimes, skills, models, usage), and Settings (7). The inbox is the header's button
- * (`inbox/header-button.tsx`), not a sidebar entry. A section is a route without a page of its own;
+ * The sidebar: My tasks (0), My agents (0.5), Inbox (1), Dashboard (2), My follow-ups (3), then
+ * Development (4: issues, projects, knowledge), Releases (4.5: Apps, environments), Agent team (5) and Settings (7).
+ * The layout adds the inbox's live count to its route navigation. A section is a route without a page of its own;
  * the layout draws it as a label over its entries (`layouts/components/navigation-menu.tsx`). The projects and
  * agents plugins' pages are mounted here (`projects({ routes: false })`), so their navigation and breadcrumb titles are
  * this application's. `/issues` and `/my-issues` are this application's own pages (`pages/issues`, `pages/my-issues`),
@@ -135,19 +134,32 @@ const releasesPage =
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
   {
-    // Every signed-in user reaches the landing page. `authz: 'skip'` takes it out of page authorization entirely, so
-    // no permission change can leave a user signed in with nowhere to land. It is the composer that starts a
-    // conversation with an agent, in Online or Runner mode (`pages/home`), first in the menu.
+    // Every signed-in user has a landing page, independent of page grants.
+    authz: 'skip',
+    auth: 'required',
+    componentLoader: () => import('./pages/landing/index.js'),
+    name: 'landing',
+    path: '/',
+  },
+  {
+    // The composer starts a conversation with an agent, in Online or Runner mode.
     authz: 'skip',
     auth: 'required',
     componentLoader: () => import('./pages/home/index.js'),
+    name: 'chat-new',
+    path: '/chat',
+  },
+  {
+    // Bookmarked home URLs now open the chat composer without a homepage menu entry.
+    authz: 'skip',
+    auth: 'required',
     name: 'home',
-    path: '/',
-    navigation: { title: 'navigation.home', icon: House, order: 0 },
+    path: '/home',
+    componentLoader: () => import('./pages/home/redirect.js'),
   },
   {
     // Conversations with coding agents on the viewer's own computers (the agent sessions plugin's page), right below
-    // Home. A session is its owner's alone, which its API checks, so the page needs no grant.
+    // My tasks. A session is its owner's alone, which its API checks, so the page needs no grant.
     ...agentSessionsRoute({
       cli: 'nb-studio',
       install: 'npm install -g @nocobase/studio-cli',
@@ -169,15 +181,15 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     navigation: {
       title: 'navigation.dashboard',
       icon: LayoutDashboard,
-      order: 1,
+      order: 2,
     },
     breadcrumb: { title: 'navigation.dashboard' },
     componentLoader: () => import('./pages/dashboard/index.js'),
   },
   {
-    // One conversation, full screen (`pages/chat`): where the home page's composer and recent conversations lead, and
+    // One conversation, full screen (`pages/chat`): where the chat composer and recent conversations lead, and
     // the chat panel's "Open full screen". A conversation is its owner's alone, which its API checks, so it needs no
-    // page grant. No menu entry: conversations are reached from the home page, the panel and its history.
+    // page grant. No menu entry: conversations are reached from the chat composer, the panel and its history.
     authz: 'skip',
     auth: 'required',
     componentLoader: () => import('./pages/chat/index.js'),
@@ -202,18 +214,18 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     ],
   },
   {
-    // Everyone's own inbox: what it lists is the viewer's, so it needs no page grant. Opened from the header's inbox
-    // button, which carries the pending-decision count, so it has no sidebar entry.
+    // Everyone's own inbox is the default landing page; its contents need no page grant.
     authz: 'skip',
     auth: 'required',
     componentLoader: () => import('./pages/inbox/index.js'),
     name: 'inbox',
+    navigation: { title: 'navigation.inbox', icon: InboxIcon, order: 1 },
     breadcrumb: { title: 'navigation.inbox' },
     path: '/inbox',
   },
   {
     // The issues the viewer follows and owns, each with what it waits for now and its live activity
-    // (`pages/follow-ups`), above My issues. It shows issues as My issues does, behind the same page grant.
+    // (`pages/follow-ups`), after Dashboard. It shows issues as My issues does, behind the same page grant.
     name: 'follow-ups',
     path: '/follow-ups',
     auth: 'required',
@@ -221,7 +233,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     navigation: {
       title: 'navigation.followUps',
       icon: ListChecks,
-      order: 1.5,
+      order: 3,
     },
     breadcrumb: { title: 'navigation.followUps' },
     componentLoader: () => import('./pages/follow-ups/index.js'),
@@ -235,7 +247,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     navigation: {
       title: 'navigation.myIssues',
       icon: CircleUserRound,
-      order: 2,
+      order: 0,
     },
     breadcrumb: { title: 'navigation.myIssues' },
     componentLoader: () => import('./pages/my-issues/index.js'),

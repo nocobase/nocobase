@@ -177,11 +177,15 @@ function useHistoryRuns(
     id: run.id,
     agentId: run.agentId,
     agentName: agentName(run.agentId) ?? unknownAgent,
-    model: run.actualModels?.length
-      ? t('issueRuns.model', { model: run.actualModels.join(', ') })
-      : run.model
-        ? t('issueRuns.configuredModel', { model: run.model })
-        : t('issueRuns.modelUnknown'),
+    model:
+      (run.executions?.at(-1)?.selection
+        ? `${t(`issueRuns.selection.${run.executions.at(-1)!.selection!.reason}`)} · `
+        : '') +
+      (run.actualModels?.length
+        ? t('issueRuns.model', { model: run.actualModels.join(', ') })
+        : run.model
+          ? t('issueRuns.configuredModel', { model: run.model })
+          : t('issueRuns.modelUnknown')),
     status: run.status,
     stopping: run.cancelRequestedAt !== null,
     createdAt: run.createdAt,

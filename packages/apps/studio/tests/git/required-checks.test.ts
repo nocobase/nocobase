@@ -228,6 +228,12 @@ describe('required and reference checks', () => {
     const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
     const issue = await h.projects.issues.create(alice(), {
       title: 'Read checks',
+      statusKey: 'in_progress',
+      start: false,
+    });
+    await h.projects.issues.update(alice(), issue.id, {
+      revision: issue.revision,
+      executor: null,
       start: false,
     });
     await repoWithReference();
@@ -251,6 +257,7 @@ describe('required and reference checks', () => {
     });
     await mentionAgent(h, 'alice', issue.id, agentId);
     const payload = await h.claimOne();
+    expect((await h.agents.runs.get(payload.run.id)).agentId).toBe(agentId);
     const token = payload.cli.credential.content.token as string;
     const url = `/git/pullRequests/${pullRequest.id}/checks`;
     const read = await h.request('GET', `${url}?issueId=${issue.id}`, {
@@ -303,6 +310,14 @@ describe('required and reference checks', () => {
     const restrictedAgent = await h.createAgent({ actions: [] });
     await mentionAgent(h, 'alice', issue.id, restrictedAgent);
     const restricted = await h.claimOne();
+    expect((await h.agents.runs.get(restricted.run.id)).agentId).toBe(
+      restrictedAgent,
+    );
+    const legacyRead = await h.request('GET', `${url}?issueId=${issue.id}`, {
+      runToken: restricted.cli.credential.content.token as string,
+    });
+    expect(legacyRead.status).toBe(200);
+    h.roles.set('alice', 'none');
     const forbidden = await h.request('GET', `${url}?issueId=${issue.id}`, {
       runToken: restricted.cli.credential.content.token as string,
     });

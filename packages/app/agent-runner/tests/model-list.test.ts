@@ -9,6 +9,32 @@ import { modelListOverrides } from '../src/lib/config.ts';
 import { cli, cliEnv, removeDir, tempDir } from './helpers.ts';
 
 describe('reported models', () => {
+  it('never lets Pi overrides add unconfigured providers or fall back to the full catalog', () => {
+    const pi = {
+      kind: 'pi' as const,
+      authenticated: true,
+      modelsDetectionStatus: 'detected' as const,
+      models: [{ id: 'configured/model' }],
+    };
+    expect(
+      reportedModels(pi, { add: ['unconfigured/model', 'configured/extra'] })
+        .models,
+    ).toEqual([{ id: 'configured/model' }, { id: 'configured/extra' }]);
+    expect(
+      reportedModels({ ...pi, models: [] }, { add: ['unconfigured/model'] })
+        .models,
+    ).toEqual([]);
+    expect(
+      reportedModels(
+        { ...pi, modelsDetectionStatus: 'failed' },
+        { add: ['configured/extra'] },
+      ).models,
+    ).toEqual([]);
+    expect(
+      reportedModels({ ...pi, modelsDetectionStatus: 'unsupported' }, undefined)
+        .models,
+    ).toEqual([]);
+  });
   it('reports the built-in list, without aliases, for a signed-in tool that cannot list its models', () => {
     const reported = reportedModels(
       {

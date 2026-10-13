@@ -10,7 +10,7 @@ import { useViewer } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { BACKLOG_STATUS } from '@nocobase/app-plugin-projects/shared/statuses';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { PlayIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
@@ -18,12 +18,10 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 
-import type { IssueProgress } from '../../../shared/project-manager.js';
 import { useNotify } from '../../access/notify.js';
 import { issueProgressKey, progressSentence } from './progress-text.js';
-
-/** Refetches on its own too: a pull request's checks change with no issue change. */
-const PROGRESS_POLL_MS = 15_000;
+import { OwnerHandoffActions } from './owner-handoff.js';
+import { useIssueProgress } from './use-issue-progress.js';
 
 export function IssueProgressLine({
   issue,
@@ -44,17 +42,7 @@ export function IssueProgressLine({
   const notify = useNotify();
   const queryClient = useQueryClient();
   const canEdit = canEditIssues(viewer) && viewer?.userId === issue.ownerUserId;
-  const progress = useQuery({
-    queryKey: [...issueProgressKey(issue.id), refresh],
-    queryFn: async () =>
-      (
-        await api.request<{ data: IssueProgress }>({
-          path: `issueProgress/${encodeURIComponent(issue.id)}`,
-        })
-      ).data,
-    placeholderData: (previous) => previous,
-    refetchInterval: PROGRESS_POLL_MS,
-  });
+  const progress = useIssueProgress(issue.id, refresh);
   const handOver = useMutation({
     mutationFn: () =>
       api.request({
@@ -74,7 +62,10 @@ export function IssueProgressLine({
   });
 
   const data = progress.data;
-  const canStart = canEdit && issue.statusKey === BACKLOG_STATUS;
+  const canStart =
+    canEdit &&
+    issue.statusKey === BACKLOG_STATUS &&
+    data?.waiting?.reason !== 'waitingOwner';
   const canHandOver =
     canEdit && data?.handOver === true && issue.statusKey !== BACKLOG_STATUS;
   return (
@@ -117,6 +108,7 @@ export function IssueProgressLine({
           </p>
         ) : null}
       </div>
+      <OwnerHandoffActions issueId={issue.id} />
       {canStart || canHandOver ? (
         <div className='flex shrink-0 flex-wrap gap-2'>
           {canStart ? (

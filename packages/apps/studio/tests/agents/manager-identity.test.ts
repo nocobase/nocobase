@@ -348,6 +348,7 @@ describe('manager and delegated identities', () => {
     await h.projects.issues.update(h.viewer('bob'), task.id, {
       revision: current.revision,
       ownerUserId: 'bob',
+      start: false,
     });
     expect((await h.agents.runs.get(run.id)).actorUserId).toBe('alice');
     expect((await h.agents.runs.get(run.id)).cancelRequestedAt).not.toBeNull();
@@ -383,6 +384,7 @@ describe('manager and delegated identities', () => {
     await h.projects.issues.update(h.viewer('bob'), task.id, {
       revision: current.revision,
       ownerUserId: 'bob',
+      start: false,
       executor: null,
     });
     const after = await runs(task.id);
@@ -513,10 +515,20 @@ describe('manager and delegated identities', () => {
       },
     });
     expect(registered.status).toBe(200);
-    expect(
-      (await h.request('GET', `/issueProgress/${task.id}`, { user: 'bob' }))
-        .body.data.waiting.reason,
-    ).toBe('ownerHasNoRunner');
+    const [legacy] = await runs(task.id);
+    await h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({
+        filter: { id: legacy.id },
+        values: { actorUserId: 'bob' },
+      });
+    const ownerWait = (
+      await h.request('GET', `/issueProgress/${task.id}`, { user: 'bob' })
+    ).body.data;
+    expect(ownerWait.waiting.reason).toBe('ownerHasNoRunner');
+    expect(ownerWait.managerWait.entries[0].reason).toBe('noSharedRunner');
+    expect((await h.agents.runs.get(legacy.id)).actorUserId).toBe('bob');
     const settings = await h.manager.settings();
     await h.manager.update('bob', {
       firstChoiceAgentId: null,
@@ -586,6 +598,7 @@ describe('manager and delegated identities', () => {
     await h.projects.issues.update(h.viewer('bob'), task.id, {
       revision: current.revision,
       ownerUserId: 'bob',
+      start: false,
     });
     const retry = await h.agents.runs.retry(previous.id, 'bob');
     expect(retry.actorUserId).toBe('bob');

@@ -1,10 +1,27 @@
 // @vitest-environment node
 /**
  * "My follow-ups" (`server/follow-ups/`): the overview at `/followUps`, replacing the followed issues
- * (`/followUps/following`) and marking an issue seen (`/followUps/issues/:issueId/markSeen`).
+ * (`/followUps/following`), following or unfollowing one (`/followUps/issues/:issueId/follow|unfollow`) and marking an
+ * issue seen (`/followUps/issues/:issueId/markSeen`), and how the routes are declared.
  */
+import { authenticationToken } from '@nocobase/app-plugin-authentication';
+import { authorizationToken } from '@nocobase/app-plugin-authorization';
+import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
+import { projectsToken } from '@nocobase/app-plugin-projects/server/tokens';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
+import { userPreferencesServiceToken } from '@nocobase/app-plugin-users/server/tokens';
+import type { Application } from '@nocobase/app-server/application';
+import {
+  findApiDocumentSchemaProblems,
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+} from '@nocobase/app-server/router';
+import { ServiceContainer } from '@nocobase/service-provider';
+import type { MiddlewareHandler } from 'hono';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { followUpsRoutes } from '../../server/follow-ups/routes.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 
 import {
   FOLLOWING_PREFERENCE,
@@ -50,6 +67,50 @@ const follow = (issueIds: readonly string[], user = 'alice') =>
   h.request('PUT', '/followUps/following', { user, body: { issueIds } });
 
 describe('the overview', () => {
+  it('includes shared queue diagnostics and only the viewer machine details', async () => {
+    h.roles.set('alice', 'admin');
+    const worker = await h.createAgent({
+      name: 'Worker',
+      maxConcurrentRuns: 2,
+    });
+    await h.claimOne();
+    await h.database
+      .connection()
+      .query.updateTable('agRunners')
+      .set({
+        toolSlots: { claude: 1 },
+        name: 'alice-machine',
+        ownerUserId: 'alice',
+      })
+      .allowAllRows()
+      .execute();
+    const busy = await create('alice', {
+      statusKey: 'in_progress',
+      start: false,
+    });
+    await h.projects.comments.create(h.viewer('alice'), busy.id, {
+      content: `[@Worker](mention://agent/${worker}) first step`,
+    });
+    await h.claimOne();
+    const queued = await create('alice', {
+      statusKey: 'in_progress',
+      start: false,
+    });
+    await h.projects.comments.create(h.viewer('alice'), queued.id, {
+      content: `[@Worker](mention://agent/${worker}) second step`,
+    });
+    const data = await overview();
+    const item = data.issues.find(
+      (issue: { id: string }) => issue.id === queued.id,
+    );
+    expect(item.progress).toMatchObject({
+      state: 'queued',
+      managerWait: {
+        entries: [{ reason: 'busy', runners: ['alice-machine'] }],
+      },
+    });
+  });
+
   it('lists the caller’s open issues by status, following their blocked and in-review ones by default', async () => {
     const backlog = await create('alice', { title: 'Later' });
     const blocked = await create('alice', { title: 'Asks' });
@@ -93,6 +154,48 @@ describe('the overview', () => {
     // Nothing was stored for a default.
     expect(h.preferences.has(`alice:${FOLLOWING_PREFERENCE}`)).toBe(false);
   });
+
+  it.each([false, true])(
+    'clears the old blocked decision after manager recovery (manual follow: %s)',
+    async (manual) => {
+      // No executor, run, dependency or pending checks can mask the status-derived progress.
+      const issue = await create('alice', {
+        statusKey: 'in_progress',
+        executor: null,
+      });
+      await move(issue, 'blocked');
+      if (manual) expect((await follow([issue.id])).status).toBe(200);
+      const before = await overview();
+      expect(
+        before.issues.find((item: any) => item.id === issue.id),
+      ).toMatchObject({
+        statusKey: 'blocked',
+        followed: true,
+        progress: { state: 'needsDecision' },
+      });
+      const current = await h.projects.issueQueries.detail(
+        h.viewer('alice'),
+        issue.id,
+      );
+      await h.projects.issues.update(
+        {
+          ...h.viewer('alice'),
+          actor: { type: 'agent', id: PROJECT_MANAGER_ID },
+        },
+        issue.id,
+        { revision: current.revision, statusKey: 'in_progress' },
+      );
+      const after = await overview();
+      const resumed = after.issues.find((item: any) => item.id === issue.id);
+      expect(resumed.statusKey).toBe('in_progress');
+      expect(resumed.progress?.state).not.toBe('needsDecision');
+      expect(after.counts.blocked).toBe(0);
+      if (manual) {
+        expect(resumed.followed).toBe(true);
+        expect(resumed.progress.state).toBe('idle');
+      }
+    },
+  );
 
   it('refuses someone signed out or who may not view issues', async () => {
     expect((await h.request('GET', '/followUps')).status).toBe(401);
@@ -170,6 +273,113 @@ describe('following', () => {
     });
     expect(answer.status).toBe(404);
     expect(h.preferences.has(`alice:${SEEN_PREFERENCE}`)).toBe(false);
+  });
+});
+
+describe('following one issue', () => {
+  const star = (verb: 'follow' | 'unfollow', issue: string, user = 'alice') =>
+    h.request('POST', `/followUps/issues/${issue}/${verb}`, { user });
+
+  it('adds an issue by id or key after the others, once, and takes it off again', async () => {
+    const first = await create('alice', { title: 'First' });
+    const second = await create('bob', { title: 'Second' });
+    const added = await star('follow', first.id);
+    expect(added.status).toBe(200);
+    expect(added.body.data).toEqual({ issueIds: [first.id] });
+    const byKey = await star('follow', second.identifier);
+    expect(byKey.body.data).toEqual({ issueIds: [first.id, second.id] });
+    // Following it again changes nothing.
+    expect((await star('follow', first.id)).body.data).toEqual({
+      issueIds: [first.id, second.id],
+    });
+    const data = await overview();
+    expect(data.following).toEqual([first.id, second.id]);
+    expect(
+      data.issues.find((issue: any) => issue.id === second.id).seenAt,
+    ).toEqual(expect.any(String));
+
+    const removed = await star('unfollow', first.identifier);
+    expect(removed.status).toBe(200);
+    expect(removed.body.data).toEqual({ issueIds: [second.id] });
+    // Unfollowing one not followed changes nothing.
+    expect((await star('unfollow', first.id)).body.data).toEqual({
+      issueIds: [second.id],
+    });
+    expect((await overview()).following).toEqual([second.id]);
+  });
+
+  it('starts from the default list, and makes it the caller’s own once they change it', async () => {
+    const review = await create('alice', { title: 'Ready' });
+    await move(review, 'in_review');
+    const other = await create('alice', { title: 'Other' });
+    expect((await star('follow', other.id)).body.data).toEqual({
+      issueIds: [review.id, other.id],
+    });
+    expect((await overview()).followingStored).toBe(true);
+  });
+
+  it('refuses a sixth issue with what to do instead', async () => {
+    const issues = await Promise.all(
+      Array.from({ length: 6 }, (_, index) =>
+        create('alice', { title: `Issue ${index}` }),
+      ),
+    );
+    for (const issue of issues.slice(0, 5))
+      expect((await star('follow', issue.id)).status).toBe(200);
+    const refused = await star('follow', issues[5]!.id);
+    expect(refused.status).toBe(400);
+    expect(refused.body.error.reason).toBe('FOLLOWING_LIMIT_REACHED');
+    expect(refused.body.error.message).toContain('Unfollow one first');
+    expect((await overview()).following).toHaveLength(5);
+    // One already followed is still fine.
+    expect((await star('follow', issues[0]!.id)).status).toBe(200);
+  });
+
+  it('answers 404 for an issue the caller cannot find, and 403 without issue access', async () => {
+    for (const verb of ['follow', 'unfollow'] as const) {
+      expect((await star(verb, 'nope')).status).toBe(404);
+      expect((await star(verb, 'ZZ-99999')).status).toBe(404);
+    }
+    expect(h.preferences.has(`alice:${FOLLOWING_PREFERENCE}`)).toBe(false);
+    const issue = await create('alice');
+    h.roles.set('bob', 'none');
+    expect((await star('follow', issue.id, 'bob')).status).toBe(403);
+    expect(
+      (await h.request('POST', `/followUps/issues/${issue.id}/follow`)).status,
+    ).toBe(401);
+  });
+});
+
+describe('the routes in the API document', () => {
+  const pass: MiddlewareHandler = async (_context, next) => next();
+
+  it('declares every route, with the follow star’s own commands', async () => {
+    const container = new ServiceContainer();
+    container.instance(authenticationToken, { required: () => pass } as never);
+    container.instance(authorizationToken, { middleware: () => pass } as never);
+    container.instance(projectsToken, {} as never);
+    container.instance(agentsToken, {} as never);
+    container.instance(userPreferencesServiceToken, {} as never);
+    const router = await followUpsRoutes.createRouter({
+      container,
+    } as unknown as Application);
+    expect(findUndeclaredApiRoutes(router)).toEqual([]);
+    const document = await generateApiDocument(router, {
+      info: { title: 'Test', version: '1.0.0' },
+    });
+    expect(findApiDocumentSchemaProblems(document)).toEqual([]);
+    const follow =
+      document.paths?.['/api/followUps/issues/{issueId}/follow']?.post;
+    const unfollow =
+      document.paths?.['/api/followUps/issues/{issueId}/unfollow']?.post;
+    expect(follow?.operationId).toBe('followUpsFollowIssue');
+    expect(unfollow?.operationId).toBe('followUpsUnfollowIssue');
+    expect(
+      (follow as { 'x-cli'?: { command?: string } })['x-cli']?.command,
+    ).toBe('follow-up follow');
+    expect(
+      (unfollow as { 'x-cli'?: { command?: string } })['x-cli']?.command,
+    ).toBe('follow-up unfollow');
   });
 });
 

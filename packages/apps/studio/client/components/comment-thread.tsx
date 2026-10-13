@@ -107,6 +107,8 @@ export interface CommentItem {
   readonly reactions?: readonly CommentReaction[];
   readonly canEdit?: boolean;
   readonly canDelete?: boolean;
+  /** Shown instead of the text, as one line that unfolds it in place, when the text is shown elsewhere. */
+  readonly collapsedLabel?: string;
 }
 
 export interface CommentThreadItem {
@@ -452,11 +454,15 @@ export interface CommentTimelineProps {
   readonly locale?: string;
   readonly labels?: CommentThreadLabels;
   readonly className?: string;
+  /** In the heading row, before "Load older", such as a filter. */
+  readonly headerActions?: ReactNode;
+  /** The entries run newest first, so "Load older" goes under them. */
+  readonly newestFirst?: boolean;
 }
 
 const DEFAULT_EMOJIS = ['👍', '👎', '😄', '🎉', '😕', '❤️', '🚀', '👀'];
 
-/** The timeline: its heading with "Load older", then every entry oldest first. */
+/** The timeline: its heading, then every entry (oldest first unless `newestFirst`), with "Load older" toward the oldest. */
 export function CommentTimeline({
   entries,
   hasOlder = false,
@@ -464,28 +470,37 @@ export function CommentTimeline({
   onLoadOlder,
   labels = defaultLabels,
   className,
+  headerActions,
+  newestFirst = false,
   ...context
 }: CommentTimelineProps): ReactElement {
+  const loadOlder =
+    hasOlder && onLoadOlder ? (
+      <Button
+        variant='ghost'
+        size='sm'
+        disabled={loadingOlder}
+        onClick={onLoadOlder}
+      >
+        {loadingOlder ? (
+          <Loader2Icon data-icon='inline-start' className='animate-spin' />
+        ) : null}
+        {labels.loadOlder}
+      </Button>
+    ) : null;
   return (
     <section
       className={cn('space-y-4', className)}
       aria-label={labels.title}
       data-slot='comment-timeline'
     >
-      <div className='flex items-center justify-between gap-2'>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
         <h2 className='font-heading text-sm font-semibold'>{labels.title}</h2>
-        {hasOlder && onLoadOlder ? (
-          <Button
-            variant='ghost'
-            size='sm'
-            disabled={loadingOlder}
-            onClick={onLoadOlder}
-          >
-            {loadingOlder ? (
-              <Loader2Icon data-icon='inline-start' className='animate-spin' />
-            ) : null}
-            {labels.loadOlder}
-          </Button>
+        {headerActions || (loadOlder && !newestFirst) ? (
+          <div className='flex flex-wrap items-center gap-2'>
+            {headerActions}
+            {newestFirst ? null : loadOlder}
+          </div>
         ) : null}
       </div>
       {entries.length === 0 ? (
@@ -503,6 +518,9 @@ export function CommentTimeline({
           }
         />
       )}
+      {newestFirst && loadOlder ? (
+        <div className='flex justify-center'>{loadOlder}</div>
+      ) : null}
     </section>
   );
 }
@@ -515,6 +533,8 @@ type Context = Omit<
   | 'onLoadOlder'
   | 'labels'
   | 'className'
+  | 'headerActions'
+  | 'newestFirst'
 > & { readonly labels: CommentThreadLabels };
 
 function snippet(content: string): string {
@@ -648,6 +668,9 @@ function CommentBlock({
 }): ReactElement {
   const { labels, locale } = context;
   const [editing, setEditing] = useState(false);
+  const [unfolded, setUnfolded] = useState(false);
+  const folded =
+    Boolean(comment.collapsedLabel) && !unfolded && !comment.deleted;
   const markdown =
     context.renderMarkdown ??
     ((content: string) => (
@@ -756,6 +779,16 @@ function CommentBlock({
           mentionSearchRevision={context.mentionSearchRevision}
           labels={labels}
         />
+      ) : folded ? (
+        <button
+          type='button'
+          aria-expanded={false}
+          className='ml-8 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground'
+          onClick={() => setUnfolded(true)}
+        >
+          <ChevronRightIcon className='size-3.5' aria-hidden='true' />
+          {comment.collapsedLabel}
+        </button>
       ) : (
         <>
           <div className='pl-8'>{markdown(comment.content)}</div>

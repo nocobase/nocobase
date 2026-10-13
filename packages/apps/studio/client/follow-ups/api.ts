@@ -34,46 +34,51 @@ export function useFollowUps(): UseQueryResult<FollowUpsView> {
   });
 }
 
-/** Replaces the followed issues, shown at once and read back from the server once saved. */
-export function useSetFollowing(
+/**
+ * Follows or stops following one issue (`POST followUps/issues/:issueId/follow|unfollow`), shown at once and read back
+ * from the server once saved; the server keeps the limit, so two tabs cannot overwrite each other's list.
+ */
+export function useFollowIssue(
   onError: (error: unknown) => void,
 ): UseMutationResult<
   FollowingView,
   unknown,
-  readonly string[],
+  { readonly issueId: string; readonly follow: boolean },
   { previous?: FollowUpsView }
 > {
   const api = useApiClient();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (issueIds: readonly string[]) =>
+    mutationFn: async ({ issueId, follow }) =>
       (
         await api.request<{ data: FollowingView }>({
-          method: 'PUT',
-          path: 'followUps/following',
-          json: { issueIds },
+          method: 'POST',
+          path: `followUps/issues/${encodeURIComponent(issueId)}/${follow ? 'follow' : 'unfollow'}`,
         })
       ).data,
-    onMutate: async (issueIds) => {
+    onMutate: async ({ issueId, follow }) => {
       await client.cancelQueries({ queryKey: followUpsKeys.overview });
       const previous = client.getQueryData<FollowUpsView>(
         followUpsKeys.overview,
       );
       if (previous) {
-        const followed = new Set(issueIds);
+        const following = follow
+          ? previous.following.includes(issueId)
+            ? previous.following
+            : [...previous.following, issueId]
+          : previous.following.filter((id) => id !== issueId);
         client.setQueryData<FollowUpsView>(followUpsKeys.overview, {
           ...previous,
-          following: [...issueIds],
+          following,
           followingStored: true,
-          issues: previous.issues.map((issue) => ({
-            ...issue,
-            followed: followed.has(issue.id),
-          })),
+          issues: previous.issues.map((issue) =>
+            issue.id === issueId ? { ...issue, followed: follow } : issue,
+          ),
         });
       }
       return { previous };
     },
-    onError: (error, _ids, context) => {
+    onError: (error, _variables, context) => {
       if (context?.previous)
         client.setQueryData(followUpsKeys.overview, context.previous);
       onError(error);
