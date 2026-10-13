@@ -120,3 +120,20 @@ export function handOverNote(agent: {
 }): string {
   return `Project manager: hand this whole issue to [@${agent.name}](mention://agent/${agent.id}) as one step; the person who asked for it chose that agent.`;
 }
+/** Initial identity follows the installation language, then persisted settings take precedence. */
+export function defaultIdentity(locale = 'en-US'): {
+  name: string;
+  description: string;
+} {
+  return locale.toLowerCase().startsWith('zh')
+    ? {
+        name: '项目经理',
+        description:
+          '安排每个事项：将各步骤交给合适的 agent，阅读回复并决定下一步。',
+      }
+    : {
+        name: 'Project manager',
+        description:
+          'Arranges every issue: hands each step to the agent that fits it, reads the replies and decides what comes next.',
+      };
+}

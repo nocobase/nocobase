@@ -957,6 +957,7 @@ const enUS = {
   'inbox.text.executor_suggested':
     '{{agentName}} is suggested to execute {{identifier}}',
   'inbox.someone': 'Someone',
+  'inbox.anAgent': 'An agent',
   'inbox.titles.approval_requested': 'Status change waiting for approval',
   'inbox.outcomes.retried': 'Retried',
   'inbox.outcomes.newRun': 'A new run has started',
@@ -1412,6 +1413,8 @@ const enUS = {
     settings: 'Settings',
     loadFailed: 'Could not load the project manager.',
     settingsPage: {
+      name: 'Name',
+      identityDescription: 'Description',
       title: 'Project manager',
       description:
         'There is one for all projects: it arranges the work of every issue.',

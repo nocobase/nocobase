@@ -851,6 +851,28 @@ describe('the inbox detail', () => {
 });
 
 describe("a notice's values", () => {
+  it('keeps database identities separate from the target translation', () => {
+    const { result } = renderHook(() => useParamsOf());
+    const [entry] = entriesOf(
+      [item('identity')],
+      [
+        notice('identity', {
+          type: 'agent_blocked',
+          data: {
+            actorName: '负责人',
+            actorDatabaseName: true,
+            agentName: 'Coder',
+            agentNameKey: 'studioAgents.presets.coder.name',
+            agentNameNs: 'studio',
+          },
+        }),
+      ],
+    );
+    expect(result.current(entry!)).toMatchObject({
+      actorName: '负责人',
+      agentName: 'studioAgents.presets.coder.name',
+    });
+  });
   it("word a built-in agent's name from its key, and leave a named agent's as sent", () => {
     const { result } = renderHook(() => useParamsOf());
     const [builtIn, named] = entriesOf(

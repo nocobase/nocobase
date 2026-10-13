@@ -58,6 +58,7 @@ import type { People } from '../../kernel/people.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import type { AgentService } from '../agents/index.js';
 import { findAgent } from '../agents/index.js';
+import { agentNamesOf } from '../agents/agent.store.js';
 import type { RunnerService } from '../../runners/index.js';
 import {
   eventsAfter,
@@ -1178,8 +1179,57 @@ export function createConversationService(
         hasMore = newest.length > limit;
         rows = newest.slice(0, limit).reverse();
       }
+      const items = rows.map((row) => viewOf(row));
+      const consultationRuns = items.flatMap((item) =>
+        item.metadata?.notice?.code === 'consultation' &&
+        !item.metadata?.notice.agentId &&
+        item.metadata?.notice.runId
+          ? [item.metadata?.notice.runId]
+          : [],
+      );
+      const consultedRuns = consultationRuns.length
+        ? await conn.query
+            .selectFrom('agRuns')
+            .select(['id', 'agentId'])
+            .where('id', 'in', consultationRuns)
+            .execute()
+        : [];
+      const runAgents = new Map(
+        consultedRuns.map((run) => [String(run.id), String(run.agentId)]),
+      );
+      const ids = items.flatMap((item) =>
+        item.metadata?.notice?.code === 'consultation'
+          ? [
+              item.metadata?.notice.agentId ??
+                (item.metadata?.notice.runId
+                  ? runAgents.get(item.metadata?.notice.runId)
+                  : undefined),
+            ].filter((id): id is string => Boolean(id))
+          : [],
+      );
+      const names = await agentNamesOf(conn, ids);
       return {
-        items: rows.map((row) => viewOf(row)),
+        items: items.map((item) => {
+          if (item.metadata?.notice?.code !== 'consultation') return item;
+          const agentId =
+            item.metadata?.notice.agentId ??
+            (item.metadata?.notice.runId
+              ? (runAgents.get(item.metadata?.notice.runId) ?? null)
+              : null);
+          const name = agentId ? names.get(agentId) : undefined;
+          return {
+            ...item,
+            metadata: {
+              ...item.metadata,
+              notice: {
+                ...item.metadata.notice,
+                agentId,
+                agentName: name ?? item.metadata.notice.agentName,
+                identitySnapshot: name === undefined,
+              },
+            },
+          };
+        }),
         hasMore,
         lastSeq: Number(current.lastSeq),
       } satisfies MessagePage;
