@@ -239,9 +239,11 @@ test('both scopes retain grouped expansion, keyboard preview, draft return and r
       page.getByRole('button', { name: /返回未发送草稿/ }),
     ).toBeVisible();
     await page.getByRole('button', { name: /返回未发送草稿/ }).click();
-    await expect(activity.getByRole('textbox', { name: '评论' })).toContainText(
-      'Unsent workspace draft',
-    );
+    await activity.getByRole('button', { name: /写评论/u }).click();
+    const returnedEditor = activity.getByRole('textbox', { name: '评论' });
+    await expect(returnedEditor).toBeVisible();
+    await expect(returnedEditor).toBeEditable();
+    await expect(returnedEditor).toContainText('Unsent workspace draft');
   } finally {
     await api.put('followUps/following', { issueIds: [] });
     await api.delete(`projects/issues/${child.id}`);
