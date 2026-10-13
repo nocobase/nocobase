@@ -9,12 +9,30 @@ import {
   signIn,
   unique,
 } from './support/fixtures.ts';
+import type { Locator, Page } from '@playwright/test';
 import { FakeRunner } from './support/runner.ts';
 import type { AgentBoard } from '../shared/agent-board.js';
 import type { IssueProgress } from '../shared/project-manager.js';
 
 test.use({ user: 'admin' });
 test.setTimeout(240_000);
+
+/** Opens an issue and returns its summary, expanded: at phone width it starts collapsed, which hides the Now line. */
+async function openSummary(
+  page: Page,
+  identifier: string,
+  locale: string,
+): Promise<Locator> {
+  await open(page, `/issues/${identifier}`);
+  const summary = page.getByRole('region', {
+    name: locale === 'en-US' ? 'Summary' : '摘要',
+  });
+  const expand = summary.getByRole('button', {
+    name: locale === 'en-US' ? 'Expand summary' : '展开摘要',
+  });
+  if (await expand.isVisible()) await expand.click();
+  return summary;
+}
 
 test.beforeEach(async ({ api, context }) => {
   // Preferences follow the account across browsers; parallel tests must not share these writes.
@@ -148,8 +166,8 @@ test('edits the fallback delay and renders waiting reasons in both languages', a
       await page.route(`**/api/issueProgress/${issue.id}`, (route) =>
         route.fulfill({ json: { data: progress } }),
       );
-      await open(page, `/issues/${issue.identifier}`);
-      const sentence = page.getByText(
+      const summary = await openSummary(page, issue.identifier, locale);
+      const sentence = summary.getByText(
         locale === 'en-US'
           ? /Project manager waiting for a runner:/
           : /项目经理在等执行机：/,
@@ -211,9 +229,9 @@ test('edits the fallback delay and renders waiting reasons in both languages', a
       await page.route(`**/api/issueProgress/${issue.id}`, (route) =>
         route.fulfill({ json: { data: progress } }),
       );
-      await open(page, `/issues/${issue.identifier}`);
+      const summary = await openSummary(page, issue.identifier, locale);
       await expect(
-        page.getByText(
+        summary.getByText(
           locale === 'en-US'
             ? /Worker waiting for a runner:/u
             : /Worker 在等执行机：/u,
@@ -242,9 +260,9 @@ test('edits the fallback delay and renders waiting reasons in both languages', a
         },
       }),
     );
-    await open(page, `/issues/${issue.identifier}`);
+    const summary = await openSummary(page, issue.identifier, locale);
     await expect(
-      page.getByText(
+      summary.getByText(
         locale === 'en-US'
           ? /Waiting for manual continuation:/u
           : /等待人工继续：/u,
