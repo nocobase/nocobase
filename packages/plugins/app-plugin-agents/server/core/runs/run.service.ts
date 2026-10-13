@@ -310,6 +310,7 @@ export interface RunService {
 }
 
 export interface RunServiceDeps extends TransitionDeps {
+  readonly diagnose?: import('./claim.js').ClaimService['diagnose'];
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -456,6 +457,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         requires: cleanList([...values.requires]),
         acceptsInput: false,
         availableAt: values.availableAt ?? null,
+        queueEnteredAt: now,
         leaseExpiresAt: null,
         dispatchedAt: null,
         startedAt: null,
@@ -1200,7 +1202,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
     },
 
     workload(query) {
-      return readWorkload(tx.read(), clock, deps.runners, query);
+      return readWorkload(tx.read(), clock, deps.runners, query, deps.diagnose);
     },
 
     async events(runId, afterSeq, limit, types) {
@@ -1283,14 +1285,18 @@ export function createRunService(deps: RunServiceDeps): RunService {
         : null;
       if (!binding || !agent || !runner || !isActive(run.status))
         throw notFound('Run context');
-      const assembly = await binding.context.assemble(conn, {
-        run: toRun(run),
-        agent,
-        runner,
-        inputs: (await pendingInputs(conn, run.id)).map(toInput),
-        cli: deps.cliName,
-        appName: deps.appName,
-      });
+      const assembly = await binding.context.assemble(
+        conn,
+        {
+          run: toRun(run),
+          agent,
+          runner,
+          inputs: (await pendingInputs(conn, run.id)).map(toInput),
+          cli: deps.cliName,
+          appName: deps.appName,
+        },
+        await binding.context.prepare?.(toRun(run)),
+      );
       return assembly.data;
     },
 

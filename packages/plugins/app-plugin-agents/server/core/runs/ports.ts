@@ -120,6 +120,8 @@ export interface SubjectAssembly {
 }
 
 export interface ContextProvider {
+  /** Read external permissions before the claim transaction; assembly receives this result as its third argument. */
+  prepare?(run: Run): Promise<unknown>;
   /**
    * Optional subject policy, checked when queued work is claimed, inside that transaction and before assembly.
    * Return a rejection to cancel this run normally: no payload, token, failure count, or retry is produced. Throwing
@@ -149,6 +151,7 @@ export interface ContextProvider {
   assemble(
     conn: DatabaseConnection,
     claim: ClaimContext,
+    prepared?: unknown,
   ): Promise<SubjectAssembly>;
 }
 
@@ -278,6 +281,15 @@ export interface SubjectBinding {
    * past that the sweeper fails it as `queuedExpired`. Without it (or 0), queued runs wait for a runner however long it takes.
    */
   readonly queuedExpiryMs?: number;
+  /** Per-run queued withdrawal policy, evaluated under the claim's agent lock by the periodic sweep. Reads only. */
+  readonly queuedTimeout?: (
+    conn: DatabaseConnection,
+    run: Run,
+    now: Date,
+  ) => Promise<{
+    readonly reason: import('@nocobase/agent-protocol').FailureReason;
+    readonly detail: string;
+  } | null>;
   /** What the reports may say about the subjects; without it, runs on the kind are reported by id only. */
   readonly reports?: SubjectReports;
   /**

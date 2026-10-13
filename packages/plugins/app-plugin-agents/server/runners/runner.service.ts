@@ -475,7 +475,11 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
               ? { unavailableModels: asJson(kept) }
               : {}),
             // What it holds per tool across every application: read for why a run waits, so it changes nothing else.
-            load: asJson(storedToolLoad(request.load.tools ?? null)),
+            load: asJson({
+              ...storedToolLoad(request.load.tools ?? null),
+              free: request.load.free,
+              slots: request.load.slots,
+            }),
             lastSeenAt: now,
             updatedAt: changed ? now : runner.updatedAt,
           },

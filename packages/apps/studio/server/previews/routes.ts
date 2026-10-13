@@ -313,7 +313,7 @@ function withoutPassword(previews: IssuePreviews): IssuePreviews {
 
 /**
  * `/previews`: what the issue page and the `preview` commands share. The run-capable routes act as the caller's
- * `Viewer` (`permissions`): a person narrowed by their key's scope, a run by its agent's actions.
+ * `Viewer` (`permissions`): a person narrowed by their key's scope, a run by Studio's command scope.
  */
 function previewRouter(deps: {
   readonly authentication: Pick<Auth, 'required'>;

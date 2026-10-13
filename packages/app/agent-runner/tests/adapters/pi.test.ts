@@ -173,7 +173,7 @@ describe('detect', () => {
       path: path.join(dir, 'pi'),
       authenticated: true,
     });
-    expect(calls).toEqual([['--version'], ['--offline', '--list-models']]);
+    expect(calls).toEqual([['--version'], ['--list-models']]);
     expect(adapter.features()).toEqual(['steer']);
   });
 

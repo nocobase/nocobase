@@ -1,7 +1,7 @@
 /**
  * Who a command of a run acts as. A run on a conversation acts for the conversation's owner, the person who asked: its
  * changes are theirs, marked "via ‹Agent›" (`Actor.via: 'agent'` with the run and the conversation in its trace), and it
- * may do what they may do and the agent is configured for; so does an agent consulted from it (`ask_agent`), which only
+ * may do what they may do within Studio's command scope; so does an agent consulted from it (`ask_agent`), which only
  * reads and proposes plans there. Any other run (an agent working on an issue) acts as the
  * agent itself, as before.
  */

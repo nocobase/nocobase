@@ -78,6 +78,7 @@ describe('runner end to end', () => {
     expect(runner?.register).not.toHaveProperty('labels');
     expect(runner?.register.features).toEqual(
       expect.arrayContaining([
+        'workspaceKey',
         'input',
         'checkout',
         'directories',

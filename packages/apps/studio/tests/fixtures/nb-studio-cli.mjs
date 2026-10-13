@@ -4,6 +4,8 @@
 import { registerHooks } from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
+import { existsSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 
 registerHooks({
   resolve(specifier, context, nextResolve) {
@@ -23,8 +25,18 @@ registerHooks({
   },
 });
 
-const { runAppCliPackage } = await import('@nocobase/app-cli-client');
-await runAppCliPackage(
+const { readAppCliPackage, appCliConfigOf, runAppCli } =
+  await import('@nocobase/app-cli-client');
+const { brand, info } = readAppCliPackage(
   path.resolve(import.meta.dirname, '../..'),
+);
+// Only discover credentials generated in this fixture's own cwd, never an agent run in an ancestor directory.
+const localRun = path.join(process.cwd(), brand.runCredentialsFile);
+if (existsSync(localRun)) process.env.AGENT_RUN_CREDENTIALS = localRun;
+await runAppCli(
+  {
+    ...appCliConfigOf(brand, info),
+    runCredentialsFile: `.nb-studio/absent-fixture-${randomUUID()}.json`,
+  },
   process.argv.slice(2),
 );

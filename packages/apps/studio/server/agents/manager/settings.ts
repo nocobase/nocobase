@@ -8,6 +8,10 @@ import { z } from 'zod';
 
 import {
   COMMENT_RUN_LIMIT_MAX,
+  DEFAULT_FALLBACK_AFTER_SECONDS,
+  DEFAULT_DELEGATION_QUEUE_TIMEOUT_SECONDS,
+  DELEGATION_QUEUE_TIMEOUT_SECONDS_MAX,
+  FALLBACK_AFTER_SECONDS_MAX,
   DEFAULT_COMMENT_RUN_LIMIT,
   PRINCIPLES_MAX,
   type ProjectManagerPatch,
@@ -22,18 +26,38 @@ export const DEFAULT_MANAGER_SETTINGS: ProjectManagerSettings = {
   fallbackAgentId: null,
   principles: null,
   commentRunLimit: DEFAULT_COMMENT_RUN_LIMIT,
+  fallbackAfterSeconds: DEFAULT_FALLBACK_AFTER_SECONDS,
+  delegationQueueTimeoutSeconds: DEFAULT_DELEGATION_QUEUE_TIMEOUT_SECONDS,
 };
 
 /** The body of `PATCH /api/projectManager`. */
 export const ProjectManagerPatchSchema: z.ZodType<ProjectManagerPatch> = z
   .strictObject({
+    delegationQueueTimeoutSeconds: z
+      .number()
+      .int()
+      .min(1)
+      .max(DELEGATION_QUEUE_TIMEOUT_SECONDS_MAX)
+      .meta({
+        description:
+          'Seconds a manager-delegated step may remain queued before withdrawal and an automatic reply (default 600); changes apply on the next sweep.',
+      }),
+    fallbackAfterSeconds: z
+      .number()
+      .int()
+      .min(1)
+      .max(FALLBACK_AFTER_SECONDS_MAX)
+      .meta({
+        description:
+          'Seconds the first choice may wait in the runnable queue before an idle fallback can claim it (default 120).',
+      }),
     firstChoiceAgentId: z.string().min(1).max(64).nullable().meta({
       description:
         'The enabled agent whose tool and model the project manager runs with.',
     }),
     fallbackAgentId: z.string().min(1).max(64).nullable().meta({
       description:
-        'The enabled agent it runs with when no runner can take the first choice’s work; null for none.',
+        'The enabled agent it runs with after the first choice queue delay, or immediately when no compatible runner can take the first choice; null for none.',
     }),
     principles: z.string().max(PRINCIPLES_MAX).nullable().meta({
       description:
@@ -67,9 +91,23 @@ export function settingsOf(value: unknown): ProjectManagerSettings {
   const raw = parse(value);
   const limit = raw.commentRunLimit;
   return {
+    delegationQueueTimeoutSeconds:
+      typeof raw.delegationQueueTimeoutSeconds === 'number' &&
+      Number.isInteger(raw.delegationQueueTimeoutSeconds) &&
+      raw.delegationQueueTimeoutSeconds >= 1 &&
+      raw.delegationQueueTimeoutSeconds <= DELEGATION_QUEUE_TIMEOUT_SECONDS_MAX
+        ? raw.delegationQueueTimeoutSeconds
+        : DEFAULT_DELEGATION_QUEUE_TIMEOUT_SECONDS,
     firstChoiceAgentId: text(raw.firstChoiceAgentId),
     fallbackAgentId: text(raw.fallbackAgentId),
     principles: text(raw.principles),
+    fallbackAfterSeconds:
+      typeof raw.fallbackAfterSeconds === 'number' &&
+      Number.isInteger(raw.fallbackAfterSeconds) &&
+      raw.fallbackAfterSeconds >= 1 &&
+      raw.fallbackAfterSeconds <= FALLBACK_AFTER_SECONDS_MAX
+        ? raw.fallbackAfterSeconds
+        : DEFAULT_FALLBACK_AFTER_SECONDS,
     commentRunLimit:
       typeof limit === 'number' &&
       Number.isInteger(limit) &&

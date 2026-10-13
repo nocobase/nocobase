@@ -102,6 +102,50 @@ describe('the overview', () => {
     );
   });
 
+  it('includes shared queue diagnostics and only the viewer machine details', async () => {
+    h.roles.set('alice', 'admin');
+    const worker = await h.createAgent({
+      name: 'Worker',
+      maxConcurrentRuns: 2,
+    });
+    await h.claimOne();
+    await h.database
+      .connection()
+      .query.updateTable('agRunners')
+      .set({
+        toolSlots: { claude: 1 },
+        name: 'alice-machine',
+        ownerUserId: 'alice',
+      })
+      .allowAllRows()
+      .execute();
+    const busy = await create('alice', {
+      statusKey: 'in_progress',
+      start: false,
+    });
+    await h.projects.comments.create(h.viewer('alice'), busy.id, {
+      content: `[@Worker](mention://agent/${worker}) first step`,
+    });
+    await h.claimOne();
+    const queued = await create('alice', {
+      statusKey: 'in_progress',
+      start: false,
+    });
+    await h.projects.comments.create(h.viewer('alice'), queued.id, {
+      content: `[@Worker](mention://agent/${worker}) second step`,
+    });
+    const data = await overview();
+    const item = data.issues.find(
+      (issue: { id: string }) => issue.id === queued.id,
+    );
+    expect(item.progress).toMatchObject({
+      state: 'queued',
+      managerWait: {
+        entries: [{ reason: 'busy', runners: ['alice-machine'] }],
+      },
+    });
+  });
+
   it('lists the caller’s open issues by status, following their blocked and in-review ones by default', async () => {
     const backlog = await create('alice', { title: 'Later' });
     const blocked = await create('alice', { title: 'Asks' });
@@ -145,6 +189,48 @@ describe('the overview', () => {
     // Nothing was stored for a default.
     expect(h.preferences.has(`alice:${FOLLOWING_PREFERENCE}`)).toBe(false);
   });
+
+  it.each([false, true])(
+    'clears the old blocked decision after manager recovery (manual follow: %s)',
+    async (manual) => {
+      // No executor, run, dependency or pending checks can mask the status-derived progress.
+      const issue = await create('alice', {
+        statusKey: 'in_progress',
+        executor: null,
+      });
+      await move(issue, 'blocked');
+      if (manual) expect((await follow([issue.id])).status).toBe(200);
+      const before = await overview();
+      expect(
+        before.issues.find((item: any) => item.id === issue.id),
+      ).toMatchObject({
+        statusKey: 'blocked',
+        followed: true,
+        progress: { state: 'needsDecision' },
+      });
+      const current = await h.projects.issueQueries.detail(
+        h.viewer('alice'),
+        issue.id,
+      );
+      await h.projects.issues.update(
+        {
+          ...h.viewer('alice'),
+          actor: { type: 'agent', id: PROJECT_MANAGER_ID },
+        },
+        issue.id,
+        { revision: current.revision, statusKey: 'in_progress' },
+      );
+      const after = await overview();
+      const resumed = after.issues.find((item: any) => item.id === issue.id);
+      expect(resumed.statusKey).toBe('in_progress');
+      expect(resumed.progress?.state).not.toBe('needsDecision');
+      expect(after.counts.blocked).toBe(0);
+      if (manual) {
+        expect(resumed.followed).toBe(true);
+        expect(resumed.progress.state).toBe('idle');
+      }
+    },
+  );
 
   it('refuses someone signed out or who may not view issues', async () => {
     expect((await h.request('GET', '/followUps')).status).toBe(401);
