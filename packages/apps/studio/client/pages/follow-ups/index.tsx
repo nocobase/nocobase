@@ -29,6 +29,7 @@ import {
   useFollowIssue,
   useMarkSeen,
 } from '../../follow-ups/api.js';
+import { COLUMN_SCROLL } from '../../follow-ups/column-scroll.js';
 import { FollowingRail } from '../../follow-ups/following-rail.js';
 import { IssuePanel } from '../../follow-ups/issue-panel.js';
 import {
@@ -37,17 +38,13 @@ import {
   ownedRows,
 } from '../../follow-ups/model.js';
 import { OwnedList } from '../../follow-ups/owned-list.js';
-import { useFillHeight } from '../../follow-ups/use-fill-height.js';
 import { StatusPill } from '../../issues/live/status.js';
 import { needsViewer } from '../../issues/live/summary-model.js';
 import { PhoneBar } from '../../layouts/components/phone-bar.js';
 import { useFollowUpStatusName } from '../../issues/live/status-colors.js';
 
 /** A side column on a wide screen: it stays in view while the middle scrolls, and scrolls on its own. */
-const SIDE_COLUMN = 'lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain';
-
-/** The page's bottom padding on a wide screen (`PageContainer`'s `md:p-8`), kept below the columns. */
-const PAGE_BOTTOM = 32;
+const SIDE_COLUMN = cn('lg:min-h-0 lg:overflow-y-auto', COLUMN_SCROLL);
 
 /** The statuses the header counts. */
 const COUNTED: readonly FollowUpStatus[] = [
@@ -85,8 +82,6 @@ export default function FollowUpsPage(): ReactElement {
   const showFollowing = wide || (chosen === null && tab === 'following');
   const showOwned = wide || (chosen === null && tab === 'mine');
   const showTabs = !wide && chosen === null;
-  // On a wide screen the columns fill the rest of the visible area and scroll on their own.
-  const [columnsHeight, fill] = useFillHeight(wide, PAGE_BOTTOM);
   const badges = useMemo(
     () => ({
       following: followed.filter(
@@ -157,6 +152,8 @@ export default function FollowUpsPage(): ReactElement {
     <PageContainer
       className={cn(
         'flex flex-col gap-6 space-y-0',
+        // A wide screen fits the page to the shell's scroll area, so the columns get the rest of it and scroll on their own.
+        'lg:h-full',
         // A phone goes edge to edge: each part keeps its own 16px inset.
         'max-md:gap-3 max-md:px-0 max-md:pt-2',
         // Room for the tab bar, and a phone's issue view starts right at its Back row.
@@ -239,9 +236,7 @@ export default function FollowUpsPage(): ReactElement {
         )
       ) : (
         <div
-          ref={fill}
-          style={columnsHeight === null ? undefined : { height: columnsHeight }}
-          className='grid items-start gap-5 max-md:gap-4 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_minmax(0,22rem)] lg:grid-rows-[minmax(0,1fr)] lg:items-stretch'
+          className='grid items-start gap-5 max-md:gap-4 lg:min-h-80 lg:flex-1 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_minmax(0,22rem)] lg:grid-rows-[minmax(0,1fr)] lg:items-stretch'
           data-testid='follow-ups-columns'
         >
           {showFollowing ? (
@@ -260,7 +255,7 @@ export default function FollowUpsPage(): ReactElement {
           ) : null}
           {!showPanel ? null : selectedId ? (
             <IssuePanel
-              className='lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain'
+              className={SIDE_COLUMN}
               key={selectedId}
               issueId={selectedId}
               summary={summary}
@@ -274,7 +269,7 @@ export default function FollowUpsPage(): ReactElement {
           )}
           {showOwned ? (
             <OwnedList
-              className={SIDE_COLUMN}
+              className='lg:min-h-0'
               view={view}
               rows={rows}
               filter={filter}

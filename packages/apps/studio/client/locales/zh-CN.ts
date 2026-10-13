@@ -130,6 +130,9 @@ const zhCN: AppResource = {
     errorsAlwaysVisible: '错误始终显示',
   },
   overrides: {
+    '@nocobase/app-plugin-agent-sessions': {
+      links: { startHint: '交给项目经理安排执行者和流转' },
+    },
     '@nocobase/app-plugin-agents': {
       runWait: {
         reasons: {
@@ -473,6 +476,7 @@ const zhCN: AppResource = {
     usage: '用量',
     config: '设置',
     home: '首页',
+    agentSessions: '我的 Agent',
     dashboard: '仪表盘',
     open: '打开导航',
     close: '关闭导航',

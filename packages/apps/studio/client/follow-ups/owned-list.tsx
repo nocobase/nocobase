@@ -32,6 +32,7 @@ import {
   statusColor,
   useFollowUpStatusName,
 } from '../issues/live/status-colors.js';
+import { COLUMN_SCROLL } from './column-scroll.js';
 
 export function OwnedList({
   view,
@@ -125,7 +126,13 @@ export function OwnedList({
           {ownsAny ? t('followUps.mine.empty') : t('followUps.mine.emptyAll')}
         </p>
       ) : (
-        <ul className='overflow-hidden rounded-xl border bg-card text-card-foreground max-md:overflow-visible max-md:rounded-none max-md:border-x-0'>
+        // On a wide screen the list scrolls under its filters.
+        <ul
+          className={cn(
+            'overflow-hidden rounded-xl border bg-card text-card-foreground max-md:overflow-visible max-md:rounded-none max-md:border-x-0 lg:min-h-0 lg:overflow-y-auto',
+            COLUMN_SCROLL,
+          )}
+        >
           {rows.map((issue) => (
             <OwnedRow
               key={issue.id}

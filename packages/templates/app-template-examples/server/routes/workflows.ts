@@ -85,7 +85,7 @@ export const workflowRoutes: AppApiRouteContribution<Application> =
           ...failures,
         },
       }),
-      (context) => context.json({ data: service.definitions() }),
+      async (context) => context.json({ data: await service.definitions() }),
     );
     router.get(
       '/definitions/:workflowId',
