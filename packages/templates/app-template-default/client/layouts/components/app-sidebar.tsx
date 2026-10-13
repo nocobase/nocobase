@@ -102,7 +102,7 @@ export function AppSidebar({
   }, [isMobile, openMobile, setOpenMobile]);
 
   const header = (
-    <SidebarHeader className='h-16 shrink-0 flex-row items-center justify-between border-b border-sidebar-border/70 px-5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0'>
+    <SidebarHeader className='h-16 shrink-0 flex-row items-center justify-between border-b border-sidebar-border px-5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0'>
       <AppBrand compact={state === 'collapsed' && !isMobile} />
       {isMobile ? (
         <Button

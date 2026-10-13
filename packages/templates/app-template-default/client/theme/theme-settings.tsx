@@ -114,7 +114,7 @@ export function ThemeSettings(): ReactElement {
                     'group relative flex cursor-pointer flex-col rounded-xl border p-2 text-left transition-all select-none',
                     isSelected
                       ? 'border-primary ring-2 ring-primary/20 bg-primary/5 shadow-xs'
-                      : 'border-border/70 hover:border-border hover:bg-muted/30',
+                      : 'border-border hover:bg-muted/30',
                   )}
                 >
                   <RadioGroupItem
@@ -125,7 +125,7 @@ export function ThemeSettings(): ReactElement {
                     <div
                       aria-hidden='true'
                       data-theme={item.id}
-                      className='theme-preview relative flex h-full overflow-hidden rounded-lg border border-border/80 bg-background shadow-2xs'
+                      className='theme-preview relative flex h-full overflow-hidden rounded-lg border border-border bg-background shadow-2xs'
                     >
                       {/* Mini Sidebar */}
                       <div className='flex w-6 flex-col gap-1 border-r border-sidebar-border/50 bg-sidebar p-1'>
