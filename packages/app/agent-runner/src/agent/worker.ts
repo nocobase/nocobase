@@ -1060,7 +1060,7 @@ export class RunWorker {
     }
   }
 
-  private async saveLocal(): Promise<string> {
+  private async saveLocal(remove = false): Promise<string> {
     await this.stopTool();
     const unsafeReason = await this.quiesceWriters();
     const workDir = this.prepared?.workspace?.workDir;
@@ -1070,7 +1070,7 @@ export class RunWorker {
       workDir,
       this.deps.log,
       {
-        remove: false,
+        remove,
         ...(unsafeReason === undefined ? {} : { unsafeReason }),
       },
     );
@@ -1185,7 +1185,8 @@ export class RunWorker {
     const ending = this.ending;
     await this.stopTool();
     if (ending?.kind === 'lost' || ending?.kind === 'cancel')
-      await this.saveLocal();
+      // The server may release the worker immediately after cancelAck; finish safe cleanup before acknowledging it.
+      await this.saveLocal(ending.kind === 'cancel');
     switch (ending?.kind) {
       case 'lost':
         this.deps.log(

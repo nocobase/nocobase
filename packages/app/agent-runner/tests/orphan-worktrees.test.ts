@@ -386,22 +386,23 @@ describe('orphan writer recovery', () => {
     };
     await writeRecord(paths, record);
     let terminal = false;
+    const messages: string[] = [];
     const client = new ApiClient({
       server: 'http://fixture.test',
       headers: {},
       fetch: async () =>
         new Response(
           terminal
-            ? '{"error":{"reason":"RUN_NOT_ACTIVE","message":"Cancelled"}}'
+            ? '{"error":{"code":400,"status":"FAILED_PRECONDITION","domain":"agents","reason":"RUN_NOT_ACTIVE","message":"Cancelled"}}'
             : '{}',
-          { status: terminal ? 409 : 200 },
+          { status: terminal ? 400 : 200 },
         ),
     });
     const options = {
       paths,
       clientFor: () => client,
       timings: {},
-      log: () => {},
+      log: (message: string) => messages.push(message),
     };
     await recoverRun(record, {
       ...options,
@@ -413,6 +414,7 @@ describe('orphan writer recovery', () => {
     await recoverOrphans(options);
     expect(await readRecords(paths)).toHaveLength(1);
     expect(existsSync(workDir)).toBe(true);
+    expect(messages.join(' ')).toContain('RUN_NOT_ACTIVE');
   });
 
   it('reports cancellation even when retry metadata cannot be rewritten, then recovers its reason from owned server status', async () => {

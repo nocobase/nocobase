@@ -53,6 +53,11 @@ it('starts an unmarked writer alongside another, cancels and restores both unpub
     },
   });
   const daemon = startDaemon(env);
+  let directoryAtAcknowledgement: boolean | undefined;
+  server.onCancelAck = (run) => {
+    if (run.payload.run.id === a.payload.run.id)
+      directoryAtAcknowledgement = existsSync(String(run.start?.workDir));
+  };
   try {
     await waitFor(
       () =>
@@ -92,6 +97,7 @@ it('starts an unmarked writer alongside another, cancels and restores both unpub
       15_000,
       'cancelled worktree removal',
     );
+    expect(directoryAtAcknowledgement).toBe(false);
     const c = server.enqueue({
       subject,
       workspace,
