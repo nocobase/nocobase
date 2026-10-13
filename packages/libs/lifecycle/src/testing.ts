@@ -1,3 +1,4 @@
+import { StoredLifecycleParameters } from './parameter-configuration.js';
 import type { Lifecycle } from './definition.js';
 import { MemoryLifecycleStore } from './memory-store.js';
 import {
@@ -196,9 +197,19 @@ export class LifecycleTestKit<T extends LifecycleTypes> {
     });
     this.dispatcher.attach(this.runtime);
     const overrides = options.parameters ?? {};
-    this.runtime.register(lifecycle, {
+    const registered = lifecycle.parameterConfiguration
+      ? { ...lifecycle, parameters: { ...lifecycle.parameters, ...overrides } }
+      : lifecycle;
+    this.runtime.register(registered, {
       ...(options.services === undefined ? {} : { services: options.services }),
-      parameters: (): Partial<ParametersOf<T>> => overrides,
+      ...(lifecycle.parameterConfiguration
+        ? {
+            parameterConfiguration: {
+              store: new StoredLifecycleParameters(this.store),
+              scope: () => 'test',
+            },
+          }
+        : { parameters: (): Partial<ParametersOf<T>> => overrides }),
     });
   }
 
