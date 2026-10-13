@@ -218,6 +218,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
   public async commitSyncStep(input: MailSyncStepCommit): Promise<MailSyncRun> {
     if (!this.locations)
       throw new Error('IMAP location persistence is not configured.');
+    if (!this.syncRun)
+      throw new Error(
+        'An IMAP sync commit requires its immutable run snapshot.',
+      );
     const ids = new Set(
       input.messages.map((message) => message.providerMessageId),
     );
@@ -936,9 +940,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     signal?: AbortSignal,
   ): Promise<MailProviderResult<void>> {
     if (
-      this.operation &&
-      (this.operation.operation !== 'flags' ||
-        this.operation.providerMessageId !== providerMessageId)
+      (this.locations && !this.operation) ||
+      (this.operation &&
+        (this.operation.operation !== 'flags' ||
+          this.operation.providerMessageId !== providerMessageId))
     )
       return failure(
         'IMAP_OPERATION_MISMATCH',
@@ -957,9 +962,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     signal?: AbortSignal,
   ): Promise<MailProviderResult<void>> {
     if (
-      this.operation &&
-      (this.operation.operation !== 'flags' ||
-        this.operation.providerMessageId !== providerMessageId)
+      (this.locations && !this.operation) ||
+      (this.operation &&
+        (this.operation.operation !== 'flags' ||
+          this.operation.providerMessageId !== providerMessageId))
     )
       return failure(
         'IMAP_OPERATION_MISMATCH',
@@ -978,9 +984,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     signal?: AbortSignal,
   ): Promise<MailProviderResult<void>> {
     if (
-      this.operation &&
-      (this.operation.operation !== 'delete' ||
-        this.operation.providerMessageId !== providerMessageId)
+      (this.locations && !this.operation) ||
+      (this.operation &&
+        (this.operation.operation !== 'delete' ||
+          this.operation.providerMessageId !== providerMessageId))
     )
       return failure(
         'IMAP_OPERATION_MISMATCH',

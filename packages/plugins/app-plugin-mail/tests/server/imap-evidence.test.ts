@@ -4,7 +4,10 @@ import {
   rawComparable,
   readRawSource,
 } from '../../server/adapters/imap-smtp/content.js';
-import { validateImapLocation } from '../../server/store/message-writes.js';
+import {
+  validateImapLocation,
+  validateImapStoredLocation,
+} from '../../server/store/message-writes.js';
 
 describe('IMAP MIME evidence', () => {
   it.each([
@@ -165,4 +168,25 @@ describe('IMAP application write boundary', () => {
       ),
     ).toThrow();
   });
+});
+
+describe('IMAP stored evidence enums', () => {
+  it.each(['unknown', '', null])(
+    'rejects the invalid stored status %s',
+    (status) => {
+      expect(() =>
+        validateImapStoredLocation({
+          id: 'location',
+          messageId: 'message',
+          providerMessageId: 'OBJECT',
+          source: 'objectid',
+          folder: 'INBOX',
+          uidValidity: '1',
+          uid: 1,
+          updatedAt: new Date().toISOString(),
+          status,
+        } as never),
+      ).toThrow('Invalid stored IMAP');
+    },
+  );
 });

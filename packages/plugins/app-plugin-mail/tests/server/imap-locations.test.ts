@@ -145,6 +145,7 @@ vi.mock('imapflow', () => {
       const { header, body } = split(message.raw);
       return {
         uid,
+        id: `synthetic-${uid}`,
         size: message.raw.byteLength,
         flags: new Set(message.flags),
         internalDate: message.date,
@@ -537,7 +538,7 @@ describe('IMAP message identity', () => {
     deliver('INBOX', { raw: raw('<same@example.com>') });
     deliver('Archive', { raw: raw('<same@example.com>') });
     // Same Message-ID, different bytes: never merged.
-    deliver('Sent', { raw: raw('<same@example.com>', 'Different') });
+    deliver('Sent', { raw: raw('<same@example.com>', 'Jello') });
     // An attachment cannot be proven without downloading it.
     deliver('Sent', {
       raw: raw('<file@example.com>'),
@@ -1084,9 +1085,11 @@ describe('IMAP review regressions', () => {
       'delayed',
       new Date(Date.now() + 60000).toISOString(),
     ))!;
-    const adapter = await adapters.resolve(
-      (await store.getAccount(accountId))!,
-    );
+    const base = await adapters.resolve((await store.getAccount(accountId))!);
+    const adapter = (
+      base as import('../../server/adapters/imap-smtp/adapter.js').ImapSmtpAdapter
+    ).forSync(claimed);
+    await base.close?.();
     try {
       const page = await adapter.listMessages!({ limit: 100 });
       if (!page.ok) throw new Error(page.error.message);
@@ -1549,9 +1552,25 @@ describe('IMAP production writes and draft protection', () => {
           ).persistsLocations,
         ).toBe(true);
         expect(await adapter.setRead!('PRODUCTION', true)).toMatchObject({
-          ok: true,
+          ok: false,
+          error: { code: 'IMAP_OPERATION_MISMATCH' },
         });
-        expect((await messages())[0].read).toBe(true);
+        const target = (await messages())[0];
+        const bound = await (
+          adapter as import('../../server/adapters/imap-smtp/adapter.js').ImapSmtpAdapter
+        ).forMessage(target.id, 'PRODUCTION', 'flags');
+        try {
+          expect(await bound.setRead('PRODUCTION', true)).toMatchObject({
+            ok: true,
+          });
+          expect(await bound.deleteMessage('PRODUCTION', true)).toMatchObject({
+            ok: false,
+            error: { code: 'IMAP_OPERATION_MISMATCH' },
+          });
+          expect((await messages())[0].read).toBe(true);
+        } finally {
+          await bound.close();
+        }
       } finally {
         await adapter.close?.();
       }
@@ -1716,5 +1735,39 @@ describe('IMAP verification exhaustion retains evidence', () => {
     } finally {
       await adapter.close?.();
     }
+  });
+});
+
+describe('IMAP shared mutation boundary validation', () => {
+  it('rejects illegal tuples for flags and delete effects before updating business data', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', {
+      raw: raw('<boundary@example.com>'),
+      emailId: 'BOUNDARY',
+    });
+    await sync();
+    const original = (await messages())[0];
+    const persistence = createImapLocationPersistence(database, accountId);
+    const [location] = await persistence.listValidLocations('BOUNDARY');
+    for (const invalid of [
+      { uid: 0 },
+      { uid: 4294967296 },
+      { uidValidity: '01' },
+      { source: 'unknown' },
+      { status: 'unknown' },
+    ]) {
+      const observed = { ...location, ...invalid } as typeof location;
+      await expect(
+        persistence.commitFlags(observed, { read: true }),
+      ).rejects.toThrow('Invalid');
+      await expect(persistence.commitDeleted(observed)).rejects.toThrow(
+        'Invalid',
+      );
+    }
+    expect((await messages())[0]).toMatchObject({
+      id: original.id,
+      read: false,
+    });
   });
 });
