@@ -16,6 +16,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
 import { Organize } from '../../client/agents/intake-agent.js';
+import { intakeMessage } from '../../server/agents/conversation/intake.js';
+import type { OrganizeRequest } from '../../shared/intake.js';
 import { pickerAgent } from '../fixtures/picker-agents';
 
 const mocks = vi.hoisted(() => ({
@@ -49,7 +51,11 @@ const started = () => ({
   },
 });
 
-async function show(locale = 'en-US', fileIds: string[] = []) {
+async function show(
+  locale = 'en-US',
+  fileIds: string[] = [],
+  text = 'Keep these requirements',
+) {
   const runtime = await createTestI18nRuntime({
     application: {
       namespace: 'studio',
@@ -74,7 +80,7 @@ async function show(locale = 'en-US', fileIds: string[] = []) {
               path='new'
               element={
                 <Organize
-                  text='Keep these requirements'
+                  text={text}
                   fileIds={fileIds}
                   disabled={false}
                   onPlan={vi.fn()}
@@ -96,6 +102,187 @@ beforeEach(() => {
 });
 
 describe('intake handoff', () => {
+  it('passes every selected attachment body into the AI message, excluding a removed file', async () => {
+    const documents = [
+      {
+        fileId: 'f1',
+        filename: 'notes.txt',
+        text: 'PM307-CHECK-7319: Filter tasks by owner.',
+      },
+      {
+        fileId: 'f3',
+        filename: 'details.md',
+        text: 'PM307-CHECK-8420: Preserve the filter after reload.',
+      },
+    ];
+    mocks.plans.intakeTexts.mockResolvedValue({
+      documents,
+      files: documents.map((file) => ({
+        ...file,
+        state: 'read',
+        chars: file.text.length,
+      })),
+    });
+    await show('en-US', ['f1', 'f3']);
+    fireEvent.click(
+      screen.getByRole('button', { name: enUS.pmChat.intake.organize }),
+    );
+    await waitFor(() => expect(mocks.api.request).toHaveBeenCalledOnce());
+    expect(mocks.plans.intakeTexts).toHaveBeenCalledWith(['f1', 'f3']);
+    const request = mocks.api.request.mock.calls[0]![0].json as OrganizeRequest;
+    expect(request.files).toEqual(
+      documents.map((file) => ({ name: file.filename, text: file.text })),
+    );
+    const message = intakeMessage(request);
+    for (const document of documents) expect(message).toContain(document.text);
+    expect(message).not.toContain('removed.txt');
+  });
+
+  it.each([
+    'failed',
+    'truncated',
+    'skipped',
+    'empty',
+    'image',
+    'unsupported',
+    'legacy',
+  ])(
+    'does not silently send an extraction result with state %s',
+    async (state) => {
+      mocks.plans.intakeTexts.mockResolvedValue({
+        documents:
+          state === 'truncated'
+            ? [{ fileId: 'f1', filename: 'notes.txt', text: 'partial' }]
+            : [],
+        files: [
+          {
+            fileId: 'f1',
+            filename: 'notes.txt',
+            state,
+            chars: state === 'truncated' ? 7 : 0,
+          },
+        ],
+      });
+      await show('en-US', ['f1']);
+      fireEvent.click(
+        screen.getByRole('button', { name: enUS.pmChat.intake.organize }),
+      );
+      expect(await screen.findByRole('alert')).toHaveTextContent('notes.txt');
+      expect(mocks.api.request).not.toHaveBeenCalled();
+      expect(mocks.panel.openChat).not.toHaveBeenCalled();
+      expect(
+        screen.getByRole('button', { name: enUS.pmChat.intake.retry }),
+      ).toBeEnabled();
+    },
+  );
+
+  it.each(['en-US', 'zh-CN'])(
+    'explains a failed file in %s and retries extraction with the input intact',
+    async (locale) => {
+      const copy = locale === 'en-US' ? enUS.pmChat.intake : zhCN.pmChat.intake;
+      mocks.plans.intakeTexts
+        .mockResolvedValueOnce({
+          documents: [],
+          files: [
+            { fileId: 'f1', filename: 'notes.txt', state: 'failed', chars: 0 },
+          ],
+        })
+        .mockResolvedValueOnce({
+          documents: [
+            {
+              fileId: 'f1',
+              filename: 'notes.txt',
+              text: 'PM307-RETRY: Owner filter',
+            },
+          ],
+          files: [
+            { fileId: 'f1', filename: 'notes.txt', state: 'read', chars: 25 },
+          ],
+        });
+      await show(locale, ['f1']);
+      fireEvent.click(screen.getByRole('button', { name: copy.organize }));
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        copy.filesUnreadable.replace('{{files}}', '"notes.txt"'),
+      );
+      fireEvent.click(screen.getByRole('button', { name: copy.retry }));
+      await waitFor(() => expect(mocks.api.request).toHaveBeenCalledOnce());
+      expect(mocks.plans.intakeTexts).toHaveBeenCalledTimes(2);
+      expect(mocks.api.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          json: expect.objectContaining({
+            text: 'Keep these requirements',
+            files: [{ name: 'notes.txt', text: 'PM307-RETRY: Owner filter' }],
+          }),
+        }),
+      );
+    },
+  );
+
+  it('refuses a missing extraction outcome even when another file was read', async () => {
+    mocks.plans.intakeTexts.mockResolvedValue({
+      documents: [{ fileId: 'f1', filename: 'notes.txt', text: 'body' }],
+      files: [{ fileId: 'f1', filename: 'notes.txt', state: 'read', chars: 4 }],
+    });
+    await show('en-US', ['f1', 'f2']);
+    fireEvent.click(
+      screen.getByRole('button', { name: enUS.pmChat.intake.organize }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('f2');
+    expect(mocks.api.request).not.toHaveBeenCalled();
+  });
+
+  it('hands off a file-only requirement with its complete body', async () => {
+    mocks.plans.intakeTexts.mockResolvedValue({
+      documents: [
+        {
+          fileId: 'f1',
+          filename: 'notes.txt',
+          text: 'PM307-FILE-ONLY: Owner filter',
+        },
+      ],
+      files: [
+        { fileId: 'f1', filename: 'notes.txt', state: 'read', chars: 26 },
+      ],
+    });
+    await show('en-US', ['f1'], '');
+    fireEvent.click(
+      screen.getByRole('button', { name: enUS.pmChat.intake.organize }),
+    );
+    await waitFor(() => expect(mocks.api.request).toHaveBeenCalledOnce());
+    expect(mocks.api.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        json: expect.objectContaining({
+          text: enUS.pmChat.intake.filesOnly,
+          files: [{ name: 'notes.txt', text: 'PM307-FILE-ONLY: Owner filter' }],
+        }),
+      }),
+    );
+  });
+
+  it('rejects oversized combined file bodies instead of dropping later content', async () => {
+    const documents = [1, 2, 3].map((n) => ({
+      fileId: `f${n}`,
+      filename: `notes-${n}.txt`,
+      text: `${'x'.repeat(19_980)}PM307-END-${n}`,
+    }));
+    mocks.plans.intakeTexts.mockResolvedValue({
+      documents,
+      files: documents.map((file) => ({
+        ...file,
+        state: 'read',
+        chars: file.text.length,
+      })),
+    });
+    await show('en-US', ['f1', 'f2', 'f3']);
+    fireEvent.click(
+      screen.getByRole('button', { name: enUS.pmChat.intake.organize }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      enUS.pmChat.intake.tooLong,
+    );
+    expect(mocks.api.request).not.toHaveBeenCalled();
+  });
+
   it.each(['en-US', 'zh-CN'])(
     'keeps a failed submission and offers retry in %s',
     async (locale) => {

@@ -61,10 +61,16 @@ export function Organize({
   const startingRef = useRef(false);
   const requestRef = useRef<AbortController | null>(null);
   const [starting, setStarting] = useState(false);
-  const [failure, setFailure] = useState<string | null>(null);
+  const [failure, setFailure] = useState<
+    string | { readonly files: readonly string[] } | null
+  >(null);
   useEffect(() => () => requestRef.current?.abort(), []);
 
-  function failureText(reason: string): string {
+  function failureText(reason: NonNullable<typeof failure>): string {
+    if (typeof reason !== 'string')
+      return t('pmChat.intake.filesUnreadable', {
+        files: reason.files.map((name) => JSON.stringify(name)).join(', '),
+      });
     switch (reason) {
       case 'INTAKE_NO_AGENT':
       case 'noChatAgent':
@@ -96,19 +102,33 @@ export function Organize({
     try {
       const read = fileIds.length > 0 ? await plans.intakeTexts(fileIds) : null;
       if (controller.signal.aborted) return;
+      // Extraction reports failures and truncation in a successful response. Check each selected file before sending.
+      const unread: string[] = [];
+      const documents: { name: string; text: string }[] = [];
+      for (const id of fileIds) {
+        const outcome = read?.files.find((file) => file.fileId === id);
+        const document = read?.documents.find((file) => file.fileId === id);
+        if (outcome?.state === 'read' && document?.text.trim())
+          documents.push({ name: document.filename, text: document.text });
+        else unread.push(outcome?.filename ?? document?.filename ?? id);
+      }
+      if (unread.length > 0) {
+        setFailure({ files: unread });
+        return;
+      }
       const fitted = fitIntake(
         text.trim() || t('pmChat.intake.filesOnly'),
-        (read?.documents ?? []).map((document) => ({
-          name: document.filename,
-          text: document.text,
-        })),
+        documents,
       );
+      if (!fitted) {
+        setFailure('INTAKE_TOO_LONG');
+        return;
+      }
       const request: OrganizeRequest = {
         text: fitted.text,
         title: t('pmChat.intake.conversationTitle', {
           text:
-            intakeTitleText(text, TITLE_CHARS) ||
-            (read?.documents[0]?.filename ?? ''),
+            intakeTitleText(text, TITLE_CHARS) || (documents[0]?.name ?? ''),
         }),
         ...(agent ? { agentId: agent.id } : {}),
         ...(projectId ? { projectId } : {}),

@@ -1251,6 +1251,8 @@ const zhCN: AppResource = {
       retry: '重试整理',
       tooLong:
         '需求和文件内容超过单条消息的长度限制，请缩短文字或移除部分文件后重试。',
+      filesUnreadable:
+        '未能完整读取这些文件：{{files}}。请重试，或换成内容更短的受支持文本或文档文件后重试。',
       requestFailed: '请求失败。需求仍保留在这里，请检查网络后重试。',
       noAgent:
         '没有配置可用的默认 Agent。请在个人偏好中选择默认 Agent，或请管理员配置团队默认 Agent，然后重试。',
