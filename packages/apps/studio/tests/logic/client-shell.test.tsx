@@ -103,6 +103,17 @@ describe('application shell', () => {
     ).toBeVisible();
   });
 
+  it('truncates a long sidebar version and keeps it keyboard-focusable', async () => {
+    const version = 'v1.0.0-beta.56.dev.20261013080220';
+    renderApplication('/', true, [], {
+      app: { displayName: 'NocoBase Studio', version: version.slice(1) },
+    });
+
+    const versionLabel = await screen.findByText(version);
+    expect(versionLabel).toHaveClass('truncate');
+    expect(versionLabel).toHaveAttribute('tabindex', '0');
+  });
+
   it.each(['/settings', '/settings/workflow/workflows/7'])(
     'does not route the back-office settings (%s): the URL lands on the home page',
     async (path) => {
@@ -261,6 +272,7 @@ function renderApplication(
   initialEntry: string,
   authenticated: boolean,
   routes: readonly AppClientRegisteredRoute[] = [],
+  publicConfig: Record<string, unknown> = {},
 ): void {
   const clientRoutes = [
     createRoute('home', '/', 'required', HomePage, 'application'),
@@ -284,7 +296,10 @@ function renderApplication(
     [authorizationClientToken, authorizationClient],
   ]);
   const app = {
-    config: createAppClientConfig({ rawConfig: {} }),
+    config: createAppClientConfig({
+      rawConfig: {},
+      rawPublicConfig: publicConfig,
+    }),
     services: {
       has: (token: unknown) => registered.has(token),
       resolve: (token: unknown) => {

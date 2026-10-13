@@ -3,7 +3,9 @@ import type { JsonObject } from '@nocobase/lifecycle';
 import type {
   ParameterGroupView,
   ParameterHistoryView,
-  ReviewerOptions,
+  ReviewerReference,
+  ReviewerReferencePage,
+  ReviewerReferenceType,
 } from '../../shared/parameter-configuration.js';
 import { LIFECYCLE_ROUTES } from '../../shared/routes.js';
 
@@ -16,7 +18,15 @@ export interface ParameterApi {
     expectedRevision: number,
     requestId: string,
   ): Promise<ParameterGroupView>;
-  options(): Promise<ReviewerOptions>;
+  references(
+    type: ReviewerReferenceType,
+    q: string,
+    page: number,
+  ): Promise<ReviewerReferencePage>;
+  reference(
+    type: ReviewerReferenceType,
+    id: string,
+  ): Promise<ReviewerReference | null>;
   candidates(
     values: JsonObject,
     applicantId: string,
@@ -53,7 +63,15 @@ export function parameterApi(client: ApiClient, actor: string): ParameterApi {
         { values, expectedRevision, requestId },
         'PUT',
       ),
-    options: () => get('parameterGroups/financeReviewers/options'),
+    references: (type, q, page) =>
+      client.request<ReviewerReferencePage>({
+        path: `${LIFECYCLE_ROUTES}/parameterGroups/financeReviewers/references`,
+        query: { actAs: actor, type, q, page, pageSize: 10 },
+      }),
+    reference: (type, id) =>
+      get(
+        `parameterGroups/financeReviewers/references/${type}/${encodeURIComponent(id)}`,
+      ),
     candidates: (values, applicantId) =>
       post('parameterGroups/financeReviewers/previewCandidates', {
         values,

@@ -294,8 +294,8 @@ describe('the issue feed', () => {
     const delivery = comment(
       'd1',
       5,
-      { type: 'agent', id: 'sol', name: 'Sol' },
-      'Delivered: the export keeps the filters.',
+      { type: 'agent', id: PROJECT_MANAGER_ID, name: 'PM' },
+      '## Key changes\nDelivered: the export keeps the filters.',
     );
     mocks.entries = [thread(delivery)];
     await mount(

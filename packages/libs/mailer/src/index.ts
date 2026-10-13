@@ -1,0 +1,14 @@
+import type { EmailChannelConfig, MailTransport } from './types.js';
+import { createSmtpTransport } from './smtp.js';
+import { createResendTransport } from './resend.js';
+
+export * from './types.js';
+export * from './config.js';
+export * from './execution.js';
+export { createSmtpTransport, createResendTransport };
+
+export function createMailTransport(config: EmailChannelConfig): MailTransport {
+  return config.provider === 'smtp'
+    ? createSmtpTransport(config)
+    : createResendTransport(config);
+}

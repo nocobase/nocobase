@@ -37,8 +37,10 @@ import { CSS } from '@dnd-kit/utilities';
 import {
   createContext,
   useContext,
+  useRef,
   useState,
   type HTMLAttributes,
+  type PointerEvent as ReactPointerEvent,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -130,6 +132,53 @@ function fill(
 }
 
 /** The board: the drag context around the columns, laid out side by side. */
+// What a press pans the board from: anything but a card or something that may be clicked or typed in.
+const PAN_SKIP =
+  'a, button, input, textarea, select, label, [role="button"], [draggable="true"], [contenteditable="true"]';
+
+interface DragPan {
+  readonly onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
+  readonly onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void;
+  readonly onPointerUp: (event: ReactPointerEvent<HTMLElement>) => void;
+  readonly onPointerCancel: (event: ReactPointerEvent<HTMLElement>) => void;
+}
+
+/**
+ * The board moved sideways by holding its empty space and dragging, as a mouse without a sideways wheel needs on a
+ * board wider than the page: a press outside a card pans it until the button is let go. Cards keep their own drag, and
+ * a column's own scrolling, up and down, is untouched.
+ */
+function useDragPan(): DragPan {
+  const panRef = useRef<{ x: number; left: number } | null>(null);
+  const end = (event: ReactPointerEvent<HTMLElement>): void => {
+    if (!panRef.current) return;
+    panRef.current = null;
+    const board = event.currentTarget;
+    if (board.hasPointerCapture?.(event.pointerId))
+      board.releasePointerCapture(event.pointerId);
+    delete board.dataset.panning;
+  };
+  return {
+    onPointerDown: (event) => {
+      if (event.button !== 0 || event.pointerType === 'touch') return;
+      if ((event.target as Element).closest(PAN_SKIP)) return;
+      const board = event.currentTarget;
+      panRef.current = { x: event.clientX, left: board.scrollLeft };
+      board.setPointerCapture?.(event.pointerId);
+      board.dataset.panning = '';
+      // No text is selected while the board moves.
+      event.preventDefault();
+    },
+    onPointerMove: (event) => {
+      if (!panRef.current) return;
+      event.currentTarget.scrollLeft =
+        panRef.current.left - (event.clientX - panRef.current.x);
+    },
+    onPointerUp: end,
+    onPointerCancel: end,
+  };
+}
+
 export function KanbanProvider<T extends KanbanItem, C extends KanbanColumn>({
   columns,
   items,
@@ -143,6 +192,7 @@ export function KanbanProvider<T extends KanbanItem, C extends KanbanColumn>({
 }: KanbanProviderProps<T, C>): ReactElement {
   // While a card moves, the board shows a draft of the items; the consumer's own are untouched until it applies the move.
   const [draft, setDraft] = useState<readonly T[] | null>(null);
+  const pan = useDragPan();
   const [active, setActive] = useState<{
     readonly id: string;
     readonly column: string;
@@ -265,8 +315,12 @@ export function KanbanProvider<T extends KanbanItem, C extends KanbanColumn>({
         }}
       >
         <div
+          {...pan}
           className={cn(
-            'flex size-full min-h-0 gap-3 overflow-x-auto',
+            // A unit of room on every side, taken back by the margin, so the scroller does not clip the halo of a
+            // column a card is held over. Its empty space pans it (useDragPan), and its bar sideways always shows,
+            // thicker, to be dragged (`scroll-shown`, from the application's stylesheet).
+            'scroll-shown flex size-[calc(100%+--spacing(2))] min-h-0 -m-1 cursor-grab gap-3 overflow-x-auto p-1 data-[panning]:cursor-grabbing data-[panning]:select-none',
             className,
           )}
         >
@@ -291,20 +345,30 @@ export interface KanbanBoardProps extends HTMLAttributes<HTMLElement> {
   readonly children: ReactNode;
 }
 
-/** A column: a drop target that lights up while a card is over it. */
+/** A column: a drop target that lights up while the card in hand would land in it. */
 export function KanbanBoard({
   id,
   children,
   className,
   ...props
 }: KanbanBoardProps): ReactElement {
+  const { items, activeId } = useContext(KanbanContext);
   const { isOver, setNodeRef } = useDroppable({ id });
+  // The column the card in hand would land in: the draft moves it into the column under the pointer, whether over
+  // the column's empty space or over one of its cards.
+  const landing =
+    activeId !== null &&
+    items.some((item) => item.id === activeId && item.column === id);
   return (
     <section
       ref={setNodeRef}
-      data-over={isOver || undefined}
+      data-over={isOver || landing || undefined}
       className={cn(
-        'flex h-full min-h-40 w-72 shrink-0 flex-col overflow-hidden rounded-xl bg-muted/50 ring-1 ring-transparent transition-shadow data-over:ring-primary/40',
+        // The column a card would land in is marked as a focused field is: a half-strength line of the ring colour
+        // and a 2px halo at a fifth of it.
+        // Dark, the column is fainter than the card's ground, so a card stands off it as it does in light, and a line of
+        // the general border keeps it apart from the page.
+        'flex h-full min-h-40 w-72 shrink-0 flex-col overflow-hidden rounded-xl bg-muted/70 transition-shadow dark:bg-muted/40 dark:ring-1 dark:ring-border data-over:shadow-[0_0_0_1px_color-mix(in_oklch,var(--ring)_50%,transparent),0_0_0_3px_color-mix(in_oklch,var(--ring)_20%,transparent)]',
         className,
       )}
       {...props}
@@ -374,7 +438,11 @@ export interface KanbanCardProps extends HTMLAttributes<HTMLDivElement> {
   readonly children: ReactNode;
 }
 
-/** A draggable card. Its content is the consumer's; it dims while it is being dragged. */
+/**
+ * A draggable card. Its content is the consumer's; it dims while it is being dragged. Under the pointer it lifts, on
+ * the hover grey with a firmer shadow, as a card that opens something does; one given `onClick` shows the pointer
+ * cursor, the grab only while it is held.
+ */
 export function KanbanCard({
   id,
   children,
@@ -396,8 +464,13 @@ export function KanbanCard({
       style={{ transition, transform: CSS.Translate.toString(transform) }}
       data-dragging={isDragging || undefined}
       className={cn(
-        'rounded-lg bg-card text-card-foreground shadow-xs ring-1 ring-foreground/5 outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        !disabled && 'cursor-grab active:cursor-grabbing',
+        'rounded-lg bg-card text-card-foreground shadow-xs ring-1 ring-foreground/5 outline-none dark:ring-border focus-visible:ring-2 focus-visible:ring-ring',
+        'transition-[translate,box-shadow,background-color] duration-200 ease-out motion-reduce:transition-none',
+        (!disabled || props.onClick) &&
+          !isDragging &&
+          'hover:-translate-y-0.5 hover:bg-hover hover:shadow-md motion-reduce:hover:translate-y-0',
+        props.onClick ? 'cursor-pointer' : !disabled && 'cursor-grab',
+        !disabled && 'active:cursor-grabbing',
         isDragging && 'opacity-40',
         className,
       )}

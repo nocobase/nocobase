@@ -62,12 +62,13 @@ function Value({ value }: { value: NumericValue }): ReactElement {
       </code>
       <Badge
         variant='secondary'
-        className={`px-1.5 py-0 text-[10px] font-mono shrink-0 shadow-2xs ${
+        data-size='sm'
+        className={`font-mono shrink-0 shadow-2xs ${
           type === 'number'
             ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
             : type === 'string'
               ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-              : 'bg-muted/80 text-muted-foreground border border-border/50'
+              : 'bg-muted/80 text-muted-foreground border border-border'
         }`}
       >
         {type}
@@ -106,10 +107,7 @@ export default function NumericExamplesPage(): ReactElement {
         title={t('numbers.title')}
         actions={
           data ? (
-            <Badge
-              variant='outline'
-              className='gap-1.5 px-3 py-1.5 text-xs font-mono font-medium shadow-2xs'
-            >
+            <Badge variant='outline' className='gap-1.5 font-mono shadow-2xs'>
               <Database className='size-3.5 text-primary' />
               <span>
                 {t('numbers.database', { dialect: data.data.dialect })}
@@ -120,7 +118,7 @@ export default function NumericExamplesPage(): ReactElement {
       />
 
       {/* Unified Filter & Query Control Card */}
-      <div className='overflow-hidden rounded-xl border bg-card shadow-2xs divide-y divide-border/60'>
+      <div className='overflow-hidden rounded-xl border bg-card shadow-2xs divide-y divide-border'>
         <div className='flex flex-wrap items-center justify-between gap-4 p-4'>
           <div className='flex flex-wrap items-center gap-6'>
             <fieldset className='flex items-center gap-2.5'>

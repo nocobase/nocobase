@@ -47,6 +47,7 @@ describe('workflow management through the registered application routes', () => 
     expect(data.filter((item) => item.source === 'office')).toHaveLength(6);
     expect(data.map((item) => item.id)).toContain('office.executorTasks');
     expect(new Set(data.map((item) => item.id)).size).toBe(16);
+    expect(data.every((workflow) => workflow.executionCount === 0)).toBe(true);
     for (const workflow of data) {
       const response = await session.fetch(
         `/workflows/definitions/${workflow.id}`,
@@ -122,6 +123,17 @@ describe('workflow management through the registered application routes', () => 
       '/workflows/executions?workflowId=lifecycle.reviewerDemo&page=1&pageSize=20',
     );
     expect(first.meta.total).toBe(105);
+    const catalog = (await (
+      await session.fetch('/workflows/definitions')
+    ).json()) as { data: WorkflowSummary[] };
+    expect(
+      catalog.data.find((workflow) => workflow.id === 'lifecycle.reviewerDemo')
+        ?.executionCount,
+    ).toBe(first.meta.total);
+    expect(
+      catalog.data.find((workflow) => workflow.id === 'office.dataRequests')
+        ?.executionCount,
+    ).toBe(0);
     expect(first.data).toHaveLength(20);
     expect(first.data[0].recordId).toBe(ids[104]);
     const last = await readPage(
@@ -156,6 +168,7 @@ describe('workflow management through the registered application routes', () => 
     const detail = (
       (await response.json()) as { data: WorkflowExecutionDetail }
     ).data;
+    expect(detail.workflow.executionCount).toBe(105);
     expect(detail.view.record.id).toBe(id);
     expect(detail.view.state).toBe('review');
     expect(

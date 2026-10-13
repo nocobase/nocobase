@@ -36,6 +36,9 @@ export function rosterLine(
         ]
       : []),
     ...(agent.personalOnly ? ['personal runners only'] : []),
+    ...(agent.runners?.names.length
+      ? [`runners: ${agent.runners.names.join(', ')}`]
+      : []),
     `${agent.busy} open ${agent.busy === 1 ? 'run' : 'runs'}`,
   ].join(', ');
   const goodAt = agent.goodAt.trim().replace(/\s+/gu, ' ');

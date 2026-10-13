@@ -189,7 +189,7 @@ describe('runner end to end', () => {
     );
     expect(run.fail).toBeUndefined();
     expect(run.status).toBe('completed');
-    expect(String(run.start?.workDir)).toContain(`${path.sep}PM-8.run-`);
+    expect(String(run.start?.workDir)).toContain(`${path.sep}PM-8.readonly-`);
     // It pushes nothing, so its directory goes as soon as the run ends; the next read-only run checks it out again.
     const readOnlyDir = String(run.start?.workDir);
     await waitFor(

@@ -185,6 +185,35 @@ describe('a run an agent’s comment started', () => {
       ),
     ).toEqual([]);
   });
+
+  it('reports disk capacity failure to the manager without creating a human decision card', async () => {
+    const { issue, coordinator, worker, ask, runId } = await handOff();
+    const failed = await h.runner(RUNNER_ROUTES.fail, runId, {
+      reason: 'runnerDiskFull',
+      detail: 'ENOSPC: write',
+    });
+    expect(failed.status).toBe(200);
+    await vi.waitFor(async () =>
+      expect(
+        (await commentsOf(issue.id)).filter(
+          (comment) => comment.authorId === worker,
+        ),
+      ).toEqual([
+        expect.objectContaining({
+          parentId: ask,
+          content: expect.stringContaining('runnerDiskFull'),
+        }),
+      ]),
+    );
+    expect(
+      (await runsOf(issue.id)).some((run) => run.agentId === coordinator),
+    ).toBe(true);
+    expect(
+      h.notices.some(
+        (notice) => notice.decisionKey === `agents:run-failed:${runId}`,
+      ),
+    ).toBe(false);
+  });
 });
 
 describe('a run a person started', () => {

@@ -33,6 +33,67 @@ describe('runners', () => {
     await h?.close();
   });
 
+  it('merges heartbeat disk readings with directory diagnostics, blocks claims while low, and resumes after recovery', async () => {
+    h = await createHarness();
+    const runner = await h.registerRunner();
+    const agent = await h.createAgent();
+    const runId = await h.enqueue(agent);
+    const disk = { freeBytes: 1, totalBytes: 1000, minFreeBytes: 100 };
+    await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: runner.key,
+      body: { ...heartbeat, disk },
+    });
+    expect(await h.services.runners.get(runner.runnerId)).toMatchObject({
+      status: 'online',
+      workspaceUsage: { disk, measuredAt: null, workspaces: [] },
+    });
+    const directory = {
+      workDir: '/work/SMP-1',
+      subjectKey: 'SMP-1',
+      lastUsedAt: h.clock.now().toISOString(),
+      unpushed: true,
+      sizeBytes: 321,
+    };
+    const report = await h.request('POST', '/agents/runners/workspaces', {
+      runnerKey: runner.key,
+      body: {
+        workspaces: [],
+        reportId: 'directory-report',
+        directories: [directory],
+        disk: { ...disk, freeBytes: 500 },
+      },
+    });
+    expect(report.status).toBe(200);
+    expect(await h.services.runners.get(runner.runnerId)).toMatchObject({
+      workspaceUsage: {
+        disk,
+        workspaces: [
+          expect.objectContaining({ sizeBytes: 321, subjectKey: 'SMP-1' }),
+        ],
+      },
+    });
+    expect(await claim(h, runner)).toEqual([]);
+    const second = await h.registerRunner();
+    const [payload] = await claim(h, second);
+    expect(payload.run.id).toBe(runId);
+    await h.request('POST', `/agents/runners/runs/${runId}/fail`, {
+      runnerKey: second.key,
+      body: { reason: 'runnerDiskFull' },
+    });
+    await h.enqueue(agent);
+    await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: runner.key,
+      body: { ...heartbeat, disk: { ...disk, freeBytes: 200 } },
+    });
+    expect(await h.services.runners.get(runner.runnerId)).toMatchObject({
+      workspaceUsage: {
+        disk: { freeBytes: 200 },
+        workspaces: [expect.objectContaining({ sizeBytes: 321 })],
+      },
+    });
+    expect(await claim(h, runner)).toHaveLength(1);
+  });
+
   it('serves npm-only protocol 8 runners and preserves both features for protocol 9 runners', async () => {
     h = await createHarness();
     for (const [protocolVersion, features] of [

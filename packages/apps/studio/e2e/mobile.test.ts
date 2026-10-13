@@ -71,18 +71,22 @@ test.describe('phone width', () => {
   });
 });
 
-test.describe('header chat at phone width', () => {
-  test('the multiline editor fits and the duplicate floating launcher is absent', async ({
+test.describe('the agent chat at phone width', () => {
+  test('opens from the header icon, and from the page row where the header gives way', async ({
     page,
   }) => {
-    await open(page, '/issues/PM-1');
-    const editor = page.getByTestId('header-chat-mobile').getByRole('textbox');
-    await editor.pressSequentially('第一行');
-    await editor.press('Shift+Enter');
-    await editor.pressSequentially('第二行');
-    await expect(editor).toHaveValue('第一行\n第二行');
-    await expect(page.getByTestId('chat-floating-button')).toHaveCount(0);
+    await open(page, '/inbox');
+    await page.getByRole('banner').getByTestId('chat-header-button').click();
+    await expect(page.getByTestId('chat-panel')).toBeVisible();
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
-    expect((await editor.boundingBox())!.width).toBeGreaterThan(240);
+    // The panel stays open across pages until closed.
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('chat-panel')).toBeHidden();
+    await open(page, '/issues/PM-1');
+    await page
+      .getByTestId('phone-bar')
+      .getByTestId('chat-header-button')
+      .click();
+    await expect(page.getByTestId('chat-panel')).toBeVisible();
   });
 });

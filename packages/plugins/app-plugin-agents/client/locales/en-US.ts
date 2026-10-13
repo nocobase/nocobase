@@ -480,6 +480,7 @@ const pages = {
     },
   },
   failures: {
+    runnerDiskFull: 'The execution machine ran out of disk space.',
     runnerOffline: 'The runtime went offline.',
     leaseExpired: 'The runtime stopped reporting.',
     startTimeout: 'The runtime did not start the run in time.',

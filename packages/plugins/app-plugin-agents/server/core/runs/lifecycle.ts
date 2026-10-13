@@ -28,6 +28,7 @@ import type { DatabaseConnection } from '@nocobase/db';
 import { z } from 'zod';
 import type { RunEffortReport } from '../../../shared/runs.js';
 
+import { runnersRepo } from '../../runners/runner.store.js';
 import type { Runner } from '../../../shared/runners.js';
 import { later, type Clock } from '../../kernel/clock.js';
 import type { IdSource } from '../../kernel/ids.js';
@@ -483,12 +484,25 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
     fail: (runner, runId, reported) =>
       tx.run(async (unit) => {
         const run = await held(unit.conn, runner, runId);
-        const request: FailRequest =
-          reported.detail === undefined
-            ? reported
-            : {
+        const machine =
+          reported.reason === 'runnerDiskFull'
+            ? await runnersRepo(unit.conn).findOne({
+                filter: { id: runner.id },
+              })
+            : undefined;
+        const named =
+          reported.reason === 'runnerDiskFull'
+            ? {
                 ...reported,
-                detail: redactorOf(run.id).text(reported.detail),
+                detail: `Runner ${machine?.name ?? runner.id} is out of disk space${reported.detail ? `: ${reported.detail}` : '.'}`,
+              }
+            : reported;
+        const request: FailRequest =
+          named.detail === undefined
+            ? named
+            : {
+                ...named,
+                detail: redactorOf(run.id).text(named.detail),
               };
         await recordOutcome(unit, run, request);
         if (request.reason === 'modelUnavailable' && run.tool && run.model)

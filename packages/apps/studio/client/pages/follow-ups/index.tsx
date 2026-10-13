@@ -1,8 +1,8 @@
 /**
  * Route `/follow-ups`, "My follow-ups": the issues the viewer follows (left), one issue live (middle: the summary, feed
  * and composer the issue page has too), and the issues they own with what each needs from them (right). On a wide
- * screen the three columns fill the visible area below the heading and each scrolls on its own; on a phone the lists come first and choosing an issue
- * shows it alone, with a way back. The issue shown is in the URL (`?issue=<id>`), the first followed one by default. Everything comes from `GET /api/followUps`
+ * screen the three columns fill the visible area below the heading and each scrolls on its own; a narrower screen shows
+ * one list at a time under two bottom tabs, and choosing an issue shows it alone, with a way back. The issue shown is in the URL (`?issue=<id>`), the first followed one by default. Everything comes from `GET /api/followUps`
  * (`client/follow-ups/`), kept current by the projects plugin's realtime refresh; starring an issue writes what the
  * viewer follows, and showing one records that they looked.
  */
@@ -16,6 +16,7 @@ import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from 'cn';
 import { useMediaQuery } from '@/extensions/nocobase-agent-chat/use-media-query';
 
 import {
@@ -28,6 +29,7 @@ import {
   useFollowIssue,
   useMarkSeen,
 } from '../../follow-ups/api.js';
+import { COLUMN_SCROLL } from '../../follow-ups/column-scroll.js';
 import { FollowingRail } from '../../follow-ups/following-rail.js';
 import { IssuePanel } from '../../follow-ups/issue-panel.js';
 import {
@@ -36,15 +38,13 @@ import {
   ownedRows,
 } from '../../follow-ups/model.js';
 import { OwnedList } from '../../follow-ups/owned-list.js';
-import { useFillHeight } from '../../follow-ups/use-fill-height.js';
 import { StatusPill } from '../../issues/live/status.js';
+import { needsViewer } from '../../issues/live/summary-model.js';
+import { PhoneBar } from '../../layouts/components/phone-bar.js';
 import { useFollowUpStatusName } from '../../issues/live/status-colors.js';
 
 /** A side column on a wide screen: it stays in view while the middle scrolls, and scrolls on its own. */
-const SIDE_COLUMN = 'lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain';
-
-/** The page's bottom padding on a wide screen (`PageContainer`'s `md:p-8`), kept below the columns. */
-const PAGE_BOTTOM = 32;
+const SIDE_COLUMN = cn('lg:min-h-0 lg:overflow-y-auto', COLUMN_SCROLL);
 
 /** The statuses the header counts. */
 const COUNTED: readonly FollowUpStatus[] = [
@@ -76,11 +76,21 @@ export default function FollowUpsPage(): ReactElement {
   const chosen = params.get('issue');
   const wide = useMediaQuery('(min-width: 64rem)', true);
   const selectedId = chosen ?? followed[0]?.id ?? rows[0]?.id ?? null;
-  // A phone shows the lists, or the chosen issue alone.
+  // A narrow screen shows one list at a time under its tab, or the chosen issue alone.
+  const tab: PhoneTab = params.get('tab') === 'mine' ? 'mine' : 'following';
   const showPanel = wide || chosen !== null;
-  const showLists = wide || chosen === null;
-  // On a wide screen the columns fill the rest of the visible area and scroll on their own.
-  const [columnsHeight, fill] = useFillHeight(wide, PAGE_BOTTOM);
+  const showFollowing = wide || (chosen === null && tab === 'following');
+  const showOwned = wide || (chosen === null && tab === 'mine');
+  const showTabs = !wide && chosen === null;
+  const badges = useMemo(
+    () => ({
+      following: followed.filter(
+        (issue) => issue.unread > 0 || needsViewer(issue),
+      ).length,
+      mine: view ? ownedRows(view, DEFAULT_FILTER, '').length : 0,
+    }),
+    [followed, view],
+  );
   const summary = view?.issues.find((issue) => issue.id === selectedId) ?? null;
   // The issue shown when the overview does not hold it: the middle column reads it with the same query.
   const pm = usePmApi();
@@ -99,6 +109,19 @@ export default function FollowUpsPage(): ReactElement {
           const next = new URLSearchParams(current);
           next.delete('issue');
           return next;
+        },
+        { replace: true },
+      ),
+    [setParams],
+  );
+  const pickTab = useCallback(
+    (next: PhoneTab) =>
+      setParams(
+        (current) => {
+          const params = new URLSearchParams(current);
+          if (next === 'mine') params.set('tab', 'mine');
+          else params.delete('tab');
+          return params;
         },
         { replace: true },
       ),
@@ -126,44 +149,72 @@ export default function FollowUpsPage(): ReactElement {
   );
 
   return (
-    <PageContainer className='flex flex-col gap-6 space-y-0'>
-      <PageHeader
-        title={t('followUps.title')}
-        description={
-          <span className='flex flex-wrap items-center gap-x-3 gap-y-1'>
-            <span
-              className='inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300'
-              data-testid='follow-ups-live'
-            >
+    <PageContainer
+      className={cn(
+        'flex flex-col gap-6 space-y-0',
+        // A wide screen fits the page to the shell's scroll area, so the columns get the rest of it and scroll on their own.
+        'lg:h-full',
+        // A phone goes edge to edge: each part keeps its own 16px inset.
+        'max-md:gap-3 max-md:px-0 max-md:pt-2',
+        // Room for the tab bar, and a phone's issue view starts right at its Back row.
+        showTabs && 'pb-24 lg:pb-6',
+        chosen !== null && 'max-md:pt-0 max-md:pb-0',
+      )}
+    >
+      <div className={cn('max-md:hidden', chosen !== null && 'max-lg:hidden')}>
+        <PageHeader
+          title={t('followUps.title')}
+          description={
+            <span className='flex flex-wrap items-center gap-x-3 gap-y-1'>
               <span
-                aria-hidden
-                className='size-1.5 animate-pulse rounded-full bg-emerald-500'
-              />
-              {t('followUps.live')}
+                className='inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300'
+                data-testid='follow-ups-live'
+              >
+                <span
+                  aria-hidden
+                  className='size-1.5 animate-pulse rounded-full bg-emerald-500'
+                />
+                {t('followUps.live')}
+              </span>
+              <span>{t('followUps.description')}</span>
             </span>
-            <span>{t('followUps.description')}</span>
+          }
+          actions={
+            view ? (
+              <ul
+                aria-label={t('followUps.countsLabel')}
+                className='flex flex-wrap items-center gap-2'
+              >
+                {COUNTED.map((status) => (
+                  <li
+                    key={status}
+                    className='inline-flex items-center gap-1.5 text-sm'
+                    aria-label={`${statusName(status)} ${view.counts[status]}`}
+                  >
+                    <StatusPill statusKey={status} />
+                    <span className='tabular-nums'>{view.counts[status]}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null
+          }
+        />
+      </div>
+      {chosen === null ? (
+        // A phone's heading row, with the navigation and the agent chat the hidden header would give.
+        <PhoneBar className='px-4'>
+          <h1 className='truncate font-heading text-xl font-semibold tracking-tight'>
+            {t('followUps.title')}
+          </h1>
+          <span className='inline-flex shrink-0 items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300'>
+            <span
+              aria-hidden
+              className='size-1.5 animate-pulse rounded-full bg-emerald-500'
+            />
+            {t('followUps.live')}
           </span>
-        }
-        actions={
-          view ? (
-            <ul
-              aria-label={t('followUps.countsLabel')}
-              className='flex flex-wrap items-center gap-2'
-            >
-              {COUNTED.map((status) => (
-                <li
-                  key={status}
-                  className='inline-flex items-center gap-1.5 text-sm'
-                  aria-label={`${statusName(status)} ${view.counts[status]}`}
-                >
-                  <StatusPill statusKey={status} />
-                  <span className='tabular-nums'>{view.counts[status]}</span>
-                </li>
-              ))}
-            </ul>
-          ) : null
-        }
-      />
+        </PhoneBar>
+      ) : null}
       {!view ? (
         overview.isError ? (
           <div className='flex flex-col items-start gap-3 rounded-xl border p-6 text-sm'>
@@ -185,12 +236,10 @@ export default function FollowUpsPage(): ReactElement {
         )
       ) : (
         <div
-          ref={fill}
-          style={columnsHeight === null ? undefined : { height: columnsHeight }}
-          className='grid items-start gap-5 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_minmax(0,22rem)] lg:grid-rows-[minmax(0,1fr)] lg:items-stretch'
+          className='grid items-start gap-5 max-md:gap-4 lg:min-h-80 lg:flex-1 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_minmax(0,22rem)] lg:grid-rows-[minmax(0,1fr)] lg:items-stretch'
           data-testid='follow-ups-columns'
         >
-          {showLists ? (
+          {showFollowing ? (
             <FollowingRail
               className={SIDE_COLUMN}
               issues={followed}
@@ -206,7 +255,7 @@ export default function FollowUpsPage(): ReactElement {
           ) : null}
           {!showPanel ? null : selectedId ? (
             <IssuePanel
-              className='lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain'
+              className={SIDE_COLUMN}
               key={selectedId}
               issueId={selectedId}
               summary={summary}
@@ -218,9 +267,9 @@ export default function FollowUpsPage(): ReactElement {
               {t('followUps.activity.select')}
             </p>
           )}
-          {showLists ? (
+          {showOwned ? (
             <OwnedList
-              className={SIDE_COLUMN}
+              className='lg:min-h-0'
               view={view}
               rows={rows}
               filter={filter}
@@ -234,6 +283,54 @@ export default function FollowUpsPage(): ReactElement {
           ) : null}
         </div>
       )}
+      {showTabs ? (
+        <PhoneTabs tab={tab} badges={badges} onPick={pickTab} />
+      ) : null}
     </PageContainer>
+  );
+}
+
+type PhoneTab = 'following' | 'mine';
+
+/** A narrow screen's two lists, as tabs fixed at the bottom with what needs the viewer counted on each. */
+function PhoneTabs({
+  tab,
+  badges,
+  onPick,
+}: {
+  readonly tab: PhoneTab;
+  readonly badges: Readonly<Record<PhoneTab, number>>;
+  readonly onPick: (tab: PhoneTab) => void;
+}): ReactElement {
+  const { t } = useTranslation();
+  return (
+    <nav
+      aria-label={t('followUps.tabs.label')}
+      className='fixed inset-x-0 bottom-0 z-30 grid grid-cols-2 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden'
+      data-testid='follow-ups-tabs'
+    >
+      {(['following', 'mine'] as const).map((id) => (
+        <button
+          key={id}
+          type='button'
+          aria-current={tab === id ? 'page' : undefined}
+          onClick={() => onPick(id)}
+          className={cn(
+            'flex min-h-13 items-center justify-center gap-2 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset',
+            tab === id ? 'font-semibold text-primary' : 'text-muted-foreground',
+          )}
+        >
+          {t(`followUps.tabs.${id}`)}
+          {badges[id] > 0 ? (
+            <span
+              className='min-w-5 rounded-full bg-primary px-1.5 text-center text-xs leading-5 text-primary-foreground tabular-nums'
+              aria-label={t('followUps.tabs.badge', { count: badges[id] })}
+            >
+              {badges[id]}
+            </span>
+          ) : null}
+        </button>
+      ))}
+    </nav>
   );
 }

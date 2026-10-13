@@ -18,6 +18,7 @@ import {
   askOf,
   nowLine,
   pullRequestLabel,
+  shortQuestion,
 } from '../../client/issues/live/summary-model.js';
 import type { FollowUpIssue, FollowUpsView } from '../../shared/follow-ups.js';
 import type { IssuePullRequest } from '../../shared/git.js';
@@ -317,5 +318,21 @@ describe('what the page lists', () => {
       needsViewer: false,
     });
     expect(nowLine(t, issue({ statusKey: 'backlog' }), null)).toBeNull();
+  });
+
+  it('asks a question as its first sentence, without Markdown or code', () => {
+    expect(
+      shortQuestion(
+        '已读完整评论。Sol 本步骤未完成：无提交，head `33cc199`。\n\n见 [PR #12](https://x)',
+      ),
+    ).toBe('已读完整评论。');
+    expect(
+      shortQuestion(
+        'Should we push `33cc199` again, or see [PR #12](https://x) first? More text.',
+      ),
+    ).toBe('Should we push 33cc199 again, or see PR #12 first?');
+    expect(shortQuestion('**Retry?**')).toBe('Retry?');
+    expect(shortQuestion('   ')).toBeNull();
+    expect(shortQuestion('x'.repeat(300))?.length).toBe(120);
   });
 });

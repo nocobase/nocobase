@@ -1,4 +1,4 @@
-import { AlertCircleIcon, InboxIcon } from 'lucide-react';
+import { AlertCircleIcon, InboxIcon, ListTodoIcon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 
 import {
@@ -7,7 +7,6 @@ import {
   AlertDescription,
   AlertTitle,
 } from '#components/ui/alert';
-import { Badge } from '#components/ui/badge';
 import { Button } from '#components/ui/button';
 import {
   Empty,
@@ -28,7 +27,6 @@ import {
 import { Skeleton } from '#components/ui/skeleton';
 import { Spinner } from '#components/ui/spinner';
 import { Tabs, TabsList, TabsTrigger } from '#components/ui/tabs';
-import { cn } from 'cn';
 
 import { useInboxFrameText } from './frame.js';
 import type { InboxAction } from './inbox-actions.js';
@@ -261,7 +259,7 @@ export function InboxList({
                 <section aria-labelledby={heading} className='space-y-1'>
                   <h2
                     id={heading}
-                    className='flex items-center gap-2 px-3 text-xs font-medium tracking-wider text-muted-foreground uppercase'
+                    className='flex items-center gap-2 text-xs font-medium tracking-wider text-muted-foreground uppercase'
                   >
                     {category.title(t)}
                     {/* What still waits, as To do counts it; handled items stay listed in All but are not counted. */}
@@ -311,80 +309,80 @@ export function InboxList({
 
   return (
     <>
-      <div className='shrink-0 space-y-2 border-b px-3 py-2.5'>
-        <Tabs
-          value={view}
-          onValueChange={(value) => {
-            const next = value as InboxView;
-            onFilter({
-              view: next,
-              kind: kindsOf(next, categories).includes(kind) ? kind : 'all',
-            });
+      {/* The views as line tabs (client/styles.css draws them as a record page's), each led by its icon, a count in
+          muted figures. */}
+      <Tabs
+        value={view}
+        onValueChange={(value) => {
+          const next = value as InboxView;
+          onFilter({
+            view: next,
+            kind: kindsOf(next, categories).includes(kind) ? kind : 'all',
+          });
+        }}
+      >
+        <TabsList
+          variant='line'
+          className='shrink-0 [--tabs-inset:--spacing(6)]'
+        >
+          {INBOX_VIEWS.map((value) => {
+            const count = value === 'todo' ? pending : unread;
+            const Icon = value === 'todo' ? ListTodoIcon : InboxIcon;
+            return (
+              <TabsTrigger key={value} value={value}>
+                <Icon aria-hidden='true' />
+                {value === 'todo'
+                  ? t('inbox.views.todo', { defaultValue: 'To do' })
+                  : t('inbox.views.all', { defaultValue: 'All' })}
+                {count > 0 ? (
+                  <span
+                    className='text-xs text-muted-foreground tabular-nums'
+                    aria-label={
+                      value === 'todo'
+                        ? t('inbox.pendingDecisions', {
+                            count,
+                            defaultValue: '{{count}} waiting',
+                          })
+                        : t('inbox.unreadCount', {
+                            count,
+                            defaultValue: '{{count}} unread',
+                          })
+                    }
+                  >
+                    {count}
+                  </span>
+                ) : null}
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+      </Tabs>
+      <div className='flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-6 py-2.5'>
+        <Select
+          items={kinds}
+          value={kind}
+          onValueChange={(next: string | null) => {
+            if (next) onFilter({ view, kind: next });
           }}
         >
-          <TabsList variant='line' className='w-full'>
-            {INBOX_VIEWS.map((value) => {
-              const count = value === 'todo' ? pending : unread;
-              return (
-                <TabsTrigger key={value} value={value}>
-                  {value === 'todo'
-                    ? t('inbox.views.todo', { defaultValue: 'To do' })
-                    : t('inbox.views.all', { defaultValue: 'All' })}
-                  {count > 0 ? (
-                    <Badge
-                      variant={value === 'todo' ? 'outline' : 'secondary'}
-                      className={cn(
-                        'h-4 px-1.5 tabular-nums',
-                        value === 'todo' &&
-                          'border-transparent bg-amber-500/15 text-amber-700 dark:text-amber-300',
-                      )}
-                      aria-label={
-                        value === 'todo'
-                          ? t('inbox.pendingDecisions', {
-                              count,
-                              defaultValue: '{{count}} waiting',
-                            })
-                          : t('inbox.unreadCount', {
-                              count,
-                              defaultValue: '{{count}} unread',
-                            })
-                      }
-                    >
-                      {count}
-                    </Badge>
-                  ) : null}
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
-        </Tabs>
-        <div className='flex flex-wrap items-center justify-between gap-2'>
-          <Select
-            items={kinds}
-            value={kind}
-            onValueChange={(next: string | null) => {
-              if (next) onFilter({ view, kind: next });
-            }}
+          <SelectTrigger
+            size='sm'
+            className='w-40'
+            aria-label={t('inbox.kinds.label', { defaultValue: 'Type' })}
           >
-            <SelectTrigger
-              size='sm'
-              className='w-40'
-              aria-label={t('inbox.kinds.label', { defaultValue: 'Type' })}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
-              {kinds.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {footer}
-        </div>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
+            {kinds.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {footer}
       </div>
-      <div className='min-h-0 flex-1 overflow-y-auto px-2 py-3'>{content}</div>
+      <div className='min-h-0 flex-1 overflow-y-auto px-6 py-3'>{content}</div>
       <p className='hidden shrink-0 items-center gap-3 border-t px-4 py-2 text-xs text-muted-foreground lg:flex'>
         <span className='inline-flex items-center gap-1'>
           <Kbd>J</Kbd>
@@ -410,7 +408,7 @@ function ListEmpty({
   readonly action?: ReactNode;
 }): ReactElement {
   return (
-    <Empty className='mx-1 min-h-48'>
+    <Empty className='min-h-48'>
       <EmptyHeader>
         <EmptyMedia variant='icon'>
           <InboxIcon />

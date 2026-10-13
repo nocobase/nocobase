@@ -1,4 +1,5 @@
 import {
+  AlignLeft,
   AppWindow,
   Blocks,
   Bot,
@@ -96,6 +97,7 @@ import { IssueDetailDemo } from './demo/projects/issue-detail';
 import { AttachmentListDemo } from './demo/components/attachment-list';
 import { CommentThreadDemo } from './demo/components/comment-thread';
 import { MarkdownViewDemo } from './demo/components/markdown-view';
+import { LongTextDemo } from './demo/components/long-text';
 import { RichTextEditorDemo } from './demo/components/rich-text-editor';
 import { AgentRunHistoryDemo } from './demo/agents/agent-run-history';
 import { PropertyFieldsDemo } from './demo/components/property-fields';
@@ -185,6 +187,7 @@ const itemPreviews: Record<string, ItemPreview> = {
     icon: PenLine,
   },
   'markdown-view': { path: '/demo/components/markdown-view', icon: FileText },
+  'long-text': { path: '/demo/components/long-text', icon: AlignLeft },
   'comment-thread': {
     path: '/demo/components/comment-thread',
     icon: MessagesSquare,
@@ -302,6 +305,9 @@ function AppContent(): ReactElement {
   }
   if (pathname.startsWith('/demo/components/markdown-view')) {
     return <MarkdownViewDemo />;
+  }
+  if (pathname.startsWith('/demo/components/long-text')) {
+    return <LongTextDemo />;
   }
   if (pathname.startsWith('/demo/components/comment-thread')) {
     return <CommentThreadDemo />;

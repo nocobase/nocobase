@@ -18,6 +18,7 @@ import projects from '@nocobase/app-plugin-projects/client';
 import agents from '@nocobase/app-plugin-agents/client';
 import releases from '@nocobase/app-plugin-releases/client';
 import knowledge from '@nocobase/app-plugin-knowledge/client';
+import agentSessions from '@nocobase/app-plugin-agent-sessions/client';
 
 import { ProjectManagerIdentityRefresh } from './agents/project-manager/identity-refresh.js';
 
@@ -49,6 +50,8 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   // Studio routes the knowledge page itself (`/knowledge`, the system's space) and composes the knowledge view into a
   // project's Knowledge tab (`client/routes.ts`).
   knowledge({ routes: false }),
+  // Studio routes the agent sessions page itself, below Home (`client/routes.ts`).
+  agentSessions({ routes: false }),
 ]);
 
 export default clientPlugins;

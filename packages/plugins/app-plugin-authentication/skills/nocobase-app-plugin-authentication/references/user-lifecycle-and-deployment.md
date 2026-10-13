@@ -89,10 +89,7 @@ emailVerification: {
 },
 ```
 
-Send through the application's notification plugin rather than a second mail
-client; `nocobase-app-plugin-notification` describes the channel to use. The
-`url` already points at the application's `/reset-password` route with the
-token. Rules that apply to any implementation:
+Send through the application's notification plugin rather than a second mail client; `nocobase-app-plugin-notification` describes the channel to use. The `url` first reaches Better Auth's token-bearing API reset endpoint, then redirects to the application's reset page. Rules that apply to any implementation:
 
 - Respond the same whether or not the email exists.
 - Keep the redirect on an allowlist that is the application's own origin.
@@ -100,6 +97,8 @@ token. Rules that apply to any implementation:
   token table.
 - Do not expose the forgot-password link in production until the sender is
   configured and tested.
+
+**Request-log limitation.** This feature does not change request-logging middleware. Better Auth default email links first visit a token-bearing API path before redirecting to the page; request path and message logs can record that token. Default logging output sanitizes token query values in Referer strings, but raw/custom outputs may retain them. Treat request logging and external access logs as a separate security boundary and resolve this risk before exposing the flow; existing mailer/authentication diagnostic safeguards do not protect these request records.
 
 ## Deployment
 

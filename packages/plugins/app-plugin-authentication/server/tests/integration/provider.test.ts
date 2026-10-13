@@ -66,6 +66,13 @@ describe('authentication provider', () => {
 
     provider.register();
     const auth = container.resolve(authenticationToken);
+    await auth.handler(
+      new Request('http://localhost/api/auth/request-password-reset'),
+      { clientAddress: '203.0.113.10' },
+    );
+    expect(authHandler).toHaveBeenLastCalledWith(expect.any(Request), {
+      clientAddress: '203.0.113.10',
+    });
     getSession.mockResolvedValueOnce({ user: { id: 'user-1' } });
 
     expect(container.has(realtimePrincipalResolverToken)).toBe(true);
