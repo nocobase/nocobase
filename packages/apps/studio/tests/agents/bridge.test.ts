@@ -35,13 +35,23 @@ const bob = () => h.viewer('bob');
 const PM = PROJECT_MANAGER_ID;
 
 /** An open issue nobody executes yet, created by `viewer`. */
-function openIssue(viewer: Viewer, input: Partial<CreateIssueRequest> = {}) {
-  return h.projects.issues.create(viewer, {
+async function openIssue(
+  viewer: Viewer,
+  input: Partial<CreateIssueRequest> = {},
+) {
+  const target = input.statusKey ?? 'in_progress';
+  const issue = await h.projects.issues.create(viewer, {
     title: 'A',
-    statusKey: 'in_progress',
     executor: null,
     ...input,
+    statusKey: target === 'backlog' ? 'backlog' : 'in_progress',
   });
+  return target === issue.statusKey
+    ? issue
+    : h.projects.issues.update(viewer, issue.id, {
+        revision: issue.revision,
+        statusKey: target,
+      });
 }
 
 /** Gives the issue to the project manager. */
@@ -975,6 +985,16 @@ describe('the API as a run', () => {
     );
     expect(moved.status).toBe(200);
     expect(moved.body.data.issue.statusKey).toBe('in_review');
+    const restoredReview = await h.request(
+      'PATCH',
+      `/projects/issues/${issue.identifier}`,
+      {
+        runToken: token,
+        body: { statusKey: 'in_progress' },
+      },
+    );
+    expect(restoredReview.status).toBe(200);
+    expect(restoredReview.body.data.issue.statusKey).toBe('in_progress');
     // Its own move is no news to its run.
     expect((await h.agents.runs.detail(runId)).inputs).toHaveLength(1);
     const blocked = await h.request(
@@ -983,6 +1003,21 @@ describe('the API as a run', () => {
       { runToken: token, body: { statusKey: 'blocked' } },
     );
     expect(blocked.status).toBe(200);
+    const restoredBlocked = await h.request(
+      'PATCH',
+      `/projects/issues/${issue.identifier}`,
+      {
+        runToken: token,
+        body: { statusKey: 'in_progress' },
+      },
+    );
+    expect(restoredBlocked.status).toBe(200);
+    expect(restoredBlocked.body.data.issue.statusKey).toBe('in_progress');
+    const before = await h.projects.issueQueries.detail(alice(), issue.id);
+    expect(before.activities.at(-1)).toMatchObject({
+      actorType: 'agent',
+      actorId: PM,
+    });
     for (const statusKey of ['done', 'cancelled', 'backlog']) {
       const refused = await h.request(
         'PATCH',
@@ -990,10 +1025,110 @@ describe('the API as a run', () => {
         { runToken: token, body: { statusKey } },
       );
       expect(refused.status).toBeGreaterThanOrEqual(400);
+      const after = await h.projects.issueQueries.detail(alice(), issue.id);
+      expect(after.statusKey).toBe(before.statusKey);
+      expect(after.revision).toBe(before.revision);
+      expect(after.activities).toEqual(before.activities);
     }
     const detail = await h.projects.issueQueries.detail(alice(), issue.id);
-    expect(detail.statusKey).toBe('blocked');
+    expect(detail.statusKey).toBe('in_progress');
   });
+
+  it.each(['blocked', 'in_review'])(
+    'restores a manager run claimed while %s',
+    async (statusKey) => {
+      const { issue, token } = await managerRun({ statusKey });
+      const moved = await h.request(
+        'PATCH',
+        `/projects/issues/${issue.identifier}`,
+        {
+          runToken: token,
+          body: { statusKey: 'in_progress' },
+        },
+      );
+      expect(moved.status).toBe(200);
+      expect(moved.body.data.issue.statusKey).toBe('in_progress');
+    },
+  );
+
+  it.each(['blocked', 'in_review'])(
+    'refuses worker recovery from %s without side effects',
+    async (statusKey) => {
+      const { issue, token } = await claimedRun({}, { statusKey });
+      const before = await h.projects.issueQueries.detail(alice(), issue.id);
+      const refused = await h.request(
+        'PATCH',
+        `/projects/issues/${issue.identifier}`,
+        {
+          runToken: token,
+          body: { statusKey: 'in_progress' },
+        },
+      );
+      expect(refused.status).toBe(400);
+      expect(refused.body.error.reason).toBe('TRANSITION_NOT_ALLOWED');
+      const after = await h.projects.issueQueries.detail(alice(), issue.id);
+      expect(after.statusKey).toBe(before.statusKey);
+      expect(after.revision).toBe(before.revision);
+      expect(after.activities).toEqual(before.activities);
+    },
+  );
+
+  it('refuses recovery on an invisible object and after revocation', async () => {
+    const { issue, token } = await managerRun({ statusKey: 'blocked' });
+    const before = await h.projects.issueQueries.detail(alice(), issue.id);
+    const hiddenProject = await h.projects.projects.create(bob(), {
+      name: 'Secret',
+      visibility: 'members',
+    });
+    const hidden = await openIssue(bob(), {
+      title: 'Secret',
+      projectId: hiddenProject.id,
+      statusKey: 'blocked',
+    });
+    const hiddenBefore = await h.projects.issueQueries.detail(bob(), hidden.id);
+    expect(
+      (
+        await h.request('PATCH', `/projects/issues/${hidden.identifier}`, {
+          runToken: token,
+          body: { statusKey: 'in_progress' },
+        })
+      ).status,
+    ).toBe(404);
+    h.roles.set('alice', 'none');
+    expect(
+      (
+        await h.request('PATCH', `/projects/issues/${issue.identifier}`, {
+          runToken: token,
+          body: { statusKey: 'in_progress' },
+        })
+      ).status,
+    ).toBe(403);
+    h.roles.set('alice', 'member');
+    const after = await h.projects.issueQueries.detail(alice(), issue.id);
+    expect(after.statusKey).toBe(before.statusKey);
+    expect(after.revision).toBe(before.revision);
+    expect(after.activities).toEqual(before.activities);
+    expect(await h.projects.issueQueries.detail(bob(), hidden.id)).toEqual(
+      hiddenBefore,
+    );
+  });
+
+  it.each(['done', 'cancelled'])(
+    'still lets an authorized person move to %s',
+    async (statusKey) => {
+      const issue = await openIssue(alice(), { statusKey: 'in_review' });
+      const moved = await h.request(
+        'PATCH',
+        `/projects/issues/${issue.identifier}`,
+        {
+          user: 'alice',
+          body: { revision: issue.revision, statusKey },
+        },
+      );
+      expect(moved.status).toBe(200);
+      expect(moved.body.data.issue.statusKey).toBe(statusKey);
+    },
+  );
 
   it('checks the running identity for edits and owner changes without the legacy action list', async () => {
     const { issue, token } = await claimedRun();
