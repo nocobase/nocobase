@@ -55,6 +55,8 @@ export interface StatusService {
 }
 
 export interface IssueChange {
+  /** A person explicitly assigned the issue to themselves, including an unchanged owner field. */
+  readonly ownerClaimed?: boolean;
   /** Null for a new issue. */
   readonly before: Issue | null;
   readonly after: Issue;

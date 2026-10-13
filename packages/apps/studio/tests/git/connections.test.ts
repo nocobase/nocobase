@@ -1224,16 +1224,16 @@ describe('push credentials on demand', () => {
     const app = await appConnection();
     const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
     const linked = await projectWithRepo(app, 'in_progress');
-    const issue = await h.projects.issues.update(alice(), linked.issue.id, {
+    linked.issue = await h.projects.issues.update(alice(), linked.issue.id, {
       revision: linked.issue.revision,
       executor: null,
       start: false,
     });
-    await mentionAgent(h, 'alice', issue.id, agentId);
+    await mentionAgent(h, 'alice', linked.issue.id, agentId);
     const payload = await h.claimOne(features);
     expect(payload).toBeDefined();
     expect((await h.agents.runs.detail(payload.run.id)).agentId).toBe(agentId);
-    return { app, payload, ...linked, issue };
+    return { app, payload, ...linked };
   }
 
   const ask = (payload: any, body: { url?: string; refresh?: boolean } = {}) =>
