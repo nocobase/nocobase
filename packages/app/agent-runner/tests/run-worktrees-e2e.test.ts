@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { expect, it } from 'vitest';
 import { FakeServer, waitFor } from './fake-server.ts';
+import { fixtureDiagnostics } from './fixture-diagnostics.ts';
 import {
   cliEnv,
   git,
@@ -53,6 +54,12 @@ it('starts an unmarked writer alongside another, cancels and restores both unpub
     },
   });
   const daemon = startDaemon(env);
+  const observation = fixtureDiagnostics(
+    home,
+    [server],
+    'cancellation-worktree',
+    () => daemon.output(),
+  );
   let directoryAtAcknowledgement: boolean | undefined;
   server.onCancelAck = (run) => {
     if (run.payload.run.id === a.payload.run.id)
@@ -86,17 +93,20 @@ it('starts an unmarked writer alongside another, cancels and restores both unpub
     expect(b.status).toBe('completed');
     expect(a.status).toBe('running');
     expect(a.start?.workDir).not.toBe(b.start?.workDir);
+    observation.mark('cancel-request');
     server.cancel(a.payload.run.id);
     await waitFor(
       () => a.status === 'cancelled',
       20_000,
       'cancellation acknowledgement',
     );
+    observation.mark('cancel-acknowledged');
     await waitFor(
       () => !existsSync(String(a.start?.workDir)),
       15_000,
       'cancelled worktree removal',
     );
+    observation.mark('cancel-directory-removed');
     expect(directoryAtAcknowledgement).toBe(false);
     const c = server.enqueue({
       subject,
@@ -129,6 +139,7 @@ it('starts an unmarked writer alongside another, cancels and restores both unpub
       ),
     ).toBe('preserved');
   } finally {
+    observation.finish();
     await stopDaemon(daemon);
     await server.close();
     removeDir(home);

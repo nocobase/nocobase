@@ -3,6 +3,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { FakeServer, waitFor } from './fake-server.ts';
+import { fixtureDiagnostics } from './fixture-diagnostics.ts';
 import {
   cli,
   cliEnv,
@@ -20,7 +21,9 @@ describe('local provider authentication', () => {
   const homes: string[] = [];
   const servers: FakeServer[] = [];
   const daemons: Daemon[] = [];
+  const observations: ReturnType<typeof fixtureDiagnostics>[] = [];
   afterEach(async () => {
+    for (const observation of observations.splice(0)) observation.finish();
     for (const daemon of daemons.splice(0)) await stopDaemon(daemon);
     for (const server of servers.splice(0)) await server.close();
     for (const home of homes.splice(0)) {
@@ -52,6 +55,12 @@ describe('local provider authentication', () => {
       requireAuthentication: true,
     });
     servers.push(first, second);
+    const observation = fixtureDiagnostics(
+      home,
+      [first, second],
+      'local-provider',
+    );
+    observations.push(observation);
     await first.listen();
     await second.listen();
     const fakeCli = writeFakeCli(home);
@@ -86,11 +95,13 @@ describe('local provider authentication', () => {
     await waitFor(() => first.lastHeartbeat(), 10_000, 'initial detection');
     expect(run.status).toBe('queued');
 
+    observation.mark('env-set-start');
     const set = await cli(
       ['env', 'set', 'LOCAL_PROVIDER_KEY', '--server', first.url],
       env,
       { input: 'synthetic-key' },
     );
+    observation.mark('env-set-end');
     expect(set).toMatchObject({ code: 0 });
     await waitFor(
       () => run.status === 'completed' || run.status === 'failed',

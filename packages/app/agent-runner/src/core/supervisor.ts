@@ -38,6 +38,7 @@ import {
   type AgentTool,
   type JobPayload,
   type RunPayload,
+  type CancellationRecovery,
   StatusResponseSchema,
 } from '../protocol/index.ts';
 import { deleteRunCredentials } from '../agent/credentials.ts';
@@ -77,6 +78,8 @@ export interface RunRecord {
   log: string;
   /** Retain cancellation semantics across failed report delivery and daemon restarts. */
   recoveryReason?: 'cancelled';
+  /** The worker's unconfirmed preservation report, retained independently of the event spool. */
+  cancellationRecovery?: CancellationRecovery;
 }
 
 export interface Timings {
@@ -440,8 +443,8 @@ export class Supervisor {
   }
 
   /**
-   * A worker that exits without having reported its run is handled like an orphan; one killed after a cancel has its
-   * cancel acknowledged instead.
+   * A worker that exits without a confirmed report uses the same recovery classification as a restart.
+   * The daemon cancellation observation is an additional hint; persisted worker intent takes precedence.
    */
   private async afterExit(runId: string, cancelled: boolean): Promise<void> {
     const record = await readJson<RunRecord>(
@@ -453,7 +456,7 @@ export class Supervisor {
       ...this.options,
       reason: cancelled ? 'cancelled' : 'leaseExpired',
       detail: cancelled
-        ? `The ${noun} worker did not stop after the cancel and was killed.`
+        ? `The ${noun} worker exited before cancellation reporting was confirmed.`
         : `The ${noun} worker exited without reporting the ${noun}.`,
     });
   }
@@ -532,21 +535,45 @@ export interface RecoverOptions {
   clientFor: (appKey: string) => ApiClient | undefined;
   timings: Timings;
   log: (message: string) => void;
-  /** `cancelled` acknowledges the cancel instead of failing the run. */
+  /** Recovery hint; durable cancellation evidence and owned status override a non-cancellation hint. */
   reason: 'leaseExpired' | 'runnerOffline' | 'cancelled' | 'unknown';
   detail: string;
 }
 
-/**
- * Ends a run whose worker is gone or no longer supervised: kills what is left of its process group, delivers the
- * events it spooled, reports the run as failed, and removes its credentials, spool and record.
- */
+/** Resolve cancellation once for every recovery entry; a daemon's missing observation is not negative evidence. */
+async function resolveRecoveryReason(
+  record: RunRecord,
+  options: RecoverOptions,
+): Promise<RecoverOptions['reason']> {
+  // Jobs use their existing lifecycle; coding-run preservation reports belong to the run protocol.
+  if (record.kind === 'job') return options.reason;
+  if (
+    record.recoveryReason === 'cancelled' ||
+    record.cancellationRecovery !== undefined ||
+    options.reason === 'cancelled'
+  )
+    return 'cancelled';
+  const status = await options
+    .clientFor(record.appKey)
+    ?.get(
+      routePath(RUNNER_ROUTES.status, { runId: record.runId }),
+      StatusResponseSchema,
+    )
+    .catch(() => undefined);
+  if (status === undefined) return 'unknown';
+  if (status.cancelRequested || status.status === 'cancelled')
+    return 'cancelled';
+  return options.reason;
+}
+
+/** Stops orphan writers and preserves their files before reporting; unconfirmed recovery keeps its retry record. */
 export async function recoverRun(
   record: RunRecord,
   options: RecoverOptions,
 ): Promise<void> {
   const { paths, log } = options;
   const { runId } = record;
+  const reason = await resolveRecoveryReason(record, options);
   if (
     groupAlive(record.pid) &&
     (isOurWorker(record.pid, runId) || !isAlive(record.pid))
@@ -592,6 +619,14 @@ export async function recoverRun(
         meta.appKey === record.appKey &&
         survivors.length + observedHolders.length === 0 &&
         ownershipError === '';
+      const orphanReason = `Recovery required: orphan writer quiescence cannot be verified${survivors.length + observedHolders.length > 0 ? `; live writer identities or workspace holders: ${[...new Set([...survivors, ...observedHolders])].join(', ')}` : '; no containment proof survives the worker exit'}${ownershipError}`;
+      const previousPreservation = meta?.recoveryReason;
+      const unsafeReason =
+        previousPreservation === undefined
+          ? orphanReason
+          : previousPreservation.includes(orphanReason)
+            ? previousPreservation
+            : `${previousPreservation}; ${orphanReason}`.slice(0, 10_000);
       recovery = await finalizeRunWorktrees(
         paths,
         workDir,
@@ -599,7 +634,7 @@ export async function recoverRun(
         interruptedReadOnlyCleanup
           ? {}
           : {
-              unsafeReason: `Recovery required: orphan writer quiescence cannot be verified${survivors.length + observedHolders.length > 0 ? `; live writer identities or workspace holders: ${[...new Set([...survivors, ...observedHolders])].join(', ')}` : '; no containment proof survives the worker exit'}${ownershipError}`,
+              unsafeReason,
             },
       );
       retriedReadOnlyCleanup =
@@ -616,6 +651,18 @@ export async function recoverRun(
       await lock?.release();
     }
   }
+  for (const previous of record.cancellationRecovery?.localSave ?? []) {
+    const current = recovery.find((result) => result.path === previous.path);
+    if (current === undefined) recovery.push(previous);
+    else if (!previous.saved && !current.saved)
+      recovery[recovery.indexOf(current)] = {
+        ...current,
+        reason: (current.reason?.includes(previous.reason ?? '')
+          ? current.reason
+          : `${previous.reason}; ${current.reason}`
+        ).slice(0, 10_000),
+      };
+  }
   const recoveryDetail = recovery
     .map(
       (result) =>
@@ -626,7 +673,9 @@ export async function recoverRun(
     recoveryDetail === ''
       ? options.detail
       : `${options.detail}\n\n${recoveryDetail}`;
-  if (options.reason === 'cancelled' && record.recoveryReason !== 'cancelled') {
+  if (record.cancellationRecovery !== undefined)
+    detail += `\n\n${record.cancellationRecovery.detail}`;
+  if (reason === 'cancelled' && record.recoveryReason !== 'cancelled') {
     record.recoveryReason = 'cancelled';
     await writeRecord(paths, record).catch((error) => {
       // The old record still protects the directory. A restart can also recover cancellation from the owned status.
@@ -656,13 +705,19 @@ export async function recoverRun(
         cancelAck: routePath(RUNNER_ROUTES.cancelAck, { runId }),
       };
   const client = options.clientFor(record.appKey);
-  if (options.reason === 'unknown') {
+  if (reason === 'unknown') {
     log(
       `run ${runId}: owned server status is unknown; ${retriedReadOnlyCleanup ? 'read-only cleanup completed; retry record retained' : 'preservation directory and retry record retained'}`,
     );
     return;
   }
   if (client === undefined) {
+    if (recovery.length > 0 || record.recoveryReason === 'cancelled') {
+      log(
+        `run ${runId}: application unavailable; unconfirmed recovery record retained`,
+      );
+      return;
+    }
     // The registration is gone: nobody to report to.
     log(`run ${runId}: its application is no longer registered; dropping it`);
     const files = spoolPaths(paths.runsDir, runId);
@@ -708,7 +763,7 @@ export async function recoverRun(
     log(detail);
   }
   try {
-    if (options.reason === 'cancelled') {
+    if (reason === 'cancelled') {
       const response = dataOf(
         await client.request(
           'POST',
@@ -726,8 +781,8 @@ export async function recoverRun(
       );
       if (
         !job &&
-        recovery.length > 0 &&
-        !delivered &&
+        (record.cancellationRecovery !== undefined ||
+          (recovery.length > 0 && !delivered)) &&
         !(
           response !== null &&
           typeof response === 'object' &&
@@ -742,18 +797,21 @@ export async function recoverRun(
       }
     } else
       await client.request('POST', routes.fail, {
-        reason: options.reason,
+        reason: reason,
         detail,
       });
     log(
-      `run ${runId}: reported as ${options.reason === 'cancelled' ? 'cancelled' : 'failed'} (${options.reason})`,
+      `run ${runId}: reported as ${reason === 'cancelled' ? 'cancelled' : 'failed'} (${reason})`,
     );
   } catch (error) {
     if (
       error instanceof ApiError &&
       (LOST_CODES.has(error.reason) || error.status === 404)
     ) {
-      if (recovery.length > 0 && !delivered) {
+      if (
+        record.cancellationRecovery !== undefined ||
+        (recovery.length > 0 && !delivered)
+      ) {
         log(
           `run ${runId}: preservation report not acknowledged (${error.reason}); record retained`,
         );
@@ -784,23 +842,9 @@ export async function recoverOrphans(
   const records = await readRecords(options.paths);
   const recovered: string[] = [];
   for (const record of records) {
-    let reason: 'cancelled' | 'leaseExpired' | 'unknown' =
-      record.recoveryReason ?? 'leaseExpired';
-    if (record.kind !== 'job' && record.recoveryReason === undefined) {
-      const client = options.clientFor(record.appKey);
-      const status = await client
-        ?.get(
-          routePath(RUNNER_ROUTES.status, { runId: record.runId }),
-          StatusResponseSchema,
-        )
-        .catch(() => undefined);
-      if (status?.cancelRequested === true || status?.status === 'cancelled')
-        reason = 'cancelled';
-      else if (status === undefined) reason = 'unknown';
-    }
     await recoverRun(record, {
       ...options,
-      reason,
+      reason: 'leaseExpired',
       detail:
         record.kind === 'job'
           ? 'The runner restarted; the job it left behind was stopped.'
