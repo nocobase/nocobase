@@ -149,6 +149,9 @@ export interface AgentRunners {
 
 /** An agent as the Agent page lists it (`GET /api/agents`), for the caller. */
 export interface AgentView extends Agent {
+  readonly discoveryKey?: string;
+  readonly discoveryRevision?: number;
+  readonly ignored?: boolean;
   /** Its default reasoning effort: its first entry's. */
   readonly effort: string | null;
   /** The efforts its tool takes, weakest first; empty for an application's own agent. */

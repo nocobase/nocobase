@@ -98,6 +98,50 @@ describe('the overview', () => {
     });
   });
 
+  it('includes shared queue diagnostics and only the viewer machine details', async () => {
+    h.roles.set('alice', 'admin');
+    const worker = await h.createAgent({
+      name: 'Worker',
+      maxConcurrentRuns: 2,
+    });
+    await h.claimOne();
+    await h.database
+      .connection()
+      .query.updateTable('agRunners')
+      .set({
+        toolSlots: { claude: 1 },
+        name: 'alice-machine',
+        ownerUserId: 'alice',
+      })
+      .allowAllRows()
+      .execute();
+    const busy = await create('alice', {
+      statusKey: 'in_progress',
+      start: false,
+    });
+    await h.projects.comments.create(h.viewer('alice'), busy.id, {
+      content: `[@Worker](mention://agent/${worker}) first step`,
+    });
+    await h.claimOne();
+    const queued = await create('alice', {
+      statusKey: 'in_progress',
+      start: false,
+    });
+    await h.projects.comments.create(h.viewer('alice'), queued.id, {
+      content: `[@Worker](mention://agent/${worker}) second step`,
+    });
+    const data = await overview();
+    const item = data.issues.find(
+      (issue: { id: string }) => issue.id === queued.id,
+    );
+    expect(item.progress).toMatchObject({
+      state: 'queued',
+      managerWait: {
+        entries: [{ reason: 'busy', runners: ['alice-machine'] }],
+      },
+    });
+  });
+
   it('lists the caller’s open issues by status, following their blocked and in-review ones by default', async () => {
     const backlog = await create('alice', { title: 'Later' });
     const blocked = await create('alice', { title: 'Asks' });

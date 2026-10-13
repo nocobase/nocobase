@@ -334,7 +334,7 @@ describe('an agent run calling Studio’s API', () => {
         'issue:update',
       ]),
     );
-    expect(ids).not.toContain('report:metrics');
+    expect(ids).toContain('report:metrics');
     expect(ids).not.toContain('app:create');
     expect(ids).not.toContain('label:list');
   });

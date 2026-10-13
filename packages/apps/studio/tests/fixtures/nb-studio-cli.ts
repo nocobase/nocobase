@@ -15,12 +15,17 @@ export interface StudioCliResult {
 
 /**
  * This process's environment without what a CI run sets (`GITHUB_*`, GitLab's `CI_*`): the CLI reads the repository and
- * the commit from it, so a test run in CI would otherwise send the test runner's own.
+ * the commit from it, so a test run in CI would otherwise send the test runner's own. Also exclude inherited Studio
+ * authentication and runner credential routing: subprocess fixtures must authenticate only against their own server.
  */
 function withoutCi(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   return Object.fromEntries(
     Object.entries(env).filter(
-      ([name]) => !name.startsWith('GITHUB_') && !name.startsWith('CI_'),
+      ([name]) =>
+        !name.startsWith('GITHUB_') &&
+        !name.startsWith('CI_') &&
+        !name.startsWith('NB_STUDIO_') &&
+        name !== 'AGENT_RUN_CREDENTIALS',
     ),
   );
 }

@@ -171,6 +171,13 @@ export class AgentsApi {
   }
 
   /** Every agent discovered from runners, as the Agent page shows it to the caller. */
+  public setIgnored(
+    groups: readonly { key: string; expectedRevision: number }[],
+    ignored: boolean,
+  ): Promise<unknown> {
+    return this.send('discoveryPreferences', 'PUT', { groups, ignored });
+  }
+
   public agents(): Promise<AgentView[]> {
     return this.list('');
   }
