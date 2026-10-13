@@ -30,6 +30,10 @@ import {
 } from './checkout.ts';
 import { cleanArtifacts, type ArtifactOptions } from './artifacts.ts';
 import { isAlive } from './supervisor.ts';
+import {
+  canRetryWorkspaceRemoval,
+  retryWorkspaceRemoval,
+} from './run-worktrees.ts';
 
 export { hasUnpushedWork } from './checkout.ts';
 
@@ -51,6 +55,8 @@ export interface WorkspaceEntry {
   readonly inUse: boolean;
   /** A read-only checkout (`isDisposableWorkspace`): removed once unlocked, with nothing to save. */
   readonly disposable?: boolean;
+  /** Verified pushed work with an already-started removal. */
+  readonly removing?: boolean;
   status: WorkspaceStatus;
 }
 
@@ -123,7 +129,9 @@ export async function inspectWorkspace(
     Date.parse(meta.lastUsedAt) >= checkedAt;
   let unpushed = meta.unpushed ?? false;
   const disposable = isDisposableWorkspace(workDir, meta);
-  if (disposable) unpushed = false;
+  const removing =
+    !inUse && (await canRetryWorkspaceRemoval(paths, workDir, meta));
+  if (disposable || removing) unpushed = false;
   else if (stale && !inUse) {
     unpushed = await hasUnpushedWork(workDir, meta, options.log);
     await recordCheck(paths, workDir, meta, {
@@ -140,6 +148,7 @@ export async function inspectWorkspace(
     unpushed,
     inUse,
     ...(disposable ? { disposable } : {}),
+    ...(removing ? { removing } : {}),
     status: 'unknown',
   };
 }
@@ -494,6 +503,7 @@ export function planRemovals(
   for (const entry of ended) pick(entry, 'ended');
   for (const entry of entries)
     if (entry.disposable === true) pick(entry, 'readOnly');
+    else if (entry.removing === true) pick(entry, 'selected');
   return { remove, kept };
 }
 
@@ -505,7 +515,7 @@ export async function removePlanned(
   paths: RunnerPaths,
   entry: WorkspaceEntry,
   options: { force?: boolean; log?: (message: string) => void } = {},
-): Promise<'inUse' | 'changed' | 'unpushed' | undefined> {
+): Promise<'inUse' | 'changed' | 'unpushed' | 'cleanupFailed' | undefined> {
   let lock: Lock;
   try {
     lock = await acquireLock(`${entry.workDir}.lock`, { timeoutMs: 0 });
@@ -514,6 +524,18 @@ export async function removePlanned(
   }
   try {
     const meta = await readWorkspaceMeta(paths, entry.workDir);
+    if (
+      meta !== undefined &&
+      (await canRetryWorkspaceRemoval(paths, entry.workDir, meta))
+    )
+      return (await retryWorkspaceRemoval(
+        paths,
+        entry.workDir,
+        options.log ?? (() => {}),
+        true,
+      ))
+        ? undefined
+        : 'cleanupFailed';
     if (isDisposableWorkspace(entry.workDir, meta)) {
       if (
         meta !== undefined &&

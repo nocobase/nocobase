@@ -1,5 +1,11 @@
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { waitFor } from './fake-server.ts';
+import { workspaceHolders } from '../src/core/process-tree.ts';
+import * as fsPromises from 'node:fs/promises';
+import * as checkoutModule from '../src/core/checkout.ts';
+import { collectWorkspaces } from '../src/core/workspaces.ts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
 import {
@@ -9,6 +15,7 @@ import {
   acquireLock,
   markDirsPrepared,
   reportRepos,
+  markWorkspaceEnded,
   writeWorkspaceMeta,
 } from '../src/core/checkout.ts';
 import {
@@ -16,8 +23,14 @@ import {
   runWorkDir,
   clearContinuations,
   continuationWorkDir,
+  retryWorkspaceRemoval,
 } from '../src/core/run-worktrees.ts';
 import { git, makeRemote, removeDir, tempDir } from './helpers.ts';
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>();
+  return { ...actual, rm: vi.fn(actual.rm) };
+});
 
 const COMMIT = [
   '-c',
@@ -110,6 +123,149 @@ describe('per-attempt worktrees', () => {
     });
     return { workDir, repo: prepared.dirs[0]!.repo!, prepared };
   }
+  async function interruptedRemoval(id: string) {
+    const a = await start(id);
+    git(['push', a.repo.url, 'HEAD:refs/heads/agent/PM-300'], a.repo.dir);
+    await markWorkspaceEnded(
+      paths,
+      a.workDir,
+      await reportRepos([a.repo], { push: true }),
+    );
+    const original = checkoutModule.git;
+    const spy = vi
+      .spyOn(checkoutModule, 'git')
+      .mockImplementation(async (args, ...rest) => {
+        if (args[0] === 'worktree' && args[1] === 'remove') {
+          rmSync(path.join(a.repo.dir, '.git'));
+          throw new Error('EACCES: injected interrupted removal');
+        }
+        return original(args, ...rest);
+      });
+    try {
+      const result = await finalizeRunWorktrees(paths, a.workDir, () => {});
+      expect(result.every((entry) => entry.saved)).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(existsSync(path.join(a.repo.dir, '.git'))).toBe(false);
+    expect(
+      (await readWorkspaceMeta(paths, a.workDir))?.recoveryRequired,
+    ).not.toBe(true);
+    expect(await readWorkspaceMeta(paths, a.workDir)).toMatchObject({
+      recoveryReason: expect.stringContaining('EACCES'),
+      repos: [expect.objectContaining({ removing: true })],
+    });
+    return a;
+  }
+
+  it('GC finishes a pushed interrupted removal without Git metadata and does not block the next run', async () => {
+    const a = await interruptedRemoval('remove-fails');
+    // An actual attempt lock still wins over the removal marker.
+    const lock = await acquireLock(`${a.workDir}.lock`, { timeoutMs: 0 });
+    expect(await retryWorkspaceRemoval(paths, a.workDir, () => {})).toBe(false);
+    expect(existsSync(a.workDir)).toBe(true);
+    await lock.release();
+    const holder = spawn(
+      process.execPath,
+      ['-e', 'setInterval(() => {}, 1000)'],
+      { cwd: a.repo.dir, detached: true, stdio: 'ignore' },
+    );
+    const unrelated = spawn(
+      process.execPath,
+      ['-e', 'setInterval(() => {}, 1000)'],
+      { cwd: root, detached: true, stdio: 'ignore' },
+    );
+    try {
+      await waitFor(async () =>
+        (await workspaceHolders(a.workDir)).includes(holder.pid!),
+      );
+      const collected = await collectWorkspaces({ paths });
+      await waitFor(
+        () => holder.exitCode !== null || holder.signalCode !== null,
+      );
+      expect(unrelated.exitCode).toBeNull();
+      expect(unrelated.signalCode).toBeNull();
+      expect(collected.removed.map((entry) => entry.workDir)).toContain(
+        a.workDir,
+      );
+      expect(existsSync(a.workDir)).toBe(false);
+      expect(
+        git(['worktree', 'list', '--porcelain'], a.repo.cache),
+      ).not.toContain(a.repo.dir);
+      const b = await start('after-removal');
+      expect(b.repo.warnings?.join(' ')).not.toContain('Recovery work remains');
+      await finalizeRunWorktrees(paths, b.workDir, () => {});
+    } finally {
+      holder.kill('SIGKILL');
+      unrelated.kill('SIGKILL');
+    }
+  });
+
+  it('records retry failures without demanding recovery, and the next run retries cleanup', async () => {
+    const a = await interruptedRemoval('retry-fails');
+    const original = (
+      await vi.importActual<typeof fsPromises>('node:fs/promises')
+    ).rm;
+    const spy = vi
+      .spyOn(fsPromises, 'rm')
+      .mockImplementation(async (...args) => {
+        if (String(args[0]) === a.repo.dir)
+          throw new Error('EACCES: cleanup retry');
+        return original(...args);
+      });
+    try {
+      expect(await retryWorkspaceRemoval(paths, a.workDir, () => {})).toBe(
+        false,
+      );
+      expect(
+        (await readWorkspaceMeta(paths, a.workDir))?.recoveryRequired,
+      ).not.toBe(true);
+      expect(await readWorkspaceMeta(paths, a.workDir)).toMatchObject({
+        recoveryReason: 'EACCES: cleanup retry',
+      });
+    } finally {
+      spy.mockRestore();
+    }
+    const b = await start('retry-on-next-run');
+    expect(existsSync(a.workDir)).toBe(false);
+    expect(b.repo.warnings?.join(' ')).not.toContain('Recovery work remains');
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+
+  it.each(['dirty', 'unpushed'] as const)(
+    'protects %s work even with a removal marker',
+    async (kind) => {
+      const a = await start(`protected-${kind}`);
+      git(['push', a.repo.url, 'HEAD:refs/heads/agent/PM-300'], a.repo.dir);
+      await markWorkspaceEnded(
+        paths,
+        a.workDir,
+        await reportRepos([a.repo], { push: true }),
+      );
+      writeFileSync(path.join(a.repo.dir, 'new-work.txt'), 'keep');
+      if (kind === 'unpushed') {
+        git(['add', 'new-work.txt'], a.repo.dir);
+        git([...COMMIT, 'commit', '-m', 'unpublished'], a.repo.dir);
+      }
+      const meta = (await readWorkspaceMeta(paths, a.workDir))!;
+      await writeWorkspaceMeta(paths, a.workDir, {
+        ...meta,
+        recoveryRequired: false,
+        repos: meta.repos.map((repo) => ({ ...repo, removing: true })),
+      });
+      expect(await retryWorkspaceRemoval(paths, a.workDir, () => {})).toBe(
+        false,
+      );
+      await collectWorkspaces({ paths });
+      expect(readFileSync(path.join(a.repo.dir, 'new-work.txt'), 'utf8')).toBe(
+        'keep',
+      );
+      expect(
+        (await readWorkspaceMeta(paths, a.workDir))?.recoveryRequired,
+      ).toBe(true);
+    },
+  );
+
   it('starts two unmarked writers and keeps divergent heads visible without merging', async () => {
     const [a, b] = await Promise.all([start('a'), start('b')]);
     expect(a.workDir).not.toBe(b.workDir);

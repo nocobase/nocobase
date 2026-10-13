@@ -278,3 +278,19 @@ export async function workspaceHolders(
   }
   return found;
 }
+
+/** Stop leftovers in an unlocked, verified deletion candidate, then check that its cwd holders are gone. */
+export async function stopWorkspaceHolders(workDir: string): Promise<void> {
+  for (const pid of await workspaceHolders(workDir, true)) {
+    await killLeftovers(pid, { graceMs: 100 });
+    signal(pid, 'SIGTERM');
+  }
+  await delay(100);
+  for (const pid of await workspaceHolders(workDir, true))
+    signal(pid, 'SIGKILL');
+  await delay(100);
+  if ((await workspaceHolders(workDir, true)).length > 0)
+    throw new Error(
+      'Processes still hold the directory after stopping; deletion will be retried.',
+    );
+}
