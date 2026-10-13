@@ -164,6 +164,13 @@ const enUS = {
   },
   choices: { more: 'More options' },
   transcript: {
+    image: {
+      open: 'Open image preview',
+      preview: 'Image preview',
+      zoomIn: 'Zoom in',
+      zoomOut: 'Zoom out',
+      fit: 'Fit to screen',
+    },
     thought: 'Thinking',
     plan: 'Plan {{done}}/{{total}}',
     prompt: {
