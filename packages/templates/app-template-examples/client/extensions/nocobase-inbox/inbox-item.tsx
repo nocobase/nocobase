@@ -179,11 +179,12 @@ function ItemCard({
         <span className='mt-0.5 flex shrink-0'>
           <InboxTypeIcon entry={entry} renderer={renderer} />
         </span>
-        <button
+        <Button
+          variant='ghost'
           type='button'
           aria-current={selected ? 'true' : undefined}
           // Stretched over the whole card, so a click anywhere on it selects the item.
-          className="block min-w-0 flex-1 cursor-pointer space-y-1 text-left after:absolute after:inset-0 after:rounded-lg after:content-[''] focus-visible:outline-none"
+          className="block h-auto min-w-0 flex-1 cursor-pointer space-y-1 rounded-none border-0 bg-transparent p-0 text-left font-normal whitespace-normal hover:bg-transparent active:translate-y-0 after:absolute after:inset-0 after:rounded-lg after:content-[''] focus-visible:outline-none"
           onClick={() => onSelect(entry)}
           onKeyDown={onKeyDown}
         >
@@ -234,7 +235,7 @@ function ItemCard({
               {sentence}
             </span>
           ) : null}
-        </button>
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger
             render={

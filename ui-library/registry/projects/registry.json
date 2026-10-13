@@ -56,7 +56,7 @@
       "name": "issue-detail",
       "type": "registry:block",
       "title": "Issue Detail",
-      "description": "An issue's page as presentational parts: the two-column frame of cards on the page background, the header and description opening the body card, an add bar under it, the secondary parts (checklist, approvals, sub-issues, dependencies with an issue search, files) as sections sharing one heading pattern and hidden while empty, files dropped or pasted on the body, and the side column over property-fields. Use it for an issue detail page over the hooks of @nocobase/app-plugin-projects/client/issues.",
+      "description": "An issue's page as presentational parts: the two-column frame of cards on the page background, the header and description opening the body card, an add bar under it, the secondary parts (sub-issues, dependencies with an issue search, files) as sections sharing one heading pattern and hidden while empty, files dropped or pasted on the body, and the side column over property-fields. Use it for an issue detail page over the hooks of @nocobase/app-plugin-projects/client/issues.",
       "categories": ["projects"],
       "meta": {
         "group": "Projects",

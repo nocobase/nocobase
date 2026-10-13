@@ -69,8 +69,6 @@ async function setup() {
       });
     if (method === 'POST' && path === 'projects/attachments/discard')
       return new Response(null, { status: 204 });
-    if (method === 'GET' && path === 'projects/issues/starts')
-      return { data: { initialStatus: 'todo', options: [] } };
     if (method === 'GET') return { data: [] };
     return new Response(null, { status: 404 });
   };
@@ -140,7 +138,9 @@ describe('leaving the New issue dialog while it creates the issue', () => {
     await waitFor(() =>
       expect(dialog.querySelector('img[src$="/f1/content"]')).not.toBeNull(),
     );
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Create and start' }),
+    );
     await waitFor(() =>
       expect(
         calls.filter(

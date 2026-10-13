@@ -40,6 +40,18 @@ export async function assertTargetIsUsable(directory: string): Promise<void> {
 }
 
 /**
+ * How a generated project ignores `.agents/`: `nocobase skills sync` writes `skills/` and its ownership file there, while
+ * `rules/` holds guidance the application owns and commits. Order matters, see `normalizeAgentsEntries`.
+ */
+const AGENTS_GITIGNORE_ENTRIES = ['/.agents/*', '!/.agents/rules/'] as const;
+
+/**
+ * Lines that ignore the whole `.agents/` directory, as templates and fallbacks wrote before `rules/` was committed.
+ * Left in place they would exclude the directory itself and make the `rules/` negation unreachable.
+ */
+const LEGACY_AGENTS_GITIGNORE_ENTRIES = new Set(['/.agents/', '.agents/']);
+
+/**
  * The minimum a generated project must ignore. `config.yml` carries the `secrets.keys` that `config init` generates
  * and `.env` carries local settings, so committing either would publish local configuration; the rest are build
  * output and local state.
@@ -65,7 +77,10 @@ const FALLBACK_GITIGNORE = [
   // to, for every connection, regenerated rather than committed. Hand-written metadata lives in
   // `database/<connection>/metadata/` instead, so the whole collections directory can be ignored.
   '/database/*/collections/',
-  '/.agents/',
+  // Everything under `.agents/` is generated except `rules/`, the application's own agent guidance that `AGENTS.md`
+  // links to. Git cannot re-include a path whose parent directory is excluded, so the directory's contents are ignored
+  // with `/*` rather than the directory itself, and the negation has to come after that line.
+  ...AGENTS_GITIGNORE_ENTRIES,
   '/.claude/skills/',
   '/.agent-annotations/',
   '*.log',
@@ -80,7 +95,7 @@ const FALLBACK_GITIGNORE = [
  */
 const REQUIRED_GITIGNORE_ENTRIES = [
   '/.env',
-  '/.agents/',
+  ...AGENTS_GITIGNORE_ENTRIES,
   '/.claude/skills/',
   '/.agent-annotations/',
 ] as const;
@@ -120,17 +135,74 @@ async function restoreGitignore(directory: string): Promise<void> {
   }
 
   const contents = await readFile(target, 'utf8');
+  const normalized = normalizeGitignore(contents);
+  if (normalized !== contents) {
+    await writeFile(target, normalized, 'utf8');
+  }
+}
+
+/**
+ * Rewrites the `.agents/` entries so that `rules/` is committed while the rest of the directory stays ignored.
+ *
+ * A legacy line ignoring the whole directory is replaced in place by the two current lines rather than left beside
+ * them, because git never looks inside an excluded directory and the negation would match nothing. A negation that
+ * precedes `/.agents/*` is moved after it, since the later of two matching lines wins; when `/.agents/*` is absent the
+ * negation is dropped here and appended together with it.
+ */
+function normalizeAgentsEntries(lines: string[]): string[] {
+  const [ignoreAll, keepRules] = AGENTS_GITIGNORE_ENTRIES;
+  const result: string[] = [];
+  let replacedLegacy = false;
+
+  for (const line of lines) {
+    if (LEGACY_AGENTS_GITIGNORE_ENTRIES.has(line)) {
+      if (!replacedLegacy && !lines.includes(ignoreAll)) {
+        result.push(ignoreAll, keepRules);
+      }
+      replacedLegacy = true;
+      continue;
+    }
+    result.push(line);
+  }
+
+  // Keep the first negation that follows `/.agents/*`, drop every other one, and insert it when none follows.
+  const ignoreIndex = result.indexOf(ignoreAll);
+  const keptIndex =
+    ignoreIndex === -1 ? -1 : result.indexOf(keepRules, ignoreIndex);
+  const reordered = result.filter(
+    (line, index) => line !== keepRules || index === keptIndex,
+  );
+
+  if (ignoreIndex !== -1 && keptIndex === -1) {
+    reordered.splice(reordered.indexOf(ignoreAll) + 1, 0, keepRules);
+  }
+
+  return reordered;
+}
+
+/**
+ * Brings an existing `.gitignore` up to what a generated project needs: the `.agents/` entries in their current form,
+ * then any required entry still missing, appended under a comment. Applying it to its own output changes nothing.
+ */
+export function normalizeGitignore(contents: string): string {
+  const eol = contents.includes('\r\n') ? '\r\n' : '\n';
+  const original = contents.split(/\r?\n/u);
+  const lines = normalizeAgentsEntries(original);
+  let normalized =
+    lines.length === original.length &&
+    lines.every((line, index) => line === original[index])
+      ? contents
+      : lines.join(eol);
+
   const missing = REQUIRED_GITIGNORE_ENTRIES.filter(
-    (entry) => !contents.split(/\r?\n/u).includes(entry),
+    (entry) => !lines.includes(entry),
   );
   if (missing.length > 0) {
-    const separator = contents === '' || contents.endsWith('\n') ? '' : '\n';
-    await writeFile(
-      target,
-      `${contents}${separator}\n# Written when this project was generated.\n${missing.join('\n')}\n`,
-      'utf8',
-    );
+    const separator = normalized === '' || normalized.endsWith('\n') ? '' : eol;
+    normalized = `${normalized}${separator}${eol}# Written when this project was generated.${eol}${missing.join(eol)}${eol}`;
   }
+
+  return normalized;
 }
 
 /**

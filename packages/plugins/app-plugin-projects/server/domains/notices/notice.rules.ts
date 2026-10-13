@@ -15,13 +15,14 @@
  * | comment.updated | the edit mentions more people                | `mentioned`         | the newly mentioned             |
  *
  * The planner (`notice.planner.ts`) then removes the actor and lets a mention beat a comment, and a decision or the
- * workflow's owner notice beat a status change.
+ * owner's notice beat a status change.
  */
 import { EXCERPT_LENGTH } from '../../../shared/comments.js';
 import type { Issue } from '../../../shared/issues.js';
 import { excerpt } from '../../kernel/mentions.js';
 import { findComment } from '../comments/comment.store.js';
-import { findIssue, type StatusCatalogs } from '../issues/index.js';
+import { statusOf } from '../../../shared/statuses.js';
+import { findIssue } from '../issues/index.js';
 import type { NoticeRule, NoticeRuleContext, PlannedNotice } from './ports.js';
 
 const usersIn = (
@@ -33,9 +34,7 @@ const issuePath = (identifier: string) =>
 const commentPath = (identifier: string, commentId: string) =>
   `${issuePath(identifier)}?comment=${encodeURIComponent(commentId)}`;
 
-export function builtInRules(deps: {
-  readonly statuses: StatusCatalogs;
-}): NoticeRule {
+export function builtInRules(): NoticeRule {
   return async (context: NoticeRuleContext) => {
     const { tx, events } = context;
     const notices: PlannedNotice[] = [];
@@ -143,10 +142,6 @@ export function builtInRules(deps: {
             params: { ...common.params, source: 'description' },
           });
         if (changes.status && event.actor.type !== 'system') {
-          const catalog = await deps.statuses.forProject(
-            tx.conn,
-            issue.projectId,
-          );
           const to = changes.status.to;
           notices.push({
             ...common,
@@ -160,9 +155,7 @@ export function builtInRules(deps: {
               ...common.params,
               from: changes.status.from,
               status: to,
-              statusName:
-                catalog.statuses.find((status) => status.key === to)?.name ??
-                to,
+              statusName: statusOf(to)?.name ?? to,
             },
           });
         }

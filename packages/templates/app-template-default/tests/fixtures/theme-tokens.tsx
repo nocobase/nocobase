@@ -1,6 +1,7 @@
 import { Refine } from '@refinedev/core';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
+import { Loading } from '../../client/components/loading';
 import { Button } from '../../client/components/ui/button';
 import { Input } from '../../client/components/ui/input';
 import {
@@ -36,6 +37,12 @@ export default function Fixture() {
                 <AppSidebarToggle />
               </div>
               <h1 className='text-3xl'>Theme tokens · 主题样式</h1>
+              <section
+                className='flex h-32 items-center justify-center rounded-lg border bg-background'
+                aria-label='Brand loading preview'
+              >
+                <Loading label='Loading preview' />
+              </section>
               <p data-testid='body'>Body text · 中文内容与 English text</p>
               <p className='font-serif'>Serif text</p>
               <code>const theme = 'compact';</code>

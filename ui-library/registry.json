@@ -9,6 +9,7 @@
     "registry/authorization/registry.json",
     "registry/components/registry.json",
     "registry/inbox/registry.json",
+    "registry/lifecycle/registry.json",
     "registry/projects/registry.json",
     "website/demo/registry.json"
   ]

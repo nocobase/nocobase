@@ -104,6 +104,61 @@ describe('the new issue dialog', () => {
     expect(screen.getByRole('option', { name: /Ann/u })).toBeTruthy();
   });
 
+  it('starts now by default, or later in backlog, and keeps the default executor to the server', async () => {
+    api.routes['projects/me'] = () => ({ data: withAgents() });
+    api.routes['projects/executors'] = () => ({
+      data: [
+        { type: 'agent', id: 'pm', name: 'Project manager', isDefault: true },
+        { type: 'agent', id: 'a1', name: 'Coder' },
+      ],
+    });
+    const created: unknown[] = [];
+    api.routes['POST projects/issues'] = (request) => {
+      created.push(request.json);
+      return { data: { id: 'i1', identifier: 'PM-1' } };
+    };
+    renderNewIssue();
+    const dialog = await screen.findByRole('dialog');
+    // The default executor is shown as chosen.
+    await waitFor(() =>
+      expect(
+        within(dialog).getByLabelText('properties.executor').textContent,
+      ).toContain('Project manager'),
+    );
+    expect(within(dialog).getByText('issueForm.createAndStart')).toBeTruthy();
+    fireEvent.change(within(dialog).getByLabelText('issueForm.titleLabel'), {
+      target: { value: 'Now' },
+    });
+    fireEvent.click(within(dialog).getByText('issueForm.createAndStart'));
+    await waitFor(() => expect(created).toHaveLength(1));
+    expect(created[0]).toMatchObject({
+      title: 'Now',
+      statusKey: 'in_progress',
+    });
+    // Left as it was, the executor goes to the server's default.
+    expect(created[0]).not.toHaveProperty('executor');
+  });
+
+  it('creates a later issue in backlog', async () => {
+    const created: unknown[] = [];
+    api.routes['POST projects/issues'] = (request) => {
+      created.push(request.json);
+      return { data: { id: 'i1', identifier: 'PM-1' } };
+    };
+    renderNewIssue();
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('issueForm.titleLabel'), {
+      target: { value: 'Later' },
+    });
+    await userEvent.click(within(dialog).getByText('issueForm.startLater'));
+    await waitFor(() =>
+      expect(within(dialog).getByText('common.create')).toBeTruthy(),
+    );
+    fireEvent.click(within(dialog).getByText('common.create'));
+    await waitFor(() => expect(created).toHaveLength(1));
+    expect(created[0]).toMatchObject({ title: 'Later', statusKey: 'backlog' });
+  });
+
   it('does not look for other executors when only people execute', async () => {
     renderNewIssue();
     await screen.findByRole('dialog');
@@ -206,10 +261,8 @@ describe('files on a new issue', () => {
 
   const paste = (dialog: HTMLElement, files: File[], text = '') =>
     fireEvent.paste(
-      // Hidden from the accessibility tree too, under the "Start now?" dialog.
       within(dialog).getByRole('textbox', {
         name: 'issueForm.descriptionLabel',
-        hidden: true,
       }),
       {
         clipboardData: {
@@ -234,7 +287,7 @@ describe('files on a new issue', () => {
     expect(within(list).getByText(/^screenshot-.*\.png$/u)).toBeTruthy();
     expect(calls('POST', 'projects/attachments')).toHaveLength(1);
 
-    fireEvent.click(within(dialog).getByText('common.create'));
+    fireEvent.click(within(dialog).getByText('issueForm.createAndStart'));
     await waitFor(() => expect(created).toHaveLength(1));
     expect(created[0]).toMatchObject({
       title: 'Broken login',
@@ -275,7 +328,7 @@ describe('files on a new issue', () => {
     await within(dialog).findByLabelText(/^attachments\.uploading/u);
     expect(
       within(dialog)
-        .getByText('common.create')
+        .getByText('issueForm.createAndStart')
         .closest('button')
         ?.hasAttribute('disabled'),
     ).toBe(true);
@@ -290,16 +343,16 @@ describe('files on a new issue', () => {
     await waitFor(() =>
       expect(
         within(dialog)
-          .getByText('common.create')
+          .getByText('issueForm.createAndStart')
           .closest('button')
           ?.hasAttribute('disabled'),
       ).toBe(false),
     );
-    fireEvent.click(within(dialog).getByText('common.create'));
+    fireEvent.click(within(dialog).getByText('issueForm.createAndStart'));
     await waitFor(() => expect(created).toHaveLength(1));
   });
 
-  it('does not get past "Start now?" while a file added meanwhile uploads', async () => {
+  it('blocks a later start with an agent while a file uploads', async () => {
     api.routes['projects/me'] = () => ({ data: withAgents() });
     const uploads = deferredUploads();
     const dialog = await openForm();
@@ -310,18 +363,25 @@ describe('files on a new issue', () => {
     await userEvent.click(
       await screen.findByRole('option', { name: /Coder/u }),
     );
-    fireEvent.click(within(dialog).getByText('common.create'));
-    expect(await screen.findByText('start.title')).toBeTruthy();
+    await userEvent.click(within(dialog).getByText('issueForm.startLater'));
     paste(dialog, [screenshot()]);
-    await waitFor(() =>
-      expect(calls('POST', 'projects/attachments')).toHaveLength(1),
-    );
-    fireEvent.click(screen.getByText('start.start'));
+    await within(dialog).findByLabelText(/^attachments\.uploading/u);
+    expect(
+      within(dialog).getByText('common.create').closest('button'),
+    ).toBeDisabled();
+    fireEvent.submit(dialog.querySelector('form') as HTMLFormElement);
     expect(
       await within(dialog).findByText('issueForm.uploadsPending'),
     ).toBeTruthy();
     expect(created).toHaveLength(0);
     uploads.finish();
+    await uploaded(dialog);
+    fireEvent.click(within(dialog).getByText('common.create'));
+    await waitFor(() => expect(created).toHaveLength(1));
+    expect(created[0]).toMatchObject({
+      statusKey: 'backlog',
+      attachmentIds: ['f1'],
+    });
   });
 
   it('counts files alone as unsaved, and discards them when the form is discarded', async () => {
@@ -371,7 +431,7 @@ describe('files on a new issue', () => {
     });
     paste(dialog, [screenshot()]);
     await uploaded(dialog);
-    fireEvent.click(within(dialog).getByText('common.create'));
+    fireEvent.click(within(dialog).getByText('issueForm.createAndStart'));
     await waitFor(() =>
       expect(calls('POST', 'projects/issues')).toHaveLength(1),
     );
@@ -393,7 +453,7 @@ describe('files on a new issue', () => {
     const dialog = await openForm();
     paste(dialog, [screenshot()]);
     const list = await uploaded(dialog);
-    fireEvent.click(within(dialog).getByText('common.create'));
+    fireEvent.click(within(dialog).getByText('issueForm.createAndStart'));
     await waitFor(() =>
       expect(calls('POST', 'projects/issues')).toHaveLength(1),
     );
@@ -434,13 +494,13 @@ describe('files on a new issue', () => {
       name: 'attachments.pending',
     });
     await waitFor(() => expect(list.querySelector('img')).not.toBeNull());
-    fireEvent.click(within(dialog).getByText('common.create'));
+    fireEvent.click(within(dialog).getByText('issueForm.createAndStart'));
     expect(await within(dialog).findByRole('alert')).toBeTruthy();
     expect(within(list).getAllByRole('listitem')).toHaveLength(1);
     expect(deleted()).toEqual([]);
 
     fail = false;
-    fireEvent.click(within(dialog).getByText('common.create'));
+    fireEvent.click(within(dialog).getByText('issueForm.createAndStart'));
     await waitFor(() => expect(created).toHaveLength(1));
     expect(created[0]).toMatchObject({ attachmentIds: ['f1'] });
   });

@@ -1,5 +1,7 @@
 'use client';
 
+import { BrandSpinner } from '#components/brand-spinner';
+
 import { useTranslation } from '@nocobase/i18n/client';
 import * as React from 'react';
 import { Toast as ToastPrimitive } from '@base-ui/react/toast';
@@ -12,7 +14,6 @@ import {
   InfoIcon,
   TriangleAlertIcon,
   OctagonXIcon,
-  Loader2Icon,
 } from 'lucide-react';
 
 const toast = ToastPrimitive.createToastManager();
@@ -159,7 +160,7 @@ function ToastIcon({ type }: { type: string | undefined }) {
   }
 
   if (type === 'loading') {
-    icon = <Loader2Icon className='animate-spin' aria-hidden='true' />;
+    icon = <BrandSpinner aria-hidden='true' />;
   }
 
   if (!icon) {

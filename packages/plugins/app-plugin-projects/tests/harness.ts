@@ -19,12 +19,7 @@ import type { DatabaseManager } from '@nocobase/db';
 import { permissionsOf, type Role } from './permissions.js';
 
 export { permissionsOf, type Role };
-import {
-  BUILTIN_STATUSES,
-  type WorkflowListItem,
-} from '../shared/workflows.js';
 import type { Viewer } from '../server/access/viewer.js';
-import type { WorkflowTemplate } from '../server/domains/workflows/index.js';
 import type { UserInvitations } from '../server/domains/invitations/index.js';
 import type { PlanHooks } from '../server/domains/plans/index.js';
 import type { IntakeOrganizer } from '../server/domains/plans/intake/index.js';
@@ -57,7 +52,7 @@ export interface Harness {
   readonly invitations: FakeInvitations;
   /** Users given the default role on becoming members, in order. */
   readonly admitted: string[];
-  /** The administrators the application reports (approvers named `admin`). */
+  /** The administrators the application reports. */
   readonly admins: string[];
   /** What hears plans being decided (`projectsPlanHooksToken`); set it in a test. */
   readonly planHooks: { current?: PlanHooks };
@@ -68,31 +63,14 @@ export interface Harness {
   /** Stored files' bytes by key: the file plugin and Drive, in memory. */
   readonly stored: Map<string, Uint8Array>;
   addUser(id: string, name?: string): Promise<string>;
-  /**
-   * Installs the test template `standard` ("Standard": the built-in statuses, people move freely, the system closes
-   * merged work) as the default workflow, since the plugin ships none; returns it.
-   */
-  installStandardWorkflow(): Promise<WorkflowListItem>;
   viewer(userId: string, role?: Role): Viewer;
   close(): Promise<void>;
 }
 
-/** A default workflow for tests that need one: what the plugin's own default used to be. */
-export const STANDARD_TEMPLATE: WorkflowTemplate = {
-  key: 'standard',
-  name: 'Standard',
-  makeDefault: true,
-  definition: {
-    states: BUILTIN_STATUSES,
-    transitions: [
-      { from: '*', to: '*', actors: ['user'] },
-      { from: '*', to: 'done', actors: ['system'] },
-    ],
-  },
-};
-
-export async function createHarness(): Promise<Harness> {
-  const testDatabase = await createTestDatabase();
+export async function createHarness(
+  options: Parameters<typeof createTestDatabase>[0] = {},
+): Promise<Harness> {
+  const testDatabase = await createTestDatabase(options);
   const database = testDatabase.database;
   for (const [directory, packageName] of [
     [
@@ -246,19 +224,6 @@ export async function createHarness(): Promise<Harness> {
     roles,
     stored,
     addUser: (id, name) => addUser(id, name),
-    async installStandardWorkflow() {
-      await services.workflows.installTemplate(STANDARD_TEMPLATE);
-      const viewer = {
-        userId: 'harness',
-        actor: { type: 'user', id: 'harness' },
-        permissions: permissionsOf('member', 'harness'),
-      } as const;
-      const workflow = (await services.workflows.list(viewer)).find(
-        (item) => item.builtInKey === STANDARD_TEMPLATE.key,
-      );
-      if (!workflow) throw new Error('The standard workflow is missing.');
-      return workflow;
-    },
     viewer: (userId, role = 'member') => ({
       userId,
       actor: { type: 'user', id: userId },
@@ -313,6 +278,7 @@ function createFakeInvitations(database: DatabaseManager): FakeInvitations & {
           outcome: 'invited',
           invitationId: id,
           emailSent: true,
+          inviteUrl: `https://example.test/invite/${id}`,
         });
       }
       return results;

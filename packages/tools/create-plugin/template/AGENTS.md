@@ -59,7 +59,7 @@ A page test renders the page with `renderWithApp()` from `@nocobase/app-testing/
 
 A plugin can add commands to an application's `pnpm nocobase`, and can ask an application to run a command during its `pnpm build` or `pnpm dev`. Both are declared in `cli/index.ts` through `defineCliPlugin`, and the `cli` capability generates that entry with one example command.
 
-A command extends `AppCommand` from `@nocobase/app-cli`: it returns its result, throws `CommandError` on failure, and gets `--json` for free. By default a command is static tooling that reads and writes files and packages. One that needs the application creates it with `this.withApp(async ({ app }) => …)`, which always shuts it down again, and calls `app.start()` only when it needs every provider running. Work users trigger while the application serves is a server route or a job, not a command. The `nocobase-plugin-development` Skill's CLI reference has the full contract.
+A command extends `AppCommand` from `@nocobase/app-cli`: it returns its result, throws `CommandError` on failure, and gets `--json` for free. By default a command is static tooling that reads and writes files and packages. One that needs the application creates it with `this.withApp(async ({ app }) => …)`, which always shuts it down again, and calls `app.start()` only when it needs every provider running. Work users trigger while the application serves is a server route or a job, not a command. The `nocobase-app-plugin-development` Skill's CLI reference has the full contract.
 
 Build and dev hooks are for a plugin that has to produce something before the application can run. Declaring the step here rather than in each application's build script is what keeps it correct: it appears only where this plugin is registered, and disappears with it.
 
@@ -135,6 +135,8 @@ Two consequences follow, and both surface in someone else's application rather t
 Execution history records this package name alongside each migration, so history stays attributable per plugin even though the run is shared.
 
 How to write the files themselves — self-contained, immutable once merged, `builder` for structure and `query` for data — is in the repository root `AGENTS.md`.
+
+**A merged migration is never edited; the schema changes incrementally.** This plugin is published, and an installation records each migration as executed and never runs it again, so an edited migration leaves existing installations on the old schema while fresh ones get the new one. Leave a merged migration's file untouched, its formatting and comments included, and add a new migration that sorts after it and takes an installation from what the earlier migrations left behind to the target. Test that upgrade path with `describeMigration()`.
 
 A seed is data the installing application needs in order to run. Sample or demonstration data is not: declare it as `defineSeed({ name, sample: true, run })` in the same `database/seeds`, or, when it has to go through other plugins' services, register it from a service provider's `boot()` on `sampleDataToken` from `@nocobase/app-server/sample-data` with a `name` prefixed by this package. Either loads only when the installing application installs its database with `app.sampleData` set, and is recorded as skipped otherwise. A plugin's configuration section maps its environment variables in `env` with a `description` and, where it applies, `secret`, `required`, `generate` or `firstStartOnly`, so `pnpm nocobase config variables` can tell a deployment what to supply.
 

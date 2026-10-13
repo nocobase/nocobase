@@ -19,7 +19,6 @@ import {
   type IssueListItem,
   type IssueListQuery,
   type IssuePage,
-  type IssueStarts,
   type StatusDefinition,
 } from '../../../shared/issues.js';
 import type { Viewer } from '../../access/viewer.js';
@@ -29,8 +28,6 @@ import {
   splitVia,
   tracedAgents,
 } from '../../kernel/activity.js';
-import { notFound } from '../../kernel/errors.js';
-import { projectRelation } from '../projects/index.js';
 import { decodeCursor, pageLimit, pageOf } from '../../kernel/pagination.js';
 import type { TxRunner } from '../../kernel/tx.js';
 import type { UserDirectory } from '../../kernel/users.js';
@@ -49,22 +46,12 @@ import {
   type IssueRow,
 } from './issue.store.js';
 import type { KindRegistry } from '../../kernel/kinds.js';
-import {
-  isTerminal,
-  type IssueExtras,
-  type StatusCatalog,
-  type StatusCatalogs,
-} from './ports.js';
-import { BUILTIN_STATUSES } from '../../../shared/workflows.js';
+import { isTerminal, type IssueExtras, type StatusService } from './ports.js';
+import { FIXED_STATUSES } from '../../../shared/statuses.js';
 
 export interface IssueQueries {
-  /** The statuses of a project's workflow, in order; `null` for issues without a project. */
-  statuses(
-    viewer: Viewer,
-    projectId: string | null,
-  ): Promise<StatusDefinition[]>;
-  /** The ways a new issue may start in a project's workflow (`IssueStarts`); `null` for issues without a project. */
-  starts(viewer: Viewer, projectId: string | null): Promise<IssueStarts>;
+  /** The fixed statuses, in order. */
+  statuses(): StatusDefinition[];
   page(viewer: Viewer, query: IssueListQuery): Promise<IssuePage>;
   /** A page per status column; with `statusKey`, that column only, continuing from `cursor`. */
   board(viewer: Viewer, query: IssueListQuery): Promise<IssueBoard>;
@@ -105,8 +92,8 @@ export interface IssueMatches {
 /** The most issues `IssueQueries.matching` answers. */
 export const MATCHING_LIMIT = 500;
 
-/** The built-in finished statuses, which every workflow has: left out in the query, the rest checked per workflow. */
-const FINISHED_KEYS = BUILTIN_STATUSES.filter(
+/** The finished statuses: left out in the query. */
+const FINISHED_KEYS = FIXED_STATUSES.filter(
   (status) => status.category === 'done' || status.category === 'closed',
 ).map((status) => status.key);
 
@@ -114,7 +101,7 @@ export interface QueryDeps {
   readonly tx: TxRunner;
   readonly users: UserDirectory;
   readonly kinds: KindRegistry;
-  readonly statuses: StatusCatalogs;
+  readonly statuses: Pick<StatusService, 'catalog'>;
   readonly extras: () => IssueExtras;
 }
 
@@ -231,23 +218,8 @@ function unknownStatus(key: string): StatusDefinition {
 
 export function createIssueQueries(deps: QueryDeps): IssueQueries {
   return {
-    async statuses(viewer, projectId) {
-      const conn = deps.tx.read();
-      if (projectId) {
-        const relation = await projectRelation(conn, viewer, projectId);
-        if (!relation?.visible) throw notFound('Project');
-      }
-      return [...(await deps.statuses.forProject(conn, projectId)).statuses];
-    },
-
-    async starts(viewer, projectId) {
-      const conn = deps.tx.read();
-      if (projectId) {
-        const relation = await projectRelation(conn, viewer, projectId);
-        if (!relation?.visible) throw notFound('Project');
-      }
-      const catalog = await deps.statuses.forProject(conn, projectId);
-      return { initialStatus: catalog.initialStatus, options: catalog.starts };
+    statuses() {
+      return [...deps.statuses.catalog().statuses];
     },
 
     async page(viewer, query) {
@@ -278,11 +250,7 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
         ISSUE_PAGE_LIMIT.default,
         ISSUE_PAGE_LIMIT.max,
       );
-      const catalog = await deps.statuses.forProject(
-        conn,
-        query.projectId ?? null,
-      );
-      const statuses = [...catalog.statuses];
+      const statuses = [...deps.statuses.catalog().statuses];
       if (query.statusKey) {
         const only =
           statuses.find((status) => status.key === query.statusKey) ??
@@ -327,7 +295,7 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
       const parent = issue.parentIssueId
         ? await findIssue(conn, issue.parentIssueId)
         : undefined;
-      const catalog = await deps.statuses.forProject(conn, issue.projectId);
+      const catalog = deps.statuses.catalog();
       const activities = await this.activities(viewer, issue.id, {});
       const threads = await deps.extras().threads(conn, issue, viewer);
       return {
@@ -347,9 +315,6 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
         threadsNextCursor: threads.nextCursor,
         subscribers: await deps.extras().subscribers(conn, issue),
         attachments: await deps.extras().attachments(conn, viewer, issue),
-        checklist: await deps.extras().checklist(conn, issue),
-        pendingApproval: await deps.extras().pendingApproval(conn, issue),
-        recentApprovals: await deps.extras().recentApprovals(conn, issue),
         ...(await deps.extras().relations(conn, viewer, issue)),
       };
     },
@@ -393,19 +358,12 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
         direction: 'desc',
         limit: limit + 1,
       });
-      // A workflow's own finished statuses: an executor's issue in one is left out unless it was asked for by id.
+      // A finished issue of the executor is left out unless it was asked for by id.
       const asked = new Set(ids);
-      const catalogs = new Map<string | null, StatusCatalog>();
+      const catalog = deps.statuses.catalog();
       const kept: IssueRow[] = [];
       for (const row of rows.slice(0, limit)) {
-        if (!asked.has(row.id)) {
-          let catalog = catalogs.get(row.projectId);
-          if (!catalog) {
-            catalog = await deps.statuses.forProject(conn, row.projectId);
-            catalogs.set(row.projectId, catalog);
-          }
-          if (isTerminal(catalog, row.statusKey)) continue;
-        }
+        if (!asked.has(row.id) && isTerminal(catalog, row.statusKey)) continue;
         kept.push(row);
       }
       return {

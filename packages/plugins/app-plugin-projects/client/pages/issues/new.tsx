@@ -63,6 +63,7 @@ export default function NewIssuePage(): ReactElement {
   const overProject = useParams().projectId !== undefined;
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [startNow, setStartNow] = useState(true);
   const submittingRef = useRef(false);
   const unsaved = useUnsavedChangesGuard();
   const asked = params.get('tab');
@@ -105,7 +106,11 @@ export default function NewIssuePage(): ReactElement {
       beforeClose={() => !submittingRef.current && unsaved.confirmDiscard()}
       footer={
         tab === 'manual' ? (
-          <NewIssueFooter submitting={submitting} uploading={uploading} />
+          <NewIssueFooter
+            submitting={submitting}
+            startNow={startNow}
+            uploading={uploading}
+          />
         ) : null
       }
     >
@@ -126,6 +131,7 @@ export default function NewIssuePage(): ReactElement {
             <NewIssueForm
               onSubmittingChange={onSubmittingChange}
               onUploadingChange={setUploading}
+              onStartChange={setStartNow}
               {...(overProject
                 ? {
                     onCreated: () =>

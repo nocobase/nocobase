@@ -166,12 +166,18 @@ describe('scoped API keys', () => {
 
   it('reach agents within their scope, and nothing a person does for themselves', async () => {
     expect(
-      (await router.request('/api/agents', { headers: scoped })).status,
+      (await router.request('/api/agents/skills', { headers: scoped })).status,
     ).toBe(200);
     expect(
       (await router.request('/api/agents/prices', { headers: scoped })).status,
     ).toBe(403);
-    for (const path of ['/runs', '/runners', '/conversations', '/vocabulary']) {
+    for (const path of [
+      '',
+      '/runs',
+      '/runners',
+      '/conversations',
+      '/vocabulary',
+    ]) {
       const response = await router.request(`/api/agents${path}`, {
         headers: scoped,
       });

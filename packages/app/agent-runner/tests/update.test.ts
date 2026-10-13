@@ -272,6 +272,9 @@ describe('served tarballs', () => {
     expect(existsSync(path.join(prefix, 'versions', runnerVersion()))).toBe(
       true,
     );
+    // The new version carries no Node, so the service's launcher gets the one this runner ran on: its PATH may have
+    // none.
+    expect(readlinkSync(path.join(prefix, 'node'))).toBe(process.execPath);
     expect(logs.join('\n')).toContain(`updated to nocobase-runner ${next}`);
   });
 

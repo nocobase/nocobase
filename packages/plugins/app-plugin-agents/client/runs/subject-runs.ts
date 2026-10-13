@@ -36,9 +36,11 @@ function useRefresh(
 ): void {
   useEffect(() => {
     if (refreshSignal === undefined) return;
-    void client.invalidateQueries({
-      queryKey: agentsKeys.runs(subjectKind, subjectId),
-    });
+    // Reuse an in-flight request: repeated discovery signals must not discard slow responses forever.
+    void client.invalidateQueries(
+      { queryKey: agentsKeys.runs(subjectKind, subjectId) },
+      { cancelRefetch: false },
+    );
   }, [refreshSignal, client, subjectKind, subjectId]);
 }
 
@@ -73,8 +75,8 @@ export function useAgentNames(): (agentId: string) => string | null {
   const api = useAgentsApi();
   const agents = useQuery(
     {
-      queryKey: agentsKeys.agents,
-      queryFn: () => api.agents(true),
+      queryKey: agentsKeys.agentNames,
+      queryFn: () => api.agentNames(),
       retry: false,
       staleTime: 60_000,
     },

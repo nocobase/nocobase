@@ -8,10 +8,10 @@
  *   project settings (the repository's .claude/) are loaded.
  * - The run's skills come as a local plugin (`plugins: [{ type: 'local' }]`,
  *   https://code.claude.com/docs/en/agent-sdk/plugins).
- * - Permissions: `acceptEdits`, and the runner's policy is consulted twice
- *   over: a PreToolUse hook enforces its denials for every tool call (so
- *   allow rules in project settings cannot widen it), and `canUseTool`
- *   answers the calls Claude Code would otherwise prompt for.
+ * - Permissions: none. Claude Code runs in `bypassPermissions` mode with no
+ *   hooks; only deny rules in the settings it loads still refuse a call. The
+ *   runner is not a security boundary: run it as a dedicated user, in a
+ *   container or in a VM. Claude Code refuses this mode as root.
  * - The executable is the `claude` on the runner's PATH, resolved to an
  *   absolute path and passed as `pathToClaudeCodeExecutable`. The SDK's
  *   bundled binary is never installed (its platform packages are left out),
@@ -20,17 +20,15 @@
  */
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
-import { access } from 'node:fs/promises';
+import { access, realpath, stat } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import path from 'node:path';
 
 import { TOOL_EFFORTS, type ToolCapabilities } from '@nocobase/agent-protocol';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import type {
-  CanUseTool,
   ModelInfo,
-  HookCallback,
   Options,
-  PermissionResult,
   SDKMessage,
   SDKResultMessage,
   SDKUserMessage,
@@ -40,6 +38,7 @@ import { classifyClaudeFailure } from './classify.ts';
 import { detectExec } from './detect-exec.ts';
 import { withDetectionEnvironment } from './detection.ts';
 import { boundedModels } from './models.ts';
+import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
 import type { ClaudeFailureSignal } from './classify.ts';
 import { MAX_EVENT_TEXT_BYTES } from './types.ts';
 import type {
@@ -48,7 +47,6 @@ import type {
   AdapterResult,
   AdapterSession,
   AgentAdapter,
-  PermissionDecision,
   RunnerFeature,
   ToolDetection,
   Usage,
@@ -204,21 +202,6 @@ function toolResultText(content: unknown): string {
         : `[${block?.type ?? 'content'}]`,
     )
     .join('\n');
-}
-
-function normalizeDecision(decision: PermissionDecision): {
-  allow: boolean;
-  reason?: string;
-} {
-  if (decision === 'allow') return { allow: true };
-  if (decision === 'deny')
-    return { allow: false, reason: 'Denied by the runner policy' };
-  return { allow: false, reason: decision.deny };
-}
-
-/** What the model reads when the policy denies a tool call. */
-export function denialMessage(reason: string | undefined): string {
-  return `The runner policy denied this tool call${reason ? `: ${reason}` : ''}. This decision is final and nobody can grant it during this run, so do not ask for permission. Continue the task without this call, or use an allowed alternative.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -379,18 +362,17 @@ export class ClaudeAdapter implements AgentAdapter {
 
 class ClaudeRun {
   private readonly events = new Channel<AdapterEvent>();
-  private readonly input = new Channel<SDKUserMessage>();
+  private input = new Channel<SDKUserMessage>();
+  private recovered = false;
+  private readonly initialMessage: SDKUserMessage;
+  private stderrTail = '';
   private readonly abortController = new AbortController();
   /** Steered inputs not yet seen by the agent, by message uuid. */
   private readonly pendingSteers = new Map<
     string,
-    { text: string; inputId?: string }
+    { text: string; inputId?: string; message: SDKUserMessage }
   >();
   private readonly toolNames = new Map<string, string>();
-  private readonly decisions = new Map<
-    string,
-    { allow: boolean; reason?: string }
-  >();
   private readonly reportedDecisions = new Set<string>();
   private readonly stderrLines: string[] = [];
   private sessionId?: string;
@@ -423,7 +405,8 @@ class ClaudeRun {
     session.abort.addEventListener('abort', () => void this.stop(), {
       once: true,
     });
-    this.input.push(this.userMessage(session.prompt));
+    this.initialMessage = this.userMessage(session.prompt);
+    this.input.push(this.initialMessage);
     this.done = this.run();
   }
 
@@ -453,7 +436,7 @@ class ClaudeRun {
     if (this.finished || this.stopping || this.input.isClosed)
       return Promise.resolve(false);
     const message = this.userMessage(text);
-    this.pendingSteers.set(message.uuid!, { text, inputId });
+    this.pendingSteers.set(message.uuid!, { text, inputId, message });
     return Promise.resolve(this.input.push(message));
   }
 
@@ -473,26 +456,7 @@ class ClaudeRun {
 
   // -- permissions ----------------------------------------------------------
 
-  private async decide(
-    tool: string,
-    input: Record<string, unknown>,
-    toolUseId: string | undefined,
-  ): Promise<{ allow: boolean; reason?: string }> {
-    const cached = toolUseId ? this.decisions.get(toolUseId) : undefined;
-    if (cached) return cached;
-    let decision: { allow: boolean; reason?: string };
-    try {
-      decision = normalizeDecision(await this.session.permission(tool, input));
-    } catch (error) {
-      decision = {
-        allow: false,
-        reason: `Policy error: ${error instanceof Error ? error.message : String(error)}`,
-      };
-    }
-    if (toolUseId) this.decisions.set(toolUseId, decision);
-    return decision;
-  }
-
+  /** A denial Claude Code decided itself (deny rules in settings); the runner denies nothing. */
   private report(
     tool: string,
     input: unknown,
@@ -517,44 +481,6 @@ class ClaudeRun {
     });
   }
 
-  /**
-   * Runs before Claude Code's own permission rules, so a policy denial
-   * cannot be bypassed by allow rules in project settings. A denial is
-   * answered with 'ask', which hands the call to canUseTool: that path
-   * returns the reason to the model as a plain permission denial (a hook
-   * 'deny' reaches the model as a "hook error", which models read as a
-   * request to ask for permission and stop).
-   */
-  private readonly preToolUse: HookCallback = async (hookInput) => {
-    if (hookInput.hook_event_name !== 'PreToolUse') return {};
-    const input = (hookInput.tool_input ?? {}) as Record<string, unknown>;
-    const decision = await this.decide(
-      hookInput.tool_name,
-      input,
-      hookInput.tool_use_id,
-    );
-    if (decision.allow) return {};
-    return {
-      hookSpecificOutput: {
-        hookEventName: 'PreToolUse',
-        permissionDecision: 'ask',
-        permissionDecisionReason: decision.reason,
-      },
-    };
-  };
-
-  private readonly canUseTool: CanUseTool = async (
-    tool,
-    input,
-    { toolUseID },
-  ): Promise<PermissionResult> => {
-    const decision = await this.decide(tool, input, toolUseID);
-    this.report(tool, input, toolUseID, decision);
-    return decision.allow
-      ? { behavior: 'allow', updatedInput: input }
-      : { behavior: 'deny', message: denialMessage(decision.reason) };
-  };
-
   // -- the run --------------------------------------------------------------
 
   private async buildOptions(): Promise<Options> {
@@ -572,13 +498,13 @@ class ClaudeRun {
         append: session.systemPrompt,
       },
       settingSources: ['project'],
-      permissionMode: 'acceptEdits',
-      canUseTool: this.canUseTool,
-      hooks: { PreToolUse: [{ hooks: [this.preToolUse] }] },
+      permissionMode: 'bypassPermissions',
+      allowDangerouslySkipPermissions: true,
       env: { ...session.env },
       abortController: this.abortController,
       includePartialMessages: false,
       stderr: (data: string) => {
+        this.stderrTail = (this.stderrTail + data).slice(-8192);
         this.stderrLines.push(...data.split('\n').filter(Boolean));
         this.stderrLines.splice(
           0,
@@ -600,14 +526,64 @@ class ClaudeRun {
     };
   }
 
+  /** Mirrors the project key encoding in the installed Claude SDK (including long paths). */
+  private async sessionExists(id: string): Promise<boolean> {
+    if (!/^[a-zA-Z0-9_-]+$/.test(id))
+      throw new Error('Invalid Claude session id');
+    const cwd = await realpath(this.session.workDir).catch(() =>
+      path.resolve(this.session.workDir),
+    );
+    let project = cwd.replace(/[^a-zA-Z0-9]/g, '-');
+    if (project.length > 200) {
+      let hash = 0;
+      for (let i = 0; i < cwd.length; i += 1)
+        hash = ((hash << 5) - hash + cwd.charCodeAt(i)) | 0;
+      project = `${project.slice(0, 200)}-${Math.abs(hash).toString(36)}`;
+    }
+    const config =
+      this.session.env.CLAUDE_CONFIG_DIR ||
+      path.join(this.session.env.HOME ?? homedir(), '.claude');
+    const file = path.join(
+      config.normalize('NFC'),
+      'projects',
+      project,
+      `${id}.jsonl`,
+    );
+    try {
+      return (await stat(file)).isFile();
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error.code === 'ENOENT' || error.code === 'ENOTDIR')
+      )
+        return false;
+      throw error;
+    }
+  }
+
   private async run(): Promise<AdapterResult> {
     let thrown: unknown;
     try {
       if (this.stopping) throw new Error('aborted before start');
       const options = await this.buildOptions();
+      if (options.resume && !(await this.sessionExists(options.resume))) {
+        this.recovered = true;
+        delete options.resume;
+        this.initialMessage.message.content = recoveryPrompt(
+          this.session.prompt,
+        );
+        this.emit(recoveryEvent('claude'));
+      }
+      if (this.stopping) throw new Error('aborted before start');
       const q = query({ prompt: this.input, options });
       this.closeQuery = () => q.close();
-      for await (const message of q) this.onMessage(message);
+      try {
+        for await (const message of q) this.onMessage(message);
+      } finally {
+        q.close();
+        this.closeQuery = undefined;
+      }
     } catch (error) {
       thrown = error;
     } finally {
@@ -674,7 +650,7 @@ class ClaudeRun {
    * of each turn is summed instead.
    */
   private usage(): Usage[] {
-    if (this.session.resumeSessionId) {
+    if (this.session.resumeSessionId && !this.recovered) {
       return this.turnUsage.inputTokens || this.turnUsage.outputTokens
         ? [{ ...this.turnUsage, ...(this.model ? { model: this.model } : {}) }]
         : [];
@@ -827,6 +803,10 @@ class ClaudeRun {
             model: message.model,
             claudeCodeVersion: message.claude_code_version,
             permissionMode: message.permissionMode,
+            ...(this.session.resumeSessionId
+              ? { resumed: !this.recovered }
+              : {}),
+            ...(this.recovered ? { sessionRecovery: true } : {}),
           },
         });
         return;

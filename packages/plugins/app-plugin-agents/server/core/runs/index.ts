@@ -4,17 +4,13 @@ export {
   fits,
   fitsActor,
   hasTool,
-  onlineEntryOf,
   pickEntry,
-  isServerHolder,
   payloadDirs,
   payloadRequires,
   skillTargets,
   variableTargets,
   type ClaimService,
   type RenderedBrief,
-  type ServerClaim,
-  type ServerHolder,
 } from './claim.js';
 export { resolveAgentCli, type AgentCli } from './policy.js';
 export {
@@ -32,26 +28,28 @@ export {
   type ExtensionPrepare,
   type MountContext,
   type MountOffer,
+  RepoAccessError,
   type RepoAccessContext,
   type RepoAccessProvider,
   type RepoAccessRegistry,
+  type RepoCredentialGrant,
+  type RepoCredentialRequest,
+  type RepoPrepareOptions,
   type RunMountProvider,
   type RunMountRegistry,
 } from './extensions.js';
+export {
+  createGitCredentialService,
+  ISSUE_TIMEOUT_MS,
+  type GitCredentialService,
+} from './git-credentials.js';
 export { createBriefPreviewer, type BriefPreviewer } from './preview.js';
 export { findBrief, requestReset } from './workspace.store.js';
-export {
-  createRunnerReports,
-  type OnlineUsageRecord,
-  type RunnerReports,
-} from './lifecycle.js';
+export { createRunnerReports, type RunnerReports } from './lifecycle.js';
 export {
   commandRef,
   createSubjectRegistry,
-  dialectOf,
-  takesType,
   type ClaimContext,
-  type CommandDialect,
   type ContextProvider,
   type SubjectAssembly,
   type SubjectSample,

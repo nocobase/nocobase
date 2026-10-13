@@ -5,68 +5,92 @@
     "label": "Overview"
   },
   {
-    "type": "dir",
-    "collapsed": true,
-    "name": "auth",
-    "label": "Authentication"
+    "type": "file",
+    "name": "quick-start",
+    "label": "Quick start"
   },
   {
     "type": "dir",
-    "name": "authorization",
-    "label": "Permissions",
+    "name": "auth",
+    "label": "Authentication",
     "collapsed": true
   },
   {
     "type": "dir",
-    "collapsed": true,
+    "name": "data-sources",
+    "label": "Data sources",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "authorization",
+    "label": "Authorization",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
     "name": "workflow",
-    "label": "Workflow"
+    "label": "Workflow",
+    "collapsed": true
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "approval",
-    "label": "Approval"
-  },
-  {
-    "type": "file",
-    "name": "scheduler",
-    "label": "Scheduled tasks"
-  },
-  {
-    "type": "file",
-    "name": "notification",
-    "label": "Notifications"
+    "label": "Approval",
+    "collapsed": true
   },
   {
     "type": "dir",
-    "collapsed": true,
-    "name": "mail",
-    "label": "Mail"
-  },
-  {
-    "type": "file",
     "name": "file",
-    "label": "Files"
-  },
-  {
-    "type": "file",
-    "name": "template-print",
-    "label": "Template printing"
-  },
-  {
-    "type": "file",
-    "name": "i18n",
-    "label": "Language switching"
-  },
-  {
-    "type": "file",
-    "name": "theme",
-    "label": "Themes"
+    "label": "Files",
+    "collapsed": true
   },
   {
     "type": "dir",
-    "collapsed": true,
+    "name": "i18n",
+    "label": "Internationalization",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "theme",
+    "label": "Themes",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "notification",
+    "label": "Notifications",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "scheduler",
+    "label": "Scheduled tasks",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "mail",
+    "label": "Mail",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "ai-employee",
+    "label": "AI employees",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
     "name": "ai-knowledge-base",
-    "label": "AI knowledge base"
+    "label": "AI knowledge bases",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "template-print",
+    "label": "Template printing",
+    "collapsed": true
   }
 ]

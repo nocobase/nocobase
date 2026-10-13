@@ -1,11 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -19,11 +13,8 @@ vi.mock('@nocobase/app-plugin-authorization/client', () =>
   clientMocks.authorization(),
 );
 
-const { startingExecutor } = await import('../../client/lib/kinds.js');
 const { buildTimeline } =
   await import('../../client/pages/issues/detail/timeline.js');
-const { StartDialog } =
-  await import('../../client/pages/issues/detail/start-dialog.js');
 const { useConfirmedUpdate } =
   await import('../../client/pages/issues/detail/use-confirmed-update.js');
 
@@ -55,90 +46,13 @@ describe('runs on the issue page', () => {
     ]);
   });
 
-  it('asks to start only when an executor of another kind would start working', () => {
-    const agent = { type: 'agent', id: 'a1' };
-    const statuses = [
-      { key: 'backlog', name: 'Backlog', category: 'unstarted', color: 'gray' },
-      { key: 'todo', name: 'Todo', category: 'unstarted', color: 'blue' },
-      { key: 'done', name: 'Done', category: 'done', color: 'green' },
-    ] as const;
-    const check = (input: Parameters<typeof startingExecutor>[0]) =>
-      startingExecutor({ statuses, ...input });
-    // Newly set, on an issue where work starts.
-    expect(
-      check({ fromStatus: 'todo', executorBefore: null, executorAfter: agent }),
-    ).toEqual(agent);
-    expect(
-      check({
-        fromStatus: 'todo',
-        executorBefore: agent,
-        executorAfter: { type: 'agent', id: 'a1' },
-      }),
-    ).toBeNull();
-    expect(
-      check({
-        fromStatus: 'todo',
-        executorBefore: agent,
-        executorAfter: { type: 'agent', id: 'a2' },
-      }),
-    ).toEqual({ type: 'agent', id: 'a2' });
-    expect(
-      check({
-        fromStatus: 'todo',
-        executorBefore: null,
-        executorAfter: { type: 'user', id: 'u1' },
-      }),
-    ).toBeNull();
-    expect(
-      check({ fromStatus: 'todo', executorBefore: agent, executorAfter: null }),
-    ).toBeNull();
-    // Assigned in backlog, or in a finished status: nothing starts, so nothing asks.
-    expect(
-      check({
-        fromStatus: 'backlog',
-        executorBefore: null,
-        executorAfter: agent,
-      }),
-    ).toBeNull();
-    expect(
-      check({ fromStatus: 'done', executorBefore: null, executorAfter: agent }),
-    ).toBeNull();
-    // Out of backlog with an agent: asks; into backlog or between other statuses: does not.
-    expect(
-      check({ fromStatus: 'backlog', toStatus: 'todo', executorBefore: agent }),
-    ).toEqual(agent);
-    expect(
-      check({ fromStatus: 'todo', toStatus: 'backlog', executorBefore: agent }),
-    ).toBeNull();
-    expect(
-      check({ fromStatus: 'todo', toStatus: 'done', executorBefore: agent }),
-    ).toBeNull();
-    // A new issue: given to an agent unless it starts in backlog.
-    expect(
-      check({
-        fromStatus: null,
-        toStatus: 'todo',
-        executorBefore: null,
-        executorAfter: agent,
-      }),
-    ).toEqual(agent);
-    expect(
-      check({
-        fromStatus: null,
-        toStatus: 'backlog',
-        executorBefore: null,
-        executorAfter: agent,
-      }),
-    ).toBeNull();
-  });
-
-  it('asks "Start now?" before giving the issue to an agent, and sends the answer', async () => {
+  it('applies a change at once, without asking to start', () => {
     resetApi({});
     const mutate = vi.fn();
     const issue = {
       id: 'i1',
       identifier: 'PM-1',
-      statusKey: 'todo',
+      statusKey: 'in_progress',
       executor: null,
     } as unknown as IssueDetail;
     function Harness(): ReactElement {
@@ -148,27 +62,14 @@ describe('runs on the issue page', () => {
         update: { mutate } as unknown as IssueUpdate,
       });
       return (
-        <>
-          <button
-            type='button'
-            onClick={() =>
-              confirmed.apply({ executor: { type: 'agent', id: 'a1' } })
-            }
-          >
-            assign
-          </button>
-          <button
-            type='button'
-            onClick={() => confirmed.apply({ priority: 'high' })}
-          >
-            prioritize
-          </button>
-          <StartDialog
-            request={confirmed.startRequest}
-            onDecide={confirmed.decide}
-            onCancel={confirmed.cancel}
-          />
-        </>
+        <button
+          type='button'
+          onClick={() =>
+            confirmed.apply({ executor: { type: 'agent', id: 'a1' } })
+          }
+        >
+          assign
+        </button>
       );
     }
     render(
@@ -180,19 +81,9 @@ describe('runs on the issue page', () => {
         <Harness />
       </QueryClientProvider>,
     );
-
-    fireEvent.click(screen.getByRole('button', { name: 'prioritize' }));
-    expect(mutate).toHaveBeenLastCalledWith({ priority: 'high' });
-
     fireEvent.click(screen.getByRole('button', { name: 'assign' }));
-    expect(await screen.findByText('start.title')).toBeTruthy();
-    expect(screen.getByText('Coder')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'start.later' }));
-    await waitFor(() =>
-      expect(mutate).toHaveBeenLastCalledWith({
-        executor: { type: 'agent', id: 'a1' },
-        start: false,
-      }),
-    );
+    expect(mutate).toHaveBeenLastCalledWith({
+      executor: { type: 'agent', id: 'a1' },
+    });
   });
 });

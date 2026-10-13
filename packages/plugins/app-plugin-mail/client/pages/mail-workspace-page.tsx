@@ -1,6 +1,6 @@
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
-import { prepareReplyContent } from '../lib/mail-reply-content.js';
+import { prepareMailReply } from '../prepare-mail-reply.js';
 import { mailErrorDescription } from '../lib/mail-error-description.js';
 import { useMailWorkspaceData } from '../hooks/use-mail-workspace-data.js';
 import {
@@ -14,13 +14,20 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
+  Mailbox,
   Inbox,
   PenLine,
   RefreshCw,
-  Search,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactElement } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
 import { resolveAppUrl } from '@nocobase/app-client';
 import type { MailComposerRequest } from '../contracts/composer.js';
@@ -35,6 +42,21 @@ import {
 } from '../components/index.js';
 import { Button } from '../components/ui/button.js';
 import { Input } from '../components/ui/input.js';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '../components/ui/sheet.js';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '../components/ui/field.js';
+import { cn } from '../lib/utils.js';
+import { parseMailParticipant } from '../../shared/participant.js';
 import type { MailTemplateVariables } from '../contracts/composer.js';
 import {
   getMailFolderDisplayName,
@@ -60,6 +82,8 @@ import { MAIL_PLUGIN_NS } from '../namespace.js';
 export interface MailWorkspacePageProps {
   readonly title?: string;
   readonly description?: string;
+  /** Additional actions appended after the built-in workspace actions. */
+  readonly headerActions?: ReactNode;
   /** Values available to `{{path.to.value}}` placeholders in mail templates. */
   readonly templateVariables?: MailTemplateVariables;
   /**
@@ -75,8 +99,9 @@ const LAST_COMPOSE_ACCOUNT_KEY_PREFIX =
 export default function MailWorkspacePage({
   title,
   description,
-  templateVariables = {},
   accountsHref,
+  headerActions,
+  templateVariables = {},
 }: MailWorkspacePageProps = {}): ReactElement {
   const { t } = useTranslation(MAIL_PLUGIN_NS);
   const mail = useMailClient();
@@ -95,6 +120,13 @@ export default function MailWorkspacePage({
   const [labelId, setLabelId] = useState<string>();
   const [smartView, setSmartView] = useState<MailboxSmartView>('all');
   const [query, setQuery] = useState('');
+  const [participant, setParticipant] = useState('');
+  const [debouncedParticipant, setDebouncedParticipant] = useState('');
+  const filterId = useId();
+  const participantInvalid =
+    participant !== '' && !parseMailParticipant(participant);
+  const participantReady =
+    participant === debouncedParticipant && !participantInvalid;
   const [loadingAccounts, setLoadingAccounts] = useState(true);
   const [syncRuns, setSyncRuns] = useState<
     Readonly<Record<string, MailSyncRunView>>
@@ -109,6 +141,27 @@ export default function MailWorkspacePage({
   const [composeAccountId, setComposeAccountId] = useState('');
   const [composerRequest, setComposerRequest] = useState<MailComposerRequest>();
 
+  const [navigationOpen, setNavigationOpen] = useState(false);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const navigationButtonRef = useRef<HTMLButtonElement>(null);
+  const conversationBackRef = useRef<HTMLButtonElement>(null);
+  const selectedRowRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (
+      !navigationOpen ||
+      !navigationButtonRef.current ||
+      typeof ResizeObserver === 'undefined'
+    )
+      return;
+    // CSS owns the breakpoint; observing its trigger also handles root font changes.
+    const observer = new ResizeObserver(() => {
+      if (!navigationButtonRef.current?.getClientRects().length)
+        setNavigationOpen(false);
+    });
+    observer.observe(navigationButtonRef.current);
+    return () => observer.disconnect();
+  }, [navigationOpen]);
   useEffect(() => {
     syncRunsRef.current = syncRuns;
   }, [syncRuns]);
@@ -131,11 +184,20 @@ export default function MailWorkspacePage({
       folderId,
       labelId,
       q: debouncedQuery.trim() || undefined,
+      ...(debouncedParticipant ? { participant: debouncedParticipant } : {}),
       unread: smartView === 'unread' ? true : undefined,
       starred: smartView === 'starred' ? true : undefined,
       pageSize: 50,
     }),
-    [accountId, debouncedQuery, folderAccountId, folderId, labelId, smartView],
+    [
+      accountId,
+      debouncedQuery,
+      debouncedParticipant,
+      folderAccountId,
+      folderId,
+      labelId,
+      smartView,
+    ],
   );
 
   const {
@@ -161,11 +223,23 @@ export default function MailWorkspacePage({
     mail,
     accounts,
     messageQuery,
+    queryEnabled: participantReady,
     reloadVersion,
     requestError,
     setError,
     onFocus: () => loadAccounts(false),
   });
+
+  const selectedMessageKey = selected
+    ? JSON.stringify([selected.accountId, selected.id])
+    : undefined;
+  useEffect(() => {
+    if (
+      selectedMessageKey &&
+      navigationButtonRef.current?.getClientRects().length
+    )
+      conversationBackRef.current?.focus({ preventScroll: true });
+  }, [selectedMessageKey]);
 
   const currentAccount = accounts.find((account) => account.id === accountId);
   const currentProviderCapabilities = findProviderCapabilities(
@@ -376,6 +450,14 @@ export default function MailWorkspacePage({
     const timer = window.setTimeout(() => setDebouncedQuery(query), 300);
     return () => window.clearTimeout(timer);
   }, [query]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setDebouncedParticipant(participant),
+      300,
+    );
+    return () => window.clearTimeout(timer);
+  }, [participant]);
 
   const folderNames = useMemo(
     () => ({
@@ -653,6 +735,11 @@ export default function MailWorkspacePage({
     ? t('workspace.syncAll', { defaultValue: 'Sync all mailboxes' })
     : t('workspace.incrementalRefresh', { defaultValue: 'Sync mailbox' });
 
+  const closeMailboxNavigation = (): void => {
+    setNavigationOpen(false);
+    if (navigationOpen) clearSelection();
+  };
+
   const mailboxNavigation = (
     <MailboxSidebar
       accountId={accountId}
@@ -677,6 +764,7 @@ export default function MailWorkspacePage({
         systemFolderNames,
       }}
       onAccountChange={(value) => {
+        closeMailboxNavigation();
         if (value === accountId) return;
         cancelRequests();
         accountIdRef.current = value;
@@ -689,6 +777,7 @@ export default function MailWorkspacePage({
         setSmartView('all');
       }}
       onFolderChange={(value, ownerAccountId) => {
+        closeMailboxNavigation();
         if (value === folderId && ownerAccountId === folderAccountId) return;
         cancelRequests();
         setFolderId(value);
@@ -697,6 +786,7 @@ export default function MailWorkspacePage({
         setSmartView('all');
       }}
       onLabelChange={(value) => {
+        closeMailboxNavigation();
         if (value === labelId) return;
         cancelRequests();
         setLabelId(value);
@@ -705,6 +795,7 @@ export default function MailWorkspacePage({
         setSmartView('all');
       }}
       onSmartViewChange={(value) => {
+        closeMailboxNavigation();
         if (value === smartView) return;
         cancelRequests();
         setSmartView(value);
@@ -776,28 +867,100 @@ export default function MailWorkspacePage({
                   : syncLabel}
               </span>
             </Button>
+            {accountsHref && accounts.length > 0 ? (
+              <Button
+                render={<a href={resolveAppUrl(accountsHref)} />}
+                nativeButton={false}
+                role='link'
+                variant='outline'
+              >
+                {t('navigation.accounts', { defaultValue: 'Mail accounts' })}
+              </Button>
+            ) : null}
+            {headerActions}
           </div>
         }
       />
-      <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background'>
-        <div className='shrink-0 border-b p-4'>
-          <label className='relative block w-full min-w-0 sm:w-64'>
-            <Search
-              aria-hidden='true'
-              className='absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground'
-            />
-            <Input
-              aria-label={t('workspace.search', {
-                defaultValue: 'Search mail',
-              })}
-              className='pl-9'
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={t('workspace.search', {
-                defaultValue: 'Search mail',
-              })}
-              value={query}
-            />
-          </label>
+      <div
+        ref={workspaceRef}
+        data-slot='mail-workspace'
+        className='@container/mail flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background'
+      >
+        <div className='grid shrink-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-2 border-b px-4 py-1.5 @min-[44rem]/mail:flex @min-[44rem]/mail:flex-wrap @min-[44rem]/mail:gap-4 @min-[44rem]/mail:py-4'>
+          {accounts.length > 0 ? (
+            <Button
+              ref={navigationButtonRef}
+              variant='outline'
+              className='@min-[56rem]/mail:hidden'
+              aria-haspopup='dialog'
+              aria-expanded={navigationOpen}
+              onClick={() => setNavigationOpen(true)}
+            >
+              <Mailbox aria-hidden='true' className='size-4' />
+              <span className='sr-only @min-[44rem]/mail:not-sr-only'>
+                {t('workspace.mailboxNavigation', {
+                  defaultValue: 'Mailboxes and folders',
+                })}
+              </span>
+            </Button>
+          ) : null}
+          <FieldGroup className='contents @min-[44rem]/mail:flex @min-[44rem]/mail:min-w-0 @min-[44rem]/mail:flex-1 @min-[44rem]/mail:basis-full @min-[44rem]/mail:flex-row @min-[44rem]/mail:items-start @min-[44rem]/mail:gap-4 @min-[56rem]/mail:basis-auto'>
+            <Field className='col-start-2 min-w-0 @min-[44rem]/mail:w-64'>
+              <FieldLabel
+                className='sr-only @min-[44rem]/mail:not-sr-only'
+                htmlFor={`${filterId}-search`}
+              >
+                {t('workspace.search', { defaultValue: 'Search mail' })}
+              </FieldLabel>
+              <Input
+                id={`${filterId}-search`}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t('workspace.search', {
+                  defaultValue: 'Search mail',
+                })}
+                value={query}
+              />
+            </Field>
+            <Field
+              className='col-span-2 min-w-0 gap-1 @min-[44rem]/mail:w-80 @min-[44rem]/mail:gap-2'
+              data-invalid={participantInvalid}
+            >
+              <FieldLabel htmlFor={`${filterId}-participant`}>
+                {t('workspace.participant', { defaultValue: 'Participant' })}
+              </FieldLabel>
+              <Input
+                id={`${filterId}-participant`}
+                aria-invalid={participantInvalid}
+                aria-describedby={`${filterId}-participant-hint`}
+                aria-errormessage={
+                  participantInvalid
+                    ? `${filterId}-participant-error`
+                    : undefined
+                }
+                onChange={(event) => {
+                  // Invalidate immediately, before the debounced replacement request.
+                  resetMailbox();
+                  setParticipant(event.target.value);
+                }}
+                placeholder='alice@example.com / @example.com'
+                value={participant}
+              />
+              <FieldDescription id={`${filterId}-participant-hint`}>
+                {t('workspace.participantHint', {
+                  defaultValue:
+                    'Full email address or @domain. Matches From, To and Cc only.',
+                })}
+              </FieldDescription>
+              {participantInvalid ? (
+                <FieldError id={`${filterId}-participant-error`}>
+                  {t('workspace.participantInvalid', {
+                    defaultValue:
+                      'Enter a valid full email address or @domain.',
+                  })}
+                </FieldError>
+              ) : null}
+            </Field>
+          </FieldGroup>
         </div>
         {error ? (
           <div
@@ -873,9 +1036,27 @@ export default function MailWorkspacePage({
             </div>
           </div>
         ) : (
-          <div className='grid min-h-0 flex-1 grid-cols-[13rem_20rem_minmax(0,1fr)] overflow-hidden'>
-            <div className='min-h-0'>{mailboxNavigation}</div>
-            <div className='flex min-h-0 flex-col border-r'>
+          <div className='grid min-h-0 min-w-0 flex-1 grid-cols-1 overflow-hidden @min-[56rem]/mail:grid-cols-[13rem_20rem_minmax(0,1fr)]'>
+            <div
+              data-slot='mail-navigation-pane'
+              className='hidden min-h-0 @min-[56rem]/mail:block'
+            >
+              {mailboxNavigation}
+            </div>
+            <div
+              data-slot='mail-list-pane'
+              onClickCapture={(event) => {
+                if (!(event.target instanceof Element)) return;
+                const row = event.target.closest('button');
+                const list = event.currentTarget.querySelector('section');
+                if (row instanceof HTMLButtonElement && list?.contains(row))
+                  selectedRowRef.current = row;
+              }}
+              className={cn(
+                'min-h-0 min-w-0 flex-col @min-[56rem]/mail:flex @min-[56rem]/mail:border-r',
+                selected ? 'hidden' : 'flex',
+              )}
+            >
               <div className='flex shrink-0 items-center justify-between gap-3 border-b bg-muted/20 px-4 py-3'>
                 <h2 className='truncate text-sm font-semibold'>{viewTitle}</h2>
               </div>
@@ -972,7 +1153,30 @@ export default function MailWorkspacePage({
                 </div>
               </nav>
             </div>
-            <div className='flex min-h-0 min-w-0 flex-col'>
+            <div
+              data-slot='mail-conversation-pane'
+              className={cn(
+                'min-h-0 min-w-0 flex-col @min-[56rem]/mail:flex',
+                selected ? 'flex' : 'hidden',
+              )}
+            >
+              <Button
+                ref={conversationBackRef}
+                variant='ghost'
+                className='m-2 shrink-0 self-start @min-[56rem]/mail:hidden'
+                onClick={() => {
+                  clearSelection();
+                  window.requestAnimationFrame(() => {
+                    if (selectedRowRef.current?.isConnected)
+                      selectedRowRef.current.focus({ preventScroll: true });
+                  });
+                }}
+              >
+                <ChevronLeft aria-hidden='true' className='size-4' />
+                {t('workspace.backToMessages', {
+                  defaultValue: 'Back to message list',
+                })}
+              </Button>
               <MailConversationView
                 availableLabels={
                   selectedMessageCanUseLabels ? customLabels : []
@@ -1027,24 +1231,13 @@ export default function MailWorkspacePage({
                           if (preparingReplyRef.current || composerRequest)
                             return;
                           preparingReplyRef.current = true;
-                          void prepareReplyContent(mail, message)
-                            .then(({ message: source, quote, uploads }) => {
+                          void prepareMailReply(mail, message)
+                            .then((reply) => {
                               openComposer(
-                                {
-                                  ...EMPTY_COMPOSER,
-                                  mode: 'reply',
-                                  forwardQuote: quote,
-                                  relatedMessageId: source.id,
-                                  to: source.replyTo.length
-                                    ? source.replyTo
-                                        .map((address) => address.address)
-                                        .join(', ')
-                                    : (source.from?.address ?? ''),
-                                  subject: replySubject(source.subject),
-                                },
-                                [],
-                                source.accountId,
-                                uploads,
+                                reply.value,
+                                reply.attachments,
+                                reply.accountId,
+                                reply.uploads,
                               );
                             })
                             .catch(requestError)
@@ -1205,6 +1398,40 @@ export default function MailWorkspacePage({
             </div>
           </div>
         )}
+        <Sheet open={navigationOpen} onOpenChange={setNavigationOpen}>
+          <SheetContent
+            side='left'
+            closeLabel={t('workspace.closeNavigation', {
+              defaultValue: 'Close mailbox navigation',
+            })}
+            finalFocus={() =>
+              navigationButtonRef.current?.getClientRects().length
+                ? navigationButtonRef.current
+                : workspaceRef.current?.querySelector('input')
+            }
+          >
+            <SheetHeader className='pr-14'>
+              <SheetTitle>
+                {t('workspace.mailboxNavigation', {
+                  defaultValue: 'Mailboxes and folders',
+                })}
+              </SheetTitle>
+            </SheetHeader>
+            <div
+              className='min-h-0 flex-1 overflow-y-auto'
+              onClickCapture={(event) => {
+                // Current folders can return early inside the reused sidebar itself.
+                if (
+                  event.target instanceof Element &&
+                  event.target.closest('button[aria-current="page"]')
+                )
+                  closeMailboxNavigation();
+              }}
+            >
+              {mailboxNavigation}
+            </div>
+          </SheetContent>
+        </Sheet>
         {composerRequest ? (
           <MailWorkspaceComposer
             onSelectAccount={rememberComposeAccount}
@@ -1340,10 +1567,6 @@ function formatAddressList(
   addresses: readonly { address: string; name?: string }[],
 ): string {
   return addresses.map((address) => address.address).join(', ');
-}
-
-function replySubject(subject: string): string {
-  return /^re:/iu.test(subject.trim()) ? subject : `Re: ${subject}`;
 }
 
 function forwardSubject(subject: string): string {
