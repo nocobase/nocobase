@@ -1,3 +1,4 @@
+import { BRIDGE_PROTOCOL_VERSION } from '@nocobase/acp-bridge/protocol';
 import { randomUUID } from 'node:crypto';
 
 import { describe, expect, it } from 'vitest';
@@ -50,7 +51,7 @@ describe('a session’s images', () => {
     const { storage } = fakeFiles(database);
     const service = new AgentSessionsService({ database, images: storage });
     const { computerId } = await service.register('u1', {
-      protocol: 1,
+      protocol: BRIDGE_PROTOCOL_VERSION,
       computerId: null,
       bridgeStartedAt: 'bridge-1',
       computer: {

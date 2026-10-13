@@ -11,6 +11,8 @@ import path from 'node:path';
 
 import {
   BRIDGE_PROTOCOL_VERSION,
+  DISCOVERY_TIMEOUT_MS,
+  type DiscoveredChoices,
   POLL_WAIT_MS,
   type BridgeCommand,
   type FolderListing,
@@ -365,11 +367,63 @@ export class AgentSessionsService {
 
   // The bridge.
 
+  /** Request-scoped discovery uses no Studio session or persisted choice cache. */
+  async discoverChoices(
+    userId: string,
+    computerId: string,
+    input: {
+      readonly agentId: string;
+      readonly cwd: string;
+      readonly settings: Readonly<Record<string, string>>;
+    },
+  ): Promise<DiscoveredChoices> {
+    const computer = await this.#computer(userId, computerId);
+    if (!isOnline(computer, this.#now()))
+      throw new AgentSessionsError('computerOffline');
+    if (
+      !computer.agents.some(
+        (agent) => agent.id === input.agentId && !agent.problem,
+      )
+    )
+      throw new AgentSessionsError('agentUnavailable', 'agentId');
+    const paths = pathsOf(computer);
+    if (
+      !paths.isAbsolute(input.cwd) ||
+      !within(paths, allowedFolders(computer), input.cwd)
+    )
+      throw new AgentSessionsError('directoryNotAllowed', 'cwd');
+    const requestId = randomUUID();
+    await enqueue(
+      this.#conn(),
+      computer.id,
+      {
+        type: 'discoverChoices',
+        requestId,
+        agentId: input.agentId,
+        cwd: paths.resolve(input.cwd),
+        settings: input.settings,
+      },
+      this.#iso(),
+    );
+    this.#wake(computer.id);
+    const reply = await this.#awaitReply(
+      `${computer.id}:${requestId}`,
+      DISCOVERY_TIMEOUT_MS + 10_000,
+    );
+    if (!reply.discovery || reply.error)
+      throw new AgentSessionsError(
+        'discoveryFailed',
+        undefined,
+        reply.error ? redactor.text(reply.error) : undefined,
+      );
+    return reply.discovery;
+  }
+
   /** Takes the bridge's reply to a command that asked for one, for the request waiting on it. */
   async reply(userId: string, request: ReplyRequest): Promise<void> {
     const computer = await this.#computer(userId, request.computerId);
     const key = `${computer.id}:${request.requestId}`;
-    await this.#replies.set(key, request, REPLY_WAIT_MS * 2);
+    await this.#replies.set(key, request, (DISCOVERY_TIMEOUT_MS + 10_000) * 2);
     this.#replyWaiters.get(key)?.();
   }
 
@@ -609,7 +663,7 @@ export class AgentSessionsService {
       readonly agentId: string;
       readonly cwd: string;
       readonly content: readonly PromptContent[];
-      /** Choices to open the session with, from what the agent offered on the computer (`Computer.choices`). */
+      /** Explicit settings validated authoritatively by the agent before the first prompt. */
       readonly settings?: Readonly<Record<string, string>> | undefined;
       /** The project the session works for, from `listProjects`. */
       readonly projectId?: string | null | undefined;
@@ -642,12 +696,6 @@ export class AgentSessionsService {
       throw new AgentSessionsError('projectNotFound', 'projectId');
     const mentioned = await this.#mentioned(viewer, input.mentions ?? []);
     const settings = input.settings ?? {};
-    const offered = computer.choices[agent.id] ?? [];
-    for (const [choiceId, value] of Object.entries(settings)) {
-      const choice = offered.find((candidate) => candidate.id === choiceId);
-      if (!choice?.options.some((option) => option.value === value))
-        throw new AgentSessionsError('choiceNotFound', 'settings');
-    }
     const now = this.#iso();
     const sessionId = randomUUID();
     await sessions(this.#conn()).createOne({
@@ -1055,8 +1103,11 @@ export class AgentSessionsService {
   }
 
   /** The bridge's reply to a command, once it reaches this instance or the store another one put it in. */
-  async #awaitReply(key: string): Promise<ReplyRequest> {
-    for (let waited = 0; waited < REPLY_WAIT_MS; waited += REPLY_CHECK_MS) {
+  async #awaitReply(
+    key: string,
+    timeout: number = REPLY_WAIT_MS,
+  ): Promise<ReplyRequest> {
+    for (let waited = 0; waited < timeout; waited += REPLY_CHECK_MS) {
       const reply = await this.#replies.take<ReplyRequest>(key);
       if (reply) return reply;
       await new Promise<void>((resolve) => {

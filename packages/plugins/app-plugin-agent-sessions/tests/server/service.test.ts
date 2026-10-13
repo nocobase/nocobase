@@ -1,3 +1,4 @@
+import { BRIDGE_PROTOCOL_VERSION } from '@nocobase/acp-bridge/protocol';
 import type {
   BridgeEvent,
   RegisterRequest,
@@ -32,7 +33,7 @@ function setup(database: DatabaseManager) {
   });
   const register = (userId = 'u1', overrides: Partial<RegisterRequest> = {}) =>
     service.register(userId, {
-      protocol: 1,
+      protocol: BRIDGE_PROTOCOL_VERSION,
       computerId: null,
       bridgeStartedAt: 'bridge-1',
       computer: {
@@ -99,6 +100,95 @@ const chunk = (value: string): BridgeEvent => ({
 });
 
 describe('AgentSessionsService', () => {
+  test('discovers a fresh computer without a Studio session and carries settings to the first prompt', async ({
+    database,
+  }) => {
+    const { service, register, take } = setup(database);
+    const { computerId } = await register();
+    const input = {
+      agentId: 'codex',
+      cwd: '/home/zhou/code/../code',
+      settings: { model: 'actual' },
+    };
+    const pending = service.discoverChoices('u1', computerId, input);
+    let command:
+      import('@nocobase/acp-bridge/protocol').BridgeCommand | undefined;
+    await vi.waitFor(async () => {
+      [command] = await take(computerId);
+      expect(command?.type).toBe('discoverChoices');
+    });
+    if (command?.type !== 'discoverChoices')
+      throw new Error('Missing discovery command');
+    expect(command).toMatchObject({
+      cwd: '/home/zhou/code',
+      settings: input.settings,
+    });
+    const discovery = {
+      status: 'available' as const,
+      choices: [
+        {
+          id: 'model',
+          category: 'model',
+          name: 'Model',
+          currentValue: 'actual',
+          options: [{ value: 'actual', name: 'Actual' }],
+        },
+      ],
+    };
+    await service.reply('u1', {
+      computerId,
+      requestId: command.requestId,
+      listing: null,
+      error: null,
+      discovery,
+    });
+    expect(await pending).toEqual(discovery);
+    expect(
+      (await service.listSessions(owner, { archived: false, pageSize: 50 }))
+        .sessions,
+    ).toEqual([]);
+    expect((await service.listComputers('u1'))[0]?.choices).toEqual({});
+    const session = await service.createSession(owner, {
+      computerId,
+      ...input,
+      content: text('first'),
+    });
+    expect(await take(computerId)).toMatchObject([
+      {
+        type: 'prompt',
+        session: { id: session.id, settings: { model: 'actual' } },
+      },
+    ]);
+  });
+
+  test('checks discovery ownership, installation, offline state and allowed directories before queueing', async ({
+    database,
+  }) => {
+    const { service, register, take, clock } = setup(database);
+    const { computerId } = await register();
+    const input = { agentId: 'codex', cwd: '/home/zhou/code', settings: {} };
+    await expect(
+      service.discoverChoices('u2', computerId, input),
+    ).rejects.toMatchObject({ key: 'computerNotFound' });
+    await expect(
+      service.discoverChoices('u1', computerId, {
+        ...input,
+        agentId: 'opencode',
+      }),
+    ).rejects.toMatchObject({ key: 'agentUnavailable' });
+    await service.updateComputer('u1', computerId, {
+      folders: ['/home/zhou/code'],
+    });
+    for (const cwd of ['/etc', '/home/zhou/other', 'code'])
+      await expect(
+        service.discoverChoices('u1', computerId, { ...input, cwd }),
+      ).rejects.toMatchObject({ key: 'directoryNotAllowed' });
+    clock.now += 61_000;
+    await expect(
+      service.discoverChoices('u1', computerId, input),
+    ).rejects.toMatchObject({ key: 'computerOffline' });
+    expect(await take(computerId)).toEqual([]);
+  });
   test('registers a computer once per bridge, and anew for someone else', async ({
     database,
   }) => {
@@ -437,12 +527,6 @@ describe('AgentSessionsService', () => {
       cwd: '/home/zhou',
       content: text('next'),
     };
-    await expect(
-      service.createSession(owner, {
-        ...input,
-        settings: { effort: 'max' },
-      }),
-    ).rejects.toMatchObject({ key: 'choiceNotFound', field: 'settings' });
     const next = await service.createSession(owner, {
       ...input,
       settings: { effort: 'high' },
@@ -726,7 +810,7 @@ describe('AgentSessionsService', () => {
       }),
     ]);
     const { computerId } = await service.register('u1', {
-      protocol: 1,
+      protocol: BRIDGE_PROTOCOL_VERSION,
       computerId: null,
       computer: {
         name: 'Laptop',
@@ -948,7 +1032,7 @@ describe('AgentSessionsService', () => {
         ),
     });
     const { computerId } = await service.register('u1', {
-      protocol: 1,
+      protocol: BRIDGE_PROTOCOL_VERSION,
       computerId: null,
       computer: {
         name: 'Laptop',

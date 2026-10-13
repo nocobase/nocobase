@@ -22,6 +22,7 @@ import {
   BRIDGE_PROTOCOL_VERSION,
   BRIDGE_ROUTES,
   coalesce,
+  DISCOVERY_TIMEOUT_MS,
   MAX_EVENTS_PER_REPORT,
   POLL_WAIT_MS,
   type AgentInfo,
@@ -212,6 +213,75 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
   rescan.unref();
 
   const sessions = new Map<string, BridgeSession>();
+  const discoveryShutdown = new AbortController();
+  const discoveries = new Set<Promise<void>>();
+  const resolve = async (agentId: string): Promise<ResolvedAgent> => {
+    const spec = AGENTS.find((candidate) => candidate.id === agentId);
+    if (!spec)
+      throw new Error(
+        `This version of ${options.client.name} cannot run the agent "${agentId}".`,
+      );
+    const resolved = found.get(agentId) ?? (await resolveAgent(spec, env));
+    if (!resolved)
+      throw new Error(`${spec.name} is not installed on this computer.`);
+    found.set(agentId, resolved);
+    return resolved;
+  };
+  const discover = async (
+    command: Extract<BridgeCommand, { type: 'discoverChoices' }>,
+  ): Promise<void> => {
+    const discoverySignal = AbortSignal.any([
+      signal,
+      discoveryShutdown.signal,
+      AbortSignal.timeout(DISCOVERY_TIMEOUT_MS),
+    ]);
+    const session = new BridgeSession(
+      {
+        id: command.requestId,
+        agentId: command.agentId,
+        cwd: command.cwd,
+        settings: command.settings,
+        acpSessionId: null,
+        tools: null,
+      },
+      {
+        client: options.client,
+        server: options.server,
+        env,
+        roots,
+        resolve,
+        emit: () => undefined,
+        stateChanged: () => undefined,
+        discoverySignal,
+      },
+    );
+    let reply: ReplyRequest;
+    try {
+      reply = {
+        computerId,
+        requestId: command.requestId,
+        listing: null,
+        discovery: await session.discover(),
+        error: null,
+      };
+    } catch (error) {
+      reply = {
+        computerId,
+        requestId: command.requestId,
+        listing: null,
+        error: (discoverySignal.aborted
+          ? 'Agent settings discovery was stopped or timed out. Retry settings.'
+          : message(error)
+        ).slice(0, 2000),
+      };
+    } finally {
+      await session.close();
+    }
+    if (!signal.aborted)
+      await post(BRIDGE_ROUTES.reply, reply).catch((error: unknown) =>
+        log(`Could not answer the application: ${message(error)}`),
+      );
+  };
   const reporter = new Reporter({
     send: (request) => post<ReportResponse>(BRIDGE_ROUTES.report, request),
     computerId,
@@ -247,6 +317,16 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     );
   };
   const dispatch = (command: BridgeCommand): void => {
+    if (command.type === 'discoverChoices') {
+      const pending = discover(command);
+      discoveries.add(pending);
+      void pending
+        .finally(() => discoveries.delete(pending))
+        .catch((error: unknown) =>
+          log(`Could not discover agent settings: ${message(error)}`),
+        );
+      return;
+    }
     if (command.type === 'close') {
       void closeSession(command.sessionId);
       return;
@@ -263,19 +343,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
         server: options.server,
         env,
         roots,
-        resolve: async (agentId) => {
-          const spec = AGENTS.find((candidate) => candidate.id === agentId);
-          if (!spec)
-            throw new Error(
-              `This version of ${options.client.name} cannot run the agent "${agentId}".`,
-            );
-          const resolved =
-            found.get(agentId) ?? (await resolveAgent(spec, env));
-          if (!resolved)
-            throw new Error(`${spec.name} is not installed on this computer.`);
-          found.set(agentId, resolved);
-          return resolved;
-        },
+        resolve,
         emit: (event) => reporter.add(sessionId, event),
         stateChanged: () => reporter.touch(sessionId),
       });
@@ -312,6 +380,8 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     }
   } finally {
     clearInterval(rescan);
+    discoveryShutdown.abort();
+    await Promise.all(discoveries);
     await Promise.all([...sessions.keys()].map(closeSession));
     await reporter.drain();
   }

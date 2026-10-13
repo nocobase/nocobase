@@ -20,6 +20,8 @@ import {
   ComputerParams,
   ComputerSchema,
   CreateSessionInput,
+  DiscoverChoicesInput,
+  DiscoverySchema,
   FolderListingSchema,
   ListEventsQuery,
   ListFoldersQuery,
@@ -60,6 +62,37 @@ const notWritable = apiErrorResponse(
 /** The signed-in person's computers and sessions, under `/agentSessions`. */
 export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
   const router = new Hono<AuthEnv>();
+
+  router.post(
+    '/computers/:computerId/discoverChoices',
+    describeRoute({
+      tags,
+      ...pageOnly,
+      summary: 'Discover agent settings before a session',
+      operationId: 'agentSessionsDiscoverChoices',
+      description: `Initializes the installed agent and opens a disposable ACP session without prompts or MCP servers. Waits up to 160 seconds. The agent may retain an empty local session. ${own}`,
+      responses: {
+        200: dataResponse(DiscoverySchema),
+        ...errors,
+        404: computerNotFound,
+        400: apiErrorResponse(
+          400,
+          'The computer is offline, discovery failed, or the agent or directory is unavailable.',
+        ),
+        504: apiErrorResponse(504, 'The computer did not answer in time.'),
+      },
+    }),
+    apiValidator('param', ComputerParams),
+    apiValidator('json', DiscoverChoicesInput),
+    async (context) =>
+      context.json({
+        data: await service.discoverChoices(
+          userId(context),
+          context.req.valid('param').computerId,
+          context.req.valid('json'),
+        ),
+      }),
+  );
 
   router.get(
     '/computers',

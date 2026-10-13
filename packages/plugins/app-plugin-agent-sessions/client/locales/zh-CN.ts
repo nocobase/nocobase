@@ -63,6 +63,12 @@ const zhCN: AgentSessionsResource = {
     unknown: '未知',
   },
   newSession: {
+    settingsOffline: '此电脑已离线。请重新连接桥接程序以加载设置和发送消息。',
+    settingsLoading: '正在加载设置…',
+    settingsFailed: '无法加载智能体设置。',
+    settingsRetry: '重试设置',
+    settingsUnsupported: '此智能体不提供设置，将使用默认值。',
+    settingsEmpty: '此智能体没有可配置的设置，将使用默认值。',
     title: '新会话',
     subtitle: '和你自己电脑上的 Agent 对话，记录保存在这里。',
     pickComputer: '选择电脑',
@@ -218,6 +224,7 @@ const zhCN: AgentSessionsResource = {
     truncated: '只显示前 500 个文件夹。',
   },
   computers: {
+    offline: '离线',
     title: '我的电脑',
     description:
       '这里的电脑只运行你自己的会话，Agent 以你的身份工作。给团队跑后台任务的机器在别处管理。',
