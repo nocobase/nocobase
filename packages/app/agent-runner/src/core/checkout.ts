@@ -790,12 +790,19 @@ async function ensureCheckout(
   cache: string,
   dir: string,
   repo: RepoDir,
+  readOnly = false,
+  log?: (message: string) => void,
 ): Promise<boolean> {
   const context = { cache, dir, url: repo.url };
   if (
     existsSync(dir) &&
     existsSync(path.join(dir, '.git')) &&
-    (await taskGitOk(context, ['rev-parse', '--is-inside-work-tree']))
+    (await taskGitOk(context, ['rev-parse', '--is-inside-work-tree']).catch(
+      (error: unknown) => {
+        if (!readOnly) throw error;
+        return false;
+      },
+    ))
   ) {
     // Refresh the clone's tracking refs without moving its branch or touching uncommitted work. Legacy worktrees
     // share these refs with the cache, which updateCache already refreshed.
@@ -837,9 +844,13 @@ async function ensureCheckout(
   }
   if (existsSync(dir)) {
     const entries = await readdir(dir);
-    if (entries.length > 0)
+    if (entries.length > 0 && !readOnly)
       throw new CheckoutError(`${dir} exists and is not a worktree`);
     await rm(dir, { recursive: true, force: true });
+    if (entries.length > 0)
+      log?.(
+        `checkout: rebuilding read-only directory ${dir}: not a Git worktree`,
+      );
   }
   await mkdir(path.dirname(dir), { recursive: true });
   const lock = await lockCache(cache);
@@ -1252,7 +1263,14 @@ export async function prepareDirs(
             })
           : undefined;
       const created =
-        runTree !== undefined || (await ensureCheckout(cache, dir, entry));
+        runTree !== undefined ||
+        (await ensureCheckout(
+          cache,
+          dir,
+          entry,
+          isReadOnlyWorkspace(workDir),
+          options.log,
+        ));
       const gitDir = await taskGitDir({ dir, cache, url: entry.url });
       const relative = path.relative(workDir, dir);
       const known = meta?.repos.find(
@@ -1622,6 +1640,22 @@ export interface GcOptions {
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/** The dedicated sibling layout produced by workspaceKey; never a lock directory. */
+export function isReadOnlyWorkspace(workDir: string): boolean {
+  return /^[^.][^/]*\.readonly-[A-Za-z0-9_-]+$/u.test(path.basename(workDir));
+}
+
+/** A legacy `<KEY>.readonly-*` directory, or a read-only run's own attempt directory: nothing in it is ever saved. */
+export function isDisposableWorkspace(
+  workDir: string,
+  meta: Partial<Pick<WorkspaceMeta, 'readOnly' | 'runAttempt'>> | undefined,
+): boolean {
+  return (
+    isReadOnlyWorkspace(workDir) ||
+    (meta?.readOnly === true && meta.runAttempt === true)
+  );
+}
+
 /**
  * Removes a subject's work directory, and a legacy worktree's record in its cache. The caller holds the workspace lock.
  */
@@ -1632,6 +1666,35 @@ export async function removeWorkspace(
 ): Promise<void> {
   if (meta.continuationOnly === true) {
     await clearContinuations(paths, workDir, meta as WorkspaceMeta);
+    return;
+  }
+  // A read-only checkout holds nothing to save. The caller holds its lock and has stopped its processes.
+  if (isDisposableWorkspace(workDir, meta)) {
+    await rm(workDir, { recursive: true, force: true });
+    // Missing metadata is common after an interrupted removal. Prune registrations, never borrowed objects.
+    for (const entry of await readdir(paths.reposDir, {
+      withFileTypes: true,
+    }).catch(() => [])) {
+      if (!entry.isDirectory() || !entry.name.endsWith('.git')) continue;
+      const cache = path.join(paths.reposDir, entry.name);
+      const lock = await lockCache(cache);
+      try {
+        await git(['worktree', 'prune'], cache);
+        // The run's private branch, once its worktree is unregistered; never any other ref.
+        for (const repo of meta.repos)
+          if (
+            repo.cache === cache &&
+            repo.localBranch?.startsWith('runner-run-') === true
+          )
+            await gitOk(
+              ['update-ref', '-d', `refs/heads/${repo.localBranch}`],
+              cache,
+            );
+      } finally {
+        await lock.release();
+      }
+    }
+    await rm(workspaceRecordPath(paths, workDir), { force: true });
     return;
   }
   if (meta.runWorktrees === true || meta.recoveryRequired === true)
@@ -1677,6 +1740,24 @@ export async function gcWorkspaces(options: GcOptions): Promise<string[]> {
   }
   for (const workDir of workDirs) {
     const meta = await readWorkspaceMeta(paths, workDir);
+    // Unlocked: its run is gone. Removed without a Git validity check, which a half-deleted checkout fails.
+    if (isDisposableWorkspace(workDir, meta)) {
+      let lock: Lock;
+      try {
+        lock = await acquireLock(`${workDir}.lock`, { timeoutMs: 0 });
+      } catch {
+        continue;
+      }
+      try {
+        await removeWorkspace(paths, workDir, meta ?? { repos: [] });
+        removed.push(workDir);
+      } catch (error) {
+        options.log?.(`gc: cleanup failed for ${workDir}: ${String(error)}`);
+      } finally {
+        await lock.release();
+      }
+      continue;
+    }
     if (meta === undefined) continue;
     const lastUsed = Date.parse(meta.lastUsedAt);
     const ended =

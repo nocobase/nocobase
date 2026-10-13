@@ -149,6 +149,11 @@ test.describe('issue page', () => {
       },
     );
     await open(page, `/issues/${issue.identifier}`);
+    // The runs on the activity line are system records, folded under "Conversation only".
+    await page
+      .getByTestId('issue-feed')
+      .getByRole('button', { name: '全部', exact: true })
+      .click();
     const history = page.locator('[data-slot="agent-run-history"]');
     const aside = page.locator('[data-slot="issue-detail-layout"] aside');
     await expect(history).toHaveCount(1);
@@ -402,6 +407,11 @@ test.describe('issue page', () => {
     page,
     api,
   }, testInfo) => {
+    await api.patch(`projects/issues/${issue.id}`, {
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
+    });
     const runner = new FakeRunner(api, `live-issue-${unique()}`);
     await runner.agent();
     const runsPath = `agents/runs?subjectKind=issue&subjectId=${issue.id}`;
@@ -421,6 +431,11 @@ test.describe('issue page', () => {
     page.on('framenavigated', (frame) => {
       if (frame === page.mainFrame()) navigations.push(frame.url());
     });
+    // Runs are system records, folded under "Conversation only".
+    await page
+      .getByTestId('issue-feed')
+      .getByRole('button', { name: '全部', exact: true })
+      .click();
     // A person's mention wakes the runner's agent.
     await runner.wake(issue);
     const running = await runner.start(issue.identifier);
@@ -490,6 +505,109 @@ test.describe('issue page', () => {
     await expect(
       now.getByRole('button', { name: '开始', exact: true }),
     ).toBeHidden();
+  });
+
+  test('only the owner starts; another user comments as a trigger and the transcript names both', async ({
+    page,
+    api,
+    browser,
+    context,
+  }) => {
+    test.setTimeout(120_000);
+    const admin = await apiAs(browser, 'admin');
+    const suffix = unique();
+    const triggerUser = {
+      email: `identity-trigger-${suffix}@example.com`,
+      password: 'identity-trigger-e2e-password',
+    };
+    const triggerName = `Identity trigger ${suffix}`;
+    const runner = new FakeRunner(admin.api, `owner-identity-${unique()}`);
+    const settings = await admin.api.get<{
+      firstChoiceAgentId: string | null;
+      fallbackAgentId: string | null;
+    }>('projectManager');
+    try {
+      const choice = await runner.agent();
+      await admin.api.patch('projectManager', {
+        firstChoiceAgentId: choice,
+        fallbackAgentId: null,
+      });
+      await admin.api.post('users', {
+        ...triggerUser,
+        name: triggerName,
+        roleScopes: { studio: ['admin'] },
+      });
+      await signIn(context, triggerUser);
+      await open(page, `/issues/${issue.identifier}`);
+      await expect(
+        page
+          .getByRole('region', { name: '现在' })
+          .getByRole('button', { name: '开始', exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        api.post(`projectManager/issues/${issue.id}/start`),
+      ).rejects.toThrow('ISSUE_OWNER_START_REQUIRED');
+      await signIn(context, 'alex');
+      await open(page, `/issues/${issue.identifier}`);
+      await page
+        .getByRole('region', { name: '现在' })
+        .getByRole('button', { name: '开始', exact: true })
+        .click();
+      await expect
+        .poll(
+          async () =>
+            (await api.get<Issue>(`projects/issues/${issue.id}`)).statusKey,
+        )
+        .toBe('in_progress');
+      const first = await runner.start(issue.identifier);
+      await runner.complete(first.runId, 'Ready for comments.');
+      await signIn(context, triggerUser);
+      const trigger = await api.get<{ userId: string }>('projects/me');
+      await api.post(`projects/issues/${issue.id}/comments`, {
+        content: `Please check the implementation, ${suffix}.`,
+      });
+      const started = await runner.start(issue.identifier);
+      const detail = await admin.api.get<{
+        actorUserId: string;
+        requestedByUserId: string;
+      }>(`agents/runs/${started.runId}`);
+      expect(detail.actorUserId).toBe(me.userId);
+      expect(detail.requestedByUserId).toBe(trigger.userId);
+      await open(page, `/issues/${issue.identifier}/runs/${started.runId}`);
+      await expect(page.getByTestId('run-model')).toContainText('使用模型：');
+      await expect(page.getByText(/运行身份：Alex Turner/u)).toBeVisible();
+      await expect(
+        page.getByText(new RegExp(`触发人：${triggerName}`, 'u')),
+      ).toBeVisible();
+      await page.screenshot({
+        path: test.info().outputPath('manager-identity-zh.png'),
+      });
+      await api.patch('users/me/preferences', {
+        locale: 'en-US',
+        'theme.mode': 'dark',
+      });
+      await page.evaluate(() => {
+        localStorage.setItem('nocobase.locale', 'en-US');
+        localStorage.setItem('nocobase:main:theme:color-scheme', 'dark');
+      });
+      await page.setViewportSize({ width: 375, height: 812 });
+      await page.reload();
+      await expect(page.getByTestId('run-model')).toContainText('Model:');
+      await expect(page.getByText(/Running as Alex Turner/u)).toBeVisible();
+      await expect(
+        page.getByText(new RegExp(`Triggered by ${triggerName}`, 'u')),
+      ).toBeVisible();
+      expect(await horizontalOverflow(page)).toBeLessThanOrEqual(1);
+      await page.screenshot({
+        path: test.info().outputPath('manager-identity-en-mobile.png'),
+      });
+    } finally {
+      await admin.api.patch('projectManager', {
+        firstChoiceAgentId: settings.firstChoiceAgentId,
+        fallbackAgentId: settings.fallbackAgentId,
+      });
+      await admin.close();
+    }
   });
 
   test('the project manager arranges an issue among the agents', async ({

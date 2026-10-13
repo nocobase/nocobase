@@ -121,9 +121,11 @@ async function main(): Promise<number> {
         try {
           await observation;
           await observeGroups();
+          // Strict: a failed process scan or a surviving writer keeps the worktree instead of removing it.
           const left = await killLeftovers(process.pid, {
             groups: seenGroups,
             graceMs: 2_000,
+            strict: true,
           });
           const tag = process.env[PROCESS_TAG_ENV];
           const tagged = tag === undefined ? 0 : await killTagged([tag]);
@@ -136,12 +138,13 @@ async function main(): Promise<number> {
               `worker: stopped ${left.processes + tagged} process(es) the run left behind before saving`,
             );
           if (
-            descendantsOf(process.pid, await listProcesses()).some((entry) =>
-              isAlive(entry.pid),
+            descendantsOf(process.pid, await listProcesses(true)).some(
+              (entry) => isAlive(entry.pid),
             ) ||
-            (tag !== undefined && (await taggedProcesses([tag])).length > 0) ||
+            (tag !== undefined &&
+              (await taggedProcesses([tag], true)).length > 0) ||
             (record.workDir !== undefined &&
-              (await workspaceHolders(record.workDir)).length > 0)
+              (await workspaceHolders(record.workDir, true)).length > 0)
           )
             throw new Error(
               'Writers remain after stopping the tool; preserve the worktree for recovery.',

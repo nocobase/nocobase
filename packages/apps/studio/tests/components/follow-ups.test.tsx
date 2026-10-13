@@ -1,6 +1,7 @@
 /**
  * "My follow-ups" (`client/pages/follow-ups`): the followed issues with what needs the viewer and what is new, the
- * selected issue's activity, the owned issues filtered by status and text, starring and marking an issue seen.
+ * selected issue live (summary, feed and composer shared with the issue page), the owned issues filtered by status and
+ * text, starring and marking an issue seen, and the phone's list-then-issue layout.
  */
 import {
   createTestI18nRuntime,
@@ -15,6 +16,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -27,6 +29,7 @@ const mocks = vi.hoisted(() => ({
   request: vi.fn(),
   issue: vi.fn(),
   show: vi.fn(),
+  update: vi.fn(),
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
@@ -45,6 +48,18 @@ vi.mock('@nocobase/app-plugin-projects/client/kit', () => ({
 vi.mock('@nocobase/app-plugin-projects/client/issues', () => ({
   statusTone: () => 'blue',
   useStatusName: () => (_statuses: unknown, key: string) => `status:${key}`,
+  useIssueUpdate: () => ({ mutate: mocks.update, isPending: false }),
+  canEditIssues: () => true,
+}));
+// The feed and the composer have tests of their own (`issue-feed.test.tsx`).
+vi.mock('../../client/issues/live/conversation.js', () => ({
+  IssueConversation: ({ children }: { children: ReactNode }) => children,
+}));
+vi.mock('../../client/issues/live/issue-feed.js', () => ({
+  IssueFeed: () => <div data-testid='issue-feed' />,
+}));
+vi.mock('../../client/issues/live/issue-composer.js', () => ({
+  IssueComposer: () => <div data-testid='issue-composer' />,
 }));
 vi.mock('@nocobase/app-plugin-agents/client/kit', () => ({
   AgentAvatar: () => null,
@@ -148,11 +163,12 @@ beforeEach(() => {
   mocks.request.mockReset();
   mocks.show.mockReset();
   mocks.issue.mockReset();
+  mocks.update.mockReset();
   mocks.request.mockImplementation(
     (request: { path: string; method?: string; json?: unknown }) => {
       if (request.path === 'followUps') return Promise.resolve({ data: view });
-      if (request.path === 'followUps/following')
-        return Promise.resolve({ data: request.json });
+      if (/^followUps\/issues\/[^/]+\/(?:un)?follow$/u.test(request.path))
+        return Promise.resolve({ data: { issueIds: view.following } });
       if (request.path === 'git/marks')
         return Promise.resolve({
           data: {
@@ -254,7 +270,7 @@ describe('My follow-ups', () => {
 
     const panel = await screen.findByTestId('follow-ups-activity');
     await waitFor(() =>
-      expect(within(panel).getByTestId('follow-ups-now').textContent).toContain(
+      expect(within(panel).getByTestId('issue-progress').textContent).toContain(
         'Next: merge once accepted',
       ),
     );
@@ -262,12 +278,37 @@ describe('My follow-ups', () => {
     await waitFor(() =>
       expect(panel.textContent).toContain('Checks passed · Has conflicts'),
     );
-    expect(
-      within(panel).getByTestId('follow-ups-needs-you').textContent,
-    ).toContain('Accept: PR #12');
-    expect(within(panel).getByTestId('follow-ups-feed').textContent).toContain(
-      'Project manager asked Sol: Implement the change and open a PR.',
+    expect(within(panel).getByTestId('issue-needs-you').textContent).toContain(
+      'Accept: PR #12',
     );
+    expect(within(panel).getByTestId('follow-toggle').textContent).toBe(
+      'Following · 2/5',
+    );
+    // In review: what was delivered and Send back; the feed and the reply box under it.
+    const delivery = within(panel).getByTestId('issue-delivery');
+    expect(delivery.textContent).toContain('Implement the change');
+    fireEvent.click(
+      within(delivery).getByRole('button', { name: 'Send back' }),
+    );
+    expect(mocks.update).toHaveBeenCalledWith({ statusKey: 'in_progress' });
+    within(panel).getByTestId('issue-feed');
+    within(panel).getByTestId('issue-composer');
+    // The title has a line of its own; folding leaves one bar with Expand summary.
+    const summary = within(panel).getByTestId('issue-summary');
+    expect(
+      within(summary).getByRole('heading', {
+        name: 'Release page lists previews',
+      }).tagName,
+    ).toBe('H2');
+    fireEvent.click(
+      within(summary).getByRole('button', { name: 'Collapse summary' }),
+    );
+    expect(summary.hasAttribute('data-collapsed')).toBe(true);
+    expect(within(summary).queryByTestId('issue-delivery')).toBeNull();
+    fireEvent.click(
+      within(summary).getByRole('button', { name: 'Expand summary' }),
+    );
+    within(summary).getByTestId('issue-delivery');
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith({
         method: 'POST',
@@ -314,9 +355,8 @@ describe('My follow-ups', () => {
     fireEvent.click(within(row).getByRole('button', { name: 'Follow WEB-4' }));
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith({
-        method: 'PUT',
-        path: 'followUps/following',
-        json: { issueIds: ['r1', 'f1', 'b1'] },
+        method: 'POST',
+        path: 'followUps/issues/b1/follow',
       }),
     );
   });
@@ -343,8 +383,41 @@ describe('My follow-ups', () => {
     fireEvent.click(star);
     expect(
       mocks.request.mock.calls.some(
-        ([request]) => (request as { method?: string }).method === 'PUT',
+        ([request]) =>
+          (request as { method?: string }).method === 'POST' &&
+          (request as { path: string }).path.endsWith('/follow'),
       ),
     ).toBe(false);
+  });
+
+  it('on a phone shows the lists first, then the chosen issue alone with a way back', async () => {
+    const matchMedia = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: !query.includes('min-width'),
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    })) as unknown as typeof window.matchMedia;
+    try {
+      const rail = await mount();
+      expect(screen.queryByTestId('follow-ups-activity')).toBeNull();
+      fireEvent.click(card(rail, 'WEB-9'));
+      const panel = await screen.findByTestId('follow-ups-activity');
+      // A phone starts with the summary's bar.
+      expect(
+        (await within(panel).findByTestId('issue-summary')).hasAttribute(
+          'data-collapsed',
+        ),
+      ).toBe(true);
+      expect(screen.queryByTestId('follow-ups-following')).toBeNull();
+      expect(screen.queryByTestId('follow-ups-mine')).toBeNull();
+      fireEvent.click(
+        within(panel).getByRole('button', { name: 'Back to the list' }),
+      );
+      await screen.findByTestId('follow-ups-following');
+      expect(screen.queryByTestId('follow-ups-activity')).toBeNull();
+    } finally {
+      window.matchMedia = matchMedia;
+    }
   });
 });

@@ -1,3 +1,4 @@
+import { DescriptionViewSchema } from '@nocobase/app-plugin-lifecycle-example/server';
 import { z } from 'zod';
 
 export const articleStatuses = ['draft', 'published', 'archived'] as const;
@@ -167,3 +168,54 @@ export const NumericExamples = z
       }),
   })
   .meta({ ref: 'ExamplesNumericExamples' });
+
+export const WorkflowParams = z.object({
+  workflowId: z
+    .string()
+    .regex(/^(lifecycle|office)\.[A-Za-z][A-Za-z0-9]*$/)
+    .max(100),
+});
+export const WorkflowExecutionParams = WorkflowParams.extend({
+  recordId: z.string().regex(/^[1-9]\d{0,14}$/),
+});
+export const WorkflowPageQuery = z.object({
+  page: z.coerce.number().int().min(1).max(1000).default(1),
+  order: z.enum(['newest', 'oldest']).default('newest'),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  workflowId: WorkflowParams.shape.workflowId.optional(),
+});
+export const WorkflowPageMeta = z.object({
+  page: z.number(),
+  pageSize: z.number(),
+  total: z.number(),
+});
+export const WorkflowSummarySchema: z.ZodType<
+  import('../../shared/workflows.js').WorkflowSummary
+> = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    source: z.enum(['lifecycle', 'office']),
+    states: z.number(),
+    transitions: z.number(),
+  })
+  .meta({ ref: 'ExamplesWorkflowSummary' });
+export const WorkflowExecutionSchema: z.ZodType<
+  import('../../shared/workflows.js').WorkflowExecution
+> = z
+  .object({
+    workflowId: z.string(),
+    recordId: z.string(),
+    title: z.string(),
+    state: z.string(),
+    createdAt: z.iso.datetime(),
+  })
+  .meta({ ref: 'ExamplesWorkflowExecution' });
+export const WorkflowDefinitionSchema: z.ZodType<
+  import('../../shared/workflows.js').WorkflowDefinition
+> = z
+  .intersection(
+    z.object({ workflow: WorkflowSummarySchema }),
+    DescriptionViewSchema,
+  )
+  .meta({ ref: 'ExamplesWorkflowDefinition' });

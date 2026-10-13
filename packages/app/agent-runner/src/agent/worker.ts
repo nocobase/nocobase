@@ -1004,6 +1004,16 @@ export class RunWorker {
     }
     const workDir = this.prepared?.workspace?.workDir;
     if (workDir === undefined) return '';
+    // A read-only checkout has nothing to save; during shutdown GC removes it instead.
+    if (
+      remove &&
+      this.payload.workspace.readOnly === true &&
+      this.ending?.kind === 'shutdown'
+    ) {
+      this.deps.log(`workspace: deferred read-only cleanup to GC: ${workDir}`);
+      remove = false;
+    }
+    await this.updateRecord({ finalizing: true }).catch(() => undefined);
     const results = await finalizeRunWorktrees(
       this.deps.paths,
       workDir,
@@ -1014,6 +1024,8 @@ export class RunWorker {
           ? {}
           : { unsafeReason: this.writerStopFailure }),
       },
+    ).finally(() =>
+      this.updateRecord({ finalizing: false }).catch(() => undefined),
     );
     if (results.length > 0) this.savedDuringRun = true;
     const message = results

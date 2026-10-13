@@ -36,8 +36,11 @@ export interface FollowUpPreferences {
 }
 
 export interface FollowUpsDeps {
-  readonly projects: Pick<Projects, 'issueQueries' | 'commentQueries' | 'tx'>;
-  readonly agents: Pick<Agents, 'runs' | 'agents' | 'runners'>;
+  readonly projects: Pick<
+    Projects,
+    'issueQueries' | 'commentQueries' | 'issueContext' | 'tx'
+  >;
+  readonly agents: Pick<Agents, 'runs' | 'agents' | 'runners' | 'availability'>;
   readonly preferences: FollowUpPreferences;
   readonly now?: () => Date;
 }
@@ -49,6 +52,13 @@ export interface FollowUps {
     viewer: Viewer,
     issueIds: readonly string[],
   ): Promise<FollowingView>;
+  /**
+   * Adds one issue (an id or an identifier) to what the viewer follows; following it already changes nothing. 404 when
+   * they cannot see it, `FOLLOWING_LIMIT_REACHED` when they follow as many as allowed.
+   */
+  follow(viewer: Viewer, issueIdOrKey: string): Promise<FollowingView>;
+  /** Takes one issue off what the viewer follows; not following it changes nothing. 404 when they cannot see it. */
+  unfollow(viewer: Viewer, issueIdOrKey: string): Promise<FollowingView>;
   /** Records that the viewer looked at the issue now; 404 when they cannot see it. */
   markSeen(viewer: Viewer, issueId: string): Promise<void>;
 }
@@ -126,6 +136,69 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
         !QUIET_ACTIONS.has(activity.action) &&
         !(activity.actorType === 'user' && activity.actorId === viewer.userId),
     ).length;
+  }
+
+  /** Until the viewer chooses, what they follow: their blocked and in-review issues, newest first. */
+  async function defaultFollowing(viewer: Viewer): Promise<string[]> {
+    const pages = await Promise.all(
+      (['in_review', 'blocked'] as const).map((statusKey) =>
+        projects.issueQueries.page(viewer, {
+          ownerUserId: viewer.userId,
+          statusKey,
+          limit: OWNED_PER_STATUS_MAX,
+        }),
+      ),
+    );
+    return pages
+      .flatMap((page) => page.data)
+      .filter((issue) => !issue.deletedAt)
+      .sort(byActivity)
+      .slice(0, FOLLOW_UPS_MAX)
+      .map((issue) => issue.id);
+  }
+
+  /** What the viewer follows now, as the overview shows it: only issues they can still see. */
+  async function currentFollowing(viewer: Viewer): Promise<{
+    readonly ids: string[];
+    readonly stored: boolean;
+  }> {
+    const stored = parseFollowing(
+      await preferences.get(viewer.userId, FOLLOWING_PREFERENCE),
+    );
+    const chosen = stored ?? (await defaultFollowing(viewer));
+    const found = await visible(viewer, chosen);
+    return {
+      ids: chosen.filter((id) => found.has(id)),
+      stored: stored !== null,
+    };
+  }
+
+  /** The issue's id; 404 when the viewer cannot see it. */
+  async function issueIdOf(viewer: Viewer, issueIdOrKey: string) {
+    const issue = await projects.issueQueries.detail(viewer, issueIdOrKey);
+    if (issue.deletedAt)
+      throw studioError('NOT_FOUND', 'ISSUE_NOT_FOUND', 'Issue not found.');
+    return issue.id;
+  }
+
+  async function saveFollowing(
+    viewer: Viewer,
+    ids: readonly string[],
+  ): Promise<FollowingView> {
+    const userId = viewer.userId;
+    // A newly followed issue counts what happens from now on, not its whole history.
+    const seen = await readSeen(userId);
+    const at = now().toISOString();
+    let changed = false;
+    for (const id of ids)
+      if (!seen[id]) {
+        seen[id] = at;
+        changed = true;
+      }
+    if (changed)
+      await preferences.set(userId, SEEN_PREFERENCE, pruneSeen(seen, ids));
+    await preferences.set(userId, FOLLOWING_PREFERENCE, [...ids]);
+    return { issueIds: [...ids] };
   }
 
   return {
@@ -247,20 +320,35 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
             })),
           },
         );
-      const userId = viewer.userId;
-      // A newly followed issue counts what happens from now on, not its whole history.
-      const seen = await readSeen(userId);
-      const at = now().toISOString();
-      let changed = false;
-      for (const id of ids)
-        if (!seen[id]) {
-          seen[id] = at;
-          changed = true;
-        }
-      if (changed)
-        await preferences.set(userId, SEEN_PREFERENCE, pruneSeen(seen, ids));
-      await preferences.set(userId, FOLLOWING_PREFERENCE, ids);
-      return { issueIds: ids };
+      return saveFollowing(viewer, ids);
+    },
+
+    async follow(viewer, issueIdOrKey) {
+      const issueId = await issueIdOf(viewer, issueIdOrKey);
+      const { ids, stored } = await currentFollowing(viewer);
+      if (ids.includes(issueId)) {
+        if (stored) return { issueIds: ids };
+        // Following one of the defaults makes the defaults the viewer's choice.
+        return saveFollowing(viewer, ids);
+      }
+      if (ids.length >= FOLLOW_UPS_MAX)
+        throw studioError(
+          'FAILED_PRECONDITION',
+          'FOLLOWING_LIMIT_REACHED',
+          `You follow ${FOLLOW_UPS_MAX} issues already. Unfollow one first.`,
+          { metadata: { max: String(FOLLOW_UPS_MAX) } },
+        );
+      return saveFollowing(viewer, [...ids, issueId]);
+    },
+
+    async unfollow(viewer, issueIdOrKey) {
+      const issueId = await issueIdOf(viewer, issueIdOrKey);
+      const { ids } = await currentFollowing(viewer);
+      if (!ids.includes(issueId)) return { issueIds: ids };
+      return saveFollowing(
+        viewer,
+        ids.filter((id) => id !== issueId),
+      );
     },
 
     async markSeen(viewer, issueId) {

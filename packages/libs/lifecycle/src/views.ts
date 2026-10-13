@@ -1,6 +1,11 @@
 import type { LifecycleDescription } from './definition.js';
 import { toMermaid } from './mermaid.js';
-import type { LifecycleRuntime, RecordView } from './runtime.js';
+import type {
+  LifecycleRuntime,
+  ParameterReadContext,
+  RecordView,
+} from './runtime.js';
+import type { LifecycleTypes } from './types.js';
 
 /** What a lifecycle's description route answers: the definition, its parameters and its diagram. */
 export interface LifecycleDescriptionView {
@@ -24,6 +29,23 @@ export function lifecycleDescriptionView(
   return {
     description,
     parameters: runtime.parameters(name) as Readonly<Record<string, unknown>>,
+    diagram: toMermaid(description),
+  };
+}
+
+/** A description with async overrides, using a server-owned preview context. */
+export async function lifecycleDescriptionViewAsync(
+  runtime: LifecycleRuntime,
+  name: string,
+  context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle' | 'purpose'>,
+): Promise<LifecycleDescriptionView> {
+  const description = runtime.describe(name);
+  return {
+    description,
+    parameters: (await runtime.resolveParameters(name, {
+      ...context,
+      purpose: 'preview',
+    })) as Readonly<Record<string, unknown>>,
     diagram: toMermaid(description),
   };
 }

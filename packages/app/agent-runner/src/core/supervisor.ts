@@ -68,6 +68,8 @@ export interface RunRecord {
   credentialsFile?: string;
   /** `spawned`, the name of the preparation step under way (prepare/index.ts), `running` or `reporting`. */
   phase: 'spawned' | 'running' | 'reporting' | (string & {});
+  /** Set while the worker saves and removes its worktrees: shutdown waits rather than kill it halfway. */
+  finalizing?: boolean;
   log: string;
 }
 
@@ -213,6 +215,8 @@ export function workerEntry(): string[] {
 const MAX_TAGS = 1_000;
 
 export interface SupervisedRun {
+  /** Shutdown must not interrupt this worker while it removes its disposable checkout. */
+  readOnly?: boolean;
   /** The record key: the run's id, or `jobRecordKey(jobId)`. */
   runId: string;
   /** Set for a job. */
@@ -394,6 +398,7 @@ export class Supervisor {
     child.stdin?.on('error', () => undefined);
     child.stdin?.end(JSON.stringify(job));
     const supervised: SupervisedRun = {
+      readOnly: job.kind !== 'job' && job.payload.workspace.readOnly === true,
       runId,
       ...(record.jobId === undefined ? {} : { jobId: record.jobId }),
       appKey,
@@ -482,7 +487,29 @@ export class Supervisor {
           delay(timeoutMs).then(() => false),
         ]);
         if (!stopped) {
-          await killGroup(run.pid, this.options.timings.killGraceMs ?? 5_000);
+          const finalizing = async (): Promise<boolean> =>
+            run.readOnly === true ||
+            (
+              await readJson<RunRecord>(
+                recordPath(this.options.paths, run.runId),
+              ).catch(() => undefined)
+            )?.finalizing === true;
+          const waitForCleanup = async (): Promise<void> => {
+            this.options.log(
+              `run ${run.runId}: waiting for worktree cleanup before shutdown`,
+            );
+            await run.exited;
+          };
+          if (await finalizing()) return waitForCleanup();
+          signalGroup(run.pid, 'SIGTERM');
+          const deadline =
+            Date.now() + (this.options.timings.killGraceMs ?? 5_000);
+          while (groupAlive(run.pid) && Date.now() < deadline) {
+            if (await finalizing()) return waitForCleanup();
+            await delay(100);
+          }
+          if (await finalizing()) return waitForCleanup();
+          await killGroup(run.pid, 0);
           await run.exited;
         }
       }),

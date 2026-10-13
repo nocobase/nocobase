@@ -390,6 +390,16 @@ export async function finalizeRunWorktrees(
     return results;
   }
   if (meta?.runWorktrees !== true) {
+    // A read-only attempt without repositories holds nothing to save either.
+    if (
+      options.remove !== false &&
+      meta?.readOnly === true &&
+      meta.runAttempt === true
+    ) {
+      await rm(workDir, { recursive: true, force: true });
+      await rm(workspaceRecordPath(paths, workDir), { force: true });
+      log(`workspace: removed ${workDir}`);
+    }
     if (options.remove !== false && meta?.appKey !== undefined)
       await updateContinuationState(
         paths,
@@ -527,6 +537,7 @@ export async function finalizeRunWorktrees(
   if (results.every((result) => result.saved) && options.remove !== false) {
     await rm(workDir, { recursive: true, force: true });
     await rm(workspaceRecordPath(paths, workDir), { force: true });
+    log(`workspace: removed ${workDir}`);
     if (meta.appKey !== undefined)
       await updateContinuationState(
         paths,

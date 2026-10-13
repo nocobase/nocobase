@@ -49,6 +49,8 @@ import {
   PROJECT_TITLE,
 } from './catalog/triggers.js';
 import { AGENT_KIND } from './tx.js';
+import { issueExecutionIdentity } from './execution-identity.js';
+import { readOwnerHandoff } from '../issues/owner-handoff.js';
 
 const SUBJECT_NOUN = 'issue';
 
@@ -417,6 +419,11 @@ export function createIssueContextProvider(
 ): ContextProvider {
   return {
     async admit(conn, claim) {
+      if ((await readOwnerHandoff(conn, claim.run.subject.id))?.waiting)
+        return {
+          reason: 'waitingOwner',
+          detail: 'Waiting for the new issue owner to take over.',
+        };
       const context = await projects().issueContext.contextFor(
         conn,
         claim.run.subject.id,
@@ -623,13 +630,14 @@ export function issueSample(agents: Pick<Agents, 'briefs'>): SubjectSample {
 }
 
 export function issueBinding(
-  agents: Pick<Agents, 'runs' | 'briefs'>,
+  agents: Pick<Agents, 'runs' | 'briefs' | 'agents'>,
   projects: () => Pick<Projects, 'issueContext' | 'commentQueries'>,
   sink: SubjectBinding['sink'],
   queuedExpiryMs = 0,
 ): SubjectBinding {
   return {
     kind: ISSUE_SUBJECT,
+    actsAs: issueExecutionIdentity(agents, projects),
     ...(queuedExpiryMs > 0 ? { queuedExpiryMs } : {}),
     title: ISSUE_TITLE,
     groupTitle: PROJECT_TITLE,
