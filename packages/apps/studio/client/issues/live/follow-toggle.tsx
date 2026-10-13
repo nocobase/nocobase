@@ -3,6 +3,7 @@
  * `/unfollow`). It says how many of
  * the allowed issues are followed; once that many are, an unfollowed issue's star is held, with the reason as its hint.
  */
+import { ApiClientError } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useIsMutating } from '@tanstack/react-query';
 import { StarIcon } from 'lucide-react';
@@ -41,8 +42,11 @@ export function FollowToggle({
   const following = overview.data?.following ?? [];
   const { followed, full } = followState(following, issueId);
   const loading = !overview.data;
+  const denied =
+    overview.error instanceof ApiClientError &&
+    [401, 403].includes(overview.error.status);
   const saving = useIsMutating({ mutationKey: ['studio', 'followIssue'] }) > 0;
-  const held = full || loading || saving;
+  const held = denied || full || loading || saving;
   return (
     <Button
       size='sm'
@@ -55,19 +59,26 @@ export function FollowToggle({
       )}
       aria-busy={saving || undefined}
       title={
-        saving
-          ? t('issueLive.follow.saving')
-          : loading
-            ? t(
-                overview.isError
-                  ? 'followUps.loadFailed'
-                  : 'personalTasks.loading',
-              )
-            : full
-              ? t('issueLive.follow.fullHint', { max: FOLLOW_UPS_MAX })
-              : followed
-                ? t('issueLive.follow.unfollow')
-                : undefined
+        denied
+          ? t(
+              overview.error instanceof ApiClientError &&
+                overview.error.status === 401
+                ? 'personalTasks.sessionExpired'
+                : 'common.forbidden',
+            )
+          : saving
+            ? t('issueLive.follow.saving')
+            : loading
+              ? t(
+                  overview.isError
+                    ? 'followUps.loadFailed'
+                    : 'personalTasks.loading',
+                )
+              : full
+                ? t('issueLive.follow.fullHint', { max: FOLLOW_UPS_MAX })
+                : followed
+                  ? t('issueLive.follow.unfollow')
+                  : undefined
       }
       data-testid='follow-toggle'
       onClick={(event) => {

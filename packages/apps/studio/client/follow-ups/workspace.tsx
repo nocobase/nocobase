@@ -100,14 +100,23 @@ export function PersonalTaskWorkspace({
       );
       void navigate(
         {
-          pathname: location.pathname,
+          pathname:
+            denied && fullDetail ? `/my-issues/${scope}` : location.pathname,
           search: next.toString(),
           hash: location.hash,
         },
         { replace },
       );
     },
-    [navigate, location.pathname, location.search, location.hash],
+    [
+      navigate,
+      location.pathname,
+      location.search,
+      location.hash,
+      denied,
+      fullDetail,
+      scope,
+    ],
   );
   const pickTab = (next: 'following' | 'mine'): void => {
     const updated = selectWorkspaceIssue(params, null);
@@ -141,11 +150,12 @@ export function PersonalTaskWorkspace({
       const { issueId, first } = (
         event as CustomEvent<{ issueId: string; first: boolean }>
       ).detail;
-      if (first) select(issueId);
+      // A full detail is already viewing this task; do not add a query-only history entry before its return.
+      if (first && !fullDetail) select(issueId);
     };
     window.addEventListener('studio:issue-followed', onFollow);
     return () => window.removeEventListener('studio:issue-followed', onFollow);
-  }, [select]);
+  }, [select, fullDetail]);
   useEffect(() => {
     if (!view) return;
     const next = selectionAfterRemoval(
@@ -287,6 +297,7 @@ export function PersonalTaskWorkspace({
       ) : null}
       {showPanel &&
       selected &&
+      !denied &&
       !following.includes(selected) &&
       !unavailable.has(selected) ? (
         <p className='text-sm text-muted-foreground' role='status'>
@@ -306,11 +317,11 @@ export function PersonalTaskWorkspace({
           positions={scrollPositions}
           issues={followed}
           stored={view?.followingStored ?? false}
-          selectedId={selected}
+          selectedId={showPanel && !denied ? selected : null}
           viewing={selected && !following.includes(selected) ? summary : null}
           onSelect={select}
         />
-        {showPanel && selected && unavailable.has(selected) ? (
+        {showPanel && selected && (denied || unavailable.has(selected)) ? (
           <section className='flex min-h-0 flex-col gap-3 overflow-y-auto rounded-lg border p-4'>
             <p>{t('personalTasks.draftUnavailable')}</p>
             <p className='whitespace-pre-wrap'>
@@ -348,7 +359,8 @@ export function PersonalTaskWorkspace({
           className={cn('min-h-0 min-w-0', !showTasks && 'hidden')}
           aria-hidden={!showTasks || undefined}
         >
-          {children}
+          {/* A confirmed overview denial closes all active task queries/actions, including the full-detail outlet. Draft hosts stay above this boundary. */}
+          {denied ? null : children}
         </div>
       </div>
     </div>

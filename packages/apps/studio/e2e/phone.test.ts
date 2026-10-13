@@ -1,17 +1,31 @@
 /**
  * The issue page and My follow-ups on a phone: no shell header (the page's own row reaches the navigation and the
- * agent chat), the follow-ups lists as two bottom tabs, a summary that scrolls away and leaves its one-line bar, the
+ * agent chat), the personal workspace lists as reachable partitions, a summary that scrolls away and leaves its one-line bar, the
  * composer folded to a slim bar until tapped, and the last activity reachable above it. CI runs this at iPhone 13 size
  * in Chromium; `pnpm exec playwright test --project=phone-webkit` runs it in WebKit as an iPhone 13.
  */
 import { devices } from '@playwright/test';
 
-import { expect, open, test, unique } from './support/fixtures.ts';
+import {
+  expect,
+  horizontalOverflow,
+  open,
+  test,
+  unique,
+} from './support/fixtures.ts';
 import type { Issue } from './support/runner.ts';
+import { deleteTestIssues, wheelTo } from './support/personal-task-scroll.ts';
 
 const { viewport, deviceScaleFactor, isMobile, hasTouch, userAgent } =
   devices['iPhone 13'];
-test.use({ viewport, deviceScaleFactor, isMobile, hasTouch, userAgent });
+test.use({
+  viewport,
+  deviceScaleFactor,
+  isMobile,
+  hasTouch,
+  userAgent,
+  user: 'leo',
+});
 
 test.describe('phone', () => {
   test('the header gives way on the issue pages and stays on others', async ({
@@ -46,7 +60,11 @@ test.describe('phone', () => {
     ).toBeVisible();
   });
 
-  test('My follow-ups shows one list per bottom tab', async ({ page, api }) => {
+  test('My tasks-α shows one list per partition with explicit following', async ({
+    page,
+    api,
+    browser,
+  }) => {
     const me = await api.get<{ userId: string }>('projects/me');
     const suffix = unique();
     const review = await api.post<Issue>('projects/issues', {
@@ -59,29 +77,36 @@ test.describe('phone', () => {
       statusKey: 'in_review',
     });
     await api.put('followUps/following', { issueIds: [review.id] });
-    await open(page, '/follow-ups');
-    const tabs = page.getByTestId('follow-ups-tabs');
+    await open(page, '/follow-ups?view=list&tab=following');
+    const tabs = page.getByRole('navigation', { name: '个人任务分区' });
     await expect(tabs).toBeVisible();
     await expect(page.getByTestId('follow-ups-following')).toBeVisible();
-    await expect(page.getByTestId('follow-ups-mine')).toHaveCount(0);
-    await tabs.getByRole('button', { name: /^我负责的/u }).click();
-    await expect(page.getByTestId('follow-ups-mine')).toBeVisible();
-    await expect(page.getByTestId('follow-ups-following')).toHaveCount(0);
+    await expect(page.getByRole('textbox', { name: '搜索任务' })).toBeHidden();
+    await tabs.getByRole('button', { name: '我的任务-α', exact: true }).click();
+    await expect(page.getByRole('textbox', { name: '搜索任务' })).toBeVisible();
+    await expect(page.getByTestId('follow-ups-following')).toBeHidden();
     await tabs.getByRole('button', { name: /^关注/u }).click();
     await page
       .getByTestId('follow-ups-following')
-      .locator(`[data-issue="${review.identifier}"]`)
+      .getByRole('button')
+      .filter({ hasText: review.title })
       .click();
     // The issue alone: its Back row, and no tabs.
-    await expect(page.getByTestId('follow-ups-tabs')).toHaveCount(0);
+    await expect(tabs).toBeHidden();
     await expect(
       page.getByRole('button', { name: '返回列表' }).first(),
     ).toBeVisible();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    await page.getByRole('button', { name: '返回列表' }).click();
+    await expect(tabs).toBeVisible();
+    await api.put('followUps/following', { issueIds: [] });
+    await deleteTestIssues(browser, [review.id]);
   });
 
-  test('the own tab scrolls to its last issue above the tab bar', async ({
+  test('the personal task partition scrolls to its last issue and retains its position on return', async ({
     page,
     api,
+    browser,
   }) => {
     test.setTimeout(180_000);
     const me = await api.get<{ userId: string }>('projects/me');
@@ -99,20 +124,40 @@ test.describe('phone', () => {
       });
       created.push(issue);
     }
-    await open(page, '/follow-ups?tab=mine');
-    const mine = page.getByTestId('follow-ups-mine');
-    await mine.getByRole('searchbox').fill(suffix);
-    const rows = mine.locator('li[data-issue]');
+    await api.put('followUps/following', { issueIds: [created[0]!.id] });
+    await open(page, `/follow-ups?view=list&tab=mine&q=${suffix}`);
+    await expect(page.getByRole('textbox', { name: '搜索任务' })).toHaveValue(
+      suffix,
+    );
+    const table = page.getByRole('table');
+    const rows = table.getByRole('row').filter({ hasText: suffix });
     await expect(rows).toHaveCount(32);
-    const last = rows.last();
-    await last.scrollIntoViewIfNeeded();
-    await expect(last).toBeInViewport({ ratio: 1 });
+    const last = rows.last().getByRole('link');
+    await wheelTo(page, table, last, true);
     const lastBox = (await last.boundingBox())!;
-    const tabsBox = (await page.getByTestId('follow-ups-tabs').boundingBox())!;
-    expect(lastBox.y + lastBox.height).toBeLessThanOrEqual(tabsBox.y + 1);
+    const workspaceBox = (await page
+      .getByTestId('personal-task-workspace')
+      .boundingBox())!;
+    expect(lastBox.y + lastBox.height).toBeLessThanOrEqual(
+      workspaceBox.y + workspaceBox.height + 1,
+    );
+    expect(lastBox.y + lastBox.height).toBeLessThanOrEqual(
+      page.viewportSize()!.height + 1,
+    );
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    const partitions = page.getByRole('navigation', { name: '个人任务分区' });
+    await partitions.getByRole('button', { name: '关注', exact: true }).click();
+    await expect(page.getByTestId('follow-ups-following')).toBeVisible();
+    await partitions
+      .getByRole('button', { name: '我的任务-α', exact: true })
+      .click();
+    await expect(last).toBeInViewport({ ratio: 1 });
+    await api.put('followUps/following', { issueIds: [] });
     // So many issues would crowd other tests' lists.
-    for (const issue of created)
-      await api.delete(`projects/issues/${issue.id}`);
+    await deleteTestIssues(
+      browser,
+      created.map((issue) => issue.id),
+    );
   });
 
   test('the summary scrolls away to its bar, the composer opens on tap, and the last activity is reachable', async ({
