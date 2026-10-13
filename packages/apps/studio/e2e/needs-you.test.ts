@@ -12,6 +12,7 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
   page,
   api,
   browser,
+  context,
 }) => {
   test.setTimeout(300_000);
   // Keep realtime and short UI timers, but disable query and run-discovery polling.
@@ -41,6 +42,26 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
             delay,
           )) as typeof globalThis.setTimeout;
   });
+  // Language, theme and follow-ups persist on the account; parallel shell tests use the demo admin.
+  const owner = {
+    email: `needs-you-owner-${unique()}@example.com`,
+    password: 'needs-you-e2e-password',
+  };
+  await api.post('users', {
+    ...owner,
+    name: 'Needs-you test owner',
+    roleScopes: { studio: ['admin'] },
+  });
+  const recipientUser = {
+    email: `needs-you-recipient-${unique()}@example.com`,
+    password: 'needs-you-e2e-password',
+  };
+  await api.post('users', {
+    ...recipientUser,
+    name: 'Needs-you test recipient',
+    roleScopes: { studio: ['contributor'] },
+  });
+  await signIn(context, owner);
   const me = await api.get<{ userId: string }>('projects/me');
   const settings = await api.get<{
     firstChoiceAgentId: string | null;
@@ -356,7 +377,7 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     const transfer = await make('Take over the next implementation step');
     await runner.complete(transfer.running.runId, 'Ready.');
     const recipientContext = await browser.newContext({ locale: 'en-US' });
-    await signIn(recipientContext, 'lisa');
+    await signIn(recipientContext, recipientUser);
     const recipient = {
       api: new Api(recipientContext.request),
       close: () => recipientContext.close(),
