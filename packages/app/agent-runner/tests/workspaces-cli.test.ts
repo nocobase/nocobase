@@ -120,7 +120,9 @@ describe('cleaning up working directories', () => {
     expect(server.workspaceReports[0]?.workspaces).toHaveLength(2);
     // CLI output remains compact; periodic workspace reports carry measured diagnostic sizes.
     expect(listed.workspaces[0]).not.toHaveProperty('sizeBytes');
-    expect(server.workspaceReports[0]?.workspaces[0]?.sizeBytes).toBeGreaterThan(0);
+    expect(
+      server.workspaceReports[0]?.workspaces[0]?.sizeBytes,
+    ).toBeGreaterThan(0);
     expect(listed.disk?.totalBytes).toBeGreaterThan(0);
     expect(listed.minFreeBytes).toBeNull();
     expect(server.workspaceReports[0]?.disk).toMatchObject({

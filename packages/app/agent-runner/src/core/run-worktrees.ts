@@ -45,6 +45,7 @@ export function continuationKey(
   return identity([app, subject, repo, target]);
 }
 
+/** Read-only attempts remain recognizable without metadata, for diagnostics and disposable-copy cleanup. */
 export function runWorkDir(
   paths: RunnerPaths,
   app: string,
