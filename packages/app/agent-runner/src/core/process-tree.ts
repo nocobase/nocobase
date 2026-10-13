@@ -27,7 +27,9 @@ export interface ProcessEntry {
 }
 
 /** Every process `ps` lists; empty when `ps` cannot be run. */
-export async function listProcesses(): Promise<ProcessEntry[]> {
+export async function listProcesses(
+  options: { strict?: boolean } = {},
+): Promise<ProcessEntry[]> {
   try {
     const { stdout } = await execFileAsync(
       'ps',
@@ -45,7 +47,8 @@ export async function listProcesses(): Promise<ProcessEntry[]> {
         entries.push({ pid, ppid, pgid });
     }
     return entries;
-  } catch {
+  } catch (error) {
+    if (options.strict === true) throw error;
     return [];
   }
 }

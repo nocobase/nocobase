@@ -8,7 +8,12 @@ import { readConnection, readSettings } from '../lib/config.ts';
 import { runnerPaths, readJson } from '../lib/home.ts';
 import { JobPayloadSchema, RunPayloadSchema } from '../protocol/index.ts';
 import { JobWorker } from './job-worker.ts';
-import { observeWriters, workspaceWriters } from './writer-ownership.ts';
+import {
+  observeWriters,
+  workspaceWriters,
+  stopRecordedWriters,
+  liveWriterPids,
+} from './writer-ownership.ts';
 import {
   killLeftovers,
   killTagged,
@@ -100,7 +105,7 @@ async function main(): Promise<number> {
   const settings = await readSettings(paths);
   const seenGroups = new Set<number>();
   const observeGroups = async () => {
-    const processes = await listProcesses();
+    const processes = await listProcesses({ strict: true });
     for (const group of groupsBelow(process.pid, processes))
       seenGroups.add(group);
     await observeWriters(
@@ -135,6 +140,13 @@ async function main(): Promise<number> {
           });
           const tag = process.env[PROCESS_TAG_ENV];
           const tagged = tag === undefined ? 0 : await killTagged([tag]);
+          const survivors = await stopRecordedWriters(paths, payload.run.id);
+          const processes = await listProcesses({ strict: true });
+          const groupWriters = await liveWriterPids(
+            processes
+              .filter((entry) => seenGroups.has(entry.pgid))
+              .map((entry) => entry.pid),
+          );
           if (left.groups > 0)
             log(
               `worker: stopped ${left.groups} process group(s) before saving`,
@@ -144,7 +156,9 @@ async function main(): Promise<number> {
               `worker: stopped ${left.processes + tagged} process(es) the run left behind before saving`,
             );
           if (
-            descendantsOf(process.pid, await listProcesses()).some((entry) =>
+            survivors.length > 0 ||
+            groupWriters.length > 0 ||
+            descendantsOf(process.pid, processes).some((entry) =>
               isAlive(entry.pid),
             ) ||
             (tag !== undefined && (await taggedProcesses([tag])).length > 0) ||
@@ -154,6 +168,9 @@ async function main(): Promise<number> {
             throw new Error(
               'Writers remain after stopping the tool; preserve the worktree for recovery.',
             );
+          log(
+            `run ${payload.run.id}: writers stopped before workspace cleanup`,
+          );
         } finally {
           quiescing = false;
         }

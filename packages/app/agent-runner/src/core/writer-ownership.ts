@@ -56,6 +56,27 @@ export async function observeWriters(
     await writeJsonAtomic(file, [...all.values()]);
 }
 
+/** A zombie cannot write. Verify members of observed groups as well as ancestry and recorded identities. */
+export async function liveWriterPids(
+  pids: readonly number[],
+): Promise<number[]> {
+  const live: number[] = [];
+  for (const pid of pids) {
+    if (pid === process.pid) continue;
+    if (process.platform === 'linux') {
+      if (await identity(pid)) live.push(pid);
+    } else {
+      try {
+        process.kill(pid, 0);
+        live.push(pid);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'EPERM') live.push(pid);
+      }
+    }
+  }
+  return live;
+}
+
 export async function stopRecordedWriters(
   paths: RunnerPaths,
   run: string,
@@ -94,10 +115,12 @@ export async function stopRecordedWriters(
 export async function workspaceWriters(workDir: string): Promise<number[]> {
   if (process.platform !== 'linux') return [];
   const prefix = `${path.resolve(workDir)}${path.sep}`;
-  const inWorkspace = (value: string) =>
-    value === prefix.slice(0, -1) || value.startsWith(prefix);
+  const inWorkspace = (value: string) => {
+    const location = value.replace(/ \(deleted\)$/u, '');
+    return location === prefix.slice(0, -1) || location.startsWith(prefix);
+  };
   const found: number[] = [];
-  for (const entry of await listProcesses()) {
+  for (const entry of await listProcesses({ strict: true })) {
     if (entry.pid === process.pid) continue;
     const proc = `/proc/${entry.pid}`;
     const cwd = await readlink(`${proc}/cwd`).catch(() => '');

@@ -24,6 +24,15 @@ import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { readdir, readFile, stat, statfs } from 'node:fs/promises';
 import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import {
+  cleanupWorkspace,
+  isReadOnlyWorkspace,
+  legacyReadOnlyKey,
+} from './workspace-cleanup.ts';
+import { workspaceWriters } from './writer-ownership.ts';
+import { workspaceRecordPath } from './checkout.ts';
 
 import type { RunnerPaths } from '../lib/home.ts';
 import { formatSize, minFreeBytes, type FreeSpace } from '../lib/size.ts';
@@ -38,7 +47,6 @@ import {
 import {
   acquireLock,
   checkWorkspaceGit,
-  hasUnpushedWork,
   readWorkspaceMeta,
   removeWorkspace,
   writeWorkspaceMeta,
@@ -54,6 +62,10 @@ export { hasUnpushedWork } from './checkout.ts';
 export type WorkspaceStatus = 'ended' | 'active' | 'unknown';
 
 export interface WorkspaceEntry {
+  disposable?: boolean;
+  gitCheck?: WorkspaceMeta['gitCheck'];
+  sizeBytes?: number;
+  sizeMeasuredAt?: string;
   readonly workDir: string;
   readonly appKey: string;
   readonly subjectKey: string;
@@ -85,9 +97,38 @@ export async function listWorkspaceDirs(
     )) {
       if (!entry.isDirectory()) continue;
       const workDir = path.join(appDir, entry.name);
-      const meta = await readWorkspaceMeta(paths, workDir);
+      const meta =
+        (await readWorkspaceMeta(paths, workDir)) ??
+        (legacyReadOnlyKey(paths, workDir) === undefined
+          ? undefined
+          : {
+              subjectKey: legacyReadOnlyKey(paths, workDir)!,
+              appKey: app.name,
+              repos: [],
+              readOnly: true,
+              lastUsedAt: (await stat(workDir)).mtime.toISOString(),
+            });
       if (meta !== undefined) found.push({ workDir, meta });
     }
+  }
+  // A cleanup intent survives even after the directory has gone.
+  for (const file of await readdir(paths.workspacesDir).catch(
+    () => [] as string[],
+  )) {
+    if (!file.endsWith('.json')) continue;
+    const raw = await readFile(path.join(paths.workspacesDir, file), 'utf8')
+      .then((text) => JSON.parse(text) as Record<string, unknown>)
+      .catch(() => undefined);
+    if (
+      raw?.cleanupPending !== true ||
+      typeof raw.workDir !== 'string' ||
+      path.relative(paths.workRoot, raw.workDir).split(path.sep).length !== 2 ||
+      path.basename(workspaceRecordPath(paths, raw.workDir)) !== file ||
+      found.some((item) => item.workDir === raw.workDir)
+    )
+      continue;
+    const meta = await readWorkspaceMeta(paths, raw.workDir);
+    if (meta !== undefined) found.push({ workDir: raw.workDir, meta });
   }
   return found;
 }
@@ -117,21 +158,66 @@ export async function inspectWorkspace(
   options: { now?: number; force?: boolean; log?: (message: string) => void },
 ): Promise<WorkspaceEntry> {
   const now = options.now ?? Date.now();
-  const inUse = await isLocked(workDir);
+  let inUse = await isLocked(workDir);
   const checkedAt =
     meta.measuredAt === undefined ? Number.NaN : Date.parse(meta.measuredAt);
   const stale =
     options.force === true ||
     meta.unpushed === undefined ||
+    (meta.gitCheck !== undefined &&
+      (!Number.isFinite(Date.parse(meta.gitCheck.checkedAt)) ||
+        now - Date.parse(meta.gitCheck.checkedAt) > 10 * 60_000)) ||
     !Number.isFinite(checkedAt) ||
     Date.parse(meta.lastUsedAt) >= checkedAt;
   let unpushed = meta.unpushed ?? false;
+  let gitCheck = meta.gitCheck;
+  let sizeBytes = meta.sizeBytes;
+  let sizeMeasuredAt = meta.sizeMeasuredAt;
   if (stale && !inUse) {
-    unpushed = await hasUnpushedWork(workDir, meta, options.log);
-    await recordCheck(paths, workDir, meta, {
-      unpushed,
-      measuredAt: new Date(now).toISOString(),
-    });
+    let lock: Lock | undefined;
+    try {
+      lock = await acquireLock(`${workDir}.lock`, { timeoutMs: 0 });
+    } catch {
+      inUse = true;
+    }
+    if (lock !== undefined)
+      try {
+        const current = await readWorkspaceMeta(paths, workDir);
+        if (
+          (current === undefined &&
+            legacyReadOnlyKey(paths, workDir) === undefined) ||
+          (current !== undefined &&
+            (current.lastUsedAt !== meta.lastUsedAt ||
+              current.lastRunId !== meta.lastRunId))
+        ) {
+          inUse = true;
+        } else {
+          const check = await checkWorkspaceGit(workDir, meta, options.log);
+          unpushed = check.reason !== 'allowed';
+          gitCheck =
+            check.reason === 'gitFailed'
+              ? { reason: 'gitFailed', checkedAt: new Date(now).toISOString() }
+              : undefined;
+          if (
+            gitCheck !== undefined &&
+            (sizeMeasuredAt === undefined ||
+              now - Date.parse(sizeMeasuredAt) > 60 * 60_000)
+          ) {
+            sizeBytes = await measureWorkspaceSize(workDir);
+            sizeMeasuredAt = new Date(now).toISOString();
+          }
+          await writeWorkspaceMeta(paths, workDir, {
+            ...(current ?? meta),
+            unpushed,
+            measuredAt: new Date(now).toISOString(),
+            gitCheck,
+            sizeBytes,
+            sizeMeasuredAt,
+          });
+        }
+      } finally {
+        await lock.release();
+      }
   }
   return {
     workDir,
@@ -140,30 +226,35 @@ export async function inspectWorkspace(
     ...(meta.lastRunId === undefined ? {} : { lastRunId: meta.lastRunId }),
     lastUsedAt: meta.lastUsedAt,
     unpushed,
+    ...(gitCheck === undefined ? {} : { gitCheck }),
+    ...(sizeBytes === undefined ? {} : { sizeBytes }),
+    ...(sizeMeasuredAt === undefined ? {} : { sizeMeasuredAt }),
+    disposable:
+      (isReadOnlyWorkspace(paths, workDir, meta) &&
+        meta.writersStopped !== false &&
+        (meta.runAttempt !== true || meta.writersStopped === true) &&
+        (meta.recoveryRequired !== true || meta.cleanupPending === true)) ||
+      (meta.cleanupPending === true &&
+        meta.writersStopped === true &&
+        gitCheck === undefined),
     inUse,
     status: 'unknown',
   };
 }
 
-/** Writes a check into the record, unless a run used the directory since it was read. */
-async function recordCheck(
-  paths: RunnerPaths,
+/** Bound expensive measurements and cache failures as unknown, never zero. du does not follow symbolic links. */
+async function measureWorkspaceSize(
   workDir: string,
-  read: WorkspaceMeta,
-  check: Pick<WorkspaceMeta, 'unpushed' | 'measuredAt'>,
-): Promise<void> {
-  let lock: Lock;
+): Promise<number | undefined> {
   try {
-    lock = await acquireLock(`${workDir}.lock`, { timeoutMs: 0 });
+    const { stdout } = await promisify(execFile)('du', ['-sk', '--', workDir], {
+      timeout: 2_000,
+      maxBuffer: 4096,
+    });
+    const value = Number(stdout.trim().split(/\s/u)[0]) * 1024;
+    return Number.isSafeInteger(value) && value >= 0 ? value : undefined;
   } catch {
-    return;
-  }
-  try {
-    const current = await readWorkspaceMeta(paths, workDir);
-    if (current === undefined || current.lastUsedAt !== read.lastUsedAt) return;
-    await writeWorkspaceMeta(paths, workDir, { ...current, ...check });
-  } finally {
-    await lock.release();
+    return undefined;
   }
 }
 
@@ -270,6 +361,13 @@ export function workspacesRequest(
         unpushed: entry.unpushed,
         ...(entry.lastRunId === undefined ? {} : { runId: entry.lastRunId }),
         ...(entry.cleanup === undefined ? {} : { cleanup: entry.cleanup }),
+        ...(entry.gitCheck === undefined ? {} : { gitCheck: entry.gitCheck }),
+        ...(entry.sizeBytes === undefined
+          ? {}
+          : { sizeBytes: entry.sizeBytes }),
+        ...(entry.sizeMeasuredAt === undefined
+          ? {}
+          : { sizeMeasuredAt: entry.sizeMeasuredAt }),
       };
     });
   return {
@@ -343,7 +441,11 @@ export async function applyDecisions(
     // The work is over: the directory goes whatever it holds, so its Git state is not checked again.
     entry.cleanup = {
       reportId: decision.reportId,
-      reason: entry.inUse ? 'inUse' : 'allowed',
+      reason: entry.inUse
+        ? 'inUse'
+        : entry.gitCheck?.reason === 'gitFailed'
+          ? 'gitFailed'
+          : 'allowed',
       discardsUntracked: !entry.inUse && entry.unpushed,
     };
     if (!entry.inUse && entry.unpushed)
@@ -450,7 +552,14 @@ export function planRemovals(
     taken.add(entry.workDir);
     if (entry.inUse) kept.push({ entry, reason: 'inUse' });
     else if (
+      entry.gitCheck?.reason === 'gitFailed' &&
+      !entry.disposable &&
+      options.force !== true
+    )
+      kept.push({ entry, reason: 'unpushed' });
+    else if (
       entry.unpushed &&
+      !entry.disposable &&
       entry.decision?.settled !== true &&
       options.force !== true
     )
@@ -476,7 +585,7 @@ export function planRemovals(
     return { remove, kept };
   }
   const ended = entries
-    .filter((entry) => entry.status === 'ended')
+    .filter((entry) => entry.status === 'ended' || entry.disposable)
     .sort((a, b) => Date.parse(a.lastUsedAt) - Date.parse(b.lastUsedAt));
   for (const entry of ended) pick(entry, 'ended');
   return { remove, kept };
@@ -498,8 +607,53 @@ export async function removePlanned(
     return 'inUse';
   }
   try {
-    const meta = await readWorkspaceMeta(paths, entry.workDir);
+    const meta =
+      (await readWorkspaceMeta(paths, entry.workDir)) ??
+      (legacyReadOnlyKey(paths, entry.workDir) === undefined
+        ? undefined
+        : {
+            appKey: entry.appKey,
+            subjectKey: entry.subjectKey,
+            repos: [],
+            readOnly: true,
+            lastUsedAt: entry.lastUsedAt,
+          });
     if (meta === undefined) return 'changed';
+    const disposable =
+      (isReadOnlyWorkspace(paths, entry.workDir, meta) &&
+        meta.writersStopped !== false &&
+        (meta.runAttempt !== true || meta.writersStopped === true) &&
+        (meta.recoveryRequired !== true || meta.cleanupPending === true)) ||
+      (meta.cleanupPending === true &&
+        meta.writersStopped === true &&
+        (await checkWorkspaceGit(entry.workDir, meta, options.log)).reason !==
+          'gitFailed');
+    if (disposable) {
+      if (
+        meta.lastUsedAt !== entry.lastUsedAt ||
+        meta.lastRunId !== entry.lastRunId
+      )
+        return 'changed';
+      if ((await workspaceWriters(entry.workDir)).length > 0) return 'inUse';
+      if (meta.writersStopped !== true) {
+        for (const name of await readdir(paths.runsDir).catch(
+          () => [] as string[],
+        )) {
+          if (!name.endsWith('.json')) continue;
+          const record = await readFile(path.join(paths.runsDir, name), 'utf8')
+            .then((text) => JSON.parse(text) as { workDir?: string })
+            .catch(() => undefined);
+          if (record?.workDir === entry.workDir) {
+            options.log?.(
+              `workspaces: kept ${entry.workDir}: orphan writer ownership is unverified`,
+            );
+            return 'inUse';
+          }
+        }
+      }
+      await cleanupWorkspace(paths, entry.workDir, meta, options.log);
+      return undefined;
+    }
     if (
       meta.runWorktrees === true ||
       meta.recoveryRequired === true ||
@@ -512,11 +666,11 @@ export async function removePlanned(
       meta.lastRunId !== entry.lastRunId
     )
       return 'changed';
+    const check = await checkWorkspaceGit(entry.workDir, meta, options.log);
     if (
       options.force !== true &&
-      entry.decision?.settled !== true &&
-      (await checkWorkspaceGit(entry.workDir, meta, options.log)).reason !==
-        'allowed'
+      (check.reason === 'gitFailed' ||
+        (entry.decision?.settled !== true && check.reason !== 'allowed'))
     ) {
       await writeWorkspaceMeta(paths, entry.workDir, {
         ...meta,
@@ -640,11 +794,18 @@ export async function collectWorkspaces(
     reason,
   }));
   for (const { entry, reason } of plan.remove) {
-    const why = await removePlanned(
-      paths,
-      entry,
-      log === undefined ? {} : { log },
-    );
+    let why: Awaited<ReturnType<typeof removePlanned>>;
+    try {
+      why = await removePlanned(paths, entry, log === undefined ? {} : { log });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      kept.push({
+        workDir: entry.workDir,
+        reason: `cleanupPending: ${message}`,
+      });
+      log?.(`workspaces: cleanup pending ${entry.workDir}: ${message}`);
+      continue;
+    }
     if (why === undefined) {
       removed.push({ workDir: entry.workDir, reason });
       log?.(

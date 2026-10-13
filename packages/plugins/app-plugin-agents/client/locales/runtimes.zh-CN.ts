@@ -19,6 +19,11 @@ const runtimesZhCN: RuntimesLocale = {
       unknown: '无法确认是否结束',
       oldRunner: '此执行机尚未提供诊断原因',
       noCleanup: '尚未收到本地清理结果',
+      gitFailed: 'Git 检查失败，需人工处理',
+      gitCheckedAt: 'Git 检查时间：{{time}}',
+      size: '占用空间：{{value}}',
+      sizeUnknown: '未知',
+      sizeMeasuredAt: '占用测量时间：{{time}}',
       discardsUntracked: '清理将丢弃未跟踪文件',
       decision: {
         settled: '已结束；仍需本地清理复核',

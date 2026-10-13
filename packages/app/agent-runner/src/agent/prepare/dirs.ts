@@ -37,6 +37,12 @@ async function prepare(
       dirs: context.payload.workspace.dirs,
       ...(context.gitAuth === undefined ? {} : { auth: context.gitAuth }),
       log: context.log,
+      onRebuild: (reason) =>
+        context.event({
+          type: 'status',
+          content: `Rebuilt read-only workspace: ${reason}`,
+          meta: { phase: 'dirs', rebuiltReadOnly: true, reason },
+        }),
       retry: {
         ...context.gitRetry,
         onRetry: (retry) => {

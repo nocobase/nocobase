@@ -14,6 +14,7 @@ import {
 import type { RunnerPaths } from '../../lib/home.ts';
 import { GIT_LOW_SPEED_CONFIG } from '../git-retry.ts';
 import { JobFailure } from './types.ts';
+import { unregisterCheckout } from '../workspace-cleanup.ts';
 
 const failed = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
@@ -134,7 +135,6 @@ export async function addJobWorktree(
   await mkdir(path.dirname(dir), { recursive: true, mode: 0o700 });
   const lock = await lockCache(cache);
   try {
-    await gitOk(['worktree', 'prune'], cache);
     await git(['worktree', 'add', '--quiet', '--detach', dir, sha], cache);
   } catch (error) {
     throw new JobFailure(
@@ -146,19 +146,19 @@ export async function addJobWorktree(
   }
 }
 
-/** Removes a job's worktree and its directory; never fails. */
+/** A cache lock failure preserves the checkout for a later retry. */
 export async function removeJobWorktree(
   cache: string | undefined,
   dir: string,
 ): Promise<void> {
   if (cache !== undefined) {
-    const lock = await lockCache(cache).catch(() => undefined);
+    const lock = await lockCache(cache);
     try {
       await gitOk(['worktree', 'remove', '--force', dir], cache);
       await rm(dir, { recursive: true, force: true });
-      await gitOk(['worktree', 'prune'], cache);
+      await unregisterCheckout(cache, dir);
     } finally {
-      await lock?.release();
+      await lock.release();
     }
   }
   await rm(dir, { recursive: true, force: true }).catch(() => undefined);

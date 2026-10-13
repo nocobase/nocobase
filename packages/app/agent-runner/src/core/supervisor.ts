@@ -1,4 +1,5 @@
-import { finalizeRunWorktrees } from './run-worktrees.ts';
+import { finalizeRunWorktrees, type SaveResult } from './run-worktrees.ts';
+import { acquireLock, readWorkspaceMeta, type Lock } from './checkout.ts';
 import {
   observeWriters,
   stopRecordedWriters,
@@ -19,7 +20,7 @@ import {
 // replays its event spool, reports the run as failed with `leaseExpired` to the application it came from, and deletes
 // its credentials file.
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
-import { closeSync, mkdirSync, openSync } from 'node:fs';
+import { closeSync, mkdirSync, openSync, existsSync } from 'node:fs';
 import { readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -570,20 +571,51 @@ export async function recoverRun(
   });
   const holders =
     record.workDir === undefined ? [] : await workspaceWriters(record.workDir);
-  // Restarted supervision has no process containment boundary. Even no observed survivors cannot rule out a
-  // descendant that escaped between scans. Retain every unfinished attempt rather than deleting on that assumption.
-  const recovery =
-    record.kind !== 'job' && record.workDir !== undefined
-      ? await finalizeRunWorktrees(paths, record.workDir, log, {
-          unsafeReason: `Recovery required: orphan writer quiescence cannot be verified${survivors.length + holders.length > 0 ? `; live writer identities or workspace holders: ${[...new Set([...survivors, ...holders])].join(', ')}` : '; no containment proof survives the worker exit'}${ownershipError}`,
-        }).catch((error) => [
-          {
-            path: record.workDir!,
-            saved: false,
-            reason: `Recovery required: could not persist preservation metadata; directory retained: ${error instanceof Error ? error.message : String(error)}`,
-          },
-        ])
-      : [];
+  // An interrupted cleanup has a durable proof written after quiescence, before deletion. An unfinished tool does not.
+  let recovery: SaveResult[] = [];
+  let retriedReadOnlyCleanup = false;
+  if (record.kind !== 'job' && record.workDir !== undefined) {
+    const workDir = record.workDir;
+    let lock: Lock | undefined;
+    try {
+      lock = await acquireLock(`${workDir}.lock`, { timeoutMs: 0 });
+      const meta = await readWorkspaceMeta(paths, workDir);
+      const observedHolders = [
+        ...new Set([...holders, ...(await workspaceWriters(workDir))]),
+      ];
+      const interruptedReadOnlyCleanup =
+        meta?.readOnly === true &&
+        meta.cleanupPending === true &&
+        meta.writersStopped === true &&
+        meta.runAttempt === true &&
+        meta.lastRunId === runId &&
+        meta.appKey === record.appKey &&
+        survivors.length + observedHolders.length === 0 &&
+        ownershipError === '';
+      recovery = await finalizeRunWorktrees(
+        paths,
+        workDir,
+        log,
+        interruptedReadOnlyCleanup
+          ? {}
+          : {
+              unsafeReason: `Recovery required: orphan writer quiescence cannot be verified${survivors.length + observedHolders.length > 0 ? `; live writer identities or workspace holders: ${[...new Set([...survivors, ...observedHolders])].join(', ')}` : '; no containment proof survives the worker exit'}${ownershipError}`,
+            },
+      );
+      retriedReadOnlyCleanup =
+        interruptedReadOnlyCleanup && !existsSync(workDir);
+    } catch (error) {
+      recovery = [
+        {
+          path: workDir,
+          saved: false,
+          reason: `Recovery required: could not persist preservation metadata; directory retained: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ];
+    } finally {
+      await lock?.release();
+    }
+  }
   const recoveryDetail = recovery
     .map(
       (result) =>
@@ -626,7 +658,7 @@ export async function recoverRun(
   const client = options.clientFor(record.appKey);
   if (options.reason === 'unknown') {
     log(
-      `run ${runId}: owned server status is unknown; preservation directory and retry record retained`,
+      `run ${runId}: owned server status is unknown; ${retriedReadOnlyCleanup ? 'read-only cleanup completed; retry record retained' : 'preservation directory and retry record retained'}`,
     );
     return;
   }

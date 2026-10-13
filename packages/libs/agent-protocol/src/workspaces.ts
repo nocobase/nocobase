@@ -113,6 +113,11 @@ export interface WorkspaceDirectoryReport extends Omit<
   readonly runId?: string;
   readonly subjectKey: string;
   readonly cleanup?: WorkspaceCleanupResult;
+  readonly gitCheck?: {
+    readonly reason: 'gitFailed';
+    readonly checkedAt: string;
+  };
+  readonly sizeMeasuredAt?: string;
 }
 export const WorkspaceDirectoryReportSchema: z.ZodType<WorkspaceDirectoryReport> =
   z.object({
@@ -123,6 +128,10 @@ export const WorkspaceDirectoryReportSchema: z.ZodType<WorkspaceDirectoryReport>
     unpushed: z.boolean(),
     lastUsedAt: z.string().max(64),
     cleanup: WorkspaceCleanupResultSchema.optional(),
+    gitCheck: z
+      .object({ reason: z.literal('gitFailed'), checkedAt: z.string().max(64) })
+      .optional(),
+    sizeMeasuredAt: z.string().max(64).optional(),
   });
 
 export interface WorkspaceDecision {

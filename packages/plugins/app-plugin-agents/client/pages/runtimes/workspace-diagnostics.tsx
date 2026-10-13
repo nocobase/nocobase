@@ -127,7 +127,10 @@ export function WorkspaceDiagnostics({
                 className='min-w-0 rounded-lg border p-2'
               >
                 <CollapsibleTrigger className='w-full text-left text-sm whitespace-normal [overflow-wrap:anywhere] focus-visible:outline-2'>
-                  {workspace.subjectId ?? workspace.workDir.split('/').pop()} ·{' '}
+                  {workspace.subjectKey ??
+                    workspace.subjectId ??
+                    workspace.workDir.split('/').pop()}{' '}
+                  ·{' '}
                   {t(
                     workspace.settled === true
                       ? 'runtimes.workspaces.ended'
@@ -135,9 +138,37 @@ export function WorkspaceDiagnostics({
                         ? 'runtimes.workspaces.active'
                         : 'runtimes.workspaces.unknown',
                   )}
+                  {workspace.gitCheck
+                    ? ` · ${t('runtimes.workspaces.gitFailed')}`
+                    : null}
                 </CollapsibleTrigger>
                 <CollapsibleContent className='space-y-2 pt-2 text-sm text-muted-foreground [overflow-wrap:anywhere]'>
                   <p>{workspace.workDir}</p>
+                  {workspace.gitCheck ? (
+                    <>
+                      <p>{t('runtimes.workspaces.gitFailed')}</p>
+                      <p>
+                        {t('runtimes.workspaces.gitCheckedAt', {
+                          time: format.dateTime(workspace.gitCheck.checkedAt),
+                        })}
+                      </p>
+                      <p>
+                        {t('runtimes.workspaces.size', {
+                          value:
+                            workspace.sizeBytes === undefined
+                              ? t('runtimes.workspaces.sizeUnknown')
+                              : bytes(workspace.sizeBytes),
+                        })}
+                      </p>
+                      {workspace.sizeMeasuredAt ? (
+                        <p>
+                          {t('runtimes.workspaces.sizeMeasuredAt', {
+                            time: format.dateTime(workspace.sizeMeasuredAt),
+                          })}
+                        </p>
+                      ) : null}
+                    </>
+                  ) : null}
                   <p>
                     {workspace.decision
                       ? t(

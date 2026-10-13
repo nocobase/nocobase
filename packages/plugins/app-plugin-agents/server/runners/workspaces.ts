@@ -262,6 +262,18 @@ export function createRunnerWorkspaces(
             ? workspace.cleanup
             : undefined;
         workspaces.push({
+          ...(workspace.subjectKey === ''
+            ? {}
+            : { subjectKey: workspace.subjectKey }),
+          ...(workspace.gitCheck === undefined
+            ? {}
+            : { gitCheck: workspace.gitCheck }),
+          ...(workspace.sizeBytes === undefined
+            ? {}
+            : { sizeBytes: workspace.sizeBytes }),
+          ...(workspace.sizeMeasuredAt === undefined
+            ? {}
+            : { sizeMeasuredAt: workspace.sizeMeasuredAt }),
           ...(workspace.runId === undefined ? {} : { runId: workspace.runId }),
           workDir: workspace.workDir,
           unpushed: workspace.unpushed,

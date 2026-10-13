@@ -21,6 +21,7 @@ import {
   gitOk,
 } from './checkout.ts';
 import { taskGit, taskGitDir, taskGitOk } from './task-git.ts';
+import { cleanupWorkspace } from './workspace-cleanup.ts';
 
 const identity = (parts: readonly string[]) =>
   createHash('sha256').update(JSON.stringify(parts)).digest('hex');
@@ -261,19 +262,24 @@ async function importLegacy(
         const key = continuationKey(app, subject, url, branch);
         const saved = `refs/runner/saved/${key}/0/legacy-${identity([workDir, repo.path])}/${head}`;
         // Fetch only into an immutable namespace; never overwrite remote tracking refs or the legacy branch.
-        await git(
-          [
-            'fetch',
-            '--no-write-fetch-head',
-            context.dir,
-            `refs/heads/${branch}:${saved}`,
-          ],
-          cache,
-        );
-        if ((await ref(cache, saved)) !== head)
-          throw new CheckoutError(
-            `Legacy ref verification failed: ${context.dir}`,
+        const cacheLock = await lockCache(cache);
+        try {
+          await git(
+            [
+              'fetch',
+              '--no-write-fetch-head',
+              context.dir,
+              `refs/heads/${branch}:${saved}`,
+            ],
+            cache,
           );
+          if ((await ref(cache, saved)) !== head)
+            throw new CheckoutError(
+              `Legacy ref verification failed: ${context.dir}`,
+            );
+        } finally {
+          await cacheLock.release();
+        }
         await updateContinuationState(paths, app, subject, (state) => ({
           ...state,
           repos: state.repos.some((item) => item.continuation === key)
@@ -361,10 +367,10 @@ export async function addRunWorktree(options: {
     };
   });
   const resume = `refs/runner/resume/${key}/${epoch}`;
+  if (!options.readOnly)
+    await importLegacy(paths, appKey, subjectKey, cache, repo.url);
   const lock = await lockCache(cache);
   try {
-    if (!options.readOnly)
-      await importLegacy(paths, appKey, subjectKey, cache, repo.url);
     const remote = await ref(cache, `refs/remotes/origin/${repo.branch}`);
     const local = await ref(cache, resume);
     const base =
@@ -390,7 +396,7 @@ export async function addRunWorktree(options: {
       runWorktrees: true,
       readOnly: options.readOnly,
       repos: [
-        ...(existing?.repos ?? []),
+        ...(existing?.repos ?? []).filter((item) => item.path !== repo.path),
         {
           url: repo.url,
           path: repo.path,
@@ -527,6 +533,7 @@ export async function finalizeRunWorktrees(
     if (meta !== undefined)
       await writeWorkspaceMeta(paths, workDir, {
         ...meta,
+        writersStopped: false,
         recoveryRequired: true,
         recoveryReason: options.unsafeReason,
         endedAt: new Date().toISOString(),
@@ -534,6 +541,21 @@ export async function finalizeRunWorktrees(
     for (const result of results)
       log(`worktree recovery required: ${result.path}: ${result.reason}`);
     return results;
+  }
+  if (meta?.readOnly === true) {
+    if (options.remove === false) return [];
+    try {
+      await cleanupWorkspace(paths, workDir, meta, log);
+      log(`workspace: removed the read-only ${workDir}`);
+      return meta.repos.map((repo) => ({
+        path: path.join(workDir, repo.path),
+        saved: true,
+      }));
+    } catch (error) {
+      const reason = `Read-only cleanup pending: ${error instanceof Error ? error.message : String(error)}`;
+      log(reason);
+      return [{ path: workDir, saved: false, reason }];
+    }
   }
   if (meta?.runWorktrees !== true) {
     if (options.remove !== false && meta?.appKey !== undefined)
@@ -550,7 +572,6 @@ export async function finalizeRunWorktrees(
       );
     return [];
   }
-  if (meta.readOnly === true && options.remove === false) return [];
   const results: SaveResult[] = [];
   for (const repo of meta.repos) {
     const dir = path.join(workDir, repo.path);
@@ -574,7 +595,7 @@ export async function finalizeRunWorktrees(
         );
       // Metadata validation runs before checking/committing; never execute checkout-provided hooks or filters.
       await taskGit(context, ['status', '--porcelain']);
-      if (meta.readOnly !== true) {
+      {
         if (
           (await taskGit(context, [
             'diff',
@@ -625,57 +646,46 @@ export async function finalizeRunWorktrees(
             path.join(paths.locksDir, `resume-${repo.continuation}.lock`),
           );
           try {
-            const previousSaved = await ref(repo.cache, saved);
-            if (previousSaved !== undefined && previousSaved !== head)
-              throw new CheckoutError(
-                'Immutable saved ref already contains a different head',
-              );
-            if (previousSaved === undefined)
-              await git(
-                ['update-ref', saved, head, '0'.repeat(head.length)],
-                repo.cache,
-              );
-            if ((await ref(repo.cache, saved)) !== head)
-              throw new CheckoutError('Saved ref verification failed');
-            const previous = await ref(repo.cache, resume);
-            if (
-              previous === undefined ||
-              (await gitOk(
-                ['merge-base', '--is-ancestor', previous, head],
-                repo.cache,
-              ))
-            )
-              await git(
-                [
-                  'update-ref',
-                  resume,
-                  head,
-                  previous ?? '0'.repeat(head.length),
-                ],
-                repo.cache,
-              );
-            // A divergent result stays reachable in saved/* and is merged during the next preparation.
+            const cacheLock = await lockCache(repo.cache);
+            try {
+              const previousSaved = await ref(repo.cache, saved);
+              if (previousSaved !== undefined && previousSaved !== head)
+                throw new CheckoutError(
+                  'Immutable saved ref already contains a different head',
+                );
+              if (previousSaved === undefined)
+                await git(
+                  ['update-ref', saved, head, '0'.repeat(head.length)],
+                  repo.cache,
+                );
+              if ((await ref(repo.cache, saved)) !== head)
+                throw new CheckoutError('Saved ref verification failed');
+              const previous = await ref(repo.cache, resume);
+              if (
+                previous === undefined ||
+                (await gitOk(
+                  ['merge-base', '--is-ancestor', previous, head],
+                  repo.cache,
+                ))
+              )
+                await git(
+                  [
+                    'update-ref',
+                    resume,
+                    head,
+                    previous ?? '0'.repeat(head.length),
+                  ],
+                  repo.cache,
+                );
+              // A divergent result stays reachable in saved/* and is merged during the next preparation.
+            } finally {
+              await cacheLock.release();
+            }
           } finally {
             await lock.release();
           }
           results.push({ path: dir, saved: true, head });
         } else results.push({ path: dir, saved: true });
-      } else results.push({ path: dir, saved: true });
-      if (options.remove === false) continue;
-      const lock = await lockCache(repo.cache);
-      try {
-        // Validate the backlink again before Git removes anything. Never prune unrelated worktree metadata.
-        await taskGitDir(context);
-        // Git refuses to remove a populated submodule worktree. A validated read-only checkout has no work to save.
-        if (meta.readOnly === true && existsSync(path.join(dir, '.gitmodules')))
-          await rm(dir, { recursive: true, force: true });
-        await git(['worktree', 'remove', '--force', dir], repo.cache);
-        await git(
-          ['update-ref', '-d', `refs/heads/${repo.localBranch}`],
-          repo.cache,
-        );
-      } finally {
-        await lock.release();
       }
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
@@ -687,20 +697,13 @@ export async function finalizeRunWorktrees(
     }
   }
   if (results.every((result) => result.saved) && options.remove !== false) {
-    await rm(workDir, { recursive: true, force: true });
-    await rm(workspaceRecordPath(paths, workDir), { force: true });
-    if (meta.appKey !== undefined)
-      await updateContinuationState(
-        paths,
-        meta.appKey,
-        meta.subjectKey,
-        (state) => ({
-          ...state,
-          activeWorkDirs: (state.activeWorkDirs ?? []).filter(
-            (dir) => dir !== workDir,
-          ),
-        }),
-      );
+    try {
+      await cleanupWorkspace(paths, workDir, meta, log);
+    } catch (error) {
+      const reason = `Workspace cleanup pending: ${error instanceof Error ? error.message : String(error)}`;
+      log(reason);
+      return [{ path: workDir, saved: false, reason }];
+    }
   } else if (results.some((result) => !result.saved)) {
     await writeWorkspaceMeta(paths, workDir, {
       ...meta,
