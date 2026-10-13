@@ -62,6 +62,7 @@ export function IssueSummary({
   /** In the title row, such as the follow star. */
   readonly actions?: ReactNode;
   readonly collapsible?: boolean;
+  /** Starts folded, unless something waits on a person (an ask, an owner handoff). */
   readonly defaultCollapsed?: boolean;
   /** The title is a heading; off where the page already has one for it. */
   readonly heading?: boolean;
@@ -70,7 +71,8 @@ export function IssueSummary({
   const { t } = useTranslation();
   const Title = heading ? 'h2' : 'p';
   const viewer = useViewer();
-  const [collapsed, setCollapsed] = useState(collapsible && defaultCollapsed);
+  // Null until the viewer folds or unfolds it.
+  const [folded, setFolded] = useState<boolean | null>(null);
   const mark = usePullRequestMark(issue.id, issue.revision).data;
   const progress = useIssueProgress(issue.id, refresh, progressFallback).data;
   const owned = Boolean(viewer?.userId) && issue.ownerUserId === viewer?.userId;
@@ -79,6 +81,9 @@ export function IssueSummary({
     { owned, statusKey: issue.statusKey, progress: progress ?? null },
     mark,
   );
+  // Something waiting on a person keeps a folded-by-default summary open.
+  const waits = Boolean(ask) || progress?.waiting?.reason === 'waitingOwner';
+  const collapsed = collapsible && (folded ?? (defaultCollapsed && !waits));
   const checks =
     mark && mark.state === 'open' && mark.ciState
       ? t(`issueLive.summary.checks.${mark.ciState}`)
@@ -110,7 +115,7 @@ export function IssueSummary({
               size='sm'
               variant='ghost'
               aria-expanded={!collapsed}
-              onClick={() => setCollapsed((value) => !value)}
+              onClick={() => setFolded(!collapsed)}
             >
               {collapsed ? (
                 <ChevronDownIcon data-icon='inline-start' />

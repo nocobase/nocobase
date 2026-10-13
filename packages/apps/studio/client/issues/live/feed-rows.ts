@@ -1,6 +1,6 @@
 /**
  * How the issue pages' feed (`issue-feed.tsx`) lays out the issue's timeline: newest first, a thread where its latest
- * comment is; conversation (comments, status moves, pull requests) apart from system records (runs and every other
+ * comment is; conversation (comments, status moves, pull requests, owner handoffs) apart from system records (runs and every other
  * change), which "Conversation only" folds into one row per stretch. Also which comment speaks for a delivery.
  */
 import type {
@@ -9,6 +9,7 @@ import type {
 } from '@nocobase/app-plugin-projects/client/issues';
 import type { Activity } from '@nocobase/app-plugin-projects/shared/issues';
 
+import { isOwnerHandoffActivity } from '../detail/activity-labels.js';
 import { activityFeedKind } from './feed.js';
 
 export type FeedMode = 'conversation' | 'all';
@@ -44,10 +45,13 @@ export function newestFirst(
     .map(({ entry }) => entry);
 }
 
-/** A run, or a change that is neither a status move nor a pull request event. */
+/** A run, or a change that is neither a status move, a pull request event nor an owner handoff. */
 export function isSystemEntry(entry: TimelineEntry): boolean {
   if (entry.kind === 'thread') return false;
   if (entry.kind === 'run') return true;
+  // A handoff waits for the owner, so it stays in the conversation.
+  if (isOwnerHandoffActivity(entry.activity.action, entry.activity.details))
+    return false;
   const kind = activityFeedKind(entry.activity);
   return kind !== 'status' && kind !== 'pullRequest';
 }

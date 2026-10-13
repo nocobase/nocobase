@@ -119,6 +119,15 @@ describe('the feed layout', () => {
     expect(isSystemEntry(run('r', 1))).toBe(true);
     expect(isSystemEntry(activity('w', 'work_skipped', 1))).toBe(true);
     expect(isSystemEntry(activity('l', 'label_added', 1))).toBe(true);
+    // An owner handoff waits for a person, so it stays in the conversation.
+    expect(isSystemEntry(activity('h', 'studio_owner_transferred', 1))).toBe(
+      false,
+    );
+    expect(
+      isSystemEntry(
+        activity('k', 'work_skipped', 1, { reason: 'waitingOwner' }),
+      ),
+    ).toBe(false);
   });
 
   it('folds each stretch of system records in conversation mode and shows every one in all', () => {

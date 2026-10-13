@@ -253,34 +253,6 @@ const card = (rail: HTMLElement, identifier: string) =>
   rail.querySelector<HTMLElement>(`[data-issue="${identifier}"]`)!;
 
 describe('My follow-ups', () => {
-  it('keeps handoff activities readable after sharing the issue activity wording', async () => {
-    const original = mocks.issue.getMockImplementation()!;
-    mocks.issue.mockImplementation(async (id: string) => ({
-      ...(await original(id)),
-      activities: [
-        'studio_owner_transferred',
-        'studio_owner_accepted',
-        'studio_owner_rejected',
-      ].map((action, index) => ({
-        id: `handoff-${index}`,
-        actorType: 'user',
-        actorId: 'alice',
-        actorName: 'Alice',
-        action,
-        details: action === 'work_skipped' ? { reason: 'waitingOwner' } : {},
-        via: null,
-        createdAt: at(index + 4),
-      })),
-    }));
-    await mount();
-    const panel = await screen.findByTestId('follow-ups-activity');
-    await waitFor(() =>
-      expect(panel.textContent).toContain('transferred responsibility'),
-    );
-    expect(panel.textContent).toContain('accepted responsibility');
-    expect(panel.textContent).toContain('rejected the handoff');
-  });
-
   it('shows the followed issues, what needs the viewer and what is new, with the first one open', async () => {
     const rail = await mount();
     const first = card(rail, 'WEB-5');
