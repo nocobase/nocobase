@@ -14,6 +14,10 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  'auth.passwordResetSuccess':
+    'Your password has been reset. Sign in with your new password.',
+  'auth.requestNewResetLink': 'Request a new reset link',
+
   'issueRuns.selection.preferredQueued': 'First choice queued, using fallback',
   'issueRuns.selection.preferredUnavailable':
     'First choice unavailable, using fallback',

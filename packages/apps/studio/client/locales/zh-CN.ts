@@ -14,6 +14,9 @@ import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
+  'auth.passwordResetSuccess': '密码已重置，请用新密码登录。',
+  'auth.requestNewResetLink': '重新申请重置链接',
+
   'issueRuns.selection.preferredQueued': '首选排队，改用备选',
   'issueRuns.selection.preferredUnavailable': '首选无兼容执行机，改用备选',
   'projectManager.settingsPage.delegationTimeout': '委派排队超时（秒）',
@@ -175,7 +178,8 @@ const zhCN: AppResource = {
   'auth.registerDescription': '创建账户以开始使用。',
   'auth.forgotTitle': '忘记密码',
   'auth.forgotDescription': '输入邮箱，如果账户存在，我们将发送重置链接。',
-  'auth.passwordResetUnavailable': '未开启自助找回，请联系管理员重置密码。',
+  'auth.passwordResetUnavailable':
+    '尚未开启自助找回密码，请联系管理员重置密码。',
   'auth.capabilityLoadFailed': '无法检查自助找回是否已开启。',
   'auth.retry': '重试',
   'auth.loading': '加载中',

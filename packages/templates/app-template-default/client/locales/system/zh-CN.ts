@@ -4,6 +4,9 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
+  'auth.passwordResetSuccess': '密码已重置，请用新密码登录。',
+  'auth.requestNewResetLink': '重新申请重置链接',
+
   // The UI Library block of the `/device` page; the keys below may reword it.
   ...deviceApprovalZhCN,
   // The UI Library block of the `/inbox` page; the keys below may reword it.
