@@ -14,6 +14,7 @@ const enUS = {
     executions: 'Execution records',
     definition: 'Workflow definition',
     execution: 'Workflow execution',
+    executionCount: 'Executions',
     workflow: 'Workflow',
     source: 'Source',
     states: 'States',
