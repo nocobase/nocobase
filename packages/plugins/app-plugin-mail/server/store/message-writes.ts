@@ -311,14 +311,24 @@ function unchanged(
     : !observed;
 }
 
+function validImapIdentity(value: unknown, source?: ImapIdSource): boolean {
+  if (typeof value !== 'string' || !value || value.length > 500) return false;
+  if (source === 'objectid') return /^[A-Za-z0-9_-]{1,255}$/.test(value);
+  if (source === 'x-gm-msgid')
+    return (
+      /^(0|[1-9]\d{0,19})$/.test(value) &&
+      BigInt(value) <= 18446744073709551615n
+    );
+  return true;
+}
+
 export function validateImapStoredLocation(location: ImapStoredLocation): void {
   validateImapLocation(location, location.source);
   if (
     !['valid', 'pending', 'invalid'].includes(location.status) ||
     !location.id ||
     !location.messageId ||
-    !location.providerMessageId ||
-    location.providerMessageId.length > 500 ||
+    !validImapIdentity(location.providerMessageId, location.source) ||
     !Number.isFinite(Date.parse(location.updatedAt))
   )
     throw new Error('Invalid stored IMAP location.');
@@ -329,9 +339,7 @@ export function validateImapCopyEvidence(copy: ImapCopyEvidence): void {
   if (
     typeof copy.locationId !== 'string' ||
     !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(copy.locationId) ||
-    typeof copy.providerMessageId !== 'string' ||
-    !copy.providerMessageId ||
-    copy.providerMessageId.length > 500 ||
+    !validImapIdentity(copy.providerMessageId, copy.source) ||
     !['objectid', 'x-gm-msgid', 'rfc-message-id', 'locator'].includes(
       copy.source,
     ) ||

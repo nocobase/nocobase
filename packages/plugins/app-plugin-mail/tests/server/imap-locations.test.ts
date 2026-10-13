@@ -1424,6 +1424,8 @@ describe('IMAP production writes and draft protection', () => {
       { uidValidity: '0' },
       { uidValidity: '4294967296' },
       { source: 'unknown' },
+      { providerMessageId: 'x'.repeat(256) },
+      { source: 'x-gm-msgid', providerMessageId: '18446744073709551616' },
       { read: 'true' },
       { receivedAt: 'invalid' },
     ]) {
