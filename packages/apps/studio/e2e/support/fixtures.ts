@@ -69,7 +69,10 @@ export const atInbox =
 const CONNECTION_HEADERS = { origin: server.origin, connection: 'close' };
 
 export class Api {
-  constructor(private readonly request: APIRequestContext) {}
+  constructor(
+    private readonly request: APIRequestContext,
+    private readonly target = server,
+  ) {}
 
   private async send<T>(
     method: string,
@@ -77,11 +80,18 @@ export class Api {
     body?: unknown,
     headers: Record<string, string> = {},
   ): Promise<T> {
-    const response = await this.request.fetch(url(`/api/${path}`), {
-      method,
-      headers: { ...CONNECTION_HEADERS, ...headers },
-      ...(body === undefined ? {} : { data: body as object }),
-    });
+    const response = await this.request.fetch(
+      `${this.target.baseURL}/api/${path}`,
+      {
+        method,
+        headers: {
+          ...CONNECTION_HEADERS,
+          origin: this.target.origin,
+          ...headers,
+        },
+        ...(body === undefined ? {} : { data: body as object }),
+      },
+    );
     const text = await response.text();
     if (!response.ok())
       throw new Error(
@@ -127,12 +137,16 @@ export class Api {
 export async function signIn(
   context: BrowserContext,
   user: DemoUser | UserCredentials,
+  target = server,
 ): Promise<void> {
   const { email, password } = typeof user === 'string' ? USERS[user] : user;
-  const response = await context.request.post(url('/api/auth/sign-in/email'), {
-    data: { email, password },
-    headers: CONNECTION_HEADERS,
-  });
+  const response = await context.request.post(
+    `${target.baseURL}/api/auth/sign-in/email`,
+    {
+      data: { email, password },
+      headers: { ...CONNECTION_HEADERS, origin: target.origin },
+    },
+  );
   if (!response.ok())
     throw new Error(
       `Signing in as ${email} failed: ${response.status()} ${await response.text()}`,

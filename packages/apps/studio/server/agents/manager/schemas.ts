@@ -14,7 +14,7 @@ export const ProjectManagerViewSchema: z.ZodType<ProjectManagerView> = z
     }),
     fallbackAgentId: z.string().nullable().meta({
       description:
-        'The agent it runs with when no runner can take the first choice’s work.',
+        'The agent it runs with after the first choice queue delay, or immediately when no compatible runner can take the first choice.',
     }),
     principles: z.string().nullable().meta({
       description:
@@ -24,6 +24,8 @@ export const ProjectManagerViewSchema: z.ZodType<ProjectManagerView> = z
       description:
         'How many runs agents’ comments may start on one issue within 24 hours.',
     }),
+    fallbackAfterSeconds: z.number().int(),
+    delegationQueueTimeoutSeconds: z.number().int(),
     builtInPrinciples: z.string(),
     choices: z.array(
       z.object({
@@ -58,11 +60,89 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
       'queued',
       'checksPending',
       'needsDecision',
+      'waitingForContinuation',
       'inReview',
       'notStarted',
       'finished',
       'idle',
     ]),
+    managerWait: z
+      .object({
+        queueEnteredAt: z.string(),
+        fallbackAfterSeconds: z.number(),
+        sampledAt: z.string(),
+        entries: z.array(
+          z.object({
+            tool: z.string(),
+            model: z.string().nullable(),
+            reason: z.enum([
+              'ready',
+              'busy',
+              'incompatible',
+              'offline',
+              'restricted',
+              'toolNotInstalled',
+              'toolUnavailable',
+              'noSharedRunner',
+              'unknown',
+              'concurrencyFull',
+              'sameWorkActive',
+              'delayed',
+            ]),
+            compatibleCount: z.number(),
+            blockers: z
+              .array(
+                z.enum([
+                  'ready',
+                  'busy',
+                  'incompatible',
+                  'offline',
+                  'restricted',
+                  'toolNotInstalled',
+                  'toolUnavailable',
+                  'noSharedRunner',
+                  'unknown',
+                  'concurrencyFull',
+                  'sameWorkActive',
+                  'delayed',
+                ]),
+              )
+              .optional(),
+            runners: z.array(z.string()),
+            runnerLoads: z
+              .array(
+                z.object({
+                  name: z.string(),
+                  reason: z
+                    .enum([
+                      'ready',
+                      'busy',
+                      'incompatible',
+                      'offline',
+                      'restricted',
+                      'toolNotInstalled',
+                      'toolUnavailable',
+                      'noSharedRunner',
+                      'unknown',
+                      'concurrencyFull',
+                      'sameWorkActive',
+                      'delayed',
+                    ])
+                    .optional(),
+                  lastSeenAt: z.string().nullable().optional(),
+                  used: z.number().optional(),
+                  limit: z.number().optional(),
+                  toolUsed: z.number().optional(),
+                  toolLimit: z.number().optional(),
+                  reportedFree: z.number().optional(),
+                  reportedTotalFree: z.number().optional(),
+                }),
+              )
+              .optional(),
+          }),
+        ),
+      })
+      .optional(),
     agent: z.object({ id: z.string(), name: z.string() }).nullable(),
     step: z.string().nullable().meta({
       description:
