@@ -89,6 +89,34 @@ describe("the project manager's run", () => {
     expect(payload.workspace.readOnly).toBeUndefined();
   });
 
+  it.each([
+    ['in_progress', ['blocked', 'in_review']],
+    ['blocked', ['in_progress', 'in_review']],
+    ['in_review', ['in_progress', 'blocked']],
+  ] as const)(
+    'briefs the real next transitions from %s',
+    async (statusKey, moves) => {
+      await h.createAgent({ name: 'Coder' });
+      const issue = await openIssue(true);
+      if (statusKey !== 'in_progress') {
+        await h.projects.issues.update(alice(), issue.id, {
+          revision: issue.revision,
+          statusKey,
+        });
+      }
+      const payload = await h.claimOne();
+      const system = payload.prompt.system as string;
+      expect(system).toContain(
+        `At this read, the current status is ${statusKey}; available next transitions are: ${moves.join(', ')}`,
+      );
+      expect(system).toContain(
+        'not a fixed restriction after the status changes',
+      );
+      expect(system).toContain(`nb-studio issue get ${issue.identifier}`);
+      expect(system).toContain('never bypass a refusal');
+    },
+  );
+
   it('leaves out of the roster an agent no runner reported for 14 days', async () => {
     await h.createAgent({ name: 'Coder' });
     // The runner registers first: its report would refresh every agent it has.
@@ -204,6 +232,7 @@ describe("an agent's step", () => {
     expect(system).toContain("Do not change the issue's status.");
     expect(system).not.toContain(firstLine(MANAGER_ROLE));
     expect(system).not.toContain('## Agents you can hand work to');
+    expect(system).not.toContain('available next transitions');
 
     const token = payload.cli.credential.content.token as string;
     const moved = await h.request(

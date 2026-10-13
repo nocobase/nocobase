@@ -25,7 +25,12 @@ import {
   type RunnerModelEntry,
   type SystemAgentInput,
 } from '../../../shared/agents.js';
-import { agentNameOf } from '../../../shared/model-catalog.js';
+import { agentNameOf, discoveryKey } from '../../../shared/model-catalog.js';
+import {
+  lockDiscovery,
+  preferences,
+  type DiscoveryPreference,
+} from './discovery.js';
 import { reportedModels, type Runner } from '../../../shared/runners.js';
 import type { Clock } from '../../kernel/clock.js';
 import { invalid, notFound, ProtocolError } from '../../kernel/errors.js';
@@ -101,6 +106,10 @@ export function runnerAgentId(tool: AgentTool, model: string): string {
 }
 
 export interface AgentService {
+  setIgnored(
+    groups: readonly { key: string; expectedRevision: number }[],
+    ignored: boolean,
+  ): Promise<DiscoveryPreference[]>;
   /** The agents not removed, by name. */
   list(): Promise<Agent[]>;
   /** 404 when absent or removed. */
@@ -145,7 +154,7 @@ export interface AgentService {
   /** Where every discovered agent's instructions and business actions come from; returns what removes it. */
   setDefaults(provider: () => AgentDefaults): () => void;
   /** Writes the current defaults to every discovered agent that differs; answers how many changed. */
-  applyDefaults(): Promise<number>;
+  applyDefaults(options?: { preserveInstructions?: boolean }): Promise<number>;
   /** The agent's history, newest first; with `afterRevision`, the changes made after that revision. 404 when absent. */
   history(id: string, options?: HistoryOptions): Promise<AgentChange[]>;
   /** Records in the agent's history, on `conn`, that one of its variables was added, changed or removed. */
@@ -294,6 +303,45 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
   }
 
   return {
+    setIgnored: (groups, ignored) =>
+      tx.run(async ({ conn, emit }) => {
+        const result: DiscoveryPreference[] = [];
+        const lockedGroups: DiscoveryPreference[] = [];
+        // Stable ordering avoids deadlocks between overlapping batches.
+        for (const group of [...groups].sort((a, b) =>
+          a.key.localeCompare(b.key),
+        )) {
+          lockedGroups.push(
+            await lockDiscovery(conn, group.key, group.expectedRevision),
+          );
+        }
+        const agents = await listAgents(conn);
+        for (const group of lockedGroups) {
+          const members = agents.filter(
+            (agent) =>
+              agent.source === 'runner' &&
+              agent.tool &&
+              agent.model &&
+              discoveryKey(agent.tool, agent.model) === group.key,
+          );
+          if (
+            !members.some((agent) => agent.status === 'pending') ||
+            members.some((agent) => agent.status === 'enabled')
+          )
+            throw invalid(
+              'Only pending discovery groups can be ignored or restored. Reload the list.',
+              { reason: 'DISCOVERY_NOT_PENDING' },
+            );
+          await preferences(conn).updateMany({
+            filter: { key: group.key },
+            values: { ignored },
+          });
+          for (const member of members)
+            emit({ type: 'agent.changed', agentId: member.id });
+          result.push({ ...group, ignored });
+        }
+        return result;
+      }),
     list: () => listAgents(tx.read()),
     get: (id) => require(tx.read(), id),
     find: findAgent,
@@ -345,6 +393,17 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
         return await tx.run(async (unit) => {
           const { conn, emit } = unit;
           const before = await require(conn, id);
+          if (before.tool && before.model) {
+            const group = await lockDiscovery(
+              conn,
+              discoveryKey(before.tool, before.model),
+            );
+            if (patch.enabled && group.ignored)
+              throw invalid(
+                'Restore this discovery group before enabling it.',
+                { reason: 'DISCOVERY_IGNORED' },
+              );
+          }
           if (patch.expectedRevision !== before.revision)
             throw revisionConflict(before.revision);
           const now = clock.now().toISOString();
@@ -513,6 +572,14 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
             created.push(id);
           continue;
         }
+        const generated = agentNameOf(combo.tool, combo.model);
+        if (
+          record.status === 'pending' &&
+          record.name ===
+            `${{ claude: 'Claude', codex: 'Codex', pi: 'Pi', opencode: 'OpenCode' }[combo.tool]} · ${combo.model.split('/').at(-1)}` &&
+          record.name !== generated
+        )
+          await updateAgent(unit.conn, id, { name: generated });
         if (
           !record.lastReportedAt ||
           now.getTime() - Date.parse(record.lastReportedAt) >= REPORT_REFRESH_MS
@@ -533,7 +600,7 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
         if (defaults === provider) defaults = () => NO_DEFAULTS;
       };
     },
-    async applyDefaults() {
+    async applyDefaults(options = {}) {
       const { instructions, actions } = currentDefaults();
       return tx.run(async ({ conn, emit }) => {
         const records = await agentsRepo(conn).findMany({
@@ -547,12 +614,13 @@ export function createAgentService(deps: AgentServiceDeps): AgentService {
         for (const record of records) {
           const agent = (await findAgent(conn, record.id))!;
           if (
-            agent.instructions === instructions &&
+            (options.preserveInstructions ||
+              agent.instructions === instructions) &&
             JSON.stringify(agent.actions) === JSON.stringify(actions)
           )
             continue;
           await updateAgent(conn, record.id, {
-            instructions,
+            ...(options.preserveInstructions ? {} : { instructions }),
             actions: [...actions],
             updatedAt: clock.now().toISOString(),
           });

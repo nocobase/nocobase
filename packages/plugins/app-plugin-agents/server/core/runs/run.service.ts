@@ -1283,14 +1283,18 @@ export function createRunService(deps: RunServiceDeps): RunService {
         : null;
       if (!binding || !agent || !runner || !isActive(run.status))
         throw notFound('Run context');
-      const assembly = await binding.context.assemble(conn, {
-        run: toRun(run),
-        agent,
-        runner,
-        inputs: (await pendingInputs(conn, run.id)).map(toInput),
-        cli: deps.cliName,
-        appName: deps.appName,
-      });
+      const assembly = await binding.context.assemble(
+        conn,
+        {
+          run: toRun(run),
+          agent,
+          runner,
+          inputs: (await pendingInputs(conn, run.id)).map(toInput),
+          cli: deps.cliName,
+          appName: deps.appName,
+        },
+        await binding.context.prepare?.(toRun(run)),
+      );
       return assembly.data;
     },
 

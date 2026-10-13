@@ -7,7 +7,7 @@
  * manage previews: it writes no code.
  *
  * Every agent discovered from runners gets the same built-in instructions (`WORKER_INSTRUCTIONS`) and every business
- * action an agent may be given but reading the reports (`setDefaults` of the agents plugin), within what the person who
+ * action in Studio's command scope, reports included (`setDefaults` of the agents plugin), within what the person who
  * woke it may do.
  *
  * Choosing the first choice also makes it the team's default chat agent, so a new conversation and AI intake go to it.
@@ -27,11 +27,7 @@ import {
   type ProjectManagerView,
 } from '../../../shared/project-manager.js';
 import { studioError } from '../../http/errors.js';
-import {
-  OPEN_PR_ACTION,
-  PREVIEWS_MANAGE_ACTION,
-  REPORTS_READ_ACTION,
-} from '../capabilities.js';
+import { OPEN_PR_ACTION, PREVIEWS_MANAGE_ACTION } from '../capabilities.js';
 import {
   BUILT_IN_PRINCIPLES,
   managerInstructions,
@@ -48,12 +44,8 @@ const MANAGER_NAME_TEXT = {
 const MANAGER_DESCRIPTION =
   'Arranges every issue: hands each step to the agent that fits it, reads the replies and decides what comes next.';
 
-/** What no agent discovered from runners is given. */
-const NOT_FOR_WORKERS: readonly string[] = [REPORTS_READ_ACTION];
-
-/** What the project manager is not given besides: it writes no code. */
+/** Compatibility catalog for the project manager's coordinating role; authorization uses its running identity. */
 const NOT_FOR_MANAGER: readonly string[] = [
-  ...NOT_FOR_WORKERS,
   OPEN_PR_ACTION,
   PREVIEWS_MANAGE_ACTION,
 ];
@@ -85,8 +77,7 @@ export function createProjectManager(deps: {
 }): ProjectManager {
   const { agents } = deps;
 
-  const workerActions = (): string[] =>
-    agents.actions.keys().filter((key) => !NOT_FOR_WORKERS.includes(key));
+  const workerActions = (): string[] => [...agents.actions.keys()];
   const managerActions = (): string[] =>
     agents.actions.keys().filter((key) => !NOT_FOR_MANAGER.includes(key));
 
@@ -213,7 +204,7 @@ export function createProjectManager(deps: {
         instructions: WORKER_INSTRUCTIONS,
         actions: workerActions(),
       }));
-      await agents.agents.applyDefaults();
+      await agents.agents.applyDefaults({ preserveInstructions: true });
       await sync();
     },
   };

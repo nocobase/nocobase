@@ -155,7 +155,7 @@ describe('reports in the CLI', () => {
     expect(badDay.status).toBe(400);
   });
 
-  it('offers them to a run only when its agent may read reports and the person who woke it holds the page', async () => {
+  it('offers them to a run when the running identity holds the page despite missing legacy report actions', async () => {
     const run = await conversationRun();
     expect(await manifestIds(run.token)).toEqual(
       expect.arrayContaining(['report:metrics', 'report:usage']),
@@ -173,15 +173,15 @@ describe('reports in the CLI', () => {
     const plain = await conversationRun({
       actions: PM_ACTIONS.filter((key) => key !== 'studio.reports/read'),
     });
-    expect(await manifestIds(plain.token)).not.toContain('report:metrics');
+    expect(await manifestIds(plain.token)).toContain('report:metrics');
     expect(
       (await h.request('GET', '/reports/metrics', { runToken: plain.token }))
         .status,
-    ).toBe(403);
+    ).toBe(200);
     expect(
       (await h.request('GET', '/reports/usage', { runToken: plain.token }))
         .status,
-    ).toBe(403);
+    ).toBe(200);
 
     h.roles.set('alice', 'none');
     expect(await manifestIds(run.token)).not.toContain('report:metrics');
@@ -440,6 +440,10 @@ describe("an issue's runs in the CLI", () => {
     const blind = await conversationRun({ actions: ['pm.projects/view'] });
     expect(
       (await h.request('GET', url, { runToken: blind.token })).status,
+    ).toBe(200);
+    h.roles.set('alice', 'none');
+    expect(
+      (await h.request('GET', url, { runToken: blind.token })).status,
     ).toBe(403);
   });
 
@@ -493,19 +497,27 @@ describe("an issue's runs in the CLI", () => {
     ).toBe(400);
   });
 
-  it('defaults to the run’s own issue, and refuses an agent that may not view issues', async () => {
+  it('defaults to the run’s issue and checks identity view permission irrespective of legacy actions', async () => {
     const { issue, runId, token } = await workedIssue();
     const own = await h.request('GET', '/issueRuns', { runToken: token });
     expect(own.status).toBe(200);
     expect(own.body.data.map((row: { id: string }) => row.id)).toEqual([runId]);
     const blind = await conversationRun({ actions: ['pm.projects/view'] });
-    const refused = await h.request('GET', runs(issue.identifier), {
-      runToken: blind.token,
-    });
-    expect(refused.status).toBe(403);
     expect(
       (
-        await h.request('GET', `/issueRuns/${runId}`, {
+        await h.request('GET', runs(issue.identifier), {
+          runToken: blind.token,
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (await h.request('GET', `/issueRuns/${runId}`, { runToken: blind.token }))
+        .status,
+    ).toBe(200);
+    h.roles.set('alice', 'none');
+    expect(
+      (
+        await h.request('GET', runs(issue.identifier), {
           runToken: blind.token,
         })
       ).status,
@@ -675,12 +687,12 @@ describe('knowledge in a conversation', () => {
     expect(system.status).toBe(200);
   });
 
-  it('says nothing of knowledge to an agent not configured to read it', async () => {
+  it('includes knowledge for an authorized identity despite missing legacy knowledge actions', async () => {
     const run = await conversationRun({
       actions: PM_ACTIONS.filter((key) => !key.startsWith('kb.knowledge')),
     });
-    expect(run.system).not.toContain('## Knowledge');
-    expect(await manifestIds(run.token)).not.toContain('kb:search');
+    expect(run.system).toContain('## Knowledge');
+    expect(await manifestIds(run.token)).toContain('kb:search');
   });
 
   it('merges the hits of several spaces, each section once at its best score, best first', () => {
