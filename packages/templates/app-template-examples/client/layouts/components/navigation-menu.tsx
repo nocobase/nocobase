@@ -17,6 +17,7 @@ import {
 import {
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuAction,
   SidebarMenuButton,
@@ -70,6 +71,43 @@ export function NavigationMenu({
   );
 }
 
+/** Navigation sections are labels with direct links, rather than another collapsible menu level. */
+function NavigationSection({
+  item,
+  selectedKey,
+  onNavigate,
+  inPopover = false,
+}: ItemProps): ReactElement {
+  const label = useItemLabel(item);
+  return (
+    <SidebarMenuItem>
+      <SidebarGroup role='group' aria-label={label} className='p-0'>
+        <SidebarGroupLabel
+          className={
+            inPopover
+              ? 'text-sidebar-foreground/50 group-data-[collapsible=icon]:mt-0 group-data-[collapsible=icon]:opacity-100'
+              : 'text-sidebar-foreground/50'
+          }
+        >
+          {label}
+        </SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {item.children.map((child) => (
+              <NavigationSubItem
+                key={routeKey(child.route)}
+                item={child}
+                selectedKey={selectedKey}
+                onNavigate={onNavigate}
+              />
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </SidebarMenuItem>
+  );
+}
+
 function useItemLabel(item: RouteNavigationItem): string {
   const { t } = useTranslation(item.route.packageName);
   const title = item.route.navigation?.title ?? '';
@@ -110,6 +148,16 @@ function NavigationItem({
   const tooltip = inPopover
     ? undefined
     : { children: label, role: 'tooltip', sideOffset: 8 };
+
+  if (item.section)
+    return (
+      <NavigationSection
+        item={item}
+        selectedKey={selectedKey}
+        onNavigate={navigate}
+        inPopover={inPopover}
+      />
+    );
 
   if (children.length > 0 && state === 'collapsed' && !isMobile && !inPopover)
     return (
@@ -206,6 +254,14 @@ function NavigationSubItem({
   const isSelected = routeKey(item.route) === selectedKey;
   const disclosure = useDisclosure(item, selectedKey);
   const children = item.children;
+  if (item.section)
+    return (
+      <NavigationSection
+        item={item}
+        selectedKey={selectedKey}
+        onNavigate={onNavigate}
+      />
+    );
   if (children.length === 0 && !item.route.componentLoader) return null;
 
   const link = item.route.componentLoader ? (

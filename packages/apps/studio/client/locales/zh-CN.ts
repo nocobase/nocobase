@@ -4,6 +4,7 @@ import type { AppResource } from './en-US.js';
 import { gitZhCN } from '../git/locales.js';
 import { knowledgeZhCN } from '../knowledge/locales.js';
 import { issuesZhCN } from '../issues/locales.js';
+import { issueLiveZhCN } from '../issues/live/locales.js';
 import { projectPageZhCN } from '../projects/locales.js';
 import { ciSetupZhCN } from '../releases/ci-setup/locales.js';
 import { previewsZhCN, deploysZhCN } from '../previews/locales.js';
@@ -1256,6 +1257,7 @@ const zhCN: AppResource = {
   knowledge: knowledgeZhCN,
   issuesPage: issuesZhCN,
   followUps: followUpsZhCN,
+  issueLive: issueLiveZhCN,
   projectPage: projectPageZhCN,
   // A repository's "Deployment" (`client/releases/ci-setup`).
   ciSetup: ciSetupZhCN,

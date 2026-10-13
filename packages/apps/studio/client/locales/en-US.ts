@@ -4,6 +4,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import { gitEnUS } from '../git/locales.js';
 import { knowledgeEnUS } from '../knowledge/locales.js';
 import { issuesEnUS } from '../issues/locales.js';
+import { issueLiveEnUS } from '../issues/live/locales.js';
 import { projectPageEnUS } from '../projects/locales.js';
 import { ciSetupEnUS } from '../releases/ci-setup/locales.js';
 import { previewsEnUS, deploysEnUS } from '../previews/locales.js';
@@ -1374,6 +1375,7 @@ const enUS = {
   knowledge: knowledgeEnUS,
   issuesPage: issuesEnUS,
   followUps: followUpsEnUS,
+  issueLive: issueLiveEnUS,
   projectPage: projectPageEnUS,
   // A repository's "Deployment" (`client/releases/ci-setup`).
   ciSetup: ciSetupEnUS,

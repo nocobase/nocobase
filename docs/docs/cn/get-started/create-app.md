@@ -37,7 +37,7 @@ npx skills@latest add nocobase/skills-v3 --skill '*' -g
    在刚开启的会话中，复制并发送下面这句话：
 
    ```text
-   帮我创建一个 NocoBase 3 应用：https://v3.docs.nocobase.com/cn/get-started/create-app-with-agent.md （请直接访问链接内容）
+   帮我创建一个 NocoBase 3 应用：https://v3.docs.nocobase.com/zh-CN/get-started/create-app-with-agent.md （请直接访问链接内容）
    ```
 
    AI Agent 会检查环境，在当前空目录中初始化应用，然后读取项目指引，确认数据库需求并启动服务。
