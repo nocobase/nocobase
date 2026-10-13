@@ -1,3 +1,4 @@
+import { agentSessionsRoute } from '@nocobase/app-plugin-agent-sessions/client';
 import { chatLinkRoutes } from '@nocobase/app-plugin-agents/client/chat';
 import {
   agentsRoute,
@@ -25,6 +26,7 @@ import {
   LayoutDashboard,
   ListChecks,
   ListTodo,
+  MessagesSquare,
   MonitorCog,
   Rocket,
   Server,
@@ -86,7 +88,7 @@ function issueDetailRoute(owner?: string): AppClientRouteDefinition {
 }
 
 /**
- * The sidebar: Home (0, the composer that starts a conversation) and Dashboard (1), then My
+ * The sidebar: Home (0, the composer that starts a conversation), My agents (0.5) and Dashboard (1), then My
  * follow-ups (1.5) and My issues (2) on top, then the sections Development (4: issues, projects, knowledge), Releases (4.5: Apps, environments)
  * and Agent team (5: agents, runtimes, skills, models, usage), and Settings (7). The inbox is the header's button
  * (`inbox/header-button.tsx`), not a sidebar entry. A section is a route without a page of its own;
@@ -142,6 +144,20 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     name: 'home',
     path: '/',
     navigation: { title: 'navigation.home', icon: House, order: 0 },
+  },
+  {
+    // Conversations with coding agents on the viewer's own computers (the agent sessions plugin's page), right below
+    // Home. A session is its owner's alone, which its API checks, so the page needs no grant.
+    ...agentSessionsRoute({
+      cli: 'nb-studio',
+      install: 'npm install -g @nocobase/studio-cli',
+    }),
+    navigation: {
+      title: 'navigation.agentSessions',
+      icon: MessagesSquare,
+      order: 0.5,
+    },
+    breadcrumb: { title: 'navigation.agentSessions' },
   },
   {
     // How delivery goes, how the agents perform and what is stuck (`pages/dashboard`), behind the `reports` grant,

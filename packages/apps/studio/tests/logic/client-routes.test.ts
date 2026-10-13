@@ -86,7 +86,7 @@ describe('app client routes', () => {
     ).toEqual([]);
   });
 
-  it('orders the sidebar with Home and Dashboard first, then My follow-ups and My issues, the Development, Releases and Agent team sections, and Settings', () => {
+  it('orders the sidebar with Home, My agents and Dashboard first, then My follow-ups and My issues, the Development, Releases and Agent team sections, and Settings', () => {
     // The inbox is not among them: it is the header's button (`client/inbox/header-button.tsx`).
     const menu = (routes: readonly AppClientRegisteredRoute[]) =>
       routes.flatMap((route) =>
@@ -95,6 +95,7 @@ describe('app client routes', () => {
     const { routes } = resolveRoutes();
     expect(menu(routes)).toEqual([
       'navigation.home',
+      'navigation.agentSessions',
       'navigation.dashboard',
       'navigation.followUps',
       'navigation.myIssues',
@@ -167,6 +168,9 @@ describe('app client routes', () => {
       // Legacy `/pm` links: redirects that open the agents' chat panel, which checks what it opens.
       { name: 'chat-pm', authorizedAs: null },
       { name: 'chat-pm-conversation', authorizedAs: null },
+      // Agent sessions: a session is its owner's alone, which its API checks.
+      { name: 'agent-sessions', authorizedAs: null },
+      { name: 'agent-sessions-session', authorizedAs: null },
       // The dashboard, behind the reports grant its figures' API checks too.
       { name: 'dashboard', authorizedAs: 'reports' },
       // My follow-ups opens with My issues' grant.

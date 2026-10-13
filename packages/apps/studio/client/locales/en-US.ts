@@ -464,6 +464,7 @@ const enUS = {
     usage: 'Usage',
     config: 'Settings',
     home: 'Home',
+    agentSessions: 'My agents',
     dashboard: 'Dashboard',
     open: 'Open navigation',
     close: 'Close navigation',

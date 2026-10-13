@@ -434,6 +434,7 @@ const zhCN: AppResource = {
     usage: '用量',
     config: '设置',
     home: '首页',
+    agentSessions: '我的 Agent',
     dashboard: '仪表盘',
     open: '打开导航',
     close: '关闭导航',
