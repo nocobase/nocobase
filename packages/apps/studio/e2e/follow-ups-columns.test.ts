@@ -7,6 +7,12 @@ import type { Locator, Page } from '@playwright/test';
 import { expect, open, test, unique } from './support/fixtures.ts';
 import type { Issue } from './support/runner.ts';
 
+/** What the test reads from a scrolling element, without the DOM library. */
+interface ScrollArea {
+  readonly scrollHeight: number;
+  readonly clientHeight: number;
+}
+
 /**
  * Wheels over `scroller` until `item` is inside both it and the window, the way a person reaches it. `overflows` says the
  * scroller must have more than it shows.
@@ -17,7 +23,7 @@ async function wheelTo(
   item: Locator,
   overflows: boolean,
 ) {
-  const metrics = await scroller.evaluate((element) => ({
+  const metrics = await scroller.evaluate((element: ScrollArea) => ({
     scrollHeight: element.scrollHeight,
     clientHeight: element.clientHeight,
   }));
