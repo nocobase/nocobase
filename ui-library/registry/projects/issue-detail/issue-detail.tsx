@@ -668,7 +668,7 @@ export function IssueHeader({
       </div>
       <div className='flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground'>
         <span className='font-mono text-xs'>{identifier}</span>
-        <IssueStatusBadge status={status} />
+        <IssueStatusBadge status={status} size='sm' />
         {project ? (
           <Link
             href={project.href}
@@ -869,6 +869,7 @@ export function IssueSubtasks({
                     marks={
                       issue.waiting ? (
                         <Badge
+                          data-size='sm'
                           variant='secondary'
                           className='gap-1 bg-amber-500/10 font-normal text-amber-700 dark:text-amber-300'
                         >

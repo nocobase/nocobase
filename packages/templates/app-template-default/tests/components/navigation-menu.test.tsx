@@ -25,7 +25,10 @@ import {
   AppSidebarProvider,
   AppSidebarToggle,
 } from '../../client/layouts/components/app-sidebar.js';
-import { NavigationMenu } from '../../client/layouts/components/navigation-menu.js';
+import {
+  NavigationMenu,
+  type NavigationBadges,
+} from '../../client/layouts/components/navigation-menu.js';
 
 // Navigation titles are route data, not keys any namespace owns: the menu translates each through its package's
 // namespace with the title itself as `defaultValue`, so the runtime is not strict.
@@ -58,7 +61,12 @@ function page(name: string): AppClientRegisteredRoute {
 const child = page('child');
 const sibling = page('sibling');
 
-function shell(items: readonly RouteNavigationItem[], selectedKey?: string) {
+function shell(
+  items: readonly RouteNavigationItem[],
+  selectedKey?: string,
+  sections = true,
+  badges?: NavigationBadges,
+) {
   return (
     <MemoryRouter>
       <AppSidebarProvider>
@@ -67,6 +75,8 @@ function shell(items: readonly RouteNavigationItem[], selectedKey?: string) {
             items={items}
             label='Menu'
             selectedKey={selectedKey}
+            sections={sections}
+            badges={badges}
           />
         </AppSidebar>
         <AppSidebarToggle />
@@ -99,7 +109,10 @@ describe.each([
       { route: sibling, children: [] },
     ],
   };
-  const tree = (selectedKey: string | undefined) => shell([item], selectedKey);
+  // The collapsible form: a clickable parent always, and a group without a page when sections are off or it is
+  // nested. A top-level group without a page is a section, covered below.
+  const tree = (selectedKey: string | undefined) =>
+    shell([item], selectedKey, false);
   function toggle() {
     return screen.getByRole('button', { name: 'Group' });
   }
@@ -140,6 +153,61 @@ describe.each([
   });
 });
 
+describe('sections', () => {
+  const group: RouteNavigationItem = {
+    route: { ...page('Group'), componentLoader: undefined },
+    children: [
+      { route: child, children: [] },
+      { route: sibling, children: [] },
+    ],
+  };
+
+  it('draws a top-level group without a page as a heading over entries always shown', () => {
+    render(shell([{ route: page('Home'), children: [] }, group], 'elsewhere'), {
+      wrapper: I18n,
+    });
+    expect(screen.getByText('Group')).toHaveAttribute(
+      'data-sidebar',
+      'group-label',
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Group' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'child' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'sibling' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Home' })).toBeVisible();
+  });
+
+  it('keeps a group divided into sections as one collapsible entry', () => {
+    const divided: RouteNavigationItem = {
+      route: { ...page('Flows'), componentLoader: undefined },
+      children: [
+        {
+          section: true,
+          route: { ...page('Business'), componentLoader: undefined },
+          children: [{ route: child, children: [] }],
+        },
+      ],
+    };
+    render(shell([divided], routeKey(child)), { wrapper: I18n });
+    expect(screen.getByRole('button', { name: 'Flows' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(screen.getByRole('group', { name: 'Business' })).toBeVisible();
+  });
+
+  it('shows a section entries as icons, not a popup, in the collapsed sidebar', () => {
+    setCollapsed(true);
+    render(shell([group], routeKey(child)), { wrapper: I18n });
+    const link = screen.getByRole('link', { name: 'child' });
+    expect(link).toHaveAttribute('aria-current', 'page');
+    expect(
+      screen.queryByRole('button', { name: 'Group' }),
+    ).not.toBeInTheDocument();
+  });
+});
+
 it('marks the selected page with the selected navigation colors', () => {
   render(
     shell([{ route: page('Home'), children: [] }], routeKey(page('Home'))),
@@ -156,11 +224,72 @@ it('marks the selected page with the selected navigation colors', () => {
   );
 });
 
+describe('entry counts', () => {
+  const entries: RouteNavigationItem[] = [
+    { route: page('inbox'), children: [] },
+    { route: page('approvals'), children: [] },
+    { route: page('runs'), children: [] },
+    { route: page('archive'), children: [] },
+  ];
+  const badges: NavigationBadges = {
+    inbox: 5,
+    approvals: 120,
+    runs: { count: 2, live: true, hint: '2 running' },
+    archive: 0,
+  };
+
+  it('shows a count beside its entry, in the entry name, and nothing at zero', () => {
+    render(shell(entries, undefined, true, badges), { wrapper: I18n });
+    const inbox = screen.getByRole('link', { name: 'inbox · 5' });
+    const badge = inbox.parentElement?.querySelector(
+      '[data-slot="sidebar-menu-badge"]',
+    );
+    expect(badge).toHaveTextContent('5');
+    expect(badge).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByRole('link', { name: 'approvals · 120' })).toBeVisible();
+    expect(
+      screen
+        .getByRole('link', { name: 'approvals · 120' })
+        .parentElement?.querySelector('[data-slot="sidebar-menu-badge"]'),
+    ).toHaveTextContent('99+');
+    const archive = screen.getByRole('link', { name: 'archive' });
+    expect(
+      archive.parentElement?.querySelector('[data-slot="sidebar-menu-badge"]'),
+    ).toBeNull();
+  });
+
+  it('names work under way by its hint', () => {
+    render(shell(entries, undefined, true, badges), { wrapper: I18n });
+    const runs = screen.getByRole('link', { name: 'runs · 2 running' });
+    expect(
+      runs.parentElement?.querySelector('[data-slot="sidebar-menu-badge"]'),
+    ).toHaveAttribute('title', '2 running');
+  });
+
+  it('marks a counted entry with a dot and its count in the tooltip when collapsed', async () => {
+    setCollapsed(true);
+    const user = userEvent.setup();
+    render(shell(entries, undefined, true, badges), { wrapper: I18n });
+    const inbox = screen.getByRole('link', { name: 'inbox · 5' });
+    expect(
+      inbox.parentElement?.querySelector('[data-slot="navigation-badge-dot"]'),
+    ).not.toBeNull();
+    expect(
+      screen
+        .getByRole('link', { name: 'archive' })
+        .parentElement?.querySelector('[data-slot="navigation-badge-dot"]'),
+    ).toBeNull();
+    await user.hover(inbox);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('inbox · 5');
+  });
+});
+
 describe('collapsed navigation', () => {
   beforeEach(() => setCollapsed(true));
 
+  // A group's popup belongs to the collapsible form, so these render without sections.
   function show(item: RouteNavigationItem, selectedKey = routeKey(child)) {
-    return render(shell([item], selectedKey), { wrapper: I18n });
+    return render(shell([item], selectedKey, false), { wrapper: I18n });
   }
 
   it('shows a leaf label immediately on hover and dismisses it on leave', async () => {

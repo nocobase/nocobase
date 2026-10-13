@@ -1,6 +1,5 @@
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -80,19 +79,10 @@ describe.each(['expanded', 'collapsed', 'mobile'])(
       await act(async () => {
         resolve.forEach((done, i) => done(i === 0));
       });
-      const user = userEvent.setup();
-      if (mode === 'collapsed') {
-        await user.hover(await screen.findByRole('button', { name: 'Group' }));
-        expect(
-          within(await screen.findByRole('dialog')).getByRole('link', {
-            name: 'Allowed',
-          }),
-        ).toHaveAttribute('href', '/Allowed');
-      } else {
-        expect(
-          await screen.findByRole('link', { name: 'Allowed' }),
-        ).toBeVisible();
-      }
+      // Group is a section: its entries show in every mode, as icons in the collapsed sidebar.
+      expect(
+        await screen.findByRole('link', { name: 'Allowed' }),
+      ).toHaveAttribute('href', '/Allowed');
       expect(screen.queryByText('Denied')).not.toBeInTheDocument();
       expect(screen.queryByText('Empty')).not.toBeInTheDocument();
       auth.client.can.mockResolvedValue(false);
