@@ -38,7 +38,7 @@ export interface FollowUpPreferences {
 export interface FollowUpsDeps {
   readonly projects: Pick<
     Projects,
-    'issueQueries' | 'commentQueries' | 'tx' | 'issueContext'
+    'issueQueries' | 'commentQueries' | 'issueContext' | 'tx'
   >;
   readonly agents: Pick<Agents, 'runs' | 'agents' | 'runners' | 'availability'>;
   readonly preferences: FollowUpPreferences;

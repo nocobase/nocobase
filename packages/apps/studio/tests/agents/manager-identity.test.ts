@@ -348,6 +348,7 @@ describe('manager and delegated identities', () => {
     await h.projects.issues.update(h.viewer('bob'), task.id, {
       revision: current.revision,
       ownerUserId: 'bob',
+      start: false,
     });
     expect((await h.agents.runs.get(run.id)).actorUserId).toBe('alice');
     expect((await h.agents.runs.get(run.id)).cancelRequestedAt).not.toBeNull();
@@ -383,6 +384,7 @@ describe('manager and delegated identities', () => {
     await h.projects.issues.update(h.viewer('bob'), task.id, {
       revision: current.revision,
       ownerUserId: 'bob',
+      start: false,
       executor: null,
     });
     const after = await runs(task.id);
@@ -586,6 +588,7 @@ describe('manager and delegated identities', () => {
     await h.projects.issues.update(h.viewer('bob'), task.id, {
       revision: current.revision,
       ownerUserId: 'bob',
+      start: false,
     });
     const retry = await h.agents.runs.retry(previous.id, 'bob');
     expect(retry.actorUserId).toBe('bob');

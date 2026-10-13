@@ -229,6 +229,10 @@ describe('required and reference checks', () => {
     const issue = await h.projects.issues.create(alice(), {
       title: 'Read checks',
       statusKey: 'in_progress',
+      start: false,
+    });
+    await h.projects.issues.update(alice(), issue.id, {
+      revision: issue.revision,
       executor: null,
       start: false,
     });
