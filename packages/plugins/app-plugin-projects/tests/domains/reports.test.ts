@@ -2,13 +2,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Issue } from '../../shared/issues.js';
-import type { WorkflowDefinition } from '../../shared/workflows.js';
 import { createHarness, type Harness } from '../harness.js';
 
 let h: Harness;
 beforeEach(async () => {
   h = await createHarness();
-  await h.installStandardWorkflow();
   for (const id of ['admin', 'lead', 'alice', 'bob']) await h.addUser(id, id);
 });
 afterEach(() => h.close());
@@ -47,7 +45,7 @@ async function giveToAgent(issueId: string, agentId: string): Promise<void> {
 }
 
 describe('issue reports', () => {
-  it('counts adoption, deliveries, review exits and decisions over the issues the viewer sees', async () => {
+  it('counts adoption, deliveries and review exits over the issues the viewer sees', async () => {
     const open = await h.services.projects.create(lead(), { name: 'Open' });
     const secret = await h.services.projects.create(lead(), {
       name: 'Secret',
@@ -69,38 +67,19 @@ describe('issue reports', () => {
     });
     await moveTo(lead(), reworked, 'in_review');
     await moveTo(lead(), reworked, 'in_progress');
-    // Delivered by a person, with an approval on the way.
-    const [workflow] = await h.services.workflows.list(admin());
-    const definition: WorkflowDefinition = {
-      states: workflow.definition.states,
-      transitions: [
-        ...workflow.definition.transitions,
-        {
-          from: 'in_review',
-          to: 'done',
-          actors: ['user'],
-          approval: { approvers: ['projectLead'] },
-        },
-      ],
-    };
-    await h.services.workflows.update(admin(), workflow.id, {
-      revision: workflow.revision,
-      definition,
-    });
+    // Delivered by a person, through review.
     const approved = await h.services.issues.create(alice(), {
       title: 'Approve it',
       projectId: open.id,
     });
     await moveTo(alice(), approved, 'in_review');
-    const held = await moveTo(alice(), approved, 'done');
-    await h.services.approvals.approve(lead(), held.pendingApproval!.id, {});
-    // Still waiting for a decision.
+    await moveTo(alice(), approved, 'done');
+    // Still waiting to be accepted.
     const waiting = await h.services.issues.create(alice(), {
       title: 'Wait for it',
       projectId: open.id,
     });
     await moveTo(alice(), waiting, 'in_review');
-    await moveTo(alice(), waiting, 'done');
 
     const all = await h.services.reports.report(admin(), RANGE);
     expect(all.adoption).toMatchObject({
@@ -122,7 +101,7 @@ describe('issue reports', () => {
     expect(all.aiShare.cycleMs).toHaveLength(2);
     expect(all.aiShare.cycleMs.every((ms) => ms >= 0)).toBe(true);
 
-    // Work in progress now: the open statuses, in workflow order; done ones are left out.
+    // Work in progress now: the open statuses, in order; done ones are left out.
     expect(await h.services.reports.wip(admin())).toEqual([
       {
         key: 'in_progress',
@@ -139,16 +118,7 @@ describe('issue reports', () => {
       reviewExits: 3,
       reviewPassed: 2,
       reworked: 1,
-      approvalsApproved: 1,
-      approvalsRejected: 0,
     });
-    expect(all.decisions).toMatchObject({
-      created: 2,
-      resolved: 1,
-      open: 1,
-      byOutcome: { approved: 1 },
-    });
-    expect(all.decisions.resolveMs).toHaveLength(1);
 
     // Bob sees neither the private project's issue nor its review exit.
     const mine = await h.services.reports.report(bob(), RANGE);
@@ -170,25 +140,6 @@ describe('issue reports', () => {
       to: new Date('2020-01-02T00:00:00Z'),
     });
     expect(before.adoption.issuesCreated).toBe(0);
-    expect(before.decisions.open).toBe(0);
-  });
-
-  it('names the work in progress as the workflow names its statuses', async () => {
-    const [workflow] = await h.services.workflows.list(admin());
-    await h.services.workflows.update(admin(), workflow.id, {
-      revision: workflow.revision,
-      definition: {
-        ...workflow.definition,
-        states: workflow.definition.states.map((state) =>
-          state.key === 'in_review' ? { ...state, name: 'Peer review' } : state,
-        ),
-      },
-    });
-    const issue = await h.services.issues.create(alice(), { title: 'Check' });
-    await moveTo(alice(), issue, 'in_review');
-    expect(await h.services.reports.wip(admin())).toEqual([
-      { key: 'in_review', name: 'Peer review', category: 'started', count: 1 },
-    ]);
   });
 
   it('describes issues with their project and whether the viewer sees them', async () => {
@@ -287,7 +238,7 @@ describe('issue flow, projects and attention', () => {
       projectId: open.id,
     });
     reopened = await moveTo(alice(), reopened, 'done');
-    await moveTo(alice(), reopened, 'todo');
+    await moveTo(alice(), reopened, 'in_progress');
     // An agent asks the owner: its run moves the issue to blocked.
     const asked = await h.services.issues.create(alice(), {
       title: 'Ask me',
@@ -303,7 +254,11 @@ describe('issue flow, projects and attention', () => {
           actorType: 'agent',
           actorId: 'ag-1',
           action: 'status_changed',
-          details: { from: 'todo', to: 'blocked', trace: { runId: 'run-1' } },
+          details: {
+            from: 'in_progress',
+            to: 'blocked',
+            trace: { runId: 'run-1' },
+          },
           createdAt: new Date(),
         },
       });
@@ -331,7 +286,7 @@ describe('issue flow, projects and attention', () => {
     ).toEqual(
       [
         [reworked.id, 'in_review', 'in_progress'],
-        [reopened.id, 'done', 'todo'],
+        [reopened.id, 'done', 'in_progress'],
       ].sort(),
     );
     expect(flow.agentBlocks).toEqual([

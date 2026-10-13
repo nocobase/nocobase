@@ -35,7 +35,7 @@ import type { Clock } from '../../kernel/clock.js';
 import { invalid } from '../../kernel/errors.js';
 import type { People } from '../../kernel/people.js';
 import type { TxRunner } from '../../kernel/tx.js';
-import { listAgents } from '../agents/index.js';
+import { agentsRepo } from '../agents/agent.store.js';
 import type { SubjectFacts, SubjectRegistry } from '../runs/index.js';
 import {
   runsRepo,
@@ -312,7 +312,10 @@ export function createReportService(deps: {
     conn: DatabaseConnection,
   ): Promise<Map<string, string>> {
     return new Map(
-      (await listAgents(conn, true)).map((agent) => [agent.id, agent.name]),
+      (await agentsRepo(conn).findMany({})).map((agent) => [
+        agent.id,
+        agent.name,
+      ]),
     );
   }
 

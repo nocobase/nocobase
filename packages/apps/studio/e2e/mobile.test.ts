@@ -8,9 +8,11 @@ test.use({
 
 /** Key pages at phone width, and what shows that each one rendered. */
 const PAGES: readonly { path: string; heading: string | null }[] = [
-  { path: '/', heading: '今天要做什么？' },
+  { path: '/', heading: '收件箱' },
+  { path: '/chat', heading: '今天要做什么？' },
   { path: '/dashboard', heading: '仪表盘' },
   { path: '/inbox', heading: '收件箱' },
+  { path: '/follow-ups', heading: '我的跟进' },
   { path: '/my-issues', heading: '我的任务' },
   { path: '/issues?view=list', heading: '任务' },
   { path: '/issues?view=board', heading: '任务' },
@@ -24,7 +26,7 @@ const PAGES: readonly { path: string; heading: string | null }[] = [
   { path: '/projects', heading: '项目' },
   { path: '/knowledge', heading: '系统知识' },
   { path: '/config/members', heading: '成员' },
-  { path: '/config/workflows', heading: '流程模板' },
+  { path: '/agents', heading: 'Agent' },
   { path: '/config/api-keys', heading: 'API 密钥' },
   { path: '/environments', heading: '部署环境' },
 ];

@@ -13,21 +13,25 @@ export const ISSUE_SUBJECT = 'issue';
 /** What starts a run on an issue. */
 export const ISSUE_TRIGGERS = [
   'assigned',
+  // A person started the issue: it entered In progress (`work.ts`), or they handed it to the project manager to go on.
+  'started',
   'mention',
   'reply',
   'comment',
   'statusChange',
   'ownerChanged',
+  'ownerAccepted',
   // Moved to another project: the work starts again in its working directories (`work.ts`).
   'projectChanged',
   'unblocked',
   'subtasksFinished',
-  'stageEntered',
   'planDecided',
-  // A linked pull request's checks failed, or it conflicts (`studio/server/git`).
+  // A linked pull request's checks failed, passed, or it conflicts (`studio/server/git`).
   'prChecksFailed',
+  'prChecksPassed',
   'prConflict',
-  // A finished issue's retrospective (`studio/server/knowledge/retrospective.ts`).
+  // Recorded by earlier versions: a workflow stage's rule, and a finished issue's retrospective.
+  'stageEntered',
   'retrospective',
 ] as const;
 

@@ -4,21 +4,18 @@
  *
  * - `keys`: whether an API key's scope may hold it (a permission group covers it, `key-scopes.ts`), or why a person
  *   decides it;
- * - `agents`: whether an agent may be configured with it (`grantable`, ticked for a new agent when `defaultOn`, only
- *   for the agent types in `types`), or why it never is. Settings capabilities are never an agent's.
+ * - `agents`: whether an agent may be configured with it (`grantable`, given to agents by default when `defaultOn`),
+ *   or why it never is. Settings capabilities are never an agent's.
  *
  * Every registered action is annotated for both; `tests/access/catalog.test.ts` checks it against the running catalog,
  * so a plugin's new action cannot reach keys or agents unconsidered.
  */
-import type { AgentType } from '@nocobase/app-plugin-agents/shared/agents';
-
 export type KeyPolicy = true | { readonly reason: string };
 
 export type AgentPolicy =
   | {
       readonly grantable: true;
       readonly defaultOn?: boolean;
-      readonly types?: readonly AgentType[];
     }
   | {
       readonly grantable: false;
@@ -62,11 +59,7 @@ const BUSINESS: Readonly<Record<string, ActionPolicy>> = {
   'pm.issues/close': { keys: true, agents: AGENT },
   'pm.issues/change-owner': { keys: true, agents: AGENT },
   'pm.issues/delete': { keys: true, agents: AGENT },
-  // Attaching sends files from a working directory, which only a runner agent has.
-  'pm.attachments/upload': {
-    keys: true,
-    agents: { grantable: true, types: ['runner'] },
-  },
+  'pm.attachments/upload': { keys: true, agents: AGENT },
   'agents.agents/edit': {
     keys: true,
     agents: notAgents('agents.agents/edit'),
@@ -125,7 +118,6 @@ export const ACTION_POLICIES: Readonly<Record<string, ActionPolicy>> = {
   ...BUSINESS,
   ...settings('pm.general', { read: true, update: true }),
   ...settings('pm.labels', { read: true, update: true }),
-  ...settings('pm.workflows', { read: true, update: true }),
   ...settings('pm.members', {
     read: true,
     invite: true,

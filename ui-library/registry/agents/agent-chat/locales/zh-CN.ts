@@ -25,7 +25,7 @@ const agentChatZhCN: AgentChatLocale = {
     emptyTitle: '{{name}} 能帮你做什么？',
     emptyDescription:
       '可以问任何问题，也可以直接描述要安排的工作。当前页面会作为上下文一起发送。',
-    noAgent: '没有你可以对话的 Agent。请管理员创建一个，或者给你开通权限。',
+    noAgent: '没有你可以对话的 Agent。请管理员启用一个，或者连接一台执行机。',
     chooseAgent:
       '在下方选择要对话的 Agent。想每次都从同一个 Agent 开始，可以在个人资料里设置默认 Agent。',
     messages: '消息',
@@ -36,16 +36,11 @@ const agentChatZhCN: AgentChatLocale = {
     availability: {
       online: '在线',
       agentMissing: '已删除',
-      agentArchived: '已归档',
+      agentArchived: '未启用',
       forbidden: '你无权使用',
-      noRunner: '没有在线的运行环境',
+      noRunner: '暂无执行机，选不了',
+      othersPersonal: '只有别人的个人执行机能跑',
       modelUnavailable: '模型不可用',
-    },
-    mode: {
-      online: '在线',
-      runner: 'Runner',
-      onlineHint: '在服务端秒级回答',
-      runnerHint: '在运行环境中工作的编码 Agent',
     },
     reply: {
       writing: '正在输入…',
@@ -53,9 +48,10 @@ const agentChatZhCN: AgentChatLocale = {
     },
     offline: {
       agentMissing: '{{name}} 已不存在',
-      agentArchived: '{{name}} 已归档',
+      agentArchived: '{{name}} 未启用',
       forbidden: '你已无权使用 {{name}}',
       noRunner: '{{name}} 暂时没有在线的运行环境',
+      othersPersonal: '只有别人的个人执行机能跑 {{name}}，请连接你自己的执行机',
       modelUnavailable: '{{name}} 的模型不可用，请联系管理员',
       kept: '消息已保存，它能回复时会处理。',
       fallback: '这条对话改用其他 Agent',
@@ -107,11 +103,6 @@ const agentChatZhCN: AgentChatLocale = {
       retry: '重新发送',
       discard: '丢弃',
     },
-    model: {
-      label: '模型',
-      current: '模型：{{name}}',
-      default: '{{model}}（默认）',
-    },
     composer: {
       label: '发给 Agent 的消息',
       placeholder: '提问，或者描述要安排的工作…',
@@ -161,12 +152,9 @@ const agentChatZhCN: AgentChatLocale = {
       placeholder: '选择 Agent',
       myDefault: '我的默认',
       systemDefault: '系统默认',
-      personal: '仅我可用',
+      personal: '仅个人执行机',
       temporary: '临时',
-      onlineGroup: '在线 Agent',
-      runnerGroup: 'Runner Agent',
-      modeHint:
-        '在线模式在服务端秒级回答；Runner 模式在运行环境中运行编码 Agent。对话创建后模式不变。',
+      hint: '列出已启用的 Agent，并说明哪个现在无法回答你。回答在执行机上运行：第一条回复要等执行机接手，通常几秒。',
     },
     history: {
       title: '对话历史',

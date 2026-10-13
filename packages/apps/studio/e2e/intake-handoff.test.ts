@@ -2,8 +2,9 @@
 import type { Page } from '@playwright/test';
 
 import { apiAs, expect, open, test, unique } from './support/fixtures.ts';
+import { FakeRunner } from './support/runner.ts';
 
-// These tests change only this person's preference and agents they create, never the team's default or model service.
+// These tests change only this person's preference, never the team's default.
 test.use({ user: 'wendy' });
 
 async function intake(page: Page) {
@@ -16,7 +17,28 @@ async function intake(page: Page) {
 
 test('a server failure preserves the input and retry completes the handoff', async ({
   page,
+  api,
+  browser,
 }) => {
+  // The demo's runtimes are offline: a runner of this test's own takes the agent the retry hands the request to.
+  const admin = await apiAs(browser, 'admin');
+  const preference = await api.get<{ defaultAgentId: string | null }>(
+    'agents/chatPreferences',
+  );
+  const agentId = await new FakeRunner(
+    admin.api,
+    `intake-retry-${unique()}`,
+  ).agent();
+  await admin.close();
+  await api.patch('agents/chatPreferences', { defaultAgentId: agentId });
+  try {
+    await retriedHandoff(page);
+  } finally {
+    await api.patch('agents/chatPreferences', preference);
+  }
+});
+
+async function retriedHandoff(page: Page): Promise<void> {
   await page.route(
     '**/api/organizeIntake',
     (route) =>
@@ -43,7 +65,7 @@ test('a server failure preserves the input and retry completes the handoff', asy
   await expect(dialog).toBeHidden();
   await expect(page).toHaveURL(/\/issues\?view=list$/u);
   await expect(page.getByTestId('chat-panel')).toContainText(text);
-});
+}
 
 test('a network failure leaves an enabled retry and can be cancelled', async ({
   page,
@@ -95,7 +117,6 @@ test('an accepted message without a started run keeps the dialog open', async ({
           run: null,
           conversation: {
             id: 'unstarted',
-            models: [],
             availability: { online: true, reason: null, onlineRunners: 1 },
             run: null,
           },
@@ -111,94 +132,44 @@ test('an accepted message without a started run keeps the dialog open', async ({
   await expect(page.getByTestId('chat-panel')).toBeHidden();
 });
 
-for (const type of ['online', 'runner'] as const) {
-  test(`${type === 'online' ? 'an online agent with an unavailable model' : 'a runner agent without an eligible runtime'} is rejected before creating work`, async ({
-    page,
-    api,
-    browser,
-  }) => {
-    const admin = await apiAs(browser, 'admin');
-    const preference = await api.get<{ defaultAgentId: string | null }>(
-      'agents/chatPreferences',
-    );
-    const service =
-      type === 'online'
-        ? await admin.api.post<{ name: string }>('agents/services', {
-            title: `Intake model ${unique()}`,
-            provider: 'openai-compatible',
-            baseUrl: 'http://127.0.0.1:9/v1',
-            models: [{ value: 'intake-model', label: 'Intake model' }],
-          })
-        : null;
-    const agent = await admin.api.post<{ id: string }>('agents', {
-      name: `Intake boundary ${unique()}`,
-      type,
-      access: 'everyone',
-      // Other files register online Claude runners. Keep this agent restricted to
-      // a runtime that is not registered, regardless of test order or parallelism.
-      ...(type === 'runner'
-        ? { runnerIds: [`intake-unregistered-${unique()}`] }
-        : {}),
-      modelEntries: service
-        ? [{ modelService: service.name, model: 'intake-model' }]
-        : [{ tool: 'claude', model: null }],
-    });
-    // Removing only this test's service leaves the shared mock model and other tests untouched.
-    if (service) await admin.api.delete(`agents/services/${service.name}`);
-    try {
-      await api.patch('agents/chatPreferences', { defaultAgentId: agent.id });
-      const { dialog, text } = await intake(page);
-      const response = page.waitForResponse('**/api/organizeIntake');
-      await dialog.getByRole('button', { name: '让 Agent 整理' }).click();
-      expect((await response).status()).toBe(409);
-      await expect(dialog.getByRole('alert')).toContainText(
-        type === 'online'
-          ? '模型不可用'
-          : '没有适合为你运行此 Agent 的在线运行环境',
-      );
-      if (type === 'online')
-        await expect(dialog.getByRole('alert')).not.toContainText('运行环境');
-      await expect(dialog.getByRole('textbox', { name: '需求' })).toHaveValue(
-        text,
-      );
-      await expect(page.getByTestId('chat-panel')).toBeHidden();
-      const conversations = await api.get<{ title: string | null }[]>(
-        'agents/conversations?pageSize=100',
-      );
-      expect(conversations.some((item) => item.title?.includes(text))).toBe(
-        false,
-      );
-    } finally {
-      await api.patch('agents/chatPreferences', preference);
-      await admin.api.post(`agents/${agent.id}/archive`);
-      await admin.api.delete(`agents/${agent.id}`);
-      await admin.close();
-    }
-  });
-}
-
-test('a missing online model is explained without blaming runtimes', async ({
+test('an agent without an eligible runtime is rejected before creating work', async ({
   page,
+  api,
+  browser,
 }) => {
-  // No-model behavior on an empty catalog is verified against the isolated server harness; this server has a fallback model.
-  await page.route('**/api/organizeIntake', (route) =>
-    route.fulfill({
-      status: 409,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        error: {
-          reason: 'INTAKE_MODEL_MISSING',
-          message: 'No configured model',
-        },
-      }),
-    }),
+  const admin = await apiAs(browser, 'admin');
+  const preference = await api.get<{ defaultAgentId: string | null }>(
+    'agents/chatPreferences',
   );
-  const { dialog, text } = await intake(page);
-  await dialog.getByRole('button', { name: '让 Agent 整理' }).click();
-  await expect(dialog.getByRole('alert')).toContainText('还没有配置模型');
-  await expect(dialog.getByRole('alert')).not.toContainText('运行环境');
-  await expect(dialog.getByRole('textbox', { name: '需求' })).toHaveValue(text);
-  await expect(page.getByTestId('chat-panel')).toBeHidden();
+  // The demo's runtimes went offline long ago, so no runner takes its Sonnet agent; other tests' runners report models
+  // of their own.
+  const agent = (
+    await admin.api.get<{ id: string; name: string }[]>('agents')
+  ).find((item) => item.name === 'Claude · Sonnet 5');
+  expect(agent).toBeTruthy();
+  try {
+    await api.patch('agents/chatPreferences', { defaultAgentId: agent!.id });
+    const { dialog, text } = await intake(page);
+    const response = page.waitForResponse('**/api/organizeIntake');
+    await dialog.getByRole('button', { name: '让 Agent 整理' }).click();
+    expect((await response).status()).toBe(409);
+    await expect(dialog.getByRole('alert')).toContainText(
+      '没有适合为你运行此 Agent 的在线运行环境',
+    );
+    await expect(dialog.getByRole('textbox', { name: '需求' })).toHaveValue(
+      text,
+    );
+    await expect(page.getByTestId('chat-panel')).toBeHidden();
+    const conversations = await api.get<{ title: string | null }[]>(
+      'agents/conversations?pageSize=100',
+    );
+    expect(conversations.some((item) => item.title?.includes(text))).toBe(
+      false,
+    );
+  } finally {
+    await api.patch('agents/chatPreferences', preference);
+    await admin.close();
+  }
 });
 
 test('closing during submission ignores the late response, including when a new dialog is opened', async ({
@@ -224,7 +195,6 @@ test('closing during submission ignores the late response, including when a new 
               run: { id: 'late-run', outcome: 'created' },
               conversation: {
                 id: 'late-conversation',
-                models: [],
                 availability: { online: true, reason: null, onlineRunners: 1 },
                 run: null,
               },

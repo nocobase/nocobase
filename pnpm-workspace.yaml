@@ -84,7 +84,6 @@ catalog:
   ignore: ^7.0.6
   ioredis: ^5.11.1
   jsdom: ^30.0.1
-  just-bash: ^3.6.0
   keyv: ^5.6.0
   knex: ^3.1.0
   lint-staged: ^17.3.0
@@ -170,10 +169,6 @@ ignoredOptionalDependencies:
   # The Claude Agent SDK's platform packages each carry a bundled Claude Code binary. The runner (`nocobase-runner`)
   # runs the `claude` it finds on PATH instead.
   - '@anthropic-ai/claude-agent-sdk-*'
-  # Optional native decompressors of just-bash, a development dependency of the agents plugin. The bundle the plugin
-  # ships leaves xz and zstd archives out, so nothing here loads them.
-  - node-liblzma
-  - '@mongodb-js/zstd'
 
 # Reports a dependency whose install script was skipped as a warning instead of failing the install.
 # allowBuilds decides the packages known today; this keeps a newly introduced transitive dependency

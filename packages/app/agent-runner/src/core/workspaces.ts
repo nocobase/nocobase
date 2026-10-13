@@ -18,7 +18,8 @@
 // `nocobase-runner gc` can remove it. A directory a run holds (its lock is taken), or one a run used since it was
 // reported, is never touched, and a removal the application's second answer no longer confirms is taken back. A
 // directory whose work goes on, or whose status is unknown, with unpushed work is only ever removed when a person
-// forces it (`nocobase-runner gc --force`).
+// forces it (`nocobase-runner gc --force`). A directory whose work goes on loses only its regenerable build artifacts
+// once no run has used it for a while (core/artifacts.ts).
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { readdir, readFile, stat, statfs } from 'node:fs/promises';
@@ -44,6 +45,7 @@ import {
   type Lock,
   type WorkspaceMeta,
 } from './checkout.ts';
+import { cleanArtifacts, type ArtifactOptions } from './artifacts.ts';
 import { isAlive } from './supervisor.ts';
 
 export { hasUnpushedWork } from './checkout.ts';
@@ -558,6 +560,8 @@ export interface CollectOptions {
   readonly decisionApps?: ReadonlySet<string>;
   readonly readDisk?: ReadDisk;
   readonly log?: (message: string) => void;
+  /** Regenerable build artifacts of directories unused this long go (core/artifacts.ts); none when absent. */
+  readonly artifacts?: Pick<ArtifactOptions, 'ttlMs' | 'patterns'>;
 }
 
 export interface CollectResult {
@@ -569,6 +573,8 @@ export interface CollectResult {
   readonly disk: DiskSpace | undefined;
   /** Less than the threshold is still free. */
   readonly low: boolean;
+  /** The directories whose regenerable build artifacts were removed. */
+  readonly artifactsCleaned: string[];
 }
 
 /**
@@ -639,8 +645,20 @@ export async function collectWorkspaces(
       );
     } else kept.push({ workDir: entry.workDir, reason: why });
   }
-  const after = await read(paths.workRoot);
   const gone = new Set(removed.map((item) => item.workDir));
+  const artifactsCleaned =
+    options.artifacts === undefined
+      ? []
+      : await cleanArtifacts(
+          entries.filter((entry) => !gone.has(entry.workDir)),
+          {
+            paths,
+            ...options.artifacts,
+            ...(options.now === undefined ? {} : { now: options.now }),
+            ...(log === undefined ? {} : { log }),
+          },
+        );
+  const after = await read(paths.workRoot);
   const warning = lowDiskWarning(
     entries.filter((entry) => !gone.has(entry.workDir)),
     after,
@@ -654,5 +672,6 @@ export async function collectWorkspaces(
     plan,
     disk: after,
     low: warning !== undefined,
+    artifactsCleaned,
   };
 }

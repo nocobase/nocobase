@@ -30,12 +30,6 @@ import { useAgentFieldLabels } from '../../agents/agent-field-labels.js';
 import { STUDIO_METHODS, SELF_METHODS } from './model.js';
 import { RADIO_CARD } from './target-fields.js';
 
-/**
- * The built-in senior developer agent, the issue's executor unless someone chooses another: setting up CI changes the
- * repository and opens a pull request, which the project lead, a coordinator, may not do.
- */
-export const CI_SETUP_AGENT = 'studio-senior-developer';
-
 export function CiMethodChoice({
   value,
   onChange,
@@ -117,7 +111,7 @@ export function CiMethodChoice({
   );
 }
 
-/** Who works on the "Set up deployment" issue: the senior developer agent unless someone chooses another. */
+/** Who the project manager hands the "Set up deployment" issue to: the first agent offered unless someone chooses another. */
 export function CiAgentField({
   agentId,
   onChange,
@@ -128,11 +122,10 @@ export function CiAgentField({
   readonly className?: string;
 }): ReactElement {
   const { t } = useTranslation();
-  const agents = useAgentOptions({ type: 'runner' });
+  const agents = useAgentOptions();
   const items = agents.options;
   const labels = useAgentFieldLabels(t('ciSetup.agent.label'));
-  const fallback = (items.find((item) => item.value === CI_SETUP_AGENT) ??
-    items[0]) as { readonly value: string } | undefined;
+  const fallback = items[0] as { readonly value: string } | undefined;
   useEffect(() => {
     if (!agentId && fallback) onChange(fallback.value);
   }, [agentId, fallback, onChange]);
@@ -144,7 +137,6 @@ export function CiAgentField({
       <AgentPicker
         id='ci-method-agent'
         agents={agents.agents}
-        type='runner'
         value={agentId || null}
         onSelect={onChange}
         labels={labels}

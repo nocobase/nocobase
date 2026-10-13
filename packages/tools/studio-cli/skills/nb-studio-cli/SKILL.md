@@ -78,8 +78,8 @@ These have no command. When someone needs one, tell them exactly where to go in 
 | Change a password                               | Avatar › Account settings › Account and security                                                                                      |
 | Language, theme, sounds, default chat agent     | Avatar › Account settings › Preferences                                                                                               |
 
-Everything else Settings shows (General, Labels, Knowledge search, Members, Roles, API keys, Git connections, Workflow templates) and the Agent team pages (Agents, Runtimes, Skills, Models, Usage) also has commands: `nb-studio access …`, `nb-studio label …`, `nb-studio kb settings …`, `nb-studio api-key …`, `nb-studio git connection …`, `nb-studio workflow …`, `nb-studio agent …`, `nb-studio runtime …`, `nb-studio skill …`, `nb-studio model …`, `nb-studio service …`.
+Everything else Settings shows (General, Labels, Knowledge search, Members, Roles, API keys, Git connections) and the Agent team pages (Agents, Runtimes, Skills, Models, Usage) also has commands: `nb-studio access …`, `nb-studio label …`, `nb-studio kb settings …`, `nb-studio api-key …`, `nb-studio git connection …`, `nb-studio agent …`, `nb-studio project-manager …`, `nb-studio runtime …`, `nb-studio skill …`, `nb-studio model …`, `nb-studio service …`.
 
 ## When a person must decide
 
-Merging a pull request, deciding approvals, approving deployment requests, and anything needing an action the agent lacks are a person's. Say what you need and why in a comment on the issue (`nb-studio issue comment add <issue> --content-file <path>`), then end your turn; the answer reaches you as new input.
+Merging a pull request, accepting an issue (moving it to Done), approving deployment requests, and anything needing an action the agent lacks are a person's. Say what you need and why in a comment on the issue (`nb-studio issue comment add <issue> --content-file <path>`), then end your turn; the answer reaches you as new input.

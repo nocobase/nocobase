@@ -1,7 +1,7 @@
 /**
  * Kinds of principal that act on issues or are named in them: `user` (people) and `system` (the plugin's own rules)
  * are built in; other plugins register more (`projectsKindsToken`), such as an agent runtime registering `agent`.
- * Executors, activity, mentions, approval requesters and workflow transitions all name a kind by its key.
+ * Executors, activity, mentions and status moves all name a kind by its key.
  */
 
 export const USER_KIND = 'user';
@@ -39,4 +39,6 @@ export interface ExecutorCandidate {
   readonly online?: boolean;
   /** Work it is doing or has queued. */
   readonly busy?: number;
+  /** A new issue gets it when it names no executor, so the New issue form preselects it. */
+  readonly isDefault?: boolean;
 }

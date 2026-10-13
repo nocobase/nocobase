@@ -1,8 +1,9 @@
 // @vitest-environment node
 /**
  * The agent board (`server/agents/board.ts`) over the real projects and agents plugins: one row per issue
- * an agent is involved in, in the section of where its agent stands (waiting for a person, working, queued, idle), why
- * queued work waits, and only what the viewer may see.
+ * an agent is involved in (the project manager executing it, or an agent doing a step of it), in the section of where
+ * its agent stands (waiting for a person, working, queued, idle), why queued work waits, and only what the viewer may
+ * see. A person is waited on for a failed run, a question (Blocked) or acceptance (In review); nothing else.
  */
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -15,6 +16,7 @@ import {
 import { createAgentWork } from '../../server/agents/work.js';
 import { RUN_FAILED_FINAL } from '../../server/agents/notices.js';
 import type { OpenDecision } from '../../server/inbox/service.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 
 let h: BridgeHarness;
@@ -63,31 +65,36 @@ describe('the agent board', () => {
   let working: Issue;
   let queued: Issue;
   let failed: Issue;
-  let proposal: Issue;
+  let review: Issue;
+  let coderId: string;
 
   beforeEach(async () => {
-    agentId = await h.createAgent({ name: 'Coder', maxConcurrentRuns: 1 });
+    coderId = await h.createAgent({ name: 'Coder' });
+    agentId = PROJECT_MANAGER_ID;
     project = await h.projects.projects.create(alice(), { name: 'Payments' });
     const give = (title: string, extra: object = {}) =>
       h.projects.issues.create(alice(), {
         title,
         projectId: project.id,
+        statusKey: 'in_progress',
         executor: { type: 'agent', id: agentId },
         ...extra,
+      });
+    const moved = async (issue: Issue, statusKey: string) =>
+      h.projects.issues.update(alice(), issue.id, {
+        revision: issue.revision,
+        statusKey,
       });
     working = await give('Fix login');
     await h.claimOne();
     queued = await give('Retry callbacks');
     await give('Later', { start: false });
-    await give('Which database?', { statusKey: 'blocked', start: false });
-    const done = await give('Old work', { start: false });
-    await h.projects.issues.update(alice(), done.id, {
-      revision: done.revision,
-      statusKey: 'done',
-    });
+    await moved(await give('Which database?', { start: false }), 'blocked');
+    await moved(await give('Old work', { start: false }), 'done');
     failed = await h.projects.issues.create(alice(), {
       title: 'Flaky deploy',
       projectId: project.id,
+      executor: null,
     });
     decisions.push({
       decisionKey: 'agents:run-failed:r1',
@@ -96,11 +103,11 @@ describe('the agent board', () => {
       userIds: ['alice'],
       createdAt: '2026-10-02T08:00:00.000Z',
     });
-    // Its design proposal waits in Proposal review, for the owner.
-    proposal = await give('Plan the migration', {
-      statusKey: 'proposal_review',
-      start: false,
-    });
+    // Ready for acceptance, for the owner.
+    review = await moved(
+      await give('Plan the migration', { start: false }),
+      'in_review',
+    );
   });
 
   it('shows each issue once, in the section of where its agent stands, and explains the queue', async () => {
@@ -116,11 +123,10 @@ describe('the agent board', () => {
     expect(new Set(result.rows.map((row) => row.issue.id)).size).toBe(6);
     expect(result.agents[agentId]).toMatchObject({
       id: agentId,
-      name: 'Coder',
+      name: 'Project manager',
       archived: false,
       online: true,
       active: 1,
-      maxConcurrentRuns: 1,
     });
     expect(titles(result, 'working')).toEqual(['Fix login']);
     expect(titles(result, 'queued')).toEqual(['Retry callbacks']);
@@ -147,7 +153,6 @@ describe('the agent board', () => {
     });
     expect(rowOf(result, working.id)?.run?.id).toEqual(expect.any(String));
     expect(rowOf(result, queued.id)?.queue).toMatchObject({
-      reason: 'concurrencyFull',
       agentPosition: 1,
     });
     expect(rowOf(result, failed.id)?.waiting).toMatchObject({
@@ -157,12 +162,12 @@ describe('the agent board', () => {
       path: '/inbox?view=todo',
       detail: 'leaseExpired',
     });
-    // A design proposal is decided where it shows in full: the issue's design section.
-    expect(rowOf(result, proposal.id)?.waiting).toMatchObject({
-      kind: 'proposal',
+    // Acceptance is decided on the issue.
+    expect(rowOf(result, review.id)?.waiting).toMatchObject({
+      kind: 'review',
       viewerDecides: true,
       detail: null,
-      path: `/issues/${proposal.identifier}#design`,
+      path: `/issues/${review.identifier}`,
     });
     expect(
       result.rows.find((row) => row.issue.title === 'Which database?')?.waiting,
@@ -268,6 +273,24 @@ describe('the agent board', () => {
     expect(result.summary.working).toBe(0);
   });
 
+  it('names an agent doing a step beside the project manager, and waits on people only for runs, questions and acceptance', async () => {
+    await h.projects.comments.create(alice(), working.id, {
+      content: `[@Coder](mention://agent/${coderId}) write the fix`,
+    });
+    const result = await board('alice');
+    expect(rowOf(result, working.id)).toMatchObject({
+      agentId,
+      state: 'working',
+      others: [{ agentId: coderId, state: 'queued' }],
+    });
+    expect(result.agents[coderId]?.name).toBe('Coder');
+    expect(
+      new Set(
+        result.rows.flatMap((row) => (row.waiting ? [row.waiting.kind] : [])),
+      ),
+    ).toEqual(new Set(['failedRun', 'question', 'review']));
+  });
+
   it('shows another member the issues without the details of runs they did not start', async () => {
     const result = await board('carol');
     const run = rowOf(result, working.id)?.run;
@@ -278,9 +301,9 @@ describe('the agent board', () => {
       lastActivity: null,
       status: 'dispatched',
     });
-    // The proposal is Alice's to decide: Carol sees that it waits for her, on the issue.
-    expect(rowOf(result, proposal.id)?.waiting).toMatchObject({
-      kind: 'proposal',
+    // Acceptance is Alice's to decide: Carol sees that it waits for her, on the issue.
+    expect(rowOf(result, review.id)?.waiting).toMatchObject({
+      kind: 'review',
       viewerDecides: false,
       waitingFor: [{ userId: 'alice' }],
     });

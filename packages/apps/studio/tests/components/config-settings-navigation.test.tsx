@@ -92,7 +92,6 @@ describe('the settings navigation', () => {
     for (const item of [
       'pm.general',
       'pm.members',
-      'pm.workflows',
       'pm.labels',
       'studio.apiKeys',
       'studio.git',
@@ -107,7 +106,6 @@ describe('the settings navigation', () => {
     ).toEqual([
       'studio-settings-workspace',
       'studio-settings-access',
-      'studio-settings-projects',
       'studio-settings-integrations',
     ]);
     expect(groupLinks('config.nav.groups.workspace')).toEqual([
@@ -119,9 +117,6 @@ describe('the settings navigation', () => {
       'config.nav.members',
       'config.nav.roles',
       'config.nav.apiKeys',
-    ]);
-    expect(groupLinks('config.nav.groups.projects')).toEqual([
-      'config.nav.workflows',
     ]);
     expect(groupLinks('config.nav.groups.integrations')).toEqual([
       'config.nav.git',

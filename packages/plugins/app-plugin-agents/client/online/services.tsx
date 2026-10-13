@@ -1,11 +1,11 @@
 /**
  * `ModelServicesPage`: the Models page, laid out like the Apps page: a page header with "Add service", then a table of
- * the model services online agents call, one row per service with its name, base URL host, provider type with how many
- * chat, embedding and rerank models it offers, and status.
+ * the model services the application calls models of (a knowledge base's embeddings, reranking and context), one row
+ * per service with its name, base URL host, provider type with how many chat, embedding and rerank models it offers,
+ * and status.
  * Several services of one provider are normal (two OpenAI-compatible endpoints, two keys of one provider). Clicking a
  * row, or Edit in its menu, opens its editor in a dialog (`service-editor.tsx`); "Add service" opens the same dialog
- * empty. The menu also turns a service on or off or deletes it. Above the table, the system default chat model online
- * agents with no models of their own answer with (`default-model.tsx`). It reads and manages behind `agents.services`: who
+ * empty. The menu also turns a service on or off or deletes it. It reads and manages behind `agents.services`: who
  * only reads sees the same rows and forms, unchangeable.
  */
 import { useCan } from '@nocobase/app-plugin-authorization/client';
@@ -66,7 +66,6 @@ import {
   sortServices,
   type ServiceStatus,
 } from './model.js';
-import { DefaultModelSection } from './default-model.js';
 import { ServiceDialog } from './service-editor.js';
 
 const STATUS_BADGE: Record<
@@ -163,9 +162,6 @@ export function ModelServicesPage(): ReactElement {
         description={t('models.description')}
         actions={services.data && services.data.length > 0 ? addButton : null}
       />
-      {services.data && services.data.length > 0 ? (
-        <DefaultModelSection canManage={canManage} />
-      ) : null}
       {content}
       {services.data ? (
         <ServiceDialog

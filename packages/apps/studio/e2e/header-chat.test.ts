@@ -41,6 +41,8 @@ test.describe('global header Agent', () => {
           .getByText(question, { exact: true }),
       ).toBeVisible();
       await expect(view.getByTestId('chat-submissions')).toHaveCount(0);
+      // No runner answers here: stop the run the message queued, so the conversation is idle before the next send.
+      await api.post(`agents/conversations/${conversation.id}/stop`, {});
       await expect
         .poll(
           async () =>

@@ -18,11 +18,17 @@ beforeEach(async () => {
 });
 afterEach(() => h.close());
 
+/** A run of an agent with `actions` on a step a person handed it, mentioning it on an issue. */
 async function runOn(actions: readonly string[]) {
   const agentId = await h.createAgent({ actions: [...actions] });
   const issue = await h.projects.issues.create(h.viewer('alice'), {
     title: 'Fix login',
-    executor: { type: 'agent', id: agentId },
+    executor: null,
+    statusKey: 'in_progress',
+    start: false,
+  });
+  await h.projects.comments.post({ type: 'user', id: 'alice' }, issue.id, {
+    content: `[@Coder](mention://agent/${agentId}) look at it`,
   });
   const payload = await h.claimOne();
   return { issue, token: payload.cli.credential.content.token as string };

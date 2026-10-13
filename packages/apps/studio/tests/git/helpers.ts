@@ -56,3 +56,16 @@ export function bindingOf(connection: GitConnection, repo: string, id = '1') {
 export function signBody(secret: string, body: string | Uint8Array): string {
   return `sha256=${createHmac('sha256', secret).update(body).digest('hex')}`;
 }
+
+/** `userId` mentions the agent on the issue, handing it a step as the project manager would: its run on the issue. */
+export async function mentionAgent(
+  h: BridgeHarness,
+  userId: string,
+  issueId: string,
+  agentId: string,
+  text = 'please take this step',
+): Promise<void> {
+  await h.projects.comments.create(h.viewer(userId), issueId, {
+    content: `[@Coder](mention://agent/${agentId}) ${text}`,
+  });
+}

@@ -18,7 +18,7 @@ export interface BoardColumn {
 }
 
 /**
- * The board's columns, one per status in the workflow's order. Moves still waiting for the server (`overrides`, issue
+ * The board's columns, one per status, in order. Moves still waiting for the server (`overrides`, issue
  * id → target status) show in their target column, so a card does not jump back while its request is in flight.
  */
 export function buildBoardColumns(

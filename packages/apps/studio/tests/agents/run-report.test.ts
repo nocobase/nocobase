@@ -8,6 +8,7 @@ import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { reportRun, reportText } from '../../server/agents/run-report.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 
 let h: BridgeHarness;
@@ -29,7 +30,7 @@ const commentsOf = (issueId: string) =>
 const runsOf = (issueId: string) =>
   h.agents.runs.list({ subjectKind: 'issue', subjectId: issueId });
 
-/** A coordinator executing an issue hands a step to a worker; the worker's run is claimed and started. */
+/** The project manager executing an issue hands a step to a worker; the worker's run is claimed and started. */
 async function handOff(
   worker: Parameters<BridgeHarness['createAgent']>[0] = {},
 ): Promise<{
@@ -39,10 +40,11 @@ async function handOff(
   ask: string;
   runId: string;
 }> {
-  const coordinator = await h.createAgent({ name: 'Coordinator' });
+  const coordinator = PROJECT_MANAGER_ID;
   const workerId = await h.createAgent({ name: 'Worker', ...worker });
   const issue = await h.projects.issues.create(alice(), {
     title: 'Split',
+    statusKey: 'in_progress',
     executor: { type: 'agent', id: coordinator },
     start: false,
   });
@@ -132,9 +134,7 @@ describe('a run an agent’s comment started', () => {
   });
 
   it('says why it failed for good, waking the executor', async () => {
-    const { issue, coordinator, worker, ask, runId } = await handOff({
-      maxAttempts: 1,
-    });
+    const { issue, coordinator, worker, ask, runId } = await handOff();
     expect(
       (
         await h.runner(RUNNER_ROUTES.fail, runId, {
@@ -176,7 +176,11 @@ describe('a run an agent’s comment started', () => {
 describe('a run a person started', () => {
   it('posts nothing when it ends without a comment', async () => {
     const worker = await h.createAgent({ name: 'Worker' });
-    const issue = await h.projects.issues.create(alice(), { title: 'Direct' });
+    const issue = await h.projects.issues.create(alice(), {
+      title: 'Direct',
+      statusKey: 'in_progress',
+      executor: null,
+    });
     await h.projects.comments.create(alice(), issue.id, {
       content: `[@Worker](mention://agent/${worker}) take a look`,
     });

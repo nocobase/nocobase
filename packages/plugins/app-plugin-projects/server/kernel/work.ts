@@ -15,7 +15,7 @@
  * event bus like any other event, and only the plugin that owns `kind` reads its `payload`.
  *
  * What a handler did not start because the issue is held (`blocked`), waits where nothing starts (`dormant`), or had
- * as many runs from principals' comments as its workflow allows (`limited`, `commentRunLimit`), and the queued work it
+ * as many runs from principals' comments as the kind allows (`limited`), and the queued work it
  * withdrew when the issue became held (`onBlocked`), is recorded on the issue's activity, as the principal's:
  * `work_skipped { reason, trigger, blockers | status }` and `work_withdrawn { reason, runId, blockers }`.
  * Whether an issue is held is the plugin's to say (`SubtaskService.blockersOf`); the handler asks it and answers
@@ -53,9 +53,10 @@ declare module './events.js' {
 /**
  * Why a handler started nothing for a principal: `deferred`, the person asked not to start now; `blocked`, the issue
  * waits for unfinished issues; `dormant`, the issue is where work does not start (`BACKLOG_STATUS`); `limited`,
- * principals' comments started as many runs on the issue as its workflow allows (`commentRunLimit`).
+ * principals' comments started as many runs on the issue as the kind allows.
  */
 export type RunAttemptSkip =
+  | 'waitingOwner'
   | 'deferred'
   | 'limited'
   | 'denied'
@@ -96,7 +97,11 @@ export interface WorkWithdrawal {
  * that transaction is a rehearsal (`tx.rehearsal`), it only answers what it would start.
  */
 export interface IssueWorkHandler {
-  /** A new issue, or an update (including a status moved by a workflow event or an approval). */
+  /** Receives comments even when the executor was cleared, for issue-wide pause policies. */
+  readonly observesComments?: boolean;
+  /** Receives trusted owner claims even when the executor is cleared. */
+  readonly observesOwnerClaims?: boolean;
+  /** A new issue, or an update (including a status moved by a status event). */
   onIssueChanged(tx: Tx, change: IssueChange): Promise<readonly RunAttempt[]>;
   /**
    * A comment that is not a note, of a person or another principal (never the system's), on an issue the kind executes
@@ -107,7 +112,7 @@ export interface IssueWorkHandler {
     tx: Tx,
     change: CommentChange,
   ): Promise<readonly RunAttempt[]>;
-  /** The issue's owner changed while the kind executes it: queued work woken by the previous owner is withdrawn. */
+  /** The issue's owner changed. Every work kind hears this before ordinary triggers, including unassigned issues. */
   onOwnerChanged?(
     tx: Tx,
     input: {
@@ -199,6 +204,7 @@ const blockerRefs = (blockers: readonly Blocker[]) =>
 
 /** The skips recorded on the issue's activity. */
 const RECORDED_SKIPS: ReadonlySet<string> = new Set([
+  'waitingOwner',
   'blocked',
   'dormant',
   'limited',
@@ -245,28 +251,41 @@ export function kindTriggers(
   return {
     async onIssueChanged(tx, change) {
       const { before, after } = change;
+      // Transfers reach every work kind before ordinary triggers, even when the executor is cleared.
+      if (before && before.ownerUserId !== after.ownerUserId)
+        for (const [, work] of handlersOf(
+          kinds,
+          kinds.list().map((kind) => kind.key),
+        ))
+          await report(
+            tx,
+            after,
+            work.onOwnerChanged?.(tx, {
+              issue: after,
+              from: before.ownerUserId,
+              to: after.ownerUserId,
+              actor: change.actor,
+            }),
+          );
       for (const [, work] of handlersOf(kinds, [
         before?.executor?.type,
         after.executor?.type,
+        ...(change.ownerClaimed
+          ? kinds
+              .list()
+              .filter((kind) => kind.work?.observesOwnerClaims)
+              .map((kind) => kind.key)
+          : []),
       ]))
         await report(tx, after, work.onIssueChanged(tx, change));
-      if (before && before.ownerUserId !== after.ownerUserId) {
-        const work = handlerOf(kinds, after.executor?.type);
-        await report(
-          tx,
-          after,
-          work?.onOwnerChanged?.(tx, {
-            issue: after,
-            from: before.ownerUserId,
-            to: after.ownerUserId,
-            actor: change.actor,
-          }),
-        );
-      }
     },
 
     async onCommentCreated(tx, change) {
       const concerned = handlersOf(kinds, [
+        ...kinds
+          .list()
+          .filter((kind) => kind.work?.observesComments)
+          .map((kind) => kind.key),
         change.issue.executor?.type,
         change.parent?.authorType,
         ...change.mentions.map((ref) => ref.kind),
