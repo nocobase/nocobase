@@ -165,15 +165,27 @@ it('retains cancellation recovery through lost intent, unavailable spool, restar
 });
 
 it.each([
-  [false, '503'],
-  [true, '503'],
-  [false, 'unconfirmed'],
-  [true, 'unconfirmed'],
-  [false, 'terminal'],
-  [true, 'terminal'],
+  [false, '503', 'restart'],
+  [true, '503', 'restart'],
+  [false, 'unconfirmed', 'restart'],
+  [true, 'unconfirmed', 'restart'],
+  [false, 'terminal', 'restart'],
+  [true, 'terminal', 'restart'],
+  [false, '503', 'exitUnseen'],
+  [true, '503', 'exitUnseen'],
+  [false, 'unconfirmed', 'exitUnseen'],
+  [true, 'unconfirmed', 'exitUnseen'],
+  [false, 'terminal', 'exitUnseen'],
+  [true, 'terminal', 'exitUnseen'],
+  [false, '503', 'exitSeen'],
+  [true, '503', 'exitSeen'],
+  [false, 'unconfirmed', 'exitSeen'],
+  [true, 'unconfirmed', 'exitSeen'],
+  [false, 'terminal', 'exitSeen'],
+  [true, 'terminal', 'exitSeen'],
 ] as const)(
-  'retains the live worker recovery through failed intent=%s and ack=%s until restart reaches production storage',
-  async (lostIntent, firstAck) => {
+  'retains the live worker recovery through failed intent=%s, ack=%s and entry=%s until production storage acknowledges it',
+  async (lostIntent, firstAck, entry = 'restart') => {
     const h = await createHarness();
     const root = await mkdtemp(
       path.join(tmpdir(), 'worker-cancellation-recovery-'),
@@ -330,16 +342,29 @@ it.each([
         timings: { reportTimeoutMs: 1 },
         log: () => {},
       };
+      const { Supervisor } =
+        await import('../../../app/agent-runner/src/core/supervisor.ts');
+      const supervisor = new Supervisor(options);
+      const recover = () =>
+        entry === 'restart'
+          ? recoverOrphans(options)
+          : (
+              supervisor as unknown as {
+                afterExit(id: string, cancelled: boolean): Promise<void>;
+              }
+            ).afterExit(runId, entry === 'exitSeen');
       fault = 'status';
-      await recoverOrphans(options);
+      await recover();
       expect(await readRecords(paths)).toHaveLength(1);
-      if (lostIntent) expect(routes).toEqual(['cancelAck', 'status']);
+      if (lostIntent && entry !== 'exitSeen')
+        expect(routes).toEqual(['cancelAck', 'status']);
+      else expect(routes).toEqual(['cancelAck', 'cancelAck']);
       fault = 'terminal';
-      await recoverOrphans(options);
+      await recover();
       expect(await readRecords(paths)).toHaveLength(1);
       expect(existsSync(workDir)).toBe(true);
       fault = undefined;
-      await recoverOrphans(options);
+      await recover();
       expect(await readRecords(paths)).toEqual([]);
       const saved = await h.services.runs.get(runId);
       expect(saved.status).toBe('cancelled');

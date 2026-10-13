@@ -50,6 +50,115 @@ describe('orphan writer recovery', () => {
     removeDir(root);
   });
 
+  it.each([
+    ['intent', 'leaseExpired'],
+    ['intent', 'runnerOffline'],
+    ['report', 'leaseExpired'],
+    ['report', 'runnerOffline'],
+  ] as const)(
+    'never downgrades durable cancellation %s through a direct %s recovery hint',
+    async (evidence, hint) => {
+      const paths = runnerPaths(
+        path.join(root, 'home'),
+        path.join(root, 'work'),
+      );
+      const workDir = runWorkDir(paths, 'app', 'fixture', 'direct-cancel', 1);
+      mkdirSync(workDir, { recursive: true });
+      await writeWorkspaceMeta(paths, workDir, {
+        appKey: 'app',
+        subjectKey: 'fixture',
+        repos: [],
+        lastUsedAt: new Date().toISOString(),
+        runWorktrees: true,
+      });
+      const record: RunRecord = {
+        runId: 'direct-cancel',
+        appKey: 'app',
+        attempt: 1,
+        pid: 2147483647,
+        workDir,
+        startedAt: new Date().toISOString(),
+        phase: 'running',
+        firstSeq: 0,
+        log: '',
+        ...(evidence === 'intent'
+          ? { recoveryReason: 'cancelled' as const }
+          : {
+              cancellationRecovery: {
+                attempt: 1,
+                detail: 'Unconfirmed cancellation preservation',
+                localSave: [
+                  {
+                    path: workDir,
+                    saved: false,
+                    reason: 'Writer verification failed',
+                  },
+                ],
+              },
+            }),
+      };
+      await writeRecord(paths, record);
+      vi.spyOn(EventSpool, 'open').mockImplementation(() => {
+        throw new Error('injected unavailable spool');
+      });
+      let response = '503';
+      const routes: string[] = [];
+      const client = new ApiClient({
+        server: 'http://fixture.test',
+        headers: {},
+        fetch: async (url) => {
+          routes.push(String(url).split('/').at(-1)!);
+          if (response === '503') return new Response('{}', { status: 503 });
+          if (response === 'terminal')
+            return new Response(
+              JSON.stringify({
+                error: {
+                  code: 400,
+                  status: 'FAILED_PRECONDITION',
+                  domain: 'agents',
+                  reason: 'RUN_NOT_ACTIVE',
+                  message: 'Cancelled',
+                },
+              }),
+              { status: 400 },
+            );
+          return new Response(
+            JSON.stringify({
+              data: {
+                status: 'cancelled',
+                ...(response === 'accepted' ? { recoveryAccepted: true } : {}),
+              },
+            }),
+          );
+        },
+      });
+      const options = {
+        paths,
+        clientFor: () => client,
+        timings: {},
+        log: () => {},
+        reason: hint,
+        detail: 'Live exit',
+      };
+      for (const fault of ['503', 'unconfirmed', 'terminal']) {
+        response = fault;
+        await recoverRun(record, options);
+        expect(await readRecords(paths)).toHaveLength(1);
+        expect(existsSync(workDir)).toBe(true);
+      }
+      response = 'accepted';
+      await recoverRun(record, options);
+      expect(routes).toEqual([
+        'cancelAck',
+        'cancelAck',
+        'cancelAck',
+        'cancelAck',
+      ]);
+      expect(await readRecords(paths)).toEqual([]);
+      expect(existsSync(workDir)).toBe(true);
+    },
+  );
+
   it('retains an escaped writer with an open descriptor and reports recovery across idempotent restart retries', async () => {
     const paths = runnerPaths(path.join(root, 'home'), path.join(root, 'work'));
     const remote = makeRemote(root);
@@ -112,6 +221,17 @@ describe('orphan writer recovery', () => {
       server: 'http://fixture.test',
       headers: {},
       fetch: async (url, init) => {
+        if (String(url).endsWith('/status'))
+          return new Response(
+            JSON.stringify({
+              data: {
+                status: 'running',
+                cancelRequested: false,
+                inputs: [],
+                leaseExpiresAt: null,
+              },
+            }),
+          );
         const body = JSON.parse(String(init?.body)) as {
           detail: string;
           events?: { content: string }[];
@@ -245,6 +365,17 @@ describe('orphan writer recovery', () => {
       server: 'http://fixture.test',
       headers: {},
       fetch: async (url, init) => {
+        if (String(url).endsWith('/status'))
+          return new Response(
+            JSON.stringify({
+              data: {
+                status: 'running',
+                cancelRequested: false,
+                inputs: [],
+                leaseExpiresAt: null,
+              },
+            }),
+          );
         if (String(url).endsWith('/fail'))
           details.push(
             (JSON.parse(String(init?.body)) as { detail: string }).detail,
@@ -511,6 +642,17 @@ describe('orphan writer recovery', () => {
       server: 'http://fixture.test',
       headers: {},
       fetch: async (url, init) => {
+        if (String(url).endsWith('/status'))
+          return new Response(
+            JSON.stringify({
+              data: {
+                status: 'running',
+                cancelRequested: false,
+                inputs: [],
+                leaseExpiresAt: null,
+              },
+            }),
+          );
         if (String(url).endsWith('/fail'))
           details.push(
             (JSON.parse(String(init?.body)) as { detail: string }).detail,
