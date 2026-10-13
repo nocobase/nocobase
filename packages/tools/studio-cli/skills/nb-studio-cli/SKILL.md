@@ -83,3 +83,7 @@ Everything else Settings shows (General, Labels, Knowledge search, Members, Role
 ## When a person must decide
 
 Merging a pull request, accepting an issue (moving it to Done), approving deployment requests, and anything needing an action the agent lacks are a person's. Say what you need and why in a comment on the issue (`nb-studio issue comment add <issue> --content-file <path>`), then end your turn; the answer reaches you as new input.
+
+## Agent branches and task PRs
+
+The initial checkout is a starting point. In a writable run, switch or create branches and ordinarily push any branch of the same repository without rewriting published history or force pushing. Do not check out or push fork PRs. Pass `--head <actual-branch>` to `nb-studio pr open`, especially after switching; the default head comes from the repository's first issue branch rule, not local HEAD or the selected PR. `pr link` adds another task PR. `pr unlink <issue> <pr>` removes only the named association and suppresses automatic relinking; it does not close the PR or delete a branch. Explicit link/open clears suppression. Discover these commands through help: they require the running server to support them and the caller to hold issue edit and PR actions within its scope.

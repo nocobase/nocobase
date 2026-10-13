@@ -27,6 +27,7 @@ const start = {
 const FEATURES = [
   'input',
   'checkout',
+  'multiBranchWorkspaces',
   'directories',
   'attachments',
   'skills',
