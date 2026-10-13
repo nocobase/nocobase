@@ -1,5 +1,15 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.35
+
+### Patch Changes
+
+- ca0adee: Document the quieter template interface in the application development Skill: the `--hover` token and the navigation built on it, the single border, which a preset with a darker page has to make opaque, and the compact preset's values, one shared focus ring, the two badge sizes, the pointer cursor, cards that lift on hover, and table rows on the `--hover` grey. Add the long-text rule (I14) for `LongText` and `LongTextPreview`, show a record's particulars inline, describe navigation sections and counts beside menu entries, with guideline L8 on which counts belong there, and list the UI Library's new `long-text` item and the inline variant of `property-fields`. The upgrade Skill's theme checks now say to merge a token together with every use of it, and a global attribute rule together with the components that set the attribute.
+- ddfe1b1: Update the UI Library catalog reference for the agents blocks: the agent picker, chat and composer no longer offer online agents or a model choice, and the issue detail no longer has checklist or approval parts.
+- 43d7d1f: Add code-declared lifecycle parameter groups with asynchronous execution resolution, immutable configuration versions, atomic CAS saves, first-submission snapshots, per-execution usage facts and flat reviewer selection rules. Demonstrate shared configuration editors, optional diagram bindings, snapshot expense thresholds, live ticket policy and finite candidate review workflows, and document application integration.
+- 9555de6: Guide agents to expose node-related lifecycle parameters through editing dialogs on process diagrams, with references to the workflow example. Clarify HTTP-compatible browser request IDs and key reuse for transport retries.
+- 758c372: Ask whether users want a flowchart or process interface when developing a lifecycle, respect separate interface and diagram preferences, and document UI Library diagram integration including label callback arguments.
+
 ## 0.1.0-beta.34
 
 ### Patch Changes

@@ -1,5 +1,28 @@
 # @nocobase/app-cli-client
 
+## 0.1.0-beta.6
+
+### Minor Changes
+
+- 157a914: Add `<bin> acp start`, which connects the computer to the signed-in person's agent sessions (`@nocobase/app-plugin-agent-sessions`) and keeps it connected until stopped, running their sessions with the coding agents installed there, and `<bin> acp service install`, `status` and `uninstall`, which keep it connected in the background from every login as a launchd agent on macOS, a systemd user unit on Linux or a Startup script on Windows. One bridge runs per profile on a computer. The person chooses the folders sessions work in from the application; `--root` limits them on the computer itself (the home directory by default).
+- 6758f9f: Add offline `skills install` and `skills status` commands for branded CLI packages that ship the nb-studio-cli Skill, with Claude Code and Codex detection, explicit tool selection, dry-run output and content comparison. Register installed locations and synchronize them from the new package after CLI self-update, preserving older copies on replacement failure and reporting synchronization warnings without failing the CLI upgrade. The update JSON payload gains an optional `skills` result and envelope warnings; local Skill commands return their payload under `result.data`. Preserve documented exit codes when static commands fail with JSON output.
+
+  Document local installation, Codex's current user Skill directory and legacy-copy behavior, and reinstalling Skills after external CLI upgrades.
+
+  Reject nested installation destinations before writing any target, including destinations registered by earlier installs. During self-update, preserve conflicting copies and their records, report warnings, and continue synchronizing unrelated destinations.
+
+### Patch Changes
+
+- 8698e80: Keep oclif from registering tsx when a packaged CLI runs from sources under `NODE_ENV=development` or `test`, which made every cold start about half again as slow.
+- Updated dependencies [157a914]
+- Updated dependencies [10e261b]
+- Updated dependencies [ddfe1b1]
+- Updated dependencies [ee24e95]
+- Updated dependencies [4748117]
+- Updated dependencies [a2cf036]
+  - @nocobase/acp-bridge@0.1.0-beta.0
+  - @nocobase/agent-protocol@0.1.0-beta.7
+
 ## 0.1.0-beta.5
 
 ### Patch Changes
