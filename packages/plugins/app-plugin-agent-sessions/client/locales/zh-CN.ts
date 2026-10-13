@@ -153,6 +153,13 @@ const zhCN: AgentSessionsResource = {
   },
   choices: { more: '更多选项' },
   transcript: {
+    image: {
+      open: '打开图片预览',
+      preview: '图片预览',
+      zoomIn: '放大',
+      zoomOut: '缩小',
+      fit: '适应屏幕',
+    },
     thought: '思考',
     plan: '计划 {{done}}/{{total}}',
     prompt: {

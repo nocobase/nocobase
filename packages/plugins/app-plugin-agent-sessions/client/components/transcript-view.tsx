@@ -29,6 +29,7 @@ import { Fragment, useState, type ReactElement } from 'react';
 import { Link } from 'react-router';
 
 import { MarkdownView } from './markdown-view.js';
+import { ConversationImage } from './conversation-image.js';
 import { Button } from './ui/button.js';
 import { Checkbox } from './ui/checkbox.js';
 import {
@@ -122,15 +123,13 @@ function Item({
           {item.images.length > 0 && (
             <div className='flex flex-wrap justify-end gap-2'>
               {item.images.map((image) => (
-                <img
+                <ConversationImage
                   key={image.id}
                   src={
                     image.file
                       ? resolveAppUrl(imagePath(session.id, image.file))
                       : `data:${image.mimeType};base64,${image.data}`
                   }
-                  alt=''
-                  className='max-h-40 rounded-lg border'
                 />
               ))}
             </div>
