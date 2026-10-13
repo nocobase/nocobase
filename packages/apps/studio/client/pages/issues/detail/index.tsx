@@ -183,7 +183,7 @@ function IssuePage({
         <IssueConversation detail={detail} detailKey={detailKey}>
           {/* Pinned while the page scrolls; a phone starts with the title row alone. */}
           <div
-            className='sticky top-0 z-20 max-h-[60vh] overflow-y-auto rounded-lg border bg-card/95 px-4 py-3 text-card-foreground backdrop-blur-md md:px-6'
+            className='sticky top-0 z-20 rounded-lg border bg-card/95 px-4 py-3 text-card-foreground backdrop-blur-md md:px-6'
             data-testid='issue-summary-pin'
           >
             <IssueSummary
