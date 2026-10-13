@@ -199,6 +199,7 @@ function Conversation({
   const headerChangeRef = useRef<{ height: number; scrollTop: number } | null>(
     null,
   );
+  const compensatedResizeRef = useRef<number | null>(null);
   const pendingShrinkRef = useRef<number | null>(null);
   const touchYRef = useRef<number | null>(null);
   const changeHeader = (next: boolean): void => {
@@ -229,6 +230,9 @@ function Conversation({
       setCollapsed(false);
       return;
     }
+    // The container resize caused by this header change already preserves the reading position.
+    if (height !== before.height)
+      compensatedResizeRef.current = scroller.clientHeight;
     scroller.scrollTop = target;
     headerChangeRef.current = null;
     if (collapsed) pendingShrinkRef.current = null;
@@ -241,6 +245,9 @@ function Conversation({
     const element = scrollerRef.current;
     if (!element) return;
     const observer = new ResizeObserver(() => {
+      const compensatedHeight = compensatedResizeRef.current;
+      compensatedResizeRef.current = null;
+      if (element.clientHeight === compensatedHeight) return;
       if (pinnedRef.current) element.scrollTop = element.scrollHeight;
     });
     observer.observe(element);

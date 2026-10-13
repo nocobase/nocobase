@@ -4,7 +4,13 @@ import {
   type ApiCall,
 } from '@nocobase/app-testing/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SessionView } from '../../client/components/session-view.js';
@@ -50,7 +56,14 @@ function link(
   };
 }
 
+let resizeCallbacks: Map<Element, () => void>;
+
+function resize(element: Element): void {
+  act(() => resizeCallbacks.get(element)?.());
+}
+
 beforeEach(() => {
+  resizeCallbacks = new Map();
   vi.stubGlobal(
     'matchMedia',
     vi.fn((query: string) => ({
@@ -63,8 +76,14 @@ beforeEach(() => {
   vi.stubGlobal(
     'ResizeObserver',
     class {
-      observe() {}
-      disconnect() {}
+      constructor(private readonly callback: () => void) {}
+      observe(element: Element) {
+        resizeCallbacks.set(element, this.callback);
+      }
+      disconnect() {
+        for (const [element, callback] of resizeCallbacks)
+          if (callback === this.callback) resizeCallbacks.delete(element);
+      }
     },
   );
 });
@@ -101,6 +120,8 @@ async function setup(links: readonly SessionLink[] = []) {
 /** Models normal overflow scrolling: both writes and reflow clamp scrollTop to the current range. */
 function scrollGeometry() {
   let summaryHeight = 0;
+  let contentHeight = 1000;
+  let viewportHeight = 640;
   const height = (): number => {
     const title = screen.queryByRole('heading', { name: session.title });
     return (title?.classList.contains('truncate') ? 80 : 140) + summaryHeight;
@@ -111,6 +132,12 @@ function scrollGeometry() {
     },
   );
   return {
+    growMessages: () => {
+      contentHeight += 100;
+    },
+    shrinkViewport: () => {
+      viewportHeight -= 100;
+    },
     wrapSummary: () => {
       summaryHeight = 24;
     },
@@ -126,8 +153,11 @@ function scrollGeometry() {
           Math.min(value, element.scrollHeight - element.clientHeight),
         );
       Object.defineProperties(element, {
-        scrollHeight: { configurable: true, get: () => 1000 },
-        clientHeight: { configurable: true, get: () => 640 - height() },
+        scrollHeight: { configurable: true, get: () => contentHeight },
+        clientHeight: {
+          configurable: true,
+          get: () => viewportHeight - height(),
+        },
         scrollTop: {
           configurable: true,
           get: () => {
@@ -150,6 +180,50 @@ function scrollGeometry() {
 }
 
 describe('session mobile layout', () => {
+  it.each([0, 1, 50, 79, 150])(
+    'keeps the reading position after the header resize observer at %spx from the bottom, then follows message updates normally',
+    async (distance) => {
+      const geometry = scrollGeometry();
+      const { client } = await setup();
+      const { element, readingPosition } = geometry.attach();
+      // Deliver the initial observation before the user's scroll, as in a browser.
+      resize(element);
+      element.scrollTop = 500 - distance;
+      fireEvent.scroll(element);
+      const before = readingPosition();
+      fireEvent.wheel(element, { deltaY: 10 });
+      fireEvent.scroll(element);
+      resize(element);
+      expect(readingPosition()).toBe(before);
+      expect(element.scrollTop).toBe(440 - distance);
+
+      geometry.growMessages();
+      act(() =>
+        client.setQueryData(
+          ['agentSessions', 'transcript', 'session'],
+          [
+            {
+              kind: 'prompt',
+              promptId: 'new-message',
+              seq: 1,
+              at: session.createdAt,
+              content: [
+                { type: 'text', text: 'A new message after the title changed' },
+              ],
+            },
+          ],
+        ),
+      );
+      await waitFor(() =>
+        expect(element.scrollTop).toBe(distance < 80 ? 540 : 290),
+      );
+      // A later viewport resize must still follow the existing near-bottom rule.
+      geometry.shrinkViewport();
+      resize(element);
+      expect(element.scrollTop).toBe(distance < 80 ? 640 : 290);
+    },
+  );
+
   it('defers a short slow swipe near the message top until a two-line title can be compensated', async () => {
     const geometry = scrollGeometry();
     await setup();
@@ -172,6 +246,7 @@ describe('session mobile layout', () => {
     const atThreshold = readingPosition();
     fireEvent.scroll(element);
     expect(element.scrollTop).toBe(0);
+    resize(element);
     expect(readingPosition()).toBe(atThreshold);
     expect(writes.every((value) => value >= 0)).toBe(true);
     expect(
@@ -189,12 +264,14 @@ describe('session mobile layout', () => {
       const before = readingPosition();
       fireEvent.wheel(element, { deltaY: 10 });
       expect(element.scrollTop).toBe(scrollTop - 60);
+      resize(element);
       expect(readingPosition()).toBe(before);
       // Expanding at the top is compensated too, without moving the message.
       element.scrollTop = 0;
       const atTop = readingPosition();
       fireEvent.wheel(element, { deltaY: -10 });
       expect(element.scrollTop).toBe(60);
+      resize(element);
       expect(readingPosition()).toBe(atTop);
     },
   );
@@ -216,6 +293,7 @@ describe('session mobile layout', () => {
     const before = readingPosition();
     fireEvent.wheel(element, { deltaY: 10 });
     expect(element.scrollTop).toBe(60);
+    resize(element);
     expect(readingPosition()).toBe(before);
   });
   it('fits a mobile keyboard viewport and restores the shell height on close', async () => {
