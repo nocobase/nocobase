@@ -129,6 +129,8 @@ export function OwnedList({
           {rows.map((issue) => (
             <OwnedRow
               key={issue.id}
+              // With one status chosen, its pill would only repeat the chip on a phone.
+              statusShown={filter.length !== 1}
               issue={issue}
               selected={issue.id === selectedId}
               followed={following.has(issue.id)}
@@ -149,6 +151,7 @@ export function OwnedList({
 }
 
 function OwnedRow({
+  statusShown,
   issue,
   selected,
   followed,
@@ -156,6 +159,7 @@ function OwnedRow({
   onSelect,
   onToggleFollow,
 }: {
+  readonly statusShown: boolean;
   readonly issue: FollowUpIssue;
   readonly selected: boolean;
   readonly followed: boolean;
@@ -188,7 +192,9 @@ function OwnedRow({
           <span className='font-mono text-xs text-muted-foreground'>
             {issue.identifier}
           </span>
-          <StatusPill statusKey={issue.statusKey} />
+          <span className={cn(!statusShown && 'max-md:hidden')}>
+            <StatusPill statusKey={issue.statusKey} />
+          </span>
           <time
             dateTime={issue.lastActivityAt}
             className='ml-auto shrink-0 text-xs text-muted-foreground'

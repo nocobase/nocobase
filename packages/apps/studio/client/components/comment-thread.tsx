@@ -305,7 +305,7 @@ export function TimelineActivity({
   readonly children: ReactNode;
 }): ReactElement {
   return (
-    <div className='flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-sm text-muted-foreground'>
+    <div className='flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-sm text-muted-foreground max-md:py-2'>
       {icon ?? (
         <span
           className='size-1.5 shrink-0 rounded-full bg-muted-foreground/50'
@@ -396,7 +396,8 @@ function TimelineEntries({
   const [anchor, setAnchor] = useState<HTMLDivElement | null>(null);
   if (entries.length <= VIRTUALIZE_AFTER)
     return (
-      <ul className='space-y-3' aria-label={label}>
+      // On a phone the entries are full-width rows with hairlines between them.
+      <ul className='space-y-3 max-md:space-y-0' aria-label={label}>
         {entries.map((entry) => (
           <li key={entry.key}>{renderEntry(entry)}</li>
         ))}
@@ -575,7 +576,7 @@ export function ThreadCard({
   if (resolved && !expanded)
     return (
       <article
-        className='flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground'
+        className='flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground max-md:-mx-4 max-md:rounded-none max-md:border-x-0 max-md:px-4'
         data-testid='thread-resolved'
       >
         <Button
@@ -603,7 +604,7 @@ export function ThreadCard({
     );
 
   return (
-    <article className='rounded-lg border bg-card text-card-foreground'>
+    <article className='rounded-lg border bg-card text-card-foreground max-md:-mx-4 max-md:rounded-none max-md:border-x-0 max-md:bg-transparent max-md:[li+li>&]:border-t-0'>
       {resolved ? (
         <div className='flex items-center gap-2 border-b bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground'>
           <Button
@@ -682,7 +683,7 @@ function CommentBlock({
     <div
       data-comment-id={comment.id}
       className={cn(
-        'group space-y-1.5 p-3 max-md:space-y-1 max-md:px-2.5 max-md:py-2',
+        'group space-y-1.5 p-3 max-md:space-y-1 max-md:px-4 max-md:py-2.5',
         nested && 'pl-9',
         context.replyingToId === comment.id && 'bg-accent/50',
         context.targetId === comment.id && 'ring-2 ring-primary/40 ring-inset',
