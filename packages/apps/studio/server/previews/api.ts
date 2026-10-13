@@ -96,7 +96,7 @@ export function createPreviewApi(deps: {
   readonly previews: () => PreviewService;
   readonly syncPreviewLabels: (issueId: string) => Promise<void>;
   readonly issues: IssueAccess;
-  readonly projects: () => Pick<Projects, 'issueQueries'>;
+  readonly projects: () => Pick<Projects, 'projects'>;
   readonly releases: () => Releases;
   /** A release management App's name, for the linked App a preview previews. */
   readonly appName: (appId: string) => Promise<string | null>;
@@ -221,7 +221,7 @@ export function createPreviewApi(deps: {
   ): Promise<void> {
     if (viewer.permissions.scopes['pm.issues/view'] === 'none')
       throw forbidden('Viewing issues is required.');
-    await deps.projects().issueQueries.statuses(viewer, projectId);
+    await deps.projects().projects.get(viewer, projectId);
   }
 
   async function canApp(

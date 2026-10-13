@@ -13,6 +13,7 @@ import {
   type BridgeHarness,
 } from '../agents/bridge-harness.js';
 import { API, bindingOf, tokenConnection } from '../git/helpers.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 
 let h: BridgeHarness;
 let projectId: string;
@@ -358,9 +359,13 @@ it('never exposes unlinked previews to a run even when its owner is an administr
   const agentId = await h.createAgent({
     actions: ['pm.projects/view', 'pm.issues/view', 'studio.previews/manage'],
   });
-  await h.projects.issues.create(h.viewer('alice'), {
+  const issue = await h.projects.issues.create(h.viewer('alice'), {
     title: 'Agent task',
-    executor: { type: 'agent', id: agentId },
+    statusKey: 'in_progress',
+    start: false,
+  });
+  await h.projects.comments.create(h.viewer('alice'), issue.id, {
+    content: `[@Worker](mention://agent/${agentId}) check unlinked previews`,
   });
   const payload = await h.claimOne();
   const runToken = payload.cli.credential.content.token as string;
@@ -377,6 +382,36 @@ it('never exposes unlinked previews to a run even when its owner is an administr
       )
     ).status,
   ).toBe(403);
+});
+
+it('uses the claimed manager-delegated owner identity for linked project previews after permission revocation', async () => {
+  h.roles.set('bob', 'admin');
+  const worker = await h.createAgent({ name: 'Preview identity worker' });
+  const issue = await h.projects.issues.create(h.viewer('alice'), {
+    title: 'Owner preview access',
+    projectId,
+    statusKey: 'in_progress',
+    start: false,
+  });
+  await link(issue.id);
+  await h.projects.comments.create(
+    { ...h.viewer('bob'), actor: { type: 'agent', id: PROJECT_MANAGER_ID } },
+    issue.id,
+    { content: `[@Worker](mention://agent/${worker}) check preview access` },
+  );
+  const payload = await h.claimOne();
+  expect((await h.agents.runs.get(payload.run.id)).actorUserId).toBe('alice');
+  const runToken = payload.cli.credential.content.token as string;
+  const request = () =>
+    h.request('GET', `/previews?projectId=${projectId}`, { runToken });
+  expect((await request()).body.data).toEqual([
+    expect.objectContaining({ issueId: issue.id }),
+  ]);
+  h.roles.set('alice', 'none');
+  expect((await request()).status).toBe(403);
+  expect((await list('bob')).body.data).toEqual([
+    expect.objectContaining({ issueId: issue.id }),
+  ]);
 });
 
 it('returns linked and unlinked previews together and computes view-only App capability', async () => {

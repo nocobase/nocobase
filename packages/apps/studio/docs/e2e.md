@@ -55,6 +55,8 @@ Import `test` and `expect` from `e2e/support/fixtures.ts`. Its `page` is already
 
 ## Screenshots
 
+`pnpm test:e2e project-previews-live` verifies project preview cleanup against an isolated built Studio, persisted local repository/PR records and a real deployed in-process preview App. It does not intercept API responses or contact GitHub. English screenshots in `output/screenshots/pm5-live/` cover the unlinked group and preview entry, 375 px layout, destroy menu, confirmation, the empty state with the active Releases tab retained, and the hidden entry after leaving. The fixture uses synthetic demo accounts and removes its server when the test finishes. `project-previews.test.ts` separately exercises the UI with intercepted responses and is not evidence of server behavior.
+
 `pnpm test:screenshots` runs `e2e/screenshots/screenshots.test.ts` against a server of its own and saves the key pages, as the initial administrator, in four combinations: zh-CN and en-US, each light and dark. They go to `output/screenshots/<locale>-<mode>/<page>.png` (gitignored), with `<page>.phone.png` for the pages also taken at 390 px. `NB_STUDIO_SCREENSHOT_PAGES=inbox,issue` takes a subset, `NB_STUDIO_SCREENSHOT_THEMES=en-US-dark` a subset of the combinations, and `NB_STUDIO_SCREENSHOT_DIR` another directory. They are for looking at, not compared against a baseline.
 
 ## In CI

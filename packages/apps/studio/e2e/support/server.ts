@@ -275,9 +275,10 @@ async function startLlm(
 }
 
 export async function startStudio(
-  options: { isolated?: boolean } = {},
+  options: { isolated?: boolean; entry?: string } = {},
 ): Promise<ServerState> {
-  const entry = path.join(STUDIO_ROOT, 'dist/server/standalone.js');
+  const entry =
+    options.entry ?? path.join(STUDIO_ROOT, 'dist/server/standalone.js');
   if (!existsSync(entry))
     throw new Error(
       'dist/server/standalone.js is missing: run `pnpm build` before the browser tests.',
@@ -289,22 +290,26 @@ export async function startStudio(
   const configFile = path.join(directory, 'config.yml');
   writeFileSync(configFile, configYaml({ origin, port, directory }));
   const log = openSync(path.join(directory, 'server.log'), 'a');
-  const child = spawn(process.execPath, [entry], {
-    cwd: path.join(STUDIO_ROOT, 'dist'),
-    env: {
-      ...process.env,
-      NODE_ENV: 'production',
-      APP_CONFIG_FILE: configFile,
-      APP_STORAGE_DIR: path.join(directory, 'storage'),
-      APP_BASE_PATH: '/main',
-      APP_SERVER_PORT: String(port),
-      APP_SERVER_HOST: '127.0.0.1',
-      APP_PUBLIC_ORIGIN: origin,
+  const child = spawn(
+    process.execPath,
+    [...(options.entry ? ['--experimental-import-meta-resolve'] : []), entry],
+    {
+      cwd: path.join(STUDIO_ROOT, 'dist'),
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        APP_CONFIG_FILE: configFile,
+        APP_STORAGE_DIR: path.join(directory, 'storage'),
+        APP_BASE_PATH: '/main',
+        APP_SERVER_PORT: String(port),
+        APP_SERVER_HOST: '127.0.0.1',
+        APP_PUBLIC_ORIGIN: origin,
+      },
+      // Its own process group, so teardown stops it and everything it started, and nothing else.
+      detached: true,
+      stdio: ['ignore', log, log],
     },
-    // Its own process group, so teardown stops it and everything it started, and nothing else.
-    detached: true,
-    stdio: ['ignore', log, log],
-  });
+  );
   child.unref();
   if (!child.pid) throw new Error('The Studio e2e server did not start.');
   const baseURL = `${origin}/main`;
