@@ -459,7 +459,7 @@ const zhCN: AppResource = {
   },
   navigation: {
     inbox: '收件箱',
-    myIssues: '我的任务',
+    myIssues: '我的任务-α',
     followUps: '我的跟进',
     development: '开发',
     issues: '任务',
@@ -1266,6 +1266,13 @@ const zhCN: AppResource = {
   preferences: preferencesZhCN,
   knowledge: knowledgeZhCN,
   issuesPage: issuesZhCN,
+  personalTasks: {
+    draftUnavailable:
+      '此任务已不可访问。未发送草稿仍保留在当前会话中，暂时无法发送。',
+    loading: '正在读取关注任务…',
+    sections: '个人任务分区',
+    returnDraft: '返回未发送草稿 · {{key}}',
+  },
   followUps: followUpsZhCN,
   issueLive: issueLiveZhCN,
   projectPage: projectPageZhCN,

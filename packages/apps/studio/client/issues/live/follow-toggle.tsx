@@ -4,6 +4,7 @@
  * the allowed issues are followed; once that many are, an unfollowed issue's star is held, with the reason as its hint.
  */
 import { useTranslation } from '@nocobase/i18n/client';
+import { useIsMutating } from '@tanstack/react-query';
 import { StarIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
@@ -40,7 +41,8 @@ export function FollowToggle({
   const following = overview.data?.following ?? [];
   const { followed, full } = followState(following, issueId);
   const loading = !overview.data;
-  const held = full || loading;
+  const saving = useIsMutating({ mutationKey: ['studio', 'followIssue'] }) > 0;
+  const held = full || loading || saving;
   return (
     <Button
       size='sm'
@@ -51,19 +53,27 @@ export function FollowToggle({
         'aria-disabled:cursor-not-allowed aria-disabled:opacity-60',
         className,
       )}
+      aria-busy={saving || undefined}
       title={
-        full
-          ? t('issueLive.follow.fullHint', { max: FOLLOW_UPS_MAX })
-          : followed
-            ? t('issueLive.follow.unfollow')
-            : undefined
+        saving
+          ? t('issueLive.follow.saving')
+          : loading
+            ? t(
+                overview.isError
+                  ? 'followUps.loadFailed'
+                  : 'personalTasks.loading',
+              )
+            : full
+              ? t('issueLive.follow.fullHint', { max: FOLLOW_UPS_MAX })
+              : followed
+                ? t('issueLive.follow.unfollow')
+                : undefined
       }
       data-testid='follow-toggle'
-      onClick={
-        held
-          ? undefined
-          : () => followIssue.mutate({ issueId, follow: !followed })
-      }
+      onClick={(event) => {
+        event.stopPropagation();
+        if (!held) followIssue.mutate({ issueId, follow: !followed });
+      }}
     >
       <StarIcon
         data-icon='inline-start'

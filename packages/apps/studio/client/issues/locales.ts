@@ -23,7 +23,7 @@ export const issuesEnUS = {
   title: 'Issues',
   description:
     'Every issue you may see. Agents take the ones they execute; the Agent view shows their queue.',
-  myTitle: 'My issues',
+  myTitle: 'My tasks-α',
   myDescription: 'The issues you own or execute.',
   myTabsLabel: 'My issues',
   myTabs: { owned: 'I own', executing: 'I execute' },
@@ -206,7 +206,7 @@ export const issuesZhCN: IssuesWording = {
   title: '任务',
   description:
     '你有权查看的全部任务。Agent 会领取由它执行的任务，Agent 视图展示它们的队列。',
-  myTitle: '我的任务',
+  myTitle: '我的任务-α',
   myDescription: '你负责或执行的任务。',
   myTabsLabel: '我的任务',
   myTabs: { owned: '我负责的', executing: '我执行的' },

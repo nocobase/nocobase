@@ -28,6 +28,8 @@ import {
 
 import type { RichTextHandle } from '@/components/rich-text-editor';
 
+import { useIssueDraft, useDraftField } from '../../follow-ups/draft-state.js';
+
 import { issueMentionCandidates } from '../detail/mention-candidates.js';
 import { ConversationContext } from './conversation-state.js';
 
@@ -48,13 +50,30 @@ export function IssueConversation({
   const [memberSearchFailed, setMemberSearchFailed] = useState(false);
   const [mentionSearchRevision, setMentionSearchRevision] = useState(0);
   const editorRef = useRef<RichTextHandle>(null);
-  const [replyTo, setReplyTo] = useState<IssueComment | null>(null);
-  const [composerOpen, setComposerOpen] = useState(false);
+  const draft = useIssueDraft(detail.id);
+  const [replyTo, setReplyTarget] = useDraftField<IssueComment | null>(
+    draft,
+    'replyTo',
+    null,
+  );
+  const setReplyTo = useCallback(
+    (comment: IssueComment | null): void => {
+      // A reply selected while sending must not be silently cleared by the pending submission.
+      if (comment && draft?.read('pending', false)) return;
+      setReplyTarget(comment);
+    },
+    [draft, setReplyTarget],
+  );
+  const [composerOpen, setComposerOpen] = useDraftField(
+    draft,
+    'composerOpen',
+    false,
+  );
   const openComposer = useCallback(() => {
     setComposerOpen(true);
     // The editor mounts with the open composer.
     requestAnimationFrame(() => editorRef.current?.focus());
-  }, []);
+  }, [setComposerOpen]);
   const project = useQuery({
     queryKey: pmKeys.project(detail.projectId ?? ''),
     queryFn: () => {
@@ -102,6 +121,7 @@ export function IssueConversation({
   const mayComment = canComment(viewer);
   const value = useMemo(
     () => ({
+      draft,
       detail,
       detailKey,
       actions,
@@ -119,11 +139,14 @@ export function IssueConversation({
       openComposer,
     }),
     [
+      draft,
       detail,
       detailKey,
       actions,
       mayComment,
       replyTo,
+      setReplyTo,
+      setComposerOpen,
       searchMentions,
       mentionSearchRevision,
       memberSearchFailed,

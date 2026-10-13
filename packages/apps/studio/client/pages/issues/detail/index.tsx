@@ -44,7 +44,7 @@ import {
   type ReactNode,
 } from 'react';
 import { ArrowLeftIcon } from 'lucide-react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useLocation } from 'react-router';
 
 import { RouteChildPage } from '@/components/route-child-page';
 import { Button } from '@/components/ui/button';
@@ -114,11 +114,13 @@ export default function IssueDetailPage(): ReactElement {
 function IssueLoader({ issueId }: { readonly issueId: string }): ReactElement {
   const { t } = useIssuePageWording();
   const parent = useIssueParent();
+  const { hash } = useLocation();
   const detail = useIssueDetail(issueId);
-  if (detail.isError && !detail.data) {
-    const missing =
-      detail.error instanceof ApiClientError &&
-      [403, 404].includes(detail.error.status);
+  const missing =
+    detail.error instanceof ApiClientError &&
+    [403, 404].includes(detail.error.status);
+  // Scoped workspace detail links must also hide cached content after access is revoked.
+  if (detail.isError && (!detail.data || missing)) {
     return (
       <div className='p-6 md:p-8'>
         <PmLoadError
@@ -133,7 +135,11 @@ function IssueLoader({ issueId }: { readonly issueId: string }): ReactElement {
                     nativeButton={false}
                     render={
                       <Link
-                        to={{ pathname: parent.path, search: parent.search }}
+                        to={{
+                          pathname: parent.path,
+                          search: parent.search,
+                          hash,
+                        }}
                       />
                     }
                   >
@@ -160,6 +166,7 @@ function IssuePage({
   const { t } = useTranslation();
   const wording = useIssuePageWording();
   const parent = useIssueParent();
+  const { hash } = useLocation();
   const detailKey = useMemo(() => pmKeys.issue(issueId), [issueId]);
   const update = useIssueUpdate(detail, detailKey);
   const pageActions = useIssuePageActions(detail);
@@ -217,7 +224,9 @@ function IssuePage({
               variant='ghost'
               nativeButton={false}
               render={
-                <Link to={{ pathname: parent.path, search: parent.search }} />
+                <Link
+                  to={{ pathname: parent.path, search: parent.search, hash }}
+                />
               }
             >
               <ArrowLeftIcon data-icon='inline-start' />
