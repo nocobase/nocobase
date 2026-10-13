@@ -547,3 +547,88 @@ test('shows initial loading and retains a coherent table after refresh failure',
     fullPage: true,
   });
 });
+
+test('retains genuine empty content during polling failure and recovers with Retry', async ({
+  page,
+  api,
+}) => {
+  mkdirSync(directory, { recursive: true });
+  await api.patch('users/me/preferences', {
+    locale: 'en-US',
+    'theme.mode': 'light',
+    'theme.preset': 'compact',
+  });
+  await open(page, '/my-issues/executing?view=list');
+  await expect(
+    page
+      .getByRole('table')
+      .or(page.getByText('You execute no issues', { exact: true })),
+  ).toBeVisible();
+  // These are synthetic fixture assignments; teardown removes the entire database.
+  for (const identifier of await page
+    .getByRole('table')
+    .getByRole('link')
+    .allTextContents()) {
+    const task = await api.get<Task>(`projects/issues/${identifier}`);
+    await api.patch(`projects/issues/${task.id}`, {
+      revision: task.revision,
+      executor: null,
+    });
+  }
+  await expect(
+    page.getByText('You execute no issues', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('table')).toHaveCount(0);
+  // An unfiltered cached empty result still reports a failed polling refresh.
+  let releaseEmptyRefresh = () => {};
+  const emptyRefreshGate = new Promise<void>((resolve) => {
+    releaseEmptyRefresh = resolve;
+  });
+  await page.route('**/api/taskTrees*', async (route) => {
+    await emptyRefreshGate;
+    await route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        error: {
+          status: 'INTERNAL',
+          reason: 'TEST_FAILURE',
+          message: 'Test failure',
+        },
+      }),
+    });
+  });
+  await expect(
+    page.getByText('Refreshing tasks…', { exact: true }),
+  ).toBeVisible({ timeout: 20_000 });
+  await expect(
+    page.getByText('You execute no issues', { exact: true }),
+  ).toBeVisible();
+  releaseEmptyRefresh();
+  const refreshError = page.getByText(
+    'Could not refresh tasks. Showing the last complete result.',
+    { exact: true },
+  );
+  await expect(refreshError).toBeVisible();
+  await expect(
+    page.getByText('You execute no issues', { exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: path.join(directory, 'my-tasks-empty-refresh-error.png'),
+    fullPage: true,
+  });
+  await page.unroute('**/api/taskTrees*');
+  await page.getByRole('button', { name: 'Retry', exact: true }).click();
+  await expect(refreshError).toHaveCount(0);
+  await expect(
+    page.getByText('Refreshing tasks…', { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText('You execute no issues', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('table')).toHaveCount(0);
+  await page.screenshot({
+    path: path.join(directory, 'my-tasks-empty-refresh-recovered.png'),
+    fullPage: true,
+  });
+});

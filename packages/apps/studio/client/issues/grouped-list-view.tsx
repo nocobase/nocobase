@@ -287,15 +287,6 @@ export function GroupedIssueListView({
     (sum, group) => sum + group.totals.tasks,
     0,
   );
-  if (total === 0 && !page.filtered)
-    return (
-      <PmEmpty
-        icon={<ListTodoIcon />}
-        title={empty.title}
-        description={empty.description}
-        action={empty.action}
-      />
-    );
   const entries: NonNullable<IssueTableProps['entries']>[number][] = [];
   const depths = new Map<string, number>();
   function add(row: TaskTreeRow, depth: number) {
@@ -475,130 +466,139 @@ export function GroupedIssueListView({
           {t('issuesPage.tree.refreshing')}
         </span>
       ) : null}
-      <div className='min-h-0 flex-1 overflow-auto overscroll-y-contain rounded-lg'>
-        <IssueTable
-          rows={entries.filter((entry) => 'id' in entry)}
-          entries={entries}
-          labels={
-            t('issuesPage.table', {
-              returnObjects: true,
-            }) as unknown as IssueTableLabels
-          }
-          locale={i18n.language}
-          {...(sortColumn
-            ? {
-                sort: {
-                  column: sortColumn,
-                  direction: page.filters.direction ?? 'desc',
-                },
-              }
-            : {})}
-          onSortChange={(sort) =>
-            page.updateParams((current) =>
-              withIssueSort(current, SORTS[sort.column], sort.direction),
-            )
-          }
-          rowHref={(row) => issueHref(row.id)}
-          onRowClick={(row) => onOpen(row.id)}
-          rowLeading={(row) => {
-            const node = metadata.get(row.id)!;
-            const open = expanded.has(row.id);
-            const label = t(
-              open
-                ? 'issuesPage.tree.collapseTask'
-                : 'issuesPage.tree.expandTask',
-              { identifier: row.identifier },
-            );
-            return (
-              <span
-                data-task-id={row.id}
-                className='inline-flex shrink-0'
-                style={{
-                  paddingInlineStart: `calc(var(--spacing) * ${4 * (depths.get(row.id) ?? 0)})`,
-                }}
-              >
-                {node.hasChildren ? (
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Button
-                          id={`task-toggle-${row.id}`}
-                          variant='ghost'
-                          size='icon-sm'
-                          aria-expanded={open}
-                          aria-label={label}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setExpanded((current) => {
-                              const next = new Set(current);
-                              if (open) next.delete(row.id);
-                              else next.add(row.id);
-                              return next;
-                            });
-                          }}
-                        />
-                      }
-                    >
-                      {open ? <ChevronDownIcon /> : <ChevronRightIcon />}
-                    </TooltipTrigger>
-                    <TooltipContent>{label}</TooltipContent>
-                  </Tooltip>
-                ) : (
-                  <span className='size-8' />
-                )}
-              </span>
-            );
-          }}
-          rowDescription={(row) => {
-            const node = metadata.get(row.id)!;
-            return (
-              <div className='flex flex-wrap items-center gap-2 whitespace-normal break-words text-xs text-muted-foreground'>
-                {!node.matchesFilter ? (
-                  <Badge variant='outline'>
-                    {t('issuesPage.tree.context')}
-                  </Badge>
-                ) : null}
-                {node.explanation ? (
-                  <span>
-                    {t('issuesPage.tree.explanation', {
-                      identifier: node.explanation.identifier,
-                      reason: t(
-                        `issuesPage.tree.reasons.${node.explanation.reason}`,
-                      ),
-                    })}
-                  </span>
-                ) : null}
-                {node.attention.waitingForViewer ? (
-                  <span>{t('issuesPage.tree.waitingForYou')}</span>
-                ) : node.attention.needsHumanAction ? (
-                  <span>{t('issuesPage.tree.needsAction')}</span>
-                ) : null}
-                {node.progress.total > 0 ? (
-                  <span title={t('issuesPage.tree.progressScope')}>
-                    {t('issuesPage.tree.progress', node.progress)}
-                  </span>
-                ) : null}
-              </div>
-            );
-          }}
-          rowMarks={(row) => {
-            const node = metadata.get(row.id);
-            return node ? (
-              <IssueMarks
-                issue={node.issue}
-                placement='row'
-                className='flex-nowrap'
-                {...(work.has(row.id)
-                  ? {
-                      workingAgentName:
-                        node.issue.executorName ?? work.get(row.id)!,
-                    }
-                  : {})}
-              />
-            ) : null;
-          }}
+      {total === 0 && !page.filtered ? (
+        <PmEmpty
+          icon={<ListTodoIcon />}
+          title={empty.title}
+          description={empty.description}
+          action={empty.action}
         />
-      </div>
+      ) : (
+        <div className='min-h-0 flex-1 overflow-auto overscroll-y-contain rounded-lg'>
+          <IssueTable
+            rows={entries.filter((entry) => 'id' in entry)}
+            entries={entries}
+            labels={
+              t('issuesPage.table', {
+                returnObjects: true,
+              }) as unknown as IssueTableLabels
+            }
+            locale={i18n.language}
+            {...(sortColumn
+              ? {
+                  sort: {
+                    column: sortColumn,
+                    direction: page.filters.direction ?? 'desc',
+                  },
+                }
+              : {})}
+            onSortChange={(sort) =>
+              page.updateParams((current) =>
+                withIssueSort(current, SORTS[sort.column], sort.direction),
+              )
+            }
+            rowHref={(row) => issueHref(row.id)}
+            onRowClick={(row) => onOpen(row.id)}
+            rowLeading={(row) => {
+              const node = metadata.get(row.id)!;
+              const open = expanded.has(row.id);
+              const label = t(
+                open
+                  ? 'issuesPage.tree.collapseTask'
+                  : 'issuesPage.tree.expandTask',
+                { identifier: row.identifier },
+              );
+              return (
+                <span
+                  data-task-id={row.id}
+                  className='inline-flex shrink-0'
+                  style={{
+                    paddingInlineStart: `calc(var(--spacing) * ${4 * (depths.get(row.id) ?? 0)})`,
+                  }}
+                >
+                  {node.hasChildren ? (
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button
+                            id={`task-toggle-${row.id}`}
+                            variant='ghost'
+                            size='icon-sm'
+                            aria-expanded={open}
+                            aria-label={label}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setExpanded((current) => {
+                                const next = new Set(current);
+                                if (open) next.delete(row.id);
+                                else next.add(row.id);
+                                return next;
+                              });
+                            }}
+                          />
+                        }
+                      >
+                        {open ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                      </TooltipTrigger>
+                      <TooltipContent>{label}</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <span className='size-8' />
+                  )}
+                </span>
+              );
+            }}
+            rowDescription={(row) => {
+              const node = metadata.get(row.id)!;
+              return (
+                <div className='flex flex-wrap items-center gap-2 whitespace-normal break-words text-xs text-muted-foreground'>
+                  {!node.matchesFilter ? (
+                    <Badge variant='outline'>
+                      {t('issuesPage.tree.context')}
+                    </Badge>
+                  ) : null}
+                  {node.explanation ? (
+                    <span>
+                      {t('issuesPage.tree.explanation', {
+                        identifier: node.explanation.identifier,
+                        reason: t(
+                          `issuesPage.tree.reasons.${node.explanation.reason}`,
+                        ),
+                      })}
+                    </span>
+                  ) : null}
+                  {node.attention.waitingForViewer ? (
+                    <span>{t('issuesPage.tree.waitingForYou')}</span>
+                  ) : node.attention.needsHumanAction ? (
+                    <span>{t('issuesPage.tree.needsAction')}</span>
+                  ) : null}
+                  {node.progress.total > 0 ? (
+                    <span title={t('issuesPage.tree.progressScope')}>
+                      {t('issuesPage.tree.progress', node.progress)}
+                    </span>
+                  ) : null}
+                </div>
+              );
+            }}
+            rowMarks={(row) => {
+              const node = metadata.get(row.id);
+              return node ? (
+                <IssueMarks
+                  issue={node.issue}
+                  placement='row'
+                  className='flex-nowrap'
+                  {...(work.has(row.id)
+                    ? {
+                        workingAgentName:
+                          node.issue.executorName ?? work.get(row.id)!,
+                      }
+                    : {})}
+                />
+              ) : null;
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

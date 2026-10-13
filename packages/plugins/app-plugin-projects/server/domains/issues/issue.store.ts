@@ -134,7 +134,9 @@ export async function hierarchyRecords(
     filter,
     select: (select) => select.fields(...FIELDS),
   });
-  return rows.map((row) => toIssue({ ...row, priorityRank: 0, deletedById: null }));
+  return rows.map((row) =>
+    toIssue({ ...row, priorityRank: 0, deletedById: null }),
+  );
 }
 
 function toRow(
