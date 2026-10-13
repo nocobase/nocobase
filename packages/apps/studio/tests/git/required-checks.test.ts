@@ -228,8 +228,12 @@ describe('required and reference checks', () => {
     const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
     const issue = await h.projects.issues.create(alice(), {
       title: 'Read checks',
-      executor: null,
       statusKey: 'in_progress',
+      start: false,
+    });
+    await h.projects.issues.update(alice(), issue.id, {
+      revision: issue.revision,
+      executor: null,
       start: false,
     });
     await repoWithReference();

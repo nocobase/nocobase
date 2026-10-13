@@ -1224,7 +1224,7 @@ describe('push credentials on demand', () => {
     const app = await appConnection();
     const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
     const linked = await projectWithRepo(app, 'in_progress');
-    await h.projects.issues.update(alice(), linked.issue.id, {
+    linked.issue = await h.projects.issues.update(alice(), linked.issue.id, {
       revision: linked.issue.revision,
       executor: null,
       start: false,
@@ -1268,9 +1268,9 @@ describe('push credentials on demand', () => {
 
   it('lists nothing on demand for a token connection', async () => {
     const connection = await tokenConnection(h);
-    const { issue } = await projectWithRepo(connection, 'in_progress');
-    await h.projects.issues.update(alice(), issue.id, {
-      revision: issue.revision,
+    const { issue: created } = await projectWithRepo(connection, 'in_progress');
+    const issue = await h.projects.issues.update(alice(), created.id, {
+      revision: created.revision,
       executor: null,
       start: false,
     });

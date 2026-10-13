@@ -50,6 +50,7 @@ import {
 } from './catalog/triggers.js';
 import { AGENT_KIND } from './tx.js';
 import { issueExecutionIdentity } from './execution-identity.js';
+import { readOwnerHandoff } from '../issues/owner-handoff.js';
 
 const SUBJECT_NOUN = 'issue';
 
@@ -425,6 +426,11 @@ export function createIssueContextProvider(
         displayName: '',
       }),
     async admit(conn, claim) {
+      if ((await readOwnerHandoff(conn, claim.run.subject.id))?.waiting)
+        return {
+          reason: 'waitingOwner',
+          detail: 'Waiting for the new issue owner to take over.',
+        };
       const context = await projects().issueContext.contextFor(
         conn,
         claim.run.subject.id,
