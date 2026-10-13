@@ -5,6 +5,14 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.24](https://github.com/nocobase/nocobase/compare/v2.2.23...v2.2.24) - 2026-10-13
+
+### 🐛 修复
+
+- **[server]** 修复网关对请求中应用名称的校验与状态隔离。 ([#10548](https://github.com/nocobase/nocobase/pull/10548)) by @2013xile
+
+- **[AI 员工]** AI 对话现在会在 OpenAI 两种 API 模式下传递稳定的会话级提示词缓存键，便于兼容网关保持渠道亲和。 ([#10788](https://github.com/nocobase/nocobase/pull/10788)) by @cgyrock
+
 ## [v2.2.23](https://github.com/nocobase/nocobase/compare/v2.2.22...v2.2.23) - 2026-10-11
 
 ### 🚀 优化
