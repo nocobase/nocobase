@@ -5,6 +5,7 @@ import { workspaceNotes } from '../src/agent/worker.ts';
 describe('workspaceNotes', () => {
   const base = {
     workDir: '/work/PM-1',
+    tmpDir: '/tmp/n-12345678/1234567890abcdef',
     cwd: '/work/PM-1',
     dirs: [],
     cli: 'acme',

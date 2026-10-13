@@ -76,6 +76,7 @@ import {
   type AgentTool,
 } from '../protocol/index.ts';
 import type { Installation } from '../lib/install.ts';
+import { gcRunTemps } from './run-temp.ts';
 import { gcWorkspaces } from './checkout.ts';
 import { prunePnpmStore } from './pnpm-store.ts';
 import {
@@ -581,6 +582,7 @@ export class RunnerDaemon {
             patterns: artifactPatterns(settings),
           },
         });
+        await gcRunTemps(paths, true);
         this.diskPaused = collected.low;
         if (
           collected.removed.length > 0 ||
