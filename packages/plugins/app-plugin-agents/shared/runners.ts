@@ -401,12 +401,16 @@ export function listedTools(runner: Pick<Runner, 'tools'>): AgentTool[] {
  * no work whatever their slots say.
  */
 export type RunnerActivity =
-  'online' | 'busy' | 'offline' | 'revoked' | 'upgrade_required';
+  'online' | 'busy' | 'low_disk' | 'offline' | 'revoked' | 'upgrade_required';
 
 export function runnerActivity(
-  runner: Pick<RunnerSummary, 'status' | 'slots' | 'activeRuns' | 'activeJobs'>,
+  runner: Pick<
+    RunnerSummary,
+    'status' | 'slots' | 'activeRuns' | 'activeJobs' | 'workspaceUsage'
+  >,
 ): RunnerActivity {
   if (runner.status !== 'online') return runner.status;
+  if (runnerLowOnDisk(runner)) return 'low_disk';
   return runner.activeRuns + runner.activeJobs >= runner.slots
     ? 'busy'
     : 'online';

@@ -82,6 +82,7 @@ const runtimesZhCN: RuntimesLocale = {
     activity: {
       online: '在线 {{active}}/{{slots}}',
       busy: '忙碌 {{active}}/{{slots}}',
+      low_disk: '磁盘不足 {{active}}/{{slots}}',
       offline: '离线 · {{time}}',
       offlineNever: '离线',
     },

@@ -67,6 +67,7 @@ const runtimesEnUS = {
     activity: {
       online: 'Online {{active}}/{{slots}}',
       busy: 'Busy {{active}}/{{slots}}',
+      low_disk: 'Low disk space {{active}}/{{slots}}',
       offline: 'Offline · {{time}}',
       offlineNever: 'Offline',
     },

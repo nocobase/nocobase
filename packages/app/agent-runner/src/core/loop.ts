@@ -675,8 +675,11 @@ export class RunnerDaemon {
         this.options.paths.workRoot,
       );
       const paused = lowOnDisk(sampledDisk, minFreeDisk(settings));
+      const newlyPaused = !this.diskPaused && paused;
       if (this.diskPaused && !paused) this.slotFreed?.();
       this.diskPaused = paused;
+      // Reclaim once when heartbeats discover pressure; persistent pressure uses the regular GC interval.
+      if (newlyPaused) void this.collectGarbage();
       const disk =
         sampledDisk === undefined
           ? null
@@ -857,7 +860,12 @@ export class RunnerDaemon {
     const disk = await (this.options.readDisk ?? readDisk)(
       this.options.paths.workRoot,
     );
-    if (this.collecting || this.pruning || this.stopping.signal.aborted)
+    if (
+      this.collecting ||
+      this.pruning ||
+      this.diskPaused ||
+      this.stopping.signal.aborted
+    )
       return 0;
     if (lowOnDisk(disk, minFreeDisk(settings))) {
       await this.collectGarbage();

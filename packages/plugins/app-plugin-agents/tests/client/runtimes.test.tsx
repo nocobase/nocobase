@@ -104,6 +104,9 @@ describe('runtimes page', () => {
       </>,
     );
     await screen.findByText('runtimes.workspaces.previousLow');
+    expect(
+      screen.getByText(/runtimes\.activity\.low_disk/u),
+    ).toBeInTheDocument();
     const sheet = await openSheet();
     expect(
       within(sheet).getByText('runtimes.workspaces.empty'),
@@ -139,6 +142,9 @@ describe('runtimes page', () => {
     );
     expect(
       screen.queryByText('runtimes.workspaces.previousLow'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/runtimes\.activity\.low_disk/u),
     ).not.toBeInTheDocument();
     expect(
       within(sheet).queryByText('runtimes.workspaces.stale'),

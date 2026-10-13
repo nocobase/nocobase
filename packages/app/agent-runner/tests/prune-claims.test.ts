@@ -214,6 +214,57 @@ describe('claiming and pruning the shared store', () => {
     expect(runner['diskPaused']).toBe(false);
   });
 
+  it('collects immediately when a heartbeat first discovers pressure, without collecting again on every heartbeat', async () => {
+    let freeBytes = 10 * 1024 ** 3;
+    const runner = await daemon(
+      async () => true,
+      async () => ({ freeBytes, totalBytes: 100 * 1024 ** 3 }),
+    );
+    const link = runner['links'][0]!;
+    await runner.heartbeat(link);
+    const collect = vi.spyOn(runner, 'collectGarbage');
+    freeBytes = 0;
+    await runner.heartbeat(link);
+    await runner['collecting'];
+    expect(collect).toHaveBeenCalledOnce();
+    expect(runner['diskPaused']).toBe(true);
+    await runner.heartbeat(link);
+    expect(collect).toHaveBeenCalledOnce();
+    freeBytes = 10 * 1024 ** 3;
+    await runner.heartbeat(link);
+    expect(runner['diskPaused']).toBe(false);
+  });
+
+  it('honors a heartbeat pause that arrives while the claim disk probe is still pending', async () => {
+    const probing = Promise.withResolvers<void>();
+    const probe = Promise.withResolvers<{
+      freeBytes: number;
+      totalBytes: number;
+    }>();
+    let first = true;
+    const runner = await daemon(
+      async () => true,
+      async () => {
+        if (first) {
+          first = false;
+          probing.resolve();
+          return probe.promise;
+        }
+        return { freeBytes: 0, totalBytes: 100 * 1024 ** 3 };
+      },
+    );
+    const link = runner['links'][0]!;
+    const run = server.enqueue({ subject: { key: 'probe-pause-race' } });
+    const claim = runner['claimFrom'](link, 1, false);
+    await probing.promise;
+    await runner.heartbeat(link);
+    await runner['collecting'];
+    expect(runner['diskPaused']).toBe(true);
+    probe.resolve({ freeBytes: 10 * 1024 ** 3, totalBytes: 100 * 1024 ** 3 });
+    expect(await claim).toBe(0);
+    expect(run.status).toBe('queued');
+  });
+
   it('reports disk-full worker spawn failures and failed tool output with the dedicated reason', async () => {
     const runner = await daemon(async () => true);
     const link = runner['links'][0]!;
