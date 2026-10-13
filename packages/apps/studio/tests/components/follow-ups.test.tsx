@@ -496,10 +496,18 @@ describe('personal task workspace', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(screen.queryByTestId('panel')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Following' }));
+    screen.getByRole('button', { name: /^C\b/ }).focus();
     fireEvent.click(screen.getByRole('button', { name: /^C\b/ }));
     expect(screen.getByText('Full detail')).toHaveAttribute(
       'href',
       expect.stringContaining('#reply'),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByRole('button', { name: 'Following' })).toHaveFocus();
+    fireEvent.click(screen.getByRole('button', { name: 'My tasks-α' }));
+    expect(screen.getByRole('textbox', { name: 'Search' })).toBeVisible();
+    expect(screen.getByText(/\/my-issues\/owned\?/u)).toHaveTextContent(
+      'tab=mine',
     );
   });
   it('does not stack tasks behind a zero-follow temporary panel or compress the outlet under full details', async () => {

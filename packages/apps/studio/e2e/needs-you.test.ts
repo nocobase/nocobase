@@ -1,5 +1,6 @@
 import { expect, open, test, unique, signIn, Api } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
+import type { FollowUpsView } from '../shared/follow-ups.js';
 
 test.use({
   user: 'admin',
@@ -196,11 +197,9 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     await page
       .getByRole('option', { name: 'All statuses', exact: true })
       .click();
-    const ownedRow = table
-      .getByRole('row')
-      .filter({
-        has: page.getByRole('link', { name: issue.identifier, exact: true }),
-      });
+    const ownedRow = table.getByRole('row').filter({
+      has: page.getByRole('link', { name: issue.identifier, exact: true }),
+    });
     const panel = page.getByTestId('follow-ups-activity');
     const standalone = await page.context().newPage();
     await open(standalone, `/issues/${issue.identifier}`);
@@ -261,17 +260,22 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
       fullPage: true,
     });
     const resumedRun = await runner.start(issue.identifier);
-    await expect(rail).toContainText('Project manager working', {
+    const work = await api.get<FollowUpsView>('followUps');
+    const agentName = work.issues.find((item) => item.id === issue.id)?.progress
+      ?.agent?.name;
+    if (!agentName)
+      throw new Error('The resumed run has no displayed agent name');
+    const working = `${agentName} working`;
+    await expect(rail).toContainText(working, {
       timeout: 8000,
     });
-    await expect(panel.getByTestId('issue-summary')).toContainText(
-      'Project manager working',
-      { timeout: 3000 },
-    );
+    await expect(panel.getByTestId('issue-summary')).toContainText(working, {
+      timeout: 3000,
+    });
     await expect(
       ownedRow.getByRole('status', { name: /is working on this issue$/u }),
     ).toBeVisible({ timeout: 3000 });
-    await expect(standaloneSummary).toContainText('Project manager working', {
+    await expect(standaloneSummary).toContainText(working, {
       timeout: 3000,
     });
     await expect(
@@ -281,20 +285,19 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     ).toBeVisible();
     await shot('running-follow-ups-fixed');
     await runner.complete(resumedRun.runId, 'The execution disk is ready.');
-    await expect(rail).not.toContainText('Project manager working', {
+    await expect(rail).not.toContainText(working, {
       timeout: 8000,
     });
     await expect(panel.getByTestId('issue-summary')).not.toContainText(
-      'Project manager working',
+      working,
       { timeout: 3000 },
     );
     await expect(
       ownedRow.getByRole('status', { name: /is working on this issue$/u }),
     ).toHaveCount(0, { timeout: 3000 });
-    await expect(standaloneSummary).not.toContainText(
-      'Project manager working',
-      { timeout: 3000 },
-    );
+    await expect(standaloneSummary).not.toContainText(working, {
+      timeout: 3000,
+    });
     await standalone.close();
     await open(page, `/issues/${issue.identifier}`);
     await expect(page.getByTestId('issue-needs-you')).toHaveCount(0);

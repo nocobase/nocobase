@@ -66,3 +66,24 @@ test('missing vertical scrolling fails explicitly instead of replacing absent me
     'No bounded vertical scroller',
   );
 });
+
+test('return focus does not move the next action between pointer down and up', async ({
+  page,
+}) => {
+  const content = (expands: boolean) => `<style>
+    h2 { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%) }
+    ${expands ? 'h2:focus { position:static;width:auto;height:40px;margin:0;clip-path:none }' : ''}
+    button { display:block;height:28px;width:160px }
+    </style><h2 tabindex="-1">My tasks</h2><button onclick="this.dataset.clicked='true'">My tasks partition</button>`;
+  await page.setContent(content(true));
+  await page.getByRole('heading').focus();
+  await page.getByRole('button').click();
+  await expect(page.getByRole('button')).not.toHaveAttribute('data-clicked');
+  await page.setContent(content(false));
+  await page.getByRole('heading').focus();
+  await page.getByRole('button').click();
+  await expect(page.getByRole('button')).toHaveAttribute(
+    'data-clicked',
+    'true',
+  );
+});

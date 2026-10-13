@@ -5,6 +5,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ComponentProps,
@@ -142,7 +143,7 @@ export function PersonalTaskWorkspace({
     },
     [fullDetail, select],
   );
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!focusRequest || handledFocusRef.current === focusRequest) return;
     if (focusRequest.kind === 'preview' && showPanel) {
       if (!columns)
@@ -154,7 +155,12 @@ export function PersonalTaskWorkspace({
       const target = focusRequest.source;
       if (target?.isConnected && !target.closest('[aria-hidden="true"]'))
         target.focus({ preventScroll: true });
-      else focusTargetRef.current?.focus({ preventScroll: true });
+      else {
+        const section = rootRef.current?.querySelector<HTMLElement>(
+          '[data-workspace-sections] button[aria-pressed="true"]',
+        );
+        (section ?? focusTargetRef.current)?.focus({ preventScroll: true });
+      }
       handledFocusRef.current = focusRequest;
     }
   }, [chosen, showPanel, columns, focusRequest]);
@@ -249,11 +255,7 @@ export function PersonalTaskWorkspace({
         data-testid='personal-task-workspace'
         data-columns={(columns && hasFollowing && !fullDetail) || undefined}
       >
-        <h2
-          ref={focusTargetRef}
-          tabIndex={-1}
-          className='sr-only focus:not-sr-only focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
-        >
+        <h2 ref={focusTargetRef} tabIndex={-1} className='sr-only'>
           {t('issuesPage.myTitle')}
         </h2>
         {overview.isError ? (
@@ -327,6 +329,7 @@ export function PersonalTaskWorkspace({
             ))}
         {hasFollowing && !columns && !showPanel ? (
           <nav
+            data-workspace-sections
             aria-label={t('personalTasks.sections')}
             className='flex flex-wrap gap-2'
           >
