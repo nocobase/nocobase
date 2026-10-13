@@ -122,6 +122,23 @@ test.describe('personal task columns', () => {
             .getByRole('navigation', { name: '个人任务分区' })
             .getByRole('button', { name: '我的任务-α', exact: true })
             .click();
+          console.info(
+            'Partition return:',
+            JSON.stringify({
+              url: page.url(),
+              geometry: await workspaceGeometry(workspace),
+              tables: await table.count(),
+              rows: await rows.count(),
+              preview: await activity.count(),
+            }),
+          );
+          await expect(
+            page
+              .getByRole('navigation', { name: '个人任务分区' })
+              .getByRole('button', { name: '我的任务-α', exact: true }),
+          ).toHaveAttribute('aria-pressed', 'true');
+          await expect(table).toBeVisible();
+          await expect(rows).toHaveCount(32);
           await expect(rows.last().getByRole('link')).toBeInViewport({
             ratio: 1,
           });

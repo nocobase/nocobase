@@ -85,7 +85,10 @@ test.describe('personal task workspace', () => {
       '改动已完成，请验收。',
     );
     await test.step('Follow from full detail and return with browser history', async () => {
-      await page.getByRole('button', { name: '关注', exact: true }).click();
+      await page
+        .getByTestId('issue-summary')
+        .getByRole('button', { name: '关注', exact: true })
+        .click();
       await expect
         .poll(
           async () =>
@@ -254,7 +257,25 @@ test('both scopes retain grouped expansion, keyboard preview, draft return and r
       page.getByRole('button', { name: /返回未发送草稿/ }),
     ).toBeVisible();
     await page.getByRole('button', { name: /返回未发送草稿/ }).click();
-    await activity.getByRole('button', { name: /写评论/u }).click();
+    const composer = activity.getByTestId('issue-composer');
+    await expect(composer).toBeVisible();
+    console.info(
+      'Returned composer:',
+      JSON.stringify({
+        folded: await composer.getAttribute('data-folded'),
+        editorVisible: await activity
+          .getByRole('textbox', { name: '评论' })
+          .isVisible(),
+        buttons: await composer.getByRole('button').allTextContents(),
+      }),
+    );
+    // Session state may already keep the composer open; use the real fold control only when it is folded.
+    if ((await composer.getAttribute('data-folded')) !== null) {
+      const open = composer.getByRole('button');
+      await expect(open).toHaveAccessibleName(/\S/u);
+      await open.click();
+      await expect(composer).not.toHaveAttribute('data-folded');
+    }
     const returnedEditor = activity.getByRole('textbox', { name: '评论' });
     await expect(returnedEditor).toBeVisible();
     await expect(returnedEditor).toBeEditable();
