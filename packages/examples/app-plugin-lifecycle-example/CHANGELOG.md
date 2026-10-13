@@ -1,5 +1,24 @@
 # @nocobase/app-plugin-lifecycle-example
 
+## 0.1.0-beta.5
+
+### Minor Changes
+
+- 43d7d1f: Add unified workflow management to the Examples application, including all lifecycle and office workflow definitions, paginated execution records, node parameter editing, and diagram history replay with current and visited paths highlighted. Consolidate lifecycle and office navigation under one Workflow entry with flat Business workflows and Workflow management sections. Expose the existing example services and reusable lifecycle diagram components for application composition.
+- 43d7d1f: Add code-declared lifecycle parameter groups with asynchronous execution resolution, immutable configuration versions, atomic CAS saves, first-submission snapshots, per-execution usage facts and flat reviewer selection rules. Demonstrate shared configuration editors, optional diagram bindings, snapshot expense thresholds, live ticket policy and finite candidate review workflows, and document application integration.
+
+### Patch Changes
+
+- 659c22e: Load reviewer references on demand by selected type and name, with scoped pagination and individual saved-reference lookup instead of preloading the entire directory.
+
+  Keep the workflow execution link compact and aligned to the right in definition drawers.
+
+- Updated dependencies [9e99702]
+- Updated dependencies [43d7d1f]
+  - @nocobase/app-server@2.0.0-beta.6
+  - @nocobase/app-plugin-authentication@2.0.0-beta.8
+  - @nocobase/lifecycle@0.1.0-beta.2
+
 ## 0.1.0-beta.4
 
 ### Patch Changes

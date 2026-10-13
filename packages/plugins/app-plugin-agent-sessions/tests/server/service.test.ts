@@ -1190,6 +1190,74 @@ describe('AgentSessionsService', () => {
     ).resolves.toBe('How to work in this session:\nMake small fixes yourself.');
   });
 
+  for (const locale of ['zh-CN', 'en-US']) {
+    test(`resolves instructions from the current interface locale (${locale}), also after restoring a session`, async ({
+      database,
+    }) => {
+      const { service, register, take } = setup(database);
+      const instructions = (viewer: { readonly locale?: string | undefined }) =>
+        `Create tasks in ${viewer.locale}.`;
+      service.registerInstructions(instructions);
+      const { computerId } = await register();
+      const viewer = { userId: owner.userId, locale };
+      const session = await service.createSession(viewer, {
+        computerId,
+        agentId: 'codex',
+        cwd: '/home/zhou/code',
+        // The message language deliberately differs from the interface language.
+        content: text(locale === 'zh-CN' ? 'Create a task' : '创建任务'),
+      });
+      const told = async () => {
+        const commands = await take(computerId);
+        return commands.flatMap((command) =>
+          command.type === 'prompt'
+            ? command.content.flatMap((part) =>
+                part.type === 'text' ? [part.text] : [],
+              )
+            : [],
+        );
+      };
+      await expect(told()).resolves.toContain(
+        `How to work in this session:\nCreate tasks in ${locale}.`,
+      );
+      const restored = new AgentSessionsService({ database, now: () => T0 });
+      restored.registerInstructions(instructions);
+      const caller = {
+        userId: viewer.userId,
+        sessionId: session.id,
+        projectId: null,
+      };
+      await expect(restored.toolHost.instructions(caller)).resolves.toContain(
+        `Create tasks in ${locale}.`,
+      );
+      await restored.prompt(viewer, session.id, text('Continue'));
+      await expect(told()).resolves.toEqual(['Continue']);
+      const switched = locale === 'zh-CN' ? 'en-US' : 'zh-CN';
+      await restored.prompt(
+        { ...viewer, locale: switched },
+        session.id,
+        text('Create another'),
+      );
+      await expect(told()).resolves.toEqual([
+        'Create another',
+        `How to work in this session:\nCreate tasks in ${switched}.`,
+      ]);
+      await expect(restored.toolHost.instructions(caller)).resolves.toContain(
+        `Create tasks in ${switched}.`,
+      );
+      // Context is sent to the agent without rewriting the person's transcript.
+      const events = await restored.listEvents(viewer.userId, session.id, {
+        after: 0,
+        limit: 100,
+      });
+      expect(
+        events.filter((event) => event.kind === 'prompt').at(-1),
+      ).toMatchObject({
+        content: text('Create another'),
+      });
+    });
+  }
+
   test('gives every session’s agent its work and how it is going', async ({
     database,
   }) => {

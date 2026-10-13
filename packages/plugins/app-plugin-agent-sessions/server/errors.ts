@@ -9,6 +9,7 @@ import {
   TRANSLATOR_CONTEXT_KEY,
   type Translator,
 } from '@nocobase/i18n/server';
+import { parseAcceptLanguage } from '@nocobase/i18n';
 import type { Context, ErrorHandler } from 'hono';
 
 import enUS from './locales/en-US.js';
@@ -69,7 +70,20 @@ export function signedInUser(context: {
 export function viewerOf<P extends string, I extends object>(
   context: Context<AuthEnv, P, I>,
 ): Viewer {
-  return { userId: signedInUser(context), locale: getRequestLocale(context) };
+  // The API client sends its effective interface locale on every request. Prefer it to the server session, whose
+  // locale synchronization may still be pending immediately after a switch (or may use a server-only fallback).
+  const accepted = parseAcceptLanguage(
+    context.req.header('accept-language'),
+  )[0];
+  let locale = getRequestLocale(context);
+  if (accepted) {
+    try {
+      locale = Intl.getCanonicalLocales(accepted)[0] ?? locale;
+    } catch {
+      // An invalid language tag leaves the server's resolved locale in effect.
+    }
+  }
+  return { userId: signedInUser(context), locale };
 }
 
 /** The routers' `onError`: this plugin's errors in the standard body, translated; everything else to the framework. */

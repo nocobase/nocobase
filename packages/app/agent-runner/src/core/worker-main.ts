@@ -169,6 +169,7 @@ async function main(): Promise<number> {
   );
   process.on('SIGUSR2', () => void worker.pollStatus());
   process.on('SIGTERM', () => worker.end({ kind: 'shutdown' }));
+  process.on('SIGUSR1', () => worker.end({ kind: 'upgrade' }));
   process.on('SIGINT', () => worker.end({ kind: 'shutdown' }));
   const outcome = await worker.run().finally(() => clearInterval(scan));
   log(`run ${payload.run.id}: worker done (${outcome})`);

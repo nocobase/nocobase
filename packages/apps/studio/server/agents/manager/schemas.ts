@@ -8,6 +8,8 @@ import type {
 
 export const ProjectManagerViewSchema: z.ZodType<ProjectManagerView> = z
   .object({
+    name: z.string(),
+    description: z.string().nullable(),
     firstChoiceAgentId: z.string().nullable().meta({
       description:
         'The agent whose tool and model the project manager runs with; null until someone chooses.',
@@ -77,6 +79,8 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
             model: z.string().nullable(),
             reason: z.enum([
               'ready',
+              'updatePending',
+              'pruning',
               'busy',
               'incompatible',
               'offline',
@@ -94,6 +98,8 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
               .array(
                 z.enum([
                   'ready',
+                  'updatePending',
+                  'pruning',
                   'busy',
                   'incompatible',
                   'offline',
@@ -116,6 +122,8 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
                   reason: z
                     .enum([
                       'ready',
+                      'updatePending',
+                      'pruning',
                       'busy',
                       'incompatible',
                       'offline',

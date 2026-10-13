@@ -1,5 +1,38 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.8
+
+### Minor Changes
+
+- 10e261b: Use a private linked Git worktree per run and save local continuation after stopping its tools. Fast-forward the resume reference, retain divergent heads as separately listed saved references, and preserve the directory on cleanup failure. Keep Codex state outside disposable worktrees. Other tools start fresh when their code directory changes; legacy sessions and clones are not migrated. Distinguish private local branches from task push targets and retain older runner compatibility.
+- ddfe1b1: Report the models each coding tool can use (Claude Agent SDK `supportedModels()`, Codex app-server `model/list`, OpenCode `GET /api/model`, Pi `--list-models`, else a built-in list), overridable with `nocobase-runner config models <tool> add|remove|reset|show`. A directory lock held while a run prepares its working directories now requeues the run as workspace-busy without using an attempt. A claim's `workspace.key` names the run's working directory, and a `workspace.readOnly` run works in a read-only worktree of its own (`<dir>.readonly-<agentId>`) on the same branches, alongside the run that writes, and never pushes. A read-only run's work directory is removed as soon as the run ends. Once no run has used a working directory for 12 hours, its regenerable build artifacts (`node_modules`, `.next`, `.turbo` anywhere in the checkout, without following symbolic links) are removed at the next collection while the checkout stays; `nocobase-runner config set artifact-ttl` and `artifact-patterns` change the wait and the names.
+
+### Patch Changes
+
+- ee24e95: Clean idle build artifacts before pushed workspaces when disk space is low, pause new work until heartbeats detect recovery, and report disk-full failures for reassignment without counting a project-manager step failure. Show current disk capacity and workspace size, type and push diagnostics.
+
+  Retry interrupted removal of verified pushed attempt directories from GC or the next run, stop their remaining processes before deleting remnants, and retain cleanup failure reasons without blocking later tasks. Preserve unpublished or uncommitted work for recovery.
+
+  Verify the actual checkout branch and HEAD before retrying removal, report disk exhaustion even when local preservation metadata or events cannot be written, and continue safe pressure cleanup when diagnostic cache writes fail.
+
+- 4748117: Allow the project manager to use an idle fallback after a configurable queue delay, exclude runners that cannot honor its workspace, and show selection and waiting reasons. Persist queue episodes through retries and restarts, withdraw unclaimed manager delegations after a configurable timeout, reliably report their cause in the dispatch thread, and publish identity-aware immediate capacity in each manager roster.
+- a2cf036: Interrupt agent runs for runner updates after stopping tools and preserving local continuation references. Requeue upgrade interruptions without consuming failure attempts or notifying project managers, retain task inputs, and report draining capacity and reasons in runner and queue views.
+- c10937c: Stop run processes before removing read-only workspaces, preserve cleanup during shutdown, rebuild damaged read-only checkouts, and collect unlocked read-only remnants independently of Git state.
+- abc3fcb: Keep enabled agents prominent, group new discoveries by tool and catalog model, and persist shared ignore and restore preferences with revision protection. Choose a provider without changing existing execution identities and show personal runner names. Discover only authenticated Pi providers and prevent model overrides from bypassing that filter. In Studio, authorize runs through their running identity and existing command scope instead of intersecting with legacy agent action lists, including reports, while retaining object permissions, credential scopes, read-only modes and human approval requirements.
+
+  Show recognizable provider and runner labels when selecting a model and cap atomic bulk discovery operations at 256 selected groups with explicit counts and limits.
+
+- Updated dependencies [157a914]
+- Updated dependencies [8698e80]
+- Updated dependencies [10e261b]
+- Updated dependencies [ddfe1b1]
+- Updated dependencies [ee24e95]
+- Updated dependencies [4748117]
+- Updated dependencies [a2cf036]
+- Updated dependencies [6758f9f]
+  - @nocobase/app-cli-client@0.1.0-beta.6
+  - @nocobase/agent-protocol@0.1.0-beta.7
+
 ## 0.1.0-beta.7
 
 ### Patch Changes

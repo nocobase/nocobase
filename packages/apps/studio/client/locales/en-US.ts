@@ -957,6 +957,7 @@ const enUS = {
   'inbox.text.executor_suggested':
     '{{agentName}} is suggested to execute {{identifier}}',
   'inbox.someone': 'Someone',
+  'inbox.anAgent': 'An agent',
   'inbox.titles.approval_requested': 'Status change waiting for approval',
   'inbox.outcomes.retried': 'Retried',
   'inbox.outcomes.newRun': 'A new run has started',
@@ -1412,6 +1413,8 @@ const enUS = {
     settings: 'Settings',
     loadFailed: 'Could not load the project manager.',
     settingsPage: {
+      name: 'Name',
+      identityDescription: 'Description',
       title: 'Project manager',
       description:
         'There is one for all projects: it arranges the work of every issue.',
@@ -1458,6 +1461,8 @@ const enUS = {
     workerChoice: 'Model',
     workerWaiting: '{{agent}} waiting for a runner: {{entries}}',
     modelWait: {
+      updatePending: 'runner waiting for update; new work is paused',
+      pruning: 'runner cleaning shared store; new work is paused',
       toolNotInstalled: 'tool not installed',
       toolUnavailable: 'tool not signed in, disabled, or model unavailable',
       noSharedRunner: 'only other people’s personal runners are online',

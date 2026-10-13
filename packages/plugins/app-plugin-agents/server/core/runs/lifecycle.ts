@@ -504,7 +504,13 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
                 ...named,
                 detail: redactorOf(run.id).text(named.detail),
               };
-        await recordOutcome(unit, run, request);
+        await recordOutcome(
+          unit,
+          run,
+          request.reason === 'runnerUpgrade'
+            ? { ...request, handledInputIds: [] }
+            : request,
+        );
         if (request.reason === 'modelUnavailable' && run.tool && run.model)
           await deps.onModelUnavailable?.(
             unit,

@@ -882,6 +882,7 @@ const zhCN: AppResource = {
   'inbox.text.executor_assigned': '{{actor}} 把 {{identifier}} 交给你执行',
   'inbox.text.executor_suggested': '建议由 {{agentName}} 执行 {{identifier}}',
   'inbox.someone': '有人',
+  'inbox.anAgent': '某个 agent',
   'inbox.titles.approval_requested': '状态变更待审批',
   'inbox.outcomes.retried': '已重试',
   'inbox.outcomes.newRun': '已有新的运行',
@@ -1292,6 +1293,8 @@ const zhCN: AppResource = {
     settings: '设置',
     loadFailed: '项目经理的设置没有加载出来。',
     settingsPage: {
+      name: '名称',
+      identityDescription: '描述',
       title: '项目经理',
       description: '全局只有一个，所有项目的任务都由它安排。',
       readOnly: '只有能管理 Agent 的人可以修改这些设置。',
@@ -1336,6 +1339,8 @@ const zhCN: AppResource = {
     workerChoice: '执行模型',
     workerWaiting: '{{agent}} 在等执行机：{{entries}}',
     modelWait: {
+      updatePending: '执行机等待升级，暂不接活',
+      pruning: '执行机清理共享缓存，暂不接活',
       toolNotInstalled: '未安装工具',
       toolUnavailable: '工具未登录、被禁用或模型不可用',
       noSharedRunner: '仅他人的个人执行机在线',

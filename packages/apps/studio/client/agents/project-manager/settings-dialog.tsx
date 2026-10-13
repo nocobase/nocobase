@@ -103,6 +103,9 @@ function Settings({
           readOnly={readOnly}
           invalid={
             limit === null ||
+            draft.name.trim().length === 0 ||
+            draft.name.trim().length > 200 ||
+            draft.description.length > 10_000 ||
             fallbackSecondsOf(draft.fallbackAfterSeconds) === null ||
             delegationSecondsOf(draft.delegationQueueTimeoutSeconds) === null
           }
@@ -110,6 +113,31 @@ function Settings({
       }
     >
       <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor='pm-name'>
+            {t('projectManager.settingsPage.name')}
+          </FieldLabel>
+          <Input
+            id='pm-name'
+            value={draft.name}
+            maxLength={200}
+            readOnly={readOnly}
+            onChange={(event) => set({ name: event.target.value })}
+            aria-invalid={draft.name.trim() === ''}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor='pm-description'>
+            {t('projectManager.settingsPage.identityDescription')}
+          </FieldLabel>
+          <Textarea
+            id='pm-description'
+            value={draft.description}
+            maxLength={10_000}
+            readOnly={readOnly}
+            onChange={(event) => set({ description: event.target.value })}
+          />
+        </Field>
         {readOnly ? (
           <p className='rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground'>
             {t('projectManager.settingsPage.readOnly')}

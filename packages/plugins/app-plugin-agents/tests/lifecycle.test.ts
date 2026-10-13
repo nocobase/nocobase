@@ -414,6 +414,41 @@ describe('run lifecycle', () => {
     ]);
   });
 
+  it('requeues upgrades immediately without consuming attempts or notifying the subject, retaining task inputs', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 1 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    const [first] = await claim(h, runner);
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const current = attempt === 1 ? first : (await claim(h, runner))[0];
+      expect(current.run).toMatchObject({ id: runId, attempt });
+      expect(current.inputs).toEqual(first.inputs);
+      if (attempt > 1)
+        expect(current.prompt.turn).toContain(
+          'interrupted by a runner upgrade',
+        );
+      await post(runner, runId, 'start', start);
+      expect(
+        (
+          await post(runner, runId, 'fail', {
+            reason: 'runnerUpgrade',
+            handledInputIds: current.inputs.map((input) => input.id),
+            sessionId: 'upgrade-session',
+          })
+        ).body.data,
+      ).toMatchObject({ status: 'queued' });
+      expect(h.finished).toEqual([]);
+    }
+    const [again] = await claim(h, runner);
+    expect(again.run.attempt).toBe(4);
+    expect(again.prompt.resumeSessionId).toBe('upgrade-session');
+    expect(
+      (await post(runner, runId, 'fail', { reason: 'toolNetwork' })).body.data,
+    ).toEqual({ status: 'failed' });
+    expect(h.finished).toHaveLength(1);
+  });
+
   it('requeues live workspace contention with a delay and releases its runner slot', async () => {
     h = await createHarness();
     const agentId = await h.createAgent({ maxAttempts: 3 });

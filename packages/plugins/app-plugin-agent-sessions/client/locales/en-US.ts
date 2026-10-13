@@ -81,7 +81,7 @@ const enUS = {
       'This agent has no configurable settings. Its defaults will be used.',
     title: 'New session',
     subtitle:
-      'Talk with an agent on your own computer. The conversation is kept here.',
+      'Discuss and clarify requirements with an agent on your own computer, record tasks, and follow progress here. Studio’s project manager coordinates agents to develop tasks after you start them.',
     pickComputer: 'Choose a computer',
     noAgent: 'No agent available',
     folder: 'Directory on the computer',
@@ -91,7 +91,7 @@ const enUS = {
       'Agents run with full access in the directory you choose, as in your own terminal.',
     noComputer: 'Connect your computer first',
     noComputerHint:
-      'Sessions run on your own computer: the agent works there signed in with your own account, in the folders you allow, and the conversations are kept here. Connect it once and it is online whenever the computer is on.',
+      'Sessions run on your own computer: the agent works there signed in with your own account, in the folders you allow, and the conversations are kept here. Connect it once and it is online whenever the computer is on. My Agent helps discuss and clarify requirements, record tasks, and follow progress; after you start them, Studio’s project manager coordinates agents to develop them.',
     allOffline: 'Your computers are offline',
     offlineHint:
       'Run this on the computer to keep it connected from every login.',
@@ -173,6 +173,13 @@ const enUS = {
   },
   choices: { more: 'More options' },
   transcript: {
+    image: {
+      open: 'Open image preview',
+      preview: 'Image preview',
+      zoomIn: 'Zoom in',
+      zoomOut: 'Zoom out',
+      fit: 'Fit to screen',
+    },
     thought: 'Thinking',
     plan: 'Plan {{done}}/{{total}}',
     prompt: {

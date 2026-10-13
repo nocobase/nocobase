@@ -1,5 +1,11 @@
 # @nocobase/acp-bridge
 
+## 0.1.0-beta.0
+
+### Minor Changes
+
+- 157a914: Add `@nocobase/acp-bridge`, which makes a person's computer a place where their agent sessions run, on macOS, Linux or Windows: `runBridge` registers the computer with the agents installed there (Codex, Claude Code, Gemini CLI, GitHub Copilot, Cursor, OpenCode, Qwen Code, Kimi CLI and more, each in its ACP mode or through its ACP adapter), signed in as that person the first time and with the computer's own key from then on, so it stays connected however long the sign-in lasts; it offers an agent installed while it runs within a minute, long-polls the application for commands, runs each session's agent over the Agent Client Protocol with full access in the directories the person allowed, lists the computer's folders for a person choosing one, and reports what it does. `@nocobase/acp-bridge/protocol` is the wire protocol between the bridge and `@nocobase/app-plugin-agent-sessions`, with no Node dependency, so the application's server and browser read it too.
+
 ## 0.0.1
 
 Initial version.

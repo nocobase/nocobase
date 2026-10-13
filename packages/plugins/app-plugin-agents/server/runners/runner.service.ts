@@ -481,6 +481,9 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
               ...storedToolLoad(request.load.tools ?? null),
               free: request.load.free,
               slots: request.load.slots,
+              ...(request.load.draining
+                ? { draining: request.load.draining }
+                : {}),
             }),
             ...(request.disk === undefined
               ? {}
