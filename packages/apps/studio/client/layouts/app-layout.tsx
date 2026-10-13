@@ -12,6 +12,7 @@ import { RouteTreeProvider } from '../routing/route-context.js';
 import { ChatPanel } from '@/extensions/nocobase-agent-chat/chat-panel';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { useInboxNavigation } from '../inbox/navigation.js';
+import { useStudioIssueRefresh } from '../issues/live/realtime-refresh.js';
 
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
@@ -47,6 +48,7 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
   // The person's language and theme follow them from the server (`account/preferences-sync.ts`).
   useUserPreferencesSync();
   const inbox = useInboxNavigation();
+  useStudioIssueRefresh();
 
   const { t } = useTranslation();
   const { items: menuItems, denied } = useRouteNavigation(routes);

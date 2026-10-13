@@ -55,19 +55,31 @@ export function askOf(
   issue: Pick<FollowUpIssue, 'owned' | 'statusKey' | 'progress'>,
   mark: Pick<PullRequestMark, 'label' | 'state'> | null | undefined,
 ): string | null {
-  if (!needsViewer(issue)) return null;
+  if (!issue.owned || ['done', 'cancelled'].includes(issue.statusKey))
+    return null;
+  if (issue.progress?.waiting?.reason === 'waitingOwner')
+    return t('issueLive.ask.takeOver');
   if (issue.statusKey === 'in_review')
     return mark && mark.state === 'open'
       ? t('issueLive.ask.acceptPullRequest', {
           label: pullRequestLabel(mark),
         })
       : t('issueLive.ask.acceptIssue');
-  const question = issue.progress?.question
-    ? shortQuestion(issue.progress.question)
+  if (issue.progress?.state === 'waitingForContinuation')
+    return t('issueLive.ask.continue');
+  if (!needsViewer(issue)) return null;
+  const request = issue.progress?.question;
+  if (request) return shortQuestion(request);
+  const content = issue.progress?.blockedComment?.content;
+  const first = content
+    ?.split('\n')
+    .find(
+      (line) =>
+        line.trim() && !/^(?:Next\s*:|接下来\s*[：:])/iu.test(line.trim()),
+    );
+  return first
+    ? t('issueLive.ask.waiting', { reason: shortQuestion(first) })
     : null;
-  return question
-    ? t('issueLive.ask.answer', { question })
-    : t('issueLive.ask.answerNoQuestion');
 }
 
 /** What is going on, in one line: the viewer's part when it waits for them, else what it waits for. */
@@ -78,7 +90,16 @@ export function nowLine(
   now: number = Date.now(),
 ): { readonly text: string; readonly needsViewer: boolean } | null {
   const ask = askOf(t, issue, mark);
-  if (ask) return { text: ask, needsViewer: true };
+  if (ask)
+    return {
+      text: ask,
+      needsViewer: !(
+        issue.statusKey === 'blocked' &&
+        !issue.progress?.question &&
+        issue.progress?.state !== 'waitingForContinuation' &&
+        issue.progress?.waiting?.reason !== 'waitingOwner'
+      ),
+    };
   if (!issue.progress) return null;
   // Someone else's decision: what they are asked, shortly.
   const question = issue.progress.question
@@ -108,15 +129,35 @@ const HANDOFF_TYPES: ReadonlySet<string> = new Set([
  */
 export function coveredBySummary(
   entry: Pick<InboxEntry, 'notice'>,
-  shown: { readonly accepting: boolean; readonly handoff: boolean },
+  shown: {
+    readonly accepting: boolean;
+    readonly handoff: boolean;
+    readonly pullRequest?: {
+      readonly repo: string;
+      readonly number: number;
+    } | null;
+    readonly blocked?: boolean;
+    readonly commentId?: string | null;
+    readonly continuation?: boolean;
+    readonly notificationKey?: string | null;
+  },
 ): boolean {
   const notice = entry.notice;
   if (!notice) return false;
   if (
     shown.accepting &&
     notice.source === GIT_INBOX_SOURCE &&
-    notice.type === PR_MERGE_REQUESTED
+    notice.type === PR_MERGE_REQUESTED &&
+    notice.data?.repo === shown.pullRequest?.repo &&
+    Number(notice.data?.number) === shown.pullRequest?.number
   )
     return true;
-  return shown.handoff && HANDOFF_TYPES.has(notice.type);
+  if (notice.type === 'agent_blocked')
+    return !shown.blocked || notice.data?.commentId === shown.commentId;
+  if (shown.continuation && notice.type === 'comment_runs_limited') return true;
+  return (
+    shown.handoff &&
+    HANDOFF_TYPES.has(notice.type) &&
+    notice.data?.notificationKey === shown.notificationKey
+  );
 }

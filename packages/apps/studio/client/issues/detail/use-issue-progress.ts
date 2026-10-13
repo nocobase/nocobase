@@ -17,10 +17,11 @@ export function useIssueProgress(
   const api = useApiClient();
   return useQuery({
     queryKey: [...issueProgressKey(issueId), refresh],
-    queryFn: async () =>
+    queryFn: async ({ signal }) =>
       (
         await api.request<{ data: IssueProgress }>({
           path: `issueProgress/${encodeURIComponent(issueId)}`,
+          signal,
         })
       ).data,
     placeholderData: (previous) => previous ?? fallback ?? undefined,

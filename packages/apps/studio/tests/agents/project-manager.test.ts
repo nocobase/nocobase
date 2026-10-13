@@ -704,13 +704,50 @@ describe('what an issue waits for', () => {
     const issue = await create({ statusKey: 'in_progress', start: false });
     await h.projects.comments.create(asAgent(PROJECT_MANAGER_ID), issue.id, {
       content:
-        'Next: once you choose, hand the change to the Coder.\n\nShould the export include **deleted** issues?',
+        'Next: once you choose, hand the change to the Coder.\nNeeds you: Should the export include **deleted** issues?\n\nPlease confirm the scope.',
     });
     await update(issue, { statusKey: 'blocked' }, asAgent(PROJECT_MANAGER_ID));
     expect(await progress(issue.id)).toMatchObject({
       state: 'needsDecision',
       question: 'Should the export include **deleted** issues?',
       next: 'once you choose, hand the change to the Coder.',
+    });
+  });
+
+  it('keeps the blocked source through later dispatch reports, clears it on resume, and reads only the latest Next', async () => {
+    const issue = await create({ statusKey: 'in_progress', start: false });
+    const { comment: source } = await h.projects.comments.create(
+      asAgent(PROJECT_MANAGER_ID),
+      issue.id,
+      {
+        content:
+          'Next: wait for the disk to recover.\n需要你：Restore the execution machine.\n\nThe disk is full. Run `df -h`.',
+      },
+    );
+    await update(issue, { statusKey: 'blocked' }, asAgent(PROJECT_MANAGER_ID));
+    await h.projects.comments.create(asAgent(PROJECT_MANAGER_ID), issue.id, {
+      content: 'The report was received. No question here.',
+    });
+    expect(await progress(issue.id)).toMatchObject({
+      question: 'Restore the execution machine.',
+      blockedComment: { id: source.id },
+      next: null,
+    });
+    await update(issue, { statusKey: 'in_progress' });
+    expect(await progress(issue.id)).toMatchObject({
+      question: null,
+      next: null,
+    });
+    expect((await progress(issue.id)).blockedComment).toBeUndefined();
+    const { comment: second } = await h.projects.comments.create(
+      asAgent(PROJECT_MANAGER_ID),
+      issue.id,
+      { content: 'Next: wait for a decision.\n\nThe checkout failed.' },
+    );
+    await update(issue, { statusKey: 'blocked' }, asAgent(PROJECT_MANAGER_ID));
+    expect(await progress(issue.id)).toMatchObject({
+      question: null,
+      blockedComment: { id: second.id, content: second.content },
     });
   });
 

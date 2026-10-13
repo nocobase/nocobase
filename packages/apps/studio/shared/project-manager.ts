@@ -70,7 +70,7 @@ export interface ProjectManagerView extends ProjectManagerSettings {
  * - `working`: an agent's run is on it (`agent`, `step` it was handed, since `since`, on `runner`).
  * - `queued`: an agent's run waits for a runner (`agent`, `step`).
  * - `checksPending`: no run is on it and a linked open pull request's checks have not finished (`pullRequest`).
- * - `needsDecision`: the issue is blocked; `question` is what the project manager asked the person.
+ * - `needsDecision`: the issue is blocked; `question` is its source comment's explicit Needs you line, when present.
  * - `inReview`: it waits for a person to accept it.
  * - `notStarted`: in backlog.
  * - `finished`: done or cancelled.
@@ -135,6 +135,11 @@ export interface IssueProgress {
     readonly url: string | null;
   } | null;
   readonly question: string | null;
+  /** The manager comment at the current transition to Blocked, unchanged by later reports. */
+  readonly blockedComment?: {
+    readonly id: string;
+    readonly content: string;
+  } | null;
   readonly next: string | null;
   readonly handOver: boolean;
 }

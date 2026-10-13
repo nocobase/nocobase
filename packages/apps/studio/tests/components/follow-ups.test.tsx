@@ -347,7 +347,7 @@ describe('My follow-ups', () => {
       within(mine).getByRole('button', { name: /status:in_progress/ }),
     );
     expect(keys()).toEqual(['WEB-5', 'WEB-4', 'WEB-3']);
-    expect(mine.textContent).toContain('Answer: Push again?');
+    expect(mine.textContent).toContain('Push again?');
     fireEvent.change(within(mine).getByRole('searchbox'), {
       target: { value: 'web-3' },
     });
