@@ -20,6 +20,7 @@ export const issueLiveEnUS = {
     viewChanges: 'View changes',
     sendBack: 'Send back',
     sendBackHint: 'Move it back to In progress so the work continues.',
+    answer: 'Answer',
   },
   ask: {
     acceptPullRequest: 'Accept: {{label}}',
@@ -38,6 +39,7 @@ export const issueLiveEnUS = {
     handOver: 'Hand-over',
     approved: 'Review: approved',
     changesRequested: 'Review: changes requested',
+    deliveryShownAbove: 'Delivery notes — shown above',
   },
   follow: {
     follow: 'Follow',
@@ -73,6 +75,7 @@ export const issueLiveZhCN: typeof issueLiveEnUS = {
     viewChanges: '看改动',
     sendBack: '退回修改',
     sendBackHint: '移回进行中，让工作继续。',
+    answer: '回答',
   },
   ask: {
     acceptPullRequest: '验收：{{label}}',
@@ -91,6 +94,7 @@ export const issueLiveZhCN: typeof issueLiveEnUS = {
     handOver: '交接',
     approved: '评审：通过',
     changesRequested: '评审：需要修改',
+    deliveryShownAbove: '交付说明 — 见上方',
   },
   follow: {
     follow: '关注',

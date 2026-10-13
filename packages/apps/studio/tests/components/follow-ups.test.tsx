@@ -293,6 +293,22 @@ describe('My follow-ups', () => {
     expect(mocks.update).toHaveBeenCalledWith({ statusKey: 'in_progress' });
     within(panel).getByTestId('issue-feed');
     within(panel).getByTestId('issue-composer');
+    // The title has a line of its own; folding leaves one bar with Expand summary.
+    const summary = within(panel).getByTestId('issue-summary');
+    expect(
+      within(summary).getByRole('heading', {
+        name: 'Release page lists previews',
+      }).tagName,
+    ).toBe('H2');
+    fireEvent.click(
+      within(summary).getByRole('button', { name: 'Collapse summary' }),
+    );
+    expect(summary.hasAttribute('data-collapsed')).toBe(true);
+    expect(within(summary).queryByTestId('issue-delivery')).toBeNull();
+    fireEvent.click(
+      within(summary).getByRole('button', { name: 'Expand summary' }),
+    );
+    within(summary).getByTestId('issue-delivery');
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith({
         method: 'POST',
@@ -387,6 +403,12 @@ describe('My follow-ups', () => {
       expect(screen.queryByTestId('follow-ups-activity')).toBeNull();
       fireEvent.click(card(rail, 'WEB-9'));
       const panel = await screen.findByTestId('follow-ups-activity');
+      // A phone starts with the summary's bar.
+      expect(
+        (await within(panel).findByTestId('issue-summary')).hasAttribute(
+          'data-collapsed',
+        ),
+      ).toBe(true);
       expect(screen.queryByTestId('follow-ups-following')).toBeNull();
       expect(screen.queryByTestId('follow-ups-mine')).toBeNull();
       fireEvent.click(

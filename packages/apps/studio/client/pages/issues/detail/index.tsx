@@ -7,9 +7,11 @@
  * (`issues/detail/`), with Studio's own sections placed between the plugin's, and the live summary, feed and composer it
  * shares with "My follow-ups" (`issues/live/`). The main column, top to bottom:
  *
- * - the summary, pinned while the page scrolls and folding to its title row (a phone starts folded): status, pull
- *   request and checks, "Now" with "Start", what waits for the viewer, the delivery in review, and the follow star;
- * - the body card: the header with "Ask agent" and Studio's marks, an agent comment the comment run limit held back,
+ * - the summary, pinned while the page scrolls: the title (the page's heading, renamed in place), key, status, pull
+ *   request and checks, "Now" with "Start", what waits for the viewer, the delivery in review, and the follow star. It
+ *   folds to a one-line bar with what waits for the viewer (Merge, Answer, Take over) while the page is scrolled down
+ *   and on a phone;
+ * - the body card: the parent, the project, Studio's marks, "Ask agent" and "Delete", an agent comment the comment run limit held back,
  *   "Waiting for you", the description, the add bar, sub-issues, dependencies, files, related plans, project setup,
  *   then Code and deployments;
  * - the activity card, newest first, conversation only by default, its composer pinned to the bottom edge.
@@ -20,6 +22,7 @@
  */
 import { ApiClientError } from '@nocobase/app-client';
 import {
+  canEditIssues,
   useIssueDetail,
   useIssuePageActions,
   useIssueUpdate,
@@ -29,6 +32,7 @@ import {
   PmLoadError,
   pmKeys,
   usePageContextSource,
+  useViewer,
 } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -59,7 +63,7 @@ import {
   IssueDependenciesSection,
   IssueDescriptionSection,
   IssueFilesSection,
-  IssueHeaderSection,
+  IssueBodyHeader,
   IssueSubtasksSection,
 } from '../../../issues/detail/issue-main.js';
 import { useIssueMainState } from '../../../issues/detail/main-state.js';
@@ -153,6 +157,7 @@ function IssuePage({
   ].join('|');
   const main = useIssueMainState(pageActions);
   const narrow = useMediaQuery('(max-width: 767px)');
+  const viewer = useViewer();
   const [linkingPullRequest, setLinkingPullRequest] = useState(false);
   const linking = {
     linking: linkingPullRequest,
@@ -188,16 +193,27 @@ function IssuePage({
               actions={<FollowToggle issueId={detail.id} />}
               collapsible
               defaultCollapsed={narrow}
-              heading={false}
+              autoCompact
+              headingLevel={1}
+              {...(canEditIssues(viewer)
+                ? {
+                    rename: {
+                      onRename: async (title: string) => {
+                        await update.mutateAsync({ title });
+                      },
+                      editLabel: wording.detail.editTitle,
+                      inputLabel: wording.detail.titleLabel,
+                    },
+                  }
+                : {})}
             />
           </div>
           <IssueFileDrop
             {...(main.canUpload ? { onFiles: main.upload } : {})}
             className={cn(ISSUE_SURFACE, 'flex flex-col gap-6')}
           >
-            <IssueHeaderSection
+            <IssueBodyHeader
               detail={detail}
-              update={update}
               pageActions={pageActions}
               actions={<AskAgent placement='issue' entry={entry} />}
               meta={

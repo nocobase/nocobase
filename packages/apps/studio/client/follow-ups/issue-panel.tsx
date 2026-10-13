@@ -98,7 +98,12 @@ export function IssuePanel({
     );
   return (
     <PanelFrame className={className}>
-      <LiveIssue issue={data} summary={summary} back={back} />
+      <LiveIssue
+        issue={data}
+        summary={summary}
+        back={back}
+        narrow={Boolean(onBack)}
+      />
     </PanelFrame>
   );
 }
@@ -107,10 +112,13 @@ function LiveIssue({
   issue,
   summary,
   back,
+  narrow,
 }: {
   readonly issue: IssueDetail;
   readonly summary: FollowUpIssue | null;
   readonly back: ReactNode;
+  /** On a phone, where the summary starts as its bar. */
+  readonly narrow: boolean;
 }): ReactElement {
   const { t } = useTranslation();
   const detailKey = useMemo(() => pmKeys.issue(issue.id), [issue.id]);
@@ -118,13 +126,17 @@ function LiveIssue({
   const issuePath = `/issues/${encodeURIComponent(issue.identifier)}`;
   return (
     <IssueConversation detail={issue} detailKey={detailKey}>
-      <div className='flex flex-col gap-2 border-b px-5 py-4'>
+      {/* Pinned while the page scrolls, folding to a bar then. */}
+      <div className='sticky top-0 z-10 flex flex-col gap-2 rounded-t-xl border-b bg-card/95 px-5 py-4 backdrop-blur-md'>
         {back}
         <IssueSummary
           issue={issue}
           update={update}
           refresh={`${issue.revision}|${issue.statusKey}`}
           progressFallback={summary?.progress ?? null}
+          collapsible
+          defaultCollapsed={narrow}
+          autoCompact
           actions={
             <>
               <FollowToggle issueId={issue.id} />

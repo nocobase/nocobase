@@ -107,6 +107,8 @@ export interface CommentItem {
   readonly reactions?: readonly CommentReaction[];
   readonly canEdit?: boolean;
   readonly canDelete?: boolean;
+  /** Shown instead of the text, as one line that unfolds it in place, when the text is shown elsewhere. */
+  readonly collapsedLabel?: string;
 }
 
 export interface CommentThreadItem {
@@ -666,6 +668,9 @@ function CommentBlock({
 }): ReactElement {
   const { labels, locale } = context;
   const [editing, setEditing] = useState(false);
+  const [unfolded, setUnfolded] = useState(false);
+  const folded =
+    Boolean(comment.collapsedLabel) && !unfolded && !comment.deleted;
   const markdown =
     context.renderMarkdown ??
     ((content: string) => (
@@ -774,6 +779,16 @@ function CommentBlock({
           mentionSearchRevision={context.mentionSearchRevision}
           labels={labels}
         />
+      ) : folded ? (
+        <button
+          type='button'
+          aria-expanded={false}
+          className='ml-8 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground'
+          onClick={() => setUnfolded(true)}
+        >
+          <ChevronRightIcon className='size-3.5' aria-hidden='true' />
+          {comment.collapsedLabel}
+        </button>
       ) : (
         <>
           <div className='pl-8'>{markdown(comment.content)}</div>

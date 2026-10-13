@@ -40,3 +40,8 @@ export function useIssueConversation(): IssueConversationState {
     throw new Error('useIssueConversation needs an <IssueConversation>');
   return state;
 }
+
+/** The conversation around a part that may also be placed outside one; null there. */
+export function useOptionalIssueConversation(): IssueConversationState | null {
+  return useContext(ConversationContext);
+}

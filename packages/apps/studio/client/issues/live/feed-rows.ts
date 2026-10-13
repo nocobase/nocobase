@@ -7,7 +7,13 @@ import type {
   CommentThread,
   TimelineEntry,
 } from '@nocobase/app-plugin-projects/client/issues';
-import type { Activity } from '@nocobase/app-plugin-projects/shared/issues';
+import type {
+  Activity,
+  IssueDetail,
+} from '@nocobase/app-plugin-projects/shared/issues';
+import { IN_REVIEW_STATUS } from '@nocobase/app-plugin-projects/shared/statuses';
+
+import { PROJECT_MANAGER_ID } from '../../../shared/project-manager.js';
 
 import { isOwnerHandoffActivity } from '../detail/activity-labels.js';
 import { activityFeedKind } from './feed.js';
@@ -120,4 +126,12 @@ export function deliveryComment(
       ? list[0]
       : list.find((comment) => Date.parse(comment.createdAt) <= movedAt);
   return before(byWorker) ?? byWorker[0] ?? comments[0] ?? null;
+}
+
+/** In review, the comment the summary shows as the delivery notes; null otherwise. */
+export function deliveryCommentOf(
+  issue: Pick<IssueDetail, 'statusKey' | 'threads' | 'activities'>,
+): CommentThread['root'] | null {
+  if (issue.statusKey !== IN_REVIEW_STATUS) return null;
+  return deliveryComment(issue.threads, issue.activities, PROJECT_MANAGER_ID);
 }

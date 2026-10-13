@@ -12,6 +12,7 @@ import {
 import { useViewer } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import {
+  BLOCKED_STATUS,
   IN_PROGRESS_STATUS,
   IN_REVIEW_STATUS,
 } from '@nocobase/app-plugin-projects/shared/statuses';
@@ -20,27 +21,39 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   ExternalLinkIcon,
+  MessageSquareIcon,
+  PencilIcon,
   UndoIcon,
 } from 'lucide-react';
-import { useState, type ReactElement, type ReactNode } from 'react';
+import { useRef, useState, type ReactElement, type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from 'cn';
 
-import {
-  PROJECT_MANAGER_ID,
-  type IssueProgress,
-} from '../../../shared/project-manager.js';
+import type { IssuePullRequests } from '../../../shared/git.js';
+import type { IssueProgress } from '../../../shared/project-manager.js';
 import { useIssuePullRequests, usePullRequestMark } from '../../git/api.js';
 import { MergeButtons } from '../../git/pull-requests.js';
 import { IssueProgressLine } from '../detail/issue-progress.js';
+import { OwnerHandoffActions } from '../detail/owner-handoff.js';
+import { progressSentence } from '../detail/progress-text.js';
 import { useIssueProgress } from '../detail/use-issue-progress.js';
 import { IssueMarkdown } from '../markdown.js';
 import { Clamped } from './clamped.js';
-import { deliveryComment } from './feed-rows.js';
+import { useOptionalIssueConversation } from './conversation-state.js';
+import { deliveryCommentOf } from './feed-rows.js';
 import { StatusPill } from './status.js';
 import { askOf, pullRequestLabel } from './summary-model.js';
+import { useScrollCompact } from './use-scroll-compact.js';
+
+/** Renaming the issue from its title, with the words for the pencil and the input. */
+export interface SummaryRename {
+  readonly onRename: (title: string) => Promise<void>;
+  readonly editLabel: string;
+  readonly inputLabel: string;
+}
 
 export function IssueSummary({
   issue,
@@ -50,7 +63,9 @@ export function IssueSummary({
   actions,
   collapsible = false,
   defaultCollapsed = false,
-  heading = true,
+  autoCompact = false,
+  headingLevel = 2,
+  rename,
   className,
 }: {
   readonly issue: IssueDetail;
@@ -59,21 +74,30 @@ export function IssueSummary({
   readonly refresh: string;
   /** What "Now" says until the server answers, such as an overview's copy. */
   readonly progressFallback?: IssueProgress | null;
-  /** In the title row, such as the follow star. */
+  /** On the second row, such as the follow star. */
   readonly actions?: ReactNode;
   readonly collapsible?: boolean;
-  /** Starts folded, unless something waits on a person (an ask, an owner handoff). */
+  /** Starts as the one-line bar, as on a phone. */
   readonly defaultCollapsed?: boolean;
-  /** The title is a heading; off where the page already has one for it. */
-  readonly heading?: boolean;
+  /** Folds to the bar while the page is scrolled down. */
+  readonly autoCompact?: boolean;
+  /** The title's heading level: 1 where it is the page's title. */
+  readonly headingLevel?: 1 | 2;
+  readonly rename?: SummaryRename;
   readonly className?: string;
 }): ReactElement {
   const { t } = useTranslation();
-  const Title = heading ? 'h2' : 'p';
+  const Title = headingLevel === 1 ? 'h1' : 'h2';
   const viewer = useViewer();
-  // Null until the viewer folds or unfolds it.
-  const [folded, setFolded] = useState<boolean | null>(null);
+  const ref = useRef<HTMLElement>(null);
+  const scroll = useScrollCompact(ref, collapsible && autoCompact);
+  // What the viewer chose, until the page is next scrolled down.
+  const [folded, setFolded] = useState<{
+    readonly value: boolean;
+    readonly epoch: number;
+  } | null>(null);
   const mark = usePullRequestMark(issue.id, issue.revision).data;
+  const pullRequests = useIssuePullRequests(issue.id, issue.revision).data;
   const progress = useIssueProgress(issue.id, refresh, progressFallback).data;
   const owned = Boolean(viewer?.userId) && issue.ownerUserId === viewer?.userId;
   const ask = askOf(
@@ -81,56 +105,70 @@ export function IssueSummary({
     { owned, statusKey: issue.statusKey, progress: progress ?? null },
     mark,
   );
-  // Something waiting on a person keeps a folded-by-default summary open.
-  const waits = Boolean(ask) || progress?.waiting?.reason === 'waitingOwner';
-  const collapsed = collapsible && (folded ?? (defaultCollapsed && !waits));
+  const auto = defaultCollapsed || scroll.scrolled;
+  const collapsed =
+    collapsible &&
+    (folded && folded.epoch === scroll.epoch ? folded.value : auto);
   const checks =
     mark && mark.state === 'open' && mark.ciState
       ? t(`issueLive.summary.checks.${mark.ciState}`)
       : null;
+  const toggle = collapsible ? (
+    <Button
+      size='sm'
+      variant='ghost'
+      aria-expanded={!collapsed}
+      onClick={() => setFolded({ value: !collapsed, epoch: scroll.epoch })}
+    >
+      {collapsed ? (
+        <ChevronDownIcon data-icon='inline-start' />
+      ) : (
+        <ChevronUpIcon data-icon='inline-start' />
+      )}
+      {collapsed
+        ? t('issueLive.summary.expand')
+        : t('issueLive.summary.collapse')}
+    </Button>
+  ) : null;
   return (
     <section
+      ref={ref}
       aria-label={t('issueLive.summary.label')}
       data-testid='issue-summary'
       data-collapsed={collapsed ? '' : undefined}
-      className={cn('flex flex-col gap-3', className)}
+      className={cn('flex flex-col', collapsed ? 'gap-2' : 'gap-3', className)}
     >
-      <div className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5'>
-        <span className='font-mono text-sm text-muted-foreground'>
-          {issue.identifier}
-        </span>
-        <StatusPill statusKey={issue.statusKey} />
-        <Title
-          className={cn(
-            'min-w-0 flex-1 basis-40 text-base leading-snug font-semibold',
-            collapsed ? 'truncate' : 'text-balance',
-          )}
-        >
-          {issue.title}
-        </Title>
-        <span className='flex flex-wrap items-center gap-2'>
-          {actions}
-          {collapsible ? (
-            <Button
-              size='sm'
-              variant='ghost'
-              aria-expanded={!collapsed}
-              onClick={() => setFolded(!collapsed)}
-            >
-              {collapsed ? (
-                <ChevronDownIcon data-icon='inline-start' />
-              ) : (
-                <ChevronUpIcon data-icon='inline-start' />
-              )}
-              {collapsed
-                ? t('issueLive.summary.expand')
-                : t('issueLive.summary.collapse')}
-            </Button>
-          ) : null}
-        </span>
-      </div>
-      {collapsed ? null : (
+      {collapsed ? (
+        <div className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5'>
+          <StatusPill statusKey={issue.statusKey} />
+          <Title className='min-w-0 flex-1 basis-32 truncate text-base leading-snug font-semibold'>
+            {issue.title}
+          </Title>
+          <NeedsYou
+            issue={issue}
+            progress={progress ?? null}
+            ask={ask}
+            pullRequests={pullRequests}
+          />
+          {toggle}
+        </div>
+      ) : (
         <>
+          <SummaryTitle
+            title={issue.title}
+            Title={Title}
+            {...(rename ? { rename } : {})}
+          />
+          <div className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5'>
+            <span className='font-mono text-sm text-muted-foreground'>
+              {issue.identifier}
+            </span>
+            <StatusPill statusKey={issue.statusKey} />
+            <span className='ml-auto flex flex-wrap items-center gap-2'>
+              {actions}
+              {toggle}
+            </span>
+          </div>
           {mark?.state === 'open' ? (
             <p className='flex flex-wrap items-center gap-x-2 text-sm'>
               <a
@@ -183,6 +221,135 @@ export function IssueSummary({
   );
 }
 
+/** The title on a line of its own, wrapping between words; the pencil edits it in place. */
+function SummaryTitle({
+  title,
+  Title,
+  rename,
+}: {
+  readonly title: string;
+  readonly Title: 'h1' | 'h2';
+  readonly rename?: SummaryRename;
+}): ReactElement {
+  const [draft, setDraft] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  // Enter saves and then blurs the disabled input, which would save a second time without this guard.
+  const savingRef = useRef(false);
+  const save = (): void => {
+    if (savingRef.current) return;
+    const next = draft?.trim() ?? '';
+    if (!next || next === title || !rename) {
+      setDraft(null);
+      return;
+    }
+    savingRef.current = true;
+    setSaving(true);
+    void rename
+      .onRename(next)
+      .catch(() => undefined)
+      .finally(() => {
+        savingRef.current = false;
+        setSaving(false);
+        setDraft(null);
+      });
+  };
+  if (draft !== null)
+    return (
+      <div className='flex items-center gap-2'>
+        <Input
+          value={draft}
+          autoFocus
+          aria-label={rename?.inputLabel}
+          className='h-9 text-base font-semibold'
+          disabled={saving}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={save}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              save();
+            } else if (event.key === 'Escape') {
+              event.preventDefault();
+              setDraft(null);
+            }
+          }}
+        />
+        {saving ? <Spinner /> : null}
+      </div>
+    );
+  return (
+    <div className='group flex min-w-0 items-start gap-1'>
+      <Title className='min-w-0 flex-1 font-heading text-lg leading-snug font-semibold text-pretty wrap-break-word'>
+        {title}
+      </Title>
+      {rename ? (
+        <Button
+          variant='ghost'
+          size='icon-sm'
+          aria-label={rename.editLabel}
+          className='shrink-0 opacity-60 group-hover:opacity-100 focus-visible:opacity-100'
+          onClick={() => setDraft(title)}
+        >
+          <PencilIcon />
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+/** The bar's part of what waits on the viewer: taking over a handoff, merging, or answering. */
+function NeedsYou({
+  issue,
+  progress,
+  ask,
+  pullRequests,
+}: {
+  readonly issue: IssueDetail;
+  readonly progress: IssueProgress | null;
+  readonly ask: string | null;
+  readonly pullRequests: IssuePullRequests | undefined;
+}): ReactElement | null {
+  const { t } = useTranslation();
+  const conversation = useOptionalIssueConversation();
+  if (progress?.waiting?.reason === 'waitingOwner')
+    return (
+      <span
+        className='flex min-w-0 flex-wrap items-center gap-2 text-sm'
+        data-testid='issue-needs-you-bar'
+      >
+        <span className='text-muted-foreground'>
+          {progressSentence(t, progress)}
+        </span>
+        <OwnerHandoffActions issueId={issue.id} />
+      </span>
+    );
+  if (!ask) return null;
+  const open = pullRequests?.data.find((pr) => pr.state === 'open') ?? null;
+  return (
+    <span
+      className='flex min-w-0 items-center gap-2 text-sm'
+      data-testid='issue-needs-you-bar'
+    >
+      <span className='hidden max-w-64 truncate text-amber-700 lg:inline dark:text-amber-300'>
+        {ask}
+      </span>
+      {issue.statusKey === IN_REVIEW_STATUS &&
+      open &&
+      pullRequests?.canMerge ? (
+        <MergeButtons issue={issue} pullRequest={open} mergeOnly />
+      ) : issue.statusKey === BLOCKED_STATUS && conversation?.mayComment ? (
+        <Button
+          size='sm'
+          onClick={() => conversation.editorRef.current?.focus()}
+        >
+          <MessageSquareIcon data-icon='inline-start' />
+          {t('issueLive.summary.answer')}
+        </Button>
+      ) : null}
+    </span>
+  );
+}
+
 /** In review: what was delivered, and the decisions on it. */
 function Delivery({
   issue,
@@ -197,11 +364,7 @@ function Delivery({
   const pullRequests = useIssuePullRequests(issue.id, issue.revision).data;
   const open = pullRequests?.data.find((pr) => pr.state === 'open') ?? null;
   const shown = open ?? pullRequests?.data[0] ?? null;
-  const comment = deliveryComment(
-    issue.threads,
-    issue.activities,
-    PROJECT_MANAGER_ID,
-  );
+  const comment = deliveryCommentOf(issue);
   return (
     <section
       aria-label={t('issueLive.summary.delivery')}
