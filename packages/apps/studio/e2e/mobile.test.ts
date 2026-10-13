@@ -72,21 +72,24 @@ test.describe('phone width', () => {
 });
 
 test.describe('the agent chat at phone width', () => {
-  test('opens from the header icon, and from the page row where the header gives way', async ({
+  test('is absent from both header rows and remains available by shortcut', async ({
     page,
   }) => {
     await open(page, '/inbox');
-    await page.getByRole('banner').getByTestId('chat-header-button').click();
+    await expect(
+      page.getByRole('banner').getByTestId('chat-header-button'),
+    ).toHaveCount(0);
+    await page.keyboard.press('Control+j');
     await expect(page.getByTestId('chat-panel')).toBeVisible();
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
-    // The panel stays open across pages until closed.
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('chat-panel')).toBeHidden();
     await open(page, '/issues/PM-1');
-    await page
-      .getByTestId('phone-bar')
-      .getByTestId('chat-header-button')
-      .click();
+    const phoneBar = page.getByTestId('phone-bar');
+    await expect(phoneBar.getByTestId('chat-header-button')).toHaveCount(0);
+    await expect(phoneBar.getByRole('button', { name: /导航/ })).toBeVisible();
+    await page.keyboard.press('Control+j');
     await expect(page.getByTestId('chat-panel')).toBeVisible();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
   });
 });

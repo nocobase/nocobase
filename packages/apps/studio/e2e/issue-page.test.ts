@@ -226,10 +226,7 @@ test.describe('issue page', () => {
       path: 'storage/ui-workflow/issue-runs/screenshots/history-bottom.png',
     });
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page
-      .getByTestId('chat-header-button')
-      .filter({ visible: true })
-      .click();
+    await page.keyboard.press('Control+j');
     await expect(page.getByTestId('chat-panel')).toBeVisible();
     await check(1280, true);
     await page
