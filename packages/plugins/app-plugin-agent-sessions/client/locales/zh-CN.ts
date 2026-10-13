@@ -64,7 +64,8 @@ const zhCN: AgentSessionsResource = {
   },
   newSession: {
     title: '新会话',
-    subtitle: '和你自己电脑上的 Agent 对话，记录保存在这里。',
+    subtitle:
+      '在自己的电脑上与 Agent 讨论并澄清需求、记录任务、跟进进展。开始任务后，Studio 项目经理会协调 Agent 进行开发。',
     pickComputer: '选择电脑',
     noAgent: '没有可用的 Agent',
     folder: '电脑上的目录',
@@ -73,7 +74,7 @@ const zhCN: AgentSessionsResource = {
       'Agent 在你选的目录里以完全访问的权限工作，和在你自己的终端里一样。',
     noComputer: '先连接你的电脑',
     noComputerHint:
-      '会话在你自己的电脑上运行：Agent 用你在那台电脑上登录的账号，在你允许的目录里工作，对话记录保存在这里。连接一次，之后电脑开机就会自动在线。',
+      '会话在你自己的电脑上运行：Agent 用你在那台电脑上登录的账号，在你允许的目录里工作，对话记录保存在这里。连接一次，之后电脑开机就会自动在线。我的 Agent 帮你讨论和澄清需求、记录任务并跟进进展；开始这些任务后，Studio 项目经理才会协调 Agent 进行开发。',
     allOffline: '你的电脑都不在线',
     offlineHint: '在电脑上运行下面的命令，之后开机就会自动连接。',
     noAgentTitle: '这台电脑上还没有可用的 Agent',
