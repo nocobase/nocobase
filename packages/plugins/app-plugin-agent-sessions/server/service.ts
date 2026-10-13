@@ -6,7 +6,7 @@
  * command on this instance and within a second by one on another. Each report of a bridge is appended to the
  * session's transcript in one transaction, and the owner's pages hear of it on the realtime topic.
  */
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import {
@@ -158,6 +158,7 @@ export class AgentSessionsService {
   #toolServer = 'app';
   readonly #toolTokens: ToolTokens | undefined;
   #projects: ProjectSource | undefined;
+  #instructions: string | undefined;
   readonly #replies: ReplyStore;
   readonly #replyWaiters = new Map<string, () => void>();
 
@@ -173,6 +174,17 @@ export class AgentSessionsService {
   /** Lets sessions show, and start, what the application ties to them under `kind`. */
   registerLinkKind(kind: string, resolver: LinkResolver): void {
     this.#linkKinds.set(kind, resolver);
+  }
+
+  /**
+   * How the application wants the agents in sessions to work, such as what they do themselves and what they hand on,
+   * in English: each session's agent is told it in its first message, again whenever it changes, and when its session
+   * opens.
+   */
+  registerInstructions(text: string): void {
+    this.#instructions = text.trim()
+      ? `How to work in this session:\n${text.trim()}`
+      : undefined;
   }
 
   /** Lets a session work for one of the application's projects, which its tools then default to. */
@@ -216,6 +228,7 @@ export class AgentSessionsService {
           : undefined;
         const work = workNote(await this.#work(viewer, caller.sessionId), null);
         const lines = [
+          this.#instructions,
           project &&
             `This session works for the project "${project.name}" (id ${project.id}). File and look for work there unless the person names another project.`,
           work && `${work}\nCall \`list_session_work\` for how each is going.`,
@@ -598,6 +611,7 @@ export class AgentSessionsService {
         state: null,
         settings,
         toldWork: null,
+        toldInstructions: null,
         locale: viewer.locale ?? null,
         running: false,
         pendingPermissions: 0,
@@ -719,10 +733,17 @@ export class AgentSessionsService {
     const promptId = randomUUID();
     const work = await this.#work(viewer, sessionId, mentioned);
     const note = workNote(work, session.toldWork);
-    // The agent reads what the message mentions, and the session's work when it changed since it was last told; the
-    // transcript keeps the message as written.
+    const toldInstructions =
+      this.#instructions && instructionsHash(this.#instructions);
+    const instructions =
+      toldInstructions !== session.toldInstructions
+        ? this.#instructions
+        : undefined;
+    // The agent reads the application's instructions until it was told them, what the message mentions, and the
+    // session's work when it changed since it was last told; the transcript keeps the message as written.
     const told: readonly PromptContent[] = [
       ...content,
+      ...(instructions ? [{ type: 'text' as const, text: instructions }] : []),
       ...(mentioned.length > 0
         ? [
             {
@@ -742,6 +763,7 @@ export class AgentSessionsService {
         now,
         {
           ...(note ? { toldWork: workSnapshot(work) } : {}),
+          ...(instructions ? { toldInstructions } : {}),
           ...(viewer.locale ? { locale: viewer.locale } : {}),
         },
       );
@@ -1340,4 +1362,9 @@ function memoryReplies(): ReplyStore {
       );
     },
   };
+}
+
+/** Tells whether a session's agent was told the application's instructions as they are now. */
+function instructionsHash(text: string): string {
+  return createHash('sha256').update(text).digest('hex');
 }

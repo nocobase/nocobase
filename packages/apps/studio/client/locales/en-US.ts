@@ -143,6 +143,11 @@ const enUS = {
     errorsAlwaysVisible: 'Errors are always shown',
   },
   overrides: {
+    '@nocobase/app-plugin-agent-sessions': {
+      links: {
+        startHint: 'The project manager assigns agents and moves them along.',
+      },
+    },
     '@nocobase/app-plugin-agents': {
       runWait: {
         reasons: {

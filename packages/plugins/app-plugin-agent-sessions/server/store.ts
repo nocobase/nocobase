@@ -62,6 +62,8 @@ export interface SessionRecord {
   readonly settings: Readonly<Record<string, string>>;
   /** What its agent was last told about the work tied to it (`work.ts`). */
   readonly toldWork: WorkSnapshot | null;
+  /** The hash of the application's instructions its agent was told (`instructionsHash`). */
+  readonly toldInstructions: string | null;
   /** The language its owner last wrote in. */
   readonly locale: string | null;
   readonly running: boolean;

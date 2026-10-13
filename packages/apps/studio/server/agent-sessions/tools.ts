@@ -49,7 +49,7 @@ export function studioTools({
     defineSessionTool({
       name: 'create_issues',
       description:
-        'Records work as issues in a Studio project (people see them as tasks) and ties them to this session. Each issue waits in Backlog: nothing runs until the person starts it from this session, which hands it to an agent in a runtime that plans and does the work. Give each issue a title a teammate understands at a glance, and a description with the context, the decisions taken in this conversation, and what done means. Create issues when the person asks to, or when you agree on work to record; ask which project when it is unclear.',
+        "Records work as issues in a Studio project (people see them as tasks) and ties them to this session. Each issue waits in Backlog: nothing runs until the person starts it from this session, which hands it to Studio's project manager: it plans the work, gives each step to the agents that fit, and moves the issue along. Give each issue a title a teammate understands at a glance, and a description with the context, the decisions taken in this conversation, and what done means. Create issues when the person asks to, or when you agree on work to record; ask which project when it is unclear.",
       input: z.object({
         projectId: z.string().min(1).optional().meta({
           description:

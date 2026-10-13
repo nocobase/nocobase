@@ -68,6 +68,10 @@ The records tied to a session, created in it or mentioned in its messages, are w
 
 With `registerProjects`, a new session may work for one of the application's projects (`GET /api/agentSessions/projects`). The session shows its project, the list groups and filters by it, and its tools learn it (`SessionToolContext.projectId`); the MCP `initialize` answer tells the agent to file work there unless the person names another project.
 
+### How the agents work
+
+`registerInstructions(text)` tells the agents in sessions how the application wants them to work, in English, such as what they do themselves and what they record for others to run. The agent reads it beneath a session's first message, and beneath the next message again whenever the text changed (`agentSessions.toldInstructions` keeps a hash of what it was told), and in the MCP `initialize` answer when its session opens. The transcript keeps the messages as written.
+
 ### Giving the agents tools
 
 The agents reach the application's tools as an MCP server over HTTP. Register them once, under the server name the agents see:

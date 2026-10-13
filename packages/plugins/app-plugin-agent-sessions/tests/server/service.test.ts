@@ -869,6 +869,43 @@ describe('AgentSessionsService', () => {
     );
   });
 
+  test('tells the agent how the application wants it to work, again only when that changed', async ({
+    database,
+  }) => {
+    const { service, started, take } = setup(database);
+    service.registerInstructions('Hand development on as issues.');
+    const { computerId, session } = await started();
+    const told = async (): Promise<string[]> => {
+      const [command] = await take(computerId);
+      return command?.type === 'prompt'
+        ? command.content.flatMap((part) =>
+            part.type === 'text' ? [part.text] : [],
+          )
+        : [];
+    };
+
+    await expect(told()).resolves.toEqual([
+      'Fix the board\nand more',
+      'How to work in this session:\nHand development on as issues.',
+    ]);
+    await service.prompt(owner, session.id, text('and?'));
+    await expect(told()).resolves.toEqual(['and?']);
+
+    service.registerInstructions('Make small fixes yourself.');
+    await service.prompt(owner, session.id, text('and now?'));
+    await expect(told()).resolves.toEqual([
+      'and now?',
+      'How to work in this session:\nMake small fixes yourself.',
+    ]);
+    await expect(
+      service.toolHost.instructions({
+        userId: 'u1',
+        sessionId: session.id,
+        projectId: null,
+      }),
+    ).resolves.toBe('How to work in this session:\nMake small fixes yourself.');
+  });
+
   test('gives every session’s agent its work and how it is going', async ({
     database,
   }) => {

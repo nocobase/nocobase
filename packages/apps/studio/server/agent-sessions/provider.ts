@@ -2,6 +2,7 @@
  * Studio's side of agent sessions (`@nocobase/app-plugin-agent-sessions`), joined at boot: a session may work for one
  * of the person's projects, the issues an agent in it creates or the person mentions with `#` are tied to the session
  * (`links.ts`), and the agent gets Studio's tools over MCP (`tools.ts`). Both act as the session's owner, through the projects plugin's own services and checks.
+ * The agent is told to talk the work through and hand development to the project manager as issues (`INSTRUCTIONS`).
  */
 import { agentSessionsToken } from '@nocobase/app-plugin-agent-sessions/server';
 import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
@@ -19,6 +20,18 @@ import { issueLinks } from './links.js';
 import { studioTools } from './tools.js';
 
 const PROJECTS_NAMESPACE = '@nocobase/app-plugin-projects';
+
+/**
+ * The person's own agent talks the work through; Studio's project manager runs it once the person starts its issues,
+ * as with the chat agents' operation plans (`agents/conversation/rules.ts`).
+ */
+const INSTRUCTIONS = [
+  "You are the person's own agent: mostly you discuss, analyze and plan with them. Read code and run commands freely to understand things.",
+  "Development work is not yours to do here. Once you and the person agree on it, record it with `create_issues`: when they start the issues from this session, Studio's project manager takes them over, gives each step to the agents that fit, and moves them along.",
+  'A very small change, such as a typo or a one-line fix, you may make directly; say what you changed. Do bigger work here only when the person explicitly asks you to, and when unsure whether something is small, ask whether to record it.',
+]
+  .map((line) => `- ${line}`)
+  .join('\n');
 
 export default class StudioAgentSessionsProvider extends ServiceProvider<Application> {
   public readonly name: string = 'studio/agent-sessions';
@@ -59,6 +72,7 @@ export default class StudioAgentSessionsProvider extends ServiceProvider<Applica
       }
     };
 
+    sessions.registerInstructions(INSTRUCTIONS);
     sessions.registerProjects({
       list: async (reader) =>
         (await projects.projects.list(await viewerOf(reader.userId))).map(

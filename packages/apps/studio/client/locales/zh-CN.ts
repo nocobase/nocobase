@@ -127,6 +127,9 @@ const zhCN: AppResource = {
     errorsAlwaysVisible: '错误始终显示',
   },
   overrides: {
+    '@nocobase/app-plugin-agent-sessions': {
+      links: { startHint: '交给项目经理安排执行者和流转' },
+    },
     '@nocobase/app-plugin-agents': {
       runWait: {
         reasons: {
