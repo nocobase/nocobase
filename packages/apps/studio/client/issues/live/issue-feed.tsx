@@ -130,7 +130,8 @@ export function IssueFeed({
   );
 
   // The comment the summary shows as the delivery notes reads as one line here.
-  const deliveryId = deliveryCommentOf(detail)?.id ?? null;
+  const delivery = deliveryCommentOf(detail);
+  const deliveryId = delivery?.comment.id ?? null;
   const comments = new Map<string, IssueComment>();
   const meaningTags = (event: FeedEvent | undefined): CommentTag[] => {
     if (event?.kind === 'handOver')
@@ -215,7 +216,13 @@ export function IssueFeed({
       canEdit: canEditComment(viewer, comment),
       canDelete: canDeleteComment(viewer, comment, detail),
       ...(comment.id === deliveryId
-        ? { collapsedLabel: appT('issueLive.feed.deliveryShownAbove') }
+        ? {
+            collapsedLabel: appT(
+              delivery?.report
+                ? 'issueLive.feed.deliveryShownAbove'
+                : 'issueLive.feed.latestShownAbove',
+            ),
+          }
         : {}),
     };
   };
@@ -328,7 +335,7 @@ export function IssueFeed({
           ? {
               onReply: (item: CommentItem) => {
                 setReplyTo(original(item) ?? null);
-                conversation.editorRef.current?.focus();
+                conversation.openComposer();
               },
               onResolve: (thread, resolved: boolean) =>
                 actions.resolve(thread.root.id, resolved),

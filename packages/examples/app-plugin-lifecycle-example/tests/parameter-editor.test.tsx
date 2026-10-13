@@ -47,7 +47,11 @@ async function editor(
     save,
     read,
     list: async () => [],
-    options: async () => ({ departments: [], roles: [], people: [] }),
+    references: async () => ({
+      data: [],
+      meta: { page: 1, pageSize: 10, total: 0 },
+    }),
+    reference: async () => null,
     candidates: async () => [],
     history: async () => ({
       snapshot: null,

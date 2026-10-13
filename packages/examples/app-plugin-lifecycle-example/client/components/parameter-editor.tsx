@@ -1,12 +1,9 @@
 import { useId, useState, type ReactElement } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
 import type { JsonObject, ReviewerSelection } from '@nocobase/lifecycle';
-import type {
-  ParameterGroupView,
-  ReviewerOptions,
-} from '../../shared/parameter-configuration.js';
+import type { ParameterGroupView } from '../../shared/parameter-configuration.js';
 import type { ParameterApi } from '../lib/parameter-api.js';
-import { useLoader } from '../lib/use-loader.js';
+import { ReviewerReferenceSelect } from './reviewer-reference-select.js';
 import { errorMessage } from '../lib/api.js';
 import { NAMESPACE } from '../lib/format.js';
 import { Choice } from './choice.js';
@@ -22,31 +19,25 @@ function requestKey(): string {
 }
 function ReviewerRuleEditor({
   value,
-  options,
+  api,
   disabled,
   onChange,
 }: {
   readonly value: readonly ReviewerSelection[];
-  readonly options?: ReviewerOptions;
+  readonly api: ParameterApi;
   readonly disabled: boolean;
   readonly onChange: (value: readonly ReviewerSelection[]) => void;
 }): ReactElement {
   const { t } = useTranslation(NAMESPACE);
   const groups = [...new Set(value.map((item) => item.group))];
-  const available = (type: string) =>
-    type === 'department'
-      ? options?.departments
-      : type === 'role'
-        ? options?.roles
-        : options?.people;
   return (
     <div className='space-y-3'>
       <p className='text-sm text-muted-foreground'>
         {t('parameters.ruleExplanation')}
       </p>
       {groups.map((group, groupIndex) => (
-        <fieldset key={group} className='space-y-2 rounded-lg border p-3'>
-          <legend className='px-1 text-sm font-medium'>
+        <fieldset key={group} className='min-w-0 space-y-2'>
+          <legend className='mb-2 text-sm font-medium'>
             {t(
               groupIndex === 0
                 ? 'parameters.allConditions'
@@ -59,7 +50,7 @@ function ReviewerRuleEditor({
                 /* Rows have no local state; repeated selections need distinct positional keys. */
                 // eslint-disable-next-line @eslint-react/no-array-index-key
                 key={index}
-                className='flex flex-wrap gap-2'
+                className='grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2'
               >
                 <Choice
                   label={t('parameters.selectionType')}
@@ -76,22 +67,21 @@ function ReviewerRuleEditor({
                           ? {
                               ...current,
                               type,
-                              referenceId: available(type)?.[0]?.id ?? '',
+                              referenceId: '',
                             }
                           : current,
                       ),
                     )
                   }
                 />
-                <Choice
-                  label={t('parameters.reference')}
-                  disabled={disabled}
+                <ReviewerReferenceSelect
+                  key={item.type}
+                  api={api}
+                  type={
+                    item.type as import('../../shared/parameter-configuration.js').ReviewerReferenceType
+                  }
                   value={item.referenceId}
-                  options={(
-                    available(item.type) ?? [
-                      { id: item.referenceId, name: item.referenceId },
-                    ]
-                  ).map((item) => ({ value: item.id, label: item.name }))}
+                  disabled={disabled}
                   onChange={(referenceId) =>
                     onChange(
                       value.map((current, offset) =>
@@ -128,7 +118,7 @@ function ReviewerRuleEditor({
                   {
                     group,
                     type: 'department',
-                    referenceId: options?.departments[0]?.id ?? '',
+                    referenceId: '',
                   },
                 ])
               }
@@ -148,7 +138,7 @@ function ReviewerRuleEditor({
               {
                 group: Math.max(0, ...groups) + 1,
                 type: 'user',
-                referenceId: options?.people[0]?.id ?? '',
+                referenceId: '',
               },
             ])
           }
@@ -166,12 +156,14 @@ export function ParameterEditor({
   actor,
   onSaved,
   onBusyChange,
+  embedded = false,
 }: {
   readonly group: ParameterGroupView;
   readonly api: ParameterApi;
   readonly actor: string;
   readonly onSaved?: (group: ParameterGroupView) => void;
   readonly onBusyChange?: (busy: boolean) => void;
+  readonly embedded?: boolean;
 }): ReactElement {
   const { t } = useTranslation(NAMESPACE);
   const id = useId();
@@ -188,10 +180,6 @@ export function ParameterEditor({
   const [objectText, setObjectText] = useState<Record<string, string>>({});
   const hasReviewers = Object.values(group.fields).some(
     (field) => field.type === 'reviewers',
-  );
-  const { data: options, error: optionsError } = useLoader(
-    hasReviewers && group.canUpdate ? () => api.options() : undefined,
-    `options:${actor}:${group.key}`,
   );
   const change = (key: string, value: JsonObject[string]): void => {
     setDraft((previous) => ({ ...previous, [key]: value }));
@@ -229,7 +217,13 @@ export function ParameterEditor({
     }
   };
   return (
-    <section className='space-y-4 rounded-xl border bg-card p-4 text-card-foreground'>
+    <section
+      className={
+        embedded
+          ? 'space-y-4 py-2'
+          : 'space-y-4 rounded-xl border bg-card p-4 text-card-foreground'
+      }
+    >
       <div>
         <h3 className='font-medium'>{group.title}</h3>
         <p className='text-sm text-muted-foreground'>
@@ -258,7 +252,8 @@ export function ParameterEditor({
           {field.type === 'reviewers' ? (
             <ReviewerRuleEditor
               value={draft[key] as unknown as ReviewerSelection[]}
-              options={options}
+              key={actor}
+              api={api}
               disabled={!group.canUpdate || busy}
               onChange={(value) =>
                 change(
@@ -336,11 +331,6 @@ export function ParameterEditor({
           </p>
         ))}
       </div>
-      {optionsError && (
-        <p role='alert' className='text-sm text-destructive'>
-          {optionsError}
-        </p>
-      )}
       {note && (
         <p role='status' className='text-sm'>
           {note}
@@ -366,7 +356,7 @@ export function ParameterEditor({
           </Button>
         </div>
       )}
-      <div className='flex flex-wrap gap-2'>
+      <div className='flex flex-wrap items-center gap-2'>
         {group.canUpdate ? (
           <Button
             disabled={busy || Object.values(objectErrors).some(Boolean)}

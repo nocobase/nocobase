@@ -14,6 +14,10 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  'auth.passwordResetSuccess':
+    'Your password has been reset. Sign in with your new password.',
+  'auth.requestNewResetLink': 'Request a new reset link',
+
   'issueRuns.selection.preferredQueued': 'First choice queued, using fallback',
   'issueRuns.selection.preferredUnavailable':
     'First choice unavailable, using fallback',
@@ -143,6 +147,11 @@ const enUS = {
     errorsAlwaysVisible: 'Errors are always shown',
   },
   overrides: {
+    '@nocobase/app-plugin-agent-sessions': {
+      links: {
+        startHint: 'The project manager assigns agents and moves them along.',
+      },
+    },
     '@nocobase/app-plugin-agents': {
       runWait: {
         reasons: {
@@ -284,6 +293,7 @@ const enUS = {
     allConversations: 'View all',
     untitled: 'Untitled conversation',
     agentSetup: {
+      menu: 'Use Studio in your agent',
       open: 'Manage Studio with a local Coding Agent',
       title: 'Connect a local Coding Agent',
       description:
@@ -505,6 +515,7 @@ const enUS = {
     usage: 'Usage',
     config: 'Settings',
     home: 'Home',
+    agentSessions: 'My agents',
     dashboard: 'Dashboard',
     open: 'Open navigation',
     close: 'Close navigation',
@@ -1462,6 +1473,12 @@ const enUS = {
       sameWorkActive: 'another run in this thread is active',
       delayed: 'scheduled delay or retry backoff',
     },
+    nextLabel: 'Next:',
+    status: {
+      working: '{{agent}} working',
+      queued: '{{agent}} queued',
+      minutes: '{{minutes}} min',
+    },
     waiting: {
       waitingOwner: 'Waiting for {{owner}} to take over',
       noOwner: 'Waiting for a valid issue owner',
@@ -1490,7 +1507,7 @@ const enUS = {
     notStarted:
       'Not started. Start it and the project manager arranges the work.',
     finished: 'Finished',
-    idle: 'Nothing is going on now',
+    idle: 'Nothing is running',
     next: 'Next: {{next}}',
     start: 'Start',
     handOver: 'Hand over to the project manager',

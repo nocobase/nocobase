@@ -28,6 +28,11 @@ export interface IssueConversationState {
   readonly memberSearchFailed: boolean;
   readonly retryingMembers: boolean;
   readonly retryMembers: () => void;
+  /** Whether a composer that starts folded (on a phone) is open. */
+  readonly composerOpen: boolean;
+  readonly setComposerOpen: (open: boolean) => void;
+  /** Opens the composer and puts the cursor in it, as Reply and Answer do. */
+  readonly openComposer: () => void;
 }
 
 export const ConversationContext = createContext<IssueConversationState | null>(

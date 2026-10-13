@@ -4,13 +4,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   acquireLock,
   checkout,
+  gcWorkspaces,
   markDirsPrepared,
   subjectWorkDir,
+  writeWorkspaceMeta,
 } from '../src/core/checkout.ts';
 import { collectWorkspaces } from '../src/core/workspaces.ts';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
 import { listProcesses } from '../src/core/process-tree.ts';
-import { Supervisor, type SupervisedRun } from '../src/core/supervisor.ts';
+import {
+  Supervisor,
+  writeRecord,
+  type RunRecord,
+  type SupervisedRun,
+} from '../src/core/supervisor.ts';
 import { git, makeRemote, removeDir, tempDir } from './helpers.ts';
 
 describe('read-only workspace cleanup', () => {
@@ -124,6 +131,42 @@ describe('read-only workspace cleanup', () => {
     expect(existsSync(dirs[1]!)).toBe(false);
   });
 
+  it('collects unlocked read-only run attempts without Git checks but keeps writer attempts', async () => {
+    const [readOnly, held, writer] = [
+      'PM-1.run-a-1-x',
+      'PM-2.run-b-1-y',
+      'PM-3.run-c-1-z',
+    ].map((key) => subjectWorkDir(paths, 'app', key));
+    for (const [dir, ro] of [
+      [readOnly, true],
+      [held, true],
+      [writer, false],
+    ] as const) {
+      mkdirSync(path.join(dir!, 'app'), { recursive: true });
+      writeFileSync(path.join(dir!, 'app', '.git'), 'gitdir: /missing');
+      await writeWorkspaceMeta(paths, dir!, {
+        appKey: 'app',
+        subjectKey: path.basename(dir!).split('.')[0]!,
+        repos: [],
+        lastUsedAt: new Date().toISOString(),
+        runAttempt: true,
+        runWorktrees: true,
+        readOnly: ro,
+      });
+    }
+    const lock = await acquireLock(`${held}.lock`);
+    try {
+      const result = await collectWorkspaces({ paths });
+      expect(result.removed.map((entry) => entry.workDir)).toEqual([readOnly]);
+      expect(existsSync(held!)).toBe(true);
+      expect(existsSync(writer!)).toBe(true);
+    } finally {
+      await lock.release();
+    }
+    expect(await gcWorkspaces({ paths })).toEqual([held]);
+    expect(existsSync(writer!)).toBe(true);
+  });
+
   it('does not interpret a failed process scan as an empty process tree', async () => {
     vi.stubEnv('PATH', root);
     await expect(listProcesses(true)).rejects.toMatchObject({ code: 'ENOENT' });
@@ -204,6 +247,47 @@ describe('read-only workspace cleanup', () => {
     await new Promise((resolve) => setTimeout(resolve, 30));
     expect(stopped).toBe(false);
     expect(kill.mock.calls).toEqual([[987654, 'SIGTERM']]);
+    finish();
+    await stopping;
+    expect(stopped).toBe(true);
+  });
+
+  it('waits for a writer that is saving and removing its worktrees at shutdown', async () => {
+    const kill = vi.spyOn(process, 'kill').mockReturnValue(true);
+    const supervisor = new Supervisor({
+      paths,
+      clientFor: () => undefined,
+      timings: {},
+      log: () => {},
+    });
+    await writeRecord(paths, {
+      runId: 'writer',
+      appKey: 'app',
+      attempt: 1,
+      firstSeq: 0,
+      pid: 987655,
+      startedAt: new Date().toISOString(),
+      phase: 'reporting',
+      finalizing: true,
+      log: '',
+    } satisfies RunRecord);
+    let finish!: () => void;
+    const exited = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    supervisor.runs.set('writer', {
+      runId: 'writer',
+      pid: 987655,
+      exited,
+      groups: new Set(),
+    } as unknown as SupervisedRun);
+    let stopped = false;
+    const stopping = supervisor.stopAll(5).then(() => {
+      stopped = true;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(stopped).toBe(false);
+    expect(kill.mock.calls).toEqual([[987655, 'SIGTERM']]);
     finish();
     await stopping;
     expect(stopped).toBe(true);

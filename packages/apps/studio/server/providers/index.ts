@@ -1,6 +1,7 @@
 import type { ApplicationServiceProviderConstructor } from '@nocobase/app-server/application';
 
 import StudioAccessProvider from '../access/provider.js';
+import StudioAgentSessionsProvider from '../agent-sessions/provider.js';
 import StudioAgentsProvider from '../agents/provider.js';
 import StudioCiProvider from '../builds/ci-provider.js';
 import StudioCliProvider from '../cli/provider.js';
@@ -29,6 +30,8 @@ const serviceProviders: readonly ApplicationServiceProviderConstructor[] = [
   StudioCiProvider,
   // The knowledge base: its commands, brief sections and mount for the agents, its inbox cards.
   StudioKnowledgeProvider,
+  // Agent sessions on people's own computers: the issues their agents create, and Studio's tools for those agents.
+  StudioAgentSessionsProvider,
   // What Studio's command line leaves off.
   StudioCliProvider,
   // Registers the demo data as the application's sample data, which the framework builds once everything is ready.

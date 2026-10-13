@@ -1,5 +1,5 @@
 /**
- * "Use Studio in your agent", under the home page's composer: a dialog with a prompt to paste into a coding agent
+ * "Use Studio in your agent", under the chat page's composer and in the account menu: a dialog with a prompt to paste into a coding agent
  * (Claude Code, Codex…) that installs the nb-studio CLI, signs it in as the person and points it at `nb-studio docs`. Opening
  * it mints a short-lived download token (`agents/dist/downloadTokens`) that the prompt's install line carries; the
  * person can make a new one when it has expired. The CLI acts as the person, so the dialog says so; it signs in only
@@ -8,7 +8,7 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation } from '@tanstack/react-query';
 import { CheckIcon, CopyIcon, RefreshCwIcon, TerminalIcon } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { useHref } from 'react-router';
 
 import { useNotify } from '../../access/notify.js';
@@ -34,15 +34,7 @@ function useServerUrl(): string {
 
 export function AgentSetup(): ReactElement {
   const { t } = useTranslation();
-  const home = useHomeApi();
   const [open, setOpen] = useState(false);
-  const mint = useMutation({ mutationFn: () => home.downloadToken() });
-
-  function openDialog(next: boolean): void {
-    setOpen(next);
-    if (next && !mint.isPending) mint.mutate();
-  }
-
   return (
     <>
       <Button
@@ -50,28 +42,55 @@ export function AgentSetup(): ReactElement {
         variant='link'
         size='sm'
         className='h-auto gap-1.5 p-0 text-muted-foreground'
-        onClick={() => openDialog(true)}
+        onClick={() => setOpen(true)}
       >
         <TerminalIcon aria-hidden='true' />
         {t('home.agentSetup.open')}
       </Button>
-      <Dialog open={open} onOpenChange={openDialog}>
-        <DialogContent className='sm:max-w-xl'>
-          <DialogHeader>
-            <DialogTitle>{t('home.agentSetup.title')}</DialogTitle>
-            <DialogDescription>
-              {t('home.agentSetup.description')}
-            </DialogDescription>
-          </DialogHeader>
-          <PromptBody
-            token={mint.data?.token ?? null}
-            pending={mint.isPending}
-            failed={mint.isError}
-            onRetry={() => mint.mutate()}
-          />
-        </DialogContent>
-      </Dialog>
+      <AgentSetupDialog open={open} onOpenChange={setOpen} />
     </>
+  );
+}
+
+/** The setup dialog, opened from the chat page's link and from the account menu. */
+export function AgentSetupDialog({
+  open,
+  onOpenChange,
+}: {
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+}): ReactElement {
+  const { t } = useTranslation();
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className='sm:max-w-xl'>
+        <DialogHeader>
+          <DialogTitle>{t('home.agentSetup.title')}</DialogTitle>
+          <DialogDescription>
+            {t('home.agentSetup.description')}
+          </DialogDescription>
+        </DialogHeader>
+        {/* Mounted with the open dialog, so each opening mints a fresh token. */}
+        {open ? <MintedPrompt /> : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MintedPrompt(): ReactElement {
+  const home = useHomeApi();
+  const mint = useMutation({ mutationFn: () => home.downloadToken() });
+  const { mutate } = mint;
+  useEffect(() => {
+    mutate();
+  }, [mutate]);
+  return (
+    <PromptBody
+      token={mint.data?.token ?? null}
+      pending={mint.isPending || mint.isIdle}
+      failed={mint.isError}
+      onRetry={() => mint.mutate()}
+    />
   );
 }
 

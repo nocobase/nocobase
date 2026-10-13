@@ -1,0 +1,406 @@
+// The real daemon and isolated workers, with a deterministic tool and local Git remote.
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { expect, it } from 'vitest';
+import { FakeServer, waitFor } from './fake-server.ts';
+import {
+  cliEnv,
+  git,
+  makeRemote,
+  registerRunner,
+  removeDir,
+  startDaemon,
+  stopDaemon,
+  tempDir,
+  workRootOf,
+  writeFakeCli,
+} from './helpers.ts';
+
+it('starts an unmarked writer alongside another, cancels, resumes one head and retains the parallel head for manual integration', async () => {
+  const server = new FakeServer();
+  await server.listen();
+  const root = tempDir('parallel-worktrees-');
+  const home = path.join(root, 'home');
+  const env = cliEnv(home);
+  const remote = makeRemote(root);
+  const fakeCli = writeFakeCli(root);
+  await registerRunner(server.url, env, [
+    '--slots',
+    '2',
+    '--cli',
+    `appcli=${fakeCli}`,
+  ]);
+  const workspace = {
+    dirs: [
+      {
+        kind: 'repo' as const,
+        url: remote,
+        defaultBranch: 'main',
+        branch: 'agent/PM-300',
+        path: 'repo',
+      },
+    ],
+    env: [],
+  };
+  const subject = { key: 'PM-300', url: 'http://app.test/PM-300' };
+  const a = server.enqueue({
+    subject,
+    workspace,
+    prompt: {
+      system: '',
+      session: 'fresh',
+      turn: 'write cancelled.txt preserved\nhang',
+    },
+  });
+  const daemon = startDaemon(env);
+  try {
+    await waitFor(
+      () =>
+        a.status === 'running' &&
+        existsSync(
+          path.join(String(a.start?.workDir), 'repo', 'cancelled.txt'),
+        ),
+      30_000,
+      'first writer',
+    );
+    const cache = git(
+      ['rev-parse', '--git-common-dir'],
+      path.join(String(a.start?.workDir), 'repo'),
+    );
+    const b = server.enqueue({
+      subject,
+      workspace,
+      prompt: {
+        system: '',
+        session: 'fresh',
+        turn: 'write parallel.txt parallel\nsay second finished',
+      },
+    });
+    await waitFor(
+      () => b.status === 'completed' || b.status === 'failed',
+      30_000,
+      'unmarked concurrent writer',
+    );
+    expect(b.fail).toBeUndefined();
+    expect(b.status).toBe('completed');
+    expect(a.status).toBe('running');
+    expect(a.start?.workDir).not.toBe(b.start?.workDir);
+    server.cancel(a.payload.run.id);
+    await waitFor(
+      () => a.status === 'cancelled',
+      20_000,
+      'cancellation acknowledgement',
+    );
+    await waitFor(
+      () => !existsSync(String(a.start?.workDir)),
+      15_000,
+      'cancelled worktree removal',
+    );
+    const c = server.enqueue({
+      subject,
+      workspace,
+      prompt: {
+        system: '',
+        session: 'fresh',
+        turn: 'read parallel.txt\nsay resumed',
+      },
+    });
+    await waitFor(
+      () => c.status === 'completed' || c.status === 'failed',
+      30_000,
+      'continuation',
+    );
+    expect(c.fail).toBeUndefined();
+    const output = server
+      .events(c.payload.run.id)
+      .filter((event) => event.type === 'toolResult')
+      .map((event) => event.output)
+      .join(' ');
+    expect(output).toContain('parallel');
+    const savedRef = git(
+      ['for-each-ref', '--format=%(refname)', 'refs/runner/saved/'],
+      cache,
+    );
+    expect(savedRef).not.toBe('');
+    expect(git(['show', `${savedRef}:cancelled.txt`], cache)).toBe('preserved');
+    // The first completed parallel head owns resume. Cancelled changes remain reachable in saved.
+    expect(b.complete?.repos?.[0]?.pushed).toBe(false);
+    expect(
+      git(
+        ['for-each-ref', '--format=%(refname)', 'refs/heads/agent/PM-300'],
+        remote.replace('file://', ''),
+      ),
+    ).toBe('refs/heads/agent/PM-300');
+  } finally {
+    await stopDaemon(daemon);
+    await server.close();
+    removeDir(home);
+    removeDir(workRootOf(home));
+    removeDir(root);
+  }
+}, 150_000);
+
+it.each(['completed', 'failed', 'cancelled'] as const)(
+  'resumes unpublished files after a %s run on the same machine',
+  async (ending) => {
+    const server = new FakeServer();
+    await server.listen();
+    const root = tempDir('ending-continuation-');
+    const home = path.join(root, 'home');
+    const env = cliEnv(home);
+    const remote = makeRemote(root);
+    await registerRunner(server.url, env, [
+      '--cli',
+      `appcli=${writeFakeCli(root)}`,
+    ]);
+    const workspace = {
+      dirs: [
+        {
+          kind: 'repo' as const,
+          url: remote,
+          path: 'repo',
+          branch: 'agent/continuation',
+          defaultBranch: 'main',
+        },
+      ],
+      env: [],
+    };
+    const subject = {
+      key: 'continuation',
+      url: 'http://app.test/continuation',
+    };
+    const tail =
+      ending === 'completed'
+        ? 'say done'
+        : ending === 'failed'
+          ? 'fail toolProcess expected failure'
+          : 'hang';
+    const first = server.enqueue({
+      subject,
+      workspace,
+      prompt: {
+        system: '',
+        session: 'fresh',
+        turn: `write pending.txt ${ending}\n${tail}`,
+      },
+    });
+    const daemon = startDaemon(env);
+    try {
+      await waitFor(
+        () =>
+          existsSync(
+            path.join(String(first.start?.workDir), 'repo', 'pending.txt'),
+          ),
+        30_000,
+        'uncommitted file',
+      );
+      if (ending === 'cancelled') server.cancel(first.payload.run.id);
+      await waitFor(
+        () =>
+          first.status === ending && !existsSync(String(first.start?.workDir)),
+        30_000,
+        'saved and removed first attempt',
+      );
+      expect(
+        git(
+          [
+            'for-each-ref',
+            '--format=%(refname)',
+            'refs/heads/agent/continuation',
+          ],
+          remote.replace('file://', ''),
+        ),
+      ).toBe('');
+      const next = server.enqueue({
+        subject,
+        workspace,
+        prompt: {
+          system: '',
+          session: 'fresh',
+          turn: 'read pending.txt\nsay resumed',
+        },
+      });
+      await waitFor(
+        () => next.status === 'completed' || next.status === 'failed',
+        30_000,
+        'resumed attempt',
+      );
+      expect(next.fail).toBeUndefined();
+      expect(next.start?.workDir).not.toBe(first.start?.workDir);
+      expect(
+        server
+          .events(next.payload.run.id)
+          .filter((event) => event.type === 'toolResult')
+          .map((event) => event.output)
+          .join(' '),
+      ).toContain(ending);
+    } finally {
+      await stopDaemon(daemon);
+      await server.close();
+      removeDir(home);
+      removeDir(workRootOf(home));
+      removeDir(root);
+    }
+  },
+  90_000,
+);
+
+it('keeps a failed directory and includes its path in the existing failure detail', async () => {
+  const server = new FakeServer();
+  await server.listen();
+  const root = tempDir('failed-directory-');
+  const home = path.join(root, 'home');
+  const env = cliEnv(home);
+  const remote = makeRemote(root);
+  await registerRunner(server.url, env, [
+    '--cli',
+    `appcli=${writeFakeCli(root)}`,
+  ]);
+  const run = server.enqueue({
+    workspace: {
+      dirs: [
+        {
+          kind: 'repo',
+          url: remote,
+          path: 'repo',
+          branch: 'agent/retention',
+          defaultBranch: 'main',
+        },
+      ],
+      env: [],
+    },
+    prompt: {
+      system: '',
+      session: 'fresh',
+      turn: 'bash git checkout -b unexpected\nwrite pending.txt retained\nfail toolProcess expected failure',
+    },
+  });
+  const daemon = startDaemon(env);
+  try {
+    await waitFor(() => run.status === 'failed', 30_000, 'failed run');
+    const workDir = String(run.start?.workDir);
+    const repo = path.join(workDir, 'repo');
+    expect(run.fail?.detail).toContain(repo);
+    expect(run.fail?.detail).toContain('local branch');
+    expect(existsSync(path.join(repo, 'pending.txt'))).toBe(true);
+    expect(git(['symbolic-ref', '--short', 'HEAD'], repo)).toBe('unexpected');
+    // Final cleanup and daemon exit must also keep the failed directory.
+    await stopDaemon(daemon);
+    expect(existsSync(repo)).toBe(true);
+  } finally {
+    await stopDaemon(daemon);
+    await server.close();
+    removeDir(home);
+    removeDir(workRootOf(home));
+    removeDir(root);
+  }
+}, 60_000);
+
+it('keeps Codex HOME outside attempt worktrees and isolates thread homes', async () => {
+  const server = new FakeServer();
+  await server.listen();
+  const root = tempDir('codex-home-worktree-');
+  const home = path.join(root, 'home');
+  const env = cliEnv(home, {
+    CODEX_HOME: path.join(root, 'synthetic-host-codex'),
+  });
+  const remote = makeRemote(root);
+  await registerRunner(server.url, env, [
+    '--cli',
+    `appcli=${writeFakeCli(root)}`,
+  ]);
+  const dirs = [
+    {
+      kind: 'repo' as const,
+      url: remote,
+      path: 'repo',
+      branch: 'agent/codex-state',
+      defaultBranch: 'main',
+    },
+  ];
+  const subject = { key: 'codex-state', url: 'http://app.test/codex-state' };
+  const enqueue = (scope: string, turn: string, resumeSessionId?: string) =>
+    server.enqueue({
+      tool: {
+        kind: 'codex',
+        policy: {
+          permissionMode: 'acceptEdits',
+          allowedCommands: [],
+          deniedPatterns: [],
+          idleTimeoutMs: 30_000,
+        },
+      },
+      subject,
+      workspace: { dirs, env: [], sessionScope: scope },
+      prompt: {
+        system: '',
+        session: resumeSessionId ? 'resume' : 'fresh',
+        ...(resumeSessionId ? { resumeSessionId } : {}),
+        turn,
+      },
+    });
+  const output = (id: string) =>
+    server
+      .events(id)
+      .filter((event) => event.type === 'toolResult')
+      .map((event) => String(event.output))
+      .join('\n');
+  const first = enqueue(
+    'thread-a',
+    'bash printf remembered > "$CODEX_HOME/marker"\nbash printf "home:%s" "$CODEX_HOME"\nbash pwd',
+  );
+  const daemon = startDaemon(env);
+  try {
+    await waitFor(
+      () => first.status === 'completed' || first.status === 'failed',
+      30_000,
+      'first Codex attempt',
+    );
+    expect(first.fail).toBeUndefined();
+    expect(first.status).toBe('completed');
+    await waitFor(
+      () => !existsSync(String(first.start?.workDir)),
+      10_000,
+      'removed first worktree',
+    );
+    const externalHome = /home:([^\n]+)/u.exec(
+      output(first.payload.run.id),
+    )?.[1];
+    expect(externalHome).toBeDefined();
+    expect(externalHome!.startsWith(`${first.start?.workDir}/`)).toBe(false);
+    expect(existsSync(path.join(externalHome!, 'marker'))).toBe(true);
+    expect(output(first.payload.run.id)).toContain(
+      path.join(String(first.start?.workDir), 'repo'),
+    );
+    const second = enqueue(
+      'thread-a',
+      'bash cat "$CODEX_HOME/marker"\nbash printf "home:%s" "$CODEX_HOME"',
+      first.complete?.sessionId,
+    );
+    await waitFor(
+      () => second.status === 'completed',
+      30_000,
+      'same-thread Codex attempt',
+    );
+    expect(output(second.payload.run.id)).toContain('remembered');
+    expect(output(second.payload.run.id)).toContain(`home:${externalHome}`);
+    expect(second.complete?.sessionId).toBe(first.complete?.sessionId);
+    const other = enqueue(
+      'thread-b',
+      'bash test ! -f "$CODEX_HOME/marker" && printf isolated\nbash printf "home:%s" "$CODEX_HOME"',
+    );
+    await waitFor(
+      () => other.status === 'completed',
+      30_000,
+      'different-thread Codex attempt',
+    );
+    expect(output(other.payload.run.id)).toContain('isolated');
+    expect(output(other.payload.run.id)).not.toContain(`home:${externalHome}`);
+  } finally {
+    await stopDaemon(daemon);
+    await server.close();
+    removeDir(home);
+    removeDir(workRootOf(home));
+    removeDir(root);
+  }
+}, 120_000);

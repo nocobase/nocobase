@@ -51,10 +51,6 @@
   --foreground: oklch(0.16 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.16 0 0);
-  --overlay-backdrop: rgb(15 23 42 / 0.28);
-  --overlay-shadow:
-    0 24px 64px -16px rgb(15 23 42 / 0.22),
-    0 8px 24px -12px rgb(15 23 42 / 0.16);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.16 0 0);
   --primary: #002ad1;
@@ -72,8 +68,9 @@
   --muted-foreground: oklch(0.52 0 0);
   --accent: rgb(237 242 255);
   --accent-foreground: rgb(0 42 209);
+  --hover: color-mix(in srgb, var(--muted) 70%, var(--card));
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.9 0 0);
+  --border: oklch(0.9 0 0 / 60%);
   --input: oklch(0.9 0 0);
   --ring: var(--primary);
   --chart-1: oklch(0.646 0.222 41.116);
@@ -85,8 +82,8 @@
   --sidebar-foreground: var(--card-foreground);
   --sidebar-primary: color-mix(in srgb, var(--primary) 8%, var(--sidebar));
   --sidebar-primary-foreground: var(--primary);
-  --sidebar-accent: var(--accent);
-  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-accent: var(--hover);
+  --sidebar-accent-foreground: var(--sidebar-foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
 }
@@ -98,9 +95,6 @@
   --foreground: oklch(0.96 0 0);
   --card: oklch(0.18 0 0);
   --card-foreground: oklch(0.985 0 0);
-  --overlay-backdrop: rgb(0 0 0 / 0.58);
-  --overlay-shadow:
-    0 24px 64px -16px rgb(0 0 0 / 0.6), 0 8px 24px -12px rgb(0 0 0 / 0.4);
   --popover: oklch(0.18 0 0);
   --popover-foreground: oklch(0.985 0 0);
   --primary: #8ca9ff;
@@ -115,6 +109,7 @@
   --muted-foreground: oklch(0.7 0 0);
   --accent: rgb(30 42 72);
   --accent-foreground: rgb(174 194 255);
+  --hover: color-mix(in srgb, var(--muted) 70%, var(--card));
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
@@ -128,8 +123,8 @@
   --sidebar-foreground: var(--card-foreground);
   --sidebar-primary: color-mix(in srgb, var(--primary) 8%, var(--sidebar));
   --sidebar-primary-foreground: var(--primary);
-  --sidebar-accent: var(--accent);
-  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-accent: var(--hover);
+  --sidebar-accent-foreground: var(--sidebar-foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
 }

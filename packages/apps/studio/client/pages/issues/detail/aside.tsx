@@ -26,7 +26,7 @@ export function IssuePageAside({
   readonly pageActions: IssuePageActions;
 }): ReactElement {
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='flex flex-col gap-4 max-md:gap-2 max-md:[&>*]:rounded-none max-md:[&>*]:border-x-0 max-md:[&_[data-slot=card]]:rounded-none'>
       <IssuePropertiesCard
         detail={detail}
         update={update}
