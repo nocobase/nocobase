@@ -7,12 +7,15 @@ import type { Projects } from '@nocobase/app-plugin-projects/server/tokens';
 import type { DatabaseConnection } from '@nocobase/db';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { AGENT_KIND } from './tx.js';
+import { readOwnerHandoff } from '../issues/owner-handoff.js';
 
 export function issueExecutionIdentity(
   agents: Pick<Agents, 'runs' | 'agents'>,
   projects: () => Pick<Projects, 'issueContext' | 'commentQueries'>,
 ): NonNullable<SubjectBinding['actsAs']> {
   return async (conn, work) => {
+    if ((await readOwnerHandoff(conn, work.subjectId))?.waiting)
+      return { actorUserId: null, reason: 'waitingOwner' };
     const seen = new Set<string>();
     const comments = await projects().commentQueries.list(conn, work.subjectId);
     const byId = new Map(comments.map((comment) => [comment.id, comment]));

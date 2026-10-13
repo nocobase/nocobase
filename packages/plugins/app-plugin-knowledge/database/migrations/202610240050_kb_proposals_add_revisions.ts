@@ -50,7 +50,7 @@ function openKeyOf(row: Record<string, unknown>): string {
 }
 
 const migration: MigrationDefinition = defineMigration({
-  name: '202610240040_kb_proposals_add_revisions',
+  name: '202610240050_kb_proposals_add_revisions',
 
   async up({ builder, query }: MigrationContext): Promise<void> {
     await builder.createCollection('kbProposalGroups', (collection) => {

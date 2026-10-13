@@ -13,6 +13,28 @@ import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
+  'ownerHandoff.title': '负责人接手',
+  'ownerHandoff.accept': '接手',
+  'ownerHandoff.claim': '认领',
+  'ownerHandoff.reject': '拒绝',
+  'ownerHandoff.accepted': '已接手',
+  'ownerHandoff.rejected': '已拒绝接手，agent 运行保持暂停',
+  'ownerHandoff.rejectedWaiting': '已拒绝接手，等待重新转交或负责人自行认领。',
+  'ownerHandoff.stale': '此接手请求已失效，请刷新任务。',
+  'ownerHandoff.failed': '未能处理接手请求，请检查权限并刷新任务。',
+  'ownerHandoff.loadFailed': '未能加载接手请求。',
+  'activity.actions.ownerTransferred': '转交了负责人',
+  'activity.actions.ownerAccepted': '接手了任务',
+  'activity.actions.ownerRejected': '拒绝了接手',
+  'activity.actions.waitingOwner': '跳过 agent 运行：等待新负责人接手',
+  'inbox.types.owner_handoff': '等待接手',
+  'inbox.types.owner_handoff_rejected': '接手已拒绝',
+  'inbox.text.owner_handoff': '接手 {{identifier}}',
+  'inbox.text.owner_handoff_rejected': '{{identifier}} 的接手已拒绝',
+  'inbox.body.owner_handoff':
+    '请选择接手或拒绝，新负责人接手前 agent 运行保持暂停。',
+  'inbox.body.owner_handoff_rejected':
+    '新负责人拒绝了接手，负责人保持不变，agent 运行保持暂停。',
   'issueRuns.model': '模型：{{model}}',
   'issueRuns.configuredModel': '配置模型：{{model}}',
   'issueRuns.modelUnknown': '模型尚未报告',
@@ -998,6 +1020,7 @@ const zhCN: AppResource = {
       comment: '评论',
       statusChange: '状态变更',
       ownerChanged: '负责人变更',
+      ownerAccepted: '负责人接手',
       projectChanged: '转项目',
       unblocked: '阻塞解除',
       subtasksFinished: '子任务完成',
@@ -1278,6 +1301,7 @@ const zhCN: AppResource = {
   issueStart: { title: '现在开始？', later: '暂不开始', start: '开始' },
   issueProgress: {
     waiting: {
+      waitingOwner: '等待 {{owner}} 接手',
       noOwner: '正在等待有效的任务负责人',
       notConfigured: '{{agent}} 正在等待：尚未配置首选或备选模型',
       noRunner: '{{agent}} 正在等待：没有能运行首选或备选模型的在线执行机',

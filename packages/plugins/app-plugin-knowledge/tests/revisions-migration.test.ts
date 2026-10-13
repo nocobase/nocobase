@@ -70,7 +70,7 @@ const legacy = [
   { ...base, id: 'withdrawn', status: 'withdrawn', createdAt: at(7) },
 ].map((row) => ({ ...row, updatedAt: row.createdAt }));
 
-describeMigration('202610240040_kb_proposals_add_revisions', {
+describeMigration('202610240050_kb_proposals_add_revisions', {
   sources,
   before: async ({ connection }) => {
     await connection.query.insertInto('kbProposals').values(legacy).execute();
