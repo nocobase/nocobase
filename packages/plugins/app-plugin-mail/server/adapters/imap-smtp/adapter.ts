@@ -714,8 +714,14 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         { uid: true, bodyStructure: true, envelope: true },
         { uid: true },
       );
-      const part =
-        message && attachmentParts(message.bodyStructure)[locator.attachment];
+      if (!message || message.uid !== locator.uid)
+        return failure(
+          'IMAP_ATTACHMENT_NOT_FOUND',
+          'The IMAP attachment copy changed.',
+          'provider',
+          false,
+        );
+      const part = attachmentParts(message.bodyStructure)[locator.attachment];
       if (!part)
         return failure(
           'IMAP_ATTACHMENT_NOT_FOUND',
@@ -739,6 +745,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           actual.inline !== expected.inline ||
           ((storedCopy?.source === 'objectid' ||
             storedCopy?.source === 'x-gm-msgid') &&
+            validNativeId(this.nativeSource(), message.emailId) !== undefined &&
             (this.nativeSource() !== storedCopy.source ||
               message.emailId !== storedCopy.providerMessageId))
         )
@@ -1512,11 +1519,16 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       );
       if (!message || message.uid !== location.uid) return undefined;
       const source = location.source ?? 'locator';
-      if (source === 'objectid' || source === 'x-gm-msgid')
-        return this.nativeSource() === source &&
-          message.emailId === location.providerMessageId
+      if (source === 'objectid' || source === 'x-gm-msgid') {
+        const currentSource = this.nativeSource();
+        const nativeId = validNativeId(currentSource, message.emailId);
+        // A UID cannot identify another message within the same UIDVALIDITY.
+        // Missing native metadata preserves this previously verified tuple.
+        return !nativeId ||
+          (currentSource === source && nativeId === location.providerMessageId)
           ? message
           : undefined;
+      }
       if (source === 'rfc-message-id')
         return message.envelope?.messageId === location.providerMessageId
           ? message

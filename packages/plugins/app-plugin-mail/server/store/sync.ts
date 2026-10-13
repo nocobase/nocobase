@@ -767,7 +767,10 @@ export function createImapLocationPersistence(
     }
     return rows.flatMap((row) => {
       const message = messages.get(row.messageId);
-      return message ? [toStoredLocation(row, message)] : [];
+      if (!message) return [];
+      const location = toStoredLocation(row, message);
+      validateImapStoredLocation(location);
+      return [location];
     });
   };
   const select = (query: QueryAdapter) =>

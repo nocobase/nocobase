@@ -1036,10 +1036,24 @@ describe('IMAP review regressions', () => {
         ok: true,
         value: { messages: [{ providerMessageId: 'OBJECT' }] },
       });
+      expect(await adapter.getMessage!('OBJECT')).toMatchObject({
+        ok: true,
+        value: { providerMessageId: 'OBJECT', text: 'Hello' },
+      });
     } finally {
       await adapter.close?.();
     }
+    await sync();
+    expect(
+      await service().getMessage(owner, accountId, before.id),
+    ).toMatchObject({ id: before.id, text: 'Hello' });
+    await service().updateMessage(owner, {
+      accountId,
+      messageId: before.id,
+      read: true,
+    });
     expect((await messages())[0]).toMatchObject({
+      read: true,
       id: before.id,
       imapIdSource: 'objectid',
     });
