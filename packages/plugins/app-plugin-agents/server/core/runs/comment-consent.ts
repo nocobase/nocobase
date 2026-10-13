@@ -58,7 +58,10 @@ export async function currentCommentOwner(
 export async function commentFromOwner(
   conn: DatabaseConnection,
   root: RunRecord,
+  visited: Set<string> = new Set<string>(),
 ): Promise<boolean> {
+  if (visited.has(root.id)) return false;
+  visited.add(root.id);
   if (root.requestedByUserId !== root.ownerUserId) return false;
   const inputs = await inputsRepo(conn).findMany({
     filter: { runId: root.id },
@@ -92,19 +95,26 @@ export async function commentFromOwner(
       : null;
   if (
     !cause ||
+    cause.subjectKind !== root.subjectKind ||
+    cause.subjectId !== root.subjectId ||
+    cause.ownerUserId !== root.ownerUserId ||
     (cause.requestedByUserId ?? cause.actorUserId) !== root.ownerUserId
   )
     return false;
   if (cause.commentRootRunId) {
     const origin = await findRunRecord(conn, cause.commentRootRunId);
     return Boolean(
-      origin && origin.id !== root.id && (await commentFromOwner(conn, origin)),
+      origin &&
+      origin.id !== root.id &&
+      (await commentFromOwner(conn, origin, visited)),
     );
   }
   const causeInputs = await inputsRepo(conn).findMany({
     filter: { runId: cause.id },
   });
-  return !causeInputs.some((input) => input.type === 'comment');
+  return causeInputs.some((input) => input.type === 'comment')
+    ? commentFromOwner(conn, cause, visited)
+    : true;
 }
 
 export async function commentDecision(

@@ -266,10 +266,6 @@ export interface RequestedRun {
 
 /** Work queued straight away, as `runs.enqueue` queues it once nobody needs to confirm it. */
 export interface DirectRun {
-  readonly commentRunId?: string | null;
-  readonly commentRootRunId?: string | null;
-  readonly commentExecution?: 'requester';
-  readonly commentOwnerKey?: string | null;
   readonly agent: Agent;
   readonly subject: { readonly kind: string; readonly id: string };
   readonly threadScope: string;
@@ -379,6 +375,12 @@ export interface RunRequestDeps {
     record: RunRequestRecord,
   ) => Promise<void>;
   readonly releaseCommentRequest?: (
+    unit: Tx,
+    record: RunRequestRecord,
+    byUserId: string,
+  ) => Promise<RequestedRun>;
+  /** Switches every unfinished target and input of the locked comment chain atomically. */
+  readonly runCommentAsRequester?: (
     unit: Tx,
     record: RunRequestRecord,
     byUserId: string,
@@ -559,9 +561,6 @@ export function createRunRequestService(
     maxAttempts:
       record.maxAttempts === null ? null : Number(record.maxAttempts),
     input: inputOf(record),
-    commentOwnerKey: record.commentOwnerKey ?? null,
-    commentRunId: record.commentRunId ?? null,
-    commentRootRunId: record.commentRootRunId ?? null,
   });
 
   async function itemsOf(
@@ -769,8 +768,6 @@ export function createRunRequestService(
         );
         const work = workOf(record, agent);
         await deps.requireRunnerFor(unit, agent, byUserId, work.requires);
-        if (record.purpose === 'personalRunner')
-          await deps.cancelCommentRequest!(unit, record, byUserId);
         if (record.status === 'pending')
           await settle(unit, record, {
             status: expired ? 'expired' : 'withdrawn',
@@ -787,15 +784,15 @@ export function createRunRequestService(
           if (result.updatedCount !== 1)
             throw conflict('The request changed; read it again.');
         }
-        const run = await deps.direct(unit, {
-          ...work,
-          ...(record.purpose === 'personalRunner'
-            ? { commentExecution: 'requester' as const }
-            : {}),
-          actorUserId: byUserId,
-          requestedByUserId: byUserId,
-          confirmedByUserId: null,
-        });
+        const run =
+          record.purpose === 'personalRunner'
+            ? await deps.runCommentAsRequester!(unit, record, byUserId)
+            : await deps.direct(unit, {
+                ...work,
+                actorUserId: byUserId,
+                requestedByUserId: byUserId,
+                confirmedByUserId: null,
+              });
         const request = toRunRequest(await setRun(unit, record.id, run.runId));
         if (record.status === 'pending')
           unit.emit({

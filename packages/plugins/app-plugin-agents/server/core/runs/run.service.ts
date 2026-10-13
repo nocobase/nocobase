@@ -45,7 +45,12 @@ import {
 } from '../../kernel/errors.js';
 import type { IdSource } from '../../kernel/ids.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
-import { asJson, cleanList, jsonObject } from '../../kernel/values.js';
+import {
+  asJson,
+  cleanList,
+  jsonObject,
+  stringArray,
+} from '../../kernel/values.js';
 import type { AgentService } from '../agents/index.js';
 import { findAgent, lockAgentForClaim } from '../agents/index.js';
 import { agentNamesOf } from '../agents/agent.store.js';
@@ -372,6 +377,9 @@ function fireAtOf(value: Date | string | undefined, now: Date): string | null {
   if (Number.isNaN(at.getTime())) throw invalid('fireAt is not a date.');
   return at.getTime() > now.getTime() ? at.toISOString() : null;
 }
+
+const COMMENT_CANCEL_DETAIL =
+  'The personal runner request was declined or switched to the commenter.';
 
 export function createRunService(deps: RunServiceDeps): RunService {
   const { tx, ids, clock } = deps;
@@ -867,82 +875,132 @@ export function createRunService(deps: RunServiceDeps): RunService {
           await finishRun(unit, deps, run, {
             status: 'cancelled',
             reason: null,
-            detail:
-              'The personal runner request was declined or switched to the commenter.',
+            detail: COMMENT_CANCEL_DETAIL,
             cancelledById: byUserId,
           });
     },
-    direct: async (unit, run) => {
-      const original = run.input;
-      if (run.commentExecution === 'requester' && run.commentRunId) {
-        const targetInputs = await inputsRepo(unit.conn).findMany({
-          filter: { runId: run.commentRunId },
-          sort: (sort) => [
-            sort.field('createdAt').asc(),
-            sort.field('id').asc(),
-          ],
-        });
-        const target =
-          targetInputs.find((input) => !input.handledAt) ??
-          targetInputs.find(
-            (input) => jsonObject(input.payload).commentSourceSnapshot !== true,
-          );
-        if (target) run = { ...run, input: toInput(target) };
-      }
-      const identity = await selectedIdentity(
-        unit,
-        {
-          agentId: run.agent.id,
-          subject: run.subject,
-          input: run.input,
-          actorUserId: run.actorUserId,
-        },
-        run.commentExecution,
-      );
-      const actorUserId =
-        run.commentExecution === 'requester'
-          ? run.actorUserId
-          : (identity?.actorUserId ?? run.actorUserId);
-      const agent = await requireInvocable(unit, run.agent.id, actorUserId);
-      const result = await queue(unit, agent, {
-        ...(run.commentExecution === 'requester'
-          ? {
-              commentRootRunId: '',
-              commentExecution: 'requester',
-              commentOwnerKey: run.commentOwnerKey ?? null,
-            }
-          : {}),
-        freshSession: run.freshSession,
-        subject: run.subject,
-        threadScope: run.threadScope,
-        actorUserId,
-        requestedByUserId: run.requestedByUserId,
-        confirmedByUserId: run.confirmedByUserId,
-        ownerUserId:
-          run.commentExecution === 'requester'
-            ? run.ownerUserId
-            : identity
-              ? actorUserId
-              : run.ownerUserId,
-        priority: run.priority,
-        // As it was asked: a moment already past when it is confirmed means now.
-        fireAt: fireAtOf(run.fireAt ?? undefined, clock.now()),
-        requires: run.requires,
-        ...(run.maxAttempts === null ? {} : { maxAttempts: run.maxAttempts }),
-        input: run.input,
+    runCommentAsRequester: async (unit, record, byUserId) => {
+      const chain = await runsRepo(unit.conn).findMany({
+        filter: { commentRootRunId: record.commentRootRunId! },
+        sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
       });
+      const targets = [];
+      for (const old of chain) {
+        // Rejection ends the queued chain, but leaves its inputs unhandled. Do not revive independently ended work.
+        const declined =
+          record.status === 'rejected' &&
+          old.status === 'cancelled' &&
+          old.cancelledById === record.responsibleUserId &&
+          old.failureDetail === COMMENT_CANCEL_DETAIL;
+        if (isTerminal(old.status) && !declined) continue;
+        const inputs = await pendingInputs(unit.conn, old.id);
+        if (inputs.length === 0) continue;
+        await selectedIdentity(
+          unit,
+          {
+            agentId: old.agentId,
+            subject: { kind: old.subjectKind, id: old.subjectId },
+            input: toInput(inputs[0]),
+            actorUserId: byUserId,
+          },
+          'requester',
+        );
+        const agent = await requireInvocable(unit, old.agentId, byUserId);
+        const requires = stringArray(old.requires);
+        await requireRunnerFor(unit, agent, byUserId, requires);
+        targets.push({ old, inputs, agent, requires });
+      }
+      if (!targets.length)
+        throw precondition(
+          'RUN_REQUEST_SETTLED',
+          'No comment work is still waiting.',
+        );
+      // Validate all targets before stopping any of them. The root lock and transaction also cover claims and repeat clicks.
+      for (const old of chain)
+        if (!isTerminal(old.status))
+          await finishRun(unit, deps, old, {
+            status: 'cancelled',
+            reason: null,
+            detail: COMMENT_CANCEL_DETAIL,
+            cancelledById: byUserId,
+          });
+      const replacements = new Map<string, RunEnqueued>();
+      let rootId: string | undefined;
+      for (const { old, inputs, agent, requires } of targets) {
+        const first = inputs[0];
+        const next = await queue(unit, agent, {
+          commentRootRunId: rootId ?? '',
+          commentExecution: 'requester',
+          commentOwnerKey: record.commentOwnerKey ?? null,
+          freshSession: Boolean(old.freshSession),
+          subject: { kind: old.subjectKind, id: old.subjectId },
+          threadScope: old.threadScope,
+          actorUserId: byUserId,
+          requestedByUserId: byUserId,
+          confirmedByUserId: null,
+          ownerUserId: old.ownerUserId,
+          priority: Number(old.priority),
+          fireAt: fireAtOf(old.availableAt ?? undefined, clock.now()),
+          requires,
+          maxAttempts: Number(old.maxAttempts),
+          input: toInput(first),
+        });
+        rootId ??= next.runId;
+        replacements.set(old.id, next);
+        for (const input of inputs.slice(1))
+          await insertInput(unit, next.runId, {
+            ...toInput(input),
+            payload: { ...jsonObject(input.payload), commentRootRunId: rootId },
+          });
+      }
+      // Remap causal references only for replaced work; completed ancestors remain the original historical runs.
+      for (const { old } of targets) {
+        const next = replacements.get(old.id)!;
+        if (old.parentRunId)
+          await runsRepo(unit.conn).updateMany({
+            filter: { id: next.runId },
+            values: {
+              parentRunId:
+                replacements.get(old.parentRunId)?.runId ?? old.parentRunId,
+            },
+          });
+        for (const input of await pendingInputs(unit.conn, next.runId)) {
+          const payload = jsonObject(input.payload);
+          const cause =
+            typeof payload.causedByRunId === 'string'
+              ? replacements.get(payload.causedByRunId)
+              : undefined;
+          if (cause)
+            await inputsRepo(unit.conn).updateMany({
+              filter: { id: input.id },
+              values: {
+                payload: asJson({ ...payload, causedByRunId: cause.runId }),
+              },
+            });
+        }
+      }
+      const rootInputs = await pendingInputs(unit.conn, rootId!);
       if (
-        run.commentExecution === 'requester' &&
-        (original.text !== run.input.text ||
-          jsonObject(original.payload).commentId !==
-            jsonObject(run.input.payload).commentId)
+        !rootInputs.some(
+          (input) =>
+            input.type === record.inputType &&
+            input.text === record.inputText &&
+            jsonObject(input.payload).commentId ===
+              jsonObject(record.inputPayload).commentId,
+        )
       ) {
-        const sourceId = await insertInput(unit, result.runId, {
-          ...original,
+        const sourceId = await insertInput(unit, rootId!, {
+          type: record.inputType as NewInput['type'],
+          actor: {
+            kind: record.inputActorKind as NewInput['actor']['kind'],
+            id: record.inputActorId,
+            name: record.inputActorName,
+          },
+          text: record.inputText,
           payload: {
-            ...jsonObject(original.payload),
+            ...jsonObject(record.inputPayload),
             commentSourceSnapshot: true,
-            commentRootRunId: result.runId,
+            commentRootRunId: rootId,
           },
         });
         await inputsRepo(unit.conn).updateMany({
@@ -950,7 +1008,34 @@ export function createRunService(deps: RunServiceDeps): RunService {
           values: { handledAt: clock.now().toISOString() },
         });
       }
-      return result;
+      return (
+        replacements.get(record.commentRunId!) ??
+        replacements.values().next().value!
+      );
+    },
+    direct: async (unit, run) => {
+      const identity = await selectedIdentity(unit, {
+        agentId: run.agent.id,
+        subject: run.subject,
+        input: run.input,
+        actorUserId: run.actorUserId,
+      });
+      const actorUserId = identity?.actorUserId ?? run.actorUserId;
+      const agent = await requireInvocable(unit, run.agent.id, actorUserId);
+      return queue(unit, agent, {
+        freshSession: run.freshSession,
+        subject: run.subject,
+        threadScope: run.threadScope,
+        actorUserId,
+        requestedByUserId: run.requestedByUserId,
+        confirmedByUserId: run.confirmedByUserId,
+        ownerUserId: identity ? actorUserId : run.ownerUserId,
+        priority: run.priority,
+        fireAt: fireAtOf(run.fireAt ?? undefined, clock.now()),
+        requires: run.requires,
+        ...(run.maxAttempts === null ? {} : { maxAttempts: run.maxAttempts }),
+        input: run.input,
+      });
     },
   });
 

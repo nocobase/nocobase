@@ -24,6 +24,7 @@ test('comment work shares the decision card and runs only on an authorized ident
   const owner = await api.get<{ userId: string }>('projects/me');
   const author = await requester.get<{ userId: string }>('projects/me');
   const settings = await api.get<{
+    name: string;
     firstChoiceAgentId: string | null;
     fallbackAgentId: string | null;
     commentRunLimit: number;
@@ -51,6 +52,7 @@ test('comment work shares the decision card and runs only on an authorized ident
   try {
     const team = new FakeRunner(api, `consent-team-${unique()}`, true);
     await api.patch('projectManager', {
+      name: 'Project manager',
       firstChoiceAgentId: await team.agent(),
       fallbackAgentId: null,
       commentRunLimit: 20,
@@ -226,6 +228,238 @@ test('comment work shares the decision card and runs only on an authorized ident
     await shot('handoff-priority', requesterPage);
   } finally {
     await api.patch('projectManager', {
+      name: settings.name,
+      firstChoiceAgentId: settings.firstChoiceAgentId,
+      fallbackAgentId: settings.fallbackAgentId,
+      commentRunLimit: settings.commentRunLimit,
+    });
+    for (const issue of created)
+      await api.delete(`projects/issues/${issue.id}`).catch(() => undefined);
+    await requesterContext.close();
+  }
+});
+
+test('owner delegation needs no extra consent and Run as me preserves both comment targets', async ({
+  page,
+  api,
+  browser,
+}) => {
+  test.setTimeout(240_000);
+  const requesterContext = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    locale: 'en-US',
+  });
+  await signIn(requesterContext, 'lisa');
+  const requester = new Api(requesterContext.request);
+  const requesterPage = await requesterContext.newPage();
+  await requester.patch('users/me/preferences', { locale: 'en-US' });
+  await api.patch('users/me/preferences', { locale: 'en-US' });
+  const owner = await api.get<{ userId: string }>('projects/me');
+  const author = await requester.get<{ userId: string }>('projects/me');
+  const settings = await api.get<{
+    name: string;
+    firstChoiceAgentId: string | null;
+    fallbackAgentId: string | null;
+    commentRunLimit: number;
+  }>('projectManager');
+  const created: Issue[] = [];
+  const make = async (title: string) => {
+    const issue = await api.post<Issue>('projects/issues', {
+      title,
+      ownerUserId: owner.userId,
+      statusKey: 'in_progress',
+      start: false,
+    });
+    created.push(issue);
+    return issue;
+  };
+  const shot = (name: string, target = page) =>
+    target.screenshot({
+      path: test.info().outputPath(`pm301-${name}.png`),
+      fullPage: true,
+    });
+  try {
+    const suffix = unique();
+    const managerModel = `consent-manager-${suffix}`;
+    const workerModel = `consent-worker-${suffix}`;
+    const ownerManager = new FakeRunner(api, 'Owner manager laptop', true, {
+      trust: 'ownerOnly',
+      model: managerModel,
+    });
+    const ownerWorker = new FakeRunner(api, 'Owner worker laptop', true, {
+      trust: 'ownerOnly',
+      model: workerModel,
+    });
+    const worker = await ownerWorker.discovered();
+    await api.patch('projectManager', {
+      name: 'Project manager',
+      firstChoiceAgentId: await ownerManager.agent(),
+      fallbackAgentId: null,
+      commentRunLimit: 20,
+    });
+    const registeredOwners =
+      await api.get<{ name: string; trust: string; ownerUserId: string }[]>(
+        'agents/runners',
+      );
+    for (const name of ['Owner manager laptop', 'Owner worker laptop'])
+      expect(
+        registeredOwners.find((runner) => runner.name === name),
+      ).toMatchObject({ trust: 'ownerOnly', ownerUserId: owner.userId });
+    const ownIssue = await make(
+      'Owner comment and delegated step use the personal runner directly',
+    );
+    const source = await api.post<{ comment: { id: string } }>(
+      `projects/issues/${ownIssue.id}/comments`,
+      { content: 'Please delegate my isolated delivery to the worker.' },
+    );
+    const managerTurn = await ownerManager.start(ownIssue.identifier);
+    await api.post(
+      `projects/issues/${ownIssue.id}/comments`,
+      {
+        content: `[@Worker](mention://agent/${worker.id}) implement the owner’s next step without another confirmation.`,
+        parentId: source.comment.id,
+      },
+      { 'x-nocobase-run-token': managerTurn.token },
+    );
+    expect(
+      (await api.get<IssueProgress>(`issueProgress/${ownIssue.id}`))
+        .personalRunnerRequests,
+    ).toEqual([]);
+    await ownerManager.complete(managerTurn.runId, 'Done.');
+    const workerTurn = await ownerWorker.start(ownIssue.identifier);
+    const ownStep = await api.get<RunDetail>(`agents/runs/${workerTurn.runId}`);
+    expect(ownStep.actorUserId).toBe(owner.userId);
+    expect(ownStep.requestedByUserId).toBe(owner.userId);
+    expect(ownStep.confirmedByUserId).toBeNull();
+    await open(page, `/issues/${ownIssue.identifier}/runs/${workerTurn.runId}`);
+    await expect(
+      page.getByText('Running as Super Admin', { exact: false }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Confirm', exact: true }),
+    ).toHaveCount(0);
+    await shot('owner-delegation-no-consent');
+    await ownerWorker.complete(workerTurn.runId, 'Done.');
+
+    const authorManager = new FakeRunner(
+      requester,
+      'Commenter manager laptop',
+      true,
+      { trust: 'ownerOnly', model: managerModel },
+    );
+    const authorWorker = new FakeRunner(
+      requester,
+      'Commenter worker laptop',
+      true,
+      { trust: 'ownerOnly', model: workerModel },
+    );
+    await authorManager.agent();
+    await authorWorker.agent();
+    const registeredCommenters =
+      await api.get<{ name: string; trust: string; ownerUserId: string }[]>(
+        'agents/runners',
+      );
+    for (const name of ['Commenter manager laptop', 'Commenter worker laptop'])
+      expect(
+        registeredCommenters.find((runner) => runner.name === name),
+      ).toMatchObject({ trust: 'ownerOnly', ownerUserId: author.userId });
+
+    for (const state of ['pending', 'rejected'] as const) {
+      const issue = await make(
+        `Two comment targets continue as the commenter after ${state} consent`,
+      );
+      await requester.post(`projects/issues/${issue.id}/comments`, {
+        content: `[@Worker](mention://agent/${worker.id}) inspect this delivery together with the project manager.`,
+      });
+      const before = await api.get<RunDetail[]>(
+        `agents/runs?subjectKind=issue&subjectId=${issue.id}`,
+      );
+      expect(before).toHaveLength(2);
+      await expect
+        .poll(
+          async () =>
+            (await api.get<IssueProgress>(`issueProgress/${issue.id}`))
+              .personalRunnerRequests?.length,
+        )
+        .toBe(1);
+      expect(await ownerManager.probe()).toEqual([]);
+      expect(await ownerWorker.probe()).toEqual([]);
+      if (state === 'rejected') {
+        await open(page, `/issues/${issue.identifier}`);
+        await page
+          .getByRole('region', { name: 'Needs you', exact: true })
+          .getByRole('button', { name: 'Reject', exact: true })
+          .click();
+      }
+      await open(requesterPage, `/issues/${issue.identifier}`);
+      await requesterPage
+        .getByRole('button', { name: 'Run as me', exact: true })
+        .click();
+      await expect
+        .poll(
+          async () =>
+            (
+              await requester.get<RunDetail[]>(
+                `agents/runs?subjectKind=issue&subjectId=${issue.id}`,
+              )
+            ).filter((run) => run.status === 'queued').length,
+        )
+        .toBe(2);
+      const after = await requester.get<RunDetail[]>(
+        `agents/runs?subjectKind=issue&subjectId=${issue.id}`,
+      );
+      const continued = after.filter((run) => run.status === 'queued');
+      expect(continued.map((run) => run.agentId).sort()).toEqual(
+        before.map((run) => run.agentId).sort(),
+      );
+      expect(
+        continued.every(
+          (run) =>
+            run.actorUserId === author.userId &&
+            run.commentExecution === 'requester',
+        ),
+      ).toBe(true);
+      expect(new Set(continued.map((run) => run.commentRootRunId)).size).toBe(
+        1,
+      );
+      expect(await ownerManager.probe()).toEqual([]);
+      expect(await ownerWorker.probe()).toEqual([]);
+      const step = await authorWorker.start(issue.identifier);
+      expect(
+        (await requester.get<RunDetail>(`agents/runs/${step.runId}`))
+          .actorUserId,
+      ).toBe(author.userId);
+      await open(
+        requesterPage,
+        `/issues/${issue.identifier}/runs/${step.runId}`,
+      );
+      await expect(
+        requesterPage
+          .getByText('Running as Lisa Nguyen', { exact: false })
+          .first(),
+      ).toBeVisible();
+      await shot(`multi-${state}-worker`, requesterPage);
+      await authorWorker.complete(step.runId, 'Done.');
+      const manager = await authorManager.start(issue.identifier);
+      expect(
+        (await requester.get<RunDetail>(`agents/runs/${manager.runId}`))
+          .actorUserId,
+      ).toBe(author.userId);
+      await open(
+        requesterPage,
+        `/issues/${issue.identifier}/runs/${manager.runId}`,
+      );
+      await expect(
+        requesterPage
+          .getByText('Running as Lisa Nguyen', { exact: false })
+          .first(),
+      ).toBeVisible();
+      await shot(`multi-${state}-manager`, requesterPage);
+      await authorManager.complete(manager.runId, 'Done.');
+    }
+  } finally {
+    await api.patch('projectManager', {
+      name: settings.name,
       firstChoiceAgentId: settings.firstChoiceAgentId,
       fallbackAgentId: settings.fallbackAgentId,
       commentRunLimit: settings.commentRunLimit,

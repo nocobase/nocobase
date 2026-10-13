@@ -298,4 +298,271 @@ describe('comment personal runner consent', () => {
     }
     expect(await pending()).toEqual([]);
   });
+  it.each(['pending', 'rejected'])(
+    'switches all %s targets once with merged inputs and causal references intact',
+    async (state) => {
+      await setup();
+      await h.registerRunner({ trust: 'ownerOnly', ownerUserId: 'alice' });
+      const root = await enqueue();
+      const secondAgent = await h.createAgent({ name: 'Second target' });
+      const step = {
+        agentId: secondAgent,
+        subject: { kind: 'commentIssue', id: '1' },
+        actorUserId: 'alice',
+        causedByRunId: root.runId!,
+        input: {
+          type: 'comment' as const,
+          actor: { kind: 'agent' as const, id: agentId, name: 'Manager' },
+          text: 'First instruction.',
+          payload: {
+            commentId: 'step-1',
+            causedByRunId: root.runId,
+            byAgent: true,
+          },
+        },
+      };
+      const second = await h.services.runs.enqueue(step);
+      const merged = await h.services.runs.enqueue({
+        ...step,
+        input: {
+          ...step.input,
+          text: 'Second instruction.',
+          payload: { ...step.input.payload, commentId: 'step-2' },
+        },
+      });
+      expect(merged.runId).toBe(second.runId);
+      const [request] = await pending();
+      if (state === 'rejected')
+        await h.services.runs.requests.reject(request.id, 'alice');
+      const bobs = await h.registerRunner({
+        trust: 'ownerOnly',
+        ownerUserId: 'bob',
+      });
+      const switched = await h.services.runs.requests.runAsRequester(
+        request.id,
+        'bob',
+      );
+      const queued = (
+        await h.services.runs.list({
+          subjectKind: 'commentIssue',
+          subjectId: '1',
+        })
+      ).filter((run) => run.status === 'queued');
+      expect(queued.map((run) => run.agentId).sort()).toEqual(
+        [agentId, secondAgent].sort(),
+      );
+      const nextRoot = queued.find((run) => run.agentId === agentId)!;
+      const nextStep = queued.find((run) => run.agentId === secondAgent)!;
+      expect(
+        queued.every(
+          (run) =>
+            run.actorUserId === 'bob' && run.commentRootRunId === nextRoot.id,
+        ),
+      ).toBe(true);
+      const inputs = await h.services.runs.pendingInputs(
+        h.database.connection(),
+        nextStep.id,
+      );
+      expect(inputs.map((input) => input.text)).toEqual([
+        'First instruction.',
+        'Second instruction.',
+      ]);
+      expect(inputs.map((input) => input.payload)).toEqual([
+        expect.objectContaining({
+          commentId: 'step-1',
+          commentRootRunId: nextRoot.id,
+          causedByRunId: nextRoot.id,
+        }),
+        expect.objectContaining({
+          commentId: 'step-2',
+          commentRootRunId: nextRoot.id,
+          causedByRunId: nextRoot.id,
+        }),
+      ]);
+      await expect(
+        h.services.runs.requests.runAsRequester(request.id, 'bob'),
+      ).rejects.toMatchObject({ code: 'RUN_REQUEST_SETTLED' });
+      expect((await h.services.runs.requests.get(request.id)).runId).toBe(
+        switched.run.runId,
+      );
+      const claims = await claim(h, bobs, 2);
+      expect(claims.map((taken) => taken.run.id).sort()).toEqual(
+        queued.map((run) => run.id).sort(),
+      );
+    },
+  );
+
+  it.each(['pending', 'rejected'])(
+    'leaves completed ancestors and independently cancelled targets ended after %s switching',
+    async (state) => {
+      await setup();
+      const team = await h.registerRunner({ trust: 'team' });
+      const root = await enqueue();
+      const [taken] = await claim(h, team);
+      await h.request('POST', `/agents/runners/runs/${taken.run.id}/start`, {
+        runnerKey: team.key,
+        body: { workDir: '.', adapter: { kind: 'claude' }, acceptsInput: true },
+      });
+      await h.request('POST', `/agents/runners/runs/${taken.run.id}/complete`, {
+        runnerKey: team.key,
+        body: {
+          summary: 'Already done',
+          handledInputIds: taken.inputs.map(
+            (input: { id: string }) => input.id,
+          ),
+        },
+      });
+      await h.database
+        .connection()
+        .repository('agRunners')
+        .updateMany({
+          filter: { id: team.runnerId },
+          values: { trust: 'ownerOnly', ownerUserId: 'alice' },
+        });
+      const secondAgent = await h.createAgent({ name: 'Remaining target' });
+      const child = await h.services.runs.enqueue({
+        parentRunId: root.runId!,
+        agentId: secondAgent,
+        subject: { kind: 'commentIssue', id: '1' },
+        actorUserId: 'alice',
+        causedByRunId: root.runId!,
+        input: {
+          type: 'comment',
+          actor: { kind: 'agent', id: agentId, name: 'Manager' },
+          text: 'The remaining step.',
+          payload: {
+            commentId: 'remaining',
+            causedByRunId: root.runId,
+            byAgent: true,
+          },
+        },
+      });
+      const stoppedAgent = await h.createAgent({
+        name: 'Separately stopped target',
+      });
+      const stopped = await h.services.runs.enqueue({
+        agentId: stoppedAgent,
+        subject: { kind: 'commentIssue', id: '1' },
+        actorUserId: 'alice',
+        causedByRunId: root.runId!,
+        input: {
+          type: 'signal',
+          actor: { kind: 'agent', id: agentId, name: 'Manager' },
+          text: 'Stopped separately.',
+        },
+      });
+      await h.services.runs.cancel(stopped.runId!, 'alice');
+      const [request] = await pending();
+      if (state === 'rejected')
+        await h.services.runs.requests.reject(request.id, 'alice');
+      await h.registerRunner({ trust: 'ownerOnly', ownerUserId: 'bob' });
+      const switched = await h.services.runs.requests.runAsRequester(
+        request.id,
+        'bob',
+      );
+      expect((await h.services.runs.get(root.runId!)).status).toBe('completed');
+      const queued = (
+        await h.services.runs.list({
+          subjectKind: 'commentIssue',
+          subjectId: '1',
+        })
+      ).filter((run) => run.status === 'queued');
+      expect(queued).toHaveLength(1);
+      expect(queued[0].agentId).toBe(secondAgent);
+      const next = await h.services.runs.detail(switched.run.runId);
+      expect(
+        next.inputs
+          .filter((input) => !input.handledAt)
+          .map((input) => input.text),
+      ).toEqual(['The remaining step.']);
+      expect(
+        next.inputs.some(
+          (input) =>
+            input.text === 'Please continue this work.' && input.handledAt,
+        ),
+      ).toBe(true);
+      expect(queued[0].parentRunId).toBe(root.runId);
+      expect((await h.services.runs.get(child.runId!)).status).toBe(
+        'cancelled',
+      );
+    },
+  );
+  it('rolls back the whole switch when one remaining target has no compatible requester runner', async () => {
+    await setup();
+    await h.registerRunner({ trust: 'ownerOnly', ownerUserId: 'alice' });
+    const root = await enqueue();
+    const childAgent = await h.createAgent({ name: 'Requires checkout' });
+    const child = await h.services.runs.enqueue({
+      agentId: childAgent,
+      subject: { kind: 'commentIssue', id: '1' },
+      actorUserId: 'alice',
+      causedByRunId: root.runId!,
+      requires: ['checkout'],
+      input: {
+        type: 'signal',
+        actor: { kind: 'agent', id: agentId, name: 'Manager' },
+        text: 'Needs a checkout.',
+      },
+    });
+    const [request] = await pending();
+    await h.registerRunner({
+      trust: 'ownerOnly',
+      ownerUserId: 'bob',
+      features: ['input'],
+    });
+    await expect(
+      h.services.runs.requests.runAsRequester(request.id, 'bob'),
+    ).rejects.toMatchObject({ code: 'NO_RUNNER_AVAILABLE' });
+    expect((await h.services.runs.requests.get(request.id)).status).toBe(
+      'pending',
+    );
+    expect((await h.services.runs.requests.get(request.id)).runId).toBeNull();
+    for (const id of [root.runId!, child.runId!])
+      expect((await h.services.runs.get(id)).status).toBe('queued');
+    expect(
+      (
+        await h.services.runs.list({
+          subjectKind: 'commentIssue',
+          subjectId: '1',
+        })
+      ).some((run) => run.actorUserId === 'bob'),
+    ).toBe(false);
+  });
+
+  it('serializes concurrent Run as me clicks for the entire comment chain', async () => {
+    await setup();
+    await h.registerRunner({ trust: 'ownerOnly', ownerUserId: 'alice' });
+    const root = await enqueue();
+    const secondAgent = await h.createAgent({ name: 'Second target' });
+    await h.services.runs.enqueue({
+      agentId: secondAgent,
+      subject: { kind: 'commentIssue', id: '1' },
+      actorUserId: 'alice',
+      causedByRunId: root.runId!,
+      input: {
+        type: 'signal',
+        actor: { kind: 'agent', id: agentId, name: 'Manager' },
+        text: 'Do the second step.',
+      },
+    });
+    const [request] = await pending();
+    await h.registerRunner({ trust: 'ownerOnly', ownerUserId: 'bob' });
+    const results = await Promise.allSettled([
+      h.services.runs.requests.runAsRequester(request.id, 'bob'),
+      h.services.runs.requests.runAsRequester(request.id, 'bob'),
+    ]);
+    expect(
+      results.filter((result) => result.status === 'fulfilled'),
+    ).toHaveLength(1);
+    const queued = (
+      await h.services.runs.list({
+        subjectKind: 'commentIssue',
+        subjectId: '1',
+      })
+    ).filter((run) => run.status === 'queued');
+    expect(queued.map((run) => run.agentId).sort()).toEqual(
+      [agentId, secondAgent].sort(),
+    );
+    expect(queued.every((run) => run.actorUserId === 'bob')).toBe(true);
+  });
 });
