@@ -9,6 +9,7 @@ import type {
   BridgeEvent,
   PromptContent,
   SessionTarget,
+  SessionState,
 } from '../src/protocol.js';
 import { BridgeSession } from '../src/session.js';
 
@@ -46,8 +47,10 @@ function start(
   session: BridgeSession;
   events: BridgeEvent[];
   target: SessionTarget;
+  states: (SessionState | null)[];
 } {
   const events: BridgeEvent[] = [];
+  const states: (SessionState | null)[] = [];
   const full: SessionTarget = {
     id: 'session-1',
     agentId: 'fake',
@@ -65,10 +68,10 @@ function start(
     roots: [root],
     resolve: () => Promise.resolve(agent),
     emit: (event) => events.push(event),
-    stateChanged: () => undefined,
+    stateChanged: () => states.push(session.state),
   });
   sessions.push(session);
-  return { session, events, target: full };
+  return { session, events, target: full, states };
 }
 
 function prompt(
@@ -172,7 +175,7 @@ describe('BridgeSession', () => {
     'sends zero prompts when explicit settings cannot apply: %j',
     async ({ settings, variant }) => {
       const log = path.join(root, 'trace.jsonl');
-      const { session, target, events } = start({ settings }, FAKE, {
+      const { session, target, events, states } = start({ settings }, FAKE, {
         ...process.env,
         FAKE_VARIANT: variant,
         FAKE_LOG: log,
@@ -188,6 +191,7 @@ describe('BridgeSession', () => {
         error: expect.any(String),
       });
       expect(await readFile(log, 'utf8')).not.toContain('"method":"prompt"');
+      expect(states.every((state) => state === null)).toBe(true);
     },
   );
 

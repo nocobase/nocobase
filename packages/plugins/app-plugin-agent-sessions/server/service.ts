@@ -596,6 +596,12 @@ export class AgentSessionsService {
           ? {
               state: redactor.value(request.state),
               acpSessionId: request.state.acpSessionId,
+              settings: Object.fromEntries(
+                request.state.choices.map((choice) => [
+                  choice.id,
+                  choice.currentValue,
+                ]),
+              ),
             }
           : {}),
       });
@@ -1012,14 +1018,10 @@ export class AgentSessionsService {
     if (!choice?.options.some((option) => option.value === input.value)) {
       throw new AgentSessionsError('choiceNotFound', 'value');
     }
-    const settings = { ...session.settings, [input.choiceId]: input.value };
-    await sessions(this.#conn()).updateMany({
-      filter: { id: sessionId },
-      values: { settings, updatedAt: this.#iso() },
-    });
+    // Keep acknowledged settings until the bridge reports the complete resulting configuration.
     await this.#command(session, {
       type: 'choose',
-      session: { ...this.#target(session), settings },
+      session: this.#target(session),
       ...input,
     });
     return this.getSession(viewer, sessionId);

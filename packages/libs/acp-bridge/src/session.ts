@@ -61,6 +61,7 @@ export class BridgeSession {
   #process: AgentProcess | undefined;
   #opening: Promise<AgentProcess> | undefined;
   #replaying = false;
+  #initialized = false;
   #closed = false;
   #choices: SessionChoice[] = [];
   /** The agent offers session modes and no configuration options: the `mode` choice is set with `session/set_mode`. */
@@ -98,9 +99,10 @@ export class BridgeSession {
     };
   }
 
-  /** Null until the agent's session is open. */
+  /** Null until the agent's session is open and its explicit settings have been validated. */
   get state(): SessionState | null {
-    if (!this.#acpSessionId || !this.#process) return null;
+    if (!this.#initialized || !this.#acpSessionId || !this.#process)
+      return null;
     return {
       acpSessionId: this.#acpSessionId,
       agent: this.#process.description,
@@ -232,7 +234,7 @@ export class BridgeSession {
   }
 
   #open(): Promise<AgentProcess> {
-    if (this.#process?.alive && this.#acpSessionId)
+    if (this.#initialized && this.#process?.alive && this.#acpSessionId)
       return Promise.resolve(this.#process);
     this.#opening ??= this.#start().finally(() => {
       this.#opening = undefined;
@@ -241,6 +243,7 @@ export class BridgeSession {
   }
 
   async #start(): Promise<AgentProcess> {
+    this.#initialized = false;
     await this.#process?.stop();
     this.#process = undefined;
     const target = this.#target;
@@ -295,6 +298,7 @@ export class BridgeSession {
         resolved.spec.modes ?? [],
         target.settings,
       );
+      this.#initialized = true;
       this.#context.stateChanged();
       return agent;
     } catch (cause) {
