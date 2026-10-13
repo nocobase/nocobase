@@ -969,6 +969,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       },
       inputs,
       workspace: {
+        sessionScope: run.threadScope,
         dirs,
         env,
         ...(passthrough.length > 0 ? { passthrough } : {}),

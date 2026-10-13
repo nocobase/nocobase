@@ -154,6 +154,7 @@ export class FakeServer {
   ]);
   /** While set, `events` answers 503. */
   eventsDown = false;
+  onCancelAck?: (run: FakeRun) => void;
   eventsFailures = 0;
   /** Skill bundles by slug, served at `RUNNER_ROUTES.skill`. */
   readonly skillBundles = new Map<string, SkillBundle>();
@@ -883,6 +884,7 @@ export class FakeServer {
       const body = (await c.req.json()) as CancelAckRequest;
       const run = owned(c);
       if (run instanceof Response) return run;
+      this.onCancelAck?.(run);
       run.cancelAck = body;
       run.status = 'cancelled';
       run.reports.push({ kind: 'cancelAck', body, status: 200 });

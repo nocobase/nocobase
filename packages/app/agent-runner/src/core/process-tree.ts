@@ -13,7 +13,7 @@
 // killing what is left in the unit's cgroup, is what remains for those.
 import { execFile } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile, readlink } from 'node:fs/promises';
 import { promisify } from 'node:util';
 
 import { delay } from '../lib/http.ts';
@@ -37,7 +37,7 @@ export async function listProcesses(strict = false): Promise<ProcessEntry[]> {
     const entries: ProcessEntry[] = [];
     for (const line of stdout.split('\n')) {
       const fields = line.trim().split(/\s+/u);
-      if (fields[3]?.startsWith('Z')) continue;
+      if (fields[3]?.startsWith('Z') || fields[3]?.startsWith('X')) continue;
       const [pid, ppid, pgid] = fields.slice(0, 3).map(Number);
       if (
         Number.isInteger(pid) &&
@@ -220,7 +220,16 @@ export async function taggedProcesses(
     const { stdout } = await execFileAsync(
       'ps',
       ['-E', '-ww', '-A', '-o', 'pid=,command='],
-      { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+      {
+        encoding: 'utf8',
+        maxBuffer: 64 * 1024 * 1024,
+        // `ps` would otherwise inherit the tag and list itself.
+        env: Object.fromEntries(
+          Object.entries(process.env).filter(
+            ([name]) => name !== PROCESS_TAG_ENV,
+          ),
+        ),
+      },
     );
     for (const line of stdout.split('\n')) {
       const match = /^\s*(\d+)\s(.*)$/u.exec(line);
@@ -252,4 +261,20 @@ export async function killTagged(tags: readonly string[]): Promise<number> {
     await delay(100);
   }
   return killed;
+}
+
+/** Current cwd holders only. This is a best-effort check, not process containment. */
+export async function workspaceHolders(
+  workDir: string,
+  strict = false,
+): Promise<number[]> {
+  if (process.platform !== 'linux') return [];
+  const prefix = `${workDir}/`;
+  const found: number[] = [];
+  for (const entry of await listProcesses(strict)) {
+    if (entry.pid === process.pid) continue;
+    const cwd = await readlink(`/proc/${entry.pid}/cwd`).catch(() => '');
+    if (cwd === workDir || cwd.startsWith(prefix)) found.push(entry.pid);
+  }
+  return found;
 }

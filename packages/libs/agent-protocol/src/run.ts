@@ -425,6 +425,8 @@ export interface RunWorkspace {
    * checks nothing out, so its runs never wait for the subject's lock. A runner from before this field ignores it.
    */
   readonly key?: string;
+  /** Stable thread scope for external Codex state; older runners ignore it. */
+  readonly sessionScope?: string;
 }
 
 export const RunWorkspaceSchema: z.ZodType<RunWorkspace> = z.object({
@@ -432,6 +434,7 @@ export const RunWorkspaceSchema: z.ZodType<RunWorkspace> = z.object({
   env: z.array(EnvVarSchema),
   passthrough: z.array(z.string()).optional(),
   clean: z.boolean().optional(),
+  sessionScope: z.string().max(500).optional(),
   git: RunGitSchema.optional(),
   readOnly: z.boolean().optional(),
   key: z
