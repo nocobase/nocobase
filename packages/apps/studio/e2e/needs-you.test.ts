@@ -14,6 +14,33 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
   browser,
 }) => {
   test.setTimeout(300_000);
+  // Keep realtime and short UI timers, but disable query and run-discovery polling.
+  await page.context().addInitScript(() => {
+    const interval = globalThis.setInterval.bind(globalThis);
+    const timeout = globalThis.setTimeout.bind(globalThis);
+    globalThis.setInterval = ((
+      callback: (...values: unknown[]) => void,
+      delay?: number,
+      ...args: unknown[]
+    ) =>
+      delay !== undefined && delay >= 2000
+        ? timeout(() => {}, 0)
+        : interval(
+            () => callback(...args),
+            delay,
+          )) as typeof globalThis.setInterval;
+    globalThis.setTimeout = ((
+      callback: (...values: unknown[]) => void,
+      delay?: number,
+      ...args: unknown[]
+    ) =>
+      delay === 2000 || delay === 5000
+        ? timeout(() => {}, 0)
+        : timeout(
+            () => callback(...args),
+            delay,
+          )) as typeof globalThis.setTimeout;
+  });
   const me = await api.get<{ userId: string }>('projects/me');
   const settings = await api.get<{
     firstChoiceAgentId: string | null;
@@ -138,6 +165,15 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     const rail = page.getByTestId('follow-ups-following');
     const mine = page.getByTestId('follow-ups-mine');
     await mine.getByRole('button', { name: /^Blocked\b/u }).click();
+    await mine.getByRole('button', { name: /^In progress\b/u }).click();
+    const ownedRow = mine.locator(`[data-issue="${issue.identifier}"]`);
+    const panel = page.getByTestId('follow-ups-activity');
+    const standalone = await page.context().newPage();
+    await open(standalone, `/issues/${issue.identifier}`);
+    const standaloneSummary = standalone.getByTestId('issue-summary');
+    await expect(
+      standaloneSummary.getByText('Blocked', { exact: true }),
+    ).toBeVisible();
     await expect(rail).toContainText(
       'Needs you: Restore the execution machine.',
     );
@@ -151,18 +187,81 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
       statusKey: 'in_progress',
     });
     await expect(rail).not.toContainText('Restore the execution machine.', {
-      timeout: 8000,
+      timeout: 3000,
     });
-    await shot('resumed-follow-ups');
+    await expect(
+      rail.locator(`[data-issue="${issue.identifier}"] .bg-blue-500`),
+    ).toBeVisible({ timeout: 3000 });
+    await expect(
+      panel
+        .getByTestId('issue-summary')
+        .getByText('In progress', { exact: true }),
+    ).toBeVisible({ timeout: 3000 });
+    await expect(
+      ownedRow.getByText('In progress', { exact: true }),
+    ).toBeVisible({ timeout: 3000 });
+    await expect(
+      standaloneSummary.getByText('In progress', { exact: true }),
+    ).toBeVisible({ timeout: 3000 });
+    await expect(panel.getByTestId('issue-needs-you')).toHaveCount(0);
+    await expect(standalone.getByTestId('issue-needs-you')).toHaveCount(0);
+    await shot('resumed-follow-ups-fixed');
+    await standalone.screenshot({
+      path: test.info().outputPath('pm342-resumed-detail-fixed.png'),
+      fullPage: true,
+    });
+    const confirmation =
+      'Realtime confirmation: the execution disk is restored.';
+    await api.post(`projects/issues/${issue.id}/comments`, {
+      content: confirmation,
+    });
+    await expect(panel.getByText(confirmation, { exact: true })).toBeVisible({
+      timeout: 3000,
+    });
+    await expect(
+      standalone.getByText(confirmation, { exact: true }),
+    ).toBeVisible({ timeout: 3000 });
+    await shot('comment-follow-ups-fixed');
+    await standalone.screenshot({
+      path: test.info().outputPath('pm342-comment-detail-fixed.png'),
+      fullPage: true,
+    });
     const resumedRun = await runner.start(issue.identifier);
     await expect(rail).toContainText('Project manager working', {
       timeout: 8000,
     });
-    await shot('running-follow-ups');
+    await expect(panel.getByTestId('issue-summary')).toContainText(
+      'Project manager working',
+      { timeout: 3000 },
+    );
+    await expect(ownedRow).toContainText('Project manager working', {
+      timeout: 3000,
+    });
+    await expect(standaloneSummary).toContainText('Project manager working', {
+      timeout: 3000,
+    });
+    await expect(
+      panel
+        .getByTestId('issue-summary')
+        .getByText('In progress', { exact: true }),
+    ).toBeVisible();
+    await shot('running-follow-ups-fixed');
     await runner.complete(resumedRun.runId, 'The execution disk is ready.');
     await expect(rail).not.toContainText('Project manager working', {
       timeout: 8000,
     });
+    await expect(panel.getByTestId('issue-summary')).not.toContainText(
+      'Project manager working',
+      { timeout: 3000 },
+    );
+    await expect(ownedRow).not.toContainText('Project manager working', {
+      timeout: 3000,
+    });
+    await expect(standaloneSummary).not.toContainText(
+      'Project manager working',
+      { timeout: 3000 },
+    );
+    await standalone.close();
     await open(page, `/issues/${issue.identifier}`);
     await expect(page.getByTestId('issue-needs-you')).toHaveCount(0);
     await expect(page.locator('[data-decision="agent_blocked"]')).toHaveCount(

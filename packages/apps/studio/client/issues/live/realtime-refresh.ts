@@ -21,6 +21,8 @@ export function subscribeIssueRefresh(
 ): () => void {
   const refresh = () => {
     for (const queryKey of [
+      // Refine owns the page cache; the projects provider refreshes a separate client.
+      ['pm', 'issue'],
       ['studio', 'issueProgress'],
       ['studio', 'issue-runs'],
       ['studio', 'commentRunLimit'],
