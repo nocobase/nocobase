@@ -51,11 +51,12 @@ export function runWorkDir(
   subject: string,
   run: string,
   attempt: number,
+  readOnly = false,
 ): string {
   return subjectWorkDir(
     paths,
     app,
-    `${subject}.run-${safeName(run)}-${attempt}-${randomUUID()}`,
+    `${subject}.${readOnly ? 'readonly' : 'run'}-${safeName(run)}-${attempt}-${randomUUID()}`,
   );
 }
 

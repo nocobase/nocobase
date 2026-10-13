@@ -19,6 +19,7 @@ export const workspaceStep: PrepareStep = {
       workspaceKey(context.payload),
       context.payload.run.id,
       context.payload.run.attempt,
+      context.payload.workspace.readOnly === true,
     );
     const lock = await acquireLock(`${workDir}.lock`);
     context.workspace = { workDir, release: () => lock.release() };

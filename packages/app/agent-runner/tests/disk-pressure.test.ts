@@ -7,6 +7,7 @@ import {
   reportRepos,
   writeWorkspaceMeta,
 } from '../src/core/checkout.ts';
+import { runWorkDir } from '../src/core/run-worktrees.ts';
 import { collectWorkspaces } from '../src/core/workspaces.ts';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
 import { isDiskFull } from '../src/lib/disk-full.ts';
@@ -122,6 +123,59 @@ describe('disk pressure', () => {
     } finally {
       await lock.release();
     }
+  });
+
+  it('protects locked attempt directories and continuation refs, and cleans disposable attempts last', async () => {
+    const clean = await workspace('clean-attempt-order', 1000);
+    const disposable = path.join(paths.workRoot, 'app', 'task.run-readonly-1');
+    const active = path.join(paths.workRoot, 'app', 'task.run-active-1');
+    const continuation = path.join(
+      paths.workRoot,
+      'app',
+      'task.continuations-state',
+    );
+    for (const dir of [disposable, active, continuation]) {
+      mkdirSync(path.join(dir, 'node_modules'), { recursive: true });
+      await writeWorkspaceMeta(paths, dir, {
+        appKey: 'app',
+        subjectKey: 'task',
+        repos: [],
+        lastUsedAt: new Date(0).toISOString(),
+        ...(dir === continuation
+          ? { continuationOnly: true, activeWorkDirs: [active] }
+          : { runAttempt: true, runWorktrees: true, readOnly: true }),
+      });
+    }
+    const lock = await acquireLock(`${active}.lock`, { timeoutMs: 0 });
+    try {
+      const result = await collectWorkspaces({
+        paths,
+        artifacts,
+        threshold,
+        readDisk: async () => ({ totalBytes: 1000, freeBytes: 0 }),
+      });
+      expect(result.removed.map((entry) => entry.workDir)).toEqual([
+        clean,
+        disposable,
+      ]);
+      expect(existsSync(path.join(active, 'node_modules'))).toBe(true);
+      expect(existsSync(continuation)).toBe(true);
+    } finally {
+      await lock.release();
+    }
+  });
+
+  it('recognizes a broken read-only attempt without metadata or valid Git', async () => {
+    const dir = runWorkDir(paths, 'app', 'task', 'broken', 1, true);
+    mkdirSync(dir, { recursive: true });
+    const result = await collectWorkspaces({
+      paths,
+      artifacts,
+      threshold,
+      readDisk: async () => ({ totalBytes: 1000, freeBytes: 0 }),
+    });
+    expect(result.removed.map((entry) => entry.workDir)).toEqual([dir]);
+    expect(existsSync(dir)).toBe(false);
   });
 
   it('protects tracked files matching artifact patterns and reports a real directory size', async () => {

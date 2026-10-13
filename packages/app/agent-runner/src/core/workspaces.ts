@@ -676,8 +676,8 @@ export async function collectWorkspaces(
   // Always reclaim ordinary workspaces before disposable read-only copies, oldest first within each phase.
   plan.remove.sort(
     (a, b) =>
-      Number(isReadOnlyWorkspace(a.entry.workDir)) -
-        Number(isReadOnlyWorkspace(b.entry.workDir)) ||
+      Number(a.entry.disposable === true) -
+        Number(b.entry.disposable === true) ||
       Date.parse(a.entry.lastUsedAt) - Date.parse(b.entry.lastUsedAt),
   );
   const removed: CollectResult['removed'] = [];
