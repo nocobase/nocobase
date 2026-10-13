@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { languageBase } from './shared/languages';
+import { pluginLegacyChineseRedirects } from './plugins/pluginLegacyChineseRedirects';
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { defineConfig, type RspressPlugin } from '@rspress/core';
 import { pluginLlms } from '@rspress/plugin-llms';
@@ -17,7 +19,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
 const lang = process.env.DOCS_LANG || 'en';
-const base = process.env.DOCS_BASE || lang === 'en' ? '/' : `/${lang}/`;
+const base = process.env.DOCS_BASE || languageBase(lang);
 const checkDeadLinks = process.env.CHECK_DEAD_LINKS !== 'false';
 const docsAiApiUrl = process.env.DOCS_AI_API_URL || '';
 const rspressI18nAliases: Readonly<Record<string, string>> = {
@@ -485,7 +487,7 @@ function sitemap(): RspressPlugin {
             } else {
               const hreflang = langMap[language as keyof typeof langMap];
               links.push(
-                `    <xhtml:link rel="alternate" hreflang="${hreflang}" href="${baseDomain}/${language}${routePath}" />`,
+                `    <xhtml:link rel="alternate" hreflang="${hreflang}" href="${baseDomain}${languageBase(language)}${routePath.replace(/^\//, '')}" />`,
               );
             }
           }
@@ -537,7 +539,7 @@ export default defineConfig({
       const canonicalRoute =
         crossRefCanonicalMap?.[route.routePath] || route.routePath;
       if (lang !== 'en') {
-        return `<link rel="canonical" href="https://docs.nocobase.com/${lang}${canonicalRoute}" />`;
+        return `<link rel="canonical" href="https://docs.nocobase.com${languageBase(lang)}${canonicalRoute.replace(/^\//, '')}" />`;
       }
       return `<link rel="canonical" href="https://docs.nocobase.com${canonicalRoute}" />`;
     },
@@ -549,7 +551,7 @@ export default defineConfig({
             return `<link rel="alternate" hreflang="en-US" href="https://docs.nocobase.com${route.routePath}" />`;
           }
           const hreflang = langMap[language as keyof typeof langMap];
-          return `<link rel="alternate" hreflang="${hreflang}" href="https://docs.nocobase.com/${language}${route.routePath}" />`;
+          return `<link rel="alternate" hreflang="${hreflang}" href="https://docs.nocobase.com${languageBase(language)}${route.routePath.replace(/^\//, '')}" />`;
         }),
       );
       links.push(
@@ -559,7 +561,7 @@ export default defineConfig({
     },
   ],
   root: path.join(__dirname, `docs/${lang}`),
-  outDir: path.join(__dirname, lang === 'en' ? 'dist' : `dist/${lang}`),
+  outDir: path.join(__dirname, 'dist', languageBase(lang)),
   themeDir: path.join(__dirname, 'theme'),
   base,
   title: currentLocale.title,
@@ -598,7 +600,7 @@ export default defineConfig({
       checkDeadLinks,
     },
   },
-  // Rspress ships built-in Simplified Chinese strings under `zh`, while this site uses `/cn/`.
+  // Rspress ships built-in Simplified Chinese strings under `zh`, while the source language key is `cn`.
   i18nSource: (value) => withRspressI18nAliases(value),
   plugins: [
     pluginPreview(),
@@ -610,6 +612,7 @@ export default defineConfig({
     pluginSearchSections(),
     pluginSearchIndex(),
     sitemap(),
+    pluginLegacyChineseRedirects(),
   ],
   search: {
     // 自定义搜索：结果按文档区分组，插件元信息页沉底。见 theme/search/searchHooks.ts。
