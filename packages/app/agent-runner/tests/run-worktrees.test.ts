@@ -431,6 +431,116 @@ describe('per-attempt worktrees', () => {
       true,
     );
   });
+  it('preserves agent branches, stash and current uncommitted work after removal and in the next run', async () => {
+    const a = await start('branch-owner');
+    git(['checkout', '-b', 'fix/agent-work'], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'committed.txt'), 'agent branch');
+    git(['add', '.'], a.repo.dir);
+    git([...COMMIT, 'commit', '-m', 'agent commit'], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'stashed.txt'), 'shared stash');
+    git([...COMMIT, 'stash', 'push', '--include-untracked'], a.repo.dir);
+    const stash = git(['rev-parse', 'refs/stash'], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'pending.txt'), 'save current head');
+    const reports = await reportRepos([a.repo], { push: true });
+    expect(reports[0].pushed).toBe(false);
+    expect(
+      git(
+        ['for-each-ref', '--format=%(refname)', 'refs/heads/agent/'],
+        path.join(root, 'origin-repo.git'),
+      ),
+    ).toBe('');
+    const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(saved[0].saved).toBe(true);
+    expect(existsSync(a.workDir)).toBe(false);
+    expect(git(['rev-parse', 'refs/heads/fix/agent-work'], a.repo.cache)).toBe(
+      saved[0].head,
+    );
+    expect(git(['rev-parse', 'refs/stash'], a.repo.cache)).toBe(stash);
+    const b = await start('next-branch-owner');
+    expect(existsSync(path.join(b.repo.dir, 'pending.txt'))).toBe(false);
+    git(['checkout', 'fix/agent-work'], b.repo.dir);
+    expect(readFileSync(path.join(b.repo.dir, 'committed.txt'), 'utf8')).toBe(
+      'agent branch',
+    );
+    expect(readFileSync(path.join(b.repo.dir, 'pending.txt'), 'utf8')).toBe(
+      'save current head',
+    );
+    git([...COMMIT, 'stash', 'apply'], b.repo.dir);
+    expect(readFileSync(path.join(b.repo.dir, 'stashed.txt'), 'utf8')).toBe(
+      'shared stash',
+    );
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+    expect(git(['rev-parse', 'refs/stash'], b.repo.cache)).toBe(stash);
+  });
+
+  it('retains unpublished runner aliases even after saving continuation refs', async () => {
+    const a = await start('unpublished-alias');
+    writeFileSync(path.join(a.repo.dir, 'local.txt'), 'local');
+    const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(existsSync(a.workDir)).toBe(false);
+    expect(
+      git(['rev-parse', `refs/heads/${a.repo.localBranch}`], a.repo.cache),
+    ).toBe(saved[0].head);
+  });
+
+  it('cleans a published runner alias but preserves an agent branch at the same commit', async () => {
+    const a = await start('published-alias');
+    git(['branch', 'fix/keep-published'], a.repo.dir);
+    git(['branch', 'runner-run-agent-owned'], a.repo.dir);
+    git(['push', a.repo.url, 'HEAD:refs/heads/agent/PM-300'], a.repo.dir);
+    await reportRepos([a.repo], { push: false });
+    const head = git(['rev-parse', 'HEAD'], a.repo.dir);
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(
+      git(
+        [
+          'for-each-ref',
+          '--format=%(refname)',
+          `refs/heads/${a.repo.localBranch}`,
+        ],
+        a.repo.cache,
+      ),
+    ).toBe('');
+    expect(
+      git(['rev-parse', 'refs/heads/fix/keep-published'], a.repo.cache),
+    ).toBe(head);
+    expect(
+      git(['rev-parse', 'refs/heads/runner-run-agent-owned'], a.repo.cache),
+    ).toBe(head);
+  });
+
+  it('preserves a switched-away runner alias with unpublished commits', async () => {
+    const a = await start('switched-away');
+    writeFileSync(path.join(a.repo.dir, 'alias.txt'), 'unpublished alias');
+    git(['add', '.'], a.repo.dir);
+    git([...COMMIT, 'commit', '-m', 'alias work'], a.repo.dir);
+    const head = git(['rev-parse', 'HEAD'], a.repo.dir);
+    git(
+      ['checkout', '-b', 'fix/separate', 'refs/remotes/origin/main'],
+      a.repo.dir,
+    );
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(
+      git(['rev-parse', `refs/heads/${a.repo.localBranch}`], a.repo.cache),
+    ).toBe(head);
+    expect(git(['show', `${head}:alias.txt`], a.repo.cache)).toBe(
+      'unpublished alias',
+    );
+  });
+
+  it('retains a published alias while another worktree has it checked out', async () => {
+    const a = await start('active-alias');
+    git(['checkout', '-b', 'fix/elsewhere'], a.repo.dir);
+    const job = path.join(root, 'other-worktree');
+    git(['worktree', 'add', job, a.repo.localBranch!], a.repo.cache);
+    const head = git(['rev-parse', 'HEAD'], job);
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(
+      git(['rev-parse', `refs/heads/${a.repo.localBranch}`], a.repo.cache),
+    ).toBe(head);
+    expect(git(['status', '--porcelain'], job)).toBe('');
+    git(['worktree', 'remove', job], a.repo.cache);
+  });
   it('discards read-only changes without updating continuation refs or deleting another run', async () => {
     const a = await start('a');
     const b = await start('b', true);
@@ -491,18 +601,72 @@ describe('per-attempt worktrees', () => {
     ).toBe(saved?.head);
   });
 
-  it('preserves the worktree when the local branch changes, and tells a subsequent run where recovery remains', async () => {
+  it('keeps a switched branch on its own ref without a saved head for the initial target', async () => {
     const a = await start('a');
     git(['checkout', '-b', 'unexpected'], a.repo.dir);
     writeFileSync(path.join(a.repo.dir, 'recovery.txt'), 'retain');
     expect(
       (await finalizeRunWorktrees(paths, a.workDir, () => {}))[0]?.saved,
-    ).toBe(false);
+    ).toBe(true);
+    expect(existsSync(a.workDir)).toBe(false);
     const b = await start('b');
-    expect(b.repo.warnings?.join(' ')).toContain(a.workDir);
-    expect(readFileSync(path.join(a.repo.dir, 'recovery.txt'), 'utf8')).toBe(
-      'retain',
+    expect(b.repo.warnings?.join(' ')).not.toContain(
+      'Additional saved commits',
     );
+    expect(
+      git(['show', 'refs/heads/unexpected:recovery.txt'], b.repo.cache),
+    ).toBe('retain');
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+
+  it('adds no manual-integration note to the initial target for a pushed switched branch', async () => {
+    const a = await start('a');
+    git(['checkout', '-b', 'feature/other'], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'other.txt'), 'other');
+    git(['add', 'other.txt'], a.repo.dir);
+    git(['commit', '-m', 'other'], a.repo.dir);
+    git(['push', a.repo.url, 'HEAD:refs/heads/feature/other'], a.repo.dir);
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+    const b = await start('b');
+    expect(b.repo.warnings?.join(' ')).not.toContain(
+      'Additional saved commits',
+    );
+    expect(existsSync(path.join(b.repo.dir, 'other.txt'))).toBe(false);
+    expect(
+      git(
+        ['for-each-ref', '--format=%(refname)', 'refs/runner/saved/'],
+        b.repo.cache,
+      ),
+    ).toBe('');
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+
+  it('reports a switched branch without a failure and never pushes it to the initial target', async () => {
+    const a = await start('a');
+    git(['checkout', '-b', 'fix/reported'], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'reported.txt'), 'reported');
+    git(['add', 'reported.txt'], a.repo.dir);
+    git(['commit', '-m', 'reported'], a.repo.dir);
+    const [report] = await reportRepos([a.repo], { push: true });
+    expect(report?.failure).toBeUndefined();
+    expect(report?.pushed).toBe(false);
+    expect(
+      git(['ls-remote', a.repo.url, 'refs/heads/agent/PM-300'], a.repo.dir),
+    ).toBe('');
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+  });
+
+  it('saves a detached HEAD whose commits no branch or remote reaches', async () => {
+    const a = await start('a');
+    git(['checkout', '--detach'], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'detached.txt'), 'detached');
+    git(['add', 'detached.txt'], a.repo.dir);
+    git(['commit', '-m', 'detached'], a.repo.dir);
+    const head = git(['rev-parse', 'HEAD'], a.repo.dir);
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+    const b = await start('b');
+    expect(b.repo.warnings?.join(' ')).toContain('Additional saved commits');
+    expect(b.repo.warnings?.join(' ')).toContain(head);
     await finalizeRunWorktrees(paths, b.workDir, () => {});
   });
 

@@ -771,6 +771,7 @@ export async function createBridgeHarness(
   const manager = createProjectManager({ agents });
   const unbindAgents = bindStudioAgents({
     agents,
+    checkoutPullRequests: (issueId) => git.checkoutPullRequests(issueId),
     delegations,
     kinds: projects.kinds,
     catalog: testCatalog,

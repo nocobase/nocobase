@@ -261,8 +261,9 @@ function fileLine(file: IssueContextFile): string {
 }
 
 /**
- * The project's working directories as a run's, in order: repositories on the issue's branch (`branches`, by working
- * directory id: its repository's first branch rule; `agent/<key>` without one), directories as they are.
+ * The project's working directories as a run's, in order: repositories on the run's starting branch (`branches`, by
+ * working directory id: the earliest linked same-repository open pull request's head, else the branch rule, `agent/<key>`
+ * by default), directories as they are.
  */
 export function dirsOf(
   context: IssueContext,
@@ -417,14 +418,24 @@ export function issueClaimRejection(
 export function createIssueContextProvider(
   agents: Pick<Agents, 'runs' | 'briefs' | 'gate'>,
   projects: () => Pick<Projects, 'issueContext' | 'commentQueries'>,
+  checkoutPullRequests?: (
+    issueId: string,
+  ) => Promise<ReadonlyMap<string, string>>,
 ): ContextProvider {
   return {
-    prepare: (run) =>
-      agents.gate.allowed({
+    async prepare(run) {
+      const allowed = await agents.gate.allowed({
         kind: 'run',
         userId: run.actorUserId,
         displayName: '',
-      }),
+      });
+      const heads =
+        run.agentId === PROJECT_MANAGER_ID
+          ? new Map<string, string>()
+          : ((await checkoutPullRequests?.(run.subject.id)) ??
+            new Map<string, string>());
+      return { allowed, heads };
+    },
     async admit(conn, claim) {
       if ((await readOwnerHandoff(conn, claim.run.subject.id))?.waiting)
         return {
@@ -449,8 +460,10 @@ export function createIssueContextProvider(
       if (!context) throw new Error('The issue is gone.');
       const inputs = claim.inputs;
       const manager = isManager(claim.agent.id);
-      const allowed =
-        (prepared as ReadonlySet<string> | undefined) ?? new Set<string>();
+      const preparation = prepared as
+        | { allowed: ReadonlySet<string>; heads: ReadonlyMap<string, string> }
+        | undefined;
+      const allowed = preparation?.allowed ?? new Set<string>();
       const subject = { noun: SUBJECT_NOUN, key: context.identifier };
       const previousSummary = await agents.runs.lastSummary(
         conn,
@@ -523,6 +536,7 @@ export function createIssueContextProvider(
                 conn,
                 context.project?.repos ?? [],
                 context.identifier,
+                { issueId: context.id, heads: preparation?.heads ?? new Map() },
               ),
               initial,
               initializeIfEmpty,
@@ -649,6 +663,9 @@ export function issueBinding(
   projects: () => Pick<Projects, 'issueContext' | 'commentQueries'>,
   sink: SubjectBinding['sink'],
   queuedExpiryMs = 0,
+  checkoutPullRequests?: (
+    issueId: string,
+  ) => Promise<ReadonlyMap<string, string>>,
 ): SubjectBinding {
   return {
     kind: ISSUE_SUBJECT,
@@ -660,7 +677,7 @@ export function issueBinding(
     groupPath: '/projects/{id}',
     triggers: ISSUE_TRIGGER_TITLES,
     preview: issueSample(agents),
-    context: createIssueContextProvider(agents, projects),
+    context: createIssueContextProvider(agents, projects, checkoutPullRequests),
     ...(sink ? { sink } : {}),
   };
 }

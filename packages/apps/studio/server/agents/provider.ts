@@ -308,6 +308,10 @@ export function connectProjects(
   scopeRuns(container, agents, grantsOf);
   return bindStudioAgents({
     agents,
+    checkoutPullRequests: (issueId) =>
+      container.has(studioGitToken)
+        ? container.resolve(studioGitToken).git().checkoutPullRequests(issueId)
+        : Promise.resolve(new Map()),
     kinds: container.resolve(projectsKindsToken),
     projects: () => container.resolve(projectsToken),
     ...(container.has(projectsNoticeRulesToken)
