@@ -44,6 +44,7 @@ import { ISSUE_SUBJECT } from '../agents/catalog/triggers.js';
 import { AGENT_KIND, agentsTx } from '../agents/tx.js';
 import { validIssueOwner } from '../agents/execution-identity.js';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
+import { readOwnerHandoff } from '../issues/owner-handoff.js';
 import type { StudioInboxPort } from '../inbox/port.js';
 import {
   IN_REVIEW,
@@ -368,10 +369,20 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
       if (
         !issue ||
         issue.status.category === 'done' ||
-        issue.status.category === 'closed' ||
-        issue.executor?.type !== AGENT_KIND
+        issue.status.category === 'closed'
       )
         continue;
+      if ((await readOwnerHandoff(tx.conn, issue.id))?.waiting) {
+        await deps.projects().activity.record(tx.conn, {
+          issueId: issue.id,
+          actor: { type: 'system', id: null },
+          action: 'work_skipped',
+          details: { reason: 'waitingOwner', trigger: signal },
+        });
+        tx.emit({ type: 'issue.changed', issueId: issue.id });
+        continue;
+      }
+      if (issue.executor?.type !== AGENT_KIND) continue;
       if (signal !== 'passed' && count > SIGNAL_WAKE_LIMIT) {
         const port = deps.inbox();
         const card = await cardIssue(tx.conn, issue.id);

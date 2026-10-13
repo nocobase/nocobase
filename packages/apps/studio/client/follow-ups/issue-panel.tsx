@@ -40,7 +40,10 @@ import {
 } from '../../shared/project-manager.js';
 import { useIssuePullRequests, usePullRequestMark } from '../git/api.js';
 import { PR_ACTIVITY_LABELS } from '../git/lib.js';
-import { actionLabel } from '../issues/detail/activity-labels.js';
+import {
+  actionLabel,
+  isOwnerHandoffActivity,
+} from '../issues/detail/activity-labels.js';
 import {
   issueProgressKey,
   progressSentence,
@@ -526,7 +529,9 @@ function describe(
       const activity = event.activity;
       if (!activity) return { what: '', detail: null };
       return {
-        what: projects(actionLabel(activity.action, activity.details), {
+        what: (isOwnerHandoffActivity(activity.action, activity.details)
+          ? t
+          : projects)(actionLabel(activity.action, activity.details), {
           name: text(activity.details.name) ?? projects('common.unknown'),
         }),
         detail: null,
