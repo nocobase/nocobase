@@ -26,6 +26,7 @@ import type { KindRegistry } from '../../kernel/kinds.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { collectRunAttempts, type RunAttempt } from '../../kernel/work.js';
 import { findIssue } from '../issues/index.js';
+import { lockIssueGraph } from '../subtasks/index.js';
 import {
   dependencyExists,
   issueFields,
@@ -189,6 +190,9 @@ export function createPlanEngine(deps: EngineDeps) {
     ): Promise<PlanRowCheck[]> {
       return deps.tx.unit(
         async (tx) => {
+          // A later row may write the graph after earlier rows lock issues or counters. Keep this outer guard across
+          // every row's savepoint, including failures, without advancing the revision for a rehearsal or plain edits.
+          await lockIssueGraph(tx.conn, false);
           const refs: Refs = new Map();
           // What the rehearsal created; it is rolled back, so the card shows no id for it.
           const transient = new Set<string>();
@@ -246,6 +250,8 @@ export function createPlanEngine(deps: EngineDeps) {
       viewer: Viewer,
       rows: readonly EngineRow[],
     ): Promise<PlanRowResult[]> {
+      // Execution and undo share this entry: take the graph before any row can lock an issue or the issue counter.
+      await lockIssueGraph(tx.conn, false);
       const refs: Refs = new Map();
       const ctx: OpContext = { tx, viewer, services: deps.services, refs };
       const outcomes: { outcome: OpOutcome; wakes: PlanWake[] }[] = [];

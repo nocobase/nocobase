@@ -1,15 +1,13 @@
 /**
- * Statuses, priorities and colours as the pages show them. A status belongs to its project's workflow
- * (`StatusDefinition`); its tone follows its meaning rather than the workflow's colour name, so every workflow reads
- * the same: not started grey, started (analysis included) blue, in review and proposal review violet, blocked amber,
- * done green, closed slate.
+ * Statuses, priorities and colours as the pages show them. A status's tone follows its meaning: backlog grey, in
+ * progress blue, in review violet, blocked amber, done green, cancelled slate.
  */
 import type { Color, Priority } from '../../shared/common.js';
 import type { StatusCategory, StatusDefinition } from '../../shared/issues.js';
-import { hasDefaultName } from '../../shared/workflows.js';
+import { hasDefaultName } from '../../shared/statuses.js';
 import type { PmTone } from '../components/pm-tones.js';
 
-/** Label and workflow colours as tones. */
+/** Label and status colours as tones. */
 export const COLOR_TONE: Readonly<Record<Color, PmTone>> = {
   gray: 'grey',
   red: 'red',
@@ -53,17 +51,16 @@ export function statusTone(
   if (category === 'done') return 'green';
   if (category === 'closed') return 'slate';
   if (category === 'unstarted') return 'grey';
-  if (key === 'in_review' || key === 'proposal_review') return 'violet';
+  if (key === 'in_review') return 'violet';
   if (key === 'blocked') return 'amber';
-  if (key === 'analysis') return 'blue';
   if (status?.color === 'purple') return 'violet';
   if (status?.color === 'red' || status?.color === 'orange') return 'amber';
   return 'blue';
 }
 
 /**
- * A status's name in the interface language: a built-in status keeping its default name is translated
- * (`status.<key>`); a status the workflow added or renamed shows the name it was given.
+ * A status's name in the interface language: a fixed status is translated (`status.<key>`); any other key (in an
+ * older record) shows as written.
  */
 export function statusName(
   t: (key: string, options?: Record<string, unknown>) => string,

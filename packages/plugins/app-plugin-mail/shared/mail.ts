@@ -496,7 +496,7 @@ export interface MailConnectAccountInput {
   readonly provider: MailProviderIdentity;
   readonly address: string;
   readonly displayName?: string;
-  readonly username: string;
+  readonly username?: string;
   readonly password: string;
   readonly initialSyncReceivedAfter: string;
 }
@@ -525,6 +525,8 @@ export interface MailListMessagesInput {
   readonly labelIds?: readonly string[];
   readonly conversationId?: string;
   readonly query?: string;
+  /** Exact From/To/Cc mailbox or @domain; full thread details and conversation counts are unchanged. */
+  readonly participant?: string;
   readonly unread?: boolean;
   readonly starred?: boolean;
   readonly cursor?: string;

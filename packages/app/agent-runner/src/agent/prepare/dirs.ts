@@ -14,6 +14,7 @@ import { GitNetworkError } from '../../core/git-retry.ts';
 import { acceptedFailure } from '../../protocol/index.ts';
 import {
   PrepareError,
+  workspaceKey,
   type PrepareContext,
   type PrepareStep,
 } from './types.ts';
@@ -25,9 +26,12 @@ async function prepare(
   let retries = 0;
   try {
     return await prepareDirs({
+      perRun: true,
+      clean: context.payload.workspace.clean === true,
+      readOnly: context.payload.workspace.readOnly === true,
       paths: context.paths,
       appKey: context.registration.key,
-      subjectKey: context.payload.subject.key,
+      subjectKey: workspaceKey(context.payload),
       runId: context.payload.run.id,
       workDir,
       dirs: context.payload.workspace.dirs,
@@ -106,6 +110,12 @@ export const dirsStep: PrepareStep = {
             : {
                 url: dir.repo.url,
                 branch: dir.repo.branch,
+                ...(dir.repo.localBranch === undefined
+                  ? {}
+                  : {
+                      localBranch: dir.repo.localBranch,
+                      targetBranch: dir.repo.branch,
+                    }),
                 ...(dir.repo.initializing ? { initializing: true } : {}),
               }),
         },

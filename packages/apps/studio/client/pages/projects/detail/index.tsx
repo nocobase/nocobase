@@ -1,6 +1,6 @@
 /**
  * Route `/projects/:projectId`: a project's page, a covering child page over the project list. The header carries the
- * progress ring, name, status, lead, dates, workflow and progress, with "Ask agent", "New issue" (the projects
+ * progress ring, name, status, lead, dates and progress, with "Ask agent", "New issue" (the projects
  * plugin's dialog over the tab shown, `<tab>/new-issue`) and deleting the project; below it the tabs are child routes —
  * Overview, Issues, Knowledge, Members, Releases (only when the project's repositories deploy to production or build
  * previews) and Settings (only for those who may manage the project). The bare URL opens Overview. The page is the
@@ -22,7 +22,6 @@ import {
   useDeleteProject,
   useProjectDetail,
   useProjectStatuses,
-  useProjectWorkflow,
 } from '@nocobase/app-plugin-projects/client/projects';
 import {
   PmDetailSkeleton,
@@ -138,7 +137,6 @@ function ProjectPage({
   const atRoot = useMatch('/projects/:projectId') !== null;
   const tabMatch = useMatch('/projects/:projectId/:tab/*');
   const statuses = useProjectStatuses(project.id);
-  const workflow = useProjectWorkflow(project);
   const releases = useQuery({
     queryKey: previewKeys.unreleased(project.id),
     queryFn: () => readUnreleased(api, project.id),
@@ -248,7 +246,6 @@ function ProjectPage({
         }}
         lead={project.lead ? { name: project.lead.name } : null}
         dates={dates}
-        workflow={workflow.name}
         actions={
           <>
             <AskAgent placement='project' entry={entry} />

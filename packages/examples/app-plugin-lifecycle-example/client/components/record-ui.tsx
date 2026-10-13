@@ -1,3 +1,5 @@
+import { useParameterBindingEditor } from './parameter-binding-editor.js';
+import { ParameterHistory } from './parameter-history.js';
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { useApiClient } from '@nocobase/app-client';
 import type { UseLifecycleResult } from '@nocobase/lifecycle/react';
@@ -152,10 +154,12 @@ export function LifecyclePanel({
   actions,
   onChange,
   diagram = true,
+  actor,
 }: {
   readonly detail: RecordDetail;
   /** Whether to draw the lifecycle here; off where the page already draws it. */
   readonly diagram?: boolean;
+  readonly actor?: string;
   /** The library's operator actions on this record's runs. */
   readonly actions: Pick<
     UseLifecycleResult,
@@ -163,6 +167,13 @@ export function LifecyclePanel({
   >;
   readonly onChange: () => Promise<void>;
 }): ReactElement {
+  const parameterEditor = useParameterBindingEditor(
+    detail.description,
+    actor ?? '',
+    () => {
+      void onChange();
+    },
+  );
   const { t, i18n } = useTranslation(NAMESPACE);
   const translate = useTranslate();
   const client = useApiClient();
@@ -287,10 +298,25 @@ export function LifecyclePanel({
             </div>
           </div>
 
+          {actor && detail.description.parameterConfiguration && (
+            <>
+              {parameterEditor.editor}
+              <ParameterHistory
+                lifecycle={detail.description.name}
+                recordId={String(detail.record.id)}
+                actor={actor}
+                version={detail.version}
+                refresh={parameterEditor.refresh}
+              />
+            </>
+          )}
           {diagram ? (
             <div className='space-y-2'>
               <h3 className='font-medium'>{t('lifecycle.diagram')}</h3>
               <ProcessDiagram
+                onParameterBinding={
+                  actor ? parameterEditor.onBinding : undefined
+                }
                 description={detail.description}
                 current={state}
                 visited={visitedStates(detail)}

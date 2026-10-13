@@ -25,7 +25,7 @@ description: 准备连接信息，复制对应场景的提示词，让 Agent 完
 用 app-installer 安装应用时，在 Agent 运行的机器安装全局 Skill：
 
 ```bash
-npx skills add https://github.com/nocobase/nocobase/tree/v3-develop/skills/nocobase-app-installer --skill nocobase-app-installer -g
+npx skills@latest add nocobase/skills-v3 --skill nocobase-app-installer -g
 ```
 
 安装后重新开启 Agent 会话。本机 Agent 通过 SSH 部署时，Skill 安装在本机；直接在服务器运行 Agent 时，安装在服务器。不要同时让两个会话操作同一个安装目录。

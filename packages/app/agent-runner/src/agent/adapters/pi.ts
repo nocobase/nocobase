@@ -29,6 +29,7 @@ import { stripVTControlCharacters } from 'node:util';
 import { TOOL_EFFORTS } from '@nocobase/agent-protocol';
 import type { ToolCapabilities, ToolModel } from '@nocobase/agent-protocol';
 import { boundedModels } from './models.ts';
+import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
 import { withDetectionEnvironment } from './detection.ts';
 
 import {
@@ -202,8 +203,11 @@ function str(value: unknown): string {
 
 /** `pi --list-models` prints a table headed `provider  model …` when any model has credentials. */
 function hasAvailableModels(stdout: string): boolean {
-  const lines = stdout.split('\n').filter((line) => line.trim());
-  return lines.length > 1 && /^provider\s+model\b/.test(lines[0]);
+  try {
+    return parsePiModels(stdout).length > 0;
+  } catch {
+    return false;
+  }
 }
 
 /** The table reports a thinking boolean, not per-model effort levels: keep efforts unknown. */
@@ -212,7 +216,10 @@ export function parsePiModels(stdout: string): ToolModel[] {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  if (lines.length === 0 || /^No models (available|found)\b/i.test(lines[0]))
+  if (
+    lines.length === 0 ||
+    /^No (?:models (?:available|found)|available models)\b/i.test(lines[0])
+  )
     return [];
   const header = lines[0].split(/\s+/);
   if (header[0] !== 'provider' || header[1] !== 'model')
@@ -278,11 +285,14 @@ export class PiAdapter implements AgentAdapter {
     const detection = await this.detect(signal);
     signal?.throwIfAborted();
     if (!detection.path) return { modelsDetectionStatus: 'unsupported' };
-    const response = await this.exec(
-      detection.path,
-      ['--offline', '--list-models'],
-      { signal },
-    );
+    if (
+      !detection.version ||
+      compareVersions(detection.version, this.minVersion) < 0
+    )
+      return { modelsDetectionStatus: 'unsupported' };
+    const response = await this.exec(detection.path, ['--list-models'], {
+      signal,
+    });
     if (response.code !== 0)
       return {
         modelsDetectionStatus: 'failed',
@@ -308,7 +318,7 @@ export class PiAdapter implements AgentAdapter {
     const v = await this.exec(piPath, ['--version'], { signal });
     const version = v.code === 0 ? parseVersion(v.stdout) : undefined;
     if (!version) return { installed: false, authenticated: false };
-    const models = await this.exec(piPath, ['--offline', '--list-models'], {
+    const models = await this.exec(piPath, ['--list-models'], {
       signal,
     });
     return {
@@ -367,6 +377,7 @@ class PiRun {
   /** Steers re-sent as a prompt after the agent settled without them. */
   private resentSteers?: { text: string; steers: PendingSteer[] };
   private sessionId?: string;
+  private recovered = false;
   private lastAssistant?: PiMessage;
   private lastRetryError?: string;
   private turns = 0;
@@ -588,7 +599,19 @@ class PiRun {
     }
     const state = await this.request('get_state');
     if (!state) throw this.exitError('before it answered get_state');
+    if (!state.success) throw new Error(state.error ?? 'Pi rejected get_state');
     const data = state.data ?? {};
+    if (this.session.resumeSessionId) {
+      this.recovered = data.messageCount === 0;
+      if (this.recovered) this.emit(recoveryEvent('pi'));
+      else if (data.messageCount === undefined)
+        this.emit({
+          type: 'status',
+          tool: 'pi',
+          content: 'sessionRecoveryUnknown',
+          meta: { reason: 'messageCountUnavailable' },
+        });
+    }
     if (typeof data.sessionId === 'string') this.sessionId = data.sessionId;
     const model = data.model as { id?: string; provider?: string } | undefined;
     this.emit({
@@ -602,13 +625,17 @@ class PiRun {
           ? { thinkingLevel: data.thinkingLevel }
           : {}),
         piVersion: this.piVersion,
+        ...(this.session.resumeSessionId ? { resumed: !this.recovered } : {}),
+        ...(this.recovered ? { sessionRecovery: true } : {}),
       },
     });
   }
 
   private async sendPrompt(): Promise<void> {
     const response = await this.request('prompt', {
-      message: this.session.prompt,
+      message: this.recovered
+        ? recoveryPrompt(this.session.prompt)
+        : this.session.prompt,
     });
     if (!response) throw this.exitError('before it accepted the prompt');
     if (!response.success) {

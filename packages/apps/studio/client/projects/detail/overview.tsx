@@ -1,11 +1,10 @@
 /**
  * A project's Overview tab, drawn with the installed `project-detail` block and `property-fields` over the projects
- * plugin's headless hooks, in its words: the key numbers, the status distribution in workflow order and the description
+ * plugin's headless hooks, in its words: the key numbers, the status distribution in status order and the description
  * on the left; the properties and the members as a row of avatars on the right. Whoever may manage the project edits
  * the description and the properties in place; while the project is being initialized, its initialization leads the
  * left column (`../init-card.tsx`), and for whoever manages the project, "Next steps" lists what is still to set up
- * (`next-steps.tsx`); switching the workflow is refused while an issue is in a status the new one lacks (the server
- * says why).
+ * (`next-steps.tsx`).
  */
 import {
   statusTone,
@@ -17,7 +16,6 @@ import {
   projectStatusSuffix,
   projectStatusTone,
   useProjectUpdate,
-  useProjectWorkflow,
   useWorkspaceMembers,
 } from '@nocobase/app-plugin-projects/client/projects';
 import { PRIORITIES } from '@nocobase/app-plugin-projects/shared/common';
@@ -72,7 +70,6 @@ export function ProjectOverview(): ReactElement {
   const { t, detail: labels, fields, richText } = useProjectPageWording();
   const statusName = useStatusName();
   const members = useWorkspaceMembers();
-  const workflow = useProjectWorkflow(project);
   const { update, isPending } = useProjectUpdate(project.id);
   const disabled = !canEdit || isPending;
   const save = (changes: Parameters<typeof update>[0]): void => {
@@ -213,24 +210,6 @@ export function ProjectOverview(): ReactElement {
                   <PersonValue name={memberName(value)} />
                 )}
                 onChange={(leadUserId) => save({ leadUserId })}
-              />
-            </PropertyRow>
-            <PropertyRow
-              label={t('projects.workflow')}
-              htmlFor='pm-project-workflow'
-            >
-              <PropertySelect
-                id='pm-project-workflow'
-                options={workflow.options}
-                value={workflow.value}
-                {...(workflow.noneLabel
-                  ? { noneLabel: workflow.noneLabel }
-                  : {})}
-                disabled={disabled || workflow.loading}
-                onChange={(option) => {
-                  const workflowId = workflow.toWorkflowId(option);
-                  if (workflowId !== undefined) save({ workflowId });
-                }}
               />
             </PropertyRow>
             <PropertyRow label={t('dates.start')} htmlFor='pm-project-start'>

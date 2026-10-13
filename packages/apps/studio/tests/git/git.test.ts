@@ -1,10 +1,10 @@
 // @vitest-environment node
 /**
- * Studio's software-development flow over the generic plugins: the design-first proposal (an agent's operation plan
- * decided by the issue's owner) and pull requests (linking, polling GitHub with validators, `studio.merged` moving the
- * issue to Done, failing checks waking the agent, merging from Studio, the `prMerged` entry condition), against a
- * GitHub stand-in.
+ * Studio's pull requests over the projects plugin: linking, polling GitHub with validators, `studio.merged` moving the
+ * issue to Done from In progress, Blocked or In review, failing checks, conflicts and passing checks waking the project
+ * manager, and merging from Studio, against a GitHub stand-in.
  */
+import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -14,13 +14,7 @@ import {
   PR_SIGNAL_STOPPED,
   SIGNAL_WAKE_LIMIT,
 } from '../../shared/git.js';
-import {
-  ANALYSIS_INSTRUCTION,
-  SOFTWARE_TEMPLATE,
-} from '../../server/agents/catalog/workflow-templates.js';
-import { createDesignService } from '../../server/agents/design.js';
-import { ROLE_AGENT_IDS } from '../../server/agents/catalog/presets.js';
-import { makeRoot, runRoleAgentsSeed } from '../agents/role-agents.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import {
   apiBaseUrlOf,
   mentionedIssueKeys,
@@ -32,9 +26,18 @@ import {
   createGitSecrets,
   GIT_SECRET_PURPOSES,
 } from '../../server/git/sealing.js';
-import { findPullRequestById, findRepoById } from '../../server/git/store.js';
+import {
+  findPullRequestById,
+  findRepoById,
+  updateRepo,
+} from '../../server/git/store.js';
 import { issueKeyOfBranch } from '../../shared/git.js';
-import { bindingOf, connectedRepo, tokenConnection } from './helpers.js';
+import {
+  bindingOf,
+  connectedRepo,
+  mentionAgent,
+  tokenConnection,
+} from './helpers.js';
 import {
   createBridgeHarness,
   type BridgeHarness,
@@ -48,18 +51,10 @@ beforeEach(async () => {
   h = await createBridgeHarness();
   for (const id of ['alice', 'bob']) await h.addUser(id);
   h.roles.set('bob', 'admin');
-  await h.projects.workflows.installTemplate(SOFTWARE_TEMPLATE);
-  h.roles.set('alice', 'admin');
-  const software = (await h.projects.workflows.list(h.viewer('alice'))).find(
-    (workflow) => workflow.builtInKey === 'software',
-  )!;
-  await h.projects.workflows.setDefault(h.viewer('alice'), software.id);
-  h.roles.delete('alice');
 });
 afterEach(() => h.close());
 
 const alice = () => h.viewer('alice');
-const bob = () => h.viewer('bob');
 
 const AGENT_ACTIONS = [
   'pm.issues/view',
@@ -159,251 +154,21 @@ describe('link rules', () => {
   });
 });
 
-describe('design first', () => {
-  beforeEach(async () => {
-    await makeRoot(h, 'root-1');
-    await runRoleAgentsSeed(h);
-  });
-
-  /**
-   * An issue bob creates in Analysis for alice, given to a developer agent: the run of the solution designer, whose
-   * stage Analysis is, that bob's assignment started. `actions` are the designer's.
-   */
-  async function analysisRun(actions: readonly string[] = AGENT_ACTIONS) {
-    const agentId = ROLE_AGENT_IDS.solutionDesigner;
-    const designer = await h.agents.agents.get(agentId);
-    await h.agents.agents.update(agentId, 'root-1', {
-      actions: [...actions],
-      expectedRevision: designer.revision,
-    });
-    const developerId = await h.createAgent({ name: 'Developer' });
-    const issue = await h.projects.issues.create(bob(), {
-      title: 'Rework the export',
-      statusKey: 'analysis',
-      ownerUserId: 'alice',
-      executor: { type: 'agent', id: developerId },
-    });
-    // The designer's stage starts once the creation commits.
-    await expect.poll(async () => (await runsOf(issue.id)).length).toBe(1);
-    const payload = await h.claimOne();
-    return {
-      agentId,
-      developerId,
-      issue,
-      token: payload.cli.credential.content.token as string,
-      runId: payload.run.id as string,
-    };
-  }
-
-  const PROPOSAL =
-    '## Understanding\nExport is slow.\n\n## Approach\nStream it.';
-
-  /** The agent submits its design proposal, as `nb-studio issue design-proposal`. */
-  const propose = (token: string, issue: Issue, content = PROPOSAL) =>
-    h.request('POST', '/designProposals', {
-      runToken: token,
-      body: { issueId: issue.identifier, content },
-    });
-
-  it('starts the solution designer on the Analysis stage when the issue is given to its developer there', async () => {
-    const { runId, issue, agentId, developerId } = await analysisRun();
-    const run = await h.agents.runs.detail(runId);
-    expect(run.agentId).toBe(agentId);
-    // The developer stays the executor and waits for In progress.
-    expect((await detail(issue)).executor).toEqual({
-      type: 'agent',
-      id: developerId,
-    });
-    expect(
-      (await runsOf(issue.id)).filter((item) => item.agentId === developerId),
-    ).toEqual([]);
-    expect(run.inputs[0]).toMatchObject({
-      payload: {
-        trigger: 'created',
-        status: 'analysis',
-        instruction: expect.stringContaining(
-          `${issue.identifier} (Rework the export) uses the design-first process`,
-        ),
-      },
-    });
-    expect(ANALYSIS_INSTRUCTION).toContain('nb-studio issue design-proposal');
-  });
-
-  it('keeps an agent from moving on from Analysis by itself', async () => {
-    const { token, issue } = await analysisRun();
-    const moved = await h.request(
-      'PATCH',
-      `/projects/issues/${issue.identifier}`,
-      { runToken: token, body: { statusKey: 'in_progress' } },
-    );
-    expect(moved.status).not.toBe(200);
-    expect(JSON.stringify(moved.body)).toContain('TRANSITION_NOT_ALLOWED');
-    expect((await detail(issue)).statusKey).toBe('analysis');
-  });
-
-  it("asks the issue's owner, not who woke the run, and approving moves it to development", async () => {
-    const { token, issue, developerId } = await analysisRun();
-    expect((await runsOf(issue.id))[0]).toMatchObject({ actorUserId: 'bob' });
-    const proposed = await propose(token, issue);
-    expect(proposed.status).toBe(200);
-    expect(proposed.body.data).toMatchObject({
-      statusKey: 'proposal_review',
-      proposal: { content: PROPOSAL, authorType: 'agent' },
-    });
-    // The proposal is a comment of its own kind; the owner gets a card to decide.
-    const commented = await detail(issue);
-    expect(commented.statusKey).toBe('proposal_review');
-    expect(commented.threads.at(-1)?.root).toMatchObject({
-      kind: 'proposal',
-      content: PROPOSAL,
-    });
-    await expect
-      .poll(() => h.port.sent.filter((sent) => sent.type === 'design_review'))
-      .toEqual([
-        expect.objectContaining({
-          kind: 'decision',
-          userIds: ['alice'],
-          decisionKey: `design:${issue.id}`,
-          subject: expect.objectContaining({ id: issue.id }),
-        }),
-      ]);
-
-    // Only the owner, the project lead or an administrator approves: bob, who woke the run, may not as a member.
-    const design = createDesignService({
-      projects: () => h.projects,
-      inbox: () => undefined,
-    });
-    h.roles.set('bob', 'member');
-    await expect(design.approve(bob(), issue.id, {})).rejects.toBeInstanceOf(
-      Error,
-    );
-    h.roles.set('bob', 'admin');
-    expect((await design.state(alice(), issue.id)).canApprove).toBe(true);
-    const approved = await design.approve(alice(), issue.id, {
-      comment: 'Go ahead.',
-    });
-    expect(approved).toMatchObject({
-      statusKey: 'in_progress',
-      inReview: false,
-    });
-    await expect
-      .poll(() => h.port.settled)
-      .toContainEqual({
-        decisionKey: `design:${issue.id}`,
-        outcome: 'approved',
-      });
-    // Proposal review runs the proposal reviewer beside the owner's card, without making it the executor.
-    expect((await runsOf(issue.id)).map((item) => item.agentId)).toContain(
-      ROLE_AGENT_IDS.proposalReviewer,
-    );
-    expect((await detail(issue)).executor).toEqual({
-      type: 'agent',
-      id: developerId,
-    });
-    // In progress runs the developer, the issue's executor, with its stage instruction, for alice.
-    const runs = (await runsOf(issue.id)).filter(
-      (item) => item.agentId === developerId,
-    );
-    const inputs = (
-      await Promise.all(runs.map((run) => h.agents.runs.detail(run.id)))
-    ).flatMap((run) => run.inputs);
-    expect(inputs).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          payload: expect.objectContaining({
-            trigger: 'stageEntered',
-            to: 'in_progress',
-          }),
-        }),
-      ]),
-    );
-  });
-
-  it('sends a proposal back with a comment: the issue returns to Analysis and the agent revises', async () => {
-    const { token, issue } = await analysisRun();
-    await propose(token, issue);
-    const design = createDesignService({
-      projects: () => h.projects,
-      inbox: () => undefined,
-    });
-    await expect(
-      design.requestChanges(alice(), issue.id, { comment: ' ' }),
-    ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
-    const back = await design.requestChanges(alice(), issue.id, {
-      comment: 'Cover the CSV export too.',
-    });
-    expect(back).toMatchObject({ statusKey: 'analysis', inReview: false });
-    const after = await detail(issue);
-    expect(after.threads.at(-1)?.root.content).toBe(
-      'Cover the CSV export too.',
-    );
-    await expect
-      .poll(() => h.port.settled)
-      .toContainEqual({
-        decisionKey: `design:${issue.id}`,
-        outcome: 'changesRequested',
-      });
-    // Analysis runs the agent again; a revised proposal replaces the first.
-    const revised = await propose(token, issue, '## Approach\nStream both.');
-    expect(revised.status).toBe(200);
-    expect((await design.state(alice(), issue.id)).proposal?.content).toBe(
-      '## Approach\nStream both.',
-    );
-  });
-
-  it('refuses a proposal outside a run on its issue', async () => {
-    const { issue } = await analysisRun();
-    const refused = await h.request('POST', '/designProposals', {
-      user: 'alice',
-      body: { issueId: issue.identifier, content: 'x' },
-    });
-    expect(refused.status).toBe(403);
-  });
-
-  it('refuses a run whose agent may not comment', async () => {
-    const { token, issue } = await analysisRun(['pm.issues/view']);
-    const refused = await h.request('POST', '/designProposals', {
-      runToken: token,
-      body: { content: PROPOSAL },
-    });
-    expect(refused.status).toBe(403);
-    expect(
-      (
-        await h.request('GET', `/designProposals/${issue.id}`, {
-          user: 'alice',
-        })
-      ).body.data.proposal,
-    ).toBeNull();
-  });
-
-  it("proposes for the run's own issue when it names none", async () => {
-    const { token, issue } = await analysisRun();
-    const submitted = await h.request('POST', '/designProposals', {
-      runToken: token,
-      body: { content: PROPOSAL },
-    });
-    expect(submitted.status).toBe(200);
-    expect(submitted.body.data.statusKey).toBe('proposal_review');
-    expect(submitted.body.meta.message).toContain('waits for its owner');
-    const shown = await h.request('GET', `/designProposals/${issue.id}`, {
-      user: 'alice',
-    });
-    expect(shown.body.data.proposal?.content).toBe(PROPOSAL);
-  });
-});
-
 describe('pull requests', () => {
-  /** An issue alice owns, executed by an agent, in review. */
-  async function reviewIssue(title = 'Fix login') {
-    const agentId = await h.createAgent({ actions: AGENT_ACTIONS });
+  /** An issue alice owns, executed by the project manager, in `statusKey` (in review by default). */
+  async function reviewIssue(
+    title = 'Fix login',
+    statusKey: 'in_progress' | 'blocked' | 'in_review' = 'in_review',
+  ) {
+    await h.createAgent({ actions: AGENT_ACTIONS });
     const issue = await h.projects.issues.create(alice(), {
       title,
-      executor: { type: 'agent', id: agentId },
+      statusKey: 'in_progress',
+      executor: { type: 'agent', id: PROJECT_MANAGER_ID },
       start: false,
     });
-    await move(issue, 'in_progress');
-    await move(issue, 'in_review');
-    return { issue, agentId };
+    if (statusKey !== 'in_progress') await move(issue, statusKey);
+    return { issue, agentId: PROJECT_MANAGER_ID };
   }
 
   const repoWithToken = () => connectedRepo(h, REPO);
@@ -567,7 +332,7 @@ describe('pull requests', () => {
     expect((await detail(issue)).statusKey).toBe('done');
   });
 
-  it('wakes the agent when checks fail, once per head, then tells the owner', async () => {
+  it('wakes the project manager when checks fail, once per head, then tells the owner', async () => {
     const { issue, agentId } = await reviewIssue();
     const repo = await repoWithToken();
     h.github.addPull(REPO, {
@@ -605,7 +370,7 @@ describe('pull requests', () => {
     );
   });
 
-  it('wakes the agent when its pull request conflicts', async () => {
+  it('wakes the project manager when its pull request conflicts', async () => {
     const { issue } = await reviewIssue();
     const repo = await repoWithToken();
     h.github.addPull(REPO, {
@@ -627,6 +392,215 @@ describe('pull requests', () => {
       ),
     ).toBe(true);
   });
+
+  it('wakes the project manager once per head when all checks pass, unless the repository turns it off', async () => {
+    const { issue } = await reviewIssue();
+    const repo = await repoWithToken();
+    const poll = async () =>
+      h.git.pollRepo((await findRepoById(h.projects.tx.read(), repo.id))!);
+    h.github.addPull(REPO, {
+      number: 15,
+      head: { ref: `agent/${issue.identifier}`, sha: 'p1' },
+    });
+    await poll();
+    const passed = async () =>
+      (
+        await Promise.all(
+          (await runsOf(issue.id)).map((run) => h.agents.runs.detail(run.id)),
+        )
+      )
+        .flatMap((run) => run.inputs)
+        .filter(
+          (input) =>
+            (input.payload as { trigger?: string }).trigger ===
+            'prChecksPassed',
+        );
+    expect(await passed()).toEqual([]);
+    h.github.setStatus(REPO, 'p1', 'success');
+    await poll();
+    expect(await passed()).toEqual([
+      expect.objectContaining({
+        type: 'signal',
+        text: expect.stringContaining('All checks of pull request'),
+        payload: expect.objectContaining({
+          trigger: 'prChecksPassed',
+          number: 15,
+          headSha: 'p1',
+        }),
+      }),
+    ]);
+    expect(
+      (await runsOf(issue.id)).every(
+        (run) => run.agentId === PROJECT_MANAGER_ID,
+      ),
+    ).toBe(true);
+    // The same head again: once is enough.
+    await poll();
+    expect(await passed()).toHaveLength(1);
+    // A new head that passes wakes it again.
+    const pull = h.github.pull(REPO, 15);
+    pull.head = { ...pull.head, sha: 'p2' };
+    h.github.setStatus(REPO, 'p2', 'success');
+    await poll();
+    expect(
+      (await passed()).map(
+        (input) => (input.payload as { headSha?: string }).headSha,
+      ),
+    ).toEqual(['p1', 'p2']);
+    // Turned off for the repository: a passing head wakes nobody.
+    await updateRepo(h.projects.tx.read(), repo.id, {
+      wakeOnChecksPassed: false,
+    });
+    pull.head = { ...pull.head, sha: 'p3' };
+    h.github.setStatus(REPO, 'p3', 'success');
+    await poll();
+    expect(await passed()).toHaveLength(2);
+  });
+
+  it('does not wake anyone on passing checks of an issue the project manager does not execute', async () => {
+    await h.createAgent();
+    const issue = await h.projects.issues.create(alice(), {
+      title: 'By hand',
+      statusKey: 'in_progress',
+      executor: { type: 'user', id: 'alice' },
+      start: false,
+    });
+    const repo = await repoWithToken();
+    h.github.addPull(REPO, {
+      number: 16,
+      head: { ref: `agent/${issue.identifier}`, sha: 'q1' },
+    });
+    await h.git.pollRepo(repo);
+    h.github.setStatus(REPO, 'q1', 'success');
+    await h.git.pollRepo((await findRepoById(h.projects.tx.read(), repo.id))!);
+    expect(await runsOf(issue.id)).toEqual([]);
+  });
+
+  it.each(['in_progress', 'blocked', 'in_review'] as const)(
+    'completes an issue %s once its pull request is merged',
+    async (statusKey) => {
+      const { issue } = await reviewIssue('Fix login', statusKey);
+      h.github.addPull(REPO, { number: 17, head: { ref: 'x', sha: 'r1' } });
+      const { pullRequest } = await h.git.link(
+        alice(),
+        issue.identifier,
+        PR_URL(17),
+        { type: 'user', id: 'alice' },
+      );
+      await h.git.markMerged(alice(), issue.identifier, pullRequest.id);
+      expect((await detail(issue)).statusKey).toBe('done');
+    },
+  );
+
+  it('leaves an issue in backlog, and one whose only pull request is opted out, where it is on a merge', async () => {
+    await h.createAgent();
+    const waiting = await h.projects.issues.create(alice(), {
+      title: 'Not started',
+      start: false,
+    });
+    expect(waiting.statusKey).toBe('backlog');
+    h.github.addPull(REPO, { number: 18, head: { ref: 'x', sha: 's1' } });
+    const early = await h.git.link(alice(), waiting.identifier, PR_URL(18), {
+      type: 'user',
+      id: 'alice',
+    });
+    await h.git.markMerged(alice(), waiting.identifier, early.pullRequest.id);
+    expect((await detail(waiting)).statusKey).toBe('backlog');
+
+    const { issue } = await reviewIssue('Opted out');
+    h.github.addPull(REPO, { number: 19, head: { ref: 'y', sha: 't1' } });
+    const { pullRequest } = await h.git.link(
+      alice(),
+      issue.identifier,
+      PR_URL(19),
+      { type: 'user', id: 'alice' },
+    );
+    await h.git.setAutoComplete(
+      alice(),
+      issue.identifier,
+      pullRequest.id,
+      true,
+    );
+    await h.git.markMerged(alice(), issue.identifier, pullRequest.id);
+    expect((await detail(issue)).statusKey).toBe('in_review');
+  });
+
+  for (const signal of ['checks', 'conflict'] as const) {
+    it(`counts one ${signal} head once across linked issues that resume development one by one`, async () => {
+      const repo = await repoWithToken();
+      h.github.addPull(REPO, {
+        number: 30,
+        head: { ref: 'shared-development', sha: 'shared-head' },
+      });
+      const issues = [];
+      await h.createAgent({ name: 'Developer' });
+      for (let index = 0; index < 4; index++) {
+        const issue = await h.projects.issues.create(alice(), {
+          title: `Linked work ${index}`,
+          statusKey: 'in_progress',
+          executor: { type: 'agent', id: PROJECT_MANAGER_ID },
+          start: false,
+        });
+        if (index > 0) await move(issue, 'in_review');
+        await h.git.link(alice(), issue.id, PR_URL(30), {
+          type: 'user',
+          id: 'alice',
+        });
+        issues.push(issue);
+      }
+      if (signal === 'checks')
+        h.github.setStatus(REPO, 'shared-head', 'failure');
+      else h.github.pull(REPO, 30).mergeable_state = 'dirty';
+      await h.git.pollRepo(repo);
+      const pull = (await h.git.list(alice(), issues[0]!.id)).data[0]!;
+      expect(
+        (await findPullRequestById(h.projects.tx.read(), pull.id))?.signals[
+          signal
+        ],
+      ).toMatchObject({ count: 1 });
+      for (const issue of issues) {
+        const inputs = (
+          await Promise.all(
+            (await runsOf(issue.id)).map((run) => h.agents.runs.detail(run.id)),
+          )
+        ).flatMap((run) => run.inputs);
+        expect(
+          inputs.filter(
+            (input) =>
+              (input.payload as { trigger?: string }).trigger ===
+              (signal === 'checks' ? 'prChecksFailed' : 'prConflict'),
+          ),
+        ).toHaveLength(1);
+        if ((await detail(issue)).statusKey !== 'in_progress')
+          await move(issue, 'in_progress');
+        const payload = await h.claimOne();
+        expect((await h.agents.runs.get(payload.run.id)).subject.id).toBe(
+          issue.id,
+        );
+        await h.runner(RUNNER_ROUTES.start, payload.run.id, {
+          workDir: '/tmp/work',
+          adapter: { kind: 'claude' },
+          acceptsInput: false,
+        });
+        expect(
+          (
+            await h.runner(RUNNER_ROUTES.complete, payload.run.id, {
+              summary: 'Done',
+              handledInputIds: payload.inputs.map(
+                (input: { id: string }) => input.id,
+              ),
+            })
+          ).status,
+        ).toBe(200);
+      }
+      await h.git.pollRepo(repo);
+      expect(
+        (await findPullRequestById(h.projects.tx.read(), pull.id))?.signals[
+          signal
+        ],
+      ).toMatchObject({ count: 1 });
+    });
+  }
 
   it('tells GitHub’s rate limit apart from a refusal, when merging and when polling', async () => {
     const { issue } = await reviewIssue();
@@ -730,9 +704,13 @@ describe('pull requests', () => {
     });
     const issue = await h.projects.issues.create(alice(), {
       title: 'Fix login',
-      executor: { type: 'agent', id: agentId },
+      executor: null,
+      statusKey: 'in_progress',
+      start: false,
     });
+    await mentionAgent(h, 'alice', issue.id, agentId);
     const payload = await h.claimOne();
+    expect(payload.agent.id).toBe(agentId);
     h.github.addPull(REPO, { number: 9, head: { ref: 'agent/x', sha: 'g1' } });
     const linked = await h.request('POST', '/git/pullRequests', {
       runToken: payload.cli.credential.content.token as string,
@@ -743,38 +721,6 @@ describe('pull requests', () => {
     expect((await h.git.list(alice(), issue.id)).data[0]).toMatchObject({
       linkedBy: { type: 'agent', id: agentId },
     });
-  });
-
-  it('keeps an issue out of a status with the prMerged condition until a pull request is merged', async () => {
-    h.roles.set('alice', 'admin');
-    const software = (await h.projects.workflows.list(alice())).find(
-      (workflow) => workflow.isDefault,
-    )!;
-    await h.projects.workflows.update(alice(), software.id, {
-      revision: software.revision,
-      definition: {
-        ...software.definition,
-        states: software.definition.states.map((state) =>
-          state.key === 'done'
-            ? { ...state, rules: [{ type: 'prMerged', config: {} }] }
-            : state,
-        ),
-      },
-    });
-    h.roles.delete('alice');
-    const { issue } = await reviewIssue();
-    await expect(move(issue, 'done')).rejects.toMatchObject({
-      code: 'PR_NOT_MERGED',
-    });
-    h.github.addPull(REPO, { number: 10, head: { ref: 'x', sha: 'h1' } });
-    const { pullRequest } = await h.git.link(
-      alice(),
-      issue.identifier,
-      PR_URL(10),
-      { type: 'user', id: 'alice' },
-    );
-    await h.git.markMerged(alice(), issue.identifier, pullRequest.id);
-    expect((await detail(issue)).statusKey).toBe('done');
   });
 
   async function prActivities(issueId: string) {
@@ -913,9 +859,13 @@ describe('pull requests', () => {
     });
     const issue = await h.projects.issues.create(alice(), {
       title: 'Fix login',
-      executor: { type: 'agent', id: agentId },
+      executor: null,
+      statusKey: 'in_progress',
+      start: false,
     });
+    await mentionAgent(h, 'alice', issue.id, agentId);
     const payload = await h.claimOne();
+    expect(payload.agent.id).toBe(agentId);
     const runToken = payload.cli.credential.content.token as string;
     await repoWithToken();
     h.github.addPull(REPO, {
@@ -995,20 +945,17 @@ describe('done by hand', () => {
   }
 
   it.each(['in_review', 'in_progress'] as const)(
-    "moves a member's issue from %s to Done at once, with no approval",
+    "moves a member's issue from %s to Done at once",
     async (from) => {
       const { carolMoves } = await projectIssue(from);
       const outcome = await carolMoves('done');
-      expect(outcome.pendingApproval).toBeUndefined();
       expect(outcome.statusKey).toBe('done');
-      expect(await h.projects.approvals.mine(alice())).toHaveLength(0);
     },
   );
 
   it('moves the issue to Done at once when the project lead moves it', async () => {
     const { issue } = await projectIssue('in_review');
     const outcome = await move(issue, 'done');
-    expect(outcome.pendingApproval).toBeUndefined();
     expect(outcome.statusKey).toBe('done');
   });
 
@@ -1023,6 +970,5 @@ describe('done by hand', () => {
     );
     await h.git.markMerged(h.viewer('carol'), issue.identifier, pullRequest.id);
     expect((await detail(issue)).statusKey).toBe('done');
-    expect(await h.projects.approvals.mine(alice())).toHaveLength(0);
   });
 });

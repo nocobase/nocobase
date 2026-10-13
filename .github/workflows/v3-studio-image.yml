@@ -7,10 +7,19 @@ name: V3 Studio image
 # dist/runners, so the image serves the runner and CLI it was built with, including to runners installed from a
 # package, which can only update from one.
 #
+# The image is published for linux/amd64 and linux/arm64. Each architecture gets its own dist/, built with that
+# architecture's `pnpm build --target`, because dist/ carries native modules (better-sqlite3, sqlite-vec) for one
+# platform and the Dockerfile refuses a prebuilt dist/ whose recorded target differs from the image. arm64 builds on a
+# native ARM runner, so neither the build nor the image's own RUN steps go through emulation. Each architecture is
+# pushed by digest, and `publish` names the tags and joins them into one multi-architecture image under every tag.
+#
 # Internal images (dev versions of Studio, nb-studio and the runner) are built in 2013xile/nocobase-ci and pushed to the
 # internal registry instead.
 #
-# The beta release calls this; re-run its job from the release run to rebuild an image.
+# The beta release calls this. To rebuild an image, re-run its job from the release run, or dispatch this workflow
+# (through its entry on main) with the release tag. Pushing a tag again replaces the image it names. Besides
+# `:<version>`, the release also points `:beta` (`:latest` for a stable version) at the new image; a dispatch does so only
+# with `update_beta_or_latest`, so rebuilding an older release cannot send `docker pull nocobase/studio:beta` back to it.
 
 on:
   workflow_call:
@@ -19,18 +28,46 @@ on:
         description: 'Aggregate release tag to build, e.g. release-beta/2026-10-11.1'
         type: string
         required: true
+      update_beta_or_latest:
+        description: Besides :<version>, also point :beta (or :latest for a stable version) at this image
+        type: boolean
+        default: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Aggregate release tag to build, e.g. release-beta/2026-10-11.1'
+        type: string
+        required: true
+      update_beta_or_latest:
+        description: Besides :<version>, also point :beta (or :latest for a stable version) at this image. Leave off when rebuilding an older release
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   image:
-    name: Build and push the Studio image
-    runs-on: ubuntu-latest
+    name: Build the Studio image (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            target: linux-x64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            target: linux-arm64
     env:
       # Studio's build typechecks it together with the framework's sources, which needs more than Node's default heap.
       NODE_OPTIONS: --max-old-space-size=6144
+    outputs:
+      # One output per architecture, so `publish` can read both digests of the matrix.
+      digest-amd64: ${{ steps.digest.outputs.digest-amd64 }}
+      digest-arm64: ${{ steps.digest.outputs.digest-arm64 }}
     steps:
       - name: Check out the release
         uses: actions/checkout@v4
@@ -38,33 +75,6 @@ jobs:
           ref: ${{ inputs.tag }}
           persist-credentials: false
           show-progress: false
-
-      - name: Name the tags
-        id: tags
-        env:
-          ALI_REGISTRY: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}
-          TAG: ${{ inputs.tag }}
-        run: |
-          manifest=packages/apps/studio/package.json
-          version=$(jq -r '.version // empty' "$manifest" 2>/dev/null || true)
-          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
-            echo "::error::$TAG has no valid version in $manifest (found '${version}'), so a release image cannot be tagged."
-            exit 1
-          fi
-          case "$version" in
-            *-*) channel=beta ;;
-            *) channel=latest ;;
-          esac
-          tags=
-          for image in nocobase/studio "$ALI_REGISTRY/nocobase/studio"; do
-            tags="${tags}${image}:${version}"$'\n'"${image}:${channel}"$'\n'
-          done
-          {
-            echo "version=${version}"
-            echo "tags<<EOF"
-            printf '%s' "$tags"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -85,12 +95,91 @@ jobs:
         run: pnpm --filter "@nocobase/studio^..." build
 
       # dist/ is built here, with this job's heap, and the image takes it prebuilt. It includes dist/runners, the
-      # runner and nb-studio packages Studio serves.
-      - name: Build dist for linux-x64
+      # runner and nb-studio packages Studio serves. The target has to be this image's architecture: the Dockerfile
+      # checks the target dist/package.json records against the image and fails on any other.
+      - name: Build dist for ${{ matrix.target }}
         working-directory: packages/apps/studio
         env:
           NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD: '1'
-        run: pnpm build --target linux-x64
+          TARGET: ${{ matrix.target }}
+        run: pnpm build --target "$TARGET"
+
+      - name: Sign in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Pushed to Docker Hub by digest only, with no tag: nothing can pull this single-architecture image by name.
+      # `publish` puts the tags on the multi-architecture image, on Docker Hub and on Aliyun's public registry.
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: packages/apps/studio
+          file: packages/apps/studio/Dockerfile
+          platforms: ${{ matrix.platform }}
+          build-args: DIST=prebuilt
+          outputs: type=image,name=nocobase/studio,push-by-digest=true,name-canonical=true,push=true
+          provenance: false
+
+      - name: Record the digest
+        id: digest
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: echo "digest-${PLATFORM#linux/}=${DIGEST}" >> "$GITHUB_OUTPUT"
+
+  # The tags are named in this job rather than passed from another: they include Aliyun's registry, which is a secret,
+  # and GitHub drops a job output that contains one.
+  publish:
+    name: Publish the Studio image
+    needs: image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the release
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+          show-progress: false
+          sparse-checkout: packages/apps/studio/package.json
+          sparse-checkout-cone-mode: false
+
+      - name: Name the tags
+        id: tags
+        env:
+          ALI_REGISTRY: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}
+          TAG: ${{ inputs.tag }}
+          UPDATE_BETA_OR_LATEST: ${{ inputs.update_beta_or_latest }}
+        run: |
+          manifest=packages/apps/studio/package.json
+          version=$(jq -r '.version // empty' "$manifest" 2>/dev/null || true)
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::$TAG has no valid version in $manifest (found '${version}'), so a release image cannot be tagged."
+            exit 1
+          fi
+          case "$version" in
+            *-*) channel=beta ;;
+            *) channel=latest ;;
+          esac
+          tags=
+          for image in nocobase/studio "$ALI_REGISTRY/nocobase/studio"; do
+            tags="${tags}${image}:${version}"$'\n'
+            if [ "${UPDATE_BETA_OR_LATEST:-true}" != false ]; then
+              tags="${tags}${image}:${channel}"$'\n'
+            fi
+          done
+          {
+            echo "version=${version}"
+            echo "tags<<EOF"
+            printf '%s' "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Sign in to Docker Hub
         uses: docker/login-action@v3
@@ -108,16 +197,27 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: packages/apps/studio
-          file: packages/apps/studio/Dockerfile
-          platforms: linux/amd64
-          build-args: DIST=prebuilt
-          push: true
-          tags: ${{ steps.tags.outputs.tags }}
-          provenance: false
+      # One manifest list over both architectures, written under every tag; imagetools copies the layers from Docker
+      # Hub to Aliyun's registry as it goes.
+      - name: Tag the multi-architecture image
+        env:
+          TAGS: ${{ steps.tags.outputs.tags }}
+          AMD64: ${{ needs.image.outputs.digest-amd64 }}
+          ARM64: ${{ needs.image.outputs.digest-arm64 }}
+        run: |
+          set -euo pipefail
+          for digest in "$AMD64" "$ARM64"; do
+            if ! printf '%s' "$digest" | grep -Eq '^sha256:[0-9a-f]{64}$'; then
+              echo "::error::An architecture's image digest is missing or malformed ('${digest}')."
+              exit 1
+            fi
+          done
+          args=()
+          while IFS= read -r tag; do
+            [ -n "$tag" ] && args+=(--tag "$tag")
+          done <<< "$TAGS"
+          docker buildx imagetools create "${args[@]}" "nocobase/studio@${AMD64}" "nocobase/studio@${ARM64}"
+          docker buildx imagetools inspect "$(head -n 1 <<< "$TAGS")"
 
       - name: Summary
         env:
@@ -128,7 +228,7 @@ jobs:
           {
             echo '### Studio image'
             echo
-            echo "Built \`@nocobase/studio@${VERSION}\` from \`${TAG}\`:"
+            echo "Built \`@nocobase/studio@${VERSION}\` from \`${TAG}\` for linux/amd64 and linux/arm64:"
             echo
             printf '%s\n' "$TAGS" | sed 's/^/- `/; s/$/`/'
           } >> "$GITHUB_STEP_SUMMARY"

@@ -27,8 +27,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppRouter } from '../../client/routing/app-router.tsx';
 import { AppThemeProvider } from '../../client/theme/index.ts';
 
-// The agents' chat and the header's inbox button need services these tests do not provide; the agent-chat block is
-// tested in the UI Library and the button in `tests/components/inbox-header-button.test.tsx`.
+// Chat and inbox navigation need services these tests do not provide; their dedicated tests cover those behaviors.
 vi.mock(
   '@nocobase/app-plugin-agents/client/chat',
   () => import('../setup/agents-chat-stub.js'),
@@ -37,8 +36,8 @@ vi.mock(
   '../../client/agents/chat.js',
   () => import('../setup/agents-chat-stub.js'),
 );
-vi.mock('../../client/inbox/header-button.js', () => ({
-  InboxHeaderButton: () => null,
+vi.mock('../../client/inbox/navigation.js', () => ({
+  useInboxNavigation: () => ({ badge: null, label: 'Inbox', hint: 'Inbox' }),
 }));
 
 /** The sidebar's navigation; the header's breadcrumb names the current page as well. */
@@ -198,18 +197,25 @@ describe('application shell', () => {
     renderApplication('/', true);
 
     await screen.findByRole('navigation', { name: 'Application navigation' });
-    const sidebar = document.querySelector('[data-slot=sidebar]');
+    // Wait for the shell's asynchronous parts to render, so the sidebar read below is the one that stays mounted.
+    await screen.findByRole('button', { name: 'Open account menu' });
+    const sidebar = (): Element | null =>
+      document.querySelector('[data-slot=sidebar]');
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Collapse navigation' }),
+      await screen.findByRole('button', { name: 'Collapse navigation' }),
     );
-    expect(sidebar).toHaveAttribute('data-collapsible', 'icon');
+    await waitFor(() =>
+      expect(sidebar()).toHaveAttribute('data-collapsible', 'icon'),
+    );
     expect(
       screen.getByRole('button', { name: 'Expand navigation' }),
     ).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(screen.getByRole('button', { name: 'Expand navigation' }));
-    expect(sidebar).toHaveAttribute('data-state', 'expanded');
+    await waitFor(() =>
+      expect(sidebar()).toHaveAttribute('data-state', 'expanded'),
+    );
   });
 
   it('opens and closes the mobile navigation without changing the route', async () => {

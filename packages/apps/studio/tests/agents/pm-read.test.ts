@@ -90,14 +90,12 @@ async function workedIssue(): Promise<{
   const issue = await h.projects.issues.create(h.viewer('alice'), {
     title: 'Faster lists',
     projectId,
+    statusKey: 'in_progress',
+    executor: null,
   });
-  const current = await h.projects.issueQueries.detail(
-    h.viewer('alice'),
-    issue.id,
-  );
-  await h.projects.issues.update(h.viewer('alice'), issue.id, {
-    revision: current.revision,
-    executor: { type: 'agent', id: coder },
+  // A step alice hands the agent.
+  await h.projects.comments.create(h.viewer('alice'), issue.id, {
+    content: `[@Coder](mention://agent/${coder}) make the lists faster`,
   });
   const payload = await h.claimOne();
   const runId = payload.run.id as string;
@@ -157,7 +155,7 @@ describe('reports in the CLI', () => {
     expect(badDay.status).toBe(400);
   });
 
-  it('offers them to a run only when its agent may read reports and the person who woke it holds the page', async () => {
+  it('offers them to a run when the running identity holds the page despite missing legacy report actions', async () => {
     const run = await conversationRun();
     expect(await manifestIds(run.token)).toEqual(
       expect.arrayContaining(['report:metrics', 'report:usage']),
@@ -175,15 +173,15 @@ describe('reports in the CLI', () => {
     const plain = await conversationRun({
       actions: PM_ACTIONS.filter((key) => key !== 'studio.reports/read'),
     });
-    expect(await manifestIds(plain.token)).not.toContain('report:metrics');
+    expect(await manifestIds(plain.token)).toContain('report:metrics');
     expect(
       (await h.request('GET', '/reports/metrics', { runToken: plain.token }))
         .status,
-    ).toBe(403);
+    ).toBe(200);
     expect(
       (await h.request('GET', '/reports/usage', { runToken: plain.token }))
         .status,
-    ).toBe(403);
+    ).toBe(200);
 
     h.roles.set('alice', 'none');
     expect(await manifestIds(run.token)).not.toContain('report:metrics');
@@ -216,7 +214,6 @@ describe('reports in the CLI', () => {
         },
         trust: {
           reviewPassRate: 0.75,
-          approvalApproveRate: null,
           reworkRate: 0.25,
         },
         reliability: {
@@ -257,7 +254,7 @@ describe('reports in the CLI', () => {
         'Metrics 2026-09-01 to 2026-09-30',
         'Adoption: 20 active days in 4 weeks, 5 people, 30 issues and 90 comments created.',
         'Delivered: 12 issues, 6 by agents (AI share 50%).',
-        'Review: 75% passed, 25% sent back; approvals n/a approved.',
+        'Review: 75% passed, 25% sent back.',
         'Runs: 10 started, 8 completed, 2 failed, 0 lost; median wait 2s, median run 10m.',
         'Cost: 1.50 USD (1000 input and 500 output tokens), 0.13 USD per delivered issue.',
         'Decisions: 4 asked, 3 decided (median 2.0h), 1 open.',
@@ -312,7 +309,7 @@ describe("an issue's runs in the CLI", () => {
         id: runId,
         agent: 'Coder',
         status: 'running',
-        trigger: 'assigned',
+        trigger: 'mention',
       }),
     ]);
 
@@ -443,6 +440,10 @@ describe("an issue's runs in the CLI", () => {
     const blind = await conversationRun({ actions: ['pm.projects/view'] });
     expect(
       (await h.request('GET', url, { runToken: blind.token })).status,
+    ).toBe(200);
+    h.roles.set('alice', 'none');
+    expect(
+      (await h.request('GET', url, { runToken: blind.token })).status,
     ).toBe(403);
   });
 
@@ -496,19 +497,27 @@ describe("an issue's runs in the CLI", () => {
     ).toBe(400);
   });
 
-  it('defaults to the run’s own issue, and refuses an agent that may not view issues', async () => {
+  it('defaults to the run’s issue and checks identity view permission irrespective of legacy actions', async () => {
     const { issue, runId, token } = await workedIssue();
     const own = await h.request('GET', '/issueRuns', { runToken: token });
     expect(own.status).toBe(200);
     expect(own.body.data.map((row: { id: string }) => row.id)).toEqual([runId]);
     const blind = await conversationRun({ actions: ['pm.projects/view'] });
-    const refused = await h.request('GET', runs(issue.identifier), {
-      runToken: blind.token,
-    });
-    expect(refused.status).toBe(403);
     expect(
       (
-        await h.request('GET', `/issueRuns/${runId}`, {
+        await h.request('GET', runs(issue.identifier), {
+          runToken: blind.token,
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (await h.request('GET', `/issueRuns/${runId}`, { runToken: blind.token }))
+        .status,
+    ).toBe(200);
+    h.roles.set('alice', 'none');
+    expect(
+      (
+        await h.request('GET', runs(issue.identifier), {
           runToken: blind.token,
         })
       ).status,
@@ -545,7 +554,7 @@ describe('who is asking', () => {
       '- Open work: owns 1 open issues (0 in progress), executes 0; 1 decisions wait on them in their inbox.',
     );
     expect(run.system).toContain(
-      `  - ${mine.identifier} [todo] Write the release notes`,
+      `  - ${mine.identifier} [backlog] Write the release notes`,
     );
   });
 
@@ -554,14 +563,12 @@ describe('who is asking', () => {
     const issue = await h.projects.issues.create(h.viewer('alice'), {
       title: 'Faster lists',
       projectId,
+      statusKey: 'in_progress',
+      executor: null,
     });
-    const current = await h.projects.issueQueries.detail(
-      h.viewer('alice'),
-      issue.id,
-    );
-    await h.projects.issues.update(h.viewer('alice'), issue.id, {
-      revision: current.revision,
-      executor: { type: 'agent', id: coder },
+    // A step alice hands the agent.
+    await h.projects.comments.create(h.viewer('alice'), issue.id, {
+      content: `[@Coder](mention://agent/${coder}) make the lists faster`,
     });
     const payload = await h.claimOne();
     expect(payload.prompt.system).not.toContain('## Who is asking');
@@ -680,12 +687,12 @@ describe('knowledge in a conversation', () => {
     expect(system.status).toBe(200);
   });
 
-  it('says nothing of knowledge to an agent not configured to read it', async () => {
+  it('includes knowledge for an authorized identity despite missing legacy knowledge actions', async () => {
     const run = await conversationRun({
       actions: PM_ACTIONS.filter((key) => !key.startsWith('kb.knowledge')),
     });
-    expect(run.system).not.toContain('## Knowledge');
-    expect(await manifestIds(run.token)).not.toContain('kb:search');
+    expect(run.system).toContain('## Knowledge');
+    expect(await manifestIds(run.token)).toContain('kb:search');
   });
 
   it('merges the hits of several spaces, each section once at its best score, best first', () => {

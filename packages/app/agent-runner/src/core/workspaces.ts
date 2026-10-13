@@ -18,7 +18,8 @@
 // `nocobase-runner gc` can remove it. A directory a run holds (its lock is taken), or one a run used since it was
 // reported, is never touched, and a removal the application's second answer no longer confirms is taken back. A
 // directory whose work goes on, or whose status is unknown, with unpushed work is only ever removed when a person
-// forces it (`nocobase-runner gc --force`).
+// forces it (`nocobase-runner gc --force`). A directory whose work goes on loses only its regenerable build artifacts
+// once no run has used it for a while (core/artifacts.ts).
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { readdir, readFile, stat, statfs } from 'node:fs/promises';
@@ -36,6 +37,8 @@ import {
 } from '../protocol/index.ts';
 import {
   acquireLock,
+  isDisposableWorkspace,
+  isReadOnlyWorkspace,
   checkWorkspaceGit,
   hasUnpushedWork,
   readWorkspaceMeta,
@@ -44,6 +47,7 @@ import {
   type Lock,
   type WorkspaceMeta,
 } from './checkout.ts';
+import { cleanArtifacts, type ArtifactOptions } from './artifacts.ts';
 import { isAlive } from './supervisor.ts';
 
 export { hasUnpushedWork } from './checkout.ts';
@@ -63,6 +67,8 @@ export interface WorkspaceEntry {
   cleanup?: WorkspaceCleanupResult;
   /** A run holds it now. */
   readonly inUse: boolean;
+  /** A read-only checkout (`isDisposableWorkspace`): removed once unlocked, with nothing to save. */
+  readonly disposable?: boolean;
   status: WorkspaceStatus;
 }
 
@@ -85,6 +91,16 @@ export async function listWorkspaceDirs(
       const workDir = path.join(appDir, entry.name);
       const meta = await readWorkspaceMeta(paths, workDir);
       if (meta !== undefined) found.push({ workDir, meta });
+      else if (isReadOnlyWorkspace(workDir))
+        found.push({
+          workDir,
+          meta: {
+            subjectKey: entry.name,
+            appKey: app.name,
+            repos: [],
+            lastUsedAt: new Date(0).toISOString(),
+          },
+        });
     }
   }
   return found;
@@ -124,7 +140,9 @@ export async function inspectWorkspace(
     !Number.isFinite(checkedAt) ||
     Date.parse(meta.lastUsedAt) >= checkedAt;
   let unpushed = meta.unpushed ?? false;
-  if (stale && !inUse) {
+  const disposable = isDisposableWorkspace(workDir, meta);
+  if (disposable) unpushed = false;
+  else if (stale && !inUse) {
     unpushed = await hasUnpushedWork(workDir, meta, options.log);
     await recordCheck(paths, workDir, meta, {
       unpushed,
@@ -139,6 +157,7 @@ export async function inspectWorkspace(
     lastUsedAt: meta.lastUsedAt,
     unpushed,
     inUse,
+    ...(disposable ? { disposable } : {}),
     status: 'unknown',
   };
 }
@@ -411,7 +430,7 @@ export interface PlanOptions {
   readonly force?: boolean;
 }
 
-export type PlanReason = 'ended' | 'selected';
+export type PlanReason = 'ended' | 'selected' | 'readOnly';
 
 export interface PlannedRemoval {
   readonly entry: WorkspaceEntry;
@@ -477,6 +496,8 @@ export function planRemovals(
     .filter((entry) => entry.status === 'ended')
     .sort((a, b) => Date.parse(a.lastUsedAt) - Date.parse(b.lastUsedAt));
   for (const entry of ended) pick(entry, 'ended');
+  for (const entry of entries)
+    if (entry.disposable === true) pick(entry, 'readOnly');
   return { remove, kept };
 }
 
@@ -497,7 +518,18 @@ export async function removePlanned(
   }
   try {
     const meta = await readWorkspaceMeta(paths, entry.workDir);
+    if (isDisposableWorkspace(entry.workDir, meta)) {
+      await removeWorkspace(paths, entry.workDir, meta ?? { repos: [] });
+      return undefined;
+    }
     if (meta === undefined) return 'changed';
+    if (
+      meta.runWorktrees === true ||
+      meta.recoveryRequired === true ||
+      (meta.continuationOnly === true &&
+        (meta.activeWorkDirs ?? []).some((dir) => existsSync(dir)))
+    )
+      return 'unpushed';
     if (
       meta.lastUsedAt !== entry.lastUsedAt ||
       meta.lastRunId !== entry.lastRunId
@@ -558,6 +590,8 @@ export interface CollectOptions {
   readonly decisionApps?: ReadonlySet<string>;
   readonly readDisk?: ReadDisk;
   readonly log?: (message: string) => void;
+  /** Regenerable build artifacts of directories unused this long go (core/artifacts.ts); none when absent. */
+  readonly artifacts?: Pick<ArtifactOptions, 'ttlMs' | 'patterns'>;
 }
 
 export interface CollectResult {
@@ -569,6 +603,8 @@ export interface CollectResult {
   readonly disk: DiskSpace | undefined;
   /** Less than the threshold is still free. */
   readonly low: boolean;
+  /** The directories whose regenerable build artifacts were removed. */
+  readonly artifactsCleaned: string[];
 }
 
 /**
@@ -631,7 +667,13 @@ export async function collectWorkspaces(
       paths,
       entry,
       log === undefined ? {} : { log },
-    );
+    ).catch((error: unknown) => {
+      if (entry.disposable !== true) throw error;
+      log?.(
+        `workspaces: cleanup failed for ${entry.workDir}; retrying next GC: ${String(error)}`,
+      );
+      return 'cleanupFailed' as const;
+    });
     if (why === undefined) {
       removed.push({ workDir: entry.workDir, reason });
       log?.(
@@ -639,8 +681,20 @@ export async function collectWorkspaces(
       );
     } else kept.push({ workDir: entry.workDir, reason: why });
   }
-  const after = await read(paths.workRoot);
   const gone = new Set(removed.map((item) => item.workDir));
+  const artifactsCleaned =
+    options.artifacts === undefined
+      ? []
+      : await cleanArtifacts(
+          entries.filter((entry) => !gone.has(entry.workDir)),
+          {
+            paths,
+            ...options.artifacts,
+            ...(options.now === undefined ? {} : { now: options.now }),
+            ...(log === undefined ? {} : { log }),
+          },
+        );
+  const after = await read(paths.workRoot);
   const warning = lowDiskWarning(
     entries.filter((entry) => !gone.has(entry.workDir)),
     after,
@@ -654,5 +708,6 @@ export async function collectWorkspaces(
     plan,
     disk: after,
     low: warning !== undefined,
+    artifactsCleaned,
   };
 }

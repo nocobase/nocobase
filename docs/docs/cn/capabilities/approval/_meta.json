@@ -2,26 +2,26 @@
   {
     "type": "file",
     "name": "index",
-    "label": "概览"
+    "label": "审批概览"
   },
   {
     "type": "file",
-    "name": "quick-start",
-    "label": "快速开始"
+    "name": "stages",
+    "label": "多级与条件审批"
   },
   {
     "type": "file",
-    "name": "develop",
-    "label": "使用 Agent 开发"
+    "name": "joint-review",
+    "label": "会签、或签与通过规则"
   },
   {
     "type": "file",
-    "name": "scenarios",
-    "label": "场景示例"
+    "name": "handover",
+    "label": "加签与转交"
   },
   {
     "type": "file",
-    "name": "extension",
-    "label": "扩展"
+    "name": "requests",
+    "label": "申请处理与进度"
   }
 ]

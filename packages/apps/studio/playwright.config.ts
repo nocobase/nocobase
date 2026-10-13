@@ -36,6 +36,12 @@ export default defineConfig({
       testIgnore: 'screenshots/**',
     },
     {
+      // The phone flows in WebKit as an iPhone 13; CI runs the same file in the `e2e` project at iPhone 13 size.
+      name: 'phone-webkit',
+      testMatch: ['phone.test.ts', 'owner-handoff.test.ts'],
+      use: { ...devices['iPhone 13'] },
+    },
+    {
       name: 'screenshots',
       testMatch: 'screenshots/**/*.test.ts',
       // One test per language and colour scheme, each visiting every page in turn.

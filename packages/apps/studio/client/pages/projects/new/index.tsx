@@ -2,7 +2,7 @@
  * Route `/projects/new`: "New project" on the Projects page, a three-step wizard in a route dialog (fixed header and
  * footer, the steps named at the top):
  *
- * 1. Basics: the project's name, description and workflow template;
+ * 1. Basics: the project's name and description;
  * 2. Code: its working directory, chosen as a project's settings choose one (`projects/code-location`: a new GitHub
  *    repository, an existing repository, a directory on a runner, or none, which is a blank project), with the optional
  *    initialization; without a repository the project is created from here;
@@ -10,12 +10,11 @@
  *    generates for, or "Skip" to configure it later in the project’s settings. A new repository that starts as a
  *    NocoBase application has no such step: Studio connects its preview CI with it.
  *
- * "Back" keeps what was entered. Who works on the project's issues is left to the workflow's status rules. Studio makes
+ * "Back" keeps what was entered. The project manager arranges the work on the project's issues. Studio makes
  * everything in one request (`POST /api/projectSetups`), a new repository included, so cancelling leaves nothing
  * behind, and opens the project, whose Overview lists what is still to set up.
  */
 import { useApiClient } from '@nocobase/app-client';
-import { WorkflowSelect } from '@nocobase/app-plugin-projects/client/kit';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { CheckIcon, Loader2Icon } from 'lucide-react';
@@ -112,7 +111,6 @@ export default function NewProjectPage(): ReactElement {
   const [step, setStep] = useState<WizardStep>(1);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [workflowId, setWorkflowId] = useState<string | null>(null);
   const [tried, setTried] = useState(false);
   // A NocoBase application's preview CI is connected with it: no Deploy step.
   const steps = wizardSteps(code.repository && !code.nocobaseInit);
@@ -132,7 +130,6 @@ export default function NewProjectPage(): ReactElement {
     return {
       name: name.trim(),
       ...(description.trim() ? { description: description.trim() } : {}),
-      workflowId,
       ...code.request(),
       ...(ci ? { ci } : {}),
     };
@@ -193,16 +190,6 @@ export default function NewProjectPage(): ReactElement {
                 rows={2}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor='new-project-workflow'>
-                {t('projectPage.newProject.workflow')}
-              </FieldLabel>
-              <WorkflowSelect
-                id='new-project-workflow'
-                value={workflowId}
-                onChange={setWorkflowId}
               />
             </Field>
           </FieldGroup>

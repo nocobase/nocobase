@@ -4,6 +4,8 @@ import type {
   FailureReason,
   RunPayload,
 } from '../../protocol/index.ts';
+import { acceptedFailure } from '../../protocol/index.ts';
+import { WorkspaceBusyError } from '../../core/checkout.ts';
 import type { SkillsPlacement } from '../adapters/types.ts';
 import type { AppRegistration } from '../../lib/config.ts';
 import type { RunnerPaths } from '../../lib/home.ts';
@@ -71,6 +73,27 @@ export class PrepareError extends Error {
     this.reason = reason;
     this.meta = meta;
   }
+}
+
+/**
+ * Why a run fails when `step` throws `error`: the error's own reason, else the step's. A lock another live process
+ * holds (`WorkspaceBusyError`), found by any step, is the workspace being busy, which the application requeues without
+ * counting an attempt, when it announces that it accepts it (`acceptedFailures`).
+ */
+export function stepFailure(
+  step: Pick<PrepareStep, 'failure'>,
+  error: unknown,
+  accepted: readonly string[] | undefined,
+): FailureReason {
+  if (error instanceof PrepareError) return error.reason;
+  if (error instanceof WorkspaceBusyError)
+    return acceptedFailure('workspaceBusy', accepted);
+  return step.failure;
+}
+
+/** The stable subject namespace. Run-attempt paths, including read-only paths, are allocated separately. */
+export function workspaceKey(payload: RunPayload): string {
+  return payload.workspace.key ?? payload.subject.key;
 }
 
 /** The working directory the agent starts in: the primary one, or the subject's work directory without any. */

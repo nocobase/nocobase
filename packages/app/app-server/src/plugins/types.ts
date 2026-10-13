@@ -23,6 +23,8 @@ export interface AppPluginApplication<TConfig = object> {
    */
   readonly mode?: 'standalone' | 'embedded';
   readonly publicBasePath: string;
+  /** The application's resolved NODE_ENV; absent when a manually composed app does not supply it. */
+  readonly nodeEnv?: string;
   readonly config: AppConfigAccessor & Partial<Record<never, TConfig>>;
   readonly paths: AppPaths;
   readonly router: Hono;

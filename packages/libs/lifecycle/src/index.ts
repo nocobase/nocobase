@@ -68,6 +68,9 @@ export {
   type LifecycleRuntimeOptions,
   type LifecycleTransaction,
   type PruneOptions,
+  type ParameterProvider,
+  type ParameterConfigurationRegistration,
+  type ParameterReadContext,
   type RetryRunOptions,
   type RecordHistory,
   type RecordView,
@@ -95,6 +98,7 @@ export type {
 export { toMermaid, type MermaidOptions } from './mermaid.js';
 export {
   lifecycleDescriptionView,
+  lifecycleDescriptionViewAsync,
   type FireView,
   type LifecycleDescriptionView,
 } from './views.js';
@@ -128,3 +132,33 @@ export {
   type RecordId,
   type ServicesOf,
 } from './types.js';
+
+export {
+  StoredLifecycleParameters,
+  ParameterConfigurationError,
+  LIFECYCLE_PARAMETER_COLLECTIONS,
+  normalizeParameterValues,
+  parameterIdentity,
+  type ParameterReadMode,
+  type ParameterBinding,
+  type ReviewerSelection,
+  type ConfigurableParameter,
+  type ParameterGroup,
+  type ParameterConfigurationDefinition,
+  type ParameterSource,
+  type ParameterResolution,
+  type ParameterSnapshot,
+  type ParameterVersion,
+  type ParameterUsage,
+  type SaveParameterVersion,
+  type LifecycleParameterStore,
+  type ParameterConfigurationErrorCode,
+} from './parameter-configuration.js';
+
+export {
+  normalizeReviewerSelections,
+  resolveReviewerSelections,
+  type ReviewerResolverContext,
+  type ReviewerSelector,
+  type ReviewerResolverOptions,
+} from './reviewers.js';

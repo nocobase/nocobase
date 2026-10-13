@@ -53,7 +53,11 @@ function TaskLine({ task }: { readonly task: ApprovalStepTask }): ReactElement {
       {ui.renderAvatar(task.personId)}
       <span className='text-sm'>{ui.personName(task.personId)}</span>
       {task.badges.map((badge) => (
-        <Badge key={badge.label} variant={badge.variant ?? 'outline'}>
+        <Badge
+          data-size='sm'
+          key={badge.label}
+          variant={badge.variant ?? 'outline'}
+        >
           {badge.label}
         </Badge>
       ))}
@@ -289,7 +293,10 @@ export function ApprovalProgress({
               <span className='text-foreground'>
                 {ui.personName(copy.personId)}
               </span>
-              <Badge variant={copy.read ? 'secondary' : 'outline'}>
+              <Badge
+                data-size='sm'
+                variant={copy.read ? 'secondary' : 'outline'}
+              >
                 {copy.read
                   ? t('approvalUi.progress.read', { defaultValue: 'read' })
                   : t('approvalUi.progress.unread', { defaultValue: 'unread' })}

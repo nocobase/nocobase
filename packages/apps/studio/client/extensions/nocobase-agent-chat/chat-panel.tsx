@@ -26,6 +26,8 @@ import { ConversationView } from './conversation-view.js';
 import { HistoryList } from './history-list.js';
 import { PanelHeader } from './panel-header.js';
 import { useMediaQuery } from './use-media-query.js';
+import { SubmissionStatus } from '../../agents/submission-status.js';
+import { chatEditorKey, useStudioChat } from '../../agents/chat-state.js';
 
 /** The chat panel; nothing while `ChatProvider` says the panel is not available (signed out, no provider). */
 export function ChatPanel(): ReactElement | null {
@@ -36,6 +38,7 @@ export function ChatPanel(): ReactElement | null {
 function PanelFrame(): ReactElement | null {
   const { t } = useChatTranslation();
   const panel = useChatPanel();
+  const state = useStudioChat();
   const mobile = useMediaQuery(CHAT_MOBILE_QUERY);
   const wide = useMediaQuery(CHAT_DOCK_QUERY, true);
   const [mounted, setMounted] = useState(panel.open);
@@ -76,7 +79,13 @@ function PanelFrame(): ReactElement | null {
           ref={dialogRef}
           // The dialog itself takes the focus on opening: its first control is the title's rename button, whose focus
           // ring would greet every opening, and focusing the box would raise the keyboard over the conversation.
-          initialFocus={dialogRef}
+          initialFocus={() =>
+            state.fromHeader()
+              ? (dialogRef.current?.querySelector<HTMLTextAreaElement>(
+                  'textarea',
+                ) ?? dialogRef.current)
+              : dialogRef.current
+          }
           id={CHAT_PANEL_ID}
           {...marker}
           showCloseButton={false}
@@ -123,6 +132,7 @@ function PanelBody({
 }): ReactElement {
   const { t } = useChatTranslation();
   const panel = useChatPanel();
+  const { temporaryKey } = useStudioChat();
   const expanded = !mobile && panel.mode === 'expanded';
   const history = panel.view === 'history';
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -180,6 +190,14 @@ function PanelBody({
               expanded && 'mx-auto w-full max-w-3xl',
             )}
           >
+            <SubmissionStatus
+              conversationId={panel.conversationId}
+              editorKey={chatEditorKey(
+                'panel',
+                panel.conversationId,
+                temporaryKey,
+              )}
+            />
             <ConversationView conversationId={panel.conversationId} />
           </div>
         ) : null}

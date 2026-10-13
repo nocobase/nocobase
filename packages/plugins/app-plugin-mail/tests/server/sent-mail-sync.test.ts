@@ -24,8 +24,8 @@ describe('post-send mailbox synchronization', () => {
   let visible: boolean;
   const notify = vi.fn();
   const input = {
-    accountId: 'account-1',
-    identityId: 'identity-1',
+    accountId: '10000000-0000-4000-8000-000000000001',
+    identityId: '20000000-0000-4000-8000-000000000001',
     to: [{ address: 'recipient@example.com' }],
     subject: 'Sent mail',
     text: 'Body',
@@ -54,7 +54,7 @@ describe('post-send mailbox synchronization', () => {
     database = await createMailTestDatabase();
     store = createDatabaseMailStore(database);
     await store.saveAccount({
-      id: 'account-1',
+      id: '10000000-0000-4000-8000-000000000001',
       userId: 'user-1',
       provider: { type: 'test', name: 'test' },
       address: 'sender@example.com',
@@ -62,10 +62,10 @@ describe('post-send mailbox synchronization', () => {
       scopes: [],
       status: 'active',
     });
-    await store.replaceIdentities('account-1', [
+    await store.replaceIdentities('10000000-0000-4000-8000-000000000001', [
       {
-        id: 'identity-1',
-        accountId: 'account-1',
+        id: '20000000-0000-4000-8000-000000000001',
+        accountId: '10000000-0000-4000-8000-000000000001',
         address: 'sender@example.com',
         isPrimary: true,
         canSend: true,
@@ -197,7 +197,7 @@ describe('post-send mailbox synchronization', () => {
     'shows accepted draft %s in Sent before background sync and does not restore a stale remote draft',
     async (draftProviderId) => {
       await store.commitSyncBatch({
-        accountId: 'account-1',
+        accountId: '10000000-0000-4000-8000-000000000001',
         nextCursor: { value: 'baseline' },
         folders: [
           {
@@ -210,13 +210,16 @@ describe('post-send mailbox synchronization', () => {
         messages: [],
         deletedProviderMessageIds: [],
       });
-      const draft = await store.saveMessage('account-1', {
-        ...sent,
-        providerMessageId: draftProviderId,
-        providerDraftMessageId: 'remote-1',
-        providerFolderIds: ['__nocobase_local_drafts__'],
-        draft: true,
-      });
+      const draft = await store.saveMessage(
+        '10000000-0000-4000-8000-000000000001',
+        {
+          ...sent,
+          providerMessageId: draftProviderId,
+          providerDraftMessageId: 'remote-1',
+          providerFolderIds: ['__nocobase_local_drafts__'],
+          draft: true,
+        },
+      );
       const request = { ...input, draftMessageId: draft.id };
       expect(
         await service.sendMessage({ actorId: 'user-1' }, request),
@@ -231,7 +234,7 @@ describe('post-send mailbox synchronization', () => {
         subject: input.subject,
       });
       await store.commitSyncBatch({
-        accountId: 'account-1',
+        accountId: '10000000-0000-4000-8000-000000000001',
         nextCursor: { value: 'baseline' },
         folders: [],
         deletedProviderMessageIds: [],
@@ -262,17 +265,23 @@ describe('post-send mailbox synchronization', () => {
     'lists a local draft only once when the remote copy already exists: %s',
     async (remoteFirst) => {
       if (remoteFirst)
-        await store.saveMessage('account-1', { ...sent, draft: true });
-      const draft = await store.saveMessage('account-1', {
-        ...sent,
-        providerMessageId: 'local-draft:1',
-        providerDraftMessageId: 'remote-1',
-        draft: true,
-        providerFolderIds: ['__nocobase_local_drafts__'],
-        subject: 'Local edits',
-      });
+        await store.saveMessage('10000000-0000-4000-8000-000000000001', {
+          ...sent,
+          draft: true,
+        });
+      const draft = await store.saveMessage(
+        '10000000-0000-4000-8000-000000000001',
+        {
+          ...sent,
+          providerMessageId: 'local-draft:1',
+          providerDraftMessageId: 'remote-1',
+          draft: true,
+          providerFolderIds: ['__nocobase_local_drafts__'],
+          subject: 'Local edits',
+        },
+      );
       await store.commitSyncBatch({
-        accountId: 'account-1',
+        accountId: '10000000-0000-4000-8000-000000000001',
         nextCursor: { value: 'baseline' },
         folders: [
           {
@@ -307,7 +316,7 @@ describe('post-send mailbox synchronization', () => {
 
   it('cleans up the draft and retains accepted delivery when saving the local sent copy fails', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: '10000000-0000-4000-8000-000000000001',
       folders: [
         {
           providerFolderId: 'Sent',
@@ -331,7 +340,11 @@ describe('post-send mailbox synchronization', () => {
       ),
     ).toMatchObject({ status: 'accepted' });
     expect(
-      await store.getMessage('user-1', 'account-1', draft.id),
+      await store.getMessage(
+        'user-1',
+        '10000000-0000-4000-8000-000000000001',
+        draft.id,
+      ),
     ).toBeUndefined();
     expect(runtime.kick).toHaveBeenCalled();
     await drain();
@@ -347,15 +360,15 @@ describe('post-send mailbox synchronization', () => {
 
   it('requests another pass when a sync was already in progress', async () => {
     await store.commitSyncBatch({
-      accountId: 'account-1',
+      accountId: '10000000-0000-4000-8000-000000000001',
       folders: [],
       messages: [],
       deletedProviderMessageIds: [],
       nextCursor: { value: 'baseline' },
     });
     const active = await store.createSyncRun({
-      id: 'active-1',
-      accountId: 'account-1',
+      id: '50000000-0000-4000-8000-000000000001',
+      accountId: '10000000-0000-4000-8000-000000000001',
       requestedBy: 'user-1',
       mode: 'incremental',
       policy: { maxMessages: 100, batchSize: 100 },

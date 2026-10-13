@@ -40,7 +40,10 @@ import {
   readConnection,
   passEnvNames,
   dropWorkspaceLimit,
+  artifactPatterns,
+  artifactTtlMs,
   minFreeDisk,
+  modelListOverrides,
   readSettings,
   runnerClient,
   type AppConnection,
@@ -99,6 +102,7 @@ import {
 } from './update.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
 import { ToolCapabilitiesCache } from './tool-capabilities.ts';
+import { reportedModels } from './model-list.ts';
 
 /** The version this runner reports and compares updates with: the host package's (`host.ts`). */
 export function runnerVersion(): string {
@@ -107,6 +111,7 @@ export function runnerVersion(): string {
 
 /** What every runner of this version can do, before adapter features. */
 export const BASE_FEATURES: readonly RunnerFeature[] = [
+  'workspaceKey',
   'input',
   'checkout',
   'directories',
@@ -499,7 +504,9 @@ export class RunnerDaemon {
     capabilities.refresh();
     return {
       variables: providedNames(process.env, passEnv, localVariables),
-      tools: [...capabilities.tools],
+      tools: capabilities.tools.map((tool) =>
+        reportedModels(tool, modelListOverrides(settings.models)[tool.kind]),
+      ),
     };
   }
 
@@ -552,6 +559,10 @@ export class RunnerDaemon {
           ),
           log,
           threshold: minFreeDisk(settings),
+          artifacts: {
+            ttlMs: artifactTtlMs(settings),
+            patterns: artifactPatterns(settings),
+          },
         });
         if (collected.removed.length > 0) this.pruneDue = true;
       } catch (error) {

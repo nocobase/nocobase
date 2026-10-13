@@ -5,10 +5,21 @@
     "label": "总览"
   },
   {
+    "type": "file",
+    "name": "quick-start",
+    "label": "快速启动"
+  },
+  {
     "type": "dir",
-    "collapsed": true,
     "name": "auth",
-    "label": "认证"
+    "label": "认证",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "data-sources",
+    "label": "数据源",
+    "collapsed": true
   },
   {
     "type": "dir",
@@ -18,9 +29,9 @@
   },
   {
     "type": "dir",
-    "collapsed": true,
     "name": "workflow",
-    "label": "工作流"
+    "label": "工作流",
+    "collapsed": true
   },
   {
     "type": "dir",
@@ -29,45 +40,57 @@
     "collapsed": true
   },
   {
-    "type": "file",
-    "name": "scheduler",
-    "label": "定时任务"
-  },
-  {
-    "type": "file",
-    "name": "notification",
-    "label": "通知"
-  },
-  {
     "type": "dir",
-    "collapsed": true,
-    "name": "mail",
-    "label": "邮件"
-  },
-  {
-    "type": "file",
     "name": "file",
-    "label": "文件"
-  },
-  {
-    "type": "file",
-    "name": "template-print",
-    "label": "模板打印"
-  },
-  {
-    "type": "file",
-    "name": "i18n",
-    "label": "多语言"
-  },
-  {
-    "type": "file",
-    "name": "theme",
-    "label": "主题"
+    "label": "文件",
+    "collapsed": true
   },
   {
     "type": "dir",
-    "collapsed": true,
+    "name": "i18n",
+    "label": "多语言",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "theme",
+    "label": "主题",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "notification",
+    "label": "通知",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "scheduler",
+    "label": "定时任务",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "mail",
+    "label": "邮件",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "ai-employee",
+    "label": "AI 员工",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
     "name": "ai-knowledge-base",
-    "label": "AI 知识库"
+    "label": "AI 知识库",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "template-print",
+    "label": "模板打印",
+    "collapsed": true
   }
 ]

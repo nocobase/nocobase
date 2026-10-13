@@ -32,7 +32,7 @@ Rules:
 - When you are done, say so in a remark and end your turn.
 
 Workspace:
-- You start in the primary working directory: \`./web\` (web), a checkout of https://example.com/acme/web.git on branch \`agent/DOC-12\` (based on \`develop\`); commit there and push only that branch.
+- You start in the primary working directory: \`./web\` (web), a checkout of https://example.com/acme/web.git targeting branch \`agent/DOC-12\` (based on \`develop\`); the local branch may be a private runner alias. Commit in the current checkout and push with \`git push origin HEAD:refs/heads/agent/DOC-12\`; never force push.
 - Also: \`/srv/data\` (data), a directory on this machine you work in as it is: no branch of its own, so leave its version control alone unless the task asks, and do not delete or reset what is there.
 - Do not clone the repositories again. Keep every file you write inside your working directories.
 {{runner.workspaceNotes}}

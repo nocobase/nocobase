@@ -1,6 +1,6 @@
 import type { ChatAgent } from '@nocobase/app-plugin-agents/shared/conversations';
 
-/** An agent as `useAgentOptions().agents` gives it to the agent picker: a runner agent, online unless said. */
+/** An agent as `useAgentOptions().agents` gives it to the agent picker: enabled, online unless said. */
 export function pickerAgent(
   id: string,
   name: string,
@@ -13,9 +13,7 @@ export function pickerAgent(
     nameText: null,
     descriptionText: null,
     avatar: null,
-    type: 'runner',
-    models: [],
-    personal: false,
+    personalOnly: false,
     isSystemDefault: false,
     isMyDefault: false,
     availability: { online: true, reason: null, onlineRunners: 1 },

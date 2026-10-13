@@ -109,6 +109,24 @@ describe('fresh run sessions', () => {
     expect(returned.workspace.dirs).toEqual(dev.workspace.dirs);
   });
 
+  it("adds the subject's note for a resumed or a fresh session to the turn", async () => {
+    h = await createHarness();
+    h.sessionNotes = { resumed: 'Nothing new.', fresh: 'Read it all.' };
+    const agent = await h.createAgent();
+    const runner = await h.registerRunner();
+    await enqueue(agent);
+    const [first] = await claim(h, runner);
+    expect(first.prompt.session).toBe('fresh');
+    expect(first.prompt.turn).toContain('Read it all.');
+    expect(first.prompt.turn).not.toContain('Nothing new.');
+    await finish(runner, first, 'session-1');
+    await enqueue(agent);
+    const [next] = await claim(h, runner);
+    expect(next.prompt.session).toBe('resume');
+    expect(next.prompt.turn).toContain('Nothing new.');
+    expect(next.prompt.turn).not.toContain('Read it all.');
+  });
+
   it('skips held input and merges into the existing waiting run without losing fresh intent', async () => {
     h = await createHarness();
     const agent = await h.createAgent();

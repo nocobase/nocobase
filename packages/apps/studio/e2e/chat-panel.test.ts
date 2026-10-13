@@ -196,7 +196,10 @@ test('phone history switches back to the conversation without horizontal overflo
   const title = `Chat panel phone ${unique()}`;
   await api.patch(`agents/conversations/${conversation.id}`, { title });
   await open(page, '/issues/PM-1');
-  await page.getByTestId('chat-floating-button').click();
+  await page
+    .getByTestId('chat-header-button')
+    .filter({ visible: true })
+    .click();
   const panel = page.getByRole('dialog', { name: 'Agent 对话' });
   await panel.getByRole('button', { name: '对话历史', exact: true }).click();
   await expect(panel.getByRole('list', { name: '对话历史' })).toBeVisible();
@@ -224,7 +227,10 @@ test('new conversation keeps page context and supports IME through size changes'
   page,
 }) => {
   await open(page, '/issues/PM-1');
-  await page.getByTestId('chat-header-button').click();
+  await page
+    .getByTestId('chat-header-button')
+    .filter({ visible: true })
+    .click();
   const panel = page.getByTestId('chat-panel');
   await panel.getByRole('button', { name: '新对话', exact: true }).click();
   const chips = panel.getByTestId('chat-context-chips');
@@ -261,7 +267,10 @@ test('the reused history keeps its failure, empty and search states beside the c
   page,
 }) => {
   await open(page, '/issues/PM-1');
-  await page.getByTestId('chat-header-button').click();
+  await page
+    .getByTestId('chat-header-button')
+    .filter({ visible: true })
+    .click();
   let failing = true;
   await page.route(/\/api\/agents\/conversations(?:\?|$)/u, async (route) => {
     await route.fulfill({

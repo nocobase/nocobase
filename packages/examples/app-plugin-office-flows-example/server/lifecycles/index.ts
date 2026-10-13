@@ -10,6 +10,19 @@ import {
   teamTaskLifecycle,
 } from './tasks.js';
 
+export const officeWorkflowDefinitions: readonly {
+  readonly name: string;
+  readonly collection: string;
+  readonly stateField: string;
+}[] = [
+  dataRequestLifecycle,
+  extractionLifecycle,
+  incomingLifecycle,
+  clerkTaskLifecycle,
+  teamTaskLifecycle,
+  executorTaskLifecycle,
+].map(({ name, collection, stateField }) => ({ name, collection, stateField }));
+
 /**
  * Registers the six lifecycles. Their services are bound to the transition's
  * transaction while a guard runs, and to the database otherwise.

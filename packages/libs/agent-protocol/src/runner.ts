@@ -113,8 +113,20 @@ export const ModelsDetectionErrorSchema: z.ZodType<ModelsDetectionError> =
     'Invalid model listing response',
   ]);
 
+/**
+ * Where a tool's model list came from: asked of the tool (`detected`), or, for a tool that cannot list its models, the
+ * runner's built-in list for it (`builtin`). Either may carry the runner owner's additions and removals.
+ */
+export type ModelsSource = 'detected' | 'builtin';
+export const ModelsSourceSchema: z.ZodType<ModelsSource> = z.enum([
+  'detected',
+  'builtin',
+]);
+
 export interface ToolCapabilities {
   readonly models?: readonly ToolModel[];
+  /** Absent from runners that predate it, which only report detected lists. */
+  readonly modelsSource?: ModelsSource;
   readonly modelsDetectedAt?: string;
   readonly modelsDetectionStatus?: ModelsDetectionStatus;
   readonly modelsDetectionError?: ModelsDetectionError;
@@ -138,6 +150,7 @@ const toolInfoFields = {
 export const ToolInfoSchema: z.ZodType<ToolInfo> = z.object({
   ...toolInfoFields,
   models: z.array(ToolModelSchema).max(MAX_TOOL_MODELS).optional(),
+  modelsSource: ModelsSourceSchema.optional(),
   modelsDetectedAt: z.iso.datetime().optional(),
   modelsDetectionStatus: ModelsDetectionStatusSchema.optional(),
   modelsDetectionError: ModelsDetectionErrorSchema.optional(),
@@ -160,6 +173,7 @@ export const ReportedToolInfoSchema: z.ZodType<ToolInfo> = z
         return value.length > 0 && models.length === 0 ? undefined : models;
       })
       .optional(),
+    modelsSource: ModelsSourceSchema.optional().catch(undefined),
     modelsDetectedAt: z.iso.datetime().optional().catch(undefined),
     modelsDetectionStatus:
       ModelsDetectionStatusSchema.optional().catch(undefined),
@@ -591,7 +605,10 @@ export const RepoPushFailureSchema: z.ZodType<RepoPushFailure> =
 
 export interface RepoReport {
   readonly url: string;
+  /** The remote target branch, including for runners using private local branch aliases. */
   readonly branch: string;
+  readonly targetBranch?: string;
+  readonly localBranch?: string;
   readonly pushed: boolean;
   readonly headSha?: string;
   /** Why it was not pushed, when the runner tried and failed (protocol 9); `message` is redacted and safe to show. */
@@ -604,6 +621,8 @@ export interface RepoReport {
 export const RepoReportSchema: z.ZodType<RepoReport> = z.object({
   url: z.string().min(1),
   branch: z.string().min(1),
+  targetBranch: z.string().min(1).optional(),
+  localBranch: z.string().min(1).optional(),
   pushed: z.boolean(),
   headSha: z.string().max(64).optional(),
   failure: z
@@ -655,11 +674,13 @@ export const FailRequestSchema: z.ZodType<FailRequest> = z.object({
 });
 
 export interface CancelAckRequest {
+  readonly sessionId?: string;
   readonly handledInputIds?: readonly string[];
   readonly usage?: readonly Usage[];
 }
 
 export const CancelAckRequestSchema: z.ZodType<CancelAckRequest> = z.object({
+  sessionId: z.string().max(200).optional(),
   handledInputIds: z.array(z.string()).optional(),
   usage: z.array(UsageSchema).optional(),
 });

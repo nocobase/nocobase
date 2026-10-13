@@ -1,6 +1,6 @@
 /**
  * What holds an issue back: the unfinished issues it is `blockedBy`, and the unfinished siblings of an earlier stage.
- * "Finished" is read from each issue's own workflow (a blocker may be in another project); deleted issues hold nothing.
+ * "Finished" is done or cancelled; deleted issues hold nothing.
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -11,11 +11,11 @@ import {
   isTerminal,
   liveChildren,
   type StatusCatalog,
-  type StatusCatalogs,
+  type StatusService,
 } from '../issues/index.js';
 import { outgoing } from './subtask.store.js';
 
-/** The workflows of the projects one call meets, each read once. */
+/** The status catalog, as one call reads it. */
 export interface Catalogs {
   of(issue: Pick<Issue, 'projectId'>): Promise<StatusCatalog>;
   terminal(issue: Pick<Issue, 'projectId' | 'statusKey'>): Promise<boolean>;
@@ -25,18 +25,11 @@ export interface Catalogs {
 }
 
 export function catalogsFor(
-  statuses: StatusCatalogs,
-  conn: DatabaseConnection,
+  statuses: Pick<StatusService, 'catalog'>,
+  _conn: DatabaseConnection,
 ): Catalogs {
-  const cache = new Map<string | null, Promise<StatusCatalog>>();
-  const of = (issue: Pick<Issue, 'projectId'>) => {
-    let catalog = cache.get(issue.projectId);
-    if (!catalog) {
-      catalog = statuses.forProject(conn, issue.projectId);
-      cache.set(issue.projectId, catalog);
-    }
-    return catalog;
-  };
+  const of = (_issue: Pick<Issue, 'projectId'>): Promise<StatusCatalog> =>
+    Promise.resolve(statuses.catalog());
   return {
     of,
     terminal: async (issue) => isTerminal(await of(issue), issue.statusKey),

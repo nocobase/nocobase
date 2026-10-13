@@ -1,39 +1,46 @@
 ---
 title: 'Data scopes and rules'
-description: 'Choose accessible records using ownership, all records, or business conditions.'
 ---
 
 # Data scopes and rules
 
-A data scope determines which records a business action can process. Users may share View orders permission while requesters see their own orders and reviewers see the orders they need to process.
+A data scope determines which records an action can access. Account managers view owned orders, while drivers view assigned tasks.
 
-## Example: requesters view their own orders
+## Different ownership fields
+
+Scope records by ownership, assignment or other business conditions. Users with the same action permission can still access different records according to their responsibilities.
 
 ```text
-Let purchase requesters view only their own orders, using the order's requester field to determine ownership.
-Order reviewers can view all orders and process pending approvals.
-Administrators can adjust each job's order-viewing scope in its permission set.
+Allow account managers to view and edit orders using the owner field linked to the current user.
+Allow drivers to view and handle tasks using the assigned driver's employee account.
+Allow dispatchers to view all orders needed for coordination, with assignment subject to current order state.
+Provide per-action scope choices in Team access and enforce consistent rules on lists, details, and mutations.
 ```
 
-Your Agent connects the order requester to the signed-in user and provides the appropriate scope. In the requester's business permissions, administrators choose Orders requested by me for View orders.
+Define what “mine” means. Owner, creator, and driver may be different people; do not use creator ownership for every job.
 
-![Choose orders requested by the current user](../../../cn/capabilities/authorization/assets/data-scope.png)
+| Scope               | Transport use                                |
+| ------------------- | -------------------------------------------- |
+| Owned by me         | Account manager follow-up                    |
+| Assigned to me      | Driver tasks                                 |
+| All records         | Dispatch coordination                        |
+| Business conditions | Stage, region, or amount conditions          |
+| Team or department  | Responsibilities backed by actual membership |
 
-Alice's order list shows her orders, while Bob's shows his. The same page returns different data according to each user's permissions.
+Viewing, editing, assigning, and approving each need their own actions and scopes. Server checks must also protect details and submitted actions, not just list filters.
 
-![Alice's list shows orders she requested](../../../cn/capabilities/authorization/assets/requester-orders.png)
+[Default access](./default-access.md) adds a common scope, [sharing](./sharing-rules.md) adds selected records, and [restrictions](./restriction-rules.md) narrow the result. None replaces page and action permissions.
 
-## Choose scopes for responsibilities
+## Compare job scopes
 
-| Scope                  | Appropriate responsibility                              |
-| ---------------------- | ------------------------------------------------------- |
-| Orders requested by me | A requester views their own orders                      |
-| All orders             | A person responsible for coordinating orders            |
-| Business conditions    | Pending approvals or orders within an amount range      |
-| Department or team     | Applications with integrated organization relationships |
+Before adding common access, sharing or restrictions, Alice sees her six orders. Dispatcher Emma sees all ten orders in the same page. The server returns each employee’s authorized records.
 
-The application provides available scopes. Requested by me refers to the order's requester, which may differ from the record creator. Tell your Agent which business field to use.
+![Alice sees her six orders](../assets/northstar-alice-orders-en.png)
 
-## Extend scopes with rules
+**With only job scope, Alice sees her six orders.**
 
-Use [default data scope](./default-access) for common reference records, [sharing rules](./sharing-rules) for selected collaborators, and [restriction rules](./restriction-rules) to narrow results. These rules adjust record scopes; permission sets still assign page access and actions.
+![Emma sees all ten orders](../assets/northstar-dispatch-orders-en.png)
+
+**Dispatcher Emma sees all ten orders.**
+
+The following rules change visible records without changing their owner.

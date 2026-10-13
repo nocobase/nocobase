@@ -16,11 +16,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
 import { Organize } from '../../client/agents/intake-agent.js';
+import { pickerAgent } from '../fixtures/picker-agents';
 
 const mocks = vi.hoisted(() => ({
   api: { request: vi.fn() },
   plans: { intakeTexts: vi.fn() },
   panel: { available: true, openChat: vi.fn() },
+  agents: [] as unknown[],
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
@@ -31,6 +33,9 @@ vi.mock('@nocobase/app-plugin-projects/client/kit', () => ({
 }));
 vi.mock('@nocobase/app-plugin-agents/client/chat', () => ({
   useChatPanel: () => mocks.panel,
+  useChatAgents: () => ({ data: mocks.agents }),
+  useAgentText: () => ({ name: (agent: { name: string }) => agent.name }),
+  AgentAvatar: () => null,
 }));
 
 const started = () => ({
@@ -38,7 +43,6 @@ const started = () => ({
     run: { id: 'r1', outcome: 'created' },
     conversation: {
       id: 'c1',
-      models: [{ model: 'test' }],
       availability: { online: true, reason: null, onlineRunners: 1 },
       run: { id: 'r1', status: 'queued' },
     },
@@ -86,6 +90,7 @@ async function show(locale = 'en-US', fileIds: string[] = []) {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.agents = [];
   mocks.panel.available = true;
   mocks.api.request.mockResolvedValue(started());
 });
@@ -176,7 +181,7 @@ describe('intake handoff', () => {
     expect(mocks.api.request).toHaveBeenCalledOnce();
   });
 
-  it.each(['modelUnavailable', 'noRunner'] as const)(
+  it.each(['agentArchived', 'noRunner'] as const)(
     'keeps an unavailable successful response (%s) out of the panel',
     async (reason) => {
       mocks.api.request.mockResolvedValueOnce({
@@ -195,7 +200,7 @@ describe('intake handoff', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent(
         reason === 'noRunner'
           ? enUS.pmChat.intake.noRunner
-          : enUS.pmChat.intake.modelUnavailable,
+          : enUS.pmChat.intake.agentUnavailable,
       );
       expect(mocks.panel.openChat).not.toHaveBeenCalled();
     },
@@ -247,5 +252,42 @@ describe('intake handoff', () => {
     expect(
       screen.getByRole('button', { name: enUS.pmChat.intake.organize }),
     ).toBeDisabled();
+  });
+
+  it('asks the agent chosen under “Organized by”, the team default first, and says why one cannot answer', async () => {
+    mocks.agents = [
+      pickerAgent('sonnet', 'Claude · Sonnet 5'),
+      pickerAgent('opus', 'Claude · Opus 5.5', {
+        isSystemDefault: true,
+        description: 'Designs and hard bugs',
+      }),
+      pickerAgent('kimi', 'OpenCode · Kimi K2', {
+        availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
+      }),
+    ];
+    await show('zh-CN');
+    const picker = screen.getByTestId('intake-agent-picker');
+    expect(picker).toHaveTextContent('Claude · Opus 5.5');
+    fireEvent.click(picker);
+    const items = await screen.findAllByRole('menuitem');
+    expect(items.map((item) => item.getAttribute('data-agent'))).toEqual([
+      'opus',
+      'sonnet',
+      'kimi',
+    ]);
+    expect(items[0]).toHaveTextContent('Designs and hard bugs');
+    expect(items[2]).toHaveAttribute('aria-disabled', 'true');
+    expect(items[2]).toHaveTextContent('暂无执行机，选不了');
+    fireEvent.click(items[1]!);
+    fireEvent.click(
+      screen.getByRole('button', { name: zhCN.pmChat.intake.organize }),
+    );
+    await waitFor(() =>
+      expect(mocks.api.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          json: expect.objectContaining({ agentId: 'sonnet' }),
+        }),
+      ),
+    );
   });
 });

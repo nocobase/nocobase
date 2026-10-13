@@ -32,6 +32,14 @@ afterEach(() => {
 });
 
 describe('runCommand', () => {
+  it('sends input over stdin without putting it in command arguments', async () => {
+    const result = await runCommand(
+      process.execPath,
+      ['-e', 'process.stdin.pipe(process.stdout)'],
+      { input: 'private-input' },
+    );
+    expect(result.stdout).toBe('private-input');
+  });
   it('stops the whole process group on a timeout, not only the direct child', async () => {
     const pidFile = path.join(temp.dir, 'grandchild.pid');
     const pending = runCommand(

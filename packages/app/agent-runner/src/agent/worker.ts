@@ -1,11 +1,16 @@
+import {
+  finalizeRunWorktrees,
+  sessionWorkDir,
+  updateContinuationState,
+} from '../core/run-worktrees.ts';
 // One run, start to end, in its own process (see supervisor.ts):
 //
 //   prepare (prepare/index.ts: workspace, application CLI, working directories, skills) -> start
 //     -> adapter turns (events, permissions, inputs) -> complete | fail | cancelAck
 //
 // The agent starts in the run's primary working directory (or the subject's work directory when the run names none),
-// with the real HOME of the user the runner runs as, its own TMPDIR (and Codex its own CODEX_HOME) inside the work
-// directory, the application's CLI first on its PATH and the runner's commit hook as its git hooks. Nothing restricts what its
+// with the real HOME of the user the runner runs as, its own TMPDIR inside the work directory and an external
+// Codex CODEX_HOME, the application's CLI first on its PATH and the runner's commit hook as its git hooks. Nothing restricts what its
 // tools do: the runner is not a security boundary, so run it as a dedicated user, in a container or in a VM.
 //
 // While it runs, the lease is renewed every 15 s and the run's status is polled every few seconds; both answers carry
@@ -87,6 +92,7 @@ import {
   agentCwd,
   PREPARE_STEPS,
   PrepareError,
+  stepFailure,
   type PrepareContext,
 } from './prepare/index.ts';
 import {
@@ -107,6 +113,8 @@ export interface WorkerDeps {
   client?: ApiClient;
   /** Whether to push branches with work on them when the run completes. */
   push?: boolean;
+  /** Stops this isolated worker's descendants before snapshotting repository files. */
+  stopWriters?: () => Promise<void>;
 }
 
 export type WorkerOutcome =
@@ -146,6 +154,8 @@ export function workspaceNotes(options: {
   mounts?: readonly { readonly dir: string; readonly note?: string }[];
   /** The pnpm store every run on this machine shares. */
   pnpmStoreDir?: string;
+  /** The run only reads (`workspace.readOnly`): nothing it commits is pushed. */
+  readOnly?: boolean;
 }): string {
   const { workDir, cwd, dirs } = options;
   const lines = [
@@ -153,9 +163,12 @@ export function workspaceNotes(options: {
       ? `Your working directory is ${workDir}, an empty directory kept for this task; you start in it.`
       : `You start in ${cwd}. The runner keeps this task's own files in ${workDir}; your TMPDIR is inside it.`,
   ];
+  lines.push(
+    'Repository attempts use new code directories. Claude, Pi and OpenCode start fresh when the directory changes; legacy sessions are not migrated. Codex state is kept outside the disposable worktree.',
+  );
   if (dirs.length > 0) {
     lines.push(
-      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}). Once the task is done or cancelled, its working directory is removed, with anything never pushed.`,
+      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}). When this run ends, repository changes are saved to local continuation refs without pushing, then its worktrees are removed. If saving fails, the original worktree is kept for recovery. Temporary files outside repositories are removed.`,
     );
     lines.push('Working directories (the first is the primary one):');
     for (const dir of dirs) {
@@ -163,9 +176,17 @@ export function workspaceNotes(options: {
       lines.push(
         dir.repo === undefined
           ? `- ${dir.dir}${name}: a directory used in place, not a checkout; there is no branch to push, so leave version control to the people who own it.`
-          : `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (push only this branch).`,
+          : options.readOnly === true
+            ? `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (a read-only copy: change, commit and push nothing).`
+            : `- ${dir.dir}${name}: ${dir.repo.url}, target branch ${dir.repo.branch} from ${dir.repo.defaultBranch}, local branch ${dir.repo.localBranch ?? dir.repo.branch}. Push only with git push origin HEAD:refs/heads/${dir.repo.branch}; never force push.`,
       );
     }
+    for (const dir of dirs)
+      for (const warning of dir.repo?.warnings ?? []) lines.push(warning);
+    if (options.readOnly === true)
+      lines.push(
+        'This step only reads: another run may be changing the same branch in its own checkout at the same time. Read and run checks here, but change, commit and push nothing; the runner pushes nothing from this checkout.',
+      );
     for (const dir of dirs) {
       if (dir.repo?.initializing)
         lines.push(
@@ -325,6 +346,7 @@ export class RunWorker {
   private idleTimer: NodeJS.Timeout | undefined;
   private lastActivity = Date.now();
   private sessionId: string | undefined;
+  private confirmedSessionId: string | undefined;
   private prepared: PrepareContext | undefined;
   private readonly releases: (() => Promise<void>)[] = [];
   private credentialsFile: string | undefined;
@@ -356,7 +378,9 @@ export class RunWorker {
     this.runId = payload.run.id;
     this.record = record;
     this.sessionId =
-      payload.prompt.session === 'resume'
+      payload.prompt.session === 'resume' &&
+      (payload.tool.kind === 'codex' ||
+        payload.workspace.dirs[0]?.kind === 'directory')
         ? payload.prompt.resumeSessionId
         : undefined;
     this.spool = EventSpool.open({
@@ -474,6 +498,18 @@ export class RunWorker {
 
   /** Spools an adapter event, noting the inputs it reports as picked up. */
   private recordEvent(event: AdapterEvent): void {
+    if (event.type === 'status' && event.content === 'sessionRecovery') {
+      this.sessionId = undefined;
+      this.confirmedSessionId = undefined;
+    }
+    if (
+      event.type === 'status' &&
+      event.content === 'started' &&
+      typeof event.meta?.sessionId === 'string'
+    ) {
+      this.sessionId = event.meta.sessionId;
+      this.confirmedSessionId = event.meta.sessionId;
+    }
     if (event.type === 'input') {
       const inputId = event.meta?.inputId;
       if (typeof inputId === 'string' && this.inputs.has(inputId)) {
@@ -537,6 +573,13 @@ export class RunWorker {
         error instanceof Error ? error.message : String(error),
       );
     } finally {
+      await this.stopTool();
+      // A failed stop/save retains the original directory. No separate recovery protocol is maintained.
+      await this.saveLocal(true).catch((error: unknown) =>
+        log(
+          `Directory retained: ${this.prepared?.workspace?.workDir ?? this.record.workDir}: ${String(error)}`,
+        ),
+      );
       this.lease.stop();
       this.broker?.close();
       await this.credentialServer?.close().catch(() => undefined);
@@ -582,6 +625,12 @@ export class RunWorker {
       onRelease: (release) => this.releases.push(release),
       ...(this.broker === undefined ? {} : { gitAuth: this.broker }),
       dirs: [],
+      gitRetry: {
+        signal: this.abort.signal,
+        ...(deps.stopWriters === undefined
+          ? {}
+          : { onAbort: deps.stopWriters }),
+      },
     };
     this.prepared = context;
     for (const step of PREPARE_STEPS) {
@@ -608,7 +657,7 @@ export class RunWorker {
         });
         if (this.ending !== undefined) return this.finishEnding();
         return this.finishFailed(
-          error instanceof PrepareError ? error.reason : step.failure,
+          stepFailure(step, error, payload.run.acceptedFailures),
           detail,
         );
       } finally {
@@ -654,9 +703,33 @@ export class RunWorker {
 
     const tmpDir = path.join(runnerDir, 'tmp');
     await mkdir(tmpDir, { recursive: true, mode: 0o700 });
+    const sessionDir = sessionWorkDir(
+      deps.paths,
+      registration.key,
+      payload.workspace.key ?? payload.subject.key,
+      payload.agent?.id ?? payload.tool.kind,
+      payload.tool.kind,
+      payload.workspace.sessionScope ?? 'root',
+    );
+    await mkdir(sessionDir, { recursive: true, mode: 0o700 });
+    await updateContinuationState(
+      deps.paths,
+      registration.key,
+      payload.workspace.key ?? payload.subject.key,
+      (state) => ({
+        ...state,
+        lastRunId: payload.run.id,
+        activeWorkDirs: [
+          ...new Set([...(state.activeWorkDirs ?? []), workDir]),
+        ],
+        sessionKeys: [
+          ...new Set([...(state.sessionKeys ?? []), path.basename(sessionDir)]),
+        ],
+      }),
+    );
     const codexHome =
       payload.tool.kind === 'codex'
-        ? await prepareCodexHome(path.join(runnerDir, 'codex-home'))
+        ? await prepareCodexHome(path.join(sessionDir, 'codex-home'))
         : undefined;
     const runnerTools =
       deps.settings.agentTools === 'system'
@@ -742,6 +815,7 @@ export class RunWorker {
           : { skillsDir: context.skills.dir }),
         ...(context.mounts === undefined ? {} : { mounts: context.mounts }),
         pnpmStoreDir,
+        ...(payload.workspace.readOnly === true ? { readOnly: true } : {}),
       }),
       init,
     );
@@ -799,6 +873,7 @@ export class RunWorker {
       this.steered.clear();
       this.usage.push(...result.usage);
       this.sessionId = result.sessionId ?? this.sessionId;
+      this.confirmedSessionId = result.sessionId ?? this.confirmedSessionId;
       this.summaryText = result.summary ?? this.summaryText;
 
       if (this.ending !== undefined) return this.finishEnding();
@@ -820,19 +895,36 @@ export class RunWorker {
         this.deliverInPrompt(pending, 'turn');
         continue;
       }
+      const late = await this.completeOrCollect();
+      if (!Array.isArray(late)) return late;
+      prompt = formatInputs(late);
+      this.deliverInPrompt(late, 'turn');
+    }
+  }
+
+  /**
+   * Completes the run, or returns the input the server held it open for. The server may withdraw pending input it no
+   * longer lets the run act on (its subject moved on) between answering `RUN_INPUT_PENDING` and delivering, so when
+   * nothing new arrives the run completes again rather than starting a turn with an empty prompt.
+   */
+  private async completeOrCollect(): Promise<WorkerOutcome | RunInput[]> {
+    let empty = 0;
+    for (;;) {
       const outcome = await this.finishCompleted();
       if (outcome !== 'inputPending') return outcome;
       await this.pollStatus();
       if (this.ending !== undefined) return this.finishEnding();
-      const next = this.undelivered();
-      if (next.length === 0) {
+      if (this.undelivered().length === 0) {
         // The server says inputs are pending but sent none we have not seen; ask once more after a pause.
         await delay(1_000);
         await this.pollStatus();
+        if (this.ending !== undefined) return this.finishEnding();
       }
       const late = this.undelivered();
-      prompt = formatInputs(late);
-      this.deliverInPrompt(late, 'turn');
+      if (late.length > 0) return late;
+      empty += 1;
+      // An older server that keeps answering so without sending anything gets the turn it used to.
+      if (empty >= 3) return late;
     }
   }
 
@@ -852,6 +944,7 @@ export class RunWorker {
       if (result !== undefined) {
         this.usage.push(...result.usage);
         this.sessionId = result.sessionId ?? this.sessionId;
+        this.confirmedSessionId = result.sessionId ?? this.confirmedSessionId;
       }
     }
   }
@@ -873,6 +966,11 @@ export class RunWorker {
     const reports = (
       await reportRepos(repos, {
         push,
+        active: () => this.ending === undefined,
+        signal: this.abort.signal,
+        ...(this.deps.stopWriters === undefined
+          ? {}
+          : { onAbort: this.deps.stopWriters }),
         ...(this.broker === undefined ? {} : { auth: this.broker }),
         log: this.deps.log,
       })
@@ -891,9 +989,76 @@ export class RunWorker {
     return reports;
   }
 
+  private savedDuringRun = false;
+
+  private writerStopFailure?: string;
+
+  private async saveLocal(remove = false): Promise<string> {
+    await this.stopTool();
+    if (this.writerStopFailure === undefined) {
+      try {
+        await this.deps.stopWriters?.();
+      } catch (error) {
+        this.writerStopFailure = `Process stop failed: ${String(error)}`;
+      }
+    }
+    const workDir = this.prepared?.workspace?.workDir;
+    if (workDir === undefined) return '';
+    // A read-only checkout has nothing to save; during shutdown GC removes it instead.
+    if (
+      remove &&
+      this.payload.workspace.readOnly === true &&
+      this.ending?.kind === 'shutdown'
+    ) {
+      this.deps.log(`workspace: deferred read-only cleanup to GC: ${workDir}`);
+      remove = false;
+    }
+    await this.updateRecord({ finalizing: true }).catch(() => undefined);
+    const results = await finalizeRunWorktrees(
+      this.deps.paths,
+      workDir,
+      this.deps.log,
+      {
+        remove,
+        ...(this.writerStopFailure === undefined
+          ? {}
+          : { unsafeReason: this.writerStopFailure }),
+      },
+    ).finally(() =>
+      this.updateRecord({ finalizing: false }).catch(() => undefined),
+    );
+    if (results.length > 0) this.savedDuringRun = true;
+    const message = results
+      .map((result) =>
+        result.saved
+          ? `Local continuation saved: ${result.path}${result.head ? ` (${result.head})` : ''}; not pushed.`
+          : `Recovery required: ${result.path}: ${result.reason}`,
+      )
+      .join('\n');
+    if (message !== '')
+      this.spool.push({
+        type: 'status',
+        content: message,
+        meta: { phase: 'localSave' },
+      });
+    return message;
+  }
+
   private async finishCompleted(): Promise<WorkerOutcome | 'inputPending'> {
     await this.updateRecord({ phase: 'reporting' });
-    const repos = await this.repoReports(this.deps.push ?? true);
+    await this.stopTool();
+    await this.deps.stopWriters?.().catch((error: unknown) => {
+      // A read-only run keeps its checkout for GC; a writer pushes nothing past a writer it could not stop.
+      if (this.payload.workspace.readOnly !== true) throw error;
+      this.writerStopFailure = `Process stop failed: ${String(error)}`;
+    });
+    // A read-only run pushes nothing: another run may be writing the same branch.
+    const repos = await this.repoReports(
+      (this.deps.push ?? true) &&
+        !this.savedDuringRun &&
+        this.ending === undefined &&
+        this.payload.workspace.readOnly !== true,
+    );
     // The agent got through the initialization prompts; later runs of the subject do not get them again.
     const workDir = this.prepared?.workspace?.workDir;
     if (workDir !== undefined)
@@ -902,13 +1067,15 @@ export class RunWorker {
         workDir,
         this.prepared?.dirs ?? [],
       );
+    const saved = await this.saveLocal();
     await this.drainEvents();
     if (this.ending !== undefined) return this.finishEnding();
     try {
       await this.report(
         routePath(RUNNER_ROUTES.complete, { runId: this.runId }),
         {
-          summary: this.summary(),
+          summary:
+            saved === '' ? this.summary() : `${this.summary()}\n\n${saved}`,
           handledInputIds: [...this.delivered],
           usage: this.usage,
           ...(this.sessionId === undefined
@@ -951,11 +1118,12 @@ export class RunWorker {
     const detail = this.redactor.text(unredacted);
     await this.updateRecord({ phase: 'reporting' }).catch(() => undefined);
     const repos = await this.repoReports(false).catch(() => []);
+    const saved = await this.saveLocal();
     await this.drainEvents();
     try {
       await this.report(routePath(RUNNER_ROUTES.fail, { runId: this.runId }), {
         reason,
-        detail,
+        detail: saved === '' ? detail : `${detail}\n\n${saved}`,
         handledInputIds: [...this.delivered],
         usage: this.usage,
         ...(this.sessionId === undefined ? {} : { sessionId: this.sessionId }),
@@ -973,6 +1141,7 @@ export class RunWorker {
   private async finishEnding(): Promise<WorkerOutcome> {
     const ending = this.ending;
     await this.stopTool();
+    if (ending?.kind === 'lost') await this.saveLocal(true);
     switch (ending?.kind) {
       case 'lost':
         this.deps.log(
@@ -980,9 +1149,12 @@ export class RunWorker {
         );
         return 'leaseLost';
       case 'cancel': {
+        const saved = await this.saveLocal(true);
         this.spool.push({
           type: 'status',
-          content: 'Cancelled.',
+          content: saved.includes('Recovery required:')
+            ? `Cancelled. ${saved}`
+            : 'Cancelled.',
           meta: { status: 'cancelled' },
         });
         await this.drainEvents();
@@ -990,6 +1162,9 @@ export class RunWorker {
           await this.report(
             routePath(RUNNER_ROUTES.cancelAck, { runId: this.runId }),
             {
+              ...(this.confirmedSessionId === undefined
+                ? {}
+                : { sessionId: this.confirmedSessionId }),
               handledInputIds: [...this.delivered],
               usage: this.usage,
             },

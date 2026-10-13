@@ -50,6 +50,10 @@ import { z } from 'zod';
  *
  * Tool model capabilities (`ToolInfo.models`, supported efforts, detection timestamp/status/reason) were added
  * within version 7 as optional fields. Older receivers ignore them; absent fields mean unknown capabilities.
+ * `ToolInfo.modelsSource` (`detected`, or `builtin` for a tool that cannot list its models) was added the same way.
+ *
+ * `RunWorkspace.readOnly` was added within version 9 as an optional field: a run that only reads gets a work directory
+ * of its own and pushes nothing. A runner that ignores it shares the subject's work directory, as before.
  *
  * `RepoDir.initializeIfEmpty` optionally permits a coding run to make the first commit of a verified empty remote.
  * Older runners ignore it and retain their missing-branch refusal. Unlike `initial`, it never allows a default-branch
@@ -68,7 +72,8 @@ import { z } from 'zod';
  * without it still gets the credentials in its payload. The number moved so that a runner announcing
  * `gitCredentials` is refused cleanly by a server that does not know it; update the application first.
  */
-export const PROTOCOL_VERSION = 9;
+/** Version 10 announces support for workspace.key; older servers refuse the new feature vocabulary cleanly. */
+export const PROTOCOL_VERSION = 10;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;
@@ -85,6 +90,7 @@ export function isProtocolSupported(version: number): boolean {
 /**
  * What a runner can do beyond the baseline (claim, lease, events, complete/fail).
  *
+ * - `workspaceKey`: honors the separately named work directory in `RunWorkspace.key`.
  * - `input`: accepts input while a run is running (`status.inputs`, and the `handledInputIds` fence on complete).
  * - `steer`: injects input into the running turn instead of waiting for a turn boundary.
  * - `attachments`: the agent can upload files through the CLI.
@@ -102,6 +108,7 @@ export function isProtocolSupported(version: number): boolean {
  *   `RUNNER_ROUTES.gitCredential`), instead of keeping the one the claim handed out for the whole run.
  */
 export const RUNNER_FEATURES = [
+  'workspaceKey',
   'input',
   'steer',
   'attachments',

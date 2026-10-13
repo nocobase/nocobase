@@ -216,8 +216,15 @@ test('Pro workflows retain the branch arguments supported by their source-owned 
 const runBlock = (source, name) => {
   const start = source.indexOf(`      - name: ${name}\n`);
   assert.notEqual(start, -1, name);
-  const end = source.indexOf('\n      - name: ', start + 1);
-  const lines = source.slice(start, end === -1 ? undefined : end).split('\n');
+  // A step ends at the next step, or at the next job when it is the last step of its job.
+  const ends = [
+    source.indexOf('\n      - name: ', start + 1),
+    source.slice(start).search(/\n {2}[\w-]+:\n/u),
+  ].map((index, i) => (i === 1 && index !== -1 ? start + index : index));
+  const end = Math.min(...ends.filter((index) => index !== -1));
+  const lines = source
+    .slice(start, Number.isFinite(end) ? end : undefined)
+    .split('\n');
   const begin = lines.indexOf('        run: |');
   assert.notEqual(begin, -1, name);
   return lines
@@ -315,19 +322,46 @@ test('a beta release that publishes Studio builds its public release image from 
   // The image is tagged with Studio's version and channel on Docker Hub and Aliyun's public registry.
   const image = workflow('studio-image');
   assert.match(image, /workflow_call:\n\s+inputs:\n\s+tag:/u);
-  assert.doesNotMatch(
+  assert.doesNotMatch(image, /ALI_DOCKER_REGISTRY\b|runners-dist/u);
+  // The release moves the channel tag; a manual rebuild does not unless asked, so an older release cannot take :beta.
+  assert.match(
     image,
-    /workflow_dispatch|ALI_DOCKER_REGISTRY\b|runners-dist/u,
+    /workflow_call:[\s\S]*?update_beta_or_latest:[\s\S]*?default: true\n\s+workflow_dispatch:[\s\S]*?update_beta_or_latest:[\s\S]*?default: false\n/u,
   );
   // Studio's own `pnpm build` packs the runner and nb-studio into dist/runners, which the prebuilt image carries.
   assert.doesNotMatch(image, /cli build|upload-artifact|studio-dist/u);
+  // Each architecture builds its own dist/ with its own --target, on a runner of that architecture, because the
+  // Dockerfile refuses a prebuilt dist/ built for another platform; publish joins the two digests under every tag.
   assert.match(
     image,
-    /- name: Build dist for linux-x64\n\s+working-directory: packages\/apps\/studio\n[\s\S]*?run: pnpm build --target linux-x64\n/u,
+    /- platform: linux\/amd64\n\s+runner: ubuntu-latest\n\s+target: linux-x64\n/u,
   );
+  assert.match(
+    image,
+    /- platform: linux\/arm64\n\s+runner: ubuntu-24\.04-arm\n\s+target: linux-arm64\n/u,
+  );
+  assert.match(
+    image,
+    /- name: Build dist for \$\{\{ matrix\.target \}\}\n\s+working-directory: packages\/apps\/studio\n[\s\S]*?TARGET: \$\{\{ matrix\.target \}\}\n\s+run: pnpm build --target "\$TARGET"\n/u,
+  );
+  assert.match(image, /platforms: \$\{\{ matrix\.platform \}\}\n/u);
   assert.match(image, /build-args: DIST=prebuilt\n/u);
-  const name = (version) => {
-    const tagWorkspace = path.join(directory, `tags-${version || 'none'}`);
+  assert.match(image, /push-by-digest=true/u);
+  // The tags hold Aliyun's registry, a secret, and GitHub drops a job output containing one, so publish names them.
+  assert.doesNotMatch(image, /needs\.\w+\.outputs\.tags/u);
+  assert.match(
+    image,
+    /\n {2}publish:\n[\s\S]*?- name: Name the tags\n[\s\S]*?TAGS: \$\{\{ steps\.tags\.outputs\.tags \}\}/u,
+  );
+  assert.match(
+    image,
+    /docker buildx imagetools create "\$\{args\[@\]\}" "nocobase\/studio@\$\{AMD64\}" "nocobase\/studio@\$\{ARM64\}"/u,
+  );
+  const name = (version, updateBetaOrLatest) => {
+    const tagWorkspace = path.join(
+      directory,
+      `tags-${version || 'none'}-${updateBetaOrLatest ?? 'unset'}`,
+    );
     mkdirSync(path.join(tagWorkspace, 'packages/apps/studio'), {
       recursive: true,
     });
@@ -349,6 +383,9 @@ test('a beta release that publishes Studio builds its public release image from 
           ALI_REGISTRY: 'registry.example.com',
           TAG: 'release-beta/2026-10-11.1',
           GITHUB_OUTPUT: output,
+          ...(updateBetaOrLatest === undefined
+            ? {}
+            : { UPDATE_BETA_OR_LATEST: updateBetaOrLatest }),
         },
       },
     );
@@ -372,6 +409,21 @@ test('a beta release that publishes Studio builds its public release image from 
     ].join('\n'),
   );
   assert.match(name('1.0.0').output, /nocobase\/studio:latest\n/u);
+  assert.equal(
+    name('1.0.0-beta.52', 'true').output,
+    name('1.0.0-beta.52').output,
+  );
+  assert.equal(
+    name('1.0.0-beta.52', 'false').output,
+    [
+      'version=1.0.0-beta.52',
+      'tags<<EOF',
+      'nocobase/studio:1.0.0-beta.52',
+      'registry.example.com/nocobase/studio:1.0.0-beta.52',
+      'EOF',
+      '',
+    ].join('\n'),
+  );
   const missing = name('');
   assert.notEqual(missing.status, 0);
   assert.match(

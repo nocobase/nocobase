@@ -6,9 +6,6 @@
  * | `POST /organizeIntake` `OrganizeRequest`        | starts an intake conversation (`conversation/intake.ts`)     |
  * | `POST /intakeDrafts` `{ drafts }`              | an intake run hands its drafts back (`intake/`)               |
  * | `POST /failedRuns/:runId/decide` `{ action }`  | answers a failed run's inbox card (`failed-runs.ts`)          |
- * | `POST /designProposals` `{ issueId?, content }` | an issue's run submits its design proposal (`design.ts`)     |
- * | `GET /designProposals/:issueId`                | an issue's design proposal (`design.ts`, `shared/design.ts`)  |
- * | `POST /designProposals/:issueId/approve`, `/requestChanges` | decides it                                       |
  * | `GET /agentBoard`                              | the Agent queue's data (`board.ts`), with the issue list's filters (`q`, `projectId`, `labelId`, `ownerUserId`, `executorId`) |
  * | `POST /agentBoard/issues/:issueId/start`       | "Start" on an idle issue                                      |
  * | `GET /delegations?conversationId=`             | the issues a conversation handed to agents (`conversation/delegation.ts`) |
@@ -53,7 +50,6 @@ import {
   intakeUnavailableReason,
   type IntakeUnavailableReason,
 } from '../../shared/intake.js';
-import { studioInboxPortToken } from '../inbox/port.js';
 import { PROJECTS_SOURCE } from '../inbox/projects.js';
 import { studioInboxToken } from '../inbox/token.js';
 
@@ -64,9 +60,6 @@ import {
   OrganizeRequestSchema,
 } from './conversation/intake.js';
 import { INTAKE_PROPOSE_ACTION } from './commands/permissions.js';
-import { createPermissionSource } from './commands/permissions.js';
-import { createAskerLookup } from './conversation/acting.js';
-import { createDesignService } from './design.js';
 import { readAgentBoard, startAgentBoardIssue } from './board.js';
 import { readIssueAgentWork } from './issue-agent-work.js';
 import { callerOfRequest, runSubjectOf } from './run-principal.js';
@@ -86,33 +79,23 @@ import {
   DelegationParams,
   DelegationPatchInput,
   DelegationSchema,
-  DesignDecisionInput,
-  DesignProposalSubmittedSchema,
-  DesignStateSchema,
   FailedRunResultSchema,
   IntakeDraftsDeliveredSchema,
   IntakeDraftsInput,
   IntakeStartedSchema,
   IssueParams,
   RunParams,
-  SubmitDesignProposalInput,
 } from './schemas.js';
 
 const tags = ['Studio'];
 const intakeFailureMessages: Record<IntakeUnavailableReason, string> = {
   INTAKE_NO_AGENT:
     'No usable default chat agent is configured. Choose a personal or team default agent.',
-  INTAKE_MODEL_MISSING:
-    'The selected online agent has no model configured. Configure its model before retrying.',
-  INTAKE_MODEL_UNAVAILABLE:
-    'The selected online agent\u2019s model is unavailable. Check its model service and enabled models.',
   INTAKE_NO_RUNNER:
-    'No eligible online runner can run this agent for the caller. Check runtime status, tool sign-in and sharing policy.',
+    'No runner online can run this agent for the caller. Check that a runner reporting its tool and model is online and shared with the team.',
   INTAKE_AGENT_UNAVAILABLE:
     'The selected agent is unavailable or cannot be invoked by this user.',
 };
-/** What submitting a design proposal performs: it is a comment on the issue. */
-const COMMENT_ACTION = 'pm.issues/comment';
 /** Routes only an agent's run calls, with its run token. */
 const runOnly: Record<string, string[]>[] = [{ runToken: [] }];
 const signedInErrors = {
@@ -171,7 +154,7 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
           403: apiErrorResponse(403, 'When the caller may not wake the agent.'),
           409: apiErrorResponse(
             409,
-            'When no default agent is configured (`INTAKE_NO_AGENT`), its model is missing or unavailable (`INTAKE_MODEL_MISSING`, `INTAKE_MODEL_UNAVAILABLE`), or no suitable runner is online (`INTAKE_NO_RUNNER`). No conversation is started.',
+            'When no default agent is configured (`INTAKE_NO_AGENT`), the agent is not enabled (`INTAKE_AGENT_UNAVAILABLE`), or no runner that can run it is online (`INTAKE_NO_RUNNER`). No conversation is started.',
           ),
           ...signedInErrors,
         },
@@ -199,7 +182,7 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
             },
           );
         const userId = userIdOf(context);
-        // Chat availability includes this person's runner sharing permissions and the selected online model.
+        // Chat availability includes whether the agent is enabled and the runners this person may use.
         // Reject before creating a conversation: an HTTP success with a queued run is not an intake handoff.
         const choices = await agents.conversations.chatAgents(userId);
         const agent = request.agentId
@@ -349,7 +332,7 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
             200: dataResponse(FailedRunResultSchema),
             400: apiErrorResponse(
               400,
-              'When the decision was already taken (`DECISION_ALREADY_TAKEN`).',
+              'When the decision was already taken (`DECISION_ALREADY_TAKEN`) or the run has already been retried (`RUN_ALREADY_RETRIED`).',
             ),
             404: apiErrorResponse(
               404,
@@ -378,187 +361,6 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
         },
       );
       router.route('/failedRuns', failedRuns);
-    }
-
-    // Design-first proposals (`design.ts`): the issue page's section and the owner's inbox card read and decide here.
-    if (container.has(projectsToken)) {
-      const design = createDesignService({
-        projects: () => container.resolve(projectsToken),
-        inbox: () =>
-          container.has(studioInboxPortToken)
-            ? container.resolve(studioInboxPortToken)
-            : undefined,
-      });
-      // Per route: a person reads and decides; only an issue's run, its token scoped, submits.
-      const designRoutes = new Hono();
-      designRoutes.onError(studioErrorHandler);
-      const askerOf = createAskerLookup(agents);
-      const permissions = createPermissionSource(
-        () =>
-          container.has(projectsAccessToken)
-            ? container.resolve(projectsAccessToken)
-            : undefined,
-        askerOf,
-      );
-      if (container.has(authorizationToken))
-        designRoutes.post(
-          '/',
-          authentication.required({
-            scopedKeys: true,
-          }) as unknown as MiddlewareHandler,
-          container
-            .resolve(authorizationToken)
-            .middleware() as unknown as MiddlewareHandler,
-          describeRoute({
-            tags,
-            summary: 'Submit a design proposal for an issue',
-            operationId: 'designProposalsSubmit',
-            description:
-              'Only the agent of a run on the issue, in the design-first flow: the issue defaults to the run’s. Submitting moves an issue in Analysis to Proposal review, which asks its owner; a new proposal replaces the earlier one. `meta.message` words the outcome.',
-            security: runOnly,
-            ...cliRoute({
-              command: 'issue design-proposal',
-              args: ['issueId'],
-              flags: {
-                issueId: { name: 'issue' },
-                content: {
-                  contentFile: true,
-                  description:
-                    'The proposal, in Markdown; write it to a file and pass it with --content-file.',
-                },
-              },
-              action: COMMENT_ACTION,
-              examples: ['issue design-proposal --content-file proposal.md'],
-            }),
-            responses: {
-              200: dataResponse(DesignProposalSubmittedSchema),
-              400: apiErrorResponse(400, 'When the proposal is empty.'),
-              404: apiErrorResponse(404, 'When the issue does not exist.'),
-              ...apiErrorResponses,
-            },
-          }),
-          apiValidator('json', SubmitDesignProposalInput),
-          async (context) => {
-            const identity = callerOfRequest(context as unknown as Context);
-            const own = runSubjectOf(identity, 'issue');
-            if (!identity || !own)
-              throw studioError(
-                'PERMISSION_DENIED',
-                'ISSUE_RUN_REQUIRED',
-                'issue design-proposal is for an agent working on an issue.',
-              );
-            // A proposal is a comment on the issue: the agent must be given commenting.
-            if (!(await agents.gate.allowed(identity)).has(COMMENT_ACTION))
-              throw studioError(
-                'PERMISSION_DENIED',
-                'ACTION_NOT_ALLOWED',
-                `issue design-proposal needs ${COMMENT_ACTION}, which this run does not hold.`,
-              );
-            const { issueId, content } = context.req.valid('json');
-            const result = await design.propose(
-              await permissions.viewerOf(identity),
-              issueId ?? own,
-              content,
-              own,
-            );
-            return context.json({
-              data: result,
-              meta: {
-                message: `Design proposal ${result.proposal.commentId} submitted; the issue is ${result.statusKey} now and waits for its owner.`,
-              },
-            });
-          },
-        );
-      designRoutes.get(
-        '/:issueId',
-        required,
-        describeRoute({
-          tags,
-          summary: 'Get an issue’s design proposal',
-          operationId: 'designProposalsGetProposal',
-          description: 'The issue is named by id or identifier.',
-          ...cliRoute({
-            command: 'design get',
-            flags: { issueId: { name: 'issue' } },
-          }),
-          responses: {
-            200: dataResponse(DesignStateSchema),
-            404: apiErrorResponse(404),
-            ...signedInErrors,
-          },
-        }),
-        apiValidator('param', IssueParams),
-        async (context) =>
-          context.json({
-            data: await design.state(
-              await viewerOf(userIdOf(context)),
-              context.req.valid('param').issueId,
-            ),
-          }),
-      );
-      const decisions = {
-        approve: {
-          summary: 'Approve an issue’s design proposal',
-          operationId: 'designProposalsApprove',
-          description:
-            'The owner, the project lead or an administrator moves the issue to In progress; an optional comment goes with it.',
-        },
-        requestChanges: {
-          summary: 'Send an issue’s design proposal back',
-          operationId: 'designProposalsRequestChanges',
-          description:
-            'Anyone who may comment on the issue writes why (`comment` is required) and moves it back to Analysis.',
-        },
-      } as const;
-      for (const action of ['approve', 'requestChanges'] as const)
-        designRoutes.post(
-          `/:issueId/${action}`,
-          required,
-          describeRoute({
-            tags,
-            ...decisions[action],
-            ...cliRoute({
-              command:
-                action === 'approve'
-                  ? 'design approve'
-                  : 'design request-changes',
-              flags: {
-                issueId: { name: 'issue' },
-                comment: { contentFile: true },
-              },
-              ...(action === 'approve'
-                ? { examples: ['design approve PM-12'] }
-                : {
-                    examples: [
-                      'design request-changes PM-12 --comment "Split the migration out."',
-                    ],
-                  }),
-            }),
-            responses: {
-              200: dataResponse(DesignStateSchema),
-              400: apiErrorResponse(
-                400,
-                'When the issue does not wait in Proposal review, has no proposal, or the comment is missing or too long.',
-              ),
-              404: apiErrorResponse(404),
-              ...apiErrorResponses,
-            },
-          }),
-          apiValidator('param', IssueParams),
-          apiValidator('json', DesignDecisionInput),
-          async (context) => {
-            const request = context.req.valid('json');
-            const viewer = await viewerOf(userIdOf(context));
-            const { issueId } = context.req.valid('param');
-            return context.json({
-              data:
-                action === 'approve'
-                  ? await design.approve(viewer, issueId, request)
-                  : await design.requestChanges(viewer, issueId, request),
-            });
-          },
-        );
-      router.route('/designProposals', designRoutes);
     }
 
     // The Agent queue's data: as the issue list, for whoever signs in, limited to what they see.
@@ -647,7 +449,7 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
           summary: 'Get current agent work on visible issues',
           operationId: 'agentBoardIssueWork',
           description:
-            'At most 100 issue IDs. Only visible issues with an agent executor are returned; matching pending approvals suppress working. No run details are exposed.',
+            'At most 100 issue IDs. Only visible issues with an agent executor are returned. No run details are exposed.',
           ...cliRoute({ command: 'board issueWork' }),
           responses: {
             200: dataResponse(z.array(IssueAgentWorkSchema)),

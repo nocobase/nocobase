@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ClaimRequestSchema,
+  CancelAckRequestSchema,
   ClaimResponseSchema,
   UploadTicketSchema,
   CompleteRequestSchema,
@@ -36,6 +37,16 @@ import {
   RunGitSchema,
   RunnerFeatureSchema,
 } from '../src/index.js';
+
+it('accepts an optional confirmed session on cancellation and remains compatible with old runners', () => {
+  expect(CancelAckRequestSchema.parse({})).toEqual({});
+  expect(CancelAckRequestSchema.parse({ sessionId: 'replacement' })).toEqual({
+    sessionId: 'replacement',
+  });
+  expect(
+    CancelAckRequestSchema.safeParse({ sessionId: 'x'.repeat(201) }).success,
+  ).toBe(false);
+});
 
 const payload: RunPayload = {
   run: {
@@ -105,8 +116,8 @@ const payload: RunPayload = {
 };
 
 describe('agent protocol', () => {
-  it('is version 9 and still serves versions 3 to 8', () => {
-    expect(PROTOCOL_VERSION).toBe(9);
+  it('is version 10 and still serves versions 3 to 9', () => {
+    expect(PROTOCOL_VERSION).toBe(10);
     expect(MIN_PROTOCOL_VERSION).toBe(3);
     expect(isProtocolSupported(3)).toBe(true);
     expect(isProtocolSupported(4)).toBe(true);
@@ -116,7 +127,8 @@ describe('agent protocol', () => {
     expect(isProtocolSupported(7)).toBe(true);
     expect(isProtocolSupported(8)).toBe(true);
     expect(isProtocolSupported(9)).toBe(true);
-    expect(isProtocolSupported(10)).toBe(false);
+    expect(isProtocolSupported(10)).toBe(true);
+    expect(isProtocolSupported(11)).toBe(false);
     expect(isProtocolSupported(3.5)).toBe(false);
   });
 
@@ -414,9 +426,26 @@ describe('agent protocol', () => {
     expect(isRetryable('runnerOffline')).toBe(true);
     expect(isRetryable('toolAuth')).toBe(false);
     expect(isRetryable('prepareNetwork')).toBe(true);
+    expect(isRetryable('workspaceBusy')).toBe(true);
+    expect(acceptedFailure('workspaceBusy', ['workspaceBusy'])).toBe(
+      'workspaceBusy',
+    );
+    expect(acceptedFailure('workspaceBusy', undefined)).toBe('checkoutFailed');
     expect(isRetryable('checkoutFailed')).toBe(false);
     expect(ERROR_STATUS.RUN_INPUT_PENDING).toBe(400);
     expect(ERROR_API_STATUS.RUN_INPUT_PENDING).toBe('FAILED_PRECONDITION');
+    expect(
+      new ProtocolError('RUN_ALREADY_RETRIED', 'Already retried', {
+        runId: 'next',
+      }),
+    ).toMatchObject({
+      code: 'RUN_ALREADY_RETRIED',
+      status: 400,
+      apiStatus: 'FAILED_PRECONDITION',
+      domain: 'agents',
+      details: { runId: 'next' },
+    });
+    expect(exitCodeFor('RUN_ALREADY_RETRIED')).toBe(EXIT_CODES.conflict);
     expect(ERROR_STATUS.LEASE_LOST).toBe(409);
     expect(ERROR_STATUS.UPLOAD_TOO_LARGE).toBe(413);
     expect(ERROR_STATUS.NOT_IMPLEMENTED).toBe(503);

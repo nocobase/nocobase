@@ -119,7 +119,7 @@ export const AGENT_LAYER_PREFIX =
 function describeDir(dir: WorkspaceDir): string {
   const name = dir.name ? ` (${dir.name})` : '';
   if (dir.kind === 'repo')
-    return `\`./${dir.path}\`${name}, a checkout of ${dir.url} on branch \`${dir.branch}\` (based on \`${dir.defaultBranch}\`); commit there and push only that branch`;
+    return `\`./${dir.path}\`${name}, a checkout of ${dir.url} targeting branch \`${dir.branch}\` (based on \`${dir.defaultBranch}\`); the local branch may be a private runner alias. Commit in the current checkout and push with \`git push origin HEAD:refs/heads/${dir.branch}\`; never force push`;
   return `\`${dir.path}\`${name}, a directory on this machine you work in as it is: no branch of its own, so leave its version control alone unless the task asks, and do not delete or reset what is there`;
 }
 

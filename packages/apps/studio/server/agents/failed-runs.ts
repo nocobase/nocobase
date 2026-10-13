@@ -20,7 +20,11 @@ import type { RunService } from '@nocobase/app-plugin-agents/server/tokens';
 import type { StudioInbox } from '../inbox/service.js';
 import { ISSUE_SUBJECT } from './catalog/triggers.js';
 import { translated } from './commands/permissions.js';
-import { RUN_FAILED_ACTIONS, runFailedDecision } from './notices.js';
+import {
+  RUN_FAILED_ACTIONS,
+  runFailedDecision,
+  withFailedRunReassignment,
+} from './notices.js';
 
 export type FailedRunAction = (typeof RUN_FAILED_ACTIONS)[number];
 
@@ -44,7 +48,7 @@ export interface FailedRunResult {
 }
 
 export interface FailedRunDeps {
-  readonly runs: Pick<RunService, 'get' | 'retry'>;
+  readonly runs: Pick<RunService, 'get' | 'retry' | 'detail'>;
   readonly projects: () => Pick<Projects, 'issueQueries' | 'issues'>;
   /** The person deciding, as the projects plugin sees them. */
   readonly viewerOf: (userId: string) => Promise<Viewer>;
@@ -67,10 +71,6 @@ export async function decideFailedRun(
       code: 'FAILED_RUN_NOT_FOUND',
     });
   const ref = runFailedDecision(run.id);
-  if (!(await deps.inbox.waiting(ref)))
-    throw new ProtocolError('CONFLICT', 'This decision was already taken.', {
-      code: 'DECISION_ALREADY_TAKEN',
-    });
   try {
     const viewer = await deps.viewerOf(userId);
     const issue = await deps
@@ -84,10 +84,23 @@ export async function decideFailedRun(
         'Only the owner of the issue or someone who may edit it decides.',
         { code: 'FAILED_RUN_DECISION_FORBIDDEN' },
       );
+    if (!(await deps.inbox.waiting(ref))) {
+      const detail =
+        request.action === 'retry' ? await deps.runs.detail(run.id) : null;
+      if (detail?.retriedRunId)
+        throw new ProtocolError(
+          'RUN_ALREADY_RETRIED',
+          'This run has already been retried.',
+          { runId: detail.retriedRunId },
+        );
+      throw new ProtocolError('CONFLICT', 'This decision was already taken.', {
+        code: 'DECISION_ALREADY_TAKEN',
+      });
+    }
     let result: FailedRunResult;
     switch (request.action) {
       case 'retry': {
-        const next = await deps.runs.retry(run.id, userId);
+        const next = await deps.runs.retry(run.id, userId, 'card');
         result = { outcome: FAILED_RUN_OUTCOMES.retry, runId: next.id };
         break;
       }
@@ -97,18 +110,45 @@ export async function decideFailedRun(
             'INVALID_REQUEST',
             'userId: the person who takes the issue over is required.',
           );
-        await deps.projects().issues.update(viewer, issue.id, {
-          revision: issue.revision,
-          executor: { type: 'user', id: request.userId },
+        const projects = deps.projects();
+        await withFailedRunReassignment(projects, issue.id, async () => {
+          await projects.issues.update(viewer, issue.id, {
+            revision: issue.revision,
+            executor: { type: 'user', id: request.userId! },
+          });
+          await deps.inbox.resolve({
+            ...ref,
+            outcome: FAILED_RUN_OUTCOMES.reassign,
+          });
         });
         result = { outcome: FAILED_RUN_OUTCOMES.reassign };
-        break;
+        return result;
       }
       case 'cancel':
         result = { outcome: FAILED_RUN_OUTCOMES.cancel };
         break;
     }
-    await deps.inbox.resolve({ ...ref, outcome: result.outcome });
+    const next = result.runId ? await deps.runs.detail(result.runId) : null;
+    await deps.inbox.resolve({
+      ...ref,
+      outcome: result.outcome,
+      ...(next
+        ? {
+            data: {
+              retriedByUserId: userId,
+              retriedByName:
+                next.inputs.find(
+                  (input) =>
+                    input.type === 'retry' &&
+                    (input.payload as { retryOfRunId?: unknown } | null)
+                      ?.retryOfRunId === run.id,
+                )?.actor.name ?? userId,
+              retrySource: 'card',
+              retriedRunId: next.id,
+            },
+          }
+        : {}),
+    });
     return result;
   } catch (error) {
     throw translated(error);

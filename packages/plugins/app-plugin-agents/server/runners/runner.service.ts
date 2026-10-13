@@ -25,17 +25,21 @@ import {
   type HeartbeatRequest,
   type RegisterRequest,
   type RegisterResponse,
+  type AgentTool,
   type RunApp,
+  type ToolInfo,
   type UpgradeRequired,
 } from '@nocobase/agent-protocol';
 
 import type { DatabaseConnection } from '@nocobase/db';
 
+import { normalizeModel } from '../../shared/model-catalog.js';
 import type {
   RegistrationToken,
   RegistrationTokenInput,
   Runner,
   RunnerPatch,
+  UnavailableModel,
 } from '../../shared/runners.js';
 import { later, type Clock } from '../kernel/clock.js';
 import {
@@ -48,7 +52,7 @@ import { notFound, precondition } from '../kernel/errors.js';
 import type { AgentsNotice } from '../kernel/events.js';
 import type { IdSource } from '../kernel/ids.js';
 import type { People } from '../kernel/people.js';
-import type { TxRunner } from '../kernel/tx.js';
+import type { Tx, TxRunner } from '../kernel/tx.js';
 import { asJson, cleanList } from '../kernel/values.js';
 import {
   absentRunners,
@@ -111,6 +115,16 @@ export interface RunnerService {
   absent(conn: DatabaseConnection, ids: readonly string[]): Promise<string[]>;
   /** The runner, read on `conn`; null when there is none. */
   find(conn: DatabaseConnection, id: string): Promise<Runner | null>;
+  /**
+   * Marks `model` of `tool` unavailable on the runner, in the caller's transaction: it is not offered there until the
+   * runner reports that tool's models differently.
+   */
+  markModelUnavailable(
+    unit: Tx,
+    runnerId: string,
+    tool: AgentTool,
+    model: string,
+  ): Promise<void>;
 }
 
 export interface RunnerServiceDeps {
@@ -123,6 +137,30 @@ export interface RunnerServiceDeps {
   readonly people?: People;
   /** The newest runner the application serves for a runner's platform, for the upgrade notice; none without it. */
   readonly latestRunner?: (runner: Runner) => Promise<string | null>;
+  /** What a runner reported, as stored, in the transaction of its registration or heartbeat. */
+  readonly onReport?: (unit: Tx, runner: Runner) => Promise<void>;
+}
+
+/** A tool's reported models, normalized and sorted, to tell when the runner reports them differently. */
+function modelsOf(tools: readonly ToolInfo[], tool: AgentTool): string[] {
+  const info = tools.find((item) => item.kind === tool);
+  return [
+    ...new Set(
+      (info?.models ?? []).map((model) => normalizeModel(tool, model.id)),
+    ),
+  ].sort();
+}
+
+/** The marks that still hold: those whose tool the runner reports the same models for as when it was marked. */
+export function keptMarks(
+  marks: readonly UnavailableModel[],
+  tools: readonly ToolInfo[],
+): UnavailableModel[] {
+  return marks.filter(
+    (mark) =>
+      JSON.stringify(modelsOf(tools, mark.tool)) ===
+      JSON.stringify([...mark.reported].sort()),
+  );
 }
 
 /** What a runner speaking `protocolVersion` is told while this application cannot work with it. */
@@ -303,6 +341,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           filter: { id: token.id },
           values: { runnerId },
         });
+        await deps.onReport?.({ conn, emit }, await require(conn, runnerId));
         emit({ type: 'runner.changed', runnerId });
         if (status === 'upgrade_required')
           await noticeUpgrade(emit, await require(conn, runnerId));
@@ -403,11 +442,18 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
       }),
 
     heartbeat: (runner, request) =>
-      tx.run(async ({ conn, emit }) => {
+      tx.run(async (unit) => {
+        const { conn, emit } = unit;
         const now = clock.now().toISOString();
         const policy = storedPolicy(request.policy);
         const variables = storedVariableNames(request.variables);
+        const tools = request.tools.map((tool) =>
+          ReportedToolInfoSchema.parse(tool),
+        );
+        const marks = runner.unavailableModels ?? [];
+        const kept = keptMarks(marks, tools);
         const changed =
+          kept.length !== marks.length ||
           runner.version !== request.version ||
           runner.product !== (request.product ?? null) ||
           JSON.stringify(runner.features) !==
@@ -422,19 +468,26 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             version: request.version,
             product: request.product ?? null,
             features: cleanList(request.features),
-            tools: request.tools.map((tool) =>
-              ReportedToolInfoSchema.parse(tool),
-            ),
+            tools,
             policy: asJson(policy),
             variables: asJson(variables),
+            ...(kept.length !== marks.length
+              ? { unavailableModels: asJson(kept) }
+              : {}),
             // What it holds per tool across every application: read for why a run waits, so it changes nothing else.
-            load: asJson(storedToolLoad(request.load.tools ?? null)),
+            load: asJson({
+              ...storedToolLoad(request.load.tools ?? null),
+              free: request.load.free,
+              slots: request.load.slots,
+            }),
             lastSeenAt: now,
             updatedAt: changed ? now : runner.updatedAt,
           },
         });
         if (changed) emit({ type: 'runner.changed', runnerId: runner.id });
-        return require(conn, runner.id);
+        const reported = await require(conn, runner.id);
+        await deps.onReport?.(unit, reported);
+        return reported;
       }),
 
     list: async () => {
@@ -586,5 +639,28 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
     absent: (conn, ids) => absentRunners(conn, ids),
 
     find: (conn, id) => findRunner(conn, id),
+
+    async markModelUnavailable(unit, runnerId, tool, model) {
+      const runner = await findRunner(unit.conn, runnerId);
+      if (!runner) return;
+      const normalized = normalizeModel(tool, model);
+      const marks = (runner.unavailableModels ?? []).filter(
+        (mark) => !(mark.tool === tool && mark.model === normalized),
+      );
+      const mark: UnavailableModel = {
+        tool,
+        model: normalized,
+        at: clock.now().toISOString(),
+        reported: modelsOf(runner.tools, tool),
+      };
+      await runnersRepo(unit.conn).updateMany({
+        filter: { id: runnerId },
+        values: {
+          unavailableModels: asJson([...marks, mark]),
+          updatedAt: clock.now().toISOString(),
+        },
+      });
+      unit.emit({ type: 'runner.changed', runnerId });
+    },
   };
 }

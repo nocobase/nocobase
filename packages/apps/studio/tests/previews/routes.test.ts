@@ -18,14 +18,24 @@ beforeEach(async () => {
 });
 afterEach(() => h.close());
 
+/** A run of an agent with `actions` on a step a person handed it, mentioning it on an issue. */
 async function runOn(actions: readonly string[]) {
   const agentId = await h.createAgent({ actions: [...actions] });
   const issue = await h.projects.issues.create(h.viewer('alice'), {
     title: 'Fix login',
-    executor: { type: 'agent', id: agentId },
+    executor: null,
+    statusKey: 'in_progress',
+    start: false,
+  });
+  await h.projects.comments.post({ type: 'user', id: 'alice' }, issue.id, {
+    content: `[@Coder](mention://agent/${agentId}) look at it`,
   });
   const payload = await h.claimOne();
-  return { issue, token: payload.cli.credential.content.token as string };
+  return {
+    issue,
+    runId: payload.run.id as string,
+    token: payload.cli.credential.content.token as string,
+  };
 }
 
 describe('the preview routes', () => {
@@ -79,17 +89,23 @@ describe('the preview routes', () => {
       ).status,
     ).toBe(404);
   });
-  it('allows an editing run to set its own preference and refuses a viewing run', async () => {
+  it('uses identity edit permission for preferences, irrespective of legacy actions', async () => {
     const viewer = await runOn(['pm.issues/view']);
+    const readScope = {
+      'x-test-key-scope': JSON.stringify({
+        'projects.issues': { level: 'read' },
+      }),
+    };
     expect(
       (
         await h.request('POST', '/previews/preference', {
-          runToken: viewer.token,
-          body: { notRequired: true },
+          user: 'alice',
+          headers: readScope,
+          body: { issueId: viewer.issue.id, notRequired: true },
         })
       ).status,
     ).toBe(403);
-    const editor = await runOn(['pm.issues/view', 'pm.issues/edit']);
+    const editor = await runOn([]);
     expect(
       (
         await h.request('POST', '/previews/preference', {
@@ -100,7 +116,7 @@ describe('the preview routes', () => {
     ).toMatchObject({ issueId: editor.issue.id, notRequired: true });
   });
   it('read the run’s own issue when it names none', async () => {
-    const { issue, token } = await runOn(['pm.issues/view']);
+    const { issue, token } = await runOn([]);
     const status = await h.request('GET', '/previews/status', {
       runToken: token,
     });
@@ -110,20 +126,15 @@ describe('the preview routes', () => {
       identifier: issue.identifier,
       previews: [],
       blocker: 'noRepository',
-      canEdit: false,
+      canEdit: true,
     });
     const list = await h.request('GET', '/previews', { runToken: token });
     expect(list.status).toBe(200);
     expect(list.body.meta).toEqual({ total: 0 });
-    // Reading a preview's logs is managing it: an action of its own.
-    const logs = await h.request('GET', '/previews/logs', {
-      runToken: token,
-    });
-    expect(logs.status).toBe(403);
-    expect(logs.body.error).toMatchObject({
-      reason: 'RUN_ACTION_FORBIDDEN',
-      metadata: { action: 'studio.previews/manage' },
-    });
+    // The identity can manage previews even when its legacy catalog is empty.
+    const logs = await h.request('GET', '/previews/logs', { runToken: token });
+    expect(logs.status).toBe(404);
+    expect(logs.body.error.reason).toBe('PREVIEW_NOT_FOUND');
     const manager = await runOn([
       'pm.issues/view',
       'pm.issues/edit',
@@ -136,22 +147,29 @@ describe('the preview routes', () => {
     expect(none.body.error.reason).toBe('PREVIEW_NOT_FOUND');
   });
 
-  it('refuse a run outside its agent’s actions', async () => {
+  it('refuses a run after its identity loses permission and hides its commands', async () => {
     const viewOnly = await runOn(['pm.issues/view']);
+    const blind = await runOn(['pm.issues/comment']);
+    h.roles.set('alice', 'none');
+    expect(
+      (await h.manifest({ runToken: blind.token })).commands.map((c) => c.id),
+    ).not.toContain('preview:status');
     const down = await h.request('POST', '/previews/down', {
       runToken: viewOnly.token,
       body: {},
     });
     expect(down.status).toBe(403);
-    const blind = await runOn(['pm.issues/comment']);
     const status = await h.request('GET', '/previews/status', {
       runToken: blind.token,
     });
     expect(status.status).toBe(403);
   });
 
-  it('let a run whose agent may edit the issue and manage previews take them down', async () => {
+  it('offers and executes preview management without a legacy action entry', async () => {
     const editor = await runOn(['pm.issues/view', 'pm.issues/edit']);
+    expect(
+      (await h.manifest({ runToken: editor.token })).commands.map((c) => c.id),
+    ).toContain('preview:down');
     expect(
       (
         await h.request('POST', '/previews/down', {
@@ -159,7 +177,7 @@ describe('the preview routes', () => {
           body: {},
         })
       ).status,
-    ).toBe(403);
+    ).toBe(200);
     const { issue, token } = await runOn([
       'pm.issues/view',
       'pm.issues/edit',
@@ -171,6 +189,85 @@ describe('the preview routes', () => {
     });
     expect(down.status).toBe(200);
     expect(down.body.meta.message).toContain(issue.identifier);
+  });
+
+  it('rejects inaccessible issue objects and aligns scoped command discovery with HTTP', async () => {
+    const { token, issue } = await runOn([]);
+    await h.addUser('bob');
+    const hidden = await h.projects.projects.create(h.viewer('bob'), {
+      name: 'Bob private',
+      visibility: 'members',
+    });
+    const other = await h.projects.issues.create(h.viewer('bob'), {
+      title: 'Bob only',
+      projectId: hidden.id,
+      start: false,
+    });
+    expect(
+      (
+        await h.request('POST', '/previews/down', {
+          runToken: token,
+          body: { issueId: other.id },
+        })
+      ).status,
+    ).toBe(404);
+    const headers = {
+      'x-test-key-scope': JSON.stringify({
+        'projects.issues': { level: 'read' },
+      }),
+    };
+    const ids = (
+      await h.request('GET', '/cli/manifest', { user: 'alice', headers })
+    ).body.data.commands.map((c: { id: string }) => c.id);
+    expect(ids).toContain('preview:status');
+    expect(ids).not.toContain('preview:down');
+    expect(
+      (
+        await h.request('POST', '/previews/down', {
+          user: 'alice',
+          headers,
+          body: { issueId: issue.id },
+        })
+      ).status,
+    ).toBe(403);
+  });
+
+  it('keeps consultation preview commands read-only despite identity edit permission', async () => {
+    const parent = await runOn([]);
+    const child = await runOn([]);
+    // Model the persisted consultation relationship; both runs retain Alice's existing actor identity.
+    await h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({
+        filter: { id: child.runId },
+        values: { parentRunId: parent.runId },
+      });
+    const ids = (await h.manifest({ runToken: child.token })).commands.map(
+      (c) => c.id,
+    );
+    expect(ids).toContain('preview:status');
+    expect(ids).not.toContain('preview:down');
+    expect(
+      (await h.request('GET', '/previews/status', { runToken: child.token }))
+        .status,
+    ).toBe(200);
+    expect(
+      (
+        await h.request('POST', '/previews/down', {
+          runToken: child.token,
+          body: {},
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await h.request('POST', '/previews/preference', {
+          runToken: child.token,
+          body: { notRequired: true },
+        })
+      ).status,
+    ).toBe(403);
   });
 
   it('let a person name the issue, and ask for it otherwise', async () => {

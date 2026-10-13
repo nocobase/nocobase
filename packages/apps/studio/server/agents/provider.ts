@@ -1,11 +1,11 @@
 /**
- * Joins the agents plugin and the projects plugin in Studio (`bind.ts`), from the application's container, and binds
- * Studio's Reports page service (`../reports`).
+ * Joins the agents plugin and the projects plugin in Studio (`bind.ts`), from the application's container, binds the
+ * project manager (`manager/`, `studioProjectManagerToken`) and Studio's Reports page service (`../reports`).
  *
  * Boot order: Studio's own providers are registered after every plugin's, so they boot after the plugins have booted,
- * and before any route is served or any plugin's `ready()` runs. Binding at boot therefore adds the `agent` kind, the
- * stage rule types and the "Software development" template before the projects plugin first uses them: its services
- * read the kind registry on each use, and its `ready()` waits for the templates added while the providers booted.
+ * and before any route is served or any plugin's `ready()` runs. Binding at boot therefore adds the `agent` kind before
+ * the projects plugin first uses it: its services read the kind registry on each use. Once everything is ready, the
+ * project manager's agent and the defaults of every agent discovered from runners are written (`ProjectManager.ready`).
  */
 import type { Application } from '@nocobase/app-server/application';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
@@ -18,9 +18,7 @@ import {
   projectsPlanHooksToken,
   projectsPlanSourceToken,
   projectsRequestActorToken,
-  projectsStatusRulesToken,
   projectsToken,
-  projectsWorkflowTemplatesToken,
 } from '@nocobase/app-plugin-projects/server/tokens';
 import type {
   DelegatedWrites,
@@ -40,7 +38,6 @@ import {
   agentsToken,
   type Agents,
 } from '@nocobase/app-plugin-agents/server/tokens';
-import { registerCliSkill } from './cli-skill.js';
 import {
   releasesAccessToken,
   releasesToken,
@@ -72,6 +69,8 @@ import {
 import type { RolesOf } from './conversation/asker.js';
 import type { InboxSource } from './conversation/inbox.js';
 import { runScopeStep, type RunPrincipal } from './run-principal.js';
+import { createProjectManager } from './manager/service.js';
+import { studioProjectManagerToken } from './manager/token.js';
 
 /**
  * The plan hooks as bound in the container: a stand-in that forwards to the bridge while it is connected, so the
@@ -309,11 +308,8 @@ export function connectProjects(
     ...(container.has(projectsNoticeRulesToken)
       ? { noticeRules: container.resolve(projectsNoticeRulesToken) }
       : {}),
-    ...(container.has(projectsStatusRulesToken)
-      ? { statusRules: container.resolve(projectsStatusRulesToken) }
-      : {}),
-    ...(container.has(projectsWorkflowTemplatesToken)
-      ? { templates: container.resolve(projectsWorkflowTemplatesToken) }
+    ...(container.has(studioProjectManagerToken)
+      ? { manager: container.resolve(studioProjectManagerToken) }
       : {}),
     access: () =>
       container.has(projectsAccessToken)
@@ -389,6 +385,9 @@ export default class StudioAgentsProvider extends ServiceProvider<Application> {
 
   public override register(): void {
     const { container } = this.app;
+    container.singleton(studioProjectManagerToken, (resolver) =>
+      createProjectManager({ agents: resolver.resolve(agentsToken) }),
+    );
     // The work conversations delegate, for the join (`bind.ts`) and the routes (`routes.ts`).
     container.singleton(studioDelegationsToken, (resolver) =>
       createDelegations({
@@ -437,12 +436,23 @@ export default class StudioAgentsProvider extends ServiceProvider<Application> {
         this.app.config.get<unknown>('studio.agents.queuedExpiryHours'),
       ),
     });
-    const withdrawSkill = registerCliSkill(agents);
-    this.release = () => {
-      withdrawSkill();
-      disconnect?.();
-    };
+    this.release = () => disconnect?.();
     return Promise.resolve();
+  }
+
+  /** The project manager's agent and the defaults of every agent discovered from runners, once the database is ready. */
+  public override async ready(): Promise<void> {
+    const { container } = this.app;
+    if (
+      !container.has(agentsToken) ||
+      !container.has(studioProjectManagerToken)
+    )
+      return;
+    try {
+      await container.resolve(studioProjectManagerToken).ready();
+    } catch (error) {
+      console.error('Agents could not set up the project manager.', error);
+    }
   }
 
   public override async shutdown(): Promise<void> {

@@ -299,7 +299,7 @@ describe('runs as their actors', () => {
   describe('eligibility', () => {
     it('counts only the runners that would take the work, team-only variables included', async () => {
       h = await createHarness();
-      const agentId = await h.createAgent();
+      const agentId = await h.createAgent({ source: 'runner' });
       await h.services.variables.set(
         { scope: 'agent', scopeId: agentId },
         'DEPLOY_KEY',

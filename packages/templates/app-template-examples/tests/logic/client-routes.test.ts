@@ -5,6 +5,7 @@ import {
 } from '@nocobase/app-client/plugins';
 import { describe, expect, it } from 'vitest';
 
+import { lifecycleRoutes } from '@nocobase/app-plugin-lifecycle-example/client';
 import applicationRoutes from '../../client/routes.ts';
 
 describe('app client routes', () => {
@@ -76,6 +77,11 @@ describe('app client routes', () => {
       { name: 'numeric-examples', authorizedAs: 'numeric-examples' },
       { name: 'i18n-examples', authorizedAs: 'i18n-examples' },
       { name: 'external-crm', authorizedAs: 'external-crm' },
+      { name: 'workflows', authorizedAs: null },
+      { name: 'workflowDefinitions', authorizedAs: null },
+      { name: 'workflowDefinition', authorizedAs: null },
+      { name: 'workflowExecutions', authorizedAs: null },
+      { name: 'workflowExecution', authorizedAs: null },
     ]);
   });
 });
@@ -87,6 +93,16 @@ function resolveRoutes() {
       packageName: '@nocobase/app-template-examples',
       routes: applicationRoutes,
       source: 'application',
+    },
+    {
+      packageName: '@nocobase/app-plugin-lifecycle-example',
+      routes: lifecycleRoutes.map((contribution) => ({
+        ...contribution,
+        routes: contribution.routes.map((group) => ({
+          ...group,
+          children: [],
+        })),
+      })),
     },
   ]);
 }

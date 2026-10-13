@@ -1,6 +1,5 @@
 /**
- * The issue page's side column: the properties, the people and the dates, nothing else. What follows from the code
- * (pull requests, previews, deployments) and the agents' execution log live in the main column, where they have room.
+ * The issue page's side column: properties, notifications (who is subscribed), dates, then the agents' execution log.
  */
 import type {
   IssuePageActions,
@@ -8,6 +7,8 @@ import type {
 } from '@nocobase/app-plugin-projects/client/issues';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import type { ReactElement } from 'react';
+
+import { IssueRunPanel } from '../../../agents/issue-runs.js';
 
 import {
   IssueDatesCard,
@@ -25,7 +26,7 @@ export function IssuePageAside({
   readonly pageActions: IssuePageActions;
 }): ReactElement {
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='flex flex-col gap-4 max-md:gap-2 max-md:[&>*]:rounded-none max-md:[&>*]:border-x-0 max-md:[&_[data-slot=card]]:rounded-none'>
       <IssuePropertiesCard
         detail={detail}
         update={update}
@@ -33,6 +34,7 @@ export function IssuePageAside({
       />
       <IssueFollowersCard detail={detail} pageActions={pageActions} />
       <IssueDatesCard detail={detail} />
+      <IssueRunPanel issue={detail} />
     </div>
   );
 }

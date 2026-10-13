@@ -34,6 +34,7 @@ import {
   SYSTEM_CALLER,
   type Releases,
 } from '@nocobase/app-plugin-releases/server';
+import { IN_PROGRESS_STATUS } from '@nocobase/app-plugin-projects/shared/statuses';
 import type { ReleasesEvent } from '@nocobase/app-plugin-releases/server/tokens';
 import type { DatabaseConnection, DatabaseManager, Row } from '@nocobase/db';
 
@@ -57,7 +58,6 @@ import {
   findIssue,
   findIssues,
   latestPushes,
-  systemViewer,
 } from '../previews/sources.js';
 
 export const DEPLOYS_SOURCE = 'deploys';
@@ -163,7 +163,10 @@ export interface DeployMarksDeps {
     allowUnlinked: boolean,
   ) => Promise<boolean>;
   readonly database: Pick<DatabaseManager, 'connection' | 'transaction'>;
-  readonly projects: () => Pick<Projects, 'issueQueries' | 'issues'>;
+  readonly projects: () => Pick<
+    Projects,
+    'issueQueries' | 'issues' | 'projects'
+  >;
   /**
    * Which of `shas` the commit `head` of a working directory's repository contains, asked of its code host
    * (`StudioGit.commitsContained`); null (or a throw) when it cannot say, which decides nothing.
@@ -286,12 +289,10 @@ export function createDeployMarks(deps: DeployMarksDeps): DeployMarksService {
       }));
   }
 
-  async function doneKeys(projectId: string | null): Promise<string[]> {
-    const categories = await categoriesOf(deps.projects(), projectId);
-    return [...categories]
+  const doneKeys = (): string[] =>
+    [...categoriesOf()]
       .filter(([, category]) => category === 'done')
       .map(([key]) => key);
-  }
 
   /**
    * The commits that may carry each issue's change into `url`: the newest head an agent pushed, and the merge commit
@@ -340,7 +341,7 @@ export function createDeployMarks(deps: DeployMarksDeps): DeployMarksService {
     const pending: { issueId: string; sha: string; link: LongLivedLink }[] = [];
     const seen = new Set<string>();
     for (const link of links) {
-      const keys = await doneKeys(link.projectId);
+      const keys = doneKeys();
       const done =
         keys.length === 0
           ? []
@@ -521,20 +522,6 @@ export function createDeployMarks(deps: DeployMarksDeps): DeployMarksService {
     }
   }
 
-  async function reopenStatus(
-    projectId: string | null,
-  ): Promise<string | null> {
-    const statuses = await deps
-      .projects()
-      .issueQueries.statuses(systemViewer(), projectId);
-    const started = statuses.filter((status) => status.category === 'started');
-    return (
-      started.find((status) => status.key === 'in_progress')?.key ??
-      started[0]?.key ??
-      null
-    );
-  }
-
   /**
    * After a check committed: the marks it withdrew go to whoever deployed in an operation plan reopening those issues
    * (they remove the rows of the issues that should stay done, or void it) — every withdrawn mark for a rollback, the
@@ -585,10 +572,9 @@ export function createDeployMarks(deps: DeployMarksDeps): DeployMarksService {
     ).filter((issue) => !issue.deleted);
     const reopen: { issue: string; statusKey: string }[] = [];
     for (const issue of issues) {
-      const categories = await categoriesOf(deps.projects(), issue.projectId);
+      const categories = categoriesOf();
       if (categories.get(issue.statusKey) !== 'done') continue;
-      const statusKey = await reopenStatus(issue.projectId);
-      if (statusKey) reopen.push({ issue: issue.id, statusKey });
+      reopen.push({ issue: issue.id, statusKey: IN_PROGRESS_STATUS });
     }
     if (reopen.length === 0) return;
     const port = deps.inbox();
@@ -655,7 +641,7 @@ export function createDeployMarks(deps: DeployMarksDeps): DeployMarksService {
       }
       try {
         // Throws 404 for a project the viewer may not see.
-        await deps.projects().issueQueries.statuses(viewer, projectId);
+        await deps.projects().projects.get(viewer, projectId);
         visible.add(projectId);
       } catch {
         // Not visible.
@@ -753,10 +739,7 @@ export function createDeployMarks(deps: DeployMarksDeps): DeployMarksService {
             .issueQueries.detail(viewer, item.id)
             .catch(() => null);
           if (!issue) continue;
-          const categories = await categoriesOf(
-            deps.projects(),
-            issue.projectId,
-          );
+          const categories = categoriesOf();
           // Only what is still done: someone may have reopened it meanwhile.
           if (categories.get(issue.statusKey) !== 'done') continue;
           // Each issue on its own: one the person may not move, or whose workflow refuses the move, stays done.
@@ -783,7 +766,7 @@ export function createDeployMarks(deps: DeployMarksDeps): DeployMarksService {
       if (!port) return;
       const issue = await findIssue(conn(), issueId);
       if (!issue || issue.deleted || !issue.projectId) return;
-      const categories = await categoriesOf(deps.projects(), issue.projectId);
+      const categories = categoriesOf();
       if (categories.get(to) !== 'done') return;
       const production = await conn()
         .query.selectFrom('studioRepoApps as link')
@@ -902,7 +885,7 @@ export function createDeployMarks(deps: DeployMarksDeps): DeployMarksService {
       );
       if (!links.some((row) => row.role === 'production'))
         return { projectId, hasProduction: false, hasPreview, items: [] };
-      const keys = await doneKeys(projectId);
+      const keys = doneKeys();
       if (keys.length === 0)
         return { projectId, hasProduction: true, hasPreview, items: [] };
       const issues = await conn()
