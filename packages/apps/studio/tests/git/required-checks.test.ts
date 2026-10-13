@@ -310,6 +310,11 @@ describe('required and reference checks', () => {
     const restrictedAgent = await h.createAgent({ actions: [] });
     await mentionAgent(h, 'alice', issue.id, restrictedAgent);
     const restricted = await h.claimOne();
+    const legacyRead = await h.request('GET', `${url}?issueId=${issue.id}`, {
+      runToken: restricted.cli.credential.content.token as string,
+    });
+    expect(legacyRead.status).toBe(200);
+    h.roles.set('alice', 'none');
     const forbidden = await h.request('GET', `${url}?issueId=${issue.id}`, {
       runToken: restricted.cli.credential.content.token as string,
     });

@@ -492,6 +492,18 @@ export const AgentSchema: z.ZodType<Agent> = agentObject.meta({
 
 export const AgentViewSchema: z.ZodType<AgentView> = agentObject
   .extend({
+    discoveryKey: z.string().optional().meta({
+      description:
+        'Persistent display group; known catalog models share a tool/model key across providers.',
+    }),
+    discoveryRevision: z.number().int().optional().meta({
+      description:
+        'Expected preference revision for ignore or restore; zero when no preference exists yet.',
+    }),
+    ignored: z.boolean().optional().meta({
+      description:
+        'Shared administrator preference hiding pending discoveries in this group.',
+    }),
     effort: z.string().nullable().meta({
       description: 'Its default reasoning effort.',
     }),

@@ -12,7 +12,8 @@ import {
   type AgentView,
   type AvailableAgent,
 } from '../../../shared/agents.js';
-import { catalogEntry } from '../../../shared/model-catalog.js';
+import { catalogEntry, discoveryKey } from '../../../shared/model-catalog.js';
+import { discoveryPreferences } from './discovery.js';
 import type { AgentAvailability, Availability } from '../runs/availability.js';
 
 /** Whether a runner reported the agent's tool and model recently enough; an application's own agent always counts. */
@@ -54,6 +55,7 @@ export async function agentViews(
   },
 ): Promise<AgentView[]> {
   const availability = await options.availability(conn, agents, options.userId);
+  const preferences = await discoveryPreferences(conn);
   return agents.map((agent): AgentView => {
     const entry = agent.modelEntries[0];
     const known =
@@ -61,6 +63,17 @@ export async function agentViews(
     const load = availability.get(agent.id);
     return {
       ...agent,
+      ...(agent.tool && agent.model
+        ? {
+            discoveryKey: discoveryKey(agent.tool, agent.model),
+            discoveryRevision:
+              preferences.get(discoveryKey(agent.tool, agent.model))
+                ?.revision ?? 0,
+            ignored:
+              preferences.get(discoveryKey(agent.tool, agent.model))?.ignored ??
+              false,
+          }
+        : {}),
       effort: entry?.effort ?? null,
       efforts: agent.source === 'runner' && entry ? effortsFor(entry) : [],
       reported: isReported(agent, options.now),

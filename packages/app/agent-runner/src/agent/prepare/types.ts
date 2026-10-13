@@ -33,6 +33,8 @@ export interface PrepareContext {
   readonly event: (event: SpoolEvent) => void;
   /** Called, last first, when the run ends, prepared or not. */
   readonly onRelease: (release: () => Promise<void>) => void;
+  /** False during shutdown, or when stopping the run's writers cannot be confirmed. */
+  readonly beforeWorkspaceRemoval?: () => Promise<boolean>;
   /** Where the run's repository credentials come from (`workspace.git`); absent without any. */
   readonly gitAuth?: RepoAuthSource;
   /** How git's network operations are retried (`git-retry.ts`); the defaults when absent. */

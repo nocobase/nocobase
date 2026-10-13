@@ -120,6 +120,8 @@ export interface SubjectAssembly {
 }
 
 export interface ContextProvider {
+  /** Read external permissions before the claim transaction; assembly receives this result as its third argument. */
+  prepare?(run: Run): Promise<unknown>;
   /**
    * Optional subject policy, checked when queued work is claimed, inside that transaction and before assembly.
    * Return a rejection to cancel this run normally: no payload, token, failure count, or retry is produced. Throwing
@@ -149,6 +151,7 @@ export interface ContextProvider {
   assemble(
     conn: DatabaseConnection,
     claim: ClaimContext,
+    prepared?: unknown,
   ): Promise<SubjectAssembly>;
 }
 
