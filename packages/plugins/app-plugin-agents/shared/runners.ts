@@ -136,6 +136,7 @@ export interface UnavailableModel {
 
 /** A runner's working directories, as it last reported them (`Runner.workspaceUsage`). */
 export interface RunnerWorkspaceUsage {
+  readonly diskMeasuredAt?: string;
   readonly intervalMs?: number;
   /** The disk holding the runner's working directories; null when it did not say. */
   readonly disk: RunnerWorkspaceDisk | null;
@@ -159,6 +160,8 @@ export interface RunnerWorkspaceDisk {
 
 /** One working directory a runner keeps for this application. */
 export interface RunnerWorkspace {
+  readonly subjectKey?: string;
+  readonly sizeBytes?: number;
   readonly decision?: WorkspaceDecision;
   readonly cleanup?: WorkspaceCleanupResult;
   /** The last run that worked in it. */
@@ -458,14 +461,32 @@ export interface RunnerAgentFit {
  * in and reported here (`runsEntry`), and the owner's local policy lets it in. Whether the runner is online right now is
  * left to the caller.
  */
+/** Shared by admission, availability and the page; does not affect existing leases. */
+export function runnerLowOnDisk(
+  runner: Pick<Runner, 'workspaceUsage'>,
+): boolean {
+  const disk = runner.workspaceUsage?.disk;
+  return (
+    disk != null &&
+    disk.minFreeBytes !== null &&
+    disk.freeBytes < disk.minFreeBytes
+  );
+}
+
 export function runnerTakesAgent(
   runner: Pick<
     Runner,
-    'id' | 'enabledTools' | 'tools' | 'policy' | 'unavailableModels'
+    | 'id'
+    | 'enabledTools'
+    | 'tools'
+    | 'policy'
+    | 'unavailableModels'
+    | 'workspaceUsage'
   >,
   agent: RunnerAgentFit,
 ): boolean {
   return (
+    !runnerLowOnDisk(runner) &&
     agent.modelEntries.some((entry) => runsEntry(runner, entry)) &&
     policyAllowsAgent(runner.policy, agent)
   );

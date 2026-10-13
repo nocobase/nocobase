@@ -27,6 +27,8 @@ import {
 } from './dist.js';
 import { RunnerPolicySchema, type RunnerPolicy } from './policy.js';
 import {
+  WorkspaceDiskSchema,
+  type WorkspaceDisk,
   WorkspaceReportingSchema,
   type WorkspaceReporting,
 } from './workspaces.js';
@@ -316,6 +318,8 @@ export const ActiveRunSchema: z.ZodType<ActiveRun> = z.object({
 
 /** What a runner reports every `heartbeatIntervalMs`: what it offers now, and the runs and jobs it holds. */
 export interface HeartbeatRequest {
+  /** Disk sampled for this heartbeat; null when measurement failed. */
+  readonly disk?: WorkspaceDisk | null;
   readonly version: string;
   /** As in `RegisterRequest`: the product the runner runs as. */
   readonly product?: string;
@@ -342,6 +346,7 @@ export interface HeartbeatRequest {
 }
 
 export const HeartbeatRequestSchema: z.ZodType<HeartbeatRequest> = z.object({
+  disk: WorkspaceDiskSchema.nullable().optional(),
   version: z.string().max(64),
   product: z.string().regex(DIST_PRODUCT_PATTERN).optional(),
   features: z.array(RunnerFeatureSchema),

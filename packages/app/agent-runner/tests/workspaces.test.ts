@@ -154,7 +154,7 @@ describe('working directories', () => {
     return { requests, reporters: new Map([['acme', report]]) };
   };
 
-  it('takes a directory as ended only for this report, and removes it with its unpushed work unless a run used it since', async () => {
+  it('takes a directory as ended only for this report while retaining unpushed work', async () => {
     const done = await finishedRun('TASK-1', 'run-1');
     const dir = path.join(done.workDir, 'app');
     writeFileSync(path.join(dir, 'scratch.txt'), 'scratch');
@@ -190,12 +190,12 @@ describe('working directories', () => {
       unpushed: true,
       cleanup: {
         reportId: request.reportId,
-        reason: 'allowed',
-        discardsUntracked: true,
+        reason: 'unpushed',
+        discardsUntracked: false,
       },
     });
-    expect(logs.some((line) => line.includes('never pushed'))).toBe(true);
-    expect(planRemovals(entries).remove).toHaveLength(1);
+    expect(logs).toEqual([]);
+    expect(planRemovals(entries).remove).toHaveLength(0);
     // A run used it since it was reported: kept, whatever the decision said.
     const record = meta(done.workDir);
     writeFileSync(
@@ -208,8 +208,8 @@ describe('working directories', () => {
       workspaceRecordPath(paths, done.workDir),
       JSON.stringify(record),
     );
-    expect(await removePlanned(paths, entries[0]!)).toBeUndefined();
-    expect(existsSync(done.workDir)).toBe(false);
+    expect(await removePlanned(paths, entries[0]!)).toBe('unpushed');
+    expect(existsSync(done.workDir)).toBe(true);
   });
 
   it('counts submodule commits as unpushed even when the parent records their gitlink', async () => {
@@ -263,7 +263,7 @@ describe('working directories', () => {
       unpushed: false,
       inUse: false,
     });
-    expect(entry).not.toHaveProperty('sizeBytes');
+    expect(entry?.sizeBytes).toBeGreaterThan(0);
     expect(meta(done.workDir)).toMatchObject({ unpushed: false });
     expect(meta(done.workDir).measuredAt).toBeDefined();
   });
@@ -497,8 +497,8 @@ describe('working directories', () => {
       });
       expect(requests).toHaveLength(2);
       expect(requests[1]?.directories?.[0]?.cleanup).toMatchObject({
-        reason: 'allowed',
-        discardsUntracked: true,
+        reason: 'unpushed',
+        discardsUntracked: false,
       });
       expect(result.removed).toEqual([]);
       expect(result.entries[0]?.status).toBe(status);
@@ -507,7 +507,7 @@ describe('working directories', () => {
     },
   );
 
-  it('removes ended directories, legacy ones and unpushed work included, unless the second answer takes it back', async () => {
+  it('keeps dirty and unpushed legacy directories even when settled', async () => {
     const ended = await finishedRun('TASK-1', 'run-1');
     const unpushed = await finishedRun('TASK-2', 'run-2');
     const reopened = await finishedRun('TASK-3', 'run-3');
@@ -561,29 +561,16 @@ describe('working directories', () => {
           workDir: unpushed.workDir,
           cleanup: {
             reportId: requests[0]?.reportId,
-            reason: 'allowed',
-            discardsUntracked: true,
+            reason: 'unpushed',
+            discardsUntracked: false,
           },
         }),
       ]),
     );
-    expect(result.removed).toEqual(
-      expect.arrayContaining([
-        { workDir: ended.workDir, reason: 'ended' },
-        { workDir: unpushed.workDir, reason: 'ended' },
-      ]),
-    );
-    expect(result.removed).toHaveLength(2);
-    expect(existsSync(ended.workDir)).toBe(false);
-    expect(existsSync(unpushed.workDir)).toBe(false);
-    expect(existsSync(reopened.workDir)).toBe(true);
-    expect(
-      logs.some(
-        (line) =>
-          line.includes(`removed ${unpushed.workDir}`) &&
-          line.includes('never pushed'),
-      ),
-    ).toBe(true);
+    expect(result.removed).toEqual([]);
+    for (const prepared of [ended, unpushed, reopened])
+      expect(existsSync(prepared.workDir)).toBe(true);
+    expect(logs.some((line) => line.includes('never pushed'))).toBe(false);
   });
 
   it('keeps unpushed work when a legacy application only returns a remove list', async () => {
@@ -628,7 +615,7 @@ describe('working directories', () => {
     }
   });
 
-  it('removes nothing on its own without an application that answers, even on a low disk, and warns once', async () => {
+  it('removes clean idle work on a low disk without an application answer, and warns once', async () => {
     await finishedRun('TASK-1', 'run-1');
     await finishedRun('TASK-2', 'run-2');
     const threshold = { bytes: 5 * GB };
@@ -658,16 +645,16 @@ describe('working directories', () => {
       readDisk: fakeDisk(GB),
       log,
     });
-    expect(low.removed).toEqual([]);
+    expect(low.removed).toHaveLength(2);
     expect(low.low).toBe(true);
     const warnings = logs.filter((line) => line.includes('is low'));
     expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain('2 pushed working directories');
+    expect(warnings[0]).toContain('0 pushed working directories');
     expect(warnings[0]).toContain('0 with unpushed work');
     expect(warnings[0]).toContain('`nocobase-runner gc`');
   });
 
-  it('on a low disk removes only what the application settled, least recently used first, never work that goes on', async () => {
+  it('on a low disk removes clean pushed idle work least recently used first, keeping unpushed work', async () => {
     const settledOld = await finishedRun('TASK-1', 'run-1');
     const ongoing = await finishedRun('TASK-2', 'run-2');
     const unpushed = await finishedRun('TASK-3', 'run-3', (dir) =>
@@ -687,14 +674,15 @@ describe('working directories', () => {
       log: (message) => logs.push(message),
     });
     expect(result.removed).toEqual([
-      { workDir: settledOld.workDir, reason: 'ended' },
-      { workDir: settledNew.workDir, reason: 'ended' },
+      { workDir: settledOld.workDir, reason: 'selected' },
+      { workDir: ongoing.workDir, reason: 'selected' },
+      { workDir: settledNew.workDir, reason: 'selected' },
     ]);
-    expect(existsSync(ongoing.workDir)).toBe(true);
+    expect(existsSync(ongoing.workDir)).toBe(false);
     expect(existsSync(unpushed.workDir)).toBe(true);
     const warnings = logs.filter((line) => line.includes('is low'));
     expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain('1 pushed working directory whose');
+    expect(warnings[0]).toContain('0 pushed working directories whose');
     expect(warnings[0]).toContain('1 with unpushed work');
   });
 
@@ -724,6 +712,7 @@ describe('working directories', () => {
         workDir: entries[0]?.workDir,
         unpushed: false,
         lastUsedAt: entries[0]?.lastUsedAt,
+        sizeBytes: entries[0]?.sizeBytes,
       },
     ]);
     expect(workspacesRequest(entries, 'crm', undefined).workspaces).toEqual([]);
@@ -761,7 +750,7 @@ describe('what goes', () => {
   const removed = (plan: ReturnType<typeof planRemovals>) =>
     plan.remove.map((item) => `${item.entry.subjectKey}:${item.reason}`);
 
-  it('removes ended work least recently used first, unpushed or not, never busy ones, and nothing else', () => {
+  it('removes clean ended work least recently used first, never busy or unpushed work', () => {
     const entries = [
       entry('old-unpushed', { unpushed: true }),
       entry('old'),
@@ -777,12 +766,9 @@ describe('what goes', () => {
       entry('newest'),
     ];
     const plan = planRemovals(entries);
-    expect(removed(plan)).toEqual([
-      'ended:ended',
-      'ended-unpushed:ended',
-      'ended-newer:ended',
-    ]);
+    expect(removed(plan)).toEqual(['ended:ended', 'ended-newer:ended']);
     expect(plan.kept.map((item) => item.entry.subjectKey)).toEqual([
+      'ended-unpushed',
       'legacy-ended',
     ]);
     expect(
@@ -831,7 +817,7 @@ describe('what goes', () => {
         }),
       ),
     ).toEqual([]);
-    // A settled directory decision allows discarding unpushed work without force.
+    // A settled decision never waives local unpushed-work protection.
     expect(
       removed(
         planRemovals(
@@ -842,7 +828,7 @@ describe('what goes', () => {
           },
         ),
       ),
-    ).toEqual(['TASK-84:selected']);
+    ).toEqual([]);
   });
 });
 

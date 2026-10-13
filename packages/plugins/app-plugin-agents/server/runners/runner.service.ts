@@ -452,7 +452,9 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         );
         const marks = runner.unavailableModels ?? [];
         const kept = keptMarks(marks, tools);
+        const workspaceUsage = (await require(conn, runner.id)).workspaceUsage;
         const changed =
+          request.disk !== undefined ||
           kept.length !== marks.length ||
           runner.version !== request.version ||
           runner.product !== (request.product ?? null) ||
@@ -480,6 +482,26 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
               free: request.load.free,
               slots: request.load.slots,
             }),
+            ...(request.disk === undefined
+              ? {}
+              : {
+                  workspaceUsage: asJson({
+                    ...(workspaceUsage ?? {
+                      measuredAt: now,
+                      count: 0,
+                      unpushedCount: 0,
+                      workspaces: [],
+                    }),
+                    disk:
+                      request.disk === null
+                        ? null
+                        : {
+                            ...request.disk,
+                            minFreeBytes: request.disk.minFreeBytes ?? null,
+                          },
+                    diskMeasuredAt: now,
+                  }),
+                }),
             lastSeenAt: now,
             updatedAt: changed ? now : runner.updatedAt,
           },

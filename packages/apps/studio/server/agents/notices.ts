@@ -71,6 +71,7 @@ export function runFailedRule(
         (await context.nameOf(AGENT_KIND, run.agentId)) ??
         'An agent';
       const reason = run.failureReason ?? 'unknown';
+      if (reason === 'runnerDiskFull') continue;
       notices.push({
         key: runFailedKey(run.id),
         kind: 'decision' as const,

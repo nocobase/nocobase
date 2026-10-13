@@ -32,7 +32,7 @@ import type { SubjectRegistry } from '../core/runs/ports.js';
 import { runsRepo } from '../core/runs/run.store.js';
 import type { Clock } from '../kernel/clock.js';
 import type { TxRunner } from '../kernel/tx.js';
-import { runnersRepo } from './runner.store.js';
+import { runnersRepo, storedWorkspaceUsage } from './runner.store.js';
 
 export interface RunnerWorkspaces {
   /** What a heartbeat answer announces: this application accepts workspace reports. */
@@ -264,6 +264,10 @@ export function createRunnerWorkspaces(
         workspaces.push({
           ...(workspace.runId === undefined ? {} : { runId: workspace.runId }),
           workDir: workspace.workDir,
+          subjectKey: workspace.subjectKey,
+          ...(workspace.sizeBytes === undefined
+            ? {}
+            : { sizeBytes: workspace.sizeBytes }),
           unpushed: workspace.unpushed,
           lastUsedAt: workspace.lastUsedAt,
           subjectKind: run?.subjectKind ?? null,
@@ -293,9 +297,21 @@ export function createRunnerWorkspaces(
         workspaces,
       };
       await tx.run(async ({ conn: write, emit }) => {
+        const current = await runnersRepo(write).findOne({
+          filter: { id: runner.id },
+        });
+        const latest = storedWorkspaceUsage(current?.workspaceUsage);
+        // Directory collection can take minutes; never replace the heartbeat's newer disk sample.
+        const merged = latest?.diskMeasuredAt
+          ? {
+              ...usage,
+              disk: latest.disk,
+              diskMeasuredAt: latest.diskMeasuredAt,
+            }
+          : usage;
         await runnersRepo(write).updateMany({
           filter: { id: runner.id },
-          values: { workspaceUsage: usage },
+          values: { workspaceUsage: merged },
         });
         emit({ type: 'runner.changed', runnerId: runner.id });
       });

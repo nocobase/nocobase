@@ -85,7 +85,7 @@ describe('runtimes page', () => {
     return await screen.findByTestId('runner-sheet');
   };
 
-  it('removes low disk warnings only when a new workspace report shows recovered space', async () => {
+  it('updates disk state from a fresh heartbeat while retaining the older directory collection time', async () => {
     runners[0] = {
       ...runners[0]!,
       canSeeMachine: true,
@@ -124,7 +124,7 @@ describe('runtimes page', () => {
         ...runners[0]!,
         workspaceUsage: {
           ...runners[0]!.workspaceUsage!,
-          measuredAt: new Date().toISOString(),
+          diskMeasuredAt: new Date().toISOString(),
           disk: { freeBytes: 50, totalBytes: 100, minFreeBytes: 20 },
         },
       },

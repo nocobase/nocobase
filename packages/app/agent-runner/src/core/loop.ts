@@ -77,7 +77,14 @@ import {
 import type { Installation } from '../lib/install.ts';
 import { gcWorkspaces } from './checkout.ts';
 import { prunePnpmStore } from './pnpm-store.ts';
-import { collectWorkspaces } from './workspaces.ts';
+import {
+  collectWorkspaces,
+  readDisk,
+  workspaceDisk,
+  lowOnDisk,
+  type ReadDisk,
+} from './workspaces.ts';
+import { isDiskFull } from '../lib/disk-full.ts';
 import { installGitHooks } from './git-hooks.ts';
 import {
   isAlive,
@@ -194,6 +201,8 @@ export interface DaemonOptions {
   clients?: ReadonlyMap<string, ApiClient>;
   /** Replaces `prunePnpmStore`; for tests. */
   pruneStore?: typeof prunePnpmStore;
+  /** Replace filesystem sampling in tests. */
+  readDisk?: ReadDisk;
   /** Why an isolation configuration cannot be had here (isolation.ts); for tests. */
   isolationProblem?: (config: IsolationConfig) => Promise<string | undefined>;
   /** Update between runs when an application serves a newer runner; without it, upgrade notices are only logged. */
@@ -255,6 +264,9 @@ export class RunnerDaemon {
   private pruning = false;
   /** Claims remain active through policy checks and worker startup, so pruning cannot overlap a received lease. */
   private claimsInFlight = 0;
+  private claimsDrained: (() => void) | undefined;
+  private diskPaused = false;
+
   /** Working directories were removed since the store was last pruned. */
   private pruneDue = false;
   /** Failed pruning is retried at the next idle opportunity after this time. */
@@ -425,6 +437,7 @@ export class RunnerDaemon {
       if (this.gcTimer !== undefined) clearInterval(this.gcTimer);
       await this.claimLoop?.catch(() => undefined);
       await this.supervisor.stopAll();
+      await this.collecting;
       const pid = await readJson<DaemonPid>(this.options.paths.daemonPid).catch(
         () => undefined,
       );
@@ -532,8 +545,10 @@ export class RunnerDaemon {
       this.lastCollect = Date.now();
       const { paths, log } = this.options;
       try {
-        const expired = await gcWorkspaces({ paths, log });
-        if (expired.length > 0) this.pruneDue = true;
+        if (this.claimsInFlight > 0)
+          await new Promise<void>((resolve) => {
+            this.claimsDrained = resolve;
+          });
         const settings = await readSettings(paths);
         const reporters = new Map<
           string,
@@ -559,19 +574,40 @@ export class RunnerDaemon {
           ),
           log,
           threshold: minFreeDisk(settings),
+          ...(this.options.readDisk ? { readDisk: this.options.readDisk } : {}),
           artifacts: {
             ttlMs: artifactTtlMs(settings),
             patterns: artifactPatterns(settings),
           },
         });
-        if (collected.removed.length > 0) this.pruneDue = true;
+        this.diskPaused = collected.low;
+        if (
+          collected.removed.length > 0 ||
+          collected.artifactsCleaned.length > 0
+        )
+          this.pruneDue = true;
+        // Retention runs after artifact-first collection, and cannot continue pressure deletion after recovery.
+        if (!collected.low && !collected.pressure) {
+          const expired = await gcWorkspaces({ paths, log });
+          if (expired.length > 0) this.pruneDue = true;
+        }
       } catch (error) {
         log(`gc: ${error instanceof Error ? error.message : String(error)}`);
+        const settings = await readSettings(paths).catch(
+          () => this.options.settings,
+        );
+        this.diskPaused = lowOnDisk(
+          await (this.options.readDisk ?? readDisk)(paths.workRoot).catch(
+            () => undefined,
+          ),
+          minFreeDisk(settings),
+        );
       }
       try {
         await this.pruneStore();
       } finally {
         this.collecting = undefined;
+        this.slotFreed?.();
       }
     })();
     return this.collecting;
@@ -634,11 +670,23 @@ export class RunnerDaemon {
     const runs = held.filter((run) => run.jobId === undefined);
     const jobs = held.filter((run) => run.jobId !== undefined);
     try {
+      const settings = await readSettings(this.options.paths);
+      const sampledDisk = await (this.options.readDisk ?? readDisk)(
+        this.options.paths.workRoot,
+      );
+      const paused = lowOnDisk(sampledDisk, minFreeDisk(settings));
+      if (this.diskPaused && !paused) this.slotFreed?.();
+      this.diskPaused = paused;
+      const disk =
+        sampledDisk === undefined
+          ? null
+          : workspaceDisk(sampledDisk, minFreeDisk(settings));
       const policy = await this.policyOf(link);
       const { variables, tools } = await this.environmentOf(link);
       const response = await link.client.post(
         RUNNER_ROUTES.heartbeat,
         {
+          disk,
           version: runnerVersion(),
           product: runnerHost().product,
           features: policy.features,
@@ -798,13 +846,33 @@ export class RunnerDaemon {
     free: number,
     wait: boolean,
   ): Promise<number> {
-    if (this.pruning || this.stopping.signal.aborted) return 0;
+    if (
+      this.pruning ||
+      this.collecting ||
+      this.diskPaused ||
+      this.stopping.signal.aborted
+    )
+      return 0;
+    const settings = await readSettings(this.options.paths);
+    const disk = await (this.options.readDisk ?? readDisk)(
+      this.options.paths.workRoot,
+    );
+    if (this.collecting || this.pruning || this.stopping.signal.aborted)
+      return 0;
+    if (lowOnDisk(disk, minFreeDisk(settings))) {
+      await this.collectGarbage();
+      return 0;
+    }
     this.claimsInFlight += 1;
     try {
       return await this.claimAndStart(link, free, wait);
     } finally {
       this.claimsInFlight -= 1;
-      await this.pruneStore();
+      if (this.claimsInFlight === 0) {
+        this.claimsDrained?.();
+        this.claimsDrained = undefined;
+      }
+      void this.pruneStore();
     }
   }
 
@@ -860,7 +928,7 @@ export class RunnerDaemon {
             'POST',
             routePath(RUNNER_ROUTES.jobFail, { jobId: payload.job.id }),
             {
-              reason: 'startTimeout',
+              reason: isDiskFull(error) ? 'runnerDiskFull' : 'startTimeout',
               detail: `The runner could not start a worker: ${error instanceof Error ? error.message : String(error)}`,
             },
           )
@@ -902,7 +970,7 @@ export class RunnerDaemon {
             'POST',
             routePath(RUNNER_ROUTES.fail, { runId: payload.run.id }),
             {
-              reason: 'startTimeout',
+              reason: isDiskFull(error) ? 'runnerDiskFull' : 'startTimeout',
               detail: `The runner could not start a worker: ${error instanceof Error ? error.message : String(error)}`,
             },
           )
@@ -928,7 +996,9 @@ export class RunnerDaemon {
       if (
         this.slots - this.supervisor.size <= 0 ||
         this.pendingUpdate ||
-        this.pruning
+        this.pruning ||
+        this.collecting ||
+        this.diskPaused
       ) {
         await new Promise<void>((resolve) => {
           this.slotFreed = resolve;

@@ -3,6 +3,14 @@ import type { RuntimesLocale } from './runtimes.en-US.js';
 const runtimesZhCN: RuntimesLocale = {
   runtimes: {
     workspaces: {
+      paused: '空间恢复前暂停领取新任务，现有运行继续。',
+      working: '类型：工作目录',
+      readOnly: '类型：只读副本',
+      size: '大小：{{value}}',
+      sizeUnknown: '未知',
+      pushed: '推送状态：干净且无未推送工作',
+      unpushed: '推送状态：有未提交、未推送或未核实工作',
+      notApplicable: '推送状态：不适用',
       title: '工作目录诊断',
       low: '磁盘空间不足',
       previousLow: '上次报告：磁盘空间不足',

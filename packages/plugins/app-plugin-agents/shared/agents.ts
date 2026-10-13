@@ -180,6 +180,7 @@ export interface AgentName {
 
 /** An agent the caller may give work to: what it is good at, and whether it can take work now. */
 export interface AvailableAgent {
+  readonly runners?: AgentRunners;
   readonly id: string;
   readonly name: string;
   /** Its description. */

@@ -203,6 +203,10 @@ function storedWorkspace(value: unknown): RunnerWorkspace | null {
       ? { cleanup: WorkspaceCleanupResultSchema.parse(item.cleanup) }
       : {}),
     workDir: item.workDir,
+    ...(typeof item.subjectKey === 'string'
+      ? { subjectKey: item.subjectKey }
+      : {}),
+    ...(isFiniteNumber(item.sizeBytes) ? { sizeBytes: item.sizeBytes } : {}),
     unpushed: item.unpushed === true,
     lastUsedAt: text(item.lastUsedAt) ?? '',
     subjectKind: text(item.subjectKind),
@@ -261,6 +265,9 @@ export function storedWorkspaceUsage(
     isFiniteNumber(field) ? field : fallback;
   return {
     disk: storedDisk(usage.disk),
+    ...(typeof usage.diskMeasuredAt === 'string'
+      ? { diskMeasuredAt: usage.diskMeasuredAt }
+      : {}),
     count: count(usage.count, workspaces.length),
     unpushedCount: count(
       usage.unpushedCount,

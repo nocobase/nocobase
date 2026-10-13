@@ -82,11 +82,14 @@ export class PrepareError extends Error {
  * holds (`WorkspaceBusyError`), found by any step, is the workspace being busy, which the application requeues without
  * counting an attempt, when it announces that it accepts it (`acceptedFailures`).
  */
+import { isDiskFull } from '../../lib/disk-full.ts';
+
 export function stepFailure(
   step: Pick<PrepareStep, 'failure'>,
   error: unknown,
   accepted: readonly string[] | undefined,
 ): FailureReason {
+  if (isDiskFull(error)) return 'runnerDiskFull';
   if (error instanceof PrepareError) return error.reason;
   if (error instanceof WorkspaceBusyError)
     return acceptedFailure('workspaceBusy', accepted);

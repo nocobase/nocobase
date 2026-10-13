@@ -86,6 +86,8 @@ export const UsageSchema: z.ZodType<Usage> = z.object({
 
 export const FAILURE_REASONS = [
   'runnerOffline',
+  /** The execution machine ran out of disk space. Reassignment is decided by the project manager. */
+  'runnerDiskFull',
   'leaseExpired',
   'startTimeout',
   'cancelled',

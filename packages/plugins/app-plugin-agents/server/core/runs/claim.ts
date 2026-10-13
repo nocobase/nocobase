@@ -282,7 +282,7 @@ export function fitsActor(
   actorUserId: string,
   requires: readonly RunnerFeature[],
 ): boolean {
-  if (agent.status !== 'enabled') return false;
+  if (agent.status !== 'enabled' || runnerLowOnDisk(runner)) return false;
   if (
     !isProtocolSupported(runner.protocolVersion) ||
     runner.status === 'upgrade_required' ||
@@ -1423,7 +1423,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       return agent ? selectionFacts(conn, toRun(run), agent, false) : null;
     },
     async claim(runner, free, tools) {
-      if (runner.status !== 'online') return [];
+      if (runner.status !== 'online' || runnerLowOnDisk(runner)) return [];
       if ((await deps.slotsUsed(tx.read(), runner.id)) >= runner.slots)
         return [];
       const payloads: RunPayload[] = [];

@@ -468,6 +468,7 @@ const zhCN: AgentsResource = {
     },
   },
   failures: {
+    runnerDiskFull: '执行机磁盘空间不足。',
     runnerOffline: '运行环境已离线。',
     leaseExpired: '运行环境停止了上报。',
     startTimeout: '运行环境没有及时开始运行。',

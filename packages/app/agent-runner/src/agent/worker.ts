@@ -298,6 +298,8 @@ export class GrowingRedactor implements Redactor {
   }
 }
 
+import { isDiskFull } from '../lib/disk-full.ts';
+
 function failureReason(result: AdapterResult): {
   reason: FailureReason;
   detail: string;
@@ -307,7 +309,14 @@ function failureReason(result: AdapterResult): {
   const parsed = FailureReasonSchema.safeParse(error?.reason);
   const detail =
     typeof error?.message === 'string' ? error.message : 'The tool failed.';
-  return { reason: parsed.success ? parsed.data : 'toolProcess', detail };
+  return {
+    reason: isDiskFull(result.error)
+      ? 'runnerDiskFull'
+      : parsed.success
+        ? parsed.data
+        : 'toolProcess',
+    detail,
+  };
 }
 
 export class RunWorker {
@@ -557,7 +566,7 @@ export class RunWorker {
       );
       if (this.ending?.kind === 'lost') return 'leaseLost';
       return this.finishFailed(
-        'unknown',
+        isDiskFull(error) ? 'runnerDiskFull' : 'unknown',
         error instanceof Error ? error.message : String(error),
       );
     } finally {

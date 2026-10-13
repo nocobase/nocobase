@@ -2,7 +2,7 @@
 //
 // A working directory whose work goes on stays, but what an install or a build regenerates (`node_modules`, `.next`,
 // `.turbo` by default, `RunnerSettings.artifactPatterns`) is removed from it once no run has used it for
-// `RunnerSettings.artifactTtlMs` (12 hours by default; 0 turns it off). The checkout itself, its commits and changes,
+// `RunnerSettings.artifactTtlMs` (2 hours by default; 0 turns it off). The checkout itself, its commits and changes,
 // stay. Every directory with one of those names anywhere inside it goes, without following symbolic links: a link is
 // never entered nor removed. A directory a run holds is never touched: the pass takes the directory's lock, and a run
 // that used it since it was read keeps it as it is. Once cleaned, a directory is not walked again until a run uses it.
@@ -17,6 +17,7 @@ import {
   type Lock,
 } from './checkout.ts';
 import type { WorkspaceEntry } from './workspaces.ts';
+import { taskGit } from './task-git.ts';
 
 export interface ArtifactOptions {
   readonly paths: RunnerPaths;
@@ -25,6 +26,9 @@ export interface ArtifactOptions {
   readonly patterns: readonly string[];
   readonly now?: number;
   readonly log?: (message: string) => void;
+  /** Pressure cleanup ignores TTL, but retains directory locks and Git file protection. */
+  readonly pressure?: boolean;
+  readonly shouldStop?: () => Promise<boolean>;
 }
 
 /** The directories named like a pattern under `root`, not following symbolic links and not looking inside a match. */
@@ -39,6 +43,7 @@ export async function findArtifacts(
     for (const entry of entries) {
       // A symbolic link is neither a directory here nor followed.
       if (!entry.isDirectory()) continue;
+      if (entry.name === '.git' || entry.name === '.nocobase-runner') continue;
       const child = path.join(dir, entry.name);
       if (names.has(entry.name)) found.push(child);
       else await walk(child);
@@ -53,13 +58,24 @@ export async function cleanArtifacts(
   entries: readonly WorkspaceEntry[],
   options: ArtifactOptions,
 ): Promise<string[]> {
-  if (options.ttlMs <= 0 || options.patterns.length === 0) return [];
+  if (
+    (!options.pressure && options.ttlMs <= 0) ||
+    options.patterns.length === 0
+  )
+    return [];
   const now = options.now ?? Date.now();
   const cleaned: string[] = [];
-  for (const entry of entries) {
+  for (const entry of [...entries].sort(
+    (a, b) => Date.parse(a.lastUsedAt) - Date.parse(b.lastUsedAt),
+  )) {
+    if (await options.shouldStop?.()) break;
     if (entry.inUse) continue;
     const usedAt = Date.parse(entry.lastUsedAt);
-    if (!Number.isFinite(usedAt) || now - usedAt < options.ttlMs) continue;
+    if (
+      !Number.isFinite(usedAt) ||
+      (!options.pressure && now - usedAt < options.ttlMs)
+    )
+      continue;
     let lock: Lock;
     try {
       lock = await acquireLock(`${entry.workDir}.lock`, { timeoutMs: 0 });
@@ -69,22 +85,61 @@ export async function cleanArtifacts(
     try {
       const meta = await readWorkspaceMeta(options.paths, entry.workDir);
       // A run used it since it was read, or it was cleaned since it was last used.
-      if (meta === undefined || meta.lastUsedAt !== entry.lastUsedAt) continue;
+      if (
+        meta === undefined ||
+        meta.lastUsedAt !== entry.lastUsedAt ||
+        meta.lastRunId !== entry.lastRunId
+      )
+        continue;
       if (
         meta.artifactsCleanedAt !== undefined &&
         Date.parse(meta.artifactsCleanedAt) >= usedAt
       )
         continue;
       const found = await findArtifacts(entry.workDir, options.patterns);
-      for (const dir of found) await rm(dir, { recursive: true, force: true });
-      await writeWorkspaceMeta(options.paths, entry.workDir, {
-        ...meta,
-        artifactsCleanedAt: new Date(now).toISOString(),
-      });
-      if (found.length > 0) {
+      const tracked: string[] = [];
+      try {
+        for (const repo of meta.repos) {
+          const root = path.join(entry.workDir, repo.path);
+          const files = await taskGit(
+            { dir: root, cache: repo.cache, url: repo.url },
+            ['ls-files', '--recurse-submodules', '-z'],
+          );
+          tracked.push(
+            ...files
+              .split('\0')
+              .filter(Boolean)
+              .map((file) => path.resolve(root, file)),
+          );
+        }
+      } catch {
+        // Without Git evidence a custom pattern might remove source files.
+        continue;
+      }
+      const safe = found.filter(
+        (dir) =>
+          !tracked.some(
+            (file) =>
+              file === dir ||
+              file.startsWith(`${dir}${path.sep}`) ||
+              dir.startsWith(`${file}${path.sep}`),
+          ),
+      );
+      let removed = 0;
+      for (const dir of safe) {
+        if (await options.shouldStop?.()) break;
+        await rm(dir, { recursive: true, force: true });
+        removed += 1;
+      }
+      if (removed === safe.length)
+        await writeWorkspaceMeta(options.paths, entry.workDir, {
+          ...meta,
+          artifactsCleanedAt: new Date(now).toISOString(),
+        });
+      if (removed > 0) {
         cleaned.push(entry.workDir);
         options.log?.(
-          `workspaces: removed ${found.length} regenerable ${found.length === 1 ? 'directory' : 'directories'} from ${entry.workDir}, unused since ${entry.lastUsedAt}`,
+          `workspaces: removed ${removed} regenerable ${removed === 1 ? 'directory' : 'directories'} from ${entry.workDir}, unused since ${entry.lastUsedAt}`,
         );
       }
     } finally {
