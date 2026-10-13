@@ -36,6 +36,10 @@ const INSTRUCTIONS = [
   .map((line) => `- ${line}`)
   .join('\n');
 
+export function sessionInstructions(locale: string): string {
+  return `${INSTRUCTIONS}\n- The person's current Studio interface language is ${locale}. When creating tasks (issues), write both titles and descriptions in that language. If the person explicitly requests another task language, follow their request. Do not infer the task language from the chat text. This task-language rule takes precedence over repository rules that require English for code, commits or pull requests. Keep technical identifiers, code, file paths and product names in their original form when appropriate. Do not translate or rewrite existing tasks automatically. The current interface language applies to subsequent task creation, including when this session resumes or the person switches language.`;
+}
+
 export default class StudioAgentSessionsProvider extends ServiceProvider<Application> {
   public readonly name: string = 'studio/agent-sessions';
 
@@ -75,7 +79,9 @@ export default class StudioAgentSessionsProvider extends ServiceProvider<Applica
       }
     };
 
-    sessions.registerInstructions(INSTRUCTIONS);
+    sessions.registerInstructions(({ locale }) =>
+      sessionInstructions(locale ?? i18n?.getLocale() ?? 'en-US'),
+    );
     if (container.has(studioInboxPortToken))
       sessions.registerNotices(
         agentSessionNotices(() => container.resolve(studioInboxPortToken)),

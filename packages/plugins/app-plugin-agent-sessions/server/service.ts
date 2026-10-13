@@ -170,7 +170,7 @@ export class AgentSessionsService {
   #toolServer = 'app';
   readonly #toolTokens: ToolTokens | undefined;
   #projects: ProjectSource | undefined;
-  #instructions: string | undefined;
+  #instructions: string | ((viewer: Viewer) => string) | undefined;
   #notices: SessionNotices | undefined;
   readonly #schedule: (task: () => Promise<void>, delayMs: number) => void;
   readonly #images: ImageStorage | undefined;
@@ -201,12 +201,21 @@ export class AgentSessionsService {
   /**
    * How the application wants the agents in sessions to work, such as what they do themselves and what they hand on,
    * in English: each session's agent is told it in its first message, again whenever it changes, and when its session
-   * opens.
+   * opens. A resolver uses the current viewer, including the interface locale supplied with their message.
    */
-  registerInstructions(text: string): void {
-    this.#instructions = text.trim()
-      ? `How to work in this session:\n${text.trim()}`
-      : undefined;
+  registerInstructions(
+    instructions: string | ((viewer: Viewer) => string),
+  ): void {
+    this.#instructions = instructions;
+  }
+
+  #instructionsFor(viewer: Viewer): string | undefined {
+    const text = (
+      typeof this.#instructions === 'function'
+        ? this.#instructions(viewer)
+        : this.#instructions
+    )?.trim();
+    return text ? `How to work in this session:\n${text}` : undefined;
   }
 
   /** Lets a session work for one of the application's projects, which its tools then default to. */
@@ -250,7 +259,7 @@ export class AgentSessionsService {
           : undefined;
         const work = workNote(await this.#work(viewer, caller.sessionId), null);
         const lines = [
-          this.#instructions,
+          this.#instructionsFor(viewer),
           project &&
             `This session works for the project "${project.name}" (id ${project.id}). File and look for work there unless the person names another project.`,
           work && `${work}\nCall \`list_session_work\` for how each is going.`,
@@ -832,11 +841,12 @@ export class AgentSessionsService {
     const promptId = randomUUID();
     const work = await this.#work(viewer, sessionId, mentioned);
     const note = workNote(work, session.toldWork);
+    const currentInstructions = this.#instructionsFor(viewer);
     const toldInstructions =
-      this.#instructions && instructionsHash(this.#instructions);
+      currentInstructions && instructionsHash(currentInstructions);
     const instructions =
       toldInstructions !== session.toldInstructions
-        ? this.#instructions
+        ? currentInstructions
         : undefined;
     // The agent reads the application's instructions until it was told them, what the message mentions, and the
     // session's work when it changed since it was last told; the transcript keeps the message as written.
@@ -1193,7 +1203,7 @@ export class AgentSessionsService {
     return items;
   }
 
-  /** The owner a tool is called for, in the language they last wrote to the session in. */
+  /** The owner a tool is called for, in the interface language supplied with their latest message. */
   async #ownerOf(caller: {
     readonly userId: string;
     readonly sessionId: string;
