@@ -246,7 +246,7 @@ pr open [--issue --title! --body --repo --head --base --draft] -> POST /api/git/
 pr refresh <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/refresh (person) pm.issues/view
 pr reopen <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/reopen (person,run) studio.git/open-pr
 pr suggestion dismiss <issue> <pr> -> DELETE /api/git/pullRequests/{pullRequestId}/suggestion (person) pm.issues/edit confirm
-pr unlink <issue> <pr> -> DELETE /api/git/pullRequests/{pullRequestId} (person) pm.issues/edit confirm
+pr unlink <issue> <pr> -> DELETE /api/git/pullRequests/{pullRequestId} (person,run) pm.issues/edit confirm
 pr update <issue> <pr> [--auto-complete-disabled!] -> PATCH /api/git/pullRequests/{pullRequestId} (person) pm.issues/edit
 preview down [--issue --app] -> POST /api/previews/down (person,run) studio.previews/manage confirm
 preview list [--project] -> GET /api/previews (person,run) pm.issues/view
@@ -413,6 +413,7 @@ pr link <url> [--issue] -> POST /api/git/pullRequests (person,run) studio.git/op
 pr list [--issue] -> GET /api/git/pullRequests (person,run) pm.issues/view
 pr open [--issue --title! --body --repo --head --base --draft] -> POST /api/git/pullRequests/open (person,run) studio.git/open-pr
 pr reopen <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/reopen (person,run) studio.git/open-pr
+pr unlink <issue> <pr> -> DELETE /api/git/pullRequests/{pullRequestId} (person,run) pm.issues/edit confirm
 preview down [--issue --app] -> POST /api/previews/down (person,run) studio.previews/manage confirm
 preview list [--project] -> GET /api/previews (person,run) pm.issues/view
 preview logs [--issue --app --page-token] -> GET /api/previews/logs (person,run) studio.previews/manage

@@ -98,6 +98,8 @@ export interface PullRequestSnapshot {
   readonly state: PullRequestState;
   readonly draft: boolean;
   readonly headRef: string;
+  /** Fresh host response only; unknown source repositories are ineligible for a run's starting branch. */
+  readonly headRepo?: string;
   readonly baseRef: string;
   readonly headSha: string;
   readonly authorLogin: string;

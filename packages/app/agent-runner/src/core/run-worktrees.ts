@@ -194,6 +194,7 @@ async function ref(cache: string, name: string): Promise<string | undefined> {
 async function assertWorktreeIdentity(
   context: { dir: string; cache: string; url: string },
   localBranch: string,
+  allowBranchChange = false,
 ): Promise<void> {
   const gitDir = await taskGitDir(context);
   await taskGit(context, ['status', '--porcelain']);
@@ -217,12 +218,39 @@ async function assertWorktreeIdentity(
       'Initialized submodules require recovery in the original worktree; their objects are not saved by a parent commit',
     );
   if (
+    !allowBranchChange &&
     (await taskGit(context, ['symbolic-ref', '--short', 'HEAD'])) !==
-    localBranch
+      localBranch
   )
     throw new CheckoutError(
       'The agent changed the local branch; keep the worktree for recovery',
     );
+}
+
+/** Called under the cache lock after removing the worktree. Only this attempt's published alias is disposable. */
+export async function deletePublishedRunBranch(
+  cache: string,
+  branch: string | undefined,
+  expected: string,
+): Promise<void> {
+  if (branch !== expected || !branch.startsWith('runner-run-')) return;
+  const name = `refs/heads/${branch}`;
+  const head = await ref(cache, name);
+  if (head === undefined) return;
+  if (
+    (await git(['worktree', 'list', '--porcelain'], cache))
+      .split('\n')
+      .includes(`branch ${name}`)
+  )
+    return;
+  // Continuation refs are local preservation, not evidence of a push. No origin refs means retain the branch.
+  if (
+    (await git(
+      ['rev-list', '--count', head, '--not', '--remotes=origin'],
+      cache,
+    )) === '0'
+  )
+    await git(['update-ref', '-d', name, head], cache);
 }
 
 /** The runner's removal marker plus local pushed evidence; never infer safety from a broken checkout alone. */
@@ -350,9 +378,10 @@ export async function retryWorkspaceRemoval(
             force: true,
           });
           await git(['worktree', 'prune'], repo.cache);
-          await git(
-            ['update-ref', '-d', `refs/heads/${repo.localBranch}`],
+          await deletePublishedRunBranch(
             repo.cache,
+            repo.localBranch,
+            runBranch(workDir, repo.path),
           );
         } finally {
           await cacheLock.release();
@@ -662,7 +691,7 @@ export async function finalizeRunWorktrees(
           );
         results.push({ path: dir, saved: true });
       } else if (meta.readOnly !== true) {
-        await assertWorktreeIdentity(context, repo.localBranch);
+        await assertWorktreeIdentity(context, repo.localBranch, true);
         await taskGit(context, ['add', '--all']);
         if (!(await taskGitOk(context, ['diff', '--cached', '--quiet'])))
           await taskGit(context, [
@@ -675,23 +704,55 @@ export async function finalizeRunWorktrees(
           () => undefined,
         );
         if (head !== undefined) {
+          const currentBranch = await taskGit(context, [
+            'symbolic-ref',
+            '--quiet',
+            '--short',
+            'HEAD',
+          ]).catch(() => undefined);
           const resume = `refs/runner/resume/${repo.continuation}`;
           const lock = await lockCache(repo.cache);
           try {
             const previous = await ref(repo.cache, resume);
             if (
-              previous === undefined ||
-              (await gitOk(
-                ['merge-base', '--is-ancestor', previous, head],
+              currentBranch !== undefined &&
+              currentBranch !== repo.localBranch
+            ) {
+              // Its own branch ref preserves the head; it is not a continuation of the initial target.
+              log(`Run ended on branch ${currentBranch} at ${head}`);
+            } else if (
+              currentBranch === undefined &&
+              // The run's own alias is not evidence: its commits continue this target.
+              (await git(
+                [
+                  'rev-list',
+                  '--count',
+                  head,
+                  '--not',
+                  `--exclude=${repo.localBranch}`,
+                  '--branches',
+                  '--remotes',
+                ],
                 repo.cache,
-              ))
+              )) === '0'
+            ) {
+              log(
+                `Run ended on a detached HEAD already reachable from a branch: ${head}`,
+              );
+            } else if (
+              currentBranch === repo.localBranch &&
+              (previous === undefined ||
+                (await gitOk(
+                  ['merge-base', '--is-ancestor', previous, head],
+                  repo.cache,
+                )))
             ) {
               await git(['update-ref', resume, head], repo.cache);
             } else {
               const saved = `refs/runner/saved/${repo.continuation}/${randomUUID()}`;
               await git(['update-ref', saved, head], repo.cache);
               log(
-                `Divergent local commit saved for manual integration: ${saved} ${head}`,
+                `Local commit saved for manual integration: ${saved} ${head}`,
               );
             }
           } finally {
@@ -719,9 +780,10 @@ export async function finalizeRunWorktrees(
         if (meta.readOnly === true && existsSync(path.join(dir, '.gitmodules')))
           await rm(dir, { recursive: true, force: true });
         await git(['worktree', 'remove', '--force', dir], repo.cache);
-        await git(
-          ['update-ref', '-d', `refs/heads/${repo.localBranch}`],
+        await deletePublishedRunBranch(
           repo.cache,
+          repo.localBranch,
+          runBranch(workDir, repo.path),
         );
         await git(['worktree', 'prune'], repo.cache);
       } finally {

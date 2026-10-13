@@ -37,6 +37,8 @@ Claude Code's personal copy goes under `<CLAUDE_CONFIG_DIR or ~/.claude>/skills/
 
 ## Common work
 
+In a writable run, the worktree's initial target may be a same-repository linked pull request branch. You may switch or create branches and push any branch of that repository with `git push origin HEAD:refs/heads/<branch>`; never force push or rewrite already-pushed history. `nb-studio pr open` without `--head` uses the branch rule (`agent/<KEY>` by default), so after starting on a linked pull request's branch or switching, pass the published branch with `--head <branch>`. Use `nb-studio pr link` and `nb-studio pr unlink` to manage issue associations; inspect each command's `--help` for its current arguments and permissions. Read-only runs still change, commit and push nothing.
+
 ```bash
 nb-studio issue search --q "login" --json
 nb-studio issue get PM-12 --json

@@ -217,6 +217,8 @@ export interface ClosePullRequestInput {
 }
 
 export interface StudioGit {
+  /** Fresh same-repository open PR heads, read before the claim transaction. No stored snapshot changes. */
+  checkoutPullRequests(issueId: string): Promise<ReadonlyMap<string, string>>;
   syncPreviewLabels(issueId: string): Promise<void>;
 
   list(viewer: Viewer, issue: string): Promise<IssuePullRequests>;
@@ -1367,6 +1369,34 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     verifyCommit,
     commitsContained,
     updatePullRequestSection,
+
+    async checkoutPullRequests(issueId) {
+      const heads = new Map<string, string>();
+      for (const { pr } of await pullRequestsOfIssue(conn(), issueId)) {
+        if (pr.state !== 'open') continue;
+        const repo = await findRepoById(conn(), pr.repoId);
+        if (!repo) continue;
+        try {
+          const pull = await platformOf(repo).getPullRequest(
+            await readAuth(repo),
+            repo.repo,
+            pr.number,
+            null,
+          );
+          if (pull.notModified) continue;
+          const snapshot = pull.body.snapshot;
+          if (
+            snapshot.state === 'open' &&
+            snapshot.headRef &&
+            snapshot.headRepo?.toLowerCase() === repo.repo.toLowerCase()
+          )
+            heads.set(pr.id, snapshot.headRef);
+        } catch {
+          // Without fresh source evidence, use the configured branch rule rather than a possibly fork-owned head.
+        }
+      }
+      return heads;
+    },
 
     async list(viewer, idOrKey) {
       const issue = await visibleIssue(viewer, idOrKey);
