@@ -8,6 +8,7 @@ import { Link } from 'react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { RecentActivity } from './recent-activity.js';
+import { OwnerHandoffActions } from '../../issues/detail/owner-handoff.js';
 import type { InboxPartProps } from '@/extensions/nocobase-inbox/registry';
 import type { ProjectsModel } from './projects.js';
 import { useParamsOf } from './projects-wording.js';
@@ -29,6 +30,12 @@ export function ProjectsBody({
         <blockquote className='rounded-md border-l-2 bg-muted/40 px-4 py-3 text-sm whitespace-pre-wrap wrap-anywhere'>
           {params.excerpt}
         </blockquote>
+      ) : null}
+      {entry.notice?.type === 'owner_handoff' && issueId ? (
+        <OwnerHandoffActions
+          issueId={issueId}
+          notificationKey={params.notificationKey}
+        />
       ) : null}
       {entry.notice?.type === 'comment_runs_limited' && issueId ? (
         <Link

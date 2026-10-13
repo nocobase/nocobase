@@ -21,6 +21,7 @@ import {
   type HeldCommentWake,
 } from './comment-guard.js';
 import { createAgentWork } from './work.js';
+import { ownerHandoffWaiting } from '../issues/owner-handoff.js';
 
 /** The notice type of the owner's card. */
 export const COMMENT_RUNS_LIMITED = 'comment_runs_limited';
@@ -91,6 +92,7 @@ export async function pendingCommentRun(
 } | null> {
   const issue = await projects.issueQueries.detail(viewer, issueId);
   if (!mayContinue(viewer) || viewer.userId !== issue.ownerUserId) return null;
+  if (await ownerHandoffWaiting(projects.tx.read(), issue)) return null;
   const guard = await commentGuards(projects.tx.read()).findOne({
     filter: { id: commentGuardId(issue.id) },
   });
@@ -126,6 +128,12 @@ export async function continueCommentRun(
         'The current issue owner must continue this work.',
       );
     const id = commentGuardId(issue.id);
+    if (await ownerHandoffWaiting(tx.conn, issue))
+      throw studioError(
+        'FAILED_PRECONDITION',
+        'ISSUE_OWNER_HANDOFF_PENDING',
+        'Accept the owner handoff before continuing this work.',
+      );
     const stale = () =>
       studioError(
         'FAILED_PRECONDITION',
