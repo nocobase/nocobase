@@ -1,9 +1,11 @@
+import { languageBase } from '../shared/languages';
 import { useLang, useSite } from '@rspress/core/runtime';
 
 export function transformHref(href: string, lang?: string) {
   if (!lang) {
     return href;
   }
+  lang = languageBase(lang).replace(/^\/|\/$/g, '') || 'en';
   if (lang === 'en' && !href.startsWith(`/${lang}/`)) {
     return href;
   }

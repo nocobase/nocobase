@@ -5,6 +5,7 @@
  *
  * - `GET /followUps`: the overview.
  * - `PUT /followUps/following`: replaces the followed issues.
+ * - `POST /followUps/issues/{issueId}/follow` and `/unfollow`: adds or takes off one issue, the follow star's own.
  * - `POST /followUps/issues/{issueId}/markSeen`: the caller looked at the issue now.
  */
 import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
@@ -39,10 +40,17 @@ import {
   FollowingViewSchema,
   FollowUpsViewSchema,
 } from './schemas.js';
+import { FOLLOW_UPS_MAX } from '../../shared/follow-ups.js';
 import { createFollowUps } from './service.js';
 
 const tags = ['Studio'];
 const Params = z.object({ issueId: z.string().min(1) });
+const IssueParams = z.object({
+  issueId: z
+    .string()
+    .min(1)
+    .meta({ description: 'The issue, by id or identifier.' }),
+});
 
 export const followUpsRoutes: AppApiRouteContribution<Application> =
   defineApiRoutes(({ container }) => {
@@ -117,7 +125,7 @@ export const followUpsRoutes: AppApiRouteContribution<Application> =
         tags,
         summary: 'Replace the issues I follow',
         operationId: 'followUpsSetFollowing',
-        // The page's own choice, made with a star; `follow-up list` reads it.
+        // Replaces the whole list; the star and the CLI use `follow-up follow` and `unfollow`.
         ...cliRoute(false),
         description:
           'Replaces the issues the caller follows, in order, at most five. An issue newly followed counts what happens on it from now on. Needs `pm.issues` view.',
@@ -139,6 +147,53 @@ export const followUpsRoutes: AppApiRouteContribution<Application> =
           ),
         }),
     );
+
+    for (const verb of ['follow', 'unfollow'] as const) {
+      const following = verb === 'follow';
+      routes.post(
+        `/issues/:issueId/${verb}`,
+        describeRoute({
+          tags,
+          summary: following
+            ? 'Follow an issue in my follow-ups'
+            : 'Stop following an issue in my follow-ups',
+          operationId: following
+            ? 'followUpsFollowIssue'
+            : 'followUpsUnfollowIssue',
+          ...cliRoute({
+            command: `follow-up ${verb}`,
+            args: ['issueId'],
+            flags: { issueId: { name: 'issue' } },
+          }),
+          description: following
+            ? `Adds the issue to the ones the caller follows, after the others; following it already changes nothing. At most ${FOLLOW_UPS_MAX}: past that the caller unfollows one first (\`FOLLOWING_LIMIT_REACHED\`). An issue newly followed counts what happens on it from now on. \`issueId\` is an id or an identifier. Needs \`pm.issues\` view.`
+            : 'Takes the issue off the ones the caller follows; not following it changes nothing. `issueId` is an id or an identifier. Needs `pm.issues` view.',
+          responses: {
+            200: dataResponse(FollowingViewSchema),
+            ...(following
+              ? {
+                  400: apiErrorResponse(
+                    400,
+                    `The caller follows ${FOLLOW_UPS_MAX} issues already (\`FOLLOWING_LIMIT_REACHED\`).`,
+                  ),
+                }
+              : {}),
+            404: apiErrorResponse(404, 'Issue not found.'),
+            ...apiErrorResponses,
+          },
+        }),
+        apiValidator('param', IssueParams),
+        async (context) => {
+          const viewer = await viewerOf(context);
+          const { issueId } = context.req.valid('param');
+          return context.json({
+            data: following
+              ? await followUps.follow(viewer, issueId)
+              : await followUps.unfollow(viewer, issueId),
+          });
+        },
+      );
+    }
 
     routes.post(
       '/issues/:issueId/markSeen',

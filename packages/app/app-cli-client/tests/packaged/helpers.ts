@@ -46,6 +46,9 @@ export interface CliResult {
   stderr: string;
 }
 
+// Node's own default cache directory: every spawn after the first skips stripping and compiling the sources again.
+const COMPILE_CACHE = path.join(os.tmpdir(), 'node-compile-cache');
+
 export function cli(
   args: string[],
   env: NodeJS.ProcessEnv,
@@ -53,7 +56,7 @@ export function cli(
 ): Promise<CliResult> {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [BIN, ...args], {
-      env,
+      env: { NODE_COMPILE_CACHE: COMPILE_CACHE, ...env },
       cwd: options.cwd ?? PACKAGE_ROOT,
     });
     let stdout = '';
