@@ -66,6 +66,7 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {
+    "@nocobase/acp-bridge": "workspace:^",
     "@nocobase/agent-protocol": "workspace:*",
     "@nocobase/cli-envelope": "workspace:^",
     "@oclif/core": "catalog:",

@@ -86,7 +86,7 @@ describe('app client routes', () => {
     ).toEqual([]);
   });
 
-  it('orders My tasks, Inbox, Dashboard and My follow-ups without a Home entry, followed by the existing sections', () => {
+  it('orders My tasks, My agents, Inbox, Dashboard and My follow-ups without a Home entry, followed by the existing sections', () => {
     const menu = (routes: readonly AppClientRegisteredRoute[]) =>
       routes.flatMap((route) =>
         route.navigation ? [route.navigation.title] : [],
@@ -94,6 +94,7 @@ describe('app client routes', () => {
     const { routes } = resolveRoutes();
     expect(menu(routes)).toEqual([
       'navigation.myIssues',
+      'navigation.agentSessions',
       'navigation.inbox',
       'navigation.dashboard',
       'navigation.followUps',
@@ -191,6 +192,9 @@ describe('app client routes', () => {
       // Legacy `/pm` links open the chat panel; the inbox needs no page grant.
       { name: 'chat-pm', authorizedAs: null },
       { name: 'chat-pm-conversation', authorizedAs: null },
+      // My agents: a session is its owner's alone, which its API checks.
+      { name: 'agent-sessions', authorizedAs: null },
+      { name: 'agent-sessions-session', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
       // The dashboard, behind the reports grant its figures' API checks too.
       { name: 'dashboard', authorizedAs: 'reports' },
