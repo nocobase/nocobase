@@ -7,6 +7,8 @@
  * | ------ | ------------------------------------------ | ----------------------- | ----------------- |
  * | GET    | `followUps`                                |                         | `FollowUpsView`   |
  * | PUT    | `followUps/following`                      | `{ issueIds }`          | `FollowingView`   |
+ * | POST   | `followUps/issues/:issueId/follow`         |                         | `FollowingView`   |
+ * | POST   | `followUps/issues/:issueId/unfollow`       |                         | `FollowingView`   |
  * | POST   | `followUps/issues/:issueId/markSeen`       |                         | (204)             |
  *
  * What a person follows and when they last looked at each issue are their own preferences (the users plugin's

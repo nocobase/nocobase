@@ -40,6 +40,7 @@
  * network.
  */
 
+import { jsonObject } from './values.js';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { studioError } from '../http/errors.js';
 import { randomUUID } from 'node:crypto';
@@ -283,6 +284,39 @@ export function createAgentWork(deps: {
       },
       agentsTx(tx),
     );
+    // Mark only the creating input, in this transaction. An appended mention must never adopt an existing run.
+    if (
+      result.outcome === 'created' &&
+      request.agentId !== PROJECT_MANAGER_ID &&
+      request.triggerType === 'mention' &&
+      request.input.actor.kind === 'agent' &&
+      request.input.actor.id === PROJECT_MANAGER_ID
+    ) {
+      const inputs = tx.conn.repository<{
+        id: string;
+        runId: string;
+        payload: unknown;
+      }>('agRunInputs');
+      const input = await inputs.findOne({
+        filter: { id: result.inputId, runId: result.runId },
+      });
+      if (!input) throw new Error('The creating input is missing.');
+      const payload = jsonObject(input.payload);
+      await inputs.updateMany({
+        filter: { id: result.inputId, runId: result.runId },
+        values: {
+          payload: {
+            ...payload,
+            managerDelegation: {
+              commentId: payload.commentId,
+              actorUserId: request.actorUserId,
+              delegatedBy: PROJECT_MANAGER_ID,
+              inputId: result.inputId,
+            },
+          },
+        },
+      });
+    }
     // A request waiting for confirmation has no run. Studio does not yet supply a responsible person;
     // keep this guard until execution request handling is integrated.
     if (result.runId === null) {
@@ -427,7 +461,22 @@ export function createAgentWork(deps: {
     if (tx.rehearsal) return true;
     const id = commentGuardId(issue.id);
     const token = randomUUID();
-    const ruleConfig = { ...held, limit };
+    const existing = await commentGuards(tx.conn).findOne({ filter: { id } });
+    const previous = existing?.pendingToken
+      ? (existing.ruleConfig as unknown as HeldCommentWake | null)
+      : null;
+    const ruleConfig = {
+      ...held,
+      limit,
+      ...(previous
+        ? {
+            pendingWakes: [
+              ...(previous.pendingWakes ?? [previous]),
+              { ...held, limit },
+            ],
+          }
+        : {}),
+    };
     await commentGuards(tx.conn).upsertOne({
       filter: { id },
       create: {
@@ -479,7 +528,7 @@ export function createAgentWork(deps: {
         fromStatus: null,
         ruleConfig: null,
       },
-      update: { resetAt, pendingToken: null },
+      update: { resetAt },
     });
   }
 
@@ -970,8 +1019,13 @@ export function createAgentWork(deps: {
     },
 
     // A person's continuation is not counted, as a person's stage move is not.
-    resumeComment(tx, issue, held, userId, continuedFrom) {
-      return wakeComment(tx, issue, held, userId, { continuedFrom });
+    async resumeComment(tx, issue, held, userId, continuedFrom) {
+      const attempts: RunAttempt[] = [];
+      for (const input of held.pendingWakes ?? [held])
+        attempts.push(
+          ...(await wakeComment(tx, issue, input, userId, { continuedFrom })),
+        );
+      return attempts;
     },
 
     async onOwnerChanged(tx, { issue, from, to, actor }) {

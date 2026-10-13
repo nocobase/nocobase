@@ -3,12 +3,13 @@ import { useLang } from '@rspress/core/runtime';
 import chinese from './markup.json';
 import english from './markup.en.json';
 import { initializeHomepage } from './interactions.mjs';
+import { useLanguageMenu } from '../LanguageMenu';
 import './index.scss';
 
 /** Shared homepage layout with language-specific content. */
 export function FullHome() {
   const lang = useLang();
-  const markup = lang === 'cn' ? chinese : english;
+  const markup = useLanguageMenu(lang === 'cn' ? chinese : english);
   const root = useRef<HTMLDivElement>(null);
   // Keep React from replacing DOM initialized by the effect on parent rerenders.
   const html = useMemo(() => ({ __html: markup }), [markup]);

@@ -4,6 +4,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 import { gitEnUS } from '../git/locales.js';
 import { knowledgeEnUS } from '../knowledge/locales.js';
 import { issuesEnUS } from '../issues/locales.js';
+import { issueLiveEnUS } from '../issues/live/locales.js';
 import { projectPageEnUS } from '../projects/locales.js';
 import { ciSetupEnUS } from '../releases/ci-setup/locales.js';
 import { previewsEnUS, deploysEnUS } from '../previews/locales.js';
@@ -17,6 +18,20 @@ const enUS = {
     'Your password has been reset. Sign in with your new password.',
   'auth.requestNewResetLink': 'Request a new reset link',
 
+  'issueRuns.selection.preferredQueued': 'First choice queued, using fallback',
+  'issueRuns.selection.preferredUnavailable':
+    'First choice unavailable, using fallback',
+  'projectManager.settingsPage.delegationTimeout':
+    'Delegated step queue timeout (seconds)',
+  'projectManager.settingsPage.delegationTimeoutHint':
+    'Default 600 seconds. Withdraw only unclaimed manager delegations and reply in their dispatch thread. At the comment run limit, retain the input for manual continuation.',
+  'projectManager.settingsPage.delegationTimeoutInvalid':
+    'Enter a whole number from 1 to 86400.',
+  'projectManager.settingsPage.fallbackAfter': 'Fallback delay (seconds)',
+  'projectManager.settingsPage.fallbackAfterHint':
+    'Wait 1–3600 seconds before an idle fallback may take queued work. If no compatible runner can take the first choice, use the fallback immediately.',
+  'projectManager.settingsPage.fallbackAfterInvalid':
+    'Enter a whole number from 1 to 3600.',
   'ownerHandoff.title': 'Owner handoff',
   'ownerHandoff.accept': 'Take over',
   'ownerHandoff.claim': 'Claim',
@@ -1092,6 +1107,7 @@ const enUS = {
     toolNetwork: 'Tool network',
     toolProcess: 'Tool crashed',
     contextOverflow: 'Context overflow',
+    delegatedQueueTimeout: 'Delegation queue timeout; withdrawn',
     queuedExpired: 'Queue expired',
     modelUnavailable: 'Model unavailable',
     stepLimit: 'Too many tool calls',
@@ -1363,6 +1379,7 @@ const enUS = {
   knowledge: knowledgeEnUS,
   issuesPage: issuesEnUS,
   followUps: followUpsEnUS,
+  issueLive: issueLiveEnUS,
   projectPage: projectPageEnUS,
   // A repository's "Deployment" (`client/releases/ci-setup`).
   ciSetup: ciSetupEnUS,
@@ -1398,7 +1415,7 @@ const enUS = {
       noFallback: 'No fallback',
       choose: 'Choose an agent',
       agentsHint:
-        'The fallback is used when no runner can run the first choice. The project manager writes no code, and its runner does not check out the repository.',
+        'An idle fallback is used after the queue delay, or immediately when no compatible runner can run the first choice. The project manager writes no code, and its runner does not check out the repository.',
       noChoices: 'No agent is enabled yet. Enable one on the Agent page first.',
       principles: 'Allocation principles',
       restore: 'Restore built-in',
@@ -1421,6 +1438,34 @@ const enUS = {
   },
   issueStart: { title: 'Start now?', later: "Don't start now", start: 'Start' },
   issueProgress: {
+    firstChoice: 'First choice',
+    fallback: 'Fallback',
+    managerModelWait: '{{choice}} {{model}}: {{reason}}{{runners}}',
+    waitingForContinuation:
+      'Waiting for manual continuation: the automatic reply was delivered; the comment run limit was reached and the pending input is retained.',
+    managerWaiting: 'Project manager waiting for a runner: {{entries}}',
+    fallbackIn: 'Fallback eligible in {{seconds}} seconds',
+    fallbackReady: 'Waiting for an idle runner for either choice',
+    runnerLoad:
+      '{{name}}: slots {{used}}/{{limit}}, {{tool}} {{toolUsed}}/{{toolLimit}}, reported total free {{totalFree}}, tool free {{free}}',
+    workerChoice: 'Model',
+    workerWaiting: '{{agent}} waiting for a runner: {{entries}}',
+    modelWait: {
+      toolNotInstalled: 'tool not installed',
+      toolUnavailable: 'tool not signed in, disabled, or model unavailable',
+      noSharedRunner: 'only other people’s personal runners are online',
+      unknown: 'workload eligibility is not established',
+
+      ready: 'can claim now',
+      busy: 'compatible runners are busy',
+      incompatible: 'runner incompatible; upgrade required',
+      offline: 'no online runner',
+      restricted:
+        'identity, policy or payload requirements exclude the runners',
+      concurrencyFull: 'agent concurrency limit reached',
+      sameWorkActive: 'another run in this thread is active',
+      delayed: 'scheduled delay or retry backoff',
+    },
     waiting: {
       waitingOwner: 'Waiting for {{owner}} to take over',
       noOwner: 'Waiting for a valid issue owner',

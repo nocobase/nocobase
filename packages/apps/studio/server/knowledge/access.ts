@@ -12,7 +12,7 @@
  *
  * A project's space inherits the system's: whoever reads it reads the system documents too, each space checked on its
  * own. An agent never edits or decides (the plugin holds to that too): it reads and proposes within the person who
- * woke it, and only with the actions its agent is configured with (the command gate checks those).
+ * woke it, within the existing command scope (the command gate checks it).
  *
  * The decision cards of a proposal go to the project's lead when they may edit there, and otherwise, as for the
  * system space, to the administrators (`decidersOf`, for the inbox).

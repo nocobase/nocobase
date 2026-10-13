@@ -3,7 +3,7 @@
  * (`@nocobase/app-plugin-agents`' run credential); Studio then bounds it the way its commands always were:
  *
  * - its scope (`runKeyScope`): the business actions the command gate allows the run (`commands/permissions.ts`: the
- *   person's, kept to what the agent is configured with, at most the actions agents may be given
+ *   person's, within the actions agents may use
  *   (`../access/action-policy.ts`) and Studio's own (`capabilities.ts`); reading only for a run on an intake request),
  *   so every route that honours a key's
  *   scope honours the run's, and nothing else;

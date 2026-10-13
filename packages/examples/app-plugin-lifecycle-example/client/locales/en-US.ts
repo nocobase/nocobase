@@ -2,6 +2,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
   navigation: {
+    parameters: 'Runtime parameters',
     group: 'Workflow',
     tickets: 'Help desk',
     expenses: 'Expense reports',
@@ -11,6 +12,63 @@ const enUS = {
     purchases: 'Flash sale',
     fulfilments: 'Shipping',
     subscriptions: 'Subscriptions',
+  },
+  parameters: {
+    loading: 'Loading parameters…',
+    title: 'Runtime parameters',
+    description:
+      'Change only code-declared values. Workflow structure, decisions and timeouts stay in code.',
+    ruleExplanation:
+      'All conditions in one group must match. Separate groups are added together. Put alternative users in separate groups.',
+    allConditions: 'Match all these conditions',
+    alsoInclude: 'Also include',
+    selectionType: 'Selection type',
+    reference: 'Reference',
+    remove: 'Remove',
+    addCondition: 'Add condition',
+    addGroup: 'Also include another group',
+    revision: 'Revision {{revision}}',
+    codeDefaults: 'Code defaults',
+    databaseVersion: 'Saved configuration',
+    snapshotEffect:
+      'Snapshot: fixed at first submission; retained after return or withdrawal',
+    liveEffect: 'Live: read again for each execution and retry',
+    yes: 'Yes',
+    no: 'No',
+    invalidObject: 'Enter a valid JSON object.',
+    saved: 'Configuration saved.',
+    conflict:
+      'The revision changed. Your inputs have been preserved; review the current values before retrying.',
+    currentRevision: 'Current saved revision: {{revision}}',
+    keepDraft: 'Keep my inputs and use this revision',
+    save: 'Save values',
+    readOnly: 'You can read these values but cannot change them.',
+    preview: 'Preview candidates for Lin',
+    candidates: 'Candidates',
+    noCandidates: 'No eligible candidates; submission will be refused.',
+    editCurrent: 'Edit current configuration',
+    historyBoundary:
+      'This edits current configuration. Historical facts and existing assigned candidates remain unchanged.',
+    history: 'Actual parameter usage',
+    effectivePreview: 'Effective values for this record now',
+    firstSnapshot: 'First-submission snapshot',
+    notRecorded: 'Not recorded',
+    reviewerDemo: 'Any-candidate review demonstration',
+    candidateBoundary:
+      'The first eligible candidate to decide finishes this review. Snapshot fixes selection conditions, not organization membership. Existing candidate lists stay fixed.',
+    demoWorkflow: 'Code-defined demonstration workflow',
+    snapshotDemo: 'Snapshot reviewer rule',
+    liveDemo: 'Live reviewer rule',
+    createReview: 'Create review as this persona',
+    diagramEntry: 'Optional diagram entry',
+    diagramHint:
+      'Click a bound node or transition to open the shared editor. Unbound entries show their original details. Clicking never executes a transition.',
+    workflow: 'Workflow',
+    types: {
+      department: 'Department',
+      role: 'Role',
+      user: 'Person',
+    },
   },
   invoices: {
     title: 'E-invoicing',
@@ -268,6 +326,7 @@ const enUS = {
     edgeHelp: 'Press Enter or Space to select a transition.',
   },
   diagramStatus: {
+    traversed: 'Traversed',
     end: 'End',
     current: 'Current',
     visited: 'Visited',
@@ -830,6 +889,7 @@ const enUS = {
     },
   },
   states: {
+    review: 'Under review',
     submitting: 'Submitting',
     awaitingIssue: 'Awaiting issue',
     querying: 'Querying',

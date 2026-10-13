@@ -353,3 +353,40 @@ describe('sidebar shell', () => {
     );
   });
 });
+
+it('shows workflow sections as labels with direct links instead of nested disclosure buttons', async () => {
+  const business = {
+    route: { ...page('Business workflows'), componentLoader: undefined },
+    section: true,
+    children: [{ route: page('Ticket workflow'), children: [] }],
+  };
+  const management = {
+    route: { ...page('Workflow management'), componentLoader: undefined },
+    section: true,
+    children: [{ route: page('Definitions'), children: [] }],
+  };
+  const workflow = {
+    route: { ...page('Workflow'), componentLoader: undefined },
+    children: [business, management],
+  };
+  render(shell([workflow], routeKey(business.children[0].route)), {
+    wrapper: I18n,
+  });
+  expect(
+    screen.getByRole('group', { name: 'Business workflows' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole('group', { name: 'Workflow management' }),
+  ).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Ticket workflow' })).toHaveAttribute(
+    'href',
+    '/Ticket workflow',
+  );
+  expect(screen.getByRole('link', { name: 'Definitions' })).toBeVisible();
+  expect(
+    screen.queryByRole('button', { name: 'Business workflows' }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Workflow management' }),
+  ).not.toBeInTheDocument();
+});

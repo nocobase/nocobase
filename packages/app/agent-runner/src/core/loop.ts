@@ -111,6 +111,7 @@ export function runnerVersion(): string {
 
 /** What every runner of this version can do, before adapter features. */
 export const BASE_FEATURES: readonly RunnerFeature[] = [
+  'workspaceKey',
   'input',
   'checkout',
   'directories',

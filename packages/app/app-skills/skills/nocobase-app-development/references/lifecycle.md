@@ -2,6 +2,8 @@
 
 Use `@nocobase/lifecycle` when a business record moves through stages that developers define in source: an expense report, a ticket, a contract, an order, a leave request. The record keeps its state in one of its own fields, every change is a transition declared in a definition, and the work a transition owes outside the database — mail, payments, calls to other systems — runs as effects after the transaction commits. There is no separate process instance, so the state is never kept in two places.
 
+Administrators can adjust code-declared business parameters without editing workflow structure. For configurable approval departments, reviewer choices, thresholds, snapshot/live reads and optional configuration editors, read [configurable lifecycle parameters](lifecycle-parameters.md).
+
 ## Choose it or something else
 
 | The requirement                                                                                   | Use                                                            |
@@ -434,6 +436,8 @@ States, transition, lifecycle and effect names are stored in the database. Addin
 The installed package's README lists its entries; the full guide, design notes and 28 worked recipes are in `packages/libs/lifecycle/docs/` of the NocoBase repository, and `packages/examples/app-plugin-lifecycle-example` and `packages/examples/app-plugin-office-flows-example` are complete working code.
 
 ## Draw an interactive lifecycle diagram
+
+For an optional configuration entry, map the clicked state's or transition's stable name through code-declared parameter bindings and open the same editor used by the settings page or embedded form. A bound entry can expose several groups; unbound entries keep their ordinary details. Read [configurable lifecycle parameters](lifecycle-parameters.md#optional-user-interfaces) for authorization, CAS conflicts and current-versus-historical values.
 
 When a page needs a lifecycle diagram, use the UI Library's `@nocobase/lifecycle-diagram` component (React Flow + ELK) instead of building a canvas or turning Mermaid source into an interactive view. Read `pnpm exec shadcn view @nocobase/lifecycle-diagram-demo`, then install with `yes n | pnpm exec shadcn add @nocobase/lifecycle-diagram` and format the created files. It includes `@nocobase/flow-diagram`, which is also available alone for a generic directed graph. Follow [the UI Library guidance](frontend/references/styling.md#3-use-shadcn) and its [offline catalog](frontend/references/ui-library.md) for discovery and installation.
 

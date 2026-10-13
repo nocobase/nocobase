@@ -4,7 +4,7 @@
  * review rates, run reliability and duration, cost, and the decisions people take), in `meta.message`.
  *
  * Both perform `studio.reports/read` (`REPORTS_READ`): a person holds it with the reports grant, and a run when its
- * agent is configured with it and the person who woke it holds the grant. As on the pages, every run counts for someone
+ * running identity holds the grant. As on the pages, every run counts for someone
  * who may read agents, and otherwise only their own, on issues they see.
  */
 import type { MetricsReport, UsageReport } from '../../shared/reports.js';
@@ -20,9 +20,7 @@ export const REPORTS_READ: string = REPORTS_READ_ACTION;
 export function reportActionsOf(grantsOf: ReaderGrantsOf): ActionSource {
   return async (identity) => {
     if (!(await grantsOf(identity)).reports) return new Set();
-    if (identity.kind === 'user') return new Set([REPORTS_READ]);
-    const configured = new Set(identity.agent?.actions ?? []);
-    return new Set([REPORTS_READ].filter((key) => configured.has(key)));
+    return new Set([REPORTS_READ]);
   };
 }
 

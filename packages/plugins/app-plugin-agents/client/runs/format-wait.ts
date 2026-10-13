@@ -33,6 +33,10 @@ export interface FormatRunWaitOptions {
 /** The reasons that need someone to act (an administrator, an agent's owner) rather than time. */
 export const BLOCKING_RUN_WAIT_REASONS: readonly string[] = [
   'agentArchived',
+  'incompatible',
+  'restricted',
+  'unknown',
+  'toolNotInstalled',
   'noRunnerOnline',
   'runnersOffline',
   'toolUnavailable',
@@ -59,6 +63,7 @@ const NAMES = [
   'limit',
   'used',
   'runners',
+  'reportedFree',
   'detail',
 ] as const;
 
@@ -95,9 +100,18 @@ export function formatRunWait(
           }).format(at);
     } else if (value !== '') values[name] = value as string | number;
   }
-  return t(`runWait.reasons.${wait.reason}`, {
+  const sentence = t(`runWait.reasons.${wait.reason}`, {
     ns,
     ...values,
     defaultValue: t('runWait.unknown', { ns, reason: wait.reason }),
   });
+  const mixed = Array.isArray(wait.params?.blockers)
+    ? (wait.params.blockers as readonly string[])
+        .map((reason) => t(`runWait.reasons.${reason}`, { ns, ...values }))
+        .join('; ')
+    : '';
+  const fullSentence = mixed ? `${sentence}; ${mixed}` : sentence;
+  return wait.reason === 'runnersBusy' && typeof wait.params?.used === 'number'
+    ? `${fullSentence} · ${t('runWait.capacity', { ns, ...values })}`
+    : fullSentence;
 }
