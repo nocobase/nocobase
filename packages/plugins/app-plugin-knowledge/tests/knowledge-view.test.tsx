@@ -13,6 +13,7 @@ import { MemoryRouter, useLocation } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import enUS from '../client/locales/en-US.js';
+import type { KnowledgeDirectorySource } from '../client/hooks/use-directory.js';
 import type {
   KnowledgeAccess,
   KnowledgeDoc,
@@ -144,7 +145,8 @@ function serve(
     const answered = extra(request);
     if (answered !== undefined) return answered;
     if (path === 'knowledge/spaces') return { data: treeOf(docs).spaces };
-    if (path === 'knowledge/proposals') return { data: proposals };
+    if (path === 'knowledge/proposals')
+      return { data: proposals, meta: { total: proposals.length } };
     if (path === 'knowledge/subjects')
       return {
         data: [{ type: 'user', id: 'alice', label: 'Alice', hint: 'a@x' }],
@@ -200,14 +202,22 @@ function Where(): null {
   return null;
 }
 
-function show(entry = '/', embedded = true): void {
+function show(
+  entry = '/',
+  embedded = true,
+  directory?: KnowledgeDirectorySource,
+): void {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   const tree: ReactElement = (
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[entry]}>
-        <KnowledgeView space={space} title={embedded ? false : undefined} />
+        <KnowledgeView
+          space={space}
+          title={embedded ? false : undefined}
+          directory={directory}
+        />
         <Where />
       </MemoryRouter>
     </QueryClientProvider>
@@ -239,6 +249,289 @@ beforeEach(() => {
 });
 
 describe('the knowledge view', () => {
+  it('shows the permission-filtered review total without loading later review pages', async () => {
+    serve([]);
+    const directory: KnowledgeDirectorySource = {
+      summaries: async () => [
+        {
+          space: {
+            ...space,
+            id: null,
+            title: 'Acme',
+            inherited: false,
+            access: MANAGE,
+          },
+          documents: 0,
+          archivedDocuments: 0,
+        },
+      ],
+      search: async () => [],
+      sharedScope: 'system',
+      sharedLabel: 'Shared across projects',
+    };
+    extra = (request) => {
+      if (request.path !== 'knowledge/proposals') return undefined;
+      if (Number(request.query?.page ?? 1) > 1) return new Promise(() => {});
+      const size = Number(request.query?.pageSize ?? 100);
+      return {
+        data: Array.from({ length: size }, (_, index) => ({
+          id: `review-${index}`,
+          scope: 'project',
+          scopeId: 'p1',
+          status: 'pending',
+          canDecide: true,
+        })),
+        meta: { total: 238 },
+      };
+    };
+    show('/', true, directory);
+    await screen.findByText('Pending review · 238');
+    expect(mocks.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: 'knowledge/proposals',
+        query: expect.objectContaining({ decidable: 'true', pageSize: 1 }),
+      }),
+    );
+  });
+  it('pages the global review queue after permission filtering', async () => {
+    serve([]);
+    const directory: KnowledgeDirectorySource = {
+      summaries: async () => [],
+      search: async () => [],
+      sharedScope: 'system',
+      sharedLabel: 'Shared across projects',
+    };
+    extra = ({ path, query }) => {
+      if (path !== 'knowledge/proposals') return undefined;
+      const page = Number(query?.page ?? 1);
+      const pageSize = Number(query?.pageSize ?? 20);
+      return {
+        data: [
+          {
+            id: `p${page}`,
+            kind: 'update',
+            status: 'pending',
+            ...space,
+            docId: `d${page}`,
+            docTitle: `Review page ${page}`,
+            title: null,
+            stale: false,
+            proposer: author,
+            authorizedBy: author,
+            createdAt: '2026-10-02T00:00:00Z',
+            canDecide: true,
+          },
+        ],
+        meta: { page, pageSize, total: 21 },
+      };
+    };
+    show('/?proposals=pending&review=true', true, directory);
+    await screen.findByText('Review page 1');
+    fireEvent.click(screen.getByRole('button', { name: 'Next', exact: true }));
+    await screen.findByText('Review page 2');
+    expect(url.search).toContain('proposalPage=2');
+    expect(mocks.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: 'knowledge/proposals',
+        query: expect.objectContaining({
+          page: 2,
+          pageSize: 20,
+          decidable: 'true',
+        }),
+      }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Next', exact: true }),
+    ).toBeDisabled();
+  });
+  it('keeps many project sections collapsed and fetches only an expanded tree', async () => {
+    serve([]);
+    const directory: KnowledgeDirectorySource = {
+      summaries: async () =>
+        Array.from({ length: 120 }, (_, index) => ({
+          space: {
+            scope: 'project',
+            scopeId: `p${index}`,
+            id: null,
+            title: `Project ${index}`,
+            inherited: false,
+            access: MANAGE,
+          },
+          documents: 0,
+          archivedDocuments: 0,
+        })),
+      search: async () => [],
+      sharedScope: 'system',
+      sharedLabel: 'Shared across projects',
+    };
+    show('/', true, directory);
+    const trigger = await screen.findByRole('button', { name: /^Project 34,/ });
+    expect(
+      mocks.request.mock.calls.some(
+        ([request]) => request.path === 'knowledge/spaces',
+      ),
+    ).toBe(false);
+    fireEvent.click(trigger);
+    await waitFor(() =>
+      expect(
+        mocks.request.mock.calls.filter(
+          ([request]) => request.path === 'knowledge/spaces',
+        ),
+      ).toHaveLength(1),
+    );
+    expect(mocks.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: 'knowledge/spaces',
+        query: { scope: 'project', scopeId: 'p34' },
+      }),
+    );
+  });
+  it('proposes an article in the explicitly chosen space without granting folder creation', async () => {
+    serve([]);
+    const rights = { read: true, propose: true, edit: false, manage: false };
+    const directory: KnowledgeDirectorySource = {
+      summaries: async () => [
+        {
+          space: {
+            ...space,
+            id: null,
+            title: 'Acme',
+            inherited: false,
+            access: rights,
+          },
+          documents: 0,
+          archivedDocuments: 0,
+        },
+      ],
+      search: async () => [],
+      sharedScope: 'system',
+      sharedLabel: 'Shared across projects',
+    };
+    extra = (request) =>
+      request.path === 'knowledge/proposals' && request.method === 'POST'
+        ? { data: { id: 'proposed' } }
+        : undefined;
+    show('/', true, directory);
+    await press(
+      await screen.findByRole('button', {
+        name: 'Choose a project or system knowledge to create in',
+      }),
+    );
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'Acme', exact: true }),
+    );
+    await press(
+      await screen.findByRole('button', { name: 'New', exact: true }),
+    );
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'New article' }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).queryByRole('tab', { name: 'Folder' }),
+    ).not.toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText('Title'), {
+      target: { value: 'Proposed article' },
+    });
+    fireEvent.change(within(dialog).getByLabelText(/Reason/), {
+      target: { value: 'A useful reference' },
+    });
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Submit proposal' }),
+    );
+    await waitFor(() =>
+      expect(mocks.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'POST',
+          path: 'knowledge/proposals',
+          json: expect.objectContaining({
+            kind: 'create',
+            scope: 'project',
+            scopeId: 'p1',
+            title: 'Proposed article',
+            reason: 'A useful reference',
+          }),
+        }),
+      ),
+    );
+    expect(
+      mocks.request.mock.calls.some(
+        ([request]) =>
+          request.method === 'POST' && request.path === 'knowledge/docs',
+      ),
+    ).toBe(false);
+  });
+  it('keeps directory trees lazy and searches unopened spaces independently', async () => {
+    const doc = summary('d1', 'Release flow');
+    serve([doc]);
+    const search = vi.fn().mockResolvedValue([]);
+    const directory: KnowledgeDirectorySource = {
+      summaries: async () =>
+        treeOf([doc]).spaces.map((entry) => ({
+          space: { ...entry.space, inherited: false },
+          documents: entry.docs.length,
+          archivedDocuments: 0,
+        })),
+      search,
+      sharedScope: 'system',
+      sharedLabel: 'Shared across projects',
+    };
+    show('/', true, directory);
+    await screen.findByText('1 document');
+    expect(
+      mocks.request.mock.calls.some(
+        ([request]) => request.path === 'knowledge/spaces',
+      ),
+    ).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: /Search knowledge/ }));
+    fireEvent.change(await screen.findByRole('combobox'), {
+      target: { value: 'unopened' },
+    });
+    await waitFor(() =>
+      expect(search).toHaveBeenCalledWith('unopened', expect.any(AbortSignal)),
+    );
+    expect(
+      mocks.request.mock.calls.some(
+        ([request]) => request.path === 'knowledge/spaces',
+      ),
+    ).toBe(false);
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Escape' });
+  });
+
+  it('expands one project by keyboard and gives creation an explicit target', async () => {
+    const doc = summary('d1', 'Release flow');
+    serve([doc]);
+    const directory: KnowledgeDirectorySource = {
+      summaries: async () =>
+        treeOf([doc]).spaces.map((entry) => ({
+          space: { ...entry.space, inherited: false },
+          documents: entry.docs.length,
+          archivedDocuments: 0,
+        })),
+      search: async () => [],
+      sharedScope: 'system',
+      sharedLabel: 'Shared across projects',
+    };
+    show('/', true, directory);
+    const group = await screen.findByTestId('knowledge-space-project');
+    const trigger = within(group).getByRole('button', {
+      name: /Acme/,
+      expanded: false,
+    });
+    trigger.focus();
+    await userEvent.keyboard('{Enter}');
+    await within(group).findByText('Release flow');
+    fireEvent.click(within(group).getByRole('button', { name: /Open/ }));
+    await press(
+      await screen.findByRole('button', { name: 'New', exact: true }),
+    );
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'New article' }),
+    );
+    expect(
+      within(await screen.findByRole('dialog')).getByText('Create in Acme'),
+    ).toBeInTheDocument();
+  });
   it('opens a document from the tree, its title shown once', async () => {
     serve([summary('d1', 'Release flow')]);
     show();
@@ -350,7 +643,7 @@ describe('the knowledge view', () => {
     expect(url.search).toBe('?proposals=pending');
     const list = await screen.findByTestId('knowledge-proposals');
     expect(
-      within(list).getByText('Scout on behalf of Ada', { exact: false }),
+      await within(list).findByText('Scout on behalf of Ada', { exact: false }),
     ).toBeInTheDocument();
   });
 

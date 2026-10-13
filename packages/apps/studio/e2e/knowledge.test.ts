@@ -20,14 +20,25 @@ async function studioProject(api: Api): Promise<Project> {
 }
 
 test.describe('knowledge', () => {
-  test('the system knowledge shows its documents', async ({ page }) => {
+  test.beforeEach(async ({ context }) => {
+    await context.addInitScript(
+      "localStorage.setItem('nocobase.locale', 'zh-CN')",
+    );
+  });
+  test('the unified directory includes projects and shared system documents', async ({
+    page,
+  }) => {
     await open(page, '/knowledge');
     await expect(
-      page.getByRole('heading', { name: '系统知识', level: 1 }),
+      page.getByRole('heading', { name: '知识库', level: 1 }),
     ).toBeVisible();
-    const tree = page
-      .getByRole('navigation', { name: '文档' })
-      .getByRole('tree');
+    await expect(
+      page.getByRole('button', { name: /Studio Platform/ }).first(),
+    ).toBeVisible();
+    await expect(page.getByText('跨项目共享', { exact: true })).toBeVisible();
+    const system = page.getByRole('region', { name: '系统知识', exact: true });
+    await system.getByRole('button', { name: /系统知识/ }).click();
+    const tree = system.getByRole('tree');
     await tree.getByRole('button', { name: 'Team conventions' }).click();
     await expect(page).toHaveURL(/doc=/);
     await expect(
