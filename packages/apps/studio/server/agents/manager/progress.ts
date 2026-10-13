@@ -26,6 +26,7 @@ import {
   validIssueOwner,
 } from '../execution-identity.js';
 import { userName } from '../work.js';
+import { ownerHandoffWaiting } from '../../issues/owner-handoff.js';
 
 /** How much of a step or a question the line carries. */
 const LINE_LENGTH = 160;
@@ -131,6 +132,18 @@ export async function issueProgress(
     handOver: managed && open && managerRuns.length === 0,
   };
 
+  if (await ownerHandoffWaiting(conn, issue))
+    return {
+      ...base,
+      handOver: false,
+      waiting: {
+        reason: 'waitingOwner',
+        owner: {
+          id: issue.ownerUserId,
+          name: await userName(conn, issue.ownerUserId),
+        },
+      },
+    };
   const runs = await deps.agents.runs.openOn(conn, subject);
   const held = runs.filter((run) => HELD.has(run.status));
   const queued = runs.filter((run) => run.status === 'queued');

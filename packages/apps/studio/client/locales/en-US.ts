@@ -27,6 +27,32 @@ const enUS = {
     'Wait 1–3600 seconds before an idle fallback may take queued work. If no compatible runner can take the first choice, use the fallback immediately.',
   'projectManager.settingsPage.fallbackAfterInvalid':
     'Enter a whole number from 1 to 3600.',
+  'ownerHandoff.title': 'Owner handoff',
+  'ownerHandoff.accept': 'Take over',
+  'ownerHandoff.claim': 'Claim',
+  'ownerHandoff.reject': 'Reject',
+  'ownerHandoff.accepted': 'Handoff accepted',
+  'ownerHandoff.rejected': 'Handoff rejected; agent work remains paused',
+  'ownerHandoff.rejectedWaiting':
+    'Handoff rejected. Waiting for a new assignment or a claim by the owner.',
+  'ownerHandoff.stale':
+    'This handoff is no longer awaiting a decision. Refresh the issue.',
+  'ownerHandoff.failed':
+    'Could not decide this handoff. Check your permission and refresh the issue.',
+  'ownerHandoff.loadFailed': 'Could not load the owner handoff.',
+  'activity.actions.ownerTransferred': 'transferred responsibility',
+  'activity.actions.ownerAccepted': 'accepted responsibility',
+  'activity.actions.ownerRejected': 'rejected the handoff',
+  'activity.actions.waitingOwner':
+    'skipped agent work: waiting for the new owner to take over',
+  'inbox.types.owner_handoff': 'Owner handoff',
+  'inbox.types.owner_handoff_rejected': 'Owner handoff rejected',
+  'inbox.text.owner_handoff': 'Take over {{identifier}}',
+  'inbox.text.owner_handoff_rejected': 'Owner handoff rejected: {{identifier}}',
+  'inbox.body.owner_handoff':
+    'Accept or reject this handoff. Agent work is paused until the new owner accepts.',
+  'inbox.body.owner_handoff_rejected':
+    'The new owner declined. The owner stays assigned and agent work remains paused.',
   'issueRuns.model': 'Model: {{model}}',
   'issueRuns.configuredModel': 'Configured model: {{model}}',
   'issueRuns.modelUnknown': 'Model not reported',
@@ -1098,6 +1124,7 @@ const enUS = {
       comment: 'Comment',
       statusChange: 'Status change',
       ownerChanged: 'Owner change',
+      ownerAccepted: 'Owner accepted',
       projectChanged: 'Moved to another project',
       unblocked: 'Unblocked',
       subtasksFinished: 'Sub-issues done',
@@ -1434,6 +1461,7 @@ const enUS = {
       delayed: 'scheduled delay or retry backoff',
     },
     waiting: {
+      waitingOwner: 'Waiting for {{owner}} to take over',
       noOwner: 'Waiting for a valid issue owner',
       notConfigured:
         '{{agent}} waits: no preferred or fallback model is configured',

@@ -98,6 +98,12 @@ import { commentRunNoticeRule } from './comment-run-limit.js';
 import { delegationTimeout } from './delegated-queue.js';
 import { stageRunReport, reportCommentRuns } from './run-report.js';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
+import {
+  OWNER_HANDOFF_NOTICE,
+  ownerHandoffNoticeRule,
+  settleOwnerHandoffNotice,
+  type HandoffAnnouncement,
+} from '../issues/owner-handoff-notices.js';
 
 export interface StudioAgentsDeps {
   readonly agents: Agents;
@@ -157,11 +163,11 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
   const { agents } = deps;
   const onError =
     deps.onError ?? ((message, error) => console.error(message, error));
-  const work = createAgentWork({ agents, projects: deps.projects });
   const askerOf = createAskerLookup(agents);
   const permissions = createPermissionSource(deps.access, askerOf);
   const viewerOf = (userId: string) =>
     permissions.viewerOf({ kind: 'user', userId, displayName: userId });
+  const work = createAgentWork({ agents, projects: deps.projects, viewerOf });
   const direct = createDirectWrites({ agents, projects: deps.projects });
   const principal = createRunPrincipal({
     askerOf,
@@ -177,6 +183,14 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
     inbox,
   });
   const releases: (() => void)[] = [
+    deps.projects().events.on('work.announced', async (event) => {
+      const port = deps.inboxPort?.();
+      if (port && event.kind === OWNER_HANDOFF_NOTICE)
+        await settleOwnerHandoffNotice(
+          port,
+          event.payload as HandoffAnnouncement,
+        );
+    }),
     deps.kinds.add(createAgentKind({ agents, work })),
     agents.subjects.register({
       ...issueBinding(
@@ -310,6 +324,7 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
       deps.noticeRules.add(runFailedRule(agents, deps.projects)),
       deps.noticeRules.add(agentBlockedRule(deps.projects, agents)),
       deps.noticeRules.add(commentRunNoticeRule()),
+      deps.noticeRules.add(ownerHandoffNoticeRule()),
     );
   // The project manager runs with the tool and model of the agents it names: one of them changing changes it.
   const manager = deps.manager;

@@ -56,6 +56,7 @@ declare module './events.js' {
  * principals' comments started as many runs on the issue as the kind allows.
  */
 export type RunAttemptSkip =
+  | 'waitingOwner'
   | 'deferred'
   | 'limited'
   | 'denied'
@@ -96,6 +97,10 @@ export interface WorkWithdrawal {
  * that transaction is a rehearsal (`tx.rehearsal`), it only answers what it would start.
  */
 export interface IssueWorkHandler {
+  /** Receives comments even when the executor was cleared, for issue-wide pause policies. */
+  readonly observesComments?: boolean;
+  /** Receives trusted owner claims even when the executor is cleared. */
+  readonly observesOwnerClaims?: boolean;
   /** A new issue, or an update (including a status moved by a status event). */
   onIssueChanged(tx: Tx, change: IssueChange): Promise<readonly RunAttempt[]>;
   /**
@@ -199,6 +204,7 @@ const blockerRefs = (blockers: readonly Blocker[]) =>
 
 /** The skips recorded on the issue's activity. */
 const RECORDED_SKIPS: ReadonlySet<string> = new Set([
+  'waitingOwner',
   'blocked',
   'dormant',
   'limited',
@@ -264,12 +270,22 @@ export function kindTriggers(
       for (const [, work] of handlersOf(kinds, [
         before?.executor?.type,
         after.executor?.type,
+        ...(change.ownerClaimed
+          ? kinds
+              .list()
+              .filter((kind) => kind.work?.observesOwnerClaims)
+              .map((kind) => kind.key)
+          : []),
       ]))
         await report(tx, after, work.onIssueChanged(tx, change));
     },
 
     async onCommentCreated(tx, change) {
       const concerned = handlersOf(kinds, [
+        ...kinds
+          .list()
+          .filter((kind) => kind.work?.observesComments)
+          .map((kind) => kind.key),
         change.issue.executor?.type,
         change.parent?.authorType,
         ...change.mentions.map((ref) => ref.kind),

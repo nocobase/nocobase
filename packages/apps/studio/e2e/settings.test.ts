@@ -1,7 +1,7 @@
 import type { APIRequestContext, Page } from '@playwright/test';
 
 import {
-  atHome,
+  atInbox,
   expect,
   open,
   server,
@@ -45,12 +45,12 @@ test.describe('settings', () => {
         section.getByRole('heading', { name, level: 1 }),
       ).toBeVisible();
     }
-    // Opened directly, the settings' Back leads home.
+    // Opened directly, the settings' Back leads to the default inbox.
     await page
       .getByRole('navigation', { name: '设置导航' })
       .getByRole('link', { name: '返回' })
       .click();
-    await expect(page).toHaveURL(atHome());
+    await expect(page).toHaveURL(atInbox());
   });
 
   test('a member is given the admin role and has it taken away again', async ({

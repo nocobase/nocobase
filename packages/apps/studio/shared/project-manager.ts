@@ -113,6 +113,7 @@ export interface IssueProgress {
   };
   readonly waiting?: {
     readonly reason:
+      | 'waitingOwner'
       | 'noOwner'
       | 'notConfigured'
       | 'noRunner'
