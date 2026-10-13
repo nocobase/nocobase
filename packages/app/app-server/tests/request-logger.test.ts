@@ -13,33 +13,6 @@ import type { Logging } from '@nocobase/logging';
 import type { AppPluginApplication } from '../src/plugins/index.js';
 
 describe('requestLogger', () => {
-  it.each([
-    '/api/auth/reset-password/private-token?token=private-token',
-    '/api/other?token=private-token',
-  ])(
-    'redacts reset secrets including Referer on unrelated APIs: %s',
-    async (path) => {
-      const output = createMemoryDestination();
-      const router = new Hono();
-      router.use(
-        '*',
-        requestLogger({ logger: createLogger({ level: 'debug' }, output) }),
-      );
-      router.get('*', () => {
-        throw new Error('private-token synthetic@example.test');
-      });
-      await router.request(path, {
-        headers: {
-          referer: 'http://localhost/main/reset-password?token=private-token',
-        },
-      });
-      const records = JSON.stringify(output.records());
-      expect(records).not.toContain('private-token');
-      expect(records).not.toContain('synthetic@example.test');
-      expect(records).toContain('[redacted]');
-    },
-  );
-
   it('logs only API requests in the application middleware', async () => {
     const output = createMemoryDestination();
     const router = new Hono();

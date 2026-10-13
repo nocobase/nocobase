@@ -42,8 +42,7 @@ export function requestLogger(
     const startedAt = Date.now();
     const app = options.app;
     const method = context.req.method;
-    const sensitive = passwordResetRequest(context);
-    const path = redactResetPath(context.req.path);
+    const path = context.req.path;
 
     logger.debug(
       {
@@ -51,7 +50,7 @@ export function requestLogger(
         req: {
           method,
           path,
-          query: sensitive ? {} : context.req.query(),
+          query: context.req.query(),
           headers: selectHeaders(
             context,
             options.requestHeaders ?? defaultRequestHeaders,
@@ -135,17 +134,16 @@ function completionBindings(
   error?: unknown,
   requestHeaders: readonly string[] = defaultRequestHeaders,
 ): Record<string, unknown> {
-  const sensitive = passwordResetRequest(context);
   return {
     ...(app ? { app } : {}),
     req: {
       method,
       path,
       route: context.req.routePath,
-      params: sensitive ? {} : context.req.param(),
+      params: context.req.param(),
       ...(status >= 400
         ? {
-            query: sensitive ? {} : context.req.query(),
+            query: context.req.query(),
             headers: selectHeaders(context, requestHeaders),
           }
         : {}),
@@ -155,13 +153,7 @@ function completionBindings(
       contentLength: responseContentLength(context),
     },
     durationMs: Date.now() - startedAt,
-    ...(error === undefined
-      ? {}
-      : {
-          err: sensitive
-            ? { type: 'PasswordResetRequestError' }
-            : serializeError(error),
-        }),
+    ...(error === undefined ? {} : { err: serializeError(error) }),
   };
 }
 
@@ -195,28 +187,9 @@ function selectHeaders(
   const headers: Record<string, string> = {};
   for (const name of names) {
     const value = context.req.header(name);
-    if (value !== undefined)
-      headers[name.toLowerCase()] =
-        name.toLowerCase() === 'referer' && resetPath(value)
-          ? '[redacted]'
-          : value;
+    if (value !== undefined) headers[name.toLowerCase()] = value;
   }
   return headers;
-}
-
-function resetPath(value: string): boolean {
-  return /\/(?:request-password-reset|reset-password)(?:[/?#]|$)/u.test(value);
-}
-
-function passwordResetRequest(context: Context): boolean {
-  return (
-    resetPath(context.req.path) ||
-    resetPath(context.req.header('referer') ?? '')
-  );
-}
-
-function redactResetPath(path: string): string {
-  return path.replace(/(\/reset-password)\/[^/]+/gu, '$1/[redacted]');
 }
 
 function responseContentLength(context: Context): number | undefined {
