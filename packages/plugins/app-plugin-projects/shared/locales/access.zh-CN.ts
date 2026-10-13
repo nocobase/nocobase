@@ -135,7 +135,6 @@ const accessZhCN: AccessLocale = {
       pm: {
         general: '常规',
         labels: '标签',
-        workflows: '流程模板',
         members: '成员',
       },
     },
@@ -152,7 +151,7 @@ const accessZhCN: AccessLocale = {
       },
       settings: {
         title: '项目设置',
-        description: '常规设置、标签和流程模板。',
+        description: '常规设置和标签。',
       },
     },
     actions: {

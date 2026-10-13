@@ -90,14 +90,12 @@ async function workedIssue(): Promise<{
   const issue = await h.projects.issues.create(h.viewer('alice'), {
     title: 'Faster lists',
     projectId,
+    statusKey: 'in_progress',
+    executor: null,
   });
-  const current = await h.projects.issueQueries.detail(
-    h.viewer('alice'),
-    issue.id,
-  );
-  await h.projects.issues.update(h.viewer('alice'), issue.id, {
-    revision: current.revision,
-    executor: { type: 'agent', id: coder },
+  // A step alice hands the agent.
+  await h.projects.comments.create(h.viewer('alice'), issue.id, {
+    content: `[@Coder](mention://agent/${coder}) make the lists faster`,
   });
   const payload = await h.claimOne();
   const runId = payload.run.id as string;
@@ -216,7 +214,6 @@ describe('reports in the CLI', () => {
         },
         trust: {
           reviewPassRate: 0.75,
-          approvalApproveRate: null,
           reworkRate: 0.25,
         },
         reliability: {
@@ -257,7 +254,7 @@ describe('reports in the CLI', () => {
         'Metrics 2026-09-01 to 2026-09-30',
         'Adoption: 20 active days in 4 weeks, 5 people, 30 issues and 90 comments created.',
         'Delivered: 12 issues, 6 by agents (AI share 50%).',
-        'Review: 75% passed, 25% sent back; approvals n/a approved.',
+        'Review: 75% passed, 25% sent back.',
         'Runs: 10 started, 8 completed, 2 failed, 0 lost; median wait 2s, median run 10m.',
         'Cost: 1.50 USD (1000 input and 500 output tokens), 0.13 USD per delivered issue.',
         'Decisions: 4 asked, 3 decided (median 2.0h), 1 open.',
@@ -312,7 +309,7 @@ describe("an issue's runs in the CLI", () => {
         id: runId,
         agent: 'Coder',
         status: 'running',
-        trigger: 'assigned',
+        trigger: 'mention',
       }),
     ]);
 
@@ -545,7 +542,7 @@ describe('who is asking', () => {
       '- Open work: owns 1 open issues (0 in progress), executes 0; 1 decisions wait on them in their inbox.',
     );
     expect(run.system).toContain(
-      `  - ${mine.identifier} [todo] Write the release notes`,
+      `  - ${mine.identifier} [backlog] Write the release notes`,
     );
   });
 
@@ -554,14 +551,12 @@ describe('who is asking', () => {
     const issue = await h.projects.issues.create(h.viewer('alice'), {
       title: 'Faster lists',
       projectId,
+      statusKey: 'in_progress',
+      executor: null,
     });
-    const current = await h.projects.issueQueries.detail(
-      h.viewer('alice'),
-      issue.id,
-    );
-    await h.projects.issues.update(h.viewer('alice'), issue.id, {
-      revision: current.revision,
-      executor: { type: 'agent', id: coder },
+    // A step alice hands the agent.
+    await h.projects.comments.create(h.viewer('alice'), issue.id, {
+      content: `[@Coder](mention://agent/${coder}) make the lists faster`,
     });
     const payload = await h.claimOne();
     expect(payload.prompt.system).not.toContain('## Who is asking');

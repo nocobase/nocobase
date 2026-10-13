@@ -1,13 +1,13 @@
 /**
  * Stands in for a runner, so that browser tests reach states only an agent's run can produce, without starting a real
- * runner or a coding agent: it registers through the runner protocol (`@nocobase/agent-protocol`), claims the run an
- * issue's agent was woken for, and calls the endpoints behind the `nb-studio` CLI with that run's token, as an agent would.
+ * runner or a coding agent: it registers through the runner protocol (`@nocobase/agent-protocol`), reporting Claude Code
+ * with a model of its own, so the agent discovered from that report (`agent()`, enabled here as an administrator would)
+ * is one no other runner takes. A person's mention wakes that agent on an issue (`wake`); the fake runner claims the run
+ * and calls the endpoints behind the `nb-studio` CLI with that run's token, as an agent would.
  */
-import type { WorkflowDefinition } from '@nocobase/app-plugin-projects/shared/workflows';
 import type { RunEvent } from '@nocobase/agent-protocol';
-import type { Page } from '@playwright/test';
 
-import { Api, expect } from './fixtures.ts';
+import type { Api } from './fixtures.ts';
 
 /** `PROTOCOL_VERSION` and `HEADERS` of `@nocobase/agent-protocol` (`packages/libs/agent-protocol/src/version.ts`). */
 const PROTOCOL_VERSION = 5;
@@ -29,45 +29,32 @@ export interface Issue {
   title: string;
   statusKey: string;
   revision: number;
-  /** The status change waiting for approval, if any. */
-  pendingApproval?: { id: string } | null;
   executor?: { type: string; id: string } | null;
 }
 
-export const DESIGN_PROPOSAL = [
-  '## 需求理解',
-  '导出大表时浏览器卡顿。',
-  '',
-  '## 方案',
-  '改为流式导出，并显示进度。',
-  '',
-  '## 影响范围',
-  '导出接口与导出按钮。',
-  '',
-  '## 风险与待定',
-  '旧浏览器不支持流式下载。',
-  '',
-  '## 验证计划',
-  '10 万行导出不超过 10 秒。',
-].join('\n');
-
-interface Workflow {
+interface RunnerAgent {
   readonly id: string;
-  readonly isDefault: boolean;
+  readonly name: string;
+  readonly tool: string | null;
+  readonly model: string | null;
+  readonly status: string;
   readonly revision: number;
-  readonly definition: WorkflowDefinition;
 }
 
 export class FakeRunner {
   private runnerKey: string | null = null;
-  private agentId: string | null = null;
-  private runnerId: string | null = null;
+  private found: { readonly id: string; readonly name: string } | null = null;
 
-  /** `api` is signed in as an administrator, who may register runners and create agents. */
+  /** `api` is signed in as an administrator, who may register runners and enable agents. */
   constructor(
     private readonly api: Api,
     private readonly name: string,
   ) {}
+
+  /** The model this runner reports: its own, so only it has the agent discovered from it. */
+  private get model(): string {
+    return `e2e-${this.name.toLowerCase().replace(/[^a-z0-9]+/gu, '-')}`;
+  }
 
   private runner<T>(
     method: 'GET' | 'POST',
@@ -87,67 +74,60 @@ export class FakeRunner {
       'agents/runners/registrationTokens',
       { trust: 'team' },
     );
-    const registered = await this.runner<{
-      runnerKey: string;
-      runnerId: string;
-    }>('POST', 'agents/runners/register', {
-      registrationToken: token.token,
-      name: this.name,
-      hostname: 'studio-e2e',
-      os: 'linux',
-      arch: 'x64',
-      version: '0.0.0',
-      protocolVersion: PROTOCOL_VERSION,
-      features: ['input', 'checkout', 'directories', 'skills', 'secrets'],
-      tools: [{ kind: 'claude', authenticated: true }],
-      slots: 20,
-    });
+    const registered = await this.runner<{ runnerKey: string }>(
+      'POST',
+      'agents/runners/register',
+      {
+        registrationToken: token.token,
+        name: this.name,
+        hostname: 'studio-e2e',
+        os: 'linux',
+        arch: 'x64',
+        version: '0.0.0',
+        protocolVersion: PROTOCOL_VERSION,
+        features: ['input', 'checkout', 'directories', 'skills', 'secrets'],
+        tools: [
+          { kind: 'claude', authenticated: true, models: [{ id: this.model }] },
+        ],
+        slots: 20,
+      },
+    );
     this.runnerKey = registered.runnerKey;
-    this.runnerId = registered.runnerId;
     return this.runnerKey;
   }
 
-  /** An agent of this runner's own, so other tests' queued runs never hold up its work. */
+  /** The agent discovered from this runner's report, enabled with what it is good at; its id. */
   async agent(): Promise<string> {
-    if (this.agentId) return this.agentId;
-    await this.register();
-    const agent = await this.api.post<{ id: string }>('agents', {
-      name: `方案设计助手 ${this.name}`,
-      modelEntries: [{ tool: 'claude' }],
-      access: 'everyone',
-      runnerIds: [this.runnerId!],
-      maxConcurrentRuns: 20,
-      description: '先分析，再提交设计方案。',
-      actions: [
-        'pm.projects/view',
-        'pm.issues/view',
-        'pm.issues/edit',
-        'pm.issues/comment',
-      ],
-    });
-    this.agentId = agent.id;
-    return agent.id;
+    return (await this.discovered()).id;
   }
 
-  /**
-   * A developer agent: it may open pull requests, so approving a proposal may hand the issue to it. The proposal's own
-   * agent (`agent()`) only designs, and approving with it as the executor asks for another.
-   */
-  async developer(): Promise<{ id: string; name: string }> {
-    const name = `开发助手 ${this.name}`;
-    const agent = await this.api.post<{ id: string }>('agents', {
-      name,
-      modelEntries: [{ tool: 'claude' }],
-      access: 'everyone',
-      actions: [
-        'pm.projects/view',
-        'pm.issues/view',
-        'pm.issues/edit',
-        'pm.issues/comment',
-        'studio.git/open-pr',
-      ],
+  /** The agent's id and name, as the catalog names it (`Claude · <model>`). */
+  async discovered(): Promise<{ readonly id: string; readonly name: string }> {
+    if (this.found) return this.found;
+    await this.register();
+    const agent = (await this.api.get<RunnerAgent[]>('agents')).find(
+      (item) => item.tool === 'claude' && item.model === this.model,
+    );
+    if (!agent) throw new Error(`No agent was discovered for ${this.model}.`);
+    if (agent.status !== 'enabled')
+      await this.api.patch(`agents/${agent.id}`, {
+        description: `Takes the steps of the browser test ${this.name}.`,
+        enabled: true,
+        expectedRevision: agent.revision,
+      });
+    this.found = { id: agent.id, name: agent.name };
+    return this.found;
+  }
+
+  /** Mentions the agent in a comment on the issue, as a person would, which wakes it there. */
+  async wake(
+    issue: { readonly id: string },
+    author: Api = this.api,
+  ): Promise<void> {
+    const agent = await this.discovered();
+    await author.post(`projects/issues/${issue.id}/comments`, {
+      content: `[@${agent.name}](mention://agent/${agent.id}) please take a look`,
     });
-    return { id: agent.id, name };
   }
 
   /** Claims the run the issue's agent was woken for and returns its token; the run is then held, as if working. */
@@ -177,52 +157,21 @@ export class FakeRunner {
     throw new Error(`No run was queued for ${identifier}.`);
   }
 
-  /** A private copy of the workflow routes Analysis to this test's runner-bound agent. */
-  private async designProject(): Promise<string> {
-    const base = (await this.api.get<Workflow[]>('projects/workflows')).find(
-      (workflow) => workflow.isDefault,
-    );
-    if (!base) throw new Error('The default workflow is missing.');
-    const agentId = await this.agent();
-    const workflow = await this.api.post<Workflow>('projects/workflows', {
-      name: `Design workflow ${this.name}`,
-      copyFrom: base.id,
-    });
-    await this.api.patch(`projects/workflows/${workflow.id}`, {
-      revision: workflow.revision,
-      definition: {
-        ...workflow.definition,
-        states: workflow.definition.states.map((state) => ({
-          ...state,
-          rules: state.rules?.map((rule) =>
-            state.key === 'analysis' && rule.type === 'runAgent'
-              ? { ...rule, config: { ...rule.config, agentId } }
-              : rule,
-          ),
-        })),
-      },
-    });
-    const project = await this.api.post<{ id: string }>('projects', {
-      name: `Design project ${this.name}`,
-      visibility: 'everyone',
-      workflowId: workflow.id,
-    });
-    return project.id;
-  }
-
   /** A real running transcript, written through the same protocol as a connected runtime. */
   async issueWithTranscript(
     title: string,
     ownerUserId: string,
     author = this.api,
   ) {
+    // An active issue with no executor lets the mention wake only this runner's agent.
     const issue = await author.post<Issue>('projects/issues', {
       title,
-      statusKey: 'in_progress',
       ownerUserId,
-      // Development runs only for an executor that may open pull requests.
-      executor: { type: 'agent', id: (await this.developer()).id },
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
     });
+    await this.wake(issue, author);
     const { run } = await this.claimRun(issue.identifier);
     const headers = { [HEADERS.runnerKey]: this.runnerKey! };
     const route = `agents/runners/runs/${run.id}`;
@@ -283,54 +232,4 @@ export class FakeRunner {
       headers,
     );
   }
-
-  /** Creates an isolated Analysis issue and submits its design proposal through the claimed run. */
-  async issueWithDesignProposal(
-    title: string,
-    options: { ownerUserId: string },
-  ): Promise<Issue> {
-    const projectId = await this.designProject();
-    const issue = await this.api.post<Issue>('projects/issues', {
-      title,
-      statusKey: 'analysis',
-      ownerUserId: options.ownerUserId,
-      projectId,
-      executor: { type: 'agent', id: await this.agent() },
-    });
-    const token = await this.claim(issue.identifier);
-    // `nb-studio issue design-proposal`'s endpoint; the issue defaults to the run's.
-    await this.api.post(
-      'designProposals',
-      { content: DESIGN_PROPOSAL },
-      { [HEADERS.runToken]: token },
-    );
-    const after = await this.api.get<Issue>(`projects/issues/${issue.id}`);
-    if (after.statusKey !== 'proposal_review')
-      throw new Error(
-        `${issue.identifier} is in ${after.statusKey}, not proposal_review.`,
-      );
-    return after;
-  }
-}
-
-/**
- * Approves a proposal whose executor cannot implement: the approval asks for an executor, `developer` is chosen in
- * the dialog, and the approval goes through with it.
- */
-export async function approveWithDeveloper(
-  page: Page,
-  developer: { readonly name: string },
-): Promise<void> {
-  const dialog = page.getByRole('dialog', { name: '批准方案' });
-  await expect(dialog).toBeVisible();
-  const input = dialog.getByRole('combobox', { name: /执行者/ });
-  await expect(input).toBeEnabled();
-  await input.click();
-  await input.fill(developer.name);
-  await expect(input).toHaveValue(developer.name);
-  // Open the search results explicitly before choosing an option.
-  await input.press('ArrowDown');
-  await page.getByRole('option', { name: new RegExp(developer.name) }).click();
-  await dialog.getByRole('button', { name: '批准并进入开发中' }).click();
-  await expect(dialog).toBeHidden();
 }

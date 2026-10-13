@@ -169,17 +169,20 @@ export class GitApi {
     return body.data;
   }
 
-  /** Squash-merges the head the person confirmed. */
+  /** Squash-merges the head the person confirmed; `force` past failed required checks, with a reason. */
   public async merge(
     issue: string,
     id: string,
     expectedHeadSha: string,
+    force?: { readonly reason: string },
   ): Promise<IssuePullRequest> {
     const body = await this.api.request<{ data: IssuePullRequest }>({
       method: 'POST',
       path: `${prPath(id)}/merge`,
       query: { issueId: issue },
-      json: { expectedHeadSha },
+      json: force
+        ? { expectedHeadSha, force: true, reason: force.reason }
+        : { expectedHeadSha },
     });
     return body.data;
   }

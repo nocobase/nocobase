@@ -20,6 +20,7 @@ import {
   permissionsOf,
   type BridgeHarness,
 } from '../agents/bridge-harness.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 
 let h: BridgeHarness;
 let reports: StudioReports;
@@ -65,15 +66,20 @@ async function seed() {
     [beta.id, coder, 'claude-sonnet-4-5', 'in_progress'],
   ];
   for (const [index, [projectId, agentId, model, end]] of work.entries()) {
+    // A person executes it and hands the agent its step.
     const issue = await h.projects.issues.create(alice, {
       title: `Work ${index + 1}`,
       projectId,
+      executor: null,
+      statusKey: 'in_progress',
+      start: false,
     });
-    const current = await h.projects.issueQueries.detail(alice, issue.id);
-    await h.projects.issues.update(alice, issue.id, {
-      revision: current.revision,
-      executor: { type: 'agent', id: agentId },
-    });
+    // Alice hands the first two their step, Bob the last: its run acts for him.
+    await h.projects.comments.post(
+      { type: 'user', id: index < 2 ? 'alice' : 'bob' },
+      issue.id,
+      { content: `[@Agent](mention://agent/${agentId}) do it` },
+    );
     const payload = await h.claimOne();
     await h.runner(RUNNER_ROUTES.start, payload.run.id, {
       workDir: '/tmp/w',
@@ -91,10 +97,13 @@ async function seed() {
     await h.projects.comments.create(h.viewer('bob'), issue.id, {
       content: 'Looks good.',
     });
+    // Delivered by an agent: the project manager executes it.
     const fresh = await h.projects.issueQueries.detail(alice, issue.id);
     await h.projects.issues.update(alice, issue.id, {
       revision: fresh.revision,
       statusKey: end,
+      executor: { type: 'agent', id: PROJECT_MANAGER_ID },
+      start: false,
     });
   }
   return { alpha, beta, coder, reviewer };
@@ -139,12 +148,11 @@ describe('metrics', () => {
         activeWeeks: 1,
         activeDays: 1,
         issuesCreated: 3,
-        commentsCreated: 3,
+        commentsCreated: 6,
         activeMembers: 2,
       },
       aiShare: { share: 1, deliveredByAgent: 2, deliveredTotal: 2 },
-      // The unfinished issue keeps Bob's comment and Alice's status-triggered work in separate runs.
-      reliability: { runs: 7, completedRuns: 3, failedRuns: 0, lostRuns: 0 },
+      reliability: { runs: 3, completedRuns: 3, failedRuns: 0, lostRuns: 0 },
       cost: {
         inputTokens: 3_000_000,
         outputTokens: 6000,
@@ -157,9 +165,9 @@ describe('metrics', () => {
       },
       statuses: { aiShare: 'ok', reviewPassRate: 'n/a', lostRuns: 'ok' },
     });
-    expect(report.aiShare.byAgent.map((item) => item.name).sort()).toEqual([
-      'Coder',
-      'Reviewer',
+    // Delivered by the agent executing them: the project manager.
+    expect(report.aiShare.byAgent.map((item) => item.name)).toEqual([
+      'Project manager',
     ]);
   });
 
@@ -167,8 +175,8 @@ describe('metrics', () => {
     const { alpha } = await seed();
     expect(await reports.metrics(ALL, { projectId: alpha.id })).toMatchObject({
       projectId: alpha.id,
-      adoption: { issuesCreated: 2, commentsCreated: 2 },
-      reliability: { runs: 4 },
+      adoption: { issuesCreated: 2, commentsCreated: 4 },
+      reliability: { runs: 2 },
       cost: {
         estimatedCost: { USD: 3.03 },
         costPerDeliveredIssue: { USD: 1.515 },
@@ -177,8 +185,11 @@ describe('metrics', () => {
     expect(
       await reports.metrics({ userId: 'bob', allRuns: false }, {}),
     ).toMatchObject({
-      reliability: { runs: 3 },
-      cost: { estimatedCost: null, costPerDeliveredIssue: null },
+      reliability: { runs: 1 },
+      cost: {
+        estimatedCost: { USD: 3.03 },
+        costPerDeliveredIssue: { USD: 1.515 },
+      },
     });
   });
 
@@ -228,14 +239,14 @@ describe('metrics', () => {
       decisionsCreated: 2,
       decisionsResolved: 1,
       openDecisions: 1,
-      byKind: { approvals: 0, plans: 1, deployRequests: 1 },
+      byKind: { plans: 1, deployRequests: 1 },
       byOutcome: { approved: 1 },
     });
     expect(report.humanLoad.decisionResolveP50Ms).toBe(3600_000);
     // In a project's report a decision about no issue does not count.
     expect(
       (await reports.metrics(ALL, { projectId: alpha.id })).humanLoad.byKind,
-    ).toEqual({ approvals: 0, plans: 1 });
+    ).toEqual({ plans: 1 });
   });
 
   it('reads percentiles, weeks and targets', () => {

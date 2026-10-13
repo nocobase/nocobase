@@ -25,8 +25,8 @@ import { useNavigate } from 'react-router';
 import { cn } from 'cn';
 
 // The preview's stand-in for @nocobase/app-plugin-agents/client/chat, aliased in vite.config.ts and mocked with it in
-// the tests: the panel's state as the plugin keeps it, and the conversations in memory. A message to an online agent
-// is answered after a moment, the reply growing in place; a runner conversation shows a run at work. Every export is
+// the tests: the panel's state as the plugin keeps it, and the conversations in memory. A message is answered after a
+// moment, the reply growing in place, as a run at work. Every export is
 // typed against the real one, so the block and this mock follow the plugin's contract.
 
 type RunEvent = ReturnType<typeof Chat.useLiveRunEvents>[number];
@@ -41,30 +41,14 @@ const AGENTS: readonly ChatAgent[] = [
   {
     id: 'assistant',
     name: 'Assistant',
-    description: 'Answers in seconds on the server.',
+    description: 'Everyday coding and writing.',
     nameText: null,
     descriptionText: null,
     avatar: null,
-    type: 'online',
-    models: [
-      {
-        modelService: 'openai',
-        model: 'gpt-5-mini',
-        serviceTitle: 'OpenAI',
-        modelLabel: 'gpt-5-mini',
-      },
-      {
-        modelService: 'anthropic',
-        model: 'claude-sonnet',
-        serviceTitle: 'Anthropic',
-        modelLabel: 'claude-sonnet',
-      },
-    ],
-    personal: false,
     isSystemDefault: false,
     isMyDefault: true,
-    fallbackAgentId: null,
     availability: online,
+    personalOnly: false,
   },
   {
     id: 'coder',
@@ -73,13 +57,10 @@ const AGENTS: readonly ChatAgent[] = [
     nameText: null,
     descriptionText: null,
     avatar: null,
-    type: 'runner',
-    models: [],
-    personal: false,
     isSystemDefault: true,
     isMyDefault: false,
-    fallbackAgentId: null,
     availability: online,
+    personalOnly: false,
   },
   {
     id: 'release',
@@ -88,13 +69,10 @@ const AGENTS: readonly ChatAgent[] = [
     nameText: null,
     descriptionText: null,
     avatar: null,
-    type: 'runner',
-    models: [],
-    personal: true,
     isSystemDefault: false,
     isMyDefault: false,
-    fallbackAgentId: null,
     availability: { online: false, reason: 'noRunner', onlineRunners: 0 },
+    personalOnly: true,
   },
 ];
 
@@ -109,21 +87,6 @@ function agentRef(id: string): ConversationDetail['agent'] {
   };
 }
 
-const MODELS = [
-  {
-    modelService: 'openai',
-    model: 'gpt-5-mini',
-    serviceTitle: 'OpenAI',
-    modelLabel: 'gpt-5-mini',
-  },
-  {
-    modelService: 'anthropic',
-    model: 'claude-sonnet',
-    serviceTitle: 'Anthropic',
-    modelLabel: 'claude-sonnet',
-  },
-] as const;
-
 function conversation(
   id: string,
   agentId: string,
@@ -131,17 +94,15 @@ function conversation(
   fields: Partial<ConversationDetail> = {},
 ): ConversationDetail {
   const agent = AGENTS.find((candidate) => candidate.id === agentId);
-  const mode = agent?.type ?? 'online';
   return {
     id,
     title,
     titleSource: 'auto',
     category: 'chat',
     source: 'panel',
-    mode,
+    mode: 'runner',
     agent: agentRef(agentId),
     fallbackFrom: null,
-    model: mode === 'online' ? MODELS[0] : null,
     read: true,
     lastMessageAt: ago(5),
     archivedAt: null,
@@ -149,7 +110,6 @@ function conversation(
     updatedAt: ago(5),
     run: null,
     availability: agent?.availability ?? online,
-    models: mode === 'online' ? MODELS : [],
     canFallback: false,
     canRestore: false,
     ...fields,
@@ -414,7 +374,7 @@ function replaceMessage(added: ConversationMessage): void {
 const REPLY =
   'Here is what I would do:\n\n1. Review **PM-12** today.\n2. Let the coding agent finish PM-15.\n3. Move PM-18 to the next release.';
 
-/** An online agent's reply: a run opens, then the reply grows in place until it is final. */
+/** An agent's reply: a run opens, then the reply grows in place until it is final. */
 function answer(conversationId: string, agentId: string): void {
   patchConversation(conversationId, (item) => ({
     ...item,
@@ -945,7 +905,6 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
   conversationId,
   agentId,
   source,
-  model = null,
   onCreated,
 }) =>
   useCallback(
@@ -958,7 +917,6 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
         const created = conversation(id, agent.id, input.content.slice(0, 30), {
           source,
           lastMessageAt: new Date().toISOString(),
-          ...(model ? { model } : {}),
         });
         update((current) => ({
           ...current,
@@ -977,10 +935,10 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
         }),
       );
       const detail = store.conversations.find((item) => item.id === target);
-      if (detail?.mode === 'online') answer(target, detail.agent.id);
+      if (detail) answer(target, detail.agent.id);
       return Promise.resolve(null);
     },
-    [conversationId, agentId, source, model, onCreated],
+    [conversationId, agentId, source, onCreated],
   );
 
 let uploads = 0;
@@ -1033,15 +991,6 @@ export const useConversationActions: typeof Chat.useConversationActions =
       patchConversation(id, (item) => ({
         ...item,
         archivedAt: archived ? new Date().toISOString() : null,
-      })),
-    ),
-    chooseModel: mutation<{
-      id: string;
-      model: (typeof MODELS)[number] | null;
-    }>(({ id, model }) =>
-      patchConversation(id, (item) => ({
-        ...item,
-        model: model ?? item.models[0] ?? null,
       })),
     ),
     stop: mutation<string>((id) =>

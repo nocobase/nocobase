@@ -27,6 +27,7 @@ import type {
   RunnerWorkspace,
   RunnerWorkspaceDisk,
   RunnerWorkspaceUsage,
+  UnavailableModel,
 } from '../../shared/runners.js';
 import { jsonObject, stringArray } from '../kernel/values.js';
 
@@ -52,6 +53,7 @@ export interface RunnerRecord {
   readonly policy: unknown;
   readonly variables?: unknown;
   readonly workspaceUsage?: unknown;
+  readonly unavailableModels?: unknown;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -221,6 +223,30 @@ function storedDisk(value: unknown): RunnerWorkspaceDisk | null {
   };
 }
 
+/** The tools and models marked unavailable on a runner, as stored; empty when there are none. */
+export function storedUnavailableModels(value: unknown): UnavailableModel[] {
+  const parsed = typeof value === 'string' ? safeJson(value) : value;
+  if (!Array.isArray(parsed)) return [];
+  return (parsed as unknown[]).flatMap((value): UnavailableModel[] => {
+    const item = jsonObject(value);
+    if (
+      typeof item.tool !== 'string' ||
+      !AGENT_TOOLS.includes(item.tool as AgentTool) ||
+      typeof item.model !== 'string' ||
+      typeof item.at !== 'string'
+    )
+      return [];
+    return [
+      {
+        tool: item.tool as AgentTool,
+        model: item.model,
+        at: item.at,
+        reported: stringArray(item.reported),
+      },
+    ];
+  });
+}
+
 /** A runner's last workspace report as stored: null when it never reported one. */
 export function storedWorkspaceUsage(
   value: unknown,
@@ -275,6 +301,7 @@ export function toRunner(
     policy: storedPolicy(record.policy),
     variables: storedVariableNames(record.variables),
     workspaceUsage: storedWorkspaceUsage(record.workspaceUsage),
+    unavailableModels: storedUnavailableModels(record.unavailableModels),
     lastSeenAt: record.lastSeenAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,

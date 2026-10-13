@@ -24,8 +24,8 @@ import { allPermissions } from '@nocobase/app-plugin-releases/shared/access';
 import type { Row } from '@nocobase/db';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { SOFTWARE_TEMPLATE } from '../../server/agents/catalog/workflow-templates.js';
 import { AGENT_KIND } from '../../server/agents/tx.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { AccessError } from '../../server/access/errors.js';
 import {
   CI_TASK_TITLE,
@@ -58,6 +58,7 @@ import {
   createBridgeHarness,
   type BridgeHarness,
 } from '../agents/bridge-harness.js';
+import { claimHandedOver } from '../projects-init/hand-over.js';
 
 const STUDIO = 'https://studio.example.com';
 
@@ -110,7 +111,6 @@ beforeEach(async () => {
   for (const id of ['alice', 'bob', 'root']) await h.addUser(id);
   h.roles.set('alice', 'admin');
   h.roles.set('root', 'owner');
-  await h.projects.workflows.installTemplate(SOFTWARE_TEMPLATE);
   agentId = await h.createAgent({ name: 'Coder' });
   h.github.app.installations.set('acme', '77');
   connection = await h.gitConnections.create('alice', {
@@ -148,7 +148,7 @@ beforeEach(async () => {
           title: input.title,
           description: input.description,
           projectId: input.projectId,
-          executor: { type: AGENT_KIND, id: input.agentId },
+          executor: { type: AGENT_KIND, id: PROJECT_MANAGER_ID },
         });
         return { id: issue.id, identifier: issue.identifier };
       },
@@ -659,7 +659,7 @@ describe('Studio writing the workflows', () => {
       app: { directory: '.', appId: 'shop-staging' },
       target: { trigger: 'branch', environmentId: 'staging' },
     });
-    const payload = await h.claimOne();
+    const payload = await claimHandedOver(h, agentId);
     h.github.repos.get('acme/shop')!.empty = false;
     await inits.repoEvent({
       type: 'push',
@@ -709,7 +709,7 @@ describe('Studio writing the workflows', () => {
       connection: 'pending',
     });
     expect(h.github.repos.get('acme/shop')?.protected).toBe(false);
-    const payload = await h.claimOne();
+    const payload = await claimHandedOver(h, agentId);
     h.github.repos.get('acme/shop')!.empty = false;
     await inits.repoEvent({
       type: 'push',
@@ -843,7 +843,8 @@ describe('an agent connecting the CI', () => {
     );
     expect(issue).toMatchObject({
       title: `${CI_TASK_TITLE}: acme/shop`,
-      executor: { type: AGENT_KIND, id: agentId },
+      // The project manager executes it, told to hand it to the agent chosen.
+      executor: { type: AGENT_KIND, id: PROJECT_MANAGER_ID },
     });
     expect(view.task!.identifier).toBe(issue.identifier);
     const brief = issue.description ?? '';

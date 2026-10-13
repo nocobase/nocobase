@@ -755,7 +755,7 @@ describe('run lifecycle', () => {
     h = await createHarness();
     const agentId = await h.createAgent();
     const runId = await h.enqueue(agentId);
-    await h.services.agents.archive(agentId, 'owner');
+    await h.disableAgent(agentId);
     await h.sweep();
     expect((await h.services.runs.get(runId)).status).toBe('cancelled');
   });

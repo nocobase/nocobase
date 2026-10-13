@@ -4,7 +4,7 @@
  * output, and a run that failed for good says there that it failed and why. A cancelled run says nothing. The comment
  * goes through the comment triggers like any agent comment, for the person the run acted for, so it wakes the issue's
  * executing agent (the coordinator) and counts toward the workflow's `commentRunLimit`. Once per run: a guard row keyed
- * by the run (`stage-run-guard.ts`) is written with the comment.
+ * by the run (`comment-guard.ts`) is written with the comment.
  */
 import { redactPatterns } from '@nocobase/agent-protocol';
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
@@ -12,7 +12,7 @@ import type { Run } from '@nocobase/app-plugin-agents/shared/runs';
 import type { Projects } from '@nocobase/app-plugin-projects/server/tokens';
 
 import { ISSUE_SUBJECT } from './catalog/triggers.js';
-import { stageGuardId, stageGuards } from './stage-run-guard.js';
+import { guardIdOf, commentGuards } from './comment-guard.js';
 import { AGENT_KIND } from './tx.js';
 import { jsonObject } from './values.js';
 
@@ -85,10 +85,10 @@ export async function reportRun(
       );
       if (own) return false;
     }
-    const id = stageGuardId(issueId, `${REPORT_GUARD}:${run.id}`);
-    if (await stageGuards(tx.conn).findOne({ filter: { id } })) return false;
+    const id = guardIdOf(issueId, `${REPORT_GUARD}:${run.id}`);
+    if (await commentGuards(tx.conn).findOne({ filter: { id } })) return false;
     // A second delivery of the same end waits on this row and then fails, posting nothing.
-    await stageGuards(tx.conn).createOne({
+    await commentGuards(tx.conn).createOne({
       values: {
         id,
         issueId,

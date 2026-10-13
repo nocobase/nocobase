@@ -11,6 +11,7 @@ import {
   DELTA_INLINE_COMMENTS,
   deltaNotes,
 } from '../../server/agents/comment-delta.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 
 const comment = (id: string, content: string) =>
@@ -121,9 +122,11 @@ describe('an issue run', () => {
   }
 
   async function assigned(): Promise<{ issue: Issue; agentId: string }> {
-    const agentId = await h.createAgent();
+    await h.createAgent();
+    const agentId = PROJECT_MANAGER_ID;
     const issue = await h.projects.issues.create(alice(), {
       title: 'Delta',
+      statusKey: 'in_progress',
       executor: { type: 'agent', id: agentId },
     });
     return { issue, agentId };
@@ -144,9 +147,11 @@ describe('an issue run', () => {
     });
     const next = await h.claimOne();
     expect(next.prompt.session).toBe('resume');
-    expect(next.prompt.turn).toContain(`New comments on ${issue.identifier}`);
+    expect(next.prompt.turn).toContain(
+      `New input for issue ${issue.identifier}`,
+    );
     expect(next.prompt.turn).toContain('Background from Bob.');
-    // Alice's comment is this turn's input, so it is not repeated as news.
+    // Both comments merge into the owner's next run; neither is repeated as news.
     expect(next.prompt.turn.match(/Please continue\./gu)).toHaveLength(1);
   });
 

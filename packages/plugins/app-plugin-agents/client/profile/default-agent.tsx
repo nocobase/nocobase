@@ -1,7 +1,7 @@
 /**
  * "My default chat agent", for the person's preferences: which agent their new conversations go to (any agent they may
  * chat with, or the system default), chosen with the agent picker as a form field. The application places the field
- * (for example, its Preferences page); copying an agent for oneself is on the agent's own page.
+ * (for example, its Preferences page).
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -18,7 +18,6 @@ import { useChatAgents, useChatApi } from '../chat/use-chat.js';
 import { AgLoadError } from '../components/ag-states.js';
 import { AgTag } from '../components/ag-tag.js';
 import { AgentPicker } from '../components/agent-picker.js';
-import { AgentTypeTag } from '../components/agent-type.js';
 import { Field, FieldDescription, FieldLabel } from '../components/ui/field.js';
 import { Skeleton } from '../components/ui/skeleton.js';
 import { useAgentPickerLabels } from '../hooks/use-agent-picker-labels.js';
@@ -110,7 +109,6 @@ function DefaultAgentField({
               shown: {
                 name: null,
                 availability: system?.availability ?? null,
-                mode: system?.type ?? null,
               },
             }
           : {})}
@@ -140,9 +138,8 @@ function DefaultAgentField({
               : t(
                   `chat.availability.${chosen.availability.reason ?? 'noRunner'}`,
                 )}
-            <AgentTypeTag type={chosen.type} />
-            {chosen.personal ? (
-              <AgTag tone='violet'>{t('chat.agents.personal')}</AgTag>
+            {chosen.personalOnly ? (
+              <AgTag tone='violet'>{t('chat.agents.personalOnly')}</AgTag>
             ) : null}
           </>
         ) : (

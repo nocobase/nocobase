@@ -25,9 +25,6 @@ describe('database', () => {
       'pmIssues',
       'pmIssueLabels',
       'pmActivities',
-      'pmWorkflows',
-      'pmIssueChecklistItems',
-      'pmApprovalRequests',
       'pmComments',
       'pmCommentReactions',
       'pmIssueSubscriptions',
@@ -37,13 +34,20 @@ describe('database', () => {
     for (const name of names)
       if (!(await collections.get(name))) missing.push(name);
     expect(missing).toEqual([]);
+    // Workflows, approvals and checklists are gone: statuses are fixed.
+    for (const name of [
+      'pmWorkflows',
+      'pmIssueChecklistItems',
+      'pmApprovalRequests',
+    ])
+      expect(await collections.get(name)).toBeUndefined();
     const issues = await collections.get('pmIssues');
     expect(issues?.fields.map((field) => field.name)).toEqual(
       expect.arrayContaining(['owner', 'project', 'parent', 'labels', 'stage']),
     );
   });
 
-  it('seeds the settings row, and no workflow and no roles', async () => {
+  it('seeds the settings row, and no roles', async () => {
     harness = await createHarness();
     const query = harness.database.connection().query;
     expect(
@@ -52,10 +56,6 @@ describe('database', () => {
         .select(['issuePrefix', 'issueCounter'])
         .execute(),
     ).toEqual([{ issuePrefix: 'PM', issueCounter: 0 }]);
-    // Projects use the built-in statuses until a workflow is the default; templates come from other plugins.
-    expect(
-      await query.selectFrom('pmWorkflows').select('id').execute(),
-    ).toEqual([]);
     // Roles belong to the application that assembles the plugin (Acme seeds its own).
     const sets = await query
       .selectFrom('authorizationPermissionSets')

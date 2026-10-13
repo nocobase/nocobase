@@ -5,14 +5,6 @@ import accessEnUS from '../../shared/locales/access.en-US.js';
 const own = {
   /** In-app notifications, written in the application's default language. */
   notifications: {
-    approval: {
-      approved: '{{identifier}} moved to {{status}}: approved',
-      rejected: '{{identifier}}: moving to {{status}} was rejected',
-      stale:
-        '{{identifier}}: moving to {{status}} was approved but no longer applies',
-    },
-    approvalRequested:
-      '{{identifier}} waits for your approval to move to {{status}}',
     batchDone: 'All sub-issues of {{identifier}} are finished',
     batchDoneStage:
       'Stage {{stage}} of the sub-issues of {{identifier}} is finished',
@@ -30,15 +22,12 @@ const own = {
     ownerNotified: '{{identifier}} is now {{status}}',
   },
   status: {
-    analysis: 'Analysis',
     backlog: 'Backlog',
     blocked: 'Blocked',
     cancelled: 'Cancelled',
     done: 'Done',
     in_progress: 'In progress',
     in_review: 'In review',
-    proposal_review: 'Proposal review',
-    todo: 'Todo',
   },
 };
 

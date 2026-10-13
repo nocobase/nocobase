@@ -113,7 +113,7 @@ export const DEMO_RUNNER_DIRECTORY = {
 /** The pull request that adds the website's workflow, waiting to be merged. */
 export const DEMO_CI_PULL_REQUEST = 12;
 
-/** The title of the issue the platform's agent connects its CI in. */
+/** The title of the issue the project manager connects the platform's CI in. */
 export const DEMO_CI_TASK_TITLE = 'Set up deployment';
 
 /** A fixed 40-hex commit, readable in the demo by its first characters. */

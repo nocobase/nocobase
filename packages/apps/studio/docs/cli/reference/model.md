@@ -29,49 +29,6 @@ nb-studio model check --service <string> --model <string>
 nb-studio model check --service openai --model gpt-5
 ```
 
-## model default get
-
-Show the default models
-
-The system default chat model online agents with no models of their own answer with: as set (`chat`), and as used now (`effectiveChat`), which is the first chat model an enabled service offers when none is set or the one set is no longer offered. Adding the first chat model sets it.
-
-```bash
-nb-studio model default get
-```
-
-**Output:** One record, field by field; with `--json`, `result.data`.
-
-**Who:** People (a sign-in or an API key).
-
-**Request:** `GET /api/agents/defaultModels` (`agentsGetDefaultModels`)
-
-## model default set
-
-Set the default chat model
-
-Sets the chat model online agents with no models of their own answer with. It must be a chat model an enabled service offers. Needs `agents.services` manage.
-
-```bash
-nb-studio model default set --service <string> --model <string>
-```
-
-| Flag        | Type   | Description |
-| ----------- | ------ | ----------- |
-| `--service` | string | (required)  |
-| `--model`   | string | (required)  |
-
-**Output:** One record, field by field; with `--json`, `result.data`.
-
-**Who:** People (a sign-in or an API key).
-
-**Request:** `PUT /api/agents/defaultModels/chat` (`agentsSetDefaultChatModel`)
-
-**Examples:**
-
-```bash
-nb-studio model default set --service openai --model gpt-5
-```
-
 ## model list
 
 List the models of the model services

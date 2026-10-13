@@ -62,7 +62,6 @@ export const KnowledgeSearchConfigSchema: z.ZodType<KnowledgeSearchConfig> = z
         description:
           'The spaces with contextual retrieval, as `system:` or `project:<id>`.',
       }),
-      wholeTokens: z.number().int(),
       chunking: z
         .object({
           headingDepth: z.number().int(),

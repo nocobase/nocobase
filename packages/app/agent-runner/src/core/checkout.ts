@@ -347,6 +347,8 @@ export interface WorkspaceMeta {
   /** Whether the directory held unpushed work when last checked (`measuredAt`). */
   unpushed?: boolean;
   measuredAt?: string;
+  /** When regenerable build artifacts were last removed from it (core/artifacts.ts). */
+  artifactsCleanedAt?: string;
   /**
    * Read from a record in the work directory, kept before the runner kept its own, or measured from one since: only
    * its layout is believed. A run preparing the directory again writes a record of the runner's own.
@@ -428,6 +430,7 @@ function believable(
     ...text('endedAt'),
     ...text('lastRunId'),
     ...text('measuredAt'),
+    ...text('artifactsCleanedAt'),
     ...(typeof raw.unpushed === 'boolean' ? { unpushed: raw.unpushed } : {}),
     ...(legacy
       ? { legacy: true as const }

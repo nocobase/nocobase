@@ -4,14 +4,12 @@
  * is safe to run on several instances at once: every move it makes is a guarded
  * update, so a run another instance (or its runner) moved first is left alone.
  *
- * - The runs an offline runner holds go back to the queue (`runnerOffline`); so do the runs of a revoked runner. An
- *   online run held by an application instance has no runner to be offline: when the instance stops renewing its
- *   lease, the lease rule below takes it back.
+ * - The runs an offline runner holds go back to the queue (`runnerOffline`); so do the runs of a revoked runner.
  * - A dispatched run not started within `startTimeoutMs` goes back to the queue (`startTimeout`).
  * - A held run whose lease lapsed goes back to the queue (`leaseExpired`).
  * - A running run with no event for twice its idle timeout fails (`idleTimeout`).
  * - A cancellation not acknowledged within `cancelGraceMs` is recorded as done.
- * - Queued runs of an archived agent are cancelled.
+ * - Queued runs of an agent that is not enabled are cancelled.
  * - A queued run that waited longer than its subject allows (`SubjectBinding.queuedExpiryMs`), counted from its last
  *   change (queued, sent back to the queue, merged into) or from when its delay passed, fails (`queuedExpired`).
  *
@@ -33,7 +31,6 @@ import type { IdSource } from '../../kernel/ids.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { jsonObject } from '../../kernel/values.js';
 import { findAgent } from '../agents/index.js';
-import { isServerHolder } from './claim.js';
 import { toolPolicyFor } from './policy.js';
 import {
   ACTIVE,
@@ -159,12 +156,11 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
         filter: (f) =>
           f.or(ACTIVE.map((status) => f.string('status').eq(status))),
       });
-      // An online run's holder is an application instance, not a registered runner: only its lease tells it is gone.
       const absent = new Set(
         await deps.runners.absent(
           conn,
           [...new Set(held.map((run) => run.runnerId ?? ''))].filter(
-            (id) => id !== '' && !isServerHolder(id),
+            (id) => id !== '',
           ),
         ),
       );
@@ -222,7 +218,13 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
             f.string('status').eq('queued'),
             f
               .relation('agent')
-              .some((agent) => agent.date('archivedAt').notEmpty()),
+              .some((agent) =>
+                agent.or([
+                  agent.string('status').ne('enabled'),
+                  agent.date('archivedAt').notEmpty(),
+                  agent.date('deletedAt').notEmpty(),
+                ]),
+              ),
           ]),
       });
       for (const run of queued)

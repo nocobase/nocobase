@@ -5,8 +5,8 @@
  * checkout's `storage/`.
  *
  * It also starts a local OpenAI-compatible model (`mock-llm.ts`) in a process of its own and, once the demo is built,
- * adds it through the agents API as the model service `mock-llm` and gives it to the built-in project assistant, the
- * team's default (`setUpOnline`), so it answers without a runner and without a real model.
+ * adds it through the agents API as the model service `mock-llm` (`setUpModelService`), which the application's own
+ * model calls use without a real model. Agents answer on runners; the tests stand one in (`runner.ts`).
  *
  * Used by `global-setup.ts`, which records what it started in a state file that `global-teardown.ts` and the tests
  * read (`readState`).
@@ -94,7 +94,7 @@ async function freePort(): Promise<number> {
   }
 }
 
-/** The model service the browser tests' online agents use: the mock model (`mock-llm.ts`), named from its title. */
+/** The model service the application's own model calls use in the browser tests: the mock model (`mock-llm.ts`), named from its title. */
 export const MOCK_SERVICE = { name: 'mock-llm', title: 'Mock LLM' } as const;
 
 function configYaml(options: {
@@ -228,11 +228,8 @@ async function call<T>(
   ) as T;
 }
 
-/**
- * Adds the mock model as a model service through the agents API, and gives the built-in project assistant (waiting for a
- * model, since the demo found no model service when it was built) the mock model, making it the team's default.
- */
-async function setUpOnline(
+/** Adds the mock model as a model service through the agents API, for the application's own model calls. */
+async function setUpModelService(
   baseURL: string,
   origin: string,
   llmUrl: string,
@@ -250,18 +247,6 @@ async function setUpOnline(
   });
   if (service.name !== MOCK_SERVICE.name)
     throw new Error(`The mock model service is named ${service.name}.`);
-  // The built-in project assistant waits for a model: the demo found no model service when it was built.
-  const assistant = await api<{ id: string; revision: number }>(
-    'GET',
-    'agents/studio-project-assistant',
-  );
-  const online = await api<{ id: string }>('PATCH', `agents/${assistant.id}`, {
-    modelEntries: [{ modelService: service.name, model: MOCK_MODEL }],
-    expectedRevision: assistant.revision,
-  });
-  await api('PATCH', 'agents/chatSettings', {
-    defaultAgentId: online.id,
-  });
 }
 
 /** Starts the mock model in a process of its own on a free port; its base URL. */
@@ -343,7 +328,7 @@ export async function startStudio(): Promise<ServerState> {
     await sleep(500);
   }
   await waitForDemo(baseURL, origin, deadline);
-  await setUpOnline(baseURL, origin, llm.url);
+  await setUpModelService(baseURL, origin, llm.url);
   return state;
 }
 

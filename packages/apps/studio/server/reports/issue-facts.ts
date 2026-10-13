@@ -33,12 +33,6 @@ export interface IssueFigures {
   readonly reviewExits: number;
   readonly reviewPassed: number;
   readonly reworked: number;
-  readonly approvalsApproved: number;
-  readonly approvalsRejected: number;
-  readonly decisionsCreated: number;
-  readonly decisionsOpen: number;
-  readonly decisionResolveMs: readonly number[];
-  readonly decisionsByOutcome: Readonly<Record<string, number>>;
 }
 
 export type ViewerOf = (userId: string) => Promise<Viewer>;
@@ -95,11 +89,5 @@ export async function issueFigures(
     reviewExits: report.trust.reviewExits,
     reviewPassed: report.trust.reviewPassed,
     reworked: report.trust.reworked,
-    approvalsApproved: report.trust.approvalsApproved,
-    approvalsRejected: report.trust.approvalsRejected,
-    decisionsCreated: report.decisions.created,
-    decisionsOpen: report.decisions.open,
-    decisionResolveMs: report.decisions.resolveMs,
-    decisionsByOutcome: report.decisions.byOutcome,
   };
 }

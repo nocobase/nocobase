@@ -113,8 +113,20 @@ export const ModelsDetectionErrorSchema: z.ZodType<ModelsDetectionError> =
     'Invalid model listing response',
   ]);
 
+/**
+ * Where a tool's model list came from: asked of the tool (`detected`), or, for a tool that cannot list its models, the
+ * runner's built-in list for it (`builtin`). Either may carry the runner owner's additions and removals.
+ */
+export type ModelsSource = 'detected' | 'builtin';
+export const ModelsSourceSchema: z.ZodType<ModelsSource> = z.enum([
+  'detected',
+  'builtin',
+]);
+
 export interface ToolCapabilities {
   readonly models?: readonly ToolModel[];
+  /** Absent from runners that predate it, which only report detected lists. */
+  readonly modelsSource?: ModelsSource;
   readonly modelsDetectedAt?: string;
   readonly modelsDetectionStatus?: ModelsDetectionStatus;
   readonly modelsDetectionError?: ModelsDetectionError;
@@ -138,6 +150,7 @@ const toolInfoFields = {
 export const ToolInfoSchema: z.ZodType<ToolInfo> = z.object({
   ...toolInfoFields,
   models: z.array(ToolModelSchema).max(MAX_TOOL_MODELS).optional(),
+  modelsSource: ModelsSourceSchema.optional(),
   modelsDetectedAt: z.iso.datetime().optional(),
   modelsDetectionStatus: ModelsDetectionStatusSchema.optional(),
   modelsDetectionError: ModelsDetectionErrorSchema.optional(),
@@ -160,6 +173,7 @@ export const ReportedToolInfoSchema: z.ZodType<ToolInfo> = z
         return value.length > 0 && models.length === 0 ? undefined : models;
       })
       .optional(),
+    modelsSource: ModelsSourceSchema.optional().catch(undefined),
     modelsDetectedAt: z.iso.datetime().optional().catch(undefined),
     modelsDetectionStatus:
       ModelsDetectionStatusSchema.optional().catch(undefined),

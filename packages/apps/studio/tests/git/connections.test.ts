@@ -9,6 +9,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
+
 import { setPreviewNotRequired } from '../../server/previews/preferences.js';
 import { createGitConnections } from '../../server/git/connections.js';
 import { INSTALLATION_TOKENS } from '../../server/git/installation-tokens.js';
@@ -17,7 +19,6 @@ import { GitApiError } from '../../server/git/platform.js';
 import { createWebhookRouter } from '../../server/git/routes.js';
 import { createGitSecrets } from '../../server/git/sealing.js';
 import { DELIVERIES, findRepo } from '../../server/git/store.js';
-import { SOFTWARE_TEMPLATE } from '../../server/agents/catalog/workflow-templates.js';
 import {
   agentCoAuthor,
   ATTRIBUTION_PREFERENCE,
@@ -28,7 +29,13 @@ import {
   TEST_SECRETS,
   type BridgeHarness,
 } from '../agents/bridge-harness.js';
-import { API, bindingOf, signBody, tokenConnection } from './helpers.js';
+import {
+  API,
+  bindingOf,
+  mentionAgent,
+  signBody,
+  tokenConnection,
+} from './helpers.js';
 
 const REPO = 'acme/studio';
 const WEBHOOK_SECRET = 'whsec-app-0123456789';
@@ -38,11 +45,6 @@ beforeEach(async () => {
   h = await createBridgeHarness();
   for (const id of ['alice', 'bob']) await h.addUser(id);
   h.roles.set('alice', 'admin');
-  await h.projects.workflows.installTemplate(SOFTWARE_TEMPLATE);
-  const software = (await h.projects.workflows.list(h.viewer('alice'))).find(
-    (workflow) => workflow.builtInKey === 'software',
-  )!;
-  await h.projects.workflows.setDefault(h.viewer('alice'), software.id);
 });
 afterEach(() => h.close());
 
@@ -64,7 +66,10 @@ async function appConnection(): Promise<GitConnection> {
 }
 
 /** A project with `REPO` linked through `connection` as its working directory, and an issue in it. */
-async function projectWithRepo(connection: GitConnection, statusKey = 'todo') {
+async function projectWithRepo(
+  connection: GitConnection,
+  statusKey = 'backlog',
+) {
   h.github.addRepo(REPO);
   const project = await h.projects.projects.create(alice(), { name: 'Web' });
   const resource = await h.projects.projects.addResource(alice(), project.id, {
@@ -240,7 +245,9 @@ describe('connections', () => {
         state: 'forged',
         redirectUri: 'x',
       }),
-    ).rejects.toMatchObject({ details: { code: 'GIT_AUTHORIZATION_FAILED' } });
+    ).rejects.toMatchObject({
+      details: { code: 'GIT_AUTHORIZATION_STATE_INVALID' },
+    });
     const acting = await h.gitConnections.actingAuth(
       { connectionId: app.id, apiBaseUrl: API },
       'alice',
@@ -259,6 +266,112 @@ describe('connections', () => {
         )
       ).as,
     ).toBe('connection');
+  });
+});
+
+describe('a person’s authorization coming back from the host', () => {
+  const callback = 'https://studio.example.com/oauth/git/callback';
+  const stateFor = async (id: string, userId = 'alice') =>
+    new URL(
+      await h.gitConnections.authorizeUrl(userId, id, callback),
+    ).searchParams.get('state');
+
+  it('says why it did not connect: declined, refused by the host, too late, or not started here', async () => {
+    const app = await appConnection();
+    const state = await stateFor(app.id);
+    await expect(
+      h.gitConnections.completeAuthorization('alice', {
+        code: undefined,
+        state,
+        error: 'access_denied',
+        redirectUri: callback,
+      }),
+    ).rejects.toMatchObject({ details: { code: 'GIT_AUTHORIZATION_DENIED' } });
+    await expect(
+      h.gitConnections.completeAuthorization('alice', {
+        code: undefined,
+        state,
+        error: 'redirect_uri_mismatch',
+        redirectUri: callback,
+      }),
+    ).rejects.toMatchObject({
+      details: {
+        code: 'GIT_AUTHORIZATION_REFUSED',
+        hostError: 'redirect_uri_mismatch',
+      },
+    });
+    // What the host passes on is a code, never arbitrary text.
+    await expect(
+      h.gitConnections.completeAuthorization('alice', {
+        code: undefined,
+        state,
+        error: '<script>',
+        redirectUri: callback,
+      }),
+    ).rejects.toMatchObject({ details: { hostError: 'unknown' } });
+    // A code GitHub did not issue, or issued already.
+    await expect(
+      h.gitConnections.completeAuthorization('alice', {
+        code: 'never-issued',
+        state,
+        redirectUri: callback,
+      }),
+    ).rejects.toMatchObject({
+      details: {
+        code: 'GIT_AUTHORIZATION_REFUSED',
+        hostError: 'bad_verification_code',
+      },
+    });
+    const later = createGitConnections({
+      conn: () => h.projects.tx.read(),
+      providers: createGitProviders([h.github.platform]),
+      secrets: createGitSecrets(TEST_SECRETS),
+      now: () => new Date(Date.now() + 2 * 3600 * 1000),
+    });
+    await expect(
+      later.completeAuthorization('alice', {
+        code: 'x',
+        state,
+        redirectUri: callback,
+      }),
+    ).rejects.toMatchObject({ details: { code: 'GIT_AUTHORIZATION_EXPIRED' } });
+    await expect(
+      h.gitConnections.completeAuthorization('bob', {
+        code: 'x',
+        state,
+        redirectUri: callback,
+      }),
+    ).rejects.toMatchObject({
+      details: { code: 'GIT_AUTHORIZATION_STATE_INVALID' },
+    });
+  });
+
+  it('reports GitHub out of reach as such', async () => {
+    const app = await appConnection();
+    const state = await stateFor(app.id);
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValue(new TypeError('fetch failed'));
+    const offline = createGitConnections({
+      conn: () => h.projects.tx.read(),
+      providers: createGitProviders([
+        (await import('../../server/git/github.js')).createGitHubPlatform({
+          sleep: async () => undefined,
+        }),
+      ]),
+      secrets: createGitSecrets(TEST_SECRETS),
+    });
+    try {
+      await expect(
+        offline.completeAuthorization('alice', {
+          code: 'code-a',
+          state,
+          redirectUri: callback,
+        }),
+      ).rejects.toMatchObject({ details: { code: 'GITHUB_UNAVAILABLE' } });
+    } finally {
+      fetch.mockRestore();
+    }
   });
 });
 
@@ -317,11 +430,74 @@ describe('a person’s own authorization without the web flow', () => {
     await expect(
       h.gitConnections.startDeviceFlow('bob', app.id),
     ).rejects.toMatchObject({ details: { code: 'GIT_DEVICE_FLOW_DISABLED' } });
+    // GitHub answering it with a 400 is the same refusal, not GitHub out of reach.
+    h.github.app.deviceFlowRefusalStatus = 400;
+    await expect(
+      h.gitConnections.startDeviceFlow('bob', app.id),
+    ).rejects.toMatchObject({
+      code: 'INVALID_REQUEST',
+      details: { code: 'GIT_DEVICE_FLOW_DISABLED' },
+    });
     // A token connection has no app to authorize.
     const token = await tokenConnection(h);
     await expect(
       h.gitConnections.startDeviceFlow('bob', token.id),
     ).rejects.toMatchObject({ details: { code: 'GIT_PERSONAL_UNAVAILABLE' } });
+  });
+
+  it('says where to turn the device flow on, and tells another refusal from GitHub being out of reach', async () => {
+    h.github.app.installations.set('acme', '77');
+    const { state } = await (async () => {
+      const form = await h.gitConnections.startAppManifest(
+        'alice',
+        {},
+        {
+          homepage: 'https://studio.example.com/',
+          redirect: 'https://studio.example.com/oauth/git/manifest',
+          callback: 'https://studio.example.com/oauth/git/callback',
+          setup: 'https://studio.example.com/oauth/git/setup',
+          webhook: (id) =>
+            `https://studio.example.com/api/webhooks/github/connections/${id}`,
+          publicOrigin: 'https://studio.example.com',
+        },
+      );
+      return { state: new URL(form.action).searchParams.get('state')! };
+    })();
+    h.github.app.manifestCodes.set('mc-1', {
+      slug: 'studio-acme',
+      owner: 'acme',
+      organization: true,
+      webhookSecret: 'whsec-from-github-0123',
+    });
+    const created = await h.gitConnections.completeAppManifest('alice', {
+      code: 'mc-1',
+      state,
+    });
+    const app = await h.gitConnections.get(created.connectionId);
+    h.github.app.deviceFlow = false;
+    await expect(
+      h.gitConnections.startDeviceFlow('bob', app.id),
+    ).rejects.toMatchObject({
+      details: {
+        code: 'GIT_DEVICE_FLOW_DISABLED',
+        appSettingsUrl:
+          'https://github.com/organizations/acme/settings/apps/studio-acme',
+      },
+    });
+    // A client id GitHub does not know: refused with GitHub's status, not "could not be reached".
+    h.github.app.deviceFlow = true;
+    (h.github.app as { clientId: string }).clientId = 'Iv1.changed';
+    await expect(
+      h.gitConnections.startDeviceFlow('bob', app.id),
+    ).rejects.toMatchObject({
+      code: 'INVALID_REQUEST',
+      details: {
+        code: 'GIT_DEVICE_FLOW_REFUSED',
+        status: 401,
+        appSettingsUrl:
+          'https://github.com/organizations/acme/settings/apps/studio-acme',
+      },
+    });
   });
 
   it('uses a personal access token checked against the host, with its expiry, and acts as it', async () => {
@@ -739,12 +915,16 @@ describe('nb-studio pr open', () => {
         'studio.git/open-pr',
       ],
     });
-    const { issue, resource } = await projectWithRepo(connection);
-    await h.projects.issues.update(alice(), issue.id, {
-      revision: (await h.projects.issueQueries.detail(alice(), issue.id))
-        .revision,
-      executor: { type: 'agent', id: agentId },
+    const { issue: created, resource } = await projectWithRepo(
+      connection,
+      'in_progress',
+    );
+    const issue = await h.projects.issues.update(alice(), created.id, {
+      revision: created.revision,
+      executor: null,
+      start: false,
     });
+    await mentionAgent(h, 'alice', issue.id, agentId);
     beforeClaim?.();
     const payload = await h.claimOne();
     return { agentId, issue, resource, payload };
@@ -757,11 +937,12 @@ describe('nb-studio pr open', () => {
       .mockRejectedValue(
         new GitApiError(0, 'synthetic-secret-that-must-not-reach-the-run'),
       );
-    const { issue, payload } = await agentRun(app);
+    const { agentId, issue, payload } = await agentRun(app);
     expect(payload).toBeUndefined();
     const [run] = await h.agents.runs.list({
       subjectKind: 'issue',
       subjectId: issue.id,
+      agentId,
     });
     expect(run).toMatchObject({
       status: 'queued',
@@ -779,8 +960,8 @@ describe('nb-studio pr open', () => {
 
   it('ends the run with an actionable reason after signing is repeatedly refused', async () => {
     const app = await appConnection();
-    const { issue, payload } = await agentRun(app, () => {
-      h.github.outage = { status: 503, times: 3 };
+    const { agentId, issue, payload } = await agentRun(app, () => {
+      h.github.outage = { status: 503, times: 10 };
     });
     expect(payload).toBeUndefined();
     expect(await h.claimOne()).toBeUndefined();
@@ -788,6 +969,7 @@ describe('nb-studio pr open', () => {
     const [run] = await h.agents.runs.list({
       subjectKind: 'issue',
       subjectId: issue.id,
+      agentId,
     });
     expect(run).toMatchObject({
       status: 'failed',
@@ -800,7 +982,7 @@ describe('nb-studio pr open', () => {
 
   it('refuses an absent preparation result after the framework catches a prepare exception', async () => {
     const app = await appConnection();
-    const { issue, payload } = await agentRun(app, () => {
+    const { agentId, issue, payload } = await agentRun(app, () => {
       vi.spyOn(h.git, 'repoOfResource').mockRejectedValue(
         new Error('synthetic-private-error'),
       );
@@ -809,6 +991,7 @@ describe('nb-studio pr open', () => {
     const [run] = await h.agents.runs.list({
       subjectKind: 'issue',
       subjectId: issue.id,
+      agentId,
     });
     expect(run?.failureDetail).toContain('could not prepare repository access');
     expect(run?.failureDetail).not.toContain('synthetic-private-error');
@@ -854,11 +1037,12 @@ describe('nb-studio pr open', () => {
       .set({ installationId: null })
       .where('id', '=', app.id)
       .execute();
-    const { issue, payload } = await agentRun(app);
+    const { agentId, issue, payload } = await agentRun(app);
     expect(payload).toBeUndefined();
     const [run] = await h.agents.runs.list({
       subjectKind: 'issue',
       subjectId: issue.id,
+      agentId,
     });
     expect(run?.failureDetail).toContain('could not issue a credential');
   });
@@ -945,10 +1129,13 @@ describe('nb-studio pr open', () => {
     const agentId = await h.createAgent({
       actions: ['pm.issues/view', 'pm.issues/edit', 'studio.git/open-pr'],
     });
-    await h.projects.issues.create(alice(), {
+    const loose = await h.projects.issues.create(alice(), {
       title: 'Loose',
-      executor: { type: 'agent', id: agentId },
+      executor: null,
+      statusKey: 'in_progress',
+      start: false,
     });
+    await mentionAgent(h, 'alice', loose.id, agentId);
     const payload = await h.claimOne();
     const refused = await h.request('POST', '/git/pullRequests/open', {
       runToken: payload.cli.credential.content.token as string,
@@ -992,24 +1179,210 @@ describe('nb-studio pr open', () => {
       attribution: 'meOnly',
     });
     const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
-    await h.projects.issues.create(alice(), {
+    const second = await h.projects.issues.create(alice(), {
       title: 'Second',
+      executor: null,
+      statusKey: 'in_progress',
       projectId: project.id,
-      executor: { type: 'agent', id: agentId },
+      start: false,
     });
+    await mentionAgent(h, 'alice', second.id, agentId);
     const payload = await h.claimOne();
     // No authorization of her own: her profile; a token connection gives no push credential.
     expect(payload.workspace.git).toEqual({
       author: { name: 'alice', email: expect.any(String) },
     });
     h.preferences.set(`alice:${ATTRIBUTION_PREFERENCE}`, 'withAgent');
-    await h.projects.issues.create(alice(), {
+    const third = await h.projects.issues.create(alice(), {
       title: 'Third',
+      executor: null,
+      statusKey: 'in_progress',
       projectId: project.id,
-      executor: { type: 'agent', id: agentId },
+      start: false,
     });
+    await mentionAgent(h, 'alice', third.id, agentId);
     const next = await h.claimOne();
     expect(next.workspace.git.trailers).toHaveLength(1);
+  });
+});
+
+describe('push credentials on demand', () => {
+  const URL_OF_REPO = `https://github.com/${REPO}.git`;
+  const ON_DEMAND = [
+    'input',
+    'checkout',
+    'directories',
+    'skills',
+    'secrets',
+    'gitCredentials',
+  ];
+
+  afterEach(() => vi.useRealTimers());
+
+  /** A run on an issue whose project links `REPO` through an app connection, claimed by a runner announcing `features`. */
+  async function claimed(features: readonly string[] = ON_DEMAND) {
+    const app = await appConnection();
+    const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
+    const linked = await projectWithRepo(app, 'in_progress');
+    linked.issue = await h.projects.issues.update(alice(), linked.issue.id, {
+      revision: linked.issue.revision,
+      executor: null,
+      start: false,
+    });
+    await mentionAgent(h, 'alice', linked.issue.id, agentId);
+    const payload = await h.claimOne(features);
+    return { app, payload, ...linked };
+  }
+
+  const ask = (payload: any, body: { url?: string; refresh?: boolean } = {}) =>
+    h.runner(RUNNER_ROUTES.gitCredential, payload.run.id as string, {
+      attempt: payload.run.attempt as number,
+      url: URL_OF_REPO,
+      ...body,
+    });
+
+  it('lists the app connection’s repositories for a runner that asks on demand, and mints nothing at the claim', async () => {
+    const { payload } = await claimed();
+    expect(payload.workspace.git.onDemand).toEqual([URL_OF_REPO]);
+    expect(payload.workspace.git.credentials).toBeUndefined();
+    expect(h.github.app.minted).toHaveLength(0);
+  });
+
+  it('still hands an older runner its credential at the claim', async () => {
+    const { payload } = await claimed([
+      'input',
+      'checkout',
+      'directories',
+      'skills',
+      'secrets',
+    ]);
+    expect(payload.workspace.git.onDemand).toBeUndefined();
+    expect(payload.workspace.git.credentials).toEqual([
+      expect.objectContaining({
+        url: URL_OF_REPO,
+        username: 'x-access-token',
+        password: expect.stringMatching(/^ghs_/u),
+      }),
+    ]);
+  });
+
+  it('lists nothing on demand for a token connection', async () => {
+    const connection = await tokenConnection(h);
+    const { issue: created } = await projectWithRepo(connection, 'in_progress');
+    const issue = await h.projects.issues.update(alice(), created.id, {
+      revision: created.revision,
+      executor: null,
+      start: false,
+    });
+    const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
+    await mentionAgent(h, 'alice', issue.id, agentId);
+    const payload = await h.claimOne(ON_DEMAND);
+    expect(payload.workspace.git).toEqual({
+      author: expect.any(Object),
+      trailers: expect.any(Array),
+    });
+  });
+
+  it('issues a token limited to the run’s repositories and to writing their contents, reused while it has enough left', async () => {
+    const { payload } = await claimed();
+    const first = await ask(payload);
+    expect(first.status).toBe(200);
+    expect(first.body).toEqual({
+      username: 'x-access-token',
+      password: expect.stringMatching(/^ghs_/u),
+      expiresAt: expect.any(String),
+    });
+    expect(h.github.app.minted).toEqual([
+      expect.objectContaining({
+        token: first.body.password,
+        repositories: ['studio'],
+        permissions: { contents: 'write' },
+      }),
+    ]);
+    const again = await ask(payload);
+    expect(again.body.password).toBe(first.body.password);
+    expect(h.github.app.minted).toHaveLength(1);
+  });
+
+  it('mints a new token when the runner says the last one was refused', async () => {
+    const { payload } = await claimed();
+    const first = await ask(payload);
+    const refreshed = await ask(payload, { refresh: true });
+    expect(refreshed.status).toBe(200);
+    expect(refreshed.body.password).not.toBe(first.body.password);
+    expect(h.github.app.minted).toHaveLength(2);
+    expect(h.github.app.minted.at(-1)).toMatchObject({
+      repositories: ['studio'],
+      permissions: { contents: 'write' },
+    });
+  });
+
+  it('keeps a long run pushing: a token near its expiry is replaced by a fresh one', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const { payload } = await claimed();
+    const first = await ask(payload);
+    // 45 minutes in: the kept token has less than 30 minutes left, so it is not handed out again.
+    vi.setSystemTime(Date.now() + 45 * 60 * 1000);
+    await h.runner(RUNNER_ROUTES.lease, payload.run.id as string, {});
+    const later = await ask(payload);
+    expect(later.status).toBe(200);
+    expect(later.body.password).not.toBe(first.body.password);
+    expect(Date.parse(later.body.expiresAt)).toBeGreaterThan(
+      Date.parse(first.body.expiresAt),
+    );
+    // Past the first token's expiry, 70 minutes in: the second still covers the run.
+    vi.setSystemTime(Date.now() + 25 * 60 * 1000);
+    expect(Date.parse(first.body.expiresAt)).toBeLessThan(Date.now());
+    await h.runner(RUNNER_ROUTES.lease, payload.run.id as string, {});
+    const still = await ask(payload);
+    expect(still.status).toBe(200);
+    expect(Date.parse(still.body.expiresAt)).toBeGreaterThan(
+      Date.now() + 30 * 60 * 1000,
+    );
+  });
+
+  it('answers unavailable while GitHub is down, and denied when the connection cannot issue', async () => {
+    const { app, payload } = await claimed();
+    h.github.outage = { status: 503, times: 10 };
+    const down = await ask(payload);
+    expect(down.status).toBeGreaterThanOrEqual(400);
+    expect(down.body.error.reason).toBe('REPO_ACCESS_UNAVAILABLE');
+    expect(down.body.error.message).toContain('GitHub refused signing');
+    h.github.outage = null;
+    h.github.rateLimit = { status: 429, headers: { 'retry-after': '60' } };
+    const limited = await ask(payload);
+    expect(limited.body.error.reason).toBe('REPO_ACCESS_UNAVAILABLE');
+    h.github.rateLimit = null;
+    await h.projects.tx
+      .read()
+      .query.updateTable('studioGitConnections')
+      .set({ installationId: null })
+      .where('id', '=', app.id)
+      .execute();
+    const denied = await ask(payload);
+    expect(denied.body.error.reason).toBe('REPO_ACCESS_DENIED');
+    expect(denied.body.error.message).toContain('Settings > Git');
+  });
+
+  it('issues nothing for a repository unlinked since the claim, or once the run is over', async () => {
+    const { payload, project, resource } = await claimed();
+    await h.projects.projects.removeResource(alice(), project.id, resource.id);
+    const unlinked = await ask(payload);
+    expect(unlinked.body.error.reason).toBe('REPO_ACCESS_DENIED');
+    expect(h.github.app.minted).toHaveLength(0);
+    const failed = await h.runner(
+      RUNNER_ROUTES.fail,
+      payload.run.id as string,
+      {
+        reason: 'toolAuth',
+        detail: 'Not signed in.',
+      },
+    );
+    expect(failed.status).toBe(200);
+    const over = await ask(payload);
+    expect(over.status).toBeGreaterThanOrEqual(400);
+    expect(over.body.error.reason).not.toMatch(/^REPO_ACCESS/u);
+    expect(h.github.app.minted).toHaveLength(0);
   });
 });
 

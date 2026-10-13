@@ -50,6 +50,10 @@ import { z } from 'zod';
  *
  * Tool model capabilities (`ToolInfo.models`, supported efforts, detection timestamp/status/reason) were added
  * within version 7 as optional fields. Older receivers ignore them; absent fields mean unknown capabilities.
+ * `ToolInfo.modelsSource` (`detected`, or `builtin` for a tool that cannot list its models) was added the same way.
+ *
+ * `RunWorkspace.readOnly` was added within version 9 as an optional field: a run that only reads gets a work directory
+ * of its own and pushes nothing. A runner that ignores it shares the subject's work directory, as before.
  *
  * `RepoDir.initializeIfEmpty` optionally permits a coding run to make the first commit of a verified empty remote.
  * Older runners ignore it and retain their missing-branch refusal. Unlike `initial`, it never allows a default-branch

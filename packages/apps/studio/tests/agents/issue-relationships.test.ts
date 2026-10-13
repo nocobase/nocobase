@@ -8,7 +8,10 @@ import type {
 } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
+
+const MANAGER = { type: 'agent', id: PROJECT_MANAGER_ID } as const;
 
 let h: BridgeHarness;
 beforeEach(async () => {
@@ -46,43 +49,17 @@ function api() {
   };
 }
 
-it.each(['done', 'cancelled', 'approval', 'event batch', 'parent'] as const)(
+it.each(['done', 'cancelled', 'event batch'] as const)(
   'does not lose the last release when conversion overlaps %s',
   async (operation) => {
     h.roles.set('alice', 'admin');
     await h.addUser('bob');
     const client = api();
-    const workflow = await h.projects.workflows.create(h.viewer('alice'), {
-      name: 'Concurrent releases',
-      copyFrom: null,
+    h.projects.statusEvents.types.add({
+      key: 'test.finished',
+      from: ['backlog'],
+      to: 'done',
     });
-    h.projects.workflowEvents.types.add({ key: 'test.finished' });
-    await h.projects.workflows.update(h.viewer('alice'), workflow.id, {
-      revision: workflow.revision,
-      definition: {
-        ...workflow.definition,
-        transitions: [
-          { from: '*', to: '*', actors: ['user'] },
-          {
-            from: 'todo',
-            to: 'done',
-            actors: ['system'],
-            on: operation === 'parent' ? 'subtasks.done' : 'test.finished',
-          },
-          ...(operation === 'approval'
-            ? [
-                {
-                  from: 'todo',
-                  to: 'done',
-                  actors: ['user'],
-                  approval: { approvers: ['projectLead' as const] },
-                },
-              ]
-            : []),
-        ],
-      },
-    });
-    await h.projects.workflows.setDefault(h.viewer('alice'), workflow.id);
     const project = await h.projects.projects.create(h.viewer('bob'), {
       name: 'Release work',
     });
@@ -91,19 +68,11 @@ it.each(['done', 'cancelled', 'approval', 'event batch', 'parent'] as const)(
       title: 'Last prerequisite',
       projectId: project.id,
     });
-    const child =
-      operation === 'parent'
-        ? await client.createIssue({
-            title: 'Last child',
-            parentIssueId: c.id,
-            stage: 0,
-          })
-        : null;
-    const agentId = await h.createAgent();
+    await h.createAgent();
     const a = await client.createIssue({
       title: 'Waiting for both',
-      statusKey: 'todo',
-      executor: { type: 'agent', id: agentId },
+      statusKey: 'in_progress',
+      executor: MANAGER,
       blockedBy: [b.id, c.id],
       start: true,
     });
@@ -118,12 +87,6 @@ it.each(['done', 'cancelled', 'approval', 'event batch', 'parent'] as const)(
         user: 'alice',
         body: { revision: (await client.issue(issue.id)).revision, statusKey },
       });
-    let approvalId: string | undefined;
-    if (operation === 'approval') {
-      const pending = await move(c, 'done');
-      expect(pending.status).toBe(202);
-      approvalId = pending.body.data.pendingApproval.id;
-    }
     const released: string[] = [];
     h.projects.events.on('issue.dependencyReleased', (event) => {
       if (event.issueId === a.id) released.push(event.issueId);
@@ -146,30 +109,15 @@ it.each(['done', 'cancelled', 'approval', 'event batch', 'parent'] as const)(
     const finish = async () => {
       if (operation === 'event batch') {
         expect(
-          await h.projects.workflowEvents.fire({
+          await h.projects.statusEvents.fire({
             event: 'test.finished',
             issueIds: [c.id],
           }),
         ).toEqual([expect.objectContaining({ outcome: 'moved', to: 'done' })]);
-      } else if (operation === 'approval') {
-        const response = await h.request(
-          'POST',
-          `/projects/approvals/${approvalId!}/approve`,
-          {
-            user: 'bob',
-            body: {},
-          },
-        );
-        expect(response.status).toBe(200);
-        expect(response.body.data.status).toBe('approved');
       } else {
         expect(
-          (
-            await move(
-              child ?? c,
-              operation === 'cancelled' ? 'cancelled' : 'done',
-            )
-          ).status,
+          (await move(c, operation === 'cancelled' ? 'cancelled' : 'done'))
+            .status,
         ).toBe(200);
       }
     };
@@ -250,7 +198,7 @@ it.each(
   async ({ operation, completed }) => {
     h.roles.set('alice', 'admin');
     const client = api();
-    const agentId = await h.createAgent();
+    await h.createAgent();
     const b = await client.createIssue({ title: 'Prerequisite' });
     const finish = async () => {
       const current = await client.issue(b.id);
@@ -263,8 +211,8 @@ it.each(
     if (completed) await finish();
     const a = await client.createIssue({
       title: 'Intentionally not started',
-      statusKey: 'todo',
-      executor: { type: 'agent', id: agentId },
+      statusKey: 'in_progress',
+      executor: MANAGER,
       start: false,
     });
     const link = await client.addDependency(a.id, {
@@ -325,10 +273,11 @@ it.each(
 
 it('waits for the remaining prerequisite after conversion and wakes once it is removed', async () => {
   const client = api();
-  const agentId = await h.createAgent();
+  await h.createAgent();
   const a = await client.createIssue({
     title: 'Waiting',
-    executor: { type: 'agent', id: agentId },
+    statusKey: 'in_progress',
+    executor: MANAGER,
     start: false,
   });
   const b = await client.createIssue({ title: 'First prerequisite' });

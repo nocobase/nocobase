@@ -6,7 +6,13 @@
  * bar's "Pull request".
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -345,6 +351,37 @@ describe('IssueCodeSection', () => {
     const open = await rowOf(12);
     expect(open.querySelector('[data-deploy-mark]')).toBeNull();
     expect(document.querySelector('[data-studio-code-unmatched]')).toBeNull();
+  });
+
+  it('says whether merging completes the issue, and turns it off with the switch', async () => {
+    answer({
+      pullRequests: [
+        pullRequest(12),
+        pullRequest(13, { autoCompleteDisabled: true }),
+      ],
+      previews: [],
+      marks: [],
+    });
+    show();
+    const counted = await rowOf(12);
+    const kept = await rowOf(13);
+    unfold(counted);
+    unfold(kept);
+    const on = within(counted).getByTestId('pr-complete-on-merge');
+    expect(on).toHaveTextContent('studioGit.section.completeOnMerge');
+    expect(on).toHaveTextContent('studioGit.section.completeOnMergeHint');
+    const off = within(kept).getByTestId('pr-complete-on-merge');
+    expect(off).toHaveTextContent('studioGit.section.mergeKeeps');
+    expect(off).toHaveTextContent('studioGit.section.mergeKeepsHint');
+    fireEvent.click(within(on).getByRole('switch'));
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'PATCH',
+          json: { autoCompleteDisabled: true },
+        }),
+      ),
+    );
   });
 
   it('asks before unlinking, saying what leaves the issue', async () => {
