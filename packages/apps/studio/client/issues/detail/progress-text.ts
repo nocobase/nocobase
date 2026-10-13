@@ -60,6 +60,9 @@ export function progressStatusLine(
     return t('issueProgress.status.queued', { agent });
   if (progress.state === 'queued' || progress.waiting)
     return progressSentence(t, progress, now);
+  // The question itself is the "Needs you" card's.
+  if (progress.state === 'needsDecision')
+    return t('issueProgress.needsDecisionNoQuestion');
   if (progress.state === 'working')
     return [
       t('issueProgress.status.working', { agent }),

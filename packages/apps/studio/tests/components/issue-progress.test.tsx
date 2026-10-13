@@ -266,6 +266,14 @@ describe('what an issue waits for', () => {
     expect(progressStatusLine(en, progress({ state: 'idle' }), NOW)).toBe(
       'Nothing is running',
     );
+    // The question is the "Needs you" card's, so Now only says a decision waits.
+    expect(
+      progressStatusLine(
+        en,
+        progress({ state: 'needsDecision', question: 'Retry after `429`?' }),
+        NOW,
+      ),
+    ).toBe('Waiting for your decision');
   });
 
   it('shows the line with the project manager’s next step, and links the pull request whose checks it waits for', async () => {
