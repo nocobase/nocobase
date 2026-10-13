@@ -167,30 +167,31 @@ nb-studio issue comment list <issue>
 
 Create an issue
 
-Needs `create` on `pm.issues` for the issue’s project. The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one.
+Needs `create` on `pm.issues` for the issue’s project, and `upload` on `pm.attachments` to send `attachmentIds` (the caller’s uploads attached to nothing, which become the issue’s own files). The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one.
 
 ```bash
 nb-studio issue create
 ```
 
-| Flag              | Type                                    | Description                                                                                |
-| ----------------- | --------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `--title`         | string                                  |                                                                                            |
-| `--description`   | string                                  | (or --description-file <path>)                                                             |
-| `--status`        | string                                  | The status it starts in: in_progress (start now) or backlog (nothing starts, the default). |
-| `--priority`      | urgent \| high \| medium \| low \| none |                                                                                            |
-| `--owner`         | string                                  |                                                                                            |
-| `--executor`      | json                                    |                                                                                            |
-| `--parent`        | string                                  |                                                                                            |
-| `--stage`         | integer                                 |                                                                                            |
-| `--project`       | string                                  |                                                                                            |
-| `--start-date`    | string                                  |                                                                                            |
-| `--due-date`      | string                                  |                                                                                            |
-| `--label`         | string[]                                | (repeatable)                                                                               |
-| `--start`         | boolean                                 |                                                                                            |
-| `--blocked-by`    | string[]                                | (repeatable)                                                                               |
-| `--project-setup` | boolean                                 |                                                                                            |
-| `--file`          | path                                    | The request body as a JSON object; the flags override its fields.                          |
+| Flag              | Type                                    | Description                                                                                                                |
+| ----------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `--title`         | string                                  |                                                                                                                            |
+| `--description`   | string                                  | (or --description-file <path>)                                                                                             |
+| `--status`        | string                                  | The status it starts in: in_progress (start now) or backlog (nothing starts, the default).                                 |
+| `--priority`      | urgent \| high \| medium \| low \| none |                                                                                                                            |
+| `--owner`         | string                                  |                                                                                                                            |
+| `--executor`      | json                                    |                                                                                                                            |
+| `--parent`        | string                                  |                                                                                                                            |
+| `--stage`         | integer                                 |                                                                                                                            |
+| `--project`       | string                                  |                                                                                                                            |
+| `--start-date`    | string                                  |                                                                                                                            |
+| `--due-date`      | string                                  |                                                                                                                            |
+| `--label`         | string[]                                | (repeatable)                                                                                                               |
+| `--start`         | boolean                                 |                                                                                                                            |
+| `--blocked-by`    | string[]                                | (repeatable)                                                                                                               |
+| `--project-setup` | boolean                                 |                                                                                                                            |
+| `--attach`        | path                                    | A file to attach to the new issue (repeatable); attaching needs `upload` on `pm.attachments`. (uploaded first, repeatable) |
+| `--file`          | path                                    | The request body as a JSON object; the flags override its fields.                                                          |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -202,6 +203,7 @@ nb-studio issue create
 
 ```bash
 nb-studio issue create --file issue.json --status in_progress
+nb-studio issue create --file issue.json --attach screenshot.png
 ```
 
 ## issue delete

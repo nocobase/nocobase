@@ -50,7 +50,7 @@ nb-studio attachment get <file>
 
 Upload a file
 
-Needs `upload` on `pm.attachments`. One file as the `file` field of a multipart body, at most 20971520 bytes. The upload is attached to nothing until it is sent with a comment (`attachmentIds`); one left so for 24 hours is purged.
+Needs `upload` on `pm.attachments`. One file as the `file` field of a multipart body, at most 20971520 bytes. The upload is attached to nothing until it is sent with a comment or a new issue (`attachmentIds`); one left so for 24 hours is purged.
 
 ```bash
 nb-studio attachment upload --file <path>
