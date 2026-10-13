@@ -666,12 +666,13 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     );
     // Compose can be enabled before the initial message-list effect has settled.
     await waitFor(() => {
-      expect(mail.listMessages).toHaveBeenCalled();
+      expect(mail.listMessages).toHaveBeenCalledTimes(1);
       expect(screen.getByRole('region', { name: 'Mail' })).toHaveAttribute(
         'aria-busy',
         'false',
       );
     });
+    await screen.findByText('No messages match this mailbox view.');
     const navigation = screen.getByRole('button', {
       name: 'Mailboxes and folders',
     });
@@ -1326,7 +1327,9 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
       try {
         render(<MailWorkspacePage />);
-        fireEvent.click(await screen.findByRole('button', { name: 'Compose' }));
+        const compose = await screen.findByRole('button', { name: 'Compose' });
+        await waitFor(() => expect(compose).toBeEnabled());
+        fireEvent.click(compose);
         fireEvent.change(await screen.findByLabelText('TO'), {
           target: { value: 'recipient@example.com' },
         });
@@ -1421,7 +1424,9 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
           : {}),
       });
       render(<MailWorkspacePage />);
-      fireEvent.click(await screen.findByRole('button', { name: 'Compose' }));
+      const compose = await screen.findByRole('button', { name: 'Compose' });
+      await waitFor(() => expect(compose).toBeEnabled());
+      fireEvent.click(compose);
       await waitFor(() =>
         expect(screen.getByLabelText('From address')).toHaveValue(
           JSON.stringify(['account-1', 'identity-1']),
@@ -1467,17 +1472,20 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   it('keeps Cc and Bcc fields hidden until their text buttons are clicked', async () => {
     render(<MailWorkspacePage />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Compose' }));
+    const compose = await screen.findByRole('button', { name: 'Compose' });
+    await waitFor(() => expect(compose).toBeEnabled());
+    fireEvent.click(compose);
+    const ccButton = await screen.findByRole('button', { name: 'Cc' });
 
     expect(screen.queryByLabelText('CC')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('BCC')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cc' }));
-    expect(screen.queryByLabelText('CC')).toBeInTheDocument();
+    fireEvent.click(ccButton);
+    expect(await screen.findByLabelText('CC')).toBeInTheDocument();
     expect(screen.queryByLabelText('BCC')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Bcc' }));
-    expect(screen.queryByLabelText('BCC')).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'Bcc' }));
+    expect(await screen.findByLabelText('BCC')).toBeInTheDocument();
   });
 
   it('shows the scheduled time only after enabling scheduled send', async () => {
@@ -1719,12 +1727,16 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     mail.listMessages.mockResolvedValue({ items: [message] });
     mail.getMessage.mockResolvedValue(message);
     render(<MailWorkspacePage />);
+    const compose = await screen.findByRole('button', { name: 'Compose' });
+    await waitFor(() => expect(compose).toBeEnabled());
     fireEvent.click(await screen.findByText('IMAP message'));
+    await screen.findByRole('heading', { name: 'IMAP message' });
     fireEvent.click(
       await screen.findByRole('button', { name: 'More actions' }),
     );
+    const menu = await screen.findByRole('menu');
     expect(
-      await screen.findByRole('menuitem', { name: 'Delete' }),
+      await within(menu).findByRole('menuitem', { name: 'Delete' }),
     ).toHaveAttribute('aria-disabled', 'true');
     expect(mail.deleteMessage).not.toHaveBeenCalled();
   });
@@ -2025,7 +2037,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     render(<MailWorkspacePage />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Compose' }));
-    fireEvent.change(screen.getByLabelText('TO'), {
+    fireEvent.change(await screen.findByLabelText('TO'), {
       target: { value: 'recipient@example.com' },
     });
     const send = screen.getByRole('button', { name: 'Send' });
@@ -2136,7 +2148,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       within(conversation).getByRole('button', { name: 'More actions' }),
       { key: 'ArrowDown' },
     );
-    const menu = await screen.findByRole('menu', {}, { timeout: 3000 });
+    const menu = await screen.findByRole('menu');
     expect(
       within(menu).queryByRole('menuitem', { name: 'Archive' }),
     ).toBeNull();
@@ -2291,10 +2303,14 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       target: { value: 'Inline image' },
     });
     const file = new File(['image'], 'inline.png', { type: 'image/png' });
-    const input = document.querySelector(
-      'input[accept="image/png,image/jpeg,image/gif,image/webp"]',
-    );
-    fireEvent.change(input!, { target: { files: [file] } });
+    const input = await waitFor(() => {
+      const candidate = document.querySelector(
+        'input[accept="image/png,image/jpeg,image/gif,image/webp"]',
+      );
+      expect(candidate).toBeInstanceOf(HTMLInputElement);
+      return candidate as HTMLInputElement;
+    });
+    fireEvent.change(input, { target: { files: [file] } });
     await waitFor(() =>
       expect(screen.getByAltText('inline.png')).toHaveAttribute(
         'src',
@@ -2323,8 +2339,10 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
 
   it('previews an uploaded inline image and sends image-only HTML with its attachment', async () => {
     render(<MailWorkspacePage />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Compose' }));
-    fireEvent.change(screen.getByLabelText('TO'), {
+    const compose = await screen.findByRole('button', { name: 'Compose' });
+    await waitFor(() => expect(compose).toBeEnabled());
+    fireEvent.click(compose);
+    fireEvent.change(await screen.findByLabelText('TO'), {
       target: { value: 'recipient@example.com' },
     });
     fireEvent.change(screen.getByLabelText('Subject'), {
@@ -2360,10 +2378,14 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   it('uploads and submits composer attachments', async () => {
     render(<MailWorkspacePage />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Compose' }));
-    const input = document.querySelector('input[type="file"][multiple]');
-    if (!(input instanceof HTMLInputElement))
-      throw new Error('Missing file input');
+    const compose = await screen.findByRole('button', { name: 'Compose' });
+    await waitFor(() => expect(compose).toBeEnabled());
+    fireEvent.click(compose);
+    const input = await waitFor(() => {
+      const candidate = document.querySelector('input[type="file"][multiple]');
+      expect(candidate).toBeInstanceOf(HTMLInputElement);
+      return candidate as HTMLInputElement;
+    });
     const file = new File(['report'], 'report.txt', { type: 'text/plain' });
     fireEvent.change(input, { target: { files: [file] } });
     expect(await screen.findByText('report.txt')).toBeInTheDocument();
@@ -2407,9 +2429,13 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       render(<MailWorkspacePage />);
       await vi.waitFor(() => expect(mail.listAccounts).toHaveBeenCalled());
       fireEvent.click(screen.getByRole('button', { name: 'Compose' }));
-      const input = document.querySelector('input[type="file"][multiple]');
-      if (!(input instanceof HTMLInputElement))
-        throw new Error('Missing file input');
+      const input = await vi.waitFor(() => {
+        const candidate = document.querySelector(
+          'input[type="file"][multiple]',
+        );
+        expect(candidate).toBeInstanceOf(HTMLInputElement);
+        return candidate as HTMLInputElement;
+      });
       fireEvent.change(input, {
         target: {
           files: [new File(['report'], 'report.txt', { type: 'text/plain' })],
@@ -2441,9 +2467,11 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   it('syncs the current all-account scope by default', async () => {
     render(<MailWorkspacePage />);
 
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Sync all mailboxes' }),
-    );
+    const sync = await screen.findByRole('button', {
+      name: 'Sync all mailboxes',
+    });
+    await waitFor(() => expect(sync).toBeEnabled());
+    fireEvent.click(sync);
 
     await waitFor(() =>
       expect(mail.startSync).toHaveBeenCalledWith(
@@ -2555,7 +2583,12 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     const body = within(first).getByLabelText('Message body');
     body.innerHTML = '<p>First message body</p>';
     fireEvent.input(body);
-    fireEvent.change(first.querySelector('input[type=file][multiple]')!, {
+    const attachmentInput = await waitFor(() => {
+      const candidate = first.querySelector('input[type=file][multiple]');
+      expect(candidate).toBeInstanceOf(HTMLInputElement);
+      return candidate as HTMLInputElement;
+    });
+    fireEvent.change(attachmentInput, {
       target: {
         files: [new File(['report'], 'report.txt', { type: 'text/plain' })],
       },
@@ -2749,7 +2782,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     await waitFor(() =>
       expect(mail.listIdentities).toHaveBeenCalledWith('account-2'),
     );
-    fireEvent.change(screen.getByLabelText('TO'), {
+    fireEvent.change(await screen.findByLabelText('TO'), {
       target: { value: 'recipient@example.com' },
     });
     fireEvent.change(screen.getByLabelText('Subject'), {
