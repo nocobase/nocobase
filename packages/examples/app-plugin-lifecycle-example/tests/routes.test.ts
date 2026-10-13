@@ -779,7 +779,8 @@ describe('lifecycle example routes', () => {
         'lifecycleExampleListParameterGroups',
         'lifecycleExampleParameterHistory',
         'lifecycleExamplePreviewReviewerCandidates',
-        'lifecycleExampleReviewerOptions',
+        'lifecycleExampleSearchReviewerReferences',
+        'lifecycleExampleGetReviewerReference',
         'lifecycleExampleSaveParameterGroup',
         'lifecycleExampleDeliverSandboxEvent',
         'lifecycleExampleCompleteSandboxInvoice',
@@ -803,7 +804,7 @@ describe('lifecycle example routes', () => {
     // The sandbox's own objects are named by their own ids.
     expect(
       paths.filter((path) =>
-        /\{(?!recordId|runId|source|eventId|sessionId|groupId|lifecycle)/.test(
+        /\{(?!recordId|runId|source|eventId|sessionId|groupId|lifecycle|type|referenceId)/.test(
           path,
         ),
       ),
