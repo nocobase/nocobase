@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import path from 'node:path';
@@ -13,8 +14,11 @@ import {
   CheckoutError,
   checkout,
   lockWorkspace,
+  markWorkspaceEnded,
+  reportRepos,
   updateCache,
 } from '../src/core/checkout.ts';
+import * as runnerGit from '../src/core/git.ts';
 import {
   classifyGitFailure,
   GIT_RETRY_DELAYS_MS,
@@ -428,14 +432,57 @@ describe('submodules an earlier preparation left unfinished', () => {
       expect(existsSync(nested)).toBe(false);
 
       down = false;
+      const rootReadme = path.join(
+        paths.workRoot,
+        'app',
+        'PM-1',
+        'app',
+        'README.md',
+      );
+      const pristine = readFileSync(rootReadme, 'utf8');
+      writeFileSync(rootReadme, 'work left after failed preparation');
+      const untouched = await prepare();
+      expect(existsSync(nested)).toBe(false);
+      expect(readFileSync(rootReadme, 'utf8')).toBe(
+        'work left after failed preparation',
+      );
+      await untouched.release();
+      writeFileSync(rootReadme, pristine);
       const work = await prepare();
       expect(existsSync(nested)).toBe(true);
+      await markWorkspaceEnded(
+        paths,
+        work.workDir,
+        await reportRepos(work.repos, { push: false }),
+      );
       await work.release();
 
-      // Done: a later preparation leaves the submodules, and the host, alone.
+      // A stale protected preparation record cannot authorize updates after a delivered-state report.
+      const repo = work.repos[0]!;
+      writeFileSync(
+        path.join(
+          repo.cache,
+          'submodule-preparations',
+          `${createHash('sha256').update(repo.gitDir).digest('hex')}-nocobase-runner-submodules.json`,
+        ),
+        JSON.stringify({ all: true, paths: ['vendor/mid'] }),
+      );
+      const calls = vi.spyOn(runnerGit, 'git');
+      const delivered = await prepare();
+      expect(
+        calls.mock.calls.some(
+          ([args]) => args.includes('submodule') && args.includes('update'),
+        ),
+      ).toBe(false);
+      await delivered.release();
+      calls.mockRestore();
+
+      // Delivered: even initialized child work is preserved instead of running a general submodule update.
+      writeFileSync(nested, 'agent local work');
       const before = host.requests();
       const again = await prepare();
       expect(host.requests()).toBe(before);
+      expect(readFileSync(nested, 'utf8')).toBe('agent local work');
       await again.release();
     } finally {
       await host.close();

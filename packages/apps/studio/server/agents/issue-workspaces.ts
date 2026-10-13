@@ -2,8 +2,8 @@
  * Whether the work on an issue is over, so runners remove the working directories they keep for it
  * (`SubjectBinding.workspaces`).
  *
- * It is over when the issue is Done or Cancelled, whatever its pull requests are: a runner then removes the issue's directories, with anything
- * in them that was never pushed. Reopening the issue checks its branch out again. An issue that is gone or deleted
+ * It is over when the issue is Done or Cancelled, whatever its pull requests are: a runner may then remove clean directories
+ * only after proving all local work published. Unpushed or uncertain work is preserved; reopening reuses its actual Git state. An issue that is gone or deleted
  * keeps its directories. While a run on the issue has not finished, the agents plugin keeps them too.
  *
  * A directory a runner kept from before it recorded runs, or whose run is gone, is named by the issue's key

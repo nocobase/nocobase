@@ -1,10 +1,11 @@
 // Repository credentials on demand end to end: the real daemon and worker, the echo adapter running the agent's git, and
 // a git server over HTTP that refuses a credential once it expired, as GitHub does with an installation token.
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { FakeServer, waitFor } from './fake-server.ts';
+import { runnerPaths, runLogPath } from '../src/lib/home.ts';
 import {
   makeServedRepo,
   startGitHttpServer,
@@ -143,6 +144,19 @@ describe('repository credentials on demand', () => {
       'the run to end',
     );
     expect(run.fail).toBeUndefined();
+    const log = runLogPath(runnerPaths(home), run.payload.run.id);
+    const cleanupDiagnostics = existsSync(log)
+      ? readFileSync(log, 'utf8')
+          .split('\n')
+          .filter((line) =>
+            /could not confirm writer cleanup|writer termination is unconfirmed/u.test(
+              line,
+            ),
+          )
+          .join('\n')
+      : '';
+    if (!run.complete?.repos?.length && cleanupDiagnostics)
+      throw new Error(cleanupDiagnostics);
     expect(run.complete?.repos).toEqual([
       expect.objectContaining({ url: remote.url('app'), pushed: true }),
       expect.objectContaining({ url: remote.url('lib'), pushed: true }),

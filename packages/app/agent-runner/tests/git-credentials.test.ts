@@ -22,7 +22,10 @@ import {
   checkout,
   RepoAccessFailure,
   reportRepos,
+  withRepoAuth,
+  type CheckedOutRepo,
 } from '../src/core/checkout.ts';
+import { taskGit } from '../src/core/task-git.ts';
 import type { SpoolEvent } from '../src/core/events.ts';
 import { installGitHooks } from '../src/core/git-hooks.ts';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
@@ -453,6 +456,21 @@ describe('the runner’s own git with credentials on demand', () => {
       path: name,
     }));
 
+  const pushExplicitly = (repo: CheckedOutRepo, broker: GitCredentialBroker) =>
+    withRepoAuth(broker, repo.url, (auth) =>
+      taskGit(
+        repo,
+        ['push', '--', repo.url, `HEAD:refs/heads/${repo.branch}`],
+        {},
+        { auth },
+      ),
+    );
+  const remoteRefs = (repo: CheckedOutRepo) =>
+    hostGit(
+      ['for-each-ref', '--format=%(refname) %(objectname)', 'refs/heads'],
+      path.join(root, 'served', `${path.basename(repo.dir)}.git`),
+    );
+
   const commit = (dir: string) =>
     hostGit(
       [
@@ -484,11 +502,21 @@ describe('the runner’s own git with credentials on demand', () => {
       for (const repo of result.repos) commit(repo.dir);
       // Every credential issued so far expires, as an installation token does after an hour.
       valid.clear();
+      const before = result.repos.map(remoteRefs);
       const reports = await reportRepos(result.repos, {
         push: true,
         auth: broker,
       });
-      expect(reports.map((report) => [report.pushed, report.failure])).toEqual([
+      expect(reports.map((report) => report.pushed)).toEqual([false, false]);
+      expect(result.repos.map(remoteRefs)).toEqual(before);
+      for (const repo of result.repos) await pushExplicitly(repo, broker);
+      const published = await reportRepos(result.repos, {
+        push: false,
+        auth: broker,
+      });
+      expect(
+        published.map((report) => [report.pushed, report.failure]),
+      ).toEqual([
         [true, undefined],
         [true, undefined],
       ]);
@@ -504,9 +532,7 @@ describe('the runner’s own git with credentials on demand', () => {
         expect(issuedFor.get(password)).toBe(repo);
       expect(existsSync(hostHelperMarker)).toBe(false);
       for (const [index, repo] of result.repos.entries())
-        expect(hostGit(['rev-parse', `origin/${repo.branch}`], repo.dir)).toBe(
-          reports[index]!.headSha,
-        );
+        expect(remoteRefs(repo)).toContain(published[index]!.headSha);
     } finally {
       await result.release();
     }
@@ -585,6 +611,12 @@ describe('the runner’s own git with credentials on demand', () => {
         hostGit(['config', key, `!echo called > '${marker}'`], repo.dir);
       hostGit(['config', 'remote.origin.pushurl', remote.url('lib')], repo.dir);
       valid.clear();
+      const before = remoteRefs(repo);
+      expect((await reportRepos(result.repos, { push: true }))[0]?.pushed).toBe(
+        false,
+      );
+      expect(remoteRefs(repo)).toBe(before);
+      await pushExplicitly(repo, broker);
       const [report] = await reportRepos(result.repos, {
         push: true,
         auth: broker,
@@ -596,12 +628,7 @@ describe('the runner’s own git with credentials on demand', () => {
       expect(
         remote.presented.every(({ repo: name }) => name === 'app.git'),
       ).toBe(true);
-      expect(
-        hostGit(
-          ['-c', 'core.fsmonitor=false', 'rev-parse', `origin/${repo.branch}`],
-          repo.dir,
-        ),
-      ).toBe(report?.headSha);
+      expect(remoteRefs(repo)).toContain(report?.headSha);
     } finally {
       await result.release();
     }

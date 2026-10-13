@@ -9,6 +9,7 @@ import {
 } from './workspace-git.ts';
 import { existsSync } from 'node:fs';
 import {
+  lstat,
   mkdir,
   readdir,
   readFile,
@@ -687,6 +688,80 @@ async function readPending(
   }
 }
 
+async function pendingSubmodulesFile(context: TaskGitContext): Promise<string> {
+  const gitDir = await taskGitDir(context);
+  return path.join(
+    context.cache,
+    'submodule-preparations',
+    `${createHash('sha256').update(gitDir).digest('hex')}-${SUBMODULES_PENDING}`,
+  );
+}
+
+/** A protected pending record belongs only to runner initialization, not an agent-delivered checkout. */
+async function canResumeSubmodules(
+  context: TaskGitContext,
+  known: WorkspaceRepo | undefined,
+  meta: WorkspaceMeta | undefined,
+): Promise<boolean> {
+  if (
+    !known?.startSha ||
+    meta?.writerActive ||
+    meta?.prepared?.includes(`repo:${known.path}`) ||
+    (known.state && known.state.head !== 'unknown')
+  )
+    return false;
+  try {
+    if (!(await readPending(await pendingSubmodulesFile(context))))
+      return false;
+    if (
+      (await taskGit(context, ['rev-parse', 'HEAD'])) !== known.startSha ||
+      (await taskGit(context, ['symbolic-ref', '--short', 'HEAD'])) !==
+        known.branch
+    )
+      return false;
+    const status = await taskGit(context, [
+      'submodule',
+      'status',
+      '--recursive',
+    ]);
+    if (status.split('\n').some((line) => /^[+U]/u.test(line))) return false;
+    for (const dir of [context.dir, ...(await listSubmodules(context.dir))]) {
+      const prefix = ['-C', dir];
+      if (
+        await taskGit(context, [
+          ...prefix,
+          'status',
+          '--porcelain',
+          '--untracked-files=all',
+          '--ignore-submodules=all',
+        ])
+      )
+        return false;
+      const head = await taskGit(context, [...prefix, 'rev-parse', 'HEAD']);
+      const refs = await taskGit(context, [
+        ...prefix,
+        'for-each-ref',
+        '--format=%(objectname)',
+        'refs/heads/',
+        'refs/stash',
+      ]);
+      if (
+        refs
+          .split('\n')
+          .filter(Boolean)
+          .some((sha) => sha !== head)
+      )
+        return false;
+      const index = await taskGit(context, [...prefix, 'ls-files', '-v', '-z']);
+      if (index.split('\0').some((entry) => /^[a-zS] /u.test(entry)))
+        return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Initializes the worktree's submodules as its `.gitmodules` lists them: every one, recursively, when `all`; otherwise
  * only the top-level ones not initialized yet (with theirs), and those an earlier update left unfinished
@@ -858,8 +933,28 @@ export async function cleanWorkspace(
   workDir: string,
 ): Promise<void> {
   const meta = await readWorkspaceMeta(paths, workDir);
-  if (meta === undefined)
+  if (meta === undefined) {
+    // lockWorkspace creates the empty runner directory before this check. Nothing else may be discarded.
+    const exists = async (file: string) =>
+      lstat(file).catch((error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT') return undefined;
+        throw error;
+      });
+    const root = await exists(workDir);
+    const runner = await exists(path.join(workDir, RUNNER_DIR));
+    if (
+      !(await exists(workspaceRecordPath(paths, workDir))) &&
+      root?.isDirectory() &&
+      !root.isSymbolicLink() &&
+      (!runner ||
+        (runner.isDirectory() &&
+          !runner.isSymbolicLink() &&
+          (await readdir(path.join(workDir, RUNNER_DIR))).length === 0)) &&
+      (await readdir(workDir)).every((name) => name === RUNNER_DIR)
+    )
+      return;
     throw new CheckoutError('Cannot clean an unrecorded workspace');
+  }
   if (!(await removeWorkspace(paths, workDir, meta)))
     throw new CheckoutError(
       'Workspace preserved: local work or remote evidence is unavailable',
@@ -1092,7 +1187,14 @@ export async function prepareDirs(
           unpushed: true,
         });
       }
-      const submodules = created
+      const initialize =
+        created ||
+        (await canResumeSubmodules(
+          { dir, cache, url: entry.url },
+          known,
+          meta,
+        ));
+      const submodules = initialize
         ? await withRepoAuth(options.auth, entry.url, (auth) =>
             initSubmodules(dir, {
               all: created,
@@ -1103,7 +1205,7 @@ export async function prepareDirs(
             }),
           ).catch(prError)
         : [];
-      if (created) {
+      if (initialize) {
         const children = [];
         for (const child of await listSubmodules(dir))
           children.push({
@@ -1139,7 +1241,7 @@ export async function prepareDirs(
         dir,
         cache,
         gitDir,
-        submodules: created
+        submodules: initialize
           ? await listSubmodules(dir)
           : (shas.get(dir)?.submodules ?? [])
               .map((child) => path.resolve(dir, child.path))

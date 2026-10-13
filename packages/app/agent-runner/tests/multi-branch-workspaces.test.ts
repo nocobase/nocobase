@@ -1,4 +1,11 @@
-import { existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
@@ -10,9 +17,14 @@ import {
   checkWorkspaceGit,
   gcWorkspaces,
   cleanWorkspace,
+  lockWorkspace,
   writeWorkspaceMeta,
 } from '../src/core/checkout.ts';
-import { removePlanned, scanWorkspaces } from '../src/core/workspaces.ts';
+import {
+  collectWorkspaces,
+  removePlanned,
+  scanWorkspaces,
+} from '../src/core/workspaces.ts';
 import { cleanArtifacts } from '../src/core/artifacts.ts';
 import { git, makeRemote, publishSeed, removeDir, tempDir } from './helpers.ts';
 import * as hostGit from '../src/core/git.ts';
@@ -57,6 +69,205 @@ describe('multi-branch workspace preservation', () => {
     git(['push', remote, `${branch}:refs/heads/${target}`], dir);
   const check = async (workDir: string) =>
     checkWorkspaceGit(workDir, (await readWorkspaceMeta(paths, workDir))!);
+
+  it('preserves older stashes after reporting and retention GC when only the newest stash is published', async () => {
+    const work = await prepare();
+    const dir = work.repos[0]!.dir;
+    const stashes: string[] = [];
+    for (const name of ['oldest', 'middle', 'newest']) {
+      writeFileSync(path.join(dir, 'README.md'), name);
+      git(['stash', 'push', '-m', name], dir);
+      stashes.push(git(['rev-parse', 'refs/stash'], dir));
+    }
+    publish(dir, 'refs/stash', 'saved-newest');
+    expect(git(['status', '--porcelain'], dir)).toBe('');
+    const reports = await reportRepos(work.repos, { push: false });
+    expect(reports[0]?.pushed).toBe(false);
+    expect(reports[0]?.savedRefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sha: stashes[0], pushed: false }),
+      ]),
+    );
+    await markWorkspaceEnded(paths, work.workDir, reports);
+    await work.release();
+    expect(
+      await gcWorkspaces({ paths, now: Date.now() + 31 * 86400000 }),
+    ).toEqual([]);
+    expect(git(['stash', 'list'], dir).split('\n')).toHaveLength(3);
+    for (const sha of stashes)
+      expect(git(['cat-file', '-t', sha!], dir)).toBe('commit');
+    for (const [index, sha] of stashes.entries())
+      publish(dir, sha!, `saved-${index}`);
+    expect(
+      await gcWorkspaces({ paths, now: Date.now() + 31 * 86400000 }),
+    ).toEqual([work.workDir]);
+  });
+
+  it('includes stash log changes in the final fingerprint and preserves unreadable logs', async () => {
+    const work = await prepare();
+    const dir = work.repos[0]!.dir;
+    writeFileSync(path.join(dir, 'README.md'), 'saved');
+    git(['stash', 'push'], dir);
+    publish(dir, 'refs/stash', 'saved-stash');
+    const log = path.join(dir, '.git/logs/refs/stash');
+    const original = hostGit.git;
+    let changed = false;
+    vi.spyOn(hostGit, 'git').mockImplementation(async (args, cwd, env) => {
+      if (!changed && args.includes('fetch') && cwd?.includes('evidence-')) {
+        changed = true;
+        writeFileSync(
+          log,
+          readFileSync(log, 'utf8').replace(/\t.*\n$/u, '\tchanged message\n'),
+        );
+      }
+      return original(args, cwd, env);
+    });
+    expect((await check(work.workDir)).reason).toBe('changed');
+    vi.restoreAllMocks();
+    writeFileSync(log, 'broken');
+    expect((await check(work.workDir)).reason).toBe('missingEvidence');
+    rmSync(log);
+    expect((await check(work.workDir)).reason).toBe('missingEvidence');
+    await work.release();
+  });
+
+  it.each(['bare', 'separate'])(
+    'preserves unknown %s metadata through clean, retention, pressure, settled, force and artifact cleanup',
+    async (kind) => {
+      const work = await prepare();
+      const seed = path.join(root, 'origin-repo-seed');
+      const sha = commit(seed, 'private.txt');
+      const backup = path.join(work.workDir, 'backup.git');
+      if (kind === 'bare') git(['clone', '--bare', seed, backup]);
+      else
+        git([
+          'clone',
+          `--separate-git-dir=${backup}`,
+          seed,
+          path.join(root, 'separate-checkout'),
+        ]);
+      expect((await check(work.workDir)).reason).toBe('missingEvidence');
+      await expect(cleanWorkspace(paths, work.workDir)).rejects.toThrow(
+        /preserved/u,
+      );
+      await markWorkspaceEnded(
+        paths,
+        work.workDir,
+        await reportRepos(work.repos, { push: false }),
+      );
+      await work.release();
+      const now = Date.now() + 31 * 86400000;
+      expect(await gcWorkspaces({ paths, now })).toEqual([]);
+      const [entry] = await scanWorkspaces(paths);
+      expect(await removePlanned(paths, entry!, { force: true })).toBe(
+        'unpushed',
+      );
+      const collected = await collectWorkspaces({
+        paths,
+        now,
+        threshold: { bytes: 1000 },
+        readDisk: async () => ({ freeBytes: 0, totalBytes: 2000 }),
+        reporters: new Map([
+          [
+            'app',
+            async (request) => ({
+              remove: request.workspaces.map((item) => item.runId),
+              decisions: request.directories?.map((item) => ({
+                ...item,
+                reportId: request.reportId!,
+                settled: true,
+              })),
+            }),
+          ],
+        ]),
+        decisionApps: new Set(['app']),
+        artifacts: { ttlMs: 1, patterns: ['backup.git'] },
+      });
+      expect(collected.removed).toEqual([]);
+      expect(collected.artifactsCleaned).toEqual([]);
+      expect(git(['--git-dir', backup, 'rev-parse', 'HEAD'])).toBe(sha);
+    },
+  );
+
+  it('cleans published annotated tags but preserves differing annotations, stale evidence and missing authorization', async () => {
+    const seed = path.join(root, 'origin-repo-seed');
+    git(['tag', '-a', 'v1', '-m', 'published release'], seed);
+    git(['push', remote, 'refs/tags/v1'], seed);
+    const work = await prepare();
+    const dir = work.repos[0]!.dir;
+    const published = git(['rev-parse', 'refs/tags/v1'], dir);
+    expect((await check(work.workDir)).reason).toBe('allowed');
+    git(['tag', '-f', '-a', 'v1', '-m', 'unpublished annotation'], dir);
+    expect(git(['rev-parse', 'v1^{}'], dir)).toBe(
+      git(['rev-parse', 'HEAD'], dir),
+    );
+    expect((await check(work.workDir)).reason).toBe('unpushed');
+    git(['update-ref', 'refs/tags/v1', published], dir);
+    const meta = (await readWorkspaceMeta(paths, work.workDir))!;
+    expect(
+      (
+        await checkWorkspaceGit(work.workDir, {
+          ...meta,
+          repos: meta.repos.map((repo) => ({ ...repo, requiresAuth: true })),
+        })
+      ).reason,
+    ).toBe('missingEvidence');
+    git(['push', remote, ':refs/tags/v1'], seed);
+    expect((await check(work.workDir)).reason).toBe('unpushed');
+    git(['push', remote, 'refs/tags/v1'], seed);
+    await work.release();
+    expect(
+      await gcWorkspaces({ paths, now: Date.now() + 31 * 86400000 }),
+    ).toEqual([work.workDir]);
+  });
+
+  it('permits clean initialization only for empty directories and permits it again after normal GC', async () => {
+    const options = {
+      paths,
+      appKey: 'app',
+      subjectKey: 'NEW',
+      clean: true,
+      dirs: [
+        {
+          kind: 'repo' as const,
+          url: remote,
+          defaultBranch: 'main',
+          branch: 'agent/NEW',
+          path: 'app',
+        },
+      ],
+    };
+    const first = await checkout(options);
+    await first.release();
+    const recorded = await checkout(options);
+    await recorded.release();
+    expect(
+      await gcWorkspaces({ paths, now: Date.now() + 31 * 86400000 }),
+    ).toEqual([recorded.workDir]);
+    const afterGC = await checkout(options);
+    await afterGC.release();
+    const lock = await lockWorkspace({
+      paths,
+      appKey: 'app',
+      subjectKey: 'unknown',
+    });
+    writeFileSync(path.join(lock.workDir, 'saved.txt'), 'local work');
+    await expect(cleanWorkspace(paths, lock.workDir)).rejects.toThrow(
+      /unrecorded/u,
+    );
+    expect(readFileSync(path.join(lock.workDir, 'saved.txt'), 'utf8')).toBe(
+      'local work',
+    );
+    rmSync(path.join(lock.workDir, 'saved.txt'));
+    writeFileSync(
+      path.join(lock.workDir, '.nocobase-runner/workspace.json'),
+      'invalid metadata',
+    );
+    await expect(cleanWorkspace(paths, lock.workDir)).rejects.toThrow(
+      /unrecorded/u,
+    );
+    await lock.release();
+  });
 
   it('preserves changes hidden from status by index flags', async () => {
     const work = await prepare();

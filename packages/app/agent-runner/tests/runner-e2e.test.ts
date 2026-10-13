@@ -1,4 +1,4 @@
-import { gcWorkspaces } from '../src/core/checkout.ts';
+import { gcWorkspaces, readWorkspaceMeta } from '../src/core/checkout.ts';
 import { runnerPaths } from '../src/lib/home.ts';
 // The runner end to end: the real daemon, its worker processes and the echo adapter against the in-memory server.
 import {
@@ -197,6 +197,74 @@ describe('runner end to end', () => {
     expect(() =>
       git(['rev-parse', '--verify', '-q', 'refs/heads/agent/PM-8'], bare),
     ).toThrow();
+  });
+
+  it('preserves an unknown bare repository at read-only completion even when the configured checkout is clean and published', async () => {
+    const remote = makeRemote(scratch);
+    const seed = path.join(scratch, 'origin-repo-seed');
+    writeFileSync(path.join(seed, 'private.txt'), 'private saved work');
+    git(['add', 'private.txt'], seed);
+    git(['-c', 'commit.gpgsign=false', 'commit', '-m', 'private'], seed);
+    const privateSha = git(['rev-parse', 'HEAD'], seed);
+    const run = server.enqueue({
+      subject: { key: 'PM-bare', url: 'http://app.test/PM-bare' },
+      workspace: {
+        dirs: [
+          {
+            kind: 'repo',
+            url: remote,
+            defaultBranch: 'main',
+            branch: 'agent/PM-bare',
+            path: 'app',
+          },
+        ],
+        env: [],
+        readOnly: true,
+      },
+      prompt: {
+        system: '',
+        session: 'fresh',
+        turn: `bash git clone --bare '${seed}' ../backup.git\nsleep 1000\nsay reviewed`,
+      },
+    });
+    daemon();
+    await waitFor(
+      async () => {
+        if (!run.start?.workDir) return false;
+        const meta = await readWorkspaceMeta(
+          runnerPaths(home),
+          String(run.start.workDir),
+        );
+        return (
+          meta?.writerActive && meta.repos[0]?.state?.head === 'agent/PM-bare'
+        );
+      },
+      20_000,
+      'delivery recorded before tool completion',
+    );
+    await waitFor(
+      () => run.status === 'completed',
+      20_000,
+      'read-only completion',
+    );
+    const workDir = String(run.start?.workDir);
+    await waitFor(
+      () => !existsSync(`${workDir}.lock`),
+      10_000,
+      'read-only release',
+    );
+    expect(git(['status', '--porcelain'], path.join(workDir, 'app'))).toBe('');
+    expect(run.complete?.repos?.[0]?.pushed).toBe(true);
+    expect(
+      git(['--git-dir', path.join(workDir, 'backup.git'), 'rev-parse', 'HEAD']),
+    ).toBe(privateSha);
+    expect(
+      await gcWorkspaces({
+        paths: runnerPaths(home),
+        now: Date.now() + 31 * 86400000,
+      }),
+    ).toEqual([]);
+    expect(existsSync(path.join(workDir, 'backup.git'))).toBe(true);
   });
 
   it('ends and restarts on B without publishing a clean non-current C, which retention GC preserves', async () => {

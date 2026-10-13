@@ -80,6 +80,37 @@ export async function readGitState(
         ? [{ ref, sha }]
         : [];
     });
+  // Older stashes are reflog entries, not ancestors of refs/stash. Read the complete log, including saved old tips.
+  const gitDir = await run(['rev-parse', '--absolute-git-dir']);
+  const stashLog = await readFile(
+    path.join(gitDir, 'logs/refs/stash'),
+    'utf8',
+  ).catch((error: NodeJS.ErrnoException) => {
+    if (
+      error.code === 'ENOENT' &&
+      !refs.some((ref) => ref.ref === 'refs/stash')
+    )
+      return '';
+    throw error;
+  });
+  if (stashLog && !stashLog.endsWith('\n'))
+    throw new Error('Incomplete stash log');
+  for (const [index, line] of stashLog.split('\n').filter(Boolean).entries()) {
+    const entry =
+      /^([0-9a-f]{40}|[0-9a-f]{64}) ([0-9a-f]{40}|[0-9a-f]{64}) .+\t.*$/u.exec(
+        line,
+      );
+    if (!entry || entry[1].length !== entry[2].length)
+      throw new Error('Unreadable stash log');
+    for (const [kind, sha] of [
+      ['old', entry[1]],
+      ['new', entry[2]],
+    ])
+      if (!/^0+$/u.test(sha))
+        refs.push({ ref: `stash-log/${index}/${kind}`, sha: sha });
+  }
+  if (refs.some((ref) => ref.ref === 'refs/stash') && !stashLog)
+    throw new Error('Missing stash log');
   const symbolic = await run(['symbolic-ref', '--quiet', 'HEAD']).catch(
     () => '',
   );
@@ -97,7 +128,9 @@ export async function readGitState(
     refs,
     status,
     fingerprint: createHash('sha256')
-      .update(JSON.stringify({ raw, head, symbolic, status, worktrees }))
+      .update(
+        JSON.stringify({ raw, stashLog, head, symbolic, status, worktrees }),
+      )
       .digest('hex'),
   };
 }
@@ -143,6 +176,7 @@ export async function provenRefs(
           '--',
           url,
           '+refs/heads/*:refs/remotes/evidence/*',
+          '+refs/tags/*:refs/evidence-tags/*',
         ],
         evidence,
         {
@@ -169,6 +203,16 @@ export async function provenRefs(
       .split('\n')
       .filter(Boolean);
     const context = { ...repo, dir };
+    const publishedTags = new Set(
+      (
+        await git(
+          ['for-each-ref', '--format=%(objectname)', 'refs/evidence-tags/'],
+          evidence,
+        )
+      )
+        .split('\n')
+        .filter(Boolean),
+    );
     const source = await taskGit(context, [
       ...(child ? ['-C', child.path] : []),
       'rev-parse',
@@ -195,7 +239,12 @@ export async function provenRefs(
     await git(['fsck', '--full', '--no-reflogs'], evidence);
     const proven = new Set<string>();
     for (const tip of tips) {
-      // An annotated tag or blob holds content beyond the peeled commit. Remote branch history cannot prove it saved.
+      // Exact remote tag objects prove their annotation and target saved, not merely the peeled commit.
+      if (publishedTags.has(tip)) {
+        proven.add(tip);
+        continue;
+      }
+      // Other annotated tags or blobs hold content beyond the commit that remote branch history proves saved.
       if ((await git(['cat-file', '-t', tip], evidence)) !== 'commit') continue;
       for (const candidate of candidates) {
         // rev-list fails for missing/corrupt objects; an empty difference proves reachability in remote history.
@@ -260,6 +309,23 @@ async function checkLayout(
     if (await lstat(modules).catch(() => undefined)) await walkModules(modules);
   }
   const walk = async (dir: string): Promise<void> => {
+    const markers = await Promise.all(
+      ['HEAD', 'objects', 'refs', 'commondir'].map(async (name) => {
+        try {
+          return await lstat(path.join(dir, name));
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code === 'ENOENT')
+            return undefined;
+          throw error;
+        }
+      }),
+    );
+    // Bare and separate Git directories have no .git entry. Unknown or incomplete metadata must survive cleanup.
+    if (
+      (markers[0] && (markers[1] || markers[2] || markers[3])) ||
+      (markers[1] && markers[2])
+    )
+      throw new Error(`Unknown Git metadata: ${dir}`);
     for (const entry of await readdir(dir, { withFileTypes: true })) {
       const file = path.join(dir, entry.name);
       if (entry.name === '.git') {

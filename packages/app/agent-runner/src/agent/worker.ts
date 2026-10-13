@@ -797,6 +797,20 @@ export class RunWorker {
           await writeWorkspaceMeta(this.deps.paths, activeDir, {
             ...meta,
             writerActive: true,
+            // Record delivery before starting the tool. A stale pending initialization must never authorize updates later.
+            repos: meta.repos.map((repo) => ({
+              ...repo,
+              state: {
+                head:
+                  this.prepared?.dirs.find(
+                    (dir) =>
+                      dir.repo?.url === repo.url &&
+                      path.relative(activeDir, dir.dir) === repo.path,
+                  )?.repo?.actualHead ?? 'unknown (agent started)',
+                refs: repo.state?.refs ?? [],
+                evidence: 'unknown',
+              },
+            })),
           });
       }
       const handle = adapter.start({
