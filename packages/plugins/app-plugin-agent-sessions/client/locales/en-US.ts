@@ -144,6 +144,8 @@ const enUS = {
     recordBody: 'The full record is kept here, and only you can see it.',
   },
   composer: {
+    expand: 'Expand input',
+    collapse: 'Collapse input',
     placeholder: 'Reply, or ask for the next thing…',
     busy: 'The agent is answering. Your message goes once it is done.',
     waiting: 'Answer the request above, or write a message to send after it.',
