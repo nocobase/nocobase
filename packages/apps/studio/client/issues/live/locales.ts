@@ -20,7 +20,7 @@ export const issueLiveEnUS = {
     viewChanges: 'View changes',
     sendBack: 'Send back',
     sendBackHint: 'Move it back to In progress so the work continues.',
-    answer: 'Answer',
+    answer: 'Reply',
     latestAgentComment: 'Latest agent comment',
     acceptPullRequest: 'Accept {{label}} — {{title}}',
     takeOver: 'Take over this issue as its owner',
@@ -29,8 +29,9 @@ export const issueLiveEnUS = {
   ask: {
     acceptPullRequest: 'Accept: {{label}}',
     acceptIssue: 'Accept the result',
-    answer: 'Answer: {{question}}',
-    answerNoQuestion: 'Answer the project manager',
+    waiting: 'Waiting: {{reason}}',
+    continue: 'Continue (comment-triggered runs reached their limit)',
+    takeOver: 'Take over the issue',
   },
   feed: {
     modes: 'What to show',
@@ -80,7 +81,7 @@ export const issueLiveZhCN: typeof issueLiveEnUS = {
     viewChanges: '看改动',
     sendBack: '退回修改',
     sendBackHint: '移回进行中，让工作继续。',
-    answer: '回答',
+    answer: '回复',
     latestAgentComment: '最新智能体评论',
     acceptPullRequest: '验收 {{label}} — {{title}}',
     takeOver: '作为负责人接手这个任务',
@@ -89,8 +90,9 @@ export const issueLiveZhCN: typeof issueLiveEnUS = {
   ask: {
     acceptPullRequest: '验收：{{label}}',
     acceptIssue: '验收结果',
-    answer: '回答：{{question}}',
-    answerNoQuestion: '回答项目经理的问题',
+    waiting: '等待：{{reason}}',
+    continue: '继续（评论运行已达上限）',
+    takeOver: '接手任务',
   },
   feed: {
     modes: '显示内容',

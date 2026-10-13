@@ -306,7 +306,7 @@ describe('what the page lists', () => {
       handOver: false,
     };
     expect(askOf(t, issue({ statusKey: 'blocked', progress }), null)).toBe(
-      'issueLive.ask.answer {"question":"Push again?"}',
+      'Push again?',
     );
     expect(
       askOf(t, issue({ statusKey: 'blocked', owned: false, progress }), null),

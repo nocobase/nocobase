@@ -18,8 +18,10 @@ export interface IssueConversationState {
   readonly actions: IssueCommentActions;
   readonly mayComment: boolean;
   readonly editorRef: RefObject<RichTextHandle | null>;
-  readonly replyTo: IssueComment | null;
-  readonly setReplyTo: (comment: IssueComment | null) => void;
+  readonly replyTo: Pick<IssueComment, 'id' | 'authorName'> | null;
+  readonly setReplyTo: (
+    comment: Pick<IssueComment, 'id' | 'authorName'> | null,
+  ) => void;
   readonly searchMentions: (
     query: string,
   ) => Promise<readonly RichTextMention[]>;

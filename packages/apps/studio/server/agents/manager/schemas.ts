@@ -154,8 +154,13 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
       .object({ number: z.number().int(), url: z.string().nullable() })
       .nullable(),
     question: z.string().nullable().meta({
-      description: 'On a blocked issue: what the project manager asked.',
+      description:
+        'The Needs you line from the manager comment at the transition to Blocked.',
     }),
+    blockedComment: z
+      .object({ id: z.string(), content: z.string() })
+      .nullable()
+      .optional(),
     next: z.string().nullable().meta({
       description: 'The project manager’s latest "Next" line.',
     }),

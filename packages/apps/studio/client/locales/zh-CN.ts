@@ -1199,7 +1199,7 @@ const zhCN: AppResource = {
     commentRuns: {
       limitReached: 'Agent 评论已暂停唤醒',
       continueHint:
-        'Agent 的评论在 {{windowHours}} 小时内已在这个任务上启动 {{maxRuns}} 次运行，最近一条没有唤醒任何 Agent。继续可唤醒它提到的 Agent 一次，并重新开始计数。',
+        '最近 {{windowHours}} 小时评论触发的运行已达 {{maxRuns}} 次上限',
       continued: '已继续 Agent 评论',
       continueStale: '这条评论已不再等待，请刷新任务。',
       continueFailed: '暂时无法继续，请检查 Agent 和任务阻塞后重试。',
