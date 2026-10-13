@@ -46,7 +46,7 @@ function trimTrailing(text: string): string {
   }
 }
 
-/** Whether `text` still reads as a link: a domain with at least one dot after the scheme or `www.`. */
+/** Whether `text` still reads as a link: a dotted domain, `localhost`, or `www.`. */
 function isLinkable(text: string): boolean {
   const authority = /^(?:https?:\/\/)?([^/?#]*)/iu.exec(text)?.[1] ?? '';
   const portSeparator = authority.lastIndexOf(':');
@@ -55,7 +55,10 @@ function isLinkable(text: string): boolean {
   const port = hasPort ? authority.slice(portSeparator + 1) : '';
   if (hasPort && (!/^\d{1,5}$/u.test(port) || Number(port) > 65535))
     return false;
-  return /^[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)+$/u.test(host);
+  return (
+    /^localhost$/iu.test(host) ||
+    /^[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)+$/u.test(host)
+  );
 }
 
 /** The text of a link GFM recognised from a bare URL, or `undefined` for any other link. */
