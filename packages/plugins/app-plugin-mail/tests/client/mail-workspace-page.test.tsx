@@ -10,6 +10,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mail = vi.hoisted(() => ({
@@ -2034,9 +2035,12 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   });
 
   it('does not allow sending without a subject and message body', async () => {
+    const user = userEvent.setup();
     render(<MailWorkspacePage />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Compose' }));
+    const compose = await screen.findByRole('button', { name: 'Compose' });
+    await waitFor(() => expect(compose).toBeEnabled());
+    await user.click(compose);
     fireEvent.change(await screen.findByLabelText('TO'), {
       target: { value: 'recipient@example.com' },
     });
@@ -2055,6 +2059,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   });
 
   it('keeps local labels available even when IMAP has no Provider label support', async () => {
+    const user = userEvent.setup();
     const message = {
       id: 'message-1',
       accountId: 'account-1',
@@ -2137,31 +2142,33 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     });
     expect(messageRow).not.toHaveAttribute('aria-current');
     expect(within(messageRow).getByText('Local label')).toBeInTheDocument();
-    fireEvent.click(await screen.findByText('IMAP message'));
+    await user.click(await screen.findByText('IMAP message'));
     await screen.findByRole('heading', { name: 'IMAP message' });
     expect(within(messageRow).getByText('Local label')).toBeInTheDocument();
     const conversation = screen
       .getByRole('heading', { name: 'IMAP message' })
       .closest('section');
     if (!conversation) throw new Error('Missing conversation view');
-    fireEvent.keyDown(
+    await user.click(
       within(conversation).getByRole('button', { name: 'More actions' }),
-      { key: 'ArrowDown' },
     );
-    const menu = await screen.findByRole('menu');
+    const menu = await screen.findByRole('menu', {}, { timeout: 3000 });
     expect(
       within(menu).queryByRole('menuitem', { name: 'Archive' }),
     ).toBeNull();
-    fireEvent.click(within(menu).getByRole('menuitem', { name: /^Labels/ }));
+    await user.click(within(menu).getByRole('menuitem', { name: /^Labels/ }));
+    const labelsDialog = await screen.findByRole('dialog');
     expect(
-      within(screen.getByRole('dialog')).getByRole('checkbox', {
+      within(labelsDialog).getByRole('checkbox', {
         name: 'Local label',
       }),
     ).toBeInTheDocument();
-    fireEvent.click(
-      within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }),
+    await user.click(
+      within(labelsDialog).getByRole('button', { name: 'Close' }),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Compose' }));
+    const compose = screen.getByRole('button', { name: 'Compose' });
+    await waitFor(() => expect(compose).toBeEnabled());
+    await user.click(compose);
     expect(
       screen.getByRole('button', { name: 'Save draft' }),
     ).toBeInTheDocument();
@@ -2172,6 +2179,9 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     try {
       render(<MailWorkspacePage />);
       await vi.waitFor(() => expect(mail.listAccounts).toHaveBeenCalled());
+      await vi.waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
+      );
 
       fireEvent.click(screen.getByRole('button', { name: 'Compose' }));
       await vi.waitFor(() => expect(mail.listIdentities).toHaveBeenCalled());
@@ -2209,6 +2219,7 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   });
 
   it('restores an unfinished composer snapshot on demand', async () => {
+    const user = userEvent.setup();
     window.sessionStorage.setItem(
       'nocobase:mail:composer-recovery:v1:account-1',
       JSON.stringify({
@@ -2231,11 +2242,13 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     );
     render(<MailWorkspacePage />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Compose' }));
+    const compose = await screen.findByRole('button', { name: 'Compose' });
+    await waitFor(() => expect(compose).toBeEnabled());
+    await user.click(compose);
     expect(
       await screen.findByText('An unfinished message can be restored.'),
     ).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
+    await user.click(screen.getByRole('button', { name: 'Restore' }));
     expect(screen.getByLabelText('Subject')).toHaveValue('Recovered subject');
     expect(screen.getByLabelText('Message body')).toHaveTextContent(
       'Recovered body',
@@ -2243,12 +2256,15 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
   });
 
   it('closes immediately and flushes the draft in the background without a confirmation', async () => {
+    const user = userEvent.setup();
     render(<MailWorkspacePage />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Compose' }));
+    const compose = await screen.findByRole('button', { name: 'Compose' });
+    await waitFor(() => expect(compose).toBeEnabled());
+    await user.click(compose);
     fireEvent.change(await screen.findByLabelText('TO'), {
       target: { value: 'draft@example.com' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByLabelText('TO')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('dialog', { name: 'Close this message?' }),
@@ -2428,6 +2444,9 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
       });
       render(<MailWorkspacePage />);
       await vi.waitFor(() => expect(mail.listAccounts).toHaveBeenCalled());
+      await vi.waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
+      );
       fireEvent.click(screen.getByRole('button', { name: 'Compose' }));
       const input = await vi.waitFor(() => {
         const candidate = document.querySelector(
