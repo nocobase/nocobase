@@ -25,6 +25,7 @@ const server = vi.hoisted(() => {
     logouts: 0,
     locks: 0,
     expunges: [] as string[],
+    stores: [] as string[],
     onList: undefined as (() => void) | undefined,
     onFlag: undefined as (() => void) | undefined,
     onSearch: undefined as (() => number[] | false | undefined) | undefined,
@@ -37,6 +38,7 @@ const server = vi.hoisted(() => {
       this.logouts = 0;
       this.locks = 0;
       this.expunges.length = 0;
+      this.stores.length = 0;
       this.onList = undefined;
       this.onFlag = undefined;
       this.onSearch = undefined;
@@ -203,6 +205,7 @@ vi.mock('imapflow', () => {
     }
     private flag(range: string, flags: string[], add: boolean): boolean {
       const path = this.mailbox && this.mailbox.path;
+      server.stores.push(`${path}:${range}:${flags.join(',')}`);
       if (
         server.failFlags.has(String(path)) ||
         server.failFlags.has(`${path}:${flags[0]}`)
@@ -359,7 +362,7 @@ function service(): DefaultMailService {
   });
 }
 
-async function step(): Promise<boolean> {
+async function step(resolver: typeof adapters = adapters): Promise<boolean> {
   const tasks = await store.claimOutbox(
     new Date().toISOString(),
     'publisher',
@@ -375,12 +378,19 @@ async function step(): Promise<boolean> {
     task.leaseToken!,
     new Date().toISOString(),
   );
-  await new SyncMailboxOperation({ store, adapters }).execute(task.payload);
+  await new SyncMailboxOperation({ store, adapters: resolver }).execute(
+    task.payload,
+  );
   return true;
 }
 
-async function sync(): Promise<string> {
-  const run = await service().startSync(owner, { accountId });
+async function sync(
+  input: Pick<
+    import('../../shared/mail.js').MailStartSyncInput,
+    'mode' | 'receivedAfter'
+  > = {},
+): Promise<string> {
+  const run = await service().startSync(owner, { accountId, ...input });
   for (let index = 0; index < 50 && (await step()); index += 1);
   expect((await store.getSyncRun(run.id))?.error).toBeUndefined();
   expect(await store.getSyncRun(run.id)).toMatchObject({
@@ -1270,8 +1280,19 @@ describe('IMAP bounded verification and protocol evidence', () => {
     server.folders
       .get('Archive')!
       .messages.set(2, { ...copied, date: new Date('2025-01-01T00:00:00Z') });
+    server.folders.get('Archive')!.messages.set(3, {
+      ...copied,
+      emailId: 'UNRELATED-OLD',
+      raw: raw('<unrelated-old@example.com>'),
+      date: new Date('2025-01-01T00:00:00Z'),
+    });
     server.folders.get('INBOX')!.messages.clear();
-    await sync();
+    const receivedAfter = '2026-01-01T00:00:00.000Z';
+    const runId = await sync({ mode: 'incremental', receivedAfter });
+    expect(await store.getSyncRun(runId)).toMatchObject({
+      mode: 'incremental',
+      policy: { receivedAfter },
+    });
     expect(await messages()).toHaveLength(1);
     expect((await messages())[0]).toMatchObject({
       id: original.id,
@@ -1362,6 +1383,289 @@ describe('IMAP bounded verification and protocol evidence', () => {
 });
 
 describe('IMAP production writes and draft protection', () => {
+  it('protects a scheduled native draft during sync, orphan cleanup and bound mutations', async () => {
+    server.capabilities.add('OBJECTID');
+    server.capabilities.add('UIDPLUS');
+    folder('Drafts');
+    deliver('Drafts', {
+      raw: raw('<scheduled@example.com>', 'scheduled body'),
+      emailId: 'SCHEDULED',
+      flags: ['\\Draft'],
+    });
+    await sync();
+    const original = (await messages())[0];
+    const adapter = await adapters.resolve(
+      (await store.getAccount(accountId))!,
+    );
+    try {
+      const snapshot = await adapter.getMessage!('SCHEDULED');
+      if (!snapshot.ok) throw new Error(snapshot.error.message);
+      const submissionId = randomUUID();
+      await store.createScheduledSubmission(
+        {
+          id: submissionId,
+          accountId,
+          status: 'pending',
+          scheduledAt: '2099-01-01T00:00:00.000Z',
+        },
+        'scheduled-imap',
+        'fingerprint',
+        owner.actorId,
+        {
+          accountId,
+          idempotencyKey: 'scheduled-imap',
+          draftMessageId: original.id,
+          to: [{ address: 'recipient@example.com' }],
+          subject: 'Scheduled',
+          text: 'scheduled body',
+        },
+        snapshot.value,
+      );
+      expect(
+        await database
+          .query()
+          .selectFrom('mailMessages')
+          .selectAll()
+          .where('id', '=', original.id)
+          .executeTakeFirst(),
+      ).toMatchObject({
+        scheduledSubmissionId: submissionId,
+        imapIdSource: 'objectid',
+        providerMessageId: 'SCHEDULED',
+      });
+      const remote = server.folders.get('Drafts')!.messages.get(1)!;
+      remote.raw = raw('<scheduled@example.com>', 'remote replacement');
+      remote.flags.add('\\Seen');
+      await sync();
+      expect(
+        await store.getMessageForAccount(accountId, original.id),
+      ).toMatchObject({ text: 'scheduled body', read: false });
+      // Exercise the bound adapter itself, rather than only the service schedule guard.
+      const flags = await (
+        adapter as import('../../server/adapters/imap-smtp/adapter.js').ImapSmtpAdapter
+      ).forMessage(original.id, 'SCHEDULED', 'flags');
+      const deletion = await (
+        adapter as import('../../server/adapters/imap-smtp/adapter.js').ImapSmtpAdapter
+      ).forMessage(original.id, 'SCHEDULED', 'delete');
+      try {
+        expect(await flags.setRead('SCHEDULED', true)).toMatchObject({
+          ok: false,
+        });
+        expect(await flags.setStarred('SCHEDULED', true)).toMatchObject({
+          ok: false,
+        });
+        expect(await deletion.deleteMessage('SCHEDULED', true)).toMatchObject({
+          ok: false,
+        });
+        expect(server.stores).toEqual([]);
+        expect(server.expunges).toEqual([]);
+      } finally {
+        await flags.close();
+        await deletion.close();
+      }
+      server.folders.get('Drafts')!.messages.clear();
+      const cleanupRun = await sync();
+      expect((await messages())[0]).toMatchObject({
+        id: original.id,
+        imapOrphanRunId: cleanupRun,
+        locations: [{ status: 'invalid' }],
+      });
+      expect(
+        await store.getMessageForAccount(accountId, original.id),
+      ).toMatchObject({
+        text: 'scheduled body',
+        scheduledSend: { id: submissionId },
+      });
+    } finally {
+      await adapter.close?.();
+    }
+  });
+
+  it.each(['complete-first', 'complete-last'] as const)(
+    'selects complete content from same-page native copies (%s)',
+    async (order) => {
+      server.capabilities.add('OBJECTID');
+      folder('INBOX');
+      const complete = {
+        raw: raw('<content@example.com>', 'complete body'),
+        emailId: 'CONTENT',
+        structure: {
+          type: 'multipart/mixed',
+          childNodes: [
+            { type: 'text/plain', part: '1', size: 13 },
+            {
+              type: 'application/pdf',
+              part: '2',
+              disposition: 'attachment',
+              dispositionParameters: { filename: 'complete.pdf' },
+              size: 10,
+            },
+          ],
+        },
+      };
+      const incomplete = {
+        raw: raw('<content@example.com>', 'incomplete body'),
+        emailId: 'CONTENT',
+        flags: ['\\Seen', '\\Flagged'],
+        structure: { type: 'text/plain', part: '1', size: 20 * 1024 * 1024 },
+      };
+      for (const copy of order === 'complete-first'
+        ? [complete, incomplete]
+        : [incomplete, complete])
+        deliver('INBOX', copy);
+      const pages: import('../../server/contracts/provider.js').NormalizedMailMessage[][] =
+        [];
+      const persistence = createImapLocationPersistence(database, accountId);
+      const commit = vi.spyOn(persistence, 'commitSyncStep');
+      const pageAdapters = {
+        resolve: async (account: MailAccount) =>
+          createImapSmtpMailProviderDefinition(() => persistence).createAdapter(
+            {
+              publicBasePath: '/test',
+              credentials: {
+                put: vi.fn(),
+                get: async <T>() => ({ username: 'u', password: 'p' }) as T,
+                replace: vi.fn(),
+                getOrRefresh: vi.fn(),
+                delete: vi.fn(),
+              },
+            },
+            config,
+            account,
+          ),
+      };
+      // Capture the real history input to prove both content variants share one commit.
+      commit.mockImplementation(async (input, evidence) => {
+        pages.push([...input.messages]);
+        return createImapLocationPersistence(
+          database,
+          accountId,
+        ).commitSyncStep(input, evidence);
+      });
+      const run = await service().startSync(owner, { accountId });
+      for (let index = 0; index < 50; index += 1) {
+        const current = (await store.getSyncRun(run.id))!;
+        if (current.status === 'completed') break;
+        expect(await step(pageAdapters)).toBe(true);
+      }
+      expect((await store.getSyncRun(run.id))?.status).toBe('completed');
+      expect(
+        pages.some(
+          (page) =>
+            page.length === 2 &&
+            page.map((copy) => copy.contentStatus).join(',') ===
+              (order === 'complete-first'
+                ? 'complete,deferred'
+                : 'deferred,complete'),
+        ),
+      ).toBe(true);
+      const [saved] = await messages();
+      expect(saved.locations).toHaveLength(2);
+      expect(saved).toMatchObject({ read: false, starred: true });
+      expect(
+        await store.getMessageForAccount(accountId, saved.id),
+      ).toMatchObject({
+        text: 'complete body',
+        contentStatus: 'complete',
+        attachments: [{ fileName: 'complete.pdf' }],
+      });
+    },
+  );
+
+  it('retains complete content through a later incomplete page and detail retry', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', {
+      raw: raw('<later@example.com>', 'complete body'),
+      emailId: 'LATER',
+      structure: {
+        type: 'multipart/mixed',
+        childNodes: [
+          { type: 'text/plain', part: '1', size: 13 },
+          {
+            type: 'application/pdf',
+            part: '2',
+            disposition: 'attachment',
+            dispositionParameters: { filename: 'complete.pdf' },
+            size: 10,
+          },
+        ],
+      },
+    });
+    await sync();
+    const original = (await messages())[0];
+    const before = (await store.getMessageForAccount(accountId, original.id))!;
+    expect(before).toMatchObject({
+      contentStatus: 'complete',
+      text: 'complete body',
+      attachments: [{ fileName: 'complete.pdf' }],
+    });
+    folder('Archive');
+    deliver('Archive', {
+      raw: raw('<later@example.com>', 'incomplete replacement'),
+      emailId: 'LATER',
+      flags: ['\\Seen', '\\Flagged'],
+      structure: { type: 'text/plain', part: '1', size: 20 * 1024 * 1024 },
+    });
+    batchSize = 1;
+    await sync();
+    expect((await messages())[0]).toMatchObject({
+      id: original.id,
+      read: false,
+      starred: true,
+      locations: [
+        { folder: 'Archive', status: 'valid' },
+        { folder: 'INBOX', status: 'valid' },
+      ],
+    });
+    const after = (await store.getMessageForAccount(accountId, original.id))!;
+    const newCopy = await database
+      .query()
+      .selectFrom('mailMessageImapLocations')
+      .selectAll()
+      .where('messageId', '=', original.id)
+      .where('providerFolderId', '=', 'Archive')
+      .executeTakeFirst();
+    expect(Boolean(newCopy?.read)).toBe(true);
+    expect(Boolean(newCopy?.starred)).toBe(true);
+    expect(after.text).toBe(before.text);
+    expect(after.attachments).toEqual(before.attachments);
+    expect(after.contentStatus).toBe('complete');
+    // Make either selected copy incomplete for the real detail FETCH path.
+    server.folders.get('INBOX')!.messages.get(1)!.structure = {
+      type: 'text/plain',
+      part: '1',
+      size: 20 * 1024 * 1024,
+    };
+    const adapter = await adapters.resolve(
+      (await store.getAccount(accountId))!,
+    );
+    try {
+      const detail = await adapter.getMessage!('LATER');
+      if (!detail.ok) throw new Error(detail.error.message);
+      expect(detail.value).toMatchObject({
+        contentStatus: 'deferred',
+        attachments: [],
+      });
+      const saved = await store.saveMessageContent(
+        accountId,
+        original.id,
+        detail.value,
+      );
+      expect(saved).toMatchObject({
+        id: original.id,
+        text: before.text,
+        contentStatus: 'complete',
+        read: false,
+        starred: true,
+      });
+      expect(saved.attachments).toEqual(before.attachments);
+      expect((await messages())[0].locations).toHaveLength(2);
+    } finally {
+      await adapter.close?.();
+    }
+  });
+
   it('preserves localized draft UUID, authored content and remote identity source', async () => {
     server.capabilities.add('OBJECTID');
     folder('Drafts');
