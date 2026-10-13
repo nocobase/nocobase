@@ -20,6 +20,7 @@ export const ISSUE_TRIGGERS = [
   'comment',
   'statusChange',
   'ownerChanged',
+  'ownerAccepted',
   // Moved to another project: the work starts again in its working directories (`work.ts`).
   'projectChanged',
   'unblocked',

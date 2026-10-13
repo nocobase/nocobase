@@ -117,6 +117,7 @@ import {
 } from '../../server/agents/conversation/delegation.js';
 import { issueRunsRoutes } from '../../server/agents/run-views.js';
 import { projectManagerRoutes } from '../../server/agents/manager/routes.js';
+import { ownerHandoffRoutes } from '../../server/issues/owner-handoff-routes.js';
 import { followUpsRoutes } from '../../server/follow-ups/routes.js';
 import { createProjectManager } from '../../server/agents/manager/service.js';
 import { studioProjectManagerToken } from '../../server/agents/manager/token.js';
@@ -1228,6 +1229,10 @@ export async function createBridgeHarness(
     await studioAgentsRoutes.createRouter(appLike as unknown as never),
   );
   api.route('/', await inboxRoutes.createRouter(appLike as unknown as never));
+  api.route(
+    '/',
+    await ownerHandoffRoutes.createRouter(appLike as unknown as never),
+  );
   api.route(
     '/',
     await projectManagerRoutes.createRouter(appLike as unknown as never),

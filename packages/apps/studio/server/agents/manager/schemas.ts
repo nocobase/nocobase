@@ -42,6 +42,7 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
     waiting: z
       .object({
         reason: z.enum([
+          'waitingOwner',
           'noOwner',
           'notConfigured',
           'noRunner',

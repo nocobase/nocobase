@@ -25,7 +25,7 @@ import {
 import { PR_ACTIVITY_LABELS } from '../../git/lib.js';
 
 import type { Translate } from './labels.js';
-import { actionLabel } from './activity-labels.js';
+import { actionLabel, isOwnerHandoffActivity } from './activity-labels.js';
 import { usePlanLinkTo } from './plan-links.js';
 import { StatusBadge } from './status-badge.js';
 
@@ -254,7 +254,9 @@ export function ActivityRow({
                       text(activity.details.name) ??
                       t('common.unknown'),
                   })
-                : t(actionLabel(activity.action, activity.details), {
+                : (isOwnerHandoffActivity(activity.action, activity.details)
+                    ? studioT
+                    : t)(actionLabel(activity.action, activity.details), {
                     name: text(activity.details.name) ?? t('common.unknown'),
                   })}
       </span>
