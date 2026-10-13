@@ -281,6 +281,15 @@ export interface SubjectBinding {
    * past that the sweeper fails it as `queuedExpired`. Without it (or 0), queued runs wait for a runner however long it takes.
    */
   readonly queuedExpiryMs?: number;
+  /** Per-run queued withdrawal policy, evaluated under the claim's agent lock by the periodic sweep. Reads only. */
+  readonly queuedTimeout?: (
+    conn: DatabaseConnection,
+    run: Run,
+    now: Date,
+  ) => Promise<{
+    readonly reason: import('@nocobase/agent-protocol').FailureReason;
+    readonly detail: string;
+  } | null>;
   /** What the reports may say about the subjects; without it, runs on the kind are reported by id only. */
   readonly reports?: SubjectReports;
   /**

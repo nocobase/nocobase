@@ -30,7 +30,7 @@ import type { Clock } from '../../kernel/clock.js';
 import type { IdSource } from '../../kernel/ids.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { jsonObject } from '../../kernel/values.js';
-import { findAgent } from '../agents/index.js';
+import { lockAgentForClaim, findAgent } from '../agents/index.js';
 import { toolPolicyFor } from './policy.js';
 import {
   ACTIVE,
@@ -39,6 +39,7 @@ import {
   runsRepo,
   usageRepo,
   type RunRecord,
+  toRun,
 } from './run.store.js';
 import { finishRun, requeueRun, type TransitionDeps } from './transitions.js';
 
@@ -235,6 +236,57 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
         });
 
       for (const binding of deps.subjects.list()) {
+        if (binding.queuedTimeout) {
+          let cursor: string | null = null;
+          while (true) {
+            let scan = conn.query
+              .selectFrom('agRuns')
+              .select('id')
+              .where('status', '=', 'queued')
+              .where('subjectKind', '=', binding.kind);
+            if (cursor !== null) scan = scan.where('id', '>', cursor);
+            const ids = await scan.orderBy('id').limit(200).execute();
+            const batch = ids.length
+              ? await runsRepo(conn).findMany({
+                  filter: (f) =>
+                    f.or(ids.map((row) => f.string('id').eq(String(row.id)))),
+                  sort: (s) => s.field('id').asc(),
+                })
+              : [];
+            if (!batch.length) break;
+            for (const candidate of batch)
+              await tx.run(async (unit) => {
+                await lockAgentForClaim(
+                  unit.conn,
+                  candidate.agentId,
+                  clock.now().toISOString(),
+                );
+                const current = await findRunRecord(unit.conn, candidate.id);
+                if (
+                  !current ||
+                  current.status !== 'queued' ||
+                  current.runnerId !== null ||
+                  Number(current.attempt) !== Number(candidate.attempt) ||
+                  time(current.queueEnteredAt ?? null) !==
+                    time(candidate.queueEnteredAt ?? null) ||
+                  time(current.availableAt) !== time(candidate.availableAt)
+                )
+                  return;
+                const outcome = await binding.queuedTimeout!(
+                  unit.conn,
+                  toRun(current),
+                  clock.now(),
+                );
+                if (!outcome) return;
+                const ended = await finishRun(unit, deps, current, {
+                  status: 'cancelled',
+                  ...outcome,
+                });
+                if (ended) counts.cancelled += 1;
+              });
+            cursor = batch.at(-1)!.id;
+          }
+        }
         const expiry = binding.queuedExpiryMs ?? 0;
         if (!(expiry > 0)) continue;
         const cutoff = new Date(now.getTime() - expiry);

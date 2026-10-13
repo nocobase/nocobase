@@ -1,5 +1,5 @@
 import { RunPayloadSchema, SkillBundleSchema } from '@nocobase/agent-protocol';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { claim, createHarness, skillMd, type Harness } from './harness.js';
 
@@ -579,8 +579,7 @@ describe('claiming', () => {
       runnerKey: runner.key,
       body: { free: 1 },
     });
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(h.services.signal.waiting()).toBe(1);
+    await vi.waitFor(() => expect(h.services.signal.waiting()).toBe(1));
     const runId = await h.enqueue(agentId);
     const response = await waiting;
     expect(
