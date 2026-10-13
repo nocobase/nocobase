@@ -46,6 +46,7 @@ import {
   projectsToken,
 } from '@nocobase/app-plugin-projects/server/tokens';
 import releasesPlugin from '@nocobase/app-plugin-releases/server';
+import { userPreferencesServiceToken } from '@nocobase/app-plugin-users/server/tokens';
 import { releasesToken } from '@nocobase/app-plugin-releases/server/tokens';
 import { createAppPaths } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
@@ -116,6 +117,8 @@ import {
 } from '../../server/agents/conversation/delegation.js';
 import { issueRunsRoutes } from '../../server/agents/run-views.js';
 import { projectManagerRoutes } from '../../server/agents/manager/routes.js';
+import { ownerHandoffRoutes } from '../../server/issues/owner-handoff-routes.js';
+import { followUpsRoutes } from '../../server/follow-ups/routes.js';
 import { createProjectManager } from '../../server/agents/manager/service.js';
 import { studioProjectManagerToken } from '../../server/agents/manager/token.js';
 import type { ProjectManager } from '../../server/agents/manager/service.js';
@@ -1144,6 +1147,15 @@ export async function createBridgeHarness(
   container.instance(agentsToken, agents);
   container.instance(studioDelegationsToken, delegations);
   container.instance(studioProjectManagerToken, manager);
+  // People's preferences, as the users plugin keeps them, in `preferences`.
+  container.instance(userPreferencesServiceToken, {
+    get: (userId: string, key: string) =>
+      Promise.resolve(preferences.get(`${userId}:${key}`)),
+    set: (userId: string, key: string, value: unknown) => {
+      preferences.set(`${userId}:${key}`, structuredClone(value));
+      return Promise.resolve();
+    },
+  } as never);
   // Studio's roles as far as the routes ask them: an administrator manages agents.
   container.instance(studioAccessToken, {
     grantsOfUser: (userId: string) =>
@@ -1206,7 +1218,15 @@ export async function createBridgeHarness(
   api.route('/', await inboxRoutes.createRouter(appLike as unknown as never));
   api.route(
     '/',
+    await ownerHandoffRoutes.createRouter(appLike as unknown as never),
+  );
+  api.route(
+    '/',
     await projectManagerRoutes.createRouter(appLike as unknown as never),
+  );
+  api.route(
+    '/',
+    await followUpsRoutes.createRouter(appLike as unknown as never),
   );
   // `issue runs`, `run get`, `run events`, and the agents plugin's `agent list`.
   api.route(

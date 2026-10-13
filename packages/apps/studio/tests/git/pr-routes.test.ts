@@ -35,6 +35,8 @@ async function runOn(actions: readonly string[], projectId?: string) {
   const issue = await h.projects.issues.create(h.viewer('alice'), {
     title: 'Fix login',
     ...(projectId === undefined ? {} : { projectId }),
+    executor: null,
+    statusKey: 'in_progress',
     start: false,
   });
   await h.projects.comments.create(h.viewer('alice'), issue.id, {

@@ -9,12 +9,14 @@
  *   GitHub's `merged_by` login is a Studio username) and notes `owner/name#12 merged`. Merge cards settle `merged`, and
  *   the followers of every linked issue hear it (`pr_merged`, `notices.ts`).
  * - **Closed** without a merge: merge cards settle `closed`.
- * - **Signals**, while it is open: failing checks (`ciState = failure`) and a conflict (`mergeableState = dirty`) wake the
- *   agent executing each linked issue (an issue run input, trigger `prChecksFailed` / `prConflict`), once per head
- *   commit, at most `SIGNAL_WAKE_LIMIT` heads in a row; after that the owner is told instead. Passing checks or a known
- *   mergeable state clear the count. Checks that all finished without a failure (`ciState = success`) wake it once per
- *   head commit (`prChecksPassed`), so the project manager may wait for them before handing the issue over for
- *   acceptance. A repository can turn each off.
+ * - **Signals**, while it is open: failed required checks and a conflict (`mergeableState = dirty`) wake the agent
+ *   executing each linked issue (an issue run input, trigger `prChecksFailed` / `prConflict`), once per head commit, at
+ *   most `SIGNAL_WAKE_LIMIT` heads in a row; after that the owner is told instead. Passing checks or a known mergeable
+ *   state clear the count. A repository can turn each signal off. Checks wake the agent only once every required check of
+ *   the head has finished, and a failed reference check (`RepoRow.referenceChecks`) never does (`checkSummaryOf`). The
+ *   input names every failed check and carries why it failed (`GitFlowDeps.explain`, read before the transaction):
+ *   annotations and the failing part of each log, or where another CI keeps it.
+ *   Required checks that all finished without failure wake it once per head (`prChecksPassed`).
  *
  * Writes run in one projects transaction, so the issue moves and the stored state commit together; inbox items go out
  * after the commit.
@@ -31,12 +33,18 @@ import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
 import {
   MERGED_EVENT,
   SIGNAL_WAKE_LIMIT,
+  checkSummaryOf,
+  isReferenceCheck,
+  type CheckSummary,
   type GitCheck,
   type PullRequestCiState,
   type PullRequestTrigger,
 } from '../../shared/git.js';
 import { ISSUE_SUBJECT } from '../agents/catalog/triggers.js';
 import { AGENT_KIND, agentsTx } from '../agents/tx.js';
+import { validIssueOwner } from '../agents/execution-identity.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
+import { readOwnerHandoff } from '../issues/owner-handoff.js';
 import type { StudioInboxPort } from '../inbox/port.js';
 import {
   IN_REVIEW,
@@ -45,9 +53,10 @@ import {
   settleMergeCards,
   type CardIssue,
 } from './cards.js';
-import type { PullRequestSnapshot } from './platform.js';
+import type { FailedCheck, PullRequestSnapshot } from './platform.js';
 import { GIT_NOTICE, type MergedAnnouncement } from './notices.js';
 import {
+  findPullRequest,
   linksOfPullRequest,
   pullRequestsOfIssue,
   updatePullRequest,
@@ -59,7 +68,7 @@ import {
 export interface GitFlowDeps {
   readonly projects: () => Pick<
     Projects,
-    'tx' | 'statusEvents' | 'issueContext'
+    'tx' | 'statusEvents' | 'issueContext' | 'activity'
   >;
   readonly agents: () => Pick<Agents, 'agents' | 'runs'> | undefined;
   readonly inbox: () => StudioInboxPort | undefined;
@@ -68,6 +77,8 @@ export interface GitFlowDeps {
   readonly onChanged?: () => void;
   /** After a store has committed, with the stored pull request (`events.ts`). */
   readonly onStored?: (pr: PullRequestRow) => Promise<void>;
+  /** Why the checks of a commit failed, read from the host (`StudioGit.explainFailures`); left out, only their names. */
+  readonly explain?: (repo: RepoRow, sha: string) => Promise<FailedCheck[]>;
 }
 
 /** What else a read learned besides the pull request itself. */
@@ -137,13 +148,113 @@ async function userOfLogin(
   return row ? String((row as { id: unknown }).id) : null;
 }
 
-function signalText(pr: PullRequestRow, signal: Signal): string {
+/** At most this many annotations of a check go into an input, and this many characters of the explanations in all. */
+const ANNOTATIONS_SHOWN = 20;
+const EXPLANATION_MAX = 40_000;
+
+/** Why one check failed, as an agent reads it in its input. */
+function explanationOf(check: FailedCheck): string {
+  const lines = [
+    `### ${check.name} (${check.conclusion})${check.url ? ` ${check.url}` : ''}`,
+  ];
+  if (check.summary) lines.push('', check.summary);
+  if (check.annotations.length > 0) {
+    lines.push('', 'Annotations:');
+    for (const note of check.annotations.slice(0, ANNOTATIONS_SHOWN)) {
+      const where =
+        note.startLine === null ? note.path : `${note.path}:${note.startLine}`;
+      lines.push(
+        `- ${where} ${note.level}: ${note.title ? `${note.title}: ` : ''}${note.message}`,
+      );
+    }
+    if (check.annotations.length > ANNOTATIONS_SHOWN)
+      lines.push(`- … ${check.annotations.length - ANNOTATIONS_SHOWN} more`);
+  }
+  if (check.log)
+    lines.push('', 'The failing part of its log:', '```', check.log, '```');
+  else if (check.logUnavailable === 'notActions')
+    lines.push(
+      '',
+      `Its log is not on GitHub: another CI reported this check. Read it there${check.url ? `: ${check.url}` : ' (no link was reported)'}.`,
+    );
+  else if (check.logUnavailable)
+    lines.push('', `Its log could not be read (${check.logUnavailable}).`);
+  return lines.join('\n');
+}
+
+/** What an agent woken by the checks reads: every failed required check, why it failed, and how to read it again. */
+function checksText(
+  ref: string,
+  pr: PullRequestRow,
+  issueKey: string,
+  summary: CheckSummary,
+  explained: readonly FailedCheck[] | null,
+  referenceChecks: readonly string[],
+): string {
+  const names = summary.failed.map(({ name }) => name).join(', ');
+  const lines = [
+    `The required checks of pull request ${ref} failed${names ? `: ${names}` : ''}. Find out why, fix it on the same branch and push.`,
+  ];
+  if (summary.referenceFailed.length > 0)
+    lines.push(
+      `Reference checks failed too (${summary.referenceFailed.map(({ name }) => name).join(', ')}): they are only for information, so leave them unless your change caused them.`,
+    );
+  const required = (explained ?? []).filter(
+    (check) => !isReferenceCheck(check.name, referenceChecks),
+  );
+  // Commit statuses, and checks the read missed, only have their names and links.
+  const unexplained = summary.failed.filter(
+    ({ name }) => !required.some((check) => check.name === name),
+  );
+  if (unexplained.length > 0)
+    lines.push(
+      '',
+      ...unexplained.map(
+        ({ name, url }) => `- ${name}${url ? `: ${url}` : ''}`,
+      ),
+    );
+  if (required.length > 0) {
+    let text = required.map(explanationOf).join('\n\n');
+    if (text.length > EXPLANATION_MAX)
+      text = `${text.slice(0, EXPLANATION_MAX)}\n…`;
+    lines.push('', text);
+  }
+  lines.push(
+    '',
+    `\`nb-studio pr checks ${issueKey} ${pr.id}\` reads why they failed again: annotations and the failing part of each log, or where another CI keeps it.`,
+  );
+  return lines.join('\n');
+}
+
+function signalText(
+  pr: PullRequestRow,
+  signal: Signal,
+  issueKey: string,
+  checks: {
+    readonly summary: CheckSummary;
+    readonly explained: readonly FailedCheck[] | null;
+    readonly referenceChecks: readonly string[];
+  },
+): string {
   const ref = `${pr.repo}#${pr.number} (${pr.url}, branch \`${pr.headRef}\`, head ${pr.headSha.slice(0, 12)})`;
   if (signal === 'passed')
     return `All checks of pull request ${ref} passed. Decide whether the change is ready for acceptance.`;
   return signal === 'checks'
-    ? `The checks of pull request ${ref} failed. Find out why, fix it on the same branch and push.`
+    ? checksText(
+        ref,
+        pr,
+        issueKey,
+        checks.summary,
+        checks.explained,
+        checks.referenceChecks,
+      )
     : `Pull request ${ref} conflicts with \`${pr.baseRef}\`. Bring the branch up to date with \`${pr.baseRef}\`, resolve the conflicts and push.`;
+}
+
+/** Whether the checks of what was read wake the agent: every required check finished and one failed. */
+function checksFailing(summary: CheckSummary): boolean | null {
+  if (summary.ciState === 'success') return false;
+  return summary.ciState === 'failure' && summary.settled ? true : null;
 }
 
 export function createGitFlow(deps: GitFlowDeps): GitFlow {
@@ -242,11 +353,14 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
 
   async function wake(
     tx: ProjectsTx,
+    repo: RepoRow,
     pr: PullRequestRow,
     signal: Signal,
     count: number,
     after: After,
+    explained: readonly FailedCheck[] | null,
   ): Promise<void> {
+    const summary = checkSummaryOf(pr, repo.referenceChecks);
     const agents = deps.agents();
     for (const link of await linksOfPullRequest(tx.conn, pr.id)) {
       const issue = await deps
@@ -255,10 +369,20 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
       if (
         !issue ||
         issue.status.category === 'done' ||
-        issue.status.category === 'closed' ||
-        issue.executor?.type !== AGENT_KIND
+        issue.status.category === 'closed'
       )
         continue;
+      if ((await readOwnerHandoff(tx.conn, issue.id))?.waiting) {
+        await deps.projects().activity.record(tx.conn, {
+          issueId: issue.id,
+          actor: { type: 'system', id: null },
+          action: 'work_skipped',
+          details: { reason: 'waitingOwner', trigger: signal },
+        });
+        tx.emit({ type: 'issue.changed', issueId: issue.id });
+        continue;
+      }
+      if (issue.executor?.type !== AGENT_KIND) continue;
       if (signal !== 'passed' && count > SIGNAL_WAKE_LIMIT) {
         const port = deps.inbox();
         const card = await cardIssue(tx.conn, issue.id);
@@ -271,7 +395,29 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
         tx.conn,
         issue.executor.id,
       );
-      if (!agent || !agents.agents.mayInvoke(agent, issue.owner.id)) continue;
+      if (!agent) continue;
+      const allowed = agents.agents.mayInvoke(agent, issue.owner.id);
+      if (agent.id === PROJECT_MANAGER_ID) {
+        const validOwner = await validIssueOwner(tx.conn, issue.owner.id);
+        if (!validOwner || !allowed) {
+          await deps.projects().activity.record(tx.conn, {
+            issueId: issue.id,
+            actor: { type: 'system', id: null },
+            action: 'studio_execution_wait',
+            details: {
+              reason: validOwner ? 'notAllowed' : 'noOwner',
+              trigger: signal,
+              agentId: agent.id,
+              agent: agent.name,
+              ownerUserId: issue.owner.id,
+              owner: issue.owner.name,
+            },
+          });
+          tx.emit({ type: 'issue.changed', issueId: issue.id });
+          continue;
+        }
+      }
+      if (!allowed) continue;
       await agents.runs.enqueue(
         {
           agentId: agent.id,
@@ -281,9 +427,21 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
           input: {
             type: 'signal',
             actor: { kind: 'system', id: 'system', name: 'Studio' },
-            text: signalText(pr, signal),
+            text: signalText(pr, signal, issue.identifier, {
+              summary,
+              explained,
+              referenceChecks: repo.referenceChecks,
+            }),
             payload: {
               trigger: TRIGGERS[signal],
+              ...(signal === 'checks'
+                ? {
+                    failedChecks: summary.failed.map(({ name }) => name),
+                    referenceFailures: summary.referenceFailed.map(
+                      ({ name }) => name,
+                    ),
+                  }
+                : {}),
               pullRequestId: pr.id,
               repo: pr.repo,
               number: pr.number,
@@ -304,17 +462,11 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
     repo: RepoRow,
     pr: PullRequestRow,
     after: After,
+    explained: readonly FailedCheck[] | null,
   ): Promise<void> {
     if (pr.state !== 'open' || !pr.headSha) return;
     const reports: ['checks' | 'conflict', boolean | null][] = [
-      [
-        'checks',
-        pr.ciState === 'failure'
-          ? true
-          : pr.ciState === 'success'
-            ? false
-            : null,
-      ],
+      ['checks', checksFailing(checkSummaryOf(pr, repo.referenceChecks))],
       [
         'conflict',
         pr.mergeableState === 'dirty'
@@ -342,15 +494,16 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
       next[signal] = { key, count };
       changed = true;
       if (signal === 'checks' ? repo.wakeOnChecks : repo.wakeOnConflict)
-        await wake(tx, pr, signal, count, after);
+        await wake(tx, repo, pr, signal, count, after, explained);
     }
     // All checks of this head finished without a failure: once per head.
-    if (pr.ciState === 'success') {
+    if (checkSummaryOf(pr, repo.referenceChecks).ciState === 'success') {
       const key = `passed@${pr.headSha}`;
       if (pr.signals.passed?.key !== key) {
         next.passed = { key, count: 1 };
         changed = true;
-        if (repo.wakeOnChecksPassed) await wake(tx, pr, 'passed', 1, after);
+        if (repo.wakeOnChecksPassed)
+          await wake(tx, repo, pr, 'passed', 1, after, explained);
       }
     }
     if (changed) await updatePullRequest(tx.conn, pr.id, { signals: next });
@@ -363,9 +516,47 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
       );
   }
 
+  /**
+   * Why the head's checks failed, read before the transaction when this read will likely wake an agent for them; null
+   * when it will not, or the host could not say (the input then names the checks and how to read them).
+   */
+  async function explainFirst(
+    repo: RepoRow,
+    snapshot: PullRequestSnapshot,
+    options: StoreOptions,
+  ): Promise<FailedCheck[] | null> {
+    if (!deps.explain || !repo.wakeOnChecks || !options.ci) return null;
+    if (snapshot.state !== 'open' || !snapshot.headSha) return null;
+    if (
+      checksFailing(checkSummaryOf(options.ci, repo.referenceChecks)) !== true
+    )
+      return null;
+    try {
+      const stored = await findPullRequest(
+        deps.projects().tx.read(),
+        repo.id,
+        snapshot.number,
+      );
+      if (stored?.signals.checks?.key === `checks@${snapshot.headSha}`)
+        return null;
+      if (
+        (stored?.signals.checks?.count ?? 0) >= SIGNAL_WAKE_LIMIT ||
+        !stored ||
+        (await linksOfPullRequest(deps.projects().tx.read(), stored.id))
+          .length === 0
+      )
+        return null;
+      return await deps.explain(repo, snapshot.headSha);
+    } catch (error) {
+      deps.onError('Studio could not read why the checks failed.', error);
+      return null;
+    }
+  }
+
   return {
     async store(repo, snapshot, options = {}) {
       const after: After = [];
+      const explained = await explainFirst(repo, snapshot, options);
       const pr = await deps.projects().tx.run(async (tx) => {
         const { pr: stored, previous } = await upsertPullRequest(
           tx.conn,
@@ -398,7 +589,7 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
               );
           }
         }
-        await signals(tx, repo, stored, after);
+        await signals(tx, repo, stored, after, explained);
         return stored;
       });
       await runAfter(after);

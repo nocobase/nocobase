@@ -54,11 +54,11 @@ export const server = readState();
 export const url = (path: string): string =>
   `${server.baseURL}${path.startsWith('/') ? path : `/${path}`}`;
 
-/** Matches Studio's home page, with or without a trailing slash after the mount, and the given query. */
-export const atHome =
+/** Matches Studio's default inbox page and the given query. */
+export const atInbox =
   (search = '') =>
   (address: URL): boolean =>
-    address.pathname.replace(/\/$/u, '') === new URL(server.baseURL).pathname &&
+    address.pathname === new URL(url('/inbox')).pathname &&
     address.search === search;
 
 /**

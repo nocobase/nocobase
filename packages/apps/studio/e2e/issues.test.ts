@@ -63,6 +63,9 @@ test.describe('issues', () => {
     const working = await api.post<Issue>('projects/issues', {
       title: `Agent 队列：处理中 ${unique()}`,
       ownerUserId: me.userId,
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
     });
     await runner.wake(working);
     await runner.claim(working.identifier);
@@ -70,12 +73,18 @@ test.describe('issues', () => {
     const queued = await api.post<Issue>('projects/issues', {
       title: `Agent 队列：排队中 ${unique()}`,
       ownerUserId: me.userId,
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
     });
     await runner.wake(queued);
     // An issue no agent touches.
     const blocker = await api.post<Issue>('projects/issues', {
       title: `Agent 队列：无关任务 ${unique()}`,
       ownerUserId: me.userId,
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
     });
 
     await open(page, '/issues?view=agent&mine=1');
