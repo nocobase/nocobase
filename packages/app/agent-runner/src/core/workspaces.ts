@@ -18,6 +18,7 @@ import {
 } from '../protocol/index.ts';
 import {
   acquireLock,
+  isDisposableWorkspace,
   isReadOnlyWorkspace,
   checkWorkspaceGit,
   hasUnpushedWork,
@@ -48,6 +49,8 @@ export interface WorkspaceEntry {
   cleanup?: WorkspaceCleanupResult;
   /** A run holds it now. */
   readonly inUse: boolean;
+  /** A read-only checkout (`isDisposableWorkspace`): removed once unlocked, with nothing to save. */
+  readonly disposable?: boolean;
   status: WorkspaceStatus;
 }
 
@@ -119,7 +122,8 @@ export async function inspectWorkspace(
     !Number.isFinite(checkedAt) ||
     Date.parse(meta.lastUsedAt) >= checkedAt;
   let unpushed = meta.unpushed ?? false;
-  if (isReadOnlyWorkspace(workDir)) unpushed = false;
+  const disposable = isDisposableWorkspace(workDir, meta);
+  if (disposable) unpushed = false;
   else if (stale && !inUse) {
     unpushed = await hasUnpushedWork(workDir, meta, options.log);
     await recordCheck(paths, workDir, meta, {
@@ -135,6 +139,7 @@ export async function inspectWorkspace(
     lastUsedAt: meta.lastUsedAt,
     unpushed,
     inUse,
+    ...(disposable ? { disposable } : {}),
     status: 'unknown',
   };
 }
@@ -488,7 +493,7 @@ export function planRemovals(
     .sort((a, b) => Date.parse(a.lastUsedAt) - Date.parse(b.lastUsedAt));
   for (const entry of ended) pick(entry, 'ended');
   for (const entry of entries)
-    if (isReadOnlyWorkspace(entry.workDir)) pick(entry, 'readOnly');
+    if (entry.disposable === true) pick(entry, 'readOnly');
   return { remove, kept };
 }
 
@@ -509,17 +514,25 @@ export async function removePlanned(
   }
   try {
     const meta = await readWorkspaceMeta(paths, entry.workDir);
-    if (isReadOnlyWorkspace(entry.workDir)) {
+    if (isDisposableWorkspace(entry.workDir, meta)) {
       if (
         meta !== undefined &&
         (meta.lastUsedAt !== entry.lastUsedAt ||
           meta.lastRunId !== entry.lastRunId)
       )
         return 'changed';
+
       await removeWorkspace(paths, entry.workDir, meta ?? { repos: [] });
       return undefined;
     }
     if (meta === undefined) return 'changed';
+    if (
+      meta.runWorktrees === true ||
+      meta.recoveryRequired === true ||
+      (meta.continuationOnly === true &&
+        (meta.activeWorkDirs ?? []).some((dir) => existsSync(dir)))
+    )
+      return 'unpushed';
     if (
       meta.lastUsedAt !== entry.lastUsedAt ||
       meta.lastRunId !== entry.lastRunId
@@ -679,7 +692,7 @@ export async function collectWorkspaces(
       entry,
       log === undefined ? {} : { log },
     ).catch((error: unknown) => {
-      if (!isReadOnlyWorkspace(entry.workDir)) throw error;
+      if (entry.disposable !== true) throw error;
       log?.(
         `workspaces: cleanup failed for ${entry.workDir}; retrying next GC: ${String(error)}`,
       );

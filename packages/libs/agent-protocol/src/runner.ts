@@ -610,7 +610,10 @@ export const RepoPushFailureSchema: z.ZodType<RepoPushFailure> =
 
 export interface RepoReport {
   readonly url: string;
+  /** The remote target branch, including for runners using private local branch aliases. */
   readonly branch: string;
+  readonly targetBranch?: string;
+  readonly localBranch?: string;
   readonly pushed: boolean;
   readonly headSha?: string;
   /** Why it was not pushed, when the runner tried and failed (protocol 9); `message` is redacted and safe to show. */
@@ -623,6 +626,8 @@ export interface RepoReport {
 export const RepoReportSchema: z.ZodType<RepoReport> = z.object({
   url: z.string().min(1),
   branch: z.string().min(1),
+  targetBranch: z.string().min(1).optional(),
+  localBranch: z.string().min(1).optional(),
   pushed: z.boolean(),
   headSha: z.string().max(64).optional(),
   failure: z

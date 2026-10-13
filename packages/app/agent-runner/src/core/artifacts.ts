@@ -88,7 +88,10 @@ export async function cleanArtifacts(
       if (
         meta === undefined ||
         meta.lastUsedAt !== entry.lastUsedAt ||
-        meta.lastRunId !== entry.lastRunId
+        meta.lastRunId !== entry.lastRunId ||
+        meta.runWorktrees === true ||
+        meta.recoveryRequired === true ||
+        meta.continuationOnly === true
       )
         continue;
       if (
