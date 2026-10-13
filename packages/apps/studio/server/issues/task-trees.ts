@@ -45,24 +45,62 @@ export async function readTaskTrees(
     const scope = await projects.issueQueries.hierarchy(viewer, filters);
     const issues = new Map(scope.issues.map((issue) => [issue.id, issue]));
     const decisions =
-      (await inbox?.taskDecisions([...issues.keys()], viewer.userId)) ?? [];
+      (await inbox?.taskDecisions(
+        [...issues.keys()],
+        viewer.userId,
+        projects.tx.read(),
+      )) ?? [];
     const byIssue = new Map<string, typeof decisions>();
     for (const decision of decisions) {
       const values = byIssue.get(decision.issueId) ?? [];
       values.push(decision);
       byIssue.set(decision.issueId, values);
     }
-    const handoffs = new Map<string, OwnerHandoff>();
     const ids = [...issues.keys()];
-    for (let at = 0; at < ids.length; at += 100) {
-      const chunk = ids.slice(at, at + 100);
-      const rows = await projects.tx
-        .read()
-        .repository<OwnerHandoff>(OWNER_HANDOFFS)
-        .findMany({
-          filter: (f) => f.or(chunk.map((id) => f.string('issueId').eq(id))),
-        });
-      for (const row of rows) handoffs.set(row.issueId, row);
+    async function readHandoffs() {
+      const handoffs = new Map<string, OwnerHandoff>();
+      for (let at = 0; at < ids.length; at += 100) {
+        const chunk = ids.slice(at, at + 100);
+        const rows = await projects.tx
+          .read()
+          .repository<OwnerHandoff>(OWNER_HANDOFFS)
+          .findMany({
+            filter: (f) => f.or(chunk.map((id) => f.string('issueId').eq(id))),
+          });
+        for (const row of rows) handoffs.set(row.issueId, row);
+      }
+      return handoffs;
+    }
+    const handoffs = await readHandoffs();
+    const signature = (
+      value: typeof scope,
+      decisionRows: typeof decisions,
+      transfers: Map<string, OwnerHandoff>,
+    ) =>
+      JSON.stringify([
+        [...value.issues].sort((a, b) => a.id.localeCompare(b.id)),
+        [...value.matchingIds].sort(),
+        [...value.blockedIds].sort(),
+        [...decisionRows].sort((a, b) =>
+          `${a.issueId}:${a.type}`.localeCompare(`${b.issueId}:${b.type}`),
+        ),
+        [...transfers].sort(([a], [b]) => a.localeCompare(b)),
+      ]);
+    const initialSignature = signature(scope, decisions, handoffs);
+    async function verifyGeneration() {
+      // Shared transaction reads are rechecked after hydration for databases using read-committed isolation.
+      const current = await projects.issueQueries.hierarchy(viewer, filters);
+      const currentDecisions =
+        (await inbox?.taskDecisions(
+          current.issues.map((issue) => issue.id),
+          viewer.userId,
+          projects.tx.read(),
+        )) ?? [];
+      if (
+        signature(current, currentDecisions, await readHandoffs()) !==
+        initialSignature
+      )
+        throw new TreeCursorError();
     }
     const attention = new Map(
       scope.issues.map((issue) => [
@@ -151,7 +189,9 @@ export async function readTaskTrees(
     }
     if (query.parentId) {
       const result = model.children(query.parentId, query.limit, query.cursor);
-      return { ...result, data: await hydrate(result.data) };
+      const data = await hydrate(result.data);
+      await verifyGeneration();
+      return { ...result, data };
     }
     const groups = [];
     for (const { group, totals } of model.groups) {
@@ -170,6 +210,7 @@ export async function readTaskTrees(
             : await hydrate(result.data),
       });
     }
+    await verifyGeneration();
     return { generation: model.generation, groups };
   });
 }

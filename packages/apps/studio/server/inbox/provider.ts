@@ -91,12 +91,10 @@ export default class StudioInboxProvider extends ServiceProvider<Application> {
           void this.topic?.publishFor(userId, { kind: 'studio.inbox.changed' });
           // Public invalidation carries no issue, decision or recipient data; every subsequent read is authorized.
           if (resolver.has(realtimeServiceToken))
-            resolver
-              .resolve(realtimeServiceToken)
-              .publish(PM_REALTIME_TOPIC, {
-                kind: 'pm.changed',
-                domain: 'issues',
-              });
+            resolver.resolve(realtimeServiceToken).publish(PM_REALTIME_TOPIC, {
+              kind: 'pm.changed',
+              domain: 'issues',
+            });
         },
       }),
     );

@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import {
   expect,
@@ -32,12 +32,23 @@ test('separate pages default to table, preserve view choices, and expose grouped
     'theme.mode': 'light',
     'theme.preset': 'compact',
   });
-  await page.addInitScript(
-    `localStorage.setItem('nocobase.locale','en-US'); localStorage.removeItem('pm:issues-view:issues'); localStorage.removeItem('pm:issues-view:my-issues');`,
+  await page.addInitScript(`localStorage.setItem('nocobase.locale','en-US');`);
+  const errors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+  await open(page, '/inbox');
+  const baselineErrors = [...errors];
+  await page.screenshot({
+    path: path.join(directory, 'baseline-inbox.png'),
+    fullPage: true,
+  });
+  await page.evaluate(
+    `localStorage.removeItem('pm:issues-view:issues'); localStorage.removeItem('pm:issues-view:my-issues');`,
   );
   const tag = `Hierarchy ${unique()}`;
   const parent = await api.post<Task>('projects/issues', {
-    title: `${tag} parent context`,
+    title: `${tag} parent context with a long task title that remains readable on hover when the narrow table truncates its title cell`,
     statusKey: 'in_progress',
     executor: null,
     start: false,
@@ -82,11 +93,18 @@ test('separate pages default to table, preserve view choices, and expose grouped
     page.getByRole('row', { name: new RegExp(parent.identifier) }),
   ).toContainText('In progress');
   await screenshots('tasks-default-table');
+  await expect(page.getByText(parent.title, { exact: true })).toHaveAttribute(
+    'title',
+    parent.title,
+  );
   const disclosure = page.getByRole('button', {
     name: `Expand subtasks of ${parent.identifier}`,
     exact: true,
   });
   await disclosure.focus();
+  await expect(
+    page.getByText(`Expand subtasks of ${parent.identifier}`, { exact: true }),
+  ).toBeVisible();
   await page.keyboard.press('Enter');
   await expect(
     page.getByRole('link', { name: child.identifier, exact: true }),
@@ -127,6 +145,50 @@ test('separate pages default to table, preserve view choices, and expose grouped
     page.getByText('1 tasks · 1 trees', { exact: true }),
   ).toBeVisible();
   await screenshots('tasks-filtered-context');
+  const search = page.getByRole('textbox', {
+    name: 'Search issues',
+    exact: true,
+  });
+  await search.click();
+  await search.press('ControlOrMeta+A');
+  await search.press('Backspace');
+  await page.keyboard.type(tag);
+  await expect(search).toHaveValue(tag);
+  await search.press('Home');
+  await page.keyboard.type('prefix ');
+  await expect(search).toHaveValue(`prefix ${tag}`);
+  const ime = await page.context().newCDPSession(page);
+  const parentNow = await api.get<Task>(`projects/issues/${parent.id}`);
+  const duringComposition = page.waitForResponse(
+    (response) =>
+      response.url().includes('/api/taskTrees') && response.status() === 200,
+  );
+  await ime.send('Input.imeSetComposition', {
+    text: 'r',
+    selectionStart: 1,
+    selectionEnd: 1,
+  });
+  const changed = api.patch(`projects/issues/${parent.id}`, {
+    revision: parentNow.revision,
+    priority: 'high',
+  });
+  await ime.send('Input.imeSetComposition', {
+    text: 're',
+    selectionStart: 2,
+    selectionEnd: 2,
+  });
+  await ime.send('Input.imeSetComposition', {
+    text: 'ren',
+    selectionStart: 3,
+    selectionEnd: 3,
+  });
+  await Promise.all([changed, duringComposition]);
+  await expect(search).toHaveValue(`prefix ren${tag}`);
+  await expect(search).toBeFocused();
+  await ime.send('Input.insertText', { text: '人' });
+  await expect(search).toHaveValue(`prefix 人${tag}`);
+  await ime.detach();
+  await open(page, `/issues?q=${encodeURIComponent(tag)}`);
   await open(page, `/my-issues/owned?q=${encodeURIComponent(tag)}`);
   await expect(page.getByRole('table')).toBeVisible();
   await expect(
@@ -137,6 +199,33 @@ test('separate pages default to table, preserve view choices, and expose grouped
   await expect(
     page.getByRole('button', { name: 'List', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true');
+  // The fixture's demo issues are synthetic and the entire database is removed by teardown.
+  for (const identifier of await page
+    .getByRole('table')
+    .getByRole('link')
+    .allTextContents()) {
+    const task = await api.get<Task>(`projects/issues/${identifier}`);
+    await page.getByRole('link', { name: identifier, exact: true }).focus();
+    await api.patch(`projects/issues/${task.id}`, {
+      revision: task.revision,
+      executor: null,
+    });
+  }
+  await expect(
+    page.getByText('You execute no issues', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('table')).toHaveCount(0);
+  await expect(
+    page.getByRole('textbox', { name: 'Search issues', exact: true }),
+  ).toBeFocused();
+  await expect(
+    page
+      .locator('header')
+      .getByRole('button', { name: 'New issue', exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'New issue', exact: true }),
+  ).toHaveCount(1);
   await screenshots('my-tasks-executing-empty');
   // Invalid saved values fall back; valid choices and explicit URLs retain their priority.
   await page.evaluate(
@@ -185,9 +274,30 @@ test('separate pages default to table, preserve view choices, and expose grouped
       await open(page, `/issues?view=list&q=${encodeURIComponent(tag)}`);
       await expect(page.getByRole('table')).toBeVisible();
       await expect(page.locator('html')).toHaveAttribute('data-theme', preset);
+      if (mode === 'dark')
+        await expect(page.locator('html')).toHaveClass(/\bdark\b/);
+      else await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);
       for (const width of [1440, 375]) {
         await page.setViewportSize({ width, height: 900 });
         expect(await horizontalOverflow(page)).toBeLessThanOrEqual(1);
+        if (width === 375) {
+          const scrolling = await page
+            .locator('[data-slot="table-container"]')
+            .evaluate((element) => {
+              const container = element as unknown as {
+                scrollLeft: number;
+                scrollWidth: number;
+                clientWidth: number;
+              };
+              container.scrollLeft = 100;
+              return {
+                overflow: container.scrollWidth > container.clientWidth,
+                left: container.scrollLeft,
+              };
+            });
+          expect(scrolling.overflow).toBe(true);
+          expect(scrolling.left).toBeGreaterThan(0);
+        }
         await screenshots(
           `tasks-${preset}-${mode}-${width === 375 ? 'narrow' : 'desktop'}`,
         );
@@ -199,7 +309,7 @@ test('separate pages default to table, preserve view choices, and expose grouped
     'theme.preset': 'compact',
   });
   await open(page, '/issues?view=list&q=no-matching-hierarchy-test-records');
-  await expect(page.getByText('No issues match your filters.')).toBeVisible();
+  await expect(page.getByText('No issue matches these filters.')).toBeVisible();
   await screenshots('tasks-no-results');
   await api.delete(`projects/issues/${review.id}`);
   await open(page, `/issues?view=list&deleted=1&q=${encodeURIComponent(tag)}`);
@@ -214,6 +324,21 @@ test('separate pages default to table, preserve view choices, and expose grouped
   await expect(
     page.getByRole('button', { name: 'Restore', exact: true }),
   ).toHaveCount(0);
+  const newErrors = errors.filter(
+    (message) => !baselineErrors.includes(message),
+  );
+  writeFileSync(
+    path.join(directory, 'browser-check.json'),
+    JSON.stringify(
+      {
+        baselineErrorCount: baselineErrors.length,
+        newErrorCount: newErrors.length,
+      },
+      null,
+      2,
+    ),
+  );
+  expect(newErrors).toEqual([]);
   // Synthetic test records are removed; fixture teardown removes the whole isolated database.
 });
 
@@ -312,7 +437,7 @@ test('paginates real children and renders honest root/child error states', async
     `/issues?view=list&q=${encodeURIComponent(`${tag} failure`)}`,
   );
   await expect(
-    page.getByText('Could not load issues.', { exact: true }),
+    page.getByText('Unable to load the issues', { exact: true }),
   ).toBeVisible();
   await page.screenshot({
     path: path.join(directory, 'tasks-load-error.png'),
@@ -320,4 +445,105 @@ test('paginates real children and renders honest root/child error states', async
   });
   await page.unroute('**/api/taskTrees*');
   await page.getByRole('button', { name: 'Retry', exact: true }).click();
+});
+
+test('shows initial loading and retains a coherent table after refresh failure', async ({
+  page,
+  api,
+}) => {
+  mkdirSync(directory, { recursive: true });
+  await api.patch('users/me/preferences', {
+    locale: 'en-US',
+    'theme.mode': 'light',
+    'theme.preset': 'compact',
+  });
+  const tag = `Refresh ${unique()}`;
+  const issue = await api.post<Task>('projects/issues', {
+    title: tag,
+    statusKey: 'in_progress',
+    executor: null,
+    start: false,
+  });
+  let release = () => {};
+  let notify = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const requested = new Promise<void>((resolve) => {
+    notify = resolve;
+  });
+  await page.route('**/api/taskTrees*', async (route) => {
+    notify();
+    await gate;
+    await route.continue();
+  });
+  await page.goto(url(`/issues?view=list&q=${encodeURIComponent(tag)}`), {
+    waitUntil: 'domcontentloaded',
+  });
+  await requested;
+  await expect(
+    page.getByRole('status', { name: /Loading/i }).last(),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'New issue', exact: true }),
+  ).toHaveCount(0);
+  await page.screenshot({
+    path: path.join(directory, 'tasks-initial-loading.png'),
+    fullPage: true,
+  });
+  release();
+  await expect(
+    page.getByRole('link', { name: issue.identifier, exact: true }),
+  ).toBeVisible();
+  await page.unroute('**/api/taskTrees*');
+  await page.route('**/api/taskTrees*', (route) =>
+    route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        error: {
+          status: 'INTERNAL',
+          reason: 'TEST_FAILURE',
+          message: 'Test failure',
+        },
+      }),
+    }),
+  );
+  await api.patch(`projects/issues/${issue.id}`, {
+    revision: issue.revision,
+    statusKey: 'in_review',
+  });
+  await expect(
+    page.getByText(
+      'Could not refresh tasks. Showing the last complete result.',
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: issue.identifier, exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: path.join(directory, 'tasks-refresh-error.png'),
+    fullPage: true,
+  });
+  await page.unroute('**/api/taskTrees*');
+  await page.getByRole('button', { name: 'Retry', exact: true }).click();
+  await expect(
+    page.getByRole('button', {
+      name: 'Collapse Review / acceptance',
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.getByRole('link', { name: issue.identifier, exact: true }).focus();
+  await api.delete(`projects/issues/${issue.id}`);
+  await expect(
+    page.getByText('No issue matches these filters.', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('textbox', { name: 'Search issues', exact: true }),
+  ).toBeFocused();
+  await page.screenshot({
+    path: path.join(directory, 'tasks-empty-focus-recovery.png'),
+    fullPage: true,
+  });
 });

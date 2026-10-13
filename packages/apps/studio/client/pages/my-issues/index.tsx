@@ -16,38 +16,47 @@ import { Navigate, Outlet, useLocation, useMatch } from 'react-router';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { RouteTabs } from '@/components/route-tabs';
+import {
+  TableCreateStateContext,
+  useTableCreateState,
+} from '../../issues/table-create-state.js';
 
 export default function MyIssuesPage(): ReactElement {
   const { t } = useTranslation();
   const location = useLocation();
   const atRoot = useMatch('/my-issues') !== null;
   const canCreate = canCreateIssues(useViewer());
+  const createState = useTableCreateState();
   if (atRoot)
     return (
       <Navigate replace to={{ pathname: 'owned', search: location.search }} />
     );
   return (
-    <PageContainer className='flex h-full min-h-0 flex-col gap-6 space-y-0'>
-      <PageHeader
-        title={t('issuesPage.myTitle')}
-        description={t('issuesPage.myDescription')}
-        actions={
-          <>
-            <PmShortcuts showTrigger canCreate={canCreate} />
-            <NewIssueButton absolute canCreate={canCreate} />
-          </>
-        }
-      />
-      <RouteTabs
-        label={t('issuesPage.myTabsLabel')}
-        tabs={[
-          { path: 'owned', label: t('issuesPage.myTabs.owned') },
-          { path: 'executing', label: t('issuesPage.myTabs.executing') },
-        ]}
-      />
-      <div className='min-h-0 flex-1'>
-        <Outlet />
-      </div>
-    </PageContainer>
+    <TableCreateStateContext.Provider value={createState.report}>
+      <PageContainer className='flex h-full min-h-0 flex-col gap-6 space-y-0'>
+        <PageHeader
+          title={t('issuesPage.myTitle')}
+          description={t('issuesPage.myDescription')}
+          actions={
+            <>
+              <PmShortcuts showTrigger canCreate={canCreate} />
+              {createState.visible ? (
+                <NewIssueButton absolute canCreate={canCreate} />
+              ) : null}
+            </>
+          }
+        />
+        <RouteTabs
+          label={t('issuesPage.myTabsLabel')}
+          tabs={[
+            { path: 'owned', label: t('issuesPage.myTabs.owned') },
+            { path: 'executing', label: t('issuesPage.myTabs.executing') },
+          ]}
+        />
+        <div className='min-h-0 flex-1'>
+          <Outlet />
+        </div>
+      </PageContainer>
+    </TableCreateStateContext.Provider>
   );
 }

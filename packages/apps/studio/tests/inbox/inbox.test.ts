@@ -308,4 +308,9 @@ it('returns uncapped safe task decision summaries and excludes resolved, informa
     { issueId: ids[0], type: 'run_failed_final', waitingForViewer: false },
   ]);
   expect(await inbox.taskDecisions([], 'lead')).toEqual([]);
+  await database.transaction(async (connection) => {
+    expect(await inbox.taskDecisions([ids[0]!], 'lead', connection)).toEqual([
+      { issueId: ids[0]!, type: 'run_failed_final', waitingForViewer: false },
+    ]);
+  });
 });

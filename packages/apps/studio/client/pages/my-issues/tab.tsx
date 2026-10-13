@@ -5,10 +5,12 @@
  */
 import {
   myIssueFilters,
+  canCreateIssues,
   type MyIssuesRole,
 } from '@nocobase/app-plugin-projects/client/issues';
 import {
   PmListSkeleton,
+  NewIssueButton,
   useViewer,
 } from '@nocobase/app-plugin-projects/client/kit';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -41,6 +43,9 @@ export function MyIssuesTab({
           empty={{
             title: t(`issuesPage.myEmpty.${role}`),
             description: t('issuesPage.emptyDescription'),
+            action: (
+              <NewIssueButton absolute canCreate={canCreateIssues(viewer)} />
+            ),
           }}
         />
       ) : (

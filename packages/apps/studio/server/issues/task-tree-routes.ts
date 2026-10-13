@@ -24,6 +24,11 @@ import { studioError, studioErrorHandler } from '../http/errors.js';
 import { TreeCursorError } from './tree-model.js';
 import { readTaskTrees } from './task-trees.js';
 import { TASK_GROUPS } from '../../shared/task-trees.js';
+import type {
+  TaskTreeRow,
+  TaskTreePage,
+  TaskTrees,
+} from '../../shared/task-trees.js';
 import { IssueListItemSchema as IssueSchema } from '@nocobase/app-plugin-projects/server';
 
 const Query = z.object({
@@ -38,7 +43,10 @@ const Query = z.object({
   direction: z.enum(['asc', 'desc']).optional(),
   group: z.enum(TASK_GROUPS).optional(),
   parentId: z.string().optional(),
-  generation: z.string().optional(),
+  generation: z.string().optional().meta({
+    description:
+      'Query generation from the initial tree response; required for continuations.',
+  }),
   cursor: z.string().max(4096).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });
@@ -56,12 +64,12 @@ const Row = z.object({
     waitingForViewer: z.boolean(),
   }),
   explanation: z.object({ identifier: z.string(), reason: Reason }).nullable(),
-});
+}) satisfies z.ZodType<TaskTreeRow>;
 const Page = z.object({
   generation: z.string(),
   data: z.array(Row),
   nextCursor: z.string().nullable(),
-});
+}) satisfies z.ZodType<TaskTreePage>;
 const Trees = z.object({
   generation: z.string(),
   groups: z.array(
@@ -75,23 +83,48 @@ const Trees = z.object({
       }),
     }),
   ),
-});
+}) satisfies z.ZodType<TaskTrees>;
 
 export const taskTreeRoutes: AppApiRouteContribution<Application> =
   defineApiRoutes(({ container }) => {
-    const router = new Hono();
+    const router = new Hono<{ Variables: { taskViewer: Viewer } }>();
     router.onError(studioErrorHandler);
     router.use(
       '*',
       container.resolve(authenticationToken).required({ scopedKeys: true }),
     );
     router.use('*', container.resolve(authorizationToken).middleware());
+    router.use('*', async (context, next) => {
+      const authz = context.get('authz' as never) as AuthorizationContext;
+      const restrictions =
+        authz.identity.keyScope?.objects('pm.projects') ?? 'all';
+      const userId = (context.get('auth' as never) as { user: { id: string } })
+        .user.id;
+      const viewer: Viewer = {
+        userId,
+        actor: { type: 'user', id: userId },
+        permissions: await container
+          .resolve(projectsAccessToken)
+          .permissionsOf(authz.identity),
+        ...(restrictions === 'all' ? {} : { projectIds: restrictions }),
+      };
+      if (viewer.permissions.scopes['pm.issues/view'] === 'none')
+        throw studioError(
+          'PERMISSION_DENIED',
+          'ACTION_FORBIDDEN',
+          'You may not view tasks.',
+        );
+      context.set('taskViewer', viewer);
+      await next();
+    });
     for (const children of [false, true])
       router.get(
         children ? '/children' : '/',
         describeRoute({
           tags: ['Studio'],
-          operationId: children ? 'taskTreeChildren' : 'taskTrees',
+          operationId: children
+            ? 'studioReadTaskTreeChildren'
+            : 'studioReadTaskTrees',
           summary: children
             ? 'Read authorized task children'
             : 'Read grouped authorized task trees',
@@ -122,26 +155,7 @@ export const taskTreeRoutes: AppApiRouteContribution<Application> =
               ),
         ),
         async (context) => {
-          const authz = context.get('authz' as never) as AuthorizationContext;
-          const restrictions =
-            authz.identity.keyScope?.objects('pm.projects') ?? 'all';
-          const userId = (
-            context.get('auth' as never) as { user: { id: string } }
-          ).user.id;
-          const viewer: Viewer = {
-            userId,
-            actor: { type: 'user', id: userId },
-            permissions: await container
-              .resolve(projectsAccessToken)
-              .permissionsOf(authz.identity),
-            ...(restrictions === 'all' ? {} : { projectIds: restrictions }),
-          };
-          if (viewer.permissions.scopes['pm.issues/view'] === 'none')
-            throw studioError(
-              'PERMISSION_DENIED',
-              'ACTION_FORBIDDEN',
-              'You may not view tasks.',
-            );
+          const viewer = context.get('taskViewer');
           try {
             return context.json({
               data: await readTaskTrees(

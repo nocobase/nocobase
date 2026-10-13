@@ -26,6 +26,7 @@ import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDownIcon, ChevronRightIcon, ListTodoIcon } from 'lucide-react';
 import {
   useEffect,
+  useContext,
   useLayoutEffect,
   useRef,
   useState,
@@ -40,6 +41,11 @@ import {
 import { Button } from '../components/ui/button.js';
 import { Spinner } from '../components/ui/spinner.js';
 import { Badge } from '../components/ui/badge.js';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '../components/ui/tooltip.js';
 import { STUDIO_INBOX_TOPIC } from '../../shared/inbox.js';
 import {
   type TaskGroup,
@@ -51,6 +57,7 @@ import { issueTableRow } from './rows.js';
 import { IssueMarks } from './issue-marks.js';
 import { useIssueAgentWork } from './use-agent-work.js';
 import type { IssuesPage } from './use-issues-page.js';
+import { TableCreateStateContext } from './table-create-state.js';
 
 const KEYS = [...pmKeys.issues, 'studio-task-trees'] as const;
 const SORTS = {
@@ -94,6 +101,7 @@ export function GroupedIssueListView({
   readonly empty: { title: string; description: string; action?: ReactNode };
 }) {
   const { t, i18n } = useTranslation();
+  const reportCreate = useContext(TableCreateStateContext);
   const api = useApiClient();
   const pm = usePmApi();
   const client = useQueryClient();
@@ -179,6 +187,13 @@ export function GroupedIssueListView({
     refetchOnReconnect: 'always',
   });
   const generation = roots.data?.generation;
+  useLayoutEffect(() => {
+    reportCreate?.(
+      !!roots.data &&
+        (page.filtered ||
+          roots.data.groups.some((group) => group.totals.tasks > 0)),
+    );
+  }, [reportCreate, roots.data, page.filtered]);
   const parentIds = [...expanded];
   const childQueries = useQueries({
     queries: parentIds.map((parentId) => ({
@@ -249,7 +264,8 @@ export function GroupedIssueListView({
         : null;
       (
         fallback ??
-        frameRef.current?.querySelector<HTMLElement>('[data-tree-heading]')
+        frameRef.current?.querySelector<HTMLElement>('[data-tree-heading]') ??
+        page.searchRef.current
       )?.focus();
       lastFocusRef.current = null;
     }
@@ -497,28 +513,36 @@ export function GroupedIssueListView({
               <span
                 data-task-id={row.id}
                 className='inline-flex shrink-0'
-                style={{ paddingInlineStart: (depths.get(row.id) ?? 0) * 16 }}
+                style={{
+                  paddingInlineStart: `calc(var(--spacing) * ${4 * (depths.get(row.id) ?? 0)})`,
+                }}
               >
                 {node.hasChildren ? (
-                  <Button
-                    id={`task-toggle-${row.id}`}
-                    variant='ghost'
-                    size='icon-sm'
-                    aria-expanded={open}
-                    aria-label={label}
-                    title={label}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setExpanded((current) => {
-                        const next = new Set(current);
-                        if (open) next.delete(row.id);
-                        else next.add(row.id);
-                        return next;
-                      });
-                    }}
-                  >
-                    {open ? <ChevronDownIcon /> : <ChevronRightIcon />}
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          id={`task-toggle-${row.id}`}
+                          variant='ghost'
+                          size='icon-sm'
+                          aria-expanded={open}
+                          aria-label={label}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setExpanded((current) => {
+                              const next = new Set(current);
+                              if (open) next.delete(row.id);
+                              else next.add(row.id);
+                              return next;
+                            });
+                          }}
+                        />
+                      }
+                    >
+                      {open ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                    </TooltipTrigger>
+                    <TooltipContent>{label}</TooltipContent>
+                  </Tooltip>
                 ) : (
                   <span className='size-8' />
                 )}
@@ -528,7 +552,7 @@ export function GroupedIssueListView({
           rowDescription={(row) => {
             const node = metadata.get(row.id)!;
             return (
-              <div className='flex flex-wrap items-center gap-2 text-xs text-muted-foreground'>
+              <div className='flex flex-wrap items-center gap-2 whitespace-normal break-words text-xs text-muted-foreground'>
                 {!node.matchesFilter ? (
                   <Badge variant='outline'>
                     {t('issuesPage.tree.context')}

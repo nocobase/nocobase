@@ -13,7 +13,7 @@
  */
 import type { NotificationService } from '@nocobase/app-plugin-notification/server';
 import type { InAppStore } from '@nocobase/app-plugin-notification-in-app/server';
-import type { DatabaseManager } from '@nocobase/db';
+import type { DatabaseManager, DatabaseConnection } from '@nocobase/db';
 
 import {
   INBOX_WAITING_MAX,
@@ -77,6 +77,7 @@ export interface StudioInbox extends StudioInboxPort {
   taskDecisions(
     issueIds: readonly string[],
     viewerUserId: string,
+    connection?: DatabaseConnection,
   ): Promise<TaskDecisionSummary[]>;
   /** What Studio knows about the caller's items among `notificationIds`; unknown ids are left out. */
   notices(
@@ -295,10 +296,10 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
   }
 
   return {
-    async taskDecisions(issueIds, viewerUserId) {
+    async taskDecisions(issueIds, viewerUserId, connection) {
       const summaries = new Map<string, TaskDecisionSummary>();
       for (let at = 0; at < issueIds.length; at += 100) {
-        const rows = await table()
+        const rows = await (connection?.query ?? table())
           .selectFrom(TABLE)
           .select(['subjectId', 'type', 'userId'])
           .distinct()

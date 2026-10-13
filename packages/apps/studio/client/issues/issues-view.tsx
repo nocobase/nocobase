@@ -20,7 +20,12 @@ import {
   ListIcon,
   Trash2Icon,
 } from 'lucide-react';
-import type { ReactElement, ReactNode } from 'react';
+import {
+  useContext,
+  useLayoutEffect,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { useLocation, useNavigate, useResolvedPath } from 'react-router';
 
 import { Alert, AlertAction, AlertTitle } from '@/components/ui/alert';
@@ -32,6 +37,7 @@ import { IssueListView } from './list-view.js';
 import { GroupedIssueListView } from './grouped-list-view.js';
 import { IssueToolbar, type IssueViewOption } from './toolbar.js';
 import { useIssuesPage } from './use-issues-page.js';
+import { TableCreateStateContext } from './table-create-state.js';
 
 export type StudioIssueView = 'agent' | 'list' | 'board';
 
@@ -77,6 +83,10 @@ export function IssuesView({
   const canDelete = canDeleteIssues(useViewer());
   const deleted = canDelete && page.filters.deleted === true;
   const view = page.view;
+  const reportCreate = useContext(TableCreateStateContext);
+  useLayoutEffect(() => {
+    if (view !== 'list' || deleted) reportCreate?.(true);
+  }, [view, deleted, reportCreate]);
 
   // An issue opens over the list's page, keeping the query string: the issue page is declared under each list's route
   // (`issueDetailRoute` in `routes.ts`), so its trail and Back lead to this list as it was left.

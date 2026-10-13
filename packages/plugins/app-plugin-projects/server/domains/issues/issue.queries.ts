@@ -173,12 +173,13 @@ async function listItems(
   deps: QueryDeps,
   conn: DatabaseConnection,
   rows: readonly IssueRow[],
+  readableIds?: ReadonlySet<string>,
 ): Promise<IssueListItem[]> {
   const name = await deps.kinds.nameAll(
     conn,
     rows.flatMap((row) => (row.executor ? [row.executor] : [])),
   );
-  const counts = await deps.extras().listCounts(conn, rows);
+  const counts = await deps.extras().listCounts(conn, rows, readableIds);
   return rows.map(({ ownerName, ...row }) => ({
     ...row,
     owner: { id: row.ownerUserId, name: ownerName },
@@ -273,7 +274,15 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
         direction: 'asc',
         limit: ids.length,
       });
-      return listItems(deps, conn, rows);
+      const readable = await hierarchyRecords(conn, (f) =>
+        visibleIssues(f, viewer),
+      );
+      return listItems(
+        deps,
+        conn,
+        rows,
+        new Set(readable.map((issue) => issue.id)),
+      );
     },
     statuses() {
       return [...deps.statuses.catalog().statuses];

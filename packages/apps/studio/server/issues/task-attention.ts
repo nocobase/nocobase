@@ -54,10 +54,7 @@ export function taskAttention(
       reasons.add('question');
       waiting ||= decision.waitingForViewer && (commenter || editor);
     }
-    if (
-      decision.type === 'run_failed_final' &&
-      issue.statusKey !== 'in_review'
-    ) {
+    if (decision.type === 'run_failed_final') {
       reasons.add('failedRun');
       waiting ||= decision.waitingForViewer && (owner || editor);
     }

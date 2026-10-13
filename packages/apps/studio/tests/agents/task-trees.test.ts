@@ -38,12 +38,46 @@ it('requires authentication and view permission on grouped and child reads', asy
       )
     ).status,
   ).toBe(403);
+  expect(
+    (
+      await h.request('GET', '/taskTrees/children?limit=invalid', {
+        user: 'bob',
+      })
+    ).status,
+  ).toBe(403);
   const result = await h.request('GET', '/taskTrees', { user: 'alice' });
   expect(result.status).toBe(200);
   expect(result.body.data.groups).toHaveLength(4);
   expect(
     (await h.request('GET', '/taskTrees/children', { user: 'alice' })).status,
   ).toBe(400);
+});
+
+it('rejects a read when an independently changing decision source changes during assembly', async () => {
+  const issue = await h.projects.issues.create(h.viewer('alice'), {
+    title: 'Changing decision',
+    start: false,
+  });
+  let calls = 0;
+  await expect(
+    readTaskTrees(
+      h.projects,
+      {
+        taskDecisions: async () =>
+          ++calls === 1
+            ? []
+            : [
+                {
+                  issueId: issue.id,
+                  type: 'run_failed_final',
+                  waitingForViewer: true,
+                },
+              ],
+      },
+      h.viewer('alice'),
+      {},
+    ),
+  ).rejects.toBeInstanceOf(TreeCursorError);
 });
 
 it('groups a matching grandchild once with authorized context and actual workflow states', async () => {
@@ -196,6 +230,14 @@ it('does not expose inaccessible ancestors or inflate visible progress, includin
     revision: child.revision,
     projectId: publicProject.id,
   });
+  const blocker = await h.projects.issues.create(h.viewer('alice'), {
+    title: 'Unreadable dependency',
+    projectId: secret.id,
+    start: false,
+  });
+  await h.projects.subtasks.addDependency(h.viewer('alice'), child.id, {
+    dependsOnIssueId: blocker.id,
+  });
   expect(
     (await h.projects.issueQueries.detail(h.viewer('alice'), child.id))
       .parentIssueId,
@@ -210,6 +252,8 @@ it('does not expose inaccessible ancestors or inflate visible progress, includin
     rootId: child.id,
     issue: { parentIssueId: null },
   });
+  expect(root.issue.blockedCount).toBe(0);
+  expect(JSON.stringify(result)).not.toContain(blocker.id);
   expect(JSON.stringify(result)).not.toContain('Private ancestor');
   expect(JSON.stringify(result)).not.toContain(parent.id);
   const keyResult = await h.request('GET', '/taskTrees?q=Readable%20child', {
@@ -263,4 +307,12 @@ it('excludes dependency-only blocking and deduplicates workflow and inbox reason
   expect(
     taskAttention(blocked, h.viewer('bob'), false, []).waitingForViewer,
   ).toBe(false);
+  expect(
+    taskAttention(
+      { ...issue, statusKey: 'in_review' },
+      h.viewer('alice'),
+      false,
+      [{ issueId: issue.id, type: 'run_failed_final', waitingForViewer: true }],
+    ).reasons,
+  ).toEqual(['review', 'failedRun']);
 });
