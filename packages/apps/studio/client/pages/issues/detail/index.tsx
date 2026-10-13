@@ -211,7 +211,7 @@ function IssuePage({
       main={
         <IssueConversation detail={detail} detailKey={detailKey}>
           {/* A phone's only top row: back to the list, the navigation and the agent chat. */}
-          <PhoneBar className='-mb-2'>
+          <PhoneBar className='-mb-2 bg-card px-2'>
             <Button
               size='sm'
               variant='ghost'
@@ -233,8 +233,8 @@ function IssuePage({
             collapsible
             defaultCollapsed={narrow}
             pinnedBar
-            pinnedBarClassName='-mb-4 md:-mb-6'
-            className='rounded-lg border bg-card px-4 py-3 text-card-foreground md:px-6'
+            pinnedBarClassName='-mb-2 md:-mb-6'
+            className='rounded-lg border bg-card px-4 py-3 text-card-foreground md:px-6 max-md:rounded-none max-md:border-0'
             headingLevel={1}
             {...(canEditIssues(viewer)
               ? {
@@ -294,7 +294,7 @@ function IssuePage({
           {/* The activity card's bottom edge, pinned while the page scrolls. */}
           <IssueComposer
             foldable={narrow}
-            className='sticky bottom-0 z-10 -mt-4 rounded-b-lg border bg-card/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-card-foreground backdrop-blur-md md:-mt-6 md:px-6 md:pb-3'
+            className='sticky bottom-0 z-10 -mt-2 rounded-b-lg border bg-card/95 px-4 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] text-card-foreground backdrop-blur-md max-md:rounded-none max-md:border-x-0 md:-mt-6 md:px-6 md:pt-3 md:pb-3'
           />
         </IssueConversation>
       }

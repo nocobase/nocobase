@@ -295,7 +295,7 @@ describe('My follow-ups', () => {
     expect(within(panel).getByTestId('issue-needs-you').textContent).toContain(
       'Accept: PR #12',
     );
-    expect(within(panel).getByTestId('follow-toggle').textContent).toBe(
+    expect(within(panel).getByTestId('follow-toggle').textContent).toContain(
       'Following · 2/5',
     );
     // In review: what was delivered and Send back; the feed and the reply box under it.

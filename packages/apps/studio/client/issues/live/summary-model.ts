@@ -80,6 +80,15 @@ export function nowLine(
   const ask = askOf(t, issue, mark);
   if (ask) return { text: ask, needsViewer: true };
   if (!issue.progress) return null;
+  // Someone else's decision: what they are asked, shortly.
+  const question = issue.progress.question
+    ? shortQuestion(issue.progress.question)
+    : null;
+  if (issue.progress.state === 'needsDecision' && question)
+    return {
+      text: t('issueProgress.needsDecision', { question }),
+      needsViewer: false,
+    };
   // A short line from the progress itself, never the manager's step prose.
   return {
     text: progressStatusLine(t, issue.progress, now),

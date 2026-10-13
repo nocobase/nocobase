@@ -77,7 +77,7 @@ export function IssueProgressLine({
     <section
       aria-label={t('issueProgress.title')}
       data-testid='issue-progress'
-      className='flex flex-col gap-2 rounded-lg border bg-muted/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:gap-4'
+      className='flex flex-col gap-2 rounded-lg border bg-muted/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:gap-4 max-md:gap-1 max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:px-0 max-md:py-0'
     >
       <div className='min-w-0 flex-1 space-y-1'>
         <div className='flex min-w-0 items-baseline gap-x-2'>

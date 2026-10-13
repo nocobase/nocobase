@@ -10,7 +10,7 @@ import { pmKeys, usePmApi } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeftIcon } from 'lucide-react';
+import { ArrowLeftIcon, ExternalLinkIcon } from 'lucide-react';
 import { useEffect, useMemo, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router';
 
@@ -136,7 +136,7 @@ function LiveIssue({
   const phone = useMediaQuery('(max-width: 767px)');
   return (
     <IssueConversation detail={issue} detailKey={detailKey}>
-      {back ? <div className='px-3 pt-2 md:px-5 md:pt-4'>{back}</div> : null}
+      {back ? <div className='px-2 pt-1 md:px-5 md:pt-4'>{back}</div> : null}
       {/* It scrolls with the activity; its one-line bar stays at the top once it is gone. */}
       <IssueSummary
         issue={issue}
@@ -146,7 +146,7 @@ function LiveIssue({
         collapsible
         defaultCollapsed={narrow}
         pinnedBar
-        className='border-b px-5 py-4'
+        className='border-b px-5 py-4 max-md:px-4 max-md:py-3'
         actions={
           <>
             <FollowToggle issueId={issue.id} />
@@ -156,15 +156,21 @@ function LiveIssue({
               nativeButton={false}
               render={<Link to={issuePath} />}
             >
-              {t('issueLive.summary.open')}
+              <ExternalLinkIcon
+                data-icon='inline-start'
+                className='md:hidden'
+              />
+              <span className='max-md:sr-only'>
+                {t('issueLive.summary.open')}
+              </span>
             </Button>
           </>
         }
       />
-      <IssueFeed className='px-5 py-4' />
+      <IssueFeed className='px-5 py-4 max-md:px-4 max-md:py-3' />
       <IssueComposer
         foldable={phone}
-        className='sticky bottom-0 z-10 rounded-b-xl border-t bg-card/95 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-md'
+        className='sticky bottom-0 z-10 rounded-b-xl border-t bg-card/95 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-md max-md:rounded-none max-md:px-4 max-md:pt-2 max-md:pb-[calc(0.5rem+env(safe-area-inset-bottom))]'
       />
     </IssueConversation>
   );
@@ -182,7 +188,7 @@ function PanelFrame({
     <section
       aria-label={t('followUps.activity.label')}
       className={cn(
-        'flex min-w-0 flex-col rounded-xl border bg-card text-card-foreground',
+        'flex min-w-0 flex-col rounded-xl border bg-card text-card-foreground max-md:rounded-none max-md:border-0',
         className,
       )}
       data-testid='follow-ups-activity'

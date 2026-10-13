@@ -157,9 +157,11 @@ export default function FollowUpsPage(): ReactElement {
     <PageContainer
       className={cn(
         'flex flex-col gap-6 space-y-0',
+        // A phone goes edge to edge: each part keeps its own 16px inset.
+        'max-md:gap-3 max-md:px-0 max-md:pt-2',
         // Room for the tab bar, and a phone's issue view starts right at its Back row.
         showTabs && 'pb-24 lg:pb-6',
-        chosen !== null && 'max-md:pt-2',
+        chosen !== null && 'max-md:pt-0 max-md:pb-0',
       )}
     >
       <div className={cn('max-md:hidden', chosen !== null && 'max-lg:hidden')}>
@@ -203,8 +205,8 @@ export default function FollowUpsPage(): ReactElement {
       </div>
       {chosen === null ? (
         // A phone's heading row, with the navigation and the agent chat the hidden header would give.
-        <PhoneBar className='-mt-2'>
-          <h1 className='truncate font-heading text-2xl font-semibold tracking-tight'>
+        <PhoneBar className='px-4'>
+          <h1 className='truncate font-heading text-xl font-semibold tracking-tight'>
             {t('followUps.title')}
           </h1>
           <span className='inline-flex shrink-0 items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300'>
@@ -239,7 +241,7 @@ export default function FollowUpsPage(): ReactElement {
         <div
           ref={fill}
           style={columnsHeight === null ? undefined : { height: columnsHeight }}
-          className='grid items-start gap-5 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_minmax(0,22rem)] lg:grid-rows-[minmax(0,1fr)] lg:items-stretch'
+          className='grid items-start gap-5 max-md:gap-4 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_minmax(0,22rem)] lg:grid-rows-[minmax(0,1fr)] lg:items-stretch'
           data-testid='follow-ups-columns'
         >
           {showFollowing ? (

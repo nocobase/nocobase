@@ -682,7 +682,7 @@ function CommentBlock({
     <div
       data-comment-id={comment.id}
       className={cn(
-        'group space-y-1.5 p-3',
+        'group space-y-1.5 p-3 max-md:space-y-1 max-md:px-2.5 max-md:py-2',
         nested && 'pl-9',
         context.replyingToId === comment.id && 'bg-accent/50',
         context.targetId === comment.id && 'ring-2 ring-primary/40 ring-inset',
@@ -737,7 +737,8 @@ function CommentBlock({
                 onClick={onResolveThread}
               >
                 <CheckCircle2Icon data-icon='inline-start' />
-                {labels.resolve}
+                {/* An icon on a phone, so the header stays on one line. */}
+                <span className='max-md:sr-only'>{labels.resolve}</span>
               </Button>
             ) : null}
             {context.onReply ? (
@@ -749,7 +750,7 @@ function CommentBlock({
                 onClick={() => context.onReply?.(comment)}
               >
                 <ReplyIcon data-icon='inline-start' />
-                {labels.reply}
+                <span className='max-md:sr-only'>{labels.reply}</span>
               </Button>
             ) : null}
             {mayEdit || mayDelete ? (

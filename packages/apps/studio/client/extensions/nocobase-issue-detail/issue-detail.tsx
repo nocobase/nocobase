@@ -122,8 +122,9 @@ function useCardLink(Link: IssueDetailLink): IssueCardLink {
 export const ISSUE_SECTION_LIST = 'divide-y overflow-hidden rounded-lg border';
 
 /** One card of the main column: the body (title, description, sections) or the activity. */
+/** A card on a wide screen; on a phone a full-width section, the page's muted gaps between them. */
 export const ISSUE_SURFACE =
-  'rounded-lg border bg-card p-4 text-card-foreground md:p-6';
+  'rounded-lg border bg-card p-4 text-card-foreground md:p-6 max-md:rounded-none max-md:border-x-0 max-md:border-y-0';
 
 /**
  * A card of the main column on the page's background, holding the body or the activity. It does not clip, so a pinned
@@ -530,8 +531,8 @@ export function IssueDetailLayout({
       className={cn('@container/issue min-h-full', className)}
       data-slot='issue-detail-layout'
     >
-      <div className='flex min-h-full flex-col gap-4 p-4 md:gap-6 md:p-6 @min-[64rem]/issue:flex-row'>
-        <div className='flex min-w-0 flex-1 flex-col gap-4 md:gap-6'>
+      <div className='flex min-h-full flex-col gap-4 p-4 md:gap-6 md:p-6 @min-[64rem]/issue:flex-row max-md:gap-2 max-md:bg-muted/60 max-md:p-0'>
+        <div className='flex min-w-0 flex-1 flex-col gap-4 md:gap-6 max-md:gap-2'>
           {main}
         </div>
         <aside

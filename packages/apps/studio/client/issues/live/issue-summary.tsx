@@ -142,7 +142,7 @@ export function IssueSummary({
         >
           {away ? (
             <div
-              className='absolute inset-x-0 top-0 rounded-b-lg border bg-card/95 px-4 py-2 text-card-foreground shadow-sm backdrop-blur-md'
+              className='absolute inset-x-0 top-0 rounded-b-lg border bg-card/95 px-4 py-2 text-card-foreground shadow-sm backdrop-blur-md max-md:rounded-none max-md:border-x-0 max-md:border-t-0 max-md:py-1.5 max-md:shadow-none'
               data-testid='issue-summary-bar'
             >
               <SummaryBar
@@ -190,15 +190,15 @@ export function IssueSummary({
               Title={Title}
               {...(rename ? { rename } : {})}
             />
-            {/* Key and status, then the actions: one row on a wide screen, two left-aligned rows on a phone. */}
-            <div className='flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center'>
+            {/* Key and status, then the actions as icon buttons on a phone, all on one row. */}
+            <div className='flex min-w-0 flex-wrap items-center gap-2'>
               <span className='flex items-center gap-2'>
                 <span className='font-mono text-sm text-muted-foreground'>
                   {issue.identifier}
                 </span>
                 <StatusPill statusKey={issue.statusKey} />
               </span>
-              <span className='flex flex-wrap items-center gap-2 sm:ml-auto max-sm:[&_[data-slot=button]]:h-7 max-sm:[&_[data-slot=button]]:px-2 max-sm:[&_[data-slot=button]]:text-xs'>
+              <span className='ml-auto flex flex-wrap items-center gap-1.5 max-md:[&_[data-slot=button]]:h-8 max-md:[&_[data-slot=button]]:px-2'>
                 {actions}
                 {collapsible ? (
                   <ToggleSummary open onClick={() => setFolded(true)} />
@@ -251,7 +251,9 @@ function ToggleSummary({
       ) : (
         <ChevronDownIcon data-icon='inline-start' />
       )}
-      {open ? t('issueLive.summary.collapse') : t('issueLive.summary.expand')}
+      <span className='max-md:sr-only'>
+        {open ? t('issueLive.summary.collapse') : t('issueLive.summary.expand')}
+      </span>
     </Button>
   );
 }
@@ -354,7 +356,7 @@ function SummaryTitle({
     );
   return (
     <div className='group flex min-w-0 items-start gap-1'>
-      <Title className='min-w-0 flex-1 font-heading text-lg leading-snug font-semibold text-pretty wrap-break-word'>
+      <Title className='min-w-0 flex-1 font-heading text-lg leading-snug font-semibold text-pretty wrap-break-word max-md:text-xl'>
         {title}
       </Title>
       {rename ? (
@@ -448,8 +450,9 @@ function NeedsYouCard({
   const viewer = useViewer();
   const conversation = useOptionalIssueConversation();
   const handoff = useOwnerHandoffView(issue.id).data;
+  // On a phone a full-width tinted band rather than a card.
   const frame =
-    'flex flex-col gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm';
+    'flex flex-col gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm max-md:-mx-4 max-md:rounded-none max-md:border-x-0 max-md:px-4';
   const heading = (text: string, extra?: ReactNode): ReactElement => (
     <div
       className='flex flex-wrap items-baseline gap-x-2 gap-y-1'
@@ -486,7 +489,7 @@ function NeedsYouCard({
             <span className='text-xs text-muted-foreground'>{state}</span>
           ) : null,
         )}
-        <div className='flex flex-col gap-1 rounded-md bg-background/70 px-3 py-2'>
+        <div className='flex flex-col gap-1 rounded-md bg-background/70 px-3 py-2 max-md:rounded-none max-md:border-t max-md:border-amber-500/30 max-md:bg-transparent max-md:px-0 max-md:pt-2.5 max-md:pb-0'>
           <h3 className='text-xs font-medium text-muted-foreground'>
             {delivery?.report
               ? t('issueLive.summary.delivery')
@@ -508,7 +511,7 @@ function NeedsYouCard({
             </p>
           )}
         </div>
-        <div className='flex flex-wrap items-center gap-2'>
+        <div className='flex flex-wrap items-center gap-2 max-md:flex-nowrap max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:[&_[data-slot=button]]:h-8 max-md:[&_[data-slot=button]]:shrink-0'>
           {open && pullRequests?.canMerge ? (
             <MergeButtons issue={issue} pullRequest={open} />
           ) : null}
