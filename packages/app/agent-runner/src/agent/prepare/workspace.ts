@@ -25,6 +25,12 @@ export const workspaceStep: PrepareStep = {
     // Releases run last first: the directory goes before its lock is released.
     if (context.payload.workspace.readOnly === true)
       context.onRelease(async () => {
+        if ((await context.beforeWorkspaceRemoval?.()) !== true) {
+          context.log(
+            `workspace: deferred read-only cleanup to GC: ${lock.workDir}`,
+          );
+          return;
+        }
         const meta = await readWorkspaceMeta(context.paths, lock.workDir);
         await removeWorkspace(
           context.paths,

@@ -709,12 +709,19 @@ async function ensureCheckout(
   cache: string,
   dir: string,
   repo: RepoDir,
+  readOnly = false,
+  log?: (message: string) => void,
 ): Promise<boolean> {
   const context = { cache, dir, url: repo.url };
   if (
     existsSync(dir) &&
     existsSync(path.join(dir, '.git')) &&
-    (await taskGitOk(context, ['rev-parse', '--is-inside-work-tree']))
+    (await taskGitOk(context, ['rev-parse', '--is-inside-work-tree']).catch(
+      (error: unknown) => {
+        if (!readOnly) throw error;
+        return false;
+      },
+    ))
   ) {
     // Refresh the clone's tracking refs without moving its branch or touching uncommitted work. Legacy worktrees
     // share these refs with the cache, which updateCache already refreshed.
@@ -756,9 +763,13 @@ async function ensureCheckout(
   }
   if (existsSync(dir)) {
     const entries = await readdir(dir);
-    if (entries.length > 0)
+    if (entries.length > 0 && !readOnly)
       throw new CheckoutError(`${dir} exists and is not a worktree`);
     await rm(dir, { recursive: true, force: true });
+    if (entries.length > 0)
+      log?.(
+        `checkout: rebuilding read-only directory ${dir}: not a Git worktree`,
+      );
   }
   await mkdir(path.dirname(dir), { recursive: true });
   const lock = await lockCache(cache);
@@ -1145,7 +1156,13 @@ export async function prepareDirs(
           entry = { ...entry, branch: entry.defaultBranch, initial: true };
         }
       }
-      const created = await ensureCheckout(cache, dir, entry);
+      const created = await ensureCheckout(
+        cache,
+        dir,
+        entry,
+        isReadOnlyWorkspace(workDir),
+        options.log,
+      );
       const gitDir = await taskGitDir({ dir, cache, url: entry.url });
       const relative = path.relative(workDir, dir);
       const known = meta?.repos.find(
@@ -1451,6 +1468,11 @@ export interface GcOptions {
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/** The dedicated sibling layout produced by workspaceKey; never a lock directory. */
+export function isReadOnlyWorkspace(workDir: string): boolean {
+  return /^[^.][^/]*\.readonly-[A-Za-z0-9_-]+$/u.test(path.basename(workDir));
+}
+
 /**
  * Removes a subject's work directory, and a legacy worktree's record in its cache. The caller holds the workspace lock.
  */
@@ -1460,6 +1482,24 @@ export async function removeWorkspace(
   meta: Pick<WorkspaceMeta, 'repos'>,
 ): Promise<void> {
   // Only repositories as `readWorkspaceMeta` believes them: a cache derived from the URL, a path inside `workDir`.
+  if (isReadOnlyWorkspace(workDir)) {
+    await rm(workDir, { recursive: true, force: true });
+    // Missing metadata is common after an interrupted removal. Prune registrations, never borrowed objects.
+    for (const entry of await readdir(paths.reposDir, {
+      withFileTypes: true,
+    }).catch(() => [])) {
+      if (!entry.isDirectory() || !entry.name.endsWith('.git')) continue;
+      const cache = path.join(paths.reposDir, entry.name);
+      const lock = await lockCache(cache);
+      try {
+        await git(['worktree', 'prune'], cache);
+      } finally {
+        await lock.release();
+      }
+    }
+    await rm(workspaceRecordPath(paths, workDir), { force: true });
+    return;
+  }
   for (const repo of meta.repos) {
     const dir = path.join(workDir, repo.path);
     if (!isInside(workDir, dir) || dir === path.resolve(workDir)) continue;
@@ -1494,6 +1534,23 @@ export async function gcWorkspaces(options: GcOptions): Promise<string[]> {
   }
   for (const workDir of workDirs) {
     const meta = await readWorkspaceMeta(paths, workDir);
+    if (isReadOnlyWorkspace(workDir)) {
+      let lock: Lock;
+      try {
+        lock = await acquireLock(`${workDir}.lock`, { timeoutMs: 0 });
+      } catch {
+        continue;
+      }
+      try {
+        await removeWorkspace(paths, workDir, meta ?? { repos: [] });
+        removed.push(workDir);
+      } catch (error) {
+        options.log?.(`gc: cleanup failed for ${workDir}: ${String(error)}`);
+      } finally {
+        await lock.release();
+      }
+      continue;
+    }
     if (meta === undefined) continue;
     const lastUsed = Date.parse(meta.lastUsedAt);
     const ended =
