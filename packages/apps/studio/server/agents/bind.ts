@@ -106,6 +106,9 @@ import {
 } from '../issues/owner-handoff-notices.js';
 
 export interface StudioAgentsDeps {
+  readonly checkoutPullRequests?: (
+    issueId: string,
+  ) => Promise<ReadonlyMap<string, string>>;
   readonly agents: Agents;
   readonly kinds: KindRegistry;
   readonly projects: () => Projects;
@@ -204,6 +207,7 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
           },
         },
         deps.queuedExpiryMs ?? DEFAULT_QUEUED_EXPIRY_HOURS * 3_600_000,
+        deps.checkoutPullRequests,
       ),
       queuedTimeout: delegationTimeout(agents),
       reports: issueReports(deps.projects, viewerOf),

@@ -1420,8 +1420,9 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
     );
     routes.delete(
       '/pullRequests/:pullRequestId',
-      person,
+      ...personOrRun,
       describeRoute({
+        security: personOrRunSecurity,
         tags,
         summary: 'Unlink a pull request from an issue',
         operationId: 'gitUnlinkPullRequest',
@@ -1432,7 +1433,8 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
           confirm: 'Unlink this pull request from the issue?',
           action: 'pm.issues/edit',
         }),
-        description: 'For whoever may edit the issue.',
+        description:
+          'For whoever may edit the issue, including scoped keys and runs within their identity permissions.',
         responses: {
           204: emptyResponse(),
           ...apiErrorResponses,
@@ -1444,7 +1446,11 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
       async (context) => {
         const { pullRequestId } = context.req.valid('param');
         const { issueId } = context.req.valid('query');
-        await git().unlink(await viewer(context), issueId, pullRequestId);
+        await git().unlink(
+          await callerViewer(context),
+          issueOf(context, issueId),
+          pullRequestId,
+        );
         return context.body(null, 204);
       },
     );

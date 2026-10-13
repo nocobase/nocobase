@@ -352,7 +352,7 @@ nb-studio pr suggestion dismiss <issue> <pr>
 
 Unlink a pull request from an issue
 
-For whoever may edit the issue.
+For whoever may edit the issue, including scoped keys and runs within their identity permissions.
 
 ```bash
 nb-studio pr unlink <issue> <pr>
@@ -369,7 +369,7 @@ nb-studio pr unlink <issue> <pr>
 
 **Output:** Nothing; prints `Done.`.
 
-**Who:** People (a sign-in or an API key); needs the action `pm.issues/edit`.
+**Who:** People, and agents in a run; needs the action `pm.issues/edit`.
 
 **Request:** `DELETE /api/git/pullRequests/{pullRequestId}` (`gitUnlinkPullRequest`)
 

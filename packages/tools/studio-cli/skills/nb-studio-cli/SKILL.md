@@ -29,6 +29,8 @@ description: Use the `nb-studio` command line to work in NocoBase Studio — iss
 
 ## Common work
 
+In a writable run, the worktree's initial target may be a same-repository linked pull request branch. You may switch or create branches and push any branch of that repository with `git push origin HEAD:refs/heads/<branch>`; never force push or rewrite already-pushed history. After switching, pass the published branch explicitly with `nb-studio pr open --head <branch>`. Use `nb-studio pr link` and `nb-studio pr unlink` to manage issue associations; inspect each command's `--help` for its current arguments and permissions. Read-only runs still change, commit and push nothing.
+
 ```bash
 nb-studio issue search --q "login" --json
 nb-studio issue get PM-12 --json

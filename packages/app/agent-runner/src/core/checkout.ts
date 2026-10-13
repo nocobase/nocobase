@@ -40,6 +40,8 @@
 import {
   addRunWorktree,
   clearContinuations,
+  deletePublishedRunBranch,
+  runBranch,
   readContinuationState,
   updateContinuationState,
 } from './run-worktrees.ts';
@@ -1687,15 +1689,13 @@ export async function removeWorkspace(
       const lock = await lockCache(cache);
       try {
         await git(['worktree', 'prune'], cache);
-        // The run's private branch, once its worktree is unregistered; never any other ref.
+        // Preserve agent branches and unpublished aliases even in a read-only attempt's shared cache.
         for (const repo of meta.repos)
-          if (
-            repo.cache === cache &&
-            repo.localBranch?.startsWith('runner-run-') === true
-          )
-            await gitOk(
-              ['update-ref', '-d', `refs/heads/${repo.localBranch}`],
+          if (repo.cache === cache)
+            await deletePublishedRunBranch(
               cache,
+              repo.localBranch,
+              runBranch(workDir, repo.path),
             );
       } finally {
         await lock.release();

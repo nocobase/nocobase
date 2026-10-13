@@ -1,5 +1,5 @@
 // The real daemon and isolated workers, with a deterministic tool and local Git remote.
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, it } from 'vitest';
 import { FakeServer, waitFor } from './fake-server.ts';
@@ -245,6 +245,102 @@ it.each(['completed', 'failed', 'cancelled'] as const)(
   90_000,
 );
 
+it('preserves a switched branch and stash across real worker completion and a second run', async () => {
+  const server = new FakeServer();
+  await server.listen();
+  const root = tempDir('switched-worktree-');
+  const home = path.join(root, 'home');
+  const env = cliEnv(home);
+  const remote = makeRemote(root);
+  await registerRunner(server.url, env, [
+    '--cli',
+    `appcli=${writeFakeCli(root)}`,
+  ]);
+  const workspace = {
+    dirs: [
+      {
+        kind: 'repo' as const,
+        url: remote,
+        path: 'repo',
+        branch: 'agent/start',
+        defaultBranch: 'main',
+      },
+    ],
+    env: [],
+  };
+  const subject = { key: 'PM-SWITCH', url: 'http://app.test/PM-SWITCH' };
+  const run = server.enqueue({
+    subject,
+    workspace,
+    prompt: {
+      system: '',
+      session: 'fresh',
+      turn: 'bash git checkout -b fix/worker-branch\nwrite committed.txt branch-content\nbash git add .\nbash git -c user.name=A -c user.email=a@example.com commit -m work\nwrite stash.txt stash-content\nbash git -c user.name=A -c user.email=a@example.com stash push --include-untracked\nwrite pending.txt saved-content\nsay finished',
+    },
+  });
+  const daemon = startDaemon(env);
+  try {
+    await waitFor(
+      () => run.status === 'completed' || run.status === 'failed',
+      30_000,
+      'switched branch completion',
+    );
+    expect(run.fail).toBeUndefined();
+    expect(run.status).toBe('completed');
+    await waitFor(
+      () => !existsSync(String(run.start?.workDir)),
+      15_000,
+      'switched worktree removal',
+    );
+    const caches = path.join(home, 'repos');
+    const cache = path.join(
+      caches,
+      readdirSync(caches).find((name) => name.endsWith('.git'))!,
+    );
+    expect(git(['show', 'fix/worker-branch:pending.txt'], cache)).toBe(
+      'saved-content',
+    );
+    const stash = git(['rev-parse', 'refs/stash'], cache);
+    const next = server.enqueue({
+      subject,
+      workspace,
+      prompt: {
+        system: '',
+        session: 'fresh',
+        turn: 'bash git checkout fix/worker-branch\nread committed.txt\nread pending.txt\nbash git stash apply\nread stash.txt\nsay finished',
+      },
+    });
+    await waitFor(
+      () => next.status === 'completed' || next.status === 'failed',
+      30_000,
+      'second branch run',
+    );
+    expect(next.fail).toBeUndefined();
+    expect(next.status).toBe('completed');
+    const output = server
+      .events(next.payload.run.id)
+      .filter((event) => event.type === 'toolResult')
+      .map((event) => event.output)
+      .join(' ');
+    expect(output).toContain('branch-content');
+    expect(output).toContain('saved-content');
+    expect(output).toContain('stash-content');
+    expect(git(['rev-parse', 'refs/stash'], cache)).toBe(stash);
+    expect(
+      git(
+        ['for-each-ref', '--format=%(refname)', 'refs/heads/agent/start'],
+        remote.replace('file://', ''),
+      ),
+    ).toBe('');
+  } finally {
+    await stopDaemon(daemon);
+    await server.close();
+    removeDir(home);
+    removeDir(workRootOf(home));
+    removeDir(root);
+  }
+}, 90_000);
+
 it('keeps a failed directory and includes its path in the existing failure detail', async () => {
   const server = new FakeServer();
   await server.listen();
@@ -272,7 +368,7 @@ it('keeps a failed directory and includes its path in the existing failure detai
     prompt: {
       system: '',
       session: 'fresh',
-      turn: 'bash git checkout -b unexpected\nwrite pending.txt retained\nfail toolProcess expected failure',
+      turn: 'bash git checkout -b unexpected\nbash git update-ref refs/runner/saved HEAD\nwrite pending.txt retained\nfail toolProcess expected failure',
     },
   });
   const daemon = startDaemon(env);
@@ -281,7 +377,7 @@ it('keeps a failed directory and includes its path in the existing failure detai
     const workDir = String(run.start?.workDir);
     const repo = path.join(workDir, 'repo');
     expect(run.fail?.detail).toContain(repo);
-    expect(run.fail?.detail).toContain('local branch');
+    expect(run.fail?.detail).toContain('cannot lock ref');
     expect(existsSync(path.join(repo, 'pending.txt'))).toBe(true);
     expect(git(['symbolic-ref', '--short', 'HEAD'], repo)).toBe('unexpected');
     // Final cleanup and daemon exit must also keep the failed directory.

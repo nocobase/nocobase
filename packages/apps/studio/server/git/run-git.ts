@@ -48,7 +48,7 @@ import {
 } from './connections.js';
 import type { StudioGit } from './service.js';
 import { GitApiError } from './platform.js';
-import { bindingOfRow, findRepo } from './store.js';
+import { bindingOfRow, findRepo, pullRequestsOfIssue } from './store.js';
 
 export const PROJECT_SETTINGS = 'studioGitProjectSettings';
 
@@ -147,7 +147,7 @@ export async function commitIdentity(
 
 /**
  * The branch a run on issue `key` works on in each linked repository, by working directory id: the repository's first
- * branch rule (`agent/{key}` until someone changes it). Database reads only, for the claim's transaction.
+ * branch rule unless a freshly verified same-repository open PR is linked. Database reads only, for the claim's transaction.
  */
 export async function runBranches(
   conn: DatabaseConnection,
@@ -156,8 +156,19 @@ export async function runBranches(
     readonly binding: ProjectResourceBinding | null;
   }[],
   key: string,
+  selection?: {
+    readonly issueId: string;
+    readonly heads: ReadonlyMap<string, string>;
+  },
 ): Promise<Map<string, string>> {
   const branches = new Map<string, string>();
+  const links = selection
+    ? (await pullRequestsOfIssue(conn, selection.issueId)).sort(
+        (a, b) =>
+          a.link.createdAt.localeCompare(b.link.createdAt) ||
+          a.pr.number - b.pr.number,
+      )
+    : [];
   for (const repo of repos) {
     const connection = repo.binding
       ? await findConnection(conn, repo.binding.connectionId)
@@ -166,9 +177,18 @@ export async function runBranches(
       connection && repo.binding
         ? await findRepo(conn, connection.apiBaseUrl, repo.binding.fullName)
         : null;
+    const linked = row
+      ? links.find(
+          ({ pr }) =>
+            pr.repoId === row.id &&
+            pr.state === 'open' &&
+            selection?.heads.has(pr.id),
+        )
+      : undefined;
     branches.set(
       repo.id,
-      branchOf(row?.branchRules[0] ?? DEFAULT_BRANCH_RULE, key),
+      (linked ? selection?.heads.get(linked.pr.id) : undefined) ??
+        branchOf(row?.branchRules[0] ?? DEFAULT_BRANCH_RULE, key),
     );
   }
   return branches;

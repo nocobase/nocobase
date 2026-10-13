@@ -278,13 +278,16 @@ describe("an agent's step", () => {
     const system = payload.prompt.system as string;
     expect(system).toContain(firstLine(WORKER_INSTRUCTIONS));
     expect(WORKER_INSTRUCTIONS).toContain(
-      'git push origin HEAD:refs/heads/<targetBranch>',
+      'git push origin HEAD:refs/heads/<branch>',
     );
-    expect(WORKER_INSTRUCTIONS).toContain('private runner alias');
+    expect(system).toContain('private runner alias');
     expect(WORKER_INSTRUCTIONS).toContain(
       'never rewrite history already pushed',
     );
-    expect(WORKER_INSTRUCTIONS).toContain('task default branch agent/<KEY>');
+    expect(WORKER_INSTRUCTIONS).toContain('switch or create branches');
+    expect(WORKER_INSTRUCTIONS).toContain('push any branch of this repository');
+    expect(WORKER_INSTRUCTIONS).toContain('nb-studio pr open --head <branch>');
+    expect(WORKER_INSTRUCTIONS).toContain('nb-studio pr unlink');
     expect(system).toContain("Do not change the issue's status.");
     expect(system).not.toContain(firstLine(MANAGER_ROLE));
     expect(system).not.toContain('## Agents you can hand work to');
