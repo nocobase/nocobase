@@ -650,7 +650,16 @@ export async function recoverRun(
           }
         : {},
     );
-    if (stopped) await cleanupRunTemp(paths, record.workDir);
+    if (stopped) {
+      try {
+        await cleanupRunTemp(paths, record.workDir);
+      } catch (error) {
+        // Temporary cleanup must not prevent credential removal, reporting or worker exit completion.
+        const reason = `Run temporary directory retained for ${record.workDir}: ${String(error)}`;
+        log(reason);
+        detail += `\n${reason}`;
+      }
+    }
     const failed = results.filter((result) => !result.saved);
     if (failed.length > 0)
       detail += `\nDirectory retained: ${record.workDir}: ${failed.map((r) => r.reason).join('; ')}`;

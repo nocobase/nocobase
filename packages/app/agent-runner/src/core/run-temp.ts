@@ -51,13 +51,13 @@ async function ensureRoot(paths: RunnerPaths): Promise<string> {
 }
 
 /** Validate existing lock directories before the shared lock helper inspects or reclaims them. */
-async function tempLock(dir: string): Promise<Lock> {
+async function tempLock(dir: string, timeoutMs = 0): Promise<Lock> {
   try {
     await privateDirectory(`${dir}.lock`, false);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
   }
-  return acquireLock(`${dir}.lock`, { timeoutMs: 0 });
+  return acquireLock(`${dir}.lock`, { timeoutMs });
 }
 
 export interface RunTemp {
@@ -110,7 +110,8 @@ export async function cleanupRunTemp(
     throw error;
   }
   const dir = path.join(root, runTempName(workDir));
-  const lock = await tempLock(dir);
+  // GC may hold this lock briefly while it checks the still-present run record.
+  const lock = await tempLock(dir, 2_000);
   try {
     await removeRunTemp(dir);
   } finally {
