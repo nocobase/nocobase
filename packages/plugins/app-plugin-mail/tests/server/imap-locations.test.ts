@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { type DatabaseManager } from '@nocobase/db';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -30,6 +31,7 @@ const server = vi.hoisted(() => {
     onFlag: undefined as (() => void) | undefined,
     onSearch: undefined as (() => number[] | false | undefined) | undefined,
     selectionModes: [] as boolean[],
+    allowNetwork: true,
     reset(): void {
       this.folders.clear();
       this.capabilities.clear();
@@ -43,17 +45,22 @@ const server = vi.hoisted(() => {
       this.onFlag = undefined;
       this.onSearch = undefined;
       this.selectionModes.length = 0;
+      this.allowNetwork = true;
     },
   };
 });
 
 vi.mock('nodemailer', () => ({
   default: {
-    createTransport: vi.fn(() => ({
-      sendMail: vi.fn(),
-      verify: vi.fn(),
-      close: vi.fn(),
-    })),
+    createTransport: vi.fn(() => {
+      if (!server.allowNetwork)
+        throw new Error('Migration must not create SMTP transports');
+      return {
+        sendMail: vi.fn(),
+        verify: vi.fn(),
+        close: vi.fn(),
+      };
+    }),
   },
 }));
 
@@ -91,7 +98,10 @@ vi.mock('imapflow', () => {
       };
     }
     public on(): void {}
-    public async connect(): Promise<void> {}
+    public async connect(): Promise<void> {
+      if (!server.allowNetwork)
+        throw new Error('Migration must not connect to IMAP');
+    }
     public async logout(): Promise<void> {
       server.logouts += 1;
     }
@@ -1816,6 +1826,339 @@ describe('IMAP production writes and draft protection', () => {
     } finally {
       lock.mockRestore();
       vi.useRealTimers();
+    }
+  });
+
+  it('boots upgraded legacy data and preserves locator UUIDs through details, attachments, flags, sync and scheduled cleanup', async () => {
+    await destroyMailTestDatabase(database);
+    database = await createMailTestDatabase({ migrate: false });
+    const migrator = database.createMigrator({
+      sources: [
+        {
+          directory: resolve(import.meta.dirname, '../../database/migrations'),
+          packageName: '@nocobase/app-plugin-mail',
+        },
+      ],
+    });
+    await migrator.upTo('202610090001_mail_create_message_participants');
+    const query = database.query();
+    const now = '2026-10-12T00:00:00.000Z';
+    await query
+      .insertInto('mailAccounts')
+      .values({
+        id: accountId,
+        userId: owner.actorId,
+        providerType: 'imap-smtp',
+        providerName: 'imap',
+        address: 'owner@example.com',
+        authorizationSubject: owner.actorId,
+        credentialReference: 'credential',
+        initialSyncReceivedAfter: '2026-01-01T00:00:00.000Z',
+        scopes: [],
+        status: 'active',
+        createdAt: now,
+        updatedAt: now,
+      })
+      .execute();
+    const legacy = (folder: string) =>
+      `imap:${Buffer.from(JSON.stringify({ folder, uidValidity: '1', uid: 1 })).toString('base64url')}`;
+    const identity = legacy('INBOX');
+    const draftIdentity = legacy('Drafts');
+    const ordinary = randomUUID();
+    const scheduled = randomUUID();
+    const submission = randomUUID();
+    const oldAttachment = `imap-attachment:${Buffer.from(JSON.stringify({ folder: 'INBOX', uidValidity: '1', uid: 1, attachment: 0 })).toString('base64url')}`;
+    const base = {
+      accountId,
+      recipients: { to: [], cc: [], bcc: [] },
+      replyTo: [],
+      references: [],
+      subject: 'Subject',
+      text: 'Hello',
+      contentStatus: 'complete',
+      attachments: [],
+      draft: false,
+      todo: false,
+      receivedAt: now,
+      sortAt: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await query
+      .insertInto('mailMessages')
+      .values([
+        {
+          ...base,
+          id: ordinary,
+          providerMessageId: identity,
+          note: 'Keep note',
+          todo: true,
+          attachments: [
+            {
+              id: 'legacy-file',
+              providerAttachmentId: oldAttachment,
+              fileName: 'file.pdf',
+              contentType: 'application/pdf',
+              size: 10,
+              inline: false,
+            },
+          ],
+        },
+        {
+          ...base,
+          id: scheduled,
+          providerMessageId: 'local-draft:scheduled-legacy',
+          providerDraftMessageId: draftIdentity,
+          draft: true,
+          text: 'Locally authored schedule',
+          scheduledSubmissionId: submission,
+        },
+      ])
+      .execute();
+    await query
+      .insertInto('mailSubmissions')
+      .values({
+        id: submission,
+        accountId,
+        idempotencyKey: 'legacy-schedule',
+        requestFingerprint: 'fingerprint',
+        status: 'pending',
+        scheduledAt: '2099-01-01T00:00:00.000Z',
+        requestedBy: owner.actorId,
+        composeInput: {
+          accountId,
+          idempotencyKey: 'legacy-schedule',
+          draftMessageId: scheduled,
+          to: [{ address: 'recipient@example.com' }],
+          subject: 'Subject',
+          text: 'Locally authored schedule',
+          deliverySnapshot: {
+            text: 'Retain delivery snapshot',
+            attachments: [],
+          },
+        },
+        createdAt: now,
+        updatedAt: now,
+      })
+      .execute();
+    const before = await query
+      .selectFrom('mailMessages')
+      .selectAll()
+      .orderBy('id')
+      .execute();
+    const submissionBefore = await query
+      .selectFrom('mailSubmissions')
+      .selectAll()
+      .execute();
+    server.allowNetwork = false;
+    const fetch = vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+      throw new Error('Migration must not fetch');
+    });
+    try {
+      await migrator.latest();
+      expect(fetch).not.toHaveBeenCalled();
+    } finally {
+      server.allowNetwork = true;
+      fetch.mockRestore();
+    }
+    const after = await query
+      .selectFrom('mailMessages')
+      .selectAll()
+      .orderBy('id')
+      .execute();
+    expect(
+      after.map(
+        ({
+          imapIdSource: _source,
+          providerDraftMessageIdSource: _draft,
+          imapOrphanRunId: _orphan,
+          ...row
+        }) => row,
+      ),
+    ).toEqual(before);
+    store = createDatabaseMailStore(database);
+    expect(
+      await query.selectFrom('mailSubmissions').selectAll().execute(),
+    ).toEqual(submissionBefore);
+    expect(await store.getMessageForAccount(accountId, ordinary)).toMatchObject(
+      { id: ordinary, text: 'Hello', note: 'Keep note', todo: true },
+    );
+    const { ServiceContainer } = await import('@nocobase/service-provider');
+    const { createAppPaths } = await import('@nocobase/app-server/config');
+    const { Hono } = await import('hono');
+    const { databaseManagerToken } = await import('@nocobase/db');
+    const tokens = await import('../../server/tokens.js');
+    const { default: plugin } = await import('../../server/plugin.js');
+    const container = new ServiceContainer();
+    container.instance(databaseManagerToken, database);
+    container.instance(tokens.mailCredentialVaultToken, {
+      put: vi.fn(),
+      get: async <T>() => ({ username: 'u', password: 'p' }) as T,
+      replace: vi.fn(),
+      getOrRefresh: vi.fn(),
+      delete: vi.fn(),
+    });
+    const app = {
+      appName: 'test',
+      publicBasePath: '/test',
+      config: {
+        app: { name: 'test', publicBasePath: '/test' },
+        get: () => ({ providers: { imap: config } }),
+      },
+      paths: createAppPaths({ rootDir: '/missing' }),
+      router: new Hono(),
+      container,
+    };
+    const providers = plugin.serviceProviders.map(
+      (Provider) => new Provider(app),
+    );
+    server.capabilities.add('OBJECTID');
+    server.capabilities.add('UIDPLUS');
+    folder('INBOX');
+    folder('Drafts');
+    deliver('INBOX', {
+      raw: raw('<legacy@example.com>'),
+      emailId: 'NEW-NATIVE',
+      structure: {
+        type: 'multipart/mixed',
+        childNodes: [
+          { type: 'text/plain', part: '1', size: 5 },
+          {
+            type: 'application/pdf',
+            part: '2',
+            size: 10,
+            disposition: 'attachment',
+            dispositionParameters: { filename: 'file.pdf' },
+          },
+        ],
+      },
+    });
+    deliver('Drafts', {
+      raw: raw('<scheduled-legacy@example.com>', 'remote replacement'),
+      emailId: 'DRAFT-NATIVE',
+      flags: ['\\Draft'],
+    });
+    try {
+      for (const provider of providers) await provider.register();
+      for (const provider of providers) await provider.boot();
+      const adapter = await container
+        .resolve(tokens.mailProviderAdapterResolverToken)
+        .resolve((await store.getAccount(accountId))!);
+      try {
+        expect(await adapter.getMessage!(identity)).toMatchObject({
+          ok: true,
+          value: { providerMessageId: identity, text: 'Hello' },
+        });
+        const content = await service().getAttachment(
+          owner,
+          accountId,
+          ordinary,
+          oldAttachment,
+        );
+        const reader = content.stream.getReader();
+        const bytes: Uint8Array[] = [];
+        for (;;) {
+          const result = await reader.read();
+          if (result.done) break;
+          bytes.push(result.value);
+        }
+        expect(Buffer.concat(bytes).toString()).toBe('attachment');
+        const bound = await (
+          adapter as import('../../server/adapters/imap-smtp/adapter.js').ImapSmtpAdapter
+        ).forMessage(ordinary, identity, 'flags');
+        try {
+          expect(await bound.setRead(identity, true)).toMatchObject({
+            ok: true,
+          });
+          expect(await bound.setStarred(identity, true)).toMatchObject({
+            ok: true,
+          });
+        } finally {
+          await bound.close();
+        }
+        expect(
+          await store.getMessageForAccount(accountId, ordinary),
+        ).toMatchObject({
+          read: true,
+          starred: true,
+          text: 'Hello',
+          note: 'Keep note',
+          todo: true,
+        });
+        await sync();
+        expect(await messages()).toHaveLength(2);
+        expect(
+          await store.getMessageForAccount(accountId, ordinary),
+        ).toMatchObject({
+          text: 'Hello',
+          note: 'Keep note',
+          todo: true,
+          attachments: [{ providerAttachmentId: oldAttachment }],
+        });
+        expect(
+          (await messages()).find((row) => row.id === ordinary),
+        ).toMatchObject({
+          providerMessageId: identity,
+          imapIdSource: 'locator',
+        });
+        expect(
+          await store.getMessageForAccount(accountId, scheduled),
+        ).toMatchObject({
+          text: 'Locally authored schedule',
+          scheduledSend: { id: submission },
+        });
+        const stores = [...server.stores];
+        const flags = await (
+          adapter as import('../../server/adapters/imap-smtp/adapter.js').ImapSmtpAdapter
+        ).forMessage(scheduled, draftIdentity, 'flags');
+        const deletion = await (
+          adapter as import('../../server/adapters/imap-smtp/adapter.js').ImapSmtpAdapter
+        ).forMessage(scheduled, draftIdentity, 'delete');
+        try {
+          expect(await flags.setRead(draftIdentity, true)).toMatchObject({
+            ok: false,
+          });
+          expect(await flags.setStarred(draftIdentity, true)).toMatchObject({
+            ok: false,
+          });
+          expect(
+            await deletion.deleteMessage(draftIdentity, true),
+          ).toMatchObject({ ok: false });
+        } finally {
+          await flags.close();
+          await deletion.close();
+        }
+        expect(server.stores).toEqual(stores);
+        expect(server.expunges).toEqual([]);
+        server.folders.get('Drafts')!.messages.clear();
+        await sync();
+        expect(await messages()).toHaveLength(2);
+        expect(
+          (await messages()).find((row) => row.id === scheduled),
+        ).toMatchObject({ locations: [{ status: 'invalid' }] });
+        expect(
+          await store.getMessageForAccount(accountId, scheduled),
+        ).toMatchObject({
+          id: scheduled,
+          text: 'Locally authored schedule',
+          scheduledSend: { id: submission },
+        });
+        expect(
+          (await messages()).find((row) => row.id === ordinary)
+            ?.providerMessageId,
+        ).toBe(identity);
+        expect(
+          await query
+            .selectFrom('mailMessages')
+            .select('providerDraftMessageIdSource')
+            .where('id', '=', scheduled)
+            .executeTakeFirst(),
+        ).toEqual({ providerDraftMessageIdSource: 'locator' });
+      } finally {
+        await adapter.close?.();
+      }
+    } finally {
+      for (const provider of providers.toReversed()) await provider.shutdown();
     }
   });
 

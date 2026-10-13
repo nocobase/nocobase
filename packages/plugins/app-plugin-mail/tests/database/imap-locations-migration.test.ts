@@ -6,7 +6,7 @@ import {
   inspectCollection,
 } from '@nocobase/app-testing/server';
 import type { DatabaseConnection, MigrationSource } from '@nocobase/db';
-import { expect } from 'vitest';
+import { expect, vi } from 'vitest';
 
 const name = '202610250001_mail_imap_message_locations';
 const previous = '202610090001_mail_create_message_participants';
@@ -18,14 +18,17 @@ const sources: readonly MigrationSource[] = [
 ];
 const now = '2026-10-12T00:00:00.000Z';
 
-async function seedAccount(connection: DatabaseConnection): Promise<string> {
+async function seedAccount(
+  connection: DatabaseConnection,
+  providerType = 'imap-smtp',
+): Promise<string> {
   const id = randomUUID();
   await connection.query
     .insertInto('mailAccounts')
     .values({
       id,
       userId: id,
-      providerType: 'imap-smtp',
+      providerType,
       providerName: 'imap',
       authorizationSubject: id,
       address: `${id}@example.com`,
@@ -44,7 +47,7 @@ async function seedMessage(
   accountId: string,
   values: Record<string, unknown> = {},
 ): Promise<string> {
-  const id = randomUUID();
+  const id = typeof values.id === 'string' ? values.id : randomUUID();
   await connection.query
     .insertInto('mailMessages')
     .values({
@@ -94,7 +97,7 @@ describeMigration(name, {
     previousMessageIdField = (
       await connection.collections.get('mailMessages')
     )?.fields?.find((field) => field.name === 'internetMessageId');
-    // Accounts without messages may stay: only message data blocks the change.
+    // Empty accounts are preserved through up/down/reapply.
     await seedAccount(connection);
     accounts = await connection.query
       .selectFrom('mailAccounts')
@@ -165,16 +168,326 @@ describeMigration(name, {
 
 const test = createDatabaseTest();
 
-test('refuses existing mail before changing any structure', async ({
+function locator(value: Record<string, unknown>): string {
+  return `imap:${Buffer.from(JSON.stringify(value)).toString('base64url')}`;
+}
+
+test('upgrades populated legacy schema offline without changing business data', async ({
   database,
   connection,
 }) => {
   const migrator = database.createMigrator({ sources });
   await migrator.upTo(previous);
-  await seedMessage(connection, await seedAccount(connection));
-  const before = await inspectCollection(connection, 'mailMessages');
-  await expect(migrator.latest()).rejects.toThrow('mailMessages contains data');
-  expect(await inspectCollection(connection, 'mailMessages')).toEqual(before);
+  const accountId = await seedAccount(connection);
+  const other = await seedAccount(connection);
+  const gmail = await seedAccount(connection, 'gmail');
+  const tuple = {
+    folder: 'Archive/中文 & +',
+    uidValidity: '4294967295',
+    uid: 4294967295,
+  };
+  const ordinary = await seedMessage(connection, accountId, {
+    providerMessageId: locator(tuple),
+    read: true,
+    starred: true,
+    receivedAt: now,
+    text: 'Complete body',
+    html: '<p>Complete body</p>',
+    note: 'Keep note',
+    todo: true,
+    attachments: JSON.stringify([
+      { id: 'attachment', providerAttachmentId: 'old-attachment' },
+    ]),
+  });
+  await seedMessage(connection, other, { providerMessageId: locator(tuple) });
+  const remoteDraft = await seedMessage(connection, accountId, {
+    providerMessageId: locator({ folder: 'Drafts', uidValidity: '1', uid: 1 }),
+    draft: true,
+  });
+  const mirror = await seedMessage(connection, accountId, {
+    providerMessageId: 'local-draft:mirror',
+    providerDraftMessageId: locator({
+      folder: 'Drafts',
+      uidValidity: '1',
+      uid: 2,
+    }),
+    draft: true,
+  });
+  const scheduled = await seedMessage(connection, accountId, {
+    providerMessageId: 'local-draft:scheduled',
+    providerDraftMessageId: locator({
+      folder: 'Drafts',
+      uidValidity: '1',
+      uid: 3,
+    }),
+    draft: true,
+    scheduledSubmissionId: randomUUID(),
+    draftSource: 'authored locally',
+  });
+  await seedMessage(connection, accountId, {
+    providerMessageId: 'local-draft:pure',
+    draft: true,
+  });
+  await seedMessage(connection, accountId, {
+    providerMessageId: 'local-draft:no-mirror',
+    draft: true,
+    scheduledSubmissionId: randomUUID(),
+  });
+  await seedMessage(connection, accountId); // SMTP accepted RFC ID has no remote tuple.
+  await seedMessage(connection, gmail, { providerMessageId: locator(tuple) });
+  // Exercise more than one bounded page, without relying on ID insertion order.
+  for (let uid = 1; uid <= 105; uid++)
+    await seedMessage(connection, accountId, {
+      providerMessageId: locator({ folder: 'INBOX', uidValidity: '7', uid }),
+    });
+  await connection.query
+    .insertInto('mailMessageFolders')
+    .values({
+      accountId,
+      messageId: ordinary,
+      providerFolderId: 'unrelated-folder-link',
+    })
+    .execute();
+  await connection.query
+    .insertInto('mailMessageParticipants')
+    .values({
+      accountId,
+      messageId: ordinary,
+      role: 'from',
+      address: 'old@example.com',
+      domain: 'example.com',
+    })
+    .execute();
+  const labelId = randomUUID();
+  await connection.query
+    .insertInto('mailLabels')
+    .values({
+      id: labelId,
+      ownerId: accountId,
+      name: 'Keep label',
+      createdAt: now,
+      updatedAt: now,
+    })
+    .execute();
+  await connection.query
+    .insertInto('mailMessageLabels')
+    .values({ messageId: ordinary, labelId })
+    .execute();
+  for (const [table, values] of Object.entries(businessRows))
+    await connection.query
+      .insertInto(table)
+      .values(values(accountId))
+      .execute();
+  const before = await connection.query
+    .selectFrom('mailMessages')
+    .selectAll()
+    .orderBy('id')
+    .execute();
+  const tables = [
+    'mailAccounts',
+    'mailMessageFolders',
+    'mailMessageParticipants',
+    'mailLabels',
+    'mailMessageLabels',
+    ...Object.keys(businessRows),
+  ];
+  const snapshots = [];
+  for (const table of tables)
+    snapshots.push(
+      await connection.query.selectFrom(table).selectAll().execute(),
+    );
+  const network = vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+    throw new Error('Migration must not access the network');
+  });
+  try {
+    await migrator.latest();
+    expect(network).not.toHaveBeenCalled();
+  } finally {
+    network.mockRestore();
+  }
+  const after = await connection.query
+    .selectFrom('mailMessages')
+    .selectAll()
+    .orderBy('id')
+    .execute();
+  expect(
+    after.map(
+      ({
+        imapIdSource: _source,
+        providerDraftMessageIdSource: _mirror,
+        imapOrphanRunId: _orphan,
+        ...row
+      }) => row,
+    ),
+  ).toEqual(before);
+  for (const [index, table] of tables.entries())
+    expect(
+      await connection.query.selectFrom(table).selectAll().execute(),
+    ).toEqual(snapshots[index]);
+  const copies = await connection.query
+    .selectFrom('mailMessageImapLocations')
+    .selectAll()
+    .execute();
+  expect(copies).toHaveLength(110);
+  const copy = copies.find((row) => row.messageId === ordinary)!;
+  expect({
+    ...copy,
+    uid: Number(copy.uid),
+    read: Boolean(copy.read),
+    starred: Boolean(copy.starred),
+  }).toMatchObject({
+    accountId,
+    providerFolderId: tuple.folder,
+    uidValidity: tuple.uidValidity,
+    uid: tuple.uid,
+    status: 'valid',
+    invalidationReason: null,
+    read: true,
+    starred: true,
+    receivedAt: before.find((row) => row.id === ordinary)!.receivedAt,
+  });
+  for (const row of after) {
+    expect(row.imapOrphanRunId).toBeNull();
+    const hasCopy = copies.some((copy) => copy.messageId === row.id);
+    expect(row.imapIdSource).toBe(
+      hasCopy && row.id !== mirror && row.id !== scheduled ? 'locator' : null,
+    );
+    expect(row.providerDraftMessageIdSource).toBe(
+      row.id === mirror || row.id === scheduled ? 'locator' : null,
+    );
+  }
+  expect(copies.some((row) => row.messageId === remoteDraft)).toBe(true);
+  // The original cascades were restored after SQLite's parent-table rebuild.
+  await connection.query
+    .deleteFrom('mailMessages')
+    .where('id', '=', ordinary)
+    .execute();
+  for (const table of [
+    'mailMessageFolders',
+    'mailMessageLabels',
+    'mailMessageParticipants',
+    'mailMessageImapLocations',
+  ])
+    expect(
+      await connection.query
+        .selectFrom(table)
+        .selectAll()
+        .where('messageId', '=', ordinary)
+        .execute(),
+    ).toEqual([]);
+});
+
+for (const value of [
+  { folder: 'INBOX', uid: 1 },
+  { folder: 'INBOX', uidValidity: '0', uid: 1 },
+  { folder: 'INBOX', uidValidity: '01', uid: 1 },
+  { folder: 'INBOX', uidValidity: '4294967296', uid: 1 },
+  { folder: 'INBOX', uidValidity: '1', uid: 0 },
+  { folder: 'INBOX', uidValidity: '1', uid: 4294967296 },
+  { folder: 'INBOX', uidValidity: '1', uid: 1.5 },
+  { folder: '', uidValidity: '1', uid: 1 },
+  { folder: 'INBOX\0', uidValidity: '1', uid: 1 },
+  null,
+]) {
+  test(`rejects only an unsafe locator before DDL: ${JSON.stringify(value)}`, async ({
+    database,
+    connection,
+  }) => {
+    const migrator = database.createMigrator({ sources });
+    await migrator.upTo(previous);
+    const id = await seedMessage(connection, await seedAccount(connection), {
+      providerMessageId: value ? locator(value) : 'imap:invalid!',
+    });
+    const before = await inspectCollection(connection, 'mailMessages');
+    await expect(migrator.latest()).rejects.toThrow(
+      `Cannot upgrade legacy IMAP message ${id}:`,
+    );
+    expect(await inspectCollection(connection, 'mailMessages')).toEqual(before);
+    expect(
+      await inspectCollection(connection, 'mailMessageImapLocations'),
+    ).toBeUndefined();
+    expect(
+      await connection.query.selectFrom('mailMessages').select('id').execute(),
+    ).toEqual([{ id }]);
+  });
+}
+
+test('refuses competing UUIDs across batches for the same account tuple without merging them', async ({
+  database,
+  connection,
+}) => {
+  const migrator = database.createMigrator({ sources });
+  await migrator.upTo(previous);
+  const account = await seedAccount(connection);
+  await seedMessage(connection, account, {
+    id: '00000000-0000-4000-8000-000000000001',
+    providerMessageId: locator({ folder: 'INBOX', uidValidity: '1', uid: 1 }),
+  });
+  const id = await seedMessage(connection, account, {
+    id: 'ffffffff-ffff-4fff-bfff-ffffffffffff',
+    providerMessageId: 'local-draft:conflict',
+    providerDraftMessageId: locator({
+      uid: 1,
+      uidValidity: '1',
+      folder: 'INBOX',
+    }),
+  });
+  for (let uid = 2; uid <= 106; uid++)
+    await seedMessage(connection, account, {
+      providerMessageId: locator({ folder: 'INBOX', uidValidity: '1', uid }),
+    });
+  const before = await connection.query
+    .selectFrom('mailMessages')
+    .selectAll()
+    .orderBy('id')
+    .execute();
+  await expect(migrator.latest()).rejects.toThrow(/tuple belongs to message/);
+  expect(before.some((row) => row.id === id)).toBe(true);
+  expect(
+    await connection.query
+      .selectFrom('mailMessages')
+      .selectAll()
+      .orderBy('id')
+      .execute(),
+  ).toEqual(before);
+  expect(
+    await inspectCollection(connection, 'mailMessageImapLocations'),
+  ).toBeUndefined();
+});
+
+test('never truncates an identity exceeding the supported capacity', async ({
+  database,
+  connection,
+}) => {
+  const migrator = database.createMigrator({ sources });
+  await migrator.upTo(previous);
+  const accountId = await seedAccount(connection);
+  const identity = locator({
+    folder: 'x'.repeat(400),
+    uidValidity: '1',
+    uid: 1,
+  });
+  expect(identity.length).toBeGreaterThan(500);
+  if (connection.dialect !== 'sqlite') {
+    // These historical VARCHAR schemas enforce the bound before migration.
+    await expect(
+      seedMessage(connection, accountId, { providerMessageId: identity }),
+    ).rejects.toThrow();
+    return;
+  }
+  const id = await seedMessage(connection, accountId, {
+    providerMessageId: identity,
+  });
+  await expect(migrator.latest()).rejects.toThrow(
+    'locator exceeds identity capacity',
+  );
+  expect(
+    await connection.query
+      .selectFrom('mailMessages')
+      .select('providerMessageId')
+      .where('id', '=', id)
+      .executeTakeFirst(),
+  ).toEqual({ providerMessageId: identity });
   expect(
     await inspectCollection(connection, 'mailMessageImapLocations'),
   ).toBeUndefined();
@@ -282,6 +595,19 @@ const businessRows: Record<
     idempotencyKey: 'key',
     requestFingerprint: 'fingerprint',
     status: 'pending',
+    requestedBy: 'owner',
+    scheduledAt: '2099-01-01T00:00:00.000Z',
+    composeInput: JSON.stringify({
+      accountId,
+      idempotencyKey: 'key',
+      to: [{ address: 'recipient@example.com' }],
+      subject: 'Scheduled',
+      text: 'Keep authored body',
+      deliverySnapshot: {
+        text: 'Keep delivery body',
+        attachments: [{ providerAttachmentId: 'keep-snapshot-attachment' }],
+      },
+    }),
     createdAt: now,
     updatedAt: now,
   }),
@@ -326,7 +652,7 @@ const businessRows: Record<
 
 for (const [table, values] of Object.entries(businessRows)) {
   for (const action of ['up', 'down'] as const) {
-    test(`refuses ${action} before any structure or metadata change when only ${table} contains business data`, async ({
+    test(`${action === 'up' ? 'preserves existing' : 'refuses destructive rollback for'} ${table} business data`, async ({
       database,
       connection,
     }) => {
@@ -343,9 +669,20 @@ for (const [table, values] of Object.entries(businessRows)) {
         connection,
         'mailMessageImapLocations',
       );
-      await expect(
-        action === 'up' ? migrator.latest() : migrator.rollback(),
-      ).rejects.toThrow(`${table} contains data`);
+      if (action === 'up') {
+        const rows = await connection.query
+          .selectFrom(table)
+          .selectAll()
+          .execute();
+        await migrator.latest();
+        expect(
+          await connection.query.selectFrom(table).selectAll().execute(),
+        ).toEqual(rows);
+        return;
+      }
+      await expect(migrator.rollback()).rejects.toThrow(
+        `${table} contains data`,
+      );
       expect(await inspectCollection(connection, 'mailMessages')).toEqual(
         structure,
       );
