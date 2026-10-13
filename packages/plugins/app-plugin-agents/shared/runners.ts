@@ -147,13 +147,6 @@ export interface RunnerWorkspaceDisk {
 
 /** One working directory a runner keeps for this application. */
 export interface RunnerWorkspace {
-  readonly subjectKey?: string;
-  readonly gitCheck?: {
-    readonly reason: 'gitFailed';
-    readonly checkedAt: string;
-  };
-  readonly sizeBytes?: number;
-  readonly sizeMeasuredAt?: string;
   readonly decision?: WorkspaceDecision;
   readonly cleanup?: WorkspaceCleanupResult;
   /** The last run that worked in it. */

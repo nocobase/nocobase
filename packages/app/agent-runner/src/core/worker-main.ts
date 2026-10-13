@@ -9,24 +9,16 @@ import { runnerPaths, readJson } from '../lib/home.ts';
 import { JobPayloadSchema, RunPayloadSchema } from '../protocol/index.ts';
 import { JobWorker } from './job-worker.ts';
 import {
-  observeWriters,
-  workspaceWriters,
-  stopRecordedWriters,
-  liveWriterPids,
-} from './writer-ownership.ts';
-import {
   killLeftovers,
   killTagged,
-  PROCESS_TAG_ENV,
   taggedProcesses,
+  PROCESS_TAG_ENV,
   listProcesses,
-  descendantsOf,
   groupsBelow,
 } from './process-tree.ts';
 import {
   jobRecordKey,
   recordPath,
-  isAlive,
   type RunRecord,
   type WorkerJob,
 } from './supervisor.ts';
@@ -103,25 +95,13 @@ async function main(): Promise<number> {
     log: '',
   };
   const settings = await readSettings(paths);
-  const seenGroups = new Set<number>();
-  const observeGroups = async () => {
-    const processes = await listProcesses({ strict: true });
-    for (const group of groupsBelow(process.pid, processes))
-      seenGroups.add(group);
-    await observeWriters(
-      paths,
-      payload.run.id,
-      process.pid,
-      'worker',
-      processes,
-    );
-  };
-  let quiescing = false;
-  let observation = Promise.resolve();
+  const groups = new Set<number>();
   const scan = setInterval(() => {
-    if (!quiescing)
-      observation = observation.then(observeGroups).catch(() => undefined);
-  }, job.timings.processScanMs ?? 1_000);
+    void listProcesses().then((entries) => {
+      for (const group of groupsBelow(process.pid, entries)) groups.add(group);
+    });
+  }, 250);
+  scan.unref();
   const worker = new RunWorker(
     payload,
     job.timings,
@@ -129,52 +109,6 @@ async function main(): Promise<number> {
       paths,
       connection,
       settings,
-      stopWriters: async () => {
-        quiescing = true;
-        try {
-          await observation;
-          await observeGroups();
-          const left = await killLeftovers(process.pid, {
-            groups: seenGroups,
-            graceMs: 2_000,
-          });
-          const tag = process.env[PROCESS_TAG_ENV];
-          const tagged = tag === undefined ? 0 : await killTagged([tag]);
-          const survivors = await stopRecordedWriters(paths, payload.run.id);
-          const processes = await listProcesses({ strict: true });
-          const groupWriters = await liveWriterPids(
-            processes
-              .filter((entry) => seenGroups.has(entry.pgid))
-              .map((entry) => entry.pid),
-          );
-          if (left.groups > 0)
-            log(
-              `worker: stopped ${left.groups} process group(s) before saving`,
-            );
-          if (left.processes + tagged > 0)
-            log(
-              `worker: stopped ${left.processes + tagged} process(es) the run left behind before saving`,
-            );
-          if (
-            survivors.length > 0 ||
-            groupWriters.length > 0 ||
-            descendantsOf(process.pid, processes).some((entry) =>
-              isAlive(entry.pid),
-            ) ||
-            (tag !== undefined && (await taggedProcesses([tag])).length > 0) ||
-            (record.workDir !== undefined &&
-              (await workspaceWriters(record.workDir)).length > 0)
-          )
-            throw new Error(
-              'Writers remain after stopping the tool; preserve the worktree for recovery.',
-            );
-          log(
-            `run ${payload.run.id}: writers stopped before workspace cleanup`,
-          );
-        } finally {
-          quiescing = false;
-        }
-      },
       adapters: loadAdapters(
         process.env,
         settings.passEnv,
@@ -185,13 +119,30 @@ async function main(): Promise<number> {
         ),
       ),
       log,
+      stopWorkspaceProcesses: async () => {
+        clearInterval(scan);
+        await killLeftovers(process.pid, {
+          groups,
+          graceMs: 2_000,
+          strict: true,
+        });
+        const tag = process.env[PROCESS_TAG_ENV];
+        if (tag !== undefined) {
+          await killTagged([tag]);
+          if ((await taggedProcesses([tag], true)).length > 0)
+            throw new Error(
+              'Tagged run processes remain; keeping the workspace.',
+            );
+        }
+        log('workspace: run processes stopped before read-only removal');
+      },
     },
     record,
   );
   process.on('SIGUSR2', () => void worker.pollStatus());
   process.on('SIGTERM', () => worker.end({ kind: 'shutdown' }));
   process.on('SIGINT', () => worker.end({ kind: 'shutdown' }));
-  const outcome = await worker.run().finally(() => clearInterval(scan));
+  const outcome = await worker.run();
   log(`run ${payload.run.id}: worker done (${outcome})`);
   // The outcome was reported to the server; the exit code only tells the daemon the worker did not crash.
   return 0;

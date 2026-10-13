@@ -37,18 +37,10 @@
 //
 // Cloning, fetching and the submodules' update are retried where they fail for a passing cause, and abort a stalled
 // transfer instead of hanging (git-retry.ts). One that outlasts every retry fails with a `GitNetworkError`.
-import {
-  addRunWorktree,
-  clearContinuations,
-  readContinuationState,
-  updateContinuationState,
-} from './run-worktrees.ts';
-
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import {
   mkdir,
-  open,
   readdir,
   readFile,
   rm,
@@ -56,12 +48,6 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
-import {
-  cleanupWorkspace,
-  isReadOnlyWorkspace,
-  legacyReadOnlyKey,
-} from './workspace-cleanup.ts';
-import { workspaceWriters } from './writer-ownership.ts';
 
 import { delay } from '../lib/http.ts';
 import {
@@ -211,14 +197,8 @@ export function subjectWorkDir(
 export const RUNNER_DIR = '.nocobase-runner';
 
 /** Locks a repository's cache (fetching, creating reference clones, or removing legacy worktrees). */
-export async function lockCache(cache: string): Promise<Lock> {
-  try {
-    return await acquireLock(`${cache}.lock`, { timeoutMs: 120_000 });
-  } catch (error) {
-    throw new CheckoutError(
-      `Cache preparation failed: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
+export function lockCache(cache: string): Promise<Lock> {
+  return acquireLock(`${cache}.lock`, { timeoutMs: 120_000 });
 }
 
 /**
@@ -249,7 +229,6 @@ export async function updateCache(
             [...GIT_LOW_SPEED_CONFIG, 'clone', '--bare', '--quiet', url, cache],
             paths.reposDir,
             env,
-            options.retry,
           );
         },
         options.retry,
@@ -257,8 +236,6 @@ export async function updateCache(
     }
     // Reference clones borrow objects even after their refs disappear from the cache. Never prune those objects.
     await git(['config', 'gc.auto', '0'], cache);
-    await git(['config', 'core.fsync', 'objects,reference'], cache);
-    await git(['config', 'core.fsyncMethod', 'fsync'], cache);
     await git(['config', 'gc.pruneExpire', 'never'], cache);
     await git(['config', 'maintenance.auto', 'false'], cache);
     await installGitHooks(path.join(cache, 'hooks'));
@@ -277,7 +254,6 @@ export async function updateCache(
           ],
           cache,
           env,
-          options.retry,
         ),
       options.retry,
     );
@@ -291,10 +267,6 @@ export interface CheckedOutRepo {
   url: string;
   branch: string;
   defaultBranch: string;
-  localBranch?: string;
-  continuation?: string;
-  continuationEpoch?: string;
-  warnings?: string[];
   primary: boolean;
   /** Absolute. */
   dir: string;
@@ -343,9 +315,6 @@ export interface WorkspaceRepo {
   /** Always `cachePath(paths, url)`. */
   cache: string;
   branch: string;
-  localBranch?: string;
-  continuation?: string;
-  continuationEpoch?: string;
   /** Where the checkout started when the runner created it; nothing past it was committed while HEAD is here. */
   startSha?: string;
   /** What the runner last saw the remote task branch hold after it pushed (or found it already pushed). */
@@ -360,23 +329,7 @@ export interface WorkspaceRepo {
  * and paths are derived and checked again, and what they say was pushed is ignored (`legacy`).
  */
 export interface WorkspaceMeta {
-  cleanupPending?: boolean;
-  cleanupStage?: 'files' | 'registration' | 'continuation' | 'record';
-  cleanupError?: string;
-  cleanupRegistrations?: { cache: string; names: string[] }[];
-  writersStopped?: boolean;
-  gitCheck?: { reason: 'gitFailed'; checkedAt: string };
-  sizeBytes?: number;
-  sizeMeasuredAt?: string;
   appKey?: string;
-  runAttempt?: boolean;
-  continuationOnly?: boolean;
-  activeWorkDirs?: string[];
-  sessionKeys?: string[];
-  runWorktrees?: boolean;
-  readOnly?: boolean;
-  recoveryRequired?: boolean;
-  recoveryReason?: string;
   subjectKey: string;
   repos: WorkspaceRepo[];
   /**
@@ -456,17 +409,6 @@ function believable(
         path: path.relative(root, dir),
         cache: cachePath(paths, repo.url),
         branch: repo.branch,
-        ...(!legacy && isText(repo.localBranch)
-          ? { localBranch: repo.localBranch }
-          : {}),
-        ...(!legacy && isText(repo.continuation)
-          ? { continuation: repo.continuation }
-          : {}),
-        ...(!legacy &&
-        isText(repo.continuationEpoch) &&
-        /^[a-zA-Z0-9-]+$/u.test(repo.continuationEpoch)
-          ? { continuationEpoch: repo.continuationEpoch }
-          : {}),
         ...(!legacy && isText(repo.startSha) && SHA.test(repo.startSha)
           ? { startSha: repo.startSha }
           : {}),
@@ -479,88 +421,6 @@ function believable(
   const text = (key: string) => (isText(raw[key]) ? { [key]: raw[key] } : {});
   return {
     ...text('appKey'),
-    ...(!legacy && raw.runAttempt === true ? { runAttempt: true } : {}),
-    ...(!legacy && raw.continuationOnly === true
-      ? { continuationOnly: true }
-      : {}),
-    ...(!legacy && Array.isArray(raw.activeWorkDirs)
-      ? {
-          activeWorkDirs: raw.activeWorkDirs.filter(
-            (dir): dir is string =>
-              isText(dir) && isInside(paths.workRoot, dir),
-          ),
-        }
-      : {}),
-    ...(!legacy && Array.isArray(raw.sessionKeys)
-      ? {
-          sessionKeys: raw.sessionKeys.filter(
-            (key): key is string => isText(key) && /^[a-f0-9]{64}$/u.test(key),
-          ),
-        }
-      : {}),
-    ...(!legacy && raw.runWorktrees === true ? { runWorktrees: true } : {}),
-    ...(raw.readOnly === false
-      ? { readOnly: false }
-      : !legacy && raw.readOnly === true
-        ? { readOnly: true }
-        : {}),
-    ...(!fromWorkDir && Array.isArray(raw.cleanupRegistrations)
-      ? {
-          cleanupRegistrations: raw.cleanupRegistrations.flatMap(
-            (value): { cache: string; names: string[] }[] => {
-              if (typeof value !== 'object' || value === null) return [];
-              const record = value as Record<string, unknown>;
-              if (
-                typeof record.cache !== 'string' ||
-                path.dirname(record.cache) !== paths.reposDir ||
-                !/^[a-f0-9]{40}\.git$/u.test(path.basename(record.cache)) ||
-                !Array.isArray(record.names)
-              )
-                return [];
-              return [
-                {
-                  cache: record.cache,
-                  names: record.names.filter(
-                    (name): name is string =>
-                      typeof name === 'string' &&
-                      /^[A-Za-z0-9_-][A-Za-z0-9._-]*$/u.test(name),
-                  ),
-                },
-              ];
-            },
-          ),
-        }
-      : {}),
-    ...(!fromWorkDir && raw.cleanupPending === true
-      ? { cleanupPending: true }
-      : {}),
-    ...(!fromWorkDir &&
-    ['files', 'registration', 'continuation', 'record'].includes(
-      String(raw.cleanupStage),
-    )
-      ? { cleanupStage: raw.cleanupStage as WorkspaceMeta['cleanupStage'] }
-      : {}),
-    ...text('cleanupError'),
-    ...(!fromWorkDir && typeof raw.writersStopped === 'boolean'
-      ? { writersStopped: raw.writersStopped }
-      : {}),
-    ...(!fromWorkDir &&
-    typeof raw.gitCheck === 'object' &&
-    raw.gitCheck !== null &&
-    (raw.gitCheck as Record<string, unknown>).reason === 'gitFailed' &&
-    isText((raw.gitCheck as Record<string, unknown>).checkedAt)
-      ? { gitCheck: raw.gitCheck as WorkspaceMeta['gitCheck'] }
-      : {}),
-    ...(typeof raw.sizeBytes === 'number' &&
-    Number.isSafeInteger(raw.sizeBytes) &&
-    raw.sizeBytes >= 0
-      ? { sizeBytes: raw.sizeBytes }
-      : {}),
-    ...text('sizeMeasuredAt'),
-    ...(!fromWorkDir && raw.recoveryRequired === true
-      ? { recoveryRequired: true }
-      : {}),
-    ...text('recoveryReason'),
     subjectKey: raw.subjectKey,
     repos,
     ...(Array.isArray(raw.prepared)
@@ -602,22 +462,7 @@ export async function writeWorkspaceMeta(
   workDir: string,
   meta: WorkspaceMeta,
 ): Promise<void> {
-  const file = workspaceRecordPath(paths, workDir);
-  await writeJsonAtomic(file, { ...meta, workDir: path.resolve(workDir) });
-  const handle = await open(file, 'r');
-  try {
-    await handle.sync();
-  } finally {
-    await handle.close();
-  }
-  if (process.platform !== 'win32') {
-    const directory = await open(path.dirname(file), 'r');
-    try {
-      await directory.sync();
-    } finally {
-      await directory.close();
-    }
-  }
+  await writeJsonAtomic(workspaceRecordPath(paths, workDir), meta);
 }
 
 /**
@@ -638,28 +483,6 @@ export async function checkWorkspaceGit(
   log?: (message: string) => void,
 ): Promise<WorkspaceGitCheck> {
   let discardsUntracked = false;
-  if (meta.continuationOnly === true)
-    return { reason: 'missingEvidence', discardsUntracked: false };
-  if (meta.runWorktrees === true) {
-    for (const repo of meta.repos) {
-      const dir = path.join(workDir, repo.path);
-      if (!existsSync(dir) && meta.cleanupPending === true) continue;
-      try {
-        if (!existsSync(dir))
-          throw new CheckoutError('Recorded checkout is missing');
-        await taskGit({ dir, cache: repo.cache, url: repo.url }, [
-          'status',
-          '--porcelain',
-        ]);
-      } catch (error) {
-        log?.(
-          `workspaces: ${dir}: Git check failed: ${error instanceof Error ? error.message : String(error)}`,
-        );
-        return { reason: 'gitFailed', discardsUntracked: false };
-      }
-    }
-    return { reason: 'missingEvidence', discardsUntracked: false };
-  }
   const result = (reason: WorkspaceGitCheck['reason']): WorkspaceGitCheck => ({
     reason,
     discardsUntracked,
@@ -834,10 +657,6 @@ async function addClone(
     '--quiet',
     `refs/remotes/origin/${repo.branch}`,
   ]);
-  if (repo.pullRequest && !remote)
-    throw new CheckoutError(
-      `PR #${repo.pullRequest.number} branch ${repo.branch}: remote branch is missing in ${repo.url}`,
-    );
   const base = remote
     ? `origin/${repo.branch}`
     : `origin/${repo.defaultBranch}`;
@@ -890,12 +709,19 @@ async function ensureCheckout(
   cache: string,
   dir: string,
   repo: RepoDir,
+  readOnly = false,
+  log?: (message: string) => void,
 ): Promise<boolean> {
   const context = { cache, dir, url: repo.url };
   if (
     existsSync(dir) &&
     existsSync(path.join(dir, '.git')) &&
-    (await taskGitOk(context, ['rev-parse', '--is-inside-work-tree']))
+    (await taskGitOk(context, ['rev-parse', '--is-inside-work-tree']).catch(
+      (error: unknown) => {
+        if (!readOnly) throw error;
+        return false;
+      },
+    ))
   ) {
     // Refresh the clone's tracking refs without moving its branch or touching uncommitted work. Legacy worktrees
     // share these refs with the cache, which updateCache already refreshed.
@@ -919,81 +745,6 @@ async function ensureCheckout(
       '--short',
       'HEAD',
     ]).catch(() => '');
-    if (repo.pullRequest) {
-      // Cleanup records only the active branch. Do not strand unpublished work on a branch it will stop checking.
-      // These origin refs were just fetched: a same-name remote containing HEAD is evidence the old work was pushed.
-      if (current !== repo.branch) {
-        if (current === '')
-          throw new CheckoutError(
-            'cannot switch from detached HEAD: cannot prove its commits were pushed',
-          );
-        const oldRemote = `refs/remotes/origin/${current}`;
-        if (
-          !(await taskGitOk(context, [
-            'show-ref',
-            '--verify',
-            '--quiet',
-            oldRemote,
-          ]))
-        )
-          throw new CheckoutError(
-            `cannot switch from branch ${current}: remote branch is missing; cannot prove its commits were pushed`,
-          );
-        if (
-          !(await taskGitOk(context, [
-            'merge-base',
-            '--is-ancestor',
-            'HEAD',
-            oldRemote,
-          ]))
-        )
-          throw new CheckoutError(
-            `cannot switch from branch ${current}: local commits are unpublished or their push cannot be proven`,
-          );
-      }
-      const remote = `refs/remotes/origin/${repo.branch}`;
-      if (
-        !(await taskGitOk(context, ['show-ref', '--verify', '--quiet', remote]))
-      )
-        throw new CheckoutError('remote branch is missing');
-      const local = `refs/heads/${repo.branch}`;
-      const exists = await taskGitOk(context, [
-        'show-ref',
-        '--verify',
-        '--quiet',
-        local,
-      ]);
-      if (!exists) {
-        await taskGit(context, [
-          'checkout',
-          '--quiet',
-          '--no-track',
-          '-b',
-          repo.branch,
-          remote,
-        ]);
-      } else {
-        const behind = await taskGitOk(context, [
-          'merge-base',
-          '--is-ancestor',
-          local,
-          remote,
-        ]);
-        const ahead = await taskGitOk(context, [
-          'merge-base',
-          '--is-ancestor',
-          remote,
-          local,
-        ]);
-        if (!behind && !ahead)
-          throw new CheckoutError('local and remote branches have diverged');
-        if (current !== repo.branch)
-          await taskGit(context, ['checkout', '--quiet', repo.branch]);
-        if (behind && !ahead)
-          await taskGit(context, ['merge', '--ff-only', remote]);
-      }
-      return false;
-    }
     if (current !== repo.branch) {
       const exists = await taskGitOk(context, [
         'show-ref',
@@ -1012,9 +763,13 @@ async function ensureCheckout(
   }
   if (existsSync(dir)) {
     const entries = await readdir(dir);
-    if (entries.length > 0)
+    if (entries.length > 0 && !readOnly)
       throw new CheckoutError(`${dir} exists and is not a worktree`);
     await rm(dir, { recursive: true, force: true });
+    if (entries.length > 0)
+      log?.(
+        `checkout: rebuilding read-only directory ${dir}: not a Git worktree`,
+      );
   }
   await mkdir(path.dirname(dir), { recursive: true });
   const lock = await lockCache(cache);
@@ -1164,7 +919,6 @@ export async function initSubmodules(
           ],
           {},
           {
-            ...options.retry,
             ...(options.auth === undefined ? {} : { auth: options.auth }),
             ...(origin === undefined ? {} : { authScope: origin }),
           },
@@ -1259,10 +1013,6 @@ const preparedKey = (entry: WorkspaceDir): string =>
   entry.kind === 'repo' ? `repo:${entry.path}` : `directory:${entry.path}`;
 
 export interface PrepareDirsOptions {
-  onRebuild?: (reason: string) => void;
-  clean?: boolean;
-  perRun?: boolean;
-  readOnly?: boolean;
   paths: RunnerPaths;
   appKey: string;
   subjectKey: string;
@@ -1290,124 +1040,8 @@ export async function prepareDirs(
   options: PrepareDirsOptions,
 ): Promise<{ dirs: PreparedDir[]; release(): Promise<void> }> {
   const { paths, workDir } = options;
-  let meta = await readWorkspaceMeta(paths, workDir);
-  if (
-    options.readOnly === true &&
-    meta !== undefined &&
-    !isReadOnlyWorkspace(paths, workDir, meta)
-  )
-    throw new CheckoutError(
-      `Read-only preparation cannot take over a recorded writable or unknown workspace: ${workDir}`,
-    );
-  let rebuildReason: string | undefined;
-  const expected = options.dirs.flatMap((entry): WorkspaceRepo[] => {
-    if (entry.kind !== 'repo') return [];
-    const dir = path.resolve(workDir, entry.path);
-    if (
-      dir === workDir ||
-      !isInside(workDir, dir) ||
-      isInside(path.join(workDir, RUNNER_DIR), dir)
-    )
-      throw new CheckoutError(
-        `Repository path ${entry.path} is outside the work directory`,
-      );
-    return [
-      {
-        url: entry.url,
-        path: path.relative(workDir, dir),
-        cache: cachePath(paths, entry.url),
-        branch: entry.branch,
-      },
-    ];
-  });
-  if (meta === undefined && legacyReadOnlyKey(paths, workDir) !== undefined)
-    meta = {
-      subjectKey: options.subjectKey,
-      repos: expected,
-      lastUsedAt: new Date().toISOString(),
-      readOnly: true,
-    };
-  if (
-    options.perRun !== true &&
-    meta !== undefined &&
-    isReadOnlyWorkspace(paths, workDir, meta)
-  ) {
-    for (const repo of expected) {
-      const dir = path.resolve(workDir, repo.path);
-      if (!existsSync(dir)) continue;
-      let reason: string | undefined;
-      try {
-        await taskGit({ dir, cache: repo.cache, url: repo.url }, [
-          'rev-parse',
-          '--is-inside-work-tree',
-        ]);
-      } catch (error) {
-        reason = error instanceof Error ? error.message : String(error);
-      }
-      if (reason !== undefined) {
-        if (
-          meta.recoveryRequired === true ||
-          meta.writersStopped === false ||
-          (await workspaceWriters(workDir)).length > 0
-        )
-          throw new CheckoutError(
-            `Read-only rebuild blocked by unverified writer ownership: ${workDir}: ${reason}`,
-          );
-        await cleanupWorkspace(
-          paths,
-          workDir,
-          {
-            ...meta,
-            repos: [
-              ...new Map(
-                [...meta.repos, ...expected].map((repo) => [
-                  `${repo.path}\0${repo.url}`,
-                  repo,
-                ]),
-              ).values(),
-            ],
-          },
-          options.log,
-          { preserveRoot: true },
-        );
-        meta = undefined;
-        rebuildReason = reason;
-        options.log?.(`Rebuilding read-only workspace: ${workDir}: ${reason}`);
-        break;
-      }
-    }
-  }
-  if (
-    meta === undefined ||
-    options.perRun === true ||
-    expected.some(
-      (repo) => !meta.repos.some((known) => known.path === repo.path),
-    )
-  )
-    await writeWorkspaceMeta(paths, workDir, {
-      ...meta,
-      appKey: options.appKey,
-      subjectKey: options.subjectKey,
-      lastRunId: options.runId ?? meta?.lastRunId,
-      lastUsedAt: new Date().toISOString(),
-      readOnly: meta?.readOnly ?? options.readOnly === true,
-      ...(options.perRun === true
-        ? { runAttempt: true, runWorktrees: expected.length > 0 }
-        : {}),
-      repos: [
-        ...(meta?.repos ?? []),
-        ...expected.filter(
-          (repo) => !meta?.repos.some((known) => known.path === repo.path),
-        ),
-      ],
-    });
-  const state =
-    options.perRun === true
-      ? await readContinuationState(paths, options.appKey, options.subjectKey)
-      : undefined;
-  const prepared = new Set(
-    options.clean === true ? [] : (state?.prepared ?? meta?.prepared ?? []),
-  );
+  const meta = await readWorkspaceMeta(paths, workDir);
+  const prepared = new Set(meta?.prepared ?? []);
   const shas = new Map<string, Pick<WorkspaceRepo, 'startSha' | 'pushedSha'>>();
   const locks: Lock[] = [];
   const release = async (): Promise<void> => {
@@ -1474,25 +1108,17 @@ export async function prepareDirs(
       );
       const retry = options.retry === undefined ? {} : { retry: options.retry };
       const repoUrl = entry.url;
-      const prError = (error: unknown): never => {
-        if (entry.kind === 'repo' && entry.pullRequest)
-          throw new CheckoutError(
-            `PR #${entry.pullRequest.number} branch ${entry.branch}: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        throw error;
-      };
       const cache = await withRepoAuth(options.auth, repoUrl, (auth) =>
         updateCache(paths, repoUrl, {
           ...(auth === undefined ? {} : { auth }),
           ...retry,
         }),
-      ).catch(prError);
+      );
       // A missing branch is not proof of an empty repository. Fetch/authentication failures have already failed
       // above; read all advertised refs before granting the narrowly scoped first-push exception.
       let initializing = false;
       if (
         entry.initializeIfEmpty === true &&
-        !entry.pullRequest &&
         entry.initial !== true &&
         !(await gitOk(
           [
@@ -1521,7 +1147,6 @@ export async function prepareDirs(
                 [...GIT_LOW_SPEED_CONFIG, 'ls-remote', '--refs', repoUrl],
                 cache,
                 gitAuthEnv(auth),
-                options.retry,
               ),
             options.retry,
           ),
@@ -1531,23 +1156,13 @@ export async function prepareDirs(
           entry = { ...entry, branch: entry.defaultBranch, initial: true };
         }
       }
-      const runTree =
-        options.perRun === true
-          ? await addRunWorktree({
-              paths,
-              workDir,
-              appKey: options.appKey,
-              subjectKey: options.subjectKey,
-              runId: options.runId!,
-              cache,
-              repo: entry,
-              readOnly: options.readOnly === true,
-              clean: options.clean === true,
-            }).catch(prError)
-          : undefined;
-      const created =
-        runTree !== undefined ||
-        (await ensureCheckout(cache, dir, entry).catch(prError));
+      const created = await ensureCheckout(
+        cache,
+        dir,
+        entry,
+        isReadOnlyWorkspace(workDir),
+        options.log,
+      );
       const gitDir = await taskGitDir({ dir, cache, url: entry.url });
       const relative = path.relative(workDir, dir);
       const known = meta?.repos.find(
@@ -1571,43 +1186,31 @@ export async function prepareDirs(
       // Refresh hooks on resumed clones too, so none keeps the push guard an earlier runner installed.
       if (isInside(dir, gitDir))
         await installGitHooks(path.join(gitDir, 'hooks'));
-      const submodules =
-        runTree?.conflicted === true
-          ? []
-          : await withRepoAuth(options.auth, entry.url, (auth) =>
-              initSubmodules(dir, {
-                all: created,
-                url: entry.url,
-                cache,
-                ...(auth === undefined ? {} : { auth }),
-                ...retry,
-              }),
-            ).catch(prError);
+      const submodules = await withRepoAuth(options.auth, entry.url, (auth) =>
+        initSubmodules(dir, {
+          all: created,
+          url: entry.url,
+          cache,
+          ...(auth === undefined ? {} : { auth }),
+          ...retry,
+        }),
+      );
       if (submodules.length > 0)
         options.log?.(`submodules: ${entry.path}: ${submodules.join(', ')}`);
       const repo: CheckedOutRepo = {
         url: entry.url,
         branch: entry.branch,
         defaultBranch: entry.defaultBranch,
-        ...(runTree === undefined
-          ? {}
-          : {
-              localBranch: runTree.branch,
-              continuation: runTree.continuation,
-              continuationEpoch: runTree.continuationEpoch,
-              warnings: runTree.warnings,
-            }),
         primary,
         dir,
         cache,
         gitDir,
-        submodules:
-          runTree?.conflicted === true ? [] : await listSubmodules(dir),
+        submodules: await listSubmodules(dir),
         ...(initializing ? { initializing: true as const } : {}),
       };
       const key = preparedKey(entry);
       // A checkout created again (removed by GC, say) needs its initialization again.
-      if (created && options.perRun !== true) prepared.delete(key);
+      if (created) prepared.delete(key);
       dirs.push({
         kind: 'repo',
         dir,
@@ -1623,24 +1226,11 @@ export async function prepareDirs(
     await writeWorkspaceMeta(paths, workDir, {
       appKey: options.appKey,
       subjectKey: options.subjectKey,
-      readOnly: options.readOnly === true,
-      ...(options.perRun === true ? { runAttempt: true } : {}),
-      ...(options.perRun === true &&
-      options.dirs.some((dir) => dir.kind === 'repo')
-        ? { runWorktrees: true, readOnly: options.readOnly === true }
-        : {}),
       repos: repos.map((repo) => ({
         url: repo.url,
         path: path.relative(workDir, repo.dir),
         cache: repo.cache,
         branch: repo.branch,
-        ...(repo.localBranch === undefined
-          ? {}
-          : {
-              localBranch: repo.localBranch,
-              continuation: repo.continuation,
-              continuationEpoch: repo.continuationEpoch,
-            }),
         ...shas.get(repo.dir),
       })),
       prepared: [...prepared],
@@ -1654,17 +1244,9 @@ export async function prepareDirs(
         ? {}
         : { measuredAt: meta.measuredAt }),
     });
-    if (rebuildReason !== undefined) {
-      options.log?.(
-        `Rebuilt read-only workspace: ${workDir}: ${rebuildReason}`,
-      );
-      options.onRebuild?.(rebuildReason);
-    }
     return { dirs, release };
   } catch (error) {
     await release();
-    if (rebuildReason !== undefined && error instanceof Error)
-      error.message += `\nRead-only rebuild failed after corruption: ${rebuildReason}`;
     throw error;
   }
 }
@@ -1740,9 +1322,6 @@ export async function reportRepos(
   repos: readonly CheckedOutRepo[],
   options: {
     push: boolean;
-    active?: () => boolean;
-    signal?: AbortSignal;
-    onAbort?: () => Promise<void>;
     auth?: RepoAuthSource;
     log?: (message: string) => void;
   },
@@ -1751,14 +1330,6 @@ export async function reportRepos(
   for (const repo of repos) {
     let headSha: string;
     try {
-      if (
-        repo.localBranch !== undefined &&
-        (await taskGit(repo, ['symbolic-ref', '--short', 'HEAD'])) !==
-          repo.localBranch
-      )
-        throw new CheckoutError(
-          'Local branch changed; refusing to push to the target branch.',
-        );
       headSha = await taskGit(repo, ['rev-parse', 'HEAD']);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -1766,9 +1337,6 @@ export async function reportRepos(
       reports.push({
         url: repo.url,
         branch: repo.branch,
-        ...(repo.localBranch === undefined
-          ? {}
-          : { localBranch: repo.localBranch, targetBranch: repo.branch }),
         pushed: false,
         headSha: '',
         failure: {
@@ -1778,31 +1346,17 @@ export async function reportRepos(
       });
       continue;
     }
-    const networkOptions = (auth: GitAuth | undefined) => ({
-      ...(auth === undefined ? {} : { auth }),
-      ...(options.signal === undefined ? {} : { signal: options.signal }),
-      ...(options.onAbort === undefined ? {} : { onAbort: options.onAbort }),
-    });
-    const remoteSha = async (): Promise<string> => {
-      if (options.active?.() === false) return '';
-      return (
-        (
-          await withRepoAuth(options.auth, repo.url, (auth) => {
-            if (options.active?.() === false)
-              throw new RepoAccessFailure(
-                'leaseLost',
-                'The run ended before querying the remote.',
-              );
-            return taskGit(
-              repo,
-              ['ls-remote', '--', repo.url, `refs/heads/${repo.branch}`],
-              {},
-              networkOptions(auth),
-            );
-          }).catch(() => '')
-        ).split(/\s+/)[0] ?? ''
-      );
-    };
+    const remoteSha = async (): Promise<string> =>
+      (
+        await withRepoAuth(options.auth, repo.url, (auth) =>
+          taskGit(
+            repo,
+            ['ls-remote', '--', repo.url, `refs/heads/${repo.branch}`],
+            {},
+            auth === undefined ? {} : { auth },
+          ),
+        ).catch(() => '')
+      ).split(/\s+/)[0] ?? '';
     const remote = await remoteSha();
     let pushed = headSha !== '' && remote === headSha;
     let failure: RepoReport['failure'];
@@ -1812,15 +1366,10 @@ export async function reportRepos(
       `origin/${repo.defaultBranch}`,
     ]).catch(() => '');
     const hasWork = headSha !== '' && (headSha !== base || remote !== '');
-    if (options.push && options.active?.() !== false && !pushed && hasWork) {
+    if (options.push && !pushed && hasWork) {
       try {
-        await withRepoAuth(options.auth, repo.url, (auth) => {
-          if (options.active?.() === false)
-            throw new RepoAccessFailure(
-              'leaseLost',
-              'The run ended before pushing.',
-            );
-          return taskGit(
+        await withRepoAuth(options.auth, repo.url, (auth) =>
+          taskGit(
             repo,
             [
               'push',
@@ -1830,9 +1379,9 @@ export async function reportRepos(
               `HEAD:refs/heads/${repo.branch}`,
             ],
             {},
-            networkOptions(auth),
-          );
-        });
+            auth === undefined ? {} : { auth },
+          ),
+        );
         pushed = (await remoteSha()) === headSha;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -1853,9 +1402,6 @@ export async function reportRepos(
     reports.push({
       url: repo.url,
       branch: repo.branch,
-      ...(repo.localBranch === undefined
-        ? {}
-        : { localBranch: repo.localBranch, targetBranch: repo.branch }),
       pushed,
       headSha,
       ...(failure === undefined ? {} : { failure }),
@@ -1878,16 +1424,6 @@ export async function markDirsPrepared(
     ...meta,
     prepared: [...prepared],
   });
-  if (meta.runAttempt === true && meta.appKey !== undefined)
-    await updateContinuationState(
-      paths,
-      meta.appKey,
-      meta.subjectKey,
-      (state) => ({
-        ...state,
-        prepared: [...new Set([...(state.prepared ?? []), ...prepared])],
-      }),
-    );
 }
 
 /**
@@ -1932,37 +1468,48 @@ export interface GcOptions {
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/** The dedicated sibling layout produced by workspaceKey; never a lock directory. */
+export function isReadOnlyWorkspace(workDir: string): boolean {
+  return /^[^.][^/]*\.readonly-[A-Za-z0-9_-]+$/u.test(path.basename(workDir));
+}
+
 /**
  * Removes a subject's work directory, and a legacy worktree's record in its cache. The caller holds the workspace lock.
  */
 export async function removeWorkspace(
   paths: RunnerPaths,
   workDir: string,
-  meta: Pick<WorkspaceMeta, 'repos'> & Partial<WorkspaceMeta>,
+  meta: Pick<WorkspaceMeta, 'repos'>,
 ): Promise<void> {
-  if (meta.continuationOnly === true) {
-    await clearContinuations(paths, workDir, meta as WorkspaceMeta);
-    return;
-  }
-  if (meta.runWorktrees === true || meta.recoveryRequired === true)
-    throw new CheckoutError(
-      'Run worktrees must be saved by their finalizer; recovery directories cannot be discarded by ordinary GC.',
-    );
-  // Unregister only the recorded checkout while holding its cache lock. Never prune other runs' worktree metadata.
-  for (const repo of meta.repos) {
-    const dir = path.join(workDir, repo.path);
-    if (!isInside(workDir, dir) || dir === path.resolve(workDir)) continue;
-    if (existsSync(repo.cache)) {
-      const lock = await lockCache(repo.cache);
+  // Only repositories as `readWorkspaceMeta` believes them: a cache derived from the URL, a path inside `workDir`.
+  if (isReadOnlyWorkspace(workDir)) {
+    await rm(workDir, { recursive: true, force: true });
+    // Missing metadata is common after an interrupted removal. Prune registrations, never borrowed objects.
+    for (const entry of await readdir(paths.reposDir, {
+      withFileTypes: true,
+    }).catch(() => [])) {
+      if (!entry.isDirectory() || !entry.name.endsWith('.git')) continue;
+      const cache = path.join(paths.reposDir, entry.name);
+      const lock = await lockCache(cache);
       try {
-        await gitOk(['worktree', 'remove', '--force', dir], repo.cache);
+        await git(['worktree', 'prune'], cache);
       } finally {
         await lock.release();
       }
     }
+    await rm(workspaceRecordPath(paths, workDir), { force: true });
+    return;
+  }
+  for (const repo of meta.repos) {
+    const dir = path.join(workDir, repo.path);
+    if (!isInside(workDir, dir) || dir === path.resolve(workDir)) continue;
+    if (existsSync(repo.cache))
+      await gitOk(['worktree', 'remove', '--force', dir], repo.cache);
   }
   await rm(workDir, { recursive: true, force: true });
   await rm(workspaceRecordPath(paths, workDir), { force: true });
+  for (const repo of meta.repos)
+    if (existsSync(repo.cache)) await gitOk(['worktree', 'prune'], repo.cache);
 }
 
 /** Removes the work directories the retention rules let go. Returns the removed directories. */
@@ -1972,28 +1519,70 @@ export async function gcWorkspaces(options: GcOptions): Promise<string[]> {
   const keepPushed = options.keepPushedMs ?? 7 * DAY;
   const idle = options.idleMs ?? 30 * DAY;
   const removed: string[] = [];
-  const { scanWorkspaces, removePlanned } = await import('./workspaces.ts');
-  for (const entry of await scanWorkspaces(paths, { now, log: options.log })) {
-    const { workDir } = entry;
+  const workDirs: string[] = [];
+  const apps = await readdir(paths.workRoot, { withFileTypes: true }).catch(
+    () => [],
+  );
+  for (const app of apps) {
+    // `.pnpm-store`, `.jobs`: the runner's own, never an application's (`safeName` gives none a leading dot).
+    if (!app.isDirectory() || app.name.startsWith('.')) continue;
+    const appDir = path.join(paths.workRoot, app.name);
+    for (const entry of await readdir(appDir, { withFileTypes: true }).catch(
+      () => [],
+    ))
+      if (entry.isDirectory()) workDirs.push(path.join(appDir, entry.name));
+  }
+  for (const workDir of workDirs) {
     const meta = await readWorkspaceMeta(paths, workDir);
-    const lastUsed = Date.parse(entry.lastUsedAt);
+    if (isReadOnlyWorkspace(workDir)) {
+      let lock: Lock;
+      try {
+        lock = await acquireLock(`${workDir}.lock`, { timeoutMs: 0 });
+      } catch {
+        continue;
+      }
+      try {
+        await removeWorkspace(paths, workDir, meta ?? { repos: [] });
+        removed.push(workDir);
+      } catch (error) {
+        options.log?.(`gc: cleanup failed for ${workDir}: ${String(error)}`);
+      } finally {
+        await lock.release();
+      }
+      continue;
+    }
+    if (meta === undefined) continue;
+    const lastUsed = Date.parse(meta.lastUsedAt);
     const ended =
-      meta?.endedAt === undefined ? Number.NaN : Date.parse(meta.endedAt);
+      meta.endedAt === undefined ? Number.NaN : Date.parse(meta.endedAt);
     const expired =
-      (meta?.pushed === true &&
+      (meta.pushed === true &&
         Number.isFinite(ended) &&
         now - ended > keepPushed) ||
       (Number.isFinite(lastUsed) && now - lastUsed > idle);
-    if (!expired && !entry.disposable) continue;
+    if (!expired) continue;
+    let lock: Lock;
     try {
-      const why = await removePlanned(paths, entry, { log: options.log });
-      if (why !== undefined) continue;
+      lock = await acquireLock(`${workDir}.lock`, { timeoutMs: 0 });
+    } catch {
+      continue;
+    }
+    try {
+      // Read again under the lock: a run may have used it since.
+      const current = await readWorkspaceMeta(paths, workDir);
+      if (current === undefined || current.lastUsedAt !== meta.lastUsedAt)
+        continue;
+      if (await hasUnpushedWork(workDir, current, options.log)) {
+        options.log?.(
+          `gc: kept ${workDir}: it holds work that was never pushed`,
+        );
+        continue;
+      }
+      await removeWorkspace(paths, workDir, current);
       removed.push(workDir);
       options.log?.(`gc: removed ${workDir}`);
-    } catch (error) {
-      options.log?.(
-        `gc: cleanup pending ${workDir}: ${error instanceof Error ? error.message : String(error)}`,
-      );
+    } finally {
+      await lock.release();
     }
   }
   return removed;

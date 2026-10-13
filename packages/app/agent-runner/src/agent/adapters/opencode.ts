@@ -488,35 +488,10 @@ class OpencodeRun {
     let sessionId: string | undefined;
     let recovered = false;
     if (session.resumeSessionId) {
-      let lookingUp = true;
       try {
-        let info = await client.getSession(session.resumeSessionId);
-        lookingUp = false;
-        sessionId = info.id;
-        if (
-          info.location?.directory !== undefined &&
-          info.location.directory !== session.workDir
-        ) {
-          // PATCH cannot change placement. Move keeps the same history/id and is admitted at a safe boundary.
-          await client.moveSession(sessionId, session.workDir);
-          const deadline = Date.now() + 30_000;
-          while (
-            !this.stopping &&
-            info.location?.directory !== session.workDir
-          ) {
-            if (Date.now() >= deadline)
-              throw new Error(
-                'OpenCode session move was not confirmed; preserving the existing conversation',
-              );
-            await delay(50);
-            info = await client.getSession(sessionId);
-            if (info.id !== sessionId)
-              throw new Error('OpenCode session identity changed during move');
-          }
-        }
+        sessionId = (await client.getSession(session.resumeSessionId)).id;
       } catch (error) {
         if (
-          !lookingUp ||
           !(error instanceof OpencodeHttpError) ||
           error.status !== 404 ||
           // A 404 without the session error, such as an unknown route, is not a missing conversation.

@@ -340,7 +340,6 @@ export interface PullRequestRow {
   readonly state: PullRequestState;
   readonly draft: boolean;
   readonly headRef: string;
-  readonly headRepo: string | null;
   readonly baseRef: string;
   readonly headSha: string;
   readonly authorLogin: string;
@@ -392,7 +391,6 @@ function pullRequestOf(row: Row, repo: string): PullRequestRow {
     state: stateOf(row.state),
     draft: bool(row.draft),
     headRef: str(row.headRef) ?? '',
-    headRepo: str(row.headRepo),
     baseRef: str(row.baseRef) ?? '',
     headSha: str(row.headSha) ?? '',
     authorLogin: str(row.authorLogin) ?? '',
@@ -528,7 +526,6 @@ export async function upsertPullRequest(
     title: snapshot.title,
     draft: snapshot.draft,
     headRef: snapshot.headRef,
-    headRepo: snapshot.headRepo ?? null,
     baseRef: snapshot.baseRef,
     headSha: snapshot.headSha,
     authorLogin: snapshot.authorLogin,

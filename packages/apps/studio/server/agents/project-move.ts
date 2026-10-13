@@ -92,7 +92,7 @@ async function branchesIn(
   const branches = await runBranches(conn, repos, key);
   return repos.map((repo) => ({
     url: repo.url,
-    branch: branches.get(repo.id)?.branch ?? `agent/${key}`,
+    branch: branches.get(repo.id) ?? `agent/${key}`,
   }));
 }
 

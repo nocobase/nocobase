@@ -98,8 +98,6 @@ export interface PullRequestSnapshot {
   readonly state: PullRequestState;
   readonly draft: boolean;
   readonly headRef: string;
-  /** Head repository owner/name; absent or null means unknown (legacy data or a deleted head repository). */
-  readonly headRepo?: string | null;
   readonly baseRef: string;
   readonly headSha: string;
   readonly authorLogin: string;

@@ -33,17 +33,10 @@ export function gitAuthEnv(
   };
 }
 
-export interface GitInvocationOptions {
-  readonly signal?: AbortSignal;
-  /** Quiesce descendant writers before the enclosing cache lock is released after an abort. */
-  readonly onAbort?: () => Promise<void>;
-}
-
 export async function git(
   args: string[],
   cwd?: string,
   env: Record<string, string> = {},
-  options: GitInvocationOptions = {},
 ): Promise<string> {
   try {
     const { stdout } = await run('git', args, {
@@ -55,11 +48,9 @@ export async function git(
         ...env,
       },
       maxBuffer: 16 * 1024 * 1024,
-      ...(options.signal === undefined ? {} : { signal: options.signal }),
     });
     return stdout.trim();
   } catch (error) {
-    if (options.signal?.aborted === true) await options.onAbort?.();
     const stderr = (error as { stderr?: string }).stderr?.trim();
     throw new CheckoutError(
       `git ${args.join(' ')} failed${stderr ? `: ${stderr}` : ''}`,

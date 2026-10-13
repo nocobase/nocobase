@@ -87,31 +87,6 @@ describe("a runner's working directories", () => {
     });
   });
 
-  it('persists independent Git failure diagnostics for an active subject and hides them without machine access', async () => {
-    h = await createHarness();
-    h.settled = new Set();
-    const { runner, runIds } = await runnerWithRuns(['1']);
-    const diagnostics = {
-      subjectKey: 'PM-303',
-      gitCheck: { reason: 'gitFailed', checkedAt: '2026-10-13T00:00:00.000Z' },
-      sizeBytes: 2048,
-      sizeMeasuredAt: '2026-10-13T00:00:00.000Z',
-    };
-    const response = await report(runner, {
-      workspaces: [],
-      reportId: 'pm303',
-      directories: [{ ...workspace(runIds[0]!), ...diagnostics }],
-    });
-    expect(response.status).toBe(200);
-    const stored = await h.services.runners.get(runner.runnerId);
-    expect(stored.workspaceUsage!.workspaces[0]).toMatchObject({
-      ...diagnostics,
-      settled: false,
-    });
-    const hidden = runnerForViewer(stored, false);
-    expect(hidden.workspaceUsage?.workspaces).toEqual([]);
-  });
-
   it('answers which runs belong to subjects whose work is over, as the binding says', async () => {
     h = await createHarness();
     h.settled = new Set(['1']);

@@ -57,34 +57,4 @@ describe('workspaceNotes', () => {
     expect(notes).toContain('not overwrite a branch created by someone else');
     expect(notes).toContain('Preserve existing files and commits on a retry');
   });
-  it('distinguishes the private branch from its permitted remote push target', () => {
-    const repo = {
-      url: 'https://example.com/repo',
-      branch: 'fix/human',
-      localBranch: 'runner/attempt/repo',
-      defaultBranch: 'main',
-      primary: true,
-      dir: '/work/run/repo',
-      cache: '/cache/repo.git',
-      gitDir: '/cache/repo.git/worktrees/repo',
-      submodules: [],
-    };
-    const notes = workspaceNotes({
-      ...base,
-      sessionDir: '/work/session',
-      dirs: [
-        {
-          kind: 'repo',
-          dir: repo.dir,
-          primary: true,
-          fresh: false,
-          key: 'repo',
-          repo,
-        },
-      ],
-    });
-    expect(notes).toContain('local branch runner/attempt/repo');
-    expect(notes).toContain('git push origin HEAD:refs/heads/fix/human');
-    expect(notes).toContain('previous run paths are stale');
-  });
 });

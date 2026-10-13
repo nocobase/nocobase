@@ -48,21 +48,6 @@ it('accepts an optional confirmed session on cancellation and remains compatible
   ).toBe(false);
 });
 
-it('validates optional cancellation recovery without changing old acknowledgement requests', () => {
-  const recovery = {
-    attempt: 1,
-    detail: 'Recovery required',
-    localSave: [
-      { path: '/work/recovery', saved: false, reason: 'Unverified writer' },
-    ],
-  };
-  expect(CancelAckRequestSchema.parse({ recovery })).toEqual({ recovery });
-  expect(
-    CancelAckRequestSchema.safeParse({ recovery: { ...recovery, attempt: 0 } })
-      .success,
-  ).toBe(false);
-});
-
 const payload: RunPayload = {
   run: {
     id: 'r1',

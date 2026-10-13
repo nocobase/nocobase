@@ -15,13 +15,12 @@
  *   runner gets one token at the claim, prepared before the claim's transaction (`prepare`), where a signing failure
  *   prevents the claim. A token connection gives none: the runner pushes with the host's own credentials.
  * - The token reaches every branch of the run's repositories that the host's branch protection leaves writable;
- *   nothing on the runner limits which branch a run pushes. Branch restrictions are instructions to the agent;
- *   the runner installs no push guard.
+ *   nothing on the runner limits which branch a run pushes.
  */
 import type { Projects } from '@nocobase/app-plugin-projects/server/tokens';
 import type { DatabaseConnection } from '@nocobase/db';
 
-import type { RepoCredential, RepoDir, RunGit } from '@nocobase/agent-protocol';
+import type { RepoCredential, RunGit } from '@nocobase/agent-protocol';
 import {
   RepoAccessError,
   type RepoAccessProvider,
@@ -49,7 +48,7 @@ import {
 } from './connections.js';
 import type { StudioGit } from './service.js';
 import { GitApiError } from './platform.js';
-import { bindingOfRow, findRepo, pullRequestsOfIssue } from './store.js';
+import { bindingOfRow, findRepo } from './store.js';
 
 export const PROJECT_SETTINGS = 'studioGitProjectSettings';
 
@@ -147,31 +146,18 @@ export async function commitIdentity(
 }
 
 /**
- * Per-directory branch selection: earliest linked eligible PR, ties by ascending PR number, otherwise the first
- * branch rule. Database reads only, for the claim's transaction; never fetch from the host here.
+ * The branch a run on issue `key` works on in each linked repository, by working directory id: the repository's first
+ * branch rule (`agent/{key}` until someone changes it). Database reads only, for the claim's transaction.
  */
-export type RunBranch = Pick<
-  RepoDir,
-  'branch' | 'pullRequest' | 'excludedPullRequests'
-> & { readonly base?: string };
-
 export async function runBranches(
   conn: DatabaseConnection,
   repos: readonly {
     readonly id: string;
     readonly binding: ProjectResourceBinding | null;
-    readonly defaultRef?: string | null;
   }[],
   key: string,
-  issueId?: string,
-): Promise<Map<string, RunBranch>> {
-  const branches = new Map<string, RunBranch>();
-  const linked = issueId ? await pullRequestsOfIssue(conn, issueId) : [];
-  linked.sort(
-    (a, b) =>
-      a.link.createdAt.localeCompare(b.link.createdAt) ||
-      a.pr.number - b.pr.number,
-  );
+): Promise<Map<string, string>> {
+  const branches = new Map<string, string>();
   for (const repo of repos) {
     const connection = repo.binding
       ? await findConnection(conn, repo.binding.connectionId)
@@ -180,40 +166,10 @@ export async function runBranches(
       connection && repo.binding
         ? await findRepo(conn, connection.apiBaseUrl, repo.binding.fullName)
         : null;
-    const open = linked.filter(
-      ({ pr }) => pr.repoId === row?.id && pr.state === 'open',
+    branches.set(
+      repo.id,
+      branchOf(row?.branchRules[0] ?? DEFAULT_BRANCH_RULE, key),
     );
-    const excludedPullRequests = open.flatMap(({ pr }) =>
-      !pr.headRepo || pr.headRepo.toLowerCase() !== row?.repo.toLowerCase()
-        ? [
-            {
-              number: pr.number,
-              url: pr.url,
-              reason: pr.headRepo ? ('fork' as const) : ('unknown' as const),
-            },
-          ]
-        : [],
-    );
-    const chosen = open.find(
-      ({ pr }) =>
-        pr.headRepo?.toLowerCase() === row?.repo.toLowerCase() &&
-        pr.headRef &&
-        pr.baseRef &&
-        pr.headRef !== pr.baseRef &&
-        pr.headRef !== (repo.defaultRef ?? 'main'),
-    )?.pr;
-    branches.set(repo.id, {
-      branch:
-        chosen?.headRef ??
-        branchOf(row?.branchRules[0] ?? DEFAULT_BRANCH_RULE, key),
-      ...(chosen
-        ? {
-            base: chosen.baseRef,
-            pullRequest: { number: chosen.number, url: chosen.url },
-          }
-        : {}),
-      ...(excludedPullRequests.length ? { excludedPullRequests } : {}),
-    });
   }
   return branches;
 }

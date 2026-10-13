@@ -596,35 +596,3 @@ describe('the dirs step', () => {
     }
   });
 });
-
-describe('preparation cancellation', () => {
-  it('stops retrying immediately when cancelled during the backoff', async () => {
-    const controller = new AbortController();
-    let attempts = 0;
-    await expect(
-      retryGit(
-        'fetch',
-        async () => {
-          attempts += 1;
-          throw new Error('Connection timed out');
-        },
-        {
-          signal: controller.signal,
-          delaysMs: [60_000],
-          onRetry: () => controller.abort(),
-        },
-      ),
-    ).rejects.toMatchObject({ name: 'AbortError' });
-    expect(attempts).toBe(1);
-  });
-
-  it('does not begin a Git attempt after cancellation', async () => {
-    const controller = new AbortController();
-    controller.abort();
-    const attempt = vi.fn();
-    await expect(
-      retryGit('fetch', attempt, { signal: controller.signal }),
-    ).rejects.toMatchObject({ name: 'AbortError' });
-    expect(attempt).not.toHaveBeenCalled();
-  });
-});

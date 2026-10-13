@@ -485,7 +485,6 @@ function snapshotOfRow(pr: PullRequestRow): PullRequestSnapshot {
     state: pr.state,
     draft: pr.draft,
     headRef: pr.headRef,
-    headRepo: pr.headRepo,
     baseRef: pr.baseRef,
     headSha: pr.headSha,
     authorLogin: pr.authorLogin,
@@ -812,8 +811,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       auth,
       repo.repo,
       pr.number,
-      // Legacy snapshots need an unconditional read even when GitHub's PR validator has not changed.
-      pr.headRepo === null ? null : pr.pullEtag,
+      pr.pullEtag,
     );
     const snapshot = pull.notModified ? snapshotOfRow(pr) : pull.body.snapshot;
     const headMoved = snapshot.headSha !== pr.headSha;

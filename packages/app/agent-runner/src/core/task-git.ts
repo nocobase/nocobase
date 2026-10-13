@@ -2,13 +2,7 @@
 import { lstat, readdir, readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 
-import {
-  CheckoutError,
-  git,
-  gitAuthEnv,
-  type GitAuth,
-  type GitInvocationOptions,
-} from './git.ts';
+import { CheckoutError, git, gitAuthEnv, type GitAuth } from './git.ts';
 import { isInside } from '../lib/paths.ts';
 import { GIT_LOW_SPEED_CONFIG } from './git-retry.ts';
 
@@ -18,7 +12,7 @@ export interface TaskGitContext {
   readonly url: string;
 }
 
-export interface TaskGitOptions extends GitInvocationOptions {
+export interface TaskGitOptions {
   /** Run credentials replace every host helper; rejection must not fall back to machine credentials. */
   readonly auth?: GitAuth;
   /** Submodules may share credentials only within their parent's HTTP origin. Defaults to the repository URL. */
@@ -40,7 +34,7 @@ const SAFE_KEYS = [
   /^rerere\.enabled$/iu,
   /^commit\.gpgsign$/iu,
   /^credential\.helper$/iu,
-  /^extensions\.(objectformat|worktreeconfig)$/iu,
+  /^extensions\.objectformat$/iu,
   /^gc\.(auto|pruneexpire)$/iu,
   /^maintenance\.auto$/iu,
 ];
@@ -137,7 +131,10 @@ async function checkMetadata(
   context: TaskGitContext,
 ): Promise<void> {
   await checkConfig(path.join(dir, 'config'), context);
-  await checkConfig(path.join(dir, 'config.worktree'), context);
+  if (await regularFile(path.join(dir, 'config.worktree')))
+    throw new CheckoutError(
+      `${dir}: per-worktree Git configuration is unsupported`,
+    );
   const modules = path.join(dir, 'modules');
   const walk = async (current: string): Promise<void> => {
     const info = await lstat(current).catch((error: NodeJS.ErrnoException) => {
@@ -266,7 +263,6 @@ export async function taskGit(
       ...gitAuthEnv(options.auth, options.authScope ?? context.url),
       ...helperEnv,
     },
-    options,
   );
 }
 

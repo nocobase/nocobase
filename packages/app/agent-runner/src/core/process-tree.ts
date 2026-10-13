@@ -26,19 +26,19 @@ export interface ProcessEntry {
   pgid: number;
 }
 
-/** Every process `ps` lists; empty when `ps` cannot be run. */
-export async function listProcesses(
-  options: { strict?: boolean } = {},
-): Promise<ProcessEntry[]> {
+/** Live processes from `ps`; strict callers propagate enumeration failures. Zombies cannot write. */
+export async function listProcesses(strict = false): Promise<ProcessEntry[]> {
   try {
     const { stdout } = await execFileAsync(
       'ps',
-      ['-A', '-o', 'pid=,ppid=,pgid='],
+      ['-A', '-o', 'pid=,ppid=,pgid=,stat='],
       { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 },
     );
     const entries: ProcessEntry[] = [];
     for (const line of stdout.split('\n')) {
-      const [pid, ppid, pgid] = line.trim().split(/\s+/u).map(Number);
+      const fields = line.trim().split(/\s+/u);
+      if (fields[3]?.startsWith('Z')) continue;
+      const [pid, ppid, pgid] = fields.slice(0, 3).map(Number);
       if (
         Number.isInteger(pid) &&
         Number.isInteger(ppid) &&
@@ -48,7 +48,7 @@ export async function listProcesses(
     }
     return entries;
   } catch (error) {
-    if (options.strict === true) throw error;
+    if (strict) throw error;
     return [];
   }
 }
@@ -113,6 +113,8 @@ function alive(target: number): boolean {
 }
 
 export interface KillLeftoversOptions {
+  /** Refuse deletion if process enumeration fails or writers survive the stop. */
+  strict?: boolean;
   /** Process groups to stop besides the ones found below `root` now, such as groups seen there earlier. */
   groups?: Iterable<number>;
   /** SIGTERM to SIGKILL; with none, SIGKILL only. */
@@ -134,10 +136,14 @@ export async function killLeftovers(
   options: KillLeftoversOptions = {},
 ): Promise<{ processes: number; groups: number }> {
   const graceMs = options.graceMs ?? 3_000;
-  const processes = await listProcesses();
+  const processes = await listProcesses(options.strict);
   const own = processes.find((entry) => entry.pid === process.pid)?.pgid;
   const rootGroup = processes.find((entry) => entry.pid === root)?.pgid;
   const below = options.below ?? true;
+  if (options.strict === true && below && rootGroup === undefined)
+    throw new Error(
+      'The worker was not found in the process scan; keeping the workspace.',
+    );
   const pids = below
     ? descendantsOf(root, processes).map((entry) => entry.pid)
     : [];
@@ -163,6 +169,18 @@ export async function killLeftovers(
     const deadline = Date.now() + 2_000;
     while (left() && Date.now() < deadline) await delay(50);
   }
+  if (options.strict === true) {
+    const remaining = await listProcesses(true);
+    if (
+      remaining.some(
+        (entry) =>
+          alive(entry.pid) &&
+          (pids.includes(entry.pid) || liveGroups.includes(entry.pgid)),
+      ) ||
+      descendantsOf(root, remaining).some((entry) => alive(entry.pid))
+    )
+      throw new Error('Run processes are still alive; keeping the workspace.');
+  }
   return { processes: pids.length, groups: liveGroups.length };
 }
 
@@ -177,6 +195,7 @@ export function newProcessTag(): string {
 /** The pids of the processes whose environment carries one of `tags`, the calling process left out. */
 export async function taggedProcesses(
   tags: readonly string[],
+  strict = false,
 ): Promise<number[]> {
   const entries = new Set(tags.map((tag) => `${PROCESS_TAG_ENV}=${tag}`));
   const found: number[] = [];
@@ -211,7 +230,8 @@ export async function taggedProcesses(
       const pid = Number(match[1]);
       if (pid !== process.pid) found.push(pid);
     }
-  } catch {
+  } catch (error) {
+    if (strict) throw error;
     // No `ps`: nothing found.
   }
   return found;

@@ -1,0 +1,61 @@
+.toplinks .docs-language-menu {
+  position: relative;
+  summary {
+    cursor: pointer;
+    list-style: none;
+    padding-block: 8px;
+    &::-webkit-details-marker {
+      display: none;
+    }
+    &::after {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      margin: 0 2px 3px 8px;
+      border-right: 1px solid currentColor;
+      border-bottom: 1px solid currentColor;
+      transform: rotate(45deg);
+    }
+    &:hover {
+      color: #3e60ed;
+    }
+    &:focus-visible {
+      outline: 2px solid #3e60ed;
+      outline-offset: 4px;
+      border-radius: 4px;
+    }
+  }
+  nav {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 60;
+    min-width: 140px;
+    padding: 6px;
+    border: 1px solid #dce0e7;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 6px 24px #2027381a;
+  }
+  nav a,
+  nav span {
+    display: block;
+    padding: 8px 12px;
+    border-radius: 4px;
+  }
+  nav a:hover,
+  [aria-current='page'] {
+    color: #3e60ed;
+    background: #eef1ff;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar .toplinks {
+    gap: 8px;
+  }
+  .topbar .brand .brand-logo {
+    width: 96px;
+  }
+}

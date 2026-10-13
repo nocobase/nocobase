@@ -15,8 +15,8 @@ import {
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { runnerPaths, runLogPath } from '../src/lib/home.ts';
 import { runnerVersion } from '../src/core/loop.ts';
+import { runnerPaths, runLogPath } from '../src/lib/home.ts';
 import { RESTART_EXIT_CODE } from '../src/core/update.ts';
 import { FakeServer, waitFor, type FakeRun } from './fake-server.ts';
 import {
@@ -29,7 +29,6 @@ import {
   tempDir,
   workRootOf,
   writeFakeCli,
-  makeRemote,
   type Daemon,
 } from './helpers.ts';
 
@@ -175,99 +174,6 @@ describe('leftover processes', () => {
     return pid;
   };
 
-  it('stops a detached child that continues writing after shutdown before deleting a read-only worktree', async () => {
-    const remote = makeRemote(scratch);
-    const ticks = path.join(scratch, 'writer-ticks.log');
-    const childScript =
-      "import { mkdirSync, writeFileSync, appendFileSync } from 'node:fs'; process.on('SIGTERM', () => {}); setInterval(() => { mkdirSync('dev/db', { recursive: true }); writeFileSync('dev/db/tick', String(Date.now())); appendFileSync(" +
-      JSON.stringify(ticks) +
-      ", String(Date.now()) + '\\n'); }, 20);";
-    const parentScript =
-      "import { spawn } from 'node:child_process'; import { writeFileSync } from 'node:fs'; const child = spawn(process.execPath, ['--input-type=module', '-e', " +
-      JSON.stringify(childScript) +
-      "], { detached: true, stdio: 'ignore', env: {} }); child.unref(); writeFileSync('leftover.pid', String(child.pid)); setTimeout(() => {}, 30000);";
-    const run = server.enqueue({
-      tool: {
-        kind: 'claude',
-        policy: {
-          permissionMode: 'acceptEdits',
-          allowedCommands: ['^node\\b'],
-          deniedPatterns: [],
-          idleTimeoutMs: 60000,
-        },
-      },
-      workspace: {
-        env: [],
-        readOnly: true,
-        dirs: [
-          {
-            kind: 'repo',
-            url: remote,
-            path: 'repo',
-            branch: 'agent/PM-303',
-            defaultBranch: 'main',
-          },
-        ],
-      },
-      prompt: {
-        system: '',
-        session: 'fresh',
-        turn: `write leave.mjs ${parentScript}\nbash node leave.mjs\nsay done`,
-      },
-    });
-    const daemon = startDaemon(
-      env({
-        NOCOBASE_RUNNER_TIMINGS: JSON.stringify({
-          ...FAST_TIMINGS,
-          processScanMs: 50,
-          cancelGraceMs: 10000,
-        }),
-      }),
-    );
-    daemons.push(daemon);
-    const child = await leftoverPid();
-    await waitFor(() => existsSync(ticks), 20000, 'child writes');
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    const paths = runnerPaths(home);
-    const recordFile = path.join(paths.runsDir, `${run.payload.run.id}.json`);
-    const workDir = (
-      JSON.parse(readFileSync(recordFile, 'utf8')) as { workDir: string }
-    ).workDir;
-    await stopDaemon(daemon);
-    expect(alive(child)).toBe(false);
-    expect(existsSync(workDir)).toBe(false);
-    const log = readFileSync(runLogPath(paths, run.payload.run.id), 'utf8');
-    const stopped = log.indexOf('writers stopped before workspace cleanup');
-    const deleted = log.indexOf('workspace cleanup:');
-    expect(stopped).toBeGreaterThan(-1);
-    expect(deleted).toBeGreaterThan(stopped);
-    expect(log).toContain('workspace: removed the read-only');
-    const evidence = process.env.PM303_EVIDENCE_DIR;
-    if (evidence) {
-      mkdirSync(evidence, { recursive: true });
-      writeFileSync(
-        path.join(evidence, 'pm303-child-cleanup-order.log'),
-        log
-          .split('\n')
-          .filter((line) =>
-            /ending \(shutdown\)|writers stopped before|workspace cleanup:|removed the read-only/u.test(
-              line,
-            ),
-          )
-          .map((line) =>
-            line
-              .replaceAll(workRootOf(home), '<fixture-work>')
-              .replaceAll(home, '<fixture-home>')
-              .replaceAll(scratch, '<fixture-scratch>'),
-          )
-          .join('\n') + '\n',
-      );
-    }
-    const last = readFileSync(ticks, 'utf8');
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    expect(readFileSync(ticks, 'utf8')).toBe(last);
-  }, 60000);
-
   it('stops what a run started once its worker ends, even when it left its parent and its group at once', async () => {
     const run = enqueueLeaving(0);
     const daemon = startDaemon(env());
@@ -277,16 +183,78 @@ describe('leftover processes', () => {
     // Well within the 5 s between two looks at the process groups below a worker.
     await waitFor(() => !alive(leftover), 3_000, 'the leftover to be stopped');
     await waitFor(
-      () =>
-        readFileSync(
-          runLogPath(runnerPaths(home), run.payload.run.id),
-          'utf8',
-        ).includes('process(es) the run left behind before saving'),
+      () => daemon.output().includes('process(es) the run left behind'),
       5_000,
       'the cleanup to be logged',
     );
     // The daemon goes on.
     expect(daemon.child.exitCode).toBeNull();
+  }, 60_000);
+
+  it('stops a detached writer before deleting its read-only workspace', async () => {
+    const writer =
+      "import { mkdirSync, writeFileSync } from 'node:fs'; import path from 'node:path'; const dir = process.cwd(); setInterval(() => { mkdirSync(dir, { recursive: true }); writeFileSync(path.join(dir, 'still-writing'), 'data'); }, 10);";
+    const script =
+      "import { spawn } from 'node:child_process'; import { writeFileSync } from 'node:fs'; " +
+      `const child = spawn(process.execPath, ['--input-type=module', '-e', ${JSON.stringify(writer)}], { detached: true, stdio: 'ignore' }); child.unref(); writeFileSync('leftover.pid', String(child.pid)); setTimeout(() => {}, 500);`;
+    const run = server.enqueue({
+      workspace: { dirs: [], env: [], readOnly: true },
+      prompt: {
+        system: '',
+        session: 'fresh',
+        turn: [
+          `write leave.mjs ${script}`,
+          'bash node leave.mjs',
+          'say done',
+        ].join('\n'),
+      },
+    });
+    const daemon = startDaemon(env());
+    daemons.push(daemon);
+    const leftover = await leftoverPid();
+    await waitFor(() => run.complete, 20_000, 'read-only completion');
+    const workDir = String(run.start?.workDir);
+    await waitFor(() => !existsSync(workDir), 15_000, 'read-only removal');
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(existsSync(workDir)).toBe(false);
+    expect(alive(leftover)).toBe(false);
+    const output = readFileSync(
+      runLogPath(runnerPaths(home), run.payload.run.id),
+      'utf8',
+    );
+    expect(
+      output.indexOf('run processes stopped before read-only removal'),
+    ).toBeGreaterThan(-1);
+    expect(output.indexOf('removed the read-only')).toBeGreaterThan(
+      output.indexOf('run processes stopped before read-only removal'),
+    );
+  }, 60_000);
+
+  it('defers read-only removal during shutdown for the next GC', async () => {
+    const run = server.enqueue({
+      workspace: { dirs: [], env: [], readOnly: true },
+      prompt: {
+        system: '',
+        session: 'fresh',
+        turn: 'write kept.txt data\nsleep 60000',
+      },
+    });
+    const daemon = startDaemon(env());
+    daemons.push(daemon);
+    await waitFor(
+      () =>
+        run.start !== undefined &&
+        existsSync(path.join(run.start.workDir, 'kept.txt')),
+      20_000,
+      'read-only work',
+    );
+    await stopDaemon(daemon);
+    const workDir = String(run.start?.workDir);
+    expect(existsSync(path.join(workDir, 'kept.txt'))).toBe(true);
+    expect(
+      readFileSync(runLogPath(runnerPaths(home), run.payload.run.id), 'utf8'),
+    ).toContain('deferred read-only cleanup to GC');
+    expect(existsSync(`${workDir}.lock`)).toBe(false);
   }, 60_000);
 
   it('stops what cleared its environment by the process group it was seen in', async () => {
@@ -304,11 +272,7 @@ describe('leftover processes', () => {
     await waitFor(() => run.complete, 20_000, 'the run to complete');
     await waitFor(() => !alive(leftover), 10_000, 'the leftover to be stopped');
     await waitFor(
-      () =>
-        readFileSync(
-          runLogPath(runnerPaths(home), run.payload.run.id),
-          'utf8',
-        ).includes('process group(s) before saving'),
+      () => daemon.output().includes('process group(s) the worker left behind'),
       5_000,
       'the cleanup to be logged',
     );

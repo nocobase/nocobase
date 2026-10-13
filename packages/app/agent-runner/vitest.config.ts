@@ -5,7 +5,6 @@ import { createNodeVitestConfig } from '@nocobase/dev-config/vitest/node';
 // so the shared 30-second floor fails them one at a time. A test that needs longer still sets its own timeout.
 export default createNodeVitestConfig({
   test: {
-    globalSetup: ['./tests/fixture-diagnostics-setup.ts'],
     testTimeout: 90_000,
   },
 });

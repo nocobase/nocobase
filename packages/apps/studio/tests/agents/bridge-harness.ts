@@ -1477,7 +1477,6 @@ export async function createBridgeHarness(
           features: (features ?? [
             'input',
             'checkout',
-            'prBranches',
             'directories',
             'skills',
             'secrets',

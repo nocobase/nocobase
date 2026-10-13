@@ -29,7 +29,7 @@ export interface FakePull {
   /** The squash commit, once merged. */
   merge_commit_sha?: string | null;
   draft: boolean;
-  head: { ref: string; sha: string; repo?: { full_name: string } | null };
+  head: { ref: string; sha: string };
   base: { ref: string };
   user: { login: string };
   mergeable_state: string;
@@ -1015,7 +1015,7 @@ export function createFakeGitHub(
         title: String(body.title),
         body: typeof body.body === 'string' ? body.body : null,
         draft: body.draft === true,
-        head: { ref: head, sha: `sha-${number}-1`, repo: { full_name: repo } },
+        head: { ref: head, sha: `sha-${number}-1` },
         base: { ref: String(body.base) },
         user: {
           login:
@@ -1159,19 +1159,13 @@ export function createFakeGitHub(
         merged_at: null,
         merged_by: null,
         draft: false,
-        head: {
-          ref: `feature-${input.number}`,
-          sha: `sha-${input.number}-1`,
-          repo: { full_name: repo },
-        },
+        head: { ref: `feature-${input.number}`, sha: `sha-${input.number}-1` },
         base: { ref: 'main' },
         user: { login: 'octocat' },
         mergeable_state: 'clean',
         updated_at: new Date().toISOString(),
         ...input,
       };
-      // GitHub includes the head repository on ordinary same-repository PRs; null explicitly models a deleted head.
-      if (pull.head.repo === undefined) pull.head.repo = { full_name: repo };
       of(repo).set(pull.number, pull);
       return pull;
     },

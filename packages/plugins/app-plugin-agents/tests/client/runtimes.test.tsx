@@ -215,50 +215,6 @@ describe('runtimes page', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows Git failure, task key, measured disk usage and unknown measurement on the existing diagnostics', async () => {
-    runners[0] = {
-      ...runners[0]!,
-      canSeeMachine: true,
-      workspaceUsage: {
-        disk: null,
-        count: 2,
-        unpushedCount: 2,
-        measuredAt: '2026-10-13T00:00:00.000Z',
-        workspaces: [2048, undefined].map((sizeBytes, index) => ({
-          workDir: `/work/PM-${303 + index}`,
-          subjectKey: `PM-${303 + index}`,
-          subjectId: 'internal-id',
-          subjectKind: 'issue',
-          settled: false,
-          unpushed: true,
-          lastUsedAt: '2026-10-13T00:00:00.000Z',
-          gitCheck: {
-            reason: 'gitFailed',
-            checkedAt: '2026-10-13T00:00:00.000Z',
-          },
-          sizeBytes,
-          sizeMeasuredAt: '2026-10-13T00:00:00.000Z',
-        })),
-      },
-    };
-    renderPage(<RuntimesPage />);
-    const sheet = await openSheet();
-    for (const key of ['PM-303', 'PM-304']) {
-      fireEvent.click(
-        within(sheet).getByRole('button', { name: new RegExp(key) }),
-      );
-    }
-    expect(
-      within(sheet).getAllByText('runtimes.workspaces.gitFailed'),
-    ).toHaveLength(2);
-    expect(
-      within(sheet).getByText(
-        'runtimes.workspaces.size(value=runtimes.workspaces.sizeUnknown)',
-      ),
-    ).toBeInTheDocument();
-    expect(within(sheet).queryByText(/internal-id/u)).not.toBeInTheDocument();
-  });
-
   it('lists each runtime as one overview row, without switches', async () => {
     renderPage(<RuntimesPage />);
     const row = await screen.findByTestId('runner-r1');

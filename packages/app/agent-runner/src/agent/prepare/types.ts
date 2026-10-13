@@ -33,6 +33,8 @@ export interface PrepareContext {
   readonly event: (event: SpoolEvent) => void;
   /** Called, last first, when the run ends, prepared or not. */
   readonly onRelease: (release: () => Promise<void>) => void;
+  /** False during shutdown, or when stopping the run's writers cannot be confirmed. */
+  readonly beforeWorkspaceRemoval?: () => Promise<boolean>;
   /** Where the run's repository credentials come from (`workspace.git`); absent without any. */
   readonly gitAuth?: RepoAuthSource;
   /** How git's network operations are retried (`git-retry.ts`); the defaults when absent. */
@@ -91,9 +93,16 @@ export function stepFailure(
   return step.failure;
 }
 
-/** The stable subject namespace. Run-attempt paths, including read-only paths, are allocated separately. */
+/**
+ * The key of the run's work directory: the one the application names (`workspace.key`), else the subject's; for a run
+ * that only reads (`workspace.readOnly`), one of its own per subject and agent, so it runs alongside the run that
+ * writes the subject's code and resumes its own session.
+ */
 export function workspaceKey(payload: RunPayload): string {
-  return payload.workspace.key ?? payload.subject.key;
+  const base = payload.workspace.key ?? payload.subject.key;
+  return payload.workspace.readOnly === true
+    ? `${base}.readonly-${payload.agent?.id ?? payload.run.id}`
+    : base;
 }
 
 /** The working directory the agent starts in: the primary one, or the subject's work directory without any. */

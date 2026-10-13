@@ -26,9 +26,6 @@ async function prepare(
   let retries = 0;
   try {
     return await prepareDirs({
-      perRun: true,
-      clean: context.payload.workspace.clean === true,
-      readOnly: context.payload.workspace.readOnly === true,
       paths: context.paths,
       appKey: context.registration.key,
       subjectKey: workspaceKey(context.payload),
@@ -37,12 +34,6 @@ async function prepare(
       dirs: context.payload.workspace.dirs,
       ...(context.gitAuth === undefined ? {} : { auth: context.gitAuth }),
       log: context.log,
-      onRebuild: (reason) =>
-        context.event({
-          type: 'status',
-          content: `Rebuilt read-only workspace: ${reason}`,
-          meta: { phase: 'dirs', rebuiltReadOnly: true, reason },
-        }),
       retry: {
         ...context.gitRetry,
         onRetry: (retry) => {
@@ -116,12 +107,6 @@ export const dirsStep: PrepareStep = {
             : {
                 url: dir.repo.url,
                 branch: dir.repo.branch,
-                ...(dir.repo.localBranch === undefined
-                  ? {}
-                  : {
-                      localBranch: dir.repo.localBranch,
-                      targetBranch: dir.repo.branch,
-                    }),
                 ...(dir.repo.initializing ? { initializing: true } : {}),
               }),
         },

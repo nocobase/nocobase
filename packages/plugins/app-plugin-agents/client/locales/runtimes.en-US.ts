@@ -19,11 +19,6 @@ const runtimesEnUS = {
       unknown: 'Cannot confirm whether work ended',
       oldRunner: 'This runner has not provided diagnostic reasons',
       noCleanup: 'Local cleanup result has not been received',
-      gitFailed: 'Git check failed; manual intervention required',
-      gitCheckedAt: 'Git checked at {{time}}',
-      size: 'Disk usage: {{value}}',
-      sizeUnknown: 'Unknown',
-      sizeMeasuredAt: 'Disk usage measured at {{time}}',
       discardsUntracked: 'Cleanup will discard untracked files',
       decision: {
         settled: 'Work ended; local cleanup checks are required',

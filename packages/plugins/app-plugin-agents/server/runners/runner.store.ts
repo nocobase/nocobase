@@ -196,26 +196,6 @@ function storedWorkspace(value: unknown): RunnerWorkspace | null {
     typeof field === 'string' ? field : null;
   return {
     ...(typeof item.runId === 'string' ? { runId: item.runId } : {}),
-    ...(typeof item.subjectKey === 'string'
-      ? { subjectKey: item.subjectKey }
-      : {}),
-    ...(jsonObject(item.gitCheck).reason === 'gitFailed' &&
-    typeof jsonObject(item.gitCheck).checkedAt === 'string'
-      ? {
-          gitCheck: {
-            reason: 'gitFailed' as const,
-            checkedAt: jsonObject(item.gitCheck).checkedAt as string,
-          },
-        }
-      : {}),
-    ...(isFiniteNumber(item.sizeBytes) &&
-    Number.isSafeInteger(item.sizeBytes) &&
-    item.sizeBytes >= 0
-      ? { sizeBytes: item.sizeBytes }
-      : {}),
-    ...(typeof item.sizeMeasuredAt === 'string'
-      ? { sizeMeasuredAt: item.sizeMeasuredAt }
-      : {}),
     ...(WorkspaceDecisionSchema.safeParse(item.decision).success
       ? { decision: WorkspaceDecisionSchema.parse(item.decision) }
       : {}),

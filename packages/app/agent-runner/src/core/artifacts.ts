@@ -69,14 +69,7 @@ export async function cleanArtifacts(
     try {
       const meta = await readWorkspaceMeta(options.paths, entry.workDir);
       // A run used it since it was read, or it was cleaned since it was last used.
-      if (
-        meta === undefined ||
-        meta.lastUsedAt !== entry.lastUsedAt ||
-        meta.runWorktrees === true ||
-        meta.recoveryRequired === true ||
-        meta.continuationOnly === true
-      )
-        continue;
+      if (meta === undefined || meta.lastUsedAt !== entry.lastUsedAt) continue;
       if (
         meta.artifactsCleanedAt !== undefined &&
         Date.parse(meta.artifactsCleanedAt) >= usedAt
