@@ -1251,7 +1251,12 @@ describe('push credentials on demand', () => {
 
   it('keeps a selected PR branch when the runner obtains its push credential on demand', async () => {
     const app = await appConnection();
-    const { issue } = await projectWithRepo(app);
+    const { issue: created } = await projectWithRepo(app, 'in_progress');
+    const issue = await h.projects.issues.update(alice(), created.id, {
+      revision: created.revision,
+      executor: null,
+      start: false,
+    });
     h.github.addPull(REPO, {
       number: 42,
       head: { ref: 'fix/human', sha: 'pr-head', repo: { full_name: REPO } },
