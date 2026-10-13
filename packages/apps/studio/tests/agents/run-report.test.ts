@@ -87,18 +87,29 @@ describe('a run an agent’s comment started', () => {
   it('answers with its output in that thread when it did not comment, waking the executor', async () => {
     const { issue, coordinator, worker, ask, runId } = await handOff();
     await complete(runId, 'Implemented the API in agent/api.');
-    await vi.waitFor(async () =>
-      expect(
-        (await commentsOf(issue.id)).filter(
-          (comment) => comment.authorId === worker,
-        ),
-      ).toEqual([
-        expect.objectContaining({
-          authorType: 'agent',
-          parentId: ask,
-          content: 'Implemented the API in agent/api.',
-        }),
-      ]),
+    await vi.waitFor(
+      async () => {
+        expect(
+          await h.database
+            .connection()
+            .repository<{ status: string; lastError: string | null }>(
+              'studioRunReports',
+            )
+            .findOne({ filter: { id: runId } }),
+        ).toMatchObject({ status: 'done', lastError: null });
+        expect(
+          (await commentsOf(issue.id)).filter(
+            (comment) => comment.authorId === worker,
+          ),
+        ).toEqual([
+          expect.objectContaining({
+            authorType: 'agent',
+            parentId: ask,
+            content: 'Implemented the API in agent/api.',
+          }),
+        ]);
+      },
+      { timeout: 10_000 },
     );
     const woken = (await runsOf(issue.id)).filter(
       (run) => run.agentId === coordinator,
