@@ -375,6 +375,7 @@ export const RecordViewSchema: z.ZodType<RecordView> = z
 
 export const FireViewSchema: z.ZodType<FireView> = z
   .object({
+    parameterValues: z.record(z.string(), z.unknown()).optional(),
     ...recordView,
     replayed: z.boolean().meta({
       description: 'True when this request id had already fired it.',
@@ -385,6 +386,43 @@ export const FireViewSchema: z.ZodType<FireView> = z
 export const DescriptionViewSchema: z.ZodType<LifecycleDescriptionView> = z
   .object({
     description: z.object({
+      parameterConfiguration: z
+        .object({
+          readMode: z.string(),
+          snapshotTransition: z.string().optional(),
+          groups: z.array(
+            z.object({
+              key: z.string(),
+              title: z.string(),
+              schemaVersion: z.number(),
+              fields: z.record(
+                z.string(),
+                z.object({
+                  type: z.enum([
+                    'number',
+                    'string',
+                    'boolean',
+                    'object',
+                    'reviewers',
+                  ]),
+                  title: z.string(),
+                  readMode: z.enum(['snapshot', 'live']).optional(),
+                  minimum: z.number().optional(),
+                  maximum: z.number().optional(),
+                  bindings: z
+                    .array(
+                      z.object({
+                        state: z.string().optional(),
+                        transition: z.string().optional(),
+                      }),
+                    )
+                    .optional(),
+                }),
+              ),
+            }),
+          ),
+        })
+        .optional(),
       name: z.string(),
       initial: z.string(),
       initialStates: z.array(z.string()),

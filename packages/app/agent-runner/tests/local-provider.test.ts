@@ -29,8 +29,8 @@ describe('local provider authentication', () => {
     }
   });
 
-  // Its waits alone allow 35s, and the release runner, which runs every package's tests at once, has taken 27s on a test that
-  // finishes in 3s locally, so the timeout leaves room above both.
+  // Authentication refresh runs two provider detection subprocesses before a run can be claimed.
+  // Give detection and execution separate budgets on the shared CI runner.
   it('dispatches and executes with only an env set key, refreshing detection without sharing it with another app', async () => {
     const home = tempDir('local-provider-');
     homes.push(home);
@@ -93,8 +93,16 @@ describe('local provider authentication', () => {
     );
     expect(set).toMatchObject({ code: 0 });
     await waitFor(
+      () =>
+        first
+          .lastHeartbeat()
+          ?.tools.some((entry) => entry.kind === 'pi' && entry.authenticated),
+      30_000,
+      'provider authentication refresh',
+    );
+    await waitFor(
       () => run.status === 'completed' || run.status === 'failed',
-      15_000,
+      30_000,
       'provider run',
     );
     expect(run.fail).toBeUndefined();
@@ -146,7 +154,7 @@ describe('local provider authentication', () => {
     expect([...first.runners.values()].at(-1)?.register.tools).toContainEqual(
       expect.objectContaining({ kind: 'pi', authenticated: true }),
     );
-  }, 60_000);
+  }, 120_000);
 
   it('refreshes authentication after env unset removes a passed name from a running daemon', async () => {
     const home = tempDir('passed-provider-');

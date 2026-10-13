@@ -22,6 +22,7 @@ import { ServiceContainer } from '@nocobase/service-provider';
 import { analyticsRoutes } from '../../server/routes/analytics.ts';
 import { articlesRoutes } from '../../server/routes/articles.ts';
 import { externalCrmRoutes } from '../../server/routes/external-crm.ts';
+import { workflowRoutes } from '../../server/routes/workflows.js';
 import { numericExamplesRoutes } from '../../server/routes/numeric-examples.ts';
 import {
   createStandaloneServer,
@@ -144,7 +145,11 @@ describe('API document of the examples application', () => {
       'examplesCreateArticle',
       'examplesGetGreeting',
       'examplesGetNumericExamples',
+      'examplesGetWorkflowDefinition',
+      'examplesGetWorkflowExecution',
       'examplesListArticles',
+      'examplesListWorkflowDefinitions',
+      'examplesListWorkflowExecutions',
       'examplesUpdateArticle',
     ]);
     expect(own.every(({ tags }) => tags?.[0] === 'Examples')).toBe(true);
@@ -172,6 +177,7 @@ it('hides the stand-ins that answer 503 while the application runs without a dat
   for (const contribution of [
     articlesRoutes,
     numericExamplesRoutes,
+    workflowRoutes,
     analyticsRoutes,
     externalCrmRoutes,
   ]) {

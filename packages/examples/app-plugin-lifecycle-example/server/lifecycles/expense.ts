@@ -1,3 +1,4 @@
+import { expenseParameterGroup } from '../configuration/definitions.js';
 import {
   defineLifecycle,
   LifecycleError,
@@ -136,6 +137,11 @@ export const expenseLifecycle: Lifecycle<ExpenseTypes> =
       { name: 'paid', final: true },
     ],
     // A real approval escalates after days; the example after minutes.
+    parameterConfiguration: {
+      readMode: 'snapshot',
+      snapshotTransition: 'submit',
+      groups: [expenseParameterGroup],
+    },
     parameters: {
       autoApproveLimit: 5000,
       financeLimit: 50000,
