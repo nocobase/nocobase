@@ -93,6 +93,7 @@ export function useParameterBindingEditor(
                 api={api}
                 actor={actor}
                 onSaved={() => {
+                  setSelected([]);
                   setRefresh((current) => current + 1);
                   onSaved?.();
                 }}
