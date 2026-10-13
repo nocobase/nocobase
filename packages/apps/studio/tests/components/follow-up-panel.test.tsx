@@ -12,7 +12,7 @@ import type { ReactNode } from 'react';
 import enUS from '../../client/locales/en-US.js';
 import { IssuePanel } from '../../client/follow-ups/issue-panel.js';
 
-const mocks = vi.hoisted(() => ({ issue: vi.fn() }));
+const mocks = vi.hoisted(() => ({ issue: vi.fn(), phone: false }));
 vi.mock('@nocobase/app-plugin-projects/client/kit', () => ({
   usePmApi: () => ({ issue: mocks.issue }),
   pmKeys: { issue: (id: string) => ['pm', 'issue', id] },
@@ -23,17 +23,24 @@ vi.mock('@nocobase/app-plugin-projects/client/issues', () => ({
 vi.mock('../../client/issues/live/conversation.js', () => ({
   IssueConversation: ({ children }: { children: ReactNode }) => children,
 }));
+vi.mock('@/extensions/nocobase-agent-chat/use-media-query', () => ({
+  useMediaQuery: () => mocks.phone,
+}));
 vi.mock('../../client/issues/live/issue-summary.js', () => ({
   IssueSummary: ({
     issue,
     actions,
+    defaultCollapsed,
   }: {
     issue: { title: string };
     actions: ReactNode;
+    defaultCollapsed: boolean;
   }) => (
     <>
       <h2>{issue.title}</h2>
-      {actions}
+      <div data-testid='summary' data-collapsed={defaultCollapsed || undefined}>
+        {defaultCollapsed ? null : actions}
+      </div>
     </>
   ),
 }));
@@ -49,12 +56,16 @@ vi.mock('../../client/issues/live/follow-toggle.js', () => ({
 vi.mock('../../client/layouts/components/phone-bar.js', () => ({
   PhoneBar: ({ children }: { children: ReactNode }) => children,
 }));
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  mocks.phone = false;
+});
 
 async function mount(
   client: QueryClient,
   seen: (id: string) => void,
   unavailable: (id: string) => void,
+  back = false,
 ) {
   const runtime = await createTestI18nRuntime({
     application: { namespace: 'studio', resources: enUS },
@@ -65,6 +76,7 @@ async function mount(
       <QueryClientProvider client={client}>
         <MemoryRouter>
           <IssuePanel
+            {...(back ? { onBack: vi.fn() } : {})}
             issueId='A'
             summary={null}
             onSeen={seen}
@@ -84,6 +96,30 @@ const detail = {
   threads: [],
 };
 describe('visible following content', () => {
+  it.each([false, true])(
+    'a return button does not decide whether the summary starts folded (phone=%s)',
+    async (phone) => {
+      mocks.phone = phone;
+      mocks.issue.mockResolvedValue(detail);
+      await mount(new QueryClient(), vi.fn(), vi.fn(), true);
+      await screen.findByText('Private title');
+      expect(
+        screen.getByRole('button', { name: 'Back to the list' }),
+      ).toBeVisible();
+      if (phone) {
+        expect(screen.getByTestId('summary')).toHaveAttribute(
+          'data-collapsed',
+          'true',
+        );
+        expect(screen.queryByRole('link', { name: 'Open issue' })).toBeNull();
+      } else {
+        expect(screen.getByTestId('summary')).not.toHaveAttribute(
+          'data-collapsed',
+        );
+        expect(screen.getByRole('link', { name: 'Open issue' })).toBeVisible();
+      }
+    },
+  );
   it.each([403, 404])(
     'hides stale cached content and sends nothing after an authorization/deletion refresh (%s)',
     async (status) => {

@@ -7,7 +7,11 @@ import {
   unique,
 } from './support/fixtures.ts';
 import type { Issue } from './support/runner.ts';
-import { deleteTestIssues, wheelTo } from './support/personal-task-scroll.ts';
+import {
+  deleteTestIssues,
+  wheelTo,
+  workspaceGeometry,
+} from './support/personal-task-scroll.ts';
 
 // Following preferences are per user: do not race the follow-ups or phone file's fixtures.
 test.use({ user: 'wendy' });
@@ -58,17 +62,28 @@ test.describe('personal task columns', () => {
         await page.setViewportSize(viewport);
         await open(page, `/follow-ups?view=list&tab=mine&q=${suffix}`);
         const workspace = page.getByTestId('personal-task-workspace');
-        // ResizeObserver and resolved-view reporting are asynchronous; compare both facts in the same rendered frame.
-        await expect
-          .poll(() =>
-            workspace.evaluate<boolean, void>(
-              `element => element.hasAttribute('data-columns') === (element.getBoundingClientRect().width >= 69 * parseFloat(getComputedStyle(document.documentElement).fontSize))`,
-            ),
-          )
-          .toBe(true);
-        const wide = await workspace.evaluate<boolean, void>(
-          `element => element.getBoundingClientRect().width >= 69 * parseFloat(getComputedStyle(document.documentElement).fontSize)`,
-        );
+        let measured: Awaited<ReturnType<typeof workspaceGeometry>> | undefined;
+        try {
+          await expect
+            .poll(async () => {
+              measured = await workspaceGeometry(workspace);
+              return measured;
+            }, 'Content width, the 69rem threshold and rendered columns must agree')
+            .toMatchObject({ consistent: true });
+        } finally {
+          await test
+            .info()
+            .attach(`workspace-geometry-${viewport.width}.json`, {
+              body: JSON.stringify({ viewport, measured }),
+              contentType: 'application/json',
+            });
+          console.info(
+            'Workspace geometry:',
+            JSON.stringify({ viewport, measured }),
+          );
+        }
+        if (!measured) throw new Error('Workspace measurement did not execute');
+        const wide = measured.width >= measured.threshold;
         if (wide) await expect(workspace).toHaveAttribute('data-columns');
         else await expect(workspace).not.toHaveAttribute('data-columns');
         const table = page.getByRole('table');

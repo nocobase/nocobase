@@ -185,7 +185,6 @@ export function IssuePanel({
         issue={data}
         summary={summary}
         back={back}
-        narrow={Boolean(onBack)}
         issueHref={issueHref}
       />
     </PanelFrame>
@@ -196,14 +195,11 @@ function LiveIssue({
   issue,
   summary,
   back,
-  narrow,
   issueHref,
 }: {
   readonly issue: IssueDetail;
   readonly summary: FollowUpIssue | null;
   readonly back: ReactNode;
-  /** On a phone, where the summary starts as its bar. */
-  readonly narrow: boolean;
   readonly issueHref?: (identifier: string) => string;
 }): ReactElement {
   const { t } = useTranslation();
@@ -223,7 +219,7 @@ function LiveIssue({
         refresh={`${issue.revision}|${issue.statusKey}`}
         progressFallback={summary?.progress ?? null}
         collapsible
-        defaultCollapsed={narrow}
+        defaultCollapsed={phone}
         pinnedBar
         className='border-b px-5 py-4 max-md:px-4 max-md:py-3'
         actions={
