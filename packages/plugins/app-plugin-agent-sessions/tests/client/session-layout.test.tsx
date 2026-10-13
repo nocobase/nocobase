@@ -98,7 +98,126 @@ async function setup(links: readonly SessionLink[] = []) {
   return { client, requests };
 }
 
+/** Models normal overflow scrolling: both writes and reflow clamp scrollTop to the current range. */
+function scrollGeometry() {
+  let summaryHeight = 0;
+  const height = (): number => {
+    const title = screen.queryByRole('heading', { name: session.title });
+    return (title?.classList.contains('truncate') ? 80 : 140) + summaryHeight;
+  };
+  vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
+    function (this: HTMLElement) {
+      return this.querySelector('header h2') ? height() : 0;
+    },
+  );
+  return {
+    wrapSummary: () => {
+      summaryHeight = 24;
+    },
+    attach: () => {
+      const element = screen
+        .getByRole('region', { name: session.title })
+        .querySelector('.overflow-y-auto') as HTMLDivElement;
+      let position = 0;
+      const writes: number[] = [];
+      const bound = (value: number): number =>
+        Math.max(
+          0,
+          Math.min(value, element.scrollHeight - element.clientHeight),
+        );
+      Object.defineProperties(element, {
+        scrollHeight: { configurable: true, get: () => 1000 },
+        clientHeight: { configurable: true, get: () => 640 - height() },
+        scrollTop: {
+          configurable: true,
+          get: () => {
+            position = bound(position);
+            return position;
+          },
+          set: (value: number) => {
+            writes.push(value);
+            position = bound(value);
+          },
+        },
+      });
+      return {
+        element,
+        writes,
+        readingPosition: () => height() - element.scrollTop,
+      };
+    },
+  };
+}
+
 describe('session mobile layout', () => {
+  it('defers a short slow swipe near the message top until a two-line title can be compensated', async () => {
+    const geometry = scrollGeometry();
+    await setup();
+    const { element, writes, readingPosition } = geometry.attach();
+    element.scrollTop = 20;
+    const before = readingPosition();
+    fireEvent.touchStart(element, { touches: [{ clientY: 200 }] });
+    fireEvent.touchMove(element, { touches: [{ clientY: 190 }] });
+    expect(readingPosition()).toBe(before);
+    expect(element.scrollTop).toBe(20);
+    expect(
+      screen.getByRole('heading', { name: session.title }).className,
+    ).toContain('line-clamp-2');
+    for (const scrollTop of [25, 30, 40, 50, 59]) {
+      element.scrollTop = scrollTop;
+      fireEvent.scroll(element);
+      expect(element.scrollTop).toBe(scrollTop);
+    }
+    element.scrollTop = 60;
+    const atThreshold = readingPosition();
+    fireEvent.scroll(element);
+    expect(element.scrollTop).toBe(0);
+    expect(readingPosition()).toBe(atThreshold);
+    expect(writes.every((value) => value >= 0)).toBe(true);
+    expect(
+      screen.getByRole('button', { name: /Tasks 0.*No tasks/ }),
+    ).toBeTruthy();
+  });
+
+  it.each([120, 500])(
+    'preserves the reading position when folding from scrollTop %s, including bottom reflow clamping',
+    async (scrollTop) => {
+      const geometry = scrollGeometry();
+      await setup();
+      const { element, readingPosition } = geometry.attach();
+      element.scrollTop = scrollTop;
+      const before = readingPosition();
+      fireEvent.wheel(element, { deltaY: 10 });
+      expect(element.scrollTop).toBe(scrollTop - 60);
+      expect(readingPosition()).toBe(before);
+      // Expanding at the top is compensated too, without moving the message.
+      element.scrollTop = 0;
+      const atTop = readingPosition();
+      fireEvent.wheel(element, { deltaY: -10 });
+      expect(element.scrollTop).toBe(60);
+      expect(readingPosition()).toBe(atTop);
+    },
+  );
+
+  it('measures the current header when a task summary has wrapped since arrival', async () => {
+    const geometry = scrollGeometry();
+    const { client } = await setup();
+    const { element, readingPosition } = geometry.attach();
+    geometry.wrapSummary();
+    client.setQueryData(['agentSessions', 'session', 'session'], {
+      ...session,
+      links: [
+        link('1', 'In progress', 'active'),
+        link('2', 'In review', 'attention'),
+      ],
+    });
+    await screen.findByRole('button', { name: /Tasks 2/ });
+    element.scrollTop = 120;
+    const before = readingPosition();
+    fireEvent.wheel(element, { deltaY: 10 });
+    expect(element.scrollTop).toBe(60);
+    expect(readingPosition()).toBe(before);
+  });
   it('fits a mobile keyboard viewport and restores the shell height on close', async () => {
     const viewport = Object.assign(new EventTarget(), {
       height: 350,

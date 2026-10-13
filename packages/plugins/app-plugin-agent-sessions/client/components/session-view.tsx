@@ -196,21 +196,42 @@ function Conversation({
   const pinnedRef = useRef(true);
   const [collapsed, setCollapsed] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
-  const previousHeightRef = useRef<number | null>(null);
+  const headerChangeRef = useRef<{ height: number; scrollTop: number } | null>(
+    null,
+  );
+  const pendingShrinkRef = useRef<number | null>(null);
   const touchYRef = useRef<number | null>(null);
-  const collapse = (): void => {
-    if (window.matchMedia('(max-width: 767px)').matches) setCollapsed(true);
+  const changeHeader = (next: boolean): void => {
+    if (!next) pendingShrinkRef.current = null;
+    if (next === collapsed || !window.matchMedia('(max-width: 767px)').matches)
+      return;
+    const header = headerRef.current;
+    const scroller = scrollerRef.current;
+    if (!header || !scroller) return;
+    // Capture before reflow: shrinking the header can already clamp scrollTop at the bottom.
+    headerChangeRef.current = {
+      height: header.offsetHeight,
+      scrollTop: scroller.scrollTop,
+    };
+    setCollapsed(next);
   };
-  // Compensate for the header's height change, keeping the message being read in place.
+  // Measure the actual shrink (including a two-line title and wrapping task summary) before paint.
   useLayoutEffect(() => {
     const height = headerRef.current?.offsetHeight;
     const scroller = scrollerRef.current;
-    if (height === undefined || !scroller) return;
-    if (previousHeightRef.current !== null) {
-      const change = height - previousHeightRef.current;
-      scroller.scrollTop += change;
+    const before = headerChangeRef.current;
+    if (height === undefined || !scroller || !before) return;
+    const target = before.scrollTop + height - before.height;
+    if (collapsed && target < 0) {
+      // Restore the expanded header before paint; retry only once native scrolling can pay for the full shrink.
+      pendingShrinkRef.current = before.height - height;
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- Restore an unpayable measured shrink before the browser paints.
+      setCollapsed(false);
+      return;
     }
-    previousHeightRef.current = height;
+    scroller.scrollTop = target;
+    headerChangeRef.current = null;
+    if (collapsed) pendingShrinkRef.current = null;
   }, [collapsed]);
   useEffect(() => {
     const element = scrollerRef.current;
@@ -287,8 +308,8 @@ function Conversation({
         ref={scrollerRef}
         className='min-h-0 flex-1 overflow-y-auto overscroll-y-contain'
         onWheel={(event) => {
-          if (event.deltaY > 0) collapse();
-          else if (event.currentTarget.scrollTop === 0) setCollapsed(false);
+          if (event.deltaY > 0) changeHeader(true);
+          else if (event.currentTarget.scrollTop === 0) changeHeader(false);
         }}
         onTouchStart={(event) => {
           touchYRef.current = event.touches[0]?.clientY ?? null;
@@ -296,18 +317,23 @@ function Conversation({
         onTouchMove={(event) => {
           const y = event.touches[0]?.clientY;
           if (y === undefined || touchYRef.current === null) return;
-          if (touchYRef.current - y > 8) collapse();
+          if (touchYRef.current - y > 8) changeHeader(true);
           else if (
             y - touchYRef.current > 8 &&
             event.currentTarget.scrollTop === 0
           )
-            setCollapsed(false);
+            changeHeader(false);
         }}
         onScroll={(event) => {
           const element = event.currentTarget;
           pinnedRef.current =
             element.scrollHeight - element.scrollTop - element.clientHeight <
             80;
+          if (
+            pendingShrinkRef.current !== null &&
+            element.scrollTop >= pendingShrinkRef.current
+          )
+            changeHeader(true);
         }}
       >
         <div className='mx-auto max-w-[760px] px-4 pt-5 pb-6 sm:px-6'>
