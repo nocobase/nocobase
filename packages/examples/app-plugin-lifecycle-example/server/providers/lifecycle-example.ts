@@ -1,3 +1,15 @@
+import { StoredLifecycleParameters } from '@nocobase/lifecycle';
+import {
+  PARAMETER_COLLECTIONS,
+  exampleParameterRegistration,
+} from '../configuration/store.js';
+import { reviewerServices } from '../configuration/reviewers.js';
+import {
+  reviewerDemoLifecycle,
+  reviewerLiveDemoLifecycle,
+} from '../lifecycles/reviewer-demo.js';
+import { ParameterConfigurationService } from '../services/parameter-configuration.js';
+import { parameterConfigurationServiceToken } from '../tokens.js';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
 import { loggingToken } from '@nocobase/app-server/logging';
 import {
@@ -72,11 +84,20 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
   public readonly name: string = LIFECYCLE_EXAMPLE_SCOPE;
   private jobs: LifecycleJobs | undefined;
   private runtime: LifecycleRuntime | undefined;
+  private parameterStore: StoredLifecycleParameters | undefined;
   private flows: DurableFlowService | undefined;
   private sandboxInstance: Sandbox | undefined;
   private changes: RealtimePublicTopic<LifecycleChange> | undefined;
 
   public override register(): void {
+    this.app.container.singleton(parameterConfigurationServiceToken, () => {
+      const runtime = this.lifecycleRuntime();
+      return new ParameterConfigurationService(
+        this.app.container.resolve(databaseManagerToken),
+        runtime,
+        this.parameterStore!,
+      );
+    });
     this.app.container.singleton(
       lifecycleExampleServiceToken,
       () =>
@@ -143,16 +164,22 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
     const logger = this.app.container
       .resolve(loggingToken)
       .getLogger('lifecycle-example');
-    const runtime = new LifecycleRuntime({
-      store: createRepositoryLifecycleStore(
-        this.app.container.resolve(databaseManagerToken),
-        {
-          collections: {
-            transitions: LIFECYCLE_EXAMPLE_COLLECTIONS.transitions,
-            effectRuns: LIFECYCLE_EXAMPLE_COLLECTIONS.effectRuns,
-          },
+    const store = createRepositoryLifecycleStore(
+      this.app.container.resolve(databaseManagerToken),
+      {
+        collections: {
+          transitions: LIFECYCLE_EXAMPLE_COLLECTIONS.transitions,
+          effectRuns: LIFECYCLE_EXAMPLE_COLLECTIONS.effectRuns,
         },
-      ),
+      },
+    );
+    const parameterStore = new StoredLifecycleParameters(
+      store,
+      PARAMETER_COLLECTIONS,
+    );
+    this.parameterStore = parameterStore;
+    const runtime = new LifecycleRuntime({
+      store,
       dispatcher: this.effectJobs(),
       logger: {
         warn: (message, details) => logger.warn({ details }, message),
@@ -162,8 +189,32 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
     const services = createExampleServices({
       info: (message, details) => logger.info(details, message),
     });
-    runtime.register(ticketLifecycle, { services });
-    runtime.register(expenseLifecycle, { services });
+    runtime.register(ticketLifecycle, {
+      services,
+      parameterConfiguration: exampleParameterRegistration(
+        parameterStore,
+        'tickets',
+      ),
+    });
+    runtime.register(expenseLifecycle, {
+      services,
+      parameterConfiguration: exampleParameterRegistration(
+        parameterStore,
+        'expenses',
+      ),
+    });
+    for (const lifecycle of [reviewerDemoLifecycle, reviewerLiveDemoLifecycle])
+      runtime.register(lifecycle, {
+        services: (handle) =>
+          reviewerServices(
+            this.app.container.resolve(databaseManagerToken),
+            handle,
+          ),
+        parameterConfiguration: exampleParameterRegistration(
+          parameterStore,
+          lifecycle.name,
+        ),
+      });
     // The durable flows call the sandbox standing in for the outside
     // systems, and may fire a transition themselves when what follows
     // depends on what they found.

@@ -98,6 +98,8 @@ import {
 } from '../core/supervisor.ts';
 
 export interface WorkerDeps {
+  /** Stops and verifies the worker's remaining writers before removing a read-only workspace. */
+  stopWorkspaceProcesses?: () => Promise<void>;
   paths: RunnerPaths;
   /** The registration the run was claimed through. */
   connection: AppConnection;
@@ -602,6 +604,13 @@ export class RunWorker {
       log: deps.log,
       event: (event) => this.spool.push(event),
       onRelease: (release) => this.releases.push(release),
+      beforeWorkspaceRemoval: async () => {
+        const shuttingDown = () => this.ending?.kind === 'shutdown';
+        if (shuttingDown()) return false;
+        if (deps.stopWorkspaceProcesses === undefined) return false;
+        await deps.stopWorkspaceProcesses();
+        return !shuttingDown();
+      },
       ...(this.broker === undefined ? {} : { gitAuth: this.broker }),
       dirs: [],
     };

@@ -54,3 +54,7 @@ pnpm --filter @nocobase/app-plugin-office-flows-example typecheck
 pnpm --filter @nocobase/app-plugin-office-flows-example test
 pnpm --filter @nocobase/app-plugin-office-flows-example build
 ```
+
+## Workflow management integration
+
+The Examples application's workflow management page includes all six office workflows, including the clerk, team and executor task subflows. The Server entry exports the original `officeFlowsServiceToken`; its service exposes `workflowDefinitions()` and the existing `runtime` so the application can read definitions and persisted execution history without creating another runtime. Management inspection is available to signed-in users of the runnable Examples application; business operations retain the office workflows' existing guards.
