@@ -28,7 +28,7 @@ The knowledge base itself is the open-source knowledge plugin, `@nocobase/app-pl
 | The default chunking and ranking the plugin reads                    | `server/knowledge/tuning.ts`                                                                          |
 | The knowledge search settings (Settings › Knowledge search)          | `server/knowledge/search-settings.ts`, `search-routes.ts`, `client/pages/config/knowledge-search.tsx` |
 | The unified knowledge page and a project's Knowledge tab             | `client/pages/knowledge`, `client/pages/projects/detail/knowledge.tsx`                                |
-| The directory API and the space access sheet's roles                 | `server/knowledge/directory-routes.ts`, `client/knowledge/access.ts`                                   |
+| The directory API and the space access sheet's roles                 | `server/knowledge/directory-routes.ts`, `client/knowledge/access.ts`                                  |
 
 Studio words its spaces in the plugin's view (`client/knowledge/labels.ts`) and refreshes its inbox after a decision there; the view itself is the plugin's.
 

@@ -24,7 +24,7 @@ const PAGES: readonly { path: string; heading: string | null }[] = [
   },
   { path: '/issues/new', heading: null },
   { path: '/projects', heading: '项目' },
-  { path: '/knowledge', heading: '系统知识' },
+  { path: '/knowledge', heading: '知识库' },
   { path: '/config/members', heading: '成员' },
   { path: '/agents', heading: 'Agent' },
   { path: '/config/api-keys', heading: 'API 密钥' },
@@ -43,6 +43,34 @@ test.describe('phone width', () => {
         await expect(
           page.getByRole('dialog', { name: '新建任务', exact: true }),
         ).toBeVisible();
+      if (path === '/knowledge') {
+        await expect(
+          page.getByRole('region', { name: 'Studio Platform', exact: true }),
+        ).toBeVisible();
+        const system = page.getByRole('region', {
+          name: '系统知识',
+          exact: true,
+        });
+        await expect(
+          system.getByText('跨项目共享', { exact: true }),
+        ).toBeVisible();
+        expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+
+        await system.getByRole('button', { name: /^系统知识,/ }).click();
+        const document = system
+          .getByRole('tree')
+          .getByRole('button', { name: 'Team conventions', exact: true });
+        await expect(document).toBeVisible();
+        expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+
+        await document.click();
+        await expect(page).toHaveURL(/doc=/);
+        await expect(
+          page
+            .getByRole('article')
+            .getByRole('heading', { name: 'Team conventions', level: 1 }),
+        ).toBeVisible();
+      }
       expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
     });
   }
