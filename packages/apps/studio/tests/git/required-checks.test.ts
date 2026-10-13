@@ -257,6 +257,7 @@ describe('required and reference checks', () => {
     });
     await mentionAgent(h, 'alice', issue.id, agentId);
     const payload = await h.claimOne();
+    expect(payload).toBeDefined();
     expect((await h.agents.runs.get(payload.run.id)).agentId).toBe(agentId);
     const token = payload.cli.credential.content.token as string;
     const url = `/git/pullRequests/${pullRequest.id}/checks`;

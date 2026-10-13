@@ -1,6 +1,6 @@
 # Getting started with `nb-studio`
 
-`nb-studio` is Studio on the command line. It ships no business commands of its own: once you are signed in it asks the server which commands you may run (`GET /api/cli/manifest`), and every one of them is a request to one API route, so the commands follow the server's version and your permissions. The [command reference](reference/index.md) lists every command; [coverage](coverage.md) says what stays in the web page.
+`nb-studio` is Studio on the command line. It ships no business commands of its own: once you are signed in it asks the server which commands you may run (`GET /api/cli/manifest`), and every one of them is a request to one API route, so the commands follow the server's version and your permissions. The [business command reference](reference/index.md) lists the server commands; the [static command reference](static-commands.md) documents local Skill installation and status; [coverage](coverage.md) says what stays in the web page.
 
 ## Install
 
@@ -23,6 +23,14 @@ nb-studio update --check   # only say whether there is one
 ```
 
 `nb-studio update` asks the server you are signed in to which version it names, installs it beside the running one (with npm, or from the server's tarball, checking its SHA-256), switches to it and keeps the previous version beside it. `nb-studio login` and business commands print a line when a newer version is served, at most every 12 hours. The runner is installed and updated apart: it updates itself between runs, and `nocobase-runner update` updates it now.
+
+### Install the agent Skill
+
+On your own machine, run `nb-studio skills install` to install the packaged `nb-studio-cli` Skill for detected Claude Code and Codex tools. To select tools explicitly, use `nb-studio skills install --tool all` or `--tool claude` / `--tool codex`. These commands work offline without a login. `nb-studio skills install --dry-run --json` previews changes; `nb-studio skills status --json` checks whether installed contents match the current CLI package.
+
+Claude Code reads `~/.claude/skills/nb-studio-cli` (`CLAUDE_CONFIG_DIR` can move its configuration directory). Codex reads the [official user Skill directory](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills), `~/.agents/skills/nb-studio-cli`. `CODEX_HOME` does not move this new target; it helps detect Codex and locates legacy copies under `$CODEX_HOME/skills/nb-studio-cli`, or `~/.codex/skills/nb-studio-cli` when unset. Status shows both paths when new and old copies coexist. New installation does not create, move or remove the legacy copy.
+
+`nb-studio update` automatically synchronizes registered copies from the newly installed package. A Skill failure warns while leaving the CLI upgrade successful, and failed replacement restores the old Skill. Unregistered copies prompt an installation reminder. After an npm global upgrade or another external upgrade, run `nb-studio skills install` again. See the [static command reference](static-commands.md) for output and recovery. The runner supplies this Skill to agent runs automatically; installation inside a run is refused, and read-only status remains available.
 
 ### Where the CLI and the runner come from
 
