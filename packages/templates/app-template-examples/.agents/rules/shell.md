@@ -14,6 +14,10 @@ The header carries no Settings or Inbox entry. An application has no separate se
 
 Navigation groups retain their expanded or collapsed state while the navigation tree stays mounted. Selecting a new page expands its ancestor groups without collapsing other groups; users can still collapse the active group manually.
 
+## Workflow navigation in Examples
+
+Examples consolidates lifecycle and office demonstration pages into one Workflow sidebar entry. `client/lib/navigation-transform.ts` groups the permission-filtered entries into Business workflows and Workflow management; these are static section labels, not nested disclosure controls. Keep page URLs, route identities and plugin-owned translations intact. Parameter configuration and office configuration belong to management; business process pages belong to business workflows. This is Examples-specific navigation composition rather than a framework template change.
+
 ## Account menu and session
 
 The account menu checks Better Auth sign-out results before refreshing the session and shows a localized error toast for API or network failures. Preserve this behavior when upgrading the shell; navigation alone does not revoke a session.
