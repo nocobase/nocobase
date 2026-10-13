@@ -81,7 +81,7 @@ export function ReviewerReferenceSelect({
       <ComboboxInput
         aria-label={t('parameters.reference')}
         placeholder={t('parameters.searchReference')}
-        className='min-w-48'
+        className='min-w-0 w-full'
       />
       <ComboboxContent>
         <ComboboxList>

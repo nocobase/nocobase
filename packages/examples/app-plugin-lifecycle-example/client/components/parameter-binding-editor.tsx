@@ -73,7 +73,7 @@ export function useParameterBindingEditor(
               {t('parameters.historyBoundary')}
             </DialogDescription>
           </DialogHeader>
-          <div className='min-h-0 overflow-y-auto'>
+          <div className='min-h-0 divide-y overflow-y-auto'>
             {error && (
               <p role='alert' className='text-sm text-destructive'>
                 {error}
@@ -87,6 +87,7 @@ export function useParameterBindingEditor(
             {data?.map((group) => (
               <ParameterEditor
                 key={`${actor}:${group.key}`}
+                embedded
                 onBusyChange={setBusy}
                 group={group}
                 api={api}

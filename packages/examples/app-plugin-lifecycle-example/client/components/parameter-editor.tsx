@@ -36,8 +36,8 @@ function ReviewerRuleEditor({
         {t('parameters.ruleExplanation')}
       </p>
       {groups.map((group, groupIndex) => (
-        <fieldset key={group} className='space-y-2 rounded-lg border p-3'>
-          <legend className='px-1 text-sm font-medium'>
+        <fieldset key={group} className='min-w-0 space-y-2'>
+          <legend className='mb-2 text-sm font-medium'>
             {t(
               groupIndex === 0
                 ? 'parameters.allConditions'
@@ -50,7 +50,7 @@ function ReviewerRuleEditor({
                 /* Rows have no local state; repeated selections need distinct positional keys. */
                 // eslint-disable-next-line @eslint-react/no-array-index-key
                 key={index}
-                className='flex flex-wrap gap-2'
+                className='grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2'
               >
                 <Choice
                   label={t('parameters.selectionType')}
@@ -156,12 +156,14 @@ export function ParameterEditor({
   actor,
   onSaved,
   onBusyChange,
+  embedded = false,
 }: {
   readonly group: ParameterGroupView;
   readonly api: ParameterApi;
   readonly actor: string;
   readonly onSaved?: (group: ParameterGroupView) => void;
   readonly onBusyChange?: (busy: boolean) => void;
+  readonly embedded?: boolean;
 }): ReactElement {
   const { t } = useTranslation(NAMESPACE);
   const id = useId();
@@ -215,7 +217,13 @@ export function ParameterEditor({
     }
   };
   return (
-    <section className='space-y-4 rounded-xl border bg-card p-4 text-card-foreground'>
+    <section
+      className={
+        embedded
+          ? 'space-y-4 py-2'
+          : 'space-y-4 rounded-xl border bg-card p-4 text-card-foreground'
+      }
+    >
       <div>
         <h3 className='font-medium'>{group.title}</h3>
         <p className='text-sm text-muted-foreground'>
@@ -348,7 +356,7 @@ export function ParameterEditor({
           </Button>
         </div>
       )}
-      <div className='flex flex-wrap gap-2'>
+      <div className='flex flex-wrap items-center gap-2'>
         {group.canUpdate ? (
           <Button
             disabled={busy || Object.values(objectErrors).some(Boolean)}
