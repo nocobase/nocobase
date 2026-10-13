@@ -1,4 +1,4 @@
-/** An issue status on "My follow-ups": a dot, or a badge, in the colour the issue lists give it. */
+/** An issue status as a dot or a badge, in the colour the issue lists give it. */
 import type { ReactElement } from 'react';
 
 import { IssueStatusBadge } from '@/components/issue-table';

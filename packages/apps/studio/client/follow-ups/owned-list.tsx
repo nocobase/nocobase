@@ -25,13 +25,13 @@ import {
   type FollowUpsView,
 } from '../../shared/follow-ups.js';
 import { usePullRequestMark } from '../git/api.js';
-import { nowLine } from './model.js';
-import { StatusPill } from './status.js';
+import { nowLine } from '../issues/live/summary-model.js';
+import { StatusPill } from '../issues/live/status.js';
 import {
   STATUS_CHIP,
   statusColor,
   useFollowUpStatusName,
-} from './status-colors.js';
+} from '../issues/live/status-colors.js';
 
 export function OwnedList({
   view,
@@ -43,8 +43,10 @@ export function OwnedList({
   selectedId,
   onSelect,
   onToggleFollow,
+  className,
 }: {
   readonly view: FollowUpsView;
+  readonly className?: string;
   readonly rows: readonly FollowUpIssue[];
   readonly filter: readonly FollowUpStatus[];
   readonly onFilter: (next: readonly FollowUpStatus[]) => void;
@@ -62,7 +64,7 @@ export function OwnedList({
   return (
     <section
       aria-labelledby='follow-ups-mine'
-      className='flex min-w-0 flex-col gap-2.5'
+      className={cn('flex min-w-0 flex-col gap-2.5', className)}
       data-testid='follow-ups-mine'
     >
       <h2
@@ -219,7 +221,7 @@ function OwnedRow({
         }
         title={
           blocked
-            ? t('followUps.activity.fullHint', { max: FOLLOW_UPS_MAX })
+            ? t('issueLive.follow.fullHint', { max: FOLLOW_UPS_MAX })
             : undefined
         }
         // Not `disabled`, so the hint still shows on hover and focus.
