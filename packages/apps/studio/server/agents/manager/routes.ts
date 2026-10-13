@@ -302,6 +302,13 @@ export const projectManagerRoutes: AppApiRouteContribution<Application> =
             { agents, projects },
             projects.tx.read(),
             issue,
+            {
+              userId: viewer.userId,
+              seesMachines: await context.get('authz').can({
+                resource: { type: 'settings', id: 'agents.runners' },
+                action: 'manage',
+              }),
+            },
           ),
         });
       },

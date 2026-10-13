@@ -186,6 +186,10 @@ describe('the project manager’s settings', () => {
     expect(raw).toMatchObject({ unknown: 'preserved' });
   });
   it('keeps renamed identities and cleared descriptions through repeated saves and startup', async () => {
+    await h.manager.update('root', {
+      fallbackAfterSeconds: 137,
+      delegationQueueTimeoutSeconds: 731,
+    });
     for (const name of ['Team lead', '项目负责人']) {
       const result = await h.request('PATCH', '/projectManager', {
         user: 'root',
@@ -204,6 +208,10 @@ describe('the project manager’s settings', () => {
         nameText: null,
       });
       expect((await h.agents.agents.get(coder)).name).toBe('Coder');
+      expect(await h.manager.settings()).toMatchObject({
+        fallbackAfterSeconds: 137,
+        delegationQueueTimeoutSeconds: 731,
+      });
     }
     for (const description of [null, '', '   ']) {
       expect(
@@ -401,6 +409,22 @@ describe('the project manager’s settings', () => {
     expect(notEnabled.body.error.reason).toBe('PROJECT_MANAGER_AGENT_INVALID');
 
     expect((await patch({ commentRunLimit: 0 })).status).toBe(400);
+    for (const value of [0, 86401, 1.5])
+      expect(
+        (await patch({ delegationQueueTimeoutSeconds: value })).status,
+      ).toBe(400);
+    expect(
+      (await patch({ delegationQueueTimeoutSeconds: 86400 })).body.data
+        .delegationQueueTimeoutSeconds,
+    ).toBe(86400);
+    await patch({ delegationQueueTimeoutSeconds: 600 });
+    expect((await patch({ fallbackAfterSeconds: 0 })).status).toBe(400);
+    expect((await patch({ fallbackAfterSeconds: 3601 })).status).toBe(400);
+    expect((await patch({ fallbackAfterSeconds: 1.5 })).status).toBe(400);
+    expect(
+      (await patch({ fallbackAfterSeconds: 3600 })).body.data
+        .fallbackAfterSeconds,
+    ).toBe(3600);
     expect((await patch({ approvals: true })).status).toBe(400);
   });
 

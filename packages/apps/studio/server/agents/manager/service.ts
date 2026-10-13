@@ -64,12 +64,21 @@ export function createProjectManager(deps: {
   readonly identityChanged?: () => void;
   readonly agents: Pick<
     Agents,
-    'agents' | 'actions' | 'chat' | 'tx' | 'availability'
+    | 'agents'
+    | 'actions'
+    | 'chat'
+    | 'tx'
+    | 'eligibility'
+    | 'runners'
+    | 'selectionPolicies'
   >;
 }): ProjectManager {
   const { agents } = deps;
   const readSettings = (conn: DatabaseConnection) =>
     readManagerSettings(conn, deps.defaultLocale);
+  agents.selectionPolicies.register(PROJECT_MANAGER_ID, async (conn) => ({
+    fallbackAfterSeconds: (await readSettings(conn)).fallbackAfterSeconds,
+  }));
 
   const workerActions = (): string[] => [...agents.actions.keys()];
   const managerActions = (): string[] =>
@@ -113,7 +122,25 @@ export function createProjectManager(deps: {
     const offered = (await agents.agents.listActive(conn)).filter(
       (agent) => agent.source === 'runner',
     );
-    const availability = await agents.availability(conn, offered, userId);
+    const manager = await agents.agents.find(conn, PROJECT_MANAGER_ID);
+    const runners = await agents.runners.online(conn);
+    const online = new Map(
+      await Promise.all(
+        offered.map(
+          async (agent) =>
+            [
+              agent.id,
+              manager
+                ? await agents.eligibility.canClaim(
+                    conn,
+                    { ...manager, modelEntries: agent.modelEntries },
+                    { actorUserId: userId, workspaceKey: true, runners },
+                  )
+                : false,
+            ] as const,
+        ),
+      ),
+    );
     return {
       ...settings,
       builtInPrinciples: BUILT_IN_PRINCIPLES,
@@ -121,7 +148,7 @@ export function createProjectManager(deps: {
         id: agent.id,
         name: agent.name,
         description: agent.description,
-        online: availability.get(agent.id)?.online ?? false,
+        online: online.get(agent.id) ?? false,
       })),
       canEdit,
     };

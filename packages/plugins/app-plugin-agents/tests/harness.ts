@@ -630,6 +630,7 @@ export async function createHarness(
         protocolVersion: PROTOCOL_VERSION,
         features: [
           ...(options.features ?? [
+            'workspaceKey',
             'input',
             'checkout',
             'directories',
@@ -652,6 +653,12 @@ export async function createHarness(
         throw new Error(
           `Registration failed: ${JSON.stringify(response.body)}`,
         );
+      await database
+        .connection()
+        .query.updateTable('agRunners')
+        .set({ load: { free: options.slots ?? 2, slots: options.slots ?? 2 } })
+        .where('id', '=', response.body.data.runnerId as string)
+        .execute();
       return {
         runnerId: response.body.data.runnerId as string,
         key: response.body.data.runnerKey as string,

@@ -40,6 +40,16 @@ export const RUNNER_STATUSES = [
 
 export type RunnerStatus = (typeof RUNNER_STATUSES)[number];
 
+/**
+ * Optional payload support is established by capabilities, never package versions.
+ * Protocol 9 runners may ignore workspace.key; only its explicit declaration is evidence.
+ */
+export function supportsWorkspaceKey(
+  runner: Pick<Runner, 'features'>,
+): boolean {
+  return runner.features.includes('workspaceKey');
+}
+
 export interface Runner {
   readonly id: string;
   readonly name: string;
@@ -78,6 +88,8 @@ export interface Runner {
    * and could take now, across every application it serves. Null or absent when it reported none (unknown: read as
    * room left).
    */
+  /** Last heartbeat free slots across all applications; absent before a heartbeat. */
+  readonly globalFree?: number;
   readonly toolLoad?: Readonly<Partial<Record<AgentTool, ToolLoad>>> | null;
   /**
    * Its owner (or a manager of runners) lets it take jobs: builds and other steps an application configures, run

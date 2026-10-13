@@ -837,6 +837,15 @@ const RunEffortReportSchema: z.ZodType<RunEffortReport> = z
 
 export const RunExecutionSnapshotSchema: z.ZodType<RunExecutionSnapshot> = z
   .object({
+    selection: z
+      .object({
+        reason: z.enum(['preferredQueued', 'preferredUnavailable']),
+        preferredTool: z.string(),
+        preferredModel: z.string().nullable(),
+        queueEnteredAt: dateTime,
+        waitedSeconds: z.number(),
+      })
+      .optional(),
     attempt: z.number().int(),
     runnerId: z.string(),
     runnerName: z.string().nullable(),
@@ -922,6 +931,7 @@ const runObject = z.object({
   requires: z.array(RunnerFeatureSchema),
   acceptsInput: z.boolean(),
   availableAt: dateTime.nullable(),
+  queueEnteredAt: dateTime.nullable().optional(),
   leaseExpiresAt: dateTime.nullable(),
   dispatchedAt: dateTime.nullable(),
   startedAt: dateTime.nullable(),
@@ -1499,6 +1509,10 @@ const runnerObject = z.object({
   toolSlots: ToolSlotsSchema.nullable().meta({
     description:
       'How many runs of each coding tool it may hold at once, beside `slots`; null, or a tool left out, for no limit of its own.',
+  }),
+  globalFree: z.number().nonnegative().optional().meta({
+    description:
+      'Free slots reported in the latest heartbeat across all applications; absent before a heartbeat.',
   }),
   toolLoad: z.partialRecord(AgentToolSchema, ToolLoadSchema).nullable().meta({
     description:

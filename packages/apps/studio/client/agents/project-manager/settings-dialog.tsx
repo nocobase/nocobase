@@ -39,7 +39,14 @@ import {
 } from '../../../shared/project-manager.js';
 import { useNotify } from '../../access/notify.js';
 import { useProjectManager, useUpdateProjectManager } from './api.js';
-import { draftOf, limitOf, patchOf, type Draft } from './draft.js';
+import {
+  draftOf,
+  limitOf,
+  fallbackSecondsOf,
+  delegationSecondsOf,
+  patchOf,
+  type Draft,
+} from './draft.js';
 
 const NO_FALLBACK = '';
 
@@ -98,7 +105,9 @@ function Settings({
             limit === null ||
             draft.name.trim().length === 0 ||
             draft.name.trim().length > 200 ||
-            draft.description.length > 10_000
+            draft.description.length > 10_000 ||
+            fallbackSecondsOf(draft.fallbackAfterSeconds) === null ||
+            delegationSecondsOf(draft.delegationQueueTimeoutSeconds) === null
           }
         />
       }
@@ -202,6 +211,76 @@ function Settings({
               : t('projectManager.settingsPage.agentsHint')}
           </FieldDescription>
         </FieldSet>
+        <Field
+          data-invalid={
+            fallbackSecondsOf(draft.fallbackAfterSeconds) === null
+              ? true
+              : undefined
+          }
+        >
+          <FieldLabel htmlFor='pm-fallback-after'>
+            {t('projectManager.settingsPage.fallbackAfter')}
+          </FieldLabel>
+          <Input
+            id='pm-fallback-after'
+            type='number'
+            min={1}
+            max={3600}
+            className='w-24'
+            value={draft.fallbackAfterSeconds}
+            readOnly={readOnly}
+            aria-invalid={
+              fallbackSecondsOf(draft.fallbackAfterSeconds) === null
+                ? true
+                : undefined
+            }
+            onChange={(event) =>
+              set({ fallbackAfterSeconds: event.target.value })
+            }
+          />
+          <FieldDescription>
+            {t('projectManager.settingsPage.fallbackAfterHint')}
+          </FieldDescription>
+          {fallbackSecondsOf(draft.fallbackAfterSeconds) === null ? (
+            <FieldError>
+              {t('projectManager.settingsPage.fallbackAfterInvalid')}
+            </FieldError>
+          ) : null}
+        </Field>
+        <Field
+          data-invalid={
+            delegationSecondsOf(draft.delegationQueueTimeoutSeconds) === null ||
+            undefined
+          }
+        >
+          <FieldLabel htmlFor='pm-delegation-timeout'>
+            {t('projectManager.settingsPage.delegationTimeout')}
+          </FieldLabel>
+          <Input
+            id='pm-delegation-timeout'
+            type='number'
+            min={1}
+            max={86400}
+            className='w-24'
+            value={draft.delegationQueueTimeoutSeconds}
+            readOnly={readOnly}
+            aria-invalid={
+              delegationSecondsOf(draft.delegationQueueTimeoutSeconds) ===
+                null || undefined
+            }
+            onChange={(event) =>
+              set({ delegationQueueTimeoutSeconds: event.target.value })
+            }
+          />
+          <FieldDescription>
+            {t('projectManager.settingsPage.delegationTimeoutHint')}
+          </FieldDescription>
+          {delegationSecondsOf(draft.delegationQueueTimeoutSeconds) === null ? (
+            <FieldError>
+              {t('projectManager.settingsPage.delegationTimeoutInvalid')}
+            </FieldError>
+          ) : null}
+        </Field>
         <Field>
           <div className='flex items-center justify-between gap-2'>
             <FieldLabel htmlFor='pm-principles'>

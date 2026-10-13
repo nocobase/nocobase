@@ -14,6 +14,17 @@ import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
+  'issueRuns.selection.preferredQueued': '首选排队，改用备选',
+  'issueRuns.selection.preferredUnavailable': '首选无兼容执行机，改用备选',
+  'projectManager.settingsPage.delegationTimeout': '委派排队超时（秒）',
+  'projectManager.settingsPage.delegationTimeoutHint':
+    '默认 600 秒。仅撤回项目经理派出且尚未领取的步骤，再自动回复派活线程；达到评论次数上限时等待人工继续。',
+  'projectManager.settingsPage.delegationTimeoutInvalid':
+    '请输入 1–86400 的整数。',
+  'projectManager.settingsPage.fallbackAfter': '备选等待时间（秒）',
+  'projectManager.settingsPage.fallbackAfterHint':
+    '首选排队 1–3600 秒后，可由空闲备选领取。首选无兼容执行机时立即尝试备选。',
+  'projectManager.settingsPage.fallbackAfterInvalid': '请输入 1–3600 的整数。',
   'ownerHandoff.title': '负责人接手',
   'ownerHandoff.accept': '接手',
   'ownerHandoff.claim': '认领',
@@ -1003,6 +1014,7 @@ const zhCN: AppResource = {
     toolNetwork: '编码工具网络错误',
     toolProcess: '编码工具崩溃',
     contextOverflow: '上下文超限',
+    delegatedQueueTimeout: '委派排队超时，已撤回',
     queuedExpired: '排队超时',
     modelUnavailable: '模型不可用',
     stepLimit: '工具调用次数过多',
@@ -1283,7 +1295,7 @@ const zhCN: AppResource = {
       noFallback: '不用备选',
       choose: '选择 Agent',
       agentsHint:
-        '首选没有执行机能跑时用备选。项目经理不写代码，用它的执行机也不检出仓库。',
+        '首选排队超时后由空闲备选领取；首选无兼容执行机时立即尝试备选。项目经理不写代码，用它的执行机也不检出仓库。',
       noChoices: '还没有启用的 Agent，先在 Agent 页面启用一个。',
       principles: '分配原则',
       restore: '恢复内置',
@@ -1305,6 +1317,33 @@ const zhCN: AppResource = {
   },
   issueStart: { title: '现在开始？', later: '暂不开始', start: '开始' },
   issueProgress: {
+    firstChoice: '首选',
+    fallback: '备选',
+    managerModelWait: '{{choice}} {{model}}：{{reason}}{{runners}}',
+    waitingForContinuation:
+      '等待人工继续：自动回报已投递，评论运行次数达到上限，待处理输入已保留。',
+    managerWaiting: '项目经理在等执行机：{{entries}}',
+    fallbackIn: '{{seconds}} 秒后可尝试备选',
+    fallbackReady: '等待首选或备选的空闲执行机',
+    runnerLoad:
+      '{{name}}：总槽位 {{used}}/{{limit}}，{{tool}} {{toolUsed}}/{{toolLimit}}，报告总空位 {{totalFree}}、工具空位 {{free}}',
+    workerChoice: '执行模型',
+    workerWaiting: '{{agent}} 在等执行机：{{entries}}',
+    modelWait: {
+      toolNotInstalled: '未安装工具',
+      toolUnavailable: '工具未登录、被禁用或模型不可用',
+      noSharedRunner: '仅他人的个人执行机在线',
+      unknown: '尚不能确认可承接条件',
+
+      ready: '现在可领取',
+      busy: '兼容执行机正忙',
+      incompatible: '执行机不兼容，需升级',
+      offline: '无在线执行机',
+      restricted: '身份、策略或负载要求限制',
+      concurrencyFull: '已达 agent 并发上限',
+      sameWorkActive: '同线程有运行正在执行',
+      delayed: '等待延迟执行或重试退避',
+    },
     waiting: {
       waitingOwner: '等待 {{owner}} 接手',
       noOwner: '正在等待有效的任务负责人',

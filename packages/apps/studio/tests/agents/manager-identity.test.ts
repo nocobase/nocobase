@@ -515,10 +515,20 @@ describe('manager and delegated identities', () => {
       },
     });
     expect(registered.status).toBe(200);
-    expect(
-      (await h.request('GET', `/issueProgress/${task.id}`, { user: 'bob' }))
-        .body.data.waiting.reason,
-    ).toBe('ownerHasNoRunner');
+    const [legacy] = await runs(task.id);
+    await h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({
+        filter: { id: legacy.id },
+        values: { actorUserId: 'bob' },
+      });
+    const ownerWait = (
+      await h.request('GET', `/issueProgress/${task.id}`, { user: 'bob' })
+    ).body.data;
+    expect(ownerWait.waiting.reason).toBe('ownerHasNoRunner');
+    expect(ownerWait.managerWait.entries[0].reason).toBe('noSharedRunner');
+    expect((await h.agents.runs.get(legacy.id)).actorUserId).toBe('bob');
     const settings = await h.manager.settings();
     await h.manager.update('bob', {
       firstChoiceAgentId: null,

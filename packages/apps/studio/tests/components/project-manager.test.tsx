@@ -50,6 +50,8 @@ const view = (overrides: Partial<ProjectManagerView> = {}) =>
     fallbackAgentId: 'astra',
     principles: null,
     commentRunLimit: 20,
+    fallbackAfterSeconds: 120,
+    delegationQueueTimeoutSeconds: 600,
     builtInPrinciples: BUILT_IN,
     choices: [
       {
@@ -196,6 +198,8 @@ describe('the project manager settings', () => {
           fallbackAgentId: null,
           principles: null,
           commentRunLimit: 30,
+          fallbackAfterSeconds: 120,
+          delegationQueueTimeoutSeconds: 600,
         },
       }),
     );

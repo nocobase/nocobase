@@ -19,6 +19,7 @@ import {
 import { pullRequestsOfIssue } from '../../git/store.js';
 import { ISSUE_SUBJECT } from '../catalog/triggers.js';
 import { AGENT_KIND } from '../tx.js';
+import { commentGuards, commentGuardId } from '../comment-guard.js';
 import { nextLineOf } from './texts.js';
 import {
   issueExecutionIdentity,
@@ -59,12 +60,13 @@ export async function issueProgress(
   deps: {
     readonly agents: Pick<
       Agents,
-      'runs' | 'agents' | 'runners' | 'availability'
+      'runs' | 'agents' | 'runners' | 'claims' | 'availability'
     >;
     readonly projects: Pick<Projects, 'commentQueries' | 'issueContext'>;
   },
   conn: DatabaseConnection,
   issue: Issue,
+  viewer?: { readonly userId: string; readonly seesMachines: boolean },
 ): Promise<IssueProgress> {
   async function waitingFor(
     agentId: string,
@@ -166,8 +168,46 @@ export async function issueProgress(
             inputs: detail?.inputs ?? [],
           })
         : undefined;
+    const actorUserId =
+      run.dispatchedAt || run.attempt > 1 || run.executions?.length
+        ? run.actorUserId
+        : (identity?.actorUserId ?? run.actorUserId);
+    const agent = await deps.agents.agents.findWorkable(conn, run.agentId);
+    const selection =
+      run.status === 'queued' &&
+      agent &&
+      (!identity || identity.actorUserId) &&
+      deps.agents.agents.mayInvoke(agent, actorUserId)
+        ? await deps.agents.claims
+            .diagnose(conn, { ...run, actorUserId }, agent)
+            .catch(() => null)
+        : null;
     return {
       ...base,
+      ...(selection
+        ? {
+            managerWait: {
+              ...selection,
+              entries: selection.entries.map((entry) => ({
+                ...entry,
+                runners: entry.runners
+                  .filter(
+                    (runner) =>
+                      viewer?.seesMachines ||
+                      runner.ownerUserId === viewer?.userId,
+                  )
+                  .map((runner) => runner.name),
+                runnerLoads: entry.runners
+                  .filter(
+                    (runner) =>
+                      viewer?.seesMachines ||
+                      runner.ownerUserId === viewer?.userId,
+                  )
+                  .map(({ ownerUserId: _owner, ...runner }) => runner),
+              })),
+            },
+          }
+        : {}),
       state: HELD.has(run.status) ? 'working' : 'queued',
       agent: { id: run.agentId, name: names.get(run.agentId) ?? run.agentId },
       step:
@@ -189,6 +229,11 @@ export async function issueProgress(
           : null,
     };
   }
+  const continuation = await commentGuards(conn).findOne({
+    filter: { id: commentGuardId(issue.id) },
+  });
+  if (continuation?.pendingToken && open)
+    return { ...base, state: 'waitingForContinuation' };
   if (category === 'done' || category === 'closed')
     return { ...base, state: 'finished' };
   if (issue.statusKey === 'backlog') return { ...base, state: 'notStarted' };

@@ -297,6 +297,10 @@ export function toRunner(
     slots: Number(record.slots),
     toolSlots: storedToolSlots(record.toolSlots),
     toolLoad: storedToolLoad(record.load),
+    globalFree:
+      typeof jsonObject(record.load).free === 'number'
+        ? Number(jsonObject(record.load).free)
+        : undefined,
     acceptJobs: Boolean(record.acceptJobs),
     policy: storedPolicy(record.policy),
     variables: storedVariableNames(record.variables),
