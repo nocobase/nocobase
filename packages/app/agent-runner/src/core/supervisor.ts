@@ -532,7 +532,7 @@ export interface RecoverOptions {
   timings: Timings;
   log: (message: string) => void;
   /** `cancelled` acknowledges the cancel instead of failing the run. */
-  reason: 'leaseExpired' | 'runnerOffline' | 'cancelled';
+  reason: 'leaseExpired' | 'runnerOffline' | 'cancelled' | 'unknown';
   detail: string;
 }
 
@@ -624,6 +624,12 @@ export async function recoverRun(
         cancelAck: routePath(RUNNER_ROUTES.cancelAck, { runId }),
       };
   const client = options.clientFor(record.appKey);
+  if (options.reason === 'unknown') {
+    log(
+      `run ${runId}: owned server status is unknown; preservation directory and retry record retained`,
+    );
+    return;
+  }
   if (client === undefined) {
     // The registration is gone: nobody to report to.
     log(`run ${runId}: its application is no longer registered; dropping it`);
@@ -715,9 +721,9 @@ export async function recoverRun(
       error instanceof ApiError &&
       (LOST_CODES.has(error.reason) || error.status === 404)
     ) {
-      if (options.reason === 'cancelled' && recovery.length > 0) {
+      if (recovery.length > 0 && !delivered) {
         log(
-          `run ${runId}: cancellation preservation report not acknowledged (${error.reason}); record retained`,
+          `run ${runId}: preservation report not acknowledged (${error.reason}); record retained`,
         );
         return;
       }
@@ -746,7 +752,7 @@ export async function recoverOrphans(
   const records = await readRecords(options.paths);
   const recovered: string[] = [];
   for (const record of records) {
-    let reason: 'cancelled' | 'leaseExpired' =
+    let reason: 'cancelled' | 'leaseExpired' | 'unknown' =
       record.recoveryReason ?? 'leaseExpired';
     if (record.kind !== 'job' && record.recoveryReason === undefined) {
       const client = options.clientFor(record.appKey);
@@ -758,6 +764,7 @@ export async function recoverOrphans(
         .catch(() => undefined);
       if (status?.cancelRequested === true || status?.status === 'cancelled')
         reason = 'cancelled';
+      else if (status === undefined) reason = 'unknown';
     }
     await recoverRun(record, {
       ...options,

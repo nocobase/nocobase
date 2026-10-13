@@ -145,6 +145,7 @@ function ok(c: Context, data: unknown, status = 200): Response {
 }
 
 export class FakeServer {
+  onCancelAck?: (run: FakeRun) => void;
   readonly app = new Hono();
   readonly runners = new Map<string, FakeRunner>();
   readonly runs = new Map<string, FakeRun>();
@@ -884,6 +885,7 @@ export class FakeServer {
       const run = owned(c);
       if (run instanceof Response) return run;
       run.cancelAck = body;
+      this.onCancelAck?.(run);
       run.status = 'cancelled';
       run.reports.push({ kind: 'cancelAck', body, status: 200 });
       return ok(c, { status: run.status });
