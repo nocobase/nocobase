@@ -153,7 +153,11 @@ function Options({
       onValueChange={(next: string) => onChoose(choice.id, next)}
     >
       {choice.options.map((option) => (
-        <DropdownMenuRadioItem key={option.value} value={option.value}>
+        <DropdownMenuRadioItem
+          key={option.value}
+          value={option.value}
+          closeOnClick
+        >
           <span className='flex min-w-0 flex-col'>
             <span className='truncate'>{option.name}</span>
             {option.description && (
