@@ -526,6 +526,12 @@ export async function removePlanned(
     const meta = await readWorkspaceMeta(paths, entry.workDir);
     if (
       meta !== undefined &&
+      (meta.lastUsedAt !== entry.lastUsedAt ||
+        meta.lastRunId !== entry.lastRunId)
+    )
+      return 'changed';
+    if (
+      meta !== undefined &&
       (await canRetryWorkspaceRemoval(paths, entry.workDir, meta))
     )
       return (await retryWorkspaceRemoval(
