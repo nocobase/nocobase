@@ -463,7 +463,10 @@ export function KnowledgeView({
           </h1>
         ));
   const creationParent =
-    selectedDoc?.kind === 'folder' && !selectedDoc.archivedAt
+    selectedDoc?.kind === 'folder' &&
+    !selectedDoc.archivedAt &&
+    own &&
+    directoryKey(selectedDoc) === directoryKey(own.space)
       ? selectedDoc
       : null;
   const creationAccess = creationParent?.access ?? access;
@@ -907,7 +910,7 @@ export function KnowledgeView({
         <SearchTestDialog
           open
           onOpenChange={(next) => !next && setDialog(null)}
-          space={space}
+          space={target ?? space}
           onOpen={(docId, lines) =>
             view.show({
               doc: docId,

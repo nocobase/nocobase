@@ -134,6 +134,7 @@ let extra: (request: {
   method?: string;
   json?: unknown;
   query?: Record<string, string>;
+  body?: FormData;
 }) => unknown = () => undefined;
 
 function serve(
@@ -206,6 +207,7 @@ function show(
   entry = '/',
   embedded = true,
   directory?: KnowledgeDirectorySource,
+  viewSpace = space,
 ): void {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -214,7 +216,7 @@ function show(
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[entry]}>
         <KnowledgeView
-          space={space}
+          space={viewSpace}
           title={embedded ? false : undefined}
           directory={directory}
         />
@@ -249,6 +251,209 @@ beforeEach(() => {
 });
 
 describe('the knowledge view', () => {
+  function inheritedFolder(access = MANAGE): void {
+    const folder = summary('systemfolder', 'Shared folder', {
+      scope: 'system',
+      scopeId: '',
+      kind: 'folder',
+      access: MANAGE,
+    });
+    serve([folder]);
+    extra = ({ path, method }) => {
+      if (path === 'knowledge/spaces')
+        return {
+          data: [
+            {
+              ...treeOf([]).spaces[0],
+              space: { ...treeOf([]).spaces[0]!.space, access },
+            },
+            {
+              space: {
+                scope: 'system',
+                scopeId: '',
+                id: 'sys',
+                title: 'System knowledge',
+                inherited: true,
+                access: MANAGE,
+              },
+              docs: [folder],
+            },
+          ],
+        };
+      if (method === 'POST') return { data: { id: 'created' } };
+      return undefined;
+    };
+    show('/?doc=systemfolder');
+  }
+
+  it.each(['article', 'folder'] as const)(
+    'keeps toolbar %s creation in the project when a system folder is selected',
+    async (kind) => {
+      inheritedFolder();
+      await press(
+        await screen.findByRole('button', { name: 'New', exact: true }),
+      );
+      fireEvent.click(
+        await screen.findByRole('menuitem', {
+          name: kind === 'article' ? 'New article' : 'New folder',
+          exact: true,
+        }),
+      );
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByText('Create in Acme')).toBeInTheDocument();
+      fireEvent.change(within(dialog).getByLabelText(/Title/), {
+        target: { value: 'New reference' },
+      });
+      fireEvent.click(
+        within(dialog).getByRole('button', { name: 'Create', exact: true }),
+      );
+      await waitFor(() =>
+        expect(mocks.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            path: 'knowledge/docs',
+            method: 'POST',
+            json: expect.objectContaining({ ...space, kind }),
+          }),
+        ),
+      );
+      const request = mocks.request.mock.calls.find(
+        ([r]) => r.path === 'knowledge/docs' && r.method === 'POST',
+      )![0];
+      expect(request.json.parentId).toBeUndefined();
+    },
+  );
+
+  it('uploads to the project root when an inherited folder is selected', async () => {
+    inheritedFolder();
+    await press(
+      await screen.findByRole('button', { name: 'New', exact: true }),
+    );
+    fireEvent.click(
+      await screen.findByRole('menuitem', {
+        name: 'Upload files',
+        exact: true,
+      }),
+    );
+    fireEvent.change(
+      screen.getByLabelText('Upload files', { selector: 'input' }),
+      { target: { files: [new File(['text'], 'reference.txt')] } },
+    );
+    await waitFor(() =>
+      expect(
+        mocks.request.mock.calls.some(
+          ([r]) => r.path === 'knowledge/docs/upload',
+        ),
+      ).toBe(true),
+    );
+    const form = mocks.request.mock.calls.find(
+      ([r]) => r.path === 'knowledge/docs/upload',
+    )![0].body as FormData;
+    expect([
+      form.get('scope'),
+      form.get('scopeId'),
+      form.get('parentId'),
+    ]).toEqual(['project', 'p1', null]);
+  });
+
+  it.each(['article', 'file'] as const)(
+    'uses project permissions for propose-only %s creation beside inherited system folders',
+    async (kind) => {
+      inheritedFolder({
+        read: true,
+        propose: true,
+        edit: false,
+        manage: false,
+      });
+      await press(
+        await screen.findByRole('button', { name: 'New', exact: true }),
+      );
+      expect(
+        screen.queryByRole('menuitem', { name: 'New folder' }),
+      ).not.toBeInTheDocument();
+      fireEvent.click(
+        await screen.findByRole('menuitem', {
+          name: kind === 'article' ? 'New article' : 'Propose a file',
+          exact: true,
+        }),
+      );
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByText('Create in Acme')).toBeInTheDocument();
+      if (kind === 'article')
+        fireEvent.change(within(dialog).getByLabelText(/Title/), {
+          target: { value: 'Proposed reference' },
+        });
+      else
+        fireEvent.change(within(dialog).getByLabelText('File'), {
+          target: { files: [new File(['text'], 'reference.txt')] },
+        });
+      fireEvent.change(within(dialog).getByLabelText(/Reason/), {
+        target: { value: 'Add reference' },
+      });
+      fireEvent.submit(dialog.querySelector('form')!);
+      const path =
+        kind === 'article'
+          ? 'knowledge/proposals'
+          : 'knowledge/proposals/upload';
+      await waitFor(() =>
+        expect(
+          mocks.request.mock.calls.some(
+            ([r]) => r.path === path && r.method === 'POST',
+          ),
+        ).toBe(true),
+      );
+      const request = mocks.request.mock.calls.find(
+        ([r]) => r.path === path && r.method === 'POST',
+      )![0];
+      if (kind === 'article') {
+        expect(request.json).toMatchObject(space);
+        expect(request.json.parentId).toBeUndefined();
+      } else
+        expect([
+          request.body.get('scope'),
+          request.body.get('scopeId'),
+          request.body.get('parentId'),
+        ]).toEqual(['project', 'p1', null]);
+    },
+  );
+
+  it('searches the project captured by its directory diagnostic action', async () => {
+    serve([]);
+    const directory: KnowledgeDirectorySource = {
+      summaries: async () => [
+        {
+          space: treeOf([]).spaces[0]!.space,
+          documents: 0,
+          archivedDocuments: 0,
+        },
+      ],
+      search: async () => [],
+      sharedScope: 'system',
+      sharedLabel: 'Shared across projects',
+    };
+    extra = ({ path }) =>
+      path === 'knowledge/search' ? { data: [], meta: {} } : undefined;
+    show('/', true, directory, { scope: 'system', scopeId: '' });
+    const group = await screen.findByTestId('knowledge-space-project');
+    await press(within(group).getByRole('button', { name: 'Space actions' }));
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'Search test' }),
+    );
+    fireEvent.change(await screen.findByLabelText('Words to search for'), {
+      target: { value: 'projectneedle' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Search', exact: true }),
+    );
+    await waitFor(() =>
+      expect(mocks.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: 'knowledge/search',
+          query: { ...space, q: 'projectneedle', explain: 'true' },
+        }),
+      ),
+    );
+  });
+
   it('shows the permission-filtered review total without loading later review pages', async () => {
     serve([]);
     const directory: KnowledgeDirectorySource = {
