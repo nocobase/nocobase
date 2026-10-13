@@ -10,8 +10,8 @@ import { cn } from 'cn';
 
 import { FOLLOW_UPS_MAX, type FollowUpIssue } from '../../shared/follow-ups.js';
 import { usePullRequestMark } from '../git/api.js';
-import { nowLine } from './model.js';
-import { StatusDot } from './status.js';
+import { nowLine } from '../issues/live/summary-model.js';
+import { StatusDot } from '../issues/live/status.js';
 
 export function FollowingRail({
   issues,
@@ -19,8 +19,10 @@ export function FollowingRail({
   selectedId,
   viewing,
   onSelect,
+  className,
 }: {
   readonly issues: readonly FollowUpIssue[];
+  readonly className?: string;
   /** The viewer chose them, rather than seeing the default. */
   readonly stored: boolean;
   readonly selectedId: string | null;
@@ -35,7 +37,7 @@ export function FollowingRail({
   return (
     <nav
       aria-labelledby='follow-ups-following'
-      className='flex min-w-0 flex-col gap-2'
+      className={cn('flex min-w-0 flex-col gap-2', className)}
       data-testid='follow-ups-following'
     >
       <h2

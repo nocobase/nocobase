@@ -361,7 +361,10 @@ export function IssuePropertiesCard({
   );
 }
 
-/** Who follows the issue, and the viewer's follow button. */
+/**
+ * Who is notified about the issue, and the viewer's subscribe button: titled "Notifications" so it is not taken for the
+ * follow star of "My follow-ups".
+ */
 export function IssueFollowersCard({
   detail,
   pageActions,
@@ -370,6 +373,7 @@ export function IssueFollowersCard({
   readonly pageActions: IssuePageActions;
 }): ReactElement {
   const { t, detail: labels } = useIssuePageWording();
+  const { t: appT } = useTranslation();
   const viewer = useViewer();
   return (
     <IssueFollowers
@@ -384,7 +388,15 @@ export function IssueFollowersCard({
         (subscriber) => subscriber.userId === viewer?.userId,
       )}
       {...(viewer ? { onToggle: pageActions.setFollowing } : {})}
-      labels={labels}
+      labels={{
+        ...labels,
+        followers: {
+          ...labels.followers,
+          title: appT('issueLive.notifications.title'),
+          follow: appT('issueLive.notifications.subscribe'),
+          unfollow: appT('issueLive.notifications.unsubscribe'),
+        },
+      }}
     />
   );
 }
