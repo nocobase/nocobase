@@ -1,8 +1,10 @@
 import { accountSettingsZhCN, preferencesZhCN } from '../account/locales.js';
+import { followUpsZhCN } from '../follow-ups/locales.js';
 import type { AppResource } from './en-US.js';
 import { gitZhCN } from '../git/locales.js';
 import { knowledgeZhCN } from '../knowledge/locales.js';
 import { issuesZhCN } from '../issues/locales.js';
+import { issueLiveZhCN } from '../issues/live/locales.js';
 import { projectPageZhCN } from '../projects/locales.js';
 import { ciSetupZhCN } from '../releases/ci-setup/locales.js';
 import { previewsZhCN, deploysZhCN } from '../previews/locales.js';
@@ -12,6 +14,28 @@ import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
+  'ownerHandoff.title': '负责人接手',
+  'ownerHandoff.accept': '接手',
+  'ownerHandoff.claim': '认领',
+  'ownerHandoff.reject': '拒绝',
+  'ownerHandoff.accepted': '已接手',
+  'ownerHandoff.rejected': '已拒绝接手，agent 运行保持暂停',
+  'ownerHandoff.rejectedWaiting': '已拒绝接手，等待重新转交或负责人自行认领。',
+  'ownerHandoff.stale': '此接手请求已失效，请刷新任务。',
+  'ownerHandoff.failed': '未能处理接手请求，请检查权限并刷新任务。',
+  'ownerHandoff.loadFailed': '未能加载接手请求。',
+  'activity.actions.ownerTransferred': '转交了负责人',
+  'activity.actions.ownerAccepted': '接手了任务',
+  'activity.actions.ownerRejected': '拒绝了接手',
+  'activity.actions.waitingOwner': '跳过 agent 运行：等待新负责人接手',
+  'inbox.types.owner_handoff': '等待接手',
+  'inbox.types.owner_handoff_rejected': '接手已拒绝',
+  'inbox.text.owner_handoff': '接手 {{identifier}}',
+  'inbox.text.owner_handoff_rejected': '{{identifier}} 的接手已拒绝',
+  'inbox.body.owner_handoff':
+    '请选择接手或拒绝，新负责人接手前 agent 运行保持暂停。',
+  'inbox.body.owner_handoff_rejected':
+    '新负责人拒绝了接手，负责人保持不变，agent 运行保持暂停。',
   'issueRuns.model': '模型：{{model}}',
   'issueRuns.configuredModel': '配置模型：{{model}}',
   'issueRuns.modelUnknown': '模型尚未报告',
@@ -61,6 +85,24 @@ const zhCN: AppResource = {
     draftConflict: '面板已有草稿，如何处理顶部问题？',
     keepDraft: '保留面板草稿',
     appendDraft: '追加顶部问题',
+  },
+  runTranscript: {
+    usedModel: '使用模型：{{model}}',
+    defaultModel: '默认模型',
+    actingAs: '运行身份：{{actor}}',
+    triggeredBy: '触发人：{{person}}',
+    systemTrigger: '由系统触发',
+    afterSubtasks: '所有子任务完成后',
+    efforts: {
+      off: '关闭',
+      minimal: '最低',
+      low: '低',
+      medium: '中',
+      high: '高',
+      xhigh: '特高',
+      max: '最高',
+      ultra: '极高',
+    },
   },
   runTranscriptFilters: {
     title: '事件类型',
@@ -399,6 +441,7 @@ const zhCN: AppResource = {
   navigation: {
     inbox: '收件箱',
     myIssues: '我的任务',
+    followUps: '我的跟进',
     development: '开发',
     issues: '任务',
     projects: '项目',
@@ -488,6 +531,9 @@ const zhCN: AppResource = {
   'errors.EXPIRY_REQUIRED': '限定范围的密钥必须设置过期时间。',
   'errors.GIT_DEVICE_FLOW_DISABLED':
     '该 App 不允许用验证码连接：需要管理员在托管平台上的 App 设置中开启 Device Flow。',
+  'errors.GIT_DEVICE_FLOW_REFUSED':
+    '托管平台拒绝了验证码连接：请确认该 App 已开启 Device Flow，且 Client ID 正确。',
+  'errors.GITHUB_REFUSED': 'GitHub 拒绝了这个请求。',
   'errors.INVALID_PERSONAL_TOKEN':
     '托管平台拒绝了该令牌：请确认它有效、未过期且完整粘贴。',
   'errors.GIT_PERSONAL_TOKENS_DISABLED': '此连接已关闭个人令牌。',
@@ -976,6 +1022,7 @@ const zhCN: AppResource = {
       comment: '评论',
       statusChange: '状态变更',
       ownerChanged: '负责人变更',
+      ownerAccepted: '负责人接手',
       projectChanged: '转项目',
       unblocked: '阻塞解除',
       subtasksFinished: '子任务完成',
@@ -1198,6 +1245,8 @@ const zhCN: AppResource = {
   preferences: preferencesZhCN,
   knowledge: knowledgeZhCN,
   issuesPage: issuesZhCN,
+  followUps: followUpsZhCN,
+  issueLive: issueLiveZhCN,
   projectPage: projectPageZhCN,
   // A repository's "Deployment" (`client/releases/ci-setup`).
   ciSetup: ciSetupZhCN,
@@ -1254,7 +1303,18 @@ const zhCN: AppResource = {
   issuePage: {
     arrange: '安排',
   },
+  issueStart: { title: '现在开始？', later: '暂不开始', start: '开始' },
   issueProgress: {
+    waiting: {
+      waitingOwner: '等待 {{owner}} 接手',
+      noOwner: '正在等待有效的任务负责人',
+      notConfigured: '{{agent}} 正在等待：尚未配置首选或备选模型',
+      noRunner: '{{agent}} 正在等待：没有能运行首选或备选模型的在线执行机',
+      ownerHasNoRunner:
+        '{{agent}} 正在等待：负责人 {{owner}} 没有能运行首选或备选模型的在线执行机',
+      notAllowed:
+        '{{agent}} 正在等待：负责人 {{owner}} 无权运行此 Agent，或可用执行机不满足运行要求',
+    },
     title: '现在',
     anAgent: '某个 Agent',
     working: '{{agent}} 正在{{step}}',

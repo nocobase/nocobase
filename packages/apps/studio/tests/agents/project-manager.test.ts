@@ -235,6 +235,71 @@ describe('the project manager’s settings', () => {
       ).status,
     ).toBe(400);
   });
+  it('keeps six enabled configurations and settings through repeated startup synchronization', async () => {
+    const ids: string[] = [];
+    const models = [
+      'claude-fable-5-1',
+      'claude-opus-5-5',
+      'claude-sonnet-5',
+      'gpt-6.1-sol',
+      'gpt-6-astra',
+      'gpt-6-luna',
+    ];
+    for (let i = 0; i < 6; i += 1)
+      ids.push(
+        await h.createAgent({
+          name: `Fixture ${i}`,
+          description: `Description ${i}`,
+          tool: i < 3 ? 'claude' : 'codex',
+          model: models[i]!,
+          modelEntries: [
+            {
+              tool: i < 3 ? 'claude' : 'codex',
+              model: models[i]!,
+              effort: 'high',
+            },
+          ],
+          instructions: `Retained fixture instructions ${i}`,
+        }),
+      );
+    await h.manager.update('root', {
+      firstChoiceAgentId: ids[3]!,
+      fallbackAgentId: ids[4]!,
+      principles: 'Fixture allocation principles.',
+      commentRunLimit: 4,
+    });
+    const snapshot = async () => ({
+      agents: await Promise.all(
+        ids.map(async (id) => {
+          const agent = await h.agents.agents.get(id);
+          return {
+            id: agent.id,
+            name: agent.name,
+            description: agent.description,
+            modelEntries: agent.modelEntries,
+            status: agent.status,
+            instructions: agent.instructions,
+            skillIds: agent.skillIds,
+            toolPolicy: agent.toolPolicy,
+            history: await h.agents.agents.history(id),
+          };
+        }),
+      ),
+      settings: await h.manager.settings(),
+      chat: await h.agents.chat.settings(),
+    });
+    const before = await snapshot();
+    await h.manager.ready();
+    await h.manager.ready();
+    expect(await snapshot()).toEqual(before);
+    for (const id of ids)
+      expect((await h.agents.agents.get(id)).actions).toContain(
+        'studio.reports/read',
+      );
+    expect(
+      await h.agents.agents.applyDefaults({ preserveInstructions: true }),
+    ).toBe(0);
+  });
   it('reads them for anyone signed in, editable by a manager of agents', async () => {
     const member = await h.request('GET', '/projectManager', { user: 'alice' });
     expect(member.status).toBe(200);

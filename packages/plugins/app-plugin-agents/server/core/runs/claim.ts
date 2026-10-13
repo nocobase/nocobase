@@ -108,6 +108,7 @@ import {
 } from './run.store.js';
 import { dropInputs } from './input-gate.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
+import { refreshQueuedIdentity } from './identity.js';
 import { consumeReset, saveBrief } from './workspace.store.js';
 
 /** Queued runs looked at per claim, oldest first by priority. */
@@ -480,7 +481,11 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       cli: deps.cli.name,
       appName: deps.app.name,
     };
-    const assembly = await binding.context.assemble(conn, claim);
+    const assembly = await binding.context.assemble(
+      conn,
+      claim,
+      prepared.get('subject'),
+    );
     inputs = assembly.inputs ?? inputs;
     const effectiveClaim = { ...claim, inputs };
     // Its owner's local policy keeps this runner off the subject, or off one of the repositories: another runner takes
@@ -775,6 +780,18 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     candidate: RunRecord,
     reported: ToolRoom,
   ): Promise<Attempt> {
+    // Repair pre-upgrade queued work before even checking personal runner ownership.
+    if (deps.subjects.get(candidate.subjectKind)?.actsAs) {
+      const current = await tx.run(async (unit) => {
+        await lockAgentForClaim(unit.conn, agent.id, clock.now().toISOString());
+        const run = await findRunRecord(unit.conn, candidate.id);
+        return run?.status === 'queued'
+          ? refreshQueuedIdentity(unit, deps, run)
+          : null;
+      });
+      if (!current) return { kind: 'skipped' };
+      candidate = current;
+    }
     // Avoid assembling or asking authorization when a cheap claim rule already rules this work out.
     const conn = tx.read();
     if (
@@ -786,14 +803,24 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     )
       return { kind: 'skipped' };
     // Before the transaction: on SQLite it holds the only connection, so the providers read what else they need now.
-    const prepared = await prepareExtensions(
-      toRun(candidate),
-      deps.sections,
-      deps.mounts,
-      (error) => deps.onClaimFailure?.(candidate.id, error),
-      deps.repoAccess,
-      { onDemand: asksCredentialsOnDemand(runner) },
+    const prepared = new Map(
+      await prepareExtensions(
+        toRun(candidate),
+        deps.sections,
+        deps.mounts,
+        (error) => deps.onClaimFailure?.(candidate.id, error),
+        deps.repoAccess,
+        { onDemand: asksCredentialsOnDemand(runner) },
+      ),
     );
+    const subjectContext = deps.subjects.get(candidate.subjectKind)?.context;
+    if (subjectContext?.prepare) {
+      try {
+        prepared.set('subject', await subjectContext.prepare(toRun(candidate)));
+      } catch (error) {
+        deps.onClaimFailure?.(candidate.id, error);
+      }
+    }
     let taken: RunPayload | null;
     try {
       taken = await tx.run(async (unit): Promise<RunPayload | null> => {
@@ -801,6 +828,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         const now = clock.now();
         const nowText = now.toISOString();
         await lockAgentForClaim(conn, agent.id, nowText);
+        const current = await findRunRecord(conn, candidate.id);
+        if (!current || current.status !== 'queued') return null;
+        const identity = await refreshQueuedIdentity(unit, deps, current);
+        // Providers were prepared for the candidate's identity outside this transaction.
+        if (!identity || identity.actorUserId !== candidate.actorUserId)
+          return null;
         if (
           (await countActive(conn, 'agentId', agent.id)) >=
           agent.maxConcurrentRuns
@@ -827,6 +860,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             f.and([
               f.string('id').eq(candidate.id),
               f.string('status').eq('queued'),
+              f.string('actorUserId').eq(candidate.actorUserId),
             ]),
           values: {
             status: 'dispatched',
@@ -1010,7 +1044,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       if (!agents.has(candidate.agentId))
         agents.set(candidate.agentId, await findAgent(conn, candidate.agentId));
       const agent = agents.get(candidate.agentId);
-      if (!agent || !fits(runner, agent, candidate)) continue;
+      if (
+        !agent ||
+        (!deps.subjects.get(candidate.subjectKind)?.actsAs &&
+          !fits(runner, agent, candidate))
+      )
+        continue;
       // None of its tools has room on the runner's side: the runs behind it may still fit.
       if (!pickOpenEntry(runner, agent, (tool) => reported.has(tool))) continue;
       try {
@@ -1051,14 +1090,18 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       const agent = await findAgent(conn, run.agentId);
       const binding = deps.subjects.get(run.subjectKind);
       if (!agent || !binding) return [];
-      const assembly = await binding.context.assemble(conn, {
-        run: toRun(run),
-        agent,
-        runner,
-        inputs: [],
-        cli: deps.cli.name,
-        appName: deps.app.name,
-      });
+      const assembly = await binding.context.assemble(
+        conn,
+        {
+          run: toRun(run),
+          agent,
+          runner,
+          inputs: [],
+          cli: deps.cli.name,
+          appName: deps.app.name,
+        },
+        await binding.context.prepare?.(toRun(run)),
+      );
       return deps.skills.forRun(conn, skillTargets(agent, assembly), run.id);
     },
   };

@@ -37,6 +37,7 @@ import {
 } from '../protocol/index.ts';
 import {
   acquireLock,
+  isReadOnlyWorkspace,
   checkWorkspaceGit,
   hasUnpushedWork,
   readWorkspaceMeta,
@@ -87,6 +88,16 @@ export async function listWorkspaceDirs(
       const workDir = path.join(appDir, entry.name);
       const meta = await readWorkspaceMeta(paths, workDir);
       if (meta !== undefined) found.push({ workDir, meta });
+      else if (isReadOnlyWorkspace(workDir))
+        found.push({
+          workDir,
+          meta: {
+            subjectKey: entry.name,
+            appKey: app.name,
+            repos: [],
+            lastUsedAt: new Date(0).toISOString(),
+          },
+        });
     }
   }
   return found;
@@ -126,7 +137,8 @@ export async function inspectWorkspace(
     !Number.isFinite(checkedAt) ||
     Date.parse(meta.lastUsedAt) >= checkedAt;
   let unpushed = meta.unpushed ?? false;
-  if (stale && !inUse) {
+  if (isReadOnlyWorkspace(workDir)) unpushed = false;
+  else if (stale && !inUse) {
     unpushed = await hasUnpushedWork(workDir, meta, options.log);
     await recordCheck(paths, workDir, meta, {
       unpushed,
@@ -413,7 +425,7 @@ export interface PlanOptions {
   readonly force?: boolean;
 }
 
-export type PlanReason = 'ended' | 'selected';
+export type PlanReason = 'ended' | 'selected' | 'readOnly';
 
 export interface PlannedRemoval {
   readonly entry: WorkspaceEntry;
@@ -479,6 +491,8 @@ export function planRemovals(
     .filter((entry) => entry.status === 'ended')
     .sort((a, b) => Date.parse(a.lastUsedAt) - Date.parse(b.lastUsedAt));
   for (const entry of ended) pick(entry, 'ended');
+  for (const entry of entries)
+    if (isReadOnlyWorkspace(entry.workDir)) pick(entry, 'readOnly');
   return { remove, kept };
 }
 
@@ -499,6 +513,10 @@ export async function removePlanned(
   }
   try {
     const meta = await readWorkspaceMeta(paths, entry.workDir);
+    if (isReadOnlyWorkspace(entry.workDir)) {
+      await removeWorkspace(paths, entry.workDir, meta ?? { repos: [] });
+      return undefined;
+    }
     if (meta === undefined) return 'changed';
     if (
       meta.lastUsedAt !== entry.lastUsedAt ||
@@ -637,7 +655,13 @@ export async function collectWorkspaces(
       paths,
       entry,
       log === undefined ? {} : { log },
-    );
+    ).catch((error: unknown) => {
+      if (!isReadOnlyWorkspace(entry.workDir)) throw error;
+      log?.(
+        `workspaces: cleanup failed for ${entry.workDir}; retrying next GC: ${String(error)}`,
+      );
+      return 'cleanupFailed' as const;
+    });
     if (why === undefined) {
       removed.push({ workDir: entry.workDir, reason });
       log?.(

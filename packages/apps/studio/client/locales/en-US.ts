@@ -1,8 +1,10 @@
 import { accountSettingsEnUS, preferencesEnUS } from '../account/locales.js';
+import { followUpsEnUS } from '../follow-ups/locales.js';
 import type { LocaleResource } from '@nocobase/i18n';
 import { gitEnUS } from '../git/locales.js';
 import { knowledgeEnUS } from '../knowledge/locales.js';
 import { issuesEnUS } from '../issues/locales.js';
+import { issueLiveEnUS } from '../issues/live/locales.js';
 import { projectPageEnUS } from '../projects/locales.js';
 import { ciSetupEnUS } from '../releases/ci-setup/locales.js';
 import { previewsEnUS, deploysEnUS } from '../previews/locales.js';
@@ -12,6 +14,32 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  'ownerHandoff.title': 'Owner handoff',
+  'ownerHandoff.accept': 'Take over',
+  'ownerHandoff.claim': 'Claim',
+  'ownerHandoff.reject': 'Reject',
+  'ownerHandoff.accepted': 'Handoff accepted',
+  'ownerHandoff.rejected': 'Handoff rejected; agent work remains paused',
+  'ownerHandoff.rejectedWaiting':
+    'Handoff rejected. Waiting for a new assignment or a claim by the owner.',
+  'ownerHandoff.stale':
+    'This handoff is no longer awaiting a decision. Refresh the issue.',
+  'ownerHandoff.failed':
+    'Could not decide this handoff. Check your permission and refresh the issue.',
+  'ownerHandoff.loadFailed': 'Could not load the owner handoff.',
+  'activity.actions.ownerTransferred': 'transferred responsibility',
+  'activity.actions.ownerAccepted': 'accepted responsibility',
+  'activity.actions.ownerRejected': 'rejected the handoff',
+  'activity.actions.waitingOwner':
+    'skipped agent work: waiting for the new owner to take over',
+  'inbox.types.owner_handoff': 'Owner handoff',
+  'inbox.types.owner_handoff_rejected': 'Owner handoff rejected',
+  'inbox.text.owner_handoff': 'Take over {{identifier}}',
+  'inbox.text.owner_handoff_rejected': 'Owner handoff rejected: {{identifier}}',
+  'inbox.body.owner_handoff':
+    'Accept or reject this handoff. Agent work is paused until the new owner accepts.',
+  'inbox.body.owner_handoff_rejected':
+    'The new owner declined. The owner stays assigned and agent work remains paused.',
   'issueRuns.model': 'Model: {{model}}',
   'issueRuns.configuredModel': 'Configured model: {{model}}',
   'issueRuns.modelUnknown': 'Model not reported',
@@ -70,6 +98,24 @@ const enUS = {
       'The panel has a draft. How should the header question be handled?',
     keepDraft: 'Keep panel draft',
     appendDraft: 'Append header question',
+  },
+  runTranscript: {
+    usedModel: 'Model: {{model}}',
+    defaultModel: 'Default model',
+    actingAs: 'Running as {{actor}}',
+    triggeredBy: 'Triggered by {{person}}',
+    systemTrigger: 'Triggered by the system',
+    afterSubtasks: 'After all sub-issues finished',
+    efforts: {
+      off: 'Off',
+      minimal: 'Minimal',
+      low: 'Low',
+      medium: 'Medium',
+      high: 'High',
+      xhigh: 'Extra high',
+      max: 'Maximum',
+      ultra: 'Ultra',
+    },
   },
   runTranscriptFilters: {
     title: 'Event types',
@@ -429,6 +475,7 @@ const enUS = {
   navigation: {
     inbox: 'Inbox',
     myIssues: 'My issues',
+    followUps: 'My follow-ups',
     development: 'Development',
     issues: 'Issues',
     projects: 'Projects',
@@ -524,6 +571,9 @@ const enUS = {
   'errors.EXPIRY_REQUIRED': 'A key with a scope must expire.',
   'errors.GIT_DEVICE_FLOW_DISABLED':
     'The app does not allow connecting with a code: an administrator turns on its device flow in the app’s settings on the host.',
+  'errors.GIT_DEVICE_FLOW_REFUSED':
+    'The host refused to start connecting with a code: check that the app enables its device flow and that its client ID is right.',
+  'errors.GITHUB_REFUSED': 'GitHub refused the request.',
   'errors.INVALID_PERSONAL_TOKEN':
     'The host refused the token: check that it is valid, not expired and pasted whole.',
   'errors.GIT_PERSONAL_TOKENS_DISABLED':
@@ -1061,6 +1111,7 @@ const enUS = {
       comment: 'Comment',
       statusChange: 'Status change',
       ownerChanged: 'Owner change',
+      ownerAccepted: 'Owner accepted',
       projectChanged: 'Moved to another project',
       unblocked: 'Unblocked',
       subtasksFinished: 'Sub-issues done',
@@ -1309,6 +1360,8 @@ const enUS = {
   preferences: preferencesEnUS,
   knowledge: knowledgeEnUS,
   issuesPage: issuesEnUS,
+  followUps: followUpsEnUS,
+  issueLive: issueLiveEnUS,
   projectPage: projectPageEnUS,
   // A repository's "Deployment" (`client/releases/ci-setup`).
   ciSetup: ciSetupEnUS,
@@ -1367,7 +1420,20 @@ const enUS = {
   issuePage: {
     arrange: 'Arrange',
   },
+  issueStart: { title: 'Start now?', later: "Don't start now", start: 'Start' },
   issueProgress: {
+    waiting: {
+      waitingOwner: 'Waiting for {{owner}} to take over',
+      noOwner: 'Waiting for a valid issue owner',
+      notConfigured:
+        '{{agent}} waits: no preferred or fallback model is configured',
+      noRunner:
+        '{{agent}} waits: no online runner supports its preferred or fallback model',
+      ownerHasNoRunner:
+        '{{agent}} waits: owner {{owner}} has no online runner for its preferred or fallback model',
+      notAllowed:
+        '{{agent}} waits: owner {{owner}} cannot run this agent with the available runners',
+    },
     title: 'Now',
     anAgent: 'An agent',
     working: '{{agent}} is working on {{step}}',

@@ -160,7 +160,7 @@ describe('issue brief', () => {
       'You have been given this issue to arrange. Decide its first step and hand it over.',
     );
     expect(task).toContain(
-      '- You may move the issue to: blocked, in_review (`nb-studio issue update PM-12 --status <status>`).',
+      '- At this read, the current status is in_progress; available next transitions are: blocked, in_review (`nb-studio issue update PM-12 --status <status>`).',
     );
     expect(task).toContain('starts with its "Next" line');
     expect(
@@ -174,7 +174,7 @@ describe('issue brief', () => {
     const task = renderTask(context, stepInputs);
     expect(task).toMatchSnapshot();
     expect(task).toContain('You were mentioned in a comment. Do what it asks.');
-    expect(task).not.toContain('You may move the issue');
+    expect(task).not.toContain('available next transitions');
     // Triggers only the project manager is woken by say nothing to an agent doing a step.
     expect(renderTask(context, managerInputs)).not.toContain(
       'You have been given this issue to arrange',
@@ -231,11 +231,12 @@ describe('issue brief', () => {
 
   it('permits empty initialization only to an agent doing a step that may open pull requests, on an open issue', () => {
     const coding = { id: 'a-1', actions: ['studio.git/open-pr'] };
-    expect(mayInitializeEmptyRepository(context, coding)).toBe(true);
+    expect(mayInitializeEmptyRepository(context, coding, true)).toBe(true);
     expect(
       mayInitializeEmptyRepository(
         { ...context, status: statusOf('blocked') },
         coding,
+        true,
       ),
     ).toBe(true);
     expect(
@@ -252,6 +253,7 @@ describe('issue brief', () => {
         mayInitializeEmptyRepository(
           { ...context, status: statusOf(key) },
           coding,
+          true,
         ),
       ).toBe(false);
     expect(dirsOf(context, new Map(), null, true)[0]).toMatchObject({

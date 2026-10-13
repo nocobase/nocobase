@@ -183,6 +183,10 @@ export function useEntryText(): (
 
     let sentence: string | null = null;
     switch (notice.type) {
+      case 'owner_handoff':
+      case 'owner_handoff_rejected':
+        sentence = t(`inbox.body.${notice.type}`);
+        break;
       case 'status_changed': {
         const from = status(params.from);
         if (from && to)

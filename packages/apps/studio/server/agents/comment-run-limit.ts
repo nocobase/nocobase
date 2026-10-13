@@ -1,6 +1,6 @@
 /**
  * The loop guard of agents' comments (`work.ts`): once they started as many runs on an issue as the project manager's
- * settings allow (`commentRunLimit`, 20 by default), the owner is told, and a person who may edit the issue continues
+ * settings allow (`commentRunLimit`, 20 by default), the owner is told, and that owner, with issue edit permission, continues
  * the comment held back once, which restarts the count.
  */
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
@@ -21,6 +21,7 @@ import {
   type HeldCommentWake,
 } from './comment-guard.js';
 import { createAgentWork } from './work.js';
+import { ownerHandoffWaiting } from '../issues/owner-handoff.js';
 
 /** The notice type of the owner's card. */
 export const COMMENT_RUNS_LIMITED = 'comment_runs_limited';
@@ -94,7 +95,8 @@ export async function pendingCommentRun(
   readonly windowHours: number;
 } | null> {
   const issue = await projects.issueQueries.detail(viewer, issueId);
-  if (!mayContinue(viewer)) return null;
+  if (!mayContinue(viewer) || viewer.userId !== issue.ownerUserId) return null;
+  if (await ownerHandoffWaiting(projects.tx.read(), issue)) return null;
   const guard = await commentGuards(projects.tx.read()).findOne({
     filter: { id: commentGuardId(issue.id) },
   });
@@ -107,7 +109,7 @@ export async function pendingCommentRun(
   };
 }
 
-/** Consumes the token, restarts the count and wakes the held comment's agents for the person continuing it. */
+/** The owner consumes the token, restarts the count and wakes the held comment's agents. */
 export async function continueCommentRun(
   projects: Projects,
   agents: Agents,
@@ -123,7 +125,19 @@ export async function continueCommentRun(
         'COMMENT_CONTINUE_FORBIDDEN',
         'Only a person who may edit the issue may continue this comment.',
       );
+    if (viewer.userId !== issue.ownerUserId)
+      throw studioError(
+        'PERMISSION_DENIED',
+        'ISSUE_OWNER_START_REQUIRED',
+        'The current issue owner must continue this work.',
+      );
     const id = commentGuardId(issue.id);
+    if (await ownerHandoffWaiting(tx.conn, issue))
+      throw studioError(
+        'FAILED_PRECONDITION',
+        'ISSUE_OWNER_HANDOFF_PENDING',
+        'Accept the owner handoff before continuing this work.',
+      );
     const stale = () =>
       studioError(
         'FAILED_PRECONDITION',

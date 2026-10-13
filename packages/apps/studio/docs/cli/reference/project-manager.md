@@ -22,7 +22,7 @@ nb-studio project-manager get
 
 Hand an issue to the project manager
 
-Wakes the project manager on an open issue it executes, as the caller, to go on with it: for an issue it never worked on. Needs `pm.issues` edit on the issue.
+Wakes the project manager on an open issue it executes, as the current issue owner. Only that owner may invoke it, and needs `pm.issues` edit on the issue. Other callers receive `ISSUE_OWNER_START_REQUIRED`.
 
 ```bash
 nb-studio project-manager start <issue>

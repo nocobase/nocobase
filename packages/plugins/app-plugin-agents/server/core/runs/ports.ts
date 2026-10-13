@@ -120,6 +120,8 @@ export interface SubjectAssembly {
 }
 
 export interface ContextProvider {
+  /** Read external permissions before the claim transaction; assembly receives this result as its third argument. */
+  prepare?(run: Run): Promise<unknown>;
   /**
    * Optional subject policy, checked when queued work is claimed, inside that transaction and before assembly.
    * Return a rejection to cancel this run normally: no payload, token, failure count, or retry is produced. Throwing
@@ -149,6 +151,7 @@ export interface ContextProvider {
   assemble(
     conn: DatabaseConnection,
     claim: ClaimContext,
+    prepared?: unknown,
   ): Promise<SubjectAssembly>;
 }
 
@@ -231,6 +234,21 @@ export interface SubjectReports {
 
 export interface SubjectBinding {
   readonly kind: string;
+  /** Overrides execution identity for selected work. Undefined preserves the caller's identity; a null actorUserId refuses it.
+   * Read in the enqueue/claim transaction. Claimed runs keep their identity until they finish.
+   */
+  readonly actsAs?: (
+    conn: DatabaseConnection,
+    work: {
+      readonly subjectId: string;
+      readonly agentId: string;
+      readonly causedByRunId?: string;
+      readonly inputs: readonly Pick<RunInput, 'actor' | 'payload'>[];
+    },
+  ) => Promise<
+    | { readonly actorUserId: string | null; readonly reason?: string }
+    | undefined
+  >;
   /**
    * Reads the current responsible inside the request's transaction, before confirming or rejecting. Null means
    * nobody answers for it (including a deleted subject). Applications with mutable responsibility must bind this;

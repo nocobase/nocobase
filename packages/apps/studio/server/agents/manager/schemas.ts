@@ -41,6 +41,20 @@ export const ProjectManagerViewSchema: z.ZodType<ProjectManagerView> = z
 
 export const IssueProgressSchema: z.ZodType<IssueProgress> = z
   .object({
+    waiting: z
+      .object({
+        reason: z.enum([
+          'waitingOwner',
+          'noOwner',
+          'notConfigured',
+          'noRunner',
+          'ownerHasNoRunner',
+          'notAllowed',
+        ]),
+        owner: z.object({ id: z.string(), name: z.string() }).nullable(),
+      })
+      .nullable()
+      .optional(),
     state: z.enum([
       'working',
       'queued',

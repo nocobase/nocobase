@@ -1,7 +1,7 @@
 /**
  * A run's token as a credential of the application's authentication: a request carrying `HEADERS.runToken` acts for
  * the person who woke the agent, as a scoped session the route accepts only when its security lists `runToken`. What
- * the run may do there is the application's to bound (the assembling application narrows the identity's scope to the agent's actions).
+ * the run may do there is the application's to bound through its command policy and the running identity's permissions.
  */
 import { HEADERS, ProtocolError } from '@nocobase/agent-protocol';
 import type {

@@ -135,4 +135,11 @@ describe('continuing an agent comment', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(mocks.request).not.toHaveBeenCalled();
   });
+
+  it('hides continuation from an editor who is not the owner', async () => {
+    mocks.viewer = { userId: 'bob' };
+    await mount(<IssueCommentRunLimit issue={issue} />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(mocks.request).not.toHaveBeenCalled();
+  });
 });

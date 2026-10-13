@@ -71,6 +71,8 @@ async function seed() {
       title: `Work ${index + 1}`,
       projectId,
       executor: null,
+      statusKey: 'in_progress',
+      start: false,
     });
     // Alice hands the first two their step, Bob the last: its run acts for him.
     await h.projects.comments.post(

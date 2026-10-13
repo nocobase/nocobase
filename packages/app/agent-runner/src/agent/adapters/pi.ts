@@ -203,8 +203,11 @@ function str(value: unknown): string {
 
 /** `pi --list-models` prints a table headed `provider  model …` when any model has credentials. */
 function hasAvailableModels(stdout: string): boolean {
-  const lines = stdout.split('\n').filter((line) => line.trim());
-  return lines.length > 1 && /^provider\s+model\b/.test(lines[0]);
+  try {
+    return parsePiModels(stdout).length > 0;
+  } catch {
+    return false;
+  }
 }
 
 /** The table reports a thinking boolean, not per-model effort levels: keep efforts unknown. */
@@ -213,7 +216,10 @@ export function parsePiModels(stdout: string): ToolModel[] {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  if (lines.length === 0 || /^No models (available|found)\b/i.test(lines[0]))
+  if (
+    lines.length === 0 ||
+    /^No (?:models (?:available|found)|available models)\b/i.test(lines[0])
+  )
     return [];
   const header = lines[0].split(/\s+/);
   if (header[0] !== 'provider' || header[1] !== 'model')
@@ -279,11 +285,14 @@ export class PiAdapter implements AgentAdapter {
     const detection = await this.detect(signal);
     signal?.throwIfAborted();
     if (!detection.path) return { modelsDetectionStatus: 'unsupported' };
-    const response = await this.exec(
-      detection.path,
-      ['--offline', '--list-models'],
-      { signal },
-    );
+    if (
+      !detection.version ||
+      compareVersions(detection.version, this.minVersion) < 0
+    )
+      return { modelsDetectionStatus: 'unsupported' };
+    const response = await this.exec(detection.path, ['--list-models'], {
+      signal,
+    });
     if (response.code !== 0)
       return {
         modelsDetectionStatus: 'failed',
@@ -309,7 +318,7 @@ export class PiAdapter implements AgentAdapter {
     const v = await this.exec(piPath, ['--version'], { signal });
     const version = v.code === 0 ? parseVersion(v.stdout) : undefined;
     if (!version) return { installed: false, authenticated: false };
-    const models = await this.exec(piPath, ['--offline', '--list-models'], {
+    const models = await this.exec(piPath, ['--list-models'], {
       signal,
     });
     return {
