@@ -47,6 +47,8 @@ Model capabilities are refreshed in the background on the first heartbeat and at
 
 A run whose workspace says it only reads (`workspace.readOnly`, such as a review or reading a failed check) gets a work directory of its own per subject and agent (`<subject>.readonly-<agent>`), with its own checkout of the same branches, so it runs while another run holds the subject's work directory and writes its code. Its agent is told to change, commit and push nothing, and the runner pushes nothing from it at the end. Since it never pushes, its work directory is removed only after the same full work-protection check when the run ends (completed, failed or cancelled), while the run still holds its lock; the next read-only run of the subject checks it out again at the same path, so the coding tool's session, kept outside the directory, still resumes.
 
+Read-only workspace cleanup first confirms runner-owned writers have stopped, then requires the same complete local-work and remote-publication evidence as writable cleanup. A read-only directory name is never deletion permission. Damaged or unknown nonempty read-only directories remain intact and fail preparation; an operator may need to preserve their contents and Git history before recovery. Automatic rebuilding is limited to confirmed empty directories or directories safely removed by the shared protection checks.
+
 A lock another live process holds (`<dir>.lock is held by process …`), found by any preparation step (the subject's work directory, a repository cache, a directory used in place, the CLI), fails the run `workspaceBusy`, which the application queues again without counting an attempt.
 
 ### Conversation recovery

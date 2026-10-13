@@ -1,5 +1,5 @@
 import { gcWorkspaces, readWorkspaceMeta } from '../src/core/checkout.ts';
-import { runnerPaths } from '../src/lib/home.ts';
+import { runnerPaths, runLogPath } from '../src/lib/home.ts';
 // The runner end to end: the real daemon, its worker processes and the echo adapter against the in-memory server.
 import {
   existsSync,
@@ -181,7 +181,7 @@ describe('runner end to end', () => {
     expect(run.fail).toBeUndefined();
     expect(run.status).toBe('completed');
     expect(String(run.start?.workDir)).toContain(`${path.sep}PM-8.readonly-`);
-    // It pushes nothing, so its directory goes as soon as the run ends; the next read-only run checks it out again.
+    // Read-only completion still preserves unpublished work after stopping the run's writers.
     const readOnlyDir = String(run.start?.workDir);
     await waitFor(
       () => !existsSync(`${readOnlyDir}.lock`),
@@ -462,6 +462,19 @@ describe('runner end to end', () => {
       ),
     ).toEqual([]);
     // The branch reached the remote.
+    const logPath = runLogPath(runnerPaths(home), run.payload.run.id);
+    const writerStages = existsSync(logPath)
+      ? readFileSync(logPath, 'utf8')
+          .split('\n')
+          .filter((line) =>
+            /could not confirm writer cleanup:|writer termination is unconfirmed|release failed:/.test(
+              line,
+            ),
+          )
+          .join('\n')
+      : 'Run log unavailable';
+    if (run.complete?.repos?.length === 0)
+      throw new Error(`Empty repository report:\n${writerStages}`);
     expect(run.complete?.repos).toEqual([
       expect.objectContaining({
         url: remote,

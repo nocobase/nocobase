@@ -213,6 +213,8 @@ export function workerEntry(): string[] {
 const MAX_TAGS = 1_000;
 
 export interface SupervisedRun {
+  /** Shutdown must not interrupt this worker's protected read-only cleanup. */
+  readOnly?: boolean;
   /** The record key: the run's id, or `jobRecordKey(jobId)`. */
   runId: string;
   /** Set for a job. */
@@ -395,6 +397,7 @@ export class Supervisor {
     child.stdin?.on('error', () => undefined);
     child.stdin?.end(JSON.stringify(job));
     const supervised: SupervisedRun = {
+      readOnly: job.kind !== 'job' && job.payload.workspace.readOnly === true,
       runId,
       ...(record.jobId === undefined ? {} : { jobId: record.jobId }),
       appKey,
@@ -483,6 +486,13 @@ export class Supervisor {
           delay(timeoutMs).then(() => false),
         ]);
         if (!stopped) {
+          if (run.readOnly === true) {
+            this.options.log(
+              `run ${run.runId}: waiting for read-only worker cleanup before shutdown`,
+            );
+            await run.exited;
+            return;
+          }
           await killGroup(run.pid, this.options.timings.killGraceMs ?? 5_000);
           await run.exited;
         }

@@ -1,3 +1,4 @@
+import type { ParameterConfigurationService } from './services/parameter-configuration.js';
 import {
   createServiceToken,
   type ServiceToken,
@@ -17,4 +18,9 @@ export const lifecycleExampleServiceToken: ServiceToken<LifecycleExampleService>
 export const durableFlowServiceToken: ServiceToken<DurableFlowService> =
   createServiceToken<DurableFlowService>(
     '@nocobase/app-plugin-lifecycle-example/durable-flows',
+  );
+
+export const parameterConfigurationServiceToken: ServiceToken<ParameterConfigurationService> =
+  createServiceToken<ParameterConfigurationService>(
+    '@nocobase/app-plugin-lifecycle-example/parameters',
   );

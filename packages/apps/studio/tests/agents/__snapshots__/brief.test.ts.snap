@@ -17,7 +17,7 @@ Someone commented on the issue you are working on. Take it into account.
 
 When you finish:
 - Act: hand the next step over, answer, or move the status, in a comment on PM-12 that starts with its "Next" line. Then end your turn.
-- You may move the issue to: blocked, in_review (\`nb-studio issue update PM-12 --status <status>\`)."
+- At this read, the current status is in_progress; available next transitions are: blocked, in_review (\`nb-studio issue update PM-12 --status <status>\`). This list is a snapshot of the current state, not a fixed restriction after the status changes. If unsure of the current status, read it with \`nb-studio issue get PM-12\` before attempting a move. The server authorizes each move; never bypass a refusal."
 `;
 
 exports[`issue brief > renders the project manager’s task and the issue context 2`] = `

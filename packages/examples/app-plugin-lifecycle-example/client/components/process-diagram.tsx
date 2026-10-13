@@ -1,6 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import type { LifecycleDescription } from '@nocobase/lifecycle';
-import { useTranslation } from '@nocobase/i18n/client';
+import { NamespaceScope, useTranslation } from '@nocobase/i18n/client';
 
 import { NAMESPACE } from '../lib/format.js';
 import type { LifecycleDiagramHistoryEntry } from './lifecycle-diagram-model.js';
@@ -14,15 +14,23 @@ export function ProcessDiagram({
   history = [],
   availableTransitions = [],
   className,
+  onParameterBinding,
+  labelNamespace = NAMESPACE,
 }: {
   readonly description: LifecycleDescription;
+  readonly labelNamespace?: string;
   readonly current?: string;
   readonly visited?: readonly string[];
   readonly history?: readonly LifecycleDiagramHistoryEntry[];
   readonly availableTransitions?: readonly string[];
   readonly className?: string;
+  readonly onParameterBinding?: (
+    kind: 'state' | 'transition',
+    name: string,
+  ) => boolean;
 }): ReactElement {
   const { t } = useTranslation(NAMESPACE);
+  const { t: label } = useTranslation(labelNamespace);
   const [selected, setSelected] = useState<{
     kind: 'state' | 'transition';
     name: string;
@@ -36,7 +44,7 @@ export function ProcessDiagram({
       ? description.transitions.find((item) => item.name === selected.name)
       : undefined;
   const stateLabel = (name: string): string =>
-    t(`states.${name}`, { defaultValue: name });
+    label(`states.${name}`, { defaultValue: name });
   const transitionLabel = (
     item: LifecycleDescription['transitions'][number],
   ): string => {
@@ -55,7 +63,7 @@ export function ProcessDiagram({
     )
       notes.push('✗');
     return [
-      t(`transitions.${item.name}`, { defaultValue: item.title }),
+      label(`transitions.${item.name}`, { defaultValue: item.title }),
       ...notes,
     ].join(' · ');
   };
@@ -80,42 +88,56 @@ export function ProcessDiagram({
             />
             ✓ {t('diagramStatus.visited')}
           </span>
-          <span className='flex items-center gap-1.5'>
-            <span className='h-0.5 w-4 rounded-full bg-primary' />
-            {t('diagramStatus.available')}
-          </span>
+          {history.length > 0 && (
+            <span className='flex items-center gap-1.5'>
+              <span className='h-0.5 w-4 rounded-full bg-primary' />
+              {t('diagramStatus.traversed')}
+            </span>
+          )}
+          {availableTransitions.length > 0 && (
+            <span className='flex items-center gap-1.5'>
+              <span className='h-0.5 w-4 rounded-full bg-primary' />
+              {t('diagramStatus.available')}
+            </span>
+          )}
           <span className='flex items-center gap-1.5'>
             <span className='h-0.5 w-4 rounded-full bg-muted-foreground/65' />
             {t('diagramStatus.pending')}
           </span>
         </div>
       ) : null}
-      <LifecycleDiagram
-        description={description}
-        endLabel={t('diagramStatus.end')}
-        currentState={current}
-        history={history}
-        visitedStates={visited}
-        availableTransitions={availableTransitions}
-        ariaLabel={t('lifecycle.diagram')}
-        direction='DOWN'
-        autoHeight
-        className={className}
-        stateLabel={(item) => stateLabel(item.name)}
-        transitionLabel={transitionLabel}
-        renderState={(item) => (
-          <span className='flex flex-col items-center gap-0.5'>
-            <span>{stateLabel(item.name)}</span>
-            {item.name === current ? (
-              <span className='text-xs'>{t('diagramStatus.current')}</span>
-            ) : null}
-          </span>
-        )}
-        onStateClick={(item) => setSelected({ kind: 'state', name: item.name })}
-        onTransitionClick={(item) =>
-          setSelected({ kind: 'transition', name: item.name })
-        }
-      />
+      <NamespaceScope ns={NAMESPACE}>
+        <LifecycleDiagram
+          description={description}
+          endLabel={t('diagramStatus.end')}
+          currentState={current}
+          history={history}
+          visitedStates={visited}
+          availableTransitions={availableTransitions}
+          ariaLabel={t('lifecycle.diagram')}
+          direction='DOWN'
+          autoHeight
+          className={className}
+          stateLabel={(item) => stateLabel(item.name)}
+          transitionLabel={transitionLabel}
+          renderState={(item) => (
+            <span className='flex flex-col items-center gap-0.5'>
+              <span>{stateLabel(item.name)}</span>
+              {item.name === current ? (
+                <span className='text-xs'>{t('diagramStatus.current')}</span>
+              ) : null}
+            </span>
+          )}
+          onStateClick={(item) => {
+            if (!onParameterBinding?.('state', item.name))
+              setSelected({ kind: 'state', name: item.name });
+          }}
+          onTransitionClick={(item) => {
+            if (!onParameterBinding?.('transition', item.name))
+              setSelected({ kind: 'transition', name: item.name });
+          }}
+        />
+      </NamespaceScope>
       {state || transition ? (
         <div
           role='status'

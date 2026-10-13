@@ -169,7 +169,7 @@ export function renderTask(
     ? [
         `- Act: hand the next step over, answer, or move the status, in a comment on ${context.identifier} that starts with its "Next" line. Then end your turn.`,
         moves.length > 0
-          ? `- You may move the issue to: ${moves.join(', ')} (\`nb-studio issue update ${context.identifier} --status <status>\`).`
+          ? `- At this read, the current status is ${context.status.key}; available next transitions are: ${moves.join(', ')} (\`nb-studio issue update ${context.identifier} --status <status>\`). This list is a snapshot of the current state, not a fixed restriction after the status changes. If unsure of the current status, read it with \`nb-studio issue get ${context.identifier}\` before attempting a move. The server authorizes each move; never bypass a refusal.`
           : '- Leave the status as it is.',
       ]
     : [

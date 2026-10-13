@@ -265,7 +265,7 @@ export async function provenRefs(
   }
 }
 
-/** Unknown Git directories anywhere inside the workspace cannot disappear with its parent. */
+/** Unknown Git metadata and files outside recorded repositories cannot disappear with their workspace. */
 async function checkLayout(
   workDir: string,
   meta: Pick<WorkspaceMeta, 'repos'>,
@@ -333,6 +333,17 @@ async function checkLayout(
           throw new Error(`Unknown Git workspace: ${dir}`);
         seen.add(dir);
       } else if (entry.isDirectory()) await walk(file);
+      else {
+        const inRepo = [...expected].some((repo) =>
+          file.startsWith(`${repo}${path.sep}`),
+        );
+        // Runner-generated tools, attachments and temporary preparation state live here. Still scan their Git metadata.
+        const inPreparation = file.startsWith(
+          `${path.resolve(workDir, '.nocobase-runner')}${path.sep}`,
+        );
+        if (!inRepo && !inPreparation)
+          throw new Error(`Unknown workspace file: ${file}`);
+      }
     }
   };
   await walk(workDir);

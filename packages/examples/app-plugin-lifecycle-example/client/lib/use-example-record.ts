@@ -55,7 +55,15 @@ export function useExampleRecord(
   const lifecycle = useExampleLifecycle(name, id, { actAs: actor });
   const { view, description } = lifecycle;
   return {
-    detail: view && description ? { ...view, ...description } : undefined,
+    detail:
+      view && description
+        ? {
+            ...view,
+            ...description,
+            parameters: (view.parameterValues ??
+              description.parameters) as Readonly<Record<string, unknown>>,
+          }
+        : undefined,
     error: lifecycle.error ? errorMessage(lifecycle.error, translate) : '',
     lifecycle,
   };

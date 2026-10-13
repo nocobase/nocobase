@@ -8,7 +8,15 @@ import { readConnection, readSettings } from '../lib/config.ts';
 import { runnerPaths, readJson } from '../lib/home.ts';
 import { JobPayloadSchema, RunPayloadSchema } from '../protocol/index.ts';
 import { JobWorker } from './job-worker.ts';
-import { killLeftovers } from './process-tree.ts';
+import {
+  killLeftovers,
+  killTagged,
+  taggedProcesses,
+  PROCESS_TAG_ENV,
+  listProcesses,
+  groupsBelow,
+  processStartTicks,
+} from './process-tree.ts';
 import {
   jobRecordKey,
   recordPath,
@@ -88,6 +96,13 @@ async function main(): Promise<number> {
     log: '',
   };
   const settings = await readSettings(paths);
+  const groups = new Set<number>();
+  const scan = setInterval(() => {
+    void listProcesses().then((entries) => {
+      for (const group of groupsBelow(process.pid, entries)) groups.add(group);
+    });
+  }, 250);
+  scan.unref();
   const worker = new RunWorker(
     payload,
     job.timings,
@@ -105,6 +120,33 @@ async function main(): Promise<number> {
         ),
       ),
       log,
+      stopWorkspaceProcesses: async () => {
+        clearInterval(scan);
+        await killLeftovers(process.pid, {
+          groups,
+          graceMs: 2_000,
+          strict: true,
+        });
+        const tag = process.env[PROCESS_TAG_ENV];
+        if (tag !== undefined) {
+          await killTagged([tag]);
+          const ticks = await processStartTicks(process.pid);
+          if (process.platform === 'linux' && ticks === undefined)
+            throw new Error('Writer birth time is unknown');
+          if (
+            (
+              await taggedProcesses([tag], {
+                strict: true,
+                ...(ticks === undefined ? {} : { minimumStartTicks: ticks }),
+              })
+            ).length > 0
+          )
+            throw new Error(
+              'Tagged run processes remain; keeping the workspace.',
+            );
+        }
+        log('workspace: run processes stopped before read-only removal');
+      },
     },
     record,
   );

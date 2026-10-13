@@ -45,8 +45,12 @@ describe('cleaning up working directories', () => {
   /** A working directory a run of `subject` finished in, with nothing to push. */
   const workspace = (subject: string, runId: string): string => {
     const workDir = path.join(workRootOf(home), APP, subject);
-    mkdirSync(path.join(workDir, '.nocobase-runner'), { recursive: true });
-    writeFileSync(path.join(workDir, 'notes.txt'), 'x'.repeat(4096));
+    mkdirSync(path.join(workDir, '.nocobase-runner/tmp'), { recursive: true });
+    // Generated preparation buffer gives size reporting data without pretending unpublished notes are disposable.
+    writeFileSync(
+      path.join(workDir, '.nocobase-runner/tmp/test-buffer'),
+      'x'.repeat(4096),
+    );
     const at = new Date(Date.now() - 60_000).toISOString();
     const record = workspaceRecordPath(
       runnerPaths(home, workRootOf(home)),
@@ -92,6 +96,24 @@ describe('cleaning up working directories', () => {
   /** Keeps no free space, so what goes does not depend on the disk the tests run on. */
   const keepNoFreeSpace = () =>
     cli(['config', 'set', 'min-free-disk', 'off'], env);
+
+  it('preserves unknown ordinary files even when the application says the task is over', async () => {
+    await keepNoFreeSpace();
+    server.workspaceReporting = { intervalMs: 60_000 };
+    server.workspaceAnswer = { remove: ['run-unknown'], keep: [] };
+    const kept = workspace('TASK-unknown', 'run-unknown');
+    writeFileSync(path.join(kept, 'notes.txt'), 'unpublished notes');
+    const applied = await cli(['gc', '--apply', '--force', '--json'], env);
+    expect(applied.code).toBe(0);
+    expect(existsSync(path.join(kept, 'notes.txt'))).toBe(true);
+    expect(json(applied.stdout).result.workspaces).toContainEqual(
+      expect.objectContaining({
+        subject: 'TASK-unknown',
+        action: 'keep',
+        reason: 'unpushed',
+      }),
+    );
+  });
 
   it('shows what would go without removing it, and removes it with --apply', async () => {
     await keepNoFreeSpace();

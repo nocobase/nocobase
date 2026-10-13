@@ -218,7 +218,7 @@ export const PluginCard: React.FC<PluginCardProps> = ({
                 </span>
                 <br />
                 <a
-                  href='/cn/plugins-bundles'
+                  href='/zh-CN/plugins-bundles'
                   style={{ color: '#2f55d4', textDecoration: 'none' }}
                 >
                   {pricing.plan1.points}{' '}
@@ -255,7 +255,7 @@ export const PluginCard: React.FC<PluginCardProps> = ({
                 </span>
                 <br />
                 <a
-                  href='/cn/plugins-bundles'
+                  href='/zh-CN/plugins-bundles'
                   style={{
                     color: 'var(--rp-c-text-2)',
                     textDecoration: 'none',

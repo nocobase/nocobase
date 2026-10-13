@@ -1549,6 +1549,11 @@ export interface GcOptions {
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/** The dedicated sibling layout produced by workspaceKey; never a lock directory. */
+export function isReadOnlyWorkspace(workDir: string): boolean {
+  return /^[^.][^/]*\.readonly-[A-Za-z0-9_-]+$/u.test(path.basename(workDir));
+}
+
 /**
  * Removes a subject's work directory, and a legacy worktree's record in its cache. The caller holds the workspace lock.
  */
@@ -1572,13 +1577,26 @@ export async function removeWorkspace(
   for (const repo of meta.repos) {
     const dir = path.join(workDir, repo.path);
     if (!isInside(workDir, dir) || dir === path.resolve(workDir)) continue;
-    if (existsSync(repo.cache))
-      await gitOk(['worktree', 'remove', '--force', dir], repo.cache);
+    if (existsSync(repo.cache)) {
+      const lock = await lockCache(repo.cache);
+      try {
+        await gitOk(['worktree', 'remove', '--force', dir], repo.cache);
+      } finally {
+        await lock.release();
+      }
+    }
   }
   await rm(workDir, { recursive: true, force: true });
   await rm(workspaceRecordPath(paths, workDir), { force: true });
   for (const repo of meta.repos)
-    if (existsSync(repo.cache)) await gitOk(['worktree', 'prune'], repo.cache);
+    if (existsSync(repo.cache)) {
+      const lock = await lockCache(repo.cache);
+      try {
+        await gitOk(['worktree', 'prune'], repo.cache);
+      } finally {
+        await lock.release();
+      }
+    }
   return true;
 }
 

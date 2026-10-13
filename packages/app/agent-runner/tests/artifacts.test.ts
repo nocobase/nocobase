@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanArtifacts, findArtifacts } from '../src/core/artifacts.ts';
 import {
   readWorkspaceMeta,
-  subjectWorkDir,
+  checkout,
   writeWorkspaceMeta,
 } from '../src/core/checkout.ts';
 import { scanWorkspaces } from '../src/core/workspaces.ts';
@@ -24,7 +24,7 @@ import {
   writeSettings,
 } from '../src/lib/config.ts';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
-import { removeDir, tempDir } from './helpers.ts';
+import { git, makeRemote, removeDir, tempDir } from './helpers.ts';
 
 const HOUR = 60 * 60 * 1000;
 const NOW = Date.parse('2026-10-12T12:00:00Z');
@@ -40,7 +40,33 @@ afterEach(() => removeDir(root));
 
 /** A working directory last used `hoursAgo` hours before `NOW`, with a checkout holding artifacts. */
 async function workspace(key: string, hoursAgo: number): Promise<string> {
-  const workDir = subjectWorkDir(paths, 'app', key);
+  const remote = makeRemote(root, `remote-${key}`);
+  const seed = path.join(root, `remote-${key}-seed`);
+  mkdirSync(path.join(seed, 'src'), { recursive: true });
+  writeFileSync(path.join(seed, 'src/index.ts'), 'export {};\n');
+  writeFileSync(
+    path.join(seed, '.gitignore'),
+    'node_modules/\n.next/\n.turbo/\n',
+  );
+  git(['add', '.'], seed);
+  git(['commit', '-m', 'publish source and artifact ignore rules'], seed);
+  git(['push', remote, 'main'], seed);
+  const prepared = await checkout({
+    paths,
+    appKey: 'app',
+    subjectKey: key,
+    dirs: [
+      {
+        kind: 'repo',
+        url: remote,
+        path: 'app',
+        branch: 'main',
+        defaultBranch: 'main',
+      },
+    ],
+  });
+  const workDir = prepared.workDir;
+  await prepared.release();
   for (const dir of [
     'app/node_modules/react',
     'app/packages/web/node_modules/.bin',
@@ -49,11 +75,9 @@ async function workspace(key: string, hoursAgo: number): Promise<string> {
     'app/src',
   ])
     mkdirSync(path.join(workDir, dir), { recursive: true });
-  writeFileSync(path.join(workDir, 'app/src/index.ts'), 'export {};\n');
+  const meta = await readWorkspaceMeta(paths, workDir);
   await writeWorkspaceMeta(paths, workDir, {
-    appKey: 'app',
-    subjectKey: key,
-    repos: [],
+    ...meta!,
     lastUsedAt: new Date(NOW - hoursAgo * HOUR).toISOString(),
   });
   return workDir;
@@ -68,6 +92,14 @@ const clean = async () =>
   });
 
 describe('regenerable build artifacts', () => {
+  it('preserves artifacts beside unknown source with no recorded repository evidence', async () => {
+    const idle = await workspace('PM-unknown', 13);
+    const meta = await readWorkspaceMeta(paths, idle);
+    await writeWorkspaceMeta(paths, idle, { ...meta!, repos: [] });
+    expect(await clean()).toEqual([]);
+    expect(existsSync(path.join(idle, 'app/src/index.ts'))).toBe(true);
+    expect(existsSync(path.join(idle, 'app/node_modules'))).toBe(true);
+  });
   it('removes every matching directory of a directory unused past the TTL, keeping the checkout', async () => {
     const idle = await workspace('PM-1', 13);
     expect(await clean()).toEqual([idle]);
