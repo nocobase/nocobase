@@ -223,7 +223,9 @@ function OwnedRow({
                   : 'text-muted-foreground',
             )}
           >
-            {line.text}
+            {line.needsViewer
+              ? t('followUps.following.needsYou', { ask: line.text })
+              : line.text}
           </span>
         ) : null}
       </button>

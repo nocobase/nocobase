@@ -344,7 +344,10 @@ describe('what an issue waits for', () => {
     expect(screen.getByTestId('issue-progress').textContent).toContain(
       'Next: Hand it to Opus for review once the checks pass',
     );
-    expect(mocks.request).toHaveBeenCalledWith({ path: 'issueProgress/i1' });
+    expect(mocks.request).toHaveBeenCalledWith({
+      path: 'issueProgress/i1',
+      signal: expect.any(AbortSignal),
+    });
     expect(screen.queryByRole('button')).toBeNull();
   });
 
