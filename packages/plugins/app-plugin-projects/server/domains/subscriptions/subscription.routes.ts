@@ -26,7 +26,9 @@ export function createSubscriptionRoutes(
       `/:issueId/${verb}`,
       describeRoute({
         tags,
-        summary: subscribed ? 'Follow an issue' : 'Stop following an issue',
+        summary: subscribed
+          ? "Subscribe to an issue's notifications"
+          : "Unsubscribe from an issue's notifications",
         operationId: subscribed
           ? 'projectsSubscribeIssue'
           : 'projectsUnsubscribeIssue',
@@ -36,7 +38,7 @@ export function createSubscriptionRoutes(
           action: 'pm.issues/view',
         }),
         description:
-          'Following brings the issue’s comments and status changes to the inbox. `issueId` is an id or an identifier.',
+          'Subscribing brings the issue’s comments and status changes to the inbox. `issueId` is an id or an identifier.',
         responses: {
           200: dataResponse(SubscriptionStateSchema),
           ...apiErrorResponses,

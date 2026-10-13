@@ -1,5 +1,5 @@
 /**
- * The issue page's side column: properties, followers, dates, then the agents' execution log.
+ * The issue page's side column: properties, notifications (who is subscribed), dates, then the agents' execution log.
  */
 import type {
   IssuePageActions,

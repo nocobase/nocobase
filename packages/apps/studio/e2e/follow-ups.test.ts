@@ -40,8 +40,8 @@ test.describe('my follow-ups', () => {
     await expect(
       activity.getByRole('heading', { name: review.title }),
     ).toBeVisible();
-    await expect(activity.getByTestId('follow-ups-needs-you')).toBeVisible();
-    await expect(activity.getByTestId('follow-ups-feed')).toContainText(
+    await expect(activity.getByTestId('issue-needs-you')).toBeVisible();
+    await expect(activity.getByTestId('issue-feed')).toContainText(
       '改动已完成，请验收。',
     );
     await expect(page.getByTestId('follow-ups-following')).toContainText(

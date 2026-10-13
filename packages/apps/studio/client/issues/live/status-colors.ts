@@ -1,4 +1,4 @@
-/** An issue status's colour and name on "My follow-ups", as the issue lists give them (`status.tsx` draws them). */
+/** An issue status’s colour and name, as the issue lists give them (`status.tsx` draws them). */
 import {
   statusTone,
   useStatusName,
@@ -7,7 +7,7 @@ import { FIXED_STATUSES } from '@nocobase/app-plugin-projects/shared/statuses';
 
 import type { IssueTableColor } from '@/components/issue-table';
 
-import { toneColor } from '../issues/rows.js';
+import { toneColor } from '../rows.js';
 
 export function statusColor(statusKey: string): IssueTableColor {
   return toneColor(statusTone(FIXED_STATUSES, statusKey));
