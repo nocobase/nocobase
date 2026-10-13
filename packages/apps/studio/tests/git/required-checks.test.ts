@@ -228,6 +228,8 @@ describe('required and reference checks', () => {
     const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
     const issue = await h.projects.issues.create(alice(), {
       title: 'Read checks',
+      statusKey: 'in_progress',
+      executor: null,
       start: false,
     });
     await repoWithReference();
@@ -251,6 +253,8 @@ describe('required and reference checks', () => {
     });
     await mentionAgent(h, 'alice', issue.id, agentId);
     const payload = await h.claimOne();
+    expect(payload).toBeDefined();
+    expect((await h.agents.runs.detail(payload.run.id)).agentId).toBe(agentId);
     const token = payload.cli.credential.content.token as string;
     const url = `/git/pullRequests/${pullRequest.id}/checks`;
     const read = await h.request('GET', `${url}?issueId=${issue.id}`, {
