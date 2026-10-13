@@ -79,6 +79,7 @@ function Summary({
     view.principles !== null && view.principles !== view.builtInPrinciples;
   return (
     <dl className='grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm'>
+      <Row label={t('projectManager.settingsPage.name')}>{view.name}</Row>
       <Row label={t('projectManager.runsWith')}>
         {first ? (
           <span className='inline-flex flex-wrap items-center gap-x-2 gap-y-1'>

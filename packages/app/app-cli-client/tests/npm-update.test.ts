@@ -16,6 +16,7 @@ import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { HEADERS } from '@nocobase/agent-protocol';
+import { installSkills, type SkillsEnvironment } from '../src/skills.ts';
 
 import {
   detectInstallation,
@@ -181,6 +182,61 @@ describe('installing from npm', () => {
 });
 
 describe('<bin> update with an npm answer', () => {
+  it('reads the upgraded npm package Skill, not the old tarball or version wrapper', async () => {
+    const prefix = installCli('npm-skills', '0.1.0');
+    const packageRoot = path.join(prefix, 'versions/0.1.0');
+    mkdirSync(path.join(packageRoot, 'skills/nb-studio-cli'), {
+      recursive: true,
+    });
+    writeFileSync(
+      path.join(packageRoot, 'skills/nb-studio-cli/SKILL.md'),
+      'old instructions',
+    );
+    const skills: SkillsEnvironment = {
+      packageRoot,
+      cliVersion: '0.1.0',
+      bin,
+      stateHome: path.join(prefix, 'state'),
+      home: path.join(prefix, 'home'),
+      env: { PATH: '' },
+    };
+    await installSkills(skills, ['all']);
+    const skillNpm = fakeNpm(path.join(scratch, 'skill-npm'), {
+      '@acme/cli': 'acme',
+    });
+    writeFileSync(
+      skillNpm,
+      `${readFileSync(skillNpm, 'utf8')}\nmkdir -p "$prefix/node_modules/$package/skills/nb-studio-cli"\nprintf 'npm instructions %s' "$version" > "$prefix/node_modules/$package/skills/nb-studio-cli/SKILL.md"\n`,
+    );
+    const server = fakeServer('0.2.0');
+    const result = await updateCli(
+      session,
+      {
+        bin,
+        running: '0.1.0',
+        installation: detectInstallation(packageRoot),
+        target,
+        skills,
+        fetch: server.fetch,
+        env: { ...env, NOCOBASE_NPM: skillNpm },
+      },
+      {},
+    );
+    expect(result.updated).toBe(true);
+    expect(result.skills?.warnings).toEqual([]);
+    expect(result.skills?.targets.map((target) => target.action)).toEqual([
+      'updated',
+      'updated',
+    ]);
+    for (const tool of ['.claude', '.agents'])
+      expect(
+        readFileSync(
+          path.join(skills.home!, tool, 'skills/nb-studio-cli/SKILL.md'),
+          'utf8',
+        ),
+      ).toBe('npm instructions 0.2.0');
+  });
+
   it('moves a tarball installation to npm, then to a newer npm version, then back to a tarball', async () => {
     const prefix = installCli('cli', '0.1.0');
     const environment = (running: string): UpdateEnvironment => ({

@@ -502,6 +502,8 @@ export function createAgentWork(deps: {
           ownerUserId: issue.ownerUserId,
         },
         agentName: held.actor.name,
+        agentId: held.actor.id,
+        commentId: held.commentId,
         limit,
         windowHours: COMMENT_RUN_WINDOW_HOURS,
         continueToken: token,

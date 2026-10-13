@@ -8,6 +8,8 @@ import type {
 
 export const ProjectManagerViewSchema: z.ZodType<ProjectManagerView> = z
   .object({
+    name: z.string(),
+    description: z.string().nullable(),
     firstChoiceAgentId: z.string().nullable().meta({
       description:
         'The agent whose tool and model the project manager runs with; null until someone chooses.',

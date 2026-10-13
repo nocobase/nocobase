@@ -8,6 +8,11 @@
  * project manager's agent and the defaults of every agent discovered from runners are written (`ProjectManager.ready`).
  */
 import type { Application } from '@nocobase/app-server/application';
+import {
+  realtimeServiceToken,
+  type DefinedRealtimeTopic,
+} from '@nocobase/app-server/realtime';
+import { PROJECT_MANAGER_IDENTITY_TOPIC } from '../../shared/project-manager.js';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import {
   projectsAccessToken,
@@ -386,11 +391,18 @@ function queuedExpiryOf(value: unknown): { queuedExpiryHours?: number } {
 export default class StudioAgentsProvider extends ServiceProvider<Application> {
   public readonly name: string = 'studio/agents';
   private release: (() => void) | undefined;
+  private identityTopic?: DefinedRealtimeTopic<Record<string, never>, 'public'>;
 
   public override register(): void {
     const { container } = this.app;
     container.singleton(studioProjectManagerToken, (resolver) =>
-      createProjectManager({ agents: resolver.resolve(agentsToken) }),
+      createProjectManager({
+        agents: resolver.resolve(agentsToken),
+        defaultLocale: this.app.config.get<string>('i18n.defaultLocale'),
+        identityChanged: () => {
+          this.identityTopic?.publish({});
+        },
+      }),
     );
     // The work conversations delegate, for the join (`bind.ts`) and the routes (`routes.ts`).
     container.singleton(studioDelegationsToken, (resolver) =>
@@ -430,6 +442,13 @@ export default class StudioAgentsProvider extends ServiceProvider<Application> {
   }
 
   public override boot(): Promise<void> {
+    if (!this.identityTopic && this.app.container.has(realtimeServiceToken))
+      this.identityTopic = this.app.container
+        .resolve(realtimeServiceToken)
+        .defineTopic<Record<string, never>, 'public'>(
+          PROJECT_MANAGER_IDENTITY_TOPIC,
+          { audience: 'public' },
+        );
     if (this.release) return Promise.resolve();
     const { container } = this.app;
     if (!container.has(agentsToken)) return Promise.resolve();
@@ -460,6 +479,8 @@ export default class StudioAgentsProvider extends ServiceProvider<Application> {
   }
 
   public override async shutdown(): Promise<void> {
+    this.identityTopic?.close();
+    this.identityTopic = undefined;
     const bound = this.release;
     this.release?.();
     this.release = undefined;

@@ -3,6 +3,44 @@ import { expect, it } from 'vitest';
 
 import { noticeText } from '../../client/chat/message-model.js';
 import locales from '../../client/locales/index.js';
+import type { ConsultationNotice } from '../../shared/conversations.js';
+
+it.each(['en-US', 'zh-CN'] as const)(
+  'marks an unresolved consultation as the original request in %s',
+  async (locale) => {
+    const namespace = '@nocobase/app-plugin-agents';
+    const runtime = await createTestI18nRuntime({
+      locale,
+      namespaces: { [namespace]: locales },
+    });
+    const notice: ConsultationNotice = {
+      code: 'consultation',
+      callId: 'old',
+      agentId: null,
+      agentName: 'Original request',
+      runId: null,
+      question: 'Question',
+      state: 'refused',
+      answer: '',
+      error: null,
+      usage: null,
+      plans: 0,
+      identitySnapshot: true,
+    };
+    expect(
+      noticeText(
+        runtime.getFixedT(namespace, locale),
+        notice,
+        'Old body',
+        () => 'Other',
+      ),
+    ).toBe(
+      locale === 'en-US'
+        ? 'Requested Original request at the time'
+        : '当时请求的对象：Original request',
+    );
+  },
+);
 
 it.each([
   ['en-US', 'Model unavailable'],

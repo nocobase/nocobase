@@ -1300,6 +1300,7 @@ const notice = z.discriminatedUnion('code', [
   }),
   z.object({
     code: z.literal('consultation'),
+    identitySnapshot: z.boolean().optional(),
     callId: z.string(),
     runId: z.string().nullable(),
     agentId: z.string().nullable(),

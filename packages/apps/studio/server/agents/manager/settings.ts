@@ -5,6 +5,7 @@
  */
 import type { DatabaseConnection } from '@nocobase/db';
 import { z } from 'zod';
+import { defaultIdentity } from './texts.js';
 
 import {
   COMMENT_RUN_LIMIT_MAX,
@@ -22,6 +23,7 @@ const SETTINGS_TABLE = 'studioSettings';
 export const PROJECT_MANAGER_SETTING = 'projectManager';
 
 export const DEFAULT_MANAGER_SETTINGS: ProjectManagerSettings = {
+  ...defaultIdentity(),
   firstChoiceAgentId: null,
   fallbackAgentId: null,
   principles: null,
@@ -33,6 +35,21 @@ export const DEFAULT_MANAGER_SETTINGS: ProjectManagerSettings = {
 /** The body of `PATCH /api/projectManager`. */
 export const ProjectManagerPatchSchema: z.ZodType<ProjectManagerPatch> = z
   .strictObject({
+    name: z.string().trim().min(1).max(200).meta({
+      description:
+        'The persisted project manager name, 1–200 characters after trimming; independent of the viewer’s language.',
+    }),
+    description: z
+      .string()
+      .max(10_000)
+      .nullable()
+      .transform((value) =>
+        value === null || value.trim() === '' ? null : value,
+      )
+      .meta({
+        description:
+          'The persisted description, at most 10,000 characters; null, an empty string or whitespace clears it.',
+      }),
     delegationQueueTimeoutSeconds: z
       .number()
       .int()
@@ -87,10 +104,27 @@ const text = (value: unknown): string | null =>
   typeof value === 'string' && value.trim() !== '' ? value : null;
 
 /** The stored settings, the defaults filling what is missing or unreadable. */
-export function settingsOf(value: unknown): ProjectManagerSettings {
+export function settingsOf(
+  value: unknown,
+  locale = 'en-US',
+): ProjectManagerSettings {
   const raw = parse(value);
+  const defaults = defaultIdentity(locale);
   const limit = raw.commentRunLimit;
   return {
+    name:
+      typeof raw.name === 'string' &&
+      raw.name.trim().length > 0 &&
+      raw.name.trim().length <= 200
+        ? raw.name.trim()
+        : defaults.name,
+    description:
+      raw.description === null
+        ? null
+        : typeof raw.description === 'string' &&
+            raw.description.length <= 10_000
+          ? text(raw.description)
+          : defaults.description,
     delegationQueueTimeoutSeconds:
       typeof raw.delegationQueueTimeoutSeconds === 'number' &&
       Number.isInteger(raw.delegationQueueTimeoutSeconds) &&
@@ -120,13 +154,14 @@ export function settingsOf(value: unknown): ProjectManagerSettings {
 
 export async function readManagerSettings(
   conn: DatabaseConnection,
+  locale = 'en-US',
 ): Promise<ProjectManagerSettings> {
   const row = await conn.query
     .selectFrom(SETTINGS_TABLE)
     .select('value')
     .where('key', '=', PROJECT_MANAGER_SETTING)
     .executeTakeFirst();
-  return settingsOf(row?.value ?? null);
+  return settingsOf(row?.value ?? null, locale);
 }
 
 export async function writeManagerSettings(
@@ -134,12 +169,12 @@ export async function writeManagerSettings(
   settings: ProjectManagerSettings,
 ): Promise<void> {
   const at = new Date();
-  const value = JSON.stringify(settings);
   const existing = await conn.query
     .selectFrom(SETTINGS_TABLE)
-    .select('key')
+    .select(['key', 'value'])
     .where('key', '=', PROJECT_MANAGER_SETTING)
     .executeTakeFirst();
+  const value = JSON.stringify({ ...parse(existing?.value), ...settings });
   if (existing)
     await conn.query
       .updateTable(SETTINGS_TABLE)

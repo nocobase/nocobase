@@ -8,6 +8,8 @@ import {
 } from '../../../shared/project-manager.js';
 
 export interface Draft {
+  readonly name: string;
+  readonly description: string;
   readonly firstChoiceAgentId: string | null;
   readonly fallbackAgentId: string | null;
   readonly principles: string;
@@ -18,6 +20,8 @@ export interface Draft {
 
 export function draftOf(view: ProjectManagerView): Draft {
   return {
+    name: view.name,
+    description: view.description ?? '',
     firstChoiceAgentId: view.firstChoiceAgentId,
     fallbackAgentId: view.fallbackAgentId,
     principles: view.principles ?? view.builtInPrinciples,
@@ -59,6 +63,8 @@ export function patchOf(
 ): ProjectManagerPatch {
   const principles = draft.principles.trim();
   return {
+    name: draft.name.trim(),
+    description: draft.description.trim() === '' ? null : draft.description,
     delegationQueueTimeoutSeconds:
       delegationSecondsOf(draft.delegationQueueTimeoutSeconds) ??
       view.delegationQueueTimeoutSeconds,

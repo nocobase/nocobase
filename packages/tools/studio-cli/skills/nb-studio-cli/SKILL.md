@@ -7,6 +7,14 @@ description: Use the `nb-studio` command line to work in NocoBase Studio — iss
 
 `nb-studio` ships no business commands: every command is one Studio API route, offered to whoever calls according to their identity and permissions. So never guess a command from memory: ask `nb-studio` what exists for you.
 
+## Install this Skill on your own machine
+
+After installing the CLI, run `nb-studio skills install` for detected Claude Code and Codex tools, or choose with `nb-studio skills install --tool all` (`claude` and `codex` are also available separately). This local command works offline without a login. Preview with `nb-studio skills install --dry-run --json`; compare installed contents with `nb-studio skills status --json`.
+
+Claude Code's personal copy goes under `<CLAUDE_CONFIG_DIR or ~/.claude>/skills/nb-studio-cli`. Codex's copy goes under `~/.agents/skills/nb-studio-cli`, following the [official user Skill directory](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills). `CODEX_HOME` helps detect Codex and locates legacy copies for status, but does not move the new target. Installation does not create, migrate or delete a legacy copy and preserves neighboring Skills.
+
+`nb-studio update` synchronizes registered copies from the new CLI package; synchronization failures warn while leaving the CLI upgrade successful. Manual unregistered copies prompt an installation reminder. After an npm global upgrade or another external upgrade, run `nb-studio skills install` again. The runner already supplies this Skill to its runs: do not install it inside a run; read-only status remains available.
+
 ## Who you are
 
 - Inside a run's working directory (a `.nb-studio/run.json` at or above it) `nb-studio` acts as the run: it presents the run's token and can do what the agent is given. You never need a key or `nb-studio login` there, and must not pass any credential on the command line.

@@ -21,8 +21,6 @@ import type { MiddlewareHandler } from 'hono';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { followUpsRoutes } from '../../server/follow-ups/routes.js';
-import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
-
 import {
   FOLLOWING_PREFERENCE,
   SEEN_MAX,
@@ -31,6 +29,7 @@ import {
   parseSeen,
   pruneSeen,
 } from '../../shared/follow-ups.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import {
   createBridgeHarness,
   type BridgeHarness,
@@ -67,6 +66,38 @@ const follow = (issueIds: readonly string[], user = 'alice') =>
   h.request('PUT', '/followUps/following', { user, body: { issueIds } });
 
 describe('the overview', () => {
+  it('reports why queued work on a followed issue is waiting', async () => {
+    await h.createAgent();
+    const task = await create('alice', {
+      statusKey: 'in_progress',
+      start: false,
+    });
+    await h.agents.runs.enqueue({
+      agentId: PROJECT_MANAGER_ID,
+      subject: { kind: 'issue', id: task.id },
+      actorUserId: 'alice',
+      input: {
+        type: 'signal',
+        actor: { kind: 'system', id: 'system', name: 'Studio' },
+        text: 'PR checks passed',
+        payload: { trigger: 'prChecksPassed' },
+      },
+    });
+    expect((await follow([task.id])).status).toBe(200);
+
+    const data = await overview();
+    expect(
+      data.issues.find((item: { id: string }) => item.id === task.id),
+    ).toMatchObject({
+      followed: true,
+      progress: {
+        state: 'queued',
+        agent: { id: PROJECT_MANAGER_ID },
+        waiting: { reason: 'noRunner', owner: { id: 'alice' } },
+      },
+    });
+  });
+
   it('includes shared queue diagnostics and only the viewer machine details', async () => {
     h.roles.set('alice', 'admin');
     const worker = await h.createAgent({

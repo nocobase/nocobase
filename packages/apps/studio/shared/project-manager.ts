@@ -14,6 +14,8 @@
 
 /** The project manager's agent id. */
 export const PROJECT_MANAGER_ID = 'studio-project-manager';
+/** Invalidation only, with no identity or settings values in its payload. */
+export const PROJECT_MANAGER_IDENTITY_TOPIC = 'studio:manager:identity';
 export const DEFAULT_FALLBACK_AFTER_SECONDS = 120;
 export const FALLBACK_AFTER_SECONDS_MAX = 3600;
 export const DEFAULT_DELEGATION_QUEUE_TIMEOUT_SECONDS = 600;
@@ -28,6 +30,8 @@ export const COMMENT_RUN_WINDOW_HOURS = 24;
 export const PRINCIPLES_MAX = 20_000;
 
 export interface ProjectManagerSettings {
+  readonly name: string;
+  readonly description: string | null;
   /** The agent whose tool and model the project manager runs with; null until someone chooses. */
   readonly firstChoiceAgentId: string | null;
   /** Used after the queue delay or when no compatible runner can take the first choice; null for none. */
