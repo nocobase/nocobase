@@ -9,7 +9,7 @@ import type {
   TurnUsage,
 } from '@nocobase/acp-bridge/protocol';
 
-import type { PromptContent, TranscriptEvent } from '../shared/api.js';
+import type { PromptPart, TranscriptEvent } from '../shared/api.js';
 
 export type ToolKind =
   | 'read'
@@ -49,7 +49,7 @@ export type TranscriptItem =
       readonly key: string;
       readonly at: string;
       readonly text: string;
-      readonly images: readonly (Extract<PromptContent, { type: 'image' }> & {
+      readonly images: readonly (Extract<PromptPart, { type: 'image' }> & {
         readonly id: string;
       })[];
       readonly state: PromptState;
@@ -163,7 +163,7 @@ export function foldTranscript(
             .join('\n\n'),
           images: event.content
             .filter(
-              (part): part is Extract<PromptContent, { type: 'image' }> =>
+              (part): part is Extract<PromptPart, { type: 'image' }> =>
                 part.type === 'image',
             )
             .map((image, index) => ({ ...image, id: `${key}:${index}` })),

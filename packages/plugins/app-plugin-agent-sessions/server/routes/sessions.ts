@@ -29,6 +29,8 @@ import {
   ReferenceSchema,
   UpdateComputerInput,
   PromptInput,
+  ImageParams,
+  SeenInput,
   SessionParams,
   SessionSchema,
   TranscriptEventSchema,
@@ -370,6 +372,48 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
     },
   );
 
+  router.get(
+    '/sessions/:sessionId/images/:file',
+    describeRoute({
+      tags,
+      ...pageOnly,
+      summary: 'Read an image sent in a session',
+      operationId: 'agentSessionsGetImage',
+      description: `The bytes of an image the transcript names by \`file\` (an image part of a \`prompt\` event). A PNG, JPEG, GIF or WebP image is served inline, anything else as a download, always with \`X-Content-Type-Options: nosniff\` and \`Content-Security-Policy: sandbox\`. ${own}`,
+      responses: {
+        200: {
+          description: 'The image, with the type it was sent with.',
+          content: {
+            'application/octet-stream': {
+              schema: { type: 'string', format: 'binary' },
+            },
+          },
+        },
+        ...errors,
+        404: apiErrorResponse(
+          404,
+          'No such session is yours, or no such image was sent in it.',
+        ),
+      },
+    }),
+    apiValidator('param', ImageParams),
+    async (context) => {
+      const { sessionId, file } = context.req.valid('param');
+      const image = await service.image(userId(context), sessionId, file);
+      const inline = INLINE_IMAGES.has(image.mimeType);
+      return new Response(new Uint8Array(image.bytes), {
+        status: 200,
+        headers: {
+          'content-type': inline ? image.mimeType : 'application/octet-stream',
+          'content-disposition': inline ? 'inline' : 'attachment',
+          'x-content-type-options': 'nosniff',
+          'content-security-policy': 'sandbox',
+          'cache-control': 'private, max-age=86400',
+        },
+      });
+    },
+  );
+
   router.post(
     '/sessions/:sessionId/prompt',
     describeRoute({
@@ -421,6 +465,32 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
       await service.cancel(
         userId(context),
         context.req.valid('param').sessionId,
+      );
+      return context.body(null, 204);
+    },
+  );
+
+  router.post(
+    '/sessions/:sessionId/seen',
+    describeRoute({
+      tags,
+      ...pageOnly,
+      summary: 'Record what the owner has seen of a session',
+      operationId: 'agentSessionsMarkSeen',
+      description: `The session's page says how far its owner has seen the transcript, so that they are not told of it elsewhere, such as in an inbox; seeing all they were told of settles it there. ${own}`,
+      responses: {
+        204: emptyResponse('Recorded.'),
+        ...errors,
+        404: sessionNotFound,
+      },
+    }),
+    apiValidator('param', SessionParams),
+    apiValidator('json', SeenInput),
+    async (context) => {
+      await service.markSeen(
+        userId(context),
+        context.req.valid('param').sessionId,
+        context.req.valid('json').seq,
       );
       return context.body(null, 204);
     },
@@ -518,3 +588,11 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
 
   return router;
 }
+
+/** The images a browser shows inline without running anything in them. */
+const INLINE_IMAGES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+]);

@@ -19,6 +19,9 @@ const zhCN: AgentSessionsResource = {
     folderUnavailable: '电脑上打不开这个文件夹。',
     projectNotFound: '没有这个项目，或者你看不到它。',
     referenceNotFound: '引用的内容不存在，或者你看不到它。',
+    imageNotFound: '这个会话里没有发过这张图片。',
+    computerKeyInvalid:
+      '这台电脑已经断开：它被移除了，或者在别处重新连接过。在这台电脑上运行 `acp start` 重新连接。',
   },
 };
 

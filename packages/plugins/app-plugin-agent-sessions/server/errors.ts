@@ -36,6 +36,8 @@ const STATUS: Readonly<Record<AgentSessionsErrorKey, ApiErrorStatus>> = {
   folderUnavailable: 'FAILED_PRECONDITION',
   projectNotFound: 'INVALID_ARGUMENT',
   referenceNotFound: 'INVALID_ARGUMENT',
+  computerKeyInvalid: 'UNAUTHENTICATED',
+  imageNotFound: 'NOT_FOUND',
 };
 
 /** A failure the API answers in the standard error body, its reason `AGENT_SESSIONS_<KEY>`. */

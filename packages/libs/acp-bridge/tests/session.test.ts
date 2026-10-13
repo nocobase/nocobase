@@ -17,7 +17,7 @@ const FAKE: ResolvedAgent = {
     id: 'fake',
     name: 'Fake',
     launchers: [],
-    mode: 'full',
+    modes: ['missing', 'full'],
     signIn: 'fake login',
   },
   command: process.execPath,
@@ -37,7 +37,10 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-function start(target: Partial<SessionTarget> = {}): {
+function start(
+  target: Partial<SessionTarget> = {},
+  agent: ResolvedAgent = FAKE,
+): {
   session: BridgeSession;
   events: BridgeEvent[];
   target: SessionTarget;
@@ -57,7 +60,7 @@ function start(target: Partial<SessionTarget> = {}): {
     server: 'https://studio.example.com/app/',
     env: process.env,
     roots: [root],
-    resolve: () => Promise.resolve(FAKE),
+    resolve: () => Promise.resolve(agent),
     emit: (event) => events.push(event),
     stateChanged: () => undefined,
   });
@@ -100,7 +103,7 @@ function texts(events: readonly BridgeEvent[]): string[] {
 }
 
 describe('BridgeSession', () => {
-  it('opens a session in the agent’s default mode and reports a turn', async () => {
+  it('opens a session in the first full-access mode the agent offers and reports a turn', async () => {
     const { session, events, target } = start();
     prompt(session, target, 'p1', 'hi');
     const end = await until(events, ended('p1'));
@@ -124,7 +127,7 @@ describe('BridgeSession', () => {
     });
   });
 
-  it('applies the choices the person made over the default mode', async () => {
+  it('applies the choices the person made over the full-access mode', async () => {
     const { session, events, target } = start({ settings: { mode: 'ask' } });
     prompt(session, target, 'p1', 'hi');
     await until(events, ended('p1'));
@@ -153,6 +156,21 @@ describe('BridgeSession', () => {
     });
     await until(events, ended('p1'));
     expect(texts(events)).toContain('permission: yes');
+  });
+
+  it('allows what an agent without a full-access mode asks, always when it offers to', async () => {
+    const allowAll: ResolvedAgent = {
+      ...FAKE,
+      spec: { ...FAKE.spec, modes: [], allowAll: true },
+    };
+    const { session, events, target } = start({}, allowAll);
+    prompt(session, target, 'p1', 'permission');
+    prompt(session, target, 'p2', 'permission always');
+    await until(events, ended('p2'));
+    expect(texts(events)).toEqual(['permission: yes', 'permission: always']);
+    expect(events.some((event) => event.kind === 'permissionRequested')).toBe(
+      false,
+    );
   });
 
   it('cancels the running turn and drops the prompts waiting behind it', async () => {

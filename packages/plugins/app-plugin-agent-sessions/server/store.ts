@@ -43,6 +43,10 @@ export interface ComputerRecord {
   readonly choices: Readonly<Record<string, readonly SessionChoice[]>>;
   readonly commands: Readonly<Record<string, SessionState['commands']>>;
   readonly folders: readonly string[] | null;
+  /** The SHA-256 of the key its bridge authenticates with, or null before its owner registered it with one. */
+  readonly keyHash: string | null;
+  /** When the run of the bridge that last registered it started. */
+  readonly bridgeStartedAt: string | null;
   readonly lastSeenAt: string;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -64,6 +68,9 @@ export interface SessionRecord {
   readonly toldWork: WorkSnapshot | null;
   /** The hash of the application's instructions its agent was told (`instructionsHash`). */
   readonly toldInstructions: string | null;
+  /** The last event its owner saw, and the last they were told of until they see it (`notices.ts`). */
+  readonly seenSeq: number;
+  readonly noticedSeq: number | null;
   /** The language its owner last wrote in. */
   readonly locale: string | null;
   readonly running: boolean;
@@ -115,6 +122,18 @@ const commands = (conn: DatabaseConnection): Repository<CommandRecord> =>
   conn.repository<CommandRecord>('agentSessionCommands');
 export const links = (conn: DatabaseConnection): Repository<LinkRecord> =>
   conn.repository<LinkRecord>('agentSessionLinks');
+export const images = (conn: DatabaseConnection): Repository<ImageRecord> =>
+  conn.repository<ImageRecord>('agentSessionImages');
+
+/** An image sent in a session, stored through the file plugin (`images.ts`). */
+export interface ImageRecord {
+  readonly id: string;
+  readonly disk: string;
+  readonly key: string;
+  readonly mimeType: string;
+  readonly sessionId: string;
+  readonly userId: string;
+}
 
 export function isOnline(
   computer: Pick<ComputerRecord, 'lastSeenAt'> | undefined,

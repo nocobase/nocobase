@@ -1,9 +1,11 @@
 /**
- * The bridge makes this computer a place where its owner's agent sessions run. Signed in as that person, it registers
- * the computer with the application, long-polls for commands, runs each session's agent and reports what happens,
- * until `signal` aborts or the application refuses it (`BridgeStopped`).
+ * The bridge makes this computer a place where its owner's agent sessions run. It registers the computer with the
+ * application, signed in as that person the first time and with the computer's own key from then on (`stateFile`), so
+ * it keeps running however long the sign-in lasts; it long-polls for commands, runs each session's agent and reports
+ * what happens, until `signal` aborts or the application refuses it (`BridgeStopped`). It retries what fails for a
+ * while, such as a connection lost while the computer slept, and offers an agent installed while it runs.
  */
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -15,6 +17,7 @@ import {
   type ResolvedAgent,
 } from './agents.js';
 import {
+  BRIDGE_HEADERS,
   BRIDGE_PROTOCOL_VERSION,
   BRIDGE_ROUTES,
   coalesce,
@@ -37,17 +40,22 @@ import { BridgeSession } from './session.js';
 export interface BridgeOptions {
   /** The application's address as the command line knows it, with any base path: `https://host/app`. */
   readonly server: string;
-  /** The headers that authenticate the person. */
+  /** The headers that authenticate the person: used when the computer has no key yet, or its key was refused. */
   readonly headers: Readonly<Record<string, string>>;
   /** The program running the bridge, for the computer record and ACP's `clientInfo`. */
   readonly client: { readonly name: string; readonly version: string };
-  /** Where the bridge keeps this computer's id for the server; written on registration. */
+  /** Where the bridge keeps this computer's id and key for the server, readable by its owner only. */
   readonly stateFile: string;
   /** The computer's name; its host name by default. */
   readonly name?: string;
   /** The directories sessions may work in; the home directory by default. */
   readonly roots?: readonly string[];
   readonly env?: NodeJS.ProcessEnv;
+  /**
+   * Whether a computer whose key the application refuses at start, such as one removed there, connects again as the
+   * person, as when they start the bridge themselves (the default); a bridge started at login stops instead.
+   */
+  readonly reconnect?: boolean;
   readonly signal: AbortSignal;
   readonly log: (message: string) => void;
 }
@@ -72,6 +80,8 @@ export class BridgeHttpError extends Error {
 
 /** How long reported events wait for more before they are sent together. */
 const REPORT_DELAY_MS = 150;
+/** How often the bridge looks for agents installed or removed while it runs. */
+const RESCAN_MS = 60_000;
 const MAX_BACKOFF_MS = 30_000;
 
 export async function runBridge(options: BridgeOptions): Promise<void> {
@@ -80,49 +90,127 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
   const roots = (options.roots ?? [os.homedir()]).map((root) =>
     path.resolve(root),
   );
-  const post = createPost(options.server, options.headers, signal);
   const startedAt = new Date().toISOString();
+  let state = await readState(options.stateFile);
+  const asPerson = createPost(options.server, options.headers, signal);
+  let post = state.key
+    ? asComputer(options.server, state.key, signal)
+    : asPerson;
 
+  const agents = new Map<string, AgentInfo>();
   const found = new Map<string, ResolvedAgent | undefined>();
-  for (const spec of AGENTS) found.set(spec.id, await resolveAgent(spec, env));
-  const computer = (agents: readonly AgentInfo[]): ComputerInfo => ({
+  /**
+   * Looks for every agent again: undefined when nothing changed since the last look, else the agents found since,
+   * which have yet to be started once.
+   */
+  const scan = async (): Promise<AgentSpec[] | undefined> => {
+    const fresh: AgentSpec[] = [];
+    let changed = false;
+    for (const spec of AGENTS) {
+      const resolved = await resolveAgent(spec, env);
+      if (
+        agents.has(spec.id) &&
+        Boolean(resolved) === Boolean(found.get(spec.id))
+      )
+        continue;
+      changed = true;
+      found.set(spec.id, resolved);
+      agents.set(
+        spec.id,
+        resolved
+          ? agentInfo(spec)
+          : { ...agentInfo(spec), problem: 'notInstalled' },
+      );
+      if (resolved) fresh.push(spec);
+    }
+    return changed ? fresh : undefined;
+  };
+  const computer = (): ComputerInfo => ({
     name: options.name ?? os.hostname(),
     platform: process.platform,
     arch: process.arch,
     host: `${options.client.name} ${options.client.version}`,
     home: os.homedir(),
     roots,
-    agents,
+    agents: [...agents.values()],
   });
-  const register = async (agents: readonly AgentInfo[]): Promise<string> => {
-    const request: RegisterRequest = {
+  /**
+   * Registers the computer with its key; signed in as the person when it has none or the application refused it,
+   * which gives it a new one.
+   */
+  const register = async (): Promise<string> => {
+    const request = (): RegisterRequest => ({
       protocol: BRIDGE_PROTOCOL_VERSION,
-      computerId: await readComputerId(options.stateFile),
-      computer: computer(agents),
-    };
-    const { computerId } = await post<RegisterResponse>(
-      BRIDGE_ROUTES.register,
-      request,
-    ).catch((error: unknown) => {
-      throw refusal(error) ?? error;
+      computerId: state.computerId,
+      bridgeStartedAt: startedAt,
+      computer: computer(),
     });
-    await writeComputerId(options.stateFile, computerId);
-    return computerId;
+    let answer: RegisterResponse;
+    try {
+      answer = await post<RegisterResponse>(BRIDGE_ROUTES.register, request());
+    } catch (error) {
+      if (post === asPerson || !keyRefused(error)) throw error;
+      if (options.reconnect === false) throw removed();
+      log(
+        "The application no longer accepts this computer's key; connecting it again as you.",
+      );
+      post = asPerson;
+      answer = await post<RegisterResponse>(BRIDGE_ROUTES.register, request());
+    }
+    state = { computerId: answer.computerId, key: answer.key ?? state.key };
+    if (answer.key) {
+      await writeState(options.stateFile, state);
+      post = asComputer(options.server, answer.key, signal);
+    } else if (state.computerId) {
+      await writeState(options.stateFile, state);
+    }
+    return answer.computerId;
+  };
+  /** Registers until the application answers, waiting longer after each failure it may recover from. */
+  const connect = async (): Promise<string | undefined> => {
+    for (let failures = 1; ; failures += 1) {
+      try {
+        return await register();
+      } catch (error) {
+        const stopped = error instanceof BridgeStopped ? error : refusal(error);
+        if (stopped) throw stopped;
+        if (signal.aborted) return undefined;
+        if (failures === 1)
+          log(
+            `Cannot reach ${options.server} (${message(error)}); trying again.`,
+          );
+        await sleep(backoff(failures), signal);
+      }
+    }
+  };
+  /** Starts `specs` once each, and tells the application what the agents here are. */
+  const probe = async (specs: readonly AgentSpec[]): Promise<void> => {
+    for (const info of await probeAgents(specs, found, env, options.client))
+      agents.set(info.id, info);
+    await register();
   };
 
-  const computerId = await register(
-    AGENTS.map((spec) => ({
-      ...agentInfo(spec),
-      ...(found.get(spec.id) ? {} : { problem: 'notInstalled' as const }),
-    })),
-  );
+  await scan();
+  const computerId = await connect();
+  if (computerId === undefined) return;
   log(
-    `This computer is connected to ${options.server} as "${computer([]).name}".`,
+    `This computer is connected to ${options.server} as "${computer().name}".`,
   );
-  void probeAgents(found, env, options.client).then(
-    (agents) => register(agents),
-    (error: unknown) => log(`Could not check the agents: ${message(error)}`),
-  );
+  const reprobe = (): void => {
+    void probe(AGENTS.filter((spec) => found.get(spec.id))).catch(
+      (error: unknown) => log(`Could not check the agents: ${message(error)}`),
+    );
+  };
+  reprobe();
+  // An agent installed while the bridge runs is offered within a minute.
+  const rescan = setInterval(() => {
+    void scan()
+      .then((fresh) => fresh && probe(fresh))
+      .catch((error: unknown) =>
+        log(`Could not check the agents: ${message(error)}`),
+      );
+  }, RESCAN_MS);
+  rescan.unref();
 
   const sessions = new Map<string, BridgeSession>();
   const reporter = new Reporter({
@@ -212,6 +300,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
         failures = 0;
       } catch (error) {
         if (signal.aborted) break;
+        if (keyRefused(error) && post !== asPerson) throw removed();
         const stopped = refusal(error);
         if (stopped) throw stopped;
         failures += 1;
@@ -223,6 +312,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       for (const command of commands) dispatch(command);
     }
   } finally {
+    clearInterval(rescan);
     await Promise.all([...sessions.keys()].map(closeSession));
     await reporter.drain();
   }
@@ -234,18 +324,19 @@ function agentInfo(spec: AgentSpec): AgentInfo {
     id: spec.id,
     name: spec.name,
     version: null,
-    ...(spec.mode ? { mode: spec.mode } : {}),
+    ...(spec.modes ? { modes: spec.modes } : {}),
   };
 }
 
-/** Starts every agent found once, to learn its version and whether it speaks ACP. */
+/** Starts each of `specs` found here once, to learn its version and whether it speaks ACP. */
 async function probeAgents(
+  specs: readonly AgentSpec[],
   found: ReadonlyMap<string, ResolvedAgent | undefined>,
   env: NodeJS.ProcessEnv,
   client: { readonly name: string; readonly version: string },
 ): Promise<AgentInfo[]> {
   return Promise.all(
-    AGENTS.map(async (spec): Promise<AgentInfo> => {
+    specs.map(async (spec): Promise<AgentInfo> => {
       const resolved = found.get(spec.id);
       const info = agentInfo(spec);
       if (!resolved) return { ...info, problem: 'notInstalled' };
@@ -461,25 +552,54 @@ function refusal(error: unknown): BridgeStopped | undefined {
   return undefined;
 }
 
-async function readComputerId(file: string): Promise<string | null> {
+/** What the bridge remembers of this computer: its id and key, readable by its owner only. */
+interface BridgeState {
+  readonly computerId: string | null;
+  readonly key: string | null;
+}
+
+async function readState(file: string): Promise<BridgeState> {
   try {
     const saved = JSON.parse(await readFile(file, 'utf8')) as {
       computerId?: unknown;
+      key?: unknown;
     };
-    return typeof saved.computerId === 'string' ? saved.computerId : null;
+    return {
+      computerId:
+        typeof saved.computerId === 'string' ? saved.computerId : null,
+      key: typeof saved.key === 'string' ? saved.key : null,
+    };
   } catch {
-    return null;
+    return { computerId: null, key: null };
   }
 }
 
-async function writeComputerId(
-  file: string,
-  computerId: string,
-): Promise<void> {
+async function writeState(file: string, state: BridgeState): Promise<void> {
   await mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
-  await writeFile(file, `${JSON.stringify({ computerId }, null, 2)}\n`, {
+  await writeFile(file, `${JSON.stringify(state, null, 2)}\n`, {
     mode: 0o600,
   });
+  await chmod(file, 0o600);
+}
+
+/** The computer's key was refused: it was removed in the application, or connected again from elsewhere. */
+function removed(): BridgeStopped {
+  return new BridgeStopped(
+    'This computer is no longer connected: it was removed in the application, or connected again from elsewhere. Start the bridge yourself to connect it again.',
+  );
+}
+
+/** Whether the application refused the computer's key. */
+function keyRefused(error: unknown): boolean {
+  return error instanceof BridgeHttpError && error.status === 401;
+}
+
+function asComputer(
+  server: string,
+  key: string,
+  stop: AbortSignal,
+): ReturnType<typeof createPost> {
+  return createPost(server, { [BRIDGE_HEADERS.computerKey]: key }, stop);
 }
 
 function backoff(attempt: number): number {

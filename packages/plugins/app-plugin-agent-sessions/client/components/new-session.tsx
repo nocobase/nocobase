@@ -37,6 +37,7 @@ import {
   useProjects,
   useSessions,
 } from '../api.js';
+import { installedAgents, otherAgentNames } from '../lib/agents.js';
 import { offeredChoices } from '../lib/choices.js';
 import { errorText } from '../lib/errors.js';
 import { shortTime, systemName } from '../lib/format.js';
@@ -45,7 +46,11 @@ import { AgentBadge } from './agent-badge.js';
 import { BackLink } from './back-link.js';
 import { ChoiceMenus } from './choice-menus.js';
 import { Composer } from './composer.js';
-import { ComputersDialog } from './computers-dialog.js';
+import {
+  ComputersDialog,
+  ConnectSteps,
+  KeepConnected,
+} from './computers-dialog.js';
 import { FolderBrowser } from './folder-browser.js';
 
 const REMEMBERED = 'nocobase.agentSessions.lastChoice';
@@ -74,7 +79,8 @@ export function NewSession(): ReactElement {
   const online = all.filter((computer) => computer.online);
   const computer =
     online.find((candidate) => candidate.id === choice.computerId) ?? online[0];
-  const agents = computer?.agents.filter((agent) => !agent.problem) ?? [];
+  const installed = computer ? installedAgents(computer) : [];
+  const agents = installed.filter((agent) => !agent.problem);
   const agent =
     agents.find((candidate) => candidate.id === choice.agentId) ?? agents[0];
   const allowed = computer?.folders ?? [];
@@ -110,20 +116,38 @@ export function NewSession(): ReactElement {
 
   if (computers.data && online.length === 0) {
     return (
-      <div className='mx-auto flex h-full max-w-xl flex-col items-center justify-center gap-3 px-6 pb-20 text-center'>
-        <LaptopIcon className='text-muted-foreground size-8' />
-        <h2 className='text-[17px] font-semibold'>
-          {all.length === 0
-            ? t('newSession.noComputer')
-            : t('newSession.allOffline')}
-        </h2>
-        <p className='text-muted-foreground text-sm'>
-          {t('newSession.connectHint')}
-        </p>
-        <Button className='mt-2' onClick={() => setComputersOpen(true)}>
-          {t('newSession.connect')}
-        </Button>
-        <ComputersDialog open={computersOpen} onOpenChange={setComputersOpen} />
+      <div className='h-full overflow-y-auto'>
+        <div className='mx-auto flex max-w-[560px] flex-col gap-4 px-4 py-10 sm:pt-24'>
+          <div className='flex flex-col items-center gap-2 text-center'>
+            <LaptopIcon className='text-muted-foreground size-8' />
+            <h2 className='text-[17px] font-semibold'>
+              {all.length === 0
+                ? t('newSession.noComputer')
+                : t('newSession.allOffline')}
+            </h2>
+            <p className='text-muted-foreground text-sm'>
+              {all.length === 0
+                ? t('newSession.noComputerHint')
+                : t('newSession.offlineHint')}
+            </p>
+          </div>
+          <div className='rounded-[10px] border p-4 text-[13px]'>
+            {all.length === 0 ? <ConnectSteps /> : <KeepConnected />}
+          </div>
+          {all.length > 0 && (
+            <Button
+              variant='outline'
+              className='self-center'
+              onClick={() => setComputersOpen(true)}
+            >
+              {t('newSession.manageComputers')}
+            </Button>
+          )}
+          <ComputersDialog
+            open={computersOpen}
+            onOpenChange={setComputersOpen}
+          />
+        </div>
       </div>
     );
   }
@@ -204,7 +228,7 @@ export function NewSession(): ReactElement {
                     <DropdownMenuLabel>
                       {t('newSession.agents')}
                     </DropdownMenuLabel>
-                    {computer?.agents.map((candidate) => (
+                    {installed.map((candidate) => (
                       <PickItem
                         key={candidate.id}
                         checked={candidate.id === agent?.id}
@@ -272,8 +296,11 @@ export function NewSession(): ReactElement {
               }
             }}
           />
+          {computer && agents.length === 0 && <NoAgent computer={computer} />}
           <p className='text-muted-foreground text-center text-xs'>
             {t('newSession.accessHint')}
+            <br />
+            {t('newSession.modelHint')}
           </p>
         </div>
       </div>
@@ -288,7 +315,7 @@ export function NewSession(): ReactElement {
   );
 }
 
-/** The values a new session opens with: what the agent last offered here, in the mode the bridge opens sessions in. */
+/** The values a new session opens with: what the agent last offered here, in the full-access mode the bridge opens it in. */
 function initialValues(
   offered: Computer['choices'][string] | undefined,
   agent: AgentInfo | undefined,
@@ -296,9 +323,10 @@ function initialValues(
   const values: Record<string, string> = {};
   for (const choice of offeredChoices(offered)) {
     const opening =
-      choice.category === 'mode' &&
-      choice.options.some((option) => option.value === agent?.mode)
-        ? agent?.mode
+      choice.category === 'mode'
+        ? agent?.modes?.find((mode) =>
+            choice.options.some((option) => option.value === mode),
+          )
         : undefined;
     values[choice.id] = opening ?? choice.currentValue;
   }
@@ -539,7 +567,8 @@ function ComputerDetails({
   readonly computer: Computer;
   readonly onManage: () => void;
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const others = otherAgentNames(computer, i18n.language);
   return (
     <aside
       className='hidden w-[296px] shrink-0 overflow-y-auto border-l xl:block'
@@ -585,7 +614,7 @@ function ComputerDetails({
           {t('newSession.availableAgents')}
         </h3>
         <ul className='divide-y'>
-          {computer.agents.map((agent) => (
+          {installedAgents(computer).map((agent) => (
             <li
               key={agent.id}
               className='flex items-center gap-2.5 py-2 text-xs'
@@ -613,6 +642,12 @@ function ComputerDetails({
         <p className='text-muted-foreground text-xs'>
           {t('newSession.agentsHint')}
         </p>
+        {/* With none installed, the notice beside the message box names them. */}
+        {others && installedAgents(computer).length > 0 && (
+          <p className='text-muted-foreground text-xs'>
+            {t('newSession.alsoSupported', { names: others })}
+          </p>
+        )}
       </section>
       <section className='px-5 py-4'>
         <Button
@@ -646,4 +681,32 @@ function remembered(): Choice {
   } catch {
     return {};
   }
+}
+
+/** Why no agent can start a session on the computer, and how one comes to: installed and signed in there. */
+function NoAgent({ computer }: { readonly computer: Computer }): ReactElement {
+  const { t, i18n } = useTranslation();
+  const failed = installedAgents(computer).filter((agent) => agent.problem);
+  const others = otherAgentNames(computer, i18n.language);
+  return (
+    <div className='flex flex-col gap-1.5 rounded-[10px] border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-[13px]'>
+      <p className='font-medium'>{t('newSession.noAgentTitle')}</p>
+      {failed.map((agent) => (
+        <p key={agent.id} className='text-muted-foreground text-xs break-words'>
+          {t('newSession.failedAgent', {
+            name: agent.name,
+            detail: agent.detail ?? t('computers.problems.failed'),
+          })}
+        </p>
+      ))}
+      <p className='text-muted-foreground text-xs'>
+        {t('newSession.noAgentHint')}
+      </p>
+      {others && (
+        <p className='text-muted-foreground text-xs'>
+          {t('newSession.supported', { names: others })}
+        </p>
+      )}
+    </div>
+  );
 }

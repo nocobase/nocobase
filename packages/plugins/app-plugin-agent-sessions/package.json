@@ -117,6 +117,7 @@
     "@base-ui/react": "catalog:",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
+    "@nocobase/app-plugin-file": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",

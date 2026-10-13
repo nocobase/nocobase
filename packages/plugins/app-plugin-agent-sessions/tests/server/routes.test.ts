@@ -10,13 +10,25 @@ import { ServiceContainer } from '@nocobase/service-provider';
 import type { Hono, MiddlewareHandler } from 'hono';
 import { describe, expect } from 'vitest';
 
+import {
+  COMPUTER_CREDENTIAL,
+  COMPUTER_KEY_SCHEME,
+} from '../../server/computer-key.js';
+import type { ImageStorage } from '../../server/images.js';
 import { apiRoutes } from '../../server/routes/index.js';
 import { AgentSessionsService } from '../../server/service.js';
 import { agentSessionsToken } from '../../server/tokens.js';
 import { test } from '../helpers/database.js';
+import { fakeFiles } from '../helpers/files.js';
 
-/** The routes behind a stand-in for sign-in: the `x-user` header names the person, and no header answers 401. */
-async function mount(database: DatabaseManager): Promise<Hono> {
+/**
+ * The routes behind a stand-in for sign-in: the `x-user` header names the person, and no header answers 401; with
+ * `x-computer` too, the person comes with that computer's key, as the credential resolver of `computer-key.ts` makes.
+ */
+async function mount(
+  database: DatabaseManager,
+  options: { readonly images?: ImageStorage } = {},
+): Promise<Hono> {
   const required = (): MiddlewareHandler => async (context, next) => {
     const id = context.req.header('x-user');
     if (!id)
@@ -24,14 +36,30 @@ async function mount(database: DatabaseManager): Promise<Hono> {
         { error: { reason: 'AUTHENTICATION_REQUIRED' } },
         401,
       );
-    context.set('auth' as never, { user: { id } } as never);
+    const computer = context.req.header('x-computer');
+    context.set(
+      'auth' as never,
+      {
+        user: { id },
+        ...(computer
+          ? {
+              credential: {
+                type: COMPUTER_CREDENTIAL,
+                id: computer,
+                userId: id,
+                scheme: COMPUTER_KEY_SCHEME,
+              },
+            }
+          : {}),
+      } as never,
+    );
     await next();
   };
   const container = new ServiceContainer();
   container.instance(authenticationToken, { required } as never);
   container.instance(
     agentSessionsToken,
-    new AgentSessionsService({ database }),
+    new AgentSessionsService({ database, ...options }),
   );
   return apiRoutes.createRouter({ container } as never);
 }
@@ -42,12 +70,14 @@ function call(
   path: string,
   user?: string,
   json?: unknown,
+  computer?: string,
 ): Promise<Response> {
   return Promise.resolve(
     router.request(`/agentSessions${path}`, {
       method,
       headers: {
         ...(user ? { 'x-user': user } : {}),
+        ...(computer ? { 'x-computer': computer } : {}),
         ...(json ? { 'content-type': 'application/json' } : {}),
       },
       ...(json ? { body: JSON.stringify(json) } : {}),
@@ -97,6 +127,7 @@ describe('the agent sessions routes', () => {
         await call(router, 'POST', '/bridge/register', undefined, {
           protocol: 1,
           computerId: null,
+          bridgeStartedAt: 'bridge-1',
           computer,
         })
       ).status,
@@ -110,6 +141,7 @@ describe('the agent sessions routes', () => {
     const registered = await call(router, 'POST', '/bridge/register', 'u1', {
       protocol: 1,
       computerId: null,
+      bridgeStartedAt: 'bridge-1',
       computer,
     });
     const { computerId } = (
@@ -156,6 +188,7 @@ describe('the agent sessions routes', () => {
     const registered = await call(router, 'POST', '/bridge/register', 'u1', {
       protocol: 1,
       computerId: null,
+      bridgeStartedAt: 'bridge-1',
       computer,
     });
     const { computerId } = (
@@ -173,6 +206,95 @@ describe('the agent sessions routes', () => {
         reason: 'AGENT_SESSIONS_DIRECTORY_NOT_ALLOWED',
         fieldViolations: [{ field: 'cwd' }],
       },
+    });
+  });
+
+  test('take a computer’s key only for that computer', async ({ database }) => {
+    const router = await mount(database);
+    const register = async (json: object, as?: string) =>
+      (
+        (await (
+          await call(router, 'POST', '/bridge/register', 'u1', json, as)
+        ).json()) as { data: { computerId: string; key?: string } }
+      ).data;
+    const body = { protocol: 1, bridgeStartedAt: 'bridge-1', computer };
+    const mine = await register({ ...body, computerId: null });
+    const other = await register({ ...body, computerId: null });
+    expect(mine.key).toMatch(/^nbc_/u);
+
+    // Registering with the key keeps it, so the answer has none.
+    await expect(
+      register({ ...body, computerId: mine.computerId }, mine.computerId),
+    ).resolves.toEqual({ computerId: mine.computerId });
+    const poll = (computerId: string) =>
+      call(
+        router,
+        'POST',
+        '/bridge/poll',
+        'u1',
+        { computerId, wait: false },
+        mine.computerId,
+      );
+    expect((await poll(mine.computerId)).status).toBe(200);
+    const elsewhere = await poll(other.computerId);
+    expect(elsewhere.status).toBe(404);
+    await expect(elsewhere.json()).resolves.toMatchObject({
+      error: { reason: 'AGENT_SESSIONS_COMPUTER_NOT_FOUND' },
+    });
+  });
+
+  test('serve an image sent in a session as nothing a browser runs', async ({
+    database,
+  }) => {
+    const router = await mount(database, {
+      images: fakeFiles(database).storage,
+    });
+    const { computerId } = (
+      (await (
+        await call(router, 'POST', '/bridge/register', 'u1', {
+          protocol: 1,
+          computerId: null,
+          bridgeStartedAt: 'bridge-1',
+          computer,
+        })
+      ).json()) as { data: { computerId: string } }
+    ).data;
+    const image = async (mimeType: string) => {
+      const created = await call(router, 'POST', '/sessions', 'u1', {
+        computerId,
+        agentId: 'codex',
+        cwd: '/home/zhou',
+        content: [
+          {
+            type: 'image',
+            mimeType,
+            data: Buffer.from('x').toString('base64'),
+          },
+        ],
+      });
+      const { id } = ((await created.json()) as { data: { id: string } }).data;
+      const events = (await (
+        await call(router, 'GET', `/sessions/${id}/events`, 'u1')
+      ).json()) as { data: { content: { file: string }[] }[] };
+      const path = `/sessions/${id}/images/${events.data[0]!.content[0]!.file}`;
+      return { path, response: await call(router, 'GET', path, 'u1') };
+    };
+
+    const png = await image('image/png');
+    expect(png.response.status).toBe(200);
+    expect(Object.fromEntries(png.response.headers)).toMatchObject({
+      'content-type': 'image/png',
+      'content-disposition': 'inline',
+      'x-content-type-options': 'nosniff',
+      'content-security-policy': 'sandbox',
+    });
+    await expect(png.response.text()).resolves.toBe('x');
+    expect((await call(router, 'GET', png.path, 'u2')).status).toBe(404);
+
+    const svg = await image('image/svg+xml');
+    expect(Object.fromEntries(svg.response.headers)).toMatchObject({
+      'content-type': 'application/octet-stream',
+      'content-disposition': 'attachment',
     });
   });
 });

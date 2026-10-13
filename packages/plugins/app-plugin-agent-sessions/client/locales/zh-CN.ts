@@ -71,15 +71,24 @@ const zhCN: AgentSessionsResource = {
     placeholder: '说说要做什么。可以一次说好几件事，也可以贴截图。',
     accessHint:
       'Agent 在你选的目录里以完全访问的权限工作，和在你自己的终端里一样。',
-    noComputer: '先连接一台电脑',
+    noComputer: '先连接你的电脑',
+    noComputerHint:
+      '会话在你自己的电脑上运行：Agent 用你在那台电脑上登录的账号，在你允许的目录里工作，对话记录保存在这里。连接一次，之后电脑开机就会自动在线。',
     allOffline: '你的电脑都不在线',
-    connectHint: '会话在你自己的电脑上运行。在电脑上启动连接后再回来。',
-    connect: '连接电脑',
+    offlineHint: '在电脑上运行下面的命令，之后开机就会自动连接。',
+    noAgentTitle: '这台电脑上还没有可用的 Agent',
+    noAgentHint:
+      '在这台电脑上装好任意一个，并用它自己的命令登录；一分钟内会出现在这里，不用重新连接。',
+    supported: '支持：{{names}}',
+    failedAgent: '{{name}} 无法启动：{{detail}}',
+    modelHint: '建议选你能用的最强模型：分析和拆解任务会更准确。',
     computers: '我的电脑',
     manageComputers: '管理我的电脑…',
     agents: '这台电脑上的 Agent',
     availableAgents: '可用的 Agent',
-    agentsHint: '只显示这台电脑上检测到的、支持 ACP 的 Agent。',
+    agentsHint:
+      '只列出这台电脑上已安装的 Agent；之后再装好并登录的，一分钟内会出现。',
+    alsoSupported: '还支持：{{names}}',
     thisComputer: '这台电脑',
     recentFolders: '最近用过',
     browseFolders: '浏览这台电脑…',
@@ -235,12 +244,16 @@ const zhCN: AgentSessionsResource = {
     foldersChosenHint: '会话只能在这些文件夹里工作。',
     add: '连接一台电脑',
     steps: {
+      agent: '装好一个编程 Agent 并登录',
+      agentHint:
+        'Codex、Claude Code、Gemini CLI、GitHub Copilot、Cursor、Qwen Code、Kimi CLI 等都可以，用它自己的命令登录。建议使用你能用的最强模型。',
       install: '安装命令行',
       login: '用你的账号登录',
-      start: '连接这台电脑',
-      startHint: '运行期间保持连接，按 Ctrl+C 停止。',
+      start: '让这台电脑保持在线',
+      startHint: '在后台运行，以后开机自动连接；断网或休眠后会自己重连。',
+      foreground: '只想临时连接、关掉终端就断开，改为运行：',
       foldersHint:
-        '默认允许会话使用整个用户目录；连接后，可以在上面这台电脑的「允许的目录」里修改。',
+        '默认允许会话使用整个用户目录；连接后，可以在「我的电脑」里修改允许的目录。',
     },
   },
 };

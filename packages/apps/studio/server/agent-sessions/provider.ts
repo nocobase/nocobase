@@ -3,6 +3,7 @@
  * of the person's projects, the issues an agent in it creates or the person mentions with `#` are tied to the session
  * (`links.ts`), and the agent gets Studio's tools over MCP (`tools.ts`). Both act as the session's owner, through the projects plugin's own services and checks.
  * The agent is told to talk the work through and hand development to the project manager as issues (`INSTRUCTIONS`).
+ * What happens in a session while its owner is not looking reaches their inbox (`../inbox/agent-sessions.ts`).
  */
 import { agentSessionsToken } from '@nocobase/app-plugin-agent-sessions/server';
 import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
@@ -16,6 +17,8 @@ import type { Application } from '@nocobase/app-server/application';
 import { i18nToken } from '@nocobase/app-server/i18n';
 import { ServiceProvider } from '@nocobase/service-provider';
 
+import { agentSessionNotices } from '../inbox/agent-sessions.js';
+import { studioInboxPortToken } from '../inbox/port.js';
 import { issueLinks } from './links.js';
 import { studioTools } from './tools.js';
 
@@ -73,6 +76,10 @@ export default class StudioAgentSessionsProvider extends ServiceProvider<Applica
     };
 
     sessions.registerInstructions(INSTRUCTIONS);
+    if (container.has(studioInboxPortToken))
+      sessions.registerNotices(
+        agentSessionNotices(() => container.resolve(studioInboxPortToken)),
+      );
     sessions.registerProjects({
       list: async (reader) =>
         (await projects.projects.list(await viewerOf(reader.userId))).map(

@@ -80,17 +80,26 @@ const enUS = {
       'Say what you need. Several things at once, or a screenshot, are fine.',
     accessHint:
       'Agents run with full access in the directory you choose, as in your own terminal.',
-    noComputer: 'Connect a computer first',
+    noComputer: 'Connect your computer first',
+    noComputerHint:
+      'Sessions run on your own computer: the agent works there signed in with your own account, in the folders you allow, and the conversations are kept here. Connect it once and it is online whenever the computer is on.',
     allOffline: 'Your computers are offline',
-    connectHint:
-      'Sessions run on your own computer. Start the bridge there, then come back.',
-    connect: 'Connect a computer',
+    offlineHint:
+      'Run this on the computer to keep it connected from every login.',
+    noAgentTitle: 'No agent is ready on this computer',
+    noAgentHint:
+      'Install any of them there and sign in with its own command; it shows up here within a minute, without connecting again.',
+    supported: 'Supported: {{names}}',
+    failedAgent: '{{name}} could not start: {{detail}}',
+    modelHint:
+      'Choose the strongest model you can use: it analyzes and breaks down the work best.',
     computers: 'My computers',
     manageComputers: 'Manage my computers…',
     agents: 'Agents on this computer',
     availableAgents: 'Available agents',
     agentsHint:
-      'Only the agents found on this computer that speak ACP are listed.',
+      'Only the agents installed on this computer are listed; one installed and signed in later shows up within a minute.',
+    alsoSupported: 'Also supported: {{names}}',
     thisComputer: 'This computer',
     recentFolders: 'Recently used',
     browseFolders: 'Browse this computer…',
@@ -246,12 +255,17 @@ const enUS = {
     foldersChosenHint: 'Sessions may work only in these folders.',
     add: 'Connect a computer',
     steps: {
+      agent: 'Install a coding agent and sign in to it',
+      agentHint:
+        'Codex, Claude Code, Gemini CLI, GitHub Copilot, Cursor, Qwen Code, Kimi CLI and more: sign in with its own command. Use the strongest model you can.',
       install: 'Install the command line',
       login: 'Sign in with your account',
-      start: 'Connect the computer',
-      startHint: 'It stays connected while this runs; stop it with Ctrl+C.',
+      start: 'Keep this computer connected',
+      startHint:
+        'It runs in the background and connects at every login, and again after the network drops or the computer sleeps.',
+      foreground: 'To connect only until you close the terminal, run instead:',
       foldersHint:
-        'Sessions may work anywhere in your home directory; once it is connected, choose other folders under "Where sessions work" above.',
+        'Sessions may work anywhere in your home directory; once it is connected, choose other folders in "My computers".',
     },
   },
 };

@@ -13,10 +13,16 @@ export type {
   AgentInfo,
   FolderListing,
   PromptContent,
+  PromptPart,
   SessionChoice,
   SessionEvent,
   SessionState,
 } from '@nocobase/acp-bridge/protocol';
+
+/** Where the session's page loads an image the transcript names by `file`, under the application's API. */
+export function imagePath(sessionId: string, file: string): string {
+  return `/api/agentSessions/sessions/${encodeURIComponent(sessionId)}/images/${encodeURIComponent(file)}`;
+}
 
 /** One of the viewer's computers. */
 export interface Computer {

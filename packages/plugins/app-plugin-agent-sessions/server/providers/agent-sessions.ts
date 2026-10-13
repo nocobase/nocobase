@@ -1,9 +1,13 @@
+import { authenticationToken } from '@nocobase/app-plugin-authentication';
+import { serverFileRepositoryManagerToken } from '@nocobase/app-plugin-file/server';
 import { cachingToken } from '@nocobase/app-server/caching';
+import { driveManagerToken } from '@nocobase/app-server/drive';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   realtimeServiceToken,
   type RealtimeUserTopic,
 } from '@nocobase/app-server/realtime';
+import { apiDocsToken } from '@nocobase/app-server/router';
 import { secretsServiceToken } from '@nocobase/app-server/secrets';
 import { databaseManagerToken } from '@nocobase/db';
 import { ServiceProvider } from '@nocobase/service-provider';
@@ -12,6 +16,8 @@ import {
   AGENT_SESSIONS_TOPIC,
   type AgentSessionsChange,
 } from '../../shared/api.js';
+import { computerKeyFragment, computerKeyResolver } from '../computer-key.js';
+import { createImageStorage } from '../images.js';
 import { AgentSessionsService } from '../service.js';
 import { agentSessionsToken } from '../tokens.js';
 import { createToolTokens } from '../tools.js';
@@ -20,6 +26,7 @@ export class AgentSessionsProvider extends ServiceProvider<AppPluginApplication>
   public readonly name: string = '@nocobase/app-plugin-agent-sessions';
 
   #topic: RealtimeUserTopic<AgentSessionsChange> | undefined;
+  readonly #releases: (() => void)[] = [];
 
   public override register(): void {
     this.app.container.singleton(agentSessionsToken, (container) => {
@@ -50,6 +57,20 @@ export class AgentSessionsProvider extends ServiceProvider<AppPluginApplication>
                 void topic.publishFor(userId, change),
             }
           : {}),
+        // Asked on each use: the application's default Drive disk, through the file plugin when it is registered.
+        images: createImageStorage({
+          uploader: () =>
+            container.has(serverFileRepositoryManagerToken)
+              ? container.resolve(serverFileRepositoryManagerToken)
+              : null,
+          disks: () =>
+            container.has(driveManagerToken)
+              ? container.resolve(driveManagerToken)
+              : null,
+          disk: () =>
+            this.app.config.get<{ readonly default?: string }>('drive')
+              ?.default ?? 'local',
+        }),
         // A bridge's reply may reach another instance than the request waiting for it.
         ...(container.has(cachingToken)
           ? {
@@ -62,7 +83,25 @@ export class AgentSessionsProvider extends ServiceProvider<AppPluginApplication>
     });
   }
 
+  /** Teaches the application's authentication and its API document the computers' keys. */
+  public override boot(): Promise<void> {
+    const { container } = this.app;
+    const service = container.resolve(agentSessionsToken);
+    if (container.has(authenticationToken))
+      this.#releases.push(
+        container
+          .resolve(authenticationToken)
+          .addCredentialResolver(computerKeyResolver(service)),
+      );
+    if (container.has(apiDocsToken))
+      this.#releases.push(
+        container.resolve(apiDocsToken).addFragment(computerKeyFragment),
+      );
+    return Promise.resolve();
+  }
+
   public override shutdown(): Promise<void> {
+    for (const release of this.#releases.splice(0)) release();
     this.#topic?.close();
     this.#topic = undefined;
     return Promise.resolve();

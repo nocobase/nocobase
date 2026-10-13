@@ -21,6 +21,12 @@ export const SessionParams: z.ZodType<{ sessionId: string }> = z.object({
   sessionId: z.string().min(1),
 });
 
+export const ImageParams: z.ZodType<{ sessionId: string; file: string }> =
+  z.object({
+    sessionId: z.string().min(1).max(64),
+    file: z.string().min(1).max(64),
+  });
+
 const CommandSchema = z.object({ name: z.string(), description: z.string() });
 
 const ProjectFields = z.object({ id: z.string(), name: z.string() });
@@ -249,6 +255,12 @@ export const PromptInput: z.ZodType<{
 }> = z.strictObject({
   content,
   mentions,
+});
+
+export const SeenInput: z.ZodType<{ seq: number }> = z.object({
+  seq: z.number().int().min(0).meta({
+    description: 'The last event of the transcript the owner has seen.',
+  }),
 });
 
 export const AnswerInput: z.ZodType<{

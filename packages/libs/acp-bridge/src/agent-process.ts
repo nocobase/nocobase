@@ -1,8 +1,14 @@
 /**
- * One agent process speaking ACP over its standard input and output, with the bridge as its client. The process runs
- * in a process group of its own, so stopping it also stops the shells and servers it started.
+ * One agent process speaking ACP over its standard input and output, with the bridge as its client. Stopping it also
+ * stops the shells and servers it started: it runs in a process group of its own, which is signalled, or on Windows its
+ * process tree is ended with `taskkill`.
  */
-import { spawn, type ChildProcess } from 'node:child_process';
+import {
+  execFile,
+  spawn,
+  type ChildProcess,
+  type ChildProcessByStdio,
+} from 'node:child_process';
 import { once } from 'node:events';
 import { Readable, Writable } from 'node:stream';
 
@@ -53,12 +59,7 @@ export class AgentProcess {
     agent: ResolvedAgent,
     options: AgentProcessOptions,
   ): Promise<AgentProcess> {
-    const child = spawn(agent.command, [...agent.args], {
-      cwd: options.cwd,
-      env: { ...options.env, ...agent.spec.env },
-      stdio: ['pipe', 'pipe', 'pipe'],
-      detached: true,
-    });
+    const child = startProgram(agent, options);
     const stderr = { text: '' };
     child.stderr.setEncoding('utf8');
     child.stderr.on('data', (chunk: string) => {
@@ -185,6 +186,36 @@ function withOutput(message: string, output: string): string {
 
 function ignore(): void {}
 
+const windows = process.platform === 'win32';
+
+function startProgram(
+  agent: ResolvedAgent,
+  options: AgentProcessOptions,
+): ChildProcessByStdio<Writable, Readable, Readable> {
+  const common = {
+    cwd: options.cwd,
+    env: { ...options.env, ...agent.spec.env },
+    stdio: ['pipe', 'pipe', 'pipe'] as ['pipe', 'pipe', 'pipe'],
+  };
+  if (!windows)
+    return spawn(agent.command, [...agent.args], { ...common, detached: true });
+  // A batch file, as npm installs `npx` and agents' commands, runs only through cmd.exe, given one command line.
+  return /\.(?:cmd|bat)$/iu.test(agent.command)
+    ? spawn([agent.command, ...agent.args].map(quoteForCmd).join(' '), {
+        ...common,
+        shell: true,
+        windowsHide: true,
+      })
+    : spawn(agent.command, [...agent.args], { ...common, windowsHide: true });
+}
+
+/** `value` as one argument of a cmd.exe command line. */
+function quoteForCmd(value: string): string {
+  return /^[\w@+=:,./\\-]+$/u.test(value)
+    ? value
+    : `"${value.replace(/"/gu, '""')}"`;
+}
+
 async function stopProcess(child: ChildProcess): Promise<void> {
   if (
     child.exitCode !== null ||
@@ -193,6 +224,11 @@ async function stopProcess(child: ChildProcess): Promise<void> {
   )
     return;
   const exited = once(child, 'exit');
+  if (windows) {
+    endTree(child.pid);
+    await exited;
+    return;
+  }
   signalGroup(child.pid, 'SIGTERM');
   const timer = setTimeout(
     () => signalGroup(child.pid!, 'SIGKILL'),
@@ -200,6 +236,16 @@ async function stopProcess(child: ChildProcess): Promise<void> {
   );
   await exited;
   clearTimeout(timer);
+}
+
+/** Ends the process `pid` and every process it started, on Windows. */
+function endTree(pid: number): void {
+  execFile(
+    'taskkill',
+    ['/pid', String(pid), '/T', '/F'],
+    { windowsHide: true },
+    ignore,
+  );
 }
 
 function signalGroup(pid: number, signal: NodeJS.Signals): void {

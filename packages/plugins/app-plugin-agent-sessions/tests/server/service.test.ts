@@ -34,6 +34,7 @@ function setup(database: DatabaseManager) {
     service.register(userId, {
       protocol: 1,
       computerId: null,
+      bridgeStartedAt: 'bridge-1',
       computer: {
         name: 'Laptop',
         platform: 'darwin',
@@ -102,10 +103,11 @@ describe('AgentSessionsService', () => {
     database,
   }) => {
     const { service, register } = setup(database);
-    const { computerId } = await register();
-    await expect(register('u1', { computerId })).resolves.toEqual({
-      computerId,
-    });
+    const { computerId, key } = await register();
+    // Registered by its owner signed in, the computer gets a new key each time.
+    const again = await register('u1', { computerId });
+    expect(again).toEqual({ computerId, key: expect.stringMatching(/^nbc_/u) });
+    expect(again.key).not.toBe(key);
     const theirs = await register('u2', { computerId });
     expect(theirs.computerId).not.toBe(computerId);
     await expect(service.listComputers('u1')).resolves.toMatchObject([
@@ -612,13 +614,19 @@ describe('AgentSessionsService', () => {
     ]);
   });
 
-  test('ends what a restarted bridge was doing', async ({ database }) => {
+  test('ends what a restarted bridge was doing, not what the running one does', async ({
+    database,
+  }) => {
     const { service, started, report, register } = setup(database);
     const { computerId, session } = await started();
     await report(computerId, session.id, [
       { kind: 'turnStarted', at, promptId: 'p1' },
     ]);
     await register('u1', { computerId });
+    await expect(service.getSession(owner, session.id)).resolves.toMatchObject({
+      running: true,
+    });
+    await register('u1', { computerId, bridgeStartedAt: 'bridge-2' });
     const after = await service.getSession(owner, session.id);
     expect(after).toMatchObject({ running: false, waiting: false });
     const events = await service.listEvents('u1', session.id, {

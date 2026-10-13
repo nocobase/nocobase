@@ -1,5 +1,5 @@
 // The static command map oclif reads (`commands.strategy: 'explicit'`). `runAppCli` fills it before oclif loads it:
-// `login`, `logout`, `whoami`, `profile …`, `docs`, `completion`, `acp start`, `update` for a CLI that updates itself, and whatever static commands the application CLI
+// `login`, `logout`, `whoami`, `profile …`, `docs`, `completion`, `acp start`, `acp service …`, `update` for a CLI that updates itself, and whatever static commands the application CLI
 // adds. Business commands are not here: they come from the server's command manifest (src/dynamic/) through the
 // `command_not_found` hook.
 import type { Command } from '@oclif/core';
@@ -24,6 +24,9 @@ export const STATIC_TOPICS: Readonly<Record<string, { description: string }>> =
     },
     acp: {
       description: 'Run your agent sessions on this computer.',
+    },
+    'acp:service': {
+      description: 'Keep this computer connected in the background.',
     },
   };
 

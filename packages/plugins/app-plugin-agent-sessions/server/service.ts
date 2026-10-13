@@ -6,7 +6,7 @@
  * command on this instance and within a second by one on another. Each report of a bridge is appended to the
  * session's transcript in one transaction, and the owner's pages hear of it on the realtime topic.
  */
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import {
@@ -53,6 +53,7 @@ import {
   computerView,
   enqueue,
   isOnline,
+  images,
   links,
   lockSession,
   readEvents,
@@ -64,6 +65,13 @@ import {
   type LinkRecord,
   type SessionRecord,
 } from './store.js';
+import type { ImageStorage } from './images.js';
+import {
+  NOTICE_DELAY_MS,
+  noticeOf,
+  type SessionNotices,
+  type SessionNoticeType,
+} from './notices.js';
 import { workName, workNote, workSnapshot, type WorkItem } from './work.js';
 
 /** Who reads: a person, and the language the answer is for. */
@@ -132,6 +140,10 @@ export interface AgentSessionsServiceOptions {
   readonly publish?: (userId: string, change: AgentSessionsChange) => void;
   /** Where bridges' replies wait; this instance's memory by default. */
   readonly replies?: ReplyStore;
+  /** Where the images people send are kept; without it, the transcript keeps them as sent. */
+  readonly images?: ImageStorage;
+  /** Runs `task` after `delayMs`, as owners are told of what they did not see (`notices.ts`); a timer by default. */
+  readonly schedule?: (task: () => Promise<void>, delayMs: number) => void;
   readonly now?: () => number;
 }
 
@@ -159,6 +171,9 @@ export class AgentSessionsService {
   readonly #toolTokens: ToolTokens | undefined;
   #projects: ProjectSource | undefined;
   #instructions: string | undefined;
+  #notices: SessionNotices | undefined;
+  readonly #schedule: (task: () => Promise<void>, delayMs: number) => void;
+  readonly #images: ImageStorage | undefined;
   readonly #replies: ReplyStore;
   readonly #replyWaiters = new Map<string, () => void>();
 
@@ -166,6 +181,8 @@ export class AgentSessionsService {
     this.#database = options.database;
     this.#toolTokens = options.toolTokens;
     this.#replies = options.replies ?? memoryReplies();
+    this.#images = options.images;
+    this.#schedule = options.schedule ?? later;
     this.#publish = options.publish ?? (() => undefined);
     this.#now = options.now ?? Date.now;
     this.#tools.push(this.#workTool());
@@ -174,6 +191,11 @@ export class AgentSessionsService {
   /** Lets sessions show, and start, what the application ties to them under `kind`. */
   registerLinkKind(kind: string, resolver: LinkResolver): void {
     this.#linkKinds.set(kind, resolver);
+  }
+
+  /** Tells owners of what happens in their sessions while they are not looking, and settles it (`notices.ts`). */
+  registerNotices(notices: SessionNotices): void {
+    this.#notices = notices;
   }
 
   /**
@@ -298,11 +320,14 @@ export class AgentSessionsService {
     input: { readonly folders: readonly string[] | null },
   ): Promise<Computer> {
     const computer = await this.#computer(userId, computerId);
+    const paths = pathsOf(computer);
+    if (input.folders?.some((folder) => !paths.isAbsolute(folder)))
+      throw new AgentSessionsError('directoryNotAllowed', 'folders');
     const folders =
       input.folders === null
         ? null
-        : [...new Set(input.folders.map((folder) => path.resolve(folder)))];
-    if (folders?.some((folder) => !within(computer.roots, folder)))
+        : [...new Set(input.folders.map((folder) => paths.resolve(folder)))];
+    if (folders?.some((folder) => !within(paths, computer.roots, folder)))
       throw new AgentSessionsError('directoryNotAllowed', 'folders');
     await computers(this.#conn()).updateMany({
       filter: { id: computer.id },
@@ -322,7 +347,7 @@ export class AgentSessionsService {
     if (!isOnline(computer, this.#now()))
       throw new AgentSessionsError('computerOffline');
     const listed = dir ?? computer.home ?? computer.roots[0];
-    if (!listed || !within(computer.roots, listed))
+    if (!listed || !within(pathsOf(computer), computer.roots, listed))
       throw new AgentSessionsError('directoryNotAllowed', 'path');
     const requestId = randomUUID();
     await enqueue(
@@ -349,19 +374,27 @@ export class AgentSessionsService {
   }
 
   /**
-   * Records the computer, as new or as the one `computerId` names. A bridge registers when it starts, so whatever its
-   * sessions were doing before has stopped: their turns are over and nothing waits for permission.
+   * Records the computer, as new or as the one `computerId` names. Registered by its owner signed in, it gets a new key,
+   * which revokes the one before; registered with its key (`keyed`), it keeps it. A bridge registers when it starts, so
+   * when another run of the bridge registers, whatever its sessions were doing has stopped: their turns are over and
+   * nothing waits for permission.
    */
   async register(
     userId: string,
     request: RegisterRequest,
+    keyed = false,
   ): Promise<RegisterResponse> {
     if (request.protocol !== BRIDGE_PROTOCOL_VERSION)
       throw new AgentSessionsError('upgradeRequired');
     const now = this.#iso();
+    const key = keyed
+      ? undefined
+      : `nbc_${randomBytes(32).toString('base64url')}`;
     const values = {
       ...request.computer,
       home: request.computer.home ?? null,
+      bridgeStartedAt: request.bridgeStartedAt,
+      ...(key ? { keyHash: keyHash(key) } : {}),
       lastSeenAt: now,
       updatedAt: now,
     };
@@ -370,6 +403,7 @@ export class AgentSessionsService {
           filter: { id: request.computerId, userId },
         })
       : undefined;
+    if (keyed && !known) throw new AgentSessionsError('computerNotFound');
     const computerId = known?.id ?? randomUUID();
     if (known)
       await computers(this.#conn()).updateMany({
@@ -387,16 +421,19 @@ export class AgentSessionsService {
         },
       });
 
-    const interrupted = await sessions(this.#conn()).findMany({
-      filter: (f) =>
-        f.and([
-          f.string('computerId').eq(computerId),
-          f.or([
-            f.boolean('running').isTrue(),
-            f.number('pendingPermissions').gt(0),
-          ]),
-        ]),
-    });
+    const restarted = known?.bridgeStartedAt !== request.bridgeStartedAt;
+    const interrupted = !restarted
+      ? []
+      : await sessions(this.#conn()).findMany({
+          filter: (f) =>
+            f.and([
+              f.string('computerId').eq(computerId),
+              f.or([
+                f.boolean('running').isTrue(),
+                f.number('pendingPermissions').gt(0),
+              ]),
+            ]),
+        });
     for (const session of interrupted) {
       const changed = await this.#transaction(async (conn, at) => {
         const locked = await lockSession(conn, session.id, at);
@@ -416,7 +453,17 @@ export class AgentSessionsService {
       if (changed) this.#changed(changed);
     }
     this.#publish(userId, { kind: 'computers' });
-    return { computerId };
+    return { computerId, ...(key ? { key } : {}) };
+  }
+
+  /** The computer whose bridge holds `key`, or undefined for a key no computer has (any more). */
+  async computerOfKey(
+    key: string,
+  ): Promise<{ readonly id: string; readonly userId: string } | undefined> {
+    const computer = await computers(this.#conn()).findOne({
+      filter: { keyHash: keyHash(key) },
+    });
+    return computer && { id: computer.id, userId: computer.userId };
   }
 
   /** Answers with the computer's waiting commands, waiting for some when asked to. */
@@ -475,6 +522,7 @@ export class AgentSessionsService {
           session,
           lastSeq: Number(session.lastSeq),
           open: session.archivedAt === null,
+          added: [],
         };
       let running = Boolean(session.running);
       let pending = Number(session.pendingPermissions);
@@ -497,9 +545,14 @@ export class AgentSessionsService {
             }
           : {}),
       });
-      return { ...result, open: session.archivedAt === null };
+      return {
+        ...result,
+        open: session.archivedAt === null,
+        added: request.events,
+      };
     });
     this.#changed(changed);
+    this.#watch(changed.session, changed.added, changed.lastSeq);
     if (request.state) {
       await this.#learnOffer(computer, changed.session.agentId, request.state);
     }
@@ -577,7 +630,7 @@ export class AgentSessionsService {
     );
     if (!agent || agent.problem)
       throw new AgentSessionsError('agentUnavailable', 'agentId');
-    if (!within(allowedFolders(computer), input.cwd))
+    if (!within(pathsOf(computer), allowedFolders(computer), input.cwd))
       throw new AgentSessionsError('directoryNotAllowed', 'cwd');
     const projectId = input.projectId ?? null;
     if (
@@ -604,7 +657,7 @@ export class AgentSessionsService {
         computerId: computer.id,
         agentId: agent.id,
         projectId,
-        cwd: path.resolve(input.cwd),
+        cwd: pathsOf(computer).resolve(input.cwd),
         title: null,
         firstMessage: redactor.text(firstLine(input.content)),
         acpSessionId: null,
@@ -612,6 +665,8 @@ export class AgentSessionsService {
         settings,
         toldWork: null,
         toldInstructions: null,
+        seenSeq: 0,
+        noticedSeq: null,
         locale: viewer.locale ?? null,
         running: false,
         pendingPermissions: 0,
@@ -649,17 +704,61 @@ export class AgentSessionsService {
       values: {
         ...(title === undefined ? {} : { title }),
         ...(archive ? { archivedAt: input.archived ? now : null } : {}),
+        ...(archive && input.archived ? { noticedSeq: null } : {}),
         updatedAt: now,
       },
     });
-    if (archive && input.archived)
+    if (archive && input.archived) {
       await this.#command(session, { type: 'close', sessionId }, false);
+      if (session.noticedSeq !== null)
+        await this.#notices?.settle({ userId, sessionId, outcome: 'archived' });
+    }
     this.#publish(userId, {
       kind: 'session',
       sessionId,
       lastSeq: Number(session.lastSeq),
     });
     return this.getSession(viewer, sessionId);
+  }
+
+  /** Records that the owner saw the session up to event `seq`; seeing what they were told of settles it. */
+  async markSeen(
+    userId: string,
+    sessionId: string,
+    seq: number,
+  ): Promise<void> {
+    const session = await this.#session(userId, sessionId);
+    const seen = Math.min(seq, Number(session.lastSeq));
+    if (seen <= Number(session.seenSeq)) return;
+    const settles =
+      session.noticedSeq !== null && seen >= Number(session.noticedSeq);
+    await sessions(this.#conn()).updateMany({
+      filter: (f) =>
+        f.and([f.string('id').eq(sessionId), f.number('seenSeq').lt(seen)]),
+      values: { seenSeq: seen, ...(settles ? { noticedSeq: null } : {}) },
+    });
+    if (settles)
+      await this.#notices?.settle({ userId, sessionId, outcome: 'seen' });
+  }
+
+  /** An image sent in the session, for its owner: its bytes and type. */
+  async image(
+    userId: string,
+    sessionId: string,
+    file: string,
+  ): Promise<{ readonly bytes: Uint8Array; readonly mimeType: string }> {
+    await this.#session(userId, sessionId);
+    const record =
+      this.#images && UUID.test(file)
+        ? await images(this.#conn()).findOne({
+            filter: { id: file, sessionId },
+          })
+        : undefined;
+    if (!this.#images || !record) throw new AgentSessionsError('imageNotFound');
+    return {
+      bytes: await this.#images.bytes(record),
+      mimeType: record.mimeType,
+    };
   }
 
   async listEvents(
@@ -754,12 +853,18 @@ export class AgentSessionsService {
         : []),
       ...(note ? [{ type: 'text' as const, text: note }] : []),
     ];
+    const kept = this.#images
+      ? await this.#images.keep(
+          { id: sessionId, userId: session.userId },
+          content,
+        )
+      : content;
     const changed = await this.#transaction(async (conn, now) => {
       const locked = (await lockSession(conn, sessionId, now))!;
       const result = await this.#append(
         conn,
         locked,
-        [{ kind: 'prompt', at: now, promptId, content }],
+        [{ kind: 'prompt', at: now, promptId, content: kept }],
         now,
         {
           ...(note ? { toldWork: workSnapshot(work) } : {}),
@@ -1220,6 +1325,85 @@ export class AgentSessionsService {
     return { session: { ...session, ...written }, lastSeq };
   }
 
+  /**
+   * Tells the owner, a little later, of what the bridge reported that they have not seen by then (`notices.ts`), and
+   * settles a request for permission once they answered it.
+   */
+  #watch(
+    session: SessionRecord,
+    added: readonly SessionEvent[],
+    seq: number,
+  ): void {
+    const notices = this.#notices;
+    if (!notices) return;
+    for (const event of added) {
+      if (
+        event.kind === 'permissionResolved' &&
+        event.reason === 'answered' &&
+        session.noticedSeq !== null
+      )
+        this.#schedule(
+          () =>
+            notices.settle({
+              userId: session.userId,
+              sessionId: session.id,
+              types: ['permissionRequested'],
+              outcome: 'answered',
+            }),
+          0,
+        );
+      const notice = noticeOf(event);
+      if (notice)
+        this.#schedule(
+          () => this.#notify(session.id, notice, event.at, seq),
+          NOTICE_DELAY_MS,
+        );
+    }
+  }
+
+  /** Tells the owner of `notice`, unless they saw the session up to `seq` or the request no longer waits. */
+  async #notify(
+    sessionId: string,
+    notice: {
+      readonly type: SessionNoticeType;
+      readonly detail: string | null;
+    },
+    at: string,
+    seq: number,
+  ): Promise<void> {
+    const conn = this.#conn();
+    const session = await sessions(conn).findOne({ filter: { id: sessionId } });
+    if (
+      !this.#notices ||
+      !session ||
+      session.archivedAt ||
+      Number(session.seenSeq) >= seq ||
+      (notice.type === 'permissionRequested' &&
+        Number(session.pendingPermissions) === 0)
+    )
+      return;
+    const computer = await computers(conn).findOne({
+      filter: { id: session.computerId },
+    });
+    await this.#notices.send({
+      key: `${session.id}:${seq}:${notice.type}`,
+      type: notice.type,
+      userId: session.userId,
+      sessionId: session.id,
+      title:
+        session.title ?? (session.state?.title?.trim() || session.firstMessage),
+      agent:
+        computer?.agents.find((agent) => agent.id === session.agentId)?.name ??
+        session.agentId,
+      detail: notice.detail,
+      at,
+    });
+    await sessions(conn).updateMany({
+      filter: { id: session.id },
+      values: { noticedSeq: Math.max(seq, Number(session.noticedSeq ?? 0)) },
+    });
+  }
+
   #changed(changed: {
     readonly session: SessionRecord;
     readonly lastSeq: number;
@@ -1297,14 +1481,26 @@ async function readEventsOfKinds(
   return readEvents(conn, sessionId, Math.max(0, lastSeq - 500), 500);
 }
 
-function within(roots: readonly string[], cwd: string): boolean {
-  if (!path.isAbsolute(cwd)) return false;
-  const resolved = path.resolve(cwd);
+/** How paths are written on the computer: Windows's, or POSIX's everywhere else. */
+function pathsOf(
+  computer: Pick<ComputerRecord, 'platform'>,
+): path.PlatformPath {
+  return computer.platform === 'win32' ? path.win32 : path.posix;
+}
+
+/** Whether `cwd`, absolute, is one of `roots` or inside one, as `paths` reads them. */
+function within(
+  paths: path.PlatformPath,
+  roots: readonly string[],
+  cwd: string,
+): boolean {
+  if (!paths.isAbsolute(cwd)) return false;
+  const resolved = paths.resolve(cwd);
   return roots.some((root) => {
-    const relative = path.relative(root, resolved);
+    const relative = paths.relative(root, resolved);
     return (
       relative === '' ||
-      (!relative.startsWith('..') && !path.isAbsolute(relative))
+      (!relative.startsWith('..') && !paths.isAbsolute(relative))
     );
   });
 }
@@ -1367,4 +1563,23 @@ function memoryReplies(): ReplyStore {
 /** Tells whether a session's agent was told the application's instructions as they are now. */
 function instructionsHash(text: string): string {
   return createHash('sha256').update(text).digest('hex');
+}
+
+/** The stored form of a computer's key. */
+function keyHash(key: string): string {
+  return createHash('sha256').update(key).digest('hex');
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
+
+/** Runs `task` after `delayMs` in this process, without keeping it alive; a failure is only logged. */
+function later(task: () => Promise<void>, delayMs: number): void {
+  setTimeout(() => {
+    task().catch((error: unknown) =>
+      console.error(
+        'Agent sessions could not tell an owner of a session.',
+        error,
+      ),
+    );
+  }, delayMs).unref();
 }

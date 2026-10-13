@@ -18,7 +18,7 @@ import {
   type UseMutationResult,
   type UseQueryResult,
 } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import {
   AGENT_SESSIONS_TOPIC,
@@ -132,6 +132,47 @@ export function useTranscript(
       }
     },
   });
+}
+
+/**
+ * Tells the server how far the viewer has seen the session while its page is visible, so that they are not told of it
+ * elsewhere: once `seq` grows, and at most once a second.
+ */
+export function useMarkSeen(sessionId: string, seq: number | undefined): void {
+  const api = useApiClient();
+  const sentRef = useRef<{ sessionId: string; seq: number } | null>(null);
+  useEffect(() => {
+    if (!seq) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const mark = (): void => {
+      const last = sentRef.current;
+      if (
+        document.visibilityState !== 'visible' ||
+        (last?.sessionId === sessionId && last.seq >= seq)
+      )
+        return;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        sentRef.current = { sessionId, seq };
+        api
+          .request({
+            path: path('sessions', sessionId, 'seen'),
+            method: 'POST',
+            json: { seq },
+          })
+          .catch(() => {
+            // Told of it elsewhere then, at worst; the next event tries again.
+            sentRef.current = null;
+          });
+      }, 1_000);
+    };
+    mark();
+    document.addEventListener('visibilitychange', mark);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', mark);
+    };
+  }, [api, sessionId, seq]);
 }
 
 /** Refreshes what the viewer sees when the server says something of theirs changed, or the connection comes back. */

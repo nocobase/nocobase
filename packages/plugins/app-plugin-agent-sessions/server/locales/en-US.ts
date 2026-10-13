@@ -25,6 +25,9 @@ const enUS = {
     projectNotFound: 'There is no such project, or you cannot see it.',
     referenceNotFound:
       'Something mentioned does not exist, or you cannot see it.',
+    imageNotFound: 'No image with this name was sent in the session.',
+    computerKeyInvalid:
+      'This computer is no longer connected: it was removed, or connected again from elsewhere. Run `acp start` on it to connect it again.',
   },
 };
 

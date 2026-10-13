@@ -1,6 +1,7 @@
 // A scriptable ACP agent for the bridge's tests, run as its own process over standard input and output.
 //
-// A prompt's text decides what the turn does: `permission` asks for permission and says which option came back,
+// A prompt's text decides what the turn does: `permission` asks for permission and says which option came back
+// (`permission always` also offers to allow always),
 // `hang` waits until the turn is cancelled, `mcp` says which MCP servers the session was given, and anything else is
 // answered "Hello world" in two pieces. `session/load` replays one exchange first.
 import { Readable, Writable } from 'node:stream';
@@ -74,7 +75,7 @@ acp
     const session = sessions.get(params.sessionId);
     const text =
       params.prompt.find((block) => block.type === 'text')?.text ?? '';
-    if (text === 'permission') {
+    if (text === 'permission' || text === 'permission always') {
       const answer = await client.request(
         acp.methods.client.session.requestPermission,
         {
@@ -85,6 +86,15 @@ acp
             rawInput: { command: 'rm -rf build' },
           },
           options: [
+            ...(text === 'permission always'
+              ? [
+                  {
+                    optionId: 'always',
+                    name: 'Allow always',
+                    kind: 'allow_always',
+                  },
+                ]
+              : []),
             { optionId: 'yes', name: 'Allow once', kind: 'allow_once' },
             { optionId: 'no', name: 'Reject', kind: 'reject_once' },
           ],

@@ -1,8 +1,9 @@
 /**
  * The wire protocol between an application's agent sessions and the bridge on a person's computer (`<cli> acp start`).
  *
- * The bridge signs in as that person and speaks plain HTTP to the application: it registers the computer, long-polls
- * for commands and reports what its agents do. What an agent says is carried as the Agent Client Protocol's own
+ * The bridge speaks plain HTTP to the application: signed in as that person, it registers the computer and receives the
+ * computer's own key, with which it then registers again, long-polls for commands and reports what its agents do
+ * (`BRIDGE_HEADERS.computerKey`), however long the person's sign-in lasts. What an agent says is carried as the Agent Client Protocol's own
  * `session/update` payloads, so the application stores and renders ACP as it is. This module has no Node dependency:
  * the application's server and browser code read it too.
  */
@@ -22,6 +23,12 @@ export const BRIDGE_ROUTES: {
   poll: '/api/agentSessions/bridge/poll',
   report: '/api/agentSessions/bridge/report',
   reply: '/api/agentSessions/bridge/reply',
+};
+
+/** Request headers of the bridge. */
+export const BRIDGE_HEADERS: { readonly computerKey: string } = {
+  /** The key a computer received when its owner registered it (`RegisterResponse.key`). */
+  computerKey: 'x-nocobase-computer-key',
 };
 
 /** How long a poll waits for a command before answering with none. */
@@ -50,8 +57,8 @@ export interface AgentInfo {
   readonly name: string;
   /** The version its ACP `initialize` reported, or null before the bridge has asked. */
   readonly version: string | null;
-  /** The value of the `mode` choice a new session opens in, when the bridge sets one. */
-  readonly mode?: string | undefined;
+  /** The values of the `mode` choice that give the agent full access: a new session opens in the first offered. */
+  readonly modes?: readonly string[] | undefined;
   /**
    * Why it cannot start a session, absent when it can: `notInstalled` (no program found), or `failed` (the program did
    * not answer ACP `initialize`; `detail` says what it printed).
@@ -64,7 +71,7 @@ export const AgentInfoSchema: z.ZodType<AgentInfo> = z.object({
   id: z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/u),
   name: z.string().min(1).max(100),
   version: z.string().max(100).nullable(),
-  mode: id.optional(),
+  modes: z.array(id).max(10).optional(),
   problem: z.enum(['notInstalled', 'failed']).optional(),
   detail: z.string().max(2000).optional(),
 });
@@ -91,24 +98,32 @@ export const ComputerInfoSchema: z.ZodType<ComputerInfo> = z.object({
   host: z.string().min(1).max(200),
   home: z.string().min(1).max(1000).optional(),
   roots: z.array(z.string().min(1).max(1000)).max(20),
-  agents: z.array(AgentInfoSchema).max(20),
+  agents: z.array(AgentInfoSchema).max(50),
 });
 
 export interface RegisterRequest {
   readonly protocol: number;
   /** The id an earlier registration of this computer received, or null for a new computer. */
   readonly computerId: string | null;
+  /** When this run of the bridge started: another run than the last one ends what the computer's sessions did. */
+  readonly bridgeStartedAt: string;
   readonly computer: ComputerInfo;
 }
 
 export const RegisterRequestSchema: z.ZodType<RegisterRequest> = z.object({
   protocol: z.number().int().positive(),
   computerId: id.nullable(),
+  bridgeStartedAt: isoTime,
   computer: ComputerInfoSchema,
 });
 
 export interface RegisterResponse {
   readonly computerId: string;
+  /**
+   * The computer's key, when its owner registered it signed in: the bridge sends it from then on instead of the
+   * person's credentials. It does not expire; removing the computer, or registering it signed in again, revokes it.
+   */
+  readonly key?: string | undefined;
 }
 
 /** Where a session works and what it continues. */
@@ -164,6 +179,19 @@ export const PromptContentSchema: z.ZodType<PromptContent> =
       data: z.string().min(1).max(14_000_000),
     }),
   ]);
+
+/**
+ * What a transcript keeps of a message the person sent: its text, and each image as sent (`data`) or, once the
+ * application stored the image apart, the name it serves it under (`file`).
+ */
+export type PromptPart =
+  | { readonly type: 'text'; readonly text: string }
+  | {
+      readonly type: 'image';
+      readonly mimeType: string;
+      readonly data?: string;
+      readonly file?: string;
+    };
 
 /** What the application asks of the bridge. Each command applies to one session and names it in full. */
 export type BridgeCommand =
@@ -290,7 +318,7 @@ export type SessionEvent =
       readonly kind: 'prompt';
       readonly at: string;
       readonly promptId: string;
-      readonly content: readonly PromptContent[];
+      readonly content: readonly PromptPart[];
     }
   | {
       readonly kind: 'update';

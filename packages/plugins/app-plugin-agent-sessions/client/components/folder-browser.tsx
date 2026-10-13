@@ -26,7 +26,7 @@ import { Skeleton } from './ui/skeleton.js';
 import type { Computer } from '../../shared/api.js';
 import { useFolders } from '../api.js';
 import { errorText } from '../lib/errors.js';
-import { displayPath, isWithin } from '../lib/paths.js';
+import { displayPath, isWithin, joinPath, parentOf } from '../lib/paths.js';
 
 export function FolderBrowser({
   computer,
@@ -120,7 +120,7 @@ export function FolderBrowser({
                 <li key={name}>
                   <button
                     type='button'
-                    onClick={() => setDir(join(listing.data.path, name))}
+                    onClick={() => setDir(joinPath(listing.data.path, name))}
                     className='hover:bg-muted flex w-full min-w-0 items-center gap-2.5 rounded-md px-2 py-2 text-left text-[13px]'
                   >
                     <FolderIcon className='text-muted-foreground size-4 shrink-0' />
@@ -151,15 +151,4 @@ export function FolderBrowser({
       </DialogContent>
     </Dialog>
   );
-}
-
-function join(dir: string, name: string): string {
-  return dir.endsWith('/') ? `${dir}${name}` : `${dir}/${name}`;
-}
-
-/** The directory above `dir`, or undefined at the top. */
-function parentOf(dir: string): string | undefined {
-  if (dir === '/') return undefined;
-  const cut = dir.replace(/\/+$/u, '').lastIndexOf('/');
-  return cut <= 0 ? '/' : dir.slice(0, cut);
 }

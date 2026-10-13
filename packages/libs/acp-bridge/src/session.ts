@@ -6,7 +6,7 @@
  * The agent process starts with the first command that needs it and keeps the session until the session closes or the
  * process dies; the next command then starts a new process and continues the agent's own session (`session/resume`,
  * or `session/load` without reporting the history it replays). The person's choices (`SessionTarget.settings`) and
- * the agent's default mode are applied every time the session opens.
+ * the agent's full-access mode (`AgentSpec.modes`) are applied every time the session opens.
  */
 import { randomUUID } from 'node:crypto';
 import { stat } from 'node:fs/promises';
@@ -62,6 +62,8 @@ export class BridgeSession {
   #choices: SessionChoice[] = [];
   /** The agent offers session modes and no configuration options: the `mode` choice is set with `session/set_mode`. */
   #modesOnly = false;
+  /** The agent offers no full-access mode, so the session allows what it asks permission for (`AgentSpec.allowAll`). */
+  #allowAll = false;
   #commands: SessionState['commands'] = [];
   #title: string | null = null;
   #usage: SessionState['context'] = null;
@@ -262,14 +264,15 @@ export class BridgeSession {
       }
       this.#process = agent;
       this.#readChoices(opened.configOptions, opened.modes);
-      await this.#applySettings(agent, resolved.spec.mode);
+      this.#allowAll = resolved.spec.allowAll === true;
+      await this.#applySettings(agent, resolved.spec.modes ?? []);
       this.#context.stateChanged();
       return agent;
     } catch (cause) {
       await agent.stop();
       if (isAuthRequired(cause)) {
         throw new Error(
-          `${resolved.spec.name} is not signed in on this computer. Run \`${resolved.spec.signIn}\` in a terminal there, then send the message again.`,
+          `${resolved.spec.name} is not signed in on this computer. Run \`${resolved.spec.signIn}\` in a terminal there and sign in, then send the message again.`,
           { cause },
         );
       }
@@ -364,12 +367,15 @@ export class BridgeSession {
     ];
   }
 
-  /** Applies the agent's default mode, then what the person chose, wherever the session differs. */
+  /** Applies the first of the agent's full-access modes it offers, then what the person chose, wherever they differ. */
   async #applySettings(
     agent: AgentProcess,
-    defaultMode: string | undefined,
+    fullAccess: readonly string[],
   ): Promise<void> {
     const mode = this.#choices.find((choice) => choice.category === 'mode');
+    const defaultMode = fullAccess.find((value) =>
+      mode?.options.some((option) => option.value === value),
+    );
     const wanted: Record<string, string> = {
       ...(mode && defaultMode ? { [mode.id]: defaultMode } : {}),
       ...this.#target.settings,
@@ -475,6 +481,13 @@ export class BridgeSession {
     request: acp.RequestPermissionRequest,
     signal: AbortSignal,
   ): Promise<acp.RequestPermissionResponse> {
+    if (this.#allowAll) {
+      const allow =
+        request.options.find((option) => option.kind === 'allow_always') ??
+        request.options.find((option) => option.kind === 'allow_once');
+      if (allow)
+        return { outcome: { outcome: 'selected', optionId: allow.optionId } };
+    }
     const requestId = randomUUID();
     this.#emit({
       kind: 'permissionRequested',

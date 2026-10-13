@@ -1,7 +1,7 @@
 /**
- * The viewer's computers: which are online and what each can run, removing one, and the three commands that connect
- * another. These computers run only their owner's sessions; machines that run the team's background work are managed
- * elsewhere in the application.
+ * The viewer's computers: which are online and what each can run, removing one, and the steps that connect another
+ * (`ConnectSteps`, also what a person with no computer sees first). These computers run only their owner's sessions;
+ * machines that run the team's background work are managed elsewhere in the application.
  */
 import { useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -27,6 +27,7 @@ import {
 import type { Computer } from '../../shared/api.js';
 import { useComputers, useRemoveComputer, useUpdateFolders } from '../api.js';
 import { useAgentSessionsConfig, useServerUrl } from '../config.js';
+import { installedAgents, otherAgentNames } from '../lib/agents.js';
 import { shortTime, systemName } from '../lib/format.js';
 import { displayPath, wholeHome } from '../lib/paths.js';
 import { errorText } from '../lib/errors.js';
@@ -42,8 +43,6 @@ export function ComputersDialog({
 }): ReactElement {
   const { t } = useTranslation();
   const computers = useComputers();
-  const { cli, install } = useAgentSessionsConfig();
-  const server = useServerUrl();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='max-h-[85vh] gap-4 overflow-y-auto sm:max-w-[640px]'>
@@ -66,28 +65,61 @@ export function ComputersDialog({
           )}
         </div>
         <h3 className='mt-1 text-[13px] font-semibold'>{t('computers.add')}</h3>
-        <ol className='flex list-decimal flex-col gap-3 pl-5 text-[13px]'>
-          {install && (
-            <li>
-              {t('computers.steps.install')}
-              <Command text={install} />
-            </li>
-          )}
-          <li>
-            {t('computers.steps.login')}
-            <Command text={`${cli} login --server ${server}`} />
-          </li>
-          <li>
-            {t('computers.steps.start')}
-            <Command text={`${cli} acp start`} />
-            <p className='text-muted-foreground mt-1.5 text-xs'>
-              {t('computers.steps.startHint')}{' '}
-              {t('computers.steps.foldersHint')}
-            </p>
-          </li>
-        </ol>
+        <ConnectSteps />
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** What connects a computer: an agent signed in there, the command line signed in, and the bridge kept running. */
+export function ConnectSteps(): ReactElement {
+  const { t } = useTranslation();
+  const { cli, install } = useAgentSessionsConfig();
+  const server = useServerUrl();
+  return (
+    <ol className='flex list-decimal flex-col gap-3 pl-5 text-[13px]'>
+      <li>
+        {t('computers.steps.agent')}
+        <p className='text-muted-foreground mt-1 text-xs'>
+          {t('computers.steps.agentHint')}
+        </p>
+      </li>
+      {install && (
+        <li>
+          {t('computers.steps.install')}
+          <Command text={install} />
+        </li>
+      )}
+      <li>
+        {t('computers.steps.login')}
+        <Command text={`${cli} login --server ${server}`} />
+      </li>
+      <li>
+        {t('computers.steps.start')}
+        <KeepConnected />
+        <p className='text-muted-foreground mt-1.5 text-xs'>
+          {t('computers.steps.foldersHint')}
+        </p>
+      </li>
+    </ol>
+  );
+}
+
+/** The command that keeps a computer connected from every login, and the one that connects it for a while. */
+export function KeepConnected(): ReactElement {
+  const { t } = useTranslation();
+  const { cli } = useAgentSessionsConfig();
+  return (
+    <>
+      <Command text={`${cli} acp service install`} />
+      <p className='text-muted-foreground mt-1.5 text-xs'>
+        {t('computers.steps.startHint')}
+      </p>
+      <p className='text-muted-foreground mt-2 text-xs'>
+        {t('computers.steps.foreground')}
+      </p>
+      <Command text={`${cli} acp start`} />
+    </>
   );
 }
 
@@ -97,6 +129,7 @@ function ComputerCard({
   readonly computer: Computer;
 }): ReactElement {
   const { t, i18n } = useTranslation();
+  const others = otherAgentNames(computer, i18n.language);
   const remove = useRemoveComputer();
   const [confirming, setConfirming] = useState(false);
   return (
@@ -142,7 +175,7 @@ function ComputerCard({
         </button>
       </div>
       <div className='flex flex-wrap gap-1.5'>
-        {computer.agents.map((agent) => (
+        {installedAgents(computer).map((agent) => (
           <span
             key={agent.id}
             title={agent.detail}
@@ -158,6 +191,11 @@ function ComputerCard({
           </span>
         ))}
       </div>
+      {others && (
+        <p className='text-muted-foreground text-xs'>
+          {t('newSession.alsoSupported', { names: others })}
+        </p>
+      )}
       <AllowedFolders computer={computer} />
     </div>
   );

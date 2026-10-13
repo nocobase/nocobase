@@ -3,10 +3,12 @@
  * a blocked agent's, `blocked.ts`, and
  * a suggested executor's, `suggestions.ts`), release management's deployment requests and failed deployments (`releases.ts`), Studio's pull
  * requests (`client/git/inbox.tsx`), issue previews and releases waiting (`previews.ts`), reopening what a deployment no longer runs (`reopen.ts`), the agents plugin's
- * notices, such as a runtime that needs an upgrade (`agents.ts`), knowledge proposals (`knowledge.ts`), and a repository's CI key that could not be rotated or was revoked (`ci.ts`).
+ * notices, such as a runtime that needs an upgrade (`agents.ts`), knowledge proposals (`knowledge.ts`), a repository's CI key that could not be rotated or was revoked (`ci.ts`),
+ * and what a 「我的 Agent」 session's agent did while its owner was not looking (`agent-sessions.ts`).
  */
 import { gitRenderer } from '../../git/inbox.js';
 import type { InboxRegistry } from '@/extensions/nocobase-inbox/registry';
+import { agentSessionsRenderer } from './agent-sessions.js';
 import { ciRenderer } from './ci.js';
 import { runnersRenderer } from './runners.js';
 import { blockedRenderer } from './blocked.js';
@@ -34,6 +36,7 @@ export const studioInboxRegistry: InboxRegistry = {
     runnersRenderer,
     knowledgeRenderer,
     ciRenderer,
+    agentSessionsRenderer,
   ],
   feeds: [],
 };

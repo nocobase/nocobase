@@ -3,6 +3,7 @@
  * thinking and tool calls folded away, its plan, the permission requests waiting for an answer, and at the end of a
  * turn the work it created with the choice to start it.
  */
+import { resolveAppUrl } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import {
@@ -36,7 +37,7 @@ import {
   CollapsibleTrigger,
 } from './ui/collapsible.js';
 
-import type { Session, SessionLink } from '../../shared/api.js';
+import { imagePath, type Session, type SessionLink } from '../../shared/api.js';
 import { awaitsStart } from '../lib/facts.js';
 import { lineDiff } from '../lib/diff.js';
 import { clockTime, dateTime, tokens } from '../lib/format.js';
@@ -123,7 +124,11 @@ function Item({
               {item.images.map((image) => (
                 <img
                   key={image.id}
-                  src={`data:${image.mimeType};base64,${image.data}`}
+                  src={
+                    image.file
+                      ? resolveAppUrl(imagePath(session.id, image.file))
+                      : `data:${image.mimeType};base64,${image.data}`
+                  }
                   alt=''
                   className='max-h-40 rounded-lg border'
                 />

@@ -50,6 +50,7 @@ import {
   useDecideLinks,
   usePrompt,
   useSession,
+  useMarkSeen,
   useTranscript,
   useUpdateSession,
 } from '../api.js';
@@ -77,6 +78,7 @@ export function SessionView({
   const { t } = useTranslation();
   const session = useSession(sessionId);
   const transcript = useTranscript(sessionId);
+  useMarkSeen(sessionId, transcript.data?.at(-1)?.seq);
   const computers = useComputers();
   // Beside the conversation on a wide screen; on a narrower one it opens over it, when asked for.
   const [details, setDetails] = useState(
