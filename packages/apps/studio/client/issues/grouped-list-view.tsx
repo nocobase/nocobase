@@ -93,8 +93,14 @@ export function GroupedIssueListView({
   page,
   issueHref,
   onOpen,
+  compact,
+  selectedId,
+  rowAction,
   empty,
 }: {
+  readonly compact?: boolean;
+  readonly selectedId?: string | null;
+  readonly rowAction?: IssueTableProps['rowAction'];
   readonly page: IssuesPage;
   readonly issueHref: (id: string) => string;
   readonly onOpen: (id: string) => void;
@@ -478,6 +484,20 @@ export function GroupedIssueListView({
           <IssueTable
             rows={entries.filter((entry) => 'id' in entry)}
             entries={entries}
+            compact={compact ?? false}
+            {...(page.filters.sort === 'created'
+              ? {
+                  sortDescription: t('issuesPage.tree.createdSort', {
+                    direction: t(
+                      page.filters.direction === 'asc'
+                        ? 'issuesPage.table.ascending'
+                        : 'issuesPage.table.descending',
+                    ),
+                  }),
+                }
+              : {})}
+            selectedId={selectedId ?? null}
+            {...(rowAction ? { rowAction } : {})}
             labels={
               t('issuesPage.table', {
                 returnObjects: true,
@@ -513,7 +533,7 @@ export function GroupedIssueListView({
                   data-task-id={row.id}
                   className='inline-flex shrink-0'
                   style={{
-                    paddingInlineStart: `calc(var(--spacing) * ${4 * (depths.get(row.id) ?? 0)})`,
+                    paddingInlineStart: `calc(var(--spacing) * ${4 * (compact ? Math.min(3, depths.get(row.id) ?? 0) : (depths.get(row.id) ?? 0))})`,
                   }}
                 >
                   {node.hasChildren ? (

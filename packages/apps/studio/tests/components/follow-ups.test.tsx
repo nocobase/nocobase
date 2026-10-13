@@ -16,15 +16,20 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  readStoredIssueView,
+  resolveIssueView,
+} from '@nocobase/app-plugin-projects/client/issues';
 import enUS from '../../client/locales/en-US.js';
 import {
   DraftContext,
   IssueDrafts,
 } from '../../client/follow-ups/draft-state.js';
+import { IssuePresentationContext } from '../../client/issues/presentation.js';
 import { PersonalTaskWorkspace } from '../../client/follow-ups/workspace.js';
 import { FollowToggle } from '../../client/issues/live/follow-toggle.js';
 import LegacyFollowUps from '../../client/pages/follow-ups/index.js';
@@ -145,7 +150,17 @@ afterEach(() => {
 
 function Tasks() {
   const [query, setQuery] = useState('');
+  const { reportPage } = useContext(IssuePresentationContext);
   const location = useLocation();
+  const resolved = resolveIssueView(
+    new URLSearchParams(location.search),
+    readStoredIssueView('my-issues'),
+    ['board', 'list', 'agent'],
+    'list',
+  );
+  useEffect(() => {
+    reportPage?.({ view: resolved, queryIdentity: `test-${resolved}` });
+  }, [reportPage, resolved]);
   const navigate = useNavigate();
   return (
     <div data-testid='tasks'>

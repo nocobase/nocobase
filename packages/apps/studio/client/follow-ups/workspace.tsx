@@ -1,9 +1,5 @@
 /** Personal task layout around the existing scope outlet. Shared table presentation remains owned by PM-336. */
 import { ApiClientError } from '@nocobase/app-client';
-import {
-  readStoredIssueView,
-  resolveIssueView,
-} from '@nocobase/app-plugin-projects/client/issues';
 import type { AttachmentUploads } from '@nocobase/app-plugin-projects/client/issues';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
@@ -22,6 +18,9 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from 'cn';
 
+import { IssuePresentationContext } from '../issues/presentation.js';
+import type { IssuesPage } from '../issues/use-issues-page.js';
+import { FollowToggle } from '../issues/live/follow-toggle.js';
 import { useFollowUps, useMarkSeen } from './api.js';
 import { COLUMN_SCROLL } from './column-scroll.js';
 import { useIssueDrafts } from './draft-state.js';
@@ -54,20 +53,30 @@ export function PersonalTaskWorkspace({
   const chosen = params.get('issue');
   const [wide, setWide] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const [focusRequest, setFocusRequest] = useState<{
+    kind: 'preview' | 'return';
+    source: HTMLElement | null;
+  } | null>(null);
+  const handledFocusRef = useRef<typeof focusRequest>(null);
   const focusTargetRef = useRef<HTMLHeadingElement>(null);
   const previousFollowingRef = useRef<readonly string[]>([]);
   const [unavailable, setUnavailable] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
-  const [storedView] = useState(() => readStoredIssueView('my-issues'));
-  // Match the existing tab's view resolution until PM-336 supplies the shared resolved-view context/default.
-  const table =
-    resolveIssueView(
-      params,
-      storedView,
-      ['board', 'list', 'agent'],
-      'board',
-    ) === 'list';
+  const [resolvedPage, setResolvedPage] =
+    useState<Pick<IssuesPage, 'view' | 'queryIdentity'>>();
+  const reportPage = useCallback(
+    (page: Pick<IssuesPage, 'view' | 'queryIdentity'>) => {
+      setResolvedPage((current) =>
+        current?.queryIdentity === page.queryIdentity &&
+        current.view === page.view
+          ? current
+          : page,
+      );
+    },
+    [],
+  );
+  const table = resolvedPage?.view === 'list';
   const columns = wide && table;
   const following = view?.following.filter((id) => !unavailable.has(id)) ?? [];
   const followed = view
@@ -118,6 +127,37 @@ export function PersonalTaskWorkspace({
       scope,
     ],
   );
+  const selectUser = useCallback(
+    (id: string | null) => {
+      if (!fullDetail) {
+        setFocusRequest((previous) => ({
+          kind: id ? 'preview' : 'return',
+          source:
+            id && document.activeElement instanceof HTMLElement
+              ? document.activeElement
+              : (previous?.source ?? null),
+        }));
+      }
+      select(id);
+    },
+    [fullDetail, select],
+  );
+  useEffect(() => {
+    if (!focusRequest || handledFocusRef.current === focusRequest) return;
+    if (focusRequest.kind === 'preview' && showPanel) {
+      if (!columns)
+        rootRef.current
+          ?.querySelector<HTMLElement>('[data-preview-focus]')
+          ?.focus({ preventScroll: true });
+      handledFocusRef.current = focusRequest;
+    } else if (focusRequest.kind === 'return' && !showPanel) {
+      const target = focusRequest.source;
+      if (target?.isConnected && !target.closest('[aria-hidden="true"]'))
+        target.focus({ preventScroll: true });
+      else focusTargetRef.current?.focus({ preventScroll: true });
+      handledFocusRef.current = focusRequest;
+    }
+  }, [chosen, showPanel, columns, focusRequest]);
   const pickTab = (next: 'following' | 'mine'): void => {
     const updated = selectWorkspaceIssue(params, null);
     updated.set('tab', next);
@@ -151,11 +191,11 @@ export function PersonalTaskWorkspace({
         event as CustomEvent<{ issueId: string; first: boolean }>
       ).detail;
       // A full detail is already viewing this task; do not add a query-only history entry before its return.
-      if (first && !fullDetail) select(issueId);
+      if (first && !fullDetail) selectUser(issueId);
     };
     window.addEventListener('studio:issue-followed', onFollow);
     return () => window.removeEventListener('studio:issue-followed', onFollow);
-  }, [select, fullDetail]);
+  }, [selectUser, fullDetail]);
   useEffect(() => {
     if (!view) return;
     const next = selectionAfterRemoval(
@@ -194,176 +234,196 @@ export function PersonalTaskWorkspace({
     `/my-issues/${scope}/${encodeURIComponent(identifier)}${location.search}${location.hash}`;
 
   return (
-    <div
-      ref={rootRef}
-      className='flex h-full min-h-0 flex-col gap-3'
-      data-testid='personal-task-workspace'
-      data-columns={(columns && hasFollowing && !fullDetail) || undefined}
+    <IssuePresentationContext.Provider
+      value={{
+        compact: columns && hasFollowing && !fullDetail,
+        selectedId: showPanel && !denied ? selected : null,
+        onPreview: selectUser,
+        rowAction: (row) => <FollowToggle issueId={row.id} compact />,
+        reportPage,
+      }}
     >
-      <h2
-        ref={focusTargetRef}
-        tabIndex={-1}
-        className='sr-only focus:not-sr-only focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
-      >
-        {t('issuesPage.myTitle')}
-      </h2>
-      {overview.isError ? (
-        <Alert variant='destructive'>
-          <AlertTitle>
-            {t(
-              expired
-                ? 'personalTasks.sessionExpired'
-                : denied
-                  ? 'common.forbidden'
-                  : 'followUps.loadFailed',
-            )}
-          </AlertTitle>
-          {expired ? (
-            <AlertAction>
-              <Button
-                size='sm'
-                variant='outline'
-                nativeButton={false}
-                role='link'
-                render={<Link to='/login' />}
-              >
-                {t('personalTasks.signInAgain')}
-              </Button>
-            </AlertAction>
-          ) : !denied ? (
-            <AlertAction>
-              <Button
-                size='sm'
-                variant='outline'
-                onClick={() => void overview.refetch()}
-              >
-                {t('common.retry')}
-              </Button>
-            </AlertAction>
-          ) : null}
-        </Alert>
-      ) : !view ? (
-        <div
-          role='status'
-          aria-label={t('personalTasks.loading')}
-          aria-busy='true'
-          className='flex items-center gap-3'
-        >
-          <Skeleton className='h-4 w-40' />
-          <span className='sr-only'>{t('personalTasks.loading')}</span>
-        </div>
-      ) : null}
-      {drafts &&
-        [...drafts.sessions.keys()]
-          .filter(
-            (id) => drafts.hasDraft(id) && (!showPanel || id !== selected),
-          )
-          .map((id) => (
-            <Button
-              key={id}
-              variant='outline'
-              size='sm'
-              className='max-w-full self-start text-left break-all whitespace-normal'
-              onClick={() => select(id)}
-            >
-              {t('personalTasks.returnDraft', {
-                key: unavailable.has(id)
-                  ? id
-                  : (view?.issues.find((issue) => issue.id === id)
-                      ?.identifier ?? id),
-              })}
-            </Button>
-          ))}
-      {hasFollowing && !columns && !showPanel ? (
-        <nav
-          aria-label={t('personalTasks.sections')}
-          className='flex flex-wrap gap-2'
-        >
-          <Button
-            variant={tab === 'following' ? 'secondary' : 'ghost'}
-            aria-pressed={tab === 'following'}
-            onClick={() => pickTab('following')}
-          >
-            {t('followUps.tabs.following')}
-          </Button>
-          <Button
-            variant={tab === 'mine' ? 'secondary' : 'ghost'}
-            aria-pressed={tab === 'mine'}
-            onClick={() => pickTab('mine')}
-          >
-            {t('issuesPage.myTitle')}
-          </Button>
-        </nav>
-      ) : null}
-      {showPanel &&
-      selected &&
-      !denied &&
-      !following.includes(selected) &&
-      !unavailable.has(selected) ? (
-        <p className='text-sm text-muted-foreground' role='status'>
-          {t('followUps.following.viewing')}
-        </p>
-      ) : null}
       <div
-        className={cn(
-          'grid min-h-0 flex-1 gap-4',
-          columns && hasFollowing && !fullDetail
-            ? 'grid-cols-[12rem_minmax(30rem,1fr)_minmax(24rem,1fr)] grid-rows-[minmax(0,1fr)]'
-            : 'grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)]',
-        )}
+        ref={rootRef}
+        className='flex h-full min-h-0 min-w-0 max-w-full flex-col gap-3'
+        data-testid='personal-task-workspace'
+        data-columns={(columns && hasFollowing && !fullDetail) || undefined}
       >
-        <FollowingScroll
-          visible={showFollowing}
-          positions={scrollPositions}
-          issues={followed}
-          stored={view?.followingStored ?? false}
-          selectedId={showPanel && !denied ? selected : null}
-          viewing={selected && !following.includes(selected) ? summary : null}
-          onSelect={select}
-        />
-        {showPanel && selected && (denied || unavailable.has(selected)) ? (
-          <section className='flex min-h-0 flex-col gap-3 overflow-y-auto rounded-lg border p-4'>
-            <p>{t('personalTasks.draftUnavailable')}</p>
-            <p className='whitespace-pre-wrap'>
-              {drafts?.sessions.get(selected)?.read('content', '')}
-            </p>
-            <ul>
-              {drafts?.sessions
-                .get(selected)
-                ?.read<AttachmentUploads | null>('issueUploads', null)
-                ?.uploads.map((upload) => (
-                  <li key={upload.key}>{upload.name}</li>
-                ))}
-            </ul>
-            <Button size='sm' variant='outline' onClick={() => select(null)}>
-              {t('followUps.activity.back')}
-            </Button>
-          </section>
-        ) : showPanel && selected ? (
-          <ScrollPanel
-            key={selected}
-            issueId={selected}
-            positions={scrollPositions}
-            summary={summary}
-            onSeen={markSeen}
-            onUnavailable={onUnavailable}
-            onResolved={onResolved}
-            issueHref={fullIssueHref}
-            {...(!columns || !hasFollowing
-              ? { onBack: () => select(null) }
-              : {})}
-          />
-        ) : null}
-        {/* Keep one stable outlet container through every layout switch; no replacement owner-card data source. */}
-        <div
-          className={cn('min-h-0 min-w-0', !showTasks && 'hidden')}
-          aria-hidden={!showTasks || undefined}
+        <h2
+          ref={focusTargetRef}
+          tabIndex={-1}
+          className='sr-only focus:not-sr-only focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
         >
-          {/* A confirmed overview denial closes all active task queries/actions, including the full-detail outlet. Draft hosts stay above this boundary. */}
-          {denied ? null : children}
+          {t('issuesPage.myTitle')}
+        </h2>
+        {overview.isError ? (
+          <Alert variant='destructive'>
+            <AlertTitle>
+              {t(
+                expired
+                  ? 'personalTasks.sessionExpired'
+                  : denied
+                    ? 'common.forbidden'
+                    : 'followUps.loadFailed',
+              )}
+            </AlertTitle>
+            {expired ? (
+              <AlertAction>
+                <Button
+                  size='sm'
+                  variant='outline'
+                  nativeButton={false}
+                  role='link'
+                  render={<Link to='/login' />}
+                >
+                  {t('personalTasks.signInAgain')}
+                </Button>
+              </AlertAction>
+            ) : !denied ? (
+              <AlertAction>
+                <Button
+                  size='sm'
+                  variant='outline'
+                  onClick={() => void overview.refetch()}
+                >
+                  {t('common.retry')}
+                </Button>
+              </AlertAction>
+            ) : null}
+          </Alert>
+        ) : !view ? (
+          <div
+            role='status'
+            aria-label={t('personalTasks.loading')}
+            aria-busy='true'
+            className='flex items-center gap-3'
+          >
+            <Skeleton className='h-4 w-40' />
+            <span className='sr-only'>{t('personalTasks.loading')}</span>
+          </div>
+        ) : null}
+        {drafts &&
+          [...drafts.sessions.keys()]
+            .filter(
+              (id) => drafts.hasDraft(id) && (!showPanel || id !== selected),
+            )
+            .map((id) => (
+              <Button
+                key={id}
+                variant='outline'
+                size='sm'
+                className='max-w-full self-start text-left break-all whitespace-normal'
+                onClick={() => {
+                  selectUser(id);
+                }}
+              >
+                {t('personalTasks.returnDraft', {
+                  key: unavailable.has(id)
+                    ? id
+                    : (view?.issues.find((issue) => issue.id === id)
+                        ?.identifier ?? id),
+                })}
+              </Button>
+            ))}
+        {hasFollowing && !columns && !showPanel ? (
+          <nav
+            aria-label={t('personalTasks.sections')}
+            className='flex flex-wrap gap-2'
+          >
+            <Button
+              variant={tab === 'following' ? 'secondary' : 'ghost'}
+              aria-pressed={tab === 'following'}
+              onClick={() => pickTab('following')}
+            >
+              {t('followUps.tabs.following')}
+            </Button>
+            <Button
+              variant={tab === 'mine' ? 'secondary' : 'ghost'}
+              aria-pressed={tab === 'mine'}
+              onClick={() => pickTab('mine')}
+            >
+              {t('issuesPage.myTitle')}
+            </Button>
+          </nav>
+        ) : null}
+        {showPanel &&
+        selected &&
+        !denied &&
+        !following.includes(selected) &&
+        !unavailable.has(selected) ? (
+          <p className='text-sm text-muted-foreground' role='status'>
+            {t('followUps.following.viewing')}
+          </p>
+        ) : null}
+        <div
+          className={cn(
+            'grid min-h-0 min-w-0 flex-1 gap-4',
+            columns && hasFollowing && !fullDetail
+              ? 'grid-cols-[12rem_minmax(30rem,1fr)_minmax(24rem,1fr)] grid-rows-[minmax(0,1fr)]'
+              : 'grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)]',
+          )}
+        >
+          <FollowingScroll
+            visible={showFollowing}
+            positions={scrollPositions}
+            issues={followed}
+            stored={view?.followingStored ?? false}
+            selectedId={showPanel && !denied ? selected : null}
+            viewing={selected && !following.includes(selected) ? summary : null}
+            onSelect={selectUser}
+          />
+          {showPanel && selected && (denied || unavailable.has(selected)) ? (
+            <section
+              data-preview-focus
+              tabIndex={-1}
+              className='flex min-h-0 flex-col gap-3 overflow-y-auto rounded-lg border p-4'
+            >
+              <p>{t('personalTasks.draftUnavailable')}</p>
+              <p className='whitespace-pre-wrap'>
+                {drafts?.sessions.get(selected)?.read('content', '')}
+              </p>
+              <ul>
+                {drafts?.sessions
+                  .get(selected)
+                  ?.read<AttachmentUploads | null>('issueUploads', null)
+                  ?.uploads.map((upload) => (
+                    <li key={upload.key}>{upload.name}</li>
+                  ))}
+              </ul>
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={() => selectUser(null)}
+              >
+                {t('followUps.activity.back')}
+              </Button>
+            </section>
+          ) : showPanel && selected ? (
+            <ScrollPanel
+              key={selected}
+              issueId={selected}
+              positions={scrollPositions}
+              summary={summary}
+              onSeen={markSeen}
+              onUnavailable={onUnavailable}
+              onResolved={onResolved}
+              issueHref={fullIssueHref}
+              {...(!columns || !hasFollowing
+                ? { onBack: () => selectUser(null) }
+                : {})}
+            />
+          ) : null}
+          {/* Keep one stable outlet container through every layout switch; no replacement owner-card data source. */}
+          <div
+            className={cn('min-h-0 min-w-0', !showTasks && 'hidden')}
+            aria-hidden={!showTasks || undefined}
+          >
+            {/* A confirmed overview denial closes all active task queries/actions, including the full-detail outlet. Draft hosts stay above this boundary. */}
+            {denied ? null : children}
+          </div>
         </div>
       </div>
-    </div>
+    </IssuePresentationContext.Provider>
   );
 }
 
@@ -383,6 +443,8 @@ function ScrollPanel({
   return (
     <div
       ref={scrollRef}
+      tabIndex={-1}
+      data-preview-focus
       className={cn('min-h-0 overflow-y-auto', COLUMN_SCROLL)}
       onScroll={(event) =>
         positions.set(issueId, event.currentTarget.scrollTop)

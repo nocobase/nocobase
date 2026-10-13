@@ -24,7 +24,7 @@ test.describe('personal task workspace', () => {
       await api.put('followUps/following', { issueIds: [] });
       await open(page, `/follow-ups?view=list&q=${suffix}#activity`);
       await expect(page).toHaveURL(
-        url(`/my-issues/owned?view=list&q=${suffix}#activity`),
+        url(`/my-issues/owned?view=list&q=${suffix}&tab=following#activity`),
       );
       const menu = page.getByRole('navigation', { name: '应用导航' });
       const entries = menu.getByRole('link');
@@ -44,10 +44,23 @@ test.describe('personal task workspace', () => {
       );
       const row = page.getByRole('row').filter({ hasText: review.title });
       await expect(row).toHaveCount(1);
-      // Row preview/follow slots are a later PM-336 integration; use the existing full-detail link now.
+      // A plain row link previews without following; the explicit action opens the full scoped detail.
       await row
         .getByRole('link', { name: review.identifier, exact: true })
         .click();
+      await expect(page).toHaveURL(
+        new RegExp(`/my-issues/owned\\?.*issue=${review.id}`),
+      );
+      await expect(
+        page.getByText('正在查看（未关注）', { exact: true }),
+      ).toBeVisible();
+      await expect
+        .poll(
+          async () =>
+            (await api.get<{ following: string[] }>('followUps')).following,
+        )
+        .toEqual([]);
+      await page.getByRole('link', { name: '打开任务', exact: true }).click();
       await expect(
         page.getByRole('heading', { name: review.title }).last(),
       ).toBeVisible();
@@ -88,7 +101,7 @@ test.describe('personal task workspace', () => {
       );
       await expect(page).toHaveURL(
         url(
-          `/my-issues/owned?view=list&issue=${review.id}&q=${suffix}#activity`,
+          `/my-issues/owned?view=list&issue=${review.id}&q=${suffix}&tab=following#activity`,
         ),
       );
       await expect(
@@ -106,4 +119,132 @@ test.describe('personal task workspace', () => {
       await api.delete(`projects/issues/${review.id}`);
     }
   });
+});
+
+test('both scopes retain grouped expansion, keyboard preview, draft return and real search composition', async ({
+  page,
+  api,
+}) => {
+  test.setTimeout(120_000);
+  const me = await api.get<{ userId: string }>('projects/me');
+  const suffix = unique();
+  const parent = await api.post<Issue>('projects/issues', {
+    title: `Workspace parent ${suffix}`,
+    ownerUserId: me.userId,
+    executor: { type: 'user', id: me.userId },
+    start: false,
+  });
+  const child = await api.post<Issue>('projects/issues', {
+    title: `Workspace child ${suffix}`,
+    parentIssueId: parent.id,
+    ownerUserId: me.userId,
+    executor: { type: 'user', id: me.userId },
+    start: false,
+  });
+  try {
+    await api.put('followUps/following', { issueIds: [] });
+    await page.setViewportSize({ width: 1600, height: 1000 });
+    await open(page, `/my-issues/owned?view=list&q=${suffix}#reply`);
+    const expand = page.getByRole('button', {
+      name: `展开${parent.identifier}的子任务`,
+      exact: true,
+    });
+    await expand.focus();
+    await page.keyboard.press('Enter');
+    await expect(
+      page.getByRole('link', { name: child.identifier, exact: true }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(
+      new RegExp(`/my-issues/owned\\?.*q=${suffix}`),
+    );
+    const parentRow = page.getByRole('row').filter({
+      has: page.getByRole('link', { name: parent.identifier, exact: true }),
+    });
+    await parentRow.getByRole('button', { name: '关注', exact: true }).click();
+    await expect
+      .poll(
+        async () =>
+          (await api.get<{ following: string[] }>('followUps')).following,
+      )
+      .toEqual([parent.id]);
+    await expect(page.getByRole('table')).toHaveAttribute(
+      'data-compact',
+      'true',
+    );
+    await expect(
+      page.getByRole('link', { name: child.identifier, exact: true }),
+    ).toBeVisible();
+    const childLink = page.getByRole('link', {
+      name: child.identifier,
+      exact: true,
+    });
+    await childLink.focus();
+    await page.keyboard.press('Enter');
+    const activity = page.getByRole('region', { name: '任务动态' });
+    await expect(
+      activity.getByRole('heading', { name: child.title }).last(),
+    ).toBeVisible();
+    await expect
+      .poll(
+        async () =>
+          (await api.get<{ following: string[] }>('followUps')).following,
+      )
+      .toEqual([parent.id]);
+    await page.goBack();
+    await expect(
+      activity.getByRole('heading', { name: parent.title }).last(),
+    ).toBeVisible();
+    await page.goForward();
+    await expect(
+      activity.getByRole('heading', { name: child.title }).last(),
+    ).toBeVisible();
+    const editor = activity.getByRole('textbox', { name: '评论' });
+    await editor.click();
+    await editor.pressSequentially('Unsent workspace draft');
+    await page.getByRole('tab', { name: '我执行的' }).click();
+    await expect(editor).toContainText('Unsent workspace draft');
+    await expect(page.getByRole('table')).toHaveAttribute(
+      'data-compact',
+      'true',
+    );
+    const search = page.getByRole('textbox', { name: '搜索任务' });
+    await search.fill('no matching task');
+    await expect(page.getByRole('table')).toContainText(
+      '没有符合筛选条件的任务。',
+    );
+    await expect(
+      activity.getByRole('heading', { name: child.title }).last(),
+    ).toBeVisible();
+    await search.fill(suffix);
+    await search.focus();
+    const ime = await page.context().newCDPSession(page);
+    await ime.send('Input.imeSetComposition', {
+      text: 'ren',
+      selectionStart: 3,
+      selectionEnd: 3,
+    });
+    await expect(search).toBeFocused();
+    await ime.send('Input.insertText', { text: '人' });
+    await expect(search).toHaveValue(`${suffix}人`);
+    await ime.detach();
+    await search.fill(suffix);
+    await expect(
+      page.getByRole('link', { name: parent.identifier, exact: true }),
+    ).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await activity
+      .getByRole('button', { name: '返回列表', exact: true })
+      .click();
+    await expect(
+      page.getByRole('button', { name: /返回未发送草稿/ }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: /返回未发送草稿/ }).click();
+    await expect(activity.getByRole('textbox', { name: '评论' })).toContainText(
+      'Unsent workspace draft',
+    );
+  } finally {
+    await api.put('followUps/following', { issueIds: [] });
+    await api.delete(`projects/issues/${child.id}`);
+    await api.delete(`projects/issues/${parent.id}`);
+  }
 });

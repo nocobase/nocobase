@@ -58,6 +58,14 @@ test.describe('personal task columns', () => {
         await page.setViewportSize(viewport);
         await open(page, `/follow-ups?view=list&tab=mine&q=${suffix}`);
         const workspace = page.getByTestId('personal-task-workspace');
+        // ResizeObserver and resolved-view reporting are asynchronous; compare both facts in the same rendered frame.
+        await expect
+          .poll(() =>
+            workspace.evaluate<boolean, void>(
+              `element => element.hasAttribute('data-columns') === (element.getBoundingClientRect().width >= 69 * parseFloat(getComputedStyle(document.documentElement).fontSize))`,
+            ),
+          )
+          .toBe(true);
         const wide = await workspace.evaluate<boolean, void>(
           `element => element.getBoundingClientRect().width >= 69 * parseFloat(getComputedStyle(document.documentElement).fontSize)`,
         );

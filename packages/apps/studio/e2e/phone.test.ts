@@ -83,6 +83,7 @@ test.describe('phone', () => {
     await expect(page.getByTestId('follow-ups-following')).toBeVisible();
     await expect(page.getByRole('textbox', { name: '搜索任务' })).toBeHidden();
     await tabs.getByRole('button', { name: '我的任务-α', exact: true }).click();
+    await page.getByRole('button', { name: /^筛选/u }).click();
     await expect(page.getByRole('textbox', { name: '搜索任务' })).toBeVisible();
     await expect(page.getByTestId('follow-ups-following')).toBeHidden();
     await tabs.getByRole('button', { name: /^关注/u }).click();
@@ -126,6 +127,7 @@ test.describe('phone', () => {
     }
     await api.put('followUps/following', { issueIds: [created[0]!.id] });
     await open(page, `/follow-ups?view=list&tab=mine&q=${suffix}`);
+    await page.getByRole('button', { name: /^筛选/u }).click();
     await expect(page.getByRole('textbox', { name: '搜索任务' })).toHaveValue(
       suffix,
     );
