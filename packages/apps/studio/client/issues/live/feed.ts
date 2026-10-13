@@ -1,7 +1,6 @@
 /**
- * An issue's activity as "My follow-ups" tells it (`issue-panel.tsx`): one entry per thing that happened, newest
- * first, worded by what it means rather than as raw comments. Read from what the issue page already loads: the issue's
- * newest activities and comment threads, and its pull requests.
+ * An issue's activity told by what it means: one entry per thing that happened, newest first. The issue pages' feed
+ * (`issue-feed.tsx`) reads it to tag hand-overs and reviews and to tell conversation from system records.
  *
  * - The project manager's comment that mentions agents hands them a step (`handOver`); its other comments say what it
  *   decided (`manager`).
@@ -15,7 +14,7 @@
 import type { CommentThread } from '@nocobase/app-plugin-projects/client/issues';
 import type { Activity } from '@nocobase/app-plugin-projects/shared/issues';
 
-import type { IssuePullRequest } from '../../shared/git.js';
+import type { IssuePullRequest } from '../../../shared/git.js';
 
 export type FeedKind =
   | 'handOver'
@@ -176,6 +175,15 @@ function text(value: unknown): string | null {
   return typeof value === 'string' && value ? value : null;
 }
 
+/** What an activity is on the feed; null for one it leaves out (comments, skipped work). */
+export function activityFeedKind(
+  activity: Pick<Activity, 'action'>,
+): 'status' | 'pullRequest' | 'change' | null {
+  if (SKIPPED_ACTIONS.has(activity.action)) return null;
+  if (activity.action === 'status_changed') return 'status';
+  return activity.action.startsWith('pr_') ? 'pullRequest' : 'change';
+}
+
 export function buildFeed(input: FeedInput): FeedEvent[] {
   const { viewerId, managerId } = input;
   const isMine = (type: string, id: string | null) =>
@@ -242,7 +250,8 @@ export function buildFeed(input: FeedInput): FeedEvent[] {
   }
 
   for (const activity of input.activities) {
-    if (SKIPPED_ACTIONS.has(activity.action)) continue;
+    const kind = activityFeedKind(activity);
+    if (!kind) continue;
     const base = {
       ...blank,
       id: `activity:${activity.id}`,
@@ -254,7 +263,7 @@ export function buildFeed(input: FeedInput): FeedEvent[] {
       },
       mine: isMine(activity.actorType, activity.actorId),
     };
-    if (activity.action === 'status_changed') {
+    if (kind === 'status') {
       events.push({
         ...base,
         kind: 'status',
@@ -263,11 +272,7 @@ export function buildFeed(input: FeedInput): FeedEvent[] {
       });
       continue;
     }
-    events.push({
-      ...base,
-      kind: activity.action.startsWith('pr_') ? 'pullRequest' : 'change',
-      activity,
-    });
+    events.push({ ...base, kind, activity });
   }
 
   for (const pr of input.pullRequests ?? []) {

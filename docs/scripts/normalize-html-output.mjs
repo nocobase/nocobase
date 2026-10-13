@@ -1,3 +1,4 @@
+import { languageBase } from '../shared/languages.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -28,7 +29,7 @@ function resolveOutDir() {
   }
 
   const lang = getOption('lang') || process.env.DOCS_LANG || 'en';
-  return path.resolve(lang === 'en' ? 'dist' : `dist/${lang}`);
+  return path.resolve('dist', `.${languageBase(lang)}`);
 }
 
 async function pathExists(targetPath) {
