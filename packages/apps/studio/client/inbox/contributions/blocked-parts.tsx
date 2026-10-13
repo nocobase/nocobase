@@ -33,6 +33,7 @@ import { inboxKeys } from '@nocobase/app-plugin-notification-in-app/client/inbox
 import type { InboxPartProps } from '@/extensions/nocobase-inbox/registry';
 import type { ProjectsModel } from './projects.js';
 import { paramsOf, useParamsOf } from './projects-wording.js';
+import { IssueMarkdown } from '../../issues/markdown.js';
 
 type BlockedAction =
   | { readonly action: 'answer'; readonly content: string }
@@ -60,7 +61,10 @@ export function BlockedActions({
   const act = useMutation({
     mutationFn: async (request: BlockedAction) => {
       if (request.action === 'answer') {
-        await pm.createComment(issueId, { content: request.content });
+        await pm.createComment(issueId, {
+          content: request.content,
+          ...(params.commentId ? { parentId: params.commentId } : {}),
+        });
         return;
       }
       const revision = issue?.revision ?? 0;
@@ -216,7 +220,7 @@ export function BlockedBrief({
         actor: params.actorName ?? t('inbox.someone'),
       })}
     >
-      {params.question}
+      <IssueMarkdown content={params.question} />
     </blockquote>
   );
 }

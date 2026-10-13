@@ -91,7 +91,7 @@ import {
 import { releaseRemovedAgents } from './removal.js';
 import { managerRoster } from './manager/roster.js';
 import type { ProjectManager } from './manager/service.js';
-import { relayAnnouncements } from './tx.js';
+import { relayAnnouncements, refreshRunIssues } from './tx.js';
 import { inactiveUsers } from './users.js';
 import { createAgentWork } from './work.js';
 import { commentRunNoticeRule } from './comment-run-limit.js';
@@ -256,6 +256,9 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
       agents.conversations.contextKinds.register(kind, resolvers[kind]),
     ),
     relayAnnouncements(deps.projects(), agents.events),
+    refreshRunIssues(deps.projects(), agents, (error) =>
+      onError('Agents could not refresh issue progress.', error),
+    ),
     // People: names from the user kind, the members to pick from, and who can no longer act (a runner they own stops).
     agents.people.provide({
       names: (conn, ids) => deps.kinds.names(conn, 'user', ids),

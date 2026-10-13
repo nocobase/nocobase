@@ -51,13 +51,13 @@ export function IssueConversation({
   const [mentionSearchRevision, setMentionSearchRevision] = useState(0);
   const editorRef = useRef<RichTextHandle>(null);
   const draft = useIssueDraft(detail.id);
-  const [replyTo, setReplyTarget] = useDraftField<IssueComment | null>(
+  const [replyTo, setReplyTarget] = useDraftField<Pick<IssueComment, 'id' | 'authorName'> | null>(
     draft,
     'replyTo',
     null,
   );
   const setReplyTo = useCallback(
-    (comment: IssueComment | null): void => {
+    (comment: Pick<IssueComment, 'id' | 'authorName'> | null): void => {
       // A reply selected while sending must not be silently cleared by the pending submission.
       if (comment && draft?.read('pending', false)) return;
       setReplyTarget(comment);

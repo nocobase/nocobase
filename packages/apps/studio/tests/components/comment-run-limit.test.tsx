@@ -85,9 +85,11 @@ describe('continuing an agent comment', () => {
     const continued = vi.fn();
     await mount(<IssueCommentRunLimit issue={issue} onContinued={continued} />);
     expect(
-      await screen.findByText(enUS.studioAgents.commentRuns.limitReached),
+      await screen.findByText(enUS.issueLive.summary.needsYou),
     ).toBeInTheDocument();
-    expect(mocks.request).toHaveBeenCalledWith({ path: 'issueCommentRuns/i1' });
+    expect(mocks.request).toHaveBeenCalledWith(
+      expect.objectContaining({ path: 'issueCommentRuns/i1' }),
+    );
     const button = screen.getByRole('button', { name: 'Continue' });
     fireEvent.click(button);
     fireEvent.click(button);

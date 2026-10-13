@@ -6,7 +6,6 @@ import {
   type AttachmentUploads,
   canUploadAttachments,
   useAttachmentUploads,
-  useAuthorLabel,
   useHasMentionableKinds,
 } from '@nocobase/app-plugin-projects/client/issues';
 import { useViewer } from '@nocobase/app-plugin-projects/client/kit';
@@ -35,7 +34,6 @@ export function IssueComposer({
   const wording = useIssuePageWording();
   const { t } = wording;
   const viewer = useViewer();
-  const authorLabel = useAuthorLabel();
   const wakeable = useHasMentionableKinds();
   const localUploads = useAttachmentUploads();
   const conversation = useIssueConversation();
@@ -123,7 +121,9 @@ export function IssueComposer({
       <CommentComposer
         session={conversation.draft ?? undefined}
         editorRef={conversation.editorRef}
-        replyingTo={replyTo ? authorLabel(replyTo) : null}
+        replyingTo={
+          replyTo ? (replyTo.authorName ?? appT('common.unknown')) : null
+        }
         onCancelReply={() => setReplyTo(null)}
         {...(modes ? { modes } : {})}
         onMentionSearch={conversation.searchMentions}
