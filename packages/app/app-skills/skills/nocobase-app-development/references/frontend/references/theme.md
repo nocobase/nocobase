@@ -85,7 +85,7 @@ Sidebar tokens may reference the preset's general colors, as both template prese
   /* … */
   --sidebar: var(--card);
   --sidebar-foreground: var(--card-foreground);
-  --sidebar-primary: var(--hover);
+  --sidebar-primary: color-mix(in srgb, var(--primary) 8%, var(--sidebar));
   --sidebar-primary-foreground: var(--primary);
   --sidebar-accent: var(--hover);
   --sidebar-accent-foreground: var(--sidebar-foreground);
@@ -94,7 +94,7 @@ Sidebar tokens may reference the preset's general colors, as both template prese
 }
 ```
 
-The current entry and a hovered one share `--hover`, the grey a table's header also takes: the current entry is told apart by its words and icon in `--primary`, while a hovered entry keeps the menu's words. Keep the primary color out of the menu's grounds, so a menu of many entries stays quiet and the current one still stands out.
+The current entry sits on a faint tint of `--primary` with its words and icon in `--primary`; a hovered entry takes `--hover`, the grey a table's header also takes, and keeps the menu's words. Keep the tint faint, so a menu of many entries stays quiet and the current one still stands out.
 
 They remain independently configurable: to change the sidebar, change these tokens. Do not redefine general colors such as `--card` on the sidebar to change its appearance.
 
@@ -270,7 +270,7 @@ The steps below add a preset with the id `forest`.
      --chart-5: oklch(0.8 0.12 90);
      --sidebar: var(--card);
      --sidebar-foreground: var(--card-foreground);
-     --sidebar-primary: var(--hover);
+     --sidebar-primary: color-mix(in srgb, var(--primary) 8%, var(--sidebar));
      --sidebar-primary-foreground: var(--primary);
      --sidebar-accent: var(--hover);
      --sidebar-accent-foreground: var(--sidebar-foreground);
@@ -306,7 +306,7 @@ The steps below add a preset with the id `forest`.
      --chart-5: oklch(0.82 0.12 90);
      --sidebar: var(--card);
      --sidebar-foreground: var(--card-foreground);
-     --sidebar-primary: var(--hover);
+     --sidebar-primary: color-mix(in srgb, var(--primary) 8%, var(--sidebar));
      --sidebar-primary-foreground: var(--primary);
      --sidebar-accent: var(--hover);
      --sidebar-accent-foreground: var(--sidebar-foreground);

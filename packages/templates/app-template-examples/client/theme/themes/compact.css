@@ -79,7 +79,7 @@
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: var(--card);
   --sidebar-foreground: var(--card-foreground);
-  --sidebar-primary: var(--hover);
+  --sidebar-primary: color-mix(in srgb, var(--primary) 8%, var(--sidebar));
   --sidebar-primary-foreground: var(--primary);
   --sidebar-accent: var(--hover);
   --sidebar-accent-foreground: var(--sidebar-foreground);
@@ -119,7 +119,7 @@
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: var(--card);
   --sidebar-foreground: var(--card-foreground);
-  --sidebar-primary: var(--hover);
+  --sidebar-primary: color-mix(in srgb, var(--primary) 8%, var(--sidebar));
   --sidebar-primary-foreground: var(--primary);
   --sidebar-accent: var(--hover);
   --sidebar-accent-foreground: var(--sidebar-foreground);

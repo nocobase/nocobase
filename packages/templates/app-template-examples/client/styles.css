@@ -371,12 +371,12 @@ label:has(> .sr-only:focus-visible),
   padding-right: calc(var(--spacing) * 24);
 }
 
-/* The navigation's rows take the sidebar primitive's own sizes: rows of 8
-   units with 2 units of padding and 4-unit icons, the list without gaps, the
-   sidebar 64 units wide (layouts/components/app-sidebar.tsx). The
-   primitive's important icon-mode sizes still control the collapsed rail. */
+/* The navigation's rows are roomier than the sidebar primitive's: 10 units
+   high with half a unit between them, nested rows 8.5 high, in a sidebar 64
+   units wide (layouts/components/app-sidebar.tsx). The primitive's important
+   icon-mode sizes still control the collapsed rail. */
 .app-navigation [data-slot='sidebar-menu'] {
-  gap: 0;
+  gap: calc(var(--spacing) * 0.5);
 }
 /* Top-level groups only: a section nested in a menu sits flush. */
 .app-navigation > nav > [data-slot='sidebar-group'] {
@@ -387,13 +387,25 @@ label:has(> .sr-only:focus-visible),
    schemes follow. */
 .app-navigation [data-sidebar='group-label'] {
   height: calc(var(--spacing) * 8);
-  padding-inline: calc(var(--spacing) * 2);
+  padding-inline: calc(var(--spacing) * 3.5);
   color: color-mix(in oklch, var(--sidebar-foreground) 50%, var(--sidebar));
 }
 .app-navigation [data-slot='sidebar-menu-button'] {
-  height: calc(var(--spacing) * 8);
+  height: calc(var(--spacing) * 10);
   gap: calc(var(--spacing) * 2);
-  padding: calc(var(--spacing) * 2);
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3.5);
+}
+/* The primitive places a row's count and its expand button for 8-unit rows;
+   both are 5 units high, so this centres them on the taller rows. */
+.app-navigation
+  [data-slot='sidebar-menu-item']
+  > :is([data-slot='sidebar-menu-badge'], [data-slot='sidebar-menu-action']) {
+  top: calc(var(--spacing) * 2.5);
+}
+.app-navigation
+  [data-slot='sidebar-menu-sub-item']
+  > [data-slot='sidebar-menu-action'] {
+  top: calc(var(--spacing) * 1.75);
 }
 .app-navigation [data-slot='sidebar-menu-button'] > svg {
   width: calc(var(--spacing) * 4);
@@ -407,13 +419,13 @@ label:has(> .sr-only:focus-visible),
   padding-right: calc(var(--spacing) * 10);
 }
 .app-navigation [data-slot='sidebar-menu-sub'] {
-  gap: calc(var(--spacing) * 1);
-  padding-block: calc(var(--spacing) * 0.5);
+  gap: calc(var(--spacing) * 0.5);
+  padding-block: calc(var(--spacing) * 1);
 }
 .app-navigation [data-slot='sidebar-menu-sub-button'] {
-  height: calc(var(--spacing) * 7);
+  height: calc(var(--spacing) * 8.5);
   gap: calc(var(--spacing) * 2);
-  padding-inline: calc(var(--spacing) * 2);
+  padding-inline: calc(var(--spacing) * 2.5);
 }
 .app-navigation [data-slot='sidebar-menu-sub-button'] > svg {
   width: calc(var(--spacing) * 4);
