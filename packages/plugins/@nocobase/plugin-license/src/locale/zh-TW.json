@@ -1,13 +1,13 @@
 {
-  "Change key": "Change key",
-  "Copied": "Copied",
-  "Copy": "Copy",
-  "Enter license key": "Enter license key",
-  "Failed to copy, please open ./storage/.license/instance-id and copy it": "Failed to copy, please open ./storage/.license/instance-id and copy it",
-  "Instance ID": "Instance ID",
-  "Invalid license key": "Invalid license key",
-  "License key": "License key",
-  "License key has been set": "License key has been set",
-  "License key saved successfully, please re-run the plugin installation.": "License key saved successfully, please re-run the plugin installation.",
-  "License settings": "License settings"
+  "Change key": "更改密鑰",
+  "Copied": "複製成功",
+  "Copy": "複製",
+  "Enter license key": "輸入授權密鑰",
+  "Failed to copy, please open ./storage/.license/instance-id and copy it": "複製失敗，請打開 ./storage/.license/instance-id 並複製",
+  "Instance ID": "實例 ID",
+  "Invalid license key": "無效的授權密鑰",
+  "License key": "授權密鑰",
+  "License key has been set": "授權密鑰已設定",
+  "License key saved successfully, please re-run the plugin installation.": "授權密鑰保存成功，請重新執行外掛安裝操作",
+  "License settings": "授權設定"
 }
