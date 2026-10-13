@@ -301,14 +301,15 @@ test.describe('default landing navigation', () => {
 });
 
 test.describe('header actions', () => {
-  test('the chat icon opens the panel, and the account menu offers the agent setup', async ({
+  test('the chat shortcut opens and closes the panel, and the account menu offers the agent setup', async ({
     page,
   }) => {
     await open(page, '/inbox');
     const banner = page.getByRole('banner');
-    await banner.getByTestId('chat-header-button').click();
+    await page.keyboard.press('Control+j');
     await expect(page.getByTestId('chat-panel')).toBeVisible();
-    await banner.getByTestId('chat-header-button').click();
+    await page.keyboard.press('Control+j');
+    await expect(page.getByTestId('chat-panel')).toBeHidden();
 
     await banner.getByRole('button', { name: '打开账户菜单' }).click();
     await page.getByTestId('user-menu-agent-setup').click();
