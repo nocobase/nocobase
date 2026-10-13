@@ -66,5 +66,8 @@ test.describe('My follow-ups columns', () => {
       const box = (await columns.boundingBox())!;
       expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
     }
+    // So many issues would crowd other tests' lists.
+    await api.put('followUps/following', { issueIds: [] });
+    for (const issue of issues) await api.delete(`projects/issues/${issue.id}`);
   });
 });

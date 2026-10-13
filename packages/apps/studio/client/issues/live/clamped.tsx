@@ -12,9 +12,12 @@ import { cn } from 'cn';
 export function Clamped({
   children,
   className,
+  clampClassName = 'max-h-18 overflow-hidden',
 }: {
   readonly children: ReactNode;
   readonly className?: string;
+  /** How far it is cut while folded: a height by default, or lines such as `line-clamp-2`. */
+  readonly clampClassName?: string;
 }): ReactElement {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
@@ -37,7 +40,7 @@ export function Clamped({
     <div className={className} data-slot='clamped'>
       <div
         ref={ref}
-        className={cn(!expanded && 'max-h-18 overflow-hidden')}
+        className={cn(!expanded && clampClassName)}
         data-clamped={!expanded && overflows ? '' : undefined}
       >
         {children}

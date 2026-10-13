@@ -26,6 +26,10 @@ test.describe('issues', () => {
     ).toBeVisible();
 
     await views.getByRole('button', { name: '列表' }).click();
+    // Other tests add issues to the same list at the same time, so find the demo issue by its words.
+    await page
+      .getByRole('textbox', { name: '搜索任务' })
+      .fill('Drag to reorder issues on the board');
     const table = page.getByRole('table');
     await expect(
       table.getByRole('row', {

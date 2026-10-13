@@ -227,7 +227,8 @@ test.describe('issue page', () => {
     });
     await page.setViewportSize({ width: 1280, height: 900 });
     await page
-      .getByRole('button', { name: '在面板中继续编辑', exact: true })
+      .getByTestId('chat-header-button')
+      .filter({ visible: true })
       .click();
     await expect(page.getByTestId('chat-panel')).toBeVisible();
     await check(1280, true);

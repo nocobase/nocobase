@@ -284,6 +284,7 @@ const enUS = {
     allConversations: 'View all',
     untitled: 'Untitled conversation',
     agentSetup: {
+      menu: 'Use Studio in your agent',
       open: 'Manage Studio with a local Coding Agent',
       title: 'Connect a local Coding Agent',
       description:
@@ -1462,6 +1463,12 @@ const enUS = {
       sameWorkActive: 'another run in this thread is active',
       delayed: 'scheduled delay or retry backoff',
     },
+    nextLabel: 'Next:',
+    status: {
+      working: '{{agent}} working',
+      queued: '{{agent}} queued',
+      minutes: '{{minutes}} min',
+    },
     waiting: {
       waitingOwner: 'Waiting for {{owner}} to take over',
       noOwner: 'Waiting for a valid issue owner',
@@ -1490,7 +1497,7 @@ const enUS = {
     notStarted:
       'Not started. Start it and the project manager arranges the work.',
     finished: 'Finished',
-    idle: 'Nothing is going on now',
+    idle: 'Nothing is running',
     next: 'Next: {{next}}',
     start: 'Start',
     handOver: 'Hand over to the project manager',

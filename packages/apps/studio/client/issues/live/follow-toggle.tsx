@@ -69,14 +69,22 @@ export function FollowToggle({
         data-icon='inline-start'
         className={cn(followed && 'fill-amber-400 text-amber-500')}
       />
-      {followed
-        ? t('issueLive.follow.following', {
-            count: following.length,
-            max: FOLLOW_UPS_MAX,
-          })
-        : full
-          ? t('issueLive.follow.full', { max: FOLLOW_UPS_MAX })
-          : t('issueLive.follow.follow')}
+      {/* On a phone the star alone, with the count when followed. */}
+      <span className='max-md:sr-only'>
+        {followed
+          ? t('issueLive.follow.following', {
+              count: following.length,
+              max: FOLLOW_UPS_MAX,
+            })
+          : full
+            ? t('issueLive.follow.full', { max: FOLLOW_UPS_MAX })
+            : t('issueLive.follow.follow')}
+      </span>
+      {followed ? (
+        <span aria-hidden className='tabular-nums md:hidden'>
+          {following.length}/{FOLLOW_UPS_MAX}
+        </span>
+      ) : null}
     </Button>
   );
 }
