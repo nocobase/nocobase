@@ -62,14 +62,18 @@ export function IssuePanel({
     queryFn: () => api.issue(issueId),
     refetchInterval: POLL_MS,
     retry: (failures, error) =>
-      !(error instanceof ApiClientError && [403, 404].includes(error.status)) &&
-      failures < 2,
+      !(
+        error instanceof ApiClientError &&
+        [401, 403, 404].includes(error.status)
+      ) && failures < 2,
   });
+  const expired =
+    detail.error instanceof ApiClientError && detail.error.status === 401;
   const denied =
     detail.error instanceof ApiClientError &&
     [403, 404].includes(detail.error.status);
   // A failed authorization refresh must never keep rendering private cached content.
-  const data = denied ? undefined : detail.data;
+  const data = denied || expired ? undefined : detail.data;
   useEffect(() => {
     if (denied) onUnavailable?.(issueId);
   }, [denied, issueId, onUnavailable]);
@@ -109,8 +113,26 @@ export function IssuePanel({
           {back}
           {detail.isError ? (
             <Alert variant='destructive'>
-              <AlertTitle>{t('followUps.activity.loadFailed')}</AlertTitle>
-              {!denied ? (
+              <AlertTitle>
+                {t(
+                  expired
+                    ? 'personalTasks.sessionExpired'
+                    : 'followUps.activity.loadFailed',
+                )}
+              </AlertTitle>
+              {expired ? (
+                <AlertAction>
+                  <Button
+                    size='sm'
+                    variant='outline'
+                    nativeButton={false}
+                    role='link'
+                    render={<Link to='/login' />}
+                  >
+                    {t('personalTasks.signInAgain')}
+                  </Button>
+                </AlertAction>
+              ) : !denied ? (
                 <AlertAction>
                   <Button
                     size='sm'
@@ -123,7 +145,11 @@ export function IssuePanel({
               ) : null}
             </Alert>
           ) : (
-            <div className='flex flex-col gap-3' aria-busy='true'>
+            <div
+              className='flex flex-col gap-3'
+              aria-busy='true'
+              aria-label={t('personalTasks.loading')}
+            >
               <Skeleton className='h-5 w-40' />
               <Skeleton className='h-6 w-3/4' />
               <Skeleton className='h-16 w-full' />
@@ -137,7 +163,13 @@ export function IssuePanel({
     <PanelFrame className={className}>
       {detail.isError ? (
         <Alert variant='destructive' className='m-3 w-auto'>
-          <AlertTitle>{t('followUps.activity.loadFailed')}</AlertTitle>
+          <AlertTitle>
+            {t(
+              expired
+                ? 'personalTasks.sessionExpired'
+                : 'followUps.activity.loadFailed',
+            )}
+          </AlertTitle>
           <AlertAction>
             <Button
               size='sm'

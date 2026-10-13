@@ -15,10 +15,11 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useSearchParams, Link } from 'react-router';
 
 import { Alert, AlertTitle, AlertAction } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from 'cn';
 
 import { useFollowUps, useMarkSeen } from './api.js';
@@ -39,6 +40,8 @@ export function PersonalTaskWorkspace({
 }): ReactElement {
   const { t } = useTranslation();
   const overview = useFollowUps();
+  const expired =
+    overview.error instanceof ApiClientError && overview.error.status === 401;
   const denied =
     overview.error instanceof ApiClientError &&
     [401, 403].includes(overview.error.status);
@@ -197,9 +200,27 @@ export function PersonalTaskWorkspace({
       {overview.isError ? (
         <Alert variant='destructive'>
           <AlertTitle>
-            {t(denied ? 'common.forbidden' : 'followUps.loadFailed')}
+            {t(
+              expired
+                ? 'personalTasks.sessionExpired'
+                : denied
+                  ? 'common.forbidden'
+                  : 'followUps.loadFailed',
+            )}
           </AlertTitle>
-          {!denied ? (
+          {expired ? (
+            <AlertAction>
+              <Button
+                size='sm'
+                variant='outline'
+                nativeButton={false}
+                role='link'
+                render={<Link to='/login' />}
+              >
+                {t('personalTasks.signInAgain')}
+              </Button>
+            </AlertAction>
+          ) : !denied ? (
             <AlertAction>
               <Button
                 size='sm'
@@ -212,9 +233,15 @@ export function PersonalTaskWorkspace({
           ) : null}
         </Alert>
       ) : !view ? (
-        <p role='status' className='text-sm text-muted-foreground'>
-          {t('personalTasks.loading')}
-        </p>
+        <div
+          role='status'
+          aria-label={t('personalTasks.loading')}
+          aria-busy='true'
+          className='flex items-center gap-3'
+        >
+          <Skeleton className='h-4 w-40' />
+          <span className='sr-only'>{t('personalTasks.loading')}</span>
+        </div>
       ) : null}
       {drafts &&
         [...drafts.sessions.keys()]

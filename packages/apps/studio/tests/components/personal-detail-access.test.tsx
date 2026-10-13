@@ -25,6 +25,13 @@ vi.mock('@nocobase/app-plugin-projects/client/kit', async (original) => ({
     <section>Access denied{action}</section>
   ),
 }));
+vi.mock('@nocobase/i18n/client', async (original) => ({
+  ...(await original<typeof import('@nocobase/i18n/client')>()),
+  useTranslation: () => ({
+    t: (key: string) =>
+      key === 'personalTasks.signInAgain' ? 'Sign in again' : key,
+  }),
+}));
 vi.mock('../../client/issues/detail/issue-parent.js', () => ({
   useIssueParent: () => ({
     path: '/my-issues/executing',
@@ -41,7 +48,7 @@ vi.mock('../../client/issues/detail/labels.js', () => ({
 afterEach(cleanup);
 
 describe('full personal detail after permission changes', () => {
-  it.each([403, 404])(
+  it.each([401, 403, 404])(
     'does not mount actions or content from the last successful query after %s',
     (status) => {
       mocks.update.mockClear();
@@ -67,9 +74,14 @@ describe('full personal detail after permission changes', () => {
       expect(screen.getByText('Access denied')).toBeVisible();
       expect(screen.queryByText('Cached private title')).toBeNull();
       expect(mocks.update).not.toHaveBeenCalled();
-      expect(
-        screen.getByRole('button', { name: 'issue.backToList' }),
-      ).toHaveAttribute('href', '/my-issues/executing?q=keep#reply');
+      if (status === 401)
+        expect(
+          screen.getByRole('link', { name: 'Sign in again' }),
+        ).toHaveAttribute('href', '/login');
+      else
+        expect(
+          screen.getByRole('button', { name: 'issue.backToList' }),
+        ).toHaveAttribute('href', '/my-issues/executing?q=keep#reply');
     },
   );
 });

@@ -126,4 +126,29 @@ describe('visible following content', () => {
     expect(mocks.issue).toHaveBeenLastCalledWith('A');
     await waitFor(() => expect(seen).toHaveBeenCalledTimes(1));
   });
+  it('hides cached content after session expiry and offers sign-in without retry or marking it unavailable', async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    mocks.issue.mockResolvedValue(detail);
+    const unavailable = vi.fn();
+    await mount(client, vi.fn(), unavailable);
+    await screen.findByText('Private title');
+    mocks.issue.mockRejectedValue(
+      new ApiClientError('Expired', {
+        status: 401,
+        method: 'GET',
+        url: '/issue/A',
+      }),
+    );
+    await act(async () => {
+      await client.invalidateQueries();
+    });
+    expect(
+      await screen.findByRole('link', { name: 'Sign in again' }),
+    ).toHaveAttribute('href', '/login');
+    expect(screen.queryByText('Private title')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(unavailable).not.toHaveBeenCalled();
+  });
 });

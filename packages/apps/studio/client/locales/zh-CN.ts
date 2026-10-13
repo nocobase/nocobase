@@ -1267,6 +1267,8 @@ const zhCN: AppResource = {
   knowledge: knowledgeZhCN,
   issuesPage: issuesZhCN,
   personalTasks: {
+    sessionExpired: '登录会话已过期，请重新登录。',
+    signInAgain: '重新登录',
     draftUnavailable:
       '此任务已不可访问。未发送草稿仍保留在当前会话中，暂时无法发送。',
     loading: '正在读取关注任务…',

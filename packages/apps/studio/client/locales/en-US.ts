@@ -1387,6 +1387,8 @@ const enUS = {
   knowledge: knowledgeEnUS,
   issuesPage: issuesEnUS,
   personalTasks: {
+    sessionExpired: 'Your session has expired. Sign in again.',
+    signInAgain: 'Sign in again',
     draftUnavailable:
       'This task is no longer accessible. Your unsent draft is kept for this session; sending is unavailable.',
     loading: 'Loading followed tasks…',
