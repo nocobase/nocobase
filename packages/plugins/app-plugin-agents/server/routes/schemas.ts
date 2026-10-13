@@ -1437,6 +1437,8 @@ export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({
 
 // A runner's working directories, as it last reported them.
 const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
+  subjectKey: z.string().optional(),
+  sizeBytes: z.number().int().nonnegative().optional(),
   decision: WorkspaceDecisionSchema.optional(),
   cleanup: WorkspaceCleanupResultSchema.optional(),
   runId: z
@@ -1476,7 +1478,8 @@ const RunnerWorkspaceUsageSchema: z.ZodType<RunnerWorkspaceUsage> = z
     intervalMs: z.number().int().positive().optional(),
     count: z.number().int(),
     unpushedCount: z.number().int(),
-    measuredAt: dateTime,
+    measuredAt: dateTime.nullable(),
+    diskMeasuredAt: dateTime.optional(),
     workspaces: z.array(RunnerWorkspaceSchema).meta({
       description:
         "This application's, most recently used first; empty for a caller who may not see the runner's machine.",

@@ -27,7 +27,7 @@ export interface WorkspaceReport {
   readonly runId: string;
   /** Where the directory is on the runner, absolute. */
   readonly workDir: string;
-  /** What the directory took on disk. Runners no longer measure it and leave it out; earlier ones sent it. */
+  /** Directory size measured during low-frequency collection; absent when measurement failed. */
   readonly sizeBytes?: number;
   /**
    * The directory holds work that may not be on the remote: changes not committed, or commits past what the runner

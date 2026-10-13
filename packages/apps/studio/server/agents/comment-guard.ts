@@ -55,6 +55,7 @@ export const commentGuards = (conn: DatabaseConnection) =>
 /** These failures describe the execution environment or network, rather than work the agent finished attempting. */
 const ENVIRONMENT_FAILURES: ReadonlySet<FailureReason> = new Set([
   'runnerOffline',
+  'runnerDiskFull',
   'leaseExpired',
   'startTimeout',
   'setupFailed',

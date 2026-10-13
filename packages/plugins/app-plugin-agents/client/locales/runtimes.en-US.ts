@@ -2,6 +2,15 @@
 const runtimesEnUS = {
   runtimes: {
     workspaces: {
+      paused:
+        'New work is paused until disk space recovers. Existing runs continue.',
+      working: 'Type: Working directory',
+      readOnly: 'Type: Read-only copy',
+      size: 'Size: {{value}}',
+      sizeUnknown: 'Unknown',
+      pushed: 'Push state: Clean, no unpushed work',
+      unpushed: 'Push state: Uncommitted, unpushed or unverified work',
+      notApplicable: 'Push state: Not applicable',
       title: 'Workspace diagnostics',
       low: 'Low disk space',
       previousLow: 'Last report: low disk space',
@@ -58,6 +67,7 @@ const runtimesEnUS = {
     activity: {
       online: 'Online {{active}}/{{slots}}',
       busy: 'Busy {{active}}/{{slots}}',
+      low_disk: 'Low disk space {{active}}/{{slots}}',
       offline: 'Offline · {{time}}',
       offlineNever: 'Offline',
     },
