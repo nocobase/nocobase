@@ -146,6 +146,16 @@ function ok(c: Context, data: unknown, status = 200): Response {
 
 export class FakeServer {
   onCancelAck?: (run: FakeRun) => void;
+  diagnosticEnabled = false;
+  readonly diagnosticRequests: {
+    at: string;
+    endedAt: string;
+    route: string;
+    status: number;
+    selected?: number;
+    reason?: string;
+    authenticated?: boolean;
+  }[] = [];
   readonly app = new Hono();
   readonly runners = new Map<string, FakeRunner>();
   readonly runs = new Map<string, FakeRun>();
@@ -231,6 +241,46 @@ export class FakeServer {
       app: { id: 'test-app', name: 'Test App' },
       ...options,
     };
+    this.app.use('*', async (c, next) => {
+      const route = c.req.path.split('/').at(-1) ?? '';
+      const at = new Date().toISOString();
+      await next();
+      if (
+        !this.diagnosticEnabled ||
+        ![
+          'heartbeat',
+          'claim',
+          'status',
+          'start',
+          'events',
+          'complete',
+          'fail',
+          'cancelAck',
+        ].includes(route)
+      )
+        return;
+      const body = await c.res
+        .clone()
+        .json()
+        .catch(() => ({}));
+      const heartbeat =
+        route === 'heartbeat'
+          ? await c.req.json().catch(() => ({}))
+          : undefined;
+      if (this.diagnosticRequests.length >= 1000)
+        this.diagnosticRequests.shift();
+      this.diagnosticRequests.push({
+        at,
+        endedAt: new Date().toISOString(),
+        route,
+        status: c.res.status,
+        selected: route === 'claim' ? body.data?.runs?.length : undefined,
+        reason: body.error?.reason,
+        authenticated: heartbeat?.tools?.find(
+          (tool: { kind: string }) => tool.kind === 'pi',
+        )?.authenticated,
+      });
+    });
     this.routes();
   }
 
