@@ -80,6 +80,7 @@ import {
 } from './git-credentials.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { EventSpool } from '../core/events.ts';
+import { isDiskFull } from '../lib/disk-full.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { ensurePnpmStore, pnpmImportMethod } from '../core/pnpm-store.ts';
 import { writeRunnerTools } from './runner-tools.ts';
@@ -297,8 +298,6 @@ export class GrowingRedactor implements Redactor {
     return this.current.with(secrets);
   }
 }
-
-import { isDiskFull } from '../lib/disk-full.ts';
 
 function failureReason(result: AdapterResult): {
   reason: FailureReason;
@@ -565,7 +564,7 @@ export class RunWorker {
         `run ${this.runId}: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
       );
       if (this.ending?.kind === 'lost') return 'leaseLost';
-      return this.finishFailed(
+      return await this.finishFailed(
         isDiskFull(error) ? 'runnerDiskFull' : 'unknown',
         error instanceof Error ? error.message : String(error),
       );
@@ -1014,7 +1013,15 @@ export class RunWorker {
     const detail = this.redactor.text(unredacted);
     await this.updateRecord({ phase: 'reporting' }).catch(() => undefined);
     const repos = await this.repoReports(false).catch(() => []);
-    await this.drainEvents();
+    if (reason === 'runnerDiskFull') {
+      this.spool.stop();
+      // A full disk may also prevent writing the event acknowledgement. The final failure still must reach the server.
+      await this.drainEvents().catch((error: unknown) =>
+        this.deps.log(
+          `run ${this.runId}: event drain failed while reporting disk exhaustion: ${this.redactor.text(error instanceof Error ? error.message : String(error))}`,
+        ),
+      );
+    } else await this.drainEvents();
     try {
       await this.report(routePath(RUNNER_ROUTES.fail, { runId: this.runId }), {
         reason,

@@ -45,7 +45,7 @@ describe('runners', () => {
     });
     expect(await h.services.runners.get(runner.runnerId)).toMatchObject({
       status: 'online',
-      workspaceUsage: { disk, workspaces: [] },
+      workspaceUsage: { disk, measuredAt: null, workspaces: [] },
     });
     const directory = {
       workDir: '/work/SMP-1',

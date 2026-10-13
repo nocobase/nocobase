@@ -487,7 +487,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
               : {
                   workspaceUsage: asJson({
                     ...(workspaceUsage ?? {
-                      measuredAt: now,
+                      measuredAt: null,
                       count: 0,
                       unpushedCount: 0,
                       workspaces: [],

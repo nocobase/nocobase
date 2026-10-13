@@ -1,8 +1,9 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { workspaceRecordPath } from '../src/core/checkout.ts';
+import { spoolPaths } from '../src/core/events.ts';
 import { RunnerDaemon, type DaemonOptions } from '../src/core/loop.ts';
 import { readConnections, readSettings } from '../src/lib/config.ts';
 import { runnerPaths } from '../src/lib/home.ts';
@@ -229,11 +230,18 @@ describe('claiming and pruning the shared store', () => {
       subject: { key: 'tool-disk-full' },
       prompt: {
         system: '',
-        turn: 'fail toolProcess No space left on device',
+        turn: 'sleep 1000\nsay before failure\nfail toolProcess No space left on device',
         session: 'fresh',
       },
     });
     expect(await runner['claimFrom'](link, 1, false)).toBe(1);
+    await waitFor(() => failedTool.start);
+    const ack = spoolPaths(
+      runnerPaths(home, `${home}-work`).runsDir,
+      failedTool.payload.run.id,
+    ).ack;
+    writeFileSync(ack, '0');
+    chmodSync(ack, 0o400);
     await waitFor(() => failedTool.fail);
     expect(failedTool.fail?.reason).toBe('runnerDiskFull');
   });

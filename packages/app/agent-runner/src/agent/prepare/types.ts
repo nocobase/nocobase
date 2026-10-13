@@ -10,6 +10,7 @@ import type { SkillsPlacement } from '../adapters/types.ts';
 import type { AppRegistration } from '../../lib/config.ts';
 import type { RunnerPaths } from '../../lib/home.ts';
 import type { ApiClient } from '../../lib/http.ts';
+import { isDiskFull } from '../../lib/disk-full.ts';
 import type {
   PreparedDir,
   RepoAuthSource,
@@ -82,8 +83,6 @@ export class PrepareError extends Error {
  * holds (`WorkspaceBusyError`), found by any step, is the workspace being busy, which the application requeues without
  * counting an attempt, when it announces that it accepts it (`acceptedFailures`).
  */
-import { isDiskFull } from '../../lib/disk-full.ts';
-
 export function stepFailure(
   step: Pick<PrepareStep, 'failure'>,
   error: unknown,

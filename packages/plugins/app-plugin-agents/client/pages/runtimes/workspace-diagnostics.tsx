@@ -114,7 +114,7 @@ export function WorkspaceDiagnostics({
           id='workspace-diagnostics'
           title={t('runtimes.workspaces.title')}
         >
-          {!usage ? (
+          {!usage || !usage.measuredAt ? (
             <p className='text-sm text-muted-foreground'>
               {t('runtimes.workspaces.notReported')}
             </p>

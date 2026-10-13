@@ -257,7 +257,8 @@ export function storedWorkspaceUsage(
 ): RunnerWorkspaceUsage | null {
   if (value === null || value === undefined) return null;
   const usage = jsonObject(value);
-  if (typeof usage.measuredAt !== 'string') return null;
+  if (typeof usage.measuredAt !== 'string' && usage.measuredAt !== null)
+    return null;
   const workspaces = (Array.isArray(usage.workspaces) ? usage.workspaces : [])
     .map(storedWorkspace)
     .filter((item): item is RunnerWorkspace => item !== null);

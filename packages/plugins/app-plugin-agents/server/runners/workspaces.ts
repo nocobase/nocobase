@@ -264,7 +264,7 @@ export function createRunnerWorkspaces(
         workspaces.push({
           ...(workspace.runId === undefined ? {} : { runId: workspace.runId }),
           workDir: workspace.workDir,
-          subjectKey: workspace.subjectKey,
+          ...(workspace.subjectKey ? { subjectKey: workspace.subjectKey } : {}),
           ...(workspace.sizeBytes === undefined
             ? {}
             : { sizeBytes: workspace.sizeBytes }),

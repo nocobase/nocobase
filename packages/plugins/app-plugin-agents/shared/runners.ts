@@ -144,8 +144,8 @@ export interface RunnerWorkspaceUsage {
   readonly count: number;
   /** How many of those hold work that was never pushed, and are never removed on the application's word. */
   readonly unpushedCount: number;
-  /** When it reported them. */
-  readonly measuredAt: string;
+  /** When directories were collected; null until the first directory report. */
+  readonly measuredAt: string | null;
   /** This application's, most recently used first. */
   readonly workspaces: readonly RunnerWorkspace[];
 }

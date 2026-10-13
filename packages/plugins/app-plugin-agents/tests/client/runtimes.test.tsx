@@ -145,6 +145,32 @@ describe('runtimes page', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('shows heartbeat disk capacity without claiming an uncollected directory list is empty', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canSeeMachine: true,
+      workspaceUsage: {
+        disk: { freeBytes: 1, totalBytes: 100, minFreeBytes: 20 },
+        count: 0,
+        unpushedCount: 0,
+        measuredAt: null,
+        diskMeasuredAt: new Date().toISOString(),
+        workspaces: [],
+      },
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    expect(
+      within(sheet).getByText('runtimes.workspaces.notReported'),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).getByText('runtimes.workspaces.paused'),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).queryByText('runtimes.workspaces.empty'),
+    ).not.toBeInTheDocument();
+  });
+
   it('shows a previous low disk report and hides private directory diagnostics without explicit permission', async () => {
     runners[0] = {
       ...runners[0]!,

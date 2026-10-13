@@ -48,6 +48,7 @@ import {
 } from '@nocobase/agent-protocol';
 import type { DistService } from '../../distribution/index.js';
 import {
+  runnerLowOnDisk,
   runsEntry,
   toolLimit,
   supportsWorkspaceKey,
