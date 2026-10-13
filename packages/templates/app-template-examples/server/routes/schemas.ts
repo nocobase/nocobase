@@ -198,6 +198,7 @@ export const WorkflowSummarySchema: z.ZodType<
     source: z.enum(['lifecycle', 'office']),
     states: z.number(),
     transitions: z.number(),
+    executionCount: z.number().int().nonnegative(),
   })
   .meta({ ref: 'ExamplesWorkflowSummary' });
 export const WorkflowExecutionSchema: z.ZodType<

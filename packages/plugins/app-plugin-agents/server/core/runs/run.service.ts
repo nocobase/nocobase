@@ -48,6 +48,7 @@ import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { asJson, cleanList, jsonObject } from '../../kernel/values.js';
 import type { AgentService } from '../agents/index.js';
 import { findAgent, lockAgentForClaim } from '../agents/index.js';
+import { agentNamesOf } from '../agents/agent.store.js';
 import type { ClaimEligibility } from './eligibility.js';
 import {
   createRunRequestService,
@@ -1079,13 +1080,12 @@ export function createRunService(deps: RunServiceDeps): RunService {
         filter: { parentRunId: runId },
         sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
       });
-      const names = new Map<string, string | null>();
-      for (const child of children)
-        if (!names.has(child.agentId))
-          names.set(
-            child.agentId,
-            (await findAgent(conn, child.agentId))?.name ?? null,
-          );
+      const names = await agentNamesOf(conn, [
+        ...children.map((child) => child.agentId),
+        ...inputs.flatMap((input) =>
+          input.actorKind === 'agent' && input.actorId ? [input.actorId] : [],
+        ),
+      ]);
       return {
         ...(await readRuns([run]))[0],
         actorName:
@@ -1101,7 +1101,16 @@ export function createRunService(deps: RunServiceDeps): RunService {
           run.requestedByUserId ??
           run.actorUserId,
         retriedRunId: retried?.id ?? null,
-        inputs: inputs.map(toInputView),
+        inputs: inputs.map((input) => {
+          const view = toInputView(input);
+          const name =
+            view.actor.kind === 'agent' && view.actor.id
+              ? names.get(view.actor.id)
+              : undefined;
+          return name === undefined
+            ? view
+            : { ...view, actor: { ...view.actor, name } };
+        }),
         repos: repos.map(toRepo),
         usage: await usageOf(conn, runId),
         children: children.map((child) => ({

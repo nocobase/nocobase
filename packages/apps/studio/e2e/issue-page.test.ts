@@ -185,7 +185,7 @@ test.describe('issue page', () => {
       );
       await expect(layout.locator(':scope > div')).toHaveCSS(
         'flex-direction',
-        available >= 1024 ? 'row' : 'column',
+        available >= 896 ? 'row' : 'column',
       );
       await page.evaluate(
         `(() => { const scroller = document.querySelector('[data-slot="route-child-page"] > div'); scroller.scrollTop = 0; })()`,
@@ -208,7 +208,7 @@ test.describe('issue page', () => {
         (element) =>
           (element as unknown as { clientWidth: number }).clientWidth,
       ));
-    for (const available of [1023, 1024, 1025])
+    for (const available of [895, 896, 897, 1023])
       await check(available + inset, false);
     await expect(aside.locator(':scope > div')).toHaveCSS('position', 'static');
     await history
@@ -226,9 +226,7 @@ test.describe('issue page', () => {
       path: 'storage/ui-workflow/issue-runs/screenshots/history-bottom.png',
     });
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page
-      .getByRole('button', { name: '在面板中继续编辑', exact: true })
-      .click();
+    await page.keyboard.press('Control+j');
     await expect(page.getByTestId('chat-panel')).toBeVisible();
     await check(1280, true);
     await page

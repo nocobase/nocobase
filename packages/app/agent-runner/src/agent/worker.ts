@@ -1,11 +1,16 @@
+import {
+  finalizeRunWorktrees,
+  sessionWorkDir,
+  updateContinuationState,
+} from '../core/run-worktrees.ts';
 // One run, start to end, in its own process (see supervisor.ts):
 //
 //   prepare (prepare/index.ts: workspace, application CLI, working directories, skills) -> start
 //     -> adapter turns (events, permissions, inputs) -> complete | fail | cancelAck
 //
 // The agent starts in the run's primary working directory (or the subject's work directory when the run names none),
-// with the real HOME of the user the runner runs as, its own TMPDIR (and Codex its own CODEX_HOME) inside the work
-// directory, the application's CLI first on its PATH and the runner's commit hook as its git hooks. Nothing restricts what its
+// with the real HOME of the user the runner runs as, its own TMPDIR inside the work directory and an external
+// Codex CODEX_HOME, the application's CLI first on its PATH and the runner's commit hook as its git hooks. Nothing restricts what its
 // tools do: the runner is not a security boundary, so run it as a dedicated user, in a container or in a VM.
 //
 // While it runs, the lease is renewed every 15 s and the run's status is polled every few seconds; both answers carry
@@ -80,6 +85,7 @@ import {
 } from './git-credentials.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { EventSpool } from '../core/events.ts';
+import { isDiskFull } from '../lib/disk-full.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
 import { ensurePnpmStore, pnpmImportMethod } from '../core/pnpm-store.ts';
 import { writeRunnerTools } from './runner-tools.ts';
@@ -98,8 +104,6 @@ import {
 } from '../core/supervisor.ts';
 
 export interface WorkerDeps {
-  /** Stops and verifies the worker's remaining writers before removing a read-only workspace. */
-  stopWorkspaceProcesses?: () => Promise<void>;
   paths: RunnerPaths;
   /** The registration the run was claimed through. */
   connection: AppConnection;
@@ -110,6 +114,8 @@ export interface WorkerDeps {
   client?: ApiClient;
   /** Whether to push branches with work on them when the run completes. */
   push?: boolean;
+  /** Stops this isolated worker's descendants before snapshotting repository files. */
+  stopWriters?: () => Promise<void>;
 }
 
 export type WorkerOutcome =
@@ -158,9 +164,12 @@ export function workspaceNotes(options: {
       ? `Your working directory is ${workDir}, an empty directory kept for this task; you start in it.`
       : `You start in ${cwd}. The runner keeps this task's own files in ${workDir}; your TMPDIR is inside it.`,
   ];
+  lines.push(
+    'Repository attempts use new code directories. Claude, Pi and OpenCode start fresh when the directory changes; legacy sessions are not migrated. Codex state is kept outside the disposable worktree.',
+  );
   if (dirs.length > 0) {
     lines.push(
-      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}). Once the task is done or cancelled, its working directory is removed, with anything never pushed.`,
+      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}). When this run ends, repository changes are saved to local continuation refs without pushing, then its worktrees are removed. If saving fails, the original worktree is kept for recovery. Temporary files outside repositories are removed.`,
     );
     lines.push('Working directories (the first is the primary one):');
     for (const dir of dirs) {
@@ -170,9 +179,11 @@ export function workspaceNotes(options: {
           ? `- ${dir.dir}${name}: a directory used in place, not a checkout; there is no branch to push, so leave version control to the people who own it.`
           : options.readOnly === true
             ? `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (a read-only copy: change, commit and push nothing).`
-            : `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (push only this branch).`,
+            : `- ${dir.dir}${name}: ${dir.repo.url}, target branch ${dir.repo.branch} from ${dir.repo.defaultBranch}, local branch ${dir.repo.localBranch ?? dir.repo.branch}. Push only with git push origin HEAD:refs/heads/${dir.repo.branch}; never force push.`,
       );
     }
+    for (const dir of dirs)
+      for (const warning of dir.repo?.warnings ?? []) lines.push(warning);
     if (options.readOnly === true)
       lines.push(
         'This step only reads: another run may be changing the same branch in its own checkout at the same time. Read and run checks here, but change, commit and push nothing; the runner pushes nothing from this checkout.',
@@ -307,7 +318,14 @@ function failureReason(result: AdapterResult): {
   const parsed = FailureReasonSchema.safeParse(error?.reason);
   const detail =
     typeof error?.message === 'string' ? error.message : 'The tool failed.';
-  return { reason: parsed.success ? parsed.data : 'toolProcess', detail };
+  return {
+    reason: isDiskFull(result.error)
+      ? 'runnerDiskFull'
+      : parsed.success
+        ? parsed.data
+        : 'toolProcess',
+    detail,
+  };
 }
 
 export class RunWorker {
@@ -368,7 +386,9 @@ export class RunWorker {
     this.runId = payload.run.id;
     this.record = record;
     this.sessionId =
-      payload.prompt.session === 'resume'
+      payload.prompt.session === 'resume' &&
+      (payload.tool.kind === 'codex' ||
+        payload.workspace.dirs[0]?.kind === 'directory')
         ? payload.prompt.resumeSessionId
         : undefined;
     this.spool = EventSpool.open({
@@ -556,11 +576,18 @@ export class RunWorker {
         `run ${this.runId}: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
       );
       if (this.ending?.kind === 'lost') return 'leaseLost';
-      return this.finishFailed(
-        'unknown',
+      return await this.finishFailed(
+        isDiskFull(error) ? 'runnerDiskFull' : 'unknown',
         error instanceof Error ? error.message : String(error),
       );
     } finally {
+      await this.stopTool();
+      // A failed stop/save retains the original directory. No separate recovery protocol is maintained.
+      await this.saveLocal(!this.retainWorkspace).catch((error: unknown) =>
+        log(
+          `Directory retained: ${this.prepared?.workspace?.workDir ?? this.record.workDir}: ${String(error)}`,
+        ),
+      );
       this.lease.stop();
       this.broker?.close();
       await this.credentialServer?.close().catch(() => undefined);
@@ -604,15 +631,14 @@ export class RunWorker {
       log: deps.log,
       event: (event) => this.spool.push(event),
       onRelease: (release) => this.releases.push(release),
-      beforeWorkspaceRemoval: async () => {
-        const shuttingDown = () => this.ending?.kind === 'shutdown';
-        if (shuttingDown()) return false;
-        if (deps.stopWorkspaceProcesses === undefined) return false;
-        await deps.stopWorkspaceProcesses();
-        return !shuttingDown();
-      },
       ...(this.broker === undefined ? {} : { gitAuth: this.broker }),
       dirs: [],
+      gitRetry: {
+        signal: this.abort.signal,
+        ...(deps.stopWriters === undefined
+          ? {}
+          : { onAbort: deps.stopWriters }),
+      },
     };
     this.prepared = context;
     for (const step of PREPARE_STEPS) {
@@ -685,9 +711,33 @@ export class RunWorker {
 
     const tmpDir = path.join(runnerDir, 'tmp');
     await mkdir(tmpDir, { recursive: true, mode: 0o700 });
+    const sessionDir = sessionWorkDir(
+      deps.paths,
+      registration.key,
+      payload.workspace.key ?? payload.subject.key,
+      payload.agent?.id ?? payload.tool.kind,
+      payload.tool.kind,
+      payload.workspace.sessionScope ?? 'root',
+    );
+    await mkdir(sessionDir, { recursive: true, mode: 0o700 });
+    await updateContinuationState(
+      deps.paths,
+      registration.key,
+      payload.workspace.key ?? payload.subject.key,
+      (state) => ({
+        ...state,
+        lastRunId: payload.run.id,
+        activeWorkDirs: [
+          ...new Set([...(state.activeWorkDirs ?? []), workDir]),
+        ],
+        sessionKeys: [
+          ...new Set([...(state.sessionKeys ?? []), path.basename(sessionDir)]),
+        ],
+      }),
+    );
     const codexHome =
       payload.tool.kind === 'codex'
-        ? await prepareCodexHome(path.join(runnerDir, 'codex-home'))
+        ? await prepareCodexHome(path.join(sessionDir, 'codex-home'))
         : undefined;
     const runnerTools =
       deps.settings.agentTools === 'system'
@@ -924,6 +974,11 @@ export class RunWorker {
     const reports = (
       await reportRepos(repos, {
         push,
+        active: () => this.ending === undefined,
+        signal: this.abort.signal,
+        ...(this.deps.stopWriters === undefined
+          ? {}
+          : { onAbort: this.deps.stopWriters }),
         ...(this.broker === undefined ? {} : { auth: this.broker }),
         log: this.deps.log,
       })
@@ -942,11 +997,91 @@ export class RunWorker {
     return reports;
   }
 
+  private savedDuringRun = false;
+
+  private writerStopFailure?: string;
+
+  private retainWorkspace = false;
+
+  private async saveLocal(
+    remove = false,
+    bestEffortEvents = false,
+  ): Promise<string> {
+    await this.stopTool();
+    if (this.writerStopFailure === undefined) {
+      try {
+        await this.deps.stopWriters?.();
+      } catch (error) {
+        this.writerStopFailure = `Process stop failed: ${String(error)}`;
+      }
+    }
+    const workDir = this.prepared?.workspace?.workDir;
+    if (workDir === undefined) return '';
+    // A read-only checkout has nothing to save; during shutdown GC removes it instead.
+    if (
+      remove &&
+      this.payload.workspace.readOnly === true &&
+      this.ending?.kind === 'shutdown'
+    ) {
+      this.deps.log(`workspace: deferred read-only cleanup to GC: ${workDir}`);
+      remove = false;
+    }
+    await this.updateRecord({ finalizing: true }).catch(() => undefined);
+    const results = await finalizeRunWorktrees(
+      this.deps.paths,
+      workDir,
+      this.deps.log,
+      {
+        remove,
+        ...(this.writerStopFailure === undefined
+          ? {}
+          : { unsafeReason: this.writerStopFailure }),
+      },
+    ).finally(() =>
+      this.updateRecord({ finalizing: false }).catch(() => undefined),
+    );
+    if (results.length > 0) this.savedDuringRun = true;
+    const message = results
+      .map((result) =>
+        result.saved
+          ? `Local continuation saved: ${result.path}${result.head ? ` (${result.head})` : ''}; not pushed.`
+          : `Recovery required: ${result.path}: ${result.reason}`,
+      )
+      .join('\n');
+    if (message !== '') {
+      try {
+        this.spool.push({
+          type: 'status',
+          content: message,
+          meta: { phase: 'localSave' },
+        });
+      } catch (error) {
+        if (!bestEffortEvents) throw error;
+        const failure = this.redactor.text(String(error));
+        this.deps.log(
+          `run ${this.runId}: local save event could not be recorded: ${failure}`,
+        );
+        return `${message}
+Local save event could not be recorded: ${failure}`;
+      }
+    }
+    return message;
+  }
+
   private async finishCompleted(): Promise<WorkerOutcome | 'inputPending'> {
     await this.updateRecord({ phase: 'reporting' });
+    await this.stopTool();
+    await this.deps.stopWriters?.().catch((error: unknown) => {
+      // A read-only run keeps its checkout for GC; a writer pushes nothing past a writer it could not stop.
+      if (this.payload.workspace.readOnly !== true) throw error;
+      this.writerStopFailure = `Process stop failed: ${String(error)}`;
+    });
     // A read-only run pushes nothing: another run may be writing the same branch.
     const repos = await this.repoReports(
-      (this.deps.push ?? true) && this.payload.workspace.readOnly !== true,
+      (this.deps.push ?? true) &&
+        !this.savedDuringRun &&
+        this.ending === undefined &&
+        this.payload.workspace.readOnly !== true,
     );
     // The agent got through the initialization prompts; later runs of the subject do not get them again.
     const workDir = this.prepared?.workspace?.workDir;
@@ -956,13 +1091,15 @@ export class RunWorker {
         workDir,
         this.prepared?.dirs ?? [],
       );
+    const saved = await this.saveLocal();
     await this.drainEvents();
     if (this.ending !== undefined) return this.finishEnding();
     try {
       await this.report(
         routePath(RUNNER_ROUTES.complete, { runId: this.runId }),
         {
-          summary: this.summary(),
+          summary:
+            saved === '' ? this.summary() : `${this.summary()}\n\n${saved}`,
           handledInputIds: [...this.delivered],
           usage: this.usage,
           ...(this.sessionId === undefined
@@ -1005,11 +1142,31 @@ export class RunWorker {
     const detail = this.redactor.text(unredacted);
     await this.updateRecord({ phase: 'reporting' }).catch(() => undefined);
     const repos = await this.repoReports(false).catch(() => []);
-    await this.drainEvents();
+    let saved: string;
+    if (reason === 'runnerDiskFull') {
+      this.spool.stop();
+      try {
+        saved = await this.saveLocal(false, true);
+      } catch (error) {
+        this.retainWorkspace = true;
+        saved = `Local preservation did not finish; workspace retained for recovery: ${this.redactor.text(String(error))}`;
+        this.deps.log(`run ${this.runId}: ${saved}`);
+      }
+      // A full disk may also prevent writing the event acknowledgement. The final failure still must reach the server.
+      await this.drainEvents().catch((error: unknown) =>
+        this.deps.log(
+          `run ${this.runId}: event drain failed while reporting disk exhaustion: ${this.redactor.text(error instanceof Error ? error.message : String(error))}`,
+        ),
+      );
+    } else {
+      saved = await this.saveLocal();
+      await this.drainEvents();
+    }
+
     try {
       await this.report(routePath(RUNNER_ROUTES.fail, { runId: this.runId }), {
         reason,
-        detail,
+        detail: saved === '' ? detail : `${detail}\n\n${saved}`,
         handledInputIds: [...this.delivered],
         usage: this.usage,
         ...(this.sessionId === undefined ? {} : { sessionId: this.sessionId }),
@@ -1027,6 +1184,7 @@ export class RunWorker {
   private async finishEnding(): Promise<WorkerOutcome> {
     const ending = this.ending;
     await this.stopTool();
+    if (ending?.kind === 'lost') await this.saveLocal(true);
     switch (ending?.kind) {
       case 'lost':
         this.deps.log(
@@ -1034,9 +1192,12 @@ export class RunWorker {
         );
         return 'leaseLost';
       case 'cancel': {
+        const saved = await this.saveLocal(true);
         this.spool.push({
           type: 'status',
-          content: 'Cancelled.',
+          content: saved.includes('Recovery required:')
+            ? `Cancelled. ${saved}`
+            : 'Cancelled.',
           meta: { status: 'cancelled' },
         });
         await this.drainEvents();

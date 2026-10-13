@@ -86,7 +86,8 @@ describe('lifecycle parameter configuration through the application API', () => 
     expect(
       (
         await session.fetch(
-          root + '/parameterGroups/financeReviewers/options?actAs=lin',
+          root +
+            '/parameterGroups/financeReviewers/references?actAs=lin&type=user&q=Chen',
         )
       ).status,
     ).toBe(403);
@@ -97,6 +98,30 @@ describe('lifecycle parameter configuration through the application API', () => 
         )
       ).status,
     ).toBe(403);
+    const lookup = root + '/parameterGroups/financeReviewers/references';
+    expect((await request(lookup + '?type=user&q=Chen')).status).toBe(401);
+    expect((await session.fetch(lookup + '/user/chen?actAs=lin')).status).toBe(
+      403,
+    );
+    const matched = await session.fetch(
+      lookup + '?actAs=zhao&type=user&q=Chen&pageSize=10',
+    );
+    expect(matched.status).toBe(200);
+    expect(await matched.json()).toMatchObject({
+      data: [{ id: 'chen', name: 'Chen' }],
+      meta: { page: 1, pageSize: 10, total: 1 },
+    });
+    expect(
+      (await session.fetch(lookup + '?actAs=zhao&type=user&q=&pageSize=10'))
+        .status,
+    ).toBe(200);
+    expect(
+      (await session.fetch(lookup + '?actAs=zhao&type=user&q=Chen&pageSize=11'))
+        .status,
+    ).toBe(400);
+    expect(
+      (await session.fetch(lookup + '?actAs=zhao&type=invalid&q=Chen')).status,
+    ).toBe(400);
     const values = { autoApproveLimit: 100, financeLimit: 1000 };
     const first = await write('zhao', values, 0, 'save-1');
     expect({ status: first.status, body: await first.json() }).toMatchObject({

@@ -15,6 +15,7 @@ import {
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { runnerPaths, runLogPath } from '../src/lib/home.ts';
 import { runnerVersion } from '../src/core/loop.ts';
 import { runnerPaths, runLogPath } from '../src/lib/home.ts';
 import { RESTART_EXIT_CODE } from '../src/core/update.ts';
@@ -79,7 +80,8 @@ function findFile(dir: string, name: string): string | undefined {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isFile() && entry.name === name) return full;
-    if (entry.isDirectory()) {
+    // Runtime locks are transient coordination directories, not locations of the fixture file.
+    if (entry.isDirectory() && !entry.name.endsWith('.lock')) {
       const found = findFile(full, name);
       if (found !== undefined) return found;
     }
@@ -183,7 +185,11 @@ describe('leftover processes', () => {
     // Well within the 5 s between two looks at the process groups below a worker.
     await waitFor(() => !alive(leftover), 3_000, 'the leftover to be stopped');
     await waitFor(
-      () => daemon.output().includes('process(es) the run left behind'),
+      () =>
+        readFileSync(
+          runLogPath(runnerPaths(home), run.payload.run.id),
+          'utf8',
+        ).includes('process(es) the run left behind before saving'),
       5_000,
       'the cleanup to be logged',
     );
@@ -222,11 +228,11 @@ describe('leftover processes', () => {
       runLogPath(runnerPaths(home), run.payload.run.id),
       'utf8',
     );
-    expect(
-      output.indexOf('run processes stopped before read-only removal'),
-    ).toBeGreaterThan(-1);
-    expect(output.indexOf('removed the read-only')).toBeGreaterThan(
-      output.indexOf('run processes stopped before read-only removal'),
+    expect(output.indexOf('the run left behind before saving')).toBeGreaterThan(
+      -1,
+    );
+    expect(output.indexOf(`workspace: removed ${workDir}`)).toBeGreaterThan(
+      output.indexOf('the run left behind before saving'),
     );
   }, 60_000);
 
@@ -272,7 +278,11 @@ describe('leftover processes', () => {
     await waitFor(() => run.complete, 20_000, 'the run to complete');
     await waitFor(() => !alive(leftover), 10_000, 'the leftover to be stopped');
     await waitFor(
-      () => daemon.output().includes('process group(s) the worker left behind'),
+      () =>
+        readFileSync(
+          runLogPath(runnerPaths(home), run.payload.run.id),
+          'utf8',
+        ).includes('process group(s) before saving'),
       5_000,
       'the cleanup to be logged',
     );

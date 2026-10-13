@@ -16,14 +16,16 @@ import { createTestI18nRuntime } from '@nocobase/i18n/testing';
 import { describeLifecycle } from '@nocobase/lifecycle';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
 import DefinitionsPage from '../../client/pages/workflows/definitions.js';
 import ExecutionsPage from '../../client/pages/workflows/executions.js';
-import { ExecutionDiagram } from '../../client/pages/workflows/execution.js';
+import ExecutionPage, {
+  ExecutionDiagram,
+} from '../../client/pages/workflows/execution.js';
 import { DataState } from '../../client/pages/workflows/shared.js';
 import type { WorkflowExecutionDetail } from '../../shared/workflows.js';
 
@@ -31,6 +33,9 @@ const { api } = vi.hoisted(() => ({ api: { request: vi.fn() } }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
   useApiClient: () => api,
+}));
+vi.mock('#components/route-drawer', () => ({
+  RouteDrawer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 const namespace = '@nocobase/app-template-examples';
 
@@ -129,6 +134,7 @@ const detail: WorkflowExecutionDetail = {
     source: 'lifecycle',
     states: 4,
     transitions: 4,
+    executionCount: 1,
   },
   description: describeLifecycle(reviewerDemoLifecycle),
   parameters: {},
@@ -182,10 +188,121 @@ describe('workflow management pages', () => {
       expect(
         review.querySelector('[data-execution-state="visited"]'),
       ).not.toBeNull();
-      fireEvent.click(screen.getByRole('button', { name: copy.latest }));
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: copy.showStep.replace('{{step}}', '4'),
+        }),
+      );
       expect(
         review.querySelector('[data-execution-state="current"]'),
       ).not.toBeNull();
+    },
+  );
+
+  it('uses one refresh action to reload data and return from history to latest progress', async () => {
+    api.request.mockResolvedValue({ data: detail });
+    await view(
+      <Routes>
+        <Route
+          path='/workflows/executions/:workflowId/:recordId'
+          element={<ExecutionPage />}
+        />
+      </Routes>,
+      'en-US',
+      '/workflows/executions/lifecycle.reviewerDemo/1',
+    );
+    const firstStep = await screen.findByRole('button', {
+      name: 'Show progress at step 1',
+    });
+    await userEvent.click(firstStep);
+    expect(firstStep).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      screen.queryByRole('button', { name: enUS.workflows.latest }),
+    ).not.toBeInTheDocument();
+    const refresh = screen.getByRole('button', { name: 'Refresh' });
+    let finish: ((value: unknown) => void) | undefined;
+    api.request.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    await userEvent.click(refresh);
+    expect(api.request).toHaveBeenCalledTimes(2);
+    expect(refresh).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Show progress at step 1' }),
+    ).toHaveAttribute('aria-pressed', 'false');
+    finish?.({ data: detail });
+    await waitFor(() => expect(refresh).toBeEnabled());
+    expect(
+      screen
+        .getByTestId('rf__node-review')
+        .querySelector('[data-execution-state="current"]'),
+    ).not.toBeNull();
+  });
+
+  it.each(['en-US', 'zh-CN'])(
+    'shows sortable execution counts and opens filtered records in %s',
+    async (locale) => {
+      const workflows = [
+        { ...detail.workflow, executionCount: 105 },
+        {
+          id: 'office.dataRequests',
+          name: 'dataRequests',
+          source: 'office',
+          states: 4,
+          transitions: 5,
+          executionCount: 0,
+        },
+      ];
+      api.request.mockImplementation(async ({ path }) =>
+        path.endsWith('definitions')
+          ? { data: workflows }
+          : { data: [], meta: { page: 1, pageSize: 20, total: 0 } },
+      );
+      await view(
+        <Routes>
+          <Route path='/workflows/definitions' element={<DefinitionsPage />} />
+          <Route path='/workflows/executions' element={<ExecutionsPage />} />
+        </Routes>,
+        locale,
+        '/workflows/definitions?page=5&workflowId=old',
+      );
+      const copy = locale === 'zh-CN' ? zhCN.workflows : enUS.workflows;
+      const count = await screen.findByRole('link', { name: /\(105\)$/ });
+      expect(count).toHaveTextContent('105');
+      expect(count).toHaveAttribute(
+        'href',
+        '/workflows/executions?workflowId=lifecycle.reviewerDemo',
+      );
+      const zero = screen.getByRole('link', { name: /\(0\)$/ });
+      expect(zero).toHaveTextContent('0');
+      expect(zero).toHaveAttribute(
+        'href',
+        '/workflows/executions?workflowId=office.dataRequests',
+      );
+      expect(screen.getAllByRole('columnheader')).toHaveLength(2);
+      await userEvent.click(
+        screen.getByRole('button', { name: copy.executionCount }),
+      );
+      expect(screen.getAllByRole('row')[1]).toHaveTextContent('0');
+      await userEvent.click(
+        screen.getByRole('button', { name: copy.executionCount }),
+      );
+      expect(screen.getAllByRole('row')[1]).toHaveTextContent('105');
+      await userEvent.click(count);
+      await waitFor(() =>
+        expect(api.request).toHaveBeenCalledWith({
+          path: 'workflows/executions',
+          query: {
+            page: '1',
+            pageSize: '20',
+            workflowId: 'lifecycle.reviewerDemo',
+          },
+        }),
+      );
+      expect(await screen.findByText(copy.noResults)).toBeInTheDocument();
     },
   );
 
@@ -239,6 +356,33 @@ describe('workflow management pages', () => {
       }),
     );
   });
+
+  it.each(['', '?workflowId=lifecycle.reviewerDemo'])(
+    'keeps the execution table and pagination visible with no records %s',
+    async (query) => {
+      let finish: ((value: unknown) => void) | undefined;
+      api.request.mockImplementation(({ path }) =>
+        path.endsWith('definitions')
+          ? Promise.resolve({ data: [detail.workflow] })
+          : new Promise((resolve) => {
+              finish = resolve;
+            }),
+      );
+      await view(<ExecutionsPage />, 'en-US', `/workflows/executions${query}`);
+      expect(screen.getByRole('table')).toBeInTheDocument();
+      expect(screen.getAllByRole('columnheader')).toHaveLength(5);
+      await waitFor(() => expect(finish).toBeDefined());
+      finish?.({ data: [], meta: { page: 1, pageSize: 20, total: 0 } });
+      const empty = await screen.findByText(
+        query ? enUS.workflows.noResults : enUS.workflows.noExecutions,
+      );
+      expect(empty.closest('table')).toBe(screen.getByRole('table'));
+      expect(empty.closest('td')).toHaveAttribute('colspan', '5');
+      expect(screen.getAllByRole('columnheader')).toHaveLength(5);
+      expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+    },
+  );
 
   it('distinguishes missing records from retryable errors and hides server internals', async () => {
     const retry = vi.fn();
@@ -316,6 +460,7 @@ it('retains loaded definitions while refreshing and exposes the busy state', asy
         source: 'lifecycle',
         states: 4,
         transitions: 5,
+        executionCount: 0,
       },
     ],
   });

@@ -1,3 +1,4 @@
+import { finalizeRunWorktrees } from './run-worktrees.ts';
 // Runs each claimed run in its own worker process and keeps a record of it on disk.
 //
 // A worker is spawned detached, so it leads a new process group. Stopping a run signals the whole group: SIGTERM, then
@@ -41,6 +42,8 @@ import {
   listProcesses,
   newProcessTag,
   PROCESS_TAG_ENV,
+  workspaceHolders,
+  taggedProcesses,
 } from './process-tree.ts';
 
 export interface RunRecord {
@@ -65,6 +68,8 @@ export interface RunRecord {
   credentialsFile?: string;
   /** `spawned`, the name of the preparation step under way (prepare/index.ts), `running` or `reporting`. */
   phase: 'spawned' | 'running' | 'reporting' | (string & {});
+  /** Set while the worker saves and removes its worktrees: shutdown waits rather than kill it halfway. */
+  finalizing?: boolean;
   log: string;
 }
 
@@ -482,14 +487,29 @@ export class Supervisor {
           delay(timeoutMs).then(() => false),
         ]);
         if (!stopped) {
-          if (run.readOnly === true) {
+          const finalizing = async (): Promise<boolean> =>
+            run.readOnly === true ||
+            (
+              await readJson<RunRecord>(
+                recordPath(this.options.paths, run.runId),
+              ).catch(() => undefined)
+            )?.finalizing === true;
+          const waitForCleanup = async (): Promise<void> => {
             this.options.log(
-              `run ${run.runId}: waiting for read-only worker cleanup before shutdown`,
+              `run ${run.runId}: waiting for worktree cleanup before shutdown`,
             );
             await run.exited;
-            return;
+          };
+          if (await finalizing()) return waitForCleanup();
+          signalGroup(run.pid, 'SIGTERM');
+          const deadline =
+            Date.now() + (this.options.timings.killGraceMs ?? 5_000);
+          while (groupAlive(run.pid) && Date.now() < deadline) {
+            if (await finalizing()) return waitForCleanup();
+            await delay(100);
           }
-          await killGroup(run.pid, this.options.timings.killGraceMs ?? 5_000);
+          if (await finalizing()) return waitForCleanup();
+          await killGroup(run.pid, 0);
           await run.exited;
         }
       }),
@@ -541,6 +561,31 @@ export async function recoverRun(
     log(`${runId}: killing the job's command group ${record.commandPgid}`);
     await killGroup(record.commandPgid, 0);
   }
+  let detail = options.detail;
+  if (record.kind !== 'job' && record.workDir !== undefined) {
+    const holders = await workspaceHolders(record.workDir);
+    const tags =
+      record.processTag === undefined
+        ? []
+        : await taggedProcesses([record.processTag]);
+    const liveGroup = (await listProcesses()).some(
+      (p) => p.pgid === record.pid,
+    );
+    const results = await finalizeRunWorktrees(
+      paths,
+      record.workDir,
+      log,
+      holders.length + tags.length > 0 || liveGroup
+        ? {
+            unsafeReason:
+              'Processes still hold the attempt directory after stopping.',
+          }
+        : {},
+    );
+    const failed = results.filter((result) => !result.saved);
+    if (failed.length > 0)
+      detail += `\nDirectory retained: ${record.workDir}: ${failed.map((r) => r.reason).join('; ')}`;
+  }
   if (record.credentialsFile !== undefined)
     await deleteRunCredentials(record.credentialsFile);
   // A job's directory is its own and goes with it.
@@ -589,8 +634,8 @@ export async function recoverRun(
   });
   spool.push(
     job
-      ? { type: 'log', stream: 'runner', content: options.detail }
-      : { type: 'status', content: options.detail, meta: { orphaned: true } },
+      ? { type: 'log', stream: 'runner', content: detail }
+      : { type: 'status', content: detail, meta: { orphaned: true } },
   );
   const delivered = await spool.drain(
     options.timings.reportTimeoutMs ?? 30_000,
@@ -601,7 +646,7 @@ export async function recoverRun(
     else
       await client.request('POST', routes.fail, {
         reason: options.reason,
-        detail: options.detail,
+        detail,
       });
     log(`run ${runId}: reported as failed (${options.reason})`);
   } catch (error) {

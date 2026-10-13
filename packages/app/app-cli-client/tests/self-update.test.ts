@@ -16,6 +16,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { HEADERS } from '@nocobase/agent-protocol';
 
 import { detectInstallation } from '../src/install.ts';
+import { installSkills, type SkillsEnvironment } from '../src/skills.ts';
 import {
   HINT_INTERVAL_MS,
   updateCli,
@@ -37,6 +38,13 @@ const session = {
 function tarball(version: string): Uint8Array {
   const staging = path.join(scratch, `staging-${version}`);
   mkdirSync(path.join(staging, 'acme', 'bin'), { recursive: true });
+  mkdirSync(path.join(staging, 'acme', 'skills/nb-studio-cli'), {
+    recursive: true,
+  });
+  writeFileSync(
+    path.join(staging, 'acme', 'skills/nb-studio-cli/SKILL.md'),
+    `instructions ${version}`,
+  );
   const bin = path.join(staging, 'acme', 'bin', 'acme');
   writeFileSync(bin, `#!/bin/sh\necho acme ${version}\n`);
   chmodSync(bin, 0o755);
@@ -93,6 +101,129 @@ function installCli(name: string, version: string, mode = 'cli') {
 }
 
 describe('<bin> update', () => {
+  it('keeps the CLI upgrade successful while leaving all overlapping registered copies untouched', async () => {
+    const { prefix, installation } = installCli('overlapping-skills', '0.1.0');
+    const packageRoot = path.join(prefix, 'versions/0.1.0');
+    mkdirSync(path.join(packageRoot, 'skills/nb-studio-cli'), {
+      recursive: true,
+    });
+    writeFileSync(
+      path.join(packageRoot, 'skills/nb-studio-cli/SKILL.md'),
+      'old instructions',
+    );
+    const skills: SkillsEnvironment = {
+      packageRoot,
+      cliVersion: '0.1.0',
+      bin,
+      stateHome: path.join(prefix, 'state'),
+      home: path.join(prefix, 'home'),
+      env: { PATH: '' },
+    };
+    await installSkills(skills, ['codex']);
+    const parent = path.join(skills.home!, '.agents/skills/nb-studio-cli');
+    const child = path.join(parent, 'claude-config/skills/nb-studio-cli');
+    mkdirSync(child, { recursive: true });
+    writeFileSync(path.join(child, 'SKILL.md'), 'child instructions');
+    const file = path.join(skills.stateHome, 'skills.json');
+    const registry = JSON.parse(readFileSync(file, 'utf8'));
+    registry.targets.push({
+      tool: 'claude',
+      path: child,
+      hash: 'child-hash',
+      cliVersion: '0.0.1',
+    });
+    writeFileSync(file, JSON.stringify(registry));
+    const before = readFileSync(file, 'utf8');
+    const result = await updateCli(
+      session,
+      {
+        bin,
+        running: '0.1.0',
+        installation,
+        target,
+        skills,
+        fetch: fakeServer('0.2.0').fetch,
+      },
+      {},
+    );
+    expect(result.updated).toBe(true);
+    expect(readlinkSync(path.join(prefix, 'current'))).toBe('versions/0.2.0');
+    expect(result.skills?.targets.map((target) => target.action)).toEqual([
+      'failed',
+      'failed',
+    ]);
+    expect(result.skills?.warnings).toHaveLength(2);
+    expect(result.skills?.warnings.join('')).toContain('contain one another');
+    expect(readFileSync(path.join(parent, 'SKILL.md'), 'utf8')).toBe(
+      'old instructions',
+    );
+    expect(readFileSync(path.join(child, 'SKILL.md'), 'utf8')).toBe(
+      'child instructions',
+    );
+    expect(readFileSync(file, 'utf8')).toBe(before);
+  });
+
+  it('syncs from the newly activated tarball and preserves the CLI upgrade and old Skill on a sync failure', async () => {
+    for (const fail of [false, true]) {
+      const { prefix, installation } = installCli(`skills-${fail}`, '0.1.0');
+      const packageRoot = path.join(prefix, 'versions/0.1.0');
+      mkdirSync(path.join(packageRoot, 'skills/nb-studio-cli'), {
+        recursive: true,
+      });
+      writeFileSync(
+        path.join(packageRoot, 'skills/nb-studio-cli/SKILL.md'),
+        'old instructions',
+      );
+      const skills: SkillsEnvironment = {
+        packageRoot,
+        cliVersion: '0.1.0',
+        bin,
+        stateHome: path.join(prefix, 'state'),
+        home: path.join(prefix, 'home'),
+        env: { PATH: '' },
+      };
+      await installSkills(skills, ['codex']);
+      const destination = path.join(
+        skills.home!,
+        '.agents/skills/nb-studio-cli',
+      );
+      const other = path.join(skills.home!, '.agents/skills/my-own-skill');
+      mkdirSync(other);
+      writeFileSync(path.join(other, 'SKILL.md'), 'preserve');
+      // A competing operation fails the Skill sync but cannot invalidate the activated CLI.
+      if (fail)
+        mkdirSync(path.join(path.dirname(destination), '.nb-studio-cli.lock'));
+      const server = fakeServer('0.2.0');
+      const environment: UpdateEnvironment = {
+        bin,
+        running: '0.1.0',
+        installation,
+        target,
+        skills,
+        fetch: server.fetch,
+      };
+      expect(
+        (await updateCli(session, environment, { check: true })).skills,
+      ).toBeUndefined();
+      expect(readFileSync(path.join(destination, 'SKILL.md'), 'utf8')).toBe(
+        'old instructions',
+      );
+      const result = await updateCli(session, environment, {});
+      expect(result.updated).toBe(true);
+      expect(readlinkSync(path.join(prefix, 'current'))).toBe('versions/0.2.0');
+      expect(result.skills?.targets[0]?.action).toBe(
+        fail ? 'failed' : 'updated',
+      );
+      expect(result.skills?.warnings.length).toBe(fail ? 1 : 0);
+      expect(readFileSync(path.join(destination, 'SKILL.md'), 'utf8')).toBe(
+        fail ? 'old instructions' : 'instructions 0.2.0',
+      );
+      expect(readFileSync(path.join(other, 'SKILL.md'), 'utf8')).toBe(
+        'preserve',
+      );
+    }
+  });
+
   it('updates a CLI installed alone, keeping the previous version', async () => {
     const { prefix, installation } = installCli('cli', '0.1.0');
     expect(installation?.mode).toBe('cli');

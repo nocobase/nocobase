@@ -3,8 +3,10 @@
  * them, and what is going on otherwise.
  */
 import type { FollowUpIssue } from '../../../shared/follow-ups.js';
+import { GIT_INBOX_SOURCE, PR_MERGE_REQUESTED } from '../../../shared/git.js';
+import type { InboxEntry } from '@/extensions/nocobase-inbox/model';
 import type { PullRequestMark } from '../../../shared/git.js';
-import { progressSentence } from '../detail/progress-text.js';
+import { progressStatusLine } from '../detail/progress-text.js';
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
@@ -24,6 +26,29 @@ export function pullRequestLabel(mark: Pick<PullRequestMark, 'label'>): string {
   return number ? `PR #${number}` : mark.label;
 }
 
+/** Longest question a short ask quotes. */
+const QUESTION_LENGTH = 120;
+
+/**
+ * A question as a short label: its first sentence, without Markdown (links read as their text, code as its content),
+ * cut to a line or two. Null when nothing is left.
+ */
+export function shortQuestion(question: string): string | null {
+  const plain = question
+    .replace(/```[\s\S]*?```/gu, ' ')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/gu, '$1')
+    .replace(/`([^`]*)`/gu, '$1')
+    .replace(/[*_~]+/gu, '')
+    .replace(/^[#>\-+\s]+/gmu, '')
+    .replace(/\s+/gu, ' ')
+    .trim();
+  if (!plain) return null;
+  const sentence = /^.+?(?:[。！？]|[.!?](?=\s|$))/u.exec(plain)?.[0] ?? plain;
+  return sentence.length > QUESTION_LENGTH
+    ? `${sentence.slice(0, QUESTION_LENGTH - 1)}…`
+    : sentence;
+}
+
 /** What the viewer is asked to do on an issue that waits for them; null when it does not. */
 export function askOf(
   t: Translate,
@@ -37,8 +62,11 @@ export function askOf(
           label: pullRequestLabel(mark),
         })
       : t('issueLive.ask.acceptIssue');
-  return issue.progress?.question
-    ? t('issueLive.ask.answer', { question: issue.progress.question })
+  const question = issue.progress?.question
+    ? shortQuestion(issue.progress.question)
+    : null;
+  return question
+    ? t('issueLive.ask.answer', { question })
     : t('issueLive.ask.answerNoQuestion');
 }
 
@@ -52,5 +80,43 @@ export function nowLine(
   const ask = askOf(t, issue, mark);
   if (ask) return { text: ask, needsViewer: true };
   if (!issue.progress) return null;
-  return { text: progressSentence(t, issue.progress, now), needsViewer: false };
+  // Someone else's decision: what they are asked, shortly.
+  const question = issue.progress.question
+    ? shortQuestion(issue.progress.question)
+    : null;
+  if (issue.progress.state === 'needsDecision' && question)
+    return {
+      text: t('issueProgress.needsDecision', { question }),
+      needsViewer: false,
+    };
+  // A short line from the progress itself, never the manager's step prose.
+  return {
+    text: progressStatusLine(t, issue.progress, now),
+    needsViewer: false,
+  };
+}
+
+/** The owner handoff decisions the inbox holds, by notice type. */
+const HANDOFF_TYPES: ReadonlySet<string> = new Set([
+  'owner_handoff',
+  'owner_handoff_rejected',
+]);
+
+/**
+ * Whether the summary's "Needs you" card already shows this waiting decision: the pull request to merge while the
+ * viewer accepts the work, or the handoff they are to take over.
+ */
+export function coveredBySummary(
+  entry: Pick<InboxEntry, 'notice'>,
+  shown: { readonly accepting: boolean; readonly handoff: boolean },
+): boolean {
+  const notice = entry.notice;
+  if (!notice) return false;
+  if (
+    shown.accepting &&
+    notice.source === GIT_INBOX_SOURCE &&
+    notice.type === PR_MERGE_REQUESTED
+  )
+    return true;
+  return shown.handoff && HANDOFF_TYPES.has(notice.type);
 }

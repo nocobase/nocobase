@@ -67,6 +67,8 @@ const agentChatZhCN: AgentChatLocale = {
       runCancelled: '已停止。',
     },
     consultation: {
+      unavailableTitle: '咨询对象不可见',
+      snapshotTitle: '当时请求的对象：{{name}}',
       title: '咨询了 {{name}}',
       question: '问题',
       answer: '回答',

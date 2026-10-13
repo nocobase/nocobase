@@ -365,6 +365,26 @@ describe('run lifecycle', () => {
     ]);
   });
 
+  it('ends disk-full failures with the machine name without automatic retry or an extra attempt', async () => {
+    h = await createHarness();
+    const { runner, runId } = await claimed();
+    await post(runner, runId, 'start', start);
+    const failed = await post(runner, runId, 'fail', {
+      reason: 'runnerDiskFull',
+      detail: 'ENOSPC: write',
+    });
+    expect(failed.body.data).toEqual({ status: 'failed' });
+    const storedRunner = await h.services.runners.get(runner.runnerId);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'failed',
+      failureReason: 'runnerDiskFull',
+      attempt: 1,
+      failureDetail: `Runner ${storedRunner.name} is out of disk space: ENOSPC: write`,
+    });
+    expect(h.finished).toHaveLength(1);
+    expect(await claim(h, runner)).toEqual([]);
+  });
+
   it('queues a run again when preparing it failed on the network, but not when the checkout failed', async () => {
     h = await createHarness();
     const agentId = await h.createAgent({ maxAttempts: 3 });

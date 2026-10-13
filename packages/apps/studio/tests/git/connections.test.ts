@@ -1231,6 +1231,8 @@ describe('push credentials on demand', () => {
     });
     await mentionAgent(h, 'alice', linked.issue.id, agentId);
     const payload = await h.claimOne(features);
+    expect(payload).toBeDefined();
+    expect((await h.agents.runs.detail(payload.run.id)).agentId).toBe(agentId);
     expect(payload).toMatchObject({ agent: { id: agentId } });
     return { app, payload, ...linked };
   }
@@ -1278,6 +1280,8 @@ describe('push credentials on demand', () => {
     const agentId = await h.createAgent({ actions: ['pm.issues/view'] });
     await mentionAgent(h, 'alice', issue.id, agentId);
     const payload = await h.claimOne(ON_DEMAND);
+    expect(payload).toBeDefined();
+    expect((await h.agents.runs.detail(payload.run.id)).agentId).toBe(agentId);
     expect(payload).toMatchObject({ agent: { id: agentId } });
     expect(payload.workspace.git).toEqual({
       author: expect.any(Object),

@@ -113,138 +113,132 @@ export default function ExecutionsPage(): ReactElement {
       </div>
       <DataState {...request} retry={request.reload} />
       {catalog.status && <DataState {...catalog} retry={catalog.reload} />}
-      {request.data && (
-        <>
-          {request.data.data.length > 0 && (
-            <div className='overflow-hidden rounded-lg border bg-card'>
-              <Table>
-                <TableHeader>
-                  <TableRow className='bg-muted/40 hover:bg-muted/40'>
-                    <TableHead className='px-3 text-muted-foreground'>
-                      {t('workflows.workflow')}
-                    </TableHead>
-                    <TableHead className='px-3 text-muted-foreground'>
-                      {t('workflows.record')}
-                    </TableHead>
-                    <TableHead className='px-3 text-muted-foreground'>
-                      {t('workflows.recordTitle')}
-                    </TableHead>
-                    <TableHead className='px-3 text-muted-foreground'>
-                      {t('workflows.state')}
-                    </TableHead>
-                    <TableHead
-                      className='px-3 text-muted-foreground'
-                      aria-sort={
-                        order === 'newest' ? 'descending' : 'ascending'
-                      }
+      <div className='overflow-hidden rounded-lg border bg-card'>
+        <Table>
+          <TableHeader>
+            <TableRow className='bg-muted/40 hover:bg-muted/40'>
+              <TableHead className='px-3 text-muted-foreground'>
+                {t('workflows.workflow')}
+              </TableHead>
+              <TableHead className='px-3 text-muted-foreground'>
+                {t('workflows.record')}
+              </TableHead>
+              <TableHead className='px-3 text-muted-foreground'>
+                {t('workflows.recordTitle')}
+              </TableHead>
+              <TableHead className='px-3 text-muted-foreground'>
+                {t('workflows.state')}
+              </TableHead>
+              <TableHead
+                className='px-3 text-muted-foreground'
+                aria-sort={order === 'newest' ? 'descending' : 'ascending'}
+              >
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  className='-ml-3 h-8'
+                  onClick={() => {
+                    const params = new URLSearchParams(search);
+                    params.set(
+                      'order',
+                      order === 'newest' ? 'oldest' : 'newest',
+                    );
+                    params.delete('page');
+                    setSearch(params);
+                  }}
+                >
+                  {t('workflows.createdAt')}
+                  {order === 'newest' ? <ArrowDown /> : <ArrowUp />}
+                </Button>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {(request.data?.data ?? []).map((execution) => {
+              const workflow = workflows.find(
+                (item) => item.id === execution.workflowId,
+              );
+              return (
+                <TableRow key={`${execution.workflowId}:${execution.recordId}`}>
+                  <TableCell className='px-3'>
+                    <Link
+                      className='text-primary hover:underline'
+                      to={{
+                        pathname: `/workflows/definitions/${execution.workflowId}`,
+                        search: location.search,
+                      }}
                     >
-                      <Button
-                        variant='ghost'
-                        size='sm'
-                        className='-ml-3 h-8'
-                        onClick={() => {
-                          const params = new URLSearchParams(search);
-                          params.set(
-                            'order',
-                            order === 'newest' ? 'oldest' : 'newest',
-                          );
-                          params.delete('page');
-                          setSearch(params);
-                        }}
-                      >
-                        {t('workflows.createdAt')}
-                        {order === 'newest' ? <ArrowDown /> : <ArrowUp />}
-                      </Button>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {request.data.data.map((execution) => {
-                    const workflow = workflows.find(
-                      (item) => item.id === execution.workflowId,
-                    );
-                    return (
-                      <TableRow
-                        key={`${execution.workflowId}:${execution.recordId}`}
-                      >
-                        <TableCell className='px-3'>
-                          <Link
-                            className='text-primary hover:underline'
-                            to={{
-                              pathname: `/workflows/definitions/${execution.workflowId}`,
-                              search: location.search,
-                            }}
-                          >
-                            {workflow
-                              ? labels.title(workflow)
-                              : execution.workflowId}
-                          </Link>
-                        </TableCell>
-                        <TableCell className='px-3'>
-                          <Link
-                            className='text-primary underline-offset-4 hover:underline'
-                            to={{
-                              pathname: `/workflows/executions/${execution.workflowId}/${execution.recordId}`,
-                              search: location.search,
-                            }}
-                          >
-                            #{execution.recordId}
-                          </Link>
-                        </TableCell>
-                        <TableCell
-                          className='max-w-64 truncate px-3'
-                          title={execution.title}
-                        >
-                          {execution.title}
-                        </TableCell>
-                        <TableCell className='px-3'>
-                          <Badge variant='secondary'>
-                            {labels.state(
-                              workflow?.source ?? 'lifecycle',
-                              execution.state,
-                            )}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className='px-3'>
-                          {workflowDate(execution.createdAt, i18n.language)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-          {request.data.data.length === 0 && (
-            <Empty>
-              <EmptyDescription>
-                {t(
-                  workflowId ? 'workflows.noResults' : 'workflows.noExecutions',
-                )}
-              </EmptyDescription>
-            </Empty>
-          )}
-          <div className='flex flex-wrap items-center justify-between gap-3 text-sm'>
-            <p>{t('workflows.pagination', { page, total })}</p>
-            <div className='flex gap-2'>
-              <Button
-                variant='outline'
-                disabled={page <= 1 || request.loading}
-                onClick={() => changePage(page - 1)}
-              >
-                {t('workflows.previous')}
-              </Button>
-              <Button
-                variant='outline'
-                disabled={page * 20 >= total || page >= 1000 || request.loading}
-                onClick={() => changePage(page + 1)}
-              >
-                {t('workflows.next')}
-              </Button>
-            </div>
-          </div>
-        </>
-      )}
+                      {workflow ? labels.title(workflow) : execution.workflowId}
+                    </Link>
+                  </TableCell>
+                  <TableCell className='px-3'>
+                    <Link
+                      className='text-primary underline-offset-4 hover:underline'
+                      to={{
+                        pathname: `/workflows/executions/${execution.workflowId}/${execution.recordId}`,
+                        search: location.search,
+                      }}
+                    >
+                      #{execution.recordId}
+                    </Link>
+                  </TableCell>
+                  <TableCell
+                    className='max-w-64 truncate px-3'
+                    title={execution.title}
+                  >
+                    {execution.title}
+                  </TableCell>
+                  <TableCell className='px-3'>
+                    <Badge variant='secondary'>
+                      {labels.state(
+                        workflow?.source ?? 'lifecycle',
+                        execution.state,
+                      )}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className='px-3'>
+                    {workflowDate(execution.createdAt, i18n.language)}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+            {request.data?.data.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5}>
+                  <Empty>
+                    <EmptyDescription>
+                      {t(
+                        workflowId
+                          ? 'workflows.noResults'
+                          : 'workflows.noExecutions',
+                      )}
+                    </EmptyDescription>
+                  </Empty>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <div className='flex flex-wrap items-center justify-between gap-3 text-sm'>
+        <p>{t('workflows.pagination', { page, total })}</p>
+        <div className='flex gap-2'>
+          <Button
+            variant='outline'
+            disabled={page <= 1 || request.loading}
+            onClick={() => changePage(page - 1)}
+          >
+            {t('workflows.previous')}
+          </Button>
+          <Button
+            variant='outline'
+            disabled={page * 20 >= total || page >= 1000 || request.loading}
+            onClick={() => changePage(page + 1)}
+          >
+            {t('workflows.next')}
+          </Button>
+        </div>
+      </div>
       <Outlet />
     </section>
   );

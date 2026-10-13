@@ -42,13 +42,6 @@ export function ExecutionDiagram({
           {t('workflows.currentState')}:{' '}
           <strong>{labels.state(detail.workflow.source, current)}</strong>
         </p>
-        <Button
-          variant='outline'
-          aria-pressed={index < 0}
-          onClick={() => setSelected(undefined)}
-        >
-          {t('workflows.latest')}
-        </Button>
       </div>
       <p className='text-sm text-muted-foreground'>
         {t('workflows.historyHint')}
@@ -167,6 +160,7 @@ export function ExecutionDiagram({
 }
 export default function ExecutionPage(): ReactElement {
   const { workflowId = '', recordId = '' } = useParams();
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const location = useLocation();
   const { t } = useTranslation();
   const labels = useWorkflowLabels();
@@ -189,7 +183,10 @@ export default function ExecutionPage(): ReactElement {
         <Button
           variant='outline'
           disabled={request.loading}
-          onClick={request.reload}
+          onClick={() => {
+            setRefreshVersion((version) => version + 1);
+            request.reload();
+          }}
         >
           {t('workflows.refresh')}
         </Button>
@@ -197,7 +194,7 @@ export default function ExecutionPage(): ReactElement {
       <DataState {...request} retry={request.reload} />
       {request.data && (
         <ExecutionDiagram
-          key={`${workflowId}:${recordId}`}
+          key={`${workflowId}:${recordId}:${refreshVersion}`}
           detail={request.data.data}
         />
       )}

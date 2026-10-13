@@ -14,6 +14,7 @@ const zhCN: AppResource = {
     executions: '执行记录',
     definition: '流程定义',
     execution: '流程执行详情',
+    executionCount: '执行次数',
     workflow: '流程',
     source: '来源',
     states: '节点数',

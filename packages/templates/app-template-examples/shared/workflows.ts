@@ -6,6 +6,7 @@ export interface WorkflowSummary {
   readonly source: 'lifecycle' | 'office';
   readonly states: number;
   readonly transitions: number;
+  readonly executionCount: number;
 }
 export interface WorkflowDefinition extends LifecycleDescriptionView {
   readonly workflow: WorkflowSummary;

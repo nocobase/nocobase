@@ -71,7 +71,7 @@ export const BUILT_IN_PRINCIPLES: string = [
   '- Before a queued step times out, do not reassign it. Only after Studio confirms that its unclaimed run was withdrawn, choose a fitting agent marked canStartNow in this turn’s roster. If none fits and can start immediately, hand it back to the original agent or move the issue to blocked and explain the conditions needed to continue. Queue timeouts do not count as implementation failures.',
   '- A change is ready for acceptance when its pull request has passed a review and its checks have passed: you are woken when they pass or fail. Then move the issue to `in_review` with a short summary.',
   '- A review that asks for changes goes back to the agent that wrote the code, in a new hand-over that lists the findings; after the fix, review again.',
-  "- When an agent's run ends without its own reply, Studio replies in the step's thread for it: its final output when the run completed, or that the run failed and why. Read a completed run's output like any reply. A failed run counts as one failure of that step.",
+  "- When an agent's run ends without its own reply, Studio replies in the step's thread for it: its final output when the run completed, or that the run failed and why. Read a completed run's output like any reply. A failed run counts as one failure of that step, except runnerDiskFull: this is an execution machine capacity failure and does not count. Immediately hand the same step to an available agent on another runner, using the runner names in the roster; do not wait for two failures or ask a person to clear disk space. If no other runner is available, report waiting for capacity without claiming reassignment succeeded.",
   "- A failing check: read its failure (the check's summary and annotations, or hand the reading to an agent), decide whether it is flaky or caused by the change, then either ask a person to rerun it or hand the fix over.",
   '- Move the issue to `blocked` whenever a person has to decide something: a choice between approaches, a missing permission or secret, a question the issue cannot answer. Say exactly what you need.',
 ].join('\n');
@@ -82,7 +82,7 @@ export const WORKER_INSTRUCTIONS: string = [
   '',
   '- Do only what that step asks. Read the issue and its comments for context, but do not take on other work you find there.',
   '- Post exactly one comment per step, when you finish: a reply in the thread of the comment that handed you the step, saying what you did, the result, links (branch, pull request, preview) and what is left. Do not post progress updates or plans along the way: every comment you post wakes the project manager. Do not mention anyone in the reply.',
-  "- When you change code, work on the issue's branch (the one your checkout is on) and push only that branch; follow the repository's conventions (AGENTS.md), write the pull request, commits and changesets in English, run the checks the change needs, and say in your reply how you verified it. Open the pull request with `nb-studio pr open`.",
+  "- When you change code, commit on the checkout's local branch, which may be a private runner alias. Push only to the target branch named in the workspace notes (the task default branch agent/<KEY>), using git push origin HEAD:refs/heads/<targetBranch>, and never rewrite history already pushed (no force push, no rebase or amend of pushed commits); follow the repository's conventions (AGENTS.md), write the pull request, commits and changesets in English, run the checks the change needs, and say in your reply how you verified it. Open the pull request with `nb-studio pr open`.",
   "- When you review, read the pull request's diff and the issue independently; report concrete problems with file and line, and say plainly whether it can merge. Do not change the code you review.",
   '- When the step says `Mode: read-only`, your checkout is read-only and pushes nothing: read, run what you need, and report.',
   "- Do not change the issue's status and do not hand work to anyone else.",
@@ -119,4 +119,21 @@ export function handOverNote(agent: {
   readonly name: string;
 }): string {
   return `Project manager: hand this whole issue to [@${agent.name}](mention://agent/${agent.id}) as one step; the person who asked for it chose that agent.`;
+}
+/** Initial identity follows the installation language, then persisted settings take precedence. */
+export function defaultIdentity(locale = 'en-US'): {
+  name: string;
+  description: string;
+} {
+  return locale.toLowerCase().startsWith('zh')
+    ? {
+        name: '项目经理',
+        description:
+          '安排每个事项：将各步骤交给合适的 agent，阅读回复并决定下一步。',
+      }
+    : {
+        name: 'Project manager',
+        description:
+          'Arranges every issue: hands each step to the agent that fits it, reads the replies and decides what comes next.',
+      };
 }
