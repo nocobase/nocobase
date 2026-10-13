@@ -49,6 +49,12 @@ export function IssueConversation({
   const [mentionSearchRevision, setMentionSearchRevision] = useState(0);
   const editorRef = useRef<RichTextHandle>(null);
   const [replyTo, setReplyTo] = useState<IssueComment | null>(null);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const openComposer = useCallback(() => {
+    setComposerOpen(true);
+    // The editor mounts with the open composer.
+    requestAnimationFrame(() => editorRef.current?.focus());
+  }, []);
   const project = useQuery({
     queryKey: pmKeys.project(detail.projectId ?? ''),
     queryFn: () => {
@@ -108,6 +114,9 @@ export function IssueConversation({
       memberSearchFailed,
       retryingMembers: project.isFetching,
       retryMembers,
+      composerOpen,
+      setComposerOpen,
+      openComposer,
     }),
     [
       detail,
@@ -120,6 +129,8 @@ export function IssueConversation({
       memberSearchFailed,
       project.isFetching,
       retryMembers,
+      composerOpen,
+      openComposer,
     ],
   );
   return (

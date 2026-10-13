@@ -41,6 +41,77 @@ let directory: string;
 const logger = { info: () => {}, warn: () => {}, error: () => {} };
 
 describe('parameter configuration against the real repository', () => {
+  test('searches one scoped reference type and pages newly added active users', async ({
+    database,
+  }) => {
+    const running = await start(database);
+    try {
+      const config = running.container.resolve(
+        parameterConfigurationServiceToken,
+      );
+      const people = database.repository('lifecycleExamplePeople');
+      for (let index = 0; index < 23; index++)
+        await people.createOne({
+          values: {
+            id: `search-${index}`,
+            scope: 'demo',
+            name: `Search Person ${String(index).padStart(2, '0')}`,
+            active: true,
+          },
+        });
+      await people.createOne({
+        values: {
+          id: 'search-private',
+          scope: 'other',
+          name: 'Search Person private',
+          active: true,
+        },
+      });
+      await people.createOne({
+        values: {
+          id: 'search-disabled',
+          scope: 'demo',
+          name: 'Search Person disabled',
+          active: false,
+        },
+      });
+      expect((await config.references('zhao', 'user', '   ')).data).toEqual([]);
+      const first = await config.references('zhao', 'user', 'Search Person');
+      const second = await config.references(
+        'zhao',
+        'user',
+        'Search Person',
+        2,
+      );
+      const last = await config.references('zhao', 'user', 'Search Person', 3);
+      expect(first.meta).toEqual({ page: 1, pageSize: 10, total: 23 });
+      expect(first.data).toHaveLength(10);
+      expect(second.data).toHaveLength(10);
+      expect(last.data).toHaveLength(3);
+      expect(
+        new Set([...first.data, ...second.data, ...last.data].map((p) => p.id))
+          .size,
+      ).toBe(23);
+      expect(
+        (await config.references('zhao', 'department', 'Search Person')).data,
+      ).toEqual([]);
+      expect(
+        (await config.references('zhao', 'user', 'Search Person', 1, 100)).data,
+      ).toHaveLength(10);
+      expect(await config.reference('zhao', 'user', 'search-22')).toMatchObject(
+        { name: 'Search Person 22' },
+      );
+      expect(
+        await config.reference('zhao', 'user', 'search-private'),
+      ).toBeNull();
+      expect(
+        await config.reference('zhao', 'user', 'search-disabled'),
+      ).toMatchObject({ active: false });
+      expect(() => config.authorize('lin', 'candidates')).toThrow();
+    } finally {
+      await running.stop();
+    }
+  });
   test('retains every usage fact when string identities share a pagination timestamp', async ({
     database,
   }) => {

@@ -66,6 +66,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { rememberRunFocus, runReturnFocus } from './run-focus.js';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from 'cn';
 
 import { useIssueRunsState, useRefreshIssueRuns } from './use-issue-runs.js';
 
@@ -445,6 +446,41 @@ export function IssueLiveRun({
       }}
       labels={wording.history}
     />
+  );
+}
+
+/**
+ * What the issue's "Now" line says, as the way to its live run's record: while a run is queued or working it opens the
+ * run's transcript (under the issue's own path, or under `base` such as `/issues/PM-12` elsewhere); otherwise it is
+ * plain text.
+ */
+export function IssueLiveRunLink({
+  issue,
+  base,
+  className,
+  children,
+}: {
+  readonly issue: IssueDetail;
+  readonly base?: string;
+  readonly className?: string;
+  readonly children: ReactNode;
+}): ReactElement {
+  const { runs } = useIssueHistoryRuns(issue);
+  const live = runs?.find((run) =>
+    ['queued', 'dispatched', 'running'].includes(run.status),
+  );
+  if (!live) return <span className={className}>{children}</span>;
+  const to = base
+    ? `${base.replace(/\/$/u, '')}/${runHref(live)}`
+    : runHref(live);
+  return (
+    <Link
+      to={to}
+      className={cn('hover:underline', className)}
+      onClick={(event) => rememberRunFocus(event.currentTarget, null)}
+    >
+      <span data-testid='run-live'>{children}</span>
+    </Link>
   );
 }
 

@@ -1,24 +1,13 @@
 import { ApiClientError, useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { inboxKeys } from '@nocobase/app-plugin-notification-in-app/client/inbox';
 import { useNotify } from '../../access/notify.js';
 
-const ownerHandoffKey = (issueId: string) =>
-  ['studio', 'ownerHandoff', issueId] as const;
-interface HandoffView {
-  readonly handoff: {
-    readonly waiting: boolean;
-    readonly notificationKey: string;
-    readonly rejectedAt: string | null;
-    readonly ownerUserId: string;
-  } | null;
-  readonly canDecide: boolean;
-  readonly canClaim: boolean;
-}
+import { ownerHandoffKey, useOwnerHandoffView } from './use-owner-handoff.js';
 
 /** Shared by the issue page and its inbox decision. An old inbox item never borrows the current decision. */
 export function OwnerHandoffActions({
@@ -32,16 +21,7 @@ export function OwnerHandoffActions({
   const api = useApiClient();
   const queries = useQueryClient();
   const notify = useNotify();
-  const handoff = useQuery({
-    queryKey: ownerHandoffKey(issueId),
-    queryFn: async () =>
-      (
-        await api.request<{ data: HandoffView }>({
-          path: `issueOwnerHandoffs/${encodeURIComponent(issueId)}`,
-        })
-      ).data,
-    refetchInterval: 15_000,
-  });
+  const handoff = useOwnerHandoffView(issueId);
   const decide = useMutation({
     mutationFn: (decision: 'accept' | 'reject') =>
       api.request({

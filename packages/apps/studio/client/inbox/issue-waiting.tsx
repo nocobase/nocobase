@@ -31,11 +31,16 @@ import { useWaiting } from './use-waiting.js';
 
 export function IssueWaitingSection({
   issue,
+  covered,
 }: {
   readonly issue: IssueDetail;
+  /** Decisions the page already shows elsewhere, such as in its summary; left out here. */
+  readonly covered?: (entry: InboxEntry) => boolean;
 }): ReactElement | null {
   const { t } = useTranslation(APP_NS);
-  const entries = useWaiting(issue).data ?? [];
+  const entries = (useWaiting(issue).data ?? []).filter(
+    (entry) => !covered?.(entry),
+  );
   if (entries.length === 0) return null;
   return (
     <section

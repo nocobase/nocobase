@@ -259,6 +259,7 @@ const zhCN: AppResource = {
     allConversations: '查看全部',
     untitled: '未命名对话',
     agentSetup: {
+      menu: '在 agent 中使用 Studio',
       open: '用本地 Coding Agent 管理 Studio',
       title: '连接本地 Coding Agent',
       description:
@@ -1341,6 +1342,12 @@ const zhCN: AppResource = {
       sameWorkActive: '同线程有运行正在执行',
       delayed: '等待延迟执行或重试退避',
     },
+    nextLabel: '接下来：',
+    status: {
+      working: '{{agent}} 工作中',
+      queued: '{{agent}} 排队中',
+      minutes: '{{minutes}} 分钟',
+    },
     waiting: {
       waitingOwner: '等待 {{owner}} 接手',
       noOwner: '正在等待有效的任务负责人',
@@ -1366,7 +1373,7 @@ const zhCN: AppResource = {
     inReview: '等待验收',
     notStarted: '还没开始。点「开始」后由项目经理安排。',
     finished: '已结束',
-    idle: '现在没有在进行的工作',
+    idle: '现在没有在运行的工作',
     next: '接下来：{{next}}',
     start: '开始',
     handOver: '交给项目经理继续',

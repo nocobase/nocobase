@@ -34,6 +34,13 @@ export const followUpsEnUS = {
     follow: 'Follow {{key}}',
     unfollow: 'Stop following {{key}}',
   },
+  tabs: {
+    label: 'Follow-up lists',
+    following: 'Following',
+    mine: 'Issues I own',
+    badge_one: '{{count}} needs a look',
+    badge_other: '{{count}} need a look',
+  },
   loadFailed: 'Could not load your follow-ups.',
   saveFailed: 'Could not save what you follow.',
 };
@@ -67,6 +74,13 @@ export const followUpsZhCN: typeof followUpsEnUS = {
     truncated: '每个状态只显示最近的 {{max}} 个任务。',
     follow: '关注 {{key}}',
     unfollow: '取消关注 {{key}}',
+  },
+  tabs: {
+    label: '跟进列表',
+    following: '关注',
+    mine: '我负责的',
+    badge_one: '{{count}} 个需要看',
+    badge_other: '{{count}} 个需要看',
   },
   loadFailed: '没有读到你的跟进。',
   saveFailed: '没能保存关注的任务。',

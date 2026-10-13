@@ -1,7 +1,9 @@
 import type {
   ParameterGroupView,
   ParameterHistoryView,
-  ReviewerOptions,
+  ReviewerReference,
+  ReviewerReferencePage,
+  ReviewerReferenceType,
 } from '../../shared/parameter-configuration.js';
 import type { DatabaseManager } from '@nocobase/db';
 import {
@@ -206,29 +208,75 @@ export class ParameterConfigurationService {
       origin: 'configuration',
     };
   }
-  public async options(actor: string): Promise<ReviewerOptions> {
-    this.authorize(actor, 'candidates');
-    const names = [
-      'lifecycleExampleDepartments',
-      'lifecycleExampleRoles',
-      'lifecycleExamplePeople',
-    ];
-    const [departments, roles, people] = await Promise.all(
-      names.map((name) =>
-        this.database.repository(name).findMany({ filter: { scope: 'demo' } }),
-      ),
-    );
-    const plain = (rows: readonly Record<string, unknown>[] | undefined) =>
-      (rows ?? []).map((row) => ({
-        id: String(row.id),
-        name: String(row.name),
-        ...(row.active === undefined ? {} : { active: Boolean(row.active) }),
-      }));
-    return {
-      departments: plain(departments),
-      roles: plain(roles),
-      people: plain(people),
+  private referenceRepository(type: ReviewerReferenceType) {
+    const names = {
+      department: 'lifecycleExampleDepartments',
+      role: 'lifecycleExampleRoles',
+      user: 'lifecycleExamplePeople',
     };
+    return this.database.repository<{
+      id: string;
+      name: string;
+      scope: string;
+      active?: boolean;
+    }>(names[type]);
+  }
+  public async references(
+    actor: string,
+    type: ReviewerReferenceType,
+    q: string,
+    page = 1,
+    pageSize = 10,
+  ): Promise<ReviewerReferencePage> {
+    this.authorize(actor, 'candidates');
+    const size = Math.max(1, Math.min(10, Math.trunc(pageSize)));
+    const currentPage = Math.max(1, Math.trunc(page));
+    const query = q.trim();
+    if (!query)
+      return {
+        data: [],
+        meta: { page: currentPage, pageSize: size, total: 0 },
+      };
+    const repository = this.referenceRepository(type);
+    const filter: NonNullable<
+      Parameters<typeof repository.count>[0]
+    >['filter'] = (f) =>
+      f.and([
+        f.string('scope').eq('demo'),
+        f.string('name').includes(query),
+        ...(type === 'user' ? [f.boolean('active').isTrue()] : []),
+      ]);
+    const data = await repository.findMany({
+      filter,
+      sort: (s) => [s.field('name').asc(), s.field('id').asc()],
+      limit: size,
+      offset: (currentPage - 1) * size,
+    });
+    return {
+      data: data.map((row) => ({ id: String(row.id), name: String(row.name) })),
+      meta: {
+        page: currentPage,
+        pageSize: size,
+        total: await repository.count({ filter }),
+      },
+    };
+  }
+  public async reference(
+    actor: string,
+    type: ReviewerReferenceType,
+    id: string,
+  ): Promise<ReviewerReference | null> {
+    this.authorize(actor, 'candidates');
+    const row = await this.referenceRepository(type).findOne({
+      filter: { scope: 'demo', id },
+    });
+    return row
+      ? {
+          id: String(row.id),
+          name: String(row.name),
+          ...(row.active === undefined ? {} : { active: Boolean(row.active) }),
+        }
+      : null;
   }
   public async candidates(
     values: JsonObject,

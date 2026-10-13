@@ -86,6 +86,7 @@ export default function DefinitionPage(): ReactElement {
             }
             nativeButton={false}
             variant='outline'
+            className='self-end'
           >
             {t('workflows.viewExecutions')}
           </Button>
