@@ -1327,6 +1327,8 @@ const enUS = {
       retry: 'Try organizing again',
       tooLong:
         'The requirements and files are too long for one message. Shorten the text or remove some files, then try again.',
+      filesUnreadable:
+        'These files could not be read in full: {{files}}. Retry, or replace them with shorter supported text or document files, then try again.',
       requestFailed:
         'The request failed. Your requirements are still here; check your connection and try again.',
       noAgent:

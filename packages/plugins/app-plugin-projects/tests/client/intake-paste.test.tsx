@@ -30,6 +30,7 @@ async function setup(
   locale = 'en-US',
   stored: Partial<IntakeFile> = {},
   basePath = '',
+  uploadFails = false,
 ) {
   const uploaded: string[] = [];
   const requests = vi.fn(({ path, method }: ApiCall): unknown => {
@@ -83,6 +84,7 @@ async function setup(
           new URL(request.url).pathname.endsWith('/intake/files')
         ) {
           uploaded.push(await request.text());
+          if (uploadFails) return new Response(null, { status: 500 });
           return Response.json({
             data: {
               id: `f${uploaded.length}`,
@@ -128,6 +130,44 @@ function paste(box: HTMLElement, files: readonly File[]) {
 }
 
 describe('requirements image paste', () => {
+  it('reports a failed TXT upload and excludes it from the submitted files', async () => {
+    const { box, uploaded, requests } = await setup('en-US', {}, '', true);
+    fireEvent.change(box, { target: { value: 'Keep these requirements' } });
+    fireEvent.change(screen.getByTestId('intake-file-input'), {
+      target: {
+        files: [
+          new File(['PM307-UPLOAD: Owner filter'], 'notes.txt', {
+            type: 'text/plain',
+          }),
+        ],
+      },
+    });
+    expect(
+      await screen.findByText('Could not upload notes.txt.'),
+    ).toBeInTheDocument();
+    expect(uploaded).toHaveLength(1);
+    await waitFor(() =>
+      expect(screen.getByTestId('intake-split')).toBeEnabled(),
+    );
+    fireEvent.click(screen.getByTestId('intake-split'));
+    await waitFor(() =>
+      expect(
+        requests.mock.calls.some(
+          ([call]) => call.path === 'projects/intake/split',
+        ),
+      ).toBe(true),
+    );
+    expect(
+      requests.mock.calls.find(
+        ([call]) => call.path === 'projects/intake/split',
+      )?.[0].json,
+    ).toEqual({
+      text: 'Keep these requirements',
+      fileIds: [],
+      projectId: null,
+    });
+  });
+
   it.each([
     ['paste', 'en-US', ''],
     ['manual', 'zh-CN', '/studio'],
