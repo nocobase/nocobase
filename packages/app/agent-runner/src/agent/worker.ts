@@ -49,7 +49,13 @@ import {
   type AppConnection,
   type RunnerSettings,
 } from '../lib/config.ts';
-import { backoff, delay, ApiError, type ApiClient } from '../lib/http.ts';
+import {
+  backoff,
+  delay,
+  ApiError,
+  dataOf,
+  type ApiClient,
+} from '../lib/http.ts';
 import type { RunnerPaths } from '../lib/home.ts';
 import {
   createRedactor,
@@ -533,13 +539,12 @@ export class RunWorker {
     await writeRecord(this.deps.paths, this.record);
   }
 
-  /** POSTs a final report, retrying transient failures. False when the run is no longer this runner's. */
-  private async report(route: string, body: unknown): Promise<boolean> {
+  /** POSTs a final report, retrying transient failures and returning its acknowledgement. */
+  private async report(route: string, body: unknown): Promise<unknown> {
     const deadline = Date.now() + (this.timings.reportTimeoutMs ?? 10 * 60_000);
     for (let attempt = 0; ; attempt += 1) {
       try {
-        await this.client.request('POST', route, body);
-        return true;
+        return await this.client.request('POST', route, body);
       } catch (error) {
         if (
           !(error instanceof ApiError) ||
@@ -569,8 +574,9 @@ export class RunWorker {
       log(
         `run ${this.runId}: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
       );
+      if (this.ending?.kind === 'cancel') return await this.finishEnding();
       if (this.ending?.kind === 'lost') return 'leaseLost';
-      return this.finishFailed(
+      return await this.finishFailed(
         'unknown',
         error instanceof Error ? error.message : String(error),
       );
@@ -578,14 +584,20 @@ export class RunWorker {
       await this.stopTool();
       // Descendants and tagged detached processes must stop before files are snapshotted.
       const unsafeReason = await this.quiesceWriters();
-      const workDir = this.prepared?.workspace?.workDir;
+      const workDir = this.prepared?.workspace?.workDir ?? this.record.workDir;
       if (workDir !== undefined) {
         const saved = await finalizeRunWorktrees(
           this.deps.paths,
           workDir,
           this.deps.log,
           { ...(unsafeReason === undefined ? {} : { unsafeReason }) },
-        );
+        ).catch((error: unknown) => {
+          this.reportAcknowledged = false;
+          this.deps.log(
+            `run ${this.runId}: final preservation failed; retry record retained: ${String(error)}`,
+          );
+          return [];
+        });
         for (const result of saved)
           this.deps.log(
             `run ${this.runId}: local save ${JSON.stringify(result)}`,
@@ -605,12 +617,16 @@ export class RunWorker {
             `run ${this.runId}: release failed: ${error instanceof Error ? error.message : String(error)}`,
           ),
         );
-      // A lost run's events can no longer be delivered; everything else was drained before reporting.
-      if (this.spool.size === 0 || this.ending?.kind === 'lost')
-        await this.spool.remove();
-      await removeRecord(this.deps.paths, this.runId, {
-        preserveWriters: unsafeReason !== undefined,
-      });
+      // Retain the sole retry record and spool until a final report has been confirmed.
+      if (this.reportAcknowledged) {
+        if (this.spool.size === 0) await this.spool.remove();
+        await removeRecord(this.deps.paths, this.runId, {
+          preserveWriters: unsafeReason !== undefined,
+        });
+      } else
+        log(
+          `run ${this.runId}: final report unconfirmed; retry record retained`,
+        );
     }
   }
 
@@ -1045,6 +1061,10 @@ export class RunWorker {
     return reports;
   }
 
+  private reportAcknowledged = false;
+  private localSaveResults: Awaited<ReturnType<typeof finalizeRunWorktrees>> =
+    [];
+  private saveEventFailure?: string;
   private savedDuringRun = false;
   private writerRecoveryReason?: string;
 
@@ -1063,7 +1083,7 @@ export class RunWorker {
   private async saveLocal(remove = false): Promise<string> {
     await this.stopTool();
     const unsafeReason = await this.quiesceWriters();
-    const workDir = this.prepared?.workspace?.workDir;
+    const workDir = this.prepared?.workspace?.workDir ?? this.record.workDir;
     if (workDir === undefined) return '';
     const results = await finalizeRunWorktrees(
       this.deps.paths,
@@ -1074,6 +1094,7 @@ export class RunWorker {
         ...(unsafeReason === undefined ? {} : { unsafeReason }),
       },
     );
+    this.localSaveResults = results;
     if (results.length > 0) this.savedDuringRun = true;
     const message = results
       .map((result) =>
@@ -1082,12 +1103,18 @@ export class RunWorker {
           : `Recovery required: ${result.path}: ${result.reason}`,
       )
       .join('\n');
-    if (message !== '')
-      this.spool.push({
-        type: 'status',
-        content: message,
-        meta: { phase: 'localSave' },
-      });
+    if (message !== '') {
+      try {
+        this.spool.push({
+          type: 'status',
+          content: message,
+          meta: { phase: 'localSave' },
+        });
+      } catch (error) {
+        this.saveEventFailure = `Local save status could not be spooled: ${String(error)}`;
+        this.deps.log(`run ${this.runId}: ${this.saveEventFailure}`);
+      }
+    }
     return message;
   }
 
@@ -1143,6 +1170,7 @@ export class RunWorker {
       }
       throw error;
     }
+    this.reportAcknowledged = true;
     this.deps.log(`run ${this.runId}: completed`);
     return 'completed';
   }
@@ -1163,6 +1191,7 @@ export class RunWorker {
     const repos = await this.repoReports(false).catch(() => []);
     const saved = await this.saveLocal();
     await this.drainEvents();
+    if (this.ending?.kind === 'cancel') return this.finishEnding();
     try {
       await this.report(routePath(RUNNER_ROUTES.fail, { runId: this.runId }), {
         reason,
@@ -1177,6 +1206,7 @@ export class RunWorker {
         return 'leaseLost';
       throw error;
     }
+    this.reportAcknowledged = true;
     this.deps.log(`run ${this.runId}: failed (${reason}): ${detail}`);
     return 'failed';
   }
@@ -1184,9 +1214,7 @@ export class RunWorker {
   private async finishEnding(): Promise<WorkerOutcome> {
     const ending = this.ending;
     await this.stopTool();
-    if (ending?.kind === 'lost' || ending?.kind === 'cancel')
-      // The server may release the worker immediately after cancelAck; finish safe cleanup before acknowledging it.
-      await this.saveLocal(ending.kind === 'cancel');
+    if (ending?.kind === 'lost') await this.saveLocal();
     switch (ending?.kind) {
       case 'lost':
         this.deps.log(
@@ -1194,26 +1222,101 @@ export class RunWorker {
         );
         return 'leaseLost';
       case 'cancel': {
-        this.spool.push({
-          type: 'status',
-          content: 'Cancelled.',
-          meta: { status: 'cancelled' },
-        });
-        await this.drainEvents();
+        // Persist intent before cleanup. The existing record protects recovery when this write itself fails.
+        const notes: string[] = [];
+        await this.updateRecord({ recoveryReason: 'cancelled' }).catch(
+          (error: unknown) => {
+            notes.push(
+              `Cancellation retry metadata could not be stored: ${String(error)}`,
+            );
+          },
+        );
         try {
-          await this.report(
-            routePath(RUNNER_ROUTES.cancelAck, { runId: this.runId }),
-            {
-              ...(this.confirmedSessionId === undefined
-                ? {}
-                : { sessionId: this.confirmedSessionId }),
-              handledInputIds: [...this.delivered],
-              usage: this.usage,
+          // Safe cleanup must finish before the server can release this worker on acknowledgement.
+          await this.saveLocal(true);
+        } catch (error) {
+          const workDir =
+            this.prepared?.workspace?.workDir ?? this.record.workDir;
+          const reason = `Cancellation preservation failed; directory retained: ${this.writerRecoveryReason ?? 'local save could not finish'}; ${String(error)}`;
+          notes.push(reason);
+          if (workDir !== undefined)
+            this.localSaveResults = [{ path: workDir, saved: false, reason }];
+        }
+        if (this.saveEventFailure !== undefined)
+          notes.push(this.saveEventFailure);
+        try {
+          this.spool.push({
+            type: 'status',
+            content: 'Cancelled.',
+            meta: { status: 'cancelled' },
+          });
+          await this.drainEvents();
+        } catch (error) {
+          notes.push(
+            `Cancellation status could not be spooled: ${String(error)}`,
+          );
+        }
+        const recovery =
+          this.localSaveResults.some((result) => !result.saved) ||
+          notes.length > 0
+            ? {
+                attempt: this.record.attempt,
+                detail: this.redactor
+                  .text(
+                    [
+                      ...this.localSaveResults.map(
+                        (result) =>
+                          `${result.path}: ${result.saved ? 'Local continuation saved; not pushed' : result.reason}`,
+                      ),
+                      ...notes,
+                    ].join('\n\n'),
+                  )
+                  .slice(0, 10_000),
+                localSave: this.localSaveResults.map((result) => ({
+                  ...result,
+                  ...(result.reason === undefined
+                    ? {}
+                    : {
+                        reason: this.redactor
+                          .text(result.reason)
+                          .slice(0, 10_000),
+                      }),
+                })),
+              }
+            : undefined;
+        if (recovery !== undefined)
+          await this.updateRecord({ cancellationRecovery: recovery }).catch(
+            (error: unknown) => {
+              this.deps.log(
+                `run ${this.runId}: recovery details could not be stored; retry record retained: ${String(error)}`,
+              );
             },
           );
+        try {
+          const response = dataOf(
+            await this.report(
+              routePath(RUNNER_ROUTES.cancelAck, { runId: this.runId }),
+              {
+                ...(this.confirmedSessionId === undefined
+                  ? {}
+                  : { sessionId: this.confirmedSessionId }),
+                handledInputIds: [...this.delivered],
+                usage: this.usage,
+                ...(recovery === undefined ? {} : { recovery }),
+              },
+            ),
+          );
+          this.reportAcknowledged =
+            recovery === undefined ||
+            (response !== null &&
+              typeof response === 'object' &&
+              'recoveryAccepted' in response &&
+              response.recoveryAccepted === true);
         } catch (error) {
-          if (!(error instanceof ApiError && LOST_CODES.has(error.reason)))
-            throw error;
+          // A terminal refusal is not an acknowledgement of preservation details. Restart recovery must retry.
+          this.deps.log(
+            `run ${this.runId}: cancellation report unconfirmed: ${error instanceof ApiError ? error.reason : String(error)}`,
+          );
         }
         this.deps.log(`run ${this.runId}: cancelled`);
         return 'cancelled';

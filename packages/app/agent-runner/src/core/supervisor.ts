@@ -1,4 +1,5 @@
 import { finalizeRunWorktrees } from './run-worktrees.ts';
+import { readWorkspaceMeta } from './checkout.ts';
 import {
   observeWriters,
   stopRecordedWriters,
@@ -37,6 +38,7 @@ import {
   type AgentTool,
   type JobPayload,
   type RunPayload,
+  type CancellationRecovery,
   StatusResponseSchema,
 } from '../protocol/index.ts';
 import { deleteRunCredentials } from '../agent/credentials.ts';
@@ -76,6 +78,8 @@ export interface RunRecord {
   log: string;
   /** Retain cancellation semantics across failed report delivery and daemon restarts. */
   recoveryReason?: 'cancelled';
+  /** The worker's unconfirmed preservation report, retained independently of the event spool. */
+  cancellationRecovery?: CancellationRecovery;
 }
 
 export interface Timings {
@@ -570,12 +574,24 @@ export async function recoverRun(
   });
   const holders =
     record.workDir === undefined ? [] : await workspaceWriters(record.workDir);
+  const previousPreservation =
+    record.workDir === undefined
+      ? undefined
+      : (await readWorkspaceMeta(paths, record.workDir).catch(() => undefined))
+          ?.recoveryReason;
   // Restarted supervision has no process containment boundary. Even no observed survivors cannot rule out a
   // descendant that escaped between scans. Retain every unfinished attempt rather than deleting on that assumption.
-  const recovery =
+  const orphanReason = `Recovery required: orphan writer quiescence cannot be verified${survivors.length + holders.length > 0 ? `; live writer identities or workspace holders: ${[...new Set([...survivors, ...holders])].join(', ')}` : '; no containment proof survives the worker exit'}${ownershipError}`;
+  const unsafeReason =
+    previousPreservation === undefined
+      ? orphanReason
+      : previousPreservation.includes(orphanReason)
+        ? previousPreservation
+        : `${previousPreservation}; ${orphanReason}`.slice(0, 10_000);
+  const recovery: CancellationRecovery['localSave'][number][] =
     record.kind !== 'job' && record.workDir !== undefined
       ? await finalizeRunWorktrees(paths, record.workDir, log, {
-          unsafeReason: `Recovery required: orphan writer quiescence cannot be verified${survivors.length + holders.length > 0 ? `; live writer identities or workspace holders: ${[...new Set([...survivors, ...holders])].join(', ')}` : '; no containment proof survives the worker exit'}${ownershipError}`,
+          unsafeReason,
         }).catch((error) => [
           {
             path: record.workDir!,
@@ -584,6 +600,18 @@ export async function recoverRun(
           },
         ])
       : [];
+  for (const previous of record.cancellationRecovery?.localSave ?? []) {
+    const current = recovery.find((result) => result.path === previous.path);
+    if (current === undefined) recovery.push(previous);
+    else if (!previous.saved && !current.saved)
+      recovery[recovery.indexOf(current)] = {
+        ...current,
+        reason: (current.reason?.includes(previous.reason ?? '')
+          ? current.reason
+          : `${previous.reason}; ${current.reason}`
+        ).slice(0, 10_000),
+      };
+  }
   const recoveryDetail = recovery
     .map(
       (result) =>
@@ -594,6 +622,8 @@ export async function recoverRun(
     recoveryDetail === ''
       ? options.detail
       : `${options.detail}\n\n${recoveryDetail}`;
+  if (record.cancellationRecovery !== undefined)
+    detail += `\n\n${record.cancellationRecovery.detail}`;
   if (options.reason === 'cancelled' && record.recoveryReason !== 'cancelled') {
     record.recoveryReason = 'cancelled';
     await writeRecord(paths, record).catch((error) => {
@@ -631,6 +661,12 @@ export async function recoverRun(
     return;
   }
   if (client === undefined) {
+    if (recovery.length > 0 || record.recoveryReason === 'cancelled') {
+      log(
+        `run ${runId}: application unavailable; unconfirmed recovery record retained`,
+      );
+      return;
+    }
     // The registration is gone: nobody to report to.
     log(`run ${runId}: its application is no longer registered; dropping it`);
     const files = spoolPaths(paths.runsDir, runId);
@@ -694,8 +730,8 @@ export async function recoverRun(
       );
       if (
         !job &&
-        recovery.length > 0 &&
-        !delivered &&
+        (record.cancellationRecovery !== undefined ||
+          (recovery.length > 0 && !delivered)) &&
         !(
           response !== null &&
           typeof response === 'object' &&
@@ -721,7 +757,10 @@ export async function recoverRun(
       error instanceof ApiError &&
       (LOST_CODES.has(error.reason) || error.status === 404)
     ) {
-      if (recovery.length > 0 && !delivered) {
+      if (
+        record.cancellationRecovery !== undefined ||
+        (recovery.length > 0 && !delivered)
+      ) {
         log(
           `run ${runId}: preservation report not acknowledged (${error.reason}); record retained`,
         );
