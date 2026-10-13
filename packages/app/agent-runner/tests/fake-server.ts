@@ -146,6 +146,8 @@ function ok(c: Context, data: unknown, status = 200): Response {
 
 export class FakeServer {
   onCancelAck?: (run: FakeRun) => void;
+  /** Persist and acknowledge recovery reports when true. False withholds receipt; undefined simulates a legacy response. */
+  cancelRecoveryAccepted?: boolean;
   diagnosticEnabled = false;
   readonly diagnosticRequests: {
     at: string;
@@ -934,11 +936,42 @@ export class FakeServer {
       const body = (await c.req.json()) as CancelAckRequest;
       const run = owned(c);
       if (run instanceof Response) return run;
+      // Match the recovery acknowledgement contract: confirmed reports remain visible after event streaming ends.
+      if (
+        this.cancelRecoveryAccepted === true &&
+        body.recovery !== undefined &&
+        ![...run.events.values()].some(
+          (event) =>
+            event.meta?.cancellationRecoveryAttempt === body.recovery?.attempt,
+        )
+      ) {
+        const seq =
+          [...run.events.keys()].reduce(
+            (last, value) => Math.max(last, value),
+            0,
+          ) + 1;
+        run.events.set(seq, {
+          seq,
+          at: new Date().toISOString(),
+          type: 'status',
+          content: body.recovery.detail,
+          meta: {
+            orphaned: true,
+            cancellationRecoveryAttempt: body.recovery.attempt,
+            localSave: body.recovery.localSave,
+          },
+        });
+      }
       run.cancelAck = body;
       this.onCancelAck?.(run);
       run.status = 'cancelled';
       run.reports.push({ kind: 'cancelAck', body, status: 200 });
-      return ok(c, { status: run.status });
+      return ok(c, {
+        status: run.status,
+        ...(this.cancelRecoveryAccepted === undefined
+          ? {}
+          : { recoveryAccepted: this.cancelRecoveryAccepted }),
+      });
     });
 
     app.get('/api/agents/runners/runs/:runId/skills/:slug', (c) => {

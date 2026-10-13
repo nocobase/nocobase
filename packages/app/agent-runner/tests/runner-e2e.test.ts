@@ -1,4 +1,5 @@
 // The runner end to end: the real daemon, its worker processes and the echo adapter against the in-memory server.
+import { execFileSync } from 'node:child_process';
 import {
   existsSync,
   chmodSync,
@@ -11,11 +12,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { runnerPaths } from '../src/lib/home.ts';
+import { spoolPaths } from '../src/core/events.ts';
+import { readRecords } from '../src/core/supervisor.ts';
 import { PROTOCOL_VERSION } from '../src/protocol/index.ts';
 import { FakeServer, waitFor } from './fake-server.ts';
 import {
   cli,
   cliEnv,
+  FAST_TIMINGS,
   git,
   groupAlive,
   makeRemote,
@@ -485,44 +490,278 @@ describe('runner end to end', () => {
     ).toBe(false);
   });
 
-  it('kills the process group within 15 s of a cancel, even when the tool ignores SIGTERM', async () => {
-    const run = server.enqueue({
-      prompt: {
-        system: '',
-        session: 'resume',
-        resumeSessionId: 'unconfirmed-old-session',
-        turn: 'say working\nhang-hard',
-      },
-    });
-    daemon();
-    const id = run.payload.run.id;
-    const pid = await waitFor(
-      () => (run.status === 'running' ? server.workerPid(id) : undefined),
-      15_000,
-      'pid',
-    );
-    await waitFor(
-      () => server.events(id).some((event) => event.content === 'working'),
-      10_000,
-      'working',
-    );
-    expect(groupAlive(pid)).toBe(true);
-    const cancelledAt = Date.now();
-    server.cancel(id);
-    await waitFor(
-      () => !groupAlive(pid),
-      15_000,
-      'the process group to disappear',
-    );
-    expect(Date.now() - cancelledAt).toBeLessThan(15_000);
-    await waitFor(() => run.status === 'cancelled', 10_000, 'cancelAck');
-    expect(run.cancelAck).toBeDefined();
-    expect(run.cancelAck?.sessionId).toBeUndefined();
-    expect(server.events(id).at(-1)).toMatchObject({
-      type: 'status',
-      meta: { status: 'cancelled' },
-    });
-  });
+  it.each(['normal', 'forced'] as const)(
+    'stops the process group within 15 s and verifies the %s cancel contract',
+    async (mode) => {
+      const remote = makeRemote(scratch);
+      const run = server.enqueue({
+        workspace: {
+          dirs: [
+            {
+              kind: 'repo',
+              url: remote,
+              defaultBranch: 'main',
+              branch: 'agent/cancellation',
+              path: 'repo',
+            },
+          ],
+          env: [],
+        },
+        prompt: {
+          system: '',
+          session: 'resume',
+          resumeSessionId: 'unconfirmed-old-session',
+          turn: 'write cancelled.txt preserved\nsay working\nhang-hard',
+        },
+      });
+      const started =
+        mode === 'normal'
+          ? daemon()
+          : startDaemon({
+              ...env,
+              NOCOBASE_RUNNER_TIMINGS: JSON.stringify({
+                ...FAST_TIMINGS,
+                reportTimeoutMs: 1_000,
+              }),
+            });
+      if (mode === 'forced') daemons.push(started);
+      const id = run.payload.run.id;
+      const pid = await waitFor(
+        () => (run.status === 'running' ? server.workerPid(id) : undefined),
+        15_000,
+        'pid',
+      );
+      await waitFor(
+        () => server.events(id).some((event) => event.content === 'working'),
+        10_000,
+        'working',
+      );
+      const workDir = String(run.start?.workDir);
+      const repo = path.join(workDir, 'repo');
+      const cache = git(['rev-parse', '--git-common-dir'], repo);
+      const paths = runnerPaths(home, workRootOf(home));
+      const directoriesAtAck: boolean[] = [];
+      server.onCancelAck = (acknowledged) => {
+        if (acknowledged.payload.run.id === id)
+          directoriesAtAck.push(existsSync(workDir));
+      };
+      if (mode === 'forced') {
+        server.cancelRecoveryAccepted = false;
+        server.eventsDown = true;
+      }
+      // Suspend only the selected process, not its group. The worker's independent lease poll still runs when
+      // the daemon is stopped; a stopped worker cannot handle SIGUSR2/SIGTERM before supervisor SIGKILL.
+      const suspended = mode === 'normal' ? started.child.pid! : pid;
+      process.kill(suspended, 'SIGSTOP');
+      try {
+        await waitFor(
+          () =>
+            execFileSync('ps', ['-o', 'stat=', '-p', String(suspended)], {
+              encoding: 'utf8',
+            })
+              .trim()
+              .startsWith('T'),
+          1_000,
+          'confirmed suspended fixture',
+        );
+        expect(groupAlive(pid)).toBe(true);
+        const cancelledAt = Date.now();
+        server.cancel(id);
+        if (mode === 'normal') {
+          await waitFor(
+            () => run.status === 'cancelled',
+            10_000,
+            'worker cancellation acknowledgement',
+          );
+          await waitFor(
+            async () =>
+              !(await readRecords(paths)).some((record) => record.runId === id),
+            10_000,
+            'worker reporting finished',
+          );
+          // The paused parent cannot reap its exited child. Resume only after worker cleanup/ack, so the daemon
+          // cannot turn a still-running normal cancellation into forced recovery.
+          started.child.kill('SIGCONT');
+        }
+        await waitFor(
+          () => !groupAlive(pid),
+          15_000,
+          'the process group to disappear',
+        );
+        expect(Date.now() - cancelledAt).toBeLessThan(15_000);
+        await waitFor(() => run.status === 'cancelled', 10_000, 'cancelAck');
+        expect(run.cancelAck).toBeDefined();
+        expect(run.cancelAck?.sessionId).toBeUndefined();
+        expect(run.reports.filter((report) => report.kind === 'fail')).toEqual(
+          [],
+        );
+        const events = server.events(id);
+        if (mode === 'normal') {
+          expect(started.output()).not.toContain('worker did not stop within');
+          expect(started.output()).not.toContain('exited (SIGKILL)');
+          expect(directoriesAtAck).toEqual([false]);
+          expect(existsSync(workDir)).toBe(false);
+          expect(run.cancelAck?.recovery).toBeUndefined();
+          const saves = events.filter(
+            (event) =>
+              event.type === 'status' && event.meta?.phase === 'localSave',
+          );
+          const cancellations = events.filter(
+            (event) =>
+              event.type === 'status' && event.meta?.status === 'cancelled',
+          );
+          expect(saves).toHaveLength(1);
+          expect(cancellations).toHaveLength(1);
+          expect(saves[0].content).toContain(
+            `Local continuation saved: ${repo}`,
+          );
+          expect(saves[0].content).toContain('not pushed');
+          expect(saves[0].seq).toBeLessThan(cancellations[0].seq);
+          const savedHead = /\(([a-f0-9]{40})\)/u.exec(
+            saves[0].content ?? '',
+          )?.[1];
+          expect(savedHead).toBeDefined();
+          expect(
+            git(
+              ['for-each-ref', '--format=%(objectname)', 'refs/runner/saved'],
+              cache,
+            ).split('\n'),
+          ).toContain(savedHead);
+          expect(git(['show', `${savedHead}:cancelled.txt`], cache)).toBe(
+            'preserved',
+          );
+          expect(
+            git(
+              [
+                'for-each-ref',
+                '--format=%(refname)',
+                'refs/heads/agent/cancellation',
+              ],
+              remote.replace('file://', ''),
+            ),
+          ).toBe('');
+          expect(
+            events.filter((event) => event.meta?.orphaned === true),
+          ).toEqual([]);
+          expect(
+            (await readRecords(paths)).filter((record) => record.runId === id),
+          ).toEqual([]);
+        } else {
+          await waitFor(
+            () =>
+              started
+                .output()
+                .includes('server did not acknowledge preservation'),
+            10_000,
+            'unconfirmed recovery retained',
+          );
+          expect(started.output()).toContain(
+            'worker did not stop within 3000 ms',
+          );
+          expect(started.output()).toContain('exited (SIGKILL)');
+          expect(directoriesAtAck).toEqual([true]);
+          expect(server.eventsFailures).toBeGreaterThan(0);
+          const preservation = readFileSync(
+            spoolPaths(paths.runsDir, id).spool,
+            'utf8',
+          )
+            .trim()
+            .split('\n')
+            .map((line) => JSON.parse(line) as (typeof events)[number])
+            .filter(
+              (event) =>
+                event.type === 'status' && event.meta?.orphaned === true,
+            );
+          expect(preservation).toHaveLength(1);
+          const localSave = [
+            {
+              path: repo,
+              saved: false,
+              reason: expect.stringContaining(
+                'orphan writer quiescence cannot be verified',
+              ),
+            },
+          ];
+          expect(preservation[0].meta?.localSave).toEqual(localSave);
+          expect(preservation[0].content).toContain(repo);
+          expect(preservation[0].content).toContain(
+            'orphan writer quiescence cannot be verified',
+          );
+          expect(run.cancelAck?.recovery).toMatchObject({
+            attempt: 1,
+            detail: expect.stringContaining(repo),
+            localSave,
+          });
+          expect(
+            (await readRecords(paths)).filter((record) => record.runId === id),
+          ).toHaveLength(1);
+          expect(readFileSync(path.join(repo, 'cancelled.txt'), 'utf8')).toBe(
+            'preserved',
+          );
+          expect(
+            git(
+              ['for-each-ref', '--format=%(refname)', 'refs/runner/saved'],
+              cache,
+            ),
+          ).toBe('');
+          await stopDaemon(started);
+          server.cancelRecoveryAccepted = true;
+          server.eventsDown = false;
+          const restarted = daemon();
+          await waitFor(
+            async () =>
+              !(await readRecords(paths)).some((record) => record.runId === id),
+            15_000,
+            'confirmed restart recovery',
+          );
+          await waitFor(
+            () => restarted.output().includes('reported as cancelled'),
+            1_000,
+            'restart receipt log',
+          );
+          const delivered = server
+            .events(id)
+            .filter(
+              (event) =>
+                event.type === 'status' && event.meta?.orphaned === true,
+            );
+          expect(delivered).toHaveLength(1);
+          for (const event of delivered) {
+            expect(event.meta?.localSave).toEqual(localSave);
+            expect(event.content).toContain(repo);
+            expect(event.content).toContain(
+              'orphan writer quiescence cannot be verified',
+            );
+          }
+          expect(run.status).toBe('cancelled');
+          expect(run.cancelAck?.sessionId).toBeUndefined();
+          expect(run.cancelAck?.recovery).toMatchObject({
+            attempt: 1,
+            localSave,
+          });
+          expect(
+            run.reports.filter((report) => report.kind === 'cancelAck'),
+          ).toHaveLength(2);
+          expect(
+            run.reports.filter((report) => report.kind === 'fail'),
+          ).toEqual([]);
+          expect(directoriesAtAck).toEqual([true, true]);
+          expect(
+            git(
+              ['for-each-ref', '--format=%(refname)', 'refs/runner/saved'],
+              cache,
+            ),
+          ).toBe('');
+          expect(readFileSync(path.join(repo, 'cancelled.txt'), 'utf8')).toBe(
+            'preserved',
+          );
+        }
+      } finally {
+        // Resume the paused daemon for ordinary fixture teardown; never delete a recovery directory to satisfy an assertion.
+        if (mode === 'normal') started.child.kill('SIGCONT');
+      }
+    },
+  );
 
   it('kills the tool when the lease is lost and reports nothing more', async () => {
     const run = server.enqueue({
