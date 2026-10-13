@@ -192,6 +192,22 @@ describe('BridgeSession', () => {
     );
   });
 
+  it('cancels a turn whose agent is still starting, and answers the next prompt', async () => {
+    const { session, events, target } = start();
+    prompt(session, target, 'p1', 'hang');
+    session.handle({ type: 'cancel', session: target });
+
+    expect(await until(events, ended('p1'))).toMatchObject({
+      stopReason: 'cancelled',
+      error: null,
+    });
+    prompt(session, target, 'p2', 'hi');
+    expect(await until(events, ended('p2'))).toMatchObject({
+      stopReason: 'end_turn',
+    });
+    expect(texts(events).join('')).toBe('Hello (full) world');
+  });
+
   it('continues an earlier session without reporting the history it replays', async () => {
     const { session, events, target } = start({ acpSessionId: 's-earlier' });
     prompt(session, target, 'p1', 'hi');

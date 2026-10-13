@@ -72,6 +72,8 @@ export class BridgeSession {
     readonly content: readonly PromptContent[];
   }[] = [];
   #turn: string | undefined;
+  /** The running turn was cancelled; until its prompt reaches the agent, only this remembers it. */
+  #turnCancelled = false;
   readonly #permissions = new Map<
     string,
     (optionId: string | null, resolution: Resolution) => void
@@ -134,21 +136,27 @@ export class BridgeSession {
     const next = this.#queue.shift();
     if (!next) return;
     this.#turn = next.promptId;
+    this.#turnCancelled = false;
     this.#emit({ kind: 'turnStarted', at: now(), promptId: next.promptId });
     let stopReason: string | null = null;
     let usage: TurnUsage | null = null;
     let error: string | null = null;
     try {
       const agent = await this.#open();
-      const response = await agent.agent.request(
-        acp.methods.agent.session.prompt,
-        {
-          sessionId: this.#acpSessionId!,
-          prompt: next.content.map(toContentBlock),
-        },
-      );
-      stopReason = response.stopReason;
-      usage = response.usage ? usageOf(response.usage) : null;
+      // Cancelled while the agent was starting, which it never heard: the prompt is not sent at all.
+      if (this.#turnCancelled) {
+        stopReason = 'cancelled';
+      } else {
+        const response = await agent.agent.request(
+          acp.methods.agent.session.prompt,
+          {
+            sessionId: this.#acpSessionId!,
+            prompt: next.content.map(toContentBlock),
+          },
+        );
+        stopReason = response.stopReason;
+        usage = response.usage ? usageOf(response.usage) : null;
+      }
     } catch (cause) {
       error = this.#explain(cause);
     } finally {
@@ -178,6 +186,7 @@ export class BridgeSession {
       });
     }
     this.#resolvePermissions('cancelled');
+    if (this.#turn !== undefined) this.#turnCancelled = true;
     if (
       this.#turn !== undefined &&
       this.#acpSessionId &&

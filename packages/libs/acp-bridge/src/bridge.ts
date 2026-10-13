@@ -5,7 +5,8 @@
  * what happens, until `signal` aborts or the application refuses it (`BridgeStopped`). It retries what fails for a
  * while, such as a connection lost while the computer slept, and offers an agent installed while it runs.
  */
-import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { chmod, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -157,13 +158,11 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       post = asPerson;
       answer = await post<RegisterResponse>(BRIDGE_ROUTES.register, request());
     }
+    const saved = state;
     state = { computerId: answer.computerId, key: answer.key ?? state.key };
-    if (answer.key) {
+    if (state.computerId !== saved.computerId || state.key !== saved.key)
       await writeState(options.stateFile, state);
-      post = asComputer(options.server, answer.key, signal);
-    } else if (state.computerId) {
-      await writeState(options.stateFile, state);
-    }
+    if (answer.key) post = asComputer(options.server, answer.key, signal);
     return answer.computerId;
   };
   /** Registers until the application answers, waiting longer after each failure it may recover from. */
@@ -574,12 +573,15 @@ async function readState(file: string): Promise<BridgeState> {
   }
 }
 
+/** Replaces the state whole, so a bridge stopped while writing it never leaves it empty or half written. */
 async function writeState(file: string, state: BridgeState): Promise<void> {
   await mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
-  await writeFile(file, `${JSON.stringify(state, null, 2)}\n`, {
+  const draft = `${file}.${randomUUID()}.tmp`;
+  await writeFile(draft, `${JSON.stringify(state, null, 2)}\n`, {
     mode: 0o600,
   });
-  await chmod(file, 0o600);
+  await chmod(draft, 0o600);
+  await rename(draft, file);
 }
 
 /** The computer's key was refused: it was removed in the application, or connected again from elsewhere. */
