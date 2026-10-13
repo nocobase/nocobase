@@ -166,6 +166,25 @@ beforeEach(() => {
 
 describe('issue execution history', () => {
   it.each(['en-US', 'zh-CN'] as const)(
+    'shows the persisted fallback reason in %s',
+    async (locale) => {
+      mocks.runs.mockResolvedValue([
+        {
+          ...run(),
+          executions: [{ selection: { reason: 'preferredQueued' } }],
+        },
+      ]);
+      await show({ locale });
+      expect(
+        await screen.findByText(
+          locale === 'en-US'
+            ? /First choice queued, using fallback/u
+            : /首选排队，改用备选/u,
+        ),
+      ).toBeInTheDocument();
+    },
+  );
+  it.each(['en-US', 'zh-CN'] as const)(
     'shows models, “Turn ended” and distinguishable transcript links in %s',
     async (locale) => {
       mocks.runs.mockResolvedValue([

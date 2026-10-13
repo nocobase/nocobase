@@ -40,7 +40,10 @@ export interface FollowUpsDeps {
     Projects,
     'issueQueries' | 'commentQueries' | 'issueContext' | 'tx'
   >;
-  readonly agents: Pick<Agents, 'runs' | 'agents' | 'runners' | 'availability'>;
+  readonly agents: Pick<
+    Agents,
+    'runs' | 'agents' | 'runners' | 'claims' | 'availability'
+  >;
   readonly preferences: FollowUpPreferences;
   readonly now?: () => Date;
 }
@@ -274,7 +277,10 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
             owned: isOwned,
             followed: isFollowed,
             progress: wantsProgress
-              ? await issueProgress({ agents, projects }, conn, issue)
+              ? await issueProgress({ agents, projects }, conn, issue, {
+                  userId: viewer.userId,
+                  seesMachines: false,
+                })
               : null,
             unread: seenAt ? await unreadOf(viewer, issue.id, seenAt) : 0,
             seenAt,

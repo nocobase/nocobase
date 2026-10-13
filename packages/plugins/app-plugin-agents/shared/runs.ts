@@ -29,6 +29,13 @@ export interface RunEffortReport {
 }
 
 export interface RunExecutionSnapshot {
+  readonly selection?: {
+    readonly reason: 'preferredQueued' | 'preferredUnavailable';
+    readonly preferredTool: string;
+    readonly preferredModel: string | null;
+    readonly queueEnteredAt: string;
+    readonly waitedSeconds: number;
+  };
   readonly attempt: number;
   readonly runnerId: string;
   readonly runnerName: string | null;
@@ -55,6 +62,44 @@ export interface RunExecutionSnapshot {
   readonly dispatchedAt: string;
   readonly finishedAt: string | null;
   readonly failureReason: string | null;
+}
+
+export type ModelWaitReason =
+  | 'ready'
+  | 'busy'
+  | 'incompatible'
+  | 'offline'
+  | 'restricted'
+  | 'noSharedRunner'
+  | 'toolNotInstalled'
+  | 'toolUnavailable'
+  | 'unknown'
+  | 'concurrencyFull'
+  | 'sameWorkActive'
+  | 'delayed';
+export interface ModelSelectionWait {
+  readonly queueEnteredAt: string;
+  readonly fallbackAfterSeconds: number;
+  readonly sampledAt: string;
+  readonly entries: readonly {
+    readonly tool: string;
+    readonly model: string | null;
+    readonly reason: ModelWaitReason;
+    readonly compatibleCount: number;
+    readonly blockers?: readonly ModelWaitReason[];
+    readonly runners: readonly {
+      readonly name: string;
+      readonly reason?: ModelWaitReason;
+      readonly lastSeenAt?: string | null;
+      readonly ownerUserId: string | null;
+      readonly used?: number;
+      readonly limit?: number;
+      readonly toolUsed?: number;
+      readonly toolLimit?: number;
+      readonly reportedFree?: number;
+      readonly reportedTotalFree?: number;
+    }[];
+  }[];
 }
 
 export interface Run {
@@ -113,6 +158,8 @@ export interface Run {
   readonly requires: readonly RunnerFeature[];
   readonly acceptsInput: boolean;
   readonly availableAt: string | null;
+  /** Start of this queue episode; older servers may omit it. */
+  readonly queueEnteredAt?: string | null;
   readonly leaseExpiresAt: string | null;
   readonly dispatchedAt: string | null;
   readonly startedAt: string | null;
@@ -226,6 +273,10 @@ export interface RunEventPage {
  */
 export const RUN_WAIT_REASONS = [
   'agentArchived',
+  'incompatible',
+  'toolNotInstalled',
+  'restricted',
+  'unknown',
   'delayed',
   'noRunnerOnline',
   'runnersOffline',
