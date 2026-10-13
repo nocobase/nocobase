@@ -1,3 +1,4 @@
+// Local change: use configured locale URLs so the cn source language is served at /zh-CN/.
 import {
   addLeadingSlash,
   normalizeHrefInRuntime,
@@ -17,14 +18,14 @@ export function useLangsMenu() {
   const hasMultiLanguage = localeLanguages.length > 1;
 
   // In single-language builds, removeBase strips the current base prefix
-  // (e.g., /cn/) leaving the page-relative path (e.g., /ai/quick-start).
+  // (e.g., /zh-CN/) leaving the page-relative path (e.g., /ai/quick-start).
   // We then prepend the target language's base to build the correct URL.
   const pagePath = removeBase(pathname);
 
   const translationMenuData = hasMultiLanguage
     ? {
         items: localeLanguages.map(item => {
-          const targetBase = item.code === 'en' ? '' : `/${item.code}`;
+          const targetBase = item.href.replace(/\/$/, '');
           return {
             text: item?.label,
             link: `${targetBase}${pagePath}` || '/',

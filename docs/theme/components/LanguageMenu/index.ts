@@ -22,8 +22,8 @@ export function useLanguageMenu(markup: string) {
   const pagePath = removeBase(pathname);
   const label = languages.find(({ code }) => code === lang)?.label ?? 'English';
   const items = languages
-    .map(({ code, label }) => {
-      const href = `${code === 'en' ? '' : `/${code}`}${pagePath || '/'}${search}${hash}`;
+    .map(({ code, label, href: base }) => {
+      const href = `${base.replace(/\/$/, '')}${pagePath || '/'}${search}${hash}`;
       const htmlLang = code === 'cn' ? 'zh-CN' : code;
       return code === lang
         ? `<span lang="${htmlLang}" aria-current="page">${label}</span>`
