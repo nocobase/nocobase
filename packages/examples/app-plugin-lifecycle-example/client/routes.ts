@@ -21,6 +21,16 @@ const routes: readonly AppClientRouteContribution[] = [
       breadcrumb: { title: 'navigation.group' },
       children: [
         {
+          name: 'lifecycleExampleParameters',
+          path: '/lifecycle-example/parameters',
+          auth: 'required',
+          authz: 'skip',
+          navigation: { title: 'navigation.parameters', icon: Workflow },
+          breadcrumb: { title: 'navigation.parameters' },
+          componentLoader: () => import('./pages/parameters.js'),
+        },
+
+        {
           name: 'lifecycleExampleTickets',
           path: '/lifecycle-example/tickets',
           auth: 'required',

@@ -7,10 +7,10 @@ import {
   describeRoute,
 } from '@nocobase/app-server/router';
 import {
-  lifecycleDescriptionView,
+  lifecycleDescriptionViewAsync,
   type LifecycleRuntime,
 } from '@nocobase/lifecycle';
-import type { Context, Hono } from 'hono';
+import type { Context, Hono, MiddlewareHandler } from 'hono';
 import { z } from 'zod';
 import {
   LIFECYCLE_EXAMPLE_DOMAIN,
@@ -43,6 +43,7 @@ export interface LifecycleRoutesSpec {
    * role; the durable flows do not, and act as the signed-in user.
    */
   readonly persona?: boolean;
+  readonly authorizeParameters?: (actor: string) => void;
 }
 
 /** Who a request acts as: the persona it names, or the signed-in user. */
@@ -74,9 +75,18 @@ export function lifecycleRoutes(
   const lower = noun.charAt(0).toLowerCase() + noun.slice(1);
   const notFound = apiErrorResponse(404, `No such ${lower}.`);
 
+  const parameterPermission: MiddlewareHandler<AuthEnv> = async (
+    context,
+    next,
+  ) => {
+    if (spec.authorizeParameters)
+      spec.authorizeParameters(actorOf(context, context.req.query('actAs')).id);
+    await next();
+  };
   // A fixed segment, registered before `/:recordId`.
   router.get(
     `${path}/lifecycle`,
+    parameterPermission,
     describeRoute({
       tags,
       summary: `Describe the ${lower} lifecycle`,
@@ -89,12 +99,19 @@ export function lifecycleRoutes(
         500: apiErrorResponse(500),
       },
     }),
-    (context) =>
-      context.json({ data: lifecycleDescriptionView(runtime, lifecycle) }),
+    apiValidator('query', query),
+    async (context) =>
+      context.json({
+        data: await lifecycleDescriptionViewAsync(runtime, lifecycle, {
+          record: null,
+          transactionHandle: undefined,
+        }),
+      }),
   );
 
   router.get(
     `${path}/:recordId`,
+    parameterPermission,
     describeRoute({
       tags,
       summary: `Get a ${lower}`,
