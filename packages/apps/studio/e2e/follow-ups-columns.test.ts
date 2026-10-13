@@ -17,10 +17,19 @@ async function wheelTo(
   item: Locator,
   overflows: boolean,
 ) {
-  const metrics = await scroller.evaluate((element) => ({
-    scrollHeight: element.scrollHeight,
-    clientHeight: element.clientHeight,
-  }));
+  const metrics = await scroller.evaluate((element) => {
+    if (
+      !('scrollHeight' in element) ||
+      typeof element.scrollHeight !== 'number' ||
+      !('clientHeight' in element) ||
+      typeof element.clientHeight !== 'number'
+    )
+      throw new Error('The column scroller must expose scroll dimensions.');
+    return {
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight,
+    };
+  });
   if (overflows)
     expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
   const area = (await scroller.boundingBox())!;
