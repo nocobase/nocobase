@@ -146,8 +146,9 @@ export async function commitIdentity(
 }
 
 /**
- * The branch a run on issue `key` works on in each linked repository, by working directory id: the repository's first
- * branch rule unless a freshly verified same-repository open PR is linked. Database reads only, for the claim's transaction.
+ * The branch a run on issue `key` starts on in each linked repository, by working directory id: the head of the earliest
+ * linked open pull request verified as same-repository, else the branch rule (`agent/{key}` by default). Database reads
+ * only, for the claim's transaction.
  */
 export async function runBranches(
   conn: DatabaseConnection,

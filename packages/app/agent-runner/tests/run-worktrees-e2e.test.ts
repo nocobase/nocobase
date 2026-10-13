@@ -368,7 +368,7 @@ it('keeps a failed directory and includes its path in the existing failure detai
     prompt: {
       system: '',
       session: 'fresh',
-      turn: 'bash git checkout -b unexpected\nbash git update-ref refs/runner/saved HEAD\nwrite pending.txt retained\nfail toolProcess expected failure',
+      turn: 'bash git checkout --detach\nbash git update-ref refs/runner/saved HEAD\nwrite pending.txt retained\nfail toolProcess expected failure',
     },
   });
   const daemon = startDaemon(env);
@@ -379,7 +379,7 @@ it('keeps a failed directory and includes its path in the existing failure detai
     expect(run.fail?.detail).toContain(repo);
     expect(run.fail?.detail).toContain('cannot lock ref');
     expect(existsSync(path.join(repo, 'pending.txt'))).toBe(true);
-    expect(git(['symbolic-ref', '--short', 'HEAD'], repo)).toBe('unexpected');
+    expect(git(['rev-parse', '--abbrev-ref', 'HEAD'], repo)).toBe('HEAD');
     // Final cleanup and daemon exit must also keep the failed directory.
     await stopDaemon(daemon);
     expect(existsSync(repo)).toBe(true);

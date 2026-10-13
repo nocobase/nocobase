@@ -261,8 +261,9 @@ function fileLine(file: IssueContextFile): string {
 }
 
 /**
- * The project's working directories as a run's, in order: repositories on the issue's branch (`branches`, by working
- * directory id: its repository's first branch rule; `agent/<key>` without one), directories as they are.
+ * The project's working directories as a run's, in order: repositories on the run's starting branch (`branches`, by
+ * working directory id: the earliest linked same-repository open pull request's head, else the branch rule, `agent/<key>`
+ * by default), directories as they are.
  */
 export function dirsOf(
   context: IssueContext,

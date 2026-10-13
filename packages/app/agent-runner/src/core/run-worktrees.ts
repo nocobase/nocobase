@@ -715,6 +715,31 @@ export async function finalizeRunWorktrees(
           try {
             const previous = await ref(repo.cache, resume);
             if (
+              currentBranch !== undefined &&
+              currentBranch !== repo.localBranch
+            ) {
+              // Its own branch ref preserves the head; it is not a continuation of the initial target.
+              log(`Run ended on branch ${currentBranch} at ${head}`);
+            } else if (
+              currentBranch === undefined &&
+              // The run's own alias is not evidence: its commits continue this target.
+              (await git(
+                [
+                  'rev-list',
+                  '--count',
+                  head,
+                  '--not',
+                  `--exclude=${repo.localBranch}`,
+                  '--branches',
+                  '--remotes',
+                ],
+                repo.cache,
+              )) === '0'
+            ) {
+              log(
+                `Run ended on a detached HEAD already reachable from a branch: ${head}`,
+              );
+            } else if (
               currentBranch === repo.localBranch &&
               (previous === undefined ||
                 (await gitOk(

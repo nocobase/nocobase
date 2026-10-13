@@ -1467,15 +1467,23 @@ export async function reportRepos(
   const reports: RepoReport[] = [];
   for (const repo of repos) {
     let headSha: string;
+    let switched = false;
     try {
-      if (
-        repo.localBranch !== undefined &&
-        (await taskGit(repo, ['symbolic-ref', '--short', 'HEAD'])) !==
-          repo.localBranch
-      )
-        throw new CheckoutError(
-          'Local branch changed; refusing to push to the target branch.',
-        );
+      if (repo.localBranch !== undefined) {
+        const current = await taskGit(repo, [
+          'symbolic-ref',
+          '--quiet',
+          '--short',
+          'HEAD',
+        ]).catch(() => undefined);
+        // Agents may switch branches; such a head is never pushed to the initial target.
+        if (current !== repo.localBranch) {
+          switched = true;
+          options.log?.(
+            `report: ${repo.url}: HEAD is on ${current ?? 'a detached commit'}, not the initial target; not pushing it to ${repo.branch}`,
+          );
+        }
+      }
       headSha = await taskGit(repo, ['rev-parse', 'HEAD']);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -1529,7 +1537,13 @@ export async function reportRepos(
       `origin/${repo.defaultBranch}`,
     ]).catch(() => '');
     const hasWork = headSha !== '' && (headSha !== base || remote !== '');
-    if (options.push && options.active?.() !== false && !pushed && hasWork) {
+    if (
+      options.push &&
+      !switched &&
+      options.active?.() !== false &&
+      !pushed &&
+      hasWork
+    ) {
       try {
         await withRepoAuth(options.auth, repo.url, (auth) => {
           if (options.active?.() === false)
