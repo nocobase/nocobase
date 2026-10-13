@@ -90,6 +90,7 @@ export interface Runner {
    */
   /** Last heartbeat free slots across all applications; absent before a heartbeat. */
   readonly globalFree?: number;
+  readonly draining?: 'updatePending' | 'pruning';
   readonly toolLoad?: Readonly<Partial<Record<AgentTool, ToolLoad>>> | null;
   /**
    * Its owner (or a manager of runners) lets it take jobs: builds and other steps an application configures, run
@@ -401,15 +402,28 @@ export function listedTools(runner: Pick<Runner, 'tools'>): AgentTool[] {
  * no work whatever their slots say.
  */
 export type RunnerActivity =
-  'online' | 'busy' | 'low_disk' | 'offline' | 'revoked' | 'upgrade_required';
+  | 'online'
+  | 'busy'
+  | 'low_disk'
+  | 'offline'
+  | 'revoked'
+  | 'upgrade_required'
+  | 'updatePending'
+  | 'pruning';
 
 export function runnerActivity(
   runner: Pick<
     RunnerSummary,
-    'status' | 'slots' | 'activeRuns' | 'activeJobs' | 'workspaceUsage'
+    | 'status'
+    | 'slots'
+    | 'activeRuns'
+    | 'activeJobs'
+    | 'workspaceUsage'
+    | 'draining'
   >,
 ): RunnerActivity {
   if (runner.status !== 'online') return runner.status;
+  if (runner.draining) return runner.draining;
   if (runnerLowOnDisk(runner)) return 'low_disk';
   return runner.activeRuns + runner.activeJobs >= runner.slots
     ? 'busy'

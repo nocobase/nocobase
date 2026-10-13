@@ -12,7 +12,15 @@ import {
   writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 import {
   readConnections,
@@ -32,7 +40,16 @@ import { RunnerDaemon, runnerVersion } from '../src/core/loop.ts';
 import { servicePlan } from '../src/core/service.ts';
 import { isNewer } from '../src/core/update.ts';
 import { FakeServer, waitFor } from './fake-server.ts';
-import { cliEnv, registerRunner, removeDir, tempDir } from './helpers.ts';
+import {
+  cliEnv,
+  registerRunner,
+  removeDir,
+  tempDir,
+  git,
+  makeRemote,
+  writeFakeCli,
+  FAST_TIMINGS,
+} from './helpers.ts';
 
 const scratch = tempDir('nocobase-runner-update-');
 afterAll(() => removeDir(scratch));
@@ -172,9 +189,15 @@ describe('served tarballs', () => {
     server = new FakeServer();
     await server.listen();
     home = tempDir('nocobase-runner-update-home-');
-    await registerRunner(server.url, cliEnv(home));
+    await registerRunner(server.url, cliEnv(home), [
+      '--slots',
+      '2',
+      '--cli',
+      `appcli=${writeFakeCli(home)}`,
+    ]);
   });
   afterEach(async () => {
+    vi.unstubAllEnvs();
     await server.close();
     removeDir(home);
     removeDir(`${home}-work`);
@@ -224,6 +247,115 @@ describe('served tarballs', () => {
       client.download('https://elsewhere.example.com/x.tar.gz'),
     ).rejects.toThrow('another origin');
   });
+
+  it.each(['graceful', 'forced'] as const)(
+    'interrupts a running tool (%s), preserves its local head and removes worktrees before installing, reporting zero capacity',
+    async (mode) => {
+      vi.stubEnv('NOCOBASE_RUNNER_ADAPTER', 'echo');
+      const remote = makeRemote(home);
+      const run = server.enqueue({
+        workspace: {
+          dirs: [
+            {
+              kind: 'repo',
+              url: remote,
+              defaultBranch: 'main',
+              branch: 'agent/upgrade',
+              path: 'repo',
+            },
+          ],
+          env: [],
+        },
+        prompt: {
+          system: '',
+          session: 'fresh',
+          turn: `write upgrade.txt preserved\n${mode === 'forced' ? 'hang-hard' : 'hang'}`,
+        },
+      });
+      const paths = runnerPaths(home, `${home}-work`);
+      const apply = vi.fn(async () => {
+        expect(run.fail?.reason).toBe('runnerUpgrade');
+        expect(existsSync(String(run.start?.workDir))).toBe(false);
+      });
+      const daemon = new RunnerDaemon({
+        paths,
+        settings: await readSettings(paths),
+        connections: [await connection()],
+        adapters: new Map(),
+        timings: {
+          ...FAST_TIMINGS,
+          cancelGraceMs: mode === 'forced' ? 1 : 10_000,
+          killGraceMs: mode === 'forced' ? 1 : 5_000,
+        },
+        toolSlots: { claude: 2 },
+        log: () => {},
+        selfUpdate: {
+          installation: { prefix: home, current: path.join(home, 'current') },
+          apply,
+        },
+      });
+      try {
+        await daemon.start();
+        await waitFor(
+          () =>
+            run.status === 'running' &&
+            existsSync(
+              path.join(String(run.start?.workDir), 'repo/upgrade.txt'),
+            ),
+          30_000,
+          'tool running',
+        );
+        const cache = git(
+          ['rev-parse', '--git-common-dir'],
+          path.join(String(run.start?.workDir), 'repo'),
+        );
+        server.upgrade = {
+          minVersion: '0.0.0',
+          latestVersion: '99.0.0',
+          downloadUrl: '/update',
+          sha256: 'a'.repeat(64),
+          reason: 'test',
+        };
+        await waitFor(
+          () => daemon.updatedTo === '99.0.0',
+          30_000,
+          'upgrade completed',
+        );
+        await daemon.wait();
+        expect(apply).toHaveBeenCalledOnce();
+        if (mode === 'forced')
+          expect(
+            [...run.events.values()].some(
+              (event) => event.meta?.orphaned === true,
+            ),
+          ).toBe(true);
+        const refs = git(
+          ['for-each-ref', '--format=%(refname)', 'refs/runner/resume'],
+          cache,
+        )
+          .split('\n')
+          .filter(Boolean);
+        expect(refs).toHaveLength(1);
+        expect(git(['show', `${refs[0]}:upgrade.txt`], cache)).toBe(
+          'preserved',
+        );
+        const heartbeats = [...server.runners.values()]
+          .flatMap((runner) => runner.heartbeats)
+          .filter((heartbeat) => heartbeat.load.draining === 'updatePending');
+        expect(heartbeats.length).toBeGreaterThan(0);
+        expect(heartbeats.every((heartbeat) => heartbeat.load.free === 0)).toBe(
+          true,
+        );
+        expect(
+          heartbeats.every(
+            (heartbeat) => heartbeat.load.tools?.claude?.free === 0,
+          ),
+        ).toBe(true);
+      } finally {
+        await daemon.stop();
+      }
+    },
+  );
 
   it('updates itself between runs when the application serves a newer runner, then stops for its service', async () => {
     const prefix = path.join(scratch, 'self-update');

@@ -141,6 +141,12 @@ describe('a runner at a glance', () => {
   });
 
   it('is busy while every slot is taken', () => {
+    expect(runnerActivity(runner('r1', { draining: 'updatePending' }))).toBe(
+      'updatePending',
+    );
+    expect(runnerActivity(runner('r1', { draining: 'pruning' }))).toBe(
+      'pruning',
+    );
     expect(runnerActivity(runner('r1'))).toBe('online');
     expect(runnerActivity(runner('r1', { activeJobs: 1 }))).toBe('busy');
     expect(

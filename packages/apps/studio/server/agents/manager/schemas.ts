@@ -77,6 +77,8 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
             model: z.string().nullable(),
             reason: z.enum([
               'ready',
+              'updatePending',
+              'pruning',
               'busy',
               'incompatible',
               'offline',
@@ -94,6 +96,8 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
               .array(
                 z.enum([
                   'ready',
+                  'updatePending',
+                  'pruning',
                   'busy',
                   'incompatible',
                   'offline',
@@ -116,6 +120,8 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
                   reason: z
                     .enum([
                       'ready',
+                      'updatePending',
+                      'pruning',
                       'busy',
                       'incompatible',
                       'offline',

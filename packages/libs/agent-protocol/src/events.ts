@@ -129,6 +129,8 @@ export const FAILURE_REASONS = [
   'prepareNetwork',
   /** A live process holds the workspace lock. Requeued with backoff when announced; older applications receive checkoutFailed. */
   'workspaceBusy',
+  /** The runner interrupted the attempt to install an update; retry without consuming the failure budget. */
+  'runnerUpgrade',
   /**
    * A repository's credential could not be had for the run's checkout because the application's code host is
    * unavailable or slow just now (protocol 9, `REPO_ACCESS_UNAVAILABLE`). Retried.
@@ -155,6 +157,7 @@ export const RETRYABLE_FAILURES: readonly FailureReason[] = [
   'toolRateLimit',
   'prepareNetwork',
   'workspaceBusy',
+  'runnerUpgrade',
   'repoAccessUnavailable',
 ];
 

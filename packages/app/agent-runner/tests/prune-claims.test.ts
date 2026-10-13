@@ -192,6 +192,11 @@ describe('claiming and pruning the shared store', () => {
     expect(await runner['claimFrom'](link, 1, false)).toBe(0);
     expect(request).not.toHaveBeenCalled();
     expect(run.status).toBe('queued');
+    await runner.heartbeat(link);
+    expect(server.lastHeartbeat()?.load).toMatchObject({
+      free: 0,
+      draining: 'pruning',
+    });
     finish.resolve();
     await collection;
     expect(await runner['claimFrom'](link, 1, false)).toBe(1);

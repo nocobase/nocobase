@@ -141,6 +141,8 @@ const runtimesEnUS = {
       owner: 'Owner {{name}}',
     },
     status: {
+      updatePending: 'Runner waiting for update',
+      pruning: 'Runner cleaning shared store',
       online: 'Online',
       offline: 'Offline',
       revoked: 'Revoked',

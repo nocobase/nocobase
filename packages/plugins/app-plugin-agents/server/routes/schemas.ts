@@ -1512,6 +1512,7 @@ const runnerObject = z.object({
     description:
       'How many runs of each coding tool it may hold at once, beside `slots`; null, or a tool left out, for no limit of its own.',
   }),
+  draining: z.enum(['updatePending', 'pruning']).optional(),
   globalFree: z.number().nonnegative().optional().meta({
     description:
       'Free slots reported in the latest heartbeat across all applications; absent before a heartbeat.',

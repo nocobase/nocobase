@@ -27,7 +27,8 @@
 //
 // Self-update: a heartbeat answer may name a newer runner the application serves (`upgrade`), or, to this runner's
 // `npm` feature, the exact version to install from npm when it serves no tarball (`npmUpgrade`). A daemon started by
-// its service from an installation (`selfUpdate`) stops claiming, waits for its runs to end, installs the new version
+// its service from an installation (`selfUpdate`) stops claiming, interrupts agent runs with local preservation,
+// waits for their cleanup and any background jobs to finish, and installs the new version
 // (update.ts) and stops, and its process exits with `exitCode`; the service starts the new version. Any other daemon
 // only logs the notice.
 import { createHash } from 'node:crypto';
@@ -205,7 +206,7 @@ export interface DaemonOptions {
   readDisk?: ReadDisk;
   /** Why an isolation configuration cannot be had here (isolation.ts); for tests. */
   isolationProblem?: (config: IsolationConfig) => Promise<string | undefined>;
-  /** Update between runs when an application serves a newer runner; without it, upgrade notices are only logged. */
+  /** Interrupt agent runs and update when an application serves a newer runner; without it, notices are only logged. */
   selfUpdate?: {
     installation: Pick<Installation, 'prefix' | 'current'>;
     /** Replaces `applyUpdate`; for tests. */
@@ -257,7 +258,7 @@ export class RunnerDaemon {
   private stopped: Promise<void> | undefined;
   /** Where the next round of claims starts, with several applications. */
   private nextApp = 0;
-  /** A newer runner to install once no run is left; claiming pauses meanwhile. */
+  /** A newer runner to install after interrupting agent runs and waiting for cleanup; claims pause meanwhile. */
   private pendingUpdate: { link: AppLink; target: UpdateTarget } | undefined;
   private updating = false;
   /** The shared pnpm store is being pruned; claiming pauses meanwhile. */
@@ -707,8 +708,16 @@ export class RunnerDaemon {
             startedAt: run.startedAt,
           })),
           load: {
+            ...(this.pendingUpdate
+              ? { draining: 'updatePending' as const }
+              : this.pruning
+                ? { draining: 'pruning' as const }
+                : {}),
             slots: this.slots,
-            free: Math.max(0, this.slots - this.supervisor.size),
+            free:
+              this.pendingUpdate || this.pruning
+                ? 0
+                : Math.max(0, this.slots - this.supervisor.size),
             ...(this.limitedTools.length > 0
               ? {
                   tools: Object.fromEntries(
@@ -716,7 +725,7 @@ export class RunnerDaemon {
                       tool,
                       {
                         slots: this.toolLimit(tool as AgentTool),
-                        free,
+                        free: this.pendingUpdate || this.pruning ? 0 : free,
                       } satisfies ToolLoad,
                     ]),
                   ),
@@ -800,14 +809,14 @@ export class RunnerDaemon {
     if (failedAt !== undefined && Date.now() - failedAt < UPDATE_RETRY_MS)
       return;
     log(
-      `${link.key}: updating to ${runnerHost().bin} ${upgrade.latestVersion}${target.kind === 'npm' ? ` (${target.package} from npm)` : ''} once no run is left`,
+      `${link.key}: updating to ${runnerHost().bin} ${upgrade.latestVersion}${target.kind === 'npm' ? ` (${target.package} from npm)` : ''}; interrupting agent runs and preserving local work`,
     );
     this.pendingUpdate = { link, target };
     this.slotFreed?.();
     void this.updateWhenIdle();
   }
 
-  /** Installs the pending update when no run is left, then stops so the service starts the new version. */
+  /** Interrupts agent runs, waits for their cleanup and background jobs, then installs and restarts. */
   private async updateWhenIdle(): Promise<void> {
     const pending = this.pendingUpdate;
     const { selfUpdate, log } = this.options;
@@ -815,12 +824,22 @@ export class RunnerDaemon {
       pending === undefined ||
       selfUpdate === undefined ||
       this.updating ||
-      this.supervisor.size > 0 ||
       this.stopping.signal.aborted
     )
       return;
     this.updating = true;
     try {
+      const reported = Promise.all(this.live.map((app) => this.heartbeat(app)));
+      while (this.claimsInFlight > 0 && !this.stopping.signal.aborted)
+        await delay(20, this.stopping.signal);
+      await Promise.all(
+        [...this.supervisor.runs.values()]
+          .filter((run) => run.jobId === undefined)
+          .map((run) => this.supervisor.enforceCancel(run.runId, true)),
+      );
+      await reported;
+      // Background jobs retain their existing completion semantics.
+      if (this.supervisor.size > 0 || this.stopping.signal.aborted) return;
       await (selfUpdate.apply ?? applyUpdate)({
         installation: selfUpdate.installation,
         client: pending.link.client,
@@ -850,6 +869,7 @@ export class RunnerDaemon {
     wait: boolean,
   ): Promise<number> {
     if (
+      this.pendingUpdate ||
       this.pruning ||
       this.collecting ||
       this.diskPaused ||
@@ -862,6 +882,7 @@ export class RunnerDaemon {
     );
     if (
       this.collecting ||
+      this.pendingUpdate ||
       this.pruning ||
       this.diskPaused ||
       this.stopping.signal.aborted
