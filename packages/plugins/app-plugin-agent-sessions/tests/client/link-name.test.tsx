@@ -69,7 +69,7 @@ describe('LinkName', () => {
     await waitFor(() => expect(tooltip()).toBeNull());
   });
 
-  it('does not open for a short title on hover or focus', async () => {
+  it('does not open for a short title on keyboard focus', async () => {
     mockWidth(link.title, false);
     renderLink();
 
