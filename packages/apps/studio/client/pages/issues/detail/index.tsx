@@ -36,7 +36,14 @@ import {
 } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import {
+  useCallback,
+  useMemo,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
+import { ArrowLeftIcon } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
 import { RouteChildPage } from '@/components/route-child-page';
@@ -51,7 +58,7 @@ import {
 import { cn } from 'cn';
 
 import { AskAgent } from '../../../agents/ask-agent.js';
-import { IssueLiveRun, IssueRunRow } from '../../../agents/issue-runs.js';
+import { IssueRunRow } from '../../../agents/issue-runs.js';
 import { IssueInitSection } from '../../../projects/init-card.js';
 import { IssueWaitingSection } from '../../../inbox/issue-waiting.js';
 import {
@@ -79,6 +86,14 @@ import { FollowToggle } from '../../../issues/live/follow-toggle.js';
 import { IssueComposer } from '../../../issues/live/issue-composer.js';
 import { IssueFeed } from '../../../issues/live/issue-feed.js';
 import { IssueSummary } from '../../../issues/live/issue-summary.js';
+import { PhoneBar } from '../../../layouts/components/phone-bar.js';
+import {
+  handoffWaitsOn,
+  useOwnerHandoffView,
+} from '../../../issues/detail/use-owner-handoff.js';
+import { coveredBySummary } from '../../../issues/live/summary-model.js';
+import type { InboxEntry } from '@/extensions/nocobase-inbox/model';
+import { IN_REVIEW_STATUS } from '@nocobase/app-plugin-projects/shared/statuses';
 import { IssuePageAside } from './aside.js';
 import { useLiveIssue } from './use-live-issue.js';
 
@@ -144,6 +159,7 @@ function IssuePage({
 }): ReactElement {
   const { t } = useTranslation();
   const wording = useIssuePageWording();
+  const parent = useIssueParent();
   const detailKey = useMemo(() => pmKeys.issue(issueId), [issueId]);
   const update = useIssueUpdate(detail, detailKey);
   const pageActions = useIssuePageActions(detail);
@@ -158,6 +174,19 @@ function IssuePage({
   const main = useIssueMainState(pageActions);
   const narrow = useMediaQuery('(max-width: 767px)');
   const viewer = useViewer();
+  // The decisions the summary's "Needs you" card shows are left out of "Waiting for you".
+  const handoff = useOwnerHandoffView(detail.id).data;
+  const covered = useCallback(
+    (entry: InboxEntry) =>
+      coveredBySummary(entry, {
+        accepting:
+          detail.statusKey === IN_REVIEW_STATUS &&
+          Boolean(viewer?.userId) &&
+          viewer?.userId === detail.ownerUserId,
+        handoff: handoffWaitsOn(handoff),
+      }),
+    [detail.statusKey, detail.ownerUserId, viewer?.userId, handoff],
+  );
   const [linkingPullRequest, setLinkingPullRequest] = useState(false);
   const linking = {
     linking: linkingPullRequest,
@@ -181,33 +210,44 @@ function IssuePage({
       asideLabel={wording.detail.properties}
       main={
         <IssueConversation detail={detail} detailKey={detailKey}>
-          {/* Pinned while the page scrolls; a phone starts with the title row alone. */}
-          <div
-            className='sticky top-0 z-20 rounded-lg border bg-card/95 px-4 py-3 text-card-foreground backdrop-blur-md md:px-6'
-            data-testid='issue-summary-pin'
-          >
-            <IssueSummary
-              issue={detail}
-              update={update}
-              refresh={progressRefresh}
-              actions={<FollowToggle issueId={detail.id} />}
-              collapsible
-              defaultCollapsed={narrow}
-              autoCompact
-              headingLevel={1}
-              {...(canEditIssues(viewer)
-                ? {
-                    rename: {
-                      onRename: async (title: string) => {
-                        await update.mutateAsync({ title });
-                      },
-                      editLabel: wording.detail.editTitle,
-                      inputLabel: wording.detail.titleLabel,
+          {/* A phone's only top row: back to the list, the navigation and the agent chat. */}
+          <PhoneBar className='-mb-2'>
+            <Button
+              size='sm'
+              variant='ghost'
+              nativeButton={false}
+              render={
+                <Link to={{ pathname: parent.path, search: parent.search }} />
+              }
+            >
+              <ArrowLeftIcon data-icon='inline-start' />
+              {wording.t('issue.backToList')}
+            </Button>
+          </PhoneBar>
+          {/* It scrolls with the page; its one-line bar stays at the top once it is gone. A phone starts with the bar. */}
+          <IssueSummary
+            issue={detail}
+            update={update}
+            refresh={progressRefresh}
+            actions={<FollowToggle issueId={detail.id} />}
+            collapsible
+            defaultCollapsed={narrow}
+            pinnedBar
+            pinnedBarClassName='-mb-4 md:-mb-6'
+            className='rounded-lg border bg-card px-4 py-3 text-card-foreground md:px-6'
+            headingLevel={1}
+            {...(canEditIssues(viewer)
+              ? {
+                  rename: {
+                    onRename: async (title: string) => {
+                      await update.mutateAsync({ title });
                     },
-                  }
-                : {})}
-            />
-          </div>
+                    editLabel: wording.detail.editTitle,
+                    inputLabel: wording.detail.titleLabel,
+                  },
+                }
+              : {})}
+          />
           <IssueFileDrop
             {...(main.canUpload ? { onFiles: main.upload } : {})}
             className={cn(ISSUE_SURFACE, 'flex flex-col gap-6')}
@@ -216,20 +256,13 @@ function IssuePage({
               detail={detail}
               pageActions={pageActions}
               actions={<AskAgent placement='issue' entry={entry} />}
-              meta={
-                <>
-                  <IssueMarks issue={detail} placement='detail' />
-                  <span className='flex min-w-0 sm:ml-auto'>
-                    <IssueLiveRun issue={detail} />
-                  </span>
-                </>
-              }
+              meta={<IssueMarks issue={detail} placement='detail' />}
             />
             <IssueCommentRunLimit
               issue={detail}
               onContinued={() => setRunRefresh((value) => value + 1)}
             />
-            <IssueWaitingSection issue={detail} />
+            <IssueWaitingSection issue={detail} covered={covered} />
             <IssueDescriptionSection detail={detail} update={update} />
             <IssueAddSection detail={detail} state={main}>
               <IssueCodeAddButton issue={detail} {...linking} />
@@ -259,7 +292,10 @@ function IssuePage({
             />
           </ActivityCard>
           {/* The activity card's bottom edge, pinned while the page scrolls. */}
-          <IssueComposer className='sticky bottom-0 z-10 -mt-4 rounded-b-lg border bg-card/95 px-4 py-3 text-card-foreground backdrop-blur-md md:-mt-6 md:px-6' />
+          <IssueComposer
+            foldable={narrow}
+            className='sticky bottom-0 z-10 -mt-4 rounded-b-lg border bg-card/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-card-foreground backdrop-blur-md md:-mt-6 md:px-6 md:pb-3'
+          />
         </IssueConversation>
       }
       aside={

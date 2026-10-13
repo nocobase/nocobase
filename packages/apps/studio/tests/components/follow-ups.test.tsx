@@ -58,6 +58,18 @@ vi.mock('../../client/issues/live/conversation.js', () => ({
 vi.mock('../../client/issues/live/issue-feed.js', () => ({
   IssueFeed: () => <div data-testid='issue-feed' />,
 }));
+// The live run's link reads the agents plugin's runs; here it is the text alone.
+vi.mock('../../client/agents/issue-runs.js', () => ({
+  IssueLiveRunLink: ({ children }: { children: ReactNode }) => (
+    <span>{children}</span>
+  ),
+}));
+// The phone bar's navigation and chat buttons need the shell's providers.
+vi.mock('../../client/layouts/components/phone-bar.js', () => ({
+  PhoneBar: ({ children }: { children?: ReactNode }) => (
+    <div data-testid='phone-bar'>{children}</div>
+  ),
+}));
 vi.mock('../../client/issues/live/issue-composer.js', () => ({
   IssueComposer: () => <div data-testid='issue-composer' />,
 }));
@@ -266,7 +278,9 @@ describe('My follow-ups', () => {
     expect(within(other).getByTestId('follow-ups-unread').textContent).toBe(
       '3',
     );
-    expect(other.textContent).toContain('Sol is working on fixing the review');
+    // A short line from the progress, not the step the manager wrote.
+    expect(other.textContent).toContain('Sol working');
+    expect(other.textContent).not.toContain('fixing the review');
 
     const panel = await screen.findByTestId('follow-ups-activity');
     await waitFor(() =>
@@ -390,7 +404,7 @@ describe('My follow-ups', () => {
     ).toBe(false);
   });
 
-  it('on a phone shows the lists first, then the chosen issue alone with a way back', async () => {
+  it('on a phone shows one list per tab, then the chosen issue alone with a way back', async () => {
     const matchMedia = window.matchMedia;
     window.matchMedia = ((query: string) => ({
       matches: !query.includes('min-width'),
@@ -399,20 +413,39 @@ describe('My follow-ups', () => {
       removeEventListener: () => undefined,
     })) as unknown as typeof window.matchMedia;
     try {
-      const rail = await mount();
+      await mount();
       expect(screen.queryByTestId('follow-ups-activity')).toBeNull();
+      const tabs = screen.getByTestId('follow-ups-tabs');
+      const following = within(tabs).getByRole('button', {
+        name: /^Following/u,
+      });
+      const mine = within(tabs).getByRole('button', {
+        name: /^Issues I own/u,
+      });
+      // What needs a look: two followed issues with news or an ask; one owned issue in review.
+      expect(following.getAttribute('aria-current')).toBe('page');
+      expect(following.textContent).toBe('Following2');
+      expect(mine.textContent).toBe('Issues I own1');
+      expect(screen.queryByTestId('follow-ups-mine')).toBeNull();
+
+      fireEvent.click(mine);
+      await screen.findByTestId('follow-ups-mine');
+      expect(screen.queryByTestId('follow-ups-following')).toBeNull();
+      fireEvent.click(following);
+      const rail = await screen.findByTestId('follow-ups-following');
+
       fireEvent.click(card(rail, 'WEB-9'));
       const panel = await screen.findByTestId('follow-ups-activity');
-      // A phone starts with the summary's bar.
+      // A phone starts with the summary's bar, and the tabs give way to the issue.
       expect(
         (await within(panel).findByTestId('issue-summary')).hasAttribute(
           'data-collapsed',
         ),
       ).toBe(true);
+      expect(screen.queryByTestId('follow-ups-tabs')).toBeNull();
       expect(screen.queryByTestId('follow-ups-following')).toBeNull();
-      expect(screen.queryByTestId('follow-ups-mine')).toBeNull();
       fireEvent.click(
-        within(panel).getByRole('button', { name: 'Back to the list' }),
+        within(panel).getAllByRole('button', { name: 'Back to the list' })[0]!,
       );
       await screen.findByTestId('follow-ups-following');
       expect(screen.queryByTestId('follow-ups-activity')).toBeNull();

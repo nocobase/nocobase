@@ -35,8 +35,47 @@ function runnerNames(
     .join(', ');
 }
 
-/** What the issue waits for, in one sentence. */
+/** What the issue waits for, in one sentence, without surrounding whitespace. */
 export function progressSentence(
+  t: Translate,
+  progress: IssueProgress,
+  now: number = Date.now(),
+): string {
+  return sentence(t, progress, now).trim();
+}
+
+/**
+ * What "Now" says on the issue page and its summary: one short line from the progress itself, never the manager's
+ * prose. Working is "<agent> working · <n> min · <runner>", queued "<agent> queued" (or why it waits for a runner);
+ * other states are their sentence.
+ */
+export function progressStatusLine(
+  t: Translate,
+  progress: IssueProgress,
+  now: number = Date.now(),
+): string {
+  const agent = progress.agent?.name ?? t('issueProgress.anAgent');
+  // Waiting for a runner keeps its account of each choice and runner; the Now line cuts it to two lines.
+  if (progress.state === 'queued' && !progress.managerWait)
+    return t('issueProgress.status.queued', { agent });
+  if (progress.state === 'queued' || progress.waiting)
+    return progressSentence(t, progress, now);
+  if (progress.state === 'working')
+    return [
+      t('issueProgress.status.working', { agent }),
+      progress.since
+        ? t('issueProgress.status.minutes', {
+            minutes: minutesSince(progress.since, now),
+          })
+        : null,
+      progress.runner,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  return progressSentence(t, progress, now);
+}
+
+function sentence(
   t: Translate,
   progress: IssueProgress,
   now: number = Date.now(),

@@ -296,3 +296,23 @@ test.describe('default landing navigation', () => {
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
   });
 });
+
+test.describe('header actions', () => {
+  test('the chat icon opens the panel, and the account menu offers the agent setup', async ({
+    page,
+  }) => {
+    await open(page, '/inbox');
+    const banner = page.getByRole('banner');
+    await banner.getByTestId('chat-header-button').click();
+    await expect(page.getByTestId('chat-panel')).toBeVisible();
+    await banner.getByTestId('chat-header-button').click();
+
+    await banner.getByRole('button', { name: '打开账户菜单' }).click();
+    await page.getByTestId('user-menu-agent-setup').click();
+    const dialog = page.getByRole('dialog', { name: '连接本地 Coding Agent' });
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByLabel('发送给 Coding Agent 的配置指令'),
+    ).toContainText('nb-studio login --server');
+  });
+});
