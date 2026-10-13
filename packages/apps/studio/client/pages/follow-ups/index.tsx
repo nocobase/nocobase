@@ -1,7 +1,7 @@
 /**
  * Route `/follow-ups`, "My follow-ups": the issues the viewer follows (left), one issue live (middle: the summary, feed
  * and composer the issue page has too), and the issues they own with what each needs from them (right). On a wide
- * screen the side columns stay put while the middle scrolls; on a phone the lists come first and choosing an issue
+ * screen the three columns fill the visible area below the heading and each scrolls on its own; on a phone the lists come first and choosing an issue
  * shows it alone, with a way back. The issue shown is in the URL (`?issue=<id>`), the first followed one by default. Everything comes from `GET /api/followUps`
  * (`client/follow-ups/`), kept current by the projects plugin's realtime refresh; starring an issue writes what the
  * viewer follows, and showing one records that they looked.
@@ -36,12 +36,15 @@ import {
   ownedRows,
 } from '../../follow-ups/model.js';
 import { OwnedList } from '../../follow-ups/owned-list.js';
+import { useFillHeight } from '../../follow-ups/use-fill-height.js';
 import { StatusPill } from '../../issues/live/status.js';
 import { useFollowUpStatusName } from '../../issues/live/status-colors.js';
 
 /** A side column on a wide screen: it stays in view while the middle scrolls, and scrolls on its own. */
-const SIDE_COLUMN =
-  'lg:sticky lg:top-4 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto';
+const SIDE_COLUMN = 'lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain';
+
+/** The page's bottom padding on a wide screen (`PageContainer`'s `md:p-8`), kept below the columns. */
+const PAGE_BOTTOM = 32;
 
 /** The statuses the header counts. */
 const COUNTED: readonly FollowUpStatus[] = [
@@ -76,6 +79,8 @@ export default function FollowUpsPage(): ReactElement {
   // A phone shows the lists, or the chosen issue alone.
   const showPanel = wide || chosen !== null;
   const showLists = wide || chosen === null;
+  // On a wide screen the columns fill the rest of the visible area and scroll on their own.
+  const [columnsHeight, fill] = useFillHeight(wide, PAGE_BOTTOM);
   const summary = view?.issues.find((issue) => issue.id === selectedId) ?? null;
   // The issue shown when the overview does not hold it: the middle column reads it with the same query.
   const pm = usePmApi();
@@ -179,7 +184,12 @@ export default function FollowUpsPage(): ReactElement {
           </div>
         )
       ) : (
-        <div className='grid items-start gap-5 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_minmax(0,22rem)]'>
+        <div
+          ref={fill}
+          style={columnsHeight === null ? undefined : { height: columnsHeight }}
+          className='grid items-start gap-5 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_minmax(0,22rem)] lg:grid-rows-[minmax(0,1fr)] lg:items-stretch'
+          data-testid='follow-ups-columns'
+        >
           {showLists ? (
             <FollowingRail
               className={SIDE_COLUMN}
@@ -196,6 +206,7 @@ export default function FollowUpsPage(): ReactElement {
           ) : null}
           {!showPanel ? null : selectedId ? (
             <IssuePanel
+              className='lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain'
               key={selectedId}
               issueId={selectedId}
               summary={summary}
