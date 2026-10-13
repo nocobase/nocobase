@@ -43,6 +43,8 @@ import {
 
 /** One icon per type, so a card is recognisable before it is read. */
 const TYPE_ICON: Readonly<Record<string, LucideIcon>> = {
+  owner_handoff: UserCheckIcon,
+  owner_handoff_rejected: CircleXIcon,
   approval_requested: ShieldCheckIcon,
   approval_decided: ShieldCheckIcon,
   approval_stale: ShieldAlertIcon,
