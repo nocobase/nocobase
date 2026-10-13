@@ -116,7 +116,7 @@ test('recovers an expired delegation after SIGKILL and does not report it twice 
       .getByText(reply.content, { exact: false })
       .first();
     await expect(timeoutReply).toBeVisible();
-    await timeoutReply.scrollIntoViewIfNeeded();
+    await expect(timeoutReply).toBeInViewport();
     await page.screenshot({
       path: path.resolve(screenshots, 'pm292-restart-timeout-reply-en-US.png'),
     });

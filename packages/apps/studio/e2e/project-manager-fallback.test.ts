@@ -1,13 +1,35 @@
 /** Browser verification of the existing settings form and deterministic waiting states. */
 import path from 'node:path';
 import { mkdirSync } from 'node:fs';
-import { expect, open, test, horizontalOverflow } from './support/fixtures.ts';
+import {
+  expect,
+  open,
+  test,
+  horizontalOverflow,
+  signIn,
+  unique,
+} from './support/fixtures.ts';
 import { FakeRunner } from './support/runner.ts';
 import type { AgentBoard } from '../shared/agent-board.js';
 import type { IssueProgress } from '../shared/project-manager.js';
 
 test.use({ user: 'admin' });
 test.setTimeout(240_000);
+
+test.beforeEach(async ({ api, context }) => {
+  // Preferences follow the account across browsers; parallel tests must not share these writes.
+  const suffix = unique();
+  const user = {
+    email: `pm292-display-${suffix}@example.com`,
+    password: 'pm292-display-e2e-password',
+  };
+  await api.post('users', {
+    ...user,
+    name: `PM-292 display ${suffix}`,
+    roleScopes: { studio: ['admin'] },
+  });
+  await signIn(context, user);
+});
 
 test('edits the fallback delay and renders waiting reasons in both languages', async ({
   page,

@@ -285,3 +285,33 @@ it('hides start and hand-over from an editor who is not the owner', async () => 
     screen.queryByRole('button', { name: 'Hand over to the project manager' }),
   ).toBeNull();
 });
+
+it.each(['en-US', 'zh-CN'] as const)(
+  'keeps owner acceptance ahead of starting work in %s',
+  async (language) => {
+    await mount(
+      'backlog',
+      progress({
+        waiting: {
+          reason: 'waitingOwner',
+          owner: { id: 'alice', name: 'Alice' },
+        },
+      }),
+      vi.fn(),
+      language,
+    );
+    expect(
+      await screen.findByText(
+        language === 'en-US'
+          ? 'Waiting for Alice to take over'
+          : '等待 Alice 接手',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: language === 'en-US' ? 'Start' : '开始',
+        exact: true,
+      }),
+    ).toBeNull();
+  },
+);
