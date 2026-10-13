@@ -342,6 +342,8 @@ export interface WorkspaceRepo {
   startSha?: string;
   /** What the runner last saw the remote task branch hold after it pushed (or found it already pushed). */
   pushedSha?: string;
+  /** Saved and being removed: a later pass only finishes the removal, never commits what is half deleted. */
+  removing?: boolean;
 }
 
 /**
@@ -452,6 +454,7 @@ function believable(
         ...(!legacy && isText(repo.pushedSha) && SHA.test(repo.pushedSha)
           ? { pushedSha: repo.pushedSha }
           : {}),
+        ...(!legacy && repo.removing === true ? { removing: true } : {}),
       },
     ];
   });
@@ -1342,6 +1345,10 @@ export async function prepareDirs(
       appKey: options.appKey,
       subjectKey: options.subjectKey,
       ...(options.perRun === true ? { runAttempt: true } : {}),
+      // A read-only attempt is disposable with or without repositories (`isDisposableWorkspace`).
+      ...(options.perRun === true && options.readOnly === true
+        ? { readOnly: true }
+        : {}),
       ...(options.perRun === true &&
       options.dirs.some((dir) => dir.kind === 'repo')
         ? { runWorktrees: true, readOnly: options.readOnly === true }

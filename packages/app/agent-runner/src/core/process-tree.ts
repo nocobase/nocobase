@@ -220,7 +220,16 @@ export async function taggedProcesses(
     const { stdout } = await execFileAsync(
       'ps',
       ['-E', '-ww', '-A', '-o', 'pid=,command='],
-      { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+      {
+        encoding: 'utf8',
+        maxBuffer: 64 * 1024 * 1024,
+        // `ps` would otherwise inherit the tag and list itself.
+        env: Object.fromEntries(
+          Object.entries(process.env).filter(
+            ([name]) => name !== PROCESS_TAG_ENV,
+          ),
+        ),
+      },
     );
     for (const line of stdout.split('\n')) {
       const match = /^\s*(\d+)\s(.*)$/u.exec(line);

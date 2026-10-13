@@ -103,6 +103,7 @@ async function main(): Promise<number> {
     for (const group of groupsBelow(process.pid, await listProcesses()))
       seenGroups.add(group);
   };
+  const strict = payload.workspace.readOnly === true;
   let quiescing = false;
   let observation = Promise.resolve();
   const scan = setInterval(() => {
@@ -121,11 +122,11 @@ async function main(): Promise<number> {
         try {
           await observation;
           await observeGroups();
-          // Strict: a failed process scan or a surviving writer keeps the worktree instead of removing it.
+          // A read-only checkout is removed with nothing saved, so a failed process scan keeps it for GC instead.
           const left = await killLeftovers(process.pid, {
             groups: seenGroups,
             graceMs: 2_000,
-            strict: true,
+            strict,
           });
           const tag = process.env[PROCESS_TAG_ENV];
           const tagged = tag === undefined ? 0 : await killTagged([tag]);
@@ -138,13 +139,13 @@ async function main(): Promise<number> {
               `worker: stopped ${left.processes + tagged} process(es) the run left behind before saving`,
             );
           if (
-            descendantsOf(process.pid, await listProcesses(true)).some(
+            descendantsOf(process.pid, await listProcesses(strict)).some(
               (entry) => isAlive(entry.pid),
             ) ||
             (tag !== undefined &&
-              (await taggedProcesses([tag], true)).length > 0) ||
+              (await taggedProcesses([tag], strict)).length > 0) ||
             (record.workDir !== undefined &&
-              (await workspaceHolders(record.workDir, true)).length > 0)
+              (await workspaceHolders(record.workDir, strict)).length > 0)
           )
             throw new Error(
               'Writers remain after stopping the tool; preserve the worktree for recovery.',

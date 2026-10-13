@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
@@ -9,6 +9,7 @@ import {
   acquireLock,
   markDirsPrepared,
   reportRepos,
+  writeWorkspaceMeta,
 } from '../src/core/checkout.ts';
 import {
   finalizeRunWorktrees,
@@ -208,6 +209,27 @@ describe('per-attempt worktrees', () => {
       'second',
     );
     await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+
+  it('finishes an interrupted removal without committing its half-deleted files', async () => {
+    const a = await start('a');
+    writeFileSync(path.join(a.repo.dir, 'kept.txt'), 'kept');
+    const [saved] = await finalizeRunWorktrees(paths, a.workDir, () => {}, {
+      remove: false,
+    });
+    const meta = (await readWorkspaceMeta(paths, a.workDir))!;
+    const repo = meta.repos[0]!;
+    await writeWorkspaceMeta(paths, a.workDir, {
+      ...meta,
+      repos: [{ ...repo, removing: true }],
+    });
+    rmSync(path.join(a.repo.dir, 'kept.txt'));
+    const [finished] = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(finished?.saved).toBe(true);
+    expect(existsSync(a.workDir)).toBe(false);
+    expect(
+      git(['rev-parse', `refs/runner/resume/${repo.continuation}`], repo.cache),
+    ).toBe(saved?.head);
   });
 
   it('preserves the worktree when the local branch changes, and tells a subsequent run where recovery remains', async () => {

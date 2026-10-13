@@ -437,8 +437,10 @@ export async function finalizeRunWorktrees(
           'Worktree ownership or continuation identity does not match its record',
         );
       // Metadata validation runs before checking/committing; never execute checkout-provided hooks or filters.
-      await taskGit(context, ['status', '--porcelain']);
-      if (meta.readOnly !== true) {
+      // Saved before an interrupted removal: committing now would record its half-deleted files.
+      if (repo.removing === true) results.push({ path: dir, saved: true });
+      else if (meta.readOnly !== true) {
+        await taskGit(context, ['status', '--porcelain']);
         if (
           (await taskGit(context, [
             'diff',
@@ -507,8 +509,18 @@ export async function finalizeRunWorktrees(
           }
           results.push({ path: dir, saved: true, head });
         } else results.push({ path: dir, saved: true });
-      } else results.push({ path: dir, saved: true });
+      } else {
+        await taskGit(context, ['status', '--porcelain']);
+        results.push({ path: dir, saved: true });
+      }
       if (options.remove === false) continue;
+      const current = (await readWorkspaceMeta(paths, workDir)) ?? meta;
+      await writeWorkspaceMeta(paths, workDir, {
+        ...current,
+        repos: current.repos.map((item) =>
+          item.path === repo.path ? { ...item, removing: true } : item,
+        ),
+      });
       const lock = await lockCache(repo.cache);
       try {
         // Validate the backlink again before Git removes anything. Never prune unrelated worktree metadata.
@@ -552,7 +564,8 @@ export async function finalizeRunWorktrees(
       );
   } else if (results.some((result) => !result.saved)) {
     await writeWorkspaceMeta(paths, workDir, {
-      ...meta,
+      // Fresh: keeps the `removing` marks written above.
+      ...((await readWorkspaceMeta(paths, workDir)) ?? meta),
       recoveryRequired: true,
       recoveryReason: results
         .filter((result) => !result.saved)

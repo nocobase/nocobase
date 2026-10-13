@@ -1047,7 +1047,11 @@ export class RunWorker {
   private async finishCompleted(): Promise<WorkerOutcome | 'inputPending'> {
     await this.updateRecord({ phase: 'reporting' });
     await this.stopTool();
-    await this.deps.stopWriters?.();
+    await this.deps.stopWriters?.().catch((error: unknown) => {
+      // A read-only run keeps its checkout for GC; a writer pushes nothing past a writer it could not stop.
+      if (this.payload.workspace.readOnly !== true) throw error;
+      this.writerStopFailure = `Process stop failed: ${String(error)}`;
+    });
     // A read-only run pushes nothing: another run may be writing the same branch.
     const repos = await this.repoReports(
       (this.deps.push ?? true) &&
