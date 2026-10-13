@@ -480,6 +480,8 @@ const pages = {
     },
   },
   failures: {
+    runnerUpgrade:
+      'Interrupted for an execution machine update; the run will continue.',
     runnerDiskFull: 'The execution machine ran out of disk space.',
     runnerOffline: 'The runtime went offline.',
     leaseExpired: 'The runtime stopped reporting.',

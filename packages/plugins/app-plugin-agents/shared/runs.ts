@@ -65,6 +65,8 @@ export interface RunExecutionSnapshot {
 }
 
 export type ModelWaitReason =
+  | 'updatePending'
+  | 'pruning'
   | 'ready'
   | 'busy'
   | 'incompatible'
@@ -272,6 +274,8 @@ export interface RunEventPage {
  * - `next`: nothing holds it; the next free runner that asks takes it.
  */
 export const RUN_WAIT_REASONS = [
+  'updatePending',
+  'pruning',
   'agentArchived',
   'incompatible',
   'toolNotInstalled',

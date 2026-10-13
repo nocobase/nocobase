@@ -12,7 +12,15 @@ import {
   writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 import {
   readConnections,
@@ -31,8 +39,18 @@ import { CliUnavailableError, resolveCli } from '../src/agent/cli.ts';
 import { RunnerDaemon, runnerVersion } from '../src/core/loop.ts';
 import { servicePlan } from '../src/core/service.ts';
 import { isNewer } from '../src/core/update.ts';
+import { RUNNER_ROUTES } from '../src/protocol/index.ts';
 import { FakeServer, waitFor } from './fake-server.ts';
-import { cliEnv, registerRunner, removeDir, tempDir } from './helpers.ts';
+import {
+  cliEnv,
+  registerRunner,
+  removeDir,
+  tempDir,
+  git,
+  makeRemote,
+  writeFakeCli,
+  FAST_TIMINGS,
+} from './helpers.ts';
 
 const scratch = tempDir('nocobase-runner-update-');
 afterAll(() => removeDir(scratch));
@@ -172,9 +190,15 @@ describe('served tarballs', () => {
     server = new FakeServer();
     await server.listen();
     home = tempDir('nocobase-runner-update-home-');
-    await registerRunner(server.url, cliEnv(home));
+    await registerRunner(server.url, cliEnv(home), [
+      '--slots',
+      '2',
+      '--cli',
+      `appcli=${writeFakeCli(home)}`,
+    ]);
   });
   afterEach(async () => {
+    vi.unstubAllEnvs();
     await server.close();
     removeDir(home);
     removeDir(`${home}-work`);
@@ -223,6 +247,286 @@ describe('served tarballs', () => {
     await expect(
       client.download('https://elsewhere.example.com/x.tar.gz'),
     ).rejects.toThrow('another origin');
+  });
+
+  it.each(['graceful', 'forced'] as const)(
+    'interrupts a running tool (%s), preserves its local head and removes worktrees before installing, reporting zero capacity',
+    async (mode) => {
+      vi.stubEnv('NOCOBASE_RUNNER_ADAPTER', 'echo');
+      const remote = makeRemote(home);
+      const run = server.enqueue({
+        workspace: {
+          dirs: [
+            {
+              kind: 'repo',
+              url: remote,
+              defaultBranch: 'main',
+              branch: 'agent/upgrade',
+              path: 'repo',
+            },
+          ],
+          env: [],
+        },
+        prompt: {
+          system: '',
+          session: 'fresh',
+          turn: `write upgrade.txt preserved\n${mode === 'forced' ? 'hang-hard' : 'hang'}`,
+        },
+      });
+      const paths = runnerPaths(home, `${home}-work`);
+      const apply = vi.fn(async () => {
+        expect(run.fail?.reason).toBe('runnerUpgrade');
+        expect(existsSync(String(run.start?.workDir))).toBe(false);
+      });
+      const daemon = new RunnerDaemon({
+        paths,
+        settings: await readSettings(paths),
+        connections: [await connection()],
+        adapters: new Map(),
+        timings: {
+          ...FAST_TIMINGS,
+          cancelGraceMs: mode === 'forced' ? 1 : 10_000,
+          killGraceMs: mode === 'forced' ? 1 : 5_000,
+        },
+        toolSlots: { claude: 2 },
+        log: () => {},
+        selfUpdate: {
+          installation: { prefix: home, current: path.join(home, 'current') },
+          apply,
+        },
+      });
+      try {
+        await daemon.start();
+        await waitFor(
+          () =>
+            run.status === 'running' &&
+            existsSync(
+              path.join(String(run.start?.workDir), 'repo/upgrade.txt'),
+            ),
+          30_000,
+          'tool running',
+        );
+        const cache = git(
+          ['rev-parse', '--git-common-dir'],
+          path.join(String(run.start?.workDir), 'repo'),
+        );
+        server.upgrade = {
+          minVersion: '0.0.0',
+          latestVersion: '99.0.0',
+          downloadUrl: '/update',
+          sha256: 'a'.repeat(64),
+          reason: 'test',
+        };
+        await waitFor(
+          () => daemon.updatedTo === '99.0.0',
+          30_000,
+          'upgrade completed',
+        );
+        await daemon.wait();
+        expect(apply).toHaveBeenCalledOnce();
+        if (mode === 'forced')
+          expect(
+            [...run.events.values()].some(
+              (event) => event.meta?.orphaned === true,
+            ),
+          ).toBe(true);
+        const refs = git(
+          ['for-each-ref', '--format=%(refname)', 'refs/runner/resume'],
+          cache,
+        )
+          .split('\n')
+          .filter(Boolean);
+        expect(refs).toHaveLength(1);
+        expect(git(['show', `${refs[0]}:upgrade.txt`], cache)).toBe(
+          'preserved',
+        );
+        const heartbeats = [...server.runners.values()]
+          .flatMap((runner) => runner.heartbeats)
+          .filter((heartbeat) => heartbeat.load.draining === 'updatePending');
+        expect(heartbeats.length).toBeGreaterThan(0);
+        expect(heartbeats.every((heartbeat) => heartbeat.load.free === 0)).toBe(
+          true,
+        );
+        expect(
+          heartbeats.every(
+            (heartbeat) => heartbeat.load.tools?.claude?.free === 0,
+          ),
+        ).toBe(true);
+      } finally {
+        await daemon.stop();
+      }
+    },
+  );
+
+  it('stops an existing tool before a long-poll claim returns, then preserves late workers and waits for all exit reports before installing', async () => {
+    server['options'].pollTimeoutMs = 30_000;
+    vi.stubEnv('NOCOBASE_RUNNER_ADAPTER', 'echo');
+    const remote = makeRemote(home);
+    const enqueue = (key: string) =>
+      server.enqueue({
+        subject: { key },
+        workspace: {
+          dirs: [
+            {
+              kind: 'repo',
+              url: remote,
+              defaultBranch: 'main',
+              branch: `agent/${key}`,
+              path: 'repo',
+            },
+          ],
+          env: [],
+        },
+        prompt: {
+          system: '',
+          session: 'fresh',
+          turn: `write ${key}.txt preserved\nhang`,
+        },
+      });
+    const existing = enqueue('existing');
+    const paths = runnerPaths(home, `${home}-work`);
+    const apply = vi.fn(async () => {
+      for (const run of [existing, late]) {
+        expect(run.fail?.reason).toBe('runnerUpgrade');
+        expect(existsSync(String(run.start?.workDir))).toBe(false);
+      }
+      expect(daemon.activeRuns).toEqual([]);
+    });
+    const daemon = new RunnerDaemon({
+      paths,
+      settings: await readSettings(paths),
+      connections: [await connection()],
+      adapters: new Map(),
+      timings: {
+        ...FAST_TIMINGS,
+        pollTimeoutMs: 30_000,
+        cancelGraceMs: 10_000,
+      },
+      log: () => {},
+      selfUpdate: {
+        installation: { prefix: home, current: path.join(home, 'current') },
+        apply,
+      },
+    });
+    const link = daemon['links'][0]!;
+    const deliver = Promise.withResolvers<void>();
+    const received = Promise.withResolvers<void>();
+    const finishExit = Promise.withResolvers<void>();
+    const exiting = Promise.withResolvers<void>();
+    const supervisor = daemon['supervisor'];
+    const afterExit = supervisor['afterExit'].bind(supervisor);
+    let late: ReturnType<typeof enqueue>;
+    const enforceCancel = supervisor.enforceCancel.bind(supervisor);
+    const cancelSpy = vi
+      .spyOn(supervisor, 'enforceCancel')
+      .mockImplementation(async (runId, upgrade) => {
+        // Let the late tool make a real edit so its cancellation also exercises local preservation.
+        if (runId === late?.payload.run.id)
+          await waitFor(
+            () =>
+              existsSync(
+                path.join(String(late.start?.workDir), 'repo/late.txt'),
+              ),
+            30_000,
+          );
+        await enforceCancel(runId, upgrade);
+      });
+    const exitSpy = vi
+      .spyOn(
+        supervisor as unknown as { afterExit: typeof afterExit },
+        'afterExit',
+      )
+      .mockImplementation(async (...args: Parameters<typeof afterExit>) => {
+        if (args[0] === late?.payload.run.id) {
+          exiting.resolve();
+          await finishExit.promise;
+        }
+        await afterExit(...args);
+      });
+    let pendingClaim: Promise<number> | undefined;
+    let responseSpy: ReturnType<typeof vi.spyOn> | undefined;
+    try {
+      await daemon['claimFrom'](link, 1, false);
+      await waitFor(
+        () =>
+          existsSync(
+            path.join(String(existing.start?.workDir), 'repo/existing.txt'),
+          ),
+        30_000,
+      );
+      const cache = git(
+        ['rev-parse', '--git-common-dir'],
+        path.join(String(existing.start?.workDir), 'repo'),
+      );
+      const request = link.client.request.bind(link.client);
+      responseSpy = vi
+        .spyOn(link.client, 'request')
+        .mockImplementation(async (...args) => {
+          const response = await request(...args);
+          if (args[1] === RUNNER_ROUTES.claim) {
+            received.resolve();
+            await deliver.promise;
+          }
+          return response;
+        });
+      const claims = server.runners.values().next().value!.claims;
+      pendingClaim = daemon['claimFrom'](link, 1, true);
+      await waitFor(
+        () => server.runners.values().next().value!.claims > claims,
+      );
+      server.upgrade = {
+        minVersion: '0.0.0',
+        latestVersion: '99.0.0',
+        downloadUrl: '/update',
+        sha256: 'a'.repeat(64),
+        reason: 'test',
+      };
+      await daemon.heartbeat(link);
+      // The request is still long-polling: the already running tool must stop first.
+      await waitFor(() => existing.fail?.reason === 'runnerUpgrade', 30_000);
+      expect(daemon['claimsInFlight']).toBe(1);
+      expect(apply).not.toHaveBeenCalled();
+      expect(await daemon['claimFrom'](link, 1, false)).toBe(0);
+      late = enqueue('late');
+      await received.promise;
+      expect(late.start).toBeUndefined();
+      deliver.resolve();
+      expect(await pendingClaim).toBe(1);
+      await exiting.promise;
+      expect(late.fail?.reason).toBe('runnerUpgrade');
+      expect(apply).not.toHaveBeenCalled();
+      finishExit.resolve();
+      await waitFor(() => daemon.updatedTo === '99.0.0', 30_000);
+      await daemon.wait();
+      expect(apply).toHaveBeenCalledOnce();
+      const refs = git(
+        ['for-each-ref', '--format=%(refname)', 'refs/runner/resume'],
+        cache,
+      )
+        .split('\n')
+        .filter(Boolean);
+      expect(refs).toHaveLength(2);
+      for (const key of ['existing', 'late']) {
+        const ref = refs.find((ref) =>
+          git(['ls-tree', '--name-only', ref], cache).includes(`${key}.txt`),
+        );
+        expect(ref).toBeDefined();
+        expect(git(['show', `${ref}:${key}.txt`], cache)).toBe('preserved');
+      }
+      expect(existsSync(String(late.start?.workDir))).toBe(false);
+      expect(server.lastHeartbeat()?.load).toMatchObject({
+        free: 0,
+        draining: 'updatePending',
+      });
+    } finally {
+      deliver.resolve();
+      finishExit.resolve();
+      await pendingClaim?.catch(() => undefined);
+      await daemon.stop();
+      responseSpy?.mockRestore();
+      cancelSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
   });
 
   it('updates itself between runs when the application serves a newer runner, then stops for its service', async () => {

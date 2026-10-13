@@ -122,6 +122,7 @@ export type WorkerOutcome =
   'completed' | 'failed' | 'cancelled' | 'leaseLost' | 'stopped';
 
 type Ending =
+  | { kind: 'upgrade' }
   | { kind: 'cancel' }
   | { kind: 'lost'; code: string }
   | { kind: 'shutdown' }
@@ -1138,6 +1139,7 @@ Local save event could not be recorded: ${failure}`;
   private async finishFailed(
     reason: FailureReason,
     unredacted: string,
+    remove = false,
   ): Promise<WorkerOutcome> {
     const detail = this.redactor.text(unredacted);
     await this.updateRecord({ phase: 'reporting' }).catch(() => undefined);
@@ -1159,7 +1161,7 @@ Local save event could not be recorded: ${failure}`;
         ),
       );
     } else {
-      saved = await this.saveLocal();
+      saved = await this.saveLocal(remove);
       await this.drainEvents();
     }
 
@@ -1218,6 +1220,14 @@ Local save event could not be recorded: ${failure}`;
         }
         this.deps.log(`run ${this.runId}: cancelled`);
         return 'cancelled';
+      }
+      case 'upgrade': {
+        await this.finishFailed(
+          'runnerUpgrade',
+          'The runner interrupted this attempt to install an update.',
+          true,
+        );
+        return 'stopped';
       }
       case 'shutdown':
         await this.finishFailed(

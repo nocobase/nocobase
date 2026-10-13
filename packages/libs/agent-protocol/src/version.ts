@@ -72,8 +72,8 @@ import { z } from 'zod';
  * without it still gets the credentials in its payload. The number moved so that a runner announcing
  * `gitCredentials` is refused cleanly by a server that does not know it; update the application first.
  */
-/** Version 10 announces support for workspace.key; older servers refuse the new feature vocabulary cleanly. */
-export const PROTOCOL_VERSION = 10;
+/** Version 11 adds runnerUpgrade reports, which older servers cannot parse; version 10 added workspace.key. */
+export const PROTOCOL_VERSION = 11;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;

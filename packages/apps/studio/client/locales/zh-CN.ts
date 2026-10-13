@@ -1339,6 +1339,8 @@ const zhCN: AppResource = {
     workerChoice: '执行模型',
     workerWaiting: '{{agent}} 在等执行机：{{entries}}',
     modelWait: {
+      updatePending: '执行机等待升级，暂不接活',
+      pruning: '执行机清理共享缓存，暂不接活',
       toolNotInstalled: '未安装工具',
       toolUnavailable: '工具未登录、被禁用或模型不可用',
       noSharedRunner: '仅他人的个人执行机在线',

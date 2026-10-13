@@ -129,9 +129,8 @@ interface WorkspaceWaits {
 }
 
 /**
- * The run's attempts that only waited for its working directory (`workspaceBusy`). They are not counted against
- * `maxAttempts`: nothing was tried, another run was still working there. The current attempt is still open in the
- * history (its reason is written when it ends), so it counts as one when the run is now reporting `workspaceBusy`.
+ * Workspace waits and runner upgrade interruptions do not consume maxAttempts. Include the open current attempt
+ * when reporting workspace contention; only consecutive workspace waits set the contention limit.
  */
 function workspaceWaits(run: RunRecord, reporting: boolean): WorkspaceWaits {
   const executions = toExecutions(run.executionHistory);
@@ -140,7 +139,9 @@ function workspaceWaits(run: RunRecord, reporting: boolean): WorkspaceWaits {
   );
   const ended = executions.filter((item) => item !== current);
   let total = ended.filter(
-    (item) => item.failureReason === 'workspaceBusy',
+    (item) =>
+      item.failureReason === 'workspaceBusy' ||
+      item.failureReason === 'runnerUpgrade',
   ).length;
   let trailing = 0;
   let since: string | null = null;
@@ -179,10 +180,12 @@ export async function requeueRun(
   const now = deps.clock.now();
   const waits = workspaceWaits(run, reason === 'workspaceBusy');
   const exhausted =
-    reason === 'workspaceBusy'
-      ? waits.since !== null &&
-        now.getTime() - Date.parse(waits.since) >= WORKSPACE_WAIT_LIMIT_MS
-      : Number(run.attempt) - waits.total >= Number(run.maxAttempts);
+    reason === 'runnerUpgrade'
+      ? false
+      : reason === 'workspaceBusy'
+        ? waits.since !== null &&
+          now.getTime() - Date.parse(waits.since) >= WORKSPACE_WAIT_LIMIT_MS
+        : Number(run.attempt) - waits.total >= Number(run.maxAttempts);
   if (exhausted) {
     const ended = await finishRun(tx, deps, run, {
       status: 'failed',
@@ -193,9 +196,11 @@ export async function requeueRun(
   }
   const nowText = now.toISOString();
   const delay =
-    reason === 'workspaceBusy'
-      ? workspaceBusyDelayMs(waits.trailing)
-      : retryDelayMs(reason, Number(run.attempt) - waits.total);
+    reason === 'runnerUpgrade'
+      ? 0
+      : reason === 'workspaceBusy'
+        ? workspaceBusyDelayMs(waits.trailing)
+        : retryDelayMs(reason, Number(run.attempt) - waits.total);
   const availableAt = delay > 0 ? later(now, delay) : null;
   const result = await runsRepo(tx.conn).updateMany({
     filter: (f) =>

@@ -134,6 +134,54 @@ async function translator(language: 'en-US' | 'zh-CN') {
   return runtime;
 }
 
+it.each(['en-US', 'zh-CN'] as const)(
+  'describes a draining runner in the Now line in %s',
+  async (language) => {
+    const t = (await translator(language)).getFixedT('studio', language);
+    const text = progressSentence(
+      t,
+      progress({
+        state: 'queued',
+        waiting: {
+          reason: 'ownerHasNoRunner',
+          owner: { id: 'alice', name: 'Alice' },
+        },
+        managerWait: {
+          queueEnteredAt: new Date(NOW).toISOString(),
+          fallbackAfterSeconds: 120,
+          sampledAt: new Date(NOW).toISOString(),
+          entries: [
+            {
+              tool: 'codex',
+              model: 'sol',
+              reason: 'updatePending',
+              compatibleCount: 1,
+              runners: ['lima'],
+              runnerLoads: [
+                {
+                  name: 'lima',
+                  ownerUserId: 'alice',
+                  reason: 'updatePending',
+                  used: 0,
+                  limit: 2,
+                  reportedTotalFree: 0,
+                },
+              ],
+            },
+          ],
+        },
+      }),
+      NOW,
+    );
+    expect(text).toContain(
+      language === 'en-US'
+        ? 'runner waiting for update'
+        : '执行机等待升级，暂不接活',
+    );
+    expect(text).toContain('lima');
+  },
+);
+
 async function mount(
   statusKey: string,
   answer: IssueProgress,

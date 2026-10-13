@@ -671,6 +671,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           (await directoryBusy(conn, runner.id, run.id, directory));
         directoryBlocked ||= blockedDirectory;
         const hasRoom =
+          !runner.draining &&
           (runner.globalFree ?? 1) > 0 &&
           used < runner.slots &&
           (byTool[entry.tool] ?? 0) < toolLimit(runner, entry.tool) &&
@@ -685,9 +686,11 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             ? runner.globalFree === undefined
               ? 'unknown'
               : 'ready'
-            : blockedDirectory
-              ? 'restricted'
-              : 'busy',
+            : runner.draining
+              ? runner.draining
+              : blockedDirectory
+                ? 'restricted'
+                : 'busy',
           lastSeenAt: runner.lastSeenAt,
           used,
           limit: runner.slots,
@@ -713,6 +716,17 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
                 ? 'toolNotInstalled'
                 : 'offline';
       if (directoryBlocked && !ready) reason = 'restricted';
+      if (
+        !ready &&
+        compatible.length > 0 &&
+        loads.every(
+          (runner) =>
+            runner.reason === 'updatePending' || runner.reason === 'pruning',
+        )
+      )
+        reason = loads.some((runner) => runner.reason === 'updatePending')
+          ? 'updatePending'
+          : 'pruning';
       if (
         unknown &&
         !ready &&
@@ -927,6 +941,11 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     const sessionNote = resume ? assembly.turn.resumed : assembly.turn.fresh;
     const turn = [
       brief.turn,
+      ...(run.failureReason === 'runnerUpgrade'
+        ? [
+            'The previous attempt was interrupted by a runner upgrade. Continue from the current state.',
+          ]
+        : []),
       ...resumeNotes,
       ...(sessionNote ? [sessionNote] : []),
     ].join('\n\n');
@@ -1385,6 +1404,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     seen: Set<string>,
     reported: ToolRoom,
   ): Promise<RunPayload | null> {
+    if (runner.draining) return null;
     const conn = tx.read();
     const queued = await candidates();
     const agents = new Map<string, Agent | null>();

@@ -133,6 +133,8 @@ const runtimesZhCN: RuntimesLocale = {
       owner: '所有者 {{name}}',
     },
     status: {
+      updatePending: '执行机等待升级，暂不接活',
+      pruning: '执行机清理共享缓存，暂不接活',
       online: '在线',
       offline: '离线',
       revoked: '已吊销',

@@ -164,8 +164,17 @@ export function explainWait(
     return wait('concurrencyFull', {
       params: { active: context.agentActive, limit: agent.maxConcurrentRuns },
     });
+  if (trusted.every((runner) => runner.draining))
+    return wait(
+      trusted.some((runner) => runner.draining === 'updatePending')
+        ? 'updatePending'
+        : 'pruning',
+    );
   const free = trusted.filter(
-    (runner) => (context.runnerUsed.get(runner.id) ?? 0) < runner.slots,
+    (runner) =>
+      !runner.draining &&
+      (runner.globalFree ?? 1) > 0 &&
+      (context.runnerUsed.get(runner.id) ?? 0) < runner.slots,
   );
   if (free.length === 0)
     return wait('runnersBusy', { params: { runners: trusted.length } });
@@ -393,6 +402,8 @@ export async function readWorkload(
       const codes: Readonly<Record<string, RunWait['reason']>> = {
         ready: 'next',
         busy: 'runnersBusy',
+        updatePending: 'updatePending',
+        pruning: 'pruning',
         offline: 'noRunnerOnline',
         incompatible: 'incompatible',
         restricted: 'restricted',
