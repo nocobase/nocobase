@@ -8,7 +8,7 @@ export interface ProjectDetailLabels {
     readonly noLead: string;
     /** Beside the name of a project only its members see. */
     readonly private: string;
-    readonly workflow: string;
+    readonly workflow?: string;
   };
   readonly deletion: {
     readonly more: string;

@@ -53,6 +53,7 @@ export interface RunRecord {
   readonly requires: readonly unknown[];
   readonly acceptsInput: boolean;
   readonly availableAt: string | null;
+  readonly queueEnteredAt?: string | null;
   readonly leaseExpiresAt: string | null;
   readonly dispatchedAt: string | null;
   readonly startedAt: string | null;
@@ -259,6 +260,7 @@ export function toRun(record: RunRecord): Run {
     requires: stringArray(record.requires) as RunnerFeature[],
     acceptsInput: Boolean(record.acceptsInput),
     availableAt: record.availableAt,
+    queueEnteredAt: record.queueEnteredAt ?? record.createdAt,
     leaseExpiresAt: record.leaseExpiresAt,
     dispatchedAt: record.dispatchedAt,
     startedAt: record.startedAt,

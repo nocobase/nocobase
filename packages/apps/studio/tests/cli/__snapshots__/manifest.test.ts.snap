@@ -25,6 +25,7 @@ access settings get -> GET /api/access/settings (person)
 access settings set [--default-role!] -> PUT /api/access/settings (person)
 agent action list -> GET /api/agents/actions (person)
 agent brief <agent> [--scenario] -> GET /api/agents/{agentId}/previewBrief (person)
+agent discovery set [--groups --ignored --input] -> PUT /api/agents/discoveryPreferences (person)
 agent get <agent> -> GET /api/agents/{agentId} (person)
 agent history <agent> [--after --limit --page-token] -> GET /api/agents/{agentId}/history (person)
 agent list -> GET /api/agents/available (person,run) agents.agents/view
@@ -120,6 +121,9 @@ env var declared <env> -> GET /api/releases/environments/{environmentId}/declare
 env var list <env> -> GET /api/releases/environments/{environmentId}/variables (person) rel.environments/read
 env var set <env> <name> <value> [--secret --description] -> PUT /api/releases/environments/{environmentId}/variables/{name} (person) rel.environments/manage
 env var unset <env> <name> -> DELETE /api/releases/environments/{environmentId}/variables/{name} (person) rel.environments/manage
+follow-up follow <issue> -> POST /api/followUps/issues/{issueId}/follow (person)
+follow-up list -> GET /api/followUps (person)
+follow-up unfollow <issue> -> POST /api/followUps/issues/{issueId}/unfollow (person)
 git authorization delete <connection> -> DELETE /api/git/authorizations/{connectionId} (person) confirm
 git authorization list -> GET /api/git/authorizations (person)
 git authorization poll <connection> [--handle!] -> POST /api/git/authorizations/{connectionId}/pollDeviceFlow (person)
@@ -136,7 +140,7 @@ git project set <project> [--attribution!] -> PUT /api/git/projects/{projectId} 
 git repo create <connection> [--owner --name! --private! --description --empty] -> POST /api/git/connections/{connectionId}/repositories (person)
 git repo list <connection> [--search --page-token] -> GET /api/git/connections/{connectionId}/repositories (person)
 git resource get <resource> -> GET /api/git/resources/{resourceId} (person)
-git resource update <resource> [--webhook-secret --wake-on-checks --wake-on-checks-passed --wake-on-conflict --branch-rules] -> PATCH /api/git/resources/{resourceId} (person)
+git resource update <resource> [--webhook-secret --wake-on-checks --wake-on-checks-passed --wake-on-conflict --branch-rules --reference-checks] -> PATCH /api/git/resources/{resourceId} (person)
 git status -> GET /api/git/status (person)
 git template get <connection> <owner> <name> -> GET /api/git/connections/{connectionId}/templateRepositories/{owner}/{name} (person)
 git template list <connection> [--search --page-token] -> GET /api/git/connections/{connectionId}/templateRepositories (person)
@@ -149,6 +153,7 @@ inbox mark-unread <message> -> POST /api/notificationInApp/messages/{messageId}/
 inbox pending -> GET /api/inbox/pending (person)
 inbox unread-count -> GET /api/notificationInApp/messages/unreadCount (person)
 inbox waiting [--subject] -> GET /api/inbox/waiting (person)
+install-token create -> POST /api/agents/dist/downloadTokens (person)
 intake ai availability -> GET /api/projects/intake/aiAvailability (person)
 intake ai cancel <job> -> POST /api/projects/intake/aiJobs/{jobId}/cancel (person) confirm
 intake ai get <job> -> GET /api/projects/intake/aiJobs/{jobId} (person)
@@ -231,12 +236,13 @@ plan undo <plan> [--dry-run] -> POST /api/projects/plans/{planId}/undo (person) 
 plan update <plan> [--revision --title --description --rows --file] -> PATCH /api/projects/plans/{planId} (person)
 plan void <plan> [--revision!] -> POST /api/projects/plans/{planId}/void (person) confirm
 pr check-merge <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/checkMerge (person)
+pr checks <issue> <pr> -> GET /api/git/pullRequests/{pullRequestId}/checks (person,run) pm.issues/view
 pr close <issue> <pr> [--reason! --unlink] -> POST /api/git/pullRequests/{pullRequestId}/close (person,run) studio.git/open-pr
 pr edit <issue> <pr> [--title --body --base --draft --ready] -> POST /api/git/pullRequests/{pullRequestId}/edit (person,run) studio.git/open-pr
 pr link <url> [--issue] -> POST /api/git/pullRequests (person,run) studio.git/open-pr
 pr list [--issue] -> GET /api/git/pullRequests (person,run) pm.issues/view
 pr mark-merged <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/markMerged (person) confirm
-pr merge <issue> <pr> [--expected-head!] -> POST /api/git/pullRequests/{pullRequestId}/merge (person) confirm
+pr merge <issue> <pr> [--expected-head! --force --reason] -> POST /api/git/pullRequests/{pullRequestId}/merge (person) confirm
 pr open [--issue --title! --body --repo --head --base --draft] -> POST /api/git/pullRequests/open (person,run) studio.git/open-pr
 pr refresh <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/refresh (person) pm.issues/view
 pr reopen <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/reopen (person,run) studio.git/open-pr
@@ -251,7 +257,7 @@ preview retry <issue> <app> -> POST /api/previews/retry (person)
 preview status [--issue] -> GET /api/previews/status (person,run) pm.issues/view
 project-manager get -> GET /api/projectManager (person)
 project-manager start <issue> -> POST /api/projectManager/issues/{issueId}/start (person)
-project-manager update [--first-choice --fallback --principles --comment-run-limit] -> PATCH /api/projectManager (person)
+project-manager update [--delegation-queue-timeout-seconds --fallback-after-seconds --first-choice --fallback --principles --comment-run-limit] -> PATCH /api/projectManager (person)
 project create <name> [--description --visibility --status --priority --lead --start-date --due-date] -> POST /api/projects (person) pm.projects/create
 project delete <project> -> DELETE /api/projects/{projectId} (person) pm.projects/delete confirm
 project get <project> -> GET /api/projects/{projectId} (person,run) pm.projects/view
@@ -401,6 +407,7 @@ kb upload [--doc --title --parent --space --summary --reason! --project --file!]
 plan create [--title --description --source --rows --file] -> POST /api/projects/plans (person,run) pm.plans/use
 plan get <plan> -> GET /api/projects/plans/{planId} (person,run) pm.plans/use
 plan list [--status --source-kind --source-key --issue --all --limit --page-token] -> GET /api/projects/plans (person,run) pm.plans/use
+pr checks <issue> <pr> -> GET /api/git/pullRequests/{pullRequestId}/checks (person,run) pm.issues/view
 pr close <issue> <pr> [--reason! --unlink] -> POST /api/git/pullRequests/{pullRequestId}/close (person,run) studio.git/open-pr
 pr edit <issue> <pr> [--title --body --base --draft --ready] -> POST /api/git/pullRequests/{pullRequestId}/edit (person,run) studio.git/open-pr
 pr link <url> [--issue] -> POST /api/git/pullRequests (person,run) studio.git/open-pr
@@ -416,6 +423,8 @@ project get <project> -> GET /api/projects/{projectId} (person,run) pm.projects/
 project list -> GET /api/projects (person,run) pm.projects/view
 project update <project> [--name --description --visibility --status --priority --lead --start-date --due-date] -> PATCH /api/projects/{projectId} (person,run) pm.projects/manage
 release list <app> [--page --limit --label] -> GET /api/releases/apps/{appId}/releases (person,run) rel.apps/view
+report metrics [--from --to --project] -> GET /api/reports/metrics (person,run) studio.reports/read
+report usage [--from --to --project --group-by --agent --user] -> GET /api/reports/usage (person,run) studio.reports/read
 run context -> GET /api/agents/runs/current/context (run) agents.runs/self
 run events <run> [--type --after --limit] -> GET /api/issueRuns/{runId}/events (person,run) pm.issues/view
 run get <run> -> GET /api/issueRuns/{runId} (person,run) pm.issues/view

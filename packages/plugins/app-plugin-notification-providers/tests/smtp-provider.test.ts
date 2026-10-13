@@ -59,7 +59,7 @@ describe('SMTP Provider', () => {
       error: {
         code: 'EAUTH',
         category: 'authentication',
-        message: 'Invalid credentials',
+        message: 'SMTP delivery failed.',
       },
     });
   });
@@ -81,7 +81,7 @@ describe('SMTP Provider', () => {
       error: {
         code: 'EAUTH',
         category: 'authentication',
-        message: 'authorization=[redacted] recipient [redacted-email]',
+        message: 'SMTP delivery failed.',
       },
     });
   });
@@ -106,7 +106,7 @@ describe('SMTP Provider', () => {
         error: {
           code: 'EENVELOPE',
           category: 'recipient',
-          message: `SMTP ${responseCode}`,
+          message: 'SMTP delivery failed.',
         },
       });
     },
@@ -126,7 +126,7 @@ describe('SMTP Provider', () => {
       error: {
         code: 'ETIMEDOUT',
         category: 'timeout',
-        message: 'Connection timeout',
+        message: 'SMTP delivery failed.',
       },
     });
   });
@@ -145,7 +145,7 @@ describe('SMTP Provider', () => {
       error: {
         code: 'ETIMEDOUT',
         category: 'timeout',
-        message: 'Response timeout',
+        message: 'SMTP delivery failed.',
       },
     });
   });

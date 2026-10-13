@@ -3,6 +3,7 @@ import { ApiError, type ApiErrorStatus } from '@nocobase/app-server/router';
 import type { Context } from 'hono';
 import {
   LifecycleError,
+  ParameterConfigurationError,
   lifecycleErrorFields,
   type LifecycleApiErrorOptions,
   type RecordView,
@@ -41,6 +42,19 @@ export function toApiError(
   error: unknown,
   options: LifecycleApiErrorOptions = {},
 ): unknown {
+  if (error instanceof ParameterConfigurationError)
+    return new ApiError({
+      status:
+        error.code === 'CONFIGURATION_CONFLICT' ||
+        error.code === 'CONFIGURATION_REQUEST_REUSED'
+          ? 'ABORTED'
+          : error.code === 'CONFIGURATION_INVALID'
+            ? 'INVALID_ARGUMENT'
+            : 'FAILED_PRECONDITION',
+      reason: error.code,
+      domain: LIFECYCLE_EXAMPLE_DOMAIN,
+      message: error.message,
+    });
   if (error instanceof LifecycleError) {
     const fields = lifecycleErrorFields(error, options);
     // A broken definition is the server's fault: the application answers 500.

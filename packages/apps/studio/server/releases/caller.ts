@@ -4,7 +4,7 @@
  * request (`Releases.callerOf`), and refuse what it may not do whatever the manifest offered.
  *
  * A person acts with their own release permissions, kept to the scope of the API key they call with; a scoped key (or an
- * organization's API key) acts as a `key`; a run as an agent within its configured actions.
+ * organization's API key) acts as a `key`; a run as an agent within Studio's command scope.
  */
 import type { CallerIdentity } from '@nocobase/app-plugin-agents/server/tokens';
 import {
@@ -29,7 +29,7 @@ export interface ReleaseCallerDeps {
   readonly permissionsOfUser: (userId: string) => Promise<ReleasesPermissions>;
 }
 
-/** The caller a CLI identity acts as: the person, or for a run an agent within its configured actions. */
+/** The caller a CLI identity acts as: the person, or for a run an agent within Studio's command scope. */
 export async function callerOfIdentity(
   deps: ReleaseCallerDeps,
   identity: CallerIdentity,
@@ -44,24 +44,25 @@ export async function callerOfIdentity(
     };
   if (identity.kind === 'user')
     return { userId: identity.userId, kind: 'human', permissions: owner };
-  const granted = new Set(
-    (identity.agent?.actions ?? []).filter(grantableToAgents),
-  );
+  const base = identity.keyScope
+    ? narrowedByScope(owner, identity.keyScope)
+    : owner;
   const none = noPermissions();
   return {
     userId: identity.userId,
     kind: 'agent',
+    ...(identity.keyScope ? { keyScope: identity.keyScope } : {}),
     permissions: {
       scopes: Object.fromEntries(
         BUSINESS_KEYS.map(({ key }) => [
           key,
-          granted.has(key) ? owner.scopes[key] : 'none',
+          grantableToAgents(key) ? base.scopes[key] : 'none',
         ]),
       ) as Record<BusinessKey, Scope>,
       // Seeing the environments is harmless and tells a run where it may deploy.
       settings: {
         ...none.settings,
-        'rel.environments/read': owner.settings['rel.environments/read'],
+        'rel.environments/read': base.settings['rel.environments/read'],
       },
       pages: none.pages,
     },

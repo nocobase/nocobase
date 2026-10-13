@@ -15,26 +15,40 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
 import { IssueProgressLine } from '../../client/issues/detail/issue-progress.js';
-import { progressSentence } from '../../client/issues/detail/progress-text.js';
+import {
+  progressSentence,
+  progressStatusLine,
+} from '../../client/issues/detail/progress-text.js';
 import type { IssueProgress } from '../../shared/project-manager.js';
 
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
   show: vi.fn(),
   editable: true,
+  userId: 'alice',
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
   useApiClient: () => ({ request: mocks.request }),
   useToaster: () => ({ show: mocks.show }),
 }));
+// The live run's link reads the agents plugin's runs; here it is the text alone.
+vi.mock('../../client/agents/issue-runs.js', () => ({
+  IssueLiveRunLink: ({ children }: { children: ReactNode }) => (
+    <span>{children}</span>
+  ),
+}));
+vi.mock('../../client/issues/markdown.js', () => ({
+  IssueMarkdown: ({ content }: { content: string }) => <span>{content}</span>,
+}));
 vi.mock('@nocobase/app-plugin-projects/client/kit', () => ({
-  useViewer: () => ({ userId: 'alice' }),
+  useViewer: () => ({ userId: mocks.userId }),
 }));
 vi.mock('@nocobase/app-plugin-projects/client/issues', () => ({
   canEditIssues: () => mocks.editable,
@@ -54,14 +68,60 @@ const progress = (overrides: Partial<IssueProgress> = {}): IssueProgress => ({
   ...overrides,
 });
 const issue = (statusKey: string) =>
-  ({ id: 'i1', statusKey, revision: 1 }) as IssueDetail;
+  ({ id: 'i1', ownerUserId: 'alice', statusKey, revision: 1 }) as IssueDetail;
 
 beforeEach(() => {
   mocks.editable = true;
+  mocks.userId = 'alice';
   mocks.request.mockReset();
   mocks.show.mockReset();
 });
 afterEach(cleanup);
+
+it.each(['en-US', 'zh-CN'] as const)(
+  'explains ordered-model waiting in %s',
+  async (language) => {
+    await mount(
+      'in_progress',
+      progress({
+        state: 'queued',
+        waiting: {
+          reason: 'ownerHasNoRunner',
+          owner: { id: 'alice', name: 'Alice' },
+        },
+        managerWait: {
+          queueEnteredAt: new Date().toISOString(),
+          fallbackAfterSeconds: 120,
+          sampledAt: new Date().toISOString(),
+          entries: [
+            {
+              tool: 'claude',
+              model: 'opus',
+              reason: 'busy',
+              compatibleCount: 1,
+              runners: ['lima'],
+            },
+            {
+              tool: 'codex',
+              model: 'astra',
+              reason: 'incompatible',
+              compatibleCount: 0,
+              runners: [],
+            },
+          ],
+        },
+      }),
+      vi.fn(),
+      language,
+    );
+    expect(await screen.findByText(/lima/u)).toHaveTextContent(
+      language === 'en-US' ? 'compatible runners are busy' : '兼容执行机正忙',
+    );
+    expect(screen.getByText(/lima/u)).toHaveTextContent(
+      language === 'en-US' ? 'upgrade required' : '需升级',
+    );
+  },
+);
 
 async function translator(language: 'en-US' | 'zh-CN') {
   const runtime = await createTestI18nRuntime({
@@ -143,11 +203,7 @@ describe('what an issue waits for', () => {
       '还没开始。点「开始」后由项目经理安排。',
     ],
     [progress({ state: 'finished' }), 'Finished', '已结束'],
-    [
-      progress({ state: 'idle' }),
-      'Nothing is going on now',
-      '现在没有在进行的工作',
-    ],
+    [progress({ state: 'idle' }), 'Nothing is running', '现在没有在运行的工作'],
   ])('words %o in both languages', async (value, english, chinese) => {
     const en = await translator('en-US');
     const zh = await translator('zh-CN');
@@ -157,6 +213,67 @@ describe('what an issue waits for', () => {
     expect(progressSentence(zh.getFixedT('studio', 'zh-CN'), value, NOW)).toBe(
       chinese,
     );
+  });
+
+  it('says Now as one short line from the progress, never the manager’s step', async () => {
+    const en = (await translator('en-US')).getFixedT('studio', 'en-US');
+    const zh = (await translator('zh-CN')).getFixedT('studio', 'zh-CN');
+    const working = progress({
+      state: 'working',
+      agent: { id: 'sol', name: 'Codex · GPT-6 Astra' },
+      step: '  Implement it.\n\nSee [PR #10804](https://example.com) and `abc123`.  ',
+      since: new Date(NOW - 2 * 60_000).toISOString(),
+      runner: 'studio-runner-lima',
+    });
+    expect(progressStatusLine(en, working, NOW)).toBe(
+      'Codex · GPT-6 Astra working · 2 min · studio-runner-lima',
+    );
+    expect(progressStatusLine(zh, working, NOW)).toBe(
+      'Codex · GPT-6 Astra 工作中 · 2 分钟 · studio-runner-lima',
+    );
+    expect(
+      progressStatusLine(
+        en,
+        progress({ state: 'queued', agent: { id: 'sol', name: 'Sol' } }),
+        NOW,
+      ),
+    ).toBe('Sol queued');
+    // Waiting for a runner keeps its reasons (the Now line cuts them to two lines).
+    expect(
+      progressStatusLine(
+        en,
+        progress({
+          state: 'queued',
+          agent: { id: 'sol', name: 'Sol' },
+          managerWait: {
+            queueEnteredAt: new Date(NOW).toISOString(),
+            fallbackAfterSeconds: 60,
+            sampledAt: new Date(NOW).toISOString(),
+            entries: [
+              {
+                tool: 'claude',
+                model: 'opus',
+                reason: 'busy',
+                compatibleCount: 1,
+                runners: ['studio-runner-lima'],
+              },
+            ],
+          },
+        }),
+        NOW,
+      ),
+    ).toContain('compatible runners are busy');
+    expect(progressStatusLine(en, progress({ state: 'idle' }), NOW)).toBe(
+      'Nothing is running',
+    );
+    // The question is the "Needs you" card's, so Now only says a decision waits.
+    expect(
+      progressStatusLine(
+        en,
+        progress({ state: 'needsDecision', question: 'Retry after `429`?' }),
+        NOW,
+      ),
+    ).toBe('Waiting for your decision');
   });
 
   it('shows the line with the project manager’s next step, and links the pull request whose checks it waits for', async () => {
@@ -176,9 +293,9 @@ describe('what an issue waits for', () => {
         name: 'Waiting for the checks of PR #12',
       }),
     ).toHaveAttribute('href', 'https://github.com/acme/shop/pull/12');
-    expect(
-      screen.getByText('Next: Hand it to Opus for review once the checks pass'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('issue-progress').textContent).toContain(
+      'Next: Hand it to Opus for review once the checks pass',
+    );
     expect(mocks.request).toHaveBeenCalledWith({ path: 'issueProgress/i1' });
     expect(screen.queryByRole('button')).toBeNull();
   });
@@ -227,3 +344,44 @@ describe('what an issue waits for', () => {
     expect(screen.queryByRole('button')).toBeNull();
   });
 });
+
+it('hides start and hand-over from an editor who is not the owner', async () => {
+  mocks.userId = 'bob';
+  await mount('backlog', progress());
+  expect(screen.queryByRole('button', { name: 'Start' })).toBeNull();
+  cleanup();
+  await mount('in_progress', progress({ handOver: true }));
+  expect(
+    screen.queryByRole('button', { name: 'Hand over to the project manager' }),
+  ).toBeNull();
+});
+
+it.each(['en-US', 'zh-CN'] as const)(
+  'keeps owner acceptance ahead of starting work in %s',
+  async (language) => {
+    await mount(
+      'backlog',
+      progress({
+        waiting: {
+          reason: 'waitingOwner',
+          owner: { id: 'alice', name: 'Alice' },
+        },
+      }),
+      vi.fn(),
+      language,
+    );
+    expect(
+      await screen.findByText(
+        language === 'en-US'
+          ? 'Waiting for Alice to take over'
+          : '等待 Alice 接手',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: language === 'en-US' ? 'Start' : '开始',
+        exact: true,
+      }),
+    ).toBeNull();
+  },
+);

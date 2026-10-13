@@ -1,3 +1,8 @@
+import { createDatabaseManager } from '@nocobase/db';
+import { StoredLifecycleParameters } from '@nocobase/lifecycle';
+import { exampleParameterRegistration } from '../server/configuration/store.js';
+import { ParameterConfigurationService } from '../server/services/parameter-configuration.js';
+import { parameterConfigurationServiceToken } from '../server/tokens.js';
 import {
   authenticationToken,
   type Auth,
@@ -48,8 +53,18 @@ function application(authentication: Auth) {
   const store = new MemoryLifecycleStore();
   const runtime = new LifecycleRuntime({ store });
   const services = createExampleServices({ info: () => undefined });
-  runtime.register(expenseLifecycle, { services });
-  runtime.register(ticketLifecycle, { services });
+  const parameters = new StoredLifecycleParameters(store);
+  runtime.register(expenseLifecycle, {
+    services,
+    parameterConfiguration: exampleParameterRegistration(
+      parameters,
+      'expenses',
+    ),
+  });
+  runtime.register(ticketLifecycle, {
+    services,
+    parameterConfiguration: exampleParameterRegistration(parameters, 'tickets'),
+  });
   // No step below reaches the sandbox: cancelling a draft has no checkout to close.
   runtime.register(orderLifecycle, { services: {} as never });
   runtime.register(invoiceLifecycle, { services: {} as never });
@@ -127,6 +142,14 @@ function application(authentication: Auth) {
     sweep: vi.fn(async () => ({ fired: 0, redelivered: 0 })),
   };
   const container = new ServiceContainer();
+  container.instance(
+    parameterConfigurationServiceToken,
+    new ParameterConfigurationService(
+      createDatabaseManager({ connections: {} }),
+      runtime,
+      parameters,
+    ),
+  );
   container.instance(authenticationToken, authentication);
   container.instance(
     lifecycleExampleServiceToken,
@@ -741,6 +764,24 @@ describe('lifecycle example routes', () => {
           `lifecycleExampleList${noun}s`,
           `lifecycleExampleRetry${noun}EffectRun`,
         ]),
+        ...['ReviewerDemo', 'ReviewerLiveDemo'].flatMap((noun) =>
+          ['Cancel', 'Continue', 'Retry']
+            .map((verb) => `lifecycleExample${verb}${noun}EffectRun`)
+            .concat([
+              `lifecycleExampleDescribe${noun}Lifecycle`,
+              `lifecycleExampleFire${noun}Transition`,
+              `lifecycleExampleGet${noun}`,
+            ]),
+        ),
+        'lifecycleExampleCreateSnapshotReviewerDemo',
+        'lifecycleExampleCreateLiveReviewerDemo',
+        'lifecycleExampleGetParameterGroup',
+        'lifecycleExampleListParameterGroups',
+        'lifecycleExampleParameterHistory',
+        'lifecycleExamplePreviewReviewerCandidates',
+        'lifecycleExampleSearchReviewerReferences',
+        'lifecycleExampleGetReviewerReference',
+        'lifecycleExampleSaveParameterGroup',
         'lifecycleExampleDeliverSandboxEvent',
         'lifecycleExampleCompleteSandboxInvoice',
         'lifecycleExampleDownloadInvoice',
@@ -763,7 +804,9 @@ describe('lifecycle example routes', () => {
     // The sandbox's own objects are named by their own ids.
     expect(
       paths.filter((path) =>
-        /\{(?!recordId|runId|source|eventId|sessionId)/.test(path),
+        /\{(?!recordId|runId|source|eventId|sessionId|groupId|lifecycle|type|referenceId)/.test(
+          path,
+        ),
       ),
     ).toEqual([]);
     expect(

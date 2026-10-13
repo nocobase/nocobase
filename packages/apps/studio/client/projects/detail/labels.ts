@@ -55,7 +55,6 @@ export function useProjectPageWording(): ProjectPageWording {
           lead: t('projects.columns.lead'),
           noLead: t('projects.noLead'),
           private: t('projects.visibility.members'),
-          workflow: t('projects.workflow'),
         },
         deletion: {
           more: t('projectMore.label'),

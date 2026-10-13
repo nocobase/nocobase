@@ -1,8 +1,10 @@
 import { accountSettingsEnUS, preferencesEnUS } from '../account/locales.js';
+import { followUpsEnUS } from '../follow-ups/locales.js';
 import type { LocaleResource } from '@nocobase/i18n';
 import { gitEnUS } from '../git/locales.js';
 import { knowledgeEnUS } from '../knowledge/locales.js';
 import { issuesEnUS } from '../issues/locales.js';
+import { issueLiveEnUS } from '../issues/live/locales.js';
 import { projectPageEnUS } from '../projects/locales.js';
 import { ciSetupEnUS } from '../releases/ci-setup/locales.js';
 import { previewsEnUS, deploysEnUS } from '../previews/locales.js';
@@ -12,6 +14,50 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  'auth.passwordResetSuccess':
+    'Your password has been reset. Sign in with your new password.',
+  'auth.requestNewResetLink': 'Request a new reset link',
+
+  'issueRuns.selection.preferredQueued': 'First choice queued, using fallback',
+  'issueRuns.selection.preferredUnavailable':
+    'First choice unavailable, using fallback',
+  'projectManager.settingsPage.delegationTimeout':
+    'Delegated step queue timeout (seconds)',
+  'projectManager.settingsPage.delegationTimeoutHint':
+    'Default 600 seconds. Withdraw only unclaimed manager delegations and reply in their dispatch thread. At the comment run limit, retain the input for manual continuation.',
+  'projectManager.settingsPage.delegationTimeoutInvalid':
+    'Enter a whole number from 1 to 86400.',
+  'projectManager.settingsPage.fallbackAfter': 'Fallback delay (seconds)',
+  'projectManager.settingsPage.fallbackAfterHint':
+    'Wait 1–3600 seconds before an idle fallback may take queued work. If no compatible runner can take the first choice, use the fallback immediately.',
+  'projectManager.settingsPage.fallbackAfterInvalid':
+    'Enter a whole number from 1 to 3600.',
+  'ownerHandoff.title': 'Owner handoff',
+  'ownerHandoff.accept': 'Take over',
+  'ownerHandoff.claim': 'Claim',
+  'ownerHandoff.reject': 'Reject',
+  'ownerHandoff.accepted': 'Handoff accepted',
+  'ownerHandoff.rejected': 'Handoff rejected; agent work remains paused',
+  'ownerHandoff.rejectedWaiting':
+    'Handoff rejected. Waiting for a new assignment or a claim by the owner.',
+  'ownerHandoff.stale':
+    'This handoff is no longer awaiting a decision. Refresh the issue.',
+  'ownerHandoff.failed':
+    'Could not decide this handoff. Check your permission and refresh the issue.',
+  'ownerHandoff.loadFailed': 'Could not load the owner handoff.',
+  'activity.actions.ownerTransferred': 'transferred responsibility',
+  'activity.actions.ownerAccepted': 'accepted responsibility',
+  'activity.actions.ownerRejected': 'rejected the handoff',
+  'activity.actions.waitingOwner':
+    'skipped agent work: waiting for the new owner to take over',
+  'inbox.types.owner_handoff': 'Owner handoff',
+  'inbox.types.owner_handoff_rejected': 'Owner handoff rejected',
+  'inbox.text.owner_handoff': 'Take over {{identifier}}',
+  'inbox.text.owner_handoff_rejected': 'Owner handoff rejected: {{identifier}}',
+  'inbox.body.owner_handoff':
+    'Accept or reject this handoff. Agent work is paused until the new owner accepts.',
+  'inbox.body.owner_handoff_rejected':
+    'The new owner declined. The owner stays assigned and agent work remains paused.',
   'issueRuns.model': 'Model: {{model}}',
   'issueRuns.configuredModel': 'Configured model: {{model}}',
   'issueRuns.modelUnknown': 'Model not reported',
@@ -71,6 +117,24 @@ const enUS = {
     keepDraft: 'Keep panel draft',
     appendDraft: 'Append header question',
   },
+  runTranscript: {
+    usedModel: 'Model: {{model}}',
+    defaultModel: 'Default model',
+    actingAs: 'Running as {{actor}}',
+    triggeredBy: 'Triggered by {{person}}',
+    systemTrigger: 'Triggered by the system',
+    afterSubtasks: 'After all sub-issues finished',
+    efforts: {
+      off: 'Off',
+      minimal: 'Minimal',
+      low: 'Low',
+      medium: 'Medium',
+      high: 'High',
+      xhigh: 'Extra high',
+      max: 'Maximum',
+      ultra: 'Ultra',
+    },
+  },
   runTranscriptFilters: {
     title: 'Event types',
     agent: 'Agent',
@@ -83,6 +147,11 @@ const enUS = {
     errorsAlwaysVisible: 'Errors are always shown',
   },
   overrides: {
+    '@nocobase/app-plugin-agent-sessions': {
+      links: {
+        startHint: 'The project manager assigns agents and moves them along.',
+      },
+    },
     '@nocobase/app-plugin-agents': {
       runWait: {
         reasons: {
@@ -224,6 +293,7 @@ const enUS = {
     allConversations: 'View all',
     untitled: 'Untitled conversation',
     agentSetup: {
+      menu: 'Use Studio in your agent',
       open: 'Manage Studio with a local Coding Agent',
       title: 'Connect a local Coding Agent',
       description:
@@ -429,6 +499,7 @@ const enUS = {
   navigation: {
     inbox: 'Inbox',
     myIssues: 'My issues',
+    followUps: 'My follow-ups',
     development: 'Development',
     issues: 'Issues',
     projects: 'Projects',
@@ -444,6 +515,7 @@ const enUS = {
     usage: 'Usage',
     config: 'Settings',
     home: 'Home',
+    agentSessions: 'My agents',
     dashboard: 'Dashboard',
     open: 'Open navigation',
     close: 'Close navigation',
@@ -524,6 +596,9 @@ const enUS = {
   'errors.EXPIRY_REQUIRED': 'A key with a scope must expire.',
   'errors.GIT_DEVICE_FLOW_DISABLED':
     'The app does not allow connecting with a code: an administrator turns on its device flow in the app’s settings on the host.',
+  'errors.GIT_DEVICE_FLOW_REFUSED':
+    'The host refused to start connecting with a code: check that the app enables its device flow and that its client ID is right.',
+  'errors.GITHUB_REFUSED': 'GitHub refused the request.',
   'errors.INVALID_PERSONAL_TOKEN':
     'The host refused the token: check that it is valid, not expired and pasted whole.',
   'errors.GIT_PERSONAL_TOKENS_DISABLED':
@@ -1039,6 +1114,7 @@ const enUS = {
     toolNetwork: 'Tool network',
     toolProcess: 'Tool crashed',
     contextOverflow: 'Context overflow',
+    delegatedQueueTimeout: 'Delegation queue timeout; withdrawn',
     queuedExpired: 'Queue expired',
     modelUnavailable: 'Model unavailable',
     stepLimit: 'Too many tool calls',
@@ -1060,6 +1136,7 @@ const enUS = {
       comment: 'Comment',
       statusChange: 'Status change',
       ownerChanged: 'Owner change',
+      ownerAccepted: 'Owner accepted',
       projectChanged: 'Moved to another project',
       unblocked: 'Unblocked',
       subtasksFinished: 'Sub-issues done',
@@ -1308,6 +1385,8 @@ const enUS = {
   preferences: preferencesEnUS,
   knowledge: knowledgeEnUS,
   issuesPage: issuesEnUS,
+  followUps: followUpsEnUS,
+  issueLive: issueLiveEnUS,
   projectPage: projectPageEnUS,
   // A repository's "Deployment" (`client/releases/ci-setup`).
   ciSetup: ciSetupEnUS,
@@ -1343,7 +1422,7 @@ const enUS = {
       noFallback: 'No fallback',
       choose: 'Choose an agent',
       agentsHint:
-        'The fallback is used when no runner can run the first choice. The project manager writes no code, and its runner does not check out the repository.',
+        'An idle fallback is used after the queue delay, or immediately when no compatible runner can run the first choice. The project manager writes no code, and its runner does not check out the repository.',
       noChoices: 'No agent is enabled yet. Enable one on the Agent page first.',
       principles: 'Allocation principles',
       restore: 'Restore built-in',
@@ -1364,7 +1443,54 @@ const enUS = {
   issuePage: {
     arrange: 'Arrange',
   },
+  issueStart: { title: 'Start now?', later: "Don't start now", start: 'Start' },
   issueProgress: {
+    firstChoice: 'First choice',
+    fallback: 'Fallback',
+    managerModelWait: '{{choice}} {{model}}: {{reason}}{{runners}}',
+    waitingForContinuation:
+      'Waiting for manual continuation: the automatic reply was delivered; the comment run limit was reached and the pending input is retained.',
+    managerWaiting: 'Project manager waiting for a runner: {{entries}}',
+    fallbackIn: 'Fallback eligible in {{seconds}} seconds',
+    fallbackReady: 'Waiting for an idle runner for either choice',
+    runnerLoad:
+      '{{name}}: slots {{used}}/{{limit}}, {{tool}} {{toolUsed}}/{{toolLimit}}, reported total free {{totalFree}}, tool free {{free}}',
+    workerChoice: 'Model',
+    workerWaiting: '{{agent}} waiting for a runner: {{entries}}',
+    modelWait: {
+      toolNotInstalled: 'tool not installed',
+      toolUnavailable: 'tool not signed in, disabled, or model unavailable',
+      noSharedRunner: 'only other people’s personal runners are online',
+      unknown: 'workload eligibility is not established',
+
+      ready: 'can claim now',
+      busy: 'compatible runners are busy',
+      incompatible: 'runner incompatible; upgrade required',
+      offline: 'no online runner',
+      restricted:
+        'identity, policy or payload requirements exclude the runners',
+      concurrencyFull: 'agent concurrency limit reached',
+      sameWorkActive: 'another run in this thread is active',
+      delayed: 'scheduled delay or retry backoff',
+    },
+    nextLabel: 'Next:',
+    status: {
+      working: '{{agent}} working',
+      queued: '{{agent}} queued',
+      minutes: '{{minutes}} min',
+    },
+    waiting: {
+      waitingOwner: 'Waiting for {{owner}} to take over',
+      noOwner: 'Waiting for a valid issue owner',
+      notConfigured:
+        '{{agent}} waits: no preferred or fallback model is configured',
+      noRunner:
+        '{{agent}} waits: no online runner supports its preferred or fallback model',
+      ownerHasNoRunner:
+        '{{agent}} waits: owner {{owner}} has no online runner for its preferred or fallback model',
+      notAllowed:
+        '{{agent}} waits: owner {{owner}} cannot run this agent with the available runners',
+    },
     title: 'Now',
     anAgent: 'An agent',
     working: '{{agent}} is working on {{step}}',
@@ -1381,7 +1507,7 @@ const enUS = {
     notStarted:
       'Not started. Start it and the project manager arranges the work.',
     finished: 'Finished',
-    idle: 'Nothing is going on now',
+    idle: 'Nothing is running',
     next: 'Next: {{next}}',
     start: 'Start',
     handOver: 'Hand over to the project manager',

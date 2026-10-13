@@ -244,6 +244,7 @@ export default function ExpensesPage(): ReactElement {
                 }}
               />
               <LifecyclePanel
+                actor={actor}
                 detail={current.detail}
                 actions={current.lifecycle}
                 onChange={reload}

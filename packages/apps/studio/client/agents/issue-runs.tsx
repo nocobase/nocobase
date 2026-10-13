@@ -5,6 +5,7 @@
  * is the agents plugin's own (its namespace), filled into the item's labels here.
  */
 import { useClientApplication } from '@nocobase/app-client';
+import { runTriggerActor } from './run-trigger.js';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import type { SubjectRun } from '@nocobase/app-plugin-agents/client/runs';
 import {
@@ -65,6 +66,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { rememberRunFocus, runReturnFocus } from './run-focus.js';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from 'cn';
 
 import { useIssueRunsState, useRefreshIssueRuns } from './use-issue-runs.js';
 
@@ -176,11 +178,15 @@ function useHistoryRuns(
     id: run.id,
     agentId: run.agentId,
     agentName: agentName(run.agentId) ?? unknownAgent,
-    model: run.actualModels?.length
-      ? t('issueRuns.model', { model: run.actualModels.join(', ') })
-      : run.model
-        ? t('issueRuns.configuredModel', { model: run.model })
-        : t('issueRuns.modelUnknown'),
+    model:
+      (run.executions?.at(-1)?.selection
+        ? `${t(`issueRuns.selection.${run.executions.at(-1)!.selection!.reason}`)} · `
+        : '') +
+      (run.actualModels?.length
+        ? t('issueRuns.model', { model: run.actualModels.join(', ') })
+        : run.model
+          ? t('issueRuns.configuredModel', { model: run.model })
+          : t('issueRuns.modelUnknown')),
     status: run.status,
     stopping: run.cancelRequestedAt !== null,
     createdAt: run.createdAt,
@@ -443,6 +449,41 @@ export function IssueLiveRun({
   );
 }
 
+/**
+ * What the issue's "Now" line says, as the way to its live run's record: while a run is queued or working it opens the
+ * run's transcript (under the issue's own path, or under `base` such as `/issues/PM-12` elsewhere); otherwise it is
+ * plain text.
+ */
+export function IssueLiveRunLink({
+  issue,
+  base,
+  className,
+  children,
+}: {
+  readonly issue: IssueDetail;
+  readonly base?: string;
+  readonly className?: string;
+  readonly children: ReactNode;
+}): ReactElement {
+  const { runs } = useIssueHistoryRuns(issue);
+  const live = runs?.find((run) =>
+    ['queued', 'dispatched', 'running'].includes(run.status),
+  );
+  if (!live) return <span className={className}>{children}</span>;
+  const to = base
+    ? `${base.replace(/\/$/u, '')}/${runHref(live)}`
+    : runHref(live);
+  return (
+    <Link
+      to={to}
+      className={cn('hover:underline', className)}
+      onClick={(event) => rememberRunFocus(event.currentTarget, null)}
+    >
+      <span data-testid='run-live'>{children}</span>
+    </Link>
+  );
+}
+
 /** A run's row on the issue's activity line. */
 export function IssueRunRow({
   issue,
@@ -621,13 +662,14 @@ export function IssueRunTranscript({
       : null;
   // The entry of the agent's list the run worked with: a coding tool and model, or a model service and model, and its effort.
   const effort = detail?.effort
-    ? ` · ${t(`agentForm.efforts.${detail.effort}`, { defaultValue: detail.effort })}`
+    ? ` · ${appT(`runTranscript.efforts.${detail.effort}`, { defaultValue: detail.effort })}`
     : '';
   const used = detail?.tool
-    ? `${t(`tools.${detail.tool}`)} · ${detail.model ?? t('agents.defaultModel')}${effort}`
+    ? `${t(`tools.${detail.tool}`)} · ${detail.model ?? appT('runTranscript.defaultModel')}${effort}`
     : detail?.modelService
       ? `${detail.modelService} · ${detail.model ?? ''}${effort}`
       : null;
+  const triggerActor = detail ? runTriggerActor(detail) : undefined;
   const summary = detail ? (
     <>
       <p className='text-xs text-muted-foreground'>
@@ -637,9 +679,15 @@ export function IssueRunTranscript({
         })}
         {used ? (
           <span data-testid='run-model'>
-            {` · ${t('modelEntries.used', { model: used })}`}
+            {` · ${appT('runTranscript.usedModel', { model: used })}`}
           </span>
         ) : null}
+        {` · ${appT('runTranscript.actingAs', { actor: detail.actorName ?? detail.actorUserId })}`}
+        {triggerActor?.kind === 'system'
+          ? ` · ${appT('runTranscript.systemTrigger')}`
+          : triggerActor
+            ? ` · ${appT('runTranscript.triggeredBy', { person: triggerActor.name })}`
+            : ''}
         {duration !== null
           ? ` · ${t('transcript.took', { duration: `${duration}s` })}`
           : ''}

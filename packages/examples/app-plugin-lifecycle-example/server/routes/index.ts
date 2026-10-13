@@ -1,3 +1,5 @@
+import { configurationRoutes } from './parameter-configuration.js';
+import { parameterConfigurationServiceToken } from '../tokens.js';
 import {
   authenticationToken,
   type AuthEnv,
@@ -71,7 +73,7 @@ function listRoutes(
 ): void {
   const list =
     (name: ExampleLifecycleName, page: number, pageSize: number) =>
-    (result: {
+    async (result: {
       readonly records: readonly Plain[];
       readonly total: number;
     }) => ({
@@ -80,7 +82,7 @@ function listRoutes(
         page,
         pageSize,
         total: result.total,
-        parameters: service.parameters(name) as Readonly<
+        parameters: (await service.parameters(name)) as Readonly<
           Record<string, unknown>
         >,
       },
@@ -104,7 +106,7 @@ function listRoutes(
     async (context) => {
       const { actAs, page, pageSize } = context.req.valid('query');
       return context.json(
-        list(
+        await list(
           'tickets',
           page,
           pageSize,
@@ -160,7 +162,7 @@ function listRoutes(
     async (context) => {
       const { actAs, page, pageSize, view } = context.req.valid('query');
       return context.json(
-        list(
+        await list(
           'expenses',
           page,
           pageSize,
@@ -229,6 +231,8 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       async (context) => context.json({ data: await flows.sweep() }),
     );
 
+    const configuration = container.resolve(parameterConfigurationServiceToken);
+    configurationRoutes(router, BASE, configuration);
     listRoutes(router, service);
     durableFlowRoutes(router, BASE, flows);
 
@@ -237,6 +241,8 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     for (const [lifecycle, noun] of [
       ['tickets', 'Ticket'],
       ['expenses', 'Expense'],
+      ['reviewerDemo', 'ReviewerDemo'],
+      ['reviewerLiveDemo', 'ReviewerLiveDemo'],
       ['orders', 'Order'],
       ['invoices', 'Invoice'],
       ['exports', 'Export'],
@@ -248,9 +254,27 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         basePath: BASE,
         lifecycle,
         noun,
+        ...([
+          'tickets',
+          'expenses',
+          'reviewerDemo',
+          'reviewerLiveDemo',
+        ].includes(lifecycle)
+          ? {
+              authorizeParameters: (actor: string) => {
+                for (const group of service.runtime.describe(lifecycle)
+                  .parameterConfiguration!.groups)
+                  configuration.authorize(actor, 'read', group.key);
+              },
+            }
+          : {}),
         // The durable flows are about waiting for the outside, not about who
         // may act: they act as the signed-in user, with no persona.
-        persona: lifecycle === 'tickets' || lifecycle === 'expenses',
+        persona:
+          lifecycle === 'tickets' ||
+          lifecycle === 'expenses' ||
+          lifecycle === 'reviewerDemo' ||
+          lifecycle === 'reviewerLiveDemo',
       });
 
     // `:recordId`, as the record routes above name it: one path, one parameter.

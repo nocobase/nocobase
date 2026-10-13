@@ -49,6 +49,7 @@ export class FakeRunner {
   constructor(
     private readonly api: Api,
     private readonly name: string,
+    private readonly workspaceKey = false,
   ) {}
 
   /** The model this runner reports: its own, so only it has the agent discovered from it. */
@@ -85,7 +86,14 @@ export class FakeRunner {
         arch: 'x64',
         version: '0.0.0',
         protocolVersion: PROTOCOL_VERSION,
-        features: ['input', 'checkout', 'directories', 'skills', 'secrets'],
+        features: [
+          'input',
+          'checkout',
+          'directories',
+          'skills',
+          'secrets',
+          ...(this.workspaceKey ? ['workspaceKey'] : []),
+        ],
         tools: [
           { kind: 'claude', authenticated: true, models: [{ id: this.model }] },
         ],
@@ -163,10 +171,13 @@ export class FakeRunner {
     ownerUserId: string,
     author = this.api,
   ) {
-    // In backlog nothing else starts: only the mention wakes this runner's agent.
+    // An active issue with no executor lets the mention wake only this runner's agent.
     const issue = await author.post<Issue>('projects/issues', {
       title,
       ownerUserId,
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
     });
     await this.wake(issue, author);
     const { run } = await this.claimRun(issue.identifier);

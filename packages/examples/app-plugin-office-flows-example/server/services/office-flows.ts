@@ -1,3 +1,4 @@
+import { officeWorkflowDefinitions } from '../lifecycles/index.js';
 import type {
   DatabaseManager,
   RepositoryFilter,
@@ -183,9 +184,14 @@ function pick(values: Plain, fields: readonly string[]): Plain {
 export class OfficeFlowsService {
   public constructor(
     private readonly database: DatabaseManager,
-    private readonly runtime: LifecycleRuntime,
+    public readonly runtime: LifecycleRuntime,
     private readonly store: OfficeStore,
   ) {}
+
+  /** Read-only metadata for the application's unified workflow browser. */
+  public workflowDefinitions(): typeof officeWorkflowDefinitions {
+    return officeWorkflowDefinitions;
+  }
 
   // ── Reference data ─────────────────────────────────────────────────────
 
