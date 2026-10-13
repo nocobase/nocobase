@@ -37,6 +37,8 @@ export function reportedModels(
   override: ModelListOverride | undefined,
 ): ToolInfo {
   const status = tool.modelsDetectionStatus;
+  if (tool.kind === 'pi' && status !== 'detected')
+    return { ...tool, models: [] };
   // Not detected yet, failed, or a tool that is not signed in: nothing to report beyond what detection said.
   if (status === undefined || status === 'failed') return tool;
   const builtin = status === 'unsupported';
@@ -46,6 +48,12 @@ export function reportedModels(
   const models = boundedModels([
     ...base.filter((model) => !removed.has(model.id)),
     ...(override?.add ?? [])
+      // Pi's authenticated listing is authoritative; an override must not add an unconfigured provider.
+      .filter(
+        (id) =>
+          tool.kind !== 'pi' ||
+          base.some((model) => model.id.split('/')[0] === id.split('/')[0]),
+      )
       .filter((id) => !removed.has(id))
       .map((id) => ({ id })),
   ]);

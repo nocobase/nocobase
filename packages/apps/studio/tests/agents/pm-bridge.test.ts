@@ -237,16 +237,16 @@ describe('a conversation run acts as the person who asked', () => {
     expect(plan.undoableUntil).not.toBeNull();
   });
 
-  it('may do only what both the asker and the agent may do', async () => {
+  it('uses the asker’s permission despite legacy actions, preserving object scope and revocation', async () => {
     const viewOnly = await conversationRun({ actions: ['pm.issues/view'] });
     const target = await issue('Fix login');
-    const refused = await command(
+    const updated = await command(
       viewOnly,
       'issue:update',
       [target.identifier],
       { priority: 'high' },
     );
-    expect(refused.status).toBe(403);
+    expect(updated.status).toBe(200);
     expect(
       (await command(viewOnly, 'issue:get', [target.identifier])).status,
     ).toBe(200);

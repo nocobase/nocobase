@@ -18,7 +18,7 @@ export interface StudioGitBinding {
   readonly connections: () => GitConnections;
   /** A signed-in person as the projects plugin sees them. */
   readonly viewerOf: (userId: string) => Promise<Viewer>;
-  /** A request's caller (`callerOfRequest`): a person narrowed by their key's scope, or a run by its agent's actions. */
+  /** A request's caller (`callerOfRequest`): a person narrowed by their key's scope, or a run by Studio's command scope. */
   readonly callerViewerOf: (identity: CallerIdentity) => Promise<Viewer>;
   /** What a person may do with the connections (`studio.git` `read` and `manage`). */
   readonly gitSettings: (

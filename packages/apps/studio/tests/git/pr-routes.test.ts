@@ -59,28 +59,34 @@ describe('the pull request routes', () => {
     expect(listed.body.meta).toMatchObject({ total: 1, canMerge: false });
   });
 
-  it('refuse a run outside its agent’s actions', async () => {
+  it('links with identity permission despite missing legacy actions and rejects a read-scoped open', async () => {
     const viewOnly = await runOn(['pm.issues/view']);
     h.github.addPull(REPO, { number: 4, head: { ref: 'fix', sha: 'd1' } });
     const link = await h.request('POST', '/git/pullRequests', {
       runToken: viewOnly.token,
       body: { url: PR_URL(4) },
     });
-    expect(link.status).toBe(403);
+    expect(link.status).toBe(201);
     const open = await h.request('POST', '/git/pullRequests/open', {
-      runToken: viewOnly.token,
-      body: { title: 'Fix' },
+      user: 'alice',
+      headers: { 'x-test-key-scope': READ_ISSUES },
+      body: { issueId: viewOnly.issue.id, title: 'Fix' },
     });
     expect(open.status).toBe(403);
   });
 
-  it('do not show a run an issue its agent may not view', async () => {
+  it('reads with identity permission and denies after identity revocation', async () => {
     const { token } = await runOn(['pm.issues/comment']);
     const listed = await h.request('GET', '/git/pullRequests', {
       runToken: token,
     });
-    expect(listed.status).toBe(403);
-    expect(listed.body.error.reason).toBe('RUN_ACTION_FORBIDDEN');
+    expect(listed.status).toBe(200);
+    h.roles.set('alice', 'none');
+    const denied = await h.request('GET', '/git/pullRequests', {
+      runToken: token,
+    });
+    expect(denied.status).toBe(403);
+    expect(denied.body.error.reason).toBe('RUN_ACTION_FORBIDDEN');
   });
 
   it('let a person link and list, naming the issue', async () => {

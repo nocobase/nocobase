@@ -2,7 +2,7 @@
  * Who may run Studio's CLI commands, and as whom. Each command names the business action it performs; what an
  * identity may do (`gate`, and the `Viewer` a command runs as) is the permissions of its person
  * (`ProjectsAccess.permissionsOfUser`), kept to the scope of the API key the person called with (`keyScope`), and for a
- * run only the actions its agent is configured with (at most those grantable to agents, `../../access/action-policy.ts`). A run on an issue acts as the agent; a run on a conversation acts as the person who asked, via the
+ * run only the actions in Studio's agent command scope (those grantable to agents, `../../access/action-policy.ts`). A run on an issue acts as the agent; a run on a conversation acts as the person who asked, via the
  * agent (`conversation/acting.ts`). A run on an intake request only proposes drafts (`../intake/`): it keeps nothing
  * but reading, and no action another plugin adds.
  */
@@ -88,15 +88,12 @@ export function createPermissionSource(
       : owner;
     if (identity.kind === 'user') return base;
     const intake = isIntakeRun(identity);
-    const granted = new Set(
-      (identity.agent?.actions ?? []).filter(
-        (key) => grantableToAgents(key) && (!intake || key.endsWith('/view')),
-      ),
-    );
     const scopes = Object.fromEntries(
       BUSINESS_KEYS.map(({ key }) => [
         key,
-        granted.has(key) ? base.scopes[key] : 'none',
+        grantableToAgents(key) && (!intake || key.endsWith('/view'))
+          ? base.scopes[key]
+          : 'none',
       ]),
     ) as Record<BusinessKey, Scope>;
     return { scopes, settings: noSettings() };
@@ -161,11 +158,9 @@ export function createActionGate(
       for (const extra of more)
         for (const key of await extra(identity)) allowed.add(key);
       for (const key of CALLER_ACTIONS) allowed.add(key);
-      // A derived action stands on a base action the caller holds; a run also needs its agent configured with it.
-      const configured = new Set(identity.agent?.actions ?? []);
+      // Derived actions inherit the running identity's base permission.
       for (const [derived, base] of Object.entries(DERIVED_ACTIONS)) {
         if (!allowed.has(base)) continue;
-        if (identity.kind === 'run' && !configured.has(derived)) continue;
         allowed.add(derived);
       }
       return allowed;

@@ -773,7 +773,11 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       cli: deps.cli.name,
       appName: deps.app.name,
     };
-    const assembly = await binding.context.assemble(conn, claim);
+    const assembly = await binding.context.assemble(
+      conn,
+      claim,
+      prepared.get('subject'),
+    );
     // workspace.key is required for coordinating runs; old runners must not silently ignore it.
     if (
       (await assemblyCompatibility(
@@ -1107,14 +1111,24 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     )
       return { kind: 'skipped' };
     // Before the transaction: on SQLite it holds the only connection, so the providers read what else they need now.
-    const prepared = await prepareExtensions(
-      toRun(candidate),
-      deps.sections,
-      deps.mounts,
-      (error) => deps.onClaimFailure?.(candidate.id, error),
-      deps.repoAccess,
-      { onDemand: asksCredentialsOnDemand(runner) },
+    const prepared = new Map(
+      await prepareExtensions(
+        toRun(candidate),
+        deps.sections,
+        deps.mounts,
+        (error) => deps.onClaimFailure?.(candidate.id, error),
+        deps.repoAccess,
+        { onDemand: asksCredentialsOnDemand(runner) },
+      ),
     );
+    const subjectContext = deps.subjects.get(candidate.subjectKind)?.context;
+    if (subjectContext?.prepare) {
+      try {
+        prepared.set('subject', await subjectContext.prepare(toRun(candidate)));
+      } catch (error) {
+        deps.onClaimFailure?.(candidate.id, error);
+      }
+    }
     let taken: RunPayload | null;
     try {
       taken = await tx.run(async (unit): Promise<RunPayload | null> => {
@@ -1432,14 +1446,18 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       const agent = await findAgent(conn, run.agentId);
       const binding = deps.subjects.get(run.subjectKind);
       if (!agent || !binding) return [];
-      const assembly = await binding.context.assemble(conn, {
-        run: toRun(run),
-        agent,
-        runner,
-        inputs: [],
-        cli: deps.cli.name,
-        appName: deps.app.name,
-      });
+      const assembly = await binding.context.assemble(
+        conn,
+        {
+          run: toRun(run),
+          agent,
+          runner,
+          inputs: [],
+          cli: deps.cli.name,
+          appName: deps.app.name,
+        },
+        await binding.context.prepare?.(toRun(run)),
+      );
       return deps.skills.forRun(conn, skillTargets(agent, assembly), run.id);
     },
   };

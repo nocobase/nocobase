@@ -313,6 +313,11 @@ describe('required and reference checks', () => {
     expect((await h.agents.runs.get(restricted.run.id)).agentId).toBe(
       restrictedAgent,
     );
+    const legacyRead = await h.request('GET', `${url}?issueId=${issue.id}`, {
+      runToken: restricted.cli.credential.content.token as string,
+    });
+    expect(legacyRead.status).toBe(200);
+    h.roles.set('alice', 'none');
     const forbidden = await h.request('GET', `${url}?issueId=${issue.id}`, {
       runToken: restricted.cli.credential.content.token as string,
     });
