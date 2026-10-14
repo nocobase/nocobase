@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.25](https://github.com/nocobase/nocobase/compare/v2.2.24...v2.2.25) - 2026-10-14
+
+### 🐛 修复
+
+- **[client-v2]** 修复 v2 审批表单子表格中附件无法预览及编辑弹层被遮挡的问题。 ([#10586](https://github.com/nocobase/nocobase/pull/10586)) by @mytharcher
+
 ## [v2.2.24](https://github.com/nocobase/nocobase/compare/v2.2.23...v2.2.24) - 2026-10-13
 
 ### 🐛 修复
