@@ -2,9 +2,8 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import type { Knex } from 'knex';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
-import { DatabaseCollectionMetadataStore } from '../../db/src/metadata/internal/database-document-store.js';
 import sqlite from '../src/index.js';
 
 const databases: DatabaseManager[] = [];
@@ -33,7 +32,6 @@ async function createOrders(manager: DatabaseManager): Promise<void> {
 }
 
 afterEach(async () => {
-  vi.restoreAllMocks();
   for (const manager of databases.splice(0)) await manager.destroy();
   for (const directory of directories.splice(0))
     await rm(directory, { recursive: true, force: true });
@@ -45,18 +43,31 @@ describe('transaction metadata cache', () => {
     await createOrders(manager);
     const root = manager.connection();
     const client = await root.client<Knex>();
-    const store = new DatabaseCollectionMetadataStore({
-      resolveClient: async () => client,
-    });
-    for (let i = 1; i < 136; i++) {
-      await store.put(
-        { version: 1, name: `unused${i}`, title: `Unused ${i}` },
-        { expectedRevision: null },
-      );
-    }
+    await client('__nocobase_collection_metadata').insert(
+      Array.from({ length: 135 }, (_, index) => ({
+        name: `unused${index}`,
+        document: JSON.stringify({
+          version: 1,
+          name: `unused${index}`,
+          title: `Unused ${index}`,
+        }),
+        revision: 1,
+        created_at: new Date(),
+        updated_at: new Date(),
+      })),
+    );
     root.collections.invalidate();
     await root.repository('orders').findMany();
-    const list = vi.spyOn(DatabaseCollectionMetadataStore.prototype, 'list');
+    const scans: string[] = [];
+    const record = (query: { sql: string }): void => {
+      if (
+        query.sql.includes('from `__nocobase_collection_metadata`') &&
+        query.sql.includes('`document`') &&
+        !query.sql.includes('where')
+      )
+        scans.push(query.sql);
+    };
+    client.on('query', record);
 
     for (let i = 0; i < 10; i++) {
       await root.transaction(async (transaction) => {
@@ -68,7 +79,8 @@ describe('transaction metadata cache', () => {
       });
     }
 
-    expect(list).not.toHaveBeenCalled();
+    client.off('query', record);
+    expect(scans).toEqual([]);
   });
 
   it('loads cold metadata on the transaction connection with a single-connection pool', async () => {

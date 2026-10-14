@@ -1,3 +1,4 @@
+import { createHash, randomUUID } from 'node:crypto';
 import type { Knex } from 'knex';
 import type {
   CollectionMetadataStore,
@@ -24,6 +25,16 @@ import type {
   StoredCollectionMetadata,
 } from '../document.js';
 import { validateCollectionMetadataDocument } from '../validation.js';
+import {
+  listMetadataNamingSnapshot,
+  registerMetadataNamingSnapshot,
+  type CollectionMetadataNamingSnapshot,
+} from './naming-snapshot.js';
+
+interface NamingSnapshotCache {
+  generation: number;
+  readonly snapshots: Map<string, CollectionMetadataNamingSnapshot>;
+}
 
 export const DEFAULT_COLLECTION_METADATA_TABLE =
   '__nocobase_collection_metadata';
@@ -47,6 +58,9 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
   });
 
   private initializationPromise?: Promise<void>;
+  private initialized = false;
+
+  private readonly versionTableName: string;
 
   get tableName(): string {
     return this.options.tableName ?? DEFAULT_COLLECTION_METADATA_TABLE;
@@ -57,7 +71,8 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
     readonly schema: string;
   }): boolean {
     return (
-      identity.tableName === this.tableName &&
+      (identity.tableName === this.tableName ||
+        identity.tableName === this.versionTableName) &&
       (this.options.schema === undefined ||
         identity.schema === this.options.schema)
     );
@@ -65,20 +80,46 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
 
   constructor(
     private readonly options: DatabaseCollectionMetadataStoreOptions,
-  ) {}
+    private readonly namingCache: NamingSnapshotCache = {
+      generation: 0,
+      snapshots: new Map(),
+    },
+  ) {
+    const hash = createHash('sha256')
+      .update(this.tableName)
+      .digest('hex')
+      .slice(0, 8);
+    this.versionTableName = `${this.tableName.slice(0, 45)}_cache_${hash}`;
+    registerMetadataNamingSnapshot(this, {
+      read: () => this.readNamingSnapshot(),
+      invalidate: () => this.invalidateNamingSnapshots(),
+    });
+  }
 
   withClient(
     resolveClient: () => Promise<Knex>,
   ): DatabaseCollectionMetadataStore {
-    return new DatabaseCollectionMetadataStore({
-      ...this.options,
-      resolveClient,
-    });
+    const store = new DatabaseCollectionMetadataStore(
+      {
+        ...this.options,
+        resolveClient,
+      },
+      this.namingCache,
+    );
+    // Only inherit completed initialization, never a query bound to a parent
+    // client that may be waiting for the connection this transaction owns.
+    if (this.initialized) {
+      store.initialized = true;
+      store.initializationPromise = Promise.resolve();
+    }
+    return store;
   }
 
   async initialize(): Promise<void> {
     if (!this.initializationPromise) {
-      const initializing = this.createTable();
+      const initializing = this.createTables().then(() => {
+        this.initialized = true;
+      });
       this.initializationPromise = initializing.catch((error: unknown) => {
         this.initializationPromise = undefined;
         throw error;
@@ -89,6 +130,8 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
 
   async reinitialize(): Promise<void> {
     this.initializationPromise = undefined;
+    this.initialized = false;
+    this.invalidateNamingSnapshots();
     await this.initialize();
   }
 
@@ -136,9 +179,18 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
     }
     const document = validateCollectionMetadataDocument(input);
     await this.initialize();
-    const knex = await this.options.resolveClient();
-    if (options.expectedRevision === null) {
-      try {
+    return this.write(async (knex) => {
+      // The version row serializes metadata writers, including insertions.
+      // Check before INSERT so a duplicate does not abort a supplied transaction.
+      const actual = await this.actualRevision(knex, document.name);
+      if (actual !== options.expectedRevision) {
+        throw new CollectionMetadataConflictError(
+          document.name,
+          options.expectedRevision,
+          actual,
+        );
+      }
+      if (options.expectedRevision === null) {
         await this.table(knex).insert({
           name: document.name,
           document: JSON.stringify(document),
@@ -146,39 +198,28 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
           created_at: new Date(),
           updated_at: new Date(),
         });
-      } catch (error) {
-        const actual = await this.actualRevision(knex, document.name);
-        if (actual !== null) {
-          throw new CollectionMetadataConflictError(
-            document.name,
-            null,
-            actual,
-          );
-        }
-        throw error;
+        return cloneStoredCollectionMetadata({ document, revision: 1 });
       }
-      return cloneStoredCollectionMetadata({ document, revision: 1 });
-    }
-
-    const nextRevision = options.expectedRevision + 1;
-    const updated = await this.table(knex)
-      .where({
-        name: document.name,
-        revision: options.expectedRevision,
-      })
-      .update({
-        document: JSON.stringify(document),
+      const nextRevision = options.expectedRevision + 1;
+      const updated = await this.table(knex)
+        .where({ name: document.name, revision: options.expectedRevision })
+        .update({
+          document: JSON.stringify(document),
+          revision: nextRevision,
+          updated_at: new Date(),
+        });
+      if (Number(updated) !== 1) {
+        throw new CollectionMetadataConflictError(
+          document.name,
+          options.expectedRevision,
+          await this.actualRevision(knex, document.name),
+        );
+      }
+      return cloneStoredCollectionMetadata({
+        document,
         revision: nextRevision,
-        updated_at: new Date(),
       });
-    if (Number(updated) !== 1) {
-      throw new CollectionMetadataConflictError(
-        document.name,
-        options.expectedRevision,
-        await this.actualRevision(knex, document.name),
-      );
-    }
-    return cloneStoredCollectionMetadata({ document, revision: nextRevision });
+    });
   }
 
   async delete(
@@ -193,16 +234,109 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
       );
     }
     await this.initialize();
+    await this.write(async (knex) => {
+      const deleted = await this.table(knex)
+        .where({ name, revision: options.expectedRevision })
+        .delete();
+      if (Number(deleted) !== 1) {
+        throw new CollectionMetadataConflictError(
+          name,
+          options.expectedRevision,
+          await this.actualRevision(knex, name),
+        );
+      }
+    });
+  }
+
+  private async write<T>(operation: (client: Knex) => Promise<T>): Promise<T> {
+    const client = await this.options.resolveClient();
+    const execute = async (knex: Knex): Promise<T> => {
+      // A fresh token avoids revision reuse when a document is deleted and
+      // recreated. The token and documents commit or roll back together.
+      const updated = await this.table(knex, this.versionTableName)
+        .where({ id: 1 })
+        .update({ version: randomUUID() });
+      if (Number(updated) !== 1)
+        throw new Error('Collection Metadata cache version is missing.');
+      return operation(knex);
+    };
+    return (client as Knex.Transaction).isTransaction
+      ? execute(client)
+      : client.transaction(execute);
+  }
+
+  private invalidateNamingSnapshots(): void {
+    this.namingCache.generation += 1;
+    this.namingCache.snapshots.clear();
+  }
+
+  private async readNamingSnapshot(): Promise<CollectionMetadataNamingSnapshot> {
+    await this.initialize();
+    const client = await this.options.resolveClient();
+    let snapshot: CollectionMetadataNamingSnapshot = [];
+    // Do not publish a snapshot assembled across different committed versions.
+    // Under sustained writes, retain the existing uncached listing behavior.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const generation = this.namingCache.generation;
+      const version = await this.readVersion(client);
+      const cached = this.namingCache.snapshots.get(version);
+      if (cached) return cached;
+      snapshot = await listMetadataNamingSnapshot(this);
+      if (
+        version === (await this.readVersion(client)) &&
+        generation === this.namingCache.generation
+      ) {
+        this.namingCache.snapshots.set(version, snapshot);
+        // Keep both sides of one concurrent edit without retaining every
+        // transaction's uncommitted or rolled-back version indefinitely.
+        if (this.namingCache.snapshots.size > 2) {
+          const oldest = this.namingCache.snapshots.keys().next().value;
+          if (oldest !== undefined) this.namingCache.snapshots.delete(oldest);
+        }
+        return snapshot;
+      }
+    }
+    return snapshot;
+  }
+
+  private async readVersion(knex: Knex): Promise<string> {
+    const row = (await this.table(knex, this.versionTableName)
+      .select('version')
+      .where({ id: 1 })
+      .first()) as { version: string } | undefined;
+    if (!row) throw new Error('Collection Metadata cache version is missing.');
+    return row.version;
+  }
+
+  private async createTables(): Promise<void> {
+    await this.createTable();
     const knex = await this.options.resolveClient();
-    const deleted = await this.table(knex)
-      .where({ name, revision: options.expectedRevision })
-      .delete();
-    if (Number(deleted) !== 1) {
-      throw new CollectionMetadataConflictError(
-        name,
-        options.expectedRevision,
-        await this.actualRevision(knex, name),
-      );
+    const schema = this.schema(knex);
+    const tableName = this.versionTableName;
+    if (!(await schema.hasTable(tableName))) {
+      try {
+        await schema.createTable(tableName, (table) => {
+          table.integer('id').primary();
+          table.string('version', 36).notNullable();
+        });
+      } catch (error) {
+        if (!(await schema.hasTable(tableName))) throw error;
+      }
+    }
+    if (!(await this.table(knex, tableName).where({ id: 1 }).first())) {
+      try {
+        // A savepoint keeps a concurrent initializer's duplicate INSERT from
+        // aborting the caller's transaction on PostgreSQL.
+        await knex.transaction(async (transaction) => {
+          await this.table(transaction, tableName).insert({
+            id: 1,
+            version: randomUUID(),
+          });
+        });
+      } catch (error) {
+        if (!(await this.table(knex, tableName).where({ id: 1 }).first()))
+          throw error;
+      }
     }
   }
 
@@ -228,8 +362,10 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
     }
   }
 
-  private table(knex: Knex): Knex.QueryBuilder {
-    const tableName = this.tableName;
+  private table(
+    knex: Knex,
+    tableName: string = this.tableName,
+  ): Knex.QueryBuilder {
     return this.options.schema
       ? knex.withSchema(this.options.schema).table(tableName)
       : knex(tableName);
