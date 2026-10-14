@@ -55,13 +55,14 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       } finally {
         logger.debug(
           {
-            phase: 'response',
+            phase: 'handlerSettled',
             requestId,
             at: Date.now(),
             durationMs: performance.now() - start,
             method: context.req.method,
             route: context.req.routePath,
-            status: context.res.status,
+            aborted: context.req.raw.signal.aborted,
+            status: context.finalized ? context.res.status : undefined,
             eventLoopUtilization:
               performance.eventLoopUtilization(utilization).utilization,
           },
