@@ -6,6 +6,7 @@
 import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
+import { useIsMutating } from '@tanstack/react-query';
 import {
   AlertTriangleIcon,
   ArchiveIcon,
@@ -181,6 +182,8 @@ function Conversation({
   const { t, i18n } = useTranslation();
   const toaster = useToaster();
   const prompt = usePrompt(session.id);
+  const sending =
+    useIsMutating({ mutationKey: ['agentSessions', 'prompt', session.id] }) > 0;
   const cancel = useCancel(session.id);
   const answer = useAnswer(session.id);
   const decide = useDecideLinks(session.id);
@@ -398,7 +401,8 @@ function Conversation({
           }
           disabled={!writable}
           busy={session.running}
-          sending={prompt.isPending}
+          sending={sending}
+          draftKey={`session:${session.id}`}
           commands={session.state?.commands}
           mentions={{ projectId: session.project?.id ?? null }}
           toolbar={

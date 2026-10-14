@@ -383,6 +383,7 @@ export function useCreateSession(): Mutation<
   const api = useApiClient();
   const client = useQueryClient();
   return useMutation({
+    mutationKey: ['agentSessions', 'createSession'],
     mutationFn: (input) =>
       data<Session>(api, {
         path: path('sessions'),
@@ -414,6 +415,7 @@ export function usePrompt(
   const api = useApiClient();
   const client = useQueryClient();
   return useMutation({
+    mutationKey: ['agentSessions', 'prompt', sessionId],
     retry: false,
     mutationFn: (json) =>
       data<TranscriptEvent>(api, {

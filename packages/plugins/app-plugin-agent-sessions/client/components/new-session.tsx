@@ -8,6 +8,7 @@
 import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
+import { useIsMutating, useQueryClient } from '@tanstack/react-query';
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -16,7 +17,13 @@ import {
   FolderSearchIcon,
   LaptopIcon,
 } from 'lucide-react';
-import { useRef, useState, type ReactElement, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { useNavigate } from 'react-router';
 
 import { Button } from './ui/button.js';
@@ -73,6 +80,16 @@ export function NewSession(): ReactElement {
   const projects = useProjects();
   const recent = useSessions(false);
   const create = useCreateSession();
+  const client = useQueryClient();
+  const creating =
+    useIsMutating({ mutationKey: ['agentSessions', 'createSession'] }) > 0;
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   const [computersOpen, setComputersOpen] = useState(false);
   const [choice, setChoice] = useState<Choice>(remembered);
   const sendingRef = useRef(false);
@@ -132,7 +149,7 @@ export function NewSession(): ReactElement {
   const ready = Boolean(computer?.online && agent && cwd && discovery.result);
 
   const pick = (next: Choice): void => {
-    if (sendingRef.current) return;
+    if (sendingRef.current || creating) return;
     const merged = { ...choice, ...next };
     setChoice(merged);
     try {
@@ -207,11 +224,11 @@ export function NewSession(): ReactElement {
             autoFocus
             placeholder={t('newSession.placeholder')}
             sendDisabled={!ready}
-            sending={create.isPending}
+            sending={creating}
             commands={computer && agent ? computer.commands[agent.id] : []}
             mentions={{ projectId: project?.id ?? null }}
             header={
-              <div className='contents' inert={create.isPending}>
+              <div className='contents' inert={creating}>
                 <Picker
                   label={
                     <>
@@ -309,7 +326,7 @@ export function NewSession(): ReactElement {
                 <ChoiceMenus
                   choices={offered}
                   values={values}
-                  disabled={create.isPending || !computer?.online}
+                  disabled={creating || !computer?.online}
                   loading={discovery.loading}
                   onChoose={discovery.choose}
                 />
@@ -345,7 +362,10 @@ export function NewSession(): ReactElement {
                 !agent ||
                 !ready ||
                 !discovery.isCurrent() ||
-                sendingRef.current
+                sendingRef.current ||
+                client.isMutating({
+                  mutationKey: ['agentSessions', 'createSession'],
+                }) > 0
               ) {
                 discovery.retry();
                 throw new Error(t('newSession.settingsLoading'));
@@ -366,7 +386,8 @@ export function NewSession(): ReactElement {
                   projectId: project?.id ?? null,
                   mentions,
                 });
-                void navigate(`/agent-sessions/${session.id}`);
+                if (mountedRef.current)
+                  void navigate(`/agent-sessions/${session.id}`);
               } catch (error) {
                 toaster.show({
                   type: 'error',
