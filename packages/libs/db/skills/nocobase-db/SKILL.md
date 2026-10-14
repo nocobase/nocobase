@@ -71,7 +71,7 @@ export default defineAppDatabaseConfig(
 
 The second argument maps environment variables onto the section: `connectionEnvironment('main')` declares `DB_DIALECT`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, `DB_SSL` and `DB_FILENAME` for the main connection, each overriding `config.yml`. Only `main` has them; a connection you add declares its own with a prefix naming it, `connectionEnvironment('analytics', 'DB_ANALYTICS')`, merged into the same `env`.
 
-The dialects are `sqlite`, `postgres`, `mysql`, `mssql`, `oracle`, `dameng`, `kingbase` and `oceanbase`. Each is an optional peer of `@nocobase/app-server` shipped as its own package: install `@nocobase/db-<dialect>` into `dependencies` — so it reaches the deployed server — and configure the dialect. No import or driver registration is needed, and the dialect package brings its own underlying driver.
+The automatically loaded dialects are `sqlite`, `postgres`, `mysql`, `mssql` and `oracle`. Each is an optional peer of `@nocobase/app-server` shipped as its own package: install `@nocobase/db-<dialect>` into `dependencies` — so it reaches the deployed server — and configure the dialect. No import or driver registration is needed, and the dialect package brings its own underlying driver.
 
 Switching a dialect means changing **both** layers. `config.yml` deep-merges into the code defaults, so editing only the code leaves a stale YAML override in place — with fields belonging to the previous dialect still applied. Remove `filename` from a connection switched away from SQLite. In YAML, `database:` is an alias for `filename` and takes precedence over it, which is the usual reason a changed `filename` appears to do nothing.
 
@@ -413,3 +413,5 @@ pnpm build
 Cover the empty result, the partial match and the absent relation, not only the happy path. Passing on SQLite does not verify PostgreSQL, MySQL, Oracle or SQL Server; report an unverified dialect rather than implying the behavior is uniform.
 
 When reporting the work, say which layer you chose and why, which tests you added, which commands you actually ran, which dialects you actually exercised, and what you did not verify.
+
+KingbaseES, Dameng and OceanBase drivers are maintained in `nocobase/nocobase3-pro` and published through the Pro registry. Applications install the selected driver and register its default export in `database.drivers`; the OSS runtime does not load these packages automatically.

@@ -1,16 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 
-export const databases = [
-  'sqlite',
-  'postgres',
-  'mysql',
-  'oceanbase',
-  'oracle',
-  'mssql',
-  'dameng',
-  'kingbase',
-];
+export const databases = ['sqlite', 'postgres', 'mysql', 'oracle', 'mssql'];
 
 // Keep whole packages covered, including their tests, manifests, and local configuration.
 const sharedDirectories = [

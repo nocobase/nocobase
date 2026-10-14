@@ -4,14 +4,7 @@ import type { AppDatabaseConfig } from './types.js';
 
 /** A dialect this runtime loads a driver for without the application registering one. */
 export type OfficialDialect =
-  | 'sqlite'
-  | 'mysql'
-  | 'postgres'
-  | 'mssql'
-  | 'oracle'
-  | 'dameng'
-  | 'kingbase'
-  | 'oceanbase';
+  'sqlite' | 'mysql' | 'postgres' | 'mssql' | 'oracle';
 
 const officialDriverLoaders = {
   sqlite: () => import('@nocobase/db-sqlite'),
@@ -19,9 +12,6 @@ const officialDriverLoaders = {
   postgres: () => import('@nocobase/db-postgres'),
   mssql: () => import('@nocobase/db-mssql'),
   oracle: () => import('@nocobase/db-oracle'),
-  dameng: () => import('@nocobase/db-dameng'),
-  kingbase: () => import('@nocobase/db-kingbase'),
-  oceanbase: () => import('@nocobase/db-oceanbase'),
   // Keyed by the exported union rather than by `string`, so a dialect added to one and not the other fails to compile
   // instead of producing a list the runtime cannot load from.
 } satisfies Record<

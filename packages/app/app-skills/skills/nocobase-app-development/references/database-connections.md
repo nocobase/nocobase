@@ -17,7 +17,7 @@ pnpm nocobase config set --from-env database.connections.main.password=CRM_DB_PA
 pnpm nocobase config check --json                        # verify, database connection included
 ```
 
-`config init` writes `database.connections.main` and a generated first key of `secrets.keys` into `config.yml`, built from `config.example.yml` so its comments survive. Supported dialects are `sqlite`, `postgres`, `mysql`, `mssql`, `oracle`, `dameng`, `kingbase`, and `oceanbase`. For anything but SQLite its JSON `result` lists `requiredSettings` — the connection settings still at a placeholder — and `nextCommands`. On an application that is already configured it reports `status: "success-noop"` and exits 0, and it fails with `error.code` `ALREADY_CONFIGURED` only when `--dialect` asks for a different database than the one configured.
+`config init` writes `database.connections.main` and a generated first key of `secrets.keys` into `config.yml`, built from `config.example.yml` so its comments survive. Supported dialects are `sqlite`, `postgres`, `mysql`, `mssql`, and `oracle`. For anything but SQLite its JSON `result` lists `requiredSettings` — the connection settings still at a placeholder — and `nextCommands`. On an application that is already configured it reports `status: "success-noop"` and exits 0, and it fails with `error.code` `ALREADY_CONFIGURED` only when `--dialect` asks for a different database than the one configured.
 
 `config init` installs nothing. Which dialects an application can run on is decided by the driver packages it depends on, so a dialect whose driver is absent fails with `error.code` `DRIVER_MISSING`, and `error.suggestions[0].run` holds the `pnpm add` pinned to the range the runtime accepts; nothing is written. Run that command, then run `config init` again. Templates depend on `@nocobase/db-sqlite`, so SQLite needs no install; another dialect needs its driver added, and `pnpm remove @nocobase/db-sqlite` if nothing else uses SQLite.
 
@@ -150,7 +150,7 @@ Use one managed connection per physical database/schema. The application rejects
 
 ## Dialect fields and defaults
 
-The fields below are TypeScript connection fields. Defaults describe the application driver's normalization, not database server provisioning. Supply the intended target and credentials explicitly in environment configuration.
+The last three rows describe commercial Pro drivers that require explicit registration. The fields below are TypeScript connection fields. Defaults describe the application driver's normalization, not database server provisioning. Supply the intended target and credentials explicitly in environment configuration.
 
 | Dialect     | Package                  | Underlying driver | Default port | Target fields and notable defaults                                                      |
 | ----------- | ------------------------ | ----------------- | ------------ | --------------------------------------------------------------------------------------- |
@@ -164,6 +164,8 @@ The fields below are TypeScript connection fields. Defaults describe the applica
 | `dameng`    | `@nocobase/db-dameng`    | `dmdb`            | 5236         | `schema`; username `SYSDBA`; `connectString` can replace host and port.                 |
 
 MariaDB uses the `mysql` dialect. MySQL and OceanBase accept `socketPath` instead of `host` and `port`; remove old host/port overrides when switching to a socket. Concrete connection types are exported by their owning `@nocobase/db-<dialect>` packages.
+
+KingbaseES, Dameng and OceanBase drivers are maintained in `nocobase/nocobase3-pro` and distributed through the Pro registry. Install the required package in the application and explicitly register its default export in `database.drivers` in `server/config/database.ts`; these dialects are not offered by `config init --dialect`. Initialize the application configuration, then set the connection dialect and its fields in `config.yml` before running `config check`.
 
 ## Verify the changed connection
 

@@ -63,11 +63,8 @@
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
-    "@nocobase/db-dameng": "workspace:^",
-    "@nocobase/db-kingbase": "workspace:^",
     "@nocobase/db-mssql": "workspace:^",
     "@nocobase/db-mysql": "workspace:^",
-    "@nocobase/db-oceanbase": "workspace:^",
     "@nocobase/db-oracle": "workspace:^",
     "@nocobase/db-postgres": "workspace:^",
     "@nocobase/db-sqlite": "workspace:^",
@@ -89,19 +86,10 @@
     "@nocobase/app-server": {
       "optional": true
     },
-    "@nocobase/db-dameng": {
-      "optional": true
-    },
-    "@nocobase/db-kingbase": {
-      "optional": true
-    },
     "@nocobase/db-mssql": {
       "optional": true
     },
     "@nocobase/db-mysql": {
-      "optional": true
-    },
-    "@nocobase/db-oceanbase": {
       "optional": true
     },
     "@nocobase/db-oracle": {

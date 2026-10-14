@@ -99,21 +99,15 @@ it('reports absent optional packages, supports async ESM, and preserves transiti
   }
 });
 
-it.each([
-  'sqlite',
-  'mysql',
-  'postgres',
-  'mssql',
-  'oracle',
-  'dameng',
-  'kingbase',
-  'oceanbase',
-])('loads the actual %s ESM factory', async (dialect) => {
-  const config = await resolveDatabaseConfig({
-    connections: { main: { dialect } },
-  });
-  expect(config.drivers[dialect].dialect).toBe(dialect);
-});
+it.each(['sqlite', 'mysql', 'postgres', 'mssql', 'oracle'])(
+  'loads the actual %s ESM factory',
+  async (dialect) => {
+    const config = await resolveDatabaseConfig({
+      connections: { main: { dialect } },
+    });
+    expect(config.drivers[dialect].dialect).toBe(dialect);
+  },
+);
 
 it('creates a synchronous manager after async preparation and executes SQLite queries', async () => {
   const config = await resolveDatabaseConfig({
@@ -134,3 +128,13 @@ it('creates a synchronous manager after async preparation and executes SQLite qu
     await manager.destroy();
   }
 });
+
+// External drivers are registered by the application; the runtime does not import Pro packages.
+it.each(['kingbase', 'dameng', 'oceanbase'])(
+  'requires explicit registration for %s',
+  async (dialect) => {
+    await expect(
+      resolveDatabaseConfig({ connections: { main: { dialect } } }),
+    ).rejects.toThrow('Register a custom driver in database.drivers');
+  },
+);

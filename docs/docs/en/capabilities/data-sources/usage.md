@@ -57,3 +57,5 @@ Open Harbor Retail’s customer details. Contact information from the main datab
 - **A connection does not create synchronization**: this example reads external data when the page opens without copying it into the main database. Synchronization requires an explicit schedule and failure handling.
 
 :::
+
+KingbaseES, Dameng and OceanBase require drivers from `nocobase/nocobase3-pro`. Install the selected package through the Pro registry and register its default export in `database.drivers`; the OSS runtime does not automatically load it.
