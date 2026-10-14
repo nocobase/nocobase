@@ -2897,7 +2897,7 @@ describe('IMAP selected-copy move and durable protection', () => {
       off(event: 'query', listener: (statement: { sql: string }) => void): void;
     }>();
     const observe = (statement: { sql: string }) =>
-      statements.push(statement.sql);
+      statements.push(statement.sql.trimStart());
     const transactions = vi.spyOn(database, 'transaction');
     client.on('query', observe);
     try {
@@ -2907,9 +2907,11 @@ describe('IMAP selected-copy move and durable protection', () => {
         content,
       );
       expect(transactions).toHaveBeenCalledTimes(1);
-      expect(statements.filter((sql) => /left join/i.test(sql))).toHaveLength(
-        1,
-      );
+      expect(
+        statements.filter(
+          (sql) => /left join/i.test(sql) && /\bfrom\s+[`"[]?mail_/i.test(sql),
+        ),
+      ).toHaveLength(1);
       // Count Mail data queries separately from the driver's schema/type inspection.
       expect(
         statements.filter(
