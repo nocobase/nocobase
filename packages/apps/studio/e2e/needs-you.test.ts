@@ -64,10 +64,12 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
   await signIn(context, owner);
   const me = await api.get<{ userId: string }>('projects/me');
   const settings = await api.get<{
+    name: string;
     firstChoiceAgentId: string | null;
     fallbackAgentId: string | null;
     commentRunLimit: number;
   }>('projectManager');
+  const managerWorking = `${settings.name} working`;
   const runner = new FakeRunner(api, `needs-you-${unique()}`, true);
   const agent = await runner.agent();
   await api.patch('users/me/preferences', { locale: 'en-US' });
@@ -248,17 +250,17 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
       fullPage: true,
     });
     const resumedRun = await runner.start(issue.identifier);
-    await expect(rail).toContainText('Project manager working', {
+    await expect(rail).toContainText(managerWorking, {
       timeout: 8000,
     });
     await expect(panel.getByTestId('issue-summary')).toContainText(
-      'Project manager working',
+      managerWorking,
       { timeout: 3000 },
     );
-    await expect(ownedRow).toContainText('Project manager working', {
+    await expect(ownedRow).toContainText(managerWorking, {
       timeout: 3000,
     });
-    await expect(standaloneSummary).toContainText('Project manager working', {
+    await expect(standaloneSummary).toContainText(managerWorking, {
       timeout: 3000,
     });
     await expect(
@@ -268,20 +270,19 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     ).toBeVisible();
     await shot('running-follow-ups-fixed');
     await runner.complete(resumedRun.runId, 'The execution disk is ready.');
-    await expect(rail).not.toContainText('Project manager working', {
+    await expect(rail).not.toContainText(managerWorking, {
       timeout: 8000,
     });
     await expect(panel.getByTestId('issue-summary')).not.toContainText(
-      'Project manager working',
+      managerWorking,
       { timeout: 3000 },
     );
-    await expect(ownedRow).not.toContainText('Project manager working', {
+    await expect(ownedRow).not.toContainText(managerWorking, {
       timeout: 3000,
     });
-    await expect(standaloneSummary).not.toContainText(
-      'Project manager working',
-      { timeout: 3000 },
-    );
+    await expect(standaloneSummary).not.toContainText(managerWorking, {
+      timeout: 3000,
+    });
     await standalone.close();
     await open(page, `/issues/${issue.identifier}`);
     await expect(page.getByTestId('issue-needs-you')).toHaveCount(0);

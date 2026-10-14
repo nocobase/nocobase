@@ -10,6 +10,14 @@ import { existsSync, writeFileSync } from 'node:fs';
 import * as acp from '@agentclientprotocol/sdk';
 
 const sessions = new Map();
+if (process.env.FAKE_START_DELAY_MS) {
+  Atomics.wait(
+    new Int32Array(new SharedArrayBuffer(4)),
+    0,
+    0,
+    Number(process.env.FAKE_START_DELAY_MS),
+  );
+}
 if (process.env.FAKE_HANG_INITIALIZE) {
   process.on('SIGTERM', () => {});
   writeFileSync(process.env.FAKE_PID_FILE, String(process.pid));

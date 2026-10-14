@@ -227,25 +227,39 @@ function quoteForCmd(value: string): string {
 }
 
 async function stopProcess(child: ChildProcess): Promise<void> {
-  if (
-    child.exitCode !== null ||
-    child.signalCode !== null ||
-    child.pid === undefined
-  )
-    return;
-  const exited = once(child, 'exit');
+  if (child.pid === undefined) return;
+  const exited =
+    child.exitCode !== null || child.signalCode !== null
+      ? Promise.resolve()
+      : once(child, 'exit');
   if (windows) {
+    if (child.exitCode !== null || child.signalCode !== null) return;
     endTree(child.pid);
     await exited;
     return;
   }
   signalGroup(child.pid, 'SIGTERM');
-  const timer = setTimeout(
-    () => signalGroup(child.pid!, 'SIGKILL'),
-    STOP_GRACE_MS,
-  );
+  let timer: NodeJS.Timeout | undefined;
+  const forced = new Promise<void>((resolve) => {
+    timer = setTimeout(() => {
+      signalGroup(child.pid!, 'SIGKILL');
+      resolve();
+    }, STOP_GRACE_MS);
+  });
   await exited;
+  // A launcher can exit while its descendants still hold this isolated group.
+  // Keep the force deadline even when the direct child exited before stop was called.
+  if (groupExists(child.pid)) await forced;
   clearTimeout(timer);
+}
+
+function groupExists(pid: number): boolean {
+  try {
+    process.kill(-pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Ends the process `pid` and every process it started, on Windows. */
