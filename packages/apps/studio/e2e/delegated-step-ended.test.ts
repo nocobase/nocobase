@@ -3,6 +3,7 @@ import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 
 import { expect, open, test, unique } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
+import { STUDIO_ISSUE_RUNS_TOPIC } from '../shared/issue-runs.ts';
 
 test.use({ user: 'admin', locale: 'en-US', trace: 'off' });
 
@@ -80,11 +81,21 @@ for (const replies of [false, true]) {
           await api.get<RunDetail>(`agents/runs/${waiting.runId}`)
         ).finishedAt;
       }
+      let runTopicSubscribed = false;
       const pushEvents: { receivedAt: string }[] = [];
       page.on('websocket', (socket) => {
         socket.on('framereceived', ({ payload }) => {
           const frame =
             typeof payload === 'string' ? payload : payload.toString();
+          const message = JSON.parse(frame) as {
+            type?: string;
+            topic?: string;
+          };
+          if (
+            message.type === 'subscribed' &&
+            message.topic === STUDIO_ISSUE_RUNS_TOPIC
+          )
+            runTopicSubscribed = true;
           if (frame.includes('studio.issue.runs') && frame.includes(issue!.id))
             pushEvents.push({ receivedAt: new Date().toISOString() });
         });
@@ -93,6 +104,7 @@ for (const replies of [false, true]) {
       await expect(
         page.getByRole('heading', { name: issue.title }),
       ).toBeVisible();
+      await expect.poll(() => runTopicSubscribed).toBe(true);
       const navigations: string[] = [];
       page.on('framenavigated', (frame) => {
         if (frame === page.mainFrame()) navigations.push(frame.url());
@@ -145,7 +157,7 @@ for (const replies of [false, true]) {
           page
             .getByRole('link')
             .evaluateAll((links) =>
-              links.map((link) => (link as HTMLAnchorElement).href),
+              links.map((link) => (link as unknown as { href: string }).href),
             ),
         )
         .toEqual(

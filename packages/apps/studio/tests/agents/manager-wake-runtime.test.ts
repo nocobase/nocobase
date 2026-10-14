@@ -250,6 +250,47 @@ beforeAll(async () => {
 }, 180_000);
 
 afterAll(async () => {
+  // Evidence contains only controlled test subjects, identities, comments and input attribution, never runner credentials.
+  for (const entry of evidence) {
+    const runId = entry.managerRun ?? entry.resumedManagerRun;
+    if (typeof runId !== 'string') continue;
+    const subject = (await agents.runs.detail(runId)).subject;
+    if (subject?.kind !== 'issue') continue;
+    entry.issueId = subject.id;
+    const runs = await agents.runs.list({
+      subjectKind: 'issue',
+      subjectId: subject.id,
+    });
+    entry.runs = await Promise.all(
+      runs.map(async ({ id }) => {
+        const run = await agents.runs.detail(id);
+        return {
+          id,
+          agentId: run.agentId,
+          actorUserId: run.actorUserId,
+          status: run.status,
+          startedAt: run.startedAt,
+          finishedAt: run.finishedAt,
+          inputs: run.inputs.map(({ id, createdAt, payload }) => ({
+            id,
+            createdAt,
+            payload,
+          })),
+        };
+      }),
+    );
+    entry.comments = (
+      await projects.commentQueries.list(projects.tx.read(), subject.id)
+    ).map(({ id, authorId, authorType, parentId, rootId, createdAt, via }) => ({
+      id,
+      authorId,
+      authorType,
+      parentId,
+      rootId,
+      createdAt,
+      via,
+    }));
+  }
   if (http) await closeNodeServer(http);
   await server?.close();
   await config?.dispose();
