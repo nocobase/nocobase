@@ -23,6 +23,7 @@ import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
 import { EraserIcon, FileTextIcon } from 'lucide-react';
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -173,7 +174,25 @@ function useHistoryRuns(
   unknownAgent: string,
 ): readonly AgentRunHistoryRun[] {
   const agentName = useAgentNames();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [now, setNow] = useState(() => Date.now());
+  const nextRetryAt = Math.min(
+    ...runs
+      .filter(
+        (run) =>
+          run.status === 'queued' && run.failureReason && run.availableAt,
+      )
+      .map((run) => new Date(run.availableAt!).getTime())
+      .filter((time) => time > now),
+  );
+  useEffect(() => {
+    if (!Number.isFinite(nextRetryAt)) return undefined;
+    const timer = window.setTimeout(
+      () => setNow(Date.now()),
+      Math.min(2_147_483_647, Math.max(0, nextRetryAt - Date.now())),
+    );
+    return () => window.clearTimeout(timer);
+  }, [nextRetryAt]);
   return runs.map((run) => ({
     id: run.id,
     agentId: run.agentId,
@@ -192,8 +211,35 @@ function useHistoryRuns(
     createdAt: run.createdAt,
     startedAt: run.startedAt,
     finishedAt: run.finishedAt,
-    failure: failure(run.failureReason),
+    failure:
+      run.status === 'failed' || run.status === 'cancelled'
+        ? failureMessage(run, failure)
+        : null,
+    retrying:
+      run.status === 'queued' && run.failureReason
+        ? [
+            run.attempt > 1 && run.failureReason !== 'setupFailed'
+              ? t('issueRuns.attemptFailed', { attempt: run.attempt - 1 })
+              : t('issueRuns.preparationFailed'),
+            failureMessage(run, failure),
+            run.availableAt && new Date(run.availableAt).getTime() > now
+              ? t('issueRuns.retryScheduled', {
+                  time: new Date(run.availableAt).toLocaleString(i18n.language),
+                })
+              : t('issueRuns.awaitingDispatch'),
+          ].join(' · ')
+        : null,
   }));
+}
+
+function failureMessage(
+  run: Run,
+  failure: (reason: string | null | undefined) => string | null,
+): string | null {
+  const reason = failure(run.failureReason);
+  return reason
+    ? `${reason}${run.failureDetail ? ` — ${run.failureDetail}` : ''}`
+    : null;
 }
 
 function useIssueHistoryRuns(issue: IssueDetail): {
@@ -699,10 +745,10 @@ export function IssueRunTranscript({
           : ''}
       </p>
       {shown?.failure ? (
-        <p className='text-sm text-destructive'>
-          {shown.failure}
-          {detail.failureDetail ? ` — ${detail.failureDetail}` : ''}
-        </p>
+        <p className='text-sm text-destructive'>{shown.failure}</p>
+      ) : null}
+      {shown?.retrying ? (
+        <p className='text-sm text-muted-foreground'>{shown.retrying}</p>
       ) : null}
       {detail.summary ? <p className='text-sm'>{detail.summary}</p> : null}
     </>

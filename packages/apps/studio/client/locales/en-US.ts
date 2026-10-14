@@ -62,6 +62,10 @@ const enUS = {
   'issueRuns.configuredModel': 'Configured model: {{model}}',
   'issueRuns.modelUnknown': 'Model not reported',
   'issueRuns.clearFilters': 'Clear filters',
+  'issueRuns.attemptFailed': 'Attempt {{attempt}} failed',
+  'issueRuns.preparationFailed': 'Run preparation failed',
+  'issueRuns.retryScheduled': 'Automatic retry scheduled for {{time}}',
+  'issueRuns.awaitingDispatch': 'Waiting to be dispatched again',
   'issueRuns.emptyHint':
     'Check the executor and status in Properties to start agent work.',
   'issueRuns.loading': 'Loading execution log…',
@@ -499,7 +503,7 @@ const enUS = {
   },
   navigation: {
     inbox: 'Inbox',
-    myIssues: 'My issues',
+    myIssues: 'My tasks-α',
     followUps: 'My follow-ups',
     development: 'Development',
     issues: 'Issues',
@@ -1387,6 +1391,15 @@ const enUS = {
   preferences: preferencesEnUS,
   knowledge: knowledgeEnUS,
   issuesPage: issuesEnUS,
+  personalTasks: {
+    sessionExpired: 'Your session has expired. Sign in again.',
+    signInAgain: 'Sign in again',
+    draftUnavailable:
+      'This task is no longer accessible. Your unsent draft is kept for this session; sending is unavailable.',
+    loading: 'Loading followed tasks…',
+    sections: 'Personal task sections',
+    returnDraft: 'Return to unsent draft · {{key}}',
+  },
   followUps: followUpsEnUS,
   issueLive: issueLiveEnUS,
   projectPage: projectPageEnUS,

@@ -160,25 +160,6 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
     ).length;
   }
 
-  /** Until the viewer chooses, what they follow: their blocked and in-review issues, newest first. */
-  async function defaultFollowing(viewer: Viewer): Promise<string[]> {
-    const pages = await Promise.all(
-      (['in_review', 'blocked'] as const).map((statusKey) =>
-        projects.issueQueries.page(viewer, {
-          ownerUserId: viewer.userId,
-          statusKey,
-          limit: OWNED_PER_STATUS_MAX,
-        }),
-      ),
-    );
-    return pages
-      .flatMap((page) => page.data)
-      .filter((issue) => !issue.deletedAt)
-      .sort(byActivity)
-      .slice(0, FOLLOW_UPS_MAX)
-      .map((issue) => issue.id);
-  }
-
   /** What the viewer follows now, as the overview shows it: only issues they can still see. */
   async function currentFollowing(viewer: Viewer): Promise<{
     readonly ids: string[];
@@ -187,7 +168,7 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
     const stored = parseFollowing(
       await preferences.get(viewer.userId, FOLLOWING_PREFERENCE),
     );
-    const chosen = stored ?? (await defaultFollowing(viewer));
+    const chosen = stored ?? [];
     const found = await visible(viewer, chosen);
     return {
       ids: chosen.filter((id) => found.has(id)),
@@ -251,15 +232,7 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
       const stored = parseFollowing(
         await preferences.get(userId, FOLLOWING_PREFERENCE),
       );
-      const chosen =
-        stored ??
-        owned
-          .filter(
-            (issue) =>
-              issue.statusKey === 'blocked' || issue.statusKey === 'in_review',
-          )
-          .slice(0, FOLLOW_UPS_MAX)
-          .map((issue) => issue.id);
+      const chosen = stored ?? [];
       const others = await visible(
         viewer,
         chosen.filter((id) => !ownedById.has(id)),
@@ -354,12 +327,8 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
 
     async follow(viewer, issueIdOrKey) {
       const issueId = await issueIdOf(viewer, issueIdOrKey);
-      const { ids, stored } = await currentFollowing(viewer);
-      if (ids.includes(issueId)) {
-        if (stored) return { issueIds: ids };
-        // Following one of the defaults makes the defaults the viewer's choice.
-        return saveFollowing(viewer, ids);
-      }
+      const { ids } = await currentFollowing(viewer);
+      if (ids.includes(issueId)) return { issueIds: ids };
       if (ids.length >= FOLLOW_UPS_MAX)
         throw studioError(
           'FAILED_PRECONDITION',
