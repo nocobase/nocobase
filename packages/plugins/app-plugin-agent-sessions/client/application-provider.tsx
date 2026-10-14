@@ -9,6 +9,7 @@ import {
   ApplicationCacheContext,
   createAgentSessionsCache,
 } from './query-cache.js';
+import { cancelChoiceDiscoveries } from './discovery-requests.js';
 import { LiveSessions } from './components/live-sessions.js';
 
 function OwnerCache({
@@ -18,6 +19,7 @@ function OwnerCache({
   const [client] = useState(createAgentSessionsCache);
   useEffect(
     () => () => {
+      void cancelChoiceDiscoveries(client);
       client.clear();
     },
     [client],

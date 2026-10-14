@@ -350,9 +350,14 @@ export function NewSession(): ReactElement {
                               : null}
                 </span>
                 {discovery.error && (
-                  <Button variant='ghost' size='sm' onClick={discovery.retry}>
-                    {t('newSession.settingsRetry')}
-                  </Button>
+                  <>
+                    <Button variant='ghost' size='sm' onClick={discovery.retry}>
+                      {t('newSession.settingsRetry')}
+                    </Button>
+                    <Button variant='ghost' size='sm' onClick={discovery.reset}>
+                      {t('newSession.settingsReset')}
+                    </Button>
+                  </>
                 )}
               </>
             }

@@ -1,3 +1,4 @@
+import { realtimeClientToken } from '@nocobase/app-client';
 import {
   answerApi,
   renderWithApp,
@@ -54,6 +55,7 @@ function Probe(): ReactElement {
       </button>
       <button onClick={() => setOnline(!online)}>Connection</button>
       <button onClick={discovery.retry}>Retry</button>
+      <button onClick={discovery.reset}>Defaults</button>
       <button
         disabled={!discovery.result || discovery.loading}
         onClick={() => setSent(discovery.isCurrent() ? 'Sent' : 'Blocked')}
@@ -90,6 +92,8 @@ function Probe(): ReactElement {
 
 async function setup() {
   const requests: { call: ApiCall; resolve: (result: unknown) => void }[] = [];
+  const signals: AbortSignal[] = [];
+  let connected = true;
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -109,12 +113,22 @@ async function setup() {
     {
       namespace: '@nocobase/app-plugin-agent-sessions',
       plugins: [plugin({ routes: false })],
-      fetch: answerApi(
-        (call) =>
-          new Promise((resolve) => {
-            requests.push({ call, resolve });
-          }),
-      ),
+      services: (app) => {
+        vi.spyOn(
+          app.container.resolve(realtimeClientToken),
+          'connected',
+          'get',
+        ).mockImplementation(() => connected);
+      },
+      fetch: async (request) => {
+        signals.push(request.signal);
+        return answerApi(
+          (call) =>
+            new Promise((resolve) => {
+              requests.push({ call, resolve });
+            }),
+        )(request);
+      },
     },
   );
   await waitFor(() => expect(requests).toHaveLength(1));
@@ -123,10 +137,74 @@ async function setup() {
       requests[index]!.resolve(result);
     });
   };
-  return { requests, answer, client };
+  return {
+    requests,
+    answer,
+    client,
+    signals,
+    disconnect: () => {
+      connected = false;
+    },
+  };
 }
 
 describe('choice discovery', () => {
+  it('can recover removed settings with fresh defaults rather than reuse the older default cache', async () => {
+    const { requests, answer } = await setup();
+    await answer(0, { data: choice('First') });
+    await screen.findByText('First');
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
+    fireEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'Other' }),
+    );
+    await waitFor(() => expect(requests).toHaveLength(2));
+    await answer(
+      1,
+      Response.json(
+        { error: { reason: 'invalid', message: 'The setting was removed.' } },
+        { status: 400 },
+      ),
+    );
+    await screen.findByText('Failure');
+    fireEvent.click(screen.getByText('Defaults'));
+    await waitFor(() => expect(requests).toHaveLength(3));
+    expect(requests[2]!.call.json).toMatchObject({ settings: {} });
+    expect(
+      screen.getByRole('button', { name: 'Send', exact: true }),
+    ).toBeDisabled();
+    await answer(2, { data: choice('New default') });
+    await screen.findByText('New default');
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Send', exact: true }),
+      ).not.toBeDisabled(),
+    );
+  });
+  it('aborts explicit offline invalidation but shares ordinary navigation', async () => {
+    const { requests, answer, signals } = await setup();
+    fireEvent.click(screen.getByText('Connection'));
+    await screen.findByText('Offline');
+    await waitFor(() => expect(signals[0]?.aborted).toBe(true));
+    fireEvent.click(screen.getByText('Connection'));
+    await waitFor(() => expect(requests).toHaveLength(2));
+    await answer(0, { data: choice('Late') });
+    await answer(1, { data: choice('Current') });
+    await screen.findByText('Current');
+    expect(screen.queryByText('Late')).not.toBeInTheDocument();
+  });
+
+  it('blocks a submit on transport closure before a connection notification renders', async () => {
+    const { answer, disconnect } = await setup();
+    await answer(0, { data: choice('First') });
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Send', exact: true }),
+      ).not.toBeDisabled(),
+    );
+    disconnect();
+    fireEvent.click(screen.getByRole('button', { name: 'Send', exact: true }));
+    await screen.findByText('Blocked');
+  });
   it('blocks a submit immediately after selection before the cache render notification', async () => {
     const { answer } = await setup();
     await answer(0, { data: choice('First') });

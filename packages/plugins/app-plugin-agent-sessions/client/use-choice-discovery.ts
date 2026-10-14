@@ -8,6 +8,11 @@ import { useEffect, useState } from 'react';
 
 import { useSessionMemory, sessionMemoryKey } from './use-session-memory.js';
 
+import {
+  cancelChoiceDiscoveries,
+  trackChoiceDiscovery,
+} from './discovery-requests.js';
+
 import { type DiscoveredChoices } from '../shared/api.js';
 
 const EMPTY: Readonly<Record<string, string>> = {};
@@ -28,6 +33,7 @@ export interface ChoiceDiscovery {
   readonly error: Error | undefined;
   readonly isCurrent: () => boolean;
   readonly retry: () => void;
+  readonly reset: () => void;
   readonly choose: (id: string, value: string) => void;
 }
 
@@ -47,7 +53,7 @@ export function useChoiceDiscovery(
     queryFn: () => realtime.connected,
     enabled: false,
   });
-  const connected = connection.data !== false;
+  const connected = connection.data !== false && realtime.connected;
   const client = useQueryClient();
   const [settings, setSettings] = useSessionMemory<
     Readonly<Record<string, string>>
@@ -64,12 +70,25 @@ export function useChoiceDiscovery(
     retry: false,
     refetchOnWindowFocus: true,
     queryFn: async () => {
-      const controller = new AbortController();
+      const { controller, release } = trackChoiceDiscovery(client, [
+        ...discoveryKey,
+        key,
+        settings,
+      ]);
+      let stopCancellation = () => {};
+      const cancellation = new Promise<never>((_, reject) => {
+        const cancelled = () =>
+          reject(new Error('Agent settings discovery was cancelled.'));
+        controller.signal.addEventListener('abort', cancelled, { once: true });
+        stopCancellation = () =>
+          controller.signal.removeEventListener('abort', cancelled);
+      });
       // Navigation must not cancel shared discovery; the explicit timeout bounds its lifetime.
       let timer: ReturnType<typeof setTimeout> | undefined;
       try {
         // The explicit race also bounds a transport that fails to settle on abort.
         return await Promise.race([
+          cancellation,
           api
             .request<{ data: DiscoveredChoices }>({
               path: `agentSessions/computers/${encodeURIComponent(computerId)}/discoverChoices`,
@@ -91,6 +110,8 @@ export function useChoiceDiscovery(
         ]);
       } finally {
         clearTimeout(timer);
+        stopCancellation();
+        release();
       }
     },
   });
@@ -99,7 +120,7 @@ export function useChoiceDiscovery(
 
   useEffect(() => {
     if (!enabled) {
-      void client.cancelQueries({ queryKey: [...discoveryKey, key] });
+      void cancelChoiceDiscoveries(client, [...discoveryKey, key]);
       void client.invalidateQueries({
         queryKey: [...discoveryKey, key],
         refetchType: 'none',
@@ -149,6 +170,7 @@ export function useChoiceDiscovery(
       ]);
       return Boolean(
         enabled &&
+        realtime.connected &&
         // Cache writes precede React Query's batched render notifications.
         client.getQueryData(sessionMemoryKey(`settings:${key}`)) === settings &&
         client.getQueryData(['agentSessions', 'discoveryConnection']) !==
@@ -167,6 +189,14 @@ export function useChoiceDiscovery(
         return;
       }
       void query.refetch();
+    },
+    reset: () => {
+      void cancelChoiceDiscoveries(client, [...discoveryKey, key]);
+      void client.invalidateQueries({
+        queryKey: [...discoveryKey, key],
+        refetchType: 'none',
+      });
+      setSettings(EMPTY);
     },
     choose: (id, value) => {
       const model =

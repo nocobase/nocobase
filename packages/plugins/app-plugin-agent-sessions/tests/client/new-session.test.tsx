@@ -1,8 +1,9 @@
+import { realtimeClientToken } from '@nocobase/app-client';
 import { useState } from 'react';
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import plugin from '../../client/plugin.js';
 import { AgentSessionsConfigContext } from '../../client/config.js';
@@ -63,6 +64,13 @@ describe('new-session composer', () => {
       </QueryClientProvider>,
       {
         plugins: [plugin({ routes: false })],
+        services: (app) => {
+          vi.spyOn(
+            app.container.resolve(realtimeClientToken),
+            'connected',
+            'get',
+          ).mockReturnValue(true);
+        },
         namespace: '@nocobase/app-plugin-agent-sessions',
         fetch: answerApi(({ path }) => {
           if (path === 'agentSessions/computers')
@@ -106,6 +114,13 @@ describe('new-session composer', () => {
       </QueryClientProvider>,
       {
         plugins: [plugin({ routes: false })],
+        services: (app) => {
+          vi.spyOn(
+            app.container.resolve(realtimeClientToken),
+            'connected',
+            'get',
+          ).mockReturnValue(true);
+        },
         namespace: '@nocobase/app-plugin-agent-sessions',
         fetch: answerApi(({ path }) => {
           if (path === 'agentSessions/computers')
@@ -159,6 +174,13 @@ describe('new-session composer', () => {
       </QueryClientProvider>,
       {
         plugins: [plugin({ routes: false })],
+        services: (app) => {
+          vi.spyOn(
+            app.container.resolve(realtimeClientToken),
+            'connected',
+            'get',
+          ).mockReturnValue(true);
+        },
         namespace: '@nocobase/app-plugin-agent-sessions',
         fetch: answerApi(({ path }) => {
           if (path === 'agentSessions/computers')
@@ -213,6 +235,13 @@ describe('new-session composer', () => {
       </QueryClientProvider>,
       {
         plugins: [plugin({ routes: false })],
+        services: (app) => {
+          vi.spyOn(
+            app.container.resolve(realtimeClientToken),
+            'connected',
+            'get',
+          ).mockReturnValue(true);
+        },
         namespace: '@nocobase/app-plugin-agent-sessions',
         fetch: answerApi(({ path, method, json }) => {
           if (path === 'agentSessions/computers')
@@ -307,6 +336,13 @@ it('retains a pending first send across navigation and does not let a second mou
     {
       namespace: '@nocobase/app-plugin-agent-sessions',
       plugins: [plugin({ routes: false })],
+      services: (app) => {
+        vi.spyOn(
+          app.container.resolve(realtimeClientToken),
+          'connected',
+          'get',
+        ).mockReturnValue(true);
+      },
       fetch: answerApi(({ path, method }) => {
         if (path === 'agentSessions/computers') return { data: [computer] };
         if (path.endsWith('/discoverChoices')) return { data: choices };

@@ -214,3 +214,63 @@ it('does not cancel slow reads during a continuous stream and follows them with 
     clearInterval(interval);
   }
 });
+
+it('observes transport closure without a protocol error and preserves memory on reconnect', async () => {
+  const client = new QueryClient();
+  let connected = true;
+  let opened: (() => void) | undefined;
+  let sample: (() => void) | undefined;
+  const original = globalThis.setInterval;
+  const timer = vi
+    .spyOn(globalThis, 'setInterval')
+    .mockImplementation((handler, ms, ...args) => {
+      if (ms === 1_000 && typeof handler === 'function')
+        sample = () => handler(...args);
+      return original(handler, ms, ...args);
+    });
+  try {
+    await renderWithApp(
+      createElement(QueryClientProvider, { client }, createElement(LiveProbe)),
+      {
+        plugins: [plugin({ routes: false })],
+        namespace: '@nocobase/app-plugin-agent-sessions',
+        fetch: answerApi(() => ({ data: [] })),
+        services: (app) => {
+          const realtime = app.container.resolve(realtimeClientToken);
+          vi.spyOn(realtime, 'connected', 'get').mockImplementation(
+            () => connected,
+          );
+          vi.spyOn(realtime, 'subscribe').mockImplementation(
+            () => () => undefined,
+          );
+          vi.spyOn(realtime, 'onOpen').mockImplementation((listener) => {
+            opened = listener;
+            return () => undefined;
+          });
+        },
+      },
+    );
+    const key = ['agentSessions', 'discovery', 'inactive'];
+    const memory = ['agentSessions', 'memory', 'settings:target'];
+    client.setQueryData(key, { status: 'available', choices: [] });
+    client.setQueryData(memory, { model: 'second' });
+    connected = false;
+    await act(async () => {
+      sample?.();
+    });
+    expect(client.getQueryData(['agentSessions', 'discoveryConnection'])).toBe(
+      false,
+    );
+    expect(client.getQueryState(key)?.isInvalidated).toBe(true);
+    connected = true;
+    await act(async () => {
+      opened?.();
+    });
+    expect(client.getQueryData(['agentSessions', 'discoveryConnection'])).toBe(
+      true,
+    );
+    expect(client.getQueryData(memory)).toEqual({ model: 'second' });
+  } finally {
+    timer.mockRestore();
+  }
+});

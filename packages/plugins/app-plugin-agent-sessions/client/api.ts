@@ -20,6 +20,7 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
+import { cancelChoiceDiscoveries } from './discovery-requests.js';
 
 import {
   AGENT_SESSIONS_TOPIC,
@@ -272,7 +273,7 @@ export function useLiveSessions(): void {
       arm(slot);
     };
     const invalidateDiscovery = (): void => {
-      void client.cancelQueries({ queryKey: ['agentSessions', 'discovery'] });
+      void cancelChoiceDiscoveries(client);
       void client.invalidateQueries({
         queryKey: ['agentSessions', 'discovery'],
       });
@@ -304,20 +305,28 @@ export function useLiveSessions(): void {
     );
     const connectionKey = ['agentSessions', 'discoveryConnection'];
     client.setQueryData(connectionKey, realtime.connected);
-    const unsubscribeError = realtime.onError(() => {
+    const disconnected = (): void => {
       client.setQueryData(connectionKey, false);
-      void client.cancelQueries({ queryKey: ['agentSessions', 'discovery'] });
+      void cancelChoiceDiscoveries(client);
       void client.invalidateQueries({
         queryKey: ['agentSessions', 'discovery'],
         refetchType: 'none',
       });
-    });
+    };
+    const unsubscribeError = realtime.onError(disconnected);
+    // onError reports protocol errors, not transport closure; connected is the existing transport signal.
+    const connectionTimer = setInterval(() => {
+      if (!realtime.connected && client.getQueryData(connectionKey) !== false)
+        disconnected();
+    }, 1_000);
     const unsubscribeOpen = realtime.onOpen(() => {
       client.setQueryData(connectionKey, true);
       refresh();
     });
     const release = (): void => {
       disposed = true;
+      clearInterval(connectionTimer);
+      void cancelChoiceDiscoveries(client);
       for (const slot of slots.values()) clearTimeout(slot.timer);
       // No bridge generation is exposed to the browser. Do not reuse discovery across an unobserved interval.
       void client.invalidateQueries({

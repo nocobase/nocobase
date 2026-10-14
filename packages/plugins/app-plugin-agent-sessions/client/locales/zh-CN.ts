@@ -69,6 +69,7 @@ const zhCN: AgentSessionsResource = {
     settingsOffline: '此电脑已离线。请重新连接桥接程序以加载设置和发送消息。',
     settingsLoading: '正在加载设置…',
     settingsFailed: '无法加载智能体设置。',
+    settingsReset: '使用 Agent 默认设置',
     settingsRetry: '重试设置',
     settingsUnsupported: '此智能体不提供设置，将使用默认值。',
     settingsEmpty: '此智能体没有可配置的设置，将使用默认值。',

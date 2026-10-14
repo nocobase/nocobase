@@ -79,6 +79,7 @@ const enUS = {
     settingsLoading: 'Loading settings…',
     settingsFailed: 'Could not load agent settings.',
     settingsRetry: 'Retry settings',
+    settingsReset: 'Use agent defaults',
     settingsUnsupported:
       'This agent does not expose settings. Its defaults will be used.',
     settingsEmpty:
