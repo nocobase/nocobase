@@ -1,13 +1,15 @@
 import { expect, open, test, unique, signIn } from './support/fixtures.ts';
 import type { Issue } from './support/runner.ts';
 
-test.use({ user: 'admin' });
+// Following preferences belong to the account, so parallel files need separate Studios.
+test.use({ user: 'admin', isolatedStudio: true });
 
 test.describe('my follow-ups', () => {
   test('lists what the viewer owns, shows an issue’s activity and keeps what they follow', async ({
     page,
     api,
     context,
+    studio,
   }) => {
     const suffix = unique();
     const owner = {
@@ -19,7 +21,7 @@ test.describe('my follow-ups', () => {
       name: 'Follow-ups test owner',
       roleScopes: { studio: ['admin'] },
     });
-    await signIn(context, owner);
+    await signIn(context, owner, studio);
     const me = await api.get<{ userId: string }>('projects/me');
     const needsYou =
       'Please review the completed work. Confirm the acceptance decision.';

@@ -44,6 +44,9 @@ async function wheelTo(
   expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
 }
 
+// Following preferences belong to the account, so parallel files need separate Studios.
+test.use({ isolatedStudio: true });
+
 test.describe('My follow-ups columns', () => {
   test('each column scrolls to its last item at common desktop sizes', async ({
     page,

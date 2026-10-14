@@ -2,9 +2,14 @@ import type { Page, WebSocket } from '@playwright/test';
 import { PM_REALTIME_TOPIC } from '@nocobase/app-plugin-projects/shared/realtime';
 import { expect, url, test, unique, signIn, Api } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
+import type { ServerState } from './support/server.ts';
 
 // Live projections require an acknowledged subscription, not global HTTP idleness or a polling fallback.
-async function open(target: Page, path: string): Promise<void> {
+async function open(
+  target: Page,
+  path: string,
+  studio: ServerState,
+): Promise<void> {
   const topics = new Set<string>();
   const observe = (socket: WebSocket): void => {
     socket.on('framereceived', ({ payload }) => {
@@ -22,7 +27,7 @@ async function open(target: Page, path: string): Promise<void> {
   };
   target.on('websocket', observe);
   try {
-    await target.goto(url(path));
+    await target.goto(url(path, studio));
     await expect
       .poll(() => topics.has(PM_REALTIME_TOPIC), {
         message:
@@ -35,6 +40,7 @@ async function open(target: Page, path: string): Promise<void> {
 }
 
 test.use({
+  isolatedStudio: true,
   user: 'admin',
   locale: 'en-US',
   actionTimeout: 15_000,
@@ -46,6 +52,7 @@ test('structured owner request, latest explanation, matching follow-ups and live
   api,
   browser,
   context,
+  studio,
 }) => {
   test.setTimeout(300_000);
   // Keep realtime and short UI timers, but disable query and run-discovery polling.
@@ -94,7 +101,7 @@ test('structured owner request, latest explanation, matching follow-ups and live
     name: 'Needs-you test recipient',
     roleScopes: { studio: ['contributor'] },
   });
-  await signIn(context, owner);
+  await signIn(context, owner, studio);
   const me = await api.get<{ userId: string }>('projects/me');
   const settings = await api.get<{
     name: string;
@@ -208,7 +215,7 @@ test('structured owner request, latest explanation, matching follow-ups and live
       headers,
     );
     await api.put('followUps/following', { issueIds: [issue.id] });
-    await open(page, `/issues/${issue.identifier}`);
+    await open(page, `/issues/${issue.identifier}`, studio);
     const summary = page.getByTestId('issue-summary');
     await expect(summary.getByTestId('issue-needs-you')).toContainText(
       'Restore the execution machine.',
@@ -275,7 +282,7 @@ test('structured owner request, latest explanation, matching follow-ups and live
           );
       })
       .toBe(true);
-    await open(page, '/follow-ups');
+    await open(page, '/follow-ups', studio);
     const rail = page.getByTestId('follow-ups-following');
     const mine = page.getByTestId('follow-ups-mine');
     await mine.getByRole('button', { name: /^Blocked\b/u }).click();
@@ -283,7 +290,7 @@ test('structured owner request, latest explanation, matching follow-ups and live
     const ownedRow = mine.locator(`[data-issue="${issue.identifier}"]`);
     const panel = page.getByTestId('follow-ups-activity');
     const standalone = await page.context().newPage();
-    await open(standalone, `/issues/${issue.identifier}`);
+    await open(standalone, `/issues/${issue.identifier}`, studio);
     const standaloneSummary = standalone.getByTestId('issue-summary');
     await expect(
       standaloneSummary.getByText('Blocked', { exact: true }),
@@ -405,7 +412,7 @@ test('structured owner request, latest explanation, matching follow-ups and live
       timeout: 3000,
     });
     await standalone.close();
-    await open(page, `/issues/${issue.identifier}`);
+    await open(page, `/issues/${issue.identifier}`, studio);
     await expect(page.getByTestId('issue-needs-you')).toHaveCount(0);
     await expect(page.locator('[data-decision="agent_blocked"]')).toHaveCount(
       0,
@@ -429,7 +436,7 @@ test('structured owner request, latest explanation, matching follow-ups and live
       waiting.headers,
     );
     await runner.complete(waiting.running.runId, 'Reported checkout failure.');
-    await open(page, `/issues/${waiting.issue.identifier}`);
+    await open(page, `/issues/${waiting.issue.identifier}`, studio);
     await expect(page.getByTestId('issue-needs-you')).toContainText(
       'Please restore the execution checkout.',
     );
@@ -449,7 +456,7 @@ test('structured owner request, latest explanation, matching follow-ups and live
       statusKey: 'in_review',
       needsYou: 'Please review the card and live refresh implementation.',
     });
-    await open(page, `/issues/${review.identifier}`);
+    await open(page, `/issues/${review.identifier}`, studio);
     await expect(page.getByTestId('issue-needs-you')).toContainText(
       'Please review the card and live refresh implementation.',
     );
@@ -496,7 +503,7 @@ test('structured owner request, latest explanation, matching follow-ups and live
     await expect
       .poll(() => api.get(`issueCommentRuns/${limited.issue.id}`))
       .not.toBeNull();
-    await open(page, `/issues/${limited.issue.identifier}`);
+    await open(page, `/issues/${limited.issue.identifier}`, studio);
     await expect(
       page.getByRole('button', { name: 'Continue', exact: true }),
     ).toBeVisible();
@@ -509,10 +516,27 @@ test('structured owner request, latest explanation, matching follow-ups and live
     await expect(
       page.getByRole('button', { name: 'Continue', exact: true }),
     ).toHaveCount(0);
+    // Continue enqueues legitimate work for this issue; finish that scenario before claiming another issue.
+    const continued = await runner.start(limited.issue.identifier);
+    const continuedDetail = await api.get<{
+      actorUserId: string;
+      subject: { kind: string; id: string };
+      inputs: unknown[];
+    }>(`agents/runs/${continued.runId}`);
+    expect(continuedDetail.actorUserId).toBe(me.userId);
+    expect(continuedDetail.subject).toEqual({
+      kind: 'issue',
+      id: limited.issue.id,
+    });
+    expect(continuedDetail.inputs).toHaveLength(1);
+    await runner.complete(
+      continued.runId,
+      'Handled the explicitly continued report.',
+    );
     const transfer = await make('Take over the next implementation step');
     await runner.complete(transfer.running.runId, 'Ready.');
     const recipientContext = await browser.newContext({ locale: 'en-US' });
-    await signIn(recipientContext, recipientUser);
+    await signIn(recipientContext, recipientUser, studio);
     const recipient = {
       api: new Api(recipientContext.request),
       close: () => recipientContext.close(),
@@ -525,7 +549,7 @@ test('structured owner request, latest explanation, matching follow-ups and live
       });
       await recipient.api.patch('users/me/preferences', { locale: 'en-US' });
       const recipientPage = await recipientContext.newPage();
-      await open(recipientPage, `/issues/${transfer.issue.identifier}`);
+      await open(recipientPage, `/issues/${transfer.issue.identifier}`, studio);
       await expect(
         recipientPage.getByRole('button', { name: 'Take over', exact: true }),
       ).toBeVisible();

@@ -1,19 +1,18 @@
-/**
- * Every run an agent's comment started leaves a comment by its agent (`work.ts`): once it commits, a run that completed
- * without commenting on its issue since it started answers in the thread of the comment that started it with its final
- * output, and a run that failed for good says there that it failed and why. Ordinary cancellation says nothing; a delegated queue timeout reports its saved cause. The comment
- * goes through the comment triggers like any agent comment, for the person the run acted for, so it wakes the issue's
- * executing agent (the coordinator) and counts toward the workflow's `commentRunLimit`. Once per run: a guard row keyed
- * by the run (`comment-guard.ts`) is written with the comment.
- */
+/** Terminal report outbox: manager delegations combine any automatic reply with one durable step-ended input. */
 import { redactPatterns } from '@nocobase/agent-protocol';
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
 import type { Run } from '@nocobase/app-plugin-agents/shared/runs';
 import type { DatabaseConnection } from '@nocobase/db';
 import type { ProjectsTx } from '@nocobase/app-plugin-projects/server/tokens';
-import { firstDispatch, managerDispatchInput } from './delegated-queue.js';
+import {
+  firstDispatch,
+  managerDispatchInput,
+  managerDelegation,
+} from './delegated-queue.js';
 import type { Projects } from '@nocobase/app-plugin-projects/server/tokens';
 
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
+import type { AgentWork } from './work.js';
 import { ISSUE_SUBJECT } from './catalog/triggers.js';
 import { guardIdOf, commentGuards } from './comment-guard.js';
 import { AGENT_KIND } from './tx.js';
@@ -66,15 +65,22 @@ export function reportCommentRuns(
   agents: Pick<Agents, 'events' | 'runs'>,
   projects: () => Pick<Projects, 'tx' | 'comments' | 'commentQueries'>,
   onError: (error: unknown) => void,
-  authorize?: (conn: DatabaseConnection, run: Run) => Promise<void>,
+  authorize?: (conn: DatabaseConnection, run: Run) => Promise<string | void>,
+  work?: AgentWork,
 ): () => void {
   let running = false;
   let stopped = false;
+  let requested = false;
   const drain = async () => {
-    if (running || stopped) return;
+    if (stopped) return;
+    requested = true;
+    if (running) return;
     running = true;
     try {
-      await drainRunReports(agents, projects(), new Date(), authorize);
+      do {
+        requested = false;
+        await drainRunReports(agents, projects(), new Date(), authorize, work);
+      } while (requested && !stopped);
     } catch (error) {
       onError(error);
     } finally {
@@ -102,9 +108,18 @@ export async function reportRun(
   outer?: ProjectsTx,
   saved?: ReportPayload,
 ): Promise<boolean> {
-  const detail = saved ?? (await agents.runs.detail(runId));
+  const detail = saved ?? {
+    ...(await agents.runs.detail(runId)),
+    stepEnded: Boolean(
+      await managerDelegation(projects.tx.read(), await agents.runs.get(runId)),
+    ),
+  };
   const { inputs, ...run } = detail;
-  if (run.subject.kind !== ISSUE_SUBJECT) return false;
+  if (
+    run.subject.kind !== ISSUE_SUBJECT ||
+    !['completed', 'failed', 'cancelled'].includes(run.status)
+  )
+    return false;
   const started = inputs
     .map((input) => jsonObject(input.payload))
     .find(
@@ -114,12 +129,43 @@ export async function reportRun(
           typeof jsonObject(payload.managerDelegation).commentId === 'string'),
     );
   if (!started) return false;
-  const content = reportText(run);
+  const content =
+    reportText(run) ??
+    (detail.stepEnded
+      ? `The step ended: ${run.status} (run ${run.id}).`
+      : null);
   if (!content) return false;
   const issueId = run.subject.id;
   return projects.tx.run(async (tx) => {
     const since = run.startedAt ?? run.createdAt;
-    if (run.status === 'completed') {
+    if (detail.stepEnded) {
+      // Read stored provenance, not the viewer-filtered display source or a timestamp match with another run.
+      const own = await tx.conn
+        .repository<{
+          issueId: string;
+          authorId: string;
+          authorType: string;
+          origin: unknown;
+          deletedAt: string | null;
+        }>('pmComments')
+        .findMany({
+          filter: (f) =>
+            f.and([
+              f.string('issueId').eq(issueId),
+              f.string('authorId').eq(run.agentId),
+              f.string('authorType').eq(AGENT_KIND),
+              f.date('deletedAt').empty(),
+            ]),
+        });
+      if (
+        own.some(
+          (comment) =>
+            jsonObject(jsonObject(comment.origin).trace).runId === run.id ||
+            jsonObject(comment.origin).runId === run.id,
+        )
+      )
+        return false;
+    } else if (run.status === 'completed') {
       const own = (
         await projects.commentQueries.list(tx.conn, issueId, { since })
       ).some(
@@ -166,6 +212,7 @@ export async function reportRun(
       },
       {
         outer: tx,
+        ...(detail.stepEnded ? { trigger: false } : {}),
         origin: { runId: run.id, report: run.status },
         forUserId: run.actorUserId,
       },
@@ -176,6 +223,7 @@ export async function reportRun(
 
 interface ReportPayload extends Run {
   readonly inputs: readonly { readonly payload: unknown }[];
+  readonly stepEnded?: boolean;
 }
 interface PendingReport {
   readonly id: string;
@@ -194,11 +242,18 @@ export async function stageRunReport(
   conn: DatabaseConnection,
   run: Run,
 ): Promise<void> {
-  if (run.subject.kind !== ISSUE_SUBJECT || !reportText(run)) return;
+  if (
+    run.subject.kind !== ISSUE_SUBJECT ||
+    !['completed', 'failed', 'cancelled'].includes(run.status)
+  )
+    return;
+  const step = await managerDelegation(conn, run);
+  if (!step && !reportText(run)) return;
   let input =
     (await managerDispatchInput(conn, run.id)) ??
     (await firstDispatch(conn, run.id));
   if (
+    !step &&
     run.failureReason !== 'delegatedQueueTimeout' &&
     input &&
     jsonObject(input.payload).byAgent !== true
@@ -214,16 +269,31 @@ export async function stageRunReport(
   }
   if (
     !input ||
-    (run.failureReason !== 'delegatedQueueTimeout' &&
+    (!step &&
+      run.failureReason !== 'delegatedQueueTimeout' &&
       jsonObject(input.payload).byAgent !== true)
   )
     return;
   const now = new Date().toISOString();
-  await reports(conn).createOne({
-    values: {
+  await reports(conn).upsertOne({
+    filter: { id: run.id },
+    update: { id: run.id },
+    create: {
       id: run.id,
       status: 'pending',
-      payload: { ...run, inputs: [{ payload: input.payload }] },
+      payload: {
+        ...run,
+        stepEnded: Boolean(step),
+        eventKey: `step-ended:${run.id}`,
+        inputs: [
+          {
+            payload: {
+              ...jsonObject(input.payload),
+              ...(step ? { byAgent: true, commentId: step.commentId } : {}),
+            },
+          },
+        ],
+      },
       attempts: 0,
       nextAt: now,
       updatedAt: now,
@@ -237,7 +307,8 @@ export async function drainRunReports(
   agents: Pick<Agents, 'runs'>,
   projects: Pick<Projects, 'tx' | 'comments' | 'commentQueries'>,
   now: Date = new Date(),
-  authorize?: (conn: DatabaseConnection, run: Run) => Promise<void>,
+  authorize?: (conn: DatabaseConnection, run: Run) => Promise<string | void>,
+  work?: AgentWork,
 ): Promise<void> {
   const pending = await reports(projects.tx.read()).findMany({
     filter: (f) =>
@@ -247,11 +318,12 @@ export async function drainRunReports(
   });
   for (const candidate of pending) {
     try {
-      if (authorize)
-        await authorize(
-          projects.tx.read(),
-          jsonObject(candidate.payload) as unknown as ReportPayload,
-        );
+      const authorizedOwner = authorize
+        ? await authorize(
+            projects.tx.read(),
+            jsonObject(candidate.payload) as unknown as ReportPayload,
+          )
+        : undefined;
       await projects.tx.run(async (tx: ProjectsTx) => {
         const locked = await reports(tx.conn).updateMany({
           filter: { id: candidate.id, status: 'pending' },
@@ -262,6 +334,14 @@ export async function drainRunReports(
           filter: { id: candidate.id },
         });
         if (!row || new Date(row.nextAt).getTime() > now.getTime()) return;
+        const payload = jsonObject(row.payload) as unknown as ReportPayload;
+        // All step notifications for an issue serialize on its business row before rechecking current ownership.
+        if (payload.stepEnded)
+          await tx.conn.query
+            .updateTable('pmIssues')
+            .set({ id: payload.subject.id })
+            .where('id', '=', payload.subject.id)
+            .execute();
         await reportRun(
           agents,
           projects,
@@ -269,10 +349,86 @@ export async function drainRunReports(
           tx,
           jsonObject(row.payload) as unknown as ReportPayload,
         );
+        let delivery: Record<string, unknown> = { outcome: 'reportOnly' };
+        if (payload.stepEnded && !work)
+          throw new Error(
+            'Step notification delivery requires the manager work handler.',
+          );
+        if (payload.stepEnded && work) {
+          const issue = await tx.conn
+            .repository<
+              import('@nocobase/app-plugin-projects/shared/issues').Issue & {
+                executorType: string;
+                executorId: string;
+                deletedAt: unknown;
+              }
+            >('pmIssues')
+            .findOne({ filter: { id: payload.subject.id } });
+          if (
+            typeof authorizedOwner === 'string' &&
+            issue &&
+            issue.ownerUserId !== authorizedOwner
+          )
+            throw new Error(
+              'The issue owner changed during notification authorization; retrying.',
+            );
+          const already = await tx.conn
+            .repository<{ id: string }>('agRuns')
+            .findOne({
+              filter: (f) =>
+                f.and([
+                  f.string('subjectKind').eq(ISSUE_SUBJECT),
+                  f.string('subjectId').eq(payload.subject.id),
+                  f.string('agentId').eq(PROJECT_MANAGER_ID),
+                  f.string('status').eq('completed'),
+                  f.date('startedAt').notBefore(new Date(payload.finishedAt!)),
+                ]),
+            });
+          delivery = already
+            ? {
+                outcome: 'skipped',
+                reason: 'managerAlreadyCompleted',
+                managerRunId: already.id,
+              }
+            : { outcome: 'skipped', reason: 'issueUnavailable' };
+          if (issue && !issue.deletedAt && !already) {
+            const agent = await tx.conn
+              .repository<{ id: string; name: string }>('agAgents')
+              .findOne({ filter: { id: payload.agentId } });
+            const attempt = await work.managerSignal(
+              tx,
+              {
+                ...issue,
+                executor: { type: issue.executorType, id: issue.executorId },
+              },
+              'stepEnded',
+              `${agent?.name ?? payload.agentId}'s step ended: ${payload.status} (run ${payload.id}). Read the dispatch thread and current runs before handing work on.`,
+              {
+                runId: payload.id,
+                status: payload.status,
+                eventKey: `step-ended:${payload.id}`,
+              },
+            );
+            delivery = {
+              outcome: attempt.started ? 'delivered' : 'skipped',
+              managerRunId: attempt.runId ?? null,
+              reason: attempt.skipped ?? null,
+            };
+            if (
+              !attempt.started &&
+              ['unavailable', 'waitingOwner', 'denied', 'blocked'].includes(
+                attempt.skipped ?? '',
+              )
+            )
+              throw new Error(`Step notification deferred: ${attempt.skipped}`);
+          }
+        }
         await reports(tx.conn).updateMany({
           filter: { id: row.id, status: 'pending' },
           values: {
-            status: 'done',
+            status: delivery.reason === 'limited' ? 'pending' : 'done',
+            nextAt: new Date(now.getTime() + 60_000).toISOString(),
+            payload: { ...payload, delivery },
             lastError: null,
             updatedAt: now.toISOString(),
           },

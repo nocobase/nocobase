@@ -18,6 +18,8 @@ export const ISSUE_TRIGGERS = [
   'mention',
   'reply',
   'comment',
+  'stepEnded',
+  'managerIdle',
   'statusChange',
   'ownerChanged',
   'ownerAccepted',

@@ -1,39 +1,17 @@
 /** Consent decisions own their server: concurrent tests may change the shared manager's model choices. */
-import { rmSync } from 'node:fs';
 import type { Page } from '@playwright/test';
-import {
-  Api,
-  expect,
-  signIn,
-  test as sharedTest,
-  unique,
-  server as sharedServer,
-} from './support/fixtures.ts';
-import { startStudio, stopStudio, type ServerState } from './support/server.ts';
+import { Api, expect, signIn, test, unique } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
 import type { IssueProgress } from '../shared/project-manager.ts';
+import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import type { RunDetail } from '@nocobase/app-plugin-agents/shared/runs';
 
-const test = sharedTest.extend<{ studio: ServerState }>({
-  studio: async ({ browser }, use) => {
-    expect(browser.isConnected()).toBe(true);
-    const state = await startStudio({ isolated: true });
-    try {
-      expect(state.origin).not.toBe(sharedServer.origin);
-      expect(state.directory).not.toBe(sharedServer.directory);
-      await use(state);
-    } finally {
-      await stopStudio(state);
-      rmSync(state.directory, { recursive: true, force: true });
-    }
-  },
-  api: async ({ context, studio }, use) => {
-    await signIn(context, 'admin', studio);
-    await use(new Api(context.request, studio));
-  },
+test.use({
+  user: 'admin',
+  locale: 'en-US',
+  trace: 'off',
+  isolatedStudio: true,
 });
-
-test.use({ user: 'admin', locale: 'en-US', trace: 'off' });
 test.setTimeout(240_000);
 
 async function createRequester(api: Api) {
@@ -398,7 +376,7 @@ test('owner delegation needs no extra consent and Run as me preserves both comme
       { content: 'Please delegate my isolated delivery to the worker.' },
     );
     const managerTurn = await ownerManager.start(ownIssue.identifier);
-    await api.post(
+    const delegation = await api.post<{ comment: { id: string } }>(
       `projects/issues/${ownIssue.id}/comments`,
       {
         content: `[@Worker](mention://agent/${worker.id}) implement the owner’s next step without another confirmation.`,
@@ -425,6 +403,35 @@ test('owner delegation needs no extra consent and Run as me preserves both comme
     ).toHaveCount(0);
     await shot('owner-delegation-no-consent');
     await ownerWorker.complete(workerTurn.runId, 'Done.');
+    // Terminal wakeups belong to this delegation and must be consumed before testing another issue's consent.
+    const continuation = await ownerManager.start(ownIssue.identifier);
+    const resumed = await api.get<RunDetail>(
+      `agents/runs/${continuation.runId}`,
+    );
+    expect(resumed.subject).toEqual({ kind: 'issue', id: ownIssue.id });
+    expect(resumed.agentId).toBe('studio-project-manager');
+    expect(resumed.actorUserId).toBe(owner.userId);
+    expect(resumed.inputs).toHaveLength(1);
+    expect(resumed.inputs[0]).toMatchObject({
+      type: 'signal',
+      payload: {
+        trigger: 'stepEnded',
+        runId: workerTurn.runId,
+        status: 'completed',
+      },
+    });
+    const ownThreads = await api.get<IssueDetail['threads']>(
+      `projects/issues/${ownIssue.id}/comments`,
+    );
+    const reports = ownThreads
+      .flatMap((thread) => [thread.root, ...thread.replies])
+      .filter((comment) => comment.authorId === worker.id);
+    expect(reports).toHaveLength(1);
+    expect(reports[0]).toMatchObject({
+      parentId: delegation.comment.id,
+      rootId: source.comment.id,
+    });
+    await ownerManager.complete(continuation.runId, 'Done.');
 
     const authorManager = new FakeRunner(
       requester,

@@ -179,3 +179,9 @@ logging:
     enabled: true
     # Set true for human-readable terminal output.
     pretty: false
+
+# Structured manager idle recovery; timeout 0 disables it. Sweep interval must be positive.
+studio:
+  agents:
+    managerIdleMinutes: 15
+    managerIdleSweepMinutes: 5

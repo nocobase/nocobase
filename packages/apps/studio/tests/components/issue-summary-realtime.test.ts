@@ -70,6 +70,8 @@ describe('live issue summaries', () => {
       observe([...pmKeys.issue(id), 'threads'], () => ({ content })),
     );
     const following = observe(['pm', 'issues', 'followUps'], () => ({
+      issues: [{ id: 'issue-331' }],
+      following: [],
       statusKey,
       running,
     }));
@@ -105,6 +107,8 @@ describe('live issue summaries', () => {
             statusKey: 'in_progress',
           });
         expect(following.observer.getCurrentResult().data).toEqual({
+          issues: [{ id: 'issue-331' }],
+          following: [],
           statusKey: 'in_progress',
           running: false,
         });
@@ -115,15 +119,23 @@ describe('live issue summaries', () => {
         for (const { observer } of threads)
           expect(observer.getCurrentResult().data).toEqual({ content });
       });
-      for (const active of [true, false]) {
+      for (const active of [true, false, true]) {
         running = active;
-        emit();
+        // Worker start, terminal status, then the queued manager continuation use the run topic.
+        listeners.get(STUDIO_ISSUE_RUNS_TOPIC)?.({
+          type: 'event',
+          topic: STUDIO_ISSUE_RUNS_TOPIC,
+          payload: { kind: 'studio.issue.runs', issueIds: ['issue-331'] },
+          publishedAt: '2026-10-14T12:00:00Z',
+        });
         await waitFor(() => {
           for (const { observer } of [progress, runs])
             expect(observer.getCurrentResult().data).toEqual({
               running: active,
             });
           expect(following.observer.getCurrentResult().data).toEqual({
+            issues: [{ id: 'issue-331' }],
+            following: [],
             statusKey: 'in_progress',
             running: active,
           });
