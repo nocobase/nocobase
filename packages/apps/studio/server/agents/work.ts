@@ -198,6 +198,7 @@ export function createAgentWork(deps: {
     | 'subtasks'
     | 'issueContext'
     | 'commentQueries'
+    | 'comments'
     | 'activity'
     | 'issues'
     | 'tx'
@@ -277,6 +278,10 @@ export function createAgentWork(deps: {
         requestedByUserId: request.actorUserId,
         causedByRunId: request.causedByRunId,
         comment: request.comment,
+        preferActive:
+          request.triggerType === 'mention' &&
+          request.input.actor.kind === 'agent' &&
+          request.input.actor.id === PROJECT_MANAGER_ID,
         ownerUserId: request.issue.ownerUserId,
         priority: runPriorityOf(request.issue.priority),
         freshSession: request.freshSession,
@@ -297,6 +302,33 @@ export function createAgentWork(deps: {
       },
       agentsTx(tx),
     );
+    if (
+      request.triggerType === 'mention' &&
+      request.input.actor.kind === 'agent' &&
+      request.input.actor.id === PROJECT_MANAGER_ID &&
+      result.outcome === 'appended' &&
+      !result.duplicate
+    ) {
+      const commentId = jsonObject(request.input.payload).commentId;
+      if (typeof commentId === 'string')
+        await deps.projects().comments.post(
+          { type: 'system', id: null },
+          request.issue.id,
+          {
+            content: `Appended to run ${result.runId} (input ${result.inputId}).`,
+            parentId: commentId,
+          },
+          {
+            outer: tx,
+            trigger: false,
+            origin: {
+              runId: result.runId,
+              inputId: result.inputId,
+              sourceCommentId: commentId,
+            },
+          },
+        );
+    }
     // Mark only the creating input, in this transaction. An appended mention must never adopt an existing run.
     if (
       result.outcome === 'created' &&
@@ -482,8 +514,24 @@ export function createAgentWork(deps: {
               },
             }),
       );
-      if (personComment && !commentRootRunId)
+      if (personComment && !commentRootRunId) {
         commentRootRunId = attempts.at(-1)?.runId ?? undefined;
+        // An appended descendant is not necessarily the authorization root shared by the remaining mentions.
+        if (
+          commentRootRunId &&
+          held.actor.kind === 'agent' &&
+          held.actor.id === PROJECT_MANAGER_ID &&
+          held.targets.length > 1
+        ) {
+          const selected = await tx.conn
+            .repository<{ id: string; commentRootRunId: string | null }>(
+              'agRuns',
+            )
+            .findOne({ filter: { id: commentRootRunId } });
+          // A reused owner-started run has no comment authorization to share.
+          commentRootRunId = selected?.commentRootRunId ?? undefined;
+        }
+      }
     }
     return attempts;
   }

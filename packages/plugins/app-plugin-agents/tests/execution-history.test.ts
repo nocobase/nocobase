@@ -39,6 +39,11 @@ describe('execution history', () => {
     await claim(h, runner);
     ownerName = 'Renamed Alice';
     await h.services.runners.update(runner.runnerId, { name: 'renamed' });
+    await h.services.reports.start({ id: runner.runnerId }, runId, {
+      workDir: '/work/sample',
+      adapter: { kind: 'codex' },
+      acceptsInput: true,
+    });
     await h.services.reports.complete({ id: runner.runnerId }, runId, {
       summary: '',
       handledInputIds: await handledInputIds(runId),
@@ -98,6 +103,11 @@ describe('execution history', () => {
     h.clock.advance(30_000);
     await claim(h, second);
     expect((await h.services.runs.get(runId)).actualModels).toEqual([]);
+    await h.services.reports.start({ id: second.runnerId }, runId, {
+      workDir: '/work/sample',
+      adapter: { kind: 'codex' },
+      acceptsInput: true,
+    });
     await h.services.reports.complete({ id: second.runnerId }, runId, {
       summary: '',
       handledInputIds: await handledInputIds(runId),
@@ -172,6 +182,11 @@ describe('execution history', () => {
     });
     const runId = await h.enqueue(agent);
     await claim(h, runner);
+    await h.services.reports.start({ id: runner.runnerId }, runId, {
+      workDir: '/work/sample',
+      adapter: { kind: 'codex' },
+      acceptsInput: true,
+    });
     await h.services.reports.complete({ id: runner.runnerId }, runId, {
       summary: '',
       handledInputIds: await handledInputIds(runId),
