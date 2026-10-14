@@ -175,7 +175,7 @@ test.describe('issues', () => {
         await expect(
           views.getByRole('button', { name: 'Agent 队列' }),
         ).toBeVisible();
-        await page.getByRole('button', { name: '清除筛选' }).click();
+        await clear.click();
       }
     }
     const measurements = testInfo.outputPath('content-heights.json');

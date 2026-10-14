@@ -127,10 +127,15 @@ test.describe('phone', () => {
     }
     await api.put('followUps/following', { issueIds: [created[0]!.id] });
     await open(page, `/follow-ups?view=list&tab=mine&q=${suffix}`);
-    await page.getByRole('button', { name: /^筛选/u }).click();
-    await expect(page.getByRole('textbox', { name: '搜索任务' })).toHaveValue(
-      suffix,
-    );
+    const filters = page.getByRole('button', { name: /^筛选/u });
+    await filters.click();
+    const filterPanel = page.getByRole('dialog');
+    const search = filterPanel.getByRole('textbox', { name: '搜索任务' });
+    await expect(search).toHaveValue(suffix);
+    // Dismiss the overlay before directing wheel events at the list underneath.
+    await search.press('Escape');
+    await expect(filterPanel).toBeHidden();
+    await expect(filters).toBeFocused();
     const table = page.getByRole('table');
     const rows = table.getByRole('row').filter({ hasText: suffix });
     await expect(rows).toHaveCount(32);

@@ -216,7 +216,13 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     await open(page, '/follow-ups?view=list');
     const rail = page.getByTestId('follow-ups-following');
     const table = page.getByRole('table');
-    const status = page.getByRole('combobox', { name: 'Status', exact: true });
+    const filters = page.getByRole('button', { name: /^Filters/u });
+    await filters.click();
+    const filterPanel = page.getByRole('dialog');
+    const status = filterPanel.getByRole('combobox', {
+      name: 'Status',
+      exact: true,
+    });
     await status.click();
     await expect(
       page.getByRole('option', { name: 'Blocked', exact: true }),
@@ -227,6 +233,9 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     await page
       .getByRole('option', { name: 'All statuses', exact: true })
       .click();
+    await status.press('Escape');
+    await expect(filterPanel).toBeHidden();
+    await expect(filters).toBeFocused();
     const ownedRow = table.getByRole('row').filter({
       has: page.getByRole('link', { name: issue.identifier, exact: true }),
     });
