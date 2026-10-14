@@ -82,7 +82,9 @@ it('switches the desktop icon mode from the header and keeps the preference', as
   expect(sidebar).toHaveAttribute('data-state', 'expanded');
   await user.click(screen.getByRole('button', { name: 'Collapse navigation' }));
   expect(sidebar).toHaveAttribute('data-collapsible', 'icon');
-  expect(localStorage.getItem('nocobase:sidebar:collapsed')).toBe('true');
+  expect(localStorage.getItem('nocobase:sidebar:collapsed:studio')).toBe(
+    'true',
+  );
   unmount();
   render(<Shell />);
   expect(
