@@ -215,7 +215,7 @@ function OwnedRow({
         {line ? (
           <span
             className={cn(
-              'line-clamp-2 text-xs max-md:line-clamp-1 max-md:text-[13px]',
+              'text-xs whitespace-pre-wrap wrap-break-word max-md:text-[13px]',
               issue.statusKey === 'blocked'
                 ? 'text-amber-700 dark:text-amber-300'
                 : issue.statusKey === 'in_review'
@@ -223,7 +223,9 @@ function OwnedRow({
                   : 'text-muted-foreground',
             )}
           >
-            {line.text}
+            {line.needsViewer
+              ? t('followUps.following.needsYou', { ask: line.text })
+              : line.text}
           </span>
         ) : null}
       </button>

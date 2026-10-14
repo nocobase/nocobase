@@ -4,6 +4,7 @@
  * in the application's locales (`client/locales/en-US.ts` and `zh-CN.ts` spread these in).
  */
 export const knowledgeEnUS = {
+  shared: 'Shared across projects',
   systemTitle: 'System knowledge',
   switcher: { projects: 'Project knowledge' },
   access: {
@@ -215,6 +216,7 @@ export const knowledgeEnUS = {
 };
 
 export const knowledgeZhCN: typeof knowledgeEnUS = {
+  shared: '跨项目共享',
   systemTitle: '系统知识',
   switcher: { projects: '项目知识' },
   access: {

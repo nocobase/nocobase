@@ -1,9 +1,34 @@
 import {
   AgentInfoSchema,
+  DiscoveredChoicesSchema,
+  type DiscoveredChoices,
   PromptContentSchema,
   type PromptContent,
 } from '@nocobase/acp-bridge/protocol';
 import { z } from 'zod';
+
+export const DiscoverySchema: z.ZodType<DiscoveredChoices> =
+  DiscoveredChoicesSchema.meta({ ref: 'AgentSessionsDiscoveredChoices' });
+export const DiscoverChoicesInput: z.ZodType<{
+  agentId: string;
+  cwd: string;
+  settings: Record<string, string>;
+}> = z.strictObject({
+  agentId: z.string().min(1).max(40).meta({
+    description: 'The installed agent to initialize without a prompt.',
+  }),
+  cwd: z
+    .string()
+    .min(1)
+    .max(1000)
+    .meta({ description: 'The absolute working directory on this computer.' }),
+  settings: z
+    .record(z.string().min(1).max(200), z.string().min(1).max(200))
+    .default({})
+    .meta({
+      description: 'Selected overrides, applied to discover dependent choices.',
+    }),
+});
 
 import type {
   Computer,
@@ -70,7 +95,7 @@ export const ComputerSchema: z.ZodType<Computer> = z
     agents: z.array(AgentInfoSchema),
     choices: z.record(z.string(), z.array(ChoiceSchema)).meta({
       description:
-        'What each agent offered in its latest session there, by agent id: the choices a new session starts from.',
+        'Historical choices from each agent’s latest session, by agent id. New sessions discover their own settings.',
     }),
     commands: z.record(z.string(), z.array(CommandSchema)).meta({
       description:
@@ -89,6 +114,18 @@ export const ComputerSchema: z.ZodType<Computer> = z
     }),
     lastSeenAt: z.string(),
     createdAt: z.string(),
+    outdatedBridge: z
+      .object({
+        host: z.string(),
+        bridgeProtocol: z.number().int(),
+        protocol: z.number().int(),
+        refusedAt: z.string(),
+      })
+      .optional()
+      .meta({
+        description:
+          'Present while its bridge was lately refused for speaking an older protocol than the application: its command line needs an update.',
+      }),
   })
   .meta({ ref: 'AgentSessionsComputer' });
 
@@ -227,7 +264,7 @@ export const CreateSessionInput: z.ZodType<{
     .optional()
     .meta({
       description:
-        "Choices to open the session with, by choice id, from what the agent offered on the computer (the computer's `choices`).",
+        'Explicit settings by choice id, validated and applied by the newly opened agent session before its first prompt.',
     }),
   projectId: z.string().min(1).nullable().optional().meta({
     description:

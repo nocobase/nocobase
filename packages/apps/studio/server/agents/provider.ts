@@ -1,3 +1,5 @@
+import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
+import { managerIdleMinutes, managerIdleSweepMinutes } from './manager/idle.js';
 /**
  * Joins the agents plugin and the projects plugin in Studio (`bind.ts`), from the application's container, binds the
  * project manager (`manager/`, `studioProjectManagerToken`) and Studio's Reports page service (`../reports`).
@@ -13,6 +15,11 @@ import {
   type DefinedRealtimeTopic,
 } from '@nocobase/app-server/realtime';
 import { PROJECT_MANAGER_IDENTITY_TOPIC } from '../../shared/project-manager.js';
+import {
+  STUDIO_ISSUE_RUNS_TOPIC,
+  type StudioIssueRunsEvent,
+} from '../../shared/issue-runs.js';
+import { announceIssueRuns } from './issue-runs-announcer.js';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import {
   projectsAccessToken,
@@ -300,14 +307,27 @@ export function connectProjects(
     readonly basePath?: string;
     /** `studio.agents.queuedExpiryHours`: how long an issue's run waits for a runner; 0 waits forever. */
     readonly queuedExpiryHours?: number;
+    readonly managerIdleMinutes?: number;
+    readonly managerIdleSweepMinutes?: number;
   } = {},
-): (() => void) | undefined {
+): (() => Promise<void>) | undefined {
   if (!container.has(projectsToken) || !container.has(projectsKindsToken))
     return undefined;
   const grantsOf = readerGrantsOf(container);
   scopeRuns(container, agents, grantsOf);
   return bindStudioAgents({
     agents,
+    managerIdleMinutes: options.managerIdleMinutes,
+    managerIdleSweepMinutes: options.managerIdleSweepMinutes,
+    wakeExecutor: container.has(jobExecutorServiceToken)
+      ? container
+          .resolve(jobExecutorServiceToken)
+          .getScheduleExecutor('studio-manager-wake')
+      : null,
+    checkoutPullRequests: (issueId) =>
+      container.has(studioGitToken)
+        ? container.resolve(studioGitToken).git().checkoutPullRequests(issueId)
+        : Promise.resolve(new Map()),
     kinds: container.resolve(projectsKindsToken),
     projects: () => container.resolve(projectsToken),
     ...(container.has(projectsNoticeRulesToken)
@@ -386,7 +406,7 @@ function queuedExpiryOf(value: unknown): { queuedExpiryHours?: number } {
 /** Binds the join at boot and releases it at shutdown. */
 export default class StudioAgentsProvider extends ServiceProvider<Application> {
   public readonly name: string = 'studio/agents';
-  private release: (() => void) | undefined;
+  private release: (() => Promise<void>) | undefined;
   private identityTopic?: DefinedRealtimeTopic<Record<string, never>, 'public'>;
 
   public override register(): void {
@@ -451,11 +471,45 @@ export default class StudioAgentsProvider extends ServiceProvider<Application> {
     const agents = container.resolve(agentsToken);
     const disconnect = connectProjects(container, agents, {
       basePath: this.app.publicBasePath,
+      managerIdleSweepMinutes: managerIdleSweepMinutes(
+        this.app.config.get<unknown>('studio.agents.managerIdleSweepMinutes'),
+      ),
+      managerIdleMinutes: managerIdleMinutes(
+        this.app.config.get<unknown>('studio.agents.managerIdleMinutes'),
+      ),
       ...queuedExpiryOf(
         this.app.config.get<unknown>('studio.agents.queuedExpiryHours'),
       ),
     });
-    this.release = () => disconnect?.();
+    // Issue pages learn of runs on their issue from this, rather than by polling for them.
+    let stopAnnouncing: (() => void) | undefined;
+    if (
+      container.has(realtimeServiceToken) &&
+      container.has(databaseManagerToken)
+    ) {
+      const topic = container
+        .resolve(realtimeServiceToken)
+        .defineTopic<StudioIssueRunsEvent, 'public'>(STUDIO_ISSUE_RUNS_TOPIC, {
+          audience: 'public',
+          authenticated: true,
+        });
+      const database = container.resolve(databaseManagerToken);
+      const stop = announceIssueRuns({
+        events: agents.events,
+        conn: () => database.connection(),
+        publish: (event) => topic.publish(event),
+        onError: (error) =>
+          console.error('Studio could not announce issue runs.', error),
+      });
+      stopAnnouncing = () => {
+        stop();
+        topic.close();
+      };
+    }
+    this.release = async () => {
+      stopAnnouncing?.();
+      await disconnect?.();
+    };
     return Promise.resolve();
   }
 
@@ -478,7 +532,7 @@ export default class StudioAgentsProvider extends ServiceProvider<Application> {
     this.identityTopic?.close();
     this.identityTopic = undefined;
     const bound = this.release;
-    this.release?.();
+    await this.release?.();
     this.release = undefined;
     // What was heard before is reported before the database goes.
     if (bound && this.app.container.has(studioDelegationsToken))

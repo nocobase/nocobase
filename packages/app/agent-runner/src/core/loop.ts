@@ -27,7 +27,8 @@
 //
 // Self-update: a heartbeat answer may name a newer runner the application serves (`upgrade`), or, to this runner's
 // `npm` feature, the exact version to install from npm when it serves no tarball (`npmUpgrade`). A daemon started by
-// its service from an installation (`selfUpdate`) stops claiming, waits for its runs to end, installs the new version
+// its service from an installation (`selfUpdate`) stops claiming, interrupts agent runs with local preservation,
+// waits for their cleanup and any background jobs to finish, and installs the new version
 // (update.ts) and stops, and its process exits with `exitCode`; the service starts the new version. Any other daemon
 // only logs the notice.
 import { createHash } from 'node:crypto';
@@ -75,6 +76,7 @@ import {
   type AgentTool,
 } from '../protocol/index.ts';
 import type { Installation } from '../lib/install.ts';
+import { gcRunTemps } from './run-temp.ts';
 import { gcWorkspaces } from './checkout.ts';
 import { prunePnpmStore } from './pnpm-store.ts';
 import {
@@ -104,11 +106,14 @@ import {
 import {
   applyUpdate,
   isNewer,
+  protocolBehindMessage,
   RESTART_EXIT_CODE,
+  updateDecision,
   type UpdateTarget,
 } from './update.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
-import { ToolCapabilitiesCache } from './tool-capabilities.ts';
+import { ToolCapabilitiesCache, detectTools } from './tool-capabilities.ts';
+export { detectTools } from './tool-capabilities.ts';
 import { reportedModels } from './model-list.ts';
 
 /** The version this runner reports and compares updates with: the host package's (`host.ts`). */
@@ -153,29 +158,6 @@ export async function readDaemonPid(
   return pid !== undefined && isAlive(pid.pid) ? pid : undefined;
 }
 
-export async function detectTools(
-  adapters: Map<AgentTool, AgentAdapter>,
-): Promise<ToolInfo[]> {
-  const tools: ToolInfo[] = [];
-  for (const [kind, adapter] of adapters) {
-    const detected = await adapter
-      .detect()
-      .catch(() => ({ installed: false, authenticated: false }));
-    if (!detected.installed) continue;
-    tools.push({
-      kind,
-      authenticated: detected.authenticated,
-      ...('version' in detected && detected.version !== undefined
-        ? { version: detected.version }
-        : {}),
-      ...('path' in detected && detected.path !== undefined
-        ? { path: detected.path }
-        : {}),
-    });
-  }
-  return tools;
-}
-
 export function runnerFeatures(
   adapters: Map<AgentTool, AgentAdapter>,
 ): RunnerFeature[] {
@@ -205,7 +187,7 @@ export interface DaemonOptions {
   readDisk?: ReadDisk;
   /** Why an isolation configuration cannot be had here (isolation.ts); for tests. */
   isolationProblem?: (config: IsolationConfig) => Promise<string | undefined>;
-  /** Update between runs when an application serves a newer runner; without it, upgrade notices are only logged. */
+  /** Interrupt agent runs and update when an application serves a newer runner; without it, notices are only logged. */
   selfUpdate?: {
     installation: Pick<Installation, 'prefix' | 'current'>;
     /** Replaces `applyUpdate`; for tests. */
@@ -234,6 +216,7 @@ interface AppLink {
    */
   detection?: {
     key: string;
+    controller: AbortController;
     tools: Promise<ToolInfo[]>;
     capabilities: Promise<ToolCapabilitiesCache>;
   };
@@ -257,7 +240,7 @@ export class RunnerDaemon {
   private stopped: Promise<void> | undefined;
   /** Where the next round of claims starts, with several applications. */
   private nextApp = 0;
-  /** A newer runner to install once no run is left; claiming pauses meanwhile. */
+  /** A newer runner to install after interrupting agent runs and waiting for cleanup; claims pause meanwhile. */
   private pendingUpdate: { link: AppLink; target: UpdateTarget } | undefined;
   private updating = false;
   /** The shared pnpm store is being pruned; claiming pauses meanwhile. */
@@ -272,6 +255,8 @@ export class RunnerDaemon {
   /** Failed pruning is retried at the next idle opportunity after this time. */
   private pruneRetryAt = 0;
   private readonly failedUpdates = new Map<string, number>();
+  /** The newer server protocol each application was last reported to speak (`noticeProtocol`). */
+  private readonly protocolNoticed = new Map<string, number>();
   /** The version the daemon installed before it stopped, if it did. */
   updatedTo: string | undefined;
 
@@ -426,9 +411,10 @@ export class RunnerDaemon {
       this.options.log(`runner stopping: ${reason}`);
       this.stopping.abort();
       await Promise.allSettled(
-        this.links.map(async (link) =>
-          (await link.detection?.capabilities)?.stop(),
-        ),
+        this.links.map(async (link) => {
+          link.detection?.controller.abort();
+          await (await link.detection?.capabilities)?.stop();
+        }),
       );
       this.slotFreed?.();
       for (const link of this.links)
@@ -499,21 +485,27 @@ export class RunnerDaemon {
       .digest('hex');
     if (link.detection?.key !== key) {
       const previous = link.detection;
-      const adapters =
+      previous?.controller.abort();
+      const controller = new AbortController();
+      const adaptersFor = () =>
         this.options.adaptersFor?.(process.env, passEnv, localVariables) ??
         this.options.adapters;
-      const tools = detectTools(adapters);
+      const tools = detectTools(adaptersFor(), controller.signal);
       link.detection = {
         key,
+        controller,
         tools,
         capabilities: tools.then(
-          (detected) => new ToolCapabilitiesCache(adapters, detected),
+          (detected) => new ToolCapabilitiesCache(adaptersFor, detected),
         ),
       };
       if (previous !== undefined)
         void previous.capabilities.then((cache) => cache.stop());
     }
-    const capabilities = await link.detection.capabilities;
+    const detection = link.detection;
+    const capabilities = await detection.capabilities;
+    if (this.stopping.signal.aborted) return { variables: [], tools: [] };
+    if (link.detection !== detection) return this.environmentOf(link);
     capabilities.refresh();
     return {
       variables: providedNames(process.env, passEnv, localVariables),
@@ -580,6 +572,7 @@ export class RunnerDaemon {
             patterns: artifactPatterns(settings),
           },
         });
+        await gcRunTemps(paths, true);
         this.diskPaused = collected.low;
         if (
           collected.removed.length > 0 ||
@@ -707,8 +700,16 @@ export class RunnerDaemon {
             startedAt: run.startedAt,
           })),
           load: {
+            ...(this.pendingUpdate
+              ? { draining: 'updatePending' as const }
+              : this.pruning
+                ? { draining: 'pruning' as const }
+                : {}),
             slots: this.slots,
-            free: Math.max(0, this.slots - this.supervisor.size),
+            free:
+              this.pendingUpdate || this.pruning
+                ? 0
+                : Math.max(0, this.slots - this.supervisor.size),
             ...(this.limitedTools.length > 0
               ? {
                   tools: Object.fromEntries(
@@ -716,7 +717,7 @@ export class RunnerDaemon {
                       tool,
                       {
                         slots: this.toolLimit(tool as AgentTool),
-                        free,
+                        free: this.pendingUpdate || this.pruning ? 0 : free,
                       } satisfies ToolLoad,
                     ]),
                   ),
@@ -752,6 +753,11 @@ export class RunnerDaemon {
           version: npmUpgrade.latestVersion,
           package: npmUpgrade.package,
         });
+      this.noticeProtocol(
+        link,
+        response.protocolVersion,
+        (upgrade ?? npmUpgrade)?.latestVersion,
+      );
       for (const runId of response.cancelRequested)
         void this.supervisor.enforceCancel(runId);
       for (const runId of response.release) void this.supervisor.release(runId);
@@ -800,14 +806,35 @@ export class RunnerDaemon {
     if (failedAt !== undefined && Date.now() - failedAt < UPDATE_RETRY_MS)
       return;
     log(
-      `${link.key}: updating to ${runnerHost().bin} ${upgrade.latestVersion}${target.kind === 'npm' ? ` (${target.package} from npm)` : ''} once no run is left`,
+      `${link.key}: updating to ${runnerHost().bin} ${upgrade.latestVersion}${target.kind === 'npm' ? ` (${target.package} from npm)` : ''}; interrupting agent runs and preserving local work`,
     );
     this.pendingUpdate = { link, target };
     this.slotFreed?.();
     void this.updateWhenIdle();
   }
 
-  /** Installs the pending update when no run is left, then stops so the service starts the new version. */
+  /**
+   * Tells the owner, once per application and protocol, that the application speaks a newer protocol than this runner
+   * while it offers no newer version: the versions may look the same, as with an application run from source, yet
+   * runs that need the newer protocol are never handed here.
+   */
+  private noticeProtocol(
+    link: AppLink,
+    serverProtocol: number | undefined,
+    offered: string | undefined,
+  ): void {
+    if (
+      serverProtocol === undefined ||
+      updateDecision({ running: runnerVersion(), offered, serverProtocol }) !==
+        'protocol' ||
+      this.protocolNoticed.get(link.key) === serverProtocol
+    )
+      return;
+    this.protocolNoticed.set(link.key, serverProtocol);
+    this.options.log(`${link.key}: ${protocolBehindMessage(serverProtocol)}`);
+  }
+
+  /** Interrupts agent runs, waits for their cleanup and background jobs, then installs and restarts. */
   private async updateWhenIdle(): Promise<void> {
     const pending = this.pendingUpdate;
     const { selfUpdate, log } = this.options;
@@ -815,12 +842,33 @@ export class RunnerDaemon {
       pending === undefined ||
       selfUpdate === undefined ||
       this.updating ||
-      this.supervisor.size > 0 ||
       this.stopping.signal.aborted
     )
       return;
     this.updating = true;
     try {
+      const reported = Promise.all(this.live.map((app) => this.heartbeat(app)));
+      const cancellations = new Map<string, Promise<void>>();
+      const interruptAgents = (): void => {
+        for (const run of this.supervisor.runs.values()) {
+          if (run.jobId !== undefined || cancellations.has(run.runId)) continue;
+          cancellations.set(
+            run.runId,
+            this.supervisor.enforceCancel(run.runId, true),
+          );
+        }
+      };
+      // Stop existing tools immediately, and include workers registered by outstanding claims.
+      interruptAgents();
+      while (this.claimsInFlight > 0 && !this.stopping.signal.aborted) {
+        await delay(20, this.stopping.signal);
+        interruptAgents();
+      }
+      interruptAgents();
+      await Promise.all(cancellations.values());
+      await reported;
+      // Background jobs retain their existing completion semantics.
+      if (this.supervisor.size > 0 || this.stopping.signal.aborted) return;
       await (selfUpdate.apply ?? applyUpdate)({
         installation: selfUpdate.installation,
         client: pending.link.client,
@@ -850,6 +898,7 @@ export class RunnerDaemon {
     wait: boolean,
   ): Promise<number> {
     if (
+      this.pendingUpdate ||
       this.pruning ||
       this.collecting ||
       this.diskPaused ||
@@ -862,6 +911,7 @@ export class RunnerDaemon {
     );
     if (
       this.collecting ||
+      this.pendingUpdate ||
       this.pruning ||
       this.diskPaused ||
       this.stopping.signal.aborted

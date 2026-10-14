@@ -21,6 +21,7 @@ import type {
   KnowledgeProposalStatus,
   KnowledgeRevisionRequest,
   KnowledgeSearchHit,
+  KnowledgeSpaceSummary,
   KnowledgeSource,
   KnowledgeSubject,
   KnowledgeSubjectType,
@@ -578,6 +579,25 @@ export const KnowledgeSpaceDocsSchema: z.ZodType<
   })
   .meta({ ref: 'KnowledgeSpaceDocs' });
 
+export const KnowledgeSpaceSummarySchema: z.ZodType<KnowledgeSpaceSummary> = z
+  .object({
+    space: z.object({
+      scope: z.string(),
+      scopeId: z.string(),
+      id: z.string().nullable(),
+      title: z.string().nullable(),
+      inherited: z.boolean(),
+      access: KnowledgeAccessSchema,
+    }),
+    documents: z.number().int().nonnegative().meta({
+      description: 'Readable live articles and files; excludes folders.',
+    }),
+    archivedDocuments: z.number().int().nonnegative().meta({
+      description: 'Archived articles and files the viewer may restore.',
+    }),
+  })
+  .meta({ ref: 'KnowledgeSpaceSummary' });
+
 // Not `KnowledgeSearch…`: an application's own `/api/knowledgeSearch` routes own that prefix.
 export const KnowledgeHitSchema: z.ZodType<KnowledgeSearchHit> = z
   .object({
@@ -589,6 +609,8 @@ export const KnowledgeHitSchema: z.ZodType<KnowledgeSearchHit> = z
     scope: z.string(),
     scopeId: z.string(),
     inherited: z.boolean(),
+    folderPath: z.array(z.string()).optional(),
+    spaceTitle: z.string().nullable().optional(),
     headingPath: z.array(z.string()),
     anchor: z.string().nullable(),
     lines: z

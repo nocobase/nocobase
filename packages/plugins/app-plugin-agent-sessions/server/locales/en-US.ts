@@ -22,6 +22,8 @@ const enUS = {
     computerNotAnswering:
       'The computer did not answer in time. Check that its connection is running, then try again.',
     folderUnavailable: 'The folder cannot be opened on the computer.',
+    discoveryFailed:
+      'Could not load agent settings. Check the agent on this computer and retry.',
     projectNotFound: 'There is no such project, or you cannot see it.',
     referenceNotFound:
       'Something mentioned does not exist, or you cannot see it.',

@@ -338,6 +338,13 @@ export interface KnowledgeTree {
   }[];
 }
 
+/** Permission-filtered directory totals. Folders are not documents. */
+export interface KnowledgeSpaceSummary {
+  readonly space: KnowledgeSpace;
+  readonly documents: number;
+  readonly archivedDocuments: number;
+}
+
 /** `POST /api/knowledge/docs`: an article, or a folder (a title only). Files are uploaded (`POST …/docs/upload`). */
 export interface CreateKnowledgeDocRequest extends SpaceRef {
   readonly kind?: 'article' | 'folder';
@@ -497,6 +504,9 @@ export interface KnowledgeSearchHit {
   readonly scope: KnowledgeScope;
   readonly scopeId: string;
   readonly inherited: boolean;
+  /** The readable folder ancestors, distinct from headings inside a document. */
+  readonly folderPath?: readonly string[];
+  readonly spaceTitle?: string | null;
   readonly headingPath: readonly string[];
   readonly anchor: string | null;
   readonly lines: readonly [number, number];

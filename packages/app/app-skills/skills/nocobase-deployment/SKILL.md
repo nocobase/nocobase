@@ -62,6 +62,8 @@ A deployment package carries code and production dependencies, not business data
 
 Before an update that can change schema, take a database and file backup and confirm the restore path. Ensure the database account can perform the configured migration and seed operations. Do not point a new instance at an empty database and describe the result as a data migration.
 
+Read [database upgrades](../nocobase-app-upgrade/references/database-upgrades.md) when the update changes migrations or reports checksum drift, before starting the new runtime. It covers target-version upgrade notes, reviewed checksum repair, data prerequisites, and irreversible changes, including plugin migrations that the application's source diff does not show. `db repair` acknowledges source checksums only; it does not upgrade schema or recover a partially failed installation.
+
 The default configuration uses managed schema migrations and automatic seeds. Determine whether the deployment should run them on startup. If migrations or seeds are run separately, set the corresponding automatic options to `false` and execute the supported CLI operation before starting the application. Record the migration and seed result; a successful process start alone is insufficient.
 
 ## Build and review production configuration

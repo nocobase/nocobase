@@ -52,7 +52,7 @@ export class MailMessagesStore {
   ): Promise<MailMessage> {
     await this.database.transaction(async ({ query }) => {
       await lockWritableAccount(query, accountId);
-      await query
+      let update = query
         .updateTable<MessageRow>('mailMessages')
         .set({
           text: message.text ?? null,
@@ -64,8 +64,11 @@ export class MailMessagesStore {
         })
         .where('accountId', '=', accountId)
         .where('id', '=', messageId)
-        .where('providerMessageId', '=', message.providerMessageId)
-        .execute();
+        .where('providerMessageId', '=', message.providerMessageId);
+      // Incomplete content from one copy never replaces complete content.
+      if ((message.contentStatus ?? 'complete') !== 'complete')
+        update = update.where('contentStatus', '!=', 'complete');
+      await update.execute();
     });
     const saved = await this.getMessageForAccount(accountId, messageId);
     if (!saved)
@@ -116,6 +119,12 @@ export class MailMessagesStore {
           providerMessageId: `local-draft:${messageId}`,
           providerDraftMessageId:
             row.providerDraftMessageId ?? row.providerMessageId,
+          // The remote copy keeps its IMAP identity source under the draft ID.
+          providerDraftMessageIdSource:
+            (row.providerDraftMessageId
+              ? row.providerDraftMessageIdSource
+              : row.imapIdSource) ?? null,
+          imapIdSource: null,
         })
         .where('accountId', '=', accountId)
         .where('id', '=', messageId)

@@ -309,6 +309,12 @@ export function toRunner(
       typeof jsonObject(record.load).free === 'number'
         ? Number(jsonObject(record.load).free)
         : undefined,
+    draining:
+      jsonObject(record.load).draining === 'updatePending'
+        ? 'updatePending'
+        : jsonObject(record.load).draining === 'pruning'
+          ? 'pruning'
+          : undefined,
     acceptJobs: Boolean(record.acceptJobs),
     policy: storedPolicy(record.policy),
     variables: storedVariableNames(record.variables),

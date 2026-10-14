@@ -9,7 +9,7 @@ import { pathToFileURL } from 'node:url';
 import runnerPackage from '@nocobase/agent-runner/package.json' with { type: 'json' };
 import studioCliPackage from '@nocobase/studio-cli/package.json' with { type: 'json' };
 import { RUNNER_PRODUCT } from '@nocobase/agent-protocol';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   installedServedVersions,
@@ -28,6 +28,26 @@ const configWith = (env: Record<string, string | undefined>) =>
   agents({ paths, env } as unknown as Parameters<typeof agents>[0]);
 
 describe('agents.dist.dir', () => {
+  it('defaults run retention to 14 days and publishes only its safe leaf', () => {
+    expect(configWith({}).runs?.retentionDays).toBe(14);
+    expect(agents.rules?.public).toEqual(['runs.retentionDays']);
+  });
+
+  it('reports invalid retention as a configuration error and accepts zero', async () => {
+    const error = vi.fn();
+    const context = { error, warning: vi.fn(), isUserProvided: () => true };
+    const validate = agents.rules!.validators[0]!;
+    await validate({ runs: { retentionDays: 0 } } as never, context);
+    expect(error).not.toHaveBeenCalled();
+    for (const days of [-1, 1.5, '14', null, false]) {
+      await validate({ runs: { retentionDays: days } } as never, context);
+      expect(error).toHaveBeenLastCalledWith(
+        'runs.retentionDays',
+        'Must be a non-negative integer.',
+      );
+    }
+    expect(error).toHaveBeenCalledTimes(5);
+  });
   const directories: string[] = [];
   afterEach(() => {
     for (const directory of directories.splice(0))

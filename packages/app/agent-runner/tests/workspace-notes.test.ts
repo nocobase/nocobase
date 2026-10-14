@@ -5,6 +5,7 @@ import { workspaceNotes } from '../src/agent/worker.ts';
 describe('workspaceNotes', () => {
   const base = {
     workDir: '/work/PM-1',
+    tmpDir: '/tmp/n-12345678/1234567890abcdef',
     cwd: '/work/PM-1',
     dirs: [],
     cli: 'acme',
@@ -84,6 +85,12 @@ describe('workspaceNotes', () => {
     });
     expect(notes).toContain('local branch runner/attempt/repo');
     expect(notes).toContain('git push origin HEAD:refs/heads/fix/human');
+    expect(notes).toContain('switch or create branches');
+    expect(notes).toContain('push any branch of this repository');
+    expect(notes).toContain(
+      'Never rewrite already-pushed history or force push',
+    );
+    expect(notes).toContain('pr open --head <branch>');
     expect(notes).toContain('legacy sessions are not migrated');
   });
 });

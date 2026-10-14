@@ -71,7 +71,7 @@ export interface SessionRecord {
   /** The last event its owner saw, and the last they were told of until they see it (`notices.ts`). */
   readonly seenSeq: number;
   readonly noticedSeq: number | null;
-  /** The language its owner last wrote in. */
+  /** The interface language supplied with its owner's latest message. */
   readonly locale: string | null;
   readonly running: boolean;
   readonly pendingPermissions: number;

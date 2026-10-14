@@ -62,6 +62,10 @@ const enUS = {
   'issueRuns.configuredModel': 'Configured model: {{model}}',
   'issueRuns.modelUnknown': 'Model not reported',
   'issueRuns.clearFilters': 'Clear filters',
+  'issueRuns.attemptFailed': 'Attempt {{attempt}} failed',
+  'issueRuns.preparationFailed': 'Run preparation failed',
+  'issueRuns.retryScheduled': 'Automatic retry scheduled for {{time}}',
+  'issueRuns.awaitingDispatch': 'Waiting to be dispatched again',
   'issueRuns.emptyHint':
     'Check the executor and status in Properties to start agent work.',
   'issueRuns.loading': 'Loading execution log…',
@@ -120,6 +124,7 @@ const enUS = {
   runTranscript: {
     usedModel: 'Model: {{model}}',
     defaultModel: 'Default model',
+    confirmedBy: 'Confirmed by {{person}}',
     actingAs: 'Running as {{actor}}',
     triggeredBy: 'Triggered by {{person}}',
     systemTrigger: 'Triggered by the system',
@@ -1144,6 +1149,8 @@ const enUS = {
       stageEntered: 'Workflow stage',
       planDecided: 'Plan decided',
       prChecksFailed: 'Checks failed',
+      stepEnded: 'Worker step ended',
+      managerIdle: 'Idle waiting recheck',
       prChecksPassed: 'Checks passed',
       started: 'Started',
       prConflict: 'Pull request conflict',
@@ -1314,7 +1321,7 @@ const enUS = {
     commentRuns: {
       limitReached: 'Agent comments paused',
       continueHint:
-        'Agents’ comments started {{maxRuns}} runs on this issue in {{windowHours}} hours, so the last one woke nobody. Continue to wake the agents it names once and restart the count.',
+        'Comment-triggered runs reached the limit of {{maxRuns}} in the last {{windowHours}} hours.',
       continued: 'Agent comment continued',
       continueStale: 'This comment no longer waits. Refresh the issue.',
       continueFailed:
@@ -1461,6 +1468,8 @@ const enUS = {
     workerChoice: 'Model',
     workerWaiting: '{{agent}} waiting for a runner: {{entries}}',
     modelWait: {
+      updatePending: 'runner waiting for update; new work is paused',
+      pruning: 'runner cleaning shared store; new work is paused',
       toolNotInstalled: 'tool not installed',
       toolUnavailable: 'tool not signed in, disabled, or model unavailable',
       noSharedRunner: 'only other people’s personal runners are online',

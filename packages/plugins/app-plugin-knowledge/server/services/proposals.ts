@@ -264,7 +264,7 @@ export type OpenKeyInput = Pick<
 /**
  * The key an open proposal holds: `open:` and the SHA-256 of its target (the document; for a new one its space, parent
  * and slug) and its source (else its proposer), encoded as a JSON array so no two of them read alike. The migration
- * `202610240050_kb_proposals_add_revisions` computes the same for the proposals pending before it.
+ * `202610260003_kb_proposals_add_revisions` computes the same for the proposals pending before it.
  */
 export function openKeyOf(record: OpenKeyInput): string {
   const target = record.docId
@@ -1110,7 +1110,6 @@ export function createProposalService(
           sort.field('createdAt').desc(),
           sort.field('id').desc(),
         ],
-        limit: 200,
       });
       const spaces = new Map(
         (

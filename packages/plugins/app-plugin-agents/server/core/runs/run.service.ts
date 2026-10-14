@@ -45,7 +45,12 @@ import {
 } from '../../kernel/errors.js';
 import type { IdSource } from '../../kernel/ids.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
-import { asJson, cleanList, jsonObject } from '../../kernel/values.js';
+import {
+  asJson,
+  cleanList,
+  jsonObject,
+  stringArray,
+} from '../../kernel/values.js';
 import type { AgentService } from '../agents/index.js';
 import { findAgent, lockAgentForClaim } from '../agents/index.js';
 import { agentNamesOf } from '../agents/agent.store.js';
@@ -66,6 +71,7 @@ import {
   isTerminal,
   lastSummary,
   openRunsOn,
+  openRunsOnEach,
   pendingInputs,
   reposRepo,
   runsOfKey,
@@ -82,6 +88,12 @@ import { readWorkload, type WorkloadRunners } from './workload.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
 import { gateInputs, gatePending } from './input-gate.js';
 import { findBrief, requestReset } from './workspace.store.js';
+import {
+  findCommentRoot,
+  currentCommentOwner,
+  commentConsent,
+  commentFromOwner,
+} from './comment-consent.js';
 
 export const DEFAULT_THREAD = 'main';
 
@@ -93,6 +105,13 @@ export interface NewInput {
 }
 
 export interface EnqueueRequest {
+  /** Trusted application dispatch: prefer a compatible authorized active run across comment roots. */
+  readonly preferActive?: boolean;
+  /** Supplied only by a real comment entry point; subsequent comment dispatches share its first run. */
+  readonly comment?: {
+    readonly rootRunId?: string;
+    readonly ownerKey: string | null;
+  };
   readonly agentId: string;
   readonly subject: { readonly kind: string; readonly id: string };
   /** Separates conversations about one subject; `main` by default. */
@@ -155,6 +174,8 @@ export interface RunEnqueued {
   readonly outcome: 'created' | 'merged' | 'appended';
   readonly status: RunStatus;
   readonly inputId: string;
+  /** The source comment already has an input; callers must not announce it again. */
+  readonly duplicate?: boolean;
 }
 
 /** Work that waits for the subject's responsible to confirm it: a run request (`runs.requests`), and no run yet. */
@@ -284,6 +305,12 @@ export interface RunService {
     subject: { readonly kind: string; readonly id: string },
     agentId?: string,
   ): Promise<Run[]>;
+  /** The runs that have not ended on each of `subjectIds` of `subjectKind`, oldest first; read on `conn`. */
+  openOnEach(
+    conn: DatabaseConnection,
+    subjectKind: string,
+    subjectIds: readonly string[],
+  ): Promise<Run[]>;
   /** The run's input not yet reported as handled, oldest first; read on `conn`. */
   pendingInputs(conn: DatabaseConnection, runId: string): Promise<RunInput[]>;
   /** The inputs given to runs on a subject since `since`, with the agent of their run and their payload as an object. */
@@ -327,12 +354,18 @@ export interface RunServiceDeps extends TransitionDeps {
   };
   /** Whether a runner would take work run as a person, for work someone asks to run as themselves. */
   readonly eligibility: Pick<ClaimEligibility, 'canClaim'>;
+  readonly reconcileCommentConsent?: (unit: Tx, runId: string) => Promise<void>;
   /** Names of people, for the lists of run requests. */
   readonly people: Pick<People, 'names'>;
 }
 
 /** Work to queue now, as the person it runs as. */
 interface Work {
+  readonly preferActive?: boolean;
+  readonly sourceRunId?: string;
+  readonly commentRootRunId?: string | null;
+  readonly commentExecution?: 'owner' | 'requester' | null;
+  readonly commentOwnerKey?: string | null;
   readonly subject: EnqueueRequest['subject'];
   readonly threadScope: string;
   readonly freshSession?: boolean;
@@ -350,7 +383,9 @@ interface Work {
 
 /** Who a chain of work a run belongs to started with: who confirmed it, else who it was requested by. */
 function chainSourceOf(run: RunRecord): string {
-  return run.confirmedByUserId ?? run.requestedByUserId ?? run.actorUserId;
+  return run.commentRootRunId
+    ? (run.requestedByUserId ?? run.actorUserId)
+    : (run.confirmedByUserId ?? run.requestedByUserId ?? run.actorUserId);
 }
 
 /** A delay as the moment a run may be claimed, or null for now (and for any moment already past). */
@@ -361,8 +396,26 @@ function fireAtOf(value: Date | string | undefined, now: Date): string | null {
   return at.getTime() > now.getTime() ? at.toISOString() : null;
 }
 
+const COMMENT_CANCEL_DETAIL =
+  'The personal runner request was declined or switched to the commenter.';
+
 export function createRunService(deps: RunServiceDeps): RunService {
   const { tx, ids, clock } = deps;
+
+  /** Ends one unfinished run of a declined chain; a run that moved since it was read rolls the decision back. */
+  async function endCommentRun(
+    unit: Tx,
+    run: RunRecord,
+    byUserId: string,
+  ): Promise<void> {
+    const ended = await finishRun(unit, deps, run, {
+      status: 'cancelled',
+      reason: null,
+      detail: COMMENT_CANCEL_DETAIL,
+      cancelledById: byUserId,
+    });
+    if (!ended) throw conflict('The comment work changed; read it again.');
+  }
 
   const require = async (conn: Tx['conn'], id: string): Promise<RunRecord> => {
     const run = await findRunRecord(conn, id);
@@ -418,6 +471,9 @@ export function createRunService(deps: RunServiceDeps): RunService {
     unit: Tx,
     agent: Agent,
     values: {
+      readonly commentRootRunId?: string | null;
+      readonly commentExecution?: 'owner' | 'requester' | null;
+      readonly commentOwnerKey?: string | null;
       readonly subject: EnqueueRequest['subject'];
       readonly threadScope: string;
       readonly freshSession?: boolean;
@@ -451,6 +507,12 @@ export function createRunService(deps: RunServiceDeps): RunService {
         subjectKind: values.subject.kind,
         subjectId: values.subject.id,
         threadScope: values.threadScope,
+        commentRootRunId:
+          values.commentRootRunId === ''
+            ? id
+            : (values.commentRootRunId ?? null),
+        commentExecution: values.commentExecution ?? null,
+        commentOwnerKey: values.commentOwnerKey ?? null,
         actorUserId: values.actorUserId,
         requestedByUserId: values.requestedByUserId,
         confirmedByUserId: values.confirmedByUserId,
@@ -576,6 +638,67 @@ export function createRunService(deps: RunServiceDeps): RunService {
     );
   }
 
+  /** Cross-root appends require both sources to retain the same owner's authorization. */
+  async function equivalentCommentAuthority(
+    unit: Tx,
+    run: RunRecord,
+    work: Work,
+  ): Promise<boolean> {
+    if (
+      run.ownerUserId !== work.ownerUserId ||
+      (run.commentOwnerKey ?? null) !== (work.commentOwnerKey ?? null) ||
+      (run.commentExecution ?? 'owner') !== (work.commentExecution ?? 'owner')
+    )
+      return false;
+    if ((run.commentRootRunId ?? null) === (work.commentRootRunId ?? null)) {
+      if (!run.commentRootRunId) return true;
+      const root = await findCommentRoot(unit.conn, run.commentRootRunId);
+      // Requester execution keeps its own identity; it does not borrow the owner's consent.
+      if (root.commentExecution === 'requester')
+        return (
+          root.actorUserId === work.actorUserId &&
+          (await currentCommentOwner(unit.conn, deps.subjects, root))
+        );
+      return await authorizedRoot(root);
+    }
+    if (
+      work.commentExecution === 'requester' ||
+      run.commentExecution === 'requester' ||
+      !work.sourceRunId
+    )
+      return false;
+    const source = await findRunRecord(unit.conn, work.sourceRunId);
+    if (
+      !source ||
+      source.subjectKind !== run.subjectKind ||
+      source.subjectId !== run.subjectId ||
+      source.ownerUserId !== run.ownerUserId ||
+      source.actorUserId !== run.actorUserId
+    )
+      return false;
+    const sourceRoot = source.commentRootRunId
+      ? await findCommentRoot(unit.conn, source.commentRootRunId)
+      : source;
+    const targetRoot = run.commentRootRunId
+      ? await findCommentRoot(unit.conn, run.commentRootRunId)
+      : run;
+    return (
+      (await authorizedRoot(sourceRoot)) && (await authorizedRoot(targetRoot))
+    );
+
+    async function authorizedRoot(root: RunRecord) {
+      if (!(await currentCommentOwner(unit.conn, deps.subjects, root)))
+        return false;
+      if (!root.commentRootRunId)
+        return chainSourceOf(root) === root.ownerUserId;
+      const { decision } = await commentConsent(unit.conn, root);
+      if (decision === 'pending' || decision === 'rejected') return false;
+      return (
+        decision === 'confirmed' || (await commentFromOwner(unit.conn, root))
+      );
+    }
+  }
+
   /**
    * Queues `work` for `agent`: it joins the run working on its key while that run can still be told, else the run
    * waiting for it, else starts a new run.
@@ -585,8 +708,48 @@ export function createRunService(deps: RunServiceDeps): RunService {
     agent: Agent,
     work: Work,
   ): Promise<RunEnqueued> {
+    if (work.commentRootRunId) {
+      // A plain read: the root's subject never changes, and the agent lock below serializes the chain's enqueues.
+      const root = await findCommentRoot(unit.conn, work.commentRootRunId);
+      if (
+        root.subjectKind !== work.subject.kind ||
+        root.subjectId !== work.subject.id
+      )
+        throw invalid('A comment authorization cannot cross subjects.');
+    }
     // Serializes enqueues and claims for this agent, so a key never gets two waiting runs.
     await lockAgentForClaim(unit.conn, agent.id, clock.now().toISOString());
+    if (work.preferActive) {
+      const commentId = jsonObject(work.input.payload).commentId;
+      if (typeof commentId === 'string') {
+        const prior = await inputsRepo(unit.conn).findOne({
+          filter: (f) =>
+            f.and([
+              f.string('type').eq('comment'),
+              f.json('payload').path(['commentId']).eq(commentId),
+              f
+                .relation('run')
+                .some((r) =>
+                  r.and([
+                    r.string('agentId').eq(agent.id),
+                    r.string('subjectKind').eq(work.subject.kind),
+                    r.string('subjectId').eq(work.subject.id),
+                  ]),
+                ),
+            ]),
+        });
+        if (prior) {
+          const run = (await findRunRecord(unit.conn, prior.runId))!;
+          return {
+            runId: run.id,
+            inputId: prior.id,
+            outcome: 'appended',
+            status: run.status,
+            duplicate: true,
+          };
+        }
+      }
+    }
     const key = {
       agentId: agent.id,
       subjectKind: work.subject.kind,
@@ -595,35 +758,113 @@ export function createRunService(deps: RunServiceDeps): RunService {
     };
     // Only into work done as the same person: merged into another's run, it would borrow their identity, or wait
     // for a runner that never takes it.
-    const open = await runsOfKey(
+    const unfiltered = await runsOfKey(
       unit.conn,
       key,
       ['queued', ...ACTIVE],
       work.actorUserId,
     );
-    const candidate = open.find(
+    const open = unfiltered.filter(
       (run) =>
-        !work.freshSession &&
-        (run.status === 'dispatched' ||
-          (run.status === 'running' && Boolean(run.acceptsInput))),
+        (run.commentRootRunId ?? null) === (work.commentRootRunId ?? null) &&
+        (run.commentExecution ?? null) === (work.commentExecution ?? null),
     );
-    // Joins the working run only when the subject would let the agent act on it now; otherwise it waits in a queued run,
-    // which the claim admits or cancels.
-    const working =
-      candidate &&
-      (
-        await gateInputs(unit.conn, deps, candidate, agent, [
-          {
-            id: '',
-            at: clock.now().toISOString(),
-            ...work.input,
-          },
-        ])
-      ).length > 0
-        ? candidate
-        : undefined;
+    let working: RunRecord | undefined;
+    for (let candidate of work.preferActive ? unfiltered : open) {
+      if (
+        work.freshSession ||
+        candidate.cancelRequestedAt ||
+        !(
+          candidate.status === 'dispatched' ||
+          (candidate.status === 'running' && Boolean(candidate.acceptsInput))
+        )
+      )
+        continue;
+      if (work.preferActive) {
+        if (
+          !candidate.runnerId ||
+          !['claude', 'codex', 'pi', 'opencode'].includes(candidate.tool ?? '')
+        )
+          continue;
+        const runner = await deps.runners.find(unit.conn, candidate.runnerId);
+        if (!runner?.features.includes('steer')) continue;
+      }
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        if (
+          work.preferActive &&
+          !(await equivalentCommentAuthority(unit, candidate, work))
+        )
+          break;
+        const input = {
+          id: '',
+          at: clock.now().toISOString(),
+          ...work.input,
+          ...(candidate.commentRootRunId
+            ? {
+                payload: {
+                  ...jsonObject(work.input.payload),
+                  commentRootRunId: candidate.commentRootRunId,
+                },
+              }
+            : {}),
+        };
+        if (
+          (await gateInputs(unit.conn, deps, candidate, agent, [input]))
+            .length === 0
+        )
+          break;
+        const touched = await runsRepo(unit.conn).updateMany({
+          filter: (f) =>
+            f.and([
+              f.string('id').eq(candidate.id),
+              f.string('status').eq(candidate.status),
+              f.number('revision').eq(candidate.revision),
+              f.date('cancelRequestedAt').empty(),
+            ]),
+          values: { updatedAt: clock.now().toISOString() },
+        });
+        if (touched.updatedCount === 1) {
+          working = candidate;
+          break;
+        }
+        const current = await findRunRecord(unit.conn, candidate.id);
+        if (
+          !current ||
+          current.cancelRequestedAt ||
+          !(
+            current.status === 'dispatched' ||
+            (current.status === 'running' && current.acceptsInput)
+          )
+        )
+          break;
+        // A claim/start may change the holder or tool; re-evaluate those on a subsequent dispatch.
+        if (
+          current.actorUserId !== work.actorUserId ||
+          current.threadScope !== work.threadScope ||
+          current.runnerId !== candidate.runnerId ||
+          current.tool !== candidate.tool
+        )
+          break;
+        candidate = current;
+        if (attempt === 3)
+          throw conflict(
+            'The run revision changed during append; retry the dispatch.',
+          );
+      }
+      if (working) break;
+    }
     const waiting = open.find((run) => run.status === 'queued');
     const target = working ?? waiting;
+    const commentInput = (rootId: string | null | undefined): NewInput =>
+      rootId
+        ? {
+            ...work.input,
+            payload: {
+              ...jsonObject(work.input.payload),
+              commentRootRunId: rootId,
+            },
+          }
+        : work.input;
     if (!working && waiting)
       await hurry(unit, waiting, work.priority, work.fireAt);
     if (target) {
@@ -632,7 +873,11 @@ export function createRunService(deps: RunServiceDeps): RunService {
           filter: { id: target.id, status: 'queued' },
           values: { freshSession: true, updatedAt: clock.now().toISOString() },
         });
-      const inputId = await insertInput(unit, target.id, work.input);
+      const inputId = await insertInput(
+        unit,
+        target.id,
+        commentInput(target.commentRootRunId),
+      );
       return {
         runId: target.id,
         outcome: working ? 'appended' : 'merged',
@@ -641,6 +886,9 @@ export function createRunService(deps: RunServiceDeps): RunService {
       };
     }
     const runId = await createRun(unit, agent, {
+      commentRootRunId: work.commentRootRunId,
+      commentExecution: work.commentExecution,
+      commentOwnerKey: work.commentOwnerKey,
       freshSession: work.freshSession,
       subject: work.subject,
       threadScope: work.threadScope,
@@ -655,16 +903,31 @@ export function createRunService(deps: RunServiceDeps): RunService {
       ...(work.parentRunId ? { parentRunId: work.parentRunId } : {}),
       ...(work.maxAttempts ? { maxAttempts: work.maxAttempts } : {}),
     });
-    const inputId = await insertInput(unit, runId, work.input);
+    const inputId = await insertInput(
+      unit,
+      runId,
+      commentInput(
+        work.commentRootRunId === '' ? runId : work.commentRootRunId,
+      ),
+    );
     return { runId, outcome: 'created', status: 'queued', inputId };
   }
 
   /** The source of the chain of work a request belongs to (`EnqueueRequest.requestedByUserId`). */
   async function sourceOf(unit: Tx, request: EnqueueRequest): Promise<string> {
+    if (
+      request.comment &&
+      request.input.actor.kind === 'user' &&
+      jsonObject(request.input.payload).byAgent !== true &&
+      (request.requestedByUserId ?? request.actorUserId)
+    )
+      return (request.requestedByUserId ?? request.actorUserId)!;
     if (request.causedByRunId) {
       const cause = await findRunRecord(unit.conn, request.causedByRunId);
       if (!cause) throw invalid('causedByRunId names no run.');
-      return chainSourceOf(cause);
+      return request.comment
+        ? (cause.requestedByUserId ?? cause.actorUserId)
+        : chainSourceOf(cause);
     }
     const source =
       request.requestedByUserId ??
@@ -677,13 +940,19 @@ export function createRunService(deps: RunServiceDeps): RunService {
     return source;
   }
 
-  async function selectedIdentity(unit: Tx, request: EnqueueRequest) {
+  async function selectedIdentity(
+    unit: Tx,
+    request: EnqueueRequest,
+    commentExecution?: RunRecord['commentExecution'],
+  ) {
     const identity = await deps.subjects
       .get(request.subject.kind)
       ?.actsAs?.(unit.conn, {
         subjectId: request.subject.id,
         agentId: request.agentId,
         causedByRunId: request.causedByRunId,
+        commentExecution,
+        actorUserId: request.actorUserId,
         inputs: [request.input],
       });
     if (identity && !identity.actorUserId)
@@ -728,11 +997,217 @@ export function createRunService(deps: RunServiceDeps): RunService {
     mayInvoke: (agent, userId) => deps.agents.mayInvoke(agent, userId),
     requireInvocable,
     requireRunnerFor,
+    prepareCommentActor: async (record, byUserId) => {
+      const mayRead = deps.subjects.get(
+        record.subjectKind,
+      )?.commentActorMayRead;
+      if (mayRead && !(await mayRead(record.subjectId, byUserId)))
+        throw forbidden('The acting user may no longer read this issue.');
+    },
+    checkCommentRequest: async (unit, record) => {
+      const root = await findCommentRoot(unit.conn, record.commentRootRunId!);
+      if (
+        !(await currentCommentOwner(unit.conn, deps.subjects, root)) ||
+        root.commentExecution !== 'owner' ||
+        root.ownerUserId !== record.responsibleUserId ||
+        (root.commentOwnerKey ?? null) !== (record.commentOwnerKey ?? null)
+      )
+        throw precondition(
+          'RUN_REQUEST_SETTLED',
+          'This comment request belongs to an earlier owner assignment.',
+        );
+    },
+    releaseCommentRequest: async (unit, record, byUserId) => {
+      const run = await findRunRecord(unit.conn, record.commentRunId!);
+      if (
+        !run ||
+        run.status !== 'queued' ||
+        run.commentRootRunId !== record.commentRootRunId
+      )
+        throw precondition(
+          'RUN_REQUEST_SETTLED',
+          'The requested work is no longer waiting.',
+        );
+      const inputs = await pendingInputs(unit.conn, run.id);
+      const now = clock.now().toISOString();
+      // Guarded on the requested run itself: a claim that took it first wins, and this confirmation rolls back.
+      const released = await runsRepo(unit.conn).updateMany({
+        filter: { id: run.id, status: 'queued' },
+        values: { confirmedByUserId: byUserId, updatedAt: now },
+      });
+      if (released.updatedCount !== 1)
+        throw precondition(
+          'RUN_REQUEST_SETTLED',
+          'The requested work is no longer waiting.',
+        );
+      await runsRepo(unit.conn).updateMany({
+        filter: {
+          commentRootRunId: record.commentRootRunId!,
+          status: 'queued',
+          actorUserId: record.responsibleUserId,
+        },
+        values: { confirmedByUserId: byUserId, updatedAt: now },
+      });
+      unit.emit({ type: 'run.changed', runId: run.id, status: 'queued' });
+      return {
+        runId: run.id,
+        outcome: 'merged',
+        status: 'queued',
+        inputId: inputs[0].id,
+      };
+    },
+    cancelCommentRequest: async (unit, record, byUserId) => {
+      for (const run of await runsRepo(unit.conn).findMany({
+        filter: { commentRootRunId: record.commentRootRunId! },
+      }))
+        if (!isTerminal(run.status)) await endCommentRun(unit, run, byUserId);
+    },
+    runCommentAsRequester: async (unit, record, byUserId) => {
+      // Queuing the replacements takes their agents' rows, as claims do before they take a run. Taking every agent of
+      // the chain first, in one order, keeps this from holding a run a claim waits on while it waits for that claim.
+      const agentIds = new Set(
+        (
+          await runsRepo(unit.conn).findMany({
+            filter: { commentRootRunId: record.commentRootRunId! },
+          })
+        ).map((run) => run.agentId),
+      );
+      for (const agentId of [...agentIds].sort())
+        await lockAgentForClaim(unit.conn, agentId, clock.now().toISOString());
+      const chain = await runsRepo(unit.conn).findMany({
+        filter: { commentRootRunId: record.commentRootRunId! },
+        sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
+      });
+      const targets = [];
+      for (const old of chain) {
+        // Rejection ends the queued chain, but leaves its inputs unhandled. Do not revive independently ended work.
+        const declined =
+          record.status === 'rejected' &&
+          old.status === 'cancelled' &&
+          old.cancelledById === record.responsibleUserId &&
+          old.failureDetail === COMMENT_CANCEL_DETAIL;
+        if (isTerminal(old.status) && !declined) continue;
+        const inputs = await pendingInputs(unit.conn, old.id);
+        if (inputs.length === 0) continue;
+        await selectedIdentity(
+          unit,
+          {
+            agentId: old.agentId,
+            subject: { kind: old.subjectKind, id: old.subjectId },
+            input: toInput(inputs[0]),
+            actorUserId: byUserId,
+          },
+          'requester',
+        );
+        const agent = await requireInvocable(unit, old.agentId, byUserId);
+        const requires = stringArray(old.requires);
+        await requireRunnerFor(unit, agent, byUserId, requires);
+        targets.push({ old, inputs, agent, requires });
+      }
+      if (!targets.length)
+        throw precondition(
+          'RUN_REQUEST_SETTLED',
+          'No comment work is still waiting.',
+        );
+      // Validate all targets before stopping any of them. Each stop is guarded on the status read, so a run a claim took
+      // meanwhile rolls this back rather than being replaced twice; the settled request covers repeat clicks.
+      for (const old of chain)
+        if (!isTerminal(old.status)) await endCommentRun(unit, old, byUserId);
+      const replacements = new Map<string, RunEnqueued>();
+      let rootId: string | undefined;
+      for (const { old, inputs, agent, requires } of targets) {
+        const first = inputs[0];
+        const next = await queue(unit, agent, {
+          commentRootRunId: rootId ?? '',
+          commentExecution: 'requester',
+          commentOwnerKey: record.commentOwnerKey ?? null,
+          freshSession: Boolean(old.freshSession),
+          subject: { kind: old.subjectKind, id: old.subjectId },
+          threadScope: old.threadScope,
+          actorUserId: byUserId,
+          requestedByUserId: byUserId,
+          confirmedByUserId: null,
+          ownerUserId: old.ownerUserId,
+          priority: Number(old.priority),
+          fireAt: fireAtOf(old.availableAt ?? undefined, clock.now()),
+          requires,
+          maxAttempts: Number(old.maxAttempts),
+          input: toInput(first),
+        });
+        rootId ??= next.runId;
+        replacements.set(old.id, next);
+        for (const input of inputs.slice(1))
+          await insertInput(unit, next.runId, {
+            ...toInput(input),
+            payload: { ...jsonObject(input.payload), commentRootRunId: rootId },
+          });
+      }
+      // Remap causal references only for replaced work; completed ancestors remain the original historical runs.
+      for (const { old } of targets) {
+        const next = replacements.get(old.id)!;
+        if (old.parentRunId)
+          await runsRepo(unit.conn).updateMany({
+            filter: { id: next.runId },
+            values: {
+              parentRunId:
+                replacements.get(old.parentRunId)?.runId ?? old.parentRunId,
+            },
+          });
+        for (const input of await pendingInputs(unit.conn, next.runId)) {
+          const payload = jsonObject(input.payload);
+          const cause =
+            typeof payload.causedByRunId === 'string'
+              ? replacements.get(payload.causedByRunId)
+              : undefined;
+          if (cause)
+            await inputsRepo(unit.conn).updateMany({
+              filter: { id: input.id },
+              values: {
+                payload: asJson({ ...payload, causedByRunId: cause.runId }),
+              },
+            });
+        }
+      }
+      const rootInputs = await pendingInputs(unit.conn, rootId!);
+      if (
+        !rootInputs.some(
+          (input) =>
+            input.type === record.inputType &&
+            input.text === record.inputText &&
+            jsonObject(input.payload).commentId ===
+              jsonObject(record.inputPayload).commentId,
+        )
+      ) {
+        const sourceId = await insertInput(unit, rootId!, {
+          type: record.inputType as NewInput['type'],
+          actor: {
+            kind: record.inputActorKind as NewInput['actor']['kind'],
+            id: record.inputActorId,
+            name: record.inputActorName,
+          },
+          text: record.inputText,
+          payload: {
+            ...jsonObject(record.inputPayload),
+            commentSourceSnapshot: true,
+            commentRootRunId: rootId,
+          },
+        });
+        await inputsRepo(unit.conn).updateMany({
+          filter: { id: sourceId },
+          values: { handledAt: clock.now().toISOString() },
+        });
+      }
+      return (
+        replacements.get(record.commentRunId!) ??
+        replacements.values().next().value!
+      );
+    },
     direct: async (unit, run) => {
       const identity = await selectedIdentity(unit, {
         agentId: run.agent.id,
         subject: run.subject,
         input: run.input,
+        actorUserId: run.actorUserId,
       });
       const actorUserId = identity?.actorUserId ?? run.actorUserId;
       const agent = await requireInvocable(unit, run.agent.id, actorUserId);
@@ -745,7 +1220,6 @@ export function createRunService(deps: RunServiceDeps): RunService {
         confirmedByUserId: run.confirmedByUserId,
         ownerUserId: identity ? actorUserId : run.ownerUserId,
         priority: run.priority,
-        // As it was asked: a moment already past when it is confirmed means now.
         fireAt: fireAtOf(run.fireAt ?? undefined, clock.now()),
         requires: run.requires,
         ...(run.maxAttempts === null ? {} : { maxAttempts: run.maxAttempts }),
@@ -758,7 +1232,29 @@ export function createRunService(deps: RunServiceDeps): RunService {
     enqueue: (request, outer) =>
       tx.run(async (unit): Promise<EnqueueResult> => {
         const source = await sourceOf(unit, request);
-        const identity = await selectedIdentity(unit, request);
+        const cause = request.causedByRunId
+          ? await findRunRecord(unit.conn, request.causedByRunId)
+          : null;
+        const inherited =
+          !request.comment &&
+          cause?.commentRootRunId &&
+          cause.subjectKind === request.subject.kind &&
+          cause.subjectId === request.subject.id
+            ? cause
+            : null;
+        const commentRootRunId =
+          request.comment?.rootRunId ??
+          inherited?.commentRootRunId ??
+          (request.comment ? '' : null);
+        const commentExecution =
+          inherited?.commentExecution ?? (request.comment ? 'owner' : null);
+        const commentOwnerKey =
+          request.comment?.ownerKey ?? inherited?.commentOwnerKey ?? null;
+        const identity = await selectedIdentity(
+          unit,
+          request,
+          commentExecution,
+        );
         const responsible = identity
           ? null
           : (request.responsibleUserId ?? null);
@@ -805,7 +1301,9 @@ export function createRunService(deps: RunServiceDeps): RunService {
         // As the responsible when they caused it; as the source when they run it as themselves (`mine`); as whoever
         // woke the agent when nobody answers for the subject.
         const actorUserId =
-          identity?.actorUserId ??
+          (commentExecution === 'requester'
+            ? inherited?.actorUserId
+            : identity?.actorUserId) ??
           (foreign ? source : (responsible ?? request.actorUserId ?? source));
         const agent = await requireInvocable(
           unit,
@@ -819,14 +1317,24 @@ export function createRunService(deps: RunServiceDeps): RunService {
             actorUserId,
             request.requires ?? [],
           );
-        return queue(unit, agent, {
+        const result = await queue(unit, agent, {
+          preferActive: request.preferActive,
+          sourceRunId: request.causedByRunId,
+          commentRootRunId,
+          commentExecution,
+          commentOwnerKey,
           freshSession: request.freshSession,
           subject: request.subject,
           threadScope,
           actorUserId,
           requestedByUserId: source,
-          confirmedByUserId: null,
-          ownerUserId: identity ? actorUserId : (request.ownerUserId ?? null),
+          confirmedByUserId: inherited?.confirmedByUserId ?? null,
+          ownerUserId:
+            commentExecution === 'requester'
+              ? (inherited?.ownerUserId ?? request.ownerUserId ?? null)
+              : identity
+                ? actorUserId
+                : (request.ownerUserId ?? null),
           priority: request.priority ?? 0,
           fireAt: fireAtOf(request.fireAt, clock.now()),
           requires: request.requires ?? [],
@@ -834,6 +1342,9 @@ export function createRunService(deps: RunServiceDeps): RunService {
           ...(request.maxAttempts ? { maxAttempts: request.maxAttempts } : {}),
           input: request.input,
         });
+        if (commentRootRunId !== null)
+          await deps.reconcileCommentConsent?.(unit, result.runId);
+        return result;
       }, outer),
 
     requests,
@@ -848,11 +1359,40 @@ export function createRunService(deps: RunServiceDeps): RunService {
     addInput: (runId, input, outer) =>
       tx.run(async (unit) => {
         const run = await require(unit.conn, runId);
+        if (
+          run.commentRootRunId &&
+          input.type === 'comment' &&
+          jsonObject(input.payload).commentRootRunId !== run.commentRootRunId
+        )
+          throw forbidden(
+            'A comment must be queued in its own authorized run chain.',
+          );
         if (isTerminal(run.status))
           throw new ProtocolError(
             'RUN_NOT_ACTIVE',
             `The run is ${run.status}.`,
           );
+        if (isActive(run.status)) {
+          let current = run;
+          for (let attempt = 0; attempt < 4; attempt += 1) {
+            const updated = await runsRepo(unit.conn).updateMany({
+              filter: {
+                id: current.id,
+                status: current.status,
+                revision: current.revision,
+              },
+              values: { updatedAt: clock.now().toISOString() },
+            });
+            if (updated.updatedCount === 1)
+              return insertInput(unit, current.id, input);
+            current = await require(unit.conn, run.id);
+            if (!isActive(current.status))
+              throw conflict('The run moved on before input was appended.');
+          }
+          throw conflict(
+            'The run revision changed during append; retry the input.',
+          );
+        }
         return insertInput(unit, run.id, input);
       }, outer),
 
@@ -967,6 +1507,35 @@ export function createRunService(deps: RunServiceDeps): RunService {
         const previousInputs = await inputsRepo(unit.conn).findMany({
           filter: { runId: run.id },
         });
+        if (
+          !run.commentRootRunId &&
+          deps.subjects.get(run.subjectKind)?.commentOwnerKey &&
+          previousInputs.some(
+            (input) =>
+              input.type === 'comment' &&
+              !(
+                input.actorKind === 'user' &&
+                input.actorId === run.ownerUserId &&
+                jsonObject(input.payload).byAgent !== true
+              ),
+          )
+        )
+          throw precondition(
+            'RUN_NOT_RETRYABLE',
+            'Post the comment again to start a new authorized comment chain.',
+          );
+        const oldRoot = run.commentRootRunId
+          ? await findRunRecord(unit.conn, run.commentRootRunId)
+          : null;
+        const renewComment = oldRoot
+          ? !(await currentCommentOwner(unit.conn, deps.subjects, oldRoot))
+          : false;
+        const commentExecution =
+          renewComment &&
+          run.commentExecution === 'requester' &&
+          byUserId !== run.actorUserId
+            ? 'owner'
+            : run.commentExecution;
         const identity = await deps.subjects
           .get(run.subjectKind)
           ?.actsAs?.(unit.conn, {
@@ -974,10 +1543,15 @@ export function createRunService(deps: RunServiceDeps): RunService {
             agentId: run.agentId,
             inputs: previousInputs.map(toInput),
             causedByRunId: run.retryOfRunId ?? undefined,
+            commentExecution,
+            actorUserId: run.actorUserId,
           });
         if (identity && !identity.actorUserId)
           throw forbidden(identity.reason ?? 'noOwner');
-        const actorUserId = identity?.actorUserId ?? byUserId;
+        const actorUserId =
+          commentExecution === 'requester'
+            ? run.actorUserId
+            : (identity?.actorUserId ?? byUserId);
         const agent = await requireInvocable(unit, run.agentId, actorUserId);
         const open = await runsOfKey(
           unit.conn,
@@ -985,32 +1559,88 @@ export function createRunService(deps: RunServiceDeps): RunService {
           ['queued', ...ACTIVE],
           actorUserId,
         );
-        if (open.length > 0)
+        const sameChain = run.commentRootRunId
+          ? open.filter(
+              (candidate) =>
+                candidate.commentRootRunId === run.commentRootRunId,
+            )
+          : open;
+        if (sameChain.length > 0)
           throw precondition(
             'AGENT_BUSY',
             'The agent is already working on this.',
             {
-              runId: open[0].id,
+              runId: sameChain[0].id,
             },
           );
         const newId = await createRun(unit, agent, {
           subject: { kind: run.subjectKind, id: run.subjectId },
           threadScope: run.threadScope,
           actorUserId,
-          requestedByUserId: byUserId,
+          commentRootRunId: renewComment ? '' : run.commentRootRunId,
+          commentExecution,
+          commentOwnerKey: renewComment
+            ? ((await deps.subjects
+                .get(run.subjectKind)
+                ?.commentOwnerKey?.(unit.conn, run.subjectId)) ?? null)
+            : run.commentOwnerKey,
+          requestedByUserId: run.commentRootRunId
+            ? (run.requestedByUserId ?? run.actorUserId)
+            : byUserId,
           confirmedByUserId: null,
-          ownerUserId: identity ? actorUserId : run.ownerUserId,
+          ownerUserId: run.commentRootRunId
+            ? ((await deps.subjects
+                .get(run.subjectKind)
+                ?.responsibleUserId?.(unit.conn, run.subjectId)) ?? null)
+            : identity
+              ? actorUserId
+              : run.ownerUserId,
           priority: Number(run.priority),
           requires: toRun(run).requires,
           retryOfRunId: run.id,
           freshSession: run.freshSession,
         });
+        if (renewComment && oldRoot) {
+          const origins = await inputsRepo(unit.conn).findMany({
+            filter: { runId: oldRoot.id },
+            sort: (s) => [s.field('createdAt').asc(), s.field('id').asc()],
+          });
+          const origin =
+            origins.find(
+              (input) =>
+                input.type === 'comment' &&
+                jsonObject(input.payload).commentSourceSnapshot === true,
+            ) ?? origins.find((input) => input.type === 'comment');
+          if (origin) {
+            const snapshotId = await insertInput(unit, newId, {
+              type: 'comment',
+              actor: toInput(origin).actor,
+              text: origin.text,
+              payload: {
+                ...jsonObject(origin.payload),
+                commentRootRunId: newId,
+                commentSourceSnapshot: true,
+              },
+            });
+            await inputsRepo(unit.conn).updateMany({
+              filter: { id: snapshotId },
+              values: { handledAt: clock.now().toISOString() },
+            });
+          }
+        }
         for (const input of await pendingInputs(unit.conn, run.id))
           await insertInput(unit, newId, {
             type: input.type as RunInputType,
             actor: toInput(input).actor,
             text: input.text,
-            ...(input.payload === null ? {} : { payload: input.payload }),
+            ...(input.payload === null
+              ? {}
+              : {
+                  payload: {
+                    ...jsonObject(input.payload),
+                    ...(renewComment ? { commentRootRunId: newId } : {}),
+                  },
+                }),
           });
         await insertInput(unit, newId, {
           type: 'retry',
@@ -1034,6 +1664,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
           retryOfRunId: run.id,
           previousStatus: run.status,
         });
+        if (run.commentRootRunId)
+          await deps.reconcileCommentConsent?.(unit, newId);
         return toRun(await require(unit.conn, newId));
       });
     },
@@ -1092,6 +1724,11 @@ export function createRunService(deps: RunServiceDeps): RunService {
           (await deps.people.names(conn, [run.actorUserId])).get(
             run.actorUserId,
           ) ?? run.actorUserId,
+        confirmedByName: run.confirmedByUserId
+          ? ((await deps.people.names(conn, [run.confirmedByUserId])).get(
+              run.confirmedByUserId,
+            ) ?? run.confirmedByUserId)
+          : undefined,
         requestedByName:
           (
             await deps.people.names(conn, [
@@ -1250,7 +1887,19 @@ export function createRunService(deps: RunServiceDeps): RunService {
       };
     },
 
-    authenticateToken: (value) => authenticateRunToken(tx.read(), clock, value),
+    authenticateToken: async (value) => {
+      const conn = tx.read();
+      const identity = await authenticateRunToken(conn, clock, value);
+      if (identity.run.commentRootRunId) {
+        const root = await findRunRecord(conn, identity.run.commentRootRunId);
+        if (!root || !(await currentCommentOwner(conn, deps.subjects, root)))
+          throw precondition(
+            'RUN_TOKEN_INVALID',
+            'The comment authorization belongs to an earlier owner assignment.',
+          );
+      }
+      return identity;
+    },
 
     async self({ run }) {
       const conn = tx.read();
@@ -1310,6 +1959,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
     },
 
     openOn: openRunsOn,
+    openOnEach: openRunsOnEach,
     pendingInputs: async (conn, runId) =>
       (await pendingInputs(conn, runId)).map(toInput),
     inputsSince: inputsOnSince,

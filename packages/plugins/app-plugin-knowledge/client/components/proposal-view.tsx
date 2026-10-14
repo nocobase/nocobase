@@ -535,6 +535,8 @@ export function ProposalList({
   about,
   onClearAbout,
   onOpen,
+  contextLabel,
+  pagination,
 }: {
   readonly status: ProposalListStatus;
   readonly onStatus: (status: ProposalListStatus) => void;
@@ -544,6 +546,14 @@ export function ProposalList({
   readonly about: string | null;
   readonly onClearAbout: () => void;
   readonly onOpen: (id: string) => void;
+  readonly contextLabel?: (proposal: KnowledgeProposal) => string;
+  readonly pagination?: {
+    readonly page: number;
+    readonly pageSize: number;
+    readonly total: number;
+    readonly busy: boolean;
+    readonly onPage: (page: number) => void;
+  };
 }): ReactElement {
   const { t, i18n } = useTranslation(ACCESS_NAMESPACE);
   const proposer = useProposer();
@@ -601,6 +611,7 @@ export function ProposalList({
             <li key={item.id}>
               <button
                 type='button'
+                disabled={pagination?.busy}
                 className='flex w-full min-w-0 flex-col gap-1 px-4 py-3 text-left hover:bg-muted sm:flex-row sm:items-center sm:gap-3'
                 onClick={() => onOpen(item.id)}
               >
@@ -609,6 +620,11 @@ export function ProposalList({
                   <span className='truncate font-medium'>
                     {item.docTitle || item.title}
                   </span>
+                  {contextLabel ? (
+                    <span className='truncate text-xs text-muted-foreground'>
+                      {contextLabel(item)}
+                    </span>
+                  ) : null}
                   {item.stale && item.status === 'pending' ? (
                     <AlertTriangleIcon
                       className='size-3.5 shrink-0 text-muted-foreground'
@@ -625,6 +641,39 @@ export function ProposalList({
           ))}
         </ul>
       )}
+      {pagination && pagination.total > 0 ? (
+        <div className='flex flex-wrap items-center justify-between gap-2'>
+          <span className='text-xs text-muted-foreground'>
+            {t('knowledge.directory.reviewPage', {
+              page: pagination.page,
+              pages: Math.ceil(pagination.total / pagination.pageSize),
+              total: pagination.total,
+            })}
+            {pagination.busy ? ` · ${t('knowledge.loading')}` : ''}
+          </span>
+          <div className='flex gap-2'>
+            <Button
+              variant='outline'
+              size='sm'
+              disabled={pagination.busy || pagination.page <= 1}
+              onClick={() => pagination.onPage(pagination.page - 1)}
+            >
+              {t('knowledge.directory.previous')}
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
+              disabled={
+                pagination.busy ||
+                pagination.page * pagination.pageSize >= pagination.total
+              }
+              onClick={() => pagination.onPage(pagination.page + 1)}
+            >
+              {t('knowledge.directory.next')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

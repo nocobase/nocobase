@@ -122,6 +122,7 @@ env var list <env> -> GET /api/releases/environments/{environmentId}/variables (
 env var set <env> <name> <value> [--secret --description] -> PUT /api/releases/environments/{environmentId}/variables/{name} (person) rel.environments/manage
 env var unset <env> <name> -> DELETE /api/releases/environments/{environmentId}/variables/{name} (person) rel.environments/manage
 follow-up follow <issue> -> POST /api/followUps/issues/{issueId}/follow (person)
+follow-up following -> GET /api/followUps/following (person)
 follow-up list -> GET /api/followUps (person)
 follow-up unfollow <issue> -> POST /api/followUps/issues/{issueId}/unfollow (person)
 git authorization delete <connection> -> DELETE /api/git/authorizations/{connectionId} (person) confirm
@@ -181,7 +182,7 @@ issue search [--status --project --owner --executor --label --parent --q --delet
 issue status list -> GET /api/projects/issues/statuses (person)
 issue subscribe <issue> -> POST /api/projects/issues/{issueId}/subscribe (person) pm.issues/view
 issue unsubscribe <issue> -> POST /api/projects/issues/{issueId}/unsubscribe (person) pm.issues/view
-issue update <issue> [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --file] -> PATCH /api/projects/issues/{issueId} (person,run) pm.issues/edit
+issue update <issue> [--needs-you --next --title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --file] -> PATCH /api/projects/issues/{issueId} (person,run) pm.issues/edit
 kb chunking get [--scope! --owner] -> GET /api/knowledge/chunking (person)
 kb chunking set [--scope --owner --override --file] -> PUT /api/knowledge/chunking (person)
 kb doc access get <doc> -> GET /api/knowledge/docs/{docId}/access (person)
@@ -248,7 +249,7 @@ pr open [--issue --title! --body --repo --head --base --draft] -> POST /api/git/
 pr refresh <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/refresh (person) pm.issues/view
 pr reopen <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/reopen (person,run) studio.git/open-pr
 pr suggestion dismiss <issue> <pr> -> DELETE /api/git/pullRequests/{pullRequestId}/suggestion (person) pm.issues/edit confirm
-pr unlink <issue> <pr> -> DELETE /api/git/pullRequests/{pullRequestId} (person) pm.issues/edit confirm
+pr unlink <issue> <pr> -> DELETE /api/git/pullRequests/{pullRequestId} (person,run) pm.issues/edit confirm
 pr update <issue> <pr> [--auto-complete-disabled!] -> PATCH /api/git/pullRequests/{pullRequestId} (person) pm.issues/edit
 preview down [--issue --app] -> POST /api/previews/down (person,run) studio.previews/manage confirm
 preview list [--project] -> GET /api/previews (person,run) pm.issues/view
@@ -397,7 +398,7 @@ issue get <issue> -> GET /api/projects/issues/{issueId} (person,run) pm.issues/v
 issue restore <issue> -> POST /api/projects/issues/{issueId}/restore (person,run) pm.issues/delete
 issue runs [issue] [--limit --page-token] -> GET /api/issueRuns (person,run) pm.issues/view
 issue search [--status --project --owner --executor --label --parent --q --deleted --order-by --limit --page-token] -> GET /api/projects/issues (person,run) pm.issues/view
-issue update <issue> [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --file] -> PATCH /api/projects/issues/{issueId} (person,run) pm.issues/edit
+issue update <issue> [--needs-you --next --title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --file] -> PATCH /api/projects/issues/{issueId} (person,run) pm.issues/edit
 kb download <doc> [--version --project] -> GET /api/kb/docs/{doc}/file (person,run) kb.knowledge/read
 kb list [--q --parent --project] -> GET /api/kb/docs (person,run) kb.knowledge/read
 kb propose [--doc --title --slug --parent --space --content --summary --reason! --project --verify --changed] -> POST /api/kb/proposals (person,run) kb.knowledge/propose
@@ -415,6 +416,7 @@ pr link <url> [--issue] -> POST /api/git/pullRequests (person,run) studio.git/op
 pr list [--issue] -> GET /api/git/pullRequests (person,run) pm.issues/view
 pr open [--issue --title! --body --repo --head --base --draft] -> POST /api/git/pullRequests/open (person,run) studio.git/open-pr
 pr reopen <issue> <pr> -> POST /api/git/pullRequests/{pullRequestId}/reopen (person,run) studio.git/open-pr
+pr unlink <issue> <pr> -> DELETE /api/git/pullRequests/{pullRequestId} (person,run) pm.issues/edit confirm
 preview down [--issue --app] -> POST /api/previews/down (person,run) studio.previews/manage confirm
 preview list [--project] -> GET /api/previews (person,run) pm.issues/view
 preview logs [--issue --app --page-token] -> GET /api/previews/logs (person,run) studio.previews/manage

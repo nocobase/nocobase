@@ -10,6 +10,7 @@ import type {
 } from '@nocobase/acp-bridge/protocol';
 
 export type {
+  DiscoveredChoices,
   AgentInfo,
   FolderListing,
   PromptContent,
@@ -36,7 +37,7 @@ export interface Computer {
   readonly home: string | null;
   readonly roots: readonly string[];
   readonly agents: readonly AgentInfo[];
-  /** What each agent offered in its latest session here, by agent id: the choices a new session starts from. */
+  /** Historical choices from the latest session; new sessions discover their own choices. */
   readonly choices: Readonly<Record<string, readonly SessionChoice[]>>;
   /** The slash commands each agent offered in its latest session here, by agent id, for a new session. */
   readonly commands: Readonly<Record<string, SessionState['commands']>>;
@@ -48,6 +49,18 @@ export interface Computer {
   readonly online: boolean;
   readonly lastSeenAt: string;
   readonly createdAt: string;
+  /** Present while its bridge was lately refused for speaking an older protocol: its command line needs an update. */
+  readonly outdatedBridge?: OutdatedBridge;
+}
+
+/** A computer's bridge the application refused because it speaks an older protocol. */
+export interface OutdatedBridge {
+  /** The command line that ran it, with its version, such as `nb-studio 1.0.0`. */
+  readonly host: string;
+  readonly bridgeProtocol: number;
+  /** The protocol the application speaks. */
+  readonly protocol: number;
+  readonly refusedAt: string;
 }
 
 /** How something tied to a session stands, as the application that owns it says. */

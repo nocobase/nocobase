@@ -22,6 +22,22 @@ nb-studio follow-up follow <issue>
 
 **Request:** `POST /api/followUps/issues/{issueId}/follow` (`followUpsFollowIssue`)
 
+## follow-up following
+
+Get the issues I follow
+
+The issues the caller follows, in order, and the most one may follow (5): the ones they chose, or by default their blocked and in-review issues, newest first; issues they can no longer see are left out. Needs `pm.issues` view.
+
+```bash
+nb-studio follow-up following
+```
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key).
+
+**Request:** `GET /api/followUps/following` (`followUpsGetFollowing`)
+
 ## follow-up list
 
 Get my follow-ups

@@ -7,6 +7,8 @@ const runWaitEnUS = {
     capacity:
       'Slots used here {{used}}/{{limit}}; {{detail}}; reported free across apps {{reportedFree}}',
     reasons: {
+      updatePending: 'Runner waiting for update; new work is paused',
+      pruning: 'Runner cleaning shared store; new work is paused',
       toolNotInstalled: 'No connected runner has this tool installed',
       incompatible:
         'Connected runners do not support this workload; upgrade required',

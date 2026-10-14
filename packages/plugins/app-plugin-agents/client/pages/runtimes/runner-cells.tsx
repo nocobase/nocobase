@@ -36,6 +36,8 @@ const ACTIVITY_TONE: Readonly<Record<RunnerActivity, Tone>> = {
   offline: 'grey',
   revoked: 'red',
   upgrade_required: 'amber',
+  updatePending: 'amber',
+  pruning: 'amber',
 };
 
 /**
@@ -56,6 +58,7 @@ export function RunnerStatusCell({
     | 'toolSlots'
     | 'activeByTool'
     | 'workspaceUsage'
+    | 'draining'
   >;
 }): ReactElement {
   const { t } = useTranslation();

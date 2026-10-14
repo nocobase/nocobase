@@ -1,3 +1,4 @@
+import { runTempName, runTempRoot } from '../src/core/run-temp.ts';
 import { execFileSync } from 'node:child_process';
 // The runner end to end: the real daemon, its worker processes and the echo adapter against the in-memory server.
 import {
@@ -283,7 +284,17 @@ describe('runner end to end', () => {
     // The real home of the user the runner runs as, not one inside the work directory.
     expect(envOutput).toMatch(/^HOME=/m);
     expect(envOutput).not.toContain(`HOME=${workDir}`);
-    expect(envOutput).toContain(`TMPDIR=${workDir}/.nocobase-runner/tmp`);
+    const tmpDir = path.join(
+      await runTempRoot(runnerPaths(home)),
+      runTempName(workDir),
+    );
+    for (const name of ['TMPDIR', 'TMP', 'TEMP'])
+      expect(envOutput).toContain(`${name}=${tmpDir}`);
+    await waitFor(
+      () => !existsSync(tmpDir),
+      5_000,
+      'temporary directory cleanup',
+    );
     expect(envOutput).toContain('GIT_CONFIG_KEY_0=core.hooksPath');
     expect(envOutput).toContain(`PATH=${workDir}/.nocobase-runner/bin:`);
     // The runner's own Node.js and pnpm are first on PATH, and pnpm keeps to its version.
@@ -445,10 +456,10 @@ describe('runner end to end', () => {
     expect(
       server
         .events(id)
-        .some(
+        .filter(
           (event) => event.type === 'input' && event.meta?.inputId === input.id,
         ),
-    ).toBe(true);
+    ).toHaveLength(1);
   });
 
   it('starts another turn when complete answers RUN_INPUT_PENDING', async () => {
@@ -505,6 +516,7 @@ describe('runner end to end', () => {
             },
           ],
           env: [],
+          git: { author: { name: 'Test', email: 'test@example.com' } },
         },
         prompt: {
           system: '',
@@ -621,6 +633,9 @@ describe('runner end to end', () => {
           10_000,
           'record removal',
         );
+        expect(
+          existsSync(path.join(await runTempRoot(paths), runTempName(workDir))),
+        ).toBe(false);
       } finally {
         if (mode === 'normal') started.child.kill('SIGCONT');
       }
@@ -850,6 +865,14 @@ describe('runner end to end', () => {
     await stopDaemon(started);
     expect(run.fail?.reason).toBe('runnerOffline');
     expect(groupAlive(pid)).toBe(false);
+    expect(
+      existsSync(
+        path.join(
+          await runTempRoot(runnerPaths(home)),
+          runTempName(workDirOf(run.payload.subject.key)),
+        ),
+      ),
+    ).toBe(false);
   });
 
   it('starts in the background, reports status and logs, and stops', async () => {

@@ -1,6 +1,6 @@
 # Knowledge base database
 
-The creation migration, `202610030010_kb_create_tables`, holds the schema, and `202610240050_kb_proposals_add_revisions` adds revisions and database coordination per target and source. Every table is prefixed `kb`:
+The creation migration, `202610030010_kb_create_tables`, holds the schema, and `202610260003_kb_proposals_add_revisions` adds revisions and database coordination per target and source. Every table is prefixed `kb`:
 
 - `kbSpaces`: one tree of documents per space, named by the application's kind (`scope`) and key (`scopeId`), made with its first document.
 - `kbDocs`: an entry at its current version: its kind (`folder`, `article`, `file`), tree position, slug (unique in its space), title, summary, version (0 for a folder), verification and archiving, its access mode (`inherit` or `custom`) and its access key (`aclKey`, `docs/permissions.md`).

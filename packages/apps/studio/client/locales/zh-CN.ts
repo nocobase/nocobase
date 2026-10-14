@@ -54,6 +54,10 @@ const zhCN: AppResource = {
   'issueRuns.configuredModel': '配置模型：{{model}}',
   'issueRuns.modelUnknown': '模型尚未报告',
   'issueRuns.clearFilters': '清除筛选',
+  'issueRuns.attemptFailed': '第 {{attempt}} 次尝试失败',
+  'issueRuns.preparationFailed': '运行准备失败',
+  'issueRuns.retryScheduled': '将于 {{time}} 自动重试',
+  'issueRuns.awaitingDispatch': '等待重新派发',
   'issueRuns.emptyHint': '请在属性中确认执行者和任务状态，以启动 Agent 工作。',
   'issueRuns.loading': '正在加载执行记录…',
   'issueRuns.failed': '执行记录加载失败，请重试。',
@@ -103,6 +107,7 @@ const zhCN: AppResource = {
   runTranscript: {
     usedModel: '使用模型：{{model}}',
     defaultModel: '默认模型',
+    confirmedBy: '确认人：{{person}}',
     actingAs: '运行身份：{{actor}}',
     triggeredBy: '触发人：{{person}}',
     systemTrigger: '由系统触发',
@@ -1050,6 +1055,8 @@ const zhCN: AppResource = {
       stageEntered: '流程阶段',
       planDecided: '计划已决定',
       prChecksFailed: '检查失败',
+      stepEnded: '执行步骤已结束',
+      managerIdle: '空闲等待复核',
       prChecksPassed: '检查通过',
       started: '开始',
       prConflict: 'PR 冲突',
@@ -1200,7 +1207,7 @@ const zhCN: AppResource = {
     commentRuns: {
       limitReached: 'Agent 评论已暂停唤醒',
       continueHint:
-        'Agent 的评论在 {{windowHours}} 小时内已在这个任务上启动 {{maxRuns}} 次运行，最近一条没有唤醒任何 Agent。继续可唤醒它提到的 Agent 一次，并重新开始计数。',
+        '最近 {{windowHours}} 小时评论触发的运行已达 {{maxRuns}} 次上限',
       continued: '已继续 Agent 评论',
       continueStale: '这条评论已不再等待，请刷新任务。',
       continueFailed: '暂时无法继续，请检查 Agent 和任务阻塞后重试。',
@@ -1339,6 +1346,8 @@ const zhCN: AppResource = {
     workerChoice: '执行模型',
     workerWaiting: '{{agent}} 在等执行机：{{entries}}',
     modelWait: {
+      updatePending: '执行机等待升级，暂不接活',
+      pruning: '执行机清理共享缓存，暂不接活',
       toolNotInstalled: '未安装工具',
       toolUnavailable: '工具未登录、被禁用或模型不可用',
       noSharedRunner: '仅他人的个人执行机在线',

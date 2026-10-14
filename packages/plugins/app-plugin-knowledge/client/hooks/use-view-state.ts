@@ -29,6 +29,8 @@ type ViewKey =
   | 'lines'
   | 'proposal'
   | 'proposals'
+  | 'review'
+  | 'proposalPage'
   | 'about'
   | 'q';
 
@@ -39,6 +41,8 @@ const ALL: readonly ViewKey[] = [
   'lines',
   'proposal',
   'proposals',
+  'review',
+  'proposalPage',
   'about',
   'q',
 ];
@@ -51,6 +55,8 @@ export interface ViewState {
   readonly lines: readonly [number, number] | null;
   readonly proposal: string | null;
   readonly proposals: ProposalListStatus | null;
+  readonly review: boolean;
+  readonly proposalPage: number;
   readonly about: string | null;
   readonly q: string;
   /** Changes the given keys, keeping the others. */
@@ -76,12 +82,16 @@ export function useViewState(): ViewState {
   const version = Number(params.get('version'));
   const raw = params.get('mode');
   const list = params.get('proposals');
+  const proposalPage = Number(params.get('proposalPage'));
   return {
     doc: params.get('doc'),
     version: Number.isInteger(version) && version > 0 ? version : null,
     mode: raw === 'edit' || raw === 'history' ? raw : 'read',
     lines: linesOf(params.get('lines')),
     proposal: params.get('proposal'),
+    review: params.get('review') === 'true',
+    proposalPage:
+      Number.isInteger(proposalPage) && proposalPage > 0 ? proposalPage : 1,
     proposals: PROPOSAL_LIST_STATUSES.find((status) => status === list) ?? null,
     about: params.get('about'),
     q: params.get('q') ?? '',

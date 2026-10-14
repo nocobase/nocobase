@@ -14,6 +14,7 @@ import {
   ISSUE_PAGE_LIMIT,
   type ActivityPage,
   type BoardColumn,
+  type Issue,
   type IssueBoard,
   type IssueDetail,
   type IssueListItem,
@@ -56,6 +57,11 @@ export interface IssueQueries {
   /** A page per status column; with `statusKey`, that column only, continuing from `cursor`. */
   board(viewer: Viewer, query: IssueListQuery): Promise<IssueBoard>;
   detail(viewer: Viewer, idOrKey: string): Promise<IssueDetail>;
+  /**
+   * The issue itself, 404 unless it exists and the viewer may see it: the visibility `detail` checks, without reading
+   * what the issue page shows around it (activities, threads, files, relations).
+   */
+  visible(viewer: Viewer, idOrKey: string): Promise<Issue>;
   /**
    * The viewer's issues narrowed by the list's filters (`query`; its order and cursor are ignored) that an executor of
    * `scope.executorType` works on, unless finished (done or closed), or that are among `scope.issueIds`, whatever their
@@ -285,6 +291,10 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
         });
       }
       return { columns };
+    },
+
+    visible(viewer, idOrKey) {
+      return requireVisible(deps.tx.read(), viewer, idOrKey);
     },
 
     async detail(viewer, idOrKey) {

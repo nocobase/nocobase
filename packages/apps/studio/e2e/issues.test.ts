@@ -14,6 +14,15 @@ test.describe('issues', () => {
   test('the board is the default, beside the list and the Agent queue', async ({
     page,
   }) => {
+    const errors: string[] = [];
+    const treeRequests: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') errors.push(message.text());
+    });
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname.includes('/api/taskTrees'))
+        treeRequests.push(request.url());
+    });
     await open(page, '/issues');
     const views = page.getByRole('group', { name: '视图' });
     await expect(views.getByRole('button', { name: '看板' })).toHaveAttribute(
@@ -45,6 +54,8 @@ test.describe('issues', () => {
     await expect(
       views.getByRole('button', { name: 'Agent 队列' }),
     ).toHaveAttribute('aria-pressed', 'true');
+    expect(treeRequests).toEqual([]);
+    expect(errors).toEqual([]);
   });
 
   test('my issues default to the board', async ({ page }) => {

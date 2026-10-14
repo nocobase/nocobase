@@ -26,48 +26,28 @@ export function pullRequestLabel(mark: Pick<PullRequestMark, 'label'>): string {
   return number ? `PR #${number}` : mark.label;
 }
 
-/** Longest question a short ask quotes. */
-const QUESTION_LENGTH = 120;
-
-/**
- * A question as a short label: its first sentence, without Markdown (links read as their text, code as its content),
- * cut to a line or two. Null when nothing is left.
- */
-export function shortQuestion(question: string): string | null {
-  const plain = question
-    .replace(/```[\s\S]*?```/gu, ' ')
-    .replace(/!?\[([^\]]*)\]\([^)]*\)/gu, '$1')
-    .replace(/`([^`]*)`/gu, '$1')
-    .replace(/[*_~]+/gu, '')
-    .replace(/^[#>\-+\s]+/gmu, '')
-    .replace(/\s+/gu, ' ')
-    .trim();
-  if (!plain) return null;
-  const sentence = /^.+?(?:[。！？]|[.!?](?=\s|$))/u.exec(plain)?.[0] ?? plain;
-  return sentence.length > QUESTION_LENGTH
-    ? `${sentence.slice(0, QUESTION_LENGTH - 1)}…`
-    : sentence;
-}
-
 /** What the viewer is asked to do on an issue that waits for them; null when it does not. */
 export function askOf(
   t: Translate,
   issue: Pick<FollowUpIssue, 'owned' | 'statusKey' | 'progress'>,
-  mark: Pick<PullRequestMark, 'label' | 'state'> | null | undefined,
+  _mark: Pick<PullRequestMark, 'label' | 'state'> | null | undefined,
 ): string | null {
-  if (!needsViewer(issue)) return null;
-  if (issue.statusKey === 'in_review')
-    return mark && mark.state === 'open'
-      ? t('issueLive.ask.acceptPullRequest', {
-          label: pullRequestLabel(mark),
-        })
-      : t('issueLive.ask.acceptIssue');
-  const question = issue.progress?.question
-    ? shortQuestion(issue.progress.question)
-    : null;
-  return question
-    ? t('issueLive.ask.answer', { question })
-    : t('issueLive.ask.answerNoQuestion');
+  if (!issue.owned || ['done', 'cancelled'].includes(issue.statusKey))
+    return null;
+  if (needsViewer(issue))
+    return issue.progress?.needsYou ?? t('issueLive.ask.legacy');
+  if (issue.progress?.waiting?.reason === 'waitingOwner')
+    return t('issueLive.ask.takeOver');
+  const consent = issue.progress?.personalRunnerRequests?.find(
+    (request) => request.canDecide,
+  );
+  if (consent)
+    return t('issueLive.personalRunner.request', {
+      name: consent.requestedBy.name,
+    });
+  if (issue.progress?.state === 'waitingForContinuation')
+    return t('issueLive.ask.continue');
+  return null;
 }
 
 /** What is going on, in one line: the viewer's part when it waits for them, else what it waits for. */
@@ -78,17 +58,12 @@ export function nowLine(
   now: number = Date.now(),
 ): { readonly text: string; readonly needsViewer: boolean } | null {
   const ask = askOf(t, issue, mark);
-  if (ask) return { text: ask, needsViewer: true };
-  if (!issue.progress) return null;
-  // Someone else's decision: what they are asked, shortly.
-  const question = issue.progress.question
-    ? shortQuestion(issue.progress.question)
-    : null;
-  if (issue.progress.state === 'needsDecision' && question)
+  if (ask)
     return {
-      text: t('issueProgress.needsDecision', { question }),
-      needsViewer: false,
+      text: ask,
+      needsViewer: true,
     };
+  if (!issue.progress) return null;
   // A short line from the progress itself, never the manager's step prose.
   return {
     text: progressStatusLine(t, issue.progress, now),
@@ -108,15 +83,43 @@ const HANDOFF_TYPES: ReadonlySet<string> = new Set([
  */
 export function coveredBySummary(
   entry: Pick<InboxEntry, 'notice'>,
-  shown: { readonly accepting: boolean; readonly handoff: boolean },
+  shown: {
+    readonly accepting: boolean;
+    readonly handoff: boolean;
+    readonly pullRequest?: {
+      readonly repo: string;
+      readonly number: number;
+    } | null;
+    readonly blocked?: boolean;
+    readonly ownerRequest?: boolean;
+    readonly continuation?: boolean;
+    readonly notificationKey?: string | null;
+    readonly personalRequestIds?: readonly string[];
+  },
 ): boolean {
   const notice = entry.notice;
   if (!notice) return false;
   if (
+    notice.source === 'runners' &&
+    notice.type === 'personal_runner_consent' &&
+    typeof notice.data?.requestId === 'string'
+  )
+    return shown.personalRequestIds?.includes(notice.data.requestId) ?? false;
+  if (
     shown.accepting &&
     notice.source === GIT_INBOX_SOURCE &&
-    notice.type === PR_MERGE_REQUESTED
+    notice.type === PR_MERGE_REQUESTED &&
+    notice.data?.repo === shown.pullRequest?.repo &&
+    Number(notice.data?.number) === shown.pullRequest?.number
   )
     return true;
-  return shown.handoff && HANDOFF_TYPES.has(notice.type);
+  if (notice.type === 'agent_blocked')
+    // The card represents the structured request, regardless of which explanation the notice linked at the time.
+    return !shown.blocked || Boolean(shown.ownerRequest);
+  if (shown.continuation && notice.type === 'comment_runs_limited') return true;
+  return (
+    shown.handoff &&
+    HANDOFF_TYPES.has(notice.type) &&
+    notice.data?.notificationKey === shown.notificationKey
+  );
 }

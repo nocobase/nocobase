@@ -1,3 +1,4 @@
+import { cleanupRunTemp } from './run-temp.ts';
 import { finalizeRunWorktrees } from './run-worktrees.ts';
 // Runs each claimed run in its own worker process and keeps a record of it on disk.
 //
@@ -229,6 +230,7 @@ export interface SupervisedRun {
   child: ChildProcess;
   exited: Promise<void>;
   cancelSeenAt?: number;
+  upgradeInterrupted?: boolean;
   /** The process groups seen below the worker, besides its own: stopped when it exits. */
   groups: Set<number>;
 }
@@ -388,8 +390,9 @@ export class Supervisor {
           })
           .finally(async () => {
             const cancelled = this.runs.get(runId)?.cancelSeenAt !== undefined;
+            const upgrade = this.runs.get(runId)?.upgradeInterrupted === true;
+            await this.afterExit(runId, cancelled, upgrade);
             this.runs.delete(runId);
-            await this.afterExit(runId, cancelled);
             this.options.onExit?.(runId);
             resolve();
           });
@@ -418,7 +421,11 @@ export class Supervisor {
    * A worker that exits without having reported its run is handled like an orphan; one killed after a cancel has its
    * cancel acknowledged instead.
    */
-  private async afterExit(runId: string, cancelled: boolean): Promise<void> {
+  private async afterExit(
+    runId: string,
+    cancelled: boolean,
+    upgrade: boolean,
+  ): Promise<void> {
     const record = await readJson<RunRecord>(
       recordPath(this.options.paths, runId),
     ).catch(() => undefined);
@@ -426,10 +433,16 @@ export class Supervisor {
     const noun = record.kind === 'job' ? 'job' : 'run';
     await recoverRun(record, {
       ...this.options,
-      reason: cancelled ? 'cancelled' : 'leaseExpired',
-      detail: cancelled
-        ? `The ${noun} worker did not stop after the cancel and was killed.`
-        : `The ${noun} worker exited without reporting the ${noun}.`,
+      reason: upgrade
+        ? 'runnerUpgrade'
+        : cancelled
+          ? 'cancelled'
+          : 'leaseExpired',
+      detail: upgrade
+        ? 'The runner interrupted this attempt to install an update; the supervisor stopped the worker and preserved local work.'
+        : cancelled
+          ? `The ${noun} worker did not stop after the cancel and was killed.`
+          : `The ${noun} worker exited without reporting the ${noun}.`,
     });
   }
 
@@ -437,12 +450,26 @@ export class Supervisor {
    * The server asked to cancel: wake the worker so it notices now, and kill its group if it has not stopped on its own
    * after the grace period.
    */
-  async enforceCancel(runId: string): Promise<void> {
+  async enforceCancel(runId: string, upgrade: boolean = false): Promise<void> {
     const run = this.runs.get(runId);
     if (run === undefined || run.cancelSeenAt !== undefined) return;
+    // The upgrade signal must not reach a worker before it installs its handlers.
+    if (upgrade) {
+      while (
+        this.runs.has(runId) &&
+        (
+          await readJson<RunRecord>(
+            recordPath(this.options.paths, runId),
+          ).catch(() => undefined)
+        )?.phase === 'spawned'
+      )
+        await delay(20);
+      if (!this.runs.has(runId) || run.cancelSeenAt !== undefined) return;
+    }
     run.cancelSeenAt = Date.now();
+    run.upgradeInterrupted = upgrade;
     try {
-      process.kill(run.pid, 'SIGUSR2');
+      process.kill(run.pid, upgrade ? 'SIGUSR1' : 'SIGUSR2');
     } catch {
       return;
     }
@@ -452,9 +479,49 @@ export class Supervisor {
       delay(grace).then(() => false),
     ]);
     if (stopped) return;
+    if (
+      (
+        await readJson<RunRecord>(recordPath(this.options.paths, runId)).catch(
+          () => undefined,
+        )
+      )?.finalizing
+    ) {
+      await run.exited;
+      return;
+    }
     this.options.log(
       `run ${runId}: worker did not stop within ${grace} ms of the cancel; killing its process group`,
     );
+    if (upgrade) {
+      signalGroup(run.pid, 'SIGTERM');
+      const deadline = Date.now() + (this.options.timings.killGraceMs ?? 5_000);
+      while (groupAlive(run.pid) && Date.now() < deadline) {
+        if (
+          (
+            await readJson<RunRecord>(
+              recordPath(this.options.paths, runId),
+            ).catch(() => undefined)
+          )?.finalizing
+        ) {
+          await run.exited;
+          return;
+        }
+        await delay(100);
+      }
+      if (
+        (
+          await readJson<RunRecord>(
+            recordPath(this.options.paths, runId),
+          ).catch(() => undefined)
+        )?.finalizing
+      ) {
+        await run.exited;
+        return;
+      }
+      await killGroup(run.pid, 0);
+      await run.exited;
+      return;
+    }
     await killGroup(run.pid, this.options.timings.killGraceMs ?? 5_000);
     await run.exited;
   }
@@ -530,7 +597,7 @@ export interface RecoverOptions {
   timings: Timings;
   log: (message: string) => void;
   /** `cancelled` acknowledges the cancel instead of failing the run. */
-  reason: 'leaseExpired' | 'runnerOffline' | 'cancelled';
+  reason: 'leaseExpired' | 'runnerOffline' | 'cancelled' | 'runnerUpgrade';
   detail: string;
 }
 
@@ -571,6 +638,7 @@ export async function recoverRun(
     const liveGroup = (await listProcesses()).some(
       (p) => p.pgid === record.pid,
     );
+    const stopped = holders.length + tags.length === 0 && !liveGroup;
     const results = await finalizeRunWorktrees(
       paths,
       record.workDir,
@@ -582,6 +650,16 @@ export async function recoverRun(
           }
         : {},
     );
+    if (stopped) {
+      try {
+        await cleanupRunTemp(paths, record.workDir);
+      } catch (error) {
+        // Temporary cleanup must not prevent credential removal, reporting or worker exit completion.
+        const reason = `Run temporary directory retained for ${record.workDir}: ${String(error)}`;
+        log(reason);
+        detail += `\n${reason}`;
+      }
+    }
     const failed = results.filter((result) => !result.saved);
     if (failed.length > 0)
       detail += `\nDirectory retained: ${record.workDir}: ${failed.map((r) => r.reason).join('; ')}`;

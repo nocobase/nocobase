@@ -1,5 +1,54 @@
 # @nocobase/app-plugin-agents
 
+## 0.1.0-beta.10
+
+### Minor Changes
+
+- ddfe1b1: Discover agents from what runners report instead of having people create them. Each coding tool and normalized model a runner reports becomes one agent (`source: 'runner'`, a deterministic id, named from a model catalog such as "Claude · Opus 5.5"), pending until someone who manages agents writes what it is good at and enables it (`PATCH /api/agents/{agentId}` with `description`, `effort`, `enabled`); an application keeps agents of its own with `agents.ensureSystem`, and sets every discovered agent's instructions and actions with `agents.setDefaults`. A model a run reports unavailable is marked on that runner until the runner reports its models again, and an agent no runner reported for 14 days is shown without a runner and left out of `roster`. Online agents, consultations, the online executor, agent presets, creating, archiving and deleting agents, the chat model choice and the default chat model settings are removed; conversations go to an enabled agent and say why one cannot answer (`othersPersonal` added, `AGENT_NOT_ENABLED`). Model services remain for the application's own model calls through `models.gateway` (renamed from `online.gateway`). Claims carry `workspace.key` and `workspace.readOnly` from the subject's assembly (`SubjectAssembly.workspaceKey`, `readOnly`). The migration `202610240020_ag_runner_agents` adds the new columns, removes every existing agent (rows kept and marked deleted so history still names them), cancels their queued runs, withdraws their pending run requests and clears default chat agents.
+- 6fc0af2: Require the issue owner to start or continue Studio project manager work, and ignore agent wakeups from comments on unstarted issues. Run the manager and its delegated steps as the current owner while preserving trigger audit information. Withdraw all queued agent work and request cancellation of held runs on owner transfers, without automatically restarting them. Correct legacy queued identities before claim and expose waiting reasons.
+
+  Expose the existing transactional `Projects.activity` recorder for application issue events and deliver owner transfers to all work kinds before ordinary triggers, including executor clearing. Restore Studio wording for models, efforts, the start dialog and historical sub-issue activity.
+
+  Preserve delegated execution identity throughout repeated retries, including handled inputs, and show the initiator of the current retry instead of copied retry history.
+
+- abc3fcb: Keep enabled agents prominent, group new discoveries by tool and catalog model, and persist shared ignore and restore preferences with revision protection. Choose a provider without changing existing execution identities and show personal runner names. Discover only authenticated Pi providers and prevent model overrides from bypassing that filter. In Studio, authorize runs through their running identity and existing command scope instead of intersecting with legacy agent action lists, including reports, while retaining object permissions, credential scopes, read-only modes and human approval requirements.
+
+  Show recognizable provider and runner labels when selecting a model and cap atomic bulk discovery operations at 256 selected groups with explicit counts and limits.
+
+### Patch Changes
+
+- 10e261b: Use a private linked Git worktree per run and save local continuation after stopping its tools. Fast-forward the resume reference, retain divergent heads as separately listed saved references, and preserve the directory on cleanup failure. Keep Codex state outside disposable worktrees. Other tools start fresh when their code directory changes; legacy sessions and clones are not migrated. Distinguish private local branches from task push targets and retain older runner compatibility.
+- ee24e95: Clean idle build artifacts before pushed workspaces when disk space is low, pause new work until heartbeats detect recovery, and report disk-full failures for reassignment without counting a project-manager step failure. Show current disk capacity and workspace size, type and push diagnostics.
+
+  Retry interrupted removal of verified pushed attempt directories from GC or the next run, stop their remaining processes before deleting remnants, and retain cleanup failure reasons without blocking later tasks. Preserve unpublished or uncommitted work for recovery.
+
+  Verify the actual checkout branch and HEAD before retrying removal, report disk exhaustion even when local preservation metadata or events cannot be written, and continue safe pressure cleanup when diagnostic cache writes fail.
+
+- 4748117: Allow the project manager to use an idle fallback after a configurable queue delay, exclude runners that cannot honor its workspace, and show selection and waiting reasons. Persist queue episodes through retries and restarts, withdraw unclaimed manager delegations after a configurable timeout, reliably report their cause in the dispatch thread, and publish identity-aware immediate capacity in each manager roster.
+- fad531f: Initialize the project manager's name and description once in the installation's default language and allow administrators to edit them, including clearing the description. Restarts and unrelated settings saves preserve the identity. Later changes to the installation language do not rename an initialized manager.
+
+  An upgrade seed preserves valid explicit settings, custom legacy agent values, empty descriptions, and unknown settings. Legacy agent values identical to the former built-in English defaults cannot be distinguished from manual writes and are initialized in the upgrade language when no valid explicit setting exists. A damaged `studioSettings.projectManager.value` stops initialization with a repair instruction instead of overwriting it.
+
+  Resolve historical run inputs, notifications, delegation cards, plans, and consultation identity labels from stable agent IDs without rewriting historical text or execution snapshots. Legacy limit notices and plans whose identity cannot be recovered use neutral labels, and unresolved consultations mark the originally requested subject. Refresh identity caches when the manager is renamed.
+
+  Mount application query effects inside the projects plugin's cache using its optional `queryEffects` composition point. Keep completed consultation labels current after renames and distinguish loading, inaccessible agents, and historical request snapshots.
+
+- a2cf036: Interrupt agent runs for runner updates after stopping tools and preserving local continuation references. Requeue upgrade interruptions without consuming failure attempts or notifying project managers, retain task inputs, and report draining capacity and reasons in runner and queue views.
+- Updated dependencies [157a914]
+- Updated dependencies [8698e80]
+- Updated dependencies [10e261b]
+- Updated dependencies [9e99702]
+- Updated dependencies [ddfe1b1]
+- Updated dependencies [ee24e95]
+- Updated dependencies [4748117]
+- Updated dependencies [a2cf036]
+- Updated dependencies [6758f9f]
+  - @nocobase/app-cli-client@0.1.0-beta.6
+  - @nocobase/agent-protocol@0.1.0-beta.7
+  - @nocobase/app-server@2.0.0-beta.6
+  - @nocobase/app-plugin-authentication@2.0.0-beta.8
+  - @nocobase/app-plugin-file@1.0.0-beta.23
+
 ## 0.1.0-beta.9
 
 ### Patch Changes
