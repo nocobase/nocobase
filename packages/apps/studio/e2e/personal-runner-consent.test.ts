@@ -131,7 +131,26 @@ test('comment work shares the decision card and runs only on an authorized ident
     expect(await laptop.probe()).toEqual([]);
     await open(page, `/issues/${personalIssue.identifier}`);
     const card = page.getByRole('region', { name: 'Needs you', exact: true });
-    await expect(card).toHaveCount(1);
+    try {
+      await expect(card).toHaveCount(1);
+    } catch (error) {
+      const preferences = await api.get<{ locale?: string }>(
+        'users/me/preferences',
+      );
+      await test.info().attach('consent-decision-state', {
+        contentType: 'application/json',
+        body: JSON.stringify({
+          locale: preferences.locale,
+          regionNames: await page.evaluate<string[]>(
+            `Array.from(document.querySelectorAll('[role="region"]')).map((region) => region.getAttribute('aria-label')).filter(Boolean)`,
+          ),
+          canDecide: (
+            await progress(personalIssue)
+          ).personalRunnerRequests?.map((request) => request.canDecide),
+        }),
+      });
+      throw error;
+    }
     await expect(card.getByText(original)).toBeVisible();
     await expect(
       card.getByRole('button', { name: 'Confirm', exact: true }),
