@@ -6,6 +6,7 @@
  */
 import type { DatabaseConnection, Row } from '@nocobase/db';
 
+import { transactionRead } from '../transaction-read.js';
 import {
   NOCOBASE_APP_TEMPLATES,
   type InitMethod,
@@ -209,6 +210,11 @@ export async function moveInit(
  * or, in the moment between creating the project's setup issue and recording it, the project's setup issue (an init
  * issue added later is given its agent only once recorded).
  */
+const initialRead = transactionRead<{
+  readonly resourceId: string;
+  readonly defaultBranch: string;
+} | null>();
+
 export async function initialDirOf(
   conn: DatabaseConnection,
   issueId: string,
@@ -217,36 +223,39 @@ export async function initialDirOf(
   readonly resourceId: string;
   readonly defaultBranch: string;
 } | null> {
-  const own = await initOfIssue(conn, issueId);
-  if (own)
-    return own.method === 'prompt' &&
-      own.firstCommit &&
-      own.state === 'pending' &&
-      own.resourceId &&
-      own.defaultBranch
-      ? { resourceId: own.resourceId, defaultBranch: own.defaultBranch }
-      : null;
-  if (!projectId) return null;
-  const found = await initOfProject(conn, projectId);
-  if (
-    found?.method !== 'prompt' ||
-    !found.firstCommit ||
-    found.state !== 'pending' ||
-    !found.resourceId ||
-    !found.defaultBranch
-  )
-    return null;
-  let initIssue = found.issueId;
-  if (!initIssue) {
-    const row = await conn.query
-      .selectFrom('pmProjects')
-      .select('setupIssueId')
-      .where('id', '=', projectId)
-      .executeTakeFirst<Row>();
-    initIssue = typeof row?.setupIssueId === 'string' ? row.setupIssueId : null;
-  }
-  if (initIssue !== issueId) return null;
-  return { resourceId: found.resourceId, defaultBranch: found.defaultBranch };
+  return initialRead(conn, JSON.stringify([issueId, projectId]), async () => {
+    const own = await initOfIssue(conn, issueId);
+    if (own)
+      return own.method === 'prompt' &&
+        own.firstCommit &&
+        own.state === 'pending' &&
+        own.resourceId &&
+        own.defaultBranch
+        ? { resourceId: own.resourceId, defaultBranch: own.defaultBranch }
+        : null;
+    if (!projectId) return null;
+    const found = await initOfProject(conn, projectId);
+    if (
+      found?.method !== 'prompt' ||
+      !found.firstCommit ||
+      found.state !== 'pending' ||
+      !found.resourceId ||
+      !found.defaultBranch
+    )
+      return null;
+    let initIssue = found.issueId;
+    if (!initIssue) {
+      const row = await conn.query
+        .selectFrom('pmProjects')
+        .select('setupIssueId')
+        .where('id', '=', projectId)
+        .executeTakeFirst<Row>();
+      initIssue =
+        typeof row?.setupIssueId === 'string' ? row.setupIssueId : null;
+    }
+    if (initIssue !== issueId) return null;
+    return { resourceId: found.resourceId, defaultBranch: found.defaultBranch };
+  });
 }
 
 export function initView(
