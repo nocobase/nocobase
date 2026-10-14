@@ -224,12 +224,10 @@ describe('active input revisions', () => {
     vi.spyOn(store, 'pendingInputs').mockImplementation(async (conn, id) => {
       const inputs = await pending(conn, id);
       if (reads++ === 0)
-        await store
-          .runsRepo(conn)
-          .updateMany({
-            filter: { id },
-            values: { updatedAt: h.clock.now().toISOString() },
-          });
+        await store.runsRepo(conn).updateMany({
+          filter: { id },
+          values: { updatedAt: h.clock.now().toISOString() },
+        });
       return inputs;
     });
     expect(

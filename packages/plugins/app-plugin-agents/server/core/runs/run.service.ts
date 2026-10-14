@@ -646,6 +646,12 @@ export function createRunService(deps: RunServiceDeps): RunService {
     if ((run.commentRootRunId ?? null) === (work.commentRootRunId ?? null)) {
       if (!run.commentRootRunId) return true;
       const root = await findCommentRoot(unit.conn, run.commentRootRunId);
+      // Requester execution keeps its own identity; it does not borrow the owner's consent.
+      if (root.commentExecution === 'requester')
+        return (
+          root.actorUserId === work.actorUserId &&
+          (await currentCommentOwner(unit.conn, deps.subjects, root))
+        );
       return await authorizedRoot(root);
     }
     if (

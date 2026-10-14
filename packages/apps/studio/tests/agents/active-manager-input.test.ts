@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { appendFile } from 'node:fs/promises';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
 import type { Knex } from 'knex';
@@ -15,7 +16,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   vi.restoreAllMocks();
-  await h.close();
+  await h?.close();
 });
 const features = [
   'workspaceKey',
@@ -64,14 +65,38 @@ async function setup(tool: 'claude' | 'codex') {
   return { issue, worker, manager, dispatch, original, payload };
 }
 
+const measurementScope = new AsyncLocalStorage<symbol>();
+
 async function measured<T>(name: string, action: () => Promise<T>): Promise<T> {
   const client = await h.database.connection().client<Knex>();
   const queries: string[] = [];
-  const listener = (q: { sql: string }) => queries.push(q.sql);
+  const scope = Symbol(name);
+  const listener = (q: { sql: string }) => {
+    if (measurementScope.getStore() === scope) queries.push(q.sql);
+  };
   client.on('query', listener);
+  const waits: string[] = [];
+  let sampling = h.database.connection().dialect === 'postgres';
+  const schema = sampling
+    ? String((await client.raw('select current_schema() as name')).rows[0].name)
+    : null;
+  // Diagnostics stay outside the request context and do not count as product SQL.
+  const sampler = (async () => {
+    while (sampling) {
+      const result = await client.raw(
+        "select query from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock'",
+      );
+      for (const row of result.rows)
+        if (String(row.query).includes(`"${schema}".`))
+          waits.push(String(row.query));
+      await new Promise((resolve) => setTimeout(resolve, 2));
+    }
+  })();
   try {
-    return await action();
+    return await measurementScope.run(scope, action);
   } finally {
+    sampling = false;
+    await sampler;
     client.off('query', listener);
     if (process.env.PM385_SQL_REPORT)
       await appendFile(
@@ -84,6 +109,10 @@ async function measured<T>(name: string, action: () => Promise<T>): Promise<T> {
           writes: queries.filter((q) => /^\s*(insert|update|delete)/i.test(q))
             .length,
           transactions: queries.filter((q) => /^begin/i.test(q)).length,
+          lockWaitSamples: schema ? waits.length : null,
+          agentLockWaitSamples: schema
+            ? waits.filter((sql) => /ag_agents/.test(sql)).length
+            : null,
           sql: queries,
         }) + '\n',
       );
@@ -96,12 +125,7 @@ describe('manager active dispatch', () => {
     async (tool) => {
       const { issue, dispatch, original, payload, worker, manager } =
         await setup(tool);
-      const client = await h.database.connection().client<Knex>();
-      const queries: string[] = [];
-      const listener = (q: { sql: string }) => queries.push(q.sql);
-      client.on('query', listener);
-      const followup = await dispatch();
-      client.off('query', listener);
+      const followup = await measured('studio-' + tool, dispatch);
       const open = await h.agents.runs.openOn(
         h.database.connection(),
         { kind: 'issue', id: issue.id },
@@ -166,47 +190,35 @@ describe('manager active dispatch', () => {
       expect(response.body.inputs.map((i: { id: string }) => i.id)).toContain(
         added.id,
       );
-      if (process.env.PM385_SQL_REPORT)
-        await appendFile(
-          process.env.PM385_SQL_REPORT,
-          JSON.stringify({
-            dialect: h.database.connection().dialect,
-            name: 'studio-' + tool,
-            statements: queries.length,
-            reads: queries.filter((q) => /^\s*select/i.test(q)).length,
-            writes: queries.filter((q) => /^\s*(insert|update|delete)/i.test(q))
-              .length,
-            sql: queries,
-          }) + '\n',
-        );
     },
   );
   it.each(['unsupported', 'ended'] as const)(
     'preserves %s fallback for a complete manager comment dispatch',
     async (reason) => {
-      const { issue, dispatch, payload, worker } = await setup('claude');
+      const { issue, dispatch, payload, worker, manager } =
+        await setup('claude');
       if (reason === 'unsupported') {
         const conn = h.database.connection();
         const run = (await conn
           .repository('agRuns')
           .findOne({ filter: { id: payload.run.id } }))!;
-        await conn
-          .repository('agRunners')
-          .updateMany({
-            filter: { id: run.runnerId },
-            values: {
-              features: features.filter((feature) => feature !== 'steer'),
-            },
-          });
+        await conn.repository('agRunners').updateMany({
+          filter: { id: run.runnerId },
+          values: {
+            features: features.filter((feature) => feature !== 'steer'),
+          },
+        });
       } else {
         expect(
           (
-            await h.runner(RUNNER_ROUTES.complete, payload.run.id, {
-              summary: 'done',
-              handledInputIds: payload.inputs.map(
-                (input: { id: string }) => input.id,
-              ),
-            })
+            await measured('studio-complete', () =>
+              h.runner(RUNNER_ROUTES.complete, payload.run.id, {
+                summary: 'done',
+                handledInputIds: payload.inputs.map(
+                  (input: { id: string }) => input.id,
+                ),
+              }),
+            )
           ).status,
         ).toBe(200);
       }
@@ -234,6 +246,50 @@ describe('manager active dispatch', () => {
             comment.authorType === 'system',
         ),
       ).toHaveLength(0);
+      if (reason === 'ended') {
+        const resumed = await h.claimOne();
+        expect(resumed.run.id).toBe(next.id);
+        expect(
+          (
+            await h.runner(RUNNER_ROUTES.start, resumed.run.id, {
+              workDir: '/work/next',
+              acceptsInput: true,
+            })
+          ).status,
+        ).toBe(200);
+        const followup = await measured('studio-append-warm', dispatch);
+        const replay = () =>
+          h.projects.tx.run((tx) =>
+            h.projects.kinds.get('agent')!.work!.onCommentCreated!(tx, {
+              issue,
+              comment: followup.comment,
+              parent: null,
+              actor: manager.actor,
+              userId: 'alice',
+              mentions: [{ kind: 'agent', id: worker }],
+            }),
+          );
+        await measured('studio-duplicate-warm', replay);
+        const active = await h.agents.runs.openOn(
+          h.database.connection(),
+          { kind: 'issue', id: issue.id },
+          worker,
+        );
+        expect(active.map((run) => run.id)).toEqual([next.id]);
+        const detail = await h.agents.runs.detail(next.id);
+        expect(detail.inputs).toHaveLength(2);
+        const records = await h.projects.commentQueries.list(
+          h.database.connection(),
+          issue.id,
+        );
+        expect(
+          records.filter(
+            (comment) =>
+              comment.parentId === followup.comment.id &&
+              comment.authorType === 'system',
+          ),
+        ).toHaveLength(1);
+      }
     },
   );
 });
