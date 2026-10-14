@@ -5,6 +5,7 @@ import {
   coalesce,
   MAX_EVENT_TEXT,
   ReportRequestSchema,
+  ReplyRequestSchema,
   type BridgeEvent,
 } from '../src/protocol.js';
 
@@ -30,6 +31,24 @@ describe('the wire protocol', () => {
   };
 
   it('takes the commands it defines', () => {
+    expect(
+      BridgeCommandSchema.parse({
+        type: 'discoverChoices',
+        requestId: 'request',
+        agentId: 'codex',
+        cwd: '/work',
+        settings: { model: 'actual' },
+      }),
+    ).toMatchObject({ type: 'discoverChoices' });
+    expect(
+      ReplyRequestSchema.parse({
+        computerId: 'computer',
+        requestId: 'request',
+        listing: null,
+        discovery: { status: 'unsupported', choices: [] },
+        error: null,
+      }),
+    ).toMatchObject({ discovery: { status: 'unsupported' } });
     expect(
       BridgeCommandSchema.parse({
         type: 'prompt',
