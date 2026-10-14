@@ -423,6 +423,14 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     fn: (connection: DatabaseConnection) => Promise<T>,
   ): Promise<T> {
     const client = await this.resolveClient();
+    if (
+      !(client as Knex.Transaction).isTransaction &&
+      this.metadataStore instanceof DatabaseCollectionMetadataStore
+    ) {
+      // Prepare metadata tables before BEGIN: creating them inside the
+      // transaction can implicitly commit user writes on some databases.
+      await this.metadataStore.initialize();
+    }
     let stagedMetadata: TransactionCollectionMetadataStore | undefined;
     const invalidations = new TransactionInvalidationCollector();
     // A transaction opened on a transaction connection is a savepoint; its

@@ -41,6 +41,27 @@ afterEach(async () => {
 });
 
 describe('transaction metadata cache', () => {
+  it('prepares cold metadata before opening a transaction with a single-connection pool', async () => {
+    const manager = database();
+    const client = await manager.connection().client<Knex>();
+    const statements: string[] = [];
+    client.on('query', (query: { sql: string }) => statements.push(query.sql));
+    await manager.transaction(async (transaction) => {
+      const start = statements.length;
+      expect(
+        await transaction.collectionMetadata.get('orders'),
+      ).toBeUndefined();
+      await transaction.collectionMetadata.replaceDocument({
+        version: 1,
+        name: 'orders',
+      });
+      expect(
+        statements.slice(start).some((sql) => /^create\s+table/i.test(sql)),
+      ).toBe(false);
+    });
+    expect(statements.some((sql) => /^create\s+table/i.test(sql))).toBe(true);
+  });
+
   it('reuses the naming metadata across Repository, Query, and savepoint reads', async () => {
     const manager = database();
     await createOrders(manager);

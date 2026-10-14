@@ -2,6 +2,12 @@
 
 Database-backed Collection metadata shares validated naming summaries and their resolved naming indexes between a connection and its transactions. A transaction still owns its Registry, metadata Store, physical schema inspector, and Collection resolution cache. Physical schema inspection and individual metadata reads therefore continue to use the transaction's client and database snapshot.
 
+## Initialization
+
+A Database Connection prepares the metadata and version tables before opening its outermost transaction. Transaction Stores inherit completed initialization, so neither a cold single-connection pool nor a legacy metadata table requires DDL inside a business transaction. Concurrent initializers use independent schema builders for each existence check and create operation, and isolate duplicate version-row insertions in their own transactions.
+
+A Store attached directly to an already-open Knex transaction never creates tables. If a legacy metadata table exists without the version table or its row, reads use uncached metadata. Metadata writes require initializing the root Store before opening the transaction; an unprepared write fails before changing data. This avoids implicitly committing the caller's writes on databases where DDL commits transactions. An entirely missing metadata table likewise requires preparation outside the transaction.
+
 ## Version checks
 
 The database Store initializes a companion bookkeeping table alongside the metadata table. Its name consists of the first 45 characters of the metadata table name, `_cache_`, and an eight-character hash of the full name. It lives in the same schema, contains one version row, and is excluded from Collection listing and scanning. Existing metadata documents and their revisions are left unchanged when the companion table is initialized.

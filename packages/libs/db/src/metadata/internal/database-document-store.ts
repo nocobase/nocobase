@@ -59,6 +59,7 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
 
   private initializationPromise?: Promise<void>;
   private initialized = false;
+  private cacheInitialized = false;
 
   private readonly versionTableName: string;
 
@@ -110,6 +111,7 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
     // client that may be waiting for the connection this transaction owns.
     if (this.initialized) {
       store.initialized = true;
+      store.cacheInitialized = this.cacheInitialized;
       store.initializationPromise = Promise.resolve();
     }
     return store;
@@ -131,6 +133,7 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
   async reinitialize(): Promise<void> {
     this.initializationPromise = undefined;
     this.initialized = false;
+    this.cacheInitialized = false;
     this.invalidateNamingSnapshots();
     await this.initialize();
   }
@@ -249,6 +252,11 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
   }
 
   private async write<T>(operation: (client: Knex) => Promise<T>): Promise<T> {
+    if (!this.cacheInitialized) {
+      throw new CollectionMetadataStoreOptionsError(
+        'Initialize the database Collection Metadata Store before opening a transaction that writes metadata.',
+      );
+    }
     const client = await this.options.resolveClient();
     const execute = async (knex: Knex): Promise<T> => {
       // A fresh token avoids revision reuse when a document is deleted and
@@ -272,6 +280,7 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
 
   private async readNamingSnapshot(): Promise<CollectionMetadataNamingSnapshot> {
     await this.initialize();
+    if (!this.cacheInitialized) return listMetadataNamingSnapshot(this);
     const client = await this.options.resolveClient();
     let snapshot: CollectionMetadataNamingSnapshot = [];
     // Do not publish a snapshot assembled across different committed versions.
@@ -309,24 +318,44 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
   }
 
   private async createTables(): Promise<void> {
-    await this.createTable();
+    validateCollectionMetadataStoreName(this.tableName);
+    if (this.options.schema !== undefined) {
+      validateCollectionMetadataStoreName(this.options.schema);
+    }
     const knex = await this.options.resolveClient();
-    const schema = this.schema(knex);
+    if ((knex as Knex.Transaction).isTransaction) {
+      // DDL can implicitly commit the caller's work. An already-open
+      // transaction may read legacy metadata without upgrading its tables.
+      if (!(await this.schema(knex).hasTable(this.tableName))) {
+        throw new CollectionMetadataStoreOptionsError(
+          'Initialize the database Collection Metadata Store before opening a transaction.',
+        );
+      }
+      this.cacheInitialized =
+        (await this.schema(knex).hasTable(this.versionTableName)) &&
+        Boolean(
+          await this.table(knex, this.versionTableName)
+            .where({ id: 1 })
+            .first(),
+        );
+      return;
+    }
+    await this.createTable();
     const tableName = this.versionTableName;
-    if (!(await schema.hasTable(tableName))) {
+    if (!(await this.schema(knex).hasTable(tableName))) {
       try {
-        await schema.createTable(tableName, (table) => {
+        await this.schema(knex).createTable(tableName, (table) => {
           table.integer('id').primary();
           table.string('version', 36).notNullable();
         });
       } catch (error) {
-        if (!(await schema.hasTable(tableName))) throw error;
+        if (!(await this.schema(knex).hasTable(tableName))) throw error;
       }
     }
     if (!(await this.table(knex, tableName).where({ id: 1 }).first())) {
       try {
-        // A savepoint keeps a concurrent initializer's duplicate INSERT from
-        // aborting the caller's transaction on PostgreSQL.
+        // Isolate a concurrent initializer's duplicate INSERT from the
+        // subsequent existence check on PostgreSQL.
         await knex.transaction(async (transaction) => {
           await this.table(transaction, tableName).insert({
             id: 1,
@@ -338,19 +367,15 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
           throw error;
       }
     }
+    this.cacheInitialized = true;
   }
 
   private async createTable(): Promise<void> {
-    validateCollectionMetadataStoreName(this.tableName);
-    if (this.options.schema !== undefined) {
-      validateCollectionMetadataStoreName(this.options.schema);
-    }
     const knex = await this.options.resolveClient();
-    const schema = this.schema(knex);
     const tableName = this.tableName;
-    if (await schema.hasTable(tableName)) return;
+    if (await this.schema(knex).hasTable(tableName)) return;
     try {
-      await schema.createTable(tableName, (table) => {
+      await this.schema(knex).createTable(tableName, (table) => {
         table.string('name', 191).primary();
         table.text('document').notNullable();
         table.bigInteger('revision').notNullable();
@@ -358,7 +383,7 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
         table.dateTime('updated_at').notNullable();
       });
     } catch (error) {
-      if (!(await schema.hasTable(tableName))) throw error;
+      if (!(await this.schema(knex).hasTable(tableName))) throw error;
     }
   }
 
