@@ -99,6 +99,12 @@ Each application is installed once, in a directory of its own, with its own `--p
 
 ## Upgrade and roll back
 
+Before upgrading an existing database, read the target application's and registered plugins' release-specific upgrade notes. Include documented checksum changes, data prerequisites, and irreversible migrations in the recovery plan. Before the installer stops the application, inspect the target application's `db repair --dry-run --json` output using its supported CLI and deployment configuration, even when no historical correction is documented. This is a read-only checksum check: the installer's own `db apply --dry-run` discovers pending tasks but does not validate checksums, even under a strict checksum policy. If the selected installer cannot perform the required check or preparation, establish the supported maintenance procedure before proceeding with the upgrade.
+
+When the checksum preview proposes changes, explain every migration or seed checksum difference before any actual repair; when it proposes none, skip repair. The installer applies migrations but does not automatically acknowledge changed historical checksums. Repair only updates history checksums; it does not change schema, fix partial tables, or replace a forward migration. Do not suppress drift by changing migration policy or repeatedly retrying the same archive.
+
+Do not run actual repair before an ordinary installer upgrade. Its SQLite backup is taken after stopping the application and would already contain the new checksums, which the previous runtime can reject under `onChecksumMismatch: error` if the upgrade rolls back. A repair procedure must stop writers, back up the original history, perform the reviewed repair and migrations, and restore that same pre-repair backup before restarting the old runtime on failure. An extra manual backup alone does not change which backup automatic rollback restores. When the selected installer cannot coordinate that sequence, finish only the read-only checks and establish the supported maintenance procedure first.
+
 Both stop the application, so the user decides:
 
 1. An upgrade takes a new archive: `upgrade --dir <root> --archive <file> --json`. It must be the same application built for the same base path, and not an older version; the same version built again is a new release and deploys normally.
@@ -107,10 +113,10 @@ Both stop the application, so the user decides:
 4. An upgrade keeps three releases, always including the new one and the one it came from, and prunes older ones once it succeeds; pass `--keep <n>` when the user wants more of them to stay available for rollback.
 5. Read the outcome:
    - Exit 0: the new release passed its health check. Report `result.fromVersion`, `result.toVersion`, the release id `result.to`, `result.migrations` and `result.backup`, and name any release in `result.pruned`, which can no longer be rolled back to.
-   - Exit 3: the previous release runs again. Report `error.message` and `error.details.log`, and leave the next attempt to the user once the cause is known.
+   - Exit 3: the previous release runs again. Report `error.message`, `error.details.log`, and whether the database was restored; an external database may still contain changes from the failed upgrade. Leave the next attempt to the user once the cause is known.
    - Exit 4: the application is down. Work through `error.suggestions` with the user, step by step.
 
-`rollback --dir <root> --json` returns to the release the last upgrade came from, or to `--to <release id or version>`. When that upgrade migrated the databases, rolling back restores the backup taken before it and loses whatever was stored since; the confirmation notes say so, and the same relay-and-confirm step applies. `--no-restore` keeps the current databases.
+`rollback --dir <root> --json` returns to the release the last upgrade came from, or to `--to <release id or version>`. When that upgrade migrated SQLite databases and the installer holds their backup, rolling back restores it and loses whatever was stored since; the confirmation notes say so, and the same relay-and-confirm step applies. External databases require a separate restore procedure: `--backup-done` does not make the installer restore them. If an irreversible migration made the schema incompatible with the previous runtime, returning to that runtime requires a compatible database backup too. `--no-restore` keeps the current databases; use it only when compatibility with the selected runtime is established.
 
 ## Recover an interrupted operation
 
