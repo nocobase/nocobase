@@ -106,10 +106,16 @@ test('structured requests survive later explanations and locate their latest com
     );
     await expect(summary).not.toContainText('Outdated explanation');
     await expect(summary).not.toContainText('Current recovery explanation');
-    await explanation.click();
     const target = page.locator(`[data-comment-id="${latest.comment.id}"]`);
+    await page.setViewportSize({ width: 1440, height: 480 });
+    await summary.scrollIntoViewIfNeeded();
+    await expect(target).not.toBeInViewport();
+    const beforeClick = await target.boundingBox();
+    await explanation.click();
     await expect(target).toBeInViewport();
     await expect(target).toHaveClass(/ring-primary/u);
+    const afterClick = await target.boundingBox();
+    expect(afterClick!.y).toBeLessThan(beforeClick!.y);
     records.push({
       kind: 'blocked',
       issue: blocked.issue.identifier,
@@ -119,8 +125,11 @@ test('structured requests survive later explanations and locate their latest com
       fullText: needsYou,
       next,
       scrolled: true,
+      beforeClickY: beforeClick!.y,
+      afterClickY: afterClick!.y,
       highlighted: true,
     });
+    await page.setViewportSize({ width: 1440, height: 900 });
     await summary.scrollIntoViewIfNeeded();
     if (captures) {
       mkdirSync(captures, { recursive: true });
@@ -176,16 +185,22 @@ test('structured requests survive later explanations and locate their latest com
     await expect(
       summary.getByRole('button', { name: 'Send back', exact: true }),
     ).toBeVisible();
+    const reviewTarget = page.locator(
+      `[data-comment-id="${reviewComment.comment.id}"]`,
+    );
+    await page.setViewportSize({ width: 1440, height: 480 });
+    await summary.scrollIntoViewIfNeeded();
+    await expect(reviewTarget).not.toBeInViewport();
+    const reviewBefore = await reviewTarget.boundingBox();
     await summary
       .getByRole('link', {
         name: 'View the project manager’s latest explanation',
       })
       .click();
-    const reviewTarget = page.locator(
-      `[data-comment-id="${reviewComment.comment.id}"]`,
-    );
     await expect(reviewTarget).toBeInViewport();
     await expect(reviewTarget).toHaveClass(/ring-primary/u);
+    const reviewAfter = await reviewTarget.boundingBox();
+    expect(reviewAfter!.y).toBeLessThan(reviewBefore!.y);
     records.push({
       kind: 'in_review',
       issue: review.issue.identifier,
@@ -194,8 +209,11 @@ test('structured requests survive later explanations and locate their latest com
       fullText: reviewNeeds,
       next: reviewNext,
       scrolled: true,
+      beforeClickY: reviewBefore!.y,
+      afterClickY: reviewAfter!.y,
       highlighted: true,
     });
+    await page.setViewportSize({ width: 1440, height: 900 });
     await summary.scrollIntoViewIfNeeded();
     if (captures)
       await page.screenshot({
