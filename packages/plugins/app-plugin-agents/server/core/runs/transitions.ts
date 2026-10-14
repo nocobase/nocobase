@@ -69,8 +69,13 @@ export async function finishRun(
     availableAt: null,
     updatedAt: now,
   };
-  if (outcome.reason !== undefined) values.failureReason = outcome.reason;
-  if (outcome.detail !== undefined)
+  if (outcome.status === 'completed') {
+    values.failureReason = null;
+    values.failureDetail = null;
+  } else if (outcome.reason !== undefined) {
+    values.failureReason = outcome.reason;
+    values.failureDetail = outcome.detail?.slice(0, 10_000) ?? null;
+  } else if (outcome.detail !== undefined)
     values.failureDetail = outcome.detail.slice(0, 10_000);
   if (outcome.summary !== undefined) values.summary = outcome.summary;
   if (outcome.sessionId !== undefined) values.sessionId = outcome.sessionId;

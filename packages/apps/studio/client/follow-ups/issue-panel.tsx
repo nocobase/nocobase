@@ -5,7 +5,6 @@
  * issue page's own query, which the projects plugin's realtime refresh keeps current; reading it records that the
  * viewer looked (`markSeen`). On a phone it carries a way back to the lists.
  */
-import { ApiClientError } from '@nocobase/app-client';
 import { useIssueUpdate } from '@nocobase/app-plugin-projects/client/issues';
 import { pmKeys, usePmApi } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
@@ -15,7 +14,6 @@ import { ArrowLeftIcon, ExternalLinkIcon } from 'lucide-react';
 import { useEffect, useMemo, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router';
 
-import { Alert, AlertTitle, AlertAction } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMediaQuery } from '@/extensions/nocobase-agent-chat/use-media-query';
@@ -27,6 +25,7 @@ import { FollowToggle } from '../issues/live/follow-toggle.js';
 import { IssueComposer } from '../issues/live/issue-composer.js';
 import { IssueFeed } from '../issues/live/issue-feed.js';
 import { IssueSummary } from '../issues/live/issue-summary.js';
+import { PhoneBar } from '../layouts/components/phone-bar.js';
 
 /** The issue is read again this often besides the realtime refresh, as a fallback. */
 const POLL_MS = 60_000;
@@ -37,16 +36,8 @@ export function IssuePanel({
   onSeen,
   onBack,
   className,
-  issueHref,
-  onReady,
-  onResolved,
-  onUnavailable,
 }: {
   readonly issueId: string;
-  readonly onReady?: () => void;
-  readonly onResolved?: (issueId: string) => void;
-  readonly issueHref?: (identifier: string) => string;
-  readonly onUnavailable?: (issueId: string) => void;
   /** The overview's entry for it, when the viewer owns or follows it. */
   readonly summary: FollowUpIssue | null;
   /** The viewer looked at the issue as it is now. */
@@ -61,30 +52,8 @@ export function IssuePanel({
     queryKey: pmKeys.issue(issueId),
     queryFn: () => api.issue(issueId),
     refetchInterval: POLL_MS,
-    retry: (failures, error) =>
-      !(
-        error instanceof ApiClientError &&
-        [401, 403, 404].includes(error.status)
-      ) && failures < 2,
   });
-  const expired =
-    detail.error instanceof ApiClientError && detail.error.status === 401;
-  const denied =
-    detail.error instanceof ApiClientError &&
-    [403, 404].includes(detail.error.status);
-  // A failed authorization refresh must never keep rendering private cached content.
-  const data = denied || expired ? undefined : detail.data;
-  useEffect(() => {
-    if (denied) onUnavailable?.(issueId);
-  }, [denied, issueId, onUnavailable]);
-  const ready = Boolean(data);
-  useEffect(() => {
-    if (ready) onReady?.();
-  }, [ready, onReady]);
-  const canonicalId = data?.id;
-  useEffect(() => {
-    if (canonicalId) onResolved?.(canonicalId);
-  }, [canonicalId, onResolved]);
+  const data = detail.data;
   const latest = data
     ? [
         data.activities.at(-1)?.id ?? '',
@@ -94,62 +63,39 @@ export function IssuePanel({
     : null;
   // Whatever arrived while the issue is shown counts as seen.
   useEffect(() => {
-    if (canonicalId && latest !== null && document.visibilityState !== 'hidden')
-      onSeen(canonicalId);
-  }, [canonicalId, latest, onSeen]);
+    if (latest !== null && document.visibilityState !== 'hidden')
+      onSeen(issueId);
+  }, [issueId, latest, onSeen]);
 
   const backButton = onBack ? (
-    <Button size='sm' variant='ghost' className='self-start' onClick={onBack}>
+    <Button
+      size='sm'
+      variant='ghost'
+      className='self-start lg:hidden'
+      onClick={onBack}
+    >
       <ArrowLeftIcon data-icon='inline-start' />
       {t('followUps.activity.back')}
     </Button>
   ) : null;
-  // The unified workspace already supplies the phone navigation bar.
-  const back = backButton;
+  // A phone's only top row is Back, with the navigation and the agent chat; a tablet keeps the shell's header.
+  const back = backButton ? (
+    <>
+      <PhoneBar>{backButton}</PhoneBar>
+      <div className='max-md:hidden'>{backButton}</div>
+    </>
+  ) : null;
   if (!data)
     return (
       <PanelFrame className={className}>
         <div className='flex flex-col gap-3 p-5'>
           {back}
           {detail.isError ? (
-            <Alert variant='destructive'>
-              <AlertTitle>
-                {t(
-                  expired
-                    ? 'personalTasks.sessionExpired'
-                    : 'followUps.activity.loadFailed',
-                )}
-              </AlertTitle>
-              {expired ? (
-                <AlertAction>
-                  <Button
-                    size='sm'
-                    variant='outline'
-                    nativeButton={false}
-                    role='link'
-                    render={<Link to='/login' />}
-                  >
-                    {t('personalTasks.signInAgain')}
-                  </Button>
-                </AlertAction>
-              ) : !denied ? (
-                <AlertAction>
-                  <Button
-                    size='sm'
-                    variant='outline'
-                    onClick={() => void detail.refetch()}
-                  >
-                    {t('common.retry')}
-                  </Button>
-                </AlertAction>
-              ) : null}
-            </Alert>
+            <p className='text-sm text-muted-foreground'>
+              {t('followUps.activity.loadFailed')}
+            </p>
           ) : (
-            <div
-              className='flex flex-col gap-3'
-              aria-busy='true'
-              aria-label={t('personalTasks.loading')}
-            >
+            <div className='flex flex-col gap-3' aria-busy='true'>
               <Skeleton className='h-5 w-40' />
               <Skeleton className='h-6 w-3/4' />
               <Skeleton className='h-16 w-full' />
@@ -161,31 +107,11 @@ export function IssuePanel({
     );
   return (
     <PanelFrame className={className}>
-      {detail.isError ? (
-        <Alert variant='destructive' className='m-3 w-auto'>
-          <AlertTitle>
-            {t(
-              expired
-                ? 'personalTasks.sessionExpired'
-                : 'followUps.activity.loadFailed',
-            )}
-          </AlertTitle>
-          <AlertAction>
-            <Button
-              size='sm'
-              variant='outline'
-              onClick={() => void detail.refetch()}
-            >
-              {t('common.retry')}
-            </Button>
-          </AlertAction>
-        </Alert>
-      ) : null}
       <LiveIssue
         issue={data}
         summary={summary}
         back={back}
-        issueHref={issueHref}
+        narrow={Boolean(onBack)}
       />
     </PanelFrame>
   );
@@ -195,19 +121,18 @@ function LiveIssue({
   issue,
   summary,
   back,
-  issueHref,
+  narrow,
 }: {
   readonly issue: IssueDetail;
   readonly summary: FollowUpIssue | null;
   readonly back: ReactNode;
-  readonly issueHref?: (identifier: string) => string;
+  /** On a phone, where the summary starts as its bar. */
+  readonly narrow: boolean;
 }): ReactElement {
   const { t } = useTranslation();
   const detailKey = useMemo(() => pmKeys.issue(issue.id), [issue.id]);
   const update = useIssueUpdate(issue, detailKey);
-  const issuePath =
-    issueHref?.(issue.identifier) ??
-    `/issues/${encodeURIComponent(issue.identifier)}`;
+  const issuePath = `/issues/${encodeURIComponent(issue.identifier)}`;
   const phone = useMediaQuery('(max-width: 767px)');
   return (
     <IssueConversation detail={issue} detailKey={detailKey}>
@@ -219,7 +144,7 @@ function LiveIssue({
         refresh={`${issue.revision}|${issue.statusKey}`}
         progressFallback={summary?.progress ?? null}
         collapsible
-        defaultCollapsed={phone}
+        defaultCollapsed={narrow}
         pinnedBar
         className='border-b px-5 py-4 max-md:px-4 max-md:py-3'
         actions={
@@ -229,7 +154,6 @@ function LiveIssue({
               size='sm'
               variant='outline'
               nativeButton={false}
-              role='link'
               render={<Link to={issuePath} />}
             >
               <ExternalLinkIcon

@@ -134,6 +134,27 @@ const claimConcurrency = {
   tests: 'tests/claim-concurrency.test.ts',
 };
 
+const artifactKeyMigration = {
+  dialect: 'mssql',
+  filter: '@nocobase/app-plugin-releases',
+  tests: 'tests/artifact-key-migration.test.ts',
+};
+
+test('release migration changes select the SQL Server upgrade regression', () => {
+  for (const file of [
+    'packages/plugins/app-plugin-releases/database/migrations/202610020001_rel_create_tables.ts',
+    'packages/plugins/app-plugin-releases/database/migrations/202610260002_rel_bound_artifact_keys.ts',
+    'packages/plugins/app-plugin-releases/tests/artifact-key-migration.test.ts',
+  ])
+    assert.deepEqual(selectPackageSuites([file]), [artifactKeyMigration], file);
+  assert.deepEqual(
+    selectPackageSuites([
+      'packages/plugins/app-plugin-releases/server/plugin.ts',
+    ]),
+    [],
+  );
+});
+
 test('a guarded package path selects its dialect suite, and nothing else does', () => {
   for (const file of [
     'packages/plugins/app-plugin-agents/server/core/runs/claim.ts',
@@ -235,7 +256,7 @@ test('missing or unavailable comparison commits conservatively select every data
   for (const baseSha of [undefined, '', '0'.repeat(40), 'f'.repeat(40)]) {
     const plan = planDbIntegration({ ...repo, baseSha, headSha });
     assert.deepEqual(plan.databases, databases);
-    assert.deepEqual(plan.suites, [claimConcurrency]);
+    assert.deepEqual(plan.suites, [claimConcurrency, artifactKeyMigration]);
   }
   assert.deepEqual(
     planDbIntegration({ ...repo, baseSha: headSha }).databases,

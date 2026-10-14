@@ -65,6 +65,42 @@ export class CollectionCompiler {
     return this.namingFor(definition).fieldToColumnName(field);
   }
 
+  /** Preserve logical definitions with the names their schema operations use. */
+  resolveCollectionNames(
+    name: string,
+    definition: CollectionDefinition,
+    context: CollectionCompilerContext,
+  ): CollectionDefinition {
+    const tableName = this.effectiveTableName(name, definition);
+    const fields = definition.fields ?? [];
+    return {
+      ...definition,
+      indexes: definition.indexes?.map((index) =>
+        index.name !== undefined
+          ? index
+          : {
+              ...index,
+              name: this.compileIndex(tableName, index, fields, definition)
+                .name,
+            },
+      ),
+      constraints: definition.constraints?.map((constraint) =>
+        constraint.name !== undefined
+          ? constraint
+          : {
+              ...constraint,
+              name: this.compileConstraint(
+                tableName,
+                constraint,
+                fields,
+                definition,
+                context,
+              ).name,
+            },
+      ),
+    };
+  }
+
   private compileOperation(
     operation: CollectionOperation,
     context: CollectionCompilerContext,

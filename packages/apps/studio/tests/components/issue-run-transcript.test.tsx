@@ -29,6 +29,7 @@ const state = vi.hoisted(() => ({
   retriedRunId: null as string | null,
   retryOfRunId: null as string | null,
   inputs: [] as RunDetail['inputs'],
+  run: {} as Partial<RunDetail>,
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
@@ -74,6 +75,7 @@ vi.mock('@nocobase/app-plugin-agents/client/runs', async (original) => ({
         inputs: state.inputs,
         maxAttempts: 1,
         summary: 'Run summary',
+        ...state.run,
       },
     },
     events: state.events,
@@ -143,10 +145,119 @@ beforeEach(() => {
   state.retriedRunId = null;
   state.retryOfRunId = null;
   state.inputs = [];
+  state.run = {};
 });
 afterEach(cleanup);
 
 describe('Studio issue run transcript', () => {
+  it('changes a scheduled retry to waiting for dispatch when its time passes', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-10-01T00:00:00.000Z'));
+      state.run = {
+        status: 'queued',
+        attempt: 2,
+        failureReason: 'toolNetwork',
+        availableAt: '2026-10-01T00:00:01.000Z',
+      };
+      await setup();
+      expect(
+        screen.getByText(/Automatic retry scheduled/u),
+      ).toBeInTheDocument();
+      await act(() => vi.advanceTimersByTimeAsync(1001));
+      expect(
+        screen.getByText(/Waiting to be dispatched again/u),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText(/Automatic retry scheduled/u),
+      ).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each(['en-US', 'zh-CN'])(
+    'updates retry failures in the mounted transcript (%s)',
+    async (locale) => {
+      state.events = [
+        {
+          seq: 1,
+          at: '2026-10-01T00:00:00.000Z',
+          type: 'error',
+          content: 'Historical connection failure',
+        },
+      ];
+      state.run = {
+        status: 'queued',
+        attempt: 2,
+        maxAttempts: 2,
+        failureReason: 'toolNetwork',
+        failureDetail: 'First failure',
+        availableAt: '2099-10-01T00:00:00.000Z',
+      };
+      const view = await setup(locale);
+      const waiting = screen.getByText(/First failure/u);
+      expect(waiting).toHaveClass('text-muted-foreground');
+      expect(waiting).toHaveTextContent(
+        locale === 'zh-CN' ? '第 1 次尝试失败' : 'Attempt 1 failed',
+      );
+      expect(waiting).toHaveTextContent(
+        locale === 'zh-CN' ? '自动重试' : 'Automatic retry scheduled',
+      );
+      for (const status of ['dispatched', 'running', 'completed'] as const) {
+        // Old persisted fields must not be shown as a current failure either.
+        state.run.status = status;
+        view.refresh();
+        expect(screen.queryByText(/First failure/u)).not.toBeInTheDocument();
+        expect(
+          screen.getByText('Historical connection failure'),
+        ).toBeInTheDocument();
+      }
+      state.run = {
+        ...state.run,
+        status: 'failed',
+        failureReason: 'toolProcess',
+        failureDetail: 'Latest failure',
+      };
+      view.refresh();
+      expect(screen.getByText(/Latest failure/u)).toHaveClass(
+        'text-destructive',
+      );
+      expect(screen.queryByText(/First failure/u)).not.toBeInTheDocument();
+      state.run.status = 'running';
+      view.unmount();
+      await setup(locale);
+      expect(screen.queryByText(/Latest failure/u)).not.toBeInTheDocument();
+      expect(
+        screen.getByText('Historical connection failure'),
+      ).toBeInTheDocument();
+    },
+  );
+
+  it.each([
+    [1, null],
+    [1, '2020-01-01T00:00:00.000Z'],
+    [2, null],
+  ] as const)(
+    'describes preparation failures without blaming a previous attempt (%s, %s)',
+    async (attempt, availableAt) => {
+      state.run = {
+        status: 'queued',
+        attempt,
+        failureReason: 'setupFailed',
+        failureDetail: 'Preparation error',
+        availableAt,
+      };
+      await setup();
+      const waiting = screen.getByText(/Preparation error/u);
+      expect(waiting).toHaveTextContent('Run preparation failed');
+      expect(waiting).toHaveTextContent('Waiting to be dispatched again');
+      expect(waiting).not.toHaveTextContent('Attempt 0');
+      expect(waiting).not.toHaveTextContent('Attempt 1 failed');
+      expect(waiting).not.toHaveTextContent('scheduled');
+    },
+  );
+
   it.each(['en-US', 'zh-CN'])(
     'shows the current retry trigger rather than a copied retry (%s)',
     async (locale) => {

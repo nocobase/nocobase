@@ -19,16 +19,15 @@ interface Issue {
 }
 
 test.describe('issues', () => {
-  test('the table is the default, beside the board and the Agent queue', async ({
+  test('the board is the default, beside the list and the Agent queue', async ({
     page,
   }) => {
     await open(page, '/issues');
     const views = page.getByRole('group', { name: '视图' });
-    await expect(views.getByRole('button', { name: '列表' })).toHaveAttribute(
+    await expect(views.getByRole('button', { name: '看板' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    await views.getByRole('button', { name: '看板' }).click();
     const board = page.getByRole('region', { name: '任务看板' });
     await expect(
       board.getByRole('region', { name: /^进行中 \d+$/ }),
@@ -56,12 +55,12 @@ test.describe('issues', () => {
     ).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('my issues default to the table', async ({ page }) => {
+  test('my issues default to the board', async ({ page }) => {
     await open(page, '/my-issues');
     await expect(
       page
         .getByRole('group', { name: '视图' })
-        .getByRole('button', { name: '列表' }),
+        .getByRole('button', { name: '看板' }),
     ).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -152,7 +151,7 @@ test.describe('issues', () => {
     }
     expect(heights.every((height) => height > 500)).toBe(true);
 
-    await page.route('**/api/taskTrees*', async (route) => {
+    await page.route('**/api/projects/issues?*', async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 700));
       await route.continue();
     });
@@ -304,32 +303,8 @@ test.describe('issues', () => {
       .getByRole('rowgroup')
       .last()
       .getByRole('row');
-    const group = rows.filter({
-      has: page.getByRole('button', { name: '收起常规工作', exact: true }),
-    });
-    await expect(group).toHaveCount(1);
-    await expect(group).toContainText('1 个任务 · 1 棵任务树');
-    const parent = rows.filter({
-      has: page.getByRole('link', { name: 'PM-1', exact: true }),
-    });
-    await expect(parent).toContainText('上下文');
-    await parent
-      .getByRole('button', { name: '展开PM-1的子任务', exact: true })
-      .click();
-    const tasks = rows.filter({
-      has: page.getByRole('link', { name: /^PM-\d+$/ }),
-    });
-    await expect(tasks).toHaveCount(4);
-    const match = tasks.filter({
-      has: page.getByRole('link', { name: 'PM-2', exact: true }),
-    });
-    await expect(match).toHaveCount(1);
-    await expect(match).toContainText(
-      'Board drag and drop: reorder within a column',
-    );
-    await expect(match).not.toContainText('上下文');
-    const context = tasks.filter({ hasText: '上下文' });
-    await expect(context).toHaveCount(3);
+    await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toContainText('PM-2');
   });
 
   test('creating an issue by hand for later opens it in Backlog', async ({
