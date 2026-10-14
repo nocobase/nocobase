@@ -13,6 +13,7 @@ import { gitOAuthRoutes, gitRoutes, gitWebhookRoutes } from '../git/routes.js';
 import { inboxRoutes } from '../inbox/routes.js';
 import { knowledgeViewRoutes } from '../knowledge/routes.js';
 import { knowledgeSearchRoutes } from '../knowledge/search-routes.js';
+import { knowledgeDirectoryRoutes } from '../knowledge/directory-routes.js';
 import { previewsRoutes } from '../previews/routes.js';
 import { projectInitsRoutes } from '../projects-init/routes.js';
 import { releasesRoutes } from '../releases/routes.js';
@@ -36,6 +37,7 @@ const routes: readonly AppRouteContribution<Application>[] = [
   projectInitsRoutes,
   buildsRoutes,
   knowledgeSearchRoutes,
+  knowledgeDirectoryRoutes,
   knowledgeViewRoutes,
 ];
 
