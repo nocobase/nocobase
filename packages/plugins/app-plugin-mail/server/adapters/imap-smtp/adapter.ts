@@ -1,3 +1,5 @@
+import { encodePath } from 'imapflow/lib/tools.js';
+import { mailFailedPrecondition } from '../../services/errors.js';
 import {
   ImapFlow,
   type FetchMessageObject,
@@ -30,6 +32,7 @@ import type {
 } from '../../../shared/mail.js';
 import type {
   MailProviderAdapter,
+  MailProviderMoveResult,
   MailProviderAccount,
   MailProviderContext,
   MailProviderFolderPage,
@@ -45,6 +48,7 @@ import type {
 
 import type {
   ImapCopyEvidence,
+  ImapMoveState,
   ImapFolderCursor,
   ImapIdSource,
   ImapOperationSnapshot,
@@ -135,10 +139,12 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       readonly imap: typeof createImapClient;
       readonly smtp: typeof createSmtpTransport;
       readonly expungeUid: typeof expungeUid;
+      readonly transferUid?: typeof transferUid;
     } = Object.freeze({
       imap: createImapClient,
       smtp: createSmtpTransport,
       expungeUid,
+      transferUid,
     }),
     private readonly operation?: ImapOperationSnapshot | undefined,
   ) {
@@ -188,7 +194,11 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
   public async forMessage(
     messageId: string,
     providerMessageId: string,
-    operation: 'flags' | 'delete',
+    operation: 'flags' | 'delete' | 'move',
+    move?: {
+      readonly sourceProviderFolderId?: string;
+      readonly destinationProviderFolderId: string;
+    },
   ): Promise<ImapSmtpAdapter> {
     if (!this.locations)
       throw new Error('IMAP location persistence is not configured.');
@@ -196,6 +206,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       messageId,
       providerMessageId,
       operation,
+      move,
     );
     return new ImapSmtpAdapter(
       this.context,
@@ -983,6 +994,266 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     return this.locations
       ? this.updateCopyFlags(providerMessageId, '\\Flagged', starred, signal)
       : this.updateFlags(providerMessageId, '\\Flagged', starred, signal);
+  }
+
+  /** Move only the bound copy; fixed UID primitives never choose a global EXPUNGE. */
+  public async moveMessage(
+    providerMessageId: string,
+    providerFolderId: string,
+    signal?: AbortSignal,
+  ): Promise<MailProviderResult<MailProviderMoveResult>> {
+    if (
+      !this.locations ||
+      this.operation?.operation !== 'move' ||
+      this.operation.providerMessageId !== providerMessageId ||
+      this.operation.destinationProviderFolderId !== providerFolderId
+    )
+      throw mailFailedPrecondition(
+        'MAIL_IMAP_MOVE_SOURCE_REQUIRED',
+        'A move requires a bound source folder.',
+      );
+    let state: ImapMoveState | undefined;
+    let remoteStarted = false;
+    try {
+      throwIfAborted(signal);
+      const client = await this.imap();
+      if (
+        !client.capabilities.has('MOVE') &&
+        !client.capabilities.has('UIDPLUS')
+      )
+        throw mailFailedPrecondition(
+          'MAIL_IMAP_MOVE_UNSUPPORTED',
+          'This server cannot safely move messages. Use your mail client.',
+        );
+      const folders = await this.listMailboxes();
+      if (
+        !folders.some(
+          (folder) =>
+            folder.path === providerFolderId && !folder.flags.has('\\Noselect'),
+        )
+      )
+        throw new Error('The destination is not a selectable IMAP folder.');
+      const destinationMailbox = await client.mailboxOpen(providerFolderId, {
+        readOnly: false,
+      });
+      if (destinationMailbox.readOnly)
+        throw new Error('The destination is read-only.');
+      state = await this.locations.beginMove();
+      const source = await this.openCopy(
+        state.source,
+        { flags: true, size: true, bodyStructure: true },
+        false,
+      );
+      if (client.mailbox && client.mailbox.readOnly)
+        throw new Error('The source is read-only.');
+      if (!source && !state.destination)
+        throw new Error('The selected IMAP source changed.');
+      if (
+        client.mailbox &&
+        !client.mailbox.readOnly &&
+        client.mailbox.permanentFlags &&
+        !client.mailbox.permanentFlags.has('\\Deleted') &&
+        !client.mailbox.permanentFlags.has('\\*') &&
+        !state.destination
+      )
+        throw new Error('The source does not allow deletion flags.');
+      if (source?.flags?.has('\\Deleted') && !state.destination)
+        throw new Error('The source already has an external deletion flag.');
+      if (state.source.folder === providerFolderId && source) {
+        await this.locations.releaseMove(state);
+        state = undefined;
+        return { ok: true, value: { providerMessageId } };
+      }
+      const resumed = Boolean(state.destination);
+      // A persisted mapping is resumed without ever issuing another COPY or MOVE.
+      if (!state.destination) {
+        throwIfAborted(signal);
+        if (!client.capabilities.has('MOVE') && !client.capabilities.has('UIDPLUS'))
+          throw mailFailedPrecondition('MAIL_IMAP_MOVE_UNSUPPORTED', 'This server no longer has a safe move path.');
+        remoteStarted = true;
+        const native = client.capabilities.has('MOVE');
+        const tuple = await (this.protocol.transferUid ?? transferUid)(
+          client,
+          state.source.uid,
+          providerFolderId,
+          native,
+        );
+        if (
+          !tuple ||
+          tuple.uidValidity !== String(destinationMailbox.uidValidity)
+        )
+          throw new Error(
+            'The server did not supply a valid destination mapping.',
+          );
+        const destination = await this.fetchMoveDestination(
+          tuple,
+          providerMessageId,
+        );
+        if (
+          !destination ||
+          !source ||
+          destination.size !== source.size ||
+          JSON.stringify(destination.bodyStructure) !==
+            JSON.stringify(source.bodyStructure) ||
+          destination.envelope?.messageId !== source.envelope?.messageId ||
+          (source.emailId && destination.emailId !== source.emailId)
+        )
+          throw new Error(
+            'The mapped destination does not match the selected source.',
+          );
+        state = await this.locations.rememberMoveDestination(state, {
+          ...tuple,
+          locationId: randomUUID(),
+          providerMessageId,
+          source: this.operation.source,
+          read: destination.flags?.has('\\Seen') ?? false,
+          starred: destination.flags?.has('\\Flagged') ?? false,
+          receivedAt: destination.internalDate
+            ? toIsoDate(destination.internalDate)
+            : undefined,
+        });
+        // Native MOVE has already removed the source. Do not run COPY after any native failure.
+        if (native) {
+          await client.mailboxOpen(state.source.folder, { readOnly: false });
+          if (
+            !client.mailbox ||
+            String(client.mailbox.uidValidity) !== state.source.uidValidity
+          )
+            throw new Error('The source generation changed after MOVE.');
+          const remaining = await client.search(
+            { uid: String(state.source.uid) },
+            { uid: true },
+          );
+          if (!Array.isArray(remaining) || remaining.includes(state.source.uid))
+            throw new Error('The source is still present after MOVE.');
+          const id = await this.locations.commitMoved(
+            state,
+            this.moveAttachments(state.destination!, destination),
+          );
+          return { ok: true, value: { providerMessageId: id } };
+        }
+      }
+      const destination = await this.fetchMoveDestination(
+        state.destination!,
+        providerMessageId,
+      );
+      if (!destination) throw new Error('The confirmed destination changed.');
+      throwIfAborted(signal);
+      const current = await this.openCopy(
+        state.source,
+        { flags: true, size: true, bodyStructure: true },
+        false,
+      );
+      if (current) {
+        if (client.mailbox && client.mailbox.readOnly)
+          throw new Error('The source is read-only.');
+        if (!client.capabilities.has('UIDPLUS'))
+          throw new Error('UIDPLUS became unavailable before source cleanup.');
+        remoteStarted = true;
+        if (!current.flags?.has('\\Deleted')) {
+          if (
+            !(await client.messageFlagsAdd(
+              String(state.source.uid),
+              ['\\Deleted'],
+              { uid: true },
+            ))
+          )
+            throw new Error(
+              'The server did not confirm the source deletion flag.',
+            );
+        } else if (!resumed)
+          throw new Error('The source acquired an external deletion flag.');
+        if (!client.capabilities.has('UIDPLUS'))
+          throw new Error('UIDPLUS became unavailable after STORE.');
+        await this.protocol.expungeUid(client, state.source.uid);
+      }
+      // An absent UID is safe only in the same generation, including explicit partial-copy recovery.
+      if (
+        !client.mailbox ||
+        String(client.mailbox.uidValidity) !== state.source.uidValidity
+      )
+        throw new Error(
+          'The source generation changed before cleanup was confirmed.',
+        );
+      const remaining = await client.search(
+        { uid: String(state.source.uid) },
+        { uid: true },
+      );
+      if (!Array.isArray(remaining) || remaining.includes(state.source.uid))
+        throw new Error('The source removal was not confirmed.');
+      const id = await this.locations.commitMoved(
+        state,
+        this.moveAttachments(state.destination!, destination),
+      );
+      return { ok: true, value: { providerMessageId: id } };
+    } catch (error) {
+      if (
+        (error as { imapCopyRejected?: boolean }).imapCopyRejected &&
+        !state?.destination
+      )
+        remoteStarted = false;
+      if (state && !state.destination && !remoteStarted)
+        await this.locations.releaseMove(state);
+      if (state && (remoteStarted || state.destination))
+        throw mailFailedPrecondition(
+          'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
+          'The move is incomplete or its result is unknown. Verify the mailbox before retrying.',
+        );
+      throw error;
+    }
+  }
+
+  private async fetchMoveDestination(
+    tuple: ImapLocationTuple,
+    providerMessageId: string,
+  ): Promise<FetchMessageObject | undefined> {
+    const client = await this.imap();
+    const selected = await client.mailboxOpen(tuple.folder, { readOnly: true });
+    if (String(selected.uidValidity) !== tuple.uidValidity) return undefined;
+    const result = await client.fetchOne(
+      tuple.uid,
+      {
+        uid: true,
+        flags: true,
+        envelope: true,
+        bodyStructure: true,
+        size: true,
+        internalDate: true,
+      },
+      { uid: true },
+    );
+    if (!result || result.uid !== tuple.uid || result.flags?.has('\\Deleted'))
+      return undefined;
+    const source = this.operation!.source;
+    if (
+      (source === 'objectid' || source === 'x-gm-msgid') &&
+      result.emailId !== providerMessageId
+    )
+      return undefined;
+    if (
+      source === 'rfc-message-id' &&
+      result.envelope?.messageId !== providerMessageId
+    )
+      return undefined;
+    return result;
+  }
+
+  private moveAttachments(
+    tuple: ImapLocationTuple,
+    message: FetchMessageObject,
+  ): readonly import('../../../shared/mail.js').NormalizedMailAttachment[] {
+    const parts = attachmentParts(message.bodyStructure);
+    if (!parts)
+      throw new Error('The destination attachment structure is missing.');
+    return parts.map((part, index) =>
+      attachmentMetadata(
+        tuple.folder,
+        tuple.uidValidity,
+        tuple.uid,
+        part,
+        index,
+      ),
+    );
   }
 
   public async deleteMessage(
@@ -2023,4 +2294,77 @@ async function expungeUid(client: ImapFlow, uid: number): Promise<void> {
     { type: 'SEQUENCE', value: String(uid) },
   ]);
   response.next();
+}
+
+/** Parse only the exact one-UID mapping requested by this operation. Never infer a destination UID. */
+async function transferUid(
+  client: ImapFlow,
+  uid: number,
+  folder: string,
+  native: boolean,
+): Promise<ImapLocationTuple | undefined> {
+  type Response = { attributes?: { section?: { value?: unknown }[] }[] };
+  const connection = client as ImapFlow & {
+    exec(
+      command: string,
+      attributes: { type: string; value: string }[],
+      options: {
+        untagged: { OK(response: Response): Promise<void> };
+      },
+    ): Promise<{ next(): void; response: Response }>;
+  };
+  let mapping: ImapLocationTuple | undefined;
+  let invalid = false;
+  const parse = (response: Response): void => {
+    const section = response.attributes?.[0]?.section;
+    if (section?.[0]?.value !== 'COPYUID') return;
+    const single = (value: unknown): number | undefined => {
+      if (
+        typeof value !== 'string' ||
+        !/^[1-9]\d{0,9}(?::[1-9]\d{0,9})?$/.test(value)
+      )
+        return undefined;
+      const [first, last = first] = value.split(':').map(Number);
+      return first === last && first <= 0xffffffff ? first : undefined;
+    };
+    const validity = single(section[1]?.value);
+    const source = single(section[2]?.value);
+    const destination = single(section[3]?.value);
+    if (!validity || source !== uid || !destination) {
+      invalid = true;
+      return;
+    }
+    const tuple = { folder, uidValidity: String(validity), uid: destination };
+    if (mapping && tupleKey(mapping) !== tupleKey(tuple)) invalid = true;
+    mapping = tuple;
+  };
+  // No library-level MOVE/COPY emulation can run through this fixed command primitive.
+  let result;
+  try {
+    result = await connection.exec(
+      native ? 'UID MOVE' : 'UID COPY',
+      [
+        { type: 'SEQUENCE', value: String(uid) },
+        { type: 'ATOM', value: encodePath(client, folder) },
+      ],
+      {
+        untagged: {
+          OK: async (response) => {
+            parse(response);
+          },
+        },
+      },
+    );
+  } catch (error) {
+    const failure = error as {
+      responseStatus?: string;
+      imapCopyRejected?: boolean;
+    };
+    if (!native && ['NO', 'BAD'].includes(failure.responseStatus ?? ''))
+      failure.imapCopyRejected = true;
+    throw error;
+  }
+  result.next();
+  parse(result.response);
+  return invalid ? undefined : mapping;
 }

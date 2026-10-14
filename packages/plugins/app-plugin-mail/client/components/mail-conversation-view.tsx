@@ -91,6 +91,9 @@ export interface MailConversationViewProps {
     readonly archive?: (message: MailMessage) => void;
     readonly delete: (message: MailMessage) => void;
     readonly canDelete?: (message: MailMessage) => boolean;
+    readonly deleteDisabledReason?: (
+      message: MailMessage,
+    ) => string | undefined;
     readonly downloadAttachment?: (
       message: MailMessage,
       attachment: MailMessage['attachments'][number],
@@ -808,6 +811,14 @@ function MessageMoreActions({
                 <Trash2 aria-hidden='true' />
                 {actionLabels.delete}
               </DropdownMenuItem>
+              {actions.deleteDisabledReason?.(message) ? (
+                <p
+                  className='max-w-64 px-2 py-1 text-xs text-muted-foreground'
+                  role='status'
+                >
+                  {actions.deleteDisabledReason(message)}
+                </p>
+              ) : null}
             </>
           ) : null}
         </DropdownMenuContent>

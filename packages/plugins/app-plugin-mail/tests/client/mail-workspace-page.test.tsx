@@ -1741,8 +1741,117 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     expect(
       await within(menu).findByRole('menuitem', { name: 'Delete' }),
     ).toHaveAttribute('aria-disabled', 'true');
+    expect(within(menu).getByRole('status')).toHaveTextContent(
+      'This account does not support deletion. Use your mail client.',
+    );
     expect(mail.deleteMessage).not.toHaveBeenCalled();
   });
+
+  it.each(['aggregate', 'inbox-and-trash', 'no-trash'] as const)(
+    'uses the actual IMAP source and explains deletion eligibility: %s',
+    async (scenario) => {
+      mail.listAccounts.mockResolvedValue([
+        {
+          id: 'account-1',
+          provider: { type: 'imap-smtp', name: 'imap' },
+          address: 'user@example.com',
+          status: 'active',
+        },
+      ]);
+      mail.listProviders.mockResolvedValue([
+        {
+          type: 'imap-smtp',
+          name: 'imap',
+          label: 'IMAP',
+          connection: 'credentials',
+          capabilities: {
+            receive: true,
+            send: true,
+            folders: true,
+            moveMessage: true,
+          },
+        },
+      ]);
+      mail.listFolders.mockResolvedValue([
+        {
+          id: 'inbox',
+          accountId: 'account-1',
+          providerFolderId: 'INBOX',
+          name: 'Inbox',
+          type: 'inbox',
+        },
+        ...(scenario === 'no-trash'
+          ? []
+          : [
+              {
+                id: 'trash',
+                accountId: 'account-1',
+                providerFolderId: 'Trash',
+                name: 'Trash',
+                type: 'trash',
+              },
+            ]),
+      ]);
+      const message = {
+        id: 'imap-selection',
+        accountId: 'account-1',
+        providerMessageId: 'imap:message',
+        folderIds: ['INBOX', 'Trash'],
+        from: { address: 'sender@example.com' },
+        to: [],
+        cc: [],
+        bcc: [],
+        subject: 'Selected IMAP copy',
+        read: true,
+        starred: false,
+        draft: false,
+        attachments: [],
+        todo: false,
+        labelIds: [],
+        replyTo: [],
+        references: [],
+      };
+      mail.listMessages.mockResolvedValue({ items: [message] });
+      mail.getMessage.mockResolvedValue(message);
+      render(<MailWorkspacePage />);
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
+      );
+      if (scenario !== 'aggregate') {
+        const folders = screen.getAllByRole('navigation', {
+          name: 'Folders',
+        })[1];
+        await user.click(
+          within(folders).getByRole('button', { name: /Inbox/ }),
+        );
+      }
+      await user.click(await screen.findByText('Selected IMAP copy'));
+      await screen.findByRole('heading', { name: 'Selected IMAP copy' });
+      await user.click(
+        await screen.findByRole('button', { name: 'More actions' }),
+      );
+      const menu = await screen.findByRole('menu');
+      const deletion = within(menu).getByRole('menuitem', { name: 'Delete' });
+      if (scenario === 'inbox-and-trash') {
+        await user.click(deletion);
+        await waitFor(() =>
+          expect(mail.deleteMessage).toHaveBeenCalledWith(
+            'account-1',
+            'imap-selection',
+            false,
+            { sourceProviderFolderId: 'INBOX' },
+          ),
+        );
+      } else {
+        expect(deletion).toHaveAttribute('aria-disabled', 'true');
+        expect(within(menu).getByRole('status')).toHaveTextContent(
+          scenario === 'aggregate'
+            ? 'Open the source folder'
+            : 'no Trash folder',
+        );
+      }
+    },
+  );
 
   // Skipped while it fails intermittently in CI: the "Permanently delete" menu item is sometimes not found before the
   // query times out (https://github.com/chenos/nocobase-ci/actions/runs/38114158032/job/114395623484). Re-enable once
