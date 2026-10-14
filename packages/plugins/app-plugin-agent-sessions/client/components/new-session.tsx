@@ -5,7 +5,7 @@
  * by browsing the computer, never typed. The computer, agent, folder and project last used are remembered in this
  * browser. Without a connected computer it says how to connect one.
  */
-import { useToaster } from '@nocobase/app-client';
+import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import {
@@ -80,7 +80,9 @@ export function NewSession(): ReactElement {
   const all = computers.data ?? [];
   const online = all.filter((computer) => computer.online);
   const computer =
-    all.find((candidate) => candidate.id === choice.computerId) ?? online[0];
+    all.find((candidate) => candidate.id === choice.computerId) ??
+    online[0] ??
+    all[0];
   if (computer && choice.computerId !== computer.id)
     setChoice({ ...choice, computerId: computer.id });
   const installed = computer ? installedAgents(computer) : [];
@@ -108,8 +110,10 @@ export function NewSession(): ReactElement {
       computer?.id,
       agent,
       cwd,
-      computer?.online,
       computer?.folders,
+      computer?.roots,
+      computer?.home,
+      computer?.host,
     ]),
     {
       computerId: computer?.id ?? '',
@@ -118,9 +122,12 @@ export function NewSession(): ReactElement {
       enabled: Boolean(computer?.online && agent && cwd),
     },
   );
-  const offered = discovery.result?.choices;
+  const offered = discovery.displayed?.choices;
   const values = Object.fromEntries(
-    (offered ?? []).map((offer) => [offer.id, offer.currentValue]),
+    (offered ?? []).map((offer) => [
+      offer.id,
+      discovery.settings[offer.id] ?? offer.currentValue,
+    ]),
   );
   const ready = Boolean(computer?.online && agent && cwd && discovery.result);
 
@@ -191,11 +198,14 @@ export function NewSession(): ReactElement {
               {t('newSession.subtitle')}
             </p>
           </div>
+          {computer?.outdatedBridge && (
+            <OutdatedBridgeNotice computer={computer} />
+          )}
           <Composer
             large
             autoFocus
             placeholder={t('newSession.placeholder')}
-            disabled={!ready}
+            sendDisabled={!ready}
             sending={create.isPending}
             commands={computer && agent ? computer.commands[agent.id] : []}
             mentions={{ projectId: project?.id ?? null }}
@@ -298,7 +308,8 @@ export function NewSession(): ReactElement {
                 <ChoiceMenus
                   choices={offered}
                   values={values}
-                  disabled={create.isPending || discovery.loading}
+                  disabled={create.isPending || !computer?.online}
+                  loading={discovery.loading}
                   onChoose={discovery.choose}
                 />
                 <span role='status' className='text-muted-foreground text-xs'>
@@ -328,7 +339,16 @@ export function NewSession(): ReactElement {
               </>
             }
             onSend={async (content, _interrupt, mentions) => {
-              if (!computer || !agent || !ready || sendingRef.current) return;
+              if (
+                !computer ||
+                !agent ||
+                !ready ||
+                !discovery.isCurrent() ||
+                sendingRef.current
+              ) {
+                discovery.retry();
+                throw new Error(t('newSession.settingsLoading'));
+              }
               sendingRef.current = true;
               try {
                 const session = await create.mutateAsync({
@@ -349,7 +369,10 @@ export function NewSession(): ReactElement {
               } catch (error) {
                 toaster.show({
                   type: 'error',
-                  title: errorText(error, t('errors.generic')),
+                  title:
+                    error instanceof ApiClientError && error.status < 500
+                      ? errorText(error, t('errors.generic'))
+                      : t('newSession.sendUnconfirmed'),
                 });
                 throw error;
               } finally {

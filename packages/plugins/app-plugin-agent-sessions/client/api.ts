@@ -14,6 +14,7 @@ import {
   useQuery,
   useQueryClient,
   type InfiniteData,
+  type QueryClient,
   type UseInfiniteQueryResult,
   type UseMutationResult,
   type UseQueryResult,
@@ -92,6 +93,8 @@ export function useSessions(
       }),
     initialPageParam: '',
     getNextPageParam: (last) => last.meta.nextPageToken,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -101,8 +104,7 @@ export function useSession(sessionId: string): UseQueryResult<Session> {
     queryKey: keys.session(sessionId),
     queryFn: () => data<Session>(api, { path: path('sessions', sessionId) }),
     // Linked records may change without a session event (for example, an issue accepted elsewhere).
-    refetchInterval: (query) =>
-      query.state.data?.links.length ? 5_000 : false,
+    refetchInterval: 15_000,
     refetchOnWindowFocus: true,
   });
 }
@@ -118,7 +120,9 @@ export function useTranscript(
   const client = useQueryClient();
   return useQuery({
     queryKey: keys.transcript(sessionId),
-    queryFn: async () => {
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
+    queryFn: async ({ signal }) => {
       const held =
         client.getQueryData<TranscriptEvent[]>(keys.transcript(sessionId)) ??
         [];
@@ -129,10 +133,17 @@ export function useTranscript(
         const page = await api.request<ListAnswer<TranscriptEvent>>({
           path: path('sessions', sessionId, 'events'),
           query: { after },
+          signal,
         });
         events.push(...page.data);
         after = page.data.at(-1)?.seq ?? after;
-        if (!page.meta.hasMore) return events;
+        if (!page.meta.hasMore)
+          return mergeTranscript(
+            client.getQueryData<TranscriptEvent[]>(
+              keys.transcript(sessionId),
+            ) ?? [],
+            events,
+          );
       }
     },
   });
@@ -179,32 +190,112 @@ export function useMarkSeen(sessionId: string, seq: number | undefined): void {
   }, [api, sessionId, seq]);
 }
 
+const liveSubscriptions = new WeakMap<
+  QueryClient,
+  { refs: number; release: () => void }
+>();
+
 /** Refreshes what the viewer sees when the server says something of theirs changed, or the connection comes back. */
 export function useLiveSessions(): void {
   const realtime = useService(realtimeClientToken);
   const client = useQueryClient();
   useEffect(() => {
-    // A streaming answer changes its session several times a second; the list follows at a calmer pace.
-    let listTimer: ReturnType<typeof setTimeout> | undefined;
-    const refreshList = (): void => {
-      listTimer ??= setTimeout(() => {
-        listTimer = undefined;
-        void client.invalidateQueries({
-          queryKey: ['agentSessions', 'sessions'],
-        });
-      }, 2_000);
+    const existing = liveSubscriptions.get(client);
+    const detach = (): void => {
+      const shared = liveSubscriptions.get(client);
+      if (shared && --shared.refs === 0) {
+        shared.release();
+        liveSubscriptions.delete(client);
+      }
+    };
+    if (existing) {
+      existing.refs += 1;
+      return detach;
+    }
+    type Slot = {
+      readonly id: string;
+      readonly key: readonly unknown[];
+      readonly interval: number;
+      pending: boolean;
+      running: boolean;
+      started: number;
+      timer: ReturnType<typeof setTimeout> | undefined;
+    };
+    const slots = new Map<string, Slot>();
+    let disposed = false;
+    const arm = (slot: Slot): void => {
+      if (disposed || slot.timer || slot.running) return;
+      const delay = slot.started
+        ? Math.max(0, slot.started + slot.interval - Date.now())
+        : slot.interval;
+      const timer = setTimeout(() => {
+        slot.timer = undefined;
+        void flush(slot);
+      }, delay);
+      slot.timer = timer;
+    };
+    const flush = async (slot: Slot): Promise<void> => {
+      slot.pending = false;
+      slot.running = true;
+      slot.started = Date.now();
+      // An existing read may predate this notification. Follow it with a fresh read after it settles.
+      if (client.getQueryState(slot.key)?.fetchStatus === 'fetching')
+        slot.pending = true;
+      try {
+        // Never keep aborting a slow read during a continuous stream.
+        await client.invalidateQueries(
+          { queryKey: slot.key },
+          { cancelRefetch: false },
+        );
+      } finally {
+        slot.running = false;
+        if (slot.pending) arm(slot);
+        else slots.delete(slot.id);
+      }
+    };
+    const schedule = (
+      id: string,
+      key: readonly unknown[],
+      interval: number,
+    ): void => {
+      const slot = slots.get(id) ?? {
+        id,
+        key,
+        interval,
+        pending: false,
+        running: false,
+        started: 0,
+        timer: undefined,
+      };
+      slots.set(id, slot);
+      slot.pending = true;
+      arm(slot);
+    };
+    const invalidateDiscovery = (): void => {
+      void client.cancelQueries({ queryKey: ['agentSessions', 'discovery'] });
+      void client.invalidateQueries({
+        queryKey: ['agentSessions', 'discovery'],
+      });
     };
     const refresh = (change?: AgentSessionsChange): void => {
       if (change?.kind === 'session') {
+        const id = change.sessionId;
+        schedule(`events:${id}`, keys.transcript(id), 250);
+        schedule(`session:${id}`, keys.session(id), 1_000);
+        schedule('list', ['agentSessions', 'sessions'], 2_000);
+      } else if (change?.kind === 'computers') {
+        invalidateDiscovery();
+        void client.invalidateQueries({ queryKey: keys.computers });
         void client.invalidateQueries({
-          queryKey: keys.session(change.sessionId),
+          queryKey: ['agentSessions', 'session'],
         });
-        void client.invalidateQueries({
-          queryKey: keys.transcript(change.sessionId),
-        });
-        refreshList();
       } else {
-        void client.invalidateQueries({ queryKey: keys.all });
+        invalidateDiscovery();
+        void client.invalidateQueries({
+          predicate: (query) =>
+            query.queryKey[0] === 'agentSessions' &&
+            query.queryKey[1] !== 'discovery',
+        });
       }
     };
     const unsubscribe = realtime.subscribe<AgentSessionsChange>(
@@ -212,12 +303,31 @@ export function useLiveSessions(): void {
       ({ payload }) => refresh(payload),
     );
     const unsubscribeOpen = realtime.onOpen(() => refresh());
-    return () => {
-      clearTimeout(listTimer);
+    const release = (): void => {
+      disposed = true;
+      for (const slot of slots.values()) clearTimeout(slot.timer);
+      // No bridge generation is exposed to the browser. Do not reuse discovery across an unobserved interval.
+      void client.invalidateQueries({
+        queryKey: ['agentSessions', 'discovery'],
+        refetchType: 'none',
+      });
       unsubscribe();
       unsubscribeOpen();
     };
+    liveSubscriptions.set(client, { refs: 1, release });
+    refresh();
+    return detach;
   }, [client, realtime]);
+}
+
+/** Preserve confirmed events missing from an older GET; fetched updates may grow existing streamed events. */
+export function mergeTranscript(
+  held: readonly TranscriptEvent[],
+  fetched: readonly TranscriptEvent[],
+): TranscriptEvent[] {
+  const events = new Map(held.map((event) => [event.seq, event]));
+  for (const event of fetched) events.set(event.seq, event);
+  return [...events.values()].sort((left, right) => left.seq - right.seq);
 }
 
 type Mutation<Input, Output = void> = UseMutationResult<Output, Error, Input>;
@@ -264,7 +374,14 @@ export function useCreateSession(): Mutation<
         path: path('sessions'),
         method: 'POST',
         json: input,
+        signal: AbortSignal.timeout(30_000),
       }),
+    retry: false,
+    onError: () => {
+      void client.invalidateQueries({
+        queryKey: ['agentSessions', 'sessions'],
+      });
+    },
     onSuccess: (session) => {
       client.setQueryData(keys.session(session.id), session);
       void client.invalidateQueries({
@@ -276,17 +393,35 @@ export function useCreateSession(): Mutation<
 
 export function usePrompt(
   sessionId: string,
-): Mutation<{ content: PromptContent[]; mentions: Mention[] }> {
-  return useSessionWrite(
-    sessionId,
-    async (api, json: { content: PromptContent[]; mentions: Mention[] }) => {
-      await api.request({
+): Mutation<
+  { content: PromptContent[]; mentions: Mention[] },
+  TranscriptEvent
+> {
+  const api = useApiClient();
+  const client = useQueryClient();
+  return useMutation({
+    retry: false,
+    mutationFn: (json) =>
+      data<TranscriptEvent>(api, {
         path: path('sessions', sessionId, 'prompt'),
         method: 'POST',
         json,
-      });
+        signal: AbortSignal.timeout(30_000),
+      }),
+    onSuccess: async (event) => {
+      await client.cancelQueries({ queryKey: keys.transcript(sessionId) });
+      client.setQueryData<TranscriptEvent[]>(
+        keys.transcript(sessionId),
+        (held = []) => mergeTranscript(held, [event]),
+      );
+      // Realtime supplies the bounded session/list refresh. Transcript recovery also polls and refetches on focus.
     },
-  );
+    onError: () => {
+      // A failed transport may have committed. Reconcile; never automatically resend the prompt.
+      void client.invalidateQueries({ queryKey: keys.transcript(sessionId) });
+      void client.invalidateQueries({ queryKey: keys.session(sessionId) });
+    },
+  });
 }
 
 export function useCancel(sessionId: string): Mutation<void> {

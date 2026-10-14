@@ -5,7 +5,8 @@ import {
 } from '@nocobase/app-testing/client';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { useState, type ReactElement } from 'react';
-import { describe, expect, it } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { describe, expect, it, vi } from 'vitest';
 
 import plugin from '../../client/plugin.js';
 import { ChoiceMenus } from '../../client/components/choice-menus.js';
@@ -33,8 +34,9 @@ function Probe(): ReactElement {
   const [agentId, setAgentId] = useState('codex');
   const [cwd, setCwd] = useState('/work');
   const [online, setOnline] = useState(true);
+  const [sent, setSent] = useState('');
   const discovery = useChoiceDiscovery(
-    JSON.stringify([computerId, agentId, cwd, online]),
+    JSON.stringify([computerId, agentId, cwd]),
     { computerId, agentId, cwd, enabled: online },
   );
   return (
@@ -52,7 +54,13 @@ function Probe(): ReactElement {
       </button>
       <button onClick={() => setOnline(!online)}>Connection</button>
       <button onClick={discovery.retry}>Retry</button>
-      <button disabled={!discovery.result || discovery.loading}>Send</button>
+      <button
+        disabled={!discovery.result || discovery.loading}
+        onClick={() => setSent(discovery.isCurrent() ? 'Sent' : 'Blocked')}
+      >
+        Send
+      </button>
+      <span>{sent}</span>
       <output>
         {online
           ? discovery.loading
@@ -63,7 +71,9 @@ function Probe(): ReactElement {
           : 'Offline'}
       </output>
       <ChoiceMenus
-        choices={discovery.result?.choices}
+        choices={discovery.displayed?.choices}
+        values={discovery.settings}
+        loading={discovery.loading}
         onChoose={discovery.choose}
       />
     </>
@@ -72,26 +82,72 @@ function Probe(): ReactElement {
 
 async function setup() {
   const requests: { call: ApiCall; resolve: (result: unknown) => void }[] = [];
-  await renderWithApp(<Probe />, {
-    namespace: '@nocobase/app-plugin-agent-sessions',
-    plugins: [plugin({ routes: false })],
-    fetch: answerApi(
-      (call) =>
-        new Promise((resolve) => {
-          requests.push({ call, resolve });
-        }),
-    ),
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
   });
+  await renderWithApp(
+    <QueryClientProvider client={client}>
+      <Probe />
+    </QueryClientProvider>,
+    {
+      namespace: '@nocobase/app-plugin-agent-sessions',
+      plugins: [plugin({ routes: false })],
+      fetch: answerApi(
+        (call) =>
+          new Promise((resolve) => {
+            requests.push({ call, resolve });
+          }),
+      ),
+    },
+  );
   await waitFor(() => expect(requests).toHaveLength(1));
   const answer = async (index: number, result: unknown): Promise<void> => {
     await act(async () => {
       requests[index]!.resolve(result);
     });
   };
-  return { requests, answer };
+  return { requests, answer, client };
 }
 
 describe('choice discovery', () => {
+  it('checks expiration again at submission even before a stale timer rerenders', async () => {
+    const { answer } = await setup();
+    await answer(0, { data: choice('First') });
+    await screen.findByText('First');
+    const clock = vi
+      .spyOn(Date, 'now')
+      .mockReturnValue(Date.now() + 6 * 60_000);
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+      expect(screen.getByText('Blocked')).toBeInTheDocument();
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
+  it('reuses a valid cached target and disables sending during revalidation', async () => {
+    const { requests, answer, client } = await setup();
+    await answer(0, { data: choice('First') });
+    await screen.findByText('First');
+    fireEvent.click(screen.getByText('Computer'));
+    await waitFor(() => expect(requests).toHaveLength(2));
+    await answer(1, { data: choice('Second') });
+    await screen.findByText('Second');
+    fireEvent.click(screen.getByText('Computer'));
+    await screen.findByText('First');
+    expect(requests).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Send' })).not.toBeDisabled();
+    await act(async () => {
+      void client.invalidateQueries({
+        queryKey: ['agentSessions', 'discovery'],
+      });
+    });
+    await waitFor(() => expect(requests).toHaveLength(3));
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    await answer(2, { data: choice('Refreshed') });
+    await screen.findByText('Refreshed');
+  });
+
   it('ignores delayed responses across A → B → A and clears settings on computer, agent and folder changes', async () => {
     const { requests, answer } = await setup();
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
@@ -146,6 +202,7 @@ describe('choice discovery', () => {
     fireEvent.click(screen.getByText('Retry'));
     await waitFor(() => expect(requests).toHaveLength(2));
     await answer(1, { data: { status: 'available', choices: [] } });
+    await screen.findByText('available');
     expect(screen.getByRole('button', { name: 'Send' })).not.toBeDisabled();
     fireEvent.click(screen.getByText('Connection'));
     expect(screen.getByText('Offline')).toBeInTheDocument();

@@ -38,6 +38,8 @@ type Pending = Image & { readonly id: string };
 export interface ComposerProps {
   readonly placeholder: string;
   readonly disabled?: boolean;
+  /** Settings may still be loading while the draft remains editable. */
+  readonly sendDisabled?: boolean;
   /** The agent is answering: Enter queues the message, ⌘↩ interrupts. */
   readonly busy?: boolean;
   readonly sending?: boolean;
@@ -91,6 +93,7 @@ const mentionText = (reference: Reference): string =>
 export function Composer({
   placeholder,
   disabled,
+  sendDisabled,
   busy,
   sending,
   commands = [],
@@ -201,8 +204,11 @@ export function Composer({
     );
   };
 
+  const sendingRef = useRef(false);
   const send = async (interrupt: boolean): Promise<void> => {
-    if (empty || disabled || sending) return;
+    if (empty || disabled || sendDisabled || sending || sendingRef.current)
+      return;
+    sendingRef.current = true;
     const content: PromptContent[] = [
       ...(text.trim() ? [{ type: 'text' as const, text: text.trim() }] : []),
       ...images.map(({ mimeType, data }) => ({
@@ -219,8 +225,10 @@ export function Composer({
       await onSend(content, interrupt, kept);
     } catch {
       // The caller said what went wrong; the draft stays for another try.
+      sendingRef.current = false;
       return;
     }
+    sendingRef.current = false;
     setText('');
     setCaret(0);
     setImages([]);
@@ -377,7 +385,7 @@ export function Composer({
           value={text}
           rows={large ? 4 : compact ? 1 : 2}
           autoFocus={autoFocus}
-          disabled={disabled}
+          disabled={disabled || sending}
           placeholder={placeholder}
           aria-label={placeholder}
           onChange={(event) => {
@@ -412,7 +420,7 @@ export function Composer({
         >
           <ToolButton
             label={t('composer.addImage')}
-            disabled={disabled}
+            disabled={disabled || sending}
             onClick={() => filesRef.current?.click()}
           >
             <ImageIcon className='size-4' />
@@ -421,7 +429,7 @@ export function Composer({
             <span className='md:hidden'>
               <ToolButton
                 label={expanded ? t('composer.collapse') : t('composer.expand')}
-                disabled={disabled}
+                disabled={disabled || sending}
                 onClick={() => {
                   setExpanded(!expanded);
                   inputRef.current?.focus();
@@ -449,7 +457,7 @@ export function Composer({
           {mentions && (
             <ToolButton
               label={t('composer.mentions')}
-              disabled={disabled}
+              disabled={disabled || sending}
               onClick={() => insert('#')}
             >
               <HashIcon className='size-4' />
@@ -458,7 +466,7 @@ export function Composer({
           {commands.length > 0 && (
             <ToolButton
               label={t('composer.commands')}
-              disabled={disabled}
+              disabled={disabled || sending}
               onClick={() => type('/', 1)}
             >
               <SlashSquareIcon className='size-4' />
@@ -466,6 +474,11 @@ export function Composer({
           )}
           <div className='order-first flex w-full min-w-0 items-center gap-0.5 overflow-x-auto pb-1 [scrollbar-width:none] empty:hidden sm:order-none sm:ml-0.5 sm:w-auto sm:flex-1 sm:flex-wrap sm:overflow-visible sm:border-l sm:pb-0 sm:pl-1'>
             {toolbar}
+            {sending && (
+              <span role='status' className='text-muted-foreground text-xs'>
+                {t('composer.sending')}
+              </span>
+            )}
           </div>
           <div className='ml-auto flex shrink-0 items-center gap-0.5'>
             {trailing}
@@ -473,7 +486,7 @@ export function Composer({
               type='button'
               aria-label={busy ? t('composer.queue') : t('composer.send')}
               title={busy ? t('composer.queue') : t('composer.send')}
-              disabled={empty || disabled || sending}
+              disabled={empty || disabled || sendDisabled || sending}
               onClick={() => void send(false)}
               className={cn(
                 'inline-flex size-9 shrink-0 items-center justify-center rounded-full transition-colors',
