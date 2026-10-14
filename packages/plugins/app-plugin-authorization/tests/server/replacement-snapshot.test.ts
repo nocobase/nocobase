@@ -1,4 +1,3 @@
-// db-test-portability: dialect-specific — verifies the MySQL driver's required READ COMMITTED isolation.
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import {
   createTestDatabase,
