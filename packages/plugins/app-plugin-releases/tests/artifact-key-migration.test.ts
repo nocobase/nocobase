@@ -77,45 +77,12 @@ test('upgrades the original key length without changing keys or uniqueness', asy
   connection,
   dialect,
   skip,
+  expectCollection,
 }) => {
   if (dialect === 'mysql') skip();
   const migrator = database.createMigrator({ sources });
   await migrator.upTo(previous);
-  await connection.builder.alterField('relReleases', 'artifactKey', {
-    type: 'string',
-    length: 1024,
-    nullable: true,
-  });
-  await connection
-    .repository('relReleases')
-    .createOne({ values: release('existing', 'app/existing.tar.gz') });
-  await migrator.latest();
-  expect(
-    (await connection.builder.getCollection('relReleases'))?.fields?.find(
-      (field) => field.name === 'artifactKey',
-    ),
-  ).toMatchObject({ length: 172, nullable: true });
-  expect(
-    await connection
-      .repository('relReleases')
-      .findOne({ filter: { id: 'existing' } }),
-  ).toMatchObject({ artifactKey: 'app/existing.tar.gz' });
-  await expect(
-    connection.repository('relReleases').createOne({
-      values: release('duplicate', 'app/existing.tar.gz'),
-    }),
-  ).rejects.toThrow();
-  expect((await migrator.latest()).executed).toEqual([]);
-  await expect(migrator.rollback()).rejects.toThrow(/irreversible/);
-});
-
-test('rejects oversized legacy keys before changing schema or data, then allows a corrected retry', async ({
-  database,
-  connection,
-}) => {
-  const migrator = database.createMigrator({ sources });
-  await migrator.upTo(previous);
-  // Omit the invalid legacy index so the bad-data guard can also run on MySQL.
+  // Reconstruct the original indexed schema, including on SQL Server.
   await connection.builder.dropConstraint(
     'relReleases',
     'idx_rel_releases_artifact_key',
@@ -125,6 +92,63 @@ test('rejects oversized legacy keys before changing schema or data, then allows 
     length: 1024,
     nullable: true,
   });
+  await connection.builder.addConstraint('relReleases', {
+    type: 'unique',
+    fields: ['artifactKey'],
+    name: 'idx_rel_releases_artifact_key',
+    mode: 'index',
+  });
+  const records = connection.repository('relReleases');
+  const key = `${'a'.repeat(128)}/${'b'.repeat(36)}.tar.gz`;
+  await records.createOne({ values: release('existing', key) });
+  await records.createOne({ values: release('null-one', null) });
+  await records.createOne({ values: release('null-two', null) });
+  await migrator.latest();
+  await expectCollection('relReleases').toHaveIndex(['artifactKey'], {
+    unique: true,
+  });
+  expect(
+    (await connection.builder.getCollection('relReleases'))?.fields?.find(
+      (field) => field.name === 'artifactKey',
+    ),
+  ).toMatchObject({ length: 172, nullable: true });
+  expect(await records.findOne({ filter: { id: 'existing' } })).toMatchObject({
+    artifactKey: key,
+  });
+  expect(await records.count({ filter: { artifactKey: null } })).toBe(2);
+  await records.createOne({ values: release('null-three', null) });
+  await expect(
+    records.createOne({ values: release('duplicate', key) }),
+  ).rejects.toThrow();
+  expect((await migrator.latest()).executed).toEqual([]);
+  await expect(migrator.rollback()).rejects.toThrow(/irreversible/);
+});
+
+test('rejects oversized legacy keys before changing schema or data, then allows a corrected retry', async ({
+  database,
+  connection,
+  dialect,
+  expectCollection,
+}) => {
+  const migrator = database.createMigrator({ sources });
+  await migrator.upTo(previous);
+  // Remove the index before widening, then restore it where the legacy schema is valid.
+  await connection.builder.dropConstraint(
+    'relReleases',
+    'idx_rel_releases_artifact_key',
+  );
+  await connection.builder.alterField('relReleases', 'artifactKey', {
+    type: 'string',
+    length: 1024,
+    nullable: true,
+  });
+  if (dialect !== 'mysql')
+    await connection.builder.addConstraint('relReleases', {
+      type: 'unique',
+      fields: ['artifactKey'],
+      name: 'idx_rel_releases_artifact_key',
+      mode: 'index',
+    });
   const key = 'x'.repeat(173);
   await connection
     .repository('relReleases')
@@ -140,6 +164,16 @@ test('rejects oversized legacy keys before changing schema or data, then allows 
       (field) => field.name === 'artifactKey',
     ),
   ).toMatchObject({ length: 1024 });
+  if (dialect !== 'mysql') {
+    await expectCollection('relReleases').toHaveIndex(['artifactKey'], {
+      unique: true,
+    });
+    await expect(
+      connection.repository('relReleases').createOne({
+        values: release('duplicate', key),
+      }),
+    ).rejects.toThrow();
+  }
   await connection.query
     .updateTable('relReleases')
     .set({ artifactKey: 'app/resolved.tar.gz' })

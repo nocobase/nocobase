@@ -11,7 +11,7 @@ const migration: MigrationDefinition = defineMigration({
         ?.length !== 172
     );
   },
-  async up({ builder, query }) {
+  async up({ builder, query, connection }) {
     // A portable character-count check, before any DDL can truncate old data.
     const oversized = await query
       .selectFrom('relReleases')
@@ -29,11 +29,25 @@ const migration: MigrationDefinition = defineMigration({
         ?.length === 172
     )
       return;
+    // SQL Server cannot shrink a column while its unique index depends on it.
+    // Rebuild that index in the migration transaction, after validating every key.
+    const indexName = 'idx_rel_releases_artifact_key';
+    const rebuildIndex =
+      connection.dialect === 'mssql' &&
+      collection?.indexes?.some((index) => index.name === indexName);
+    if (rebuildIndex) await builder.dropConstraint('relReleases', indexName);
     await builder.alterField('relReleases', 'artifactKey', {
       type: 'string',
       length: 172,
       nullable: true,
     });
+    if (rebuildIndex)
+      await builder.addConstraint('relReleases', {
+        type: 'unique',
+        fields: ['artifactKey'],
+        name: indexName,
+        mode: 'index',
+      });
   },
 });
 

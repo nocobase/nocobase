@@ -33,7 +33,7 @@ const sharedFiles = new Set([
   'tests/scripts/select-db-integration-matrix.test.mjs',
 ]);
 
-// Package tests whose subject is how one dialect behaves under concurrency, such as row locks and lock waits. The
+// Package tests whose subject is dialect-specific behavior, such as row locks, lock waits and indexed column changes. The
 // matrix above runs the dialect packages' own suites; these run a package's named tests on that dialect through
 // `pnpm test:db`, in the Database tests workflow, when a path they guard changes.
 export const packageSuites = [
@@ -48,6 +48,16 @@ export const packageSuites = [
     dialect: 'postgres',
     filter: '@nocobase/app-plugin-agents',
     tests: ['tests/claim-concurrency.test.ts'],
+  },
+  {
+    // SQL Server requires rebuilding the unique index before shrinking the legacy artifact-key column.
+    paths: [
+      'packages/plugins/app-plugin-releases/database/migrations/',
+      'packages/plugins/app-plugin-releases/tests/artifact-key-migration.test.ts',
+    ],
+    dialect: 'mssql',
+    filter: '@nocobase/app-plugin-releases',
+    tests: ['tests/artifact-key-migration.test.ts'],
   },
 ];
 
