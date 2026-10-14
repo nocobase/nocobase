@@ -106,7 +106,9 @@ import {
 import {
   applyUpdate,
   isNewer,
+  protocolBehindMessage,
   RESTART_EXIT_CODE,
+  updateDecision,
   type UpdateTarget,
 } from './update.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
@@ -253,6 +255,8 @@ export class RunnerDaemon {
   /** Failed pruning is retried at the next idle opportunity after this time. */
   private pruneRetryAt = 0;
   private readonly failedUpdates = new Map<string, number>();
+  /** The newer server protocol each application was last reported to speak (`noticeProtocol`). */
+  private readonly protocolNoticed = new Map<string, number>();
   /** The version the daemon installed before it stopped, if it did. */
   updatedTo: string | undefined;
 
@@ -749,6 +753,11 @@ export class RunnerDaemon {
           version: npmUpgrade.latestVersion,
           package: npmUpgrade.package,
         });
+      this.noticeProtocol(
+        link,
+        response.protocolVersion,
+        (upgrade ?? npmUpgrade)?.latestVersion,
+      );
       for (const runId of response.cancelRequested)
         void this.supervisor.enforceCancel(runId);
       for (const runId of response.release) void this.supervisor.release(runId);
@@ -802,6 +811,27 @@ export class RunnerDaemon {
     this.pendingUpdate = { link, target };
     this.slotFreed?.();
     void this.updateWhenIdle();
+  }
+
+  /**
+   * Tells the owner, once per application and protocol, that the application speaks a newer protocol than this runner
+   * while it offers no newer version: the versions may look the same, as with an application run from source, yet
+   * runs that need the newer protocol are never handed here.
+   */
+  private noticeProtocol(
+    link: AppLink,
+    serverProtocol: number | undefined,
+    offered: string | undefined,
+  ): void {
+    if (
+      serverProtocol === undefined ||
+      updateDecision({ running: runnerVersion(), offered, serverProtocol }) !==
+        'protocol' ||
+      this.protocolNoticed.get(link.key) === serverProtocol
+    )
+      return;
+    this.protocolNoticed.set(link.key, serverProtocol);
+    this.options.log(`${link.key}: ${protocolBehindMessage(serverProtocol)}`);
   }
 
   /** Interrupts agent runs, waits for their cleanup and background jobs, then installs and restarts. */
