@@ -239,6 +239,7 @@ A subject assembly may return `inputs` to select the effective claim inputs. Use
 ### Scoped work summaries
 
 `agents.runs.workingOn(subjectKind, subjectIds)` returns each subject/agent pair with a `dispatched` or `running` run once, as `{ subjectId, agentId, working: true }`. Empty scopes return nothing. Reads are restricted to the supplied kind and IDs, without the workload board's global limit; queued and terminal runs are excluded. This service exposes no run details and does not enforce viewer permissions or approval rules: the consuming application must filter visible subjects first and apply its own waiting rules.
+
 ## Run process data retention
 
 Set `agents.runs.retentionDays` in the application's `config.yml` to a non-negative integer (default `14`); `0` disables cleanup. Invalid values fail configuration validation. The independent `RunDataPurge` job runs hourly and deletes only events and prompt snapshots belonging to completed, failed or cancelled runs whose `finishedAt` is strictly earlier than the fixed cutoff for that round. Run records, summaries, inputs, usage, repositories, chat messages, comments and deliveries remain available.
