@@ -287,7 +287,11 @@ export interface RunRequestFilter {
   /** `responsible`: the ones they answer for; `requester`: the ones they asked; both when left out. */
   readonly role?: 'responsible' | 'requester';
   readonly status?: RunRequestStatus;
+  /** Any of these statuses. */
+  readonly statuses?: readonly RunRequestStatus[];
   readonly subject?: { readonly kind: string; readonly id?: string };
+  /** Only these subjects of `subject.kind`. */
+  readonly subjectIds?: readonly string[];
   readonly agentId?: string;
   readonly limit?: number;
   /** The newest-first position to read after: the last request of the previous page. */
@@ -600,6 +604,8 @@ export function createRunRequestService(
     },
 
     async list(filter) {
+      if (filter.subjectIds?.length === 0 || filter.statuses?.length === 0)
+        return [];
       const records = await runRequestsRepo(tx.read()).findMany({
         filter: (f) =>
           f.and([
@@ -612,11 +618,27 @@ export function createRunRequestService(
                     f.string('requestedByUserId').eq(filter.userId),
                   ]),
             ...(filter.status ? [f.string('status').eq(filter.status)] : []),
+            ...(filter.statuses
+              ? [
+                  f.or(
+                    filter.statuses.map((status) =>
+                      f.string('status').eq(status),
+                    ),
+                  ),
+                ]
+              : []),
             ...(filter.subject
               ? [f.string('subjectKind').eq(filter.subject.kind)]
               : []),
             ...(filter.subject?.id
               ? [f.string('subjectId').eq(filter.subject.id)]
+              : []),
+            ...(filter.subjectIds
+              ? [
+                  f.or(
+                    filter.subjectIds.map((id) => f.string('subjectId').eq(id)),
+                  ),
+                ]
               : []),
             ...(filter.agentId ? [f.string('agentId').eq(filter.agentId)] : []),
           ]),
