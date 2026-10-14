@@ -201,14 +201,18 @@ describe('the /api/projects guard', () => {
         (await request({ statusKey: 'blocked', needsYou: 'Choose.' }, 'none'))
           .status,
       ).toBe(delegated ? 400 : 404);
-      const rejected = await request(
+      const optional = await request(
         { statusKey: 'blocked', next: 'Not saved' },
         'member',
       );
-      expect(rejected.status).toBe(400);
+      expect(optional.status).toBe(200);
       expect(
         await h.services.issueQueries.detail(h.viewer('alice'), issue.id),
-      ).toMatchObject({ statusKey: 'in_progress', needsYou: null, next: null });
+      ).toMatchObject({
+        statusKey: 'blocked',
+        needsYou: null,
+        next: 'Not saved',
+      });
       const changed = await request(
         {
           statusKey: 'blocked',

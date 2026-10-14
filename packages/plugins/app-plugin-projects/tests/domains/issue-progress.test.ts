@@ -18,72 +18,92 @@ afterEach(() => h.close());
 
 describe('structured issue progress', () => {
   it.each(['blocked', 'in_review'])(
-    'requires needsYou atomically for %s, including same-status requests',
+    'allows optional progress for %s and preserves or explicitly clears it',
     async (statusKey) => {
       const viewer = h.viewer('alice');
-      const issue = await h.services.issues.create(viewer, {
+      let issue = await h.services.issues.create(viewer, {
         title: 'Progress',
         statusKey: 'in_progress',
       });
-      const activities = await h.database
-        .connection()
-        .repository('pmActivities')
-        .count();
-      events.length = 0;
       for (const needsYou of [undefined, null, '', ' \n ']) {
-        await expect(
-          h.services.issues.update(viewer, issue.id, {
-            revision: issue.revision,
-            statusKey,
-            needsYou,
-            next: 'Do not save',
-          }),
-        ).rejects.toMatchObject({ code: 'NEEDS_YOU_REQUIRED' });
+        issue = await h.services.issues.update(viewer, issue.id, {
+          revision: issue.revision,
+          statusKey,
+          needsYou,
+        });
+        expect(issue).toMatchObject({ statusKey, needsYou: null });
       }
-      expect(
-        await h.services.issueQueries.detail(viewer, issue.id),
-      ).toMatchObject({
+      const text = '  Decide on **this** proposal.\nProvide the URL.  ';
+      issue = await h.services.issues.update(viewer, issue.id, {
         revision: issue.revision,
-        statusKey: 'in_progress',
-        needsYou: null,
-        next: null,
+        needsYou: text,
+        next: 'Await the decision.',
       });
-      expect(
-        await h.database.connection().repository('pmActivities').count(),
-      ).toBe(activities);
-      expect(events).toEqual([]);
+      expect(issue.needsYou).toBe(text);
+      issue = await h.services.issues.update(viewer, issue.id, {
+        revision: issue.revision,
+        statusKey: statusKey === 'blocked' ? 'in_review' : 'blocked',
+      });
+      expect(issue.needsYou).toBe(text);
+      issue = await h.services.issues.update(viewer, issue.id, {
+        revision: issue.revision,
+        needsYou: null,
+      });
+      expect(issue).toMatchObject({
+        needsYou: null,
+        next: 'Await the decision.',
+      });
+    },
+  );
+
+  it.each(['blocked', 'in_review'])(
+    'allows an application-authorized agent to omit progress for %s',
+    async (statusKey) => {
+      h.services.kinds.add({
+        key: 'bot',
+        names: async (_conn, ids) =>
+          new Map(ids.map((id) => [id, 'Other application agent'])),
+        moves: [
+          { from: 'in_progress', to: 'blocked' },
+          { from: 'in_progress', to: 'in_review' },
+        ],
+      });
+      const viewer = {
+        ...h.viewer('alice'),
+        actor: { type: 'bot', id: 'worker' },
+      };
+      const issue = await h.services.issues.create(h.viewer('alice'), {
+        title: 'Agent progress',
+        statusKey: 'in_progress',
+      });
       const changed = await h.services.issues.update(viewer, issue.id, {
         revision: issue.revision,
         statusKey,
-        needsYou: '  Decide on **this** proposal.\nProvide the URL.  ',
-        next: 'Await the decision.',
       });
-      expect(changed).toMatchObject({
-        statusKey,
-        needsYou: '  Decide on **this** proposal.\nProvide the URL.  ',
-        next: 'Await the decision.',
-        revision: issue.revision + 1,
-      });
-      await expect(
-        h.services.issues.update(viewer, issue.id, {
-          revision: changed.revision,
-          statusKey,
-        }),
-      ).rejects.toMatchObject({ code: 'NEEDS_YOU_REQUIRED' });
-      await expect(
-        h.services.issues.update(viewer, issue.id, {
-          revision: changed.revision,
-          statusKey: statusKey === 'blocked' ? 'in_review' : 'blocked',
-        }),
-      ).rejects.toMatchObject({ code: 'NEEDS_YOU_REQUIRED' });
-      await expect(
-        h.services.issues.update(viewer, issue.id, {
-          revision: changed.revision,
-          needsYou: null,
-        }),
-      ).rejects.toMatchObject({ code: 'NEEDS_YOU_REQUIRED' });
+      expect(changed).toMatchObject({ statusKey, needsYou: null, next: null });
     },
   );
+
+  it('rejects invalid field types and lengths without advancing revision', async () => {
+    const viewer = h.viewer('alice');
+    const issue = await h.services.issues.create(viewer, {
+      title: 'Field validation',
+      statusKey: 'in_progress',
+    });
+    for (const field of ['needsYou', 'next']) {
+      for (const value of [42, 'x'.repeat(2001)]) {
+        await expect(
+          h.services.issues.update(viewer, issue.id, {
+            revision: issue.revision,
+            [field]: value,
+          } as never),
+        ).rejects.toMatchObject({ code: 'INVALID_FIELD' });
+        expect(
+          (await h.services.issueQueries.detail(viewer, issue.id)).revision,
+        ).toBe(issue.revision);
+      }
+    }
+  });
 
   it('saves individual fields, emits refresh, retains omitted next and clears terminal progress', async () => {
     const viewer = h.viewer('alice');
@@ -189,7 +209,7 @@ describe('structured issue progress', () => {
     ).toMatchObject({ title: 'Renamed', needsYou: null });
   });
 
-  it('refuses system events into owner states and applies clearing rules to permitted events', async () => {
+  it('allows system events into owner states and applies clearing rules', async () => {
     const viewer = h.viewer('alice', 'admin');
     let issue = await h.services.issues.create(viewer, {
       title: 'Event target',
@@ -199,7 +219,7 @@ describe('structured issue progress', () => {
       const event = to === 'in_review' ? 'test.review' : 'test.blocked';
       h.services.statusEvents.types.add({
         key: event,
-        from: ['in_progress'],
+        from: ['in_progress', 'blocked'],
         to,
       });
       expect(
@@ -208,11 +228,12 @@ describe('structured issue progress', () => {
           issueIds: [issue.id],
           actor: viewer.actor,
         }),
-      ).toMatchObject([{ outcome: 'refused', code: 'NEEDS_YOU_REQUIRED' }]);
+      ).toMatchObject([{ outcome: 'moved' }]);
       expect(
         await h.services.issueQueries.detail(viewer, issue.id),
-      ).toMatchObject({ statusKey: 'in_progress', needsYou: null });
+      ).toMatchObject({ statusKey: to, needsYou: null });
     }
+    issue = await h.services.issueQueries.detail(viewer, issue.id);
     issue = await h.services.issues.update(viewer, issue.id, {
       revision: issue.revision,
       statusKey: 'blocked',
@@ -251,41 +272,52 @@ describe('structured issue progress', () => {
     ).toMatchObject({ next: null });
   });
 
-  it('accepts the same fields through issue.update plan rehearsal and execution', async () => {
-    const viewer = h.viewer('alice');
-    const issue = await h.services.issues.create(viewer, {
-      title: 'Plan target',
-      statusKey: 'in_progress',
-    });
-    const plan = await h.services.plans.create(viewer, {
-      title: 'Request decision',
-      source: { kind: 'conversation', key: 'progress-test' },
-      proposer: { agentId: 'pm', runId: 'run', conversationId: 'conversation' },
-      rows: [
-        {
-          op: 'issue.update',
-          params: {
-            issue: issue.id,
-            set: {
-              statusKey: 'blocked',
-              needsYou: 'Choose the deployment.',
-              next: 'Deploy the choice.',
+  it.each([true, false])(
+    'accepts optional fields through issue.update plans (withProgress=%s)',
+    async (withProgress) => {
+      const viewer = h.viewer('alice');
+      const issue = await h.services.issues.create(viewer, {
+        title: 'Plan target',
+        statusKey: 'in_progress',
+      });
+      const plan = await h.services.plans.create(viewer, {
+        title: 'Request decision',
+        source: { kind: 'conversation', key: 'progress-test' },
+        proposer: {
+          agentId: 'pm',
+          runId: 'run',
+          conversationId: 'conversation',
+        },
+        rows: [
+          {
+            op: 'issue.update',
+            params: {
+              issue: issue.id,
+              set: {
+                statusKey: 'blocked',
+                ...(withProgress
+                  ? {
+                      needsYou: 'Choose the deployment.',
+                      next: 'Deploy the choice.',
+                    }
+                  : {}),
+              },
             },
           },
-        },
-      ],
-    });
-    expect(
-      await h.services.plans.execute(viewer, plan.id, {
-        revision: plan.revision,
-      }),
-    ).toMatchObject({ status: 'executed' });
-    expect(
-      await h.services.issueQueries.detail(viewer, issue.id),
-    ).toMatchObject({
-      statusKey: 'blocked',
-      needsYou: 'Choose the deployment.',
-      next: 'Deploy the choice.',
-    });
-  });
+        ],
+      });
+      expect(
+        await h.services.plans.execute(viewer, plan.id, {
+          revision: plan.revision,
+        }),
+      ).toMatchObject({ status: 'executed' });
+      expect(
+        await h.services.issueQueries.detail(viewer, issue.id),
+      ).toMatchObject({
+        statusKey: 'blocked',
+        needsYou: withProgress ? 'Choose the deployment.' : null,
+        next: withProgress ? 'Deploy the choice.' : null,
+      });
+    },
+  );
 });

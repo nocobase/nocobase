@@ -427,7 +427,7 @@ export type UpdateIssueInput = Omit<UpdateIssueRequest, 'revision'> & {
 export const UpdateIssueBody: z.ZodType<UpdateIssueInput> = z.strictObject({
   needsYou: z.string().nullable().optional().meta({
     description:
-      'The decision or input required from the owner. Required with blocked or in_review; cleared outside those statuses.',
+      'Optional decision or input for the owner. Omit to retain; null or whitespace clears it. Cleared outside blocked or in_review. Studio requires nonblank input only for authenticated project-manager direct status updates.',
   }),
   next: z.string().nullable().optional().meta({
     description:

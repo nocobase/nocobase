@@ -994,6 +994,110 @@ describe('the API as a run', () => {
     expect(detail.statusKey).toBe('in_progress');
   });
 
+  it('requires owner input only for authenticated manager direct status requests before any write', async () => {
+    const { issue, token } = await managerRun();
+    const patch = (body: Record<string, unknown>) =>
+      h.request('PATCH', `/projects/issues/${issue.id}`, {
+        runToken: token,
+        body,
+      });
+    for (const statusKey of ['blocked', 'in_review']) {
+      const before = await h.projects.issueQueries.detail(alice(), issue.id);
+      const activities = await h.database
+        .connection()
+        .repository('pmActivities')
+        .count();
+      for (const needsYou of [undefined, null, '', ' \n ']) {
+        const result = await patch({
+          statusKey,
+          needsYou,
+          next: 'Do not save',
+        });
+        expect(result.status).toBe(400);
+        expect(JSON.stringify(result.body)).toContain('NEEDS_YOU_REQUIRED');
+      }
+      expect(
+        await h.projects.issueQueries.detail(alice(), issue.id),
+      ).toMatchObject({
+        revision: before.revision,
+        statusKey: before.statusKey,
+        needsYou: before.needsYou,
+        next: before.next,
+      });
+      expect(
+        await h.database.connection().repository('pmActivities').count(),
+      ).toBe(activities);
+      const result = await patch({
+        statusKey,
+        needsYou: '  Decide on the source.\nProvide its URL.  ',
+      });
+      expect(result.status).toBe(200);
+      expect(result.body.data.issue.needsYou).toBe(
+        '  Decide on the source.\nProvide its URL.  ',
+      );
+      expect((await patch({ statusKey })).status).toBe(400);
+      expect(
+        (await patch({ next: 'Continue after the decision.' })).status,
+      ).toBe(200);
+    }
+    expect((await patch({ statusKey: 'blocked' })).status).toBe(400);
+    expect(
+      (await patch({ statusKey: 'blocked', needsYou: 'x'.repeat(2001) }))
+        .status,
+    ).toBe(400);
+    const malformed = await h.request('PATCH', `/projects/issues/${issue.id}`, {
+      runToken: token,
+      raw: '{',
+      headers: { 'content-type': 'application/json' },
+    });
+    expect(malformed.status).toBe(400);
+    expect(JSON.stringify(malformed.body)).toContain('Malformed JSON');
+    const invalid = await h.request('PATCH', `/projects/issues/${issue.id}`, {
+      runToken: 'invalid-run-token',
+      body: { statusKey: 'blocked', needsYou: 'Choose.' },
+    });
+    expect(invalid.status).toBe(401);
+  });
+
+  it('keeps human progress optional and preserves other agents existing status permissions', async () => {
+    const { issue, token } = await claimedRun({ name: 'Project manager' });
+    for (const statusKey of ['blocked', 'in_review']) {
+      const result = await h.request('PATCH', `/projects/issues/${issue.id}`, {
+        user: 'alice',
+        headers: { 'x-agent-id': PM },
+        body: { statusKey },
+      });
+      expect(result.status).toBe(200);
+      expect(result.body.data.issue.needsYou).toBeNull();
+    }
+    await h.request('PATCH', `/projects/issues/${issue.id}`, {
+      user: 'alice',
+      body: { statusKey: 'in_progress' },
+    });
+    // Studio already restricts status moves by non-manager agents; optional progress does not widen their rights.
+    for (const statusKey of ['blocked', 'in_review']) {
+      for (const extra of [{}, { needsYou: 'Choose.' }]) {
+        const result = await h.request(
+          'PATCH',
+          `/projects/issues/${issue.id}`,
+          {
+            runToken: token,
+            headers: { 'x-agent-id': PM, 'x-agent-role': 'project-manager' },
+            body: { statusKey, ...extra },
+          },
+        );
+        expect(result.status).toBe(400);
+        expect(result.body.error.reason).toBe('TRANSITION_NOT_ALLOWED');
+      }
+    }
+    const edited = await h.request('PATCH', `/projects/issues/${issue.id}`, {
+      runToken: token,
+      body: { next: 'Continue the implementation.' },
+    });
+    expect(edited.status).toBe(200);
+    expect(edited.body.data.issue.needsYou).toBeNull();
+  });
+
   it('lets the project manager move the status between the open statuses, never finishing the issue', async () => {
     const { issue, token, runId } = await managerRun();
     const moved = await h.request(

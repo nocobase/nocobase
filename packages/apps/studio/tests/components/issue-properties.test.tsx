@@ -104,25 +104,10 @@ describe('the issue properties', () => {
     await userEvent.click(
       within(list).getByRole('option', { name: 'Blocked' }),
     );
-    expect(mutate).not.toHaveBeenCalled();
-    const save = screen.getByRole('button', {
-      name: 'issueLive.summary.saveStatus',
-    });
-    expect(save).toBeDisabled();
-    const input = screen.getByRole('textbox', {
-      name: 'issueLive.summary.needsYou',
-    });
-    await userEvent.type(input, 'Choose the source. Provide its URL.');
-    await userEvent.click(save);
     await waitFor(() =>
-      expect(mutate).toHaveBeenCalledWith(
-        {
-          statusKey: 'blocked',
-          needsYou: 'Choose the source. Provide its URL.',
-        },
-        expect.objectContaining({ onSuccess: expect.any(Function) }),
-      ),
+      expect(mutate).toHaveBeenCalledWith({ statusKey: 'blocked' }),
     );
+    expect(document.getElementById('pm-prop-needs-you')).toBeNull();
   });
 
   it('offers the project manager and the members to arrange the work', async () => {

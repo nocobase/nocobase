@@ -55,23 +55,12 @@ export function progressValues(
   const target = patch.statusKey ?? before.statusKey;
   const needsOwner = target === 'blocked' || target === 'in_review';
   const values: { needsYou?: string | null; next?: string | null } = {};
-  if (
-    needsOwner &&
-    (patch.statusKey !== undefined || patch.needsYou !== undefined)
-  ) {
-    if (typeof patch.needsYou !== 'string' || !patch.needsYou.trim())
-      throw invalid(
-        'NEEDS_YOU_REQUIRED',
-        'Fill in needsYou with the decision or input the owner needs to provide before entering blocked or in_review.',
-      );
-    values.needsYou = optionalText(
-      patch.needsYou,
-      'needsYou',
-      ISSUE_PROGRESS_MAX,
-    );
-  } else if (!needsOwner) {
-    values.needsYou = null;
-  }
+  const text =
+    patch.needsYou === undefined
+      ? undefined
+      : optionalText(patch.needsYou, 'needsYou', ISSUE_PROGRESS_MAX);
+  if (!needsOwner) values.needsYou = null;
+  else if (text !== undefined) values.needsYou = text?.trim() ? text : null;
   if (patch.next !== undefined)
     values.next = optionalText(patch.next, 'next', ISSUE_PROGRESS_MAX)?.trim()
       ? patch.next

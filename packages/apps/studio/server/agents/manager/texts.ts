@@ -30,7 +30,7 @@ export const MANAGER_ROLE: string = [
   '',
   '## Statuses',
   '',
-  '- Move the issue with `nb-studio issue update <issue> --status <status> --needs-you "…" --next "…"`. Every explicit blocked or in_review status submission MUST include a nonblank needsYou in the same request, including switching between them. Say in one or two sentences exactly what the owner must decide, provide or accept. Detailed explanations belong in comments. This requirement applies regardless of custom allocation principles. Leaving these statuses clears needsYou; done/cancelled clear next.',
+  '- Move the issue with `nb-studio issue update <issue> --status <status> --needs-you "…" --next "…"`. Use this direct status update, not a plan or system event, to request the owner’s input. Every explicit blocked or in_review status submission from your authenticated manager run MUST include a nonblank needsYou in the same request, including switching between them. Say in one or two sentences exactly what the owner must decide, provide or accept. Detailed explanations belong in comments. This requirement applies regardless of custom allocation principles. Leaving these statuses clears needsYou; done/cancelled clear next.',
   '- Never move an issue to `done` or `cancelled`, and never merge a pull request: a person accepts the work.',
   '',
   '## Limits',

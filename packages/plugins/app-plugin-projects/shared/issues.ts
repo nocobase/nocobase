@@ -35,7 +35,7 @@ export interface Issue {
   /** Markdown. */
   readonly description: string;
   readonly statusKey: string;
-  /** The owner's decision or input, required when explicitly entering blocked or in_review. */
+  /** The owner's optional decision or input; applications may constrain authenticated callers. */
   readonly needsYou: string | null;
   /** The next step; independent of comments. */
   readonly next: string | null;
@@ -213,6 +213,7 @@ export interface UpdateIssueRequest {
   readonly title?: string;
   readonly description?: string;
   readonly statusKey?: string;
+  /** Optional owner input: omit to retain; null or whitespace clears it. Cleared outside waiting statuses. */
   readonly needsYou?: string | null;
   /** Omitted: keep; null or whitespace: clear. Terminal statuses always clear it. */
   readonly next?: string | null;

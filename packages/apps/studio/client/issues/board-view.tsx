@@ -20,17 +20,7 @@ import {
 } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueListItem } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useMemo, useState, type ReactElement } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { ISSUE_PROGRESS_MAX } from '@nocobase/app-plugin-projects/shared/issues';
+import { useMemo, type ReactElement } from 'react';
 
 import { IssueCard, type IssueCardIssue } from '@/components/issue-card';
 import {
@@ -128,18 +118,7 @@ export function IssueBoardView({
 }): ReactElement {
   const { t } = useTranslation();
   const board = useBoardPages(page.filters, true);
-  const [request, setRequest] = useState<{
-    readonly identifier: string;
-    readonly resolve: (text: string | null) => void;
-  } | null>(null);
-  const [needsYou, setNeedsYou] = useState('');
-  const move = useBoardMove(
-    (issue) =>
-      new Promise((resolve) => {
-        setNeedsYou('');
-        setRequest({ identifier: issue.identifier, resolve });
-      }),
-  );
+  const move = useBoardMove();
   const canEdit = canEditIssues(useViewer());
   const statusName = useStatusName();
   const groups = board.groups;
@@ -283,54 +262,6 @@ export function IssueBoardView({
           );
         }}
       </KanbanProvider>
-      <Dialog
-        open={request !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            request?.resolve(null);
-            setRequest(null);
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogTitle>
-            {t('issueLive.summary.saveStatus')} · {request?.identifier}
-          </DialogTitle>
-          <DialogDescription>
-            {t('issueLive.summary.needsYouHint')}
-          </DialogDescription>
-          <Label htmlFor='board-needs-you'>
-            {t('issueLive.summary.needsYou')}
-          </Label>
-          <Textarea
-            id='board-needs-you'
-            aria-required='true'
-            maxLength={ISSUE_PROGRESS_MAX}
-            value={needsYou}
-            onChange={(event) => setNeedsYou(event.target.value)}
-          />
-          <DialogFooter>
-            <Button
-              variant='outline'
-              onClick={() => {
-                request?.resolve(null);
-                setRequest(null);
-              }}
-            >
-              {t('actions.cancel')}
-            </Button>
-            <Button
-              disabled={!needsYou.trim()}
-              onClick={() => {
-                request?.resolve(needsYou);
-                setRequest(null);
-              }}
-            >
-              {t('issueLive.summary.saveStatus')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

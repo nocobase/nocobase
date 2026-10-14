@@ -59,6 +59,8 @@ nb-studio app deploy my-app --release <release>
 
 Check each with `nb-studio docs <command>` before relying on its flags: they follow the server's version.
 
+Issue progress flags are optional for people and other agents. In Studio, an authenticated project-manager run must submit a nonblank `--needs-you` (or its file form) with every direct `--status blocked` or `--status in_review` update, including the same status or switching between them. This is enforced by the shared API, including JSON `--file` input; stored text cannot substitute for this submission. Updating only `--next` does not trigger it. Omitted fields are retained while waiting; explicit null/blank clears them. Leaving waiting states clears needsYou, and Done/Cancelled clear next.
+
 ## From CI
 
 A pipeline deploys every App the same way, whatever it is for; the App's environment says the rest. With `NB_STUDIO_API_KEY` set:
