@@ -48,8 +48,8 @@ export function AppSidebarProvider({
       open={!collapsed}
       onOpenChange={(open) => setCollapsed(!open)}
       className='h-svh bg-background'
-      // shadcn's 16rem and 3rem, in spacing units: a density preset that changes the unit scales the sidebar together
-      // with the items inside it (the provider's documented way to set the widths).
+      // shadcn's 16rem in spacing units, so a density preset that changes the unit scales the sidebar together with
+      // the items inside it (the provider's documented width override).
       style={
         {
           '--sidebar-width': 'calc(var(--spacing) * 64)',
@@ -102,7 +102,7 @@ export function AppSidebar({
   }, [isMobile, openMobile, setOpenMobile]);
 
   const header = (
-    <SidebarHeader className='h-16 shrink-0 flex-row items-center justify-between border-b border-sidebar-border/70 px-5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0'>
+    <SidebarHeader className='h-16 shrink-0 flex-row items-center justify-between border-b border-sidebar-border px-5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0'>
       <AppBrand compact={state === 'collapsed' && !isMobile} />
       {isMobile ? (
         <Button
@@ -123,7 +123,7 @@ export function AppSidebar({
     <>
       {header}
       {/* The primitive hides the icon mode's overflow; a long menu still scrolls there. */}
-      <SidebarContent className='group-data-[collapsible=icon]:overflow-y-auto'>
+      <SidebarContent className='app-navigation group-data-[collapsible=icon]:overflow-y-auto'>
         {children}
       </SidebarContent>
       {footer}

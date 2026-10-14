@@ -5,6 +5,7 @@ import { workspaceNotes } from '../src/agent/worker.ts';
 describe('workspaceNotes', () => {
   const base = {
     workDir: '/work/PM-1',
+    tmpDir: '/tmp/n-12345678/1234567890abcdef',
     cwd: '/work/PM-1',
     dirs: [],
     cli: 'acme',
@@ -25,5 +26,71 @@ describe('workspaceNotes', () => {
     expect(workspaceNotes({ ...noSkills, tool: 'claude' })).not.toContain(
       'nocobase-runner:',
     );
+  });
+  it('explains first delivery only when the runner verified empty initialization', () => {
+    const repo = {
+      url: 'https://example.com/app.git',
+      branch: 'main',
+      defaultBranch: 'main',
+      primary: true,
+      dir: '/work/PM-1/app',
+      cache: '/cache/app.git',
+      gitDir: '/work/PM-1/app/.git',
+      submodules: [],
+    };
+    const dir = {
+      kind: 'repo' as const,
+      dir: repo.dir,
+      primary: true,
+      fresh: true,
+      key: 'repo',
+      repo,
+    };
+    expect(workspaceNotes({ ...base, dirs: [dir] })).not.toContain(
+      'has no refs',
+    );
+    const notes = workspaceNotes({
+      ...base,
+      dirs: [{ ...dir, repo: { ...repo, initializing: true } }],
+    });
+    expect(notes).toContain('has no refs');
+    expect(notes).toContain('first delivery needs no pull request');
+    expect(notes).toContain('not overwrite a branch created by someone else');
+    expect(notes).toContain('Preserve existing files and commits on a retry');
+  });
+  it('distinguishes the private branch from its permitted remote push target', () => {
+    const repo = {
+      url: 'https://example.com/repo',
+      branch: 'fix/human',
+      localBranch: 'runner/attempt/repo',
+      defaultBranch: 'main',
+      primary: true,
+      dir: '/work/run/repo',
+      cache: '/cache/repo.git',
+      gitDir: '/cache/repo.git/worktrees/repo',
+      submodules: [],
+    };
+    const notes = workspaceNotes({
+      ...base,
+      dirs: [
+        {
+          kind: 'repo',
+          dir: repo.dir,
+          primary: true,
+          fresh: false,
+          key: 'repo',
+          repo,
+        },
+      ],
+    });
+    expect(notes).toContain('local branch runner/attempt/repo');
+    expect(notes).toContain('git push origin HEAD:refs/heads/fix/human');
+    expect(notes).toContain('switch or create branches');
+    expect(notes).toContain('push any branch of this repository');
+    expect(notes).toContain(
+      'Never rewrite already-pushed history or force push',
+    );
+    expect(notes).toContain('pr open --head <branch>');
+    expect(notes).toContain('legacy sessions are not migrated');
   });
 });

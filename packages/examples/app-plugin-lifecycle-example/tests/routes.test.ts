@@ -1,3 +1,8 @@
+import { createDatabaseManager } from '@nocobase/db';
+import { StoredLifecycleParameters } from '@nocobase/lifecycle';
+import { exampleParameterRegistration } from '../server/configuration/store.js';
+import { ParameterConfigurationService } from '../server/services/parameter-configuration.js';
+import { parameterConfigurationServiceToken } from '../server/tokens.js';
 import {
   authenticationToken,
   type Auth,
@@ -19,6 +24,7 @@ import {
 } from '@nocobase/app-server/router';
 
 import { expenseLifecycle } from '../server/lifecycles/expense.js';
+import { invoiceLifecycle } from '../server/lifecycles/invoice.js';
 import { orderLifecycle } from '../server/lifecycles/order.js';
 import { createExampleServices } from '../server/lifecycles/services.js';
 import { ticketLifecycle } from '../server/lifecycles/ticket.js';
@@ -47,10 +53,36 @@ function application(authentication: Auth) {
   const store = new MemoryLifecycleStore();
   const runtime = new LifecycleRuntime({ store });
   const services = createExampleServices({ info: () => undefined });
-  runtime.register(expenseLifecycle, { services });
-  runtime.register(ticketLifecycle, { services });
+  const parameters = new StoredLifecycleParameters(store);
+  runtime.register(expenseLifecycle, {
+    services,
+    parameterConfiguration: exampleParameterRegistration(
+      parameters,
+      'expenses',
+    ),
+  });
+  runtime.register(ticketLifecycle, {
+    services,
+    parameterConfiguration: exampleParameterRegistration(parameters, 'tickets'),
+  });
   // No step below reaches the sandbox: cancelling a draft has no checkout to close.
   runtime.register(orderLifecycle, { services: {} as never });
+  runtime.register(invoiceLifecycle, { services: {} as never });
+  store.insertRecord('lifecycleExampleInvoices', {
+    id: 9,
+    status: 'issued',
+    title: 'Example company',
+    taxNumber: '91310000MA1K000001',
+    orderRef: '1024',
+    customerId: 'customer-li',
+    amountCents: 39900,
+    queryCount: 0,
+    providerRequestId: 'inv_demo',
+    invoiceNumber: 'DEMO-ABC',
+    pdfUrl: '/api/lifecycleExample/invoices/9/pdf',
+    statusChangedAt: '2026-10-01T09:00:00.000Z',
+    lifecycleVersion: 3,
+  });
   store.insertRecord('lifecycleExampleOrders', {
     id: 3,
     title: '降噪耳机',
@@ -110,6 +142,14 @@ function application(authentication: Auth) {
     sweep: vi.fn(async () => ({ fired: 0, redelivered: 0 })),
   };
   const container = new ServiceContainer();
+  container.instance(
+    parameterConfigurationServiceToken,
+    new ParameterConfigurationService(
+      createDatabaseManager({ connections: {} }),
+      runtime,
+      parameters,
+    ),
+  );
   container.instance(authenticationToken, authentication);
   container.instance(
     lifecycleExampleServiceToken,
@@ -661,6 +701,36 @@ describe('lifecycle example routes', () => {
     });
   });
 
+  it('protects invoice creation, platform actions and PDF downloads', async () => {
+    const router = await apiRoutes.createRouter(application(deny).app);
+    for (const request of [
+      post('/lifecycleExample/invoices', {}),
+      post('/lifecycleExample/sandbox/invoices/9/complete', {
+        outcome: 'issued',
+      }),
+      new Request('http://localhost/lifecycleExample/invoices/9/pdf'),
+    ])
+      expect((await router.request(request)).status).toBe(401);
+  });
+
+  it('downloads an issued sample PDF and refuses a missing invoice', async () => {
+    const router = await apiRoutes.createRouter(application(allow).app);
+    const response = await router.request('/lifecycleExample/invoices/9/pdf');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('application/pdf');
+    expect(response.headers.get('content-disposition')).toContain(
+      'invoice-9.pdf',
+    );
+    const pdf = await response.text();
+    expect(pdf).toContain('SANDBOX INVOICE - NOT VALID FOR TAX');
+    expect(pdf).toContain('DEMO-ABC');
+    const offset = Number(/startxref\n(\d+)/.exec(pdf)?.[1]);
+    expect(pdf.slice(offset, offset + 4)).toBe('xref');
+    expect(
+      (await router.request('/lifecycleExample/invoices/999/pdf')).status,
+    ).toBe(404);
+  });
+
   it('declares every route in the API document', async () => {
     const router = await apiRoutes.createRouter(application(allow).app);
     expect(findUndeclaredApiRoutes(router)).toEqual([]);
@@ -676,6 +746,7 @@ describe('lifecycle example routes', () => {
       'Export',
       'Fulfilment',
       'Order',
+      'Invoice',
       'Purchase',
       'Subscription',
       'Ticket',
@@ -693,7 +764,27 @@ describe('lifecycle example routes', () => {
           `lifecycleExampleList${noun}s`,
           `lifecycleExampleRetry${noun}EffectRun`,
         ]),
+        ...['ReviewerDemo', 'ReviewerLiveDemo'].flatMap((noun) =>
+          ['Cancel', 'Continue', 'Retry']
+            .map((verb) => `lifecycleExample${verb}${noun}EffectRun`)
+            .concat([
+              `lifecycleExampleDescribe${noun}Lifecycle`,
+              `lifecycleExampleFire${noun}Transition`,
+              `lifecycleExampleGet${noun}`,
+            ]),
+        ),
+        'lifecycleExampleCreateSnapshotReviewerDemo',
+        'lifecycleExampleCreateLiveReviewerDemo',
+        'lifecycleExampleGetParameterGroup',
+        'lifecycleExampleListParameterGroups',
+        'lifecycleExampleParameterHistory',
+        'lifecycleExamplePreviewReviewerCandidates',
+        'lifecycleExampleSearchReviewerReferences',
+        'lifecycleExampleGetReviewerReference',
+        'lifecycleExampleSaveParameterGroup',
         'lifecycleExampleDeliverSandboxEvent',
+        'lifecycleExampleCompleteSandboxInvoice',
+        'lifecycleExampleDownloadInvoice',
         'lifecycleExampleGetSandboxCheckout',
         'lifecycleExampleListSandboxEvents',
         'lifecycleExampleListSandboxStock',
@@ -713,7 +804,9 @@ describe('lifecycle example routes', () => {
     // The sandbox's own objects are named by their own ids.
     expect(
       paths.filter((path) =>
-        /\{(?!recordId|runId|source|eventId|sessionId)/.test(path),
+        /\{(?!recordId|runId|source|eventId|sessionId|groupId|lifecycle|type|referenceId)/.test(
+          path,
+        ),
       ),
     ).toEqual([]);
     expect(

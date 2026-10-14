@@ -26,10 +26,10 @@ describe('composer signature submission', () => {
     database = await createMailTestDatabase();
     store = createDatabaseMailStore(database);
     await store.saveAccount(account());
-    await store.replaceIdentities('account-1', [
+    await store.replaceIdentities('10000000-0000-4000-8000-000000000001', [
       {
-        id: 'identity-1',
-        accountId: 'account-1',
+        id: '20000000-0000-4000-8000-000000000001',
+        accountId: '10000000-0000-4000-8000-000000000001',
         address: 'sender@example.com',
         isPrimary: true,
         canSend: true,
@@ -53,7 +53,7 @@ describe('composer signature submission', () => {
       const signature = await service.saveSignature(
         { actorId: 'user-1' },
         {
-          accountId: 'account-1',
+          accountId: '10000000-0000-4000-8000-000000000001',
           name: 'Provider signature',
           isDefault: true,
           text: 'hello from gmail',
@@ -76,8 +76,8 @@ describe('composer signature submission', () => {
         { actorId: 'user-1' },
         {
           ...buildComposerInput(
-            'account-1',
-            'identity-1',
+            '10000000-0000-4000-8000-000000000001',
+            '20000000-0000-4000-8000-000000000001',
             signature.id,
             visible,
             [],
@@ -97,7 +97,7 @@ describe('composer signature submission', () => {
 
 function account(): MailAccount {
   return {
-    id: 'account-1',
+    id: '10000000-0000-4000-8000-000000000001',
     userId: 'user-1',
     provider: { type: 'test', name: 'test' },
     address: 'sender@example.com',

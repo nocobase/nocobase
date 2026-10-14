@@ -14,12 +14,10 @@ import {
 import { Hono } from 'hono';
 
 import { viewerMiddleware, type ViewerEnv } from '../access/request.js';
-import { createApprovalRoutes } from '../domains/approvals/index.js';
 import {
   createAttachmentRoutes,
   createIssueAttachmentRoutes,
 } from '../domains/attachments/index.js';
-import { createChecklistRoutes } from '../domains/checklists/index.js';
 import {
   createCommentRoutes,
   createIssueCommentRoutes,
@@ -38,7 +36,6 @@ import { createProjectRoutes } from '../domains/projects/index.js';
 import { createSettingsRoutes } from '../domains/settings/index.js';
 import { createSubscriptionRoutes } from '../domains/subscriptions/index.js';
 import { createSubtaskRoutes } from '../domains/subtasks/index.js';
-import { createWorkflowRoutes } from '../domains/workflows/index.js';
 import { domainRouter, PROJECTS_DOMAIN } from '../kernel/http.js';
 import {
   projectsAccessToken,
@@ -98,12 +95,10 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     projects.route('/', createMentionRoutes(services.commentQueries));
     projects.route(
       '/invitations',
-      createInvitationRoutes(services.invitations),
+      createInvitationRoutes(services.invitations, authentication),
     );
     projects.route('/settings', createSettingsRoutes(services.settings));
     projects.route('/labels', createLabelRoutes(services.labels));
-    projects.route('/workflows', createWorkflowRoutes(services.workflows));
-    projects.route('/approvals', createApprovalRoutes(services.approvals));
     projects.route(
       '/plans',
       createPlanRoutes(services.plans, {
@@ -122,7 +117,6 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       createAttachmentRoutes(services.attachments),
     );
     projects.route('/comments', createCommentRoutes(services.comments));
-    projects.route('/issues', createChecklistRoutes(services.checklists));
     projects.route('/issues', createSubtaskRoutes(services.subtasks));
     projects.route(
       '/issues',

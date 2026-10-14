@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ClaimRequestSchema,
+  CancelAckRequestSchema,
   ClaimResponseSchema,
   UploadTicketSchema,
   CompleteRequestSchema,
@@ -31,7 +32,21 @@ import {
   WorkspaceDirSchema,
   type RunPayload,
   RepoDirSchema,
+  GitCredentialRequestSchema,
+  RepoReportSchema,
+  RunGitSchema,
+  RunnerFeatureSchema,
 } from '../src/index.js';
+
+it('accepts an optional confirmed session on cancellation and remains compatible with old runners', () => {
+  expect(CancelAckRequestSchema.parse({})).toEqual({});
+  expect(CancelAckRequestSchema.parse({ sessionId: 'replacement' })).toEqual({
+    sessionId: 'replacement',
+  });
+  expect(
+    CancelAckRequestSchema.safeParse({ sessionId: 'x'.repeat(201) }).success,
+  ).toBe(false);
+});
 
 const payload: RunPayload = {
   run: {
@@ -101,8 +116,8 @@ const payload: RunPayload = {
 };
 
 describe('agent protocol', () => {
-  it('is version 7 and still serves versions 3 to 6', () => {
-    expect(PROTOCOL_VERSION).toBe(7);
+  it('is version 11 and still serves versions 3 to 10', () => {
+    expect(PROTOCOL_VERSION).toBe(11);
     expect(MIN_PROTOCOL_VERSION).toBe(3);
     expect(isProtocolSupported(3)).toBe(true);
     expect(isProtocolSupported(4)).toBe(true);
@@ -110,8 +125,67 @@ describe('agent protocol', () => {
     expect(isProtocolSupported(6)).toBe(true);
     expect(isProtocolSupported(2)).toBe(false);
     expect(isProtocolSupported(7)).toBe(true);
-    expect(isProtocolSupported(8)).toBe(false);
+    expect(isProtocolSupported(8)).toBe(true);
+    expect(isProtocolSupported(9)).toBe(true);
+    expect(isProtocolSupported(10)).toBe(true);
+    expect(isProtocolSupported(11)).toBe(true);
+    expect(isProtocolSupported(12)).toBe(false);
     expect(isProtocolSupported(3.5)).toBe(false);
+  });
+
+  it('lists repositories whose credential is asked for on demand, and reads a payload without them', () => {
+    const git = {
+      onDemand: ['https://github.com/acme/app.git'],
+      credentials: [
+        {
+          url: 'https://github.com/acme/other.git',
+          username: 'x-access-token',
+          password: 'synthetic',
+          expiresAt: '2026-10-02T01:00:00Z',
+        },
+      ],
+    };
+    expect(RunGitSchema.parse(git)).toEqual(git);
+    expect(RunGitSchema.parse({}).onDemand).toBeUndefined();
+    expect(RunnerFeatureSchema.parse('gitCredentials')).toBe('gitCredentials');
+    expect(routePath(RUNNER_ROUTES.gitCredential, { runId: 'r1' })).toBe(
+      '/api/agents/runners/runs/r1/gitCredentials',
+    );
+    expect(
+      GitCredentialRequestSchema.safeParse({
+        attempt: 2,
+        url: 'https://github.com/acme/app.git',
+        refresh: true,
+      }).success,
+    ).toBe(true);
+    // Strict: a request names no other field, such as a credential of its own.
+    expect(
+      GitCredentialRequestSchema.safeParse({
+        attempt: 2,
+        url: 'https://github.com/acme/app.git',
+        password: 'x',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('says why a repository was not pushed, and reads a report without it', () => {
+    const report = {
+      url: 'https://github.com/acme/app.git',
+      branch: 'agent/x',
+      pushed: false,
+      failure: { reason: 'authFailed', message: 'The remote refused.' },
+    };
+    expect(RepoReportSchema.parse(report)).toEqual(report);
+    expect(
+      RepoReportSchema.safeParse({
+        ...report,
+        failure: { reason: 'other', message: '' },
+      }).success,
+    ).toBe(false);
+    expect(isRetryable('repoAccessUnavailable')).toBe(true);
+    expect(isRetryable('repoAccessDenied')).toBe(false);
+    expect(ERROR_API_STATUS.REPO_ACCESS_UNAVAILABLE).toBe('UNAVAILABLE');
+    expect(ERROR_API_STATUS.REPO_ACCESS_DENIED).toBe('PERMISSION_DENIED');
   });
 
   it('marks the one run that makes the first commit of an empty repository', () => {
@@ -123,6 +197,13 @@ describe('agent protocol', () => {
       path: 'new',
       initial: true,
     };
+    expect(RepoDirSchema.parse({ ...dir, initializeIfEmpty: true })).toEqual({
+      ...dir,
+      initializeIfEmpty: true,
+    });
+    expect(
+      RepoDirSchema.safeParse({ ...dir, initializeIfEmpty: false }).success,
+    ).toBe(false);
     expect(RepoDirSchema.parse(dir)).toEqual(dir);
     expect(RepoDirSchema.safeParse({ ...dir, initial: false }).success).toBe(
       false,
@@ -346,9 +427,26 @@ describe('agent protocol', () => {
     expect(isRetryable('runnerOffline')).toBe(true);
     expect(isRetryable('toolAuth')).toBe(false);
     expect(isRetryable('prepareNetwork')).toBe(true);
+    expect(isRetryable('workspaceBusy')).toBe(true);
+    expect(acceptedFailure('workspaceBusy', ['workspaceBusy'])).toBe(
+      'workspaceBusy',
+    );
+    expect(acceptedFailure('workspaceBusy', undefined)).toBe('checkoutFailed');
     expect(isRetryable('checkoutFailed')).toBe(false);
     expect(ERROR_STATUS.RUN_INPUT_PENDING).toBe(400);
     expect(ERROR_API_STATUS.RUN_INPUT_PENDING).toBe('FAILED_PRECONDITION');
+    expect(
+      new ProtocolError('RUN_ALREADY_RETRIED', 'Already retried', {
+        runId: 'next',
+      }),
+    ).toMatchObject({
+      code: 'RUN_ALREADY_RETRIED',
+      status: 400,
+      apiStatus: 'FAILED_PRECONDITION',
+      domain: 'agents',
+      details: { runId: 'next' },
+    });
+    expect(exitCodeFor('RUN_ALREADY_RETRIED')).toBe(EXIT_CODES.conflict);
     expect(ERROR_STATUS.LEASE_LOST).toBe(409);
     expect(ERROR_STATUS.UPLOAD_TOO_LARGE).toBe(413);
     expect(ERROR_STATUS.NOT_IMPLEMENTED).toBe(503);

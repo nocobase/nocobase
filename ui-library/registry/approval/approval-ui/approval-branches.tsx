@@ -49,7 +49,9 @@ export function ApprovalBranches({
     ? Math.round((finished.length / required.length) * 100)
     : 100;
   return (
-    <div className={cn('space-y-3', className)}>
+    <div
+      className={cn('@container min-w-0 space-y-3 wrap-anywhere', className)}
+    >
       <div className='space-y-1.5'>
         <div className='flex items-baseline justify-between gap-2 text-xs text-muted-foreground'>
           <span className='font-medium text-foreground tabular-nums'>
@@ -74,11 +76,11 @@ export function ApprovalBranches({
           />
         </div>
       </div>
-      <ul className='grid gap-2 sm:grid-cols-2'>
+      <ul className='grid grid-cols-1 gap-2 @min-[36rem]:grid-cols-2'>
         {branches.map((branch) => {
           const body = (
             <>
-              <div className='flex min-w-0 items-center gap-2'>
+              <div className='flex min-w-0 flex-wrap items-center gap-2'>
                 <span
                   aria-hidden='true'
                   className={cn(
@@ -86,7 +88,7 @@ export function ApprovalBranches({
                     DOT_CLASSES[branch.state],
                   )}
                 />
-                <span className='truncate text-sm font-medium'>
+                <span className='min-w-0 flex-1 text-sm font-medium'>
                   {branch.title}
                 </span>
                 {branch.required === false ? (
@@ -96,14 +98,18 @@ export function ApprovalBranches({
                     })}
                   </span>
                 ) : null}
-                <span className='ml-auto flex shrink-0 items-center gap-1'>
+                <span className='ml-auto flex max-w-full shrink-0 items-center gap-1'>
                   {branch.badge ? (
-                    <Badge variant={branch.badge.variant ?? 'outline'}>
+                    <Badge
+                      data-size='sm'
+                      variant={branch.badge.variant ?? 'outline'}
+                      className='min-w-0 max-w-full shrink whitespace-normal'
+                    >
                       {branch.badge.label}
                     </Badge>
                   ) : null}
                   {onOpen ? (
-                    <ChevronRight className='size-4 text-muted-foreground' />
+                    <ChevronRight className='size-4 shrink-0 text-muted-foreground' />
                   ) : null}
                 </span>
               </div>
@@ -111,7 +117,10 @@ export function ApprovalBranches({
                 <div className='flex flex-wrap items-center gap-x-2 gap-y-1 pl-4.5 text-xs text-muted-foreground'>
                   {branch.step ? <span>{branch.step}</span> : null}
                   {branch.ownerIds.map((id) => (
-                    <span key={id} className='inline-flex items-center gap-1'>
+                    <span
+                      key={id}
+                      className='inline-flex min-w-0 items-center gap-1'
+                    >
                       {ui.renderAvatar(id)}
                       <span className='text-foreground'>
                         {ui.personName(id)}
@@ -122,7 +131,7 @@ export function ApprovalBranches({
               ) : null}
               {branch.blocked ? (
                 <div className='flex items-center gap-1 pl-4.5 text-xs font-medium text-destructive'>
-                  <TriangleAlert className='size-3' />
+                  <TriangleAlert className='size-3 shrink-0' />
                   {t('approvalUi.branches.blocked', {
                     defaultValue: 'Holding the request up',
                   })}
@@ -136,11 +145,11 @@ export function ApprovalBranches({
             </>
           );
           const frame = cn(
-            'flex w-full flex-col gap-1.5 rounded-lg border p-3 text-left',
+            'flex min-w-0 w-full flex-col gap-1.5 rounded-lg border p-3 text-left',
             branch.blocked && 'border-destructive/50 bg-destructive/5',
           );
           return (
-            <li key={branch.key}>
+            <li key={branch.key} className='min-w-0'>
               {onOpen ? (
                 <button
                   type='button'

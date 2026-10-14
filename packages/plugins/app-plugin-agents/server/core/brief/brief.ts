@@ -119,7 +119,7 @@ export const AGENT_LAYER_PREFIX =
 function describeDir(dir: WorkspaceDir): string {
   const name = dir.name ? ` (${dir.name})` : '';
   if (dir.kind === 'repo')
-    return `\`./${dir.path}\`${name}, a checkout of ${dir.url} on branch \`${dir.branch}\` (based on \`${dir.defaultBranch}\`); commit there and push only that branch`;
+    return `\`./${dir.path}\`${name}, a checkout of ${dir.url} starting from target branch \`${dir.branch}\` (based on \`${dir.defaultBranch}\`); the local branch may be a private runner alias. You may switch or create branches in this worktree and push any branch of this repository with \`git push origin HEAD:refs/heads/<branch>\`. Never rewrite already-pushed history or force push. Follow this step's read-only restrictions when applicable`;
   return `\`${dir.path}\`${name}, a directory on this machine you work in as it is: no branch of its own, so leave its version control alone unless the task asks, and do not delete or reset what is there`;
 }
 

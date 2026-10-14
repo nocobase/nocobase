@@ -95,7 +95,11 @@ describe('agents API document', () => {
     });
     expect(command?.parameters).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ field: 'page', in: 'query', type: 'integer' }),
+        expect.objectContaining({
+          field: 'page',
+          in: 'query',
+          type: 'integer',
+        }),
         expect.objectContaining({
           field: 'pageSize',
           in: 'query',
@@ -343,10 +347,14 @@ describe('agents API document', () => {
     expect(cli('PATCH', '/api/agents/runs/current/conversation')).toMatchObject(
       { command: 'conversation title set', args: ['title'] },
     );
-    expect(cli('DELETE', '/api/agents/{agentId}')).toMatchObject({
-      command: 'agent delete',
-      confirm: expect.any(String),
+    expect(cli('PATCH', '/api/agents/{agentId}')).toMatchObject({
+      command: 'agent update',
+      args: ['agentId'],
     });
+    expect(cli('GET', '/api/agents')).toMatchObject({
+      command: 'agent list-all',
+    });
+    expect(cli('GET', '/api/agents/agentNames')).toBe(false);
     for (const [method, path] of [
       ['POST', '/api/agents/runners/claim'],
       ['POST', '/api/agents/runners/runs/{runId}/complete'],

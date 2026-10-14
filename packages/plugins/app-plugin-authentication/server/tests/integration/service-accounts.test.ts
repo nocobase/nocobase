@@ -143,9 +143,9 @@ describe('service accounts', () => {
       '/api/auth/reset-password',
       json({ token: 'stolen-token', newPassword: 'chosen-password-123' }),
     );
-    expect(reset.status).toBe(403);
+    expect(reset.status).toBe(400);
     expect(await reset.json()).toMatchObject({
-      code: 'SERVICE_ACCOUNT_NO_LOGIN',
+      code: 'INVALID_TOKEN',
     });
     expect(
       await connection.query

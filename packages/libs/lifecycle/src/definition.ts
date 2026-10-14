@@ -1,4 +1,8 @@
 import {
+  normalizeParameterValues,
+  type ParameterConfigurationDefinition,
+} from './parameter-configuration.js';
+import {
   LifecycleError,
   type BlockerKind,
   type InputProblem,
@@ -367,6 +371,7 @@ export interface LifecycleDefinition<T extends LifecycleTypes> {
   readonly states: readonly (T['state'] | StateDefinition<T['state'], T>)[];
   /** Defaults an administrator may override. They do not change the shape of the lifecycle. */
   readonly parameters?: ParametersOf<T>;
+  readonly parameterConfiguration?: ParameterConfigurationDefinition;
   readonly transitions: Readonly<Record<string, TransitionDefinition<T>>>;
   /** Effects run whenever a transition enters the state, whichever transition it was. */
   readonly onEnter?: Partial<
@@ -435,6 +440,7 @@ export interface Lifecycle<T extends LifecycleTypes> {
   /** Each state's title, whether it is final, and its metadata. */
   readonly stateInfo: ReadonlyMap<T['state'], LifecycleState<T['state']>>;
   readonly parameters: ParametersOf<T>;
+  readonly parameterConfiguration?: ParameterConfigurationDefinition;
   readonly transitions: ReadonlyMap<string, LifecycleTransition<T>>;
   readonly onEnter: ReadonlyMap<T['state'], readonly EffectDefinition<T>[]>;
   readonly onEnterState: ReadonlyMap<T['state'], readonly EnterStateHook<T>[]>;
@@ -446,6 +452,24 @@ export interface Lifecycle<T extends LifecycleTypes> {
 
 /** A plain description for a client: draw the state diagram, label buttons. */
 export interface LifecycleDescription {
+  readonly parameterConfiguration?: {
+    readonly readMode: string;
+    readonly snapshotTransition?: string;
+    readonly groups: readonly {
+      readonly key: string;
+      readonly title: string;
+      readonly schemaVersion: number;
+      readonly fields: Readonly<
+        Record<
+          string,
+          Omit<
+            import('./parameter-configuration.js').ConfigurableParameter,
+            'parse'
+          >
+        >
+      >;
+    }[];
+  };
   readonly name: string;
   readonly initial: string;
   readonly initialStates: readonly string[];
@@ -750,6 +774,88 @@ export function defineLifecycle<T extends LifecycleTypes>(
     );
   }
 
+  const configuration = definition.parameterConfiguration;
+  if (configuration) {
+    if (
+      configuration.readMode !== undefined &&
+      !['snapshot', 'live'].includes(configuration.readMode)
+    )
+      throw invalid(name, 'unknown parameter read mode.');
+    if (
+      configuration.snapshotTransition &&
+      !transitions.has(configuration.snapshotTransition)
+    )
+      throw invalid(name, 'unknown snapshot transition.');
+    const keys = new Set<string>();
+    const groups = new Set<string>();
+    let snapshots = false;
+    for (const group of configuration.groups) {
+      if (
+        !group.key ||
+        groups.has(group.key) ||
+        !Number.isSafeInteger(group.schemaVersion) ||
+        group.schemaVersion < 1
+      )
+        throw invalid(name, 'invalid parameter group key or schema version.');
+      groups.add(group.key);
+      for (const [key, field] of Object.entries(group.fields)) {
+        if (keys.has(key) || !Object.hasOwn(definition.parameters ?? {}, key))
+          throw invalid(
+            name,
+            `parameter "${key}" needs a unique key and a code default.`,
+          );
+        keys.add(key);
+        const mode = field.readMode ?? configuration.readMode ?? 'live';
+        if (!['snapshot', 'live'].includes(mode))
+          throw invalid(name, `unknown read mode for "${key}".`);
+        snapshots ||= mode === 'snapshot';
+        try {
+          field.parse((definition.parameters as Record<string, unknown>)[key]);
+        } catch {
+          throw invalid(name, `invalid default for "${key}".`);
+        }
+        for (const binding of field.bindings ?? []) {
+          if (binding.state && !states.has(binding.state))
+            throw invalid(name, `unknown state binding for "${key}".`);
+          if (binding.transition && !transitions.has(binding.transition))
+            throw invalid(name, `unknown transition binding for "${key}".`);
+          if (!binding.state && !binding.transition)
+            throw invalid(name, `empty binding for "${key}".`);
+        }
+      }
+      for (const together of group.sameReadMode ?? []) {
+        const modes = together.map((key) => {
+          const field = group.fields[key];
+          if (!field)
+            throw invalid(name, `unknown constraint parameter "${key}".`);
+          return field.readMode ?? configuration.readMode ?? 'live';
+        });
+        if (new Set(modes).size !== 1)
+          throw invalid(
+            name,
+            'joint parameter constraints require the same read mode.',
+          );
+      }
+      try {
+        normalizeParameterValues(
+          group,
+          Object.fromEntries(
+            Object.keys(group.fields).map((key) => [
+              key,
+              (definition.parameters as Record<string, unknown>)[key],
+            ]),
+          ) as JsonObject,
+        );
+      } catch {
+        throw invalid(
+          name,
+          `invalid defaults for parameter group "${group.key}".`,
+        );
+      }
+    }
+    if (snapshots && !configuration.snapshotTransition)
+      throw invalid(name, 'snapshot parameters require a binding transition.');
+  }
   return Object.freeze({
     name,
     collection: definition.collection ?? name,
@@ -764,6 +870,9 @@ export function defineLifecycle<T extends LifecycleTypes>(
     parameters: Object.freeze({
       ...(definition.parameters ?? {}),
     }) as ParametersOf<T>,
+    ...(definition.parameterConfiguration
+      ? { parameterConfiguration: definition.parameterConfiguration }
+      : {}),
     transitions,
     onEnter,
     onEnterState,
@@ -777,6 +886,38 @@ export function describeLifecycle<T extends LifecycleTypes>(
   lifecycle: Lifecycle<T>,
 ): LifecycleDescription {
   return {
+    ...(lifecycle.parameterConfiguration
+      ? {
+          parameterConfiguration: {
+            readMode: lifecycle.parameterConfiguration.readMode ?? 'live',
+            ...(lifecycle.parameterConfiguration.snapshotTransition
+              ? {
+                  snapshotTransition:
+                    lifecycle.parameterConfiguration.snapshotTransition,
+                }
+              : {}),
+            groups: lifecycle.parameterConfiguration.groups.map((group) => ({
+              key: group.key,
+              title: group.title,
+              schemaVersion: group.schemaVersion,
+              fields: Object.fromEntries(
+                Object.entries(group.fields).map(
+                  ([key, { parse: _parse, ...field }]) => [
+                    key,
+                    {
+                      ...field,
+                      readMode:
+                        field.readMode ??
+                        lifecycle.parameterConfiguration?.readMode ??
+                        'live',
+                    },
+                  ],
+                ),
+              ),
+            })),
+          },
+        }
+      : {}),
     name: lifecycle.name,
     initial: lifecycle.initial,
     initialStates: [...lifecycle.initialStates],

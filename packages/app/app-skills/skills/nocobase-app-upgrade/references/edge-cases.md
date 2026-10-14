@@ -98,25 +98,29 @@ Apply the agreed outcome to the manifest and composition roots together, then ve
 
 ## Migrations
 
-A release can ship a migration under `database/`. Copy it in like any added file, then `pnpm nocobase db apply`.
+A release can ship a migration under `database/`, and updated plugins can supply migrations without any application file changing. Copy new application migrations in like other added files, then follow [database upgrades](database-upgrades.md) before applying them or starting the application against retained data.
 
 Never edit a migration that arrives this way, and never edit one already run — a correction goes in a new migration. The user's own migrations and seeds stay byte for byte where they are; an upgrade never rewrites them.
 
-Template cleanup does not authorize deleting previously executed application migrations or seeds, even when they originally came from the template. Preserve their original package owner, paths, contents, and history; do not reset checksums, drop tables, or repoint history to another template. For directory or connection changes, follow [existing application migration rules](../../nocobase-app-development/references/migrations.md#existing-applications) and verify the original sources remain available in the deployment.
+Template cleanup does not authorize deleting previously executed application migrations or seeds, even when they originally came from the template. Preserve their original package owner, paths, contents, and history; do not reset checksums to hide unexplained drift, drop tables, or repoint history to another template. A documented upstream correction requires the separate checksum review in [database upgrades](database-upgrades.md#review-checksum-drift). For directory or connection changes, follow [existing application migration rules](../../nocobase-app-development/references/migrations.md#existing-applications) and verify the original sources remain available in the deployment.
 
 Unregistering a plugin leaves its records and migration history intact. Do not roll back a retired plugin's migrations after removing its sources; an intentional rollback requires restoring the original plugin version first.
 
 ## Documentation and generated directories
 
-`AGENTS.md`, `CLAUDE.md`, and `README.MD` ship with the template and may contain user additions. Take the template's version where the user wrote nothing and merge where they did.
+`AGENTS.md`, `CLAUDE.md`, `README.MD`, and the files under `.agents/rules/` ship with the template and may contain user additions. Take the template's version where the user wrote nothing and merge where they did. `.agents/rules/` is committed and application-owned: merge each file the target changes, keep every rules file the user added, and never replace the directory wholesale.
 
-Older template releases also shipped a committed `skills/` directory. A target release that moves those Skills into `@nocobase/app-skills` does not authorize deleting local changes. Compare each legacy file with the BASE template: an unchanged template copy may be removed only after install and `pnpm nocobase skills sync` produce the corresponding package-owned Skill under `.agents/skills/`; a modified or added file is application-owned and must be preserved. Keep a customized legacy directory with explicit links from `AGENTS.md`, or move its rules into `AGENTS.md` or another committed application-owned source after showing the user the exact relocation. Never silently fold custom content into a generated copy.
+`AGENTS.md` is a small always-on index of at most 32 KB that links to `.agents/rules/` and the synchronized Skills. When TARGET ships that index form and the project still has an older, long `AGENTS.md` with user edits, take TARGET's index and keep the user's application-specific additions by moving each into the matching `.agents/rules/<topic>.md`, or a new one linked from the index, rather than appending them to `AGENTS.md`. Show the user where each addition went.
+
+An application generated before templates shipped `.agents/rules/` ignores `/.agents/` wholesale in `.gitignore`, which keeps the rules out of version control. Replace that line with `/.agents/*` followed by `!/.agents/rules/`, keep `/.claude/skills/` ignored, and confirm with `git check-ignore -v .agents/rules/<file>` that a rules file is no longer ignored.
+
+Older template releases also shipped a committed `skills/` directory. A target release that moves those Skills into `@nocobase/app-skills` does not authorize deleting local changes. Compare each legacy file with the BASE template: an unchanged template copy may be removed only after install and `pnpm nocobase skills sync` produce the corresponding package-owned Skill under `.agents/skills/`; a modified or added file is application-owned and must be preserved. Keep a customized legacy directory with explicit links from `AGENTS.md`, or move its rules into `.agents/rules/` or another committed application-owned source after showing the user the exact relocation. Never silently fold custom content into a generated copy.
 
 Older releases may include `MIGRATION.md`. Treat it as historical context and verify each suggestion against BASE → TARGET and the project's state; never remove a capability that TARGET still provides solely because an old note says to. When TARGET removes the document, delete an unchanged template copy, but preserve or relocate the user's own operational notes before removing a customized copy.
 
 `.mcp.json`, `.cursor/mcp.json` and `.vscode/mcp.json` ship with the template and configure the shadcn MCP server for Claude Code, Cursor and VS Code. The user may have added servers of their own, or created one of these files before the template shipped it. Merge them as JSON objects, never by overwriting: take the template's entry under `mcpServers` (`servers` in `.vscode/mcp.json`) where the user's entry by that name is unchanged or missing, keep every other server and setting the user has, and ask before replacing a `shadcn` entry they changed.
 
-`.agents/skills/` is generated and gitignored. `pnpm nocobase skills sync` replaces each synchronized package-owned Skill directory wholesale, so never merge into or edit it. Local custom guidance belongs in committed application-owned files outside this generated directory.
+`.agents/skills/` is generated and gitignored. `pnpm nocobase skills sync` replaces each synchronized package-owned Skill directory wholesale, so never merge into or edit it. Local custom guidance belongs in committed application-owned files outside this generated directory, normally `.agents/rules/`.
 
 `config.yml`, optional generated `.env`, `.gitignore`, `.npmrc`, and `pnpm-workspace.yaml` were written by the generator or by `pnpm nocobase config init` and appear in no diff at all.
 
@@ -135,6 +139,10 @@ An application without an external connection only needs step 4.
 
 A release whose Default or Examples template has `testDir: './tests/playwright'` in `playwright.config.ts` keeps Playwright tests in `tests/playwright/`; earlier releases kept them in `e2e/`. Move the application's own files from `e2e/` to `tests/playwright/` with `git mv`, then take the template's `playwright.config.ts`, add `exclude: ['tests/playwright/**']` to the `test` section of `vitest.config.ts` so Vitest does not run them, and replace `e2e/**/*.ts` with `tests/playwright/**/*.ts` in `tsconfig.node.json`. Update any `globalSetup` path or script that names `e2e/`. Earlier templates shipped no tests in `e2e/`, so everything there belongs to the application. Run `pnpm exec vitest run` and `pnpm test:e2e` afterward to confirm each runner picks up only its own files.
 
+### The template's copy moved to `client/locales/system/`
+
+A release whose template has `client/locales/system/en-US.ts` keeps the template's own copy there — the shell, the sign-in pages, shared components and the homepage — and `client/locales/en-US.ts` and `zh-CN.ts` spread it before the application's own groups. Earlier releases kept everything in one file per language. Take the template's `client/locales/system/` as it is, then reduce each application locale file to `...systemEnUS` (or `...systemZhCN`) followed by the groups the application added itself: compare each group with the template's previous locale file, drop the ones the application never changed, and keep a reworded template key after the spread. A shared group the application extended, such as `navigation`, becomes `navigation: { ...systemEnUS.navigation, <the application's entries> }`. Run `pnpm exec tsc -p tsconfig.json --noEmit` and `tests/logic/app-locale-coverage.test.ts` afterward. From then on, an upgrade replaces `client/locales/system/` and leaves the application's locale files alone.
+
 ## Where the user's code lives
 
 ```text
@@ -143,7 +151,7 @@ Rarely touched by the template — a change landing here deserves a careful read
   server/routes/  server/providers/  database/  cli/commands/  tests/
 
 Template structure — where most of the delta lands
-  client/routing/  client/layouts/  client/theme/
+  client/routing/  client/layouts/  client/theme/  client/locales/system/
   client/app.ts  client/runtime.ts  client/startup.tsx  server/*.ts
   vite.config.ts  vitest.config.ts  eslint.config.js
   tsconfig*.json  index.html  components.json
@@ -151,6 +159,7 @@ Template structure — where most of the delta lands
 Both sides edit these — the hardest decisions
   client/plugins.ts  server/plugins.ts  cli/plugins.ts
   package.json  config.example.yml  optional .env.example  AGENTS.md  CLAUDE.md
+  .agents/rules/
   .mcp.json  .cursor/mcp.json  .vscode/mcp.json
 
 Legacy application-owned guidance, when present

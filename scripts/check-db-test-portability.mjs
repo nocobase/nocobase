@@ -22,6 +22,7 @@ const CHECKED_GROUPS = [
   'examples',
   'app',
   'templates',
+  'apps',
   'tools',
   'libs',
 ];
@@ -130,7 +131,7 @@ export const EXEMPT = new Map([
  * install one copy of `@nocobase/db-testing`, whose module state — provisioner cache, stale-database cleanup — exists
  * once per copy. Libraries, tools and the application runtime packages themselves use the layers below directly.
  */
-const ENTRY_GROUPS = new Set(['plugins', 'examples', 'templates']);
+const ENTRY_GROUPS = new Set(['plugins', 'examples', 'templates', 'apps']);
 
 export const ENTRY_RULES = [
   {

@@ -2,6 +2,51 @@ import type { RuntimesLocale } from './runtimes.en-US.js';
 
 const runtimesZhCN: RuntimesLocale = {
   runtimes: {
+    workspaces: {
+      paused: '空间恢复前暂停领取新任务，现有运行继续。',
+      working: '类型：工作目录',
+      readOnly: '类型：只读副本',
+      size: '大小：{{value}}',
+      sizeUnknown: '未知',
+      pushed: '推送状态：干净且无未推送工作',
+      unpushed: '推送状态：有未提交、未推送或未核实工作',
+      notApplicable: '推送状态：不适用',
+      title: '工作目录诊断',
+      low: '磁盘空间不足',
+      previousLow: '上次报告：磁盘空间不足',
+      notReported: '尚未收到工作目录报告',
+      diskUnknown: '无法获取磁盘空间',
+      thresholdOff: '未设置最低保留空间提醒',
+      free: '剩余空间：{{value}}',
+      threshold: '最低保留空间：{{value}}',
+      reportedAt: '最近上报：{{time}}',
+      stale: '以上为上次报告读数，当前空间尚未确认。',
+      empty: '最近报告中没有工作目录',
+      ended: '已结束',
+      active: '工作仍在继续',
+      unknown: '无法确认是否结束',
+      oldRunner: '此执行机尚未提供诊断原因',
+      noCleanup: '尚未收到本地清理结果',
+      discardsUntracked: '清理将丢弃未跟踪文件',
+      decision: {
+        settled: '已结束；仍需本地清理复核',
+        active: '工作仍在继续',
+        runNotFound: '无法确认是否结束：未找到运行记录',
+        ownershipUnknown: '无法确认是否结束：无法验证归属',
+        ambiguousSubject: '无法确认是否结束：任务标识有歧义',
+        bindingUnavailable: '无法确认是否结束：应用未提供结束判定',
+        subjectUnknown: '无法确认是否结束：应用无法解析任务',
+      },
+      cleanup: {
+        allowed: '已结束；允许清理',
+        inUse: '仍保留：目录正在使用',
+        changed: '仍保留：目录已重新使用',
+        trackedChanges: '仍保留：存在已跟踪改动',
+        unpushed: '仍保留：存在未推送提交或缺少本地提交对象',
+        missingEvidence: '仍保留：提交证据不足',
+        gitFailed: '仍保留：Git 检查失败',
+      },
+    },
     title: '运行环境',
     description: '运行 Agent 的运行环境，以及各自上报的编码工具。',
     add: '添加运行环境',
@@ -37,6 +82,7 @@ const runtimesZhCN: RuntimesLocale = {
     activity: {
       online: '在线 {{active}}/{{slots}}',
       busy: '忙碌 {{active}}/{{slots}}',
+      low_disk: '磁盘不足 {{active}}/{{slots}}',
       offline: '离线 · {{time}}',
       offlineNever: '离线',
     },
@@ -87,6 +133,8 @@ const runtimesZhCN: RuntimesLocale = {
       owner: '所有者 {{name}}',
     },
     status: {
+      updatePending: '执行机等待升级，暂不接活',
+      pruning: '执行机清理共享缓存，暂不接活',
       online: '在线',
       offline: '离线',
       revoked: '已吊销',
@@ -164,10 +212,12 @@ const runtimesZhCN: RuntimesLocale = {
   connect: {
     title: '添加运行环境',
     description:
-      '在装有编码工具的主机（服务器、虚拟机或个人设备）上运行下面的命令。',
+      '在装有编码工具的主机（服务器、虚拟机或个人设备）上运行下面的命令。Agent 在那里以运行执行机的用户身份完全放开地运行，能读写该用户能访问的一切，包括 SSH 密钥和其他凭证。执行机不是安全边界：请用专用系统用户、容器或虚拟机来运行它。',
     createCredential: '生成安装命令',
     advanced: '高级：按编码工具限制',
-    run: '在那台主机上运行以下命令。它会从本应用下载 runner（nocobase-runner）和本应用的 CLI（无需 Node.js），注册 runner 并设置为登录后自动启动：',
+    run: '在那台主机上运行以下命令。它会从本应用下载 runner（nocobase-runner）和本应用的 CLI，注册 runner 并设置为登录后自动启动：',
+    nodeRequired:
+      '主机需要安装 Node.js 24 或更高版本（可用 node --version 查看）。未安装时命令会停止并说明如何安装。',
     installed: '已经装好 nocobase-runner？改为注册它：',
     unsupported: 'runner 暂不支持 Windows，请使用 macOS、Linux 或 WSL。',
     tokenOnce:

@@ -10,7 +10,10 @@ import type { DatabaseManager } from '@nocobase/db';
 
 import type { ProjectsAccess } from './tokens.js';
 
-import { createActivityRecorder } from './kernel/activity.js';
+import {
+  createActivityRecorder,
+  type ActivityRecorder,
+} from './kernel/activity.js';
 import { createKindRegistry, type KindRegistry } from './kernel/kinds.js';
 import { createDomainEventBus, type DomainEventBus } from './kernel/events.js';
 import { createIdSource } from './kernel/ids.js';
@@ -18,15 +21,10 @@ import { createTxRunner, type TxRunner } from './kernel/tx.js';
 import { createUserDirectory } from './kernel/users.js';
 import { kindTriggers } from './kernel/work.js';
 import {
-  createApprovalService,
-  type ApprovalService,
-} from './domains/approvals/index.js';
-import {
   createIssueContextProvider,
   createIssueQueries,
   createIssueService,
   createProjectIssues,
-  findIssue,
   type IssueContextProvider,
   type IssueQueries,
   type IssueService,
@@ -63,7 +61,6 @@ import {
 } from './domains/members/index.js';
 import {
   createProjectService,
-  findProject,
   type ProjectService,
 } from './domains/projects/index.js';
 import {
@@ -71,24 +68,13 @@ import {
   type SettingsService,
 } from './domains/settings/index.js';
 import {
-  createChecklistService,
-  type ChecklistService,
-} from './domains/checklists/index.js';
-import {
-  builtInStatusRuleTypes,
-  createIssueRegistry,
-  createStatusRuleTypes,
-  withBuiltInTypes,
-  createWorkflowEventService,
-  createWorkflowEventTypes,
-  createWorkflowService,
-  createWorkflowTemplates,
-  type StatusRuleTypes,
-  type WorkflowEventService,
-  type WorkflowEventTypes,
-  type WorkflowService,
-  type WorkflowTemplates,
-} from './domains/workflows/index.js';
+  createStatusEventService,
+  createStatusEventTypes,
+  createStatusService,
+  type StatusEventService,
+  type StatusEventTypes,
+} from './domains/statuses/index.js';
+import type { StatusService } from './domains/issues/index.js';
 import {
   createIssueReports,
   type IssueReports,
@@ -130,12 +116,8 @@ export interface ProjectsDeps {
   readonly invitations: UserInvitations;
   /** The kinds of principal; built-in kinds only when left out. */
   readonly kinds?: KindRegistry;
-  /** Status rule types other plugins contribute (`projectsStatusRulesToken`); none when left out. */
-  readonly statusRules?: StatusRuleTypes;
-  /** Workflow events other plugins contribute (`projectsWorkflowEventsToken`); none when left out. */
-  readonly workflowEvents?: WorkflowEventTypes;
-  /** Workflow templates other plugins contribute (`projectsWorkflowTemplatesToken`); none when left out. */
-  readonly templates?: WorkflowTemplates;
+  /** Status events other plugins contribute (`projectsStatusEventsToken`); none when left out. */
+  readonly statusEvents?: StatusEventTypes;
   /**
    * What a change or a comment starts, asked on each use; when left out or when it answers undefined, the work handlers
    * of the registered kinds.
@@ -153,20 +135,21 @@ export interface ProjectsDeps {
 }
 
 export interface Projects {
+  /** Application-owned issue events, recorded in the transaction that caused them. */
+  readonly activity: ActivityRecorder;
   readonly events: DomainEventBus;
   readonly tx: TxRunner;
   readonly members: MemberService;
   readonly invitations: InvitationService;
   readonly settings: SettingsService;
   readonly labels: LabelService;
-  readonly workflows: WorkflowService;
+  /** The fixed statuses (`shared/statuses.ts`) and where each kind may move an issue. */
+  readonly statuses: StatusService;
   readonly projects: ProjectService;
   readonly issues: IssueService;
   readonly issueQueries: IssueQueries;
   /** An issue as an executor of another kind needs it, read on the caller's connection. */
   readonly issueContext: IssueContextProvider;
-  readonly checklists: ChecklistService;
-  readonly approvals: ApprovalService;
   readonly comments: CommentService;
   readonly commentQueries: CommentQueries;
   readonly subscriptions: SubscriptionService;
@@ -184,11 +167,8 @@ export interface Projects {
   /** Requirement intake with AI, through the bound organiser (`shared/intake-ai.ts`). */
   readonly intakeAi: IntakeAiService;
   readonly kinds: KindRegistry;
-  /** Every status rule type, this plugin's own first; `add` contributes one (`projectsStatusRulesToken`). */
-  readonly statusRules: StatusRuleTypes;
-  /** Contributed workflow events: their registry, and firing one for a batch of issues. */
-  readonly workflowEvents: WorkflowEventService;
-  readonly templates: WorkflowTemplates;
+  /** Contributed status events: their registry, and firing one for a batch of issues. */
+  readonly statusEvents: StatusEventService;
   /** The issue side of the reports: counts over a date range, limited to what a viewer sees. */
   readonly reports: IssueReports;
 }
@@ -202,38 +182,15 @@ export function createProjects(deps: ProjectsDeps): Projects {
   const users = createUserDirectory();
   const activity = createActivityRecorder(ids);
   const kinds = deps.kinds ?? createKindRegistry(users);
-  // This plugin's own rule types in front of the contributed ones: every rule is looked up in one place.
-  const statusRules = withBuiltInTypes(
-    deps.statusRules ?? createStatusRuleTypes(),
-    builtInStatusRuleTypes({
-      ids,
-      activity,
-      relations: () => subtasks.checks,
-    }),
-  );
-  const templates = deps.templates ?? createWorkflowTemplates();
-  const eventTypes = deps.workflowEvents ?? createWorkflowEventTypes();
+  const eventTypes = deps.statusEvents ?? createStatusEventTypes();
 
   const settings = createSettingsService({ tx });
   const labels = createLabelService({ tx, ids });
-  const workflows = createWorkflowService({
-    tx,
-    ids,
+  const statuses = createStatusService({
     kinds,
-    ruleTypes: statusRules,
     events: eventTypes,
-    templates,
-    registry: createIssueRegistry({
-      activity,
-      approvers: {
-        projectLead: async (conn, projectId) =>
-          (await findProject(conn, projectId))?.leadUserId ?? null,
-        admins: async (conn) => [...(await deps.access.administrators(conn))],
-      },
-      types: statusRules,
-    }),
+    activity,
   });
-  const statuses = workflows.catalogs;
   const defaultTriggers = kindTriggers(kinds, {
     activity,
     blockers: (conn, issue) => subtasks.blockersOf(conn, issue),
@@ -272,8 +229,6 @@ export function createProjects(deps: ProjectsDeps): Projects {
     kinds,
     statuses,
     extras: () => ({
-      checklist: (conn, issue) => checklists.current(conn, issue),
-      pendingApproval: (conn, issue) => approvals.pendingFor(conn, issue.id),
       attachments: (conn, viewer, issue) =>
         attachments.links.ofIssue(conn, viewer, issue),
     }),
@@ -282,10 +237,9 @@ export function createProjects(deps: ProjectsDeps): Projects {
   const notices = createNoticePlanner({
     subscriptions,
     kinds,
-    rules: [builtInRules({ statuses })],
+    rules: [builtInRules()],
   });
   tx.beforeCommit((unit, events) => notices.plan(unit, events));
-  const checklists = createChecklistService({ tx, kinds, activity });
   const issues: IssueService = createIssueService({
     tx,
     ids,
@@ -296,7 +250,6 @@ export function createProjects(deps: ProjectsDeps): Projects {
     labels,
     statuses,
     triggers,
-    approvals: () => approvals,
     relations: () => subtasks.relations,
   });
   const subtasks: SubtaskService = createSubtaskService({
@@ -306,23 +259,6 @@ export function createProjects(deps: ProjectsDeps): Projects {
     kinds,
     statuses,
     triggers,
-    issues: () => issues,
-  });
-  const approvals: ApprovalService = createApprovalService({
-    tx,
-    ids,
-    users,
-    kinds,
-    activity,
-    moves: () => ({
-      apply: (inner, request, approver) =>
-        issues.applyApproved(inner, request, approver),
-      find: findIssue,
-      statusName: async (conn, issue, key) =>
-        (await statuses.forProject(conn, issue.projectId)).statuses.find(
-          (status) => status.key === key,
-        )?.name ?? key,
-    }),
   });
   const projectIssues = createProjectIssues({ activity, statuses });
   const projects = createProjectService({
@@ -330,7 +266,6 @@ export function createProjects(deps: ProjectsDeps): Projects {
     ids,
     users,
     issues: () => projectIssues,
-    workflows: () => workflows.projects,
   });
   const plans = createPlanService({
     tx,
@@ -364,9 +299,6 @@ export function createProjects(deps: ProjectsDeps): Projects {
     kinds,
     statuses,
     extras: () => ({
-      checklist: (conn, issue) => checklists.current(conn, issue),
-      pendingApproval: (conn, issue) => approvals.pendingFor(conn, issue.id),
-      recentApprovals: (conn, issue) => approvals.decidedFor(conn, issue.id),
       threads: (conn, issue, viewer) =>
         threadPage(conn, kinds, issue.id, {}, attachments.links, viewer),
       attachments: (conn, viewer, issue) =>
@@ -413,11 +345,12 @@ export function createProjects(deps: ProjectsDeps): Projects {
     kinds,
   });
   return {
+    activity,
     events,
     tx,
     settings,
     labels,
-    workflows,
+    statuses,
     members,
     invitations: createInvitationService({
       tx,
@@ -429,8 +362,6 @@ export function createProjects(deps: ProjectsDeps): Projects {
     issues,
     issueQueries,
     issueContext,
-    checklists,
-    approvals,
     comments,
     commentQueries,
     subscriptions,
@@ -442,13 +373,11 @@ export function createProjects(deps: ProjectsDeps): Projects {
     intake,
     intakeAi,
     kinds,
-    statusRules,
-    workflowEvents: createWorkflowEventService({
+    statusEvents: createStatusEventService({
       tx,
       types: eventTypes,
       issues: () => issues,
     }),
-    templates,
     reports: createIssueReports({ tx }),
   };
 }

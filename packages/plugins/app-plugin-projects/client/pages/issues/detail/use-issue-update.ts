@@ -31,8 +31,8 @@ export type IssueUpdate = UseMutationResult<
 /**
  * Every change to an issue on its page: a PATCH based on the newest `revision` the cache holds. A 409
  * `REVISION_CONFLICT` means someone changed the issue first: the change is dropped, the user told, and the detail
- * reloaded rather than overwriting their edit. A status change the workflow holds for approval changes nothing and
- * says so. `detailKey` is the key the page reads the issue under (its id or its identifier, as the URL has it).
+ * reloaded rather than overwriting their edit. `detailKey` is the key the page reads the issue under (its id or its
+ * identifier, as the URL has it).
  */
 export function useIssueUpdate(issue: Issue, detailKey: QueryKey): IssueUpdate {
   const { t } = useTranslation(ACCESS_NAMESPACE);
@@ -53,15 +53,10 @@ export function useIssueUpdate(issue: Issue, detailKey: QueryKey): IssueUpdate {
         revision: cached?.revision ?? issue.revision,
       });
     },
-    onSuccess: ({ issue: updated, pendingApproval }) => {
+    onSuccess: ({ issue: updated }) => {
       queryClient.setQueryData<IssueDetail>(detailKey, (previous) =>
         previous ? { ...previous, ...updated } : previous,
       );
-      if (pendingApproval)
-        notify.info(
-          t('approvals.pendingToast'),
-          t('approvals.pendingToastDescription'),
-        );
       refresh();
     },
     onError: (error) => {
@@ -75,7 +70,7 @@ export function useIssueUpdate(issue: Issue, detailKey: QueryKey): IssueUpdate {
         return;
       }
       notify.error(error);
-      // A refusal from the issue's state (a guard, a pending approval) may mean the page is behind.
+      // A refusal from the issue's state may mean the page is behind.
       if (error instanceof ApiClientError) refresh();
     },
   });

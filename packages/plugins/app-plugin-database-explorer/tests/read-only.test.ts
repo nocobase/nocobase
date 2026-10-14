@@ -34,11 +34,10 @@ const BOOKKEEPING_TABLE = '__nocobase_collection_metadata';
  *
  * The Explorer issues no write of its own, but reading a Collection
  * initializes the Collection registry, and on a managed connection the
- * registry's metadata store creates its own `__nocobase_collection_metadata`
- * table when it is missing. So the honest guarantee is narrower than "touches
- * nothing": no Collection is created, altered or dropped, no row of any table
- * changes, and the single table the Explorer can bring into existence is that
- * bookkeeping one.
+ * registry's metadata store creates its metadata and cache-version tables
+ * when missing, including the initial version row. Business Collections and
+ * their rows remain unchanged. Once initialized, reading also leaves every
+ * bookkeeping row unchanged.
  *
  * These tests state that boundary rather than hiding it behind a warm-up read,
  * so a change that widens it fails here instead of on someone's database.
@@ -80,13 +79,12 @@ describe('reading never changes a database', () => {
     await testDatabase.destroy();
   });
 
-  it('adds nothing but its own bookkeeping table on a first read', async () => {
+  it('adds only metadata bookkeeping tables on a first read', async () => {
     // A database NocoBase has never touched: freshly provisioned and opened by
     // a manager of its own, without the reset a test database gets, and the
     // table is created with plain SQL, so the Collection builder never runs
-    // and the metadata store is genuinely absent. This is the one moment the
-    // Explorer can change a schema, and it is not reachable once migrations
-    // have run.
+    // and the metadata store is genuinely absent. Initializing bookkeeping
+    // must leave the existing business table untouched.
     const untouched = await provisionTestDatabases();
     const virginConfig: ExplorerDatabaseConfig = {
       default: 'main',
@@ -104,12 +102,18 @@ describe('reading never changes a database', () => {
       const before = await tableNames(connection);
       expect(before).toEqual(['invoices']);
 
-      await listCollections(virgin, virginConfig, 'main');
+      const collections = await listCollections(virgin, virginConfig, 'main');
+      expect(collections.items.map((item) => item.name)).toEqual(['invoices']);
 
       const added = (await tableNames(connection)).filter(
         (name) => !before.includes(name),
       );
-      expect(added).toEqual([BOOKKEEPING_TABLE]);
+      expect(added).toEqual([
+        BOOKKEEPING_TABLE,
+        expect.stringMatching(
+          /^__nocobase_collection_metadata_cache_[a-f0-9]{8}$/,
+        ),
+      ]);
       // The foreign table itself is untouched.
       expect(
         await connection.query.selectFrom('invoices').selectAll().execute(),
@@ -123,7 +127,7 @@ describe('reading never changes a database', () => {
     }
   });
 
-  it('leaves the schema identical once that table exists', async () => {
+  it('leaves the schema identical once bookkeeping is initialized', async () => {
     await listCollections(database, config, 'main');
     const before = await schemaSnapshot(database.connection());
 

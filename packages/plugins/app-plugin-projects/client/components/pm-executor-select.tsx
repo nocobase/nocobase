@@ -26,6 +26,8 @@ export interface ExecutorOption {
   readonly name: string;
   readonly note?: string;
   readonly disabled?: boolean;
+  /** A new issue gets it when it names no executor (`ExecutorCandidate.isDefault`). */
+  readonly isDefault?: boolean;
 }
 
 export interface PmExecutorSelectProps {
