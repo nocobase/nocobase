@@ -99,7 +99,7 @@ test('comment work shares the decision card and runs only on an authorized ident
     expect((await progress(teamIssue)).personalRunnerRequests).toEqual([]);
     await open(page, `/issues/${teamIssue.identifier}/runs/${teamRun.runId}`);
     await expect(
-      page.getByText('Running as Super Admin', { exact: false }).first(),
+      page.getByText('Running as Consent test owner', { exact: false }).first(),
     ).toBeVisible();
     await shot('team-direct');
     await team.complete(
@@ -191,7 +191,9 @@ test('comment work shares the decision card and runs only on an authorized ident
       `/issues/${personalIssue.identifier}/runs/${personalRun.runId}`,
     );
     await expect(
-      page.getByText('Confirmed by Super Admin', { exact: false }).first(),
+      page
+        .getByText('Confirmed by Consent test owner', { exact: false })
+        .first(),
     ).toBeVisible();
     await shot('confirmed-personal-confirmer');
     await laptop.complete(
@@ -380,7 +382,7 @@ test('owner delegation needs no extra consent and Run as me preserves both comme
     expect(ownStep.confirmedByUserId).toBeNull();
     await open(page, `/issues/${ownIssue.identifier}/runs/${workerTurn.runId}`);
     await expect(
-      page.getByText('Running as Super Admin', { exact: false }).first(),
+      page.getByText('Running as Consent test owner', { exact: false }).first(),
     ).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Confirm', exact: true }),
