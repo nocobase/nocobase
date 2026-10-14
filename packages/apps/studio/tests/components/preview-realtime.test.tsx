@@ -23,13 +23,15 @@ import { STUDIO_GIT_TOPIC, type IssuePullRequest } from '../../shared/git.js';
 import type { IssuePreviews } from '../../shared/previews.js';
 
 const { api, listeners, realtime } = vi.hoisted(() => {
-  const listeners = new Map<string, Set<() => void>>();
+  type Listener = (event?: { payload: unknown }) => void;
+  const listeners = new Map<string, Set<Listener>>();
   return {
     api: { request: vi.fn() },
     listeners,
     realtime: {
-      subscribe: (topic: string, listener: () => void) => {
-        const handlers = listeners.get(topic) ?? new Set<() => void>();
+      onOpen: () => () => undefined,
+      subscribe: (topic: string, listener: Listener) => {
+        const handlers = listeners.get(topic) ?? new Set<Listener>();
         listeners.set(topic, handlers);
         handlers.add(listener);
         return () => {
@@ -236,4 +238,79 @@ describe.each([
       expect(listeners.size).toBe(0);
     },
   );
+});
+
+describe('git change announcements', () => {
+  it('read again only what is shown of the issues they name', async () => {
+    const reads: string[] = [];
+    api.request.mockImplementation(({ path }: { path: string }) => {
+      reads.push(path);
+      if (path === 'git/pullRequests')
+        return Promise.resolve({
+          data: [pullRequest],
+          meta: {
+            suggestions: [],
+            canMerge: true,
+            canLink: true,
+            applicable: true,
+          },
+        });
+      if (path === 'previews/status')
+        return Promise.resolve({ data: emptyPreviews });
+      if (path === 'deploys/marks')
+        return Promise.resolve({ data: { i1: [] } });
+      return Promise.reject(new Error(`Unexpected ${path}`));
+    });
+    const runtime = await createTestI18nRuntime({
+      application: { namespace: 'studio', resources: enUS },
+      locale: 'en-US',
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    clients.push(client);
+    const view = render(
+      <TestI18nProvider runtime={runtime} namespace='studio'>
+        <QueryClientProvider client={client}>
+          <MemoryRouter>
+            <IssueCodeSection
+              issue={issue}
+              linking={false}
+              setLinking={() => undefined}
+            />
+            <IssueCodeSection
+              issue={issue}
+              linking={false}
+              setLinking={() => undefined}
+            />
+          </MemoryRouter>
+        </QueryClientProvider>
+      </TestI18nProvider>,
+    );
+    expect(await screen.findAllByText(pullRequest.title)).toHaveLength(2);
+    // Every component following the topic shares one subscription.
+    const handlers = [...(listeners.get(STUDIO_GIT_TOPIC) ?? [])];
+    expect(handlers).toHaveLength(1);
+    const count = (path: string) =>
+      reads.filter((read) => read === path).length;
+    const before = {
+      pulls: count('git/pullRequests'),
+      previews: count('previews/status'),
+    };
+    const announce = (payload: unknown) =>
+      act(() => {
+        for (const listener of handlers) listener({ payload });
+      });
+    announce({ kind: 'studio.git.changed', issueIds: ['elsewhere'] });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(count('git/pullRequests')).toBe(before.pulls);
+    expect(count('previews/status')).toBe(before.previews);
+    announce({ kind: 'studio.git.changed', issueIds: ['i1'] });
+    await waitFor(() => {
+      expect(count('git/pullRequests')).toBe(before.pulls + 1);
+      expect(count('previews/status')).toBe(before.previews + 1);
+    });
+    view.unmount();
+    expect(listeners.size).toBe(0);
+  });
 });

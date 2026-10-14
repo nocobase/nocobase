@@ -356,6 +356,8 @@ export interface BridgeHarness {
   /** Pushes and workflow runs webhooks delivered. */
   readonly gitRepoEvents: RepoEvents;
   readonly github: FakeGitHub;
+  /** The pull requests Studio stored something about, in order (`onChanged`). */
+  readonly gitChanges: string[];
   /** People's preferences, by `<userId>:<key>`. */
   readonly preferences: Map<string, unknown>;
   /** What Studio's inbox port was given: every notice sent, and every decision settled. */
@@ -634,6 +636,7 @@ export async function createBridgeHarness(
   const releaseServices = releases;
   // Before the agents: the template they add names the workflow event this registers.
   const github = createFakeGitHub();
+  const gitChanges: string[] = [];
   const port = {
     sent: [] as InboxSend[],
     settled: [] as { decisionKey: string; outcome: string }[],
@@ -664,6 +667,7 @@ export async function createBridgeHarness(
     events: gitEvents,
     repoEvents: gitRepoEvents,
   } = bindStudioGit({
+    onChanged: (pullRequestId) => gitChanges.push(pullRequestId),
     preferenceOf: (userId, key) =>
       Promise.resolve(preferences.get(`${userId}:${key}`)),
     projects: () => projects,
@@ -1392,6 +1396,7 @@ export async function createBridgeHarness(
     gitConnections,
     gitRepoEvents,
     github,
+    gitChanges,
     preferences,
     port,
     app,
