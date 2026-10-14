@@ -49,7 +49,11 @@ const migrationSources = [
 const sources = [
   { directory: path.join(ROOT, 'database/main/seeds'), packageName: 'studio' },
 ];
-async function runUpgrade(maintenance = true, expectedHash?: string) {
+async function runUpgrade(
+  maintenance = true,
+  expectedHash?: string,
+  defaultSet = 'member',
+) {
   return createSeeder({
     database: test.database,
     connection: 'main',
@@ -59,9 +63,11 @@ async function runUpgrade(maintenance = true, expectedHash?: string) {
         return (
           key === 'studio.accessUpgrade.maintenance'
             ? maintenance
-            : key === 'studio.accessUpgrade.expectedKeyInventoryHash'
-              ? expectedHash
-              : undefined
+            : key === 'authorization.permissionSets.defaultSet'
+              ? defaultSet
+              : key === 'studio.accessUpgrade.expectedKeyInventoryHash'
+                ? expectedHash
+                : undefined
         ) as T | undefined;
       },
     },
@@ -136,6 +142,115 @@ afterEach(async () => {
 });
 
 describe('upgrading an existing Studio without new account grants', () => {
+  it.each(['member', 'custom-default'])(
+    'stops narrowing from the unmigrated %s default set without partial writes',
+    async (defaultSet) => {
+      const connection = test.database.connection();
+      const grants = [
+        {
+          resource: { type: 'settings', id: 'pm.members' },
+          actions: [{ action: 'define-roles' }],
+        },
+      ];
+      if (defaultSet !== 'member')
+        await connection.repository('authorizationPermissionSets').createOne({
+          values: {
+            id: defaultSet,
+            key: defaultSet,
+            grants,
+            title: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+      else
+        await connection
+          .repository('authorizationPermissionSets')
+          .updateOne({ filter: { key: defaultSet }, values: { grants } });
+      const subject = 'synthetic-default-user';
+      await connection.repository('user').createOne({
+        values: {
+          id: subject,
+          kind: 'person',
+          name: 'Synthetic default user',
+          email: 'default@example.test',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+      await connection
+        .repository('authorizationPermissionSetAssignments')
+        .createOne({
+          values: {
+            id: 'default-assignment',
+            subjectType: 'user',
+            subjectId: subject,
+            permissionSetKey: defaultSet,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+      await connection.repository('apikey').createOne({
+        values: {
+          id: 'default-key',
+          referenceId: subject,
+          permissions: null,
+          key: 'synthetic-unused-value',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+      const authz = createAppAuthorization({
+        connection,
+        config: { permissionSets: { defaultSet } },
+      });
+      registerAccess(authz);
+      const identity = {
+        principal: { type: 'user', id: subject },
+        subjects: [{ type: 'authenticated', id: '*' }],
+      };
+      expect(
+        await authz.for(identity).can({
+          resource: { type: 'settings', id: 'pm.members' },
+          action: 'define-roles',
+        }),
+      ).toBe(true);
+      expect(
+        await authz.for(identity).can({
+          resource: { type: 'settings', id: 'studio.roles' },
+          action: 'manage',
+        }),
+      ).toBe(false);
+      const before = await roles();
+      const journalBefore = await connection
+        .repository('studioAccessUpgradeChanges')
+        .findMany();
+      const inventory = await readStudioKeyInventory(
+        connection,
+        'root',
+        defaultSet,
+      );
+      expect(inventory[0].status).toBe('review-required');
+      expect(inventory[0].reason).toContain(
+        'Unmigrated permission set ' + defaultSet,
+      );
+      expect(inventory[0].reason).toContain('define-roles');
+      await expect(
+        runUpgrade(true, studioKeyInventoryHash(inventory), defaultSet),
+      ).rejects.toThrow('STUDIO_KEY_REVIEW_REQUIRED');
+      expect(await roles()).toEqual(before);
+      expect(
+        await connection.repository('studioAccessUpgradeChanges').findMany(),
+      ).toEqual(journalBefore);
+      expect(
+        await authz.for(identity).can({
+          resource: { type: 'settings', id: 'pm.members' },
+          action: 'define-roles',
+        }),
+      ).toBe(true);
+    },
+  );
+
   it('maps actual narrowed grants and retains identities, invitations, advanced payloads and null defaults', async () => {
     const connection = test.database.connection();
     const before = await roles();

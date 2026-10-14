@@ -3,16 +3,61 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import {
   expect,
-  test,
+  test as base,
+  Api,
+  apiAs,
+  unique,
   url,
   horizontalOverflow,
   signIn,
 } from './support/fixtures.ts';
 
+// Each case owns its persistent preferences and administrator assignment.
+const test = base.extend({
+  context: async ({ context, browser }, use) => {
+    const bootstrap = await apiAs(browser, 'admin');
+    const email = `account-manager-${unique()}@example.test`;
+    const password = 'SyntheticPassword123!';
+    try {
+      const manager = await bootstrap.api.post<{ id: string }>('users', {
+        name: 'Synthetic account manager',
+        email,
+        password,
+      });
+      await signIn(context, { email, password });
+      const api = new Api(context.request);
+      await api.get('projects/me');
+      // Account creation is fixture preparation, not a new default admin capability.
+      const preparationRole = `pm358-fixture-create-${unique()}`;
+      await bootstrap.api.post('authorization/permissionSets', {
+        key: preparationRole,
+        title: 'Synthetic account fixture preparation',
+        grants: [
+          {
+            resource: { type: 'user', id: '*' },
+            actions: [{ action: 'create' }],
+          },
+        ],
+      });
+      await bootstrap.api.put(`users/${manager.id}/roleScopes/studio`, {
+        value: ['admin', preparationRole],
+      });
+      await api.patch('users/me/preferences', {
+        locale: 'en-US',
+        'theme.mode': 'light',
+      });
+    } finally {
+      await bootstrap.close();
+    }
+    await use(context);
+  },
+});
+
 const output = process.env.PM358_SCREENSHOT_DIR;
 test.setTimeout(180_000);
 test.use({
   user: 'admin',
+  trace: 'off',
   launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
     ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }
     : {},
@@ -139,6 +184,7 @@ test('maintains a disabled account, profile, password deep link and role permiss
   await expect(
     page.getByRole('combobox', { name: 'Status', exact: true }),
   ).toBeFocused();
+  await api.patch('users/me/preferences', { 'theme.mode': 'dark' });
   await page.evaluate(
     "localStorage.setItem('nocobase:main:theme:color-scheme', 'dark')",
   );

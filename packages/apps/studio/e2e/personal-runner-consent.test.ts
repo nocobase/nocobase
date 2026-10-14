@@ -3,6 +3,7 @@ import type { Browser, Page } from '@playwright/test';
 import {
   Api,
   apiAs,
+  attachDiagnostic,
   expect,
   signIn,
   test,
@@ -19,6 +20,7 @@ test.use({
   locale: 'en-US',
   trace: 'off',
   isolatedStudio: true,
+  requestDiagnostics: true,
 });
 test.setTimeout(240_000);
 
@@ -53,6 +55,24 @@ async function createRequester(browser: Browser, studio: ServerState) {
     await admin.close();
   }
   return credentials;
+}
+async function cleanupAfterTest(
+  primaryFailed: boolean,
+  actions: { name: string; run: () => Promise<unknown> }[],
+) {
+  const failures: string[] = [];
+  for (const action of actions) {
+    try {
+      await action.run();
+    } catch {
+      failures.push(action.name);
+    }
+  }
+  if (failures.length) {
+    await attachDiagnostic('cleanup-failures', failures);
+    if (!primaryFailed)
+      throw new Error('Test cleanup failed; see cleanup-failures attachment');
+  }
 }
 
 test('comment work shares the decision card and runs only on an authorized identity and runner', async ({
@@ -106,6 +126,7 @@ test('comment work shares the decision card and runs only on an authorized ident
     api.get<IssueProgress>(`issueProgress/${issue.id}`);
   const comment = (issue: Issue, content: string) =>
     requester.post(`projects/issues/${issue.id}/comments`, { content });
+  let primaryFailed = false;
   try {
     const team = new FakeRunner(api, `consent-team-${unique()}`, true);
     await api.patch('projectManager', {
@@ -337,16 +358,32 @@ test('comment work shares the decision card and runs only on an authorized ident
       requesterPage.getByRole('button', { name: 'Run as me', exact: true }),
     ).toHaveCount(0);
     await shot('handoff-priority', requesterPage);
+  } catch (error) {
+    primaryFailed = true;
+    throw error;
   } finally {
-    await api.patch('projectManager', {
-      name: settings.name,
-      firstChoiceAgentId: settings.firstChoiceAgentId,
-      fallbackAgentId: settings.fallbackAgentId,
-      commentRunLimit: settings.commentRunLimit,
-    });
-    for (const issue of created)
-      await api.delete(`projects/issues/${issue.id}`).catch(() => undefined);
-    await requesterContext.close();
+    await cleanupAfterTest(primaryFailed, [
+      {
+        name: 'restore project manager settings',
+        run: () =>
+          api.patch(
+            'projectManager',
+            {
+              name: settings.name,
+              firstChoiceAgentId: settings.firstChoiceAgentId,
+              fallbackAgentId: settings.fallbackAgentId,
+              commentRunLimit: settings.commentRunLimit,
+            },
+            undefined,
+            10_000,
+          ),
+      },
+      ...created.map((issue) => ({
+        name: 'delete synthetic issue',
+        run: () => api.delete(`projects/issues/${issue.id}`, 10_000),
+      })),
+      { name: 'close requester context', run: () => requesterContext.close() },
+    ]);
   }
 });
 
@@ -397,6 +434,7 @@ test('owner delegation needs no extra consent and Run as me preserves both comme
       path: test.info().outputPath(`pm301-${name}.png`),
       fullPage: true,
     });
+  let primaryFailed = false;
   try {
     const suffix = unique();
     const managerModel = `consent-manager-${suffix}`;
@@ -605,15 +643,67 @@ test('owner delegation needs no extra consent and Run as me preserves both comme
       await shot(`multi-${state}-manager`, requesterPage);
       await authorManager.complete(manager.runId, 'Done.');
     }
+  } catch (error) {
+    primaryFailed = true;
+    throw error;
   } finally {
-    await api.patch('projectManager', {
-      name: settings.name,
-      firstChoiceAgentId: settings.firstChoiceAgentId,
-      fallbackAgentId: settings.fallbackAgentId,
-      commentRunLimit: settings.commentRunLimit,
-    });
-    for (const issue of created)
-      await api.delete(`projects/issues/${issue.id}`).catch(() => undefined);
-    await requesterContext.close();
+    await cleanupAfterTest(primaryFailed, [
+      {
+        name: 'restore project manager settings',
+        run: () =>
+          api.patch(
+            'projectManager',
+            {
+              name: settings.name,
+              firstChoiceAgentId: settings.firstChoiceAgentId,
+              fallbackAgentId: settings.fallbackAgentId,
+              commentRunLimit: settings.commentRunLimit,
+            },
+            undefined,
+            10_000,
+          ),
+      },
+      ...created.map((issue) => ({
+        name: 'delete synthetic issue',
+        run: () => api.delete(`projects/issues/${issue.id}`, 10_000),
+      })),
+      { name: 'close requester context', run: () => requesterContext.close() },
+    ]);
   }
+});
+
+test('request evidence redacts credentials and cleanup preserves the primary failure', async () => {
+  const original = new Error('synthetic-header-body-token-sentinel');
+  const request = {
+    fetch: async () => {
+      throw original;
+    },
+  } as unknown as import('@playwright/test').APIRequestContext;
+  const api = new Api(request);
+  await expect(
+    api.get('synthetic-diagnostic?token=synthetic-query-sentinel'),
+  ).rejects.toBe(original);
+  expect(original.message).toContain('GET /main/api/synthetic-diagnostic');
+  expect(original.message).not.toContain('sentinel');
+  expect(original.stack).not.toContain('sentinel');
+  await expect(
+    cleanupAfterTest(true, [
+      {
+        name: 'synthetic cleanup failure',
+        run: async () => {
+          throw new Error('synthetic-cleanup-token-sentinel');
+        },
+      },
+    ]),
+  ).resolves.toBeUndefined();
+  await expect(
+    cleanupAfterTest(false, [
+      {
+        name: 'synthetic cleanup failure',
+        run: async () => {
+          throw new Error('synthetic-cleanup-token-sentinel');
+        },
+      },
+    ]),
+  ).rejects.toThrow('Test cleanup failed');
 });

@@ -302,7 +302,34 @@ export function reviewStudioAccessKeys(
         for (const set of sets) {
           try {
             const grants = decode(set.grants) as Grant[];
-            const converted = convertStudioAccessGrants(grants);
+            const mapped = convertStudioAccessGrants(grants);
+            // Root and default sets are excluded from the actual upgrade write plan.
+            const excluded =
+              set.key === sources.rootSet || set.key === sources.defaultSet;
+            const converted = excluded ? grants : mapped;
+            if (
+              excluded &&
+              accountScope &&
+              JSON.stringify(grants) !== JSON.stringify(mapped)
+            )
+              differences.push(
+                'Unmigrated permission set ' +
+                  set.key +
+                  ': legacy account actions lose their replacement capabilities: ' +
+                  grants
+                    .filter(
+                      (grant) =>
+                        grant.resource.type === 'settings' &&
+                        grant.resource.id === 'pm.members',
+                    )
+                    .flatMap((grant) =>
+                      grant.actions.map((action) => action.action),
+                    )
+                    .filter((action) =>
+                      ['read', 'assign', 'define-roles'].includes(action),
+                    )
+                    .join(', '),
+              );
             if (grants.some((grant) => grant.resource.type === 'composite'))
               differences.push(
                 'Composite definitions are not frozen by this upgrade: ' +
@@ -341,6 +368,7 @@ export function reviewStudioAccessKeys(
                 'Service actors cannot use the new explicit Studio assignment entry',
               );
             if (
+              !excluded &&
               set.key.startsWith('api-key-') &&
               JSON.stringify(grants) !== JSON.stringify(converted)
             )

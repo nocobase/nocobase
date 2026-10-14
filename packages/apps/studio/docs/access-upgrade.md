@@ -45,6 +45,8 @@ The new server denies business writes during maintenance, while allowing authent
 
 Server checks resolve current grants on each request. Same-instance realtime invalidates client snapshots immediately. Studio also compares a fresh snapshot on focus and every 15 seconds while visible, so a client connected to another instance observes revocation without a shared realtime broker. This gives a bounded UI refresh delay; the server does not rely on that client refresh to deny requests. Polling adds at most four permission snapshot requests per minute per visible client, plus focus checks.
 
+The equivalence proof uses the actual write plan. The configured root and default permission sets remain unchanged. A key whose account capabilities rely on legacy actions in an excluded default set is reported as `review-required`, with the set key and legacy actions that lose their replacements. This includes a customized `member` and a custom `authorization.permissionSets.defaultSet`. A matching inventory hash cannot authorize the conversion, and the transaction leaves grants and the recovery journal unchanged. Resolving such a default-set policy needs separate authorization; do not rebuild or grant permissions to the default set to bypass this stop.
+
 ## Recovery and retention
 
 The application-owned `studioAccessUpgradeChanges` collection is not registered for ordinary CRUD. It contains only version/batch, affected role identity, before/after grants and hashes, and assignment/default-configuration verification hashes. It contains no account profiles, passwords, tokens or credential values. Only actually changed roles receive records. Repeated seeding does not rewrite roles or append records.

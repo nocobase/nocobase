@@ -15,7 +15,9 @@ import {
   type BrowserContext,
   type Page,
 } from '@playwright/test';
-import { rmSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+
+import path from 'node:path';
 
 import {
   ADMIN,
@@ -86,6 +88,36 @@ export const atHome =
  */
 const CONNECTION_HEADERS = { origin: server.origin, connection: 'close' };
 
+/** Persist only caller-selected diagnostic fields, so list-reporting CI can upload them. */
+export async function attachDiagnostic(name: string, data: unknown) {
+  const info = base.info();
+  const file = info.outputPath(`${name}.json`);
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(file, JSON.stringify(data, null, 2));
+  await info.attach(name, { path: file, contentType: 'application/json' });
+}
+
+interface RequestTiming {
+  method: string;
+  path: string;
+  elapsedMs: number;
+  status: number | null;
+}
+let timings: RequestTiming[] | undefined;
+const pendingTimings = new Map<RequestTiming, number>();
+const startTiming = (method: string, address: string) => {
+  const started = performance.now();
+  const row: RequestTiming = {
+    method,
+    path: new URL(address).pathname,
+    elapsedMs: 0,
+    status: null,
+  };
+  timings?.push(row);
+  if (timings) pendingTimings.set(row, started);
+  return { row, started };
+};
+
 export class Api {
   constructor(
     private readonly request: APIRequestContext,
@@ -97,29 +129,54 @@ export class Api {
     path: string,
     body?: unknown,
     headers: Record<string, string> = {},
+    timeout?: number,
   ): Promise<T> {
-    const response = await this.request.fetch(
-      `${this.target.baseURL}/api/${path}`,
-      {
-        method,
-        headers: {
-          ...CONNECTION_HEADERS,
-          origin: this.target.origin,
-          ...headers,
+    const address = `${this.target.baseURL}/api/${path}`;
+    const timing = timings ? startTiming(method, address) : undefined;
+    try {
+      const response = await this.request.fetch(
+        `${this.target.baseURL}/api/${path}`,
+        {
+          method,
+          ...(timeout === undefined ? {} : { timeout }),
+          headers: {
+            ...CONNECTION_HEADERS,
+            origin: this.target.origin,
+            ...headers,
+          },
+          ...(body === undefined ? {} : { data: body as object }),
         },
-        ...(body === undefined ? {} : { data: body as object }),
-      },
-    );
-    const text = await response.text();
-    if (!response.ok())
-      throw new Error(
-        `${method} /api/${path}: ${response.status()} ${text.slice(0, 500)}`,
       );
-    if (!text) return undefined as T;
-    const json = JSON.parse(text) as { data?: unknown };
-    return (
-      json && typeof json === 'object' && 'data' in json ? json.data : json
-    ) as T;
+      if (timing) timing.row.status = response.status();
+      const text = await response.text();
+      if (!response.ok())
+        throw new Error(
+          timing
+            ? `${method} ${timing.row.path}: ${response.status()}`
+            : `${method} /api/${path}: ${response.status()} ${text.slice(0, 500)}`,
+        );
+      if (!text) return undefined as T;
+      const json = JSON.parse(text) as { data?: unknown };
+      return (
+        json && typeof json === 'object' && 'data' in json ? json.data : json
+      ) as T;
+    } catch (error) {
+      let failure = error;
+      // Preserve the request exception while removing Playwright's credential-bearing call log.
+      if (timing) {
+        const message = `${method} ${timing.row.path}: request failed (status ${timing.row.status ?? 'unknown'})`;
+        if (error instanceof Error) {
+          error.message = message;
+          error.stack = `${error.name}: ${message}`;
+          error.cause = undefined;
+        } else failure = new Error(message);
+      }
+      throw failure;
+    } finally {
+      if (timing) pendingTimings.delete(timing.row);
+      if (timing)
+        timing.row.elapsedMs = Math.round(performance.now() - timing.started);
+    }
   }
 
   get<T = unknown>(path: string, headers?: Record<string, string>) {
@@ -138,16 +195,17 @@ export class Api {
     path: string,
     body: unknown,
     headers?: Record<string, string>,
+    timeout?: number,
   ) {
-    return this.send<T>('PATCH', path, body, headers);
+    return this.send<T>('PATCH', path, body, headers, timeout);
   }
 
   put<T = unknown>(path: string, body: unknown) {
     return this.send<T>('PUT', path, body);
   }
 
-  delete<T = unknown>(path: string) {
-    return this.send<T>('DELETE', path);
+  delete<T = unknown>(path: string, timeout?: number) {
+    return this.send<T>('DELETE', path, undefined, undefined, timeout);
   }
 }
 
@@ -207,6 +265,8 @@ export const unique = (): string =>
     .padStart(2, '0')}`;
 
 interface Fixtures {
+  requestDiagnostics: boolean;
+  requestEvidence: void;
   /** The demo account the test's `page` and `api` are signed in as. */
   user: DemoUser;
   api: Api;
@@ -240,6 +300,50 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
     { timeout: 180_000 },
   ],
   user: ['alex', { option: true }],
+  requestDiagnostics: [false, { option: true }],
+  requestEvidence: [
+    async ({ requestDiagnostics, context }, use) => {
+      if (!requestDiagnostics) {
+        await use();
+        return;
+      }
+      timings = [];
+      const active = new Map<
+        import('@playwright/test').Request,
+        ReturnType<typeof startTiming>
+      >();
+      context.on('request', (request) => {
+        if (new URL(request.url()).pathname.includes('/api/'))
+          active.set(request, startTiming(request.method(), request.url()));
+      });
+      context.on('response', (response) => {
+        const timing = active.get(response.request());
+        if (timing) timing.row.status = response.status();
+      });
+      const finish = (request: import('@playwright/test').Request) => {
+        const timing = active.get(request);
+        if (timing) {
+          timing.row.elapsedMs = Math.round(performance.now() - timing.started);
+          active.delete(request);
+          pendingTimings.delete(timing.row);
+        }
+      };
+      context.on('requestfinished', finish);
+      context.on('requestfailed', finish);
+      try {
+        await use();
+      } finally {
+        for (const timing of active.values())
+          timing.row.elapsedMs = Math.round(performance.now() - timing.started);
+        for (const [row, started] of pendingTimings)
+          row.elapsedMs = Math.round(performance.now() - started);
+        pendingTimings.clear();
+        await attachDiagnostic('request-timing', timings);
+        timings = undefined;
+      }
+    },
+    { auto: true },
+  ],
   context: async ({ context, user, studio }, use) => {
     await signIn(context, user, studio);
     await use(context);
