@@ -24,7 +24,6 @@ import { Clamped } from '../live/clamped.js';
 import { issueProgressKey, progressStatusLine } from './progress-text.js';
 import { IssueMarkdown } from '../markdown.js';
 import { useIssueProgress } from './use-issue-progress.js';
-import { PersonalRunnerActions } from './personal-runner-actions.js';
 
 export function IssueProgressLine({
   issue,
@@ -117,11 +116,6 @@ export function IssueProgressLine({
             <Skeleton className='h-4 w-48' />
           )}
         </div>
-        {data?.personalRunnerRequests
-          ?.filter((request) => request.canRunAsMe)
-          .map((request) => (
-            <PersonalRunnerActions key={request.id} request={request} />
-          ))}
         {data?.next?.trim() ? (
           // The manager's Next line as it wrote it: links and code rendered, two lines, the rest on request.
           <Clamped

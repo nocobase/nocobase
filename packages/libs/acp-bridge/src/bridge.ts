@@ -22,6 +22,7 @@ import {
   BRIDGE_PROTOCOL_VERSION,
   BRIDGE_ROUTES,
   coalesce,
+  DISCOVERY_TIMEOUT_MS,
   MAX_EVENTS_PER_REPORT,
   POLL_WAIT_MS,
   type AgentInfo,
@@ -86,7 +87,9 @@ const RESCAN_MS = 60_000;
 const MAX_BACKOFF_MS = 30_000;
 
 export async function runBridge(options: BridgeOptions): Promise<void> {
-  const { signal, log } = options;
+  const { log } = options;
+  const stopping = new AbortController();
+  const signal = AbortSignal.any([options.signal, stopping.signal]);
   const env = options.env ?? process.env;
   const roots = (options.roots ?? [os.homedir()]).map((root) =>
     path.resolve(root),
@@ -100,21 +103,10 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
 
   const agents = new Map<string, AgentInfo>();
   const found = new Map<string, ResolvedAgent | undefined>();
-  /**
-   * Looks for every agent again: undefined when nothing changed since the last look, else the agents found since,
-   * which have yet to be started once.
-   */
-  const scan = async (): Promise<AgentSpec[] | undefined> => {
-    const fresh: AgentSpec[] = [];
-    let changed = false;
+  const scan = async (): Promise<void> => {
     for (const spec of AGENTS) {
       const resolved = await resolveAgent(spec, env);
-      if (
-        agents.has(spec.id) &&
-        Boolean(resolved) === Boolean(found.get(spec.id))
-      )
-        continue;
-      changed = true;
+      if (signal.aborted) return;
       found.set(spec.id, resolved);
       agents.set(
         spec.id,
@@ -122,9 +114,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
           ? agentInfo(spec)
           : { ...agentInfo(spec), problem: 'notInstalled' },
       );
-      if (resolved) fresh.push(spec);
     }
-    return changed ? fresh : undefined;
   };
   const computer = (): ComputerInfo => ({
     name: options.name ?? os.hostname(),
@@ -140,6 +130,10 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
    * which gives it a new one.
    */
   const register = async (): Promise<string> => {
+    const registerSignal = AbortSignal.any([
+      signal,
+      AbortSignal.timeout(15_000),
+    ]);
     const request = (): RegisterRequest => ({
       protocol: BRIDGE_PROTOCOL_VERSION,
       computerId: state.computerId,
@@ -148,7 +142,11 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     });
     let answer: RegisterResponse;
     try {
-      answer = await post<RegisterResponse>(BRIDGE_ROUTES.register, request());
+      answer = await post<RegisterResponse>(
+        BRIDGE_ROUTES.register,
+        request(),
+        registerSignal,
+      );
     } catch (error) {
       if (post === asPerson || !keyRefused(error)) throw error;
       if (options.reconnect === false) throw removed();
@@ -156,7 +154,11 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
         "The application no longer accepts this computer's key; connecting it again as you.",
       );
       post = asPerson;
-      answer = await post<RegisterResponse>(BRIDGE_ROUTES.register, request());
+      answer = await post<RegisterResponse>(
+        BRIDGE_ROUTES.register,
+        request(),
+        registerSignal,
+      );
     }
     const saved = state;
     state = { computerId: answer.computerId, key: answer.key ?? state.key };
@@ -182,12 +184,6 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       }
     }
   };
-  /** Starts `specs` once each, and tells the application what the agents here are. */
-  const probe = async (specs: readonly AgentSpec[]): Promise<void> => {
-    for (const info of await probeAgents(specs, found, env, options.client))
-      agents.set(info.id, info);
-    await register();
-  };
 
   await scan();
   const computerId = await connect();
@@ -195,23 +191,104 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
   log(
     `This computer is connected to ${options.server} as "${computer().name}".`,
   );
-  const reprobe = (): void => {
-    void probe(AGENTS.filter((spec) => found.get(spec.id))).catch(
-      (error: unknown) => log(`Could not check the agents: ${message(error)}`),
-    );
-  };
-  reprobe();
-  // An agent installed while the bridge runs is offered within a minute.
-  const rescan = setInterval(() => {
-    void scan()
-      .then((fresh) => fresh && probe(fresh))
-      .catch((error: unknown) =>
-        log(`Could not check the agents: ${message(error)}`),
+  let probing: Promise<void> | undefined;
+  const refresh = (): void => {
+    if (probing || signal.aborted) return;
+    probing = (async () => {
+      await scan();
+      const infos = await probeAgents(
+        AGENTS,
+        found,
+        env,
+        options.client,
+        signal,
       );
-  }, RESCAN_MS);
+      if (signal.aborted) return;
+      for (const info of infos) agents.set(info.id, info);
+      await register();
+    })()
+      .catch((error: unknown) => {
+        if (!signal.aborted)
+          log(`Could not check the agents: ${message(error)}`);
+      })
+      .finally(() => {
+        probing = undefined;
+      });
+  };
+  refresh();
+  const rescan = setInterval(refresh, RESCAN_MS);
   rescan.unref();
 
   const sessions = new Map<string, BridgeSession>();
+  const discoveryShutdown = new AbortController();
+  const discoveries = new Set<Promise<void>>();
+  const resolve = async (agentId: string): Promise<ResolvedAgent> => {
+    const spec = AGENTS.find((candidate) => candidate.id === agentId);
+    if (!spec)
+      throw new Error(
+        `This version of ${options.client.name} cannot run the agent "${agentId}".`,
+      );
+    const resolved = found.get(agentId) ?? (await resolveAgent(spec, env));
+    if (!resolved)
+      throw new Error(`${spec.name} is not installed on this computer.`);
+    found.set(agentId, resolved);
+    return resolved;
+  };
+  const discover = async (
+    command: Extract<BridgeCommand, { type: 'discoverChoices' }>,
+  ): Promise<void> => {
+    const discoverySignal = AbortSignal.any([
+      signal,
+      discoveryShutdown.signal,
+      AbortSignal.timeout(DISCOVERY_TIMEOUT_MS),
+    ]);
+    const session = new BridgeSession(
+      {
+        id: command.requestId,
+        agentId: command.agentId,
+        cwd: command.cwd,
+        settings: command.settings,
+        acpSessionId: null,
+        tools: null,
+      },
+      {
+        client: options.client,
+        server: options.server,
+        env,
+        roots,
+        resolve,
+        emit: () => undefined,
+        stateChanged: () => undefined,
+        discoverySignal,
+      },
+    );
+    let reply: ReplyRequest;
+    try {
+      reply = {
+        computerId,
+        requestId: command.requestId,
+        listing: null,
+        discovery: await session.discover(),
+        error: null,
+      };
+    } catch (error) {
+      reply = {
+        computerId,
+        requestId: command.requestId,
+        listing: null,
+        error: (discoverySignal.aborted
+          ? 'Agent settings discovery was stopped or timed out. Retry settings.'
+          : message(error)
+        ).slice(0, 2000),
+      };
+    } finally {
+      await session.close();
+    }
+    if (!signal.aborted)
+      await post(BRIDGE_ROUTES.reply, reply).catch((error: unknown) =>
+        log(`Could not answer the application: ${message(error)}`),
+      );
+  };
   const reporter = new Reporter({
     send: (request) => post<ReportResponse>(BRIDGE_ROUTES.report, request),
     computerId,
@@ -247,6 +324,16 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     );
   };
   const dispatch = (command: BridgeCommand): void => {
+    if (command.type === 'discoverChoices') {
+      const pending = discover(command);
+      discoveries.add(pending);
+      void pending
+        .finally(() => discoveries.delete(pending))
+        .catch((error: unknown) =>
+          log(`Could not discover agent settings: ${message(error)}`),
+        );
+      return;
+    }
     if (command.type === 'close') {
       void closeSession(command.sessionId);
       return;
@@ -263,19 +350,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
         server: options.server,
         env,
         roots,
-        resolve: async (agentId) => {
-          const spec = AGENTS.find((candidate) => candidate.id === agentId);
-          if (!spec)
-            throw new Error(
-              `This version of ${options.client.name} cannot run the agent "${agentId}".`,
-            );
-          const resolved =
-            found.get(agentId) ?? (await resolveAgent(spec, env));
-          if (!resolved)
-            throw new Error(`${spec.name} is not installed on this computer.`);
-          found.set(agentId, resolved);
-          return resolved;
-        },
+        resolve,
         emit: (event) => reporter.add(sessionId, event),
         stateChanged: () => reporter.touch(sessionId),
       });
@@ -312,6 +387,10 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     }
   } finally {
     clearInterval(rescan);
+    stopping.abort();
+    await probing;
+    discoveryShutdown.abort();
+    await Promise.all(discoveries);
     await Promise.all([...sessions.keys()].map(closeSession));
     await reporter.drain();
   }
@@ -333,6 +412,7 @@ async function probeAgents(
   found: ReadonlyMap<string, ResolvedAgent | undefined>,
   env: NodeJS.ProcessEnv,
   client: { readonly name: string; readonly version: string },
+  signal: AbortSignal,
 ): Promise<AgentInfo[]> {
   return Promise.all(
     specs.map(async (spec): Promise<AgentInfo> => {
@@ -342,6 +422,8 @@ async function probeAgents(
       try {
         const agent = await AgentProcess.start(resolved, {
           cwd: os.tmpdir(),
+          signal,
+          initializeTimeoutMs: 30_000,
           env,
           client,
           handlers: {
@@ -353,11 +435,11 @@ async function probeAgents(
         const version = agent.initialize.agentInfo?.version ?? null;
         await agent.stop();
         return { ...info, version };
-      } catch (error) {
+      } catch {
         return {
           ...info,
           problem: 'failed',
-          detail: message(error).slice(0, 2000),
+          detail: 'Agent initialization failed or timed out.',
         };
       }
     }),

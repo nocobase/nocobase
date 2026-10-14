@@ -39,62 +39,6 @@ const entry = (
   >;
 
 describe('the shared Needs you text and coverage', () => {
-  it('shares personal runner text and hides only the same request from the issue body', () => {
-    const pending = progress({
-      personalRunnerRequests: [
-        {
-          id: 'request-1',
-          status: 'pending',
-          requestedBy: { id: 'bob', name: 'Bob' },
-          commentId: 'comment-1',
-          commentText: 'Please continue.',
-          canDecide: true,
-          canRunAsMe: false,
-        },
-      ],
-    });
-    expect(askOf(t, issue('in_progress', pending), null)).toBe(
-      'issueLive.personalRunner.request{"name":"Bob"}',
-    );
-    const notice = (id: string) =>
-      ({
-        notice: {
-          source: 'runners',
-          type: 'personal_runner_consent',
-          data: { requestId: id },
-        },
-      }) as Pick<InboxEntry, 'notice'>;
-    expect(
-      coveredBySummary(notice('request-1'), {
-        accepting: false,
-        handoff: false,
-        personalRequestIds: ['request-1'],
-      }),
-    ).toBe(true);
-    expect(
-      coveredBySummary(notice('other'), {
-        accepting: false,
-        handoff: false,
-        personalRequestIds: ['request-1'],
-      }),
-    ).toBe(false);
-    const requester = progress({
-      personalRunnerRequests: [
-        {
-          ...pending.personalRunnerRequests![0],
-          canDecide: false,
-          canRunAsMe: true,
-        },
-      ],
-    });
-    expect(
-      nowLine(
-        t,
-        { owned: false, statusKey: 'in_progress', progress: requester },
-        null,
-      ),
-    ).toEqual({ text: 'issueLive.personalRunner.waiting', needsViewer: false });
-  });
   it('PM-297 continues the comment limit instead of asking a question', () => {
     expect(
       askOf(

@@ -18,6 +18,7 @@ import { allowedDir } from './folders.js';
 import type { ResolvedAgent } from './agents.js';
 import {
   MAX_EVENT_TEXT,
+  type DiscoveredChoices,
   type BridgeCommand,
   type BridgeEvent,
   type PromptContent,
@@ -38,6 +39,8 @@ export interface SessionContext {
   readonly resolve: (agentId: string) => Promise<ResolvedAgent>;
   readonly emit: (event: BridgeEvent) => void;
   readonly stateChanged: () => void;
+  /** Discovery cannot grant tool permissions and is bounded by the bridge's shutdown/timeout signal. */
+  readonly discoverySignal?: AbortSignal | undefined;
 }
 
 /** How long a permission request waits for a person before it is declined. */
@@ -58,6 +61,7 @@ export class BridgeSession {
   #process: AgentProcess | undefined;
   #opening: Promise<AgentProcess> | undefined;
   #replaying = false;
+  #initialized = false;
   #closed = false;
   #choices: SessionChoice[] = [];
   /** The agent offers session modes and no configuration options: the `mode` choice is set with `session/set_mode`. */
@@ -67,6 +71,7 @@ export class BridgeSession {
   #commands: SessionState['commands'] = [];
   #title: string | null = null;
   #usage: SessionState['context'] = null;
+  #configurationSupported = false;
   readonly #queue: {
     readonly promptId: string;
     readonly content: readonly PromptContent[];
@@ -85,9 +90,19 @@ export class BridgeSession {
     this.#context = context;
   }
 
-  /** Null until the agent's session is open. */
+  /** Opens an isolated ACP session without a prompt; the caller always closes this disposable session. */
+  async discover(): Promise<DiscoveredChoices> {
+    await this.#open();
+    return {
+      status: this.#configurationSupported ? 'available' : 'unsupported',
+      choices: this.#choices,
+    };
+  }
+
+  /** Null until the agent's session is open and its explicit settings have been validated. */
   get state(): SessionState | null {
-    if (!this.#acpSessionId || !this.#process) return null;
+    if (!this.#initialized || !this.#acpSessionId || !this.#process)
+      return null;
     return {
       acpSessionId: this.#acpSessionId,
       agent: this.#process.description,
@@ -159,6 +174,12 @@ export class BridgeSession {
       }
     } catch (cause) {
       error = this.#explain(cause);
+      if (isAuthRequired(cause)) {
+        // A process may retain the login state it read at start. Continue this session in a fresh process next time.
+        const failed = this.#process;
+        this.#process = undefined;
+        await failed?.stop();
+      }
     } finally {
       this.#resolvePermissions('cancelled');
       this.#turn = undefined;
@@ -219,7 +240,7 @@ export class BridgeSession {
   }
 
   #open(): Promise<AgentProcess> {
-    if (this.#process?.alive && this.#acpSessionId)
+    if (this.#initialized && this.#process?.alive && this.#acpSessionId)
       return Promise.resolve(this.#process);
     this.#opening ??= this.#start().finally(() => {
       this.#opening = undefined;
@@ -228,6 +249,7 @@ export class BridgeSession {
   }
 
   async #start(): Promise<AgentProcess> {
+    this.#initialized = false;
     await this.#process?.stop();
     this.#process = undefined;
     const target = this.#target;
@@ -241,6 +263,7 @@ export class BridgeSession {
         update: (notification) => this.#update(notification),
         permission: (request, signal) => this.#permission(request, signal),
       },
+      signal: this.#context.discoverySignal,
     });
     try {
       const mcpServers: acp.McpServer[] =
@@ -272,16 +295,26 @@ export class BridgeSession {
         opened = created;
       }
       this.#process = agent;
+      this.#configurationSupported =
+        opened.configOptions != null || opened.modes != null;
       this.#readChoices(opened.configOptions, opened.modes);
       this.#allowAll = resolved.spec.allowAll === true;
-      await this.#applySettings(agent, resolved.spec.modes ?? []);
+      await this.#applySettings(
+        agent,
+        resolved.spec.modes ?? [],
+        target.settings,
+      );
+      this.#initialized = true;
       this.#context.stateChanged();
       return agent;
     } catch (cause) {
       await agent.stop();
+      this.#process = undefined;
+      // A failed opening must retry initialization and explicit settings before any later prompt.
+      this.#acpSessionId = target.acpSessionId;
       if (isAuthRequired(cause)) {
         throw new Error(
-          `${resolved.spec.name} is not signed in on this computer. Run \`${resolved.spec.signIn}\` in a terminal there and sign in, then send the message again.`,
+          `${resolved.spec.name} is not signed in on this computer. Run \`${resolved.spec.signIn}\` in a terminal there and sign in, then ${this.#context.discoverySignal ? 'retry settings' : 'send the message again'}.`,
           { cause },
         );
       }
@@ -380,6 +413,7 @@ export class BridgeSession {
   async #applySettings(
     agent: AgentProcess,
     fullAccess: readonly string[],
+    settings: Readonly<Record<string, string>>,
   ): Promise<void> {
     const mode = this.#choices.find((choice) => choice.category === 'mode');
     const defaultMode = fullAccess.find((value) =>
@@ -387,17 +421,31 @@ export class BridgeSession {
     );
     const wanted: Record<string, string> = {
       ...(mode && defaultMode ? { [mode.id]: defaultMode } : {}),
-      ...this.#target.settings,
+      ...settings,
     };
-    for (const [id, value] of Object.entries(wanted)) {
+    const modelId = this.#choices.find(
+      (choice) => choice.category === 'model',
+    )?.id;
+    const ordered = Object.entries(wanted).sort(
+      ([a], [b]) => Number(b === modelId) - Number(a === modelId),
+    );
+    for (const [id, value] of ordered) {
       const choice = this.#choices.find((candidate) => candidate.id === id);
-      if (
-        choice &&
-        choice.currentValue !== value &&
-        choice.options.some((option) => option.value === value)
-      ) {
+      if (!choice?.options.some((option) => option.value === value))
+        throw new Error(
+          `The agent no longer supports setting "${id}" to "${value}". Choose settings again before sending.`,
+        );
+      if (choice.currentValue !== value) {
         await this.#set(agent, choice, value);
       }
+    }
+    for (const [id, value] of Object.entries(wanted)) {
+      if (
+        this.#choices.find((choice) => choice.id === id)?.currentValue !== value
+      )
+        throw new Error(
+          `The agent did not apply setting "${id}" to "${value}". Choose settings again before sending.`,
+        );
     }
   }
 
@@ -490,6 +538,8 @@ export class BridgeSession {
     request: acp.RequestPermissionRequest,
     signal: AbortSignal,
   ): Promise<acp.RequestPermissionResponse> {
+    if (this.#context.discoverySignal)
+      return { outcome: { outcome: 'cancelled' } };
     if (this.#allowAll) {
       const allow =
         request.options.find((option) => option.kind === 'allow_always') ??

@@ -55,13 +55,11 @@ import { useIssuePreviews } from '../../previews/use-issue-previews.js';
 import { progressSentence } from '../detail/progress-text.js';
 import { useIssueProgress } from '../detail/use-issue-progress.js';
 import { IssueMarkdown } from '../markdown.js';
-import { Clamped } from './clamped.js';
 import { useOptionalIssueConversation } from './conversation-state.js';
 import { StatusPill } from './status.js';
 import { askOf } from './summary-model.js';
 import { IssueCommentRunLimit } from '../detail/comment-run-limit.js';
 import { useOutOfView } from './use-out-of-view.js';
-import { PersonalRunnerActions } from '../detail/personal-runner-actions.js';
 
 /** Renaming the issue from its title, with the words for the pencil and the input. */
 export interface SummaryRename {
@@ -446,7 +444,7 @@ function NeedsYou({
 
 /**
  * What waits for the viewer, as one card: the structured owner request with review or reply controls,
- * an owner handoff to take over, or a personal runner decision. Without any, the
+ * an owner handoff to take over, or a continuation decision. Without any, the
  * `fallback` (the pull request's line).
  */
 function NeedsYouCard({
@@ -499,52 +497,12 @@ function NeedsYouCard({
         <OwnerHandoffActions issueId={issue.id} />
       </section>
     );
-  const consent =
-    progress?.personalRunnerRequests?.filter((request) => request.canDecide) ??
-    [];
-  if (consent.length && !ownerStatus)
-    return (
-      <section aria-label={t('issueLive.summary.needsYou')} className={frame}>
-        {consent.map((request, index) => (
-          <div
-            key={request.id}
-            className='flex flex-col gap-2'
-            data-request-id={request.id}
-          >
-            {index === 0 ? (
-              heading(
-                t('issueLive.personalRunner.request', {
-                  name: request.requestedBy.name,
-                }),
-              )
-            ) : (
-              <IssueMarkdown
-                content={t('issueLive.personalRunner.request', {
-                  name: request.requestedBy.name,
-                })}
-              />
-            )}
-            <Clamped>
-              <IssueMarkdown
-                content={request.commentText}
-                className='text-sm'
-              />
-            </Clamped>
-            <PersonalRunnerActions request={request} />
-          </div>
-        ))}
-      </section>
-    );
   const ownerActions =
-    ownerStatus &&
-    (handoffWaitsOn(handoff) || consent.length > 0 || pending) ? (
+    ownerStatus && (handoffWaitsOn(handoff) || pending) ? (
       <div className='flex flex-wrap items-center gap-2'>
         {handoffWaitsOn(handoff) ? (
           <OwnerHandoffActions issueId={issue.id} />
         ) : null}
-        {consent.map((request) => (
-          <PersonalRunnerActions key={request.id} request={request} />
-        ))}
         {pending ? <IssueCommentRunLimit issue={issue} actionsOnly /> : null}
       </div>
     ) : null;

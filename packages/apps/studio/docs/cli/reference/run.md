@@ -158,7 +158,7 @@ nb-studio run list --agent <agent>
 
 Confirm a run request
 
-Runs the work as the request's responsible, who must still be able to wake the agent. Personal runner requests release the existing comment chain instead of creating another run. When the subject binds a current responsible resolver, it is rechecked; otherwise the application must reassign requests when responsibility changes. Administrators and agent managers cannot confirm for them. The original input joins only a run acting as the caller.
+Runs the work as the request's responsible, who must still be able to wake the agent. When the subject binds a current responsible resolver, it is rechecked; otherwise the application must reassign requests when responsibility changes. Administrators and agent managers cannot confirm for them. The original input joins only a run acting as the caller.
 
 ```bash
 nb-studio run request confirm <request>
@@ -235,7 +235,7 @@ nb-studio run request list --role requester
 
 Reject a run request
 
-Declines the work; only the request's responsible may. A personal runner rejection cancels unfinished work of that comment chain and the original requester may still use Run as me. The subject's current responsible resolver is rechecked when bound; otherwise the application must reassign requests on responsibility changes.
+Declines the work; only the request's responsible may. The subject's current responsible resolver is rechecked when bound; otherwise the application must reassign requests on responsibility changes. The person who asked may run it as themselves by asking again.
 
 ```bash
 nb-studio run request reject <request>
@@ -259,7 +259,7 @@ nb-studio run request reject <request>
 
 Run a run request as the caller
 
-The person who asked runs the work as themselves now, without waiting for confirmation: on their own runner or a team runner, never on the runners of the person who answers for the subject. A pending request is withdrawn; an expired one that went nowhere may be run this way once. Rejected personal runner requests also allow one execution as the original requester, preserving the rejection. Refused with `NO_RUNNER_AVAILABLE` when no runner the caller may use can run the agent now, so the work never waits unseen.
+The person who asked runs the work as themselves now, without waiting for confirmation: on their own runner or a team runner, never on the runners of the person who answers for the subject. A pending request is withdrawn; an expired one that went nowhere may be run this way once. Refused with `NO_RUNNER_AVAILABLE` when no runner the caller may use can run the agent now, so the work never waits unseen.
 
 ```bash
 nb-studio run request run-as-me <request>

@@ -69,11 +69,11 @@ test('structured owner request, latest explanation, matching follow-ups and live
     fallbackAgentId: string | null;
     commentRunLimit: number;
   }>('projectManager');
+  const managerWorking = `${settings.name} working`;
   const runner = new FakeRunner(api, `needs-you-${unique()}`, true);
   const agent = await runner.agent();
   await api.patch('users/me/preferences', { locale: 'en-US' });
   await api.patch('projectManager', {
-    name: 'Project manager',
     firstChoiceAgentId: agent,
     fallbackAgentId: null,
   });
@@ -278,17 +278,17 @@ test('structured owner request, latest explanation, matching follow-ups and live
       fullPage: true,
     });
     const resumedRun = await runner.start(issue.identifier);
-    await expect(rail).toContainText('Project manager working', {
+    await expect(rail).toContainText(managerWorking, {
       timeout: 8000,
     });
     await expect(panel.getByTestId('issue-summary')).toContainText(
-      'Project manager working',
+      managerWorking,
       { timeout: 3000 },
     );
-    await expect(ownedRow).toContainText('Project manager working', {
+    await expect(ownedRow).toContainText(managerWorking, {
       timeout: 3000,
     });
-    await expect(standaloneSummary).toContainText('Project manager working', {
+    await expect(standaloneSummary).toContainText(managerWorking, {
       timeout: 3000,
     });
     await expect(
@@ -298,20 +298,19 @@ test('structured owner request, latest explanation, matching follow-ups and live
     ).toBeVisible();
     await shot('running-follow-ups-fixed');
     await runner.complete(resumedRun.runId, 'The execution disk is ready.');
-    await expect(rail).not.toContainText('Project manager working', {
+    await expect(rail).not.toContainText(managerWorking, {
       timeout: 8000,
     });
     await expect(panel.getByTestId('issue-summary')).not.toContainText(
-      'Project manager working',
+      managerWorking,
       { timeout: 3000 },
     );
-    await expect(ownedRow).not.toContainText('Project manager working', {
+    await expect(ownedRow).not.toContainText(managerWorking, {
       timeout: 3000,
     });
-    await expect(standaloneSummary).not.toContainText(
-      'Project manager working',
-      { timeout: 3000 },
-    );
+    await expect(standaloneSummary).not.toContainText(managerWorking, {
+      timeout: 3000,
+    });
     await standalone.close();
     await open(page, `/issues/${issue.identifier}`);
     await expect(page.getByTestId('issue-needs-you')).toHaveCount(0);
@@ -382,25 +381,17 @@ test('structured owner request, latest explanation, matching follow-ups and live
       'First implementation report.',
       codingHeaders,
     );
-    // A new comment has its own authorization chain instead of being injected into the earlier running manager.
-    const earlier = await api.get<{ inputs: { text: string }[] }>(
-      `agents/runs/${limited.running.runId}`,
+    await runner.complete(
+      limited.running.runId,
+      'Received the first implementation report.',
     );
-    expect(
-      earlier.inputs.some(
-        (input) => input.text === 'First implementation report.',
-      ),
-    ).toBe(false);
-    await runner.complete(limited.running.runId, 'Done.');
-    const reportRun = await runner.start(limited.issue.identifier);
     await comment(
       api,
       limited.issue,
       'Second implementation report.',
       codingHeaders,
     );
-    await coder.complete(coding.runId, 'Done.');
-    await runner.complete(reportRun.runId, 'Done.');
+    await coder.complete(coding.runId, 'Posted both implementation reports.');
     await expect
       .poll(() => api.get(`issueCommentRuns/${limited.issue.id}`))
       .not.toBeNull();
@@ -459,7 +450,6 @@ test('structured owner request, latest explanation, matching follow-ups and live
     }
   } finally {
     await api.patch('projectManager', {
-      name: settings.name,
       firstChoiceAgentId: settings.firstChoiceAgentId,
       fallbackAgentId: settings.fallbackAgentId,
       commentRunLimit: settings.commentRunLimit,

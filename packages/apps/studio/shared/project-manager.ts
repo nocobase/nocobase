@@ -91,8 +91,6 @@ export type IssueProgressState =
   | 'idle';
 
 export interface IssueProgress {
-  /** Current requests visible to the owner or original commenter, served by the existing progress API. */
-  readonly personalRunnerRequests?: readonly PersonalRunnerRequest[];
   readonly managerWait?: {
     readonly queueEnteredAt: string;
     readonly fallbackAfterSeconds: number;
@@ -141,14 +139,4 @@ export interface IssueProgress {
   readonly explanationCommentId: string | null;
   readonly next: string | null;
   readonly handOver: boolean;
-}
-
-export interface PersonalRunnerRequest {
-  readonly id: string;
-  readonly status: 'pending' | 'rejected';
-  readonly requestedBy: { readonly id: string; readonly name: string };
-  readonly commentId: string;
-  readonly commentText: string;
-  readonly canDecide: boolean;
-  readonly canRunAsMe: boolean;
 }

@@ -43,23 +43,6 @@ export const ProjectManagerViewSchema: z.ZodType<ProjectManagerView> = z
 
 export const IssueProgressSchema: z.ZodType<IssueProgress> = z
   .object({
-    personalRunnerRequests: z
-      .array(
-        z.object({
-          id: z.string(),
-          status: z.enum(['pending', 'rejected']),
-          requestedBy: z.object({ id: z.string(), name: z.string() }),
-          commentId: z.string(),
-          commentText: z.string(),
-          canDecide: z.boolean(),
-          canRunAsMe: z.boolean(),
-        }),
-      )
-      .optional()
-      .meta({
-        description:
-          'Personal runner consent requests visible to the issue owner or their original requester.',
-      }),
     waiting: z
       .object({
         reason: z.enum([

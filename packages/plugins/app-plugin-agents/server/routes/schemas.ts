@@ -919,11 +919,6 @@ const runObject = z.object({
     description:
       'The person the run acts as: their permissions bound it, and only their runners (or team runners) take it.',
   }),
-  commentRootRunId: z.string().nullable().optional().meta({
-    description: 'Root of this comment run chain; null for independent events.',
-  }),
-  commentExecution: z.enum(['owner', 'requester']).nullable().optional(),
-  commentOwnerKey: z.string().nullable().optional(),
   requestedByUserId: z.string().meta({
     description:
       'Who the chain of work the run belongs to started with; the actor when they started it themselves.',
@@ -953,10 +948,6 @@ const runObject = z.object({
 export const RunSchema: z.ZodType<Run> = runObject.meta({ ref: 'AgentsRun' });
 
 export const RunDetailSchema: z.ZodType<RunDetail> = runObject.extend({
-  confirmedByName: z.string().optional().meta({
-    description:
-      'The person who confirmed personal runner access for this comment chain.',
-  }),
   actorName: z
     .string()
     .optional()
@@ -1673,13 +1664,6 @@ export const RunRequestRejectInput: z.ZodType<{ note?: string | undefined }> =
   });
 
 const runRequestObject = z.object({
-  purpose: z.literal('personalRunner').nullable().optional().meta({
-    description:
-      'Personal runner consent releases existing comment work rather than creating a second run.',
-  }),
-  commentRootRunId: z.string().nullable().optional(),
-  commentRunId: z.string().nullable().optional(),
-  commentOwnerKey: z.string().nullable().optional(),
   freshSession: z.boolean().optional(),
   id: z.string(),
   agentId: z.string(),

@@ -5,7 +5,7 @@ const ORDER: readonly string[] = ['model', 'thought_level', 'model_config'];
 /** The categories the composer's bar shows, each by its icon; the agent's other choices wait in its "more" menu. */
 const ON_BAR: readonly string[] = [...ORDER, 'mode'];
 
-/** The choices worth a menu, as the composer lists them: model and reasoning first, the mode last. */
+/** The choices the composer displays, including fixed values: model and reasoning first, the mode last. */
 export function offeredChoices(
   choices: readonly SessionChoice[] = [],
 ): SessionChoice[] {
@@ -15,7 +15,7 @@ export function offeredChoices(
     return index === -1 ? ORDER.length : index;
   };
   return choices
-    .filter((choice) => choice.options.length > 1)
+    .filter((choice) => choice.options.length > 0)
     .sort((a, b) => rank(a) - rank(b));
 }
 

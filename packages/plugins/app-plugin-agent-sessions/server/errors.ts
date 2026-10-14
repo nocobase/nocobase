@@ -35,6 +35,7 @@ const STATUS: Readonly<Record<AgentSessionsErrorKey, ApiErrorStatus>> = {
   upgradeRequired: 'FAILED_PRECONDITION',
   computerNotAnswering: 'DEADLINE_EXCEEDED',
   folderUnavailable: 'FAILED_PRECONDITION',
+  discoveryFailed: 'FAILED_PRECONDITION',
   projectNotFound: 'INVALID_ARGUMENT',
   referenceNotFound: 'INVALID_ARGUMENT',
   computerKeyInvalid: 'UNAUTHENTICATED',
@@ -46,11 +47,13 @@ export class AgentSessionsError extends Error {
   override readonly name: string = 'AgentSessionsError';
   readonly key: AgentSessionsErrorKey;
   readonly field: string | undefined;
+  readonly detail: string | undefined;
 
-  constructor(key: AgentSessionsErrorKey, field?: string) {
-    super(enUS.errors[key]);
+  constructor(key: AgentSessionsErrorKey, field?: string, detail?: string) {
+    super(detail ? `${enUS.errors[key]} ${detail}` : enUS.errors[key]);
     this.key = key;
     this.field = field;
+    this.detail = detail;
   }
 }
 
@@ -108,7 +111,12 @@ function toApiError(error: AgentSessionsError, context: Context): ApiError {
     domain: AGENT_SESSIONS_DOMAIN,
     message: error.message,
     ...(locale && localized
-      ? { localizedMessage: { locale, message: localized } }
+      ? {
+          localizedMessage: {
+            locale,
+            message: error.detail ? `${localized} ${error.detail}` : localized,
+          },
+        }
       : {}),
     ...(error.field
       ? {
