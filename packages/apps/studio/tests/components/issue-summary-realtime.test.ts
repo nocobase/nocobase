@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { PM_REALTIME_TOPIC } from '@nocobase/app-plugin-projects/shared/realtime';
 import { subscribeIssueRefresh } from '../../client/issues/live/realtime-refresh.js';
 import { STUDIO_INBOX_TOPIC } from '../../shared/inbox.js';
+import { STUDIO_ISSUE_RUNS_TOPIC } from '../../shared/issue-runs.js';
 import { createElement } from 'react';
 import { Refine } from '@refinedev/core';
 import {
@@ -152,7 +153,10 @@ describe('live issue summaries', () => {
       },
     };
     const invalidateQueries = vi.fn().mockResolvedValue(undefined);
-    const stop = subscribeIssueRefresh(realtime, { invalidateQueries });
+    const stop = subscribeIssueRefresh(realtime, {
+      invalidateQueries,
+      getQueryCache: () => new QueryClient().getQueryCache(),
+    });
     const emit = (topic: string, payload: unknown) =>
       listeners.get(topic)?.({
         type: 'event',
@@ -178,5 +182,89 @@ describe('live issue summaries', () => {
     expect(invalidateQueries).toHaveBeenCalledTimes(18);
     stop();
     for (const unsubscribe of stops) expect(unsubscribe).toHaveBeenCalledOnce();
+  });
+  it('refreshes only what is shown of the issues an announcement names', async () => {
+    const client = new QueryClient();
+    const listeners = new Map<string, RealtimeListener<unknown>>();
+    const stop = subscribeIssueRefresh(
+      {
+        onOpen: () => () => {},
+        subscribe: (topic, listener) => {
+          listeners.set(topic, listener as RealtimeListener<unknown>);
+          return () => listeners.delete(topic);
+        },
+      },
+      client,
+    );
+    const reads = new Map<string, number>();
+    const observe = (queryKey: readonly unknown[], data: unknown) => {
+      const name = JSON.stringify(queryKey);
+      const observer = new QueryObserver(client, {
+        queryKey,
+        queryFn: async () => {
+          reads.set(name, (reads.get(name) ?? 0) + 1);
+          return data;
+        },
+        staleTime: Infinity,
+        retry: false,
+      });
+      return observer.subscribe(() => {});
+    };
+    const emit = (issueIds: readonly string[]) =>
+      listeners.get(PM_REALTIME_TOPIC)?.({
+        type: 'event',
+        topic: PM_REALTIME_TOPIC,
+        payload: { kind: 'pm.changed', domain: 'issues', issueIds },
+        publishedAt: '2026-10-14T12:00:00Z',
+      });
+    const stops = [
+      // The issue page opened by its key, and its threads.
+      observe(pmKeys.issue('PM-331'), { id: 'issue-331' }),
+      observe([...pmKeys.issue('PM-331'), 'threads'], {}),
+      observe(['studio', 'issueProgress', 'issue-331', 'r1'], {}),
+      observe(['studio', 'ownerHandoff', 'issue-331'], {}),
+      observe(pmKeys.issue('PM-9'), { id: 'issue-9' }),
+      observe(['studio', 'issueProgress', 'issue-9', 'r1'], {}),
+      observe(['pm', 'issues', 'followUps'], {
+        following: [],
+        issues: [{ id: 'issue-331' }],
+      }),
+    ];
+    const count = (key: readonly unknown[]) =>
+      reads.get(JSON.stringify(key)) ?? 0;
+    try {
+      await waitFor(() => expect(reads.size).toBe(7));
+      emit(['issue-331']);
+      await waitFor(() => {
+        expect(count(pmKeys.issue('PM-331'))).toBe(2);
+        expect(count([...pmKeys.issue('PM-331'), 'threads'])).toBe(2);
+        expect(count(['studio', 'issueProgress', 'issue-331', 'r1'])).toBe(2);
+        expect(count(['studio', 'ownerHandoff', 'issue-331'])).toBe(2);
+        expect(count(['pm', 'issues', 'followUps'])).toBe(2);
+      });
+      // An issue nothing here shows refreshes nothing.
+      emit(['issue-elsewhere']);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(count(pmKeys.issue('PM-9'))).toBe(1);
+      expect(count(['studio', 'issueProgress', 'issue-9', 'r1'])).toBe(1);
+      expect(count(['pm', 'issues', 'followUps'])).toBe(2);
+      expect(count(pmKeys.issue('PM-331'))).toBe(2);
+      // A run on an issue refreshes what depends on its runs, not the issue itself.
+      listeners.get(STUDIO_ISSUE_RUNS_TOPIC)?.({
+        type: 'event',
+        topic: STUDIO_ISSUE_RUNS_TOPIC,
+        payload: { kind: 'studio.issue.runs', issueIds: ['issue-9'] },
+        publishedAt: '2026-10-14T12:00:00Z',
+      });
+      await waitFor(() =>
+        expect(count(['studio', 'issueProgress', 'issue-9', 'r1'])).toBe(2),
+      );
+      expect(count(pmKeys.issue('PM-9'))).toBe(1);
+      expect(count(['pm', 'issues', 'followUps'])).toBe(2);
+    } finally {
+      stop();
+      for (const unsubscribe of stops) unsubscribe();
+      client.clear();
+    }
   });
 });

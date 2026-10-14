@@ -41,6 +41,7 @@ import {
   type PullRequestMergePreflight,
   type UpdateGitRepoRequest,
 } from '../../shared/git.js';
+import { issueProgressKey } from '../issues/detail/progress-text.js';
 import { previewKeys } from '../previews/api.js';
 
 export const gitKeys = {
@@ -478,8 +479,8 @@ export function useGitApi(): GitApi {
 
 /**
  * Follows `STUDIO_GIT_TOPIC` while mounted: when the server stores something new about a pull request (a webhook
- * delivery, a poll, a merge), the pull requests and the issue's preview labels are read again at once. An open merge
- * confirmation keeps its own read of GitHub.
+ * delivery, a poll, a merge), the pull requests, the issue's preview labels and what the issue waits for are read
+ * again at once. An open merge confirmation keeps its own read of GitHub.
  */
 export function useGitRealtime(issueId?: string): void {
   const realtime = useService(realtimeClientToken);
@@ -491,10 +492,15 @@ export function useGitRealtime(issueId?: string): void {
           queryKey: gitKeys.all,
           predicate: (query) => query.queryKey[2] !== 'preflight',
         });
-        if (issueId)
+        if (issueId) {
           void queryClient.invalidateQueries({
             queryKey: previewKeys.issue(issueId),
           });
+          // What the issue waits for follows its pull requests' checks.
+          void queryClient.invalidateQueries({
+            queryKey: issueProgressKey(issueId),
+          });
+        }
       }),
     [realtime, queryClient, issueId],
   );

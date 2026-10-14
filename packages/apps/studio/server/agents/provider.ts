@@ -13,6 +13,11 @@ import {
   type DefinedRealtimeTopic,
 } from '@nocobase/app-server/realtime';
 import { PROJECT_MANAGER_IDENTITY_TOPIC } from '../../shared/project-manager.js';
+import {
+  STUDIO_ISSUE_RUNS_TOPIC,
+  type StudioIssueRunsEvent,
+} from '../../shared/issue-runs.js';
+import { announceIssueRuns } from './issue-runs-announcer.js';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import {
   projectsAccessToken,
@@ -459,7 +464,34 @@ export default class StudioAgentsProvider extends ServiceProvider<Application> {
         this.app.config.get<unknown>('studio.agents.queuedExpiryHours'),
       ),
     });
-    this.release = () => disconnect?.();
+    // Issue pages learn of runs on their issue from this, rather than by polling for them.
+    let stopAnnouncing: (() => void) | undefined;
+    if (
+      container.has(realtimeServiceToken) &&
+      container.has(databaseManagerToken)
+    ) {
+      const topic = container
+        .resolve(realtimeServiceToken)
+        .defineTopic<StudioIssueRunsEvent, 'public'>(STUDIO_ISSUE_RUNS_TOPIC, {
+          audience: 'public',
+        });
+      const database = container.resolve(databaseManagerToken);
+      const stop = announceIssueRuns({
+        events: agents.events,
+        conn: () => database.connection(),
+        publish: (event) => topic.publish(event),
+        onError: (error) =>
+          console.error('Studio could not announce issue runs.', error),
+      });
+      stopAnnouncing = () => {
+        stop();
+        topic.close();
+      };
+    }
+    this.release = () => {
+      stopAnnouncing?.();
+      disconnect?.();
+    };
     return Promise.resolve();
   }
 

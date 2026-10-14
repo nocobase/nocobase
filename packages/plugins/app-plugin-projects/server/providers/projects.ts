@@ -9,10 +9,10 @@ import { ServiceProvider } from '@nocobase/service-provider';
 
 import {
   PM_REALTIME_TOPIC,
-  type PmChangeDomain,
   type PmChangeEvent,
 } from '../../shared/realtime.js';
 import { createProjects } from '../composition.js';
+import { createChangeAnnouncer } from './change-announcer.js';
 import { createAttachmentStorage } from '../domains/attachments/index.js';
 import { createStatusEventTypes } from '../domains/statuses/index.js';
 import { createKindRegistry } from '../kernel/kinds.js';
@@ -32,13 +32,6 @@ import { createVisibilityFilter, startNotifications } from './notifications.js';
 
 const PURGE_DELAY_MS = 60_000;
 const PURGE_INTERVAL_MS = 60 * 60_000;
-
-/** The kind of data an event changed, as the browser refreshes it. */
-function domainOf(type: string): PmChangeDomain {
-  if (type.startsWith('label.')) return 'labels';
-  if (type.startsWith('plan.') || type.startsWith('intake.')) return 'plans';
-  return 'issues';
-}
 
 /**
  * Binds the plugin's services; they are created on first use. At boot, unused files start to be purged every hour,
@@ -126,12 +119,16 @@ export class ProjectsProvider extends ServiceProvider<AppPluginApplication> {
         .defineTopic<PmChangeEvent, 'public'>(PM_REALTIME_TOPIC, {
           audience: 'public',
         });
+      const announcer = createChangeAnnouncer((change) =>
+        topic.publish(change),
+      );
       this.releases.push(
         events.onAny((event) => {
           // Planned notices are delivered, not shown.
           if (event.type.startsWith('notice.')) return;
-          topic.publish({ kind: 'pm.changed', domain: domainOf(event.type) });
+          announcer.add(event);
         }),
+        () => announcer.close(),
         () => topic.close(),
       );
     }

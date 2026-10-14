@@ -5,8 +5,11 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import type { IssueProgress } from '../../../shared/project-manager.js';
 import { issueProgressKey } from './progress-text.js';
 
-/** Refetches on its own too: a pull request's checks change with no issue change. */
-const PROGRESS_POLL_MS = 15_000;
+/**
+ * Refetches on its own too, as a fallback: changes to the issue, its runs and its pull requests are announced and read
+ * again at once (`issues/live/realtime-refresh.ts`, `git/api.ts`).
+ */
+const PROGRESS_POLL_MS = 60_000;
 
 /** What the issue waits for, read again whenever `refresh` changes; `fallback` shows until the first answer. */
 export function useIssueProgress(
