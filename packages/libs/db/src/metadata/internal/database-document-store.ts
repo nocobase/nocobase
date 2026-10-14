@@ -36,6 +36,10 @@ interface NamingSnapshotCache {
   readonly snapshots: Map<string, CollectionMetadataNamingSnapshot>;
 }
 
+// Database row locks do not serialize operations using the same transaction.
+// Share the queue across Store instances bound to that transaction as well.
+const transactionWrites = new WeakMap<Knex, Promise<void>>();
+
 export const DEFAULT_COLLECTION_METADATA_TABLE =
   '__nocobase_collection_metadata';
 
@@ -60,6 +64,7 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
   private initializationPromise?: Promise<void>;
   private initialized = false;
   private cacheInitialized = false;
+  private transactionGeneration?: number;
 
   private readonly versionTableName: string;
 
@@ -115,6 +120,22 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
       store.initializationPromise = Promise.resolve();
     }
     return store;
+  }
+
+  /** Capture cache eligibility before BEGIN; savepoints inherit their parent's generation. */
+  async prepareTransaction(): Promise<
+    (client: Knex.Transaction) => DatabaseCollectionMetadataStore
+  > {
+    await this.initialize();
+    const client = await this.options.resolveClient();
+    const generation = (client as Knex.Transaction).isTransaction
+      ? this.transactionGeneration
+      : this.namingCache.generation;
+    return (transaction) => {
+      const store = this.withClient(async () => transaction);
+      store.transactionGeneration = generation;
+      return store;
+    };
   }
 
   async initialize(): Promise<void> {
@@ -268,9 +289,23 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
       await this.changeVersion(knex);
       return result;
     };
-    return (client as Knex.Transaction).isTransaction
-      ? execute(client)
-      : client.transaction(execute);
+    if (!(client as Knex.Transaction).isTransaction)
+      return client.transaction(execute);
+
+    const previous = transactionWrites.get(client) ?? Promise.resolve();
+    const result = previous.then(() => execute(client));
+    // A handled conflict must not reject the next queued metadata write.
+    const settled = result.then(
+      () => {},
+      () => {},
+    );
+    transactionWrites.set(client, settled);
+    try {
+      return await result;
+    } finally {
+      if (transactionWrites.get(client) === settled)
+        transactionWrites.delete(client);
+    }
   }
 
   private async changeVersion(knex: Knex): Promise<void> {
@@ -290,6 +325,23 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
     await this.initialize();
     if (!this.cacheInitialized) return listMetadataNamingSnapshot(this);
     const client = await this.options.resolveClient();
+    if ((client as Knex.Transaction).isTransaction) {
+      // An externally opened transaction may already hold an older read view.
+      // Only bindings prepared before BEGIN can safely reuse shared snapshots,
+      // and explicit invalidation revokes that permission for the whole tree.
+      const generation = this.transactionGeneration;
+      if (
+        generation !== undefined &&
+        generation === this.namingCache.generation
+      ) {
+        const version = await this.readVersion(client);
+        const cached = this.namingCache.snapshots.get(version);
+        if (cached && generation === this.namingCache.generation) return cached;
+      }
+      // Own writes can combine a fresh version row with an older repeatable-read
+      // view of other documents. Never publish that view outside the transaction.
+      return listMetadataNamingSnapshot(this);
+    }
     let snapshot: CollectionMetadataNamingSnapshot = [];
     // Do not publish a snapshot assembled across different committed versions.
     // Under sustained writes, retain the existing uncached listing behavior.
@@ -305,7 +357,7 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
       ) {
         this.namingCache.snapshots.set(version, snapshot);
         // Keep both sides of one concurrent edit without retaining every
-        // transaction's uncommitted or rolled-back version indefinitely.
+        // committed version indefinitely.
         if (this.namingCache.snapshots.size > 2) {
           const oldest = this.namingCache.snapshots.keys().next().value;
           if (oldest !== undefined) this.namingCache.snapshots.delete(oldest);

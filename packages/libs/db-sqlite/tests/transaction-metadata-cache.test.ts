@@ -3,7 +3,11 @@ import os from 'node:os';
 import path from 'node:path';
 import type { Knex } from 'knex';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
+import {
+  CollectionMetadataConflictError,
+  createDatabaseManager,
+  type DatabaseManager,
+} from '@nocobase/db';
 import sqlite from '../src/index.js';
 
 const databases: DatabaseManager[] = [];
@@ -41,6 +45,87 @@ afterEach(async () => {
 });
 
 describe('transaction metadata cache', () => {
+  it('preserves metadata conflict errors for concurrent public updates', async () => {
+    const manager = database();
+    await createOrders(manager);
+    await manager.connection().collectionMetadata.removeDocument('orders');
+    await manager.transaction(async (transaction) => {
+      const results = await Promise.allSettled([
+        transaction.collectionMetadata.updateCollection('orders', {
+          title: 'First',
+        }),
+        transaction.collectionMetadata.updateCollection('orders', {
+          title: 'Second',
+        }),
+      ]);
+      expect(
+        results.filter((result) => result.status === 'fulfilled'),
+      ).toHaveLength(1);
+      const failure = results.find((result) => result.status === 'rejected');
+      expect(failure?.reason).toBeInstanceOf(CollectionMetadataConflictError);
+      expect(failure?.reason).toMatchObject({
+        code: 'METADATA_CONFLICT',
+        expectedRevision: null,
+        actualRevision: 1,
+      });
+      await transaction.collectionMetadata.updateCollection('orders', {
+        title: 'Recovered',
+      });
+    });
+    expect(
+      (await manager.connection().collectionMetadata.get('orders'))?.document
+        .title,
+    ).toBe('Recovered');
+  });
+
+  it.each([false, true])(
+    'isolates invalidated WAL snapshots when the root reloads first: %s',
+    async (rootFirst) => {
+      const directory = await mkdtemp(
+        path.join(os.tmpdir(), 'metadata-invalidation-'),
+      );
+      directories.push(directory);
+      const manager = database(path.join(directory, 'database.sqlite'), 2);
+      await createOrders(manager);
+      const root = manager.connection();
+      await root.collectionMetadata.updateCollection('orders', {
+        title: 'Before',
+      });
+      await root.collections.list();
+      const client = await root.client<Knex>();
+      await client.raw('pragma journal_mode = WAL');
+      await root.transaction(async (transaction) => {
+        const stored = await transaction.collectionMetadata.get('orders');
+        await client('__nocobase_collection_metadata')
+          .where({ name: 'orders' })
+          .update({
+            document: JSON.stringify({ ...stored!.document, title: 'After' }),
+          });
+        root.collections.invalidate();
+        if (rootFirst)
+          expect((await root.collections.list()).items[0]?.title).toBe('After');
+        expect((await transaction.collections.list()).items[0]?.title).toBe(
+          'Before',
+        );
+        // A savepoint opened after invalidation must inherit the old generation.
+        await transaction.transaction(async (savepoint) => {
+          expect((await savepoint.collections.list()).items[0]?.title).toBe(
+            'Before',
+          );
+        });
+      });
+      expect(
+        (await root.collectionMetadata.get('orders'))?.document.title,
+      ).toBe('After');
+      expect((await root.collections.list()).items[0]?.title).toBe('After');
+      await root.transaction(async (transaction) => {
+        expect((await transaction.collections.list()).items[0]?.title).toBe(
+          'After',
+        );
+      });
+    },
+  );
+
   it('prepares cold metadata before opening a transaction with a single-connection pool', async () => {
     const manager = database();
     const client = await manager.connection().client<Knex>();

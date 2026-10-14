@@ -126,11 +126,10 @@ describeIntegrationDatabases(
       await Promise.all(roots.map((root) => root.initialize()));
       for (const root of roots) {
         const index = await CollectionNamingIndex.create(root);
+        const bindTransaction = await root.prepareTransaction();
         await context.db.transaction(async (transaction) => {
           expect(
-            await CollectionNamingIndex.create(
-              root.withClient(async () => transaction),
-            ),
+            await CollectionNamingIndex.create(bindTransaction(transaction)),
           ).toBe(index);
         });
       }

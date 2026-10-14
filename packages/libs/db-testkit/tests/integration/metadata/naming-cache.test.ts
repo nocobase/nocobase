@@ -50,8 +50,9 @@ describeIntegrationDatabases('Collection metadata naming cache', (context) => {
       { expectedRevision: null },
     );
     const original = await CollectionNamingIndex.create(root);
+    const bindTransaction = await root.prepareTransaction();
     await context.db.transaction(async (transaction) => {
-      const child = root.withClient(async () => transaction);
+      const child = bindTransaction(transaction);
       const list = vi.spyOn(child, 'list');
       expect(await CollectionNamingIndex.create(child)).toBe(original);
       const prefixed = await CollectionNamingIndex.create(child, {

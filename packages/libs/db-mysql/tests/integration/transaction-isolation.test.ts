@@ -10,6 +10,69 @@ import { describe, expect, it } from 'vitest';
 import mysql from '../../src/index.js';
 
 describe('MySQL transaction isolation', () => {
+  it('keeps a repeatable-read transaction with own writes out of the shared cache', async () => {
+    const prefix = `snapshot_${randomUUID().replaceAll('-', '')}`;
+    const tableName = `${prefix}_metadata`;
+    let client: Knex;
+    const store = new DatabaseCollectionMetadataStore({
+      resolveClient: async () => client,
+      tableName,
+    });
+    const database = createManager(store, `${prefix}_`);
+    const other = createManager();
+    try {
+      client = await database.connection().client<Knex>();
+      for (const name of ['orders', 'accounts']) {
+        await database
+          .builder()
+          .createCollection(name, (collection) => collection.increments('id'));
+      }
+      await database
+        .connection()
+        .collectionMetadata.updateCollection('orders', { title: 'Before' });
+      await database.collections().list();
+      const otherStore = new DatabaseCollectionMetadataStore({
+        resolveClient: () => other.connection().client<Knex>(),
+        tableName,
+      });
+      await otherStore.initialize();
+      // The single-connection pool keeps this isolation level for the next BEGIN.
+      await client.raw(
+        'set session transaction isolation level repeatable read',
+      );
+      await database.transaction(async (transaction) => {
+        const stored = (await transaction.collectionMetadata.get('orders'))!;
+        await otherStore.put(
+          { ...stored.document, title: 'After' },
+          { expectedRevision: stored.revision },
+        );
+        await transaction.collectionMetadata.updateCollection('accounts', {
+          title: 'Own write',
+        });
+        expect(
+          (await transaction.collections.list()).items.find(
+            (item) => item.name === 'orders',
+          )?.title,
+        ).toBe('Before');
+      });
+      expect((await store.get('orders'))?.document.title).toBe('After');
+      expect(
+        (await database.collections().list()).items.find(
+          (item) => item.name === 'orders',
+        )?.title,
+      ).toBe('After');
+    } finally {
+      await other.destroy();
+      const cleanup = await database.connection().client<Knex>();
+      for (const row of rawRows<Record<string, string>>(
+        await cleanup.raw('show tables like ?', [`${prefix}%`]),
+      )) {
+        await cleanup.schema.dropTable(Object.values(row)[0]!);
+      }
+      await database.destroy();
+    }
+  });
+
   it('runs transactions at READ COMMITTED', async () => {
     const database = createManager();
     try {
@@ -85,7 +148,10 @@ describe('MySQL transaction isolation', () => {
   });
 });
 
-function createManager(metadataStore?: CollectionMetadataStore) {
+function createManager(
+  metadataStore?: CollectionMetadataStore,
+  tablePrefix?: string,
+) {
   return createDatabaseManager({
     metadataStore,
     connections: {
@@ -95,6 +161,9 @@ function createManager(metadataStore?: CollectionMetadataStore) {
         username: process.env.MYSQL_USER ?? 'nocobase',
         password: process.env.MYSQL_PASSWORD ?? 'nocobase',
         database: process.env.MYSQL_DATABASE ?? 'nocobase_collection_builder',
+        ...(tablePrefix
+          ? { naming: { tablePrefix }, pool: { min: 1, max: 1 } }
+          : {}),
       }),
     },
   });

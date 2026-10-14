@@ -423,14 +423,12 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     fn: (connection: DatabaseConnection) => Promise<T>,
   ): Promise<T> {
     const client = await this.resolveClient();
-    if (
-      !(client as Knex.Transaction).isTransaction &&
+    // Prepare bookkeeping and capture cache eligibility before BEGIN. A
+    // savepoint inherits the enclosing transaction's invalidation generation.
+    const bindMetadataTransaction =
       this.metadataStore instanceof DatabaseCollectionMetadataStore
-    ) {
-      // Prepare metadata tables before BEGIN: creating them inside the
-      // transaction can implicitly commit user writes on some databases.
-      await this.metadataStore.initialize();
-    }
+        ? await this.metadataStore.prepareTransaction()
+        : undefined;
     let stagedMetadata: TransactionCollectionMetadataStore | undefined;
     const invalidations = new TransactionInvalidationCollector();
     // A transaction opened on a transaction connection is a savepoint; its
@@ -441,12 +439,11 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     let result: T;
     try {
       result = await client.transaction(async (trx) => {
-        const metadataStore =
-          this.metadataStore instanceof DatabaseCollectionMetadataStore
-            ? this.metadataStore.withClient(async () => trx)
-            : (stagedMetadata = new TransactionCollectionMetadataStore(
-                this.metadataStore,
-              ));
+        const metadataStore = bindMetadataTransaction
+          ? bindMetadataTransaction(trx)
+          : (stagedMetadata = new TransactionCollectionMetadataStore(
+              this.metadataStore,
+            ));
         const connection = new KnexDatabaseConnection(
           this.name,
           this.sourceConfig,
