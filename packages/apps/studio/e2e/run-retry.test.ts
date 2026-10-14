@@ -45,9 +45,11 @@ test('removes an old failure when a real retry resumes and preserves historical 
   });
   await run.fail('toolNetwork', 'First connection failure');
   await expect(
-    page.getByText(
-      /Attempt 1 failed.*First connection failure.*Automatic retry scheduled/u,
-    ),
+    page
+      .getByTestId('run-transcript')
+      .getByText(
+        /Attempt 1 failed.*First connection failure.*Automatic retry scheduled/u,
+      ),
   ).toBeVisible();
   const queued = await detail();
   expect(queued).toMatchObject({
@@ -62,24 +64,32 @@ test('removes an old failure when a real retry resumes and preserves historical 
     })
     .toBe(true);
   await runner.start(run.issue.identifier);
-  await expect(page.getByText(/Attempt 1 failed/u)).toHaveCount(0);
+  await expect(
+    page.getByTestId('run-transcript').getByText(/Attempt 1 failed/u),
+  ).toHaveCount(0);
   expect(await detail()).toMatchObject({
     status: 'running',
     failureReason: null,
     failureDetail: null,
   });
   await expect(
-    page.getByText('Historical connection failure from attempt 1', {
-      exact: true,
-    }),
+    page
+      .getByTestId('run-transcript')
+      .getByText('Historical connection failure from attempt 1', {
+        exact: true,
+      }),
   ).toBeVisible();
   await snapshot('pm381-recovered-running');
   await open(page, `/issues/${run.issue.identifier}`);
   await open(page, route);
-  await expect(page.getByText(/Attempt 1 failed/u)).toHaveCount(0);
+  await expect(
+    page.getByTestId('run-transcript').getByText(/Attempt 1 failed/u),
+  ).toHaveCount(0);
   await runner.complete(run.runId, 'Retry completed successfully');
   await expect(
-    page.getByText('Retry completed successfully', { exact: true }),
+    page
+      .getByTestId('run-transcript')
+      .getByText('Retry completed successfully', { exact: true }),
   ).toBeVisible();
   expect(await detail()).toMatchObject({
     status: 'completed',
@@ -119,8 +129,12 @@ test('removes an old failure when a real retry resumes and preserves historical 
     },
   ]);
   await failed.fail('toolProcess', 'Latest failure details');
-  await expect(page.getByText(/Latest failure details/u)).toBeVisible();
-  await expect(page.getByText(/Earlier failure/u)).toHaveCount(0);
+  await expect(
+    page.getByTestId('run-transcript').getByText(/Latest failure details/u),
+  ).toBeVisible();
+  await expect(
+    page.getByTestId('run-transcript').getByText(/Earlier failure/u),
+  ).toHaveCount(0);
   expect(await api.get<RunDetail>(`agents/runs/${failed.runId}`)).toMatchObject(
     {
       status: 'failed',
@@ -129,9 +143,11 @@ test('removes an old failure when a real retry resumes and preserves historical 
     },
   );
   await expect(
-    page.getByText('Historical connection failure from attempt 1', {
-      exact: true,
-    }),
+    page
+      .getByTestId('run-transcript')
+      .getByText('Historical connection failure from attempt 1', {
+        exact: true,
+      }),
   ).toBeVisible();
   await snapshot('pm381-latest-failure-history');
   await api.patch('users/me/preferences', {
@@ -140,10 +156,14 @@ test('removes an old failure when a real retry resumes and preserves historical 
   });
   await page.setViewportSize({ width: 375, height: 812 });
   await open(page, `/issues/${failed.issue.identifier}/runs/${failed.runId}`);
-  await expect(page.getByText(/Latest failure details/u)).toBeVisible();
   await expect(
-    page.getByText('Historical connection failure from attempt 1', {
-      exact: true,
-    }),
+    page.getByTestId('run-transcript').getByText(/Latest failure details/u),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByTestId('run-transcript')
+      .getByText('Historical connection failure from attempt 1', {
+        exact: true,
+      }),
   ).toBeVisible();
 });
