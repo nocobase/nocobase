@@ -7,6 +7,7 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { databaseManagerToken } from '@nocobase/db';
 import { loggingToken } from '@nocobase/app-server/logging';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
+import { queueServiceToken } from '@nocobase/app-server/queue';
 import type { JobExecutor } from '@nocobase/jobs';
 import {
   driveManagerToken,
@@ -28,6 +29,7 @@ import { createDatabaseMailCredentialVault } from '../credentials.js';
 import { createMailProviderRegistry } from '../registry.js';
 import { createMailRuntime } from '../runtime.js';
 import { DefaultMailService } from '../service.js';
+import { MailMessageSyncNotifier } from '../message-sync-notifier.js';
 import { DriveMailOutboundAttachmentStorage } from '../outbound-attachments.js';
 import {
   MAIL_REALTIME_TOPIC,
@@ -56,6 +58,8 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
   private realtimeTopic?: RealtimeUserTopic<MailRealtimeEvent>;
   private missingMailConfigWarningLogged = false;
   private productionOAuthReturnWarningLogged = false;
+  private messageSyncNotifier?: MailMessageSyncNotifier;
+  private closing = false;
   private readonly messageChangeNotifier: MailMessageChangeNotifier = {
     notify: (userId) => {
       this.realtimeTopic?.publishFor(userId, { kind: 'mail.changed' });
@@ -106,6 +110,7 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
           .getLogger()
           .child({ module: 'mail' }),
         messageChangeNotifier: this.messageChangeNotifier,
+        messageSyncNotifier: this.resolveMessageSyncNotifier(container),
       }),
     );
     this.app.container.singleton(
@@ -147,8 +152,60 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
             mailOutboundAttachmentStorageToken,
           ),
           messageChangeNotifier: this.messageChangeNotifier,
+          messageSyncNotifier: this.resolveMessageSyncNotifier(container),
         }),
     );
+  }
+
+  private resolveMessageSyncNotifier(
+    container: ServiceResolver,
+  ): MailMessageSyncNotifier {
+    if (this.closing)
+      throw new Error('The Mail message sync notifier is closed.');
+    this.messageSyncNotifier ??= new MailMessageSyncNotifier(
+      container.has(queueServiceToken)
+        ? container.resolve(queueServiceToken)
+        : undefined,
+      {
+        error: (data, message): void => {
+          this.app.container
+            .resolveIfCreated(loggingToken)
+            ?.getLogger()
+            .error(data, message);
+        },
+        warn: (data, message): void => {
+          this.app.container
+            .resolveIfCreated(loggingToken)
+            ?.getLogger()
+            .warn(data, message);
+        },
+      },
+      container.has(queueServiceToken) ? this.queueConfiguration() : undefined,
+    );
+    return this.messageSyncNotifier;
+  }
+
+  /** Reject a misspelled event configuration instead of silently using the queue default. */
+  private queueConfiguration(): string | undefined {
+    const name = this.getMailConfig().queue;
+    if (name === undefined) return undefined;
+    const configurations =
+      this.app.config.get<Record<string, unknown>>('queue');
+    const selected = configurations?.[name];
+    if (
+      // The host strips legacy keys before selecting a queue configuration.
+      ['default', 'connections', 'worker', 'jobs'].includes(name) ||
+      !configurations ||
+      !Object.hasOwn(configurations, name) ||
+      !selected ||
+      typeof selected !== 'object' ||
+      Array.isArray(selected)
+    ) {
+      throw new Error(
+        `mail.queue names "${name}", which is not a queue configuration.`,
+      );
+    }
+    return name;
   }
 
   private resolveJobExecutor(container: ServiceResolver): JobExecutor {
@@ -289,8 +346,29 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
   }
 
   public override async shutdown(): Promise<void> {
-    await this.app.container.resolveIfCreated(mailRuntimeToken)?.close();
-    this.realtimeTopic?.close();
-    this.realtimeTopic = undefined;
+    this.closing = true;
+    // Keep accepting committed steps while synchronization workers drain.
+    const errors: unknown[] = [];
+    try {
+      await this.app.container.resolveIfCreated(mailRuntimeToken)?.close();
+    } catch (error) {
+      errors.push(error);
+    }
+    try {
+      await this.messageSyncNotifier?.close();
+    } catch (error) {
+      errors.push(error);
+    } finally {
+      const topic = this.realtimeTopic;
+      this.realtimeTopic = undefined;
+      try {
+        topic?.close();
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    if (errors.length === 1) throw errors[0];
+    if (errors.length > 1)
+      throw new AggregateError(errors, 'Mail shutdown failed.');
   }
 }

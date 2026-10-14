@@ -1,5 +1,6 @@
 import { mailLogError, writeMailLog, type MailLogger } from '../logging.js';
 import { randomUUID } from 'node:crypto';
+import type { MailMessageSyncNotifier } from '../message-sync-notifier.js';
 import { mailSyncDateMonthsAgo } from '../../shared/mail-sync-date.js';
 
 import type {
@@ -28,6 +29,7 @@ export interface SyncMailboxOperationDependencies {
   readonly adapters: MailProviderAdapterResolver;
   readonly leaseMs?: number;
   readonly messageChangeNotifier?: MailMessageChangeNotifier;
+  readonly messageSyncNotifier?: MailMessageSyncNotifier;
 }
 
 const SYNC_STEP_TIMEOUT_MS = 5 * 60 * 1_000;
@@ -274,6 +276,25 @@ export class SyncMailboxOperation {
     input: MailSyncStepCommit,
   ): Promise<MailSyncRun> {
     const result = await this.dependencies.store.commitSyncStep(input);
+    // Publish committed snapshots before any fallible post-commit inspection.
+    // Queue acceptance is awaited; business handlers never run in this sync step.
+    try {
+      await this.dependencies.messageSyncNotifier?.publish(
+        result.messageSyncEvents,
+      );
+    } catch {
+      // Even an unexpected transport failure cannot undo or retry this committed step.
+      writeMailLog(
+        this.dependencies.logger,
+        'error',
+        {
+          event: 'mail.message_sync.publication_failed',
+          accountId: result.accountId,
+          syncRunId: result.id,
+        },
+        'Mail message sync event publication failed.',
+      );
+    }
     writeMailLog(
       this.dependencies.logger,
       result.status === 'partial' || input.restart ? 'warn' : 'info',

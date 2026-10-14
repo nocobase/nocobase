@@ -33,6 +33,12 @@ import type {
   NormalizedMailMessage,
 } from './provider.js';
 
+import type { MailMessagesSyncedEvent } from './message-sync-events.js';
+
+export type MailSyncStepResult = MailSyncRun & {
+  readonly messageSyncEvents: readonly MailMessagesSyncedEvent[];
+};
+
 export interface MailAuthorizationTransaction {
   readonly stateHash: string;
   readonly userId: string;
@@ -393,7 +399,7 @@ export interface MailStore {
     leaseToken: string,
     leaseExpiresAt: string,
   ): Promise<boolean>;
-  commitSyncStep(input: MailSyncStepCommit): Promise<MailSyncRun>;
+  commitSyncStep(input: MailSyncStepCommit): Promise<MailSyncStepResult>;
   failSyncRun(run: MailSyncRun, error: MailProviderError): Promise<MailSyncRun>;
   releaseSyncRun(
     run: MailSyncRun,

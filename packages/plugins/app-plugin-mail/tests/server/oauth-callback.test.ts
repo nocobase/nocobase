@@ -190,6 +190,7 @@ async function createRouter(
 
 function service(overrides: Partial<MailService> = {}): MailService {
   return {
+    onMessagesSynced: () => () => Promise.resolve(),
     listProviders: async () => [],
     startAuthorization: async () => ({
       authorizationUrl: 'https://example.com/authorize',

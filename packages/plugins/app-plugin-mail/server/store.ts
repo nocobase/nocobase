@@ -41,6 +41,7 @@ import {
   type MailStoredSubmission,
   type MailSyncBatch,
   type MailSyncStepCommit,
+  type MailSyncStepResult,
 } from './contracts/persistence.js';
 import {
   type MailProviderPushSubscription,
@@ -653,7 +654,9 @@ export class DatabaseMailStore implements MailStore {
     return this.sync.renewSyncRunLease(syncRunId, leaseToken, leaseExpiresAt);
   }
 
-  public async commitSyncStep(input: MailSyncStepCommit): Promise<MailSyncRun> {
+  public async commitSyncStep(
+    input: MailSyncStepCommit,
+  ): Promise<MailSyncStepResult> {
     return this.sync.commitSyncStep(input);
   }
 

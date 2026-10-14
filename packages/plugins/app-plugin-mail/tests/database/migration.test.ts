@@ -60,6 +60,22 @@ for (const name of MIGRATIONS) {
         'initialSyncReceivedAfter',
         { type: 'datetimeTz' },
       );
+      await expectCollection('mailOutboundAttachments').toHaveField('key', {
+        type: 'string',
+        length: 667,
+      });
+      await expectCollection('mailPushSubscriptions').toHaveField(
+        'providerSubscriptionId',
+        { type: 'string', length: 412 },
+      );
+      await expectCollection('mailPushSubscriptions').toHaveIndex(
+        ['providerType', 'providerName', 'providerSubscriptionId'],
+        { unique: true },
+      );
+      await expectCollection('mailOutboundAttachments').toHaveIndex(
+        ['disk', 'key'],
+        { unique: true },
+      );
       await expectCollection('mailMessages').toHaveIndex(
         ['accountId', 'providerMessageId'],
         { unique: true },

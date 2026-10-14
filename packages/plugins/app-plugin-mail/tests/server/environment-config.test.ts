@@ -30,6 +30,7 @@ const environment = {
   MAIL_PUSH_WEBHOOK_URL: 'https://example.test/hooks/mail',
   MAIL_PUSH_WEBHOOK_SECRET: 'fixture-private-webhook-secret',
   MAIL_JOBS: 'mailTasks',
+  MAIL_QUEUE: 'mailEvents',
 };
 async function configuration(
   env: Readonly<Record<string, string | undefined>> = {},
@@ -70,7 +71,7 @@ async function configuration(
 }
 
 describe('Mail section environment integration', () => {
-  it('composes the actual factory, parses all seven variables and retains providers above file defaults', async () => {
+  it('composes the actual factory, parses all eight variables and retains providers above file defaults', async () => {
     const providers = {
       google: {
         type: 'gmail',
@@ -91,6 +92,7 @@ describe('Mail section environment integration', () => {
       pushWebhookUrl: environment.MAIL_PUSH_WEBHOOK_URL,
       pushWebhookSecret: environment.MAIL_PUSH_WEBHOOK_SECRET,
       jobs: environment.MAIL_JOBS,
+      queue: environment.MAIL_QUEUE,
     });
     expect(config.get('mail.mail')).toBeUndefined();
     expect(Object.keys(config.sectionEnvironmentVariables()).sort()).toEqual(
@@ -122,7 +124,7 @@ describe('Mail section environment integration', () => {
     const variables = manifest.variables.filter((entry) =>
       entry.name.startsWith('MAIL_'),
     );
-    expect(variables).toHaveLength(7);
+    expect(variables).toHaveLength(8);
     expect(variables.every((entry) => entry.required === false)).toBe(true);
     expect(
       variables.find((entry) => entry.name === 'MAIL_PUSH_WEBHOOK_SECRET'),

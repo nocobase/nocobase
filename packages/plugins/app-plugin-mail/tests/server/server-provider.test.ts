@@ -8,7 +8,17 @@ import {
   type RealtimeService,
 } from '@nocobase/app-server/realtime';
 import { Hono } from 'hono';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { queueServiceToken } from '@nocobase/app-server/queue';
+import { createMailTestQueue, type MailTestQueue } from '../helpers/queue.js';
+
+let queue: MailTestQueue;
+beforeEach(async () => {
+  queue = await createMailTestQueue('inMemory');
+});
+afterEach(async () => {
+  await queue.close();
+});
 
 import { MailCoreProvider } from '../../server/providers/mail-core.js';
 import {
@@ -28,6 +38,7 @@ import type { MailCredentialVault } from '../../server/types.js';
 describe('@nocobase/app-plugin-mail', () => {
   it('registers the Provider Registry and lazy Mail runtime services', () => {
     const container = new ServiceContainer();
+    container.instance(queueServiceToken, queue.hostQueue);
     const provider = new MailCoreProvider({
       appName: 'test',
       publicBasePath: '/test',
@@ -50,6 +61,7 @@ describe('@nocobase/app-plugin-mail', () => {
 
   it('keeps a credential vault registered by another plugin', () => {
     const container = new ServiceContainer();
+    container.instance(queueServiceToken, queue.hostQueue);
     const credentialVault = {} as MailCredentialVault;
     container.instance(mailCredentialVaultToken, credentialVault);
     const provider = new MailCoreProvider({
@@ -77,6 +89,7 @@ describe('@nocobase/app-plugin-mail', () => {
       const publishFor = vi.fn();
       const close = vi.fn();
       const container = new ServiceContainer();
+      container.instance(queueServiceToken, queue.hostQueue);
       const provider = new MailCoreProvider({
         appName: 'test',
         publicBasePath: '/test',
@@ -160,13 +173,16 @@ describe('@nocobase/app-plugin-mail', () => {
     const createRuntime = (
       sections: Record<string, unknown>,
       jobsService: boolean,
+      queueService: boolean = true,
     ) => {
       const container = new ServiceContainer();
+      if (queueService) container.instance(queueServiceToken, queue.hostQueue);
       const dependencies = new Map<unknown, unknown>([
         [mailStoreToken, {}],
         [mailProviderAdapterResolverToken, {}],
         [mailCredentialVaultToken, {}],
         [mailOutboundAttachmentStorageToken, {}],
+        [userAdministrationServiceToken, {}],
       ]);
       const resolve = container.resolve.bind(container);
       vi.spyOn(container, 'resolve').mockImplementation(
@@ -195,6 +211,8 @@ describe('@nocobase/app-plugin-mail', () => {
       }).register();
       return {
         getJobExecutor,
+        logger,
+        container,
         resolveRuntime: () => container.resolve(mailRuntimeToken),
       };
     };
@@ -203,6 +221,75 @@ describe('@nocobase/app-plugin-mail', () => {
       const { resolveRuntime } = createRuntime({}, false);
       expect(resolveRuntime).toThrow(
         'Add JobExecutorServiceProvider from @nocobase/app-server/jobs',
+      );
+    });
+
+    it('warns without requiring the application queue or constructing a private backend', () => {
+      const { resolveRuntime, logger, container } = createRuntime(
+        { mail: {} },
+        true,
+        false,
+      );
+      expect(resolveRuntime).not.toThrow();
+      expect(resolveRuntime()).toBe(container.resolve(mailRuntimeToken));
+      expect(container.has(queueServiceToken)).toBe(false);
+      expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
+        { event: 'mail.message_sync.queue_unavailable' },
+        expect.stringContaining('QueueServiceProvider'),
+      );
+    });
+
+    it('selects mail.queue independently of the synchronization jobs configuration', async () => {
+      const consumer = vi.spyOn(queue.hostQueue, 'consumer');
+      const { getJobExecutor, container } = createRuntime(
+        {
+          mail: { queue: 'test', jobs: 'mailTasks' },
+          queue: queue.config,
+          jobs: { mailTasks: { adapter: 'memory' } },
+        },
+        true,
+      );
+      const service = container.resolve(mailServiceToken);
+      const cancel = service.onMessagesSynced(vi.fn());
+      expect(consumer).toHaveBeenCalledWith('mail/message-sync', 'test');
+      expect(getJobExecutor).toHaveBeenCalledWith(
+        '@nocobase/app-plugin-mail',
+        'mailTasks',
+      );
+      await cancel();
+    });
+
+    it.each(['typo', 'default', 'alias', 'arrayConfig', '__proto__'])(
+      'rejects an invalid configured event queue name "%s" instead of falling back',
+      (name) => {
+        const { resolveRuntime } = createRuntime(
+          {
+            mail: { queue: name },
+            queue: {
+              default: 'test',
+              test: { adapter: 'inMemory' },
+              alias: 'test',
+              arrayConfig: [],
+            },
+          },
+          true,
+        );
+        expect(resolveRuntime).toThrow(
+          `mail.queue names "${name}", which is not a queue configuration.`,
+        );
+      },
+    );
+
+    it('ignores a configured event queue when the host queue service is absent', () => {
+      const { resolveRuntime, logger } = createRuntime(
+        { mail: { queue: 'unavailableEvents' } },
+        true,
+        false,
+      );
+      expect(resolveRuntime).not.toThrow();
+      expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
+        { event: 'mail.message_sync.queue_unavailable' },
+        expect.any(String),
       );
     });
 

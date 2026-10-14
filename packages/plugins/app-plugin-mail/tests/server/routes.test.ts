@@ -2066,6 +2066,7 @@ function service(overrides: Partial<MailService> = {}): MailService {
     listManagedSyncRunsPage: async () => ({ items: [], total: 0 }),
     listManagedSubmissionsPage: async () => ({ items: [], total: 0 }),
     listManagedFolders: async () => [],
+    onMessagesSynced: () => () => Promise.resolve(),
     listManagedMessages: async () => ({ items: [] }),
     manageMessages: async () => ({ items: [], succeeded: 0, failed: 0 }),
     listFolders: async () => [],

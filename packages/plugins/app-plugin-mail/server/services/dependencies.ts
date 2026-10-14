@@ -1,4 +1,5 @@
 import type { MailLogger } from '../logging.js';
+import type { MailMessageSyncNotifier } from '../message-sync-notifier.js';
 import type { UserAdministrationService } from '@nocobase/app-plugin-authentication';
 import { type MailMessageChangeNotifier } from '../realtime.js';
 import {
@@ -34,6 +35,7 @@ export interface DefaultMailServiceDependencies {
   readonly listProviderConfigs?: () => readonly MailProviderConfig[];
   readonly outboundAttachments?: MailOutboundAttachmentStorage;
   readonly messageChangeNotifier?: MailMessageChangeNotifier;
+  readonly messageSyncNotifier?: MailMessageSyncNotifier;
 }
 
 /** Internal services declare persistence capabilities rather than the entire facade. */

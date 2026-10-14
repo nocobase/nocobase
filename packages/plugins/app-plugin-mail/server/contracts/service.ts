@@ -1,4 +1,8 @@
 import type {
+  MailMessagesSyncedListener,
+  MailUnsubscribe,
+} from './message-sync-events.js';
+import type {
   MailAccount,
   MailAccountView,
   MailAttachmentContent,
@@ -51,6 +55,8 @@ import type {
  * `MailProviderDefinition` rather than implementing this service.
  */
 export interface MailService {
+  /** Register in boot and await cancellation in shutdown; a no-op without the host queue. */
+  onMessagesSynced(listener: MailMessagesSyncedListener): MailUnsubscribe;
   listProviders(): Promise<readonly MailProviderView[]>;
   startAuthorization(
     context: MailOperationContext,

@@ -52,7 +52,8 @@
         "MAIL_SYNC_BATCH_SIZE",
         "MAIL_PUSH_WEBHOOK_URL",
         "MAIL_PUSH_WEBHOOK_SECRET",
-        "MAIL_JOBS"
+        "MAIL_JOBS",
+        "MAIL_QUEUE"
       ]
     }
   },
@@ -103,6 +104,7 @@
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/jobs": "workspace:^",
+    "@nocobase/queue": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "class-variance-authority": "catalog:",
     "lucide-react": "catalog:",

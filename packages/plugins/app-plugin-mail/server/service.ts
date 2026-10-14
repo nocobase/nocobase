@@ -10,6 +10,11 @@ import { MailAuthorizationService } from './services/authorization.js';
 import { type DefaultMailServiceDependencies } from './services/dependencies.js';
 import { MailDraftsService } from './services/drafts.js';
 import { MailManagementService } from './services/management.js';
+import { MailMessageSyncNotifier } from './message-sync-notifier.js';
+import type {
+  MailMessagesSyncedListener,
+  MailUnsubscribe,
+} from './contracts/message-sync-events.js';
 import { MailMessagesService } from './services/messages.js';
 import { MailPreferencesService } from './services/preferences.js';
 import { MailProvidersService } from './services/providers.js';
@@ -58,6 +63,7 @@ export class DefaultMailService implements MailService {
   private readonly sync: MailSyncService;
   private readonly submissions: MailSubmissionsService;
   private readonly management: MailManagementService;
+  private readonly messageSyncNotifier: MailMessageSyncNotifier;
   public constructor(dependencies: DefaultMailServiceDependencies) {
     const syncBatchSize = resolveMailSyncBatchSize(dependencies.syncBatchSize);
     const defaultAutomaticSyncIntervalMinutes =
@@ -83,6 +89,15 @@ export class DefaultMailService implements MailService {
     this.attachments = new MailAttachmentsService(dependencies);
     this.submissions = new MailSubmissionsService(dependencies, sendMail);
     this.management = new MailManagementService(dependencies);
+    this.messageSyncNotifier =
+      dependencies.messageSyncNotifier ??
+      new MailMessageSyncNotifier(undefined, dependencies.logger);
+  }
+
+  public onMessagesSynced(
+    listener: MailMessagesSyncedListener,
+  ): MailUnsubscribe {
+    return this.messageSyncNotifier.subscribe(listener);
   }
 
   public listProviders(): Promise<readonly MailProviderView[]> {

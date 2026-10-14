@@ -78,6 +78,13 @@ export type {
   NormalizedMailAttachment,
 } from '../shared/mail.js';
 
+/** Committed local insertion snapshots and queue-backed Server subscriptions. */
+export type {
+  MailMessagesSyncedEvent,
+  MailMessagesSyncedListener,
+  MailUnsubscribe,
+} from './contracts/message-sync-events.js';
+
 /** Server facade for application plugins that consume Mail operations. */
 export type { MailService } from './contracts/service.js';
 
