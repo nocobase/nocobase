@@ -1,7 +1,7 @@
 /**
- * Announces the issues whose agent runs entered the queue or changed status, once for the runs of a moment: the agents
- * plugin announces a run only to pages following that run, so a page could not learn of a new run on its issue without
- * polling.
+ * Announces the issues whose agent runs entered the queue or changed status, or whose run requests (such as a personal
+ * runner consent) were made or settled, once for a moment: the agents plugin announces a run only to pages following
+ * that run, so a page could not learn of new work on its issue without polling.
  */
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
 import type { DatabaseConnection } from '@nocobase/db';
@@ -26,35 +26,37 @@ export function announceIssueRuns(deps: {
   readonly delayMs?: number;
 }): () => void {
   let runIds = new Set<string>();
+  let named = new Set<string>();
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const flush = async (): Promise<void> => {
     timer = undefined;
     const ids = [...runIds];
+    const issueIds = new Set(named);
     runIds = new Set();
-    if (ids.length === 0) return;
-    const runs = await deps
-      .conn()
-      .repository<{ id: string; subjectKind: string; subjectId: string }>(
-        'agRuns',
-      )
-      .findMany({
-        filter: (f) => f.or(ids.map((id) => f.string('id').eq(id))),
-      });
-    const issueIds = [
-      ...new Set(
-        runs
-          .filter((run) => run.subjectKind === ISSUE_SUBJECT)
-          .map((run) => String(run.subjectId)),
-      ),
-    ];
-    if (issueIds.length > 0)
-      deps.publish({ kind: 'studio.issue.runs', issueIds });
+    named = new Set();
+    if (ids.length > 0)
+      for (const run of await deps
+        .conn()
+        .repository<{ id: string; subjectKind: string; subjectId: string }>(
+          'agRuns',
+        )
+        .findMany({
+          filter: (f) => f.or(ids.map((id) => f.string('id').eq(id))),
+        }))
+        if (run.subjectKind === ISSUE_SUBJECT)
+          issueIds.add(String(run.subjectId));
+    if (issueIds.size > 0)
+      deps.publish({ kind: 'studio.issue.runs', issueIds: [...issueIds] });
   };
 
   const stop = deps.events.onAny((event) => {
-    if (!RUN_EVENTS.has(event.type) || !('runId' in event)) return;
-    runIds.add(event.runId);
+    if (event.type.startsWith('runRequest.') && 'request' in event) {
+      if (event.request.subject.kind !== ISSUE_SUBJECT) return;
+      named.add(event.request.subject.id);
+    } else if (RUN_EVENTS.has(event.type) && 'runId' in event)
+      runIds.add(event.runId);
+    else return;
     if (!timer) {
       timer = setTimeout(() => {
         flush().catch((error: unknown) => deps.onError?.(error));

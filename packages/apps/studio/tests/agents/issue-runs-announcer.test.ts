@@ -56,4 +56,35 @@ describe('issue run announcements', () => {
       stop();
     }
   });
+
+  it('names the issue of a run request made or settled', async () => {
+    const published: StudioIssueRunsEvent[] = [];
+    let listener: ((event: never) => void) | undefined;
+    const stop = announceIssueRuns({
+      events: {
+        onAny: (callback) => {
+          listener = callback as never;
+          return () => undefined;
+        },
+      },
+      conn: () => h.database.connection(),
+      publish: (event) => published.push(event),
+      delayMs: 5,
+    });
+    try {
+      for (const subject of [
+        { kind: 'issue', id: 'issue-1' },
+        { kind: 'other', id: 'x' },
+      ])
+        listener?.({
+          type: 'runRequest.created',
+          request: { subject },
+        } as never);
+      await expect
+        .poll(() => published)
+        .toEqual([{ kind: 'studio.issue.runs', issueIds: ['issue-1'] }]);
+    } finally {
+      stop();
+    }
+  });
 });
