@@ -14,6 +14,7 @@ import {
 import { useCallback } from 'react';
 
 import type {
+  FollowingState,
   FollowingView,
   FollowUpIssue,
   FollowUpsView,
@@ -62,6 +63,26 @@ export function useFollowUps(): UseQueryResult<FollowUpsView> {
 }
 
 /**
+ * What the viewer follows and how many they may (`GET followUps/following`), the follow star's read; under the
+ * overview's key, so whatever reads the overview again reads it too.
+ */
+export function useFollowing(): UseQueryResult<FollowingState> {
+  const api = useApiClient();
+  return useQuery({
+    queryKey: followUpsKeys.following,
+    queryFn: async ({ signal }) =>
+      (
+        await api.request<{ data: FollowingState }>({
+          path: 'followUps/following',
+          signal,
+        })
+      ).data,
+    placeholderData: (previous) => previous,
+    refetchInterval: OVERVIEW_POLL_MS,
+  });
+}
+
+/**
  * Follows or stops following one issue (`POST followUps/issues/:issueId/follow|unfollow`), shown at once and read back
  * from the server once saved; the server keeps the limit, so two tabs cannot overwrite each other's list.
  */
@@ -71,7 +92,7 @@ export function useFollowIssue(
   FollowingView,
   unknown,
   { readonly issueId: string; readonly follow: boolean },
-  { previous?: FollowUpsView }
+  { previous?: FollowUpsView; previousFollowing?: FollowingState }
 > {
   const api = useApiClient();
   const client = useQueryClient();
@@ -88,6 +109,18 @@ export function useFollowIssue(
       const previous = client.getQueryData<FollowUpsView>(
         followUpsKeys.overview,
       );
+      const previousFollowing = client.getQueryData<FollowingState>(
+        followUpsKeys.following,
+      );
+      if (previousFollowing)
+        client.setQueryData<FollowingState>(followUpsKeys.following, {
+          ...previousFollowing,
+          issueIds: follow
+            ? previousFollowing.issueIds.includes(issueId)
+              ? previousFollowing.issueIds
+              : [...previousFollowing.issueIds, issueId]
+            : previousFollowing.issueIds.filter((id) => id !== issueId),
+        });
       if (previous) {
         const following = follow
           ? previous.following.includes(issueId)
@@ -103,13 +136,16 @@ export function useFollowIssue(
           ),
         });
       }
-      return { previous };
+      return { previous, previousFollowing };
     },
     onError: (error, _variables, context) => {
       if (context?.previous)
         client.setQueryData(followUpsKeys.overview, context.previous);
+      if (context?.previousFollowing)
+        client.setQueryData(followUpsKeys.following, context.previousFollowing);
       onError(error);
     },
+    // The overview's key holds the star's, so both are read again.
     onSettled: () =>
       client.invalidateQueries({ queryKey: followUpsKeys.overview }),
   });

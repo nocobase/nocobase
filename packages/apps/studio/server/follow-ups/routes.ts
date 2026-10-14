@@ -5,6 +5,7 @@
  *
  * - `GET /followUps`: the overview.
  * - `GET /followUps/issues?issueIds=…`: the overview's rows of the named issues, for the page to refresh only them.
+ * - `GET /followUps/following`: the followed issues and how many one may follow, the follow star's read.
  * - `PUT /followUps/following`: replaces the followed issues.
  * - `POST /followUps/issues/{issueId}/follow` and `/unfollow`: adds or takes off one issue, the follow star's own.
  * - `POST /followUps/issues/{issueId}/markSeen`: the caller looked at the issue now.
@@ -40,6 +41,7 @@ import { studioError, studioErrorHandler } from '../http/errors.js';
 import {
   FOLLOW_UP_ROWS_MAX,
   FollowingInputSchema,
+  FollowingStateSchema,
   FollowingViewSchema,
   FollowUpIssueSchema,
   FollowUpRowsMeta,
@@ -147,6 +149,25 @@ export const followUpsRoutes: AppApiRouteContribution<Application> =
         );
         return context.json({ data, meta: { total: data.length } });
       },
+    );
+
+    routes.get(
+      '/following',
+      describeRoute({
+        tags,
+        summary: 'Get the issues I follow',
+        operationId: 'followUpsGetFollowing',
+        ...cliRoute({ command: 'follow-up following' }),
+        description: `The issues the caller follows, in order, and the most one may follow (${FOLLOW_UPS_MAX}): the ones they chose, or by default their blocked and in-review issues, newest first; issues they can no longer see are left out. Needs \`pm.issues\` view.`,
+        responses: {
+          200: dataResponse(FollowingStateSchema),
+          ...apiErrorResponses,
+        },
+      }),
+      async (context) =>
+        context.json({
+          data: await followUps.following(await viewerOf(context)),
+        }),
     );
 
     routes.put(

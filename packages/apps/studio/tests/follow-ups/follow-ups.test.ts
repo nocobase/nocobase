@@ -358,6 +358,23 @@ describe('following', () => {
     ).toBe(0);
   });
 
+  it('answers what the caller follows and how many they may, without the overview', async () => {
+    const review = await create('alice', { title: 'Ready' });
+    await move(review, 'in_review');
+    const read = () =>
+      h.request('GET', '/followUps/following', { user: 'alice' });
+    // By default, their in-review and blocked issues.
+    expect((await read()).body.data).toEqual({ issueIds: [review.id], max: 5 });
+    const theirs = await create('bob', { title: 'Theirs' });
+    expect((await follow([theirs.id])).status).toBe(200);
+    expect((await read()).body.data).toEqual({ issueIds: [theirs.id], max: 5 });
+    expect((await h.request('GET', '/followUps/following')).status).toBe(401);
+    h.roles.set('bob', 'none');
+    expect(
+      (await h.request('GET', '/followUps/following', { user: 'bob' })).status,
+    ).toBe(403);
+  });
+
   it('refuses more than five issues or one the caller cannot find', async () => {
     const issues = await Promise.all(
       Array.from({ length: 6 }, (_, index) =>
@@ -482,6 +499,9 @@ describe('the routes in the API document', () => {
     expect(follow?.operationId).toBe('followUpsFollowIssue');
     expect(document.paths?.['/api/followUps/issues']?.get?.operationId).toBe(
       'followUpsListIssues',
+    );
+    expect(document.paths?.['/api/followUps/following']?.get?.operationId).toBe(
+      'followUpsGetFollowing',
     );
     expect(unfollow?.operationId).toBe('followUpsUnfollowIssue');
     expect(

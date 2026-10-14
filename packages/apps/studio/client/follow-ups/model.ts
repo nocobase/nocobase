@@ -13,6 +13,8 @@ import {
 export const followUpsKeys = {
   /** Under the projects plugin's issues, so reading the issues again after an edit reads it again too. */
   overview: ['pm', 'issues', 'followUps'] as const,
+  /** What the viewer follows: the follow star's read, under the overview's key. */
+  following: ['pm', 'issues', 'followUps', 'following'] as const,
 };
 
 /**

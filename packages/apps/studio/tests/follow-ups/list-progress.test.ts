@@ -12,6 +12,10 @@ import {
   prefetchProgressReads,
   type ProgressMemo,
 } from '../../server/agents/manager/progress.js';
+import {
+  progressFacts,
+  progressOf,
+} from '../../server/agent-sessions/progress.js';
 import { createFollowUps } from '../../server/follow-ups/service.js';
 import {
   ensureRepo,
@@ -42,8 +46,11 @@ const manager = () =>
     actor: { type: 'agent', id: PROJECT_MANAGER_ID },
   }) as ReturnType<BridgeHarness['viewer']>;
 
-/** One issue of each kind a row shows: checks pending, a decision asked, queued work, managed, in backlog. */
-async function seed(): Promise<void> {
+/**
+ * One issue of each kind a row shows: checks pending, a decision asked, queued work (unless `queued` is false), managed,
+ * in backlog.
+ */
+async function seed({ queued: withQueued = true } = {}): Promise<void> {
   const alice = h.viewer('alice');
   const conn = h.projects.tx.read();
   const repo = await ensureRepo(conn, API, 'acme/app');
@@ -104,9 +111,10 @@ async function seed(): Promise<void> {
   await h.projects.comments.create(manager(), queued.id, {
     content: 'Next: let the worker start',
   });
-  await h.projects.comments.create(alice, queued.id, {
-    content: `[@Worker](mention://agent/${worker}) do the next step`,
-  });
+  if (withQueued)
+    await h.projects.comments.create(alice, queued.id, {
+      content: `[@Worker](mention://agent/${worker}) do the next step`,
+    });
 
   await create('in_progress');
   await create('backlog');
@@ -125,9 +133,10 @@ const COUNTED = new Set([
   'claims',
 ]);
 
-/** The follow-ups service over the harness, counting what it asks of the plugins and the database. */
-function countedFollowUps(): {
-  readonly followUps: ReturnType<typeof createFollowUps>;
+/** The plugins' services over the harness, counting what is asked of them and of the database. */
+function countedDeps(): {
+  readonly agents: BridgeHarness['agents'];
+  readonly projects: BridgeHarness['projects'];
   readonly reads: () => number;
 } {
   let count = 0;
@@ -154,23 +163,35 @@ function countedFollowUps(): {
     });
   }
   const conn = counted(h.projects.tx.read());
-  const projects = counted(h.projects);
+  return {
+    // Every read goes through the counted connection.
+    projects: new Proxy(counted(h.projects), {
+      get: (object, key) =>
+        key === 'tx'
+          ? { read: () => conn }
+          : (Reflect.get(object, key) as unknown),
+    }),
+    agents: counted(h.agents),
+    reads: () => count,
+  };
+}
+
+/** The follow-ups service over the counted services. */
+function countedFollowUps(): {
+  readonly followUps: ReturnType<typeof createFollowUps>;
+  readonly reads: () => number;
+} {
+  const { agents, projects, reads } = countedDeps();
   return {
     followUps: createFollowUps({
-      // Every read of the service goes through the counted connection.
-      projects: new Proxy(projects, {
-        get: (object, key) =>
-          key === 'tx'
-            ? { read: () => conn }
-            : (Reflect.get(object, key) as unknown),
-      }),
-      agents: counted(h.agents),
+      projects,
+      agents,
       preferences: {
         get: () => Promise.resolve(undefined),
         set: () => Promise.resolve(),
       },
     }),
-    reads: () => count,
+    reads,
   };
 }
 
@@ -235,5 +256,54 @@ describe('the progress of My follow-ups rows', () => {
     expect(many.reads()).toBe(few.reads());
     expect(few.reads()).toBeGreaterThan(10);
     expect(few.reads()).toBeLessThan(60);
+  });
+});
+
+describe('the progress an agent session reads', () => {
+  const owned = async () =>
+    (
+      await h.projects.issueQueries.page(h.viewer('alice'), {
+        ownerUserId: 'alice',
+        limit: 100,
+      })
+    ).data;
+
+  it('is each issue’s own progress, queued work included', async () => {
+    await seed();
+    await h.claimOne();
+    await seed();
+    const issues = await owned();
+    const deps = { agents: h.agents, projects: h.projects };
+    const facts = await progressOf(deps, issues, 'alice');
+    const conn = h.projects.tx.read();
+    for (const issue of issues)
+      expect(facts.get(issue.id)).toEqual(
+        progressFacts(
+          issue,
+          await issueProgress(deps, conn, issue, {
+            userId: 'alice',
+            seesMachines: false,
+          }),
+        ),
+      );
+    expect(
+      [...facts.values()].some(
+        (fact) => fact.now === 'It waits for an agent to start on it.',
+      ),
+    ).toBe(true);
+  });
+
+  it('takes as many reads for many issues as for a few, while none waits in the queue', async () => {
+    await seed({ queued: false });
+    const few = countedDeps();
+    await progressOf(few, await owned(), 'alice');
+    await seed({ queued: false });
+    await seed({ queued: false });
+    await seed({ queued: false });
+    const issues = await owned();
+    expect(issues).toHaveLength(20);
+    const many = countedDeps();
+    await progressOf(many, issues, 'alice');
+    expect(many.reads()).toBe(few.reads());
   });
 });

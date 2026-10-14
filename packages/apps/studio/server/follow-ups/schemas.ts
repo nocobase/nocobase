@@ -5,6 +5,7 @@ import {
   FOLLOW_UPS_MAX,
   OWNED_PER_STATUS_MAX,
   UNREAD_MAX,
+  type FollowingState,
   type FollowingView,
   type FollowUpIssue,
   type FollowUpsView,
@@ -94,3 +95,13 @@ export const FollowUpRowsQuery = z.object({
 export const FollowUpRowsMeta = z.object({
   total: z.number().int(),
 });
+
+export const FollowingStateSchema: z.ZodType<FollowingState> = z
+  .object({
+    issueIds: z.array(z.string()).meta({
+      description:
+        'The followed issues in order: the chosen ones, or by default the caller’s blocked and in-review issues, newest first.',
+    }),
+    max: z.number().int().meta({ description: 'The most issues one follows.' }),
+  })
+  .meta({ ref: 'StudioFollowingState' });

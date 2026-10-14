@@ -174,6 +174,27 @@ describe('refreshing My follow-ups', () => {
     expect(page.overview).toHaveBeenCalledTimes(3);
   });
 
+  it('reads the follow star’s state again for a named issue where only the star shows', async () => {
+    const client = new QueryClient();
+    clients.push(client);
+    const read = vi.fn(async () => ({ issueIds: ['a'], max: 5 }));
+    const observer = new QueryObserver(client, {
+      queryKey: [...KEY, 'following'],
+      queryFn: read,
+      staleTime: Infinity,
+      retry: false,
+    });
+    stops.push(observer.subscribe(() => {}));
+    await waitFor(() => expect(read).toHaveBeenCalledOnce());
+    const readRows = vi.fn(async () => []);
+    const refresh = followUpsRefresh(client, readRows, 5);
+    stops.push(refresh.stop);
+    refresh.issues(new Set(['a']));
+    refresh.issues(new Set(['b']));
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+    expect(readRows).not.toHaveBeenCalled();
+  });
+
   it('reads nothing while no page shows the overview', async () => {
     const page = shown(viewOf([row('a')]));
     await waitFor(() => expect(page.data()).toBeDefined());

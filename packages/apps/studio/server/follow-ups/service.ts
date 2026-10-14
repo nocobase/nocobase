@@ -21,6 +21,7 @@ import {
   parseFollowing,
   parseSeen,
   pruneSeen,
+  type FollowingState,
   type FollowingView,
   type FollowUpIssue,
   type FollowUpStatus,
@@ -59,6 +60,8 @@ export interface FollowUps {
    * they follow), for the page to refresh only them; the others are left out.
    */
   rows(viewer: Viewer, issueIds: readonly string[]): Promise<FollowUpIssue[]>;
+  /** What the viewer follows now, the issues they can no longer see left out, and how many they may. */
+  following(viewer: Viewer): Promise<FollowingState>;
   /** Replaces what the viewer follows; 400 when an issue is not one they can see. */
   setFollowing(
     viewer: Viewer,
@@ -366,6 +369,11 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
         followed,
         await readSeen(viewer.userId),
       );
+    },
+
+    async following(viewer) {
+      const { ids } = await currentFollowing(viewer);
+      return { issueIds: ids, max: FOLLOW_UPS_MAX };
     },
 
     async setFollowing(viewer, issueIds) {

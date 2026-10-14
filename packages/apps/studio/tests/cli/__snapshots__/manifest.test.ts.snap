@@ -122,6 +122,7 @@ env var list <env> -> GET /api/releases/environments/{environmentId}/variables (
 env var set <env> <name> <value> [--secret --description] -> PUT /api/releases/environments/{environmentId}/variables/{name} (person) rel.environments/manage
 env var unset <env> <name> -> DELETE /api/releases/environments/{environmentId}/variables/{name} (person) rel.environments/manage
 follow-up follow <issue> -> POST /api/followUps/issues/{issueId}/follow (person)
+follow-up following -> GET /api/followUps/following (person)
 follow-up list -> GET /api/followUps (person)
 follow-up unfollow <issue> -> POST /api/followUps/issues/{issueId}/unfollow (person)
 git authorization delete <connection> -> DELETE /api/git/authorizations/{connectionId} (person) confirm
