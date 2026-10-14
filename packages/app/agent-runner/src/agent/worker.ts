@@ -78,6 +78,11 @@ import { prepareCodexHome } from './codex-home.ts';
 import { SKILLS_PLUGIN_NAME } from './skills.ts';
 import { buildAgentEnv, environmentSecrets, providedVariables } from './env.ts';
 import {
+  allocateRunTemp,
+  removeRunTemp,
+  type RunTemp,
+} from '../core/run-temp.ts';
+import {
   GitCredentialBroker,
   installCredentialHelper,
   serveGitCredentials,
@@ -146,6 +151,7 @@ export function systemPrompt(
 /** What the runner tells the agent about its working directories. */
 export function workspaceNotes(options: {
   workDir: string;
+  tmpDir: string;
   cwd: string;
   dirs: readonly PreparedDir[];
   cli: string;
@@ -159,18 +165,19 @@ export function workspaceNotes(options: {
   /** The run only reads (`workspace.readOnly`): nothing it commits is pushed. */
   readOnly?: boolean;
 }): string {
-  const { workDir, cwd, dirs } = options;
+  const { workDir, cwd, dirs, tmpDir } = options;
   const lines = [
     dirs.length === 0
       ? `Your working directory is ${workDir}, an empty directory kept for this task; you start in it.`
-      : `You start in ${cwd}. The runner keeps this task's own files in ${workDir}; your TMPDIR is inside it.`,
+      : `You start in ${cwd}. The runner keeps this task's own files in ${workDir}.`,
   ];
   lines.push(
+    `TMPDIR, TMP and TEMP point to ${tmpDir}, which you and your child processes may write.`,
     'Repository attempts use new code directories. Claude, Pi and OpenCode start fresh when the directory changes; legacy sessions are not migrated. Codex state is kept outside the disposable worktree.',
   );
   if (dirs.length > 0) {
     lines.push(
-      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}). When this run ends, repository changes are saved to local continuation refs without pushing, then its worktrees are removed. If saving fails, the original worktree is kept for recovery. Temporary files outside repositories are removed.`,
+      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${tmpDir}). When this run ends, repository changes are saved to local continuation refs without pushing, then its worktrees are removed. If saving fails, the original worktree is kept for recovery. Temporary files outside repositories are removed.`,
     );
     lines.push('Working directories (the first is the primary one):');
     for (const dir of dirs) {
@@ -196,7 +203,7 @@ export function workspaceNotes(options: {
         );
     }
     lines.push(
-      `Keep every file you write inside these directories or the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}).`,
+      `Keep every file you write inside these directories or the task's temporary directory (${tmpDir}).`,
     );
   }
   if (options.pnpmStoreDir !== undefined)
@@ -359,6 +366,7 @@ export class RunWorker {
   private prepared: PrepareContext | undefined;
   private readonly releases: (() => Promise<void>)[] = [];
   private credentialsFile: string | undefined;
+  private runTemp: RunTemp | undefined;
 
   constructor(
     payload: RunPayload,
@@ -589,6 +597,18 @@ export class RunWorker {
           `Directory retained: ${this.prepared?.workspace?.workDir ?? this.record.workDir}: ${String(error)}`,
         ),
       );
+      if (this.runTemp !== undefined) {
+        try {
+          if (this.writerStopFailure === undefined)
+            await removeRunTemp(this.runTemp.dir);
+        } catch (error) {
+          log(
+            `Run temporary directory retained: ${this.runTemp.dir}: ${String(error)}`,
+          );
+        } finally {
+          await this.runTemp.lock.release();
+        }
+      }
       this.lease.stop();
       this.broker?.close();
       await this.credentialServer?.close().catch(() => undefined);
@@ -710,8 +730,12 @@ export class RunWorker {
       return this.finishEnding();
     }
 
-    const tmpDir = path.join(runnerDir, 'tmp');
-    await mkdir(tmpDir, { recursive: true, mode: 0o700 });
+    try {
+      this.runTemp = await allocateRunTemp(deps.paths, workDir);
+    } catch (error) {
+      return this.finishFailed('setupFailed', String(error));
+    }
+    const tmpDir = this.runTemp.dir;
     const sessionDir = sessionWorkDir(
       deps.paths,
       registration.key,
@@ -815,6 +839,7 @@ export class RunWorker {
       payload.prompt.system,
       workspaceNotes({
         workDir,
+        tmpDir,
         cwd,
         dirs: context.dirs,
         cli: payload.cli.name,

@@ -1,3 +1,4 @@
+import { cleanupRunTemp } from './run-temp.ts';
 import { finalizeRunWorktrees } from './run-worktrees.ts';
 // Runs each claimed run in its own worker process and keeps a record of it on disk.
 //
@@ -637,6 +638,7 @@ export async function recoverRun(
     const liveGroup = (await listProcesses()).some(
       (p) => p.pgid === record.pid,
     );
+    const stopped = holders.length + tags.length === 0 && !liveGroup;
     const results = await finalizeRunWorktrees(
       paths,
       record.workDir,
@@ -648,6 +650,16 @@ export async function recoverRun(
           }
         : {},
     );
+    if (stopped) {
+      try {
+        await cleanupRunTemp(paths, record.workDir);
+      } catch (error) {
+        // Temporary cleanup must not prevent credential removal, reporting or worker exit completion.
+        const reason = `Run temporary directory retained for ${record.workDir}: ${String(error)}`;
+        log(reason);
+        detail += `\n${reason}`;
+      }
+    }
     const failed = results.filter((result) => !result.saved);
     if (failed.length > 0)
       detail += `\nDirectory retained: ${record.workDir}: ${failed.map((r) => r.reason).join('; ')}`;
