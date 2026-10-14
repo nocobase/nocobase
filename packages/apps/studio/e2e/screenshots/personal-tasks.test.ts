@@ -205,6 +205,13 @@ for (const preset of ['compact', 'default'] as const) {
       ).toBe(true);
       await expect(following).toHaveCount(0);
       await capture('desktop-zero-following');
+      for (const width of [375, 390]) {
+        await page.setViewportSize({ width, height: 844 });
+        await expect(table).toBeVisible();
+        await expect(following).toHaveCount(0);
+        await capture(`phone-${width}-zero-following`);
+      }
+      await page.setViewportSize({ width: 1600, height: 900 });
       const disclosure = page.getByRole('button', {
         name: `Expand subtasks of ${parent.identifier}`,
         exact: true,
@@ -398,6 +405,46 @@ for (const preset of ['compact', 'default'] as const) {
         await returnByKeyboard(returnTarget);
         await expect(table).toBeVisible();
         await capture(`partition-${width}-personal-list`);
+        const sections = page.getByRole('navigation', {
+          name: 'Personal task sections',
+        });
+        await sections
+          .getByRole('button', { name: 'Following', exact: true })
+          .click();
+        await expect(following).toBeVisible();
+        const card = following
+          .getByRole('button')
+          .filter({ hasText: parent.title });
+        await expect(card).not.toHaveAttribute('aria-current');
+        const commenter = await apiAs(browser, 'admin');
+        try {
+          await commenter.api.post(`projects/issues/${parent.id}/comments`, {
+            content: `Unread public demo update at ${width}px`,
+          });
+        } finally {
+          await commenter.close();
+        }
+        await expect(following.getByTestId('follow-ups-unread')).toBeVisible();
+        await capture(`partition-${width}-following-unread`);
+        if (width === 375) {
+          const navigation = page
+            .getByTestId('phone-bar')
+            .getByRole('button', { name: 'Open navigation', exact: true });
+          await navigation.click();
+          const menu = page.getByRole('navigation', {
+            name: 'Application navigation',
+          });
+          await expect(
+            menu.getByRole('link', { name: /^Inbox/u }),
+          ).toBeInViewport({ ratio: 1 });
+          await capture('phone-375-navigation-menu');
+          await page.keyboard.press('Escape');
+          await expect(navigation).toBeFocused();
+        }
+        await sections
+          .getByRole('button', { name: 'My tasks-α', exact: true })
+          .click();
+        await expect(table).toBeVisible();
         await page
           .getByRole('button', { name: /^Return to unsent draft/u })
           .click();
