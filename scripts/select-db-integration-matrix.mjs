@@ -43,11 +43,13 @@ export const packageSuites = [
       'packages/plugins/app-plugin-agents/server/core/runs/',
       'packages/plugins/app-plugin-agents/server/core/agents/agent.store.ts',
       'packages/plugins/app-plugin-agents/tests/claim-concurrency.test.ts',
+      'packages/plugins/app-plugin-agents/tests/active-input.test.ts',
+      'packages/apps/studio/server/agents/work.ts',
       'packages/plugins/app-plugin-agents/tests/harness.ts',
     ],
     dialect: 'postgres',
     filter: '@nocobase/app-plugin-agents',
-    tests: ['tests/claim-concurrency.test.ts'],
+    tests: ['tests/claim-concurrency.test.ts', 'tests/active-input.test.ts'],
   },
 ];
 

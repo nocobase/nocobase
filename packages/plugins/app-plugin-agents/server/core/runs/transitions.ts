@@ -60,6 +60,7 @@ export async function finishRun(
   deps: TransitionDeps,
   run: RunRecord,
   outcome: FinishOutcome,
+  versioned = false,
 ): Promise<RunRecord | null> {
   const now = deps.clock.now().toISOString();
   const values: Record<string, unknown> = {
@@ -86,6 +87,20 @@ export async function finishRun(
       f.and([
         f.string('id').eq(run.id),
         f.string('status').eq(run.status),
+        ...(versioned
+          ? [
+              run.lastActivityAt === null
+                ? f.date('lastActivityAt').empty()
+                : f.and([
+                    f
+                      .date('lastActivityAt')
+                      .notBefore(new Date(run.lastActivityAt)),
+                    f
+                      .date('lastActivityAt')
+                      .notAfter(new Date(run.lastActivityAt)),
+                  ]),
+            ]
+          : []),
         ...(run.status === 'queued'
           ? [
               f.number('attempt').eq(Number(run.attempt)),

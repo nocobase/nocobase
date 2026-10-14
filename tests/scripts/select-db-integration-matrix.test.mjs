@@ -131,7 +131,7 @@ test('unrelated paths and empty changes skip the matrix', () => {
 const claimConcurrency = {
   dialect: 'postgres',
   filter: '@nocobase/app-plugin-agents',
-  tests: 'tests/claim-concurrency.test.ts',
+  tests: 'tests/claim-concurrency.test.ts tests/active-input.test.ts',
 };
 
 test('a guarded package path selects its dialect suite, and nothing else does', () => {

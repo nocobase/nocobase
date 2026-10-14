@@ -87,7 +87,13 @@ import { readWorkload, type WorkloadRunners } from './workload.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
 import { gateInputs, gatePending } from './input-gate.js';
 import { findBrief, requestReset } from './workspace.store.js';
-import { findCommentRoot, currentCommentOwner } from './comment-consent.js';
+import {
+  findCommentRoot,
+  currentCommentOwner,
+  commentConsent,
+  commentFromOwner,
+} from './comment-consent.js';
+import { guardVersion } from './activity.js';
 
 export const DEFAULT_THREAD = 'main';
 
@@ -99,6 +105,8 @@ export interface NewInput {
 }
 
 export interface EnqueueRequest {
+  /** Trusted application dispatch: prefer a compatible authorized active run across comment roots. */
+  readonly preferActive?: boolean;
   /** Supplied only by a real comment entry point; subsequent comment dispatches share its first run. */
   readonly comment?: {
     readonly rootRunId?: string;
@@ -166,6 +174,8 @@ export interface RunEnqueued {
   readonly outcome: 'created' | 'merged' | 'appended';
   readonly status: RunStatus;
   readonly inputId: string;
+  /** The source comment already has an input; callers must not announce it again. */
+  readonly duplicate?: boolean;
 }
 
 /** Work that waits for the subject's responsible to confirm it: a run request (`runs.requests`), and no run yet. */
@@ -345,6 +355,8 @@ export interface RunServiceDeps extends TransitionDeps {
 
 /** Work to queue now, as the person it runs as. */
 interface Work {
+  readonly preferActive?: boolean;
+  readonly sourceRunId?: string;
   readonly commentRootRunId?: string | null;
   readonly commentExecution?: 'owner' | 'requester' | null;
   readonly commentOwnerKey?: string | null;
@@ -620,6 +632,61 @@ export function createRunService(deps: RunServiceDeps): RunService {
     );
   }
 
+  /** Cross-root appends require both sources to retain the same owner's authorization. */
+  async function equivalentCommentAuthority(
+    unit: Tx,
+    run: RunRecord,
+    work: Work,
+  ): Promise<boolean> {
+    if (
+      run.ownerUserId !== work.ownerUserId ||
+      (run.commentOwnerKey ?? null) !== (work.commentOwnerKey ?? null) ||
+      (run.commentExecution ?? 'owner') !== (work.commentExecution ?? 'owner')
+    )
+      return false;
+    if ((run.commentRootRunId ?? null) === (work.commentRootRunId ?? null)) {
+      if (!run.commentRootRunId) return true;
+      const root = await findCommentRoot(unit.conn, run.commentRootRunId);
+      return await authorizedRoot(root);
+    }
+    if (
+      work.commentExecution === 'requester' ||
+      run.commentExecution === 'requester' ||
+      !work.sourceRunId
+    )
+      return false;
+    const source = await findRunRecord(unit.conn, work.sourceRunId);
+    if (
+      !source ||
+      source.subjectKind !== run.subjectKind ||
+      source.subjectId !== run.subjectId ||
+      source.ownerUserId !== run.ownerUserId ||
+      source.actorUserId !== run.actorUserId
+    )
+      return false;
+    const sourceRoot = source.commentRootRunId
+      ? await findCommentRoot(unit.conn, source.commentRootRunId)
+      : source;
+    const targetRoot = run.commentRootRunId
+      ? await findCommentRoot(unit.conn, run.commentRootRunId)
+      : run;
+    return (
+      (await authorizedRoot(sourceRoot)) && (await authorizedRoot(targetRoot))
+    );
+
+    async function authorizedRoot(root: RunRecord) {
+      if (!(await currentCommentOwner(unit.conn, deps.subjects, root)))
+        return false;
+      if (!root.commentRootRunId)
+        return chainSourceOf(root) === root.ownerUserId;
+      const { decision } = await commentConsent(unit.conn, root);
+      if (decision === 'pending' || decision === 'rejected') return false;
+      return (
+        decision === 'confirmed' || (await commentFromOwner(unit.conn, root))
+      );
+    }
+  }
+
   /**
    * Queues `work` for `agent`: it joins the run working on its key while that run can still be told, else the run
    * waiting for it, else starts a new run.
@@ -640,6 +707,34 @@ export function createRunService(deps: RunServiceDeps): RunService {
     }
     // Serializes enqueues and claims for this agent, so a key never gets two waiting runs.
     await lockAgentForClaim(unit.conn, agent.id, clock.now().toISOString());
+    if (work.preferActive) {
+      const commentId = jsonObject(work.input.payload).commentId;
+      if (typeof commentId === 'string') {
+        const prior = await inputsRepo(unit.conn).findMany({
+          filter: (f) =>
+            f.and([
+              f.string('type').eq('comment'),
+              f.json('payload').path(['commentId']).eq(commentId),
+            ]),
+        });
+        for (const input of prior) {
+          const run = await findRunRecord(unit.conn, input.runId);
+          if (
+            run &&
+            run.agentId === agent.id &&
+            run.subjectKind === work.subject.kind &&
+            run.subjectId === work.subject.id
+          )
+            return {
+              runId: run.id,
+              inputId: input.id,
+              outcome: 'appended',
+              status: run.status,
+              duplicate: true,
+            };
+        }
+      }
+    }
     const key = {
       agentId: agent.id,
       subjectKind: work.subject.kind,
@@ -659,35 +754,92 @@ export function createRunService(deps: RunServiceDeps): RunService {
         (run.commentRootRunId ?? null) === (work.commentRootRunId ?? null) &&
         (run.commentExecution ?? null) === (work.commentExecution ?? null),
     );
-    const candidate = open.find(
-      (run) =>
-        !work.freshSession &&
-        (run.status === 'dispatched' ||
-          (run.status === 'running' && Boolean(run.acceptsInput))),
-    );
-    // Joins the working run only when the subject would let the agent act on it now; otherwise it waits in a queued run,
-    // which the claim admits or cancels.
-    const working =
-      candidate &&
-      (
-        await gateInputs(unit.conn, deps, candidate, agent, [
-          {
-            id: '',
-            at: clock.now().toISOString(),
-            ...work.input,
-            ...(candidate.commentRootRunId
-              ? {
-                  payload: {
-                    ...jsonObject(work.input.payload),
-                    commentRootRunId: candidate.commentRootRunId,
-                  },
-                }
-              : {}),
-          },
-        ])
-      ).length > 0
-        ? candidate
-        : undefined;
+    let working: RunRecord | undefined;
+    for (let candidate of work.preferActive ? unfiltered : open) {
+      if (
+        work.freshSession ||
+        candidate.cancelRequestedAt ||
+        !(
+          candidate.status === 'dispatched' ||
+          (candidate.status === 'running' && Boolean(candidate.acceptsInput))
+        )
+      )
+        continue;
+      if (work.preferActive) {
+        if (
+          !candidate.runnerId ||
+          !['claude', 'codex', 'pi', 'opencode'].includes(candidate.tool ?? '')
+        )
+          continue;
+        const runner = await deps.runners.find(unit.conn, candidate.runnerId);
+        if (!runner?.features.includes('steer')) continue;
+        if (!(await equivalentCommentAuthority(unit, candidate, work)))
+          continue;
+      }
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        const input = {
+          id: '',
+          at: clock.now().toISOString(),
+          ...work.input,
+          ...(candidate.commentRootRunId
+            ? {
+                payload: {
+                  ...jsonObject(work.input.payload),
+                  commentRootRunId: candidate.commentRootRunId,
+                },
+              }
+            : {}),
+        };
+        if (
+          (await gateInputs(unit.conn, deps, candidate, agent, [input]))
+            .length === 0
+        )
+          break;
+        const next = new Date(
+          Math.max(
+            clock.now().getTime(),
+            candidate.lastActivityAt
+              ? Date.parse(candidate.lastActivityAt) + 1
+              : 0,
+          ),
+        ).toISOString();
+        const touched = await guardVersion(
+          unit.conn,
+          candidate.id,
+          candidate.lastActivityAt,
+        )
+          .where('status', '=', candidate.status)
+          .where('cancelRequestedAt', 'is', null)
+          .set({ lastActivityAt: next })
+          .execute();
+        if (touched.updatedCount === 1) {
+          working = candidate;
+          break;
+        }
+        const current = await findRunRecord(unit.conn, candidate.id);
+        if (
+          !current ||
+          current.cancelRequestedAt ||
+          !(
+            current.status === 'dispatched' ||
+            (current.status === 'running' && current.acceptsInput)
+          )
+        )
+          break;
+        // A claim/start may change the holder or tool; re-evaluate those on a subsequent dispatch.
+        if (
+          current.runnerId !== candidate.runnerId ||
+          current.tool !== candidate.tool
+        )
+          break;
+        candidate = current;
+        if (attempt === 3)
+          throw conflict(
+            'The run activity changed during append; retry the dispatch.',
+          );
+      }
+      if (working) break;
+    }
     const waiting = open.find((run) => run.status === 'queued');
     const target = working ?? waiting;
     const commentInput = (rootId: string | null | undefined): NewInput =>
@@ -1153,6 +1305,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
             request.requires ?? [],
           );
         const result = await queue(unit, agent, {
+          preferActive: request.preferActive,
+          sourceRunId: request.causedByRunId,
           commentRootRunId,
           commentExecution,
           commentOwnerKey,
@@ -1205,6 +1359,35 @@ export function createRunService(deps: RunServiceDeps): RunService {
             'RUN_NOT_ACTIVE',
             `The run is ${run.status}.`,
           );
+        if (isActive(run.status)) {
+          let current = run;
+          for (let attempt = 0; attempt < 4; attempt += 1) {
+            const version = new Date(
+              Math.max(
+                clock.now().getTime(),
+                current.lastActivityAt
+                  ? Date.parse(current.lastActivityAt) + 1
+                  : 0,
+              ),
+            ).toISOString();
+            const updated = await guardVersion(
+              unit.conn,
+              current.id,
+              current.lastActivityAt,
+            )
+              .where('status', '=', current.status)
+              .set({ lastActivityAt: version })
+              .execute();
+            if (updated.updatedCount === 1)
+              return insertInput(unit, current.id, input);
+            current = await require(unit.conn, run.id);
+            if (!isActive(current.status))
+              throw conflict('The run moved on before input was appended.');
+          }
+          throw conflict(
+            'The run activity changed during append; retry the input.',
+          );
+        }
         return insertInput(unit, run.id, input);
       }, outer),
 
