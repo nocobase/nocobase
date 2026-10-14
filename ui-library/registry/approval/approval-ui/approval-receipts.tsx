@@ -113,7 +113,9 @@ export function ApprovalReceipts({
           >
             {ui.renderAvatar(receipt.personId)}
             <span className='text-sm'>{ui.personName(receipt.personId)}</span>
-            <Badge variant={VARIANTS[receipt.state]}>{receipt.label}</Badge>
+            <Badge data-size='sm' variant={VARIANTS[receipt.state]}>
+              {receipt.label}
+            </Badge>
             {receipt.at ? (
               <time
                 dateTime={receipt.at}

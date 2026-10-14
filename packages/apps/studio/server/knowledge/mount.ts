@@ -1,7 +1,7 @@
 /**
  * The knowledge base as a mount of the agents plugin (`agents.mounts`, name `knowledge`): at claim, a snapshot (the
  * knowledge plugin's `snapshots`) of the run's project space and the system space, as the person who woke the agent
- * reads them, for an agent configured to read knowledge; the runner places it in `.nocobase-runner/knowledge/` and caches
+ * reads them, within the run's effective knowledge permissions; the runner places it in `.nocobase-runner/knowledge/` and caches
  * it by hash. A runner without the `mounts` feature gets nothing, and the brief points at `nb-studio kb read` instead.
  *
  * ```text

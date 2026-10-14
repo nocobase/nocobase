@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// NP-200: the agent, skill and variable dialogs ask before closing while they hold input that was not submitted.
+// The skill and variable dialogs ask before closing while they hold input that was not submitted.
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -13,8 +13,6 @@ vi.mock('@nocobase/app-plugin-authorization/client', () =>
   clientMocks.authorization(),
 );
 
-const { default: NewAgentPage } =
-  await import('../../client/pages/agents/new.js');
 const { default: NewSkillPage } =
   await import('../../client/pages/skills/new.js');
 const { VariableDialog } =
@@ -41,27 +39,6 @@ describe('dialogs with unsaved input', () => {
       },
       MANAGE,
     );
-  });
-
-  it('closes the new agent dialog at once when nothing was entered', async () => {
-    renderRoute(<NewAgentPage />, '/agents/new', '/agents/new');
-    await screen.findByRole('dialog');
-    fireEvent.click(screen.getByRole('button', { name: 'actions.cancel' }));
-    expect(await screen.findByText('elsewhere')).toBeInTheDocument();
-    expect(screen.queryByRole('alertdialog')).toBeNull();
-  });
-
-  it('asks before discarding a new agent, and keeps editing when told to', async () => {
-    renderRoute(<NewAgentPage />, '/agents/new', '/agents/new');
-    const dialog = await screen.findByRole('dialog');
-    fireEvent.change(within(dialog).getByLabelText('agentForm.name'), {
-      target: { value: 'Coder' },
-    });
-    await cancelAndAnswer('unsavedChanges.keepEditing');
-    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
-    expect(screen.getByLabelText('agentForm.name')).toHaveValue('Coder');
-    await cancelAndAnswer('unsavedChanges.discard');
-    expect(await screen.findByText('elsewhere')).toBeInTheDocument();
   });
 
   it('asks before discarding a new skill', async () => {

@@ -82,6 +82,70 @@ describe('realtime', () => {
     realtime.close();
   });
 
+  it('delivers an authenticated public topic only to connections with a principal', () => {
+    const realtime = createRealtimeService();
+    const topic = realtime.defineTopic<{ readonly ids: string[] }, 'public'>(
+      'test:signed-in',
+      { audience: 'public', authenticated: true },
+    );
+    const open = realtime.defineTopic<string, 'public'>('test:open', {
+      audience: 'public',
+    });
+    const first = createTestWebSocket();
+    const second = createTestWebSocket();
+    const anonymous = createTestWebSocket();
+    const signedIn = [
+      realtime.connect(first, { principal: { userId: 'user-1' } }),
+      realtime.connect(second, { principal: { userId: 'user-2' } }),
+    ];
+    const visitor = realtime.connect(anonymous);
+    for (const connection of [...signedIn, visitor])
+      realtime.handleClientMessage(
+        connection,
+        JSON.stringify({ type: 'subscribe', topic: topic.name }),
+      );
+    expect(anonymous.messages).toEqual([
+      expect.objectContaining({
+        type: 'error',
+        code: 'AUTHENTICATION_REQUIRED',
+      }),
+    ]);
+    expect(() => realtime.subscribe(visitor, topic.name)).toThrow(
+      /requires authentication/u,
+    );
+    expect(topic.publish({ ids: ['a'] }).subscriberCount).toBe(2);
+    for (const socket of [first, second])
+      expect(socket.messages.at(-1)).toMatchObject({
+        type: 'event',
+        payload: { ids: ['a'] },
+      });
+    expect(anonymous.messages).toHaveLength(1);
+    // A subscription made before the topic was registered is skipped too.
+    const early = createTestWebSocket();
+    const earlyVisitor = realtime.connect(early);
+    realtime.subscribe(earlyVisitor, 'test:late');
+    const late = realtime.defineTopic<string, 'public'>('test:late', {
+      audience: 'public',
+      authenticated: true,
+    });
+    expect(late.publish('hidden').subscriberCount).toBe(0);
+    expect(early.messages).toEqual([]);
+    late.close();
+    // A topic that does not opt in keeps reaching anonymous connections.
+    realtime.handleClientMessage(
+      visitor,
+      JSON.stringify({ type: 'subscribe', topic: open.name }),
+    );
+    expect(open.publish('tick').subscriberCount).toBe(1);
+    expect(anonymous.messages.at(-1)).toMatchObject({
+      type: 'event',
+      payload: 'tick',
+    });
+    topic.close();
+    open.close();
+    realtime.close();
+  });
+
   it('disconnects all realtime connections for one user', () => {
     const realtime = createRealtimeService();
     const first = createTestWebSocket();

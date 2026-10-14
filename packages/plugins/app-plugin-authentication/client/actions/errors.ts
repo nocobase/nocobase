@@ -16,6 +16,7 @@ const KNOWN_CODES = new Set<string>(
 export type TranslateAuthenticationError = (
   key: ErrorKey,
   defaultValue: string,
+  values?: { origin: string },
 ) => string;
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -52,10 +53,21 @@ export function resolveAuthenticationActionError(
   error: unknown,
   translate: TranslateAuthenticationError = (_key, defaultValue) =>
     defaultValue,
+  origin: string | undefined = typeof window === 'undefined'
+    ? undefined
+    : window.location.origin,
 ): AuthenticationActionError | undefined {
   if (!error) return undefined;
   const { code, status } = describe(error);
   const message = (key: ErrorKey) => translate(key, enUS.errors[key]);
+  if (code === 'INVALID_ORIGIN' && origin && /^https?:\/\//u.test(origin)) {
+    const template = translate(
+      'invalidOriginWithAddress',
+      enUS.errors.invalidOriginWithAddress,
+      { origin },
+    );
+    return { code, message: template.replaceAll('{{origin}}', () => origin) };
+  }
   if (code && KNOWN_CODES.has(code))
     return { code, message: message(code as ErrorKey) };
   if (status === 429)
@@ -72,8 +84,8 @@ export function useAuthenticationErrorResolver(): (
   const { t } = useTranslation(AUTHENTICATION_NAMESPACE);
   return useCallback(
     (error: unknown) =>
-      resolveAuthenticationActionError(error, (key, defaultValue) =>
-        t(`errors.${key}`, { defaultValue }),
+      resolveAuthenticationActionError(error, (key, defaultValue, values) =>
+        t(`errors.${key}`, { defaultValue, ...values }),
       ),
     [t],
   );

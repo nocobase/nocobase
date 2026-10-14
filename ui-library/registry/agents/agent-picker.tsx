@@ -1,27 +1,22 @@
 /**
  * The one way to pick an agent: a trigger with the agent's avatar (its availability dot on the avatar's corner) and
- * name, and a menu of every agent the viewer may pick, grouped by type (Online, Runner) with their default and personal
- * tags and availability. Two appearances: `field` (the default), which looks like a form's select, for forms and
- * settings; and `toolbar`, compact with the mode tag, for a composer. Presentational: pass the agents (`ChatAgent` from
+ * name, and a menu of every enabled agent with what it is good at, its default and "personal runners only" tags, and,
+ * for one that cannot answer the viewer now, why (it cannot be picked then). Two appearances: `field` (the default),
+ * which looks like a form's select, for forms and settings; and `toolbar`, compact, for a composer. Presentational: pass
+ * the agents (`ChatAgent` from
  * `@nocobase/app-plugin-agents/shared/conversations`), the one chosen, and `onSelect`; every word comes from `labels`,
  * English by default. A form that may choose no agent, such as a default setting, adds `noneOption` at the top of the
  * menu. `AgentIdentity` is the avatar, dot and name on their own, for a picker that lists agents among other things.
  */
+import { CheckIcon, ChevronDownIcon } from 'lucide-react';
+import type { ComponentProps, ReactElement } from 'react';
+
 import { AgentAvatar } from '@nocobase/app-plugin-agents/client/chat';
 import type {
   ChatAgent,
   ChatAvailability,
-  ConversationMode,
   OfflineReason,
 } from '@nocobase/app-plugin-agents/shared/conversations';
-import {
-  CheckIcon,
-  ChevronDownIcon,
-  MessageSquareIcon,
-  WrenchIcon,
-} from 'lucide-react';
-import type { ComponentProps, ReactElement } from 'react';
-
 import { Badge } from '#components/ui/badge';
 import {
   DropdownMenu,
@@ -47,7 +42,7 @@ export interface AgentPickerLabels {
   readonly startWith: string;
   /** Under the menu, when the conversation stays with its agent (`bound`). */
   readonly boundHint: string;
-  /** Under the menu otherwise. */
+  /** Under the menu otherwise: where answers run. */
   readonly modeHint: string;
   readonly empty: string;
   /** Shown in place of a name when there is no agent. */
@@ -58,13 +53,10 @@ export interface AgentPickerLabels {
   readonly placeholder: string;
   readonly myDefault: string;
   readonly systemDefault: string;
+  /** An agent only personal runners have. */
   readonly personal: string;
   /** A conversation answered by the system default in place of its own agent. */
   readonly temporary: string;
-  readonly onlineGroup: string;
-  readonly runnerGroup: string;
-  readonly mode: Readonly<Record<ConversationMode, string>>;
-  readonly modeHints: Readonly<Record<ConversationMode, string>>;
   readonly availability: Readonly<Record<'online' | OfflineReason, string>>;
 }
 
@@ -77,29 +69,22 @@ const defaultAgentPickerLabels: AgentPickerLabels = {
   boundHint:
     'A conversation stays with its agent; choosing another starts a new conversation.',
   modeHint:
-    'Online answers on the server in seconds; Runner runs a coding agent on a runtime. A conversation keeps its mode.',
+    'Lists the enabled agents and says why one cannot answer you now. Answers run on a runner: the first reply waits for one to take it, usually a few seconds.',
   empty: 'No agent you may chat with',
   none: 'No agent',
   unknown: 'Unknown agent',
   placeholder: 'Choose an agent',
   myDefault: 'My default',
   systemDefault: 'System default',
-  personal: 'Only me',
+  personal: 'Personal runners only',
   temporary: 'Temporary',
-  onlineGroup: 'Online agents',
-  runnerGroup: 'Runner agents',
-  mode: { online: 'Online', runner: 'Runner' },
-  modeHints: {
-    online: 'Answers in seconds on the server',
-    runner: 'A coding agent on a runtime',
-  },
   availability: {
     online: 'Online',
     agentMissing: 'Deleted',
-    agentArchived: 'Archived',
+    agentArchived: 'Not enabled',
     forbidden: 'Not available to you',
-    noRunner: 'No runner online',
-    modelUnavailable: 'Model unavailable',
+    noRunner: 'No runner online, cannot be chosen',
+    othersPersonal: "Only others' personal runners have it",
   },
 };
 
@@ -126,6 +111,7 @@ export function AgentTag({
 }: ComponentProps<'span'> & { readonly tone: AgentTagTone }): ReactElement {
   return (
     <Badge
+      data-size='sm'
       variant='secondary'
       data-tone={tone}
       className={cn('font-normal', TONE[tone], className)}
@@ -172,34 +158,7 @@ export function AvailabilityDot({
   );
 }
 
-export interface ModeTagProps extends ComponentProps<'span'> {
-  readonly mode: ConversationMode;
-  readonly labels?: Partial<AgentPickerLabels>;
-}
-
-/** A conversation's mode, Online or Runner, with what it means on hover. */
-export function ModeTag({
-  mode,
-  labels,
-  className,
-  ...props
-}: ModeTagProps): ReactElement {
-  const words = labelsOf(labels);
-  return (
-    <span
-      title={words.modeHints[mode]}
-      className={cn('inline-flex', className)}
-      {...props}
-    >
-      <AgentTag tone={mode === 'online' ? 'violet' : 'blue'}>
-        {mode === 'online' ? <MessageSquareIcon /> : <WrenchIcon />}
-        {words.mode[mode]}
-      </AgentTag>
-    </span>
-  );
-}
-
-/** An agent's tags: the viewer's default or the system default, and "only me" for a personal agent. */
+/** An agent's tags: the viewer's default or the system default, and one only personal runners have. */
 export function AgentTags({
   agent,
   labels,
@@ -215,7 +174,7 @@ export function AgentTags({
       ) : agent.isSystemDefault ? (
         <AgentTag tone='grey'>{words.systemDefault}</AgentTag>
       ) : null}
-      {agent.personal ? (
+      {agent.personalOnly ? (
         <AgentTag tone='violet'>{words.personal}</AgentTag>
       ) : null}
     </>
@@ -273,7 +232,6 @@ export function AgentIdentity({
 export interface AgentPickerShown {
   readonly name: string | null;
   readonly availability?: ChatAvailability | null;
-  readonly mode?: ConversationMode | null;
   /** The system default answers in place of the conversation's own agent. */
   readonly temporary?: boolean;
 }
@@ -286,8 +244,7 @@ export interface AgentPickerNoneOption {
 
 /**
  * `field` looks like a form's select: as wide as its container, the chosen agent and its availability, no tags.
- * `toolbar` is sized for a composer's toolbar, which is an `@container`: the name truncates only past a generous width,
- * and the mode tag shows only where the container is wide (`@md`).
+ * `toolbar` is sized for a composer's toolbar, which is an `@container`: the name truncates only past a generous width.
  */
 export type AgentPickerAppearance = 'field' | 'toolbar';
 
@@ -299,16 +256,10 @@ export interface AgentPickerProps {
   readonly onSelect: (agentId: string) => void;
   /** `field` (the default) for forms and settings, `toolbar` for a composer. */
   readonly appearance?: AgentPickerAppearance;
-  /** Offer only agents of this type; a chosen agent of another type still shows on the trigger. */
-  readonly type?: ConversationMode;
   /** The trigger's content; the chosen agent by default. */
   readonly shown?: AgentPickerShown;
   /** An existing conversation: picking another agent starts a new conversation, so nothing is checked. */
   readonly bound?: boolean;
-  /** Group the menu by mode, Online then Runner. */
-  readonly groupByMode?: boolean;
-  /** Show the mode tag on a `toolbar` trigger. */
-  readonly showMode?: boolean;
   /** Show what picking means under the menu (`boundHint` or `modeHint`); by default only in a `toolbar`. */
   readonly showHint?: boolean;
   /** How an agent is named, such as in the viewer's language; `agent.name` by default. */
@@ -348,11 +299,8 @@ export function AgentPicker({
   value,
   onSelect,
   appearance = 'field',
-  type,
   shown,
   bound = false,
-  groupByMode = true,
-  showMode = true,
   showHint,
   agentName = defaultName,
   labels,
@@ -366,7 +314,7 @@ export function AgentPicker({
 }: AgentPickerProps): ReactElement {
   const words = labelsOf(labels);
   const toolbar = appearance === 'toolbar';
-  const offered = type ? agents.filter((agent) => agent.type === type) : agents;
+  const offered = agents;
   const chosen = agents.find((agent) => agent.id === value) ?? null;
   // Nothing chosen and no "no agent" choice: a field shows its placeholder.
   const empty = !toolbar && !shown && value === null && !noneOption;
@@ -382,7 +330,6 @@ export function AgentPicker({
     ? (placeholder ?? words.placeholder)
     : (shownName ?? fieldName ?? words.none);
   const availability = shown ? shown.availability : chosen?.availability;
-  const mode = shown ? shown.mode : (chosen?.type ?? null);
   // The dot is part of the avatar, so the accessible name says what it means.
   const subject = availability
     ? format(words.withStatus, {
@@ -390,14 +337,6 @@ export function AgentPicker({
         status: availabilityText(availability, words),
       })
     : name;
-  const groups = groupByMode
-    ? (['online', 'runner'] as const)
-        .map((group) => ({
-          type: group,
-          agents: offered.filter((agent) => agent.type === group),
-        }))
-        .filter((group) => group.agents.length > 0)
-    : [{ type: null, agents: offered }];
   // A field holding no agent shows the words alone, as a select shows its choice.
   const avatarless = !toolbar && !shown && !chosen;
   return (
@@ -440,13 +379,6 @@ export function AgentPicker({
               : { className: 'flex-1' })}
           />
         )}
-        {toolbar && showMode && mode ? (
-          <ModeTag
-            mode={mode}
-            labels={words}
-            className='hidden shrink-0 @md:inline-flex'
-          />
-        ) : null}
         {toolbar && shown?.temporary ? (
           <AgentTag tone='amber'>{words.temporary}</AgentTag>
         ) : null}
@@ -485,40 +417,43 @@ export function AgentPicker({
             <DropdownMenuItem disabled>{words.empty}</DropdownMenuItem>
           ) : null}
         </DropdownMenuGroup>
-        {groups.map((group) => (
-          <DropdownMenuGroup
-            key={group.type ?? 'all'}
-            data-mode={group.type ?? undefined}
-          >
-            {group.type ? (
-              <DropdownMenuLabel className='text-xs font-normal text-muted-foreground'>
-                {group.type === 'online'
-                  ? words.onlineGroup
-                  : words.runnerGroup}
-              </DropdownMenuLabel>
-            ) : null}
-            {group.agents.map((agent) => (
-              <DropdownMenuItem
-                key={agent.id}
-                onClick={() => onSelect(agent.id)}
-                data-agent={agent.id}
-              >
-                <AgentAvatar name={agentName(agent)} size='xs' />
-                <span className='min-w-0 flex-1 truncate'>
+        <DropdownMenuGroup>
+          {offered.map((agent) => (
+            <DropdownMenuItem
+              key={agent.id}
+              // An agent that cannot answer the viewer now says why and cannot be picked.
+              disabled={!agent.availability.online && agent.id !== value}
+              onClick={() => onSelect(agent.id)}
+              data-agent={agent.id}
+              className='items-start'
+            >
+              <AgentAvatar name={agentName(agent)} size='xs' />
+              <span className='flex min-w-0 flex-1 flex-col'>
+                <span className='truncate'>
                   {agentName(agent) ?? words.none}
                 </span>
-                <AgentTags agent={agent} labels={words} />
-                <AvailabilityDot
-                  availability={agent.availability}
-                  labels={words}
-                />
-                {!bound && value === agent.id ? (
-                  <CheckIcon className='size-3.5' aria-hidden='true' />
+                {agent.description ? (
+                  <span className='truncate text-xs text-muted-foreground'>
+                    {agent.description}
+                  </span>
                 ) : null}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuGroup>
-        ))}
+                {agent.availability.online ? null : (
+                  <span className='truncate text-xs text-muted-foreground'>
+                    {availabilityText(agent.availability, words)}
+                  </span>
+                )}
+              </span>
+              <AgentTags agent={agent} labels={words} />
+              <AvailabilityDot
+                availability={agent.availability}
+                labels={words}
+              />
+              {!bound && value === agent.id ? (
+                <CheckIcon className='size-3.5' aria-hidden='true' />
+              ) : null}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
         {(showHint ?? toolbar) ? (
           <>
             <DropdownMenuSeparator />

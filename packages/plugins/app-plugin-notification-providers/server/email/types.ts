@@ -11,26 +11,11 @@ export interface EmailMessage {
   readonly replyTo?: string;
 }
 
-export interface SmtpProviderConfig {
-  readonly provider: 'smtp';
-  readonly enabled?: boolean;
-  readonly host: string;
-  readonly port: number;
-  readonly secure?: boolean;
-  readonly auth?: { readonly user: string; readonly pass: string };
-  readonly from?: string;
-  readonly replyTo?: string;
-}
-
-export interface ResendProviderConfig {
-  readonly provider: 'resend';
-  readonly enabled?: boolean;
-  readonly apiKey: string;
-  readonly from: string;
-  readonly replyTo?: string;
-}
-
-export type EmailChannelConfig = SmtpProviderConfig | ResendProviderConfig;
+export type {
+  SmtpProviderConfig,
+  ResendProviderConfig,
+  EmailChannelConfig,
+} from '@nocobase/mailer';
 
 export interface PreparedEmailMessage {
   readonly to: string;

@@ -144,6 +144,7 @@ import {
   normalizeLabels,
   normalizeName,
   normalizeRuntimePolicy,
+  releaseArtifactKey,
 } from './validation.js';
 
 const DEFAULT_STARTUP_WAIT_MS = 5_000;
@@ -301,9 +302,7 @@ export class ReleasesService {
   private closed = false;
 
   private artifactKey(appId: string, releaseId: string): string {
-    return [this.options.artifactPrefix, appId, `${releaseId}.tar.gz`]
-      .filter(Boolean)
-      .join('/');
+    return releaseArtifactKey(appId, releaseId, this.options.artifactPrefix);
   }
 
   public constructor(private readonly options: ReleasesServiceOptions) {

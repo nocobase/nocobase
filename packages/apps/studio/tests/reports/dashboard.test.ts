@@ -29,6 +29,7 @@ import {
   permissionsOf,
   type BridgeHarness,
 } from '../agents/bridge-harness.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 
 const DAY = 24 * 3600 * 1000;
 
@@ -82,14 +83,20 @@ async function seed() {
     [alpha.id, 'done'],
     [beta.id, 'in_progress'],
   ] as const) {
+    // Alice hands the agent its step; the project manager executes the issue from its first move on.
     const issue = await h.projects.issues.create(alice, {
       title: `Work ${issues.length + 1}`,
       projectId,
+      executor: null,
+      start: false,
     });
-    const current = await h.projects.issueQueries.detail(alice, issue.id);
     await h.projects.issues.update(alice, issue.id, {
-      revision: current.revision,
-      executor: { type: 'agent', id: coder },
+      revision: issue.revision,
+      statusKey: 'in_progress',
+      start: false,
+    });
+    await h.projects.comments.post({ type: 'user', id: 'alice' }, issue.id, {
+      content: `[@Coder](mention://agent/${coder}) do it`,
     });
     const payload = await h.claimOne();
     runs.push(payload.run.id);
@@ -117,6 +124,8 @@ async function seed() {
       await h.projects.issues.update(alice, issue.id, {
         revision: latest.revision,
         statusKey: status,
+        executor: { type: 'agent', id: PROJECT_MANAGER_ID },
+        start: false,
       });
     }
     issues.push(fresh);
@@ -157,7 +166,7 @@ describe('dashboard figures', () => {
     );
     await h.projects.issues.update(h.viewer('alice'), issues[1].id, {
       revision: second.revision,
-      statusKey: 'todo',
+      statusKey: 'backlog',
     });
     // Work 3's agent asks its owner while its run works.
     await conn()
@@ -326,7 +335,7 @@ describe('dashboard figures', () => {
             byAgent: false,
             at: '',
             from: 'done',
-            to: 'todo',
+            to: 'backlog',
           },
         ],
         agentBlocks: [

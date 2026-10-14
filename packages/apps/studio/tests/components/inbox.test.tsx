@@ -71,7 +71,6 @@ const unreadByKind = (entries: readonly InboxEntry[]) =>
 const unreadCount = (entries: readonly InboxEntry[]) =>
   entries.filter((entry) => !entry.item.readAt).length;
 
-const decideApproval = vi.fn();
 const issue = vi.fn();
 const createComment = vi.fn();
 const updateIssue = vi.fn();
@@ -99,7 +98,7 @@ vi.mock('@nocobase/app-plugin-projects/client/kit', () => ({
     issue: (id: string) => ['pm', 'issue', id],
     issues: ['pm', 'issues'],
   },
-  usePmApi: () => ({ issue, decideApproval, createComment, updateIssue }),
+  usePmApi: () => ({ issue, createComment, updateIssue }),
   useViewer: () => ({ userId: 'lead' }),
   // The page context and the "Ask agent" slot are inert without a provider and a fill.
   usePageContextSource: () => undefined,
@@ -767,22 +766,10 @@ describe('the inbox detail', () => {
         replies: [],
       },
     ],
-    pendingApproval: {
-      id: 'r1',
-      issueTitle: 'Retry callbacks',
-      createdAt: '2026-10-01T07:00:00.000Z',
-      fromStatus: 'in_review',
-      toStatus: 'done',
-      requestedByType: 'user',
-      requestedByName: 'alice',
-      approverUserIds: ['lead'],
-      approverNames: ['lead'],
-    },
   };
 
-  it('lets an approver decide a waiting request', async () => {
+  it('shows an approval request an earlier version sent with its issue and latest activity, and nothing to decide', async () => {
     issue.mockResolvedValue(detail);
-    decideApproval.mockResolvedValue({ status: 'approved' });
     const [entry] = entriesOf([item('a')], [notice('a')]);
     render(
       wrap(
@@ -795,26 +782,18 @@ describe('the inbox detail', () => {
         />,
       ),
     );
-    const approve = await screen.findByRole('button', {
-      name: 'inbox.request.approve',
-    });
-    // The heading is the issue's title, the sentence says who asks for which move.
     expect(
-      screen.getByRole('heading', { name: 'Retry callbacks' }),
+      await screen.findByRole('heading', { name: 'Retry callbacks' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('inbox.request.move')).toBeInTheDocument();
-    expect(screen.getByText('inbox.request.since')).toBeInTheDocument();
-    // The latest activity: the comment as a snippet, then the request.
+    expect(await screen.findByText('Ready now')).toBeInTheDocument();
     expect(screen.getByText('inbox.recent')).toBeInTheDocument();
-    expect(screen.getByText('Ready now')).toBeInTheDocument();
-    fireEvent.click(approve);
-    await waitFor(() =>
-      expect(decideApproval).toHaveBeenCalledWith('r1', 'approve', undefined),
-    );
+    expect(
+      screen.queryByRole('button', { name: 'inbox.request.approve' }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows a settled decision as handled, without its buttons', async () => {
-    issue.mockResolvedValue({ ...detail, pendingApproval: null });
+    issue.mockResolvedValue(detail);
     const [entry] = entriesOf(
       [item('a')],
       [
@@ -838,38 +817,6 @@ describe('the inbox detail', () => {
     expect(await screen.findByText(/inbox\.resolved/u)).toHaveTextContent(
       'inbox.outcomes.rejected',
     );
-    expect(
-      screen.queryByRole('button', { name: 'inbox.request.approve' }),
-    ).not.toBeInTheDocument();
-  });
-
-  it('holds the decision bar while the issue loads, and says why when the viewer may not decide', async () => {
-    let resolve: (value: unknown) => void = () => undefined;
-    issue.mockReturnValue(
-      new Promise((done) => {
-        resolve = done;
-      }),
-    );
-    const [entry] = entriesOf([item('a')], [notice('a')]);
-    render(
-      wrap(
-        <InboxDetail
-          entry={entry}
-          busy={false}
-          onBack={vi.fn()}
-          onAction={vi.fn()}
-          onOpen={vi.fn()}
-        />,
-      ),
-    );
-    expect(screen.getAllByRole('status').length).toBeGreaterThan(0);
-    resolve({
-      ...detail,
-      pendingApproval: { ...detail.pendingApproval, approverUserIds: ['x'] },
-    });
-    expect(
-      await screen.findByText('inbox.request.forbidden'),
-    ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'inbox.request.approve' }),
     ).not.toBeInTheDocument();
@@ -904,6 +851,28 @@ describe('the inbox detail', () => {
 });
 
 describe("a notice's values", () => {
+  it('keeps database identities separate from the target translation', () => {
+    const { result } = renderHook(() => useParamsOf());
+    const [entry] = entriesOf(
+      [item('identity')],
+      [
+        notice('identity', {
+          type: 'agent_blocked',
+          data: {
+            actorName: '负责人',
+            actorDatabaseName: true,
+            agentName: 'Coder',
+            agentNameKey: 'studioAgents.presets.coder.name',
+            agentNameNs: 'studio',
+          },
+        }),
+      ],
+    );
+    expect(result.current(entry!)).toMatchObject({
+      actorName: '负责人',
+      agentName: 'studioAgents.presets.coder.name',
+    });
+  });
   it("word a built-in agent's name from its key, and leave a named agent's as sent", () => {
     const { result } = renderHook(() => useParamsOf());
     const [builtIn, named] = entriesOf(
@@ -943,7 +912,6 @@ describe("a blocked agent's card", () => {
     owner: { id: 'lead', name: 'lead' },
     activities: [],
     threads: [],
-    pendingApproval: null,
   };
   const entry = () =>
     entriesOf(
@@ -966,7 +934,7 @@ describe("a blocked agent's card", () => {
   it("shows the agent's question and lets the owner answer it or unblock the issue", async () => {
     issue.mockResolvedValue(blocked);
     createComment.mockResolvedValue({});
-    updateIssue.mockResolvedValue({ issue: blocked, pendingApproval: null });
+    updateIssue.mockResolvedValue({ issue: blocked });
     render(
       wrap(
         <InboxDetail

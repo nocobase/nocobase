@@ -43,17 +43,22 @@ export const USERS = {
 
 export type DemoUser = keyof typeof USERS;
 
+interface UserCredentials {
+  readonly email: string;
+  readonly password: string;
+}
+
 export const server = readState();
 
 /** The address of a page under Studio's mount, such as `url('/issues')`. */
 export const url = (path: string): string =>
   `${server.baseURL}${path.startsWith('/') ? path : `/${path}`}`;
 
-/** Matches Studio's home page, with or without a trailing slash after the mount, and the given query. */
-export const atHome =
+/** Matches Studio's default inbox page and the given query. */
+export const atInbox =
   (search = '') =>
   (address: URL): boolean =>
-    address.pathname.replace(/\/$/u, '') === new URL(server.baseURL).pathname &&
+    address.pathname === new URL(url('/inbox')).pathname &&
     address.search === search;
 
 /**
@@ -64,7 +69,10 @@ export const atHome =
 const CONNECTION_HEADERS = { origin: server.origin, connection: 'close' };
 
 export class Api {
-  constructor(private readonly request: APIRequestContext) {}
+  constructor(
+    private readonly request: APIRequestContext,
+    private readonly target = server,
+  ) {}
 
   private async send<T>(
     method: string,
@@ -72,11 +80,18 @@ export class Api {
     body?: unknown,
     headers: Record<string, string> = {},
   ): Promise<T> {
-    const response = await this.request.fetch(url(`/api/${path}`), {
-      method,
-      headers: { ...CONNECTION_HEADERS, ...headers },
-      ...(body === undefined ? {} : { data: body as object }),
-    });
+    const response = await this.request.fetch(
+      `${this.target.baseURL}/api/${path}`,
+      {
+        method,
+        headers: {
+          ...CONNECTION_HEADERS,
+          origin: this.target.origin,
+          ...headers,
+        },
+        ...(body === undefined ? {} : { data: body as object }),
+      },
+    );
     const text = await response.text();
     if (!response.ok())
       throw new Error(
@@ -101,8 +116,12 @@ export class Api {
     return this.send<T>('POST', path, body, headers);
   }
 
-  patch<T = unknown>(path: string, body: unknown) {
-    return this.send<T>('PATCH', path, body);
+  patch<T = unknown>(
+    path: string,
+    body: unknown,
+    headers?: Record<string, string>,
+  ) {
+    return this.send<T>('PATCH', path, body, headers);
   }
 
   put<T = unknown>(path: string, body: unknown) {
@@ -117,16 +136,20 @@ export class Api {
 /** Signs a browser context in through the API; the context's pages and requests then share the session cookie. */
 export async function signIn(
   context: BrowserContext,
-  user: DemoUser,
+  user: DemoUser | UserCredentials,
+  target = server,
 ): Promise<void> {
-  const { email, password } = USERS[user];
-  const response = await context.request.post(url('/api/auth/sign-in/email'), {
-    data: { email, password },
-    headers: CONNECTION_HEADERS,
-  });
+  const { email, password } = typeof user === 'string' ? USERS[user] : user;
+  const response = await context.request.post(
+    `${target.baseURL}/api/auth/sign-in/email`,
+    {
+      data: { email, password },
+      headers: { ...CONNECTION_HEADERS, origin: target.origin },
+    },
+  );
   if (!response.ok())
     throw new Error(
-      `Signing in as ${user} failed: ${response.status()} ${await response.text()}`,
+      `Signing in as ${email} failed: ${response.status()} ${await response.text()}`,
     );
 }
 
@@ -191,10 +214,10 @@ export const test = base.extend<Fixtures>({
   ],
 });
 
-/** An API client signed in as another demo account, in a context of its own. */
+/** An API client signed in as another account, in a context of its own. */
 export async function apiAs(
   browser: import('@playwright/test').Browser,
-  user: DemoUser,
+  user: DemoUser | UserCredentials,
 ): Promise<{ api: Api; close: () => Promise<void> }> {
   const context = await browser.newContext();
   await signIn(context, user);

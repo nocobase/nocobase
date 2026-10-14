@@ -55,6 +55,7 @@ export const ticketLifecycle: Lifecycle<TicketTypes> =
 
 ## Documentation
 
+- [docs/parameters.md](docs/parameters.md) — asynchronous parameter readers, execution consistency, actions and previews, and current delivery boundaries.
 - [docs/concepts.md](docs/concepts.md) — why the record is the process, the seven concepts, what a click does, when to use it and when not.
 - [docs/design.md](docs/design.md) — the invariants, the transaction, effect execution, trigger sweeps, storage requirements, where an extension goes, and how to change a definition that is in production.
 - [docs/guide.md](docs/guide.md) — a leave request from definition to page, recipes by scenario, the checklist before going live, troubleshooting, error codes and the record routes a plugin writes for the React hook.

@@ -6,15 +6,21 @@ import type {
   MailProviderDefinition,
 } from '../../contracts/provider.js';
 
-import type { ImapSmtpCredential } from './types.js';
+import type { ImapLocationPersistence, ImapSmtpCredential } from './types.js';
 import type { ImapSmtpMailProviderConfig } from './config.js';
 import { IMAP_SMTP_CAPABILITIES } from './constants.js';
 import { ImapSmtpAdapter } from './adapter.js';
 import { validateConfig, verifyConnections } from './connection.js';
 import { classifyError, failure } from './errors.js';
 
-export const imapSmtpMailProviderDefinition: MailProviderDefinition<ImapSmtpMailProviderConfig> =
-  {
+/**
+ * Mail registers this definition with persistence bound to each account, so
+ * every adapter instance reads and commits only its own account's copies.
+ */
+export function createImapSmtpMailProviderDefinition(
+  locations?: (accountId: string) => ImapLocationPersistence,
+): MailProviderDefinition<ImapSmtpMailProviderConfig> {
+  return {
     type: 'imap-smtp',
     label: 'IMAP / SMTP',
     capabilities: IMAP_SMTP_CAPABILITIES,
@@ -28,9 +34,20 @@ export const imapSmtpMailProviderDefinition: MailProviderDefinition<ImapSmtpMail
       const credential = await context.credentials.get<ImapSmtpCredential>(
         account.credentialReference,
       );
-      return new ImapSmtpAdapter(context, config, account, credential);
+      return new ImapSmtpAdapter(
+        context,
+        config,
+        account,
+        credential,
+        locations?.(account.id),
+      );
     },
   };
+}
+
+/** Protocol-only definition without location persistence. */
+export const imapSmtpMailProviderDefinition: MailProviderDefinition<ImapSmtpMailProviderConfig> =
+  createImapSmtpMailProviderDefinition();
 
 function createConnection(): MailProviderConnection<ImapSmtpMailProviderConfig> {
   return {

@@ -3,12 +3,10 @@
  *
  * 1. Release: each issue that waited for it, or a later-stage sibling, that is unfinished and held by nothing now gets
  *    one `issue.dependencyReleased` (and the `onUnblocked` hook).
- * 2. Join: when it has a parent, the parent's row is written first (`lastActivityAt`), which locks it, so two siblings
- *    finishing at once take turns here and the second reads what the first committed. Then, if every live sub-issue
- *    is finished, one `issue.batchDone` for all of them and the workflow event `subtasks.done` on the parent; else, if
- *    its stage is finished, one `issue.batchDone` for the stage.
- *
- * A parent the event moves to a finished status goes through the same steps, up the tree, in the same transaction.
+ * 2. Join: when it has a parent, the parent's row is updated (`lastActivityAt`) under the graph guard already held
+ *    by the issue transition. Then, if every live sub-issue is finished, one `issue.batchDone` for all of them (and the
+ *    `onSubtasksFinished` hook); else, if its stage is finished, one `issue.batchDone` for the stage. The parent's own
+ *    status never changes on its own.
  */
 import type { Issue } from '../../../shared/issues.js';
 import type { Actor } from '../../kernel/actor.js';
@@ -18,23 +16,21 @@ import {
   findIssues,
   liveChildren,
   updateIssue,
-  type IssueService,
   type IssueTriggers,
+  type StatusService,
 } from '../issues/index.js';
-import type { StatusCatalogs } from '../issues/index.js';
 import { blockersOf, catalogsFor, type Catalogs } from './subtask.blocking.js';
 import { incoming } from './subtask.store.js';
 import './subtask.events.js';
 
 export interface ReleaseDeps {
-  readonly statuses: StatusCatalogs;
+  readonly statuses: Pick<StatusService, 'catalog'>;
   readonly triggers: () => IssueTriggers;
-  readonly issues: () => Pick<IssueService, 'fireEvent'>;
 }
 
 const eventActor = (actor: Actor) => ({ type: actor.type, id: actor.id });
 
-/** Tells the issue nothing holds it any more, when that is so. */
+/** Called after removing an actual wait; tells the issue when nothing holds it any more. */
 export async function releaseIfFree(
   deps: ReleaseDeps,
   tx: Tx,
@@ -74,7 +70,7 @@ async function join(
   if (!parentId) return;
   const before = await findIssue(tx.conn, parentId);
   if (!before || before.deletedAt) return;
-  // Writing the parent's row locks it until the transaction ends: siblings finishing at once take turns here.
+  // The originating transition took the graph guard before writing the child; keep that order for this parent too.
   await updateIssue(tx.conn, parentId, {
     lastActivityAt: new Date().toISOString(),
   });
@@ -108,10 +104,6 @@ async function join(
       childIssueIds: children.map((child) => child.id),
       actor,
     });
-    await deps.issues().fireEvent(tx, parent.id, 'subtasks.done', {
-      issueId: finished.id,
-      actor,
-    });
     return;
   }
   if (finished.stage === null || finished.deletedAt) return;
@@ -135,6 +127,9 @@ export async function onTerminal(
   actor: Actor,
 ): Promise<void> {
   const catalogs = catalogsFor(deps.statuses, tx.conn);
+  // Completing an issue releases waits; deleting one that was already terminal does not release them again.
+  const releasesWaits =
+    !finished.deletedAt || !(await catalogs.terminal(finished));
   const waiting = (await incoming(tx.conn, [finished.id], 'blockedBy')).map(
     (dependency) => dependency.issueId,
   );
@@ -149,7 +144,8 @@ export async function onTerminal(
   for (const candidate of candidates.sort((a, b) => a.number - b.number)) {
     if (seen.has(candidate.id)) continue;
     seen.add(candidate.id);
-    await releaseIfFree(deps, tx, catalogs, candidate, finished, actor);
+    if (releasesWaits)
+      await releaseIfFree(deps, tx, catalogs, candidate, finished, actor);
   }
   await join(deps, tx, catalogs, finished, actor);
 }

@@ -69,11 +69,6 @@ export interface CiApplication {
 
 /** How an App is built: the archive `pnpm build --tar` leaves. */
 const BUILD_STEPS = [
-  '      - uses: pnpm/action-setup@v4',
-  '      - uses: actions/setup-node@v4',
-  '        with:',
-  '          node-version: 24',
-  '          cache: pnpm',
   '      - run: pnpm install --frozen-lockfile',
   '      # Leaves storage/exports/dist.tar.gz: dist/ and config.example.yml.',
   '      - run: pnpm build --target linux-x64 --tar',
@@ -126,6 +121,22 @@ function setupSteps(
           '          ref: ${{ github.event.pull_request.head.sha }}',
         ]
       : []),
+    '      - uses: pnpm/action-setup@v4',
+    ...(directory === '.'
+      ? []
+      : [
+          '        with:',
+          `          package_json_file: ${quote(`${directory}/package.json`)}`,
+        ]),
+    '      - uses: actions/setup-node@v4',
+    '        with:',
+    '          node-version: 24',
+    '          cache: pnpm',
+    ...(directory === '.'
+      ? []
+      : [
+          `          cache-dependency-path: ${quote(`${directory}/pnpm-lock.yaml`)}`,
+        ]),
     '      - name: Install the nb-studio CLI',
     '        env:',
     `          NB_STUDIO_API_KEY: \${{ secrets.${CI_SECRET} }}`,
@@ -136,15 +147,7 @@ function setupSteps(
     '          echo "$RUNNER_TEMP/nb-studio/bin" >> "$GITHUB_PATH"',
     '          printf %s "$NB_STUDIO_API_KEY" | NB_STUDIO_KEYCHAIN=off "$RUNNER_TEMP/nb-studio/bin/nb-studio" login --server "$NB_STUDIO_URL" --api-key-stdin',
     `      - run: nb-studio build status ${target} --state building --logs "$LOGS"`,
-    directory === '.'
-      ? BUILD_STEPS
-      : BUILD_STEPS.replace(
-          '      - uses: pnpm/action-setup@v4',
-          `      - uses: pnpm/action-setup@v4\n        with:\n          package_json_file: ${quote(`${directory}/package.json`)}`,
-        ).replace(
-          '          cache: pnpm',
-          `          cache: pnpm\n          cache-dependency-path: ${quote(`${directory}/pnpm-lock.yaml`)}`,
-        ),
+    BUILD_STEPS,
   ];
 }
 

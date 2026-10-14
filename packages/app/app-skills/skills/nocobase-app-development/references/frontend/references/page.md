@@ -275,6 +275,24 @@ Write `navigation` on the route. The application sidebar reads its menu entries 
 - Do not change the shell (`client/layouts/`) or the ServiceProvider to add a menu entry, and do not add a Refine resource for a menu. Refine resources produce no menu entries (see ["Loading data in a component" in `api.md`](api.md#loading-data-in-a-component) for what they are for); the home page entry is declared in the routes as well.
 - A new page with a menu entry usually touches four places: `client/routes.ts`, the page component, `client/locales/` and, for an App page that requires sign-in, the page grant list in `tests/logic/client-routes.test.ts` ([section 12](#12-update-the-route-test)).
 
+### A count beside an entry
+
+An entry can show how many things wait on the viewer behind it, such as unread messages or requests to decide. A count changes while the page is open, so it is not part of the route's `navigation`: the App layout reads it with the hook that keeps it current and passes it to `NavigationMenu` in `badges`, keyed by the route's `name`:
+
+```tsx
+// client/layouts/app-layout.tsx
+const { data: unread = 0 } = useInboxUnreadCount(); // @nocobase/app-plugin-notification-in-app/client/inbox
+
+<NavigationMenu
+  items={menuItems}
+  label={navigationLabel}
+  selectedKey={selectedKey}
+  badges={{ inbox: unread }}
+/>;
+```
+
+A number is something waiting; `{ count, live: true, hint }` is work under way, such as runs in progress, drawn in the primary color behind a pulsing dot, with `hint` (translated, such as "2 running") as its words. The menu does the rest: nothing at zero, "99+" above 99, the count in the entry's accessible name and tooltip, and in the collapsed sidebar a dot on the icon's corner. A count goes on a page entry the menu always shows — a top-level entry or a section's — not on a group or an entry inside a sub-menu. Which counts belong in the menu at all is guideline L8 of [`../ui-guidelines.md`](../ui-guidelines.md).
+
 ## 7. Back button and breadcrumbs
 
 The shell header shows the current page's breadcrumb after the sidebar toggle, on every page; pages never render breadcrumbs themselves. A page that sits below another one — a covering child page, a record's own page, a form too long for a dialog — has a back button above its title (guideline L6), unless its header trail already leads back the same way; do not render both, and do not add a "Back to list" button to `actions`.

@@ -21,6 +21,16 @@ const routes: readonly AppClientRouteContribution[] = [
       breadcrumb: { title: 'navigation.group' },
       children: [
         {
+          name: 'lifecycleExampleParameters',
+          path: '/lifecycle-example/parameters',
+          auth: 'required',
+          authz: 'skip',
+          navigation: { title: 'navigation.parameters', icon: Workflow },
+          breadcrumb: { title: 'navigation.parameters' },
+          componentLoader: () => import('./pages/parameters.js'),
+        },
+
+        {
           name: 'lifecycleExampleTickets',
           path: '/lifecycle-example/tickets',
           auth: 'required',
@@ -37,6 +47,15 @@ const routes: readonly AppClientRouteContribution[] = [
           navigation: { title: 'navigation.expenses', icon: Receipt },
           breadcrumb: { title: 'navigation.expenses' },
           componentLoader: () => import('./pages/expenses.js'),
+        },
+        {
+          name: 'lifecycleExampleInvoices',
+          path: '/lifecycle-example/invoices',
+          auth: 'required',
+          authz: 'skip',
+          navigation: { title: 'navigation.invoices', icon: Receipt },
+          breadcrumb: { title: 'navigation.invoices' },
+          componentLoader: () => import('./pages/invoices.js'),
         },
         // Processes that stop to wait for the outside and are moved on by it.
         {

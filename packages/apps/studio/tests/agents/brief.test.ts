@@ -1,39 +1,47 @@
 // @vitest-environment node
 /**
- * The task and context layers of an issue's brief, and its working directories, rendered from a fixed issue: any change
- * to the wording shows here. The agents plugin's own test renders the whole brief from exactly these layers.
+ * The task and context layers of an issue's brief, and its working directories, rendered from a fixed issue for the
+ * project manager and for an agent doing a step: any change to the wording shows here. The agents plugin's own test
+ * renders the whole brief from exactly these layers.
  */
 import type { RunInput } from '@nocobase/agent-protocol';
 import type { IssueContext } from '@nocobase/app-plugin-projects/server/tokens';
+import { FIXED_STATUSES } from '@nocobase/app-plugin-projects/shared/statuses';
 import { describe, expect, it } from 'vitest';
 
 import {
   dirsOf,
-  mayInitializeEmptyRepository,
   EMPTY_REPOSITORY_NOTE,
+  isReadOnlyStep,
+  issueClaimRejection,
   issueGuidance,
+  managerWorkspaceKey,
+  mayInitializeEmptyRepository,
   renderIssueContext,
   renderTask,
 } from '../../server/agents/issue-subject.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
+
+const statuses = FIXED_STATUSES.map(({ key, name, category }) => ({
+  key,
+  name,
+  category,
+}));
+const statusOf = (key: string) =>
+  statuses.find((status) => status.key === key)!;
 
 const context: IssueContext = {
   id: 'i-1',
   identifier: 'PM-12',
   title: 'Fix login on Safari',
   description: 'Signing in fails on Safari 17.\n\nSee the attached HAR.',
-  status: { key: 'in_progress', name: 'In progress', category: 'started' },
-  statuses: [
-    { key: 'backlog', name: 'Backlog', category: 'unstarted' },
-    { key: 'todo', name: 'Todo', category: 'unstarted' },
-    { key: 'in_progress', name: 'In progress', category: 'started' },
-    { key: 'in_review', name: 'In review', category: 'started' },
-    { key: 'done', name: 'Done', category: 'done' },
-  ],
-  allowedTransitions: ['in_progress', 'in_review'],
+  status: statusOf('in_progress'),
+  statuses,
+  allowedTransitions: ['in_progress', 'blocked', 'in_review'],
   priority: 'high',
   labels: ['bug', 'frontend'],
   owner: { id: 'alice', name: 'Alice' },
-  executor: { type: 'agent', id: 'a-1', name: 'Coder' },
+  executor: { type: 'agent', id: PROJECT_MANAGER_ID, name: 'Project manager' },
   project: {
     id: 'p-1',
     name: 'Web',
@@ -44,6 +52,7 @@ const context: IssueContext = {
         type: 'gitRepo',
         url: 'https://example.com/acme/web.git',
         defaultRef: 'develop',
+        binding: null,
         runnerId: null,
         path: null,
         label: 'web',
@@ -54,6 +63,7 @@ const context: IssueContext = {
         type: 'directory',
         url: null,
         defaultRef: null,
+        binding: null,
         runnerId: 'runner-1',
         path: '/srv/data',
         label: 'data',
@@ -68,17 +78,8 @@ const context: IssueContext = {
     status: 'in_progress',
   },
   children: [
-    { id: 'i-2', identifier: 'PM-13', title: 'Add a test', status: 'todo' },
+    { id: 'i-2', identifier: 'PM-13', title: 'Add a test', status: 'backlog' },
   ],
-  checklist: {
-    statusKey: 'in_progress',
-    complete: false,
-    items: [
-      { key: 'repro', label: 'Reproduce', required: true, checked: true },
-      { key: 'test', label: 'Add a test', required: false, checked: false },
-    ],
-  },
-  pendingApproval: null,
   attachments: [
     {
       id: '0b9a3c52-7d1e-4f3a-9c55-2f1d8e6a4b10',
@@ -108,29 +109,90 @@ const context: IssueContext = {
   url: '/issues/PM-12',
 };
 
-const inputs: RunInput[] = [
-  {
-    id: 'in-1',
-    type: 'signal',
-    at: '2026-10-01T09:00:00.000Z',
-    actor: { kind: 'user', id: 'alice', name: 'Alice' },
-    text: 'Alice gave you PM-12 (Fix login on Safari) to work on.',
-    payload: { trigger: 'assigned' },
-  },
-  {
-    id: 'in-2',
-    type: 'comment',
-    at: '2026-10-01T09:05:00.000Z',
-    actor: { kind: 'user', id: 'bob', name: 'Bob' },
-    text: 'Use the v2 session API.',
-    payload: { trigger: 'comment', commentId: 'c-2' },
-  },
+const input = (
+  id: string,
+  text: string,
+  payload: Record<string, unknown>,
+  type: RunInput['type'] = 'comment',
+): RunInput => ({
+  id,
+  type,
+  at: '2026-10-01T09:00:00.000Z',
+  actor: { kind: 'user', id: 'alice', name: 'Alice' },
+  text,
+  payload,
+});
+
+/** What wakes the project manager: it was given the issue, then someone commented. */
+const managerInputs: RunInput[] = [
+  input(
+    'in-1',
+    'Alice gave you PM-12 (Fix login on Safari) to work on.',
+    { trigger: 'assigned' },
+    'signal',
+  ),
+  input('in-2', 'Use the v2 session API.', {
+    trigger: 'comment',
+    commentId: 'c-2',
+  }),
+];
+
+/** What wakes an agent doing a step: the project manager's hand-over mentioning it. */
+const stepInputs: RunInput[] = [
+  input(
+    'in-3',
+    'Next: once the fix is in, hand it to review.\n\n[@Coder](mention://agent/a-1) Fix the Safari sign-in; reply with the branch.',
+    { trigger: 'mention', commentId: 'c-3' },
+  ),
 ];
 
 describe('issue brief', () => {
-  it('renders the task and the issue context', () => {
-    expect(renderTask(context, inputs)).toMatchSnapshot();
+  it('renders the project manager’s task and the issue context', () => {
+    expect(
+      renderTask(context, managerInputs, { manager: true }),
+    ).toMatchSnapshot();
     expect(renderIssueContext(context)).toMatchSnapshot();
+  });
+
+  it('tells the project manager the statuses it may move the issue to, and the "Next" line', () => {
+    const task = renderTask(context, managerInputs, { manager: true });
+    expect(task).toContain(
+      'You have been given this issue to arrange. Decide its first step and hand it over.',
+    );
+    expect(task).toContain(
+      '- At this read, the current status is in_progress; available next transitions are: blocked, in_review (`nb-studio issue update PM-12 --status <status>`).',
+    );
+    expect(task).toContain('starts with its "Next" line');
+    expect(
+      renderTask({ ...context, allowedTransitions: ['in_progress'] }, [], {
+        manager: true,
+      }),
+    ).toContain('- Leave the status as it is.');
+  });
+
+  it('renders an agent’s step: one reply in its thread, no reason that only the project manager has', () => {
+    const task = renderTask(context, stepInputs);
+    expect(task).toMatchSnapshot();
+    expect(task).toContain('You were mentioned in a comment. Do what it asks.');
+    expect(task).not.toContain('available next transitions');
+    // Triggers only the project manager is woken by say nothing to an agent doing a step.
+    expect(renderTask(context, managerInputs)).not.toContain(
+      'You have been given this issue to arrange',
+    );
+  });
+
+  it('gives the project manager and an agent doing a step their own rules', () => {
+    const manager = issueGuidance('PM-12', 'nb-studio', { manager: true });
+    expect(manager.rules[0]).toContain('Arrange issue PM-12 in comments');
+    expect(manager.rules).toContain(
+      'Move the status only to the statuses the task says you may move it to.',
+    );
+    const step = issueGuidance('PM-12', 'nb-studio');
+    expect(step.rules[0]).toContain(
+      'Answer the step you were handed once, when you finish, in the thread of the comment that handed it to you (`nb-studio issue comment add PM-12 --parent <comment-id> --content-file <path>`)',
+    );
+    expect(step.rules).toContain("Do not change the issue's status.");
+    expect(step.whenBlocked).toContain('in a reply on issue PM-12');
   });
 
   it('tells an agent how to download files, and to attach them when it may', () => {
@@ -140,38 +202,6 @@ describe('issue brief', () => {
     expect(
       issueGuidance('PM-12', 'nb-studio', { attach: true }).rules.join('\n'),
     ).toContain('add `--attach <path>` (repeatable) to the comment');
-  });
-
-  it('tells an agent the workflow does not let it move the status', () => {
-    expect(
-      renderTask({ ...context, allowedTransitions: ['in_progress'] }, []),
-    ).toMatchSnapshot();
-  });
-
-  it('makes the design proposal the report of a run in Analysis', () => {
-    const analysis: IssueContext = {
-      ...context,
-      status: { key: 'analysis', name: 'Analysis', category: 'started' },
-      allowedTransitions: ['analysis', 'proposal_review', 'blocked'],
-    };
-    const task = renderTask(analysis, inputs);
-    expect(task).toMatchSnapshot();
-    expect(task).toContain(
-      'nb-studio issue design-proposal PM-12 --content-file proposal.md',
-    );
-    expect(task).not.toContain('Post a comment');
-    expect(task).not.toContain('Move the issue to the status that fits');
-
-    const design = issueGuidance('PM-12', 'nb-studio', { design: true });
-    const rules = design.rules.join('\n');
-    expect(rules).toContain('never restate or summarise it in a comment');
-    expect(rules).not.toContain('Report progress and results as comments');
-    expect(rules).not.toContain('When you are done');
-    // Elsewhere the rules stay as they were.
-    expect(issueGuidance('PM-12', 'nb-studio').rules[0]).toContain(
-      'Report progress and results as comments',
-    );
-    expect(renderTask(context, inputs)).toContain('Post a comment on PM-12');
   });
 
   it("gives a run the project's working directories in order", () => {
@@ -194,37 +224,44 @@ describe('issue brief', () => {
       },
     ]);
   });
-  it('permits empty initialization only for the assigned coding executor in development', () => {
+
+  it('names the project manager’s own work directory by the issue key', () => {
+    expect(managerWorkspaceKey('PM-12')).toBe('PM-12.manager');
+  });
+
+  it('permits empty initialization only to an agent doing a step that may open pull requests, on an open issue', () => {
     const coding = { id: 'a-1', actions: ['studio.git/open-pr'] };
-    const assigned = { ...context, executor: { type: 'agent', id: coding.id } };
-    expect(mayInitializeEmptyRepository(assigned, coding)).toBe(true);
+    expect(mayInitializeEmptyRepository(context, coding, true)).toBe(true);
     expect(
       mayInitializeEmptyRepository(
-        { ...assigned, status: context.statuses[1]! },
+        { ...context, status: statusOf('blocked') },
         coding,
+        true,
       ),
     ).toBe(true);
     expect(
-      mayInitializeEmptyRepository({ ...context, executor: null }, coding),
+      mayInitializeEmptyRepository(context, { ...coding, actions: [] }),
     ).toBe(false);
     expect(
-      mayInitializeEmptyRepository(assigned, { ...coding, actions: [] }),
+      mayInitializeEmptyRepository(context, {
+        ...coding,
+        id: PROJECT_MANAGER_ID,
+      }),
     ).toBe(false);
-    expect(
-      mayInitializeEmptyRepository(assigned, { ...coding, id: 'reviewer' }),
-    ).toBe(false);
-    expect(
-      mayInitializeEmptyRepository(
-        { ...assigned, status: context.statuses[3]! },
-        coding,
-      ),
-    ).toBe(false);
-    expect(dirsOf(assigned, new Map(), null, true)[0]).toMatchObject({
+    for (const key of ['backlog', 'in_review', 'done'])
+      expect(
+        mayInitializeEmptyRepository(
+          { ...context, status: statusOf(key) },
+          coding,
+          true,
+        ),
+      ).toBe(false);
+    expect(dirsOf(context, new Map(), null, true)[0]).toMatchObject({
       branch: 'agent/PM-12',
       initializeIfEmpty: true,
     });
-    expect(dirsOf(assigned)[0]).not.toHaveProperty('initializeIfEmpty');
-    expect(dirsOf(assigned, new Map(), null, true)[1]).not.toHaveProperty(
+    expect(dirsOf(context)[0]).not.toHaveProperty('initializeIfEmpty');
+    expect(dirsOf(context, new Map(), null, true)[1]).not.toHaveProperty(
       'initializeIfEmpty',
     );
     expect(EMPTY_REPOSITORY_NOTE).toContain(
@@ -233,5 +270,53 @@ describe('issue brief', () => {
     expect(EMPTY_REPOSITORY_NOTE).toContain(
       'continue partially generated work on retry',
     );
+  });
+
+  it('claims the project manager’s runs only while the issue is open, and every agent’s step', () => {
+    const manager = { id: PROJECT_MANAGER_ID };
+    for (const key of ['in_progress', 'blocked', 'in_review'])
+      expect(
+        issueClaimRejection({ ...context, status: statusOf(key) }, manager),
+      ).toBeNull();
+    for (const key of ['backlog', 'done', 'cancelled'])
+      expect(
+        issueClaimRejection({ ...context, status: statusOf(key) }, manager),
+      ).toMatchObject({ reason: 'dormant' });
+    expect(
+      issueClaimRejection(
+        { ...context, status: statusOf('done') },
+        { id: 'a-1' },
+      ),
+    ).toBeNull();
+  });
+});
+
+describe('a read-only step', () => {
+  const handOver = (text: string) => input('x', text, { trigger: 'mention' });
+
+  it('is one whose every input says `Mode: read-only` on a line of its own', () => {
+    expect(
+      isReadOnlyStep([handOver('Review the pull request.\nMode: read-only')]),
+    ).toBe(true);
+    expect(
+      isReadOnlyStep([
+        handOver('  mode:  READ-ONLY  \nRead the CI failure.'),
+        handOver('Also check the logs.\n\nMode: read-only'),
+      ]),
+    ).toBe(true);
+  });
+
+  it('is not one when any input lacks the line, mentions it in passing, or there is none', () => {
+    expect(isReadOnlyStep([])).toBe(false);
+    expect(
+      isReadOnlyStep([
+        handOver('Review it.\nMode: read-only'),
+        handOver('Now fix what you found.'),
+      ]),
+    ).toBe(false);
+    expect(
+      isReadOnlyStep([handOver('Do not use Mode: read-only here; fix it.')]),
+    ).toBe(false);
+    expect(isReadOnlyStep([handOver('Mode: read-only please')])).toBe(false);
   });
 });

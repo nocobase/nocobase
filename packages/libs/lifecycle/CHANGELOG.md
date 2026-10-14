@@ -1,5 +1,20 @@
 # @nocobase/lifecycle
 
+## 0.1.0-beta.2
+
+### Minor Changes
+
+- 43d7d1f: Add code-declared lifecycle parameter groups with asynchronous execution resolution, immutable configuration versions, atomic CAS saves, first-submission snapshots, per-execution usage facts and flat reviewer selection rules. Demonstrate shared configuration editors, optional diagram bindings, snapshot expense thresholds, live ticket policy and finite candidate review workflows, and document application integration.
+
+## 0.1.0-beta.1
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/jobs@0.1.0-beta.3
+
 ## 0.1.0-beta.0
 
 ### Minor Changes

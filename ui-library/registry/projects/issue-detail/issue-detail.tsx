@@ -1,8 +1,7 @@
 /**
  * An issue's page, presented: the two-column frame, the header (trail, parent, title edited in place, meta line), the
- * description edited in the rich text editor, the checklist of the current status, a status change waiting for
- * approval and the last decided ones, the sub-issues by stage, the dependencies with an issue search, the files, and
- * deleting the issue. Purely presentational: the consumer gives the data, decides who may do what, and performs every
+ * description edited in the rich text editor, the sub-issues by stage, the dependencies with an issue search, the
+ * files, and deleting the issue. Purely presentational: the consumer gives the data, decides who may do what, and performs every
  * change through the callbacks (a promise the block waits for). The properties column is in `issue-properties.tsx`.
  *
  * The page sits on the application's background as cards: the body (`IssueSurface`), the activity under it in a second
@@ -12,20 +11,14 @@
  * quiet buttons that add its first item, and `IssueFileDrop` lets files dropped or pasted anywhere on the body upload.
  */
 import {
-  CheckIcon,
-  ChevronDownIcon,
   CornerLeftUpIcon,
-  HistoryIcon,
   HourglassIcon,
   Link2Icon,
-  ListChecksIcon,
   ListTreeIcon,
   Loader2Icon,
   PaperclipIcon,
   PencilIcon,
-  ShieldCheckIcon,
   Trash2Icon,
-  Undo2Icon,
   UploadIcon,
   XIcon,
 } from 'lucide-react';
@@ -55,14 +48,13 @@ import {
 } from '#components/ui/alert-dialog';
 import { Badge } from '#components/ui/badge';
 import { Button } from '#components/ui/button';
-import { Checkbox } from '#components/ui/checkbox';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '#components/ui/collapsible';
 import { Input } from '#components/ui/input';
-import { Textarea } from '#components/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '#components/ui/tooltip';
 import { cn } from 'cn';
 
 import { IssueCard, type IssueCardLink } from '#components/issue-card';
@@ -82,10 +74,8 @@ import {
 } from '../../components/rich-text-editor.js';
 import { IssuePicker, type IssuePickerItem } from './issue-picker.js';
 import {
-  dateTime,
   defaultIssueDetailLabels,
   fill,
-  relativeTime,
   type IssueDetailLabels,
 } from './labels.js';
 
@@ -119,8 +109,6 @@ function useCardLink(Link: IssueDetailLink): IssueCardLink {
     return CardLink;
   }, [Link]);
 }
-
-const CARD = 'rounded-lg border bg-card p-4 text-card-foreground';
 
 /** The rows of a list inside a section, such as sub-issues or pull requests. */
 export const ISSUE_SECTION_LIST = 'divide-y overflow-hidden rounded-lg border';
@@ -508,13 +496,15 @@ function useFitsScrollViewport(
   return fits;
 }
 
-/** The page's padding, matching `md:p-6` and `lg:top-6` below, in pixels. */
+/** The page's padding, matching `md:p-6` and `@4xl/issue-detail:top-6` below, in pixels. */
 const LAYOUT_INSET = 24;
 
 /**
  * The frame of a record's page on the application's background: the main column (its cards, such as `IssueSurface`,
- * stacked with the frame's gap) beside a fixed 20rem side column of cards from `lg` up, folded into one column on narrow
- * screens. The side column follows the page while it fits the viewport.
+ * stacked with the frame's gap) beside a fixed 20rem side column of cards once the page's own width reaches `@4xl`
+ * (56rem), folded into one column below it. The threshold follows the page's own width through a container query
+ * rather than the viewport, so it also reacts to a sidebar docked beside the page, such as an AI assistant panel. The
+ * side column follows the page while it fits the viewport.
  */
 export function IssueDetailLayout({
   main,
@@ -531,18 +521,27 @@ export function IssueDetailLayout({
   const fits = useFitsScrollViewport(contentRef, LAYOUT_INSET);
   return (
     <div
-      className={cn(
-        'flex min-h-full flex-col gap-4 p-4 md:gap-6 md:p-6 lg:flex-row',
-        className,
-      )}
+      className={cn('@container/issue-detail min-h-full', className)}
       data-slot='issue-detail-layout'
     >
-      <div className='flex min-w-0 flex-1 flex-col gap-4 md:gap-6'>{main}</div>
-      <aside aria-label={asideLabel} className='lg:w-[20rem] lg:shrink-0'>
-        <div className={cn(fits && 'lg:sticky lg:top-6')} ref={contentRef}>
-          {aside}
+      <div className='flex min-h-full flex-col gap-4 p-4 md:gap-6 md:p-6 @4xl/issue-detail:flex-row'>
+        <div className='flex min-w-0 flex-1 flex-col gap-4 md:gap-6'>
+          {main}
         </div>
-      </aside>
+        <aside
+          aria-label={asideLabel}
+          className='min-w-0 @4xl/issue-detail:w-[20rem] @4xl/issue-detail:shrink-0'
+        >
+          <div
+            className={cn(
+              fits && '@4xl/issue-detail:sticky @4xl/issue-detail:top-6',
+            )}
+            ref={contentRef}
+          >
+            {aside}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
@@ -606,7 +605,7 @@ export function IssueHeader({
       });
   };
   return (
-    <div className='space-y-2' data-slot='issue-header'>
+    <div className='@container/issue-header space-y-2' data-slot='issue-header'>
       {trail ? <div className='min-w-0'>{trail}</div> : null}
       {parent ? (
         <Link
@@ -669,7 +668,7 @@ export function IssueHeader({
       </div>
       <div className='flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground'>
         <span className='font-mono text-xs'>{identifier}</span>
-        <IssueStatusBadge status={status} />
+        <IssueStatusBadge status={status} size='sm' />
         {project ? (
           <Link
             href={project.href}
@@ -785,321 +784,6 @@ export function IssueDescription({
   );
 }
 
-export interface ChecklistItem {
-  readonly key: string;
-  readonly label: string;
-  readonly required: boolean;
-  readonly checked: boolean;
-  /** Who checked it, when it is checked. */
-  readonly checkedBy?: string | null;
-  readonly checkedAt?: string | null;
-}
-
-/** The checklist of the current status: every item with who checked it. */
-export function IssueChecklist({
-  status,
-  items,
-  complete,
-  onToggle,
-  locale,
-  labels = defaultIssueDetailLabels,
-}: {
-  readonly status: IssueDetailStatus;
-  readonly items: readonly ChecklistItem[];
-  /** Every required item is checked. */
-  readonly complete: boolean;
-  /** Without it the items cannot be checked. */
-  readonly onToggle?: (key: string, checked: boolean) => Promise<void>;
-  readonly locale?: string;
-  readonly labels?: IssueDetailLabels;
-}): ReactElement {
-  const [busy, setBusy] = useState(false);
-  const done = items.filter((item) => item.checked).length;
-  return (
-    <IssueSection
-      icon={<ListChecksIcon />}
-      title={labels.checklist.title}
-      count={fill(labels.checklist.progress, { done, total: items.length })}
-      meta={<IssueStatusBadge status={status} />}
-      aria-label={labels.checklist.label}
-      data-testid='issue-checklist'
-    >
-      <ul className='space-y-1.5'>
-        {items.map((item) => {
-          const id = `issue-checklist-${item.key}`;
-          return (
-            <li key={item.key} className='flex items-start gap-2 text-sm'>
-              <Checkbox
-                id={id}
-                className='mt-0.5'
-                checked={item.checked}
-                disabled={!onToggle || busy}
-                onCheckedChange={(checked) => {
-                  if (!onToggle) return;
-                  setBusy(true);
-                  void onToggle(item.key, checked === true)
-                    .catch(() => undefined)
-                    .finally(() => setBusy(false));
-                }}
-              />
-              <label htmlFor={id} className='min-w-0 flex-1'>
-                <span
-                  className={cn(
-                    item.checked && 'text-muted-foreground line-through',
-                  )}
-                >
-                  {item.label}
-                </span>
-                {item.required ? (
-                  <Badge
-                    variant='secondary'
-                    className='ml-2 bg-amber-500/10 font-normal text-amber-700 dark:text-amber-300'
-                  >
-                    {labels.checklist.required}
-                  </Badge>
-                ) : null}
-                {item.checked && item.checkedAt ? (
-                  <span className='block text-xs text-muted-foreground'>
-                    {fill(labels.checklist.checkedBy, {
-                      name: item.checkedBy ?? '—',
-                      time: relativeTime(item.checkedAt, locale),
-                    })}
-                  </span>
-                ) : null}
-              </label>
-            </li>
-          );
-        })}
-      </ul>
-      {complete ? null : (
-        <p className='text-xs text-muted-foreground'>
-          {labels.checklist.incomplete}
-        </p>
-      )}
-    </IssueSection>
-  );
-}
-
-export type ApprovalDecision = 'approve' | 'reject' | 'withdraw';
-
-/**
- * A status change waiting for approval: the move, who asked and who may decide. An approver writes an optional comment
- * and approves or rejects; whoever asked may withdraw it; everyone else sees whom it waits for.
- */
-export function IssueApprovalCard({
-  from,
-  to,
-  requester,
-  requestedAt,
-  approvers,
-  canDecide,
-  canWithdraw,
-  onDecide,
-  locale,
-  labels = defaultIssueDetailLabels,
-}: {
-  readonly from: IssueDetailStatus;
-  readonly to: IssueDetailStatus;
-  readonly requester: string;
-  readonly requestedAt: string;
-  readonly approvers: readonly string[];
-  readonly canDecide: boolean;
-  readonly canWithdraw: boolean;
-  readonly onDecide: (
-    decision: ApprovalDecision,
-    comment: string | undefined,
-  ) => Promise<void>;
-  readonly locale?: string;
-  readonly labels?: IssueDetailLabels;
-}): ReactElement {
-  const [comment, setComment] = useState('');
-  const [busy, setBusy] = useState(false);
-  const decide = (decision: ApprovalDecision): void => {
-    setBusy(true);
-    void onDecide(
-      decision,
-      decision === 'withdraw' ? undefined : comment.trim() || undefined,
-    )
-      .catch(() => undefined)
-      .finally(() => setBusy(false));
-  };
-  return (
-    <article
-      className={cn('space-y-3', CARD)}
-      aria-label={labels.approvals.label}
-      data-testid='issue-approval'
-    >
-      <div className='flex flex-wrap items-center gap-2 text-sm'>
-        <ShieldCheckIcon
-          className='size-4 text-muted-foreground'
-          aria-hidden='true'
-        />
-        <span className='font-medium'>{labels.approvals.pending}</span>
-        <IssueStatusBadge status={from} />
-        <span aria-hidden='true'>→</span>
-        <IssueStatusBadge status={to} />
-      </div>
-      <dl className='grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-xs text-muted-foreground'>
-        <dt>{labels.approvals.requester}</dt>
-        <dd className='text-foreground'>
-          {requester} ·{' '}
-          <time dateTime={requestedAt}>
-            {relativeTime(requestedAt, locale)}
-          </time>
-        </dd>
-        <dt>{labels.approvals.approvers}</dt>
-        <dd className='text-foreground'>{approvers.join(', ')}</dd>
-      </dl>
-      {canDecide ? (
-        <div className='space-y-2'>
-          <Textarea
-            value={comment}
-            rows={2}
-            aria-label={labels.approvals.comment}
-            placeholder={labels.approvals.commentPlaceholder}
-            disabled={busy}
-            onChange={(event) => setComment(event.target.value)}
-          />
-          <div className='flex justify-end gap-2'>
-            <Button
-              variant='outline'
-              size='sm'
-              disabled={busy}
-              onClick={() => decide('reject')}
-            >
-              <XIcon data-icon='inline-start' />
-              {labels.approvals.reject}
-            </Button>
-            <Button size='sm' disabled={busy} onClick={() => decide('approve')}>
-              {busy ? (
-                <Loader2Icon
-                  data-icon='inline-start'
-                  className='animate-spin'
-                />
-              ) : (
-                <CheckIcon data-icon='inline-start' />
-              )}
-              {labels.approvals.approve}
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className='flex flex-wrap items-center justify-between gap-2'>
-          <p className='text-xs text-muted-foreground'>
-            {labels.approvals.waiting}
-          </p>
-          {canWithdraw ? (
-            <Button
-              variant='outline'
-              size='sm'
-              disabled={busy}
-              onClick={() => decide('withdraw')}
-            >
-              <Undo2Icon data-icon='inline-start' />
-              {labels.approvals.withdraw}
-            </Button>
-          ) : null}
-        </div>
-      )}
-    </article>
-  );
-}
-
-export interface RecentApproval {
-  readonly id: string;
-  readonly from: IssueDetailStatus;
-  readonly to: IssueDetailStatus;
-  /** How it ended, in words, and its tone. */
-  readonly outcome: string;
-  readonly outcomeTone: 'green' | 'red' | 'grey' | 'amber';
-  readonly decidedBy?: string | null;
-  readonly at: string;
-  readonly comment?: string | null;
-}
-
-const TONE: Readonly<Record<RecentApproval['outcomeTone'], string>> = {
-  green: 'bg-green-500/10 text-green-700 dark:text-green-300',
-  red: 'bg-red-500/10 text-red-700 dark:text-red-300',
-  grey: 'bg-muted text-muted-foreground',
-  amber: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-};
-
-/** The last decided approval requests, folded to one line with their count. Nothing before one was decided. */
-export function IssueRecentApprovals({
-  approvals,
-  locale,
-  labels = defaultIssueDetailLabels,
-}: {
-  readonly approvals: readonly RecentApproval[];
-  readonly locale?: string;
-  readonly labels?: IssueDetailLabels;
-}): ReactElement | null {
-  if (approvals.length === 0) return null;
-  return (
-    <Collapsible
-      render={
-        <IssueSection
-          icon={<HistoryIcon />}
-          title={labels.approvals.recent}
-          count={approvals.length}
-          actions={
-            <CollapsibleTrigger
-              render={
-                <Button
-                  variant='ghost'
-                  size='icon-sm'
-                  className='group/approvals text-muted-foreground'
-                  aria-label={labels.approvals.recent}
-                />
-              }
-            >
-              <ChevronDownIcon
-                className='transition-transform group-data-panel-open/approvals:rotate-180'
-                aria-hidden='true'
-              />
-            </CollapsibleTrigger>
-          }
-        />
-      }
-      data-testid='issue-recent-approvals'
-    >
-      <CollapsibleContent>
-        <ul className={ISSUE_SECTION_LIST}>
-          {approvals.map((approval) => (
-            <li key={approval.id} className='space-y-1 px-3 py-2 text-xs'>
-              <div className='flex flex-wrap items-center gap-2'>
-                <IssueStatusBadge status={approval.from} />
-                <span aria-hidden='true'>→</span>
-                <IssueStatusBadge status={approval.to} />
-                <Badge
-                  variant='secondary'
-                  className={cn('font-normal', TONE[approval.outcomeTone])}
-                >
-                  {approval.outcome}
-                </Badge>
-                <span className='ml-auto text-muted-foreground'>
-                  {approval.decidedBy ? `${approval.decidedBy} · ` : ''}
-                  <time
-                    dateTime={approval.at}
-                    title={dateTime(approval.at, locale)}
-                  >
-                    {relativeTime(approval.at, locale)}
-                  </time>
-                </span>
-              </div>
-              {approval.comment ? (
-                <p className='text-muted-foreground wrap-anywhere'>
-                  {approval.comment}
-                </p>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      </CollapsibleContent>
-    </Collapsible>
-  );
-}
-
 export interface SubIssue {
   readonly id: string;
   readonly identifier: string;
@@ -1185,6 +869,7 @@ export function IssueSubtasks({
                     marks={
                       issue.waiting ? (
                         <Badge
+                          data-size='sm'
                           variant='secondary'
                           className='gap-1 bg-amber-500/10 font-normal text-amber-700 dark:text-amber-300'
                         >
@@ -1381,7 +1066,11 @@ export function IssueDependencies({
   );
 }
 
-/** Deletes the issue after a confirmation. */
+/**
+ * Deletes the issue after a confirmation. Below `@md` of the nearest named container (the issue header's own width,
+ * not the viewport), only the icon shows, with the label in a tooltip, so a docked panel beside the page does not
+ * squeeze the title out of its row.
+ */
 export function IssueDeleteButton({
   identifier,
   onDelete,
@@ -1395,15 +1084,27 @@ export function IssueDeleteButton({
   const [busy, setBusy] = useState(false);
   return (
     <>
-      <Button
-        variant='ghost'
-        size='sm'
-        className='text-muted-foreground'
-        onClick={() => setOpen(true)}
-      >
-        <Trash2Icon data-icon='inline-start' />
-        {labels.delete}
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant='ghost'
+                size='sm'
+                aria-label={labels.delete}
+                className='text-muted-foreground'
+                onClick={() => setOpen(true)}
+              />
+            }
+          >
+            <Trash2Icon data-icon='inline-start' />
+            <span className='hidden @md/issue-header:inline'>
+              {labels.delete}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{labels.delete}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

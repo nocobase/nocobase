@@ -1,5 +1,20 @@
 # @nocobase/create-plugin
 
+## 0.1.0-beta.22
+
+### Patch Changes
+
+- 693e43d: Update agent guidance to refer to the renamed `nocobase-app-plugin-development` Skill.
+
+## 0.1.0-beta.21
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/cli-envelope@0.1.0-beta.1
+  - @nocobase/dev-config@0.1.0-beta.22
+
 ## 0.1.0-beta.20
 
 ### Patch Changes

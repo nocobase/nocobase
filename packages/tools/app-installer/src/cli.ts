@@ -1,3 +1,7 @@
+import { Flags } from '@oclif/core';
+import path from 'node:path';
+import { createOfflineBundle } from './lib/offline-bundle.ts';
+import { SSH_FLAGS, runRemote, type RemoteFlags } from './lib/remote.ts';
 import { parse } from '@oclif/core/parser';
 import {
   INSTALL_ARGS,
@@ -71,10 +75,15 @@ export function formatHelp(): string {
     `  $ ${installerCommand('COMMAND [FLAGS]')}`,
     '',
     'COMMANDS',
+    '  bundle             Package this installer and its installed runtime dependencies: --out <file.tar.gz>.',
+    '  deploy             With --ssh and --archive, install a new directory or upgrade an existing installation.',
     '  install DIRECTORY  Install into DIRECTORY (or --dir DIRECTORY) from --app or --archive, and start it with pm2.',
     '  upgrade            Upgrade the installation in --dir, the current directory by default, to the latest npm application or a new --archive.',
     '  rollback           Return to the release the last upgrade came from, or to --to.',
     '  status             Report the release, endpoints, health, pm2 process and releases on disk.',
+    '',
+    'SSH FLAGS (install, deploy, upgrade, rollback, status)',
+    ...describeFlags(SSH_FLAGS),
     '',
     'INSTALL FLAGS',
     ...describeFlags(INSTALL_FLAGS),
@@ -184,7 +193,50 @@ export async function runInstaller(
   const removeInterruptHandlers = installInterruptHandlers(stderr);
   try {
     let outcome: CommandOutcome;
-    if (command === 'install') {
+    const remoteDefinitions = {
+      install: {
+        args: INSTALL_ARGS,
+        flags: { ...INSTALL_FLAGS, ...SSH_FLAGS },
+      },
+      deploy: { flags: { ...INSTALL_FLAGS, ...UPGRADE_FLAGS, ...SSH_FLAGS } },
+      upgrade: { flags: { ...UPGRADE_FLAGS, ...SSH_FLAGS } },
+      rollback: { flags: { ...ROLLBACK_FLAGS, ...SSH_FLAGS } },
+      status: { flags: { ...STATUS_FLAGS, ...SSH_FLAGS } },
+    };
+    const wantsRemote =
+      command === 'deploy' ||
+      rest.some((arg) => arg === '--ssh' || arg.startsWith('--ssh='));
+    if (command === 'bundle') {
+      const parsed = await parseCommand<{
+        flags: { out: string; json: boolean };
+      }>(rest, {
+        flags: {
+          out: Flags.string({ required: true }),
+          json: Flags.boolean({ default: false }),
+        },
+      });
+      const out = path.resolve(options.cwd ?? process.cwd(), parsed.flags.out);
+      await createOfflineBundle(out);
+      outcome = {
+        status: 'success',
+        result: { archive: out, version: options.version },
+        summary: [`Offline installer: ${out}`],
+      };
+    } else if (wantsRemote && command in remoteDefinitions) {
+      const parsed = await parseCommand<{
+        directory?: string;
+        flags: RemoteFlags;
+      }>(rest, remoteDefinitions[command as keyof typeof remoteDefinitions]);
+      outcome = await runRemote(
+        command,
+        parsed.flags,
+        parsed.directory,
+        rest
+          .filter((arg) => arg.startsWith('--'))
+          .map((arg) => arg.slice(2).split('=')[0].replace(/^no-/u, '')),
+        deps,
+      );
+    } else if (command === 'install') {
       outcome = await install(
         await parseCommand<InstallInput>(rest, {
           args: INSTALL_ARGS,

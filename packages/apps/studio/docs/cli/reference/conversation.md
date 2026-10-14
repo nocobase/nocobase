@@ -56,18 +56,17 @@ nb-studio conversation attachment upload --file <path>
 
 Create a conversation
 
-With the given agent, or the caller's default chat agent when none is named; for an online agent, `model` chooses one of its `models` to answer with (400, `metadata.reason` `MODEL_NOT_LISTED`, for any other).
+With the given enabled agent, or the caller's default chat agent when none is named.
 
 ```bash
 nb-studio conversation create
 ```
 
-| Flag       | Type   | Description                                                                                                    |
-| ---------- | ------ | -------------------------------------------------------------------------------------------------------------- |
-| `--agent`  | string |                                                                                                                |
-| `--title`  | string |                                                                                                                |
-| `--source` | string |                                                                                                                |
-| `--model`  | json   | An online agent: the entry of its list (`ChatAgent.models`) to answer with; the agent's default when left out. |
+| Flag       | Type   | Description |
+| ---------- | ------ | ----------- |
+| `--agent`  | string |             |
+| `--title`  | string |             |
+| `--source` | string |             |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -79,7 +78,7 @@ nb-studio conversation create
 
 Switch a conversation to the default agent
 
-Continues the conversation with the default chat agent while its own agent cannot answer; a runner conversation whose default is not a runner agent continues with the online fallback agent.
+Continues the conversation with the default chat agent while its own agent cannot answer.
 
 ```bash
 nb-studio conversation fallback <conversation>
@@ -123,14 +122,14 @@ The conversations the caller started, newest message first, a page at a time; a 
 nb-studio conversation list
 ```
 
-| Flag           | Type    | Description  |
-| -------------- | ------- | ------------ |
-| `--query`      | string  |              |
-| `--archived`   | true \\ | false \\     | all |     |
-| `--agent`      | string  |              |
-| `--source`     | string  |              |
-| `--limit`      | integer | (default 30) |
-| `--page-token` | string  |              |
+| Flag           | Type                 | Description  |
+| -------------- | -------------------- | ------------ |
+| `--query`      | string               |              |
+| `--archived`   | true \| false \| all |              |
+| `--agent`      | string               |              |
+| `--source`     | string               |              |
+| `--limit`      | integer              | (default 30) |
+| `--page-token` | string               |              |
 
 **Output:** A list (table columns: `id`, `title`, `agent.name`, `lastMessageAt`, `read`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -268,16 +267,15 @@ nb-studio conversation settings get
 
 Update the team's chat settings
 
-Sets the team's default chat agent and the online agent that answers in place of a runner agent with no runner for the person. Needs `agents.agents` manage.
+Sets the team's default chat agent, an enabled agent. Needs `agents.agents` manage.
 
 ```bash
 nb-studio conversation settings update
 ```
 
-| Flag                      | Type   | Description |
-| ------------------------- | ------ | ----------- |
-| `--default-agent`         | string |             |
-| `--online-fallback-agent` | string |             |
+| Flag              | Type   | Description |
+| ----------------- | ------ | ----------- |
+| `--default-agent` | string |             |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -333,9 +331,7 @@ nb-studio conversation title set "Tidy the login issues"
 
 ## conversation update
 
-Rename, archive or choose the model of a conversation
-
-`model` picks one of the online conversation's `models` for its next runs (null: the agent's default); 400 `INVALID_REQUEST` with `reason: MODEL_NOT_LISTED` when the agent does not list it.
+Rename or archive a conversation
 
 ```bash
 nb-studio conversation update <conversation>
@@ -349,7 +345,6 @@ nb-studio conversation update <conversation>
 | ------------ | ------- | ----------- |
 | `--title`    | string  |             |
 | `--archived` | boolean |             |
-| `--model`    | json    |             |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

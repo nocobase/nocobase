@@ -1,5 +1,6 @@
 import { Flags, type Interfaces } from '@oclif/core';
 
+import { gcRunTemps } from '../core/run-temp.ts';
 import { RunnerCommand } from '../lib/command.ts';
 import {
   minFreeDisk,
@@ -48,6 +49,7 @@ interface GcWorkspace {
 
 interface GcResult {
   applied: boolean;
+  temporaryDirectories: { dir: string; removed: boolean }[];
   /** The disk holding the working directories; null when the file system cannot say. */
   disk: { freeBytes: number; totalBytes: number } | null;
   /** What the runner keeps free on it (`min-free-disk`); null for nothing. */
@@ -68,7 +70,9 @@ export default class Gc extends RunnerCommand {
     'with the free space on the disk holding them and what the runner keeps free (min-free-disk). Without filters, the ' +
     'directories whose work is over may go; pushed ones whose work goes on only when picked, also while the disk is low. ' +
     'With filters, the directories every filter matches. Nothing is removed without --apply, a directory a run holds ' +
-    'never is, and one with unpushed work only with --force.';
+    'never is. When the application confirms a task is completed or cancelled through a settled directory decision, ' +
+    'its directory is removed even with unpushed commits, changes or untracked files. Other directories with unpushed ' +
+    'work require --force. Manual gc --apply uses one directory decision report, with no second confirmation before removal.';
   static override examples: string[] = [
     '<%= config.bin %> gc',
     '<%= config.bin %> gc --apply',
@@ -84,7 +88,7 @@ export default class Gc extends RunnerCommand {
   } = {
     apply: Flags.boolean({
       description:
-        'Remove what the rules or filters pick; without it, only show it.',
+        'Remove what the rules or filters pick; without it, only show it. Uses one directory decision report, with no second confirmation before removal.',
     }),
     ended: Flags.boolean({
       description:
@@ -98,7 +102,8 @@ export default class Gc extends RunnerCommand {
       description: 'Pick the directories of this subject (TASK-42).',
     }),
     force: Flags.boolean({
-      description: 'Also remove picked directories with unpushed work.',
+      description:
+        'Also remove unpushed work in other picked directories; completed or cancelled tasks confirmed by a settled directory decision do not require this flag.',
     }),
   };
 
@@ -167,6 +172,11 @@ export default class Gc extends RunnerCommand {
       }
       after = await readDisk(this.paths.workRoot);
     }
+    const temporaryDirectories = await gcRunTemps(this.paths, apply);
+    for (const item of temporaryDirectories)
+      this.log(
+        `${item.removed ? 'removed' : 'would remove'} run temporary directory: ${item.dir}`,
+      );
     const workspaces: GcWorkspace[] = entries
       .sort((a, b) => Date.parse(a.lastUsedAt) - Date.parse(b.lastUsedAt))
       .map((entry) => ({
@@ -195,7 +205,7 @@ export default class Gc extends RunnerCommand {
           item.subject,
           item.diagnostic,
           item.discardsUntracked
-            ? 'cleanup will discard untracked files'
+            ? 'cleanup will discard work never pushed'
             : null,
           item.status,
           item.unpushed ? 'unpushed' : 'pushed',
@@ -232,6 +242,7 @@ export default class Gc extends RunnerCommand {
       this.log(`${warning.charAt(0).toUpperCase()}${warning.slice(1)}`);
     return {
       applied: apply,
+      temporaryDirectories,
       disk:
         after === undefined
           ? null

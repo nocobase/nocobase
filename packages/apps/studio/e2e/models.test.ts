@@ -1,8 +1,8 @@
 /**
  * Agent team › Models against the mock model global setup starts (`support/mock-llm.ts`): adding an OpenAI-compatible
  * service in one sheet (provider type, name, base URL, key, connection test, models fetched and one checked) beside the
- * `mock-llm` one global setup added; reopened, its key shown as set and never again; the (service, model) pair priced
- * on the Usage page's Prices tab; and an online agent created on the service's model.
+ * `mock-llm` one global setup added; reopened, its key shown as set and never again; and the (service, model) pair
+ * priced on the Usage page's Prices tab. Model services serve the application's own model calls; agents run on runners.
  */
 import { expect, open, server, test, unique } from './support/fixtures.ts';
 import { MOCK_SERVICE } from './support/server.ts';
@@ -23,7 +23,7 @@ interface Price {
 }
 
 test.describe('Agent team › Models', () => {
-  test('adds a service, turns on and prices its model, tests it, and gives an online agent its model', async ({
+  test('adds a service, turns on and prices its model, and tests it', async ({
     page,
     api,
   }) => {
@@ -96,45 +96,6 @@ test.describe('Agent team › Models', () => {
           price.modelService === added!.name && price.model === 'mock-model',
       ),
     ).toMatchObject({ tool: 'online', inputPerM: 2, outputPerM: 8 });
-
-    // Online agents are offered the new service's model.
-    await expect
-      .poll(
-        async () =>
-          (await api.get<{ name: string }[]>('agents/models')).map(
-            (service) => service.name,
-          ),
-        { timeout: 10_000 },
-      )
-      .toContain(added!.name);
-
-    // An online agent picks the service and its model.
-    const agentName = `模型助手 ${unique()}`;
-    await open(page, '/agents/new');
-    const create = page.getByRole('dialog');
-    await create.getByRole('radio', { name: /^在线/u }).click();
-    await create.getByLabel('名称', { exact: true }).fill(agentName);
-    const field = (label: string) =>
-      create.getByRole('combobox', { name: label, exact: true });
-    await field('模型服务').click();
-    await page.getByRole('option', { name: added!.title }).click();
-    await expect(field('模型')).toContainText('mock-model');
-    await create.getByRole('button', { name: '创建', exact: true }).click();
-    await expect
-      .poll(async () => {
-        const agents = await api.get<
-          {
-            name: string;
-            type: string;
-            modelEntries: { modelService?: string; model: string | null }[];
-          }[]
-        >('agents');
-        return agents.find((agent) => agent.name === agentName);
-      })
-      .toMatchObject({
-        type: 'online',
-        modelEntries: [{ modelService: added!.name, model: 'mock-model' }],
-      });
   });
 
   test('bills a coding tool by subscription', async ({ page, api }) => {

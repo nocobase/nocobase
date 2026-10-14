@@ -1,10 +1,10 @@
 /**
  * Studio's reports as the CLI words them (`routes.ts`): `report usage` (what runs used and cost, grouped by agent,
  * person, project, issue, day, model or tool) and `report metrics` (adoption, the share of deliveries agents made,
- * review and approval rates, run reliability and duration, cost, and the decisions people take), in `meta.message`.
+ * review rates, run reliability and duration, cost, and the decisions people take), in `meta.message`.
  *
  * Both perform `studio.reports/read` (`REPORTS_READ`): a person holds it with the reports grant, and a run when its
- * agent is configured with it and the person who woke it holds the grant. As on the pages, every run counts for someone
+ * running identity holds the grant. As on the pages, every run counts for someone
  * who may read agents, and otherwise only their own, on issues they see.
  */
 import type { MetricsReport, UsageReport } from '../../shared/reports.js';
@@ -20,9 +20,7 @@ export const REPORTS_READ: string = REPORTS_READ_ACTION;
 export function reportActionsOf(grantsOf: ReaderGrantsOf): ActionSource {
   return async (identity) => {
     if (!(await grantsOf(identity)).reports) return new Set();
-    if (identity.kind === 'user') return new Set([REPORTS_READ]);
-    const configured = new Set(identity.agent?.actions ?? []);
-    return new Set([REPORTS_READ].filter((key) => configured.has(key)));
+    return new Set([REPORTS_READ]);
   };
 }
 
@@ -50,7 +48,7 @@ export function metricsText(report: MetricsReport): string {
     `Metrics ${report.from} to ${report.to}${report.projectId ? ` (project ${report.projectId})` : ''}`,
     `Adoption: ${adoption.activeDays} active days in ${adoption.activeWeeks} weeks, ${adoption.activeMembers} people, ${adoption.issuesCreated} issues and ${adoption.commentsCreated} comments created.`,
     `Delivered: ${aiShare.deliveredTotal} issues, ${aiShare.deliveredByAgent} by agents (AI share ${percent(aiShare.share)}).`,
-    `Review: ${percent(trust.reviewPassRate)} passed, ${percent(trust.reworkRate)} sent back; approvals ${percent(trust.approvalApproveRate)} approved.`,
+    `Review: ${percent(trust.reviewPassRate)} passed, ${percent(trust.reworkRate)} sent back.`,
     `Runs: ${reliability.runs} started, ${reliability.completedRuns} completed, ${reliability.failedRuns} failed, ${reliability.lostRuns} lost; median wait ${duration(reliability.claimLatencyP50Ms)}, median run ${duration(reliability.runDurationP50Ms)}.`,
     `Cost: ${money(cost.estimatedCost)} (${cost.inputTokens} input and ${cost.outputTokens} output tokens), ${money(cost.costPerDeliveredIssue)} per delivered issue.`,
     `Decisions: ${humanLoad.decisionsCreated} asked, ${humanLoad.decisionsResolved} decided (median ${duration(humanLoad.decisionResolveP50Ms)}), ${humanLoad.openDecisions} open.`,

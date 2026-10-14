@@ -48,7 +48,7 @@ releases:
   dataDir: storage/releases
 ```
 
-Use `disk: local` to store archives on the filesystem. A prefix is relative to the disk root: `releases` stores new uploads and promoted archives at `releases/<appId>/<releaseId>.tar.gz` on both filesystem and S3 disks. Omit `prefix` or set it to an empty string to use the root; repeated `/` characters are collapsed into one, so `releases//archives` is `releases/archives`, and trailing `/` characters are removed. Absolute paths, backslashes, `.` or `..` path segments and control characters are rejected. A prefix organizes files; it is not a permission boundary.
+Use `disk: local` to store archives on the filesystem. A prefix is relative to the disk root: `releases` stores new uploads and promoted archives at `releases/<appId>/<releaseId>.tar.gz` on both filesystem and S3 disks. Omit `prefix` or set it to an empty string to use the root; repeated `/` characters are collapsed into one, so `releases//archives` is `releases/archives`, and trailing `/` characters are removed. Absolute paths, backslashes, `.` or `..` path segments and control characters are rejected. The complete artifact key, including the prefix, must fit the database limit of 172 characters; uploads and promotions reject longer keys before writing files. A prefix organizes files; it is not a permission boundary.
 
 Existing complete configurations continue to work:
 

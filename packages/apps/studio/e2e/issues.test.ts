@@ -11,21 +11,26 @@ interface Issue {
 }
 
 test.describe('issues', () => {
-  test('the board is the default, beside the list and the Agent queue', async ({
+  test('the table is the default, beside the board and the Agent queue', async ({
     page,
   }) => {
     await open(page, '/issues');
     const views = page.getByRole('group', { name: '视图' });
-    await expect(views.getByRole('button', { name: '看板' })).toHaveAttribute(
+    await expect(views.getByRole('button', { name: '列表' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
+    await views.getByRole('button', { name: '看板' }).click();
     const board = page.getByRole('region', { name: '任务看板' });
     await expect(
       board.getByRole('region', { name: /^进行中 \d+$/ }),
     ).toBeVisible();
 
     await views.getByRole('button', { name: '列表' }).click();
+    // Other tests add issues to the same list at the same time, so find the demo issue by its words.
+    await page
+      .getByRole('textbox', { name: '搜索任务' })
+      .fill('Drag to reorder issues on the board');
     const table = page.getByRole('table');
     await expect(
       table.getByRole('row', {
@@ -43,12 +48,12 @@ test.describe('issues', () => {
     ).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('my issues default to the board', async ({ page }) => {
+  test('my issues default to the table', async ({ page }) => {
     await open(page, '/my-issues');
     await expect(
       page
         .getByRole('group', { name: '视图' })
-        .getByRole('button', { name: '看板' }),
+        .getByRole('button', { name: '列表' }),
     ).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -59,28 +64,32 @@ test.describe('issues', () => {
     const me = await api.get<{ userId: string }>('projects/me');
     const runner = new FakeRunner(api, `agent-view-${unique()}`);
     const agentId = await runner.agent();
-    // Waiting for me: a design proposal in Proposal review.
-    const proposal = await runner.issueWithDesignProposal(
-      `Agent 队列：等待审核 ${unique()}`,
-      { ownerUserId: me.userId },
-    );
-    // Working: a run the runner holds.
+    // Working: a mention woke the agent and the runner holds its run.
     const working = await api.post<Issue>('projects/issues', {
       title: `Agent 队列：处理中 ${unique()}`,
       ownerUserId: me.userId,
-      executor: { type: 'agent', id: agentId },
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
     });
+    await runner.wake(working);
     await runner.claim(working.identifier);
-    // Queued: it waits for an unfinished issue, and the agent starts when that is done.
-    const blocker = await api.post<Issue>('projects/issues', {
-      title: `Agent 队列：前置任务 ${unique()}`,
-      ownerUserId: me.userId,
-    });
+    // Queued: woken after that, and no runner has taken it yet.
     const queued = await api.post<Issue>('projects/issues', {
-      title: `Agent 队列：等待前置 ${unique()}`,
+      title: `Agent 队列：排队中 ${unique()}`,
       ownerUserId: me.userId,
-      executor: { type: 'agent', id: agentId },
-      blockedBy: [blocker.id],
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
+    });
+    await runner.wake(queued);
+    // An issue no agent touches.
+    const blocker = await api.post<Issue>('projects/issues', {
+      title: `Agent 队列：无关任务 ${unique()}`,
+      ownerUserId: me.userId,
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
     });
 
     await open(page, '/issues?view=agent&mine=1');
@@ -89,22 +98,12 @@ test.describe('issues', () => {
     const item = (issue: Issue) =>
       lane.getByRole('link').filter({ hasText: issue.title });
 
-    const waitingItem = section('waiting').locator('[data-for-me]');
-    await expect(waitingItem).toContainText(proposal.title);
-    await expect(waitingItem).toContainText('等你');
-    await expect(
-      // A link drawn as a button.
-      waitingItem.getByRole('button', { name: /去处理/ }),
-    ).toHaveAttribute(
-      'href',
-      new RegExp(`/issues/${proposal.identifier}#design$`),
-    );
     await expect(
       section('working').getByRole('link').filter({ hasText: working.title }),
     ).toContainText(/\d+:\d{2}/);
     await expect(
       section('queued').getByRole('link').filter({ hasText: queued.title }),
-    ).toContainText(`被 ${blocker.identifier} 阻塞`);
+    ).toBeVisible();
     // The issue without an agent is not part of it.
     await expect(item(blocker)).toHaveCount(0);
 
@@ -129,11 +128,38 @@ test.describe('issues', () => {
       .getByRole('rowgroup')
       .last()
       .getByRole('row');
-    await expect(rows).toHaveCount(1);
-    await expect(rows.first()).toContainText('PM-2');
+    const group = rows.filter({
+      has: page.getByRole('button', { name: '收起常规工作', exact: true }),
+    });
+    await expect(group).toHaveCount(1);
+    await expect(group).toContainText('1 个任务 · 1 棵任务树');
+    const parent = rows.filter({
+      has: page.getByRole('link', { name: 'PM-1', exact: true }),
+    });
+    await expect(parent).toContainText('上下文');
+    await parent
+      .getByRole('button', { name: '展开PM-1的子任务', exact: true })
+      .click();
+    const tasks = rows.filter({
+      has: page.getByRole('link', { name: /^PM-\d+$/ }),
+    });
+    await expect(tasks).toHaveCount(4);
+    const match = tasks.filter({
+      has: page.getByRole('link', { name: 'PM-2', exact: true }),
+    });
+    await expect(match).toHaveCount(1);
+    await expect(match).toContainText(
+      'Board drag and drop: reorder within a column',
+    );
+    await expect(match).not.toContainText('上下文');
+    const context = tasks.filter({ hasText: '上下文' });
+    await expect(context).toHaveCount(3);
   });
 
-  test('creating an issue by hand opens it', async ({ page, api }) => {
+  test('creating an issue by hand for later opens it in Backlog', async ({
+    page,
+    api,
+  }) => {
     const title = `手动创建的任务 ${unique()}`;
     await open(page, '/issues');
     await page.getByRole('button', { name: '新建任务', exact: true }).click();
@@ -142,6 +168,12 @@ test.describe('issues', () => {
     await dialog.getByRole('textbox', { name: '标题' }).fill(title);
     await dialog.getByRole('combobox', { name: '优先级' }).click();
     await page.getByRole('option', { name: '高' }).click();
+    // It starts right away unless "Later" is chosen, which leaves it in Backlog.
+    await expect(dialog.getByRole('radio', { name: /立即开始/ })).toBeChecked();
+    await expect(
+      dialog.getByRole('button', { name: '创建并开始', exact: true }),
+    ).toBeVisible();
+    await dialog.getByRole('radio', { name: /以后再说/ }).click();
     await dialog.getByRole('button', { name: '创建', exact: true }).click();
 
     await expect(dialog).toBeHidden();
@@ -149,9 +181,9 @@ test.describe('issues', () => {
     const found = await api.get<Issue[]>(
       `projects/issues?q=${encodeURIComponent(title)}`,
     );
-    expect(found.map((issue) => [issue.title, issue.priority])).toEqual([
-      [title, 'high'],
-    ]);
+    expect(
+      found.map((issue) => [issue.title, issue.priority, issue.statusKey]),
+    ).toEqual([[title, 'high', 'backlog']]);
   });
 
   test('the AI tab splits notes into a draft and creates the issues with their hierarchy', async ({
@@ -170,7 +202,7 @@ test.describe('issues', () => {
       .fill(
         `# 导出改进 ${tag}\n- 导出 CSV ${tag} [high]\n- 导出 Excel ${tag}\n  - 大文件分片 ${tag}`,
       );
-    // The built-in project assistant is an online agent, so AI split is offered beside the rules; this split is by the rules.
+    // AI split is offered beside the rules; this split is by the rules.
     await dialog
       .getByRole('button', { name: '按规则拆分', exact: true })
       .click();

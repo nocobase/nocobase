@@ -414,6 +414,19 @@ export interface RunWorkspace {
   readonly clean?: boolean;
   /** Commit identity and repository credentials; absent when the application gives none (the host's own are used). */
   readonly git?: RunGit;
+  /**
+   * The run only reads (a review, reading a failed check): the runner prepares it a work directory of its own for this
+   * subject and agent, checking the same branches out there, so it runs alongside the run that writes the subject's code,
+   * and pushes nothing at its end. A runner from before this field ignores it and shares the subject's work directory.
+   */
+  readonly readOnly?: boolean;
+  /**
+   * The work directory to use in place of the subject's (`subject.key`), such as a coordinating agent's own one that
+   * checks nothing out, so its runs never wait for the subject's lock. A runner from before this field ignores it.
+   */
+  readonly key?: string;
+  /** Stable thread scope for external Codex state; older runners ignore it. */
+  readonly sessionScope?: string;
 }
 
 export const RunWorkspaceSchema: z.ZodType<RunWorkspace> = z.object({
@@ -421,7 +434,15 @@ export const RunWorkspaceSchema: z.ZodType<RunWorkspace> = z.object({
   env: z.array(EnvVarSchema),
   passthrough: z.array(z.string()).optional(),
   clean: z.boolean().optional(),
+  sessionScope: z.string().max(500).optional(),
   git: RunGitSchema.optional(),
+  readOnly: z.boolean().optional(),
+  key: z
+    .string()
+    .min(1)
+    .max(200)
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/u)
+    .optional(),
 });
 
 /**

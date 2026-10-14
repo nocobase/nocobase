@@ -7,7 +7,7 @@
  * `releases`), issue previews and deployment marks join as `StudioPreviewsProvider` joins them, their notices kept in
  * `notices`.
  */
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
@@ -46,6 +46,7 @@ import {
   projectsToken,
 } from '@nocobase/app-plugin-projects/server/tokens';
 import releasesPlugin from '@nocobase/app-plugin-releases/server';
+import { userPreferencesServiceToken } from '@nocobase/app-plugin-users/server/tokens';
 import { releasesToken } from '@nocobase/app-plugin-releases/server/tokens';
 import { createAppPaths } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
@@ -67,10 +68,12 @@ import { Hono } from 'hono';
 
 import {
   agentsToken,
+  runnerAgentId,
   type Agents,
   type CallerIdentity,
 } from '@nocobase/app-plugin-agents/server/tokens';
-import type { AgentInput } from '@nocobase/app-plugin-agents/shared/agents';
+import type { AgentTool } from '@nocobase/agent-protocol';
+import type { RunnerModelEntry } from '@nocobase/app-plugin-agents/shared/agents';
 import {
   AGENTS_MIGRATIONS,
   AGENTS_PACKAGE,
@@ -80,7 +83,6 @@ import {
   createRunnerRoutes,
   createRunRoutes,
   runCredentialResolver,
-  type CommandSurface,
 } from '@nocobase/app-plugin-agents/testing';
 
 import {
@@ -95,6 +97,7 @@ import {
 } from '@nocobase/app-plugin-releases/shared/access';
 
 import { narrowedProjectPermissions } from '../../server/access/key-scope.js';
+import { studioAccessToken } from '../../server/access/token.js';
 import { reportsRoutes } from '../../server/reports/routes.js';
 import { studioAgentsRoutes } from '../../server/agents/routes.js';
 import { inboxRoutes } from '../../server/inbox/routes.js';
@@ -113,7 +116,13 @@ import {
   type Delegations,
 } from '../../server/agents/conversation/delegation.js';
 import { issueRunsRoutes } from '../../server/agents/run-views.js';
-import { stageRunRoutes } from '../../server/agents/stage-run-routes.js';
+import { projectManagerRoutes } from '../../server/agents/manager/routes.js';
+import { taskTreeRoutes } from '../../server/issues/task-tree-routes.js';
+import { ownerHandoffRoutes } from '../../server/issues/owner-handoff-routes.js';
+import { followUpsRoutes } from '../../server/follow-ups/routes.js';
+import { createProjectManager } from '../../server/agents/manager/service.js';
+import { studioProjectManagerToken } from '../../server/agents/manager/token.js';
+import type { ProjectManager } from '../../server/agents/manager/service.js';
 import {
   isRunScope,
   runScopeStep,
@@ -124,7 +133,6 @@ import {
   createDeployMarks,
   type DeployMarksService,
 } from '../../server/deploys/service.js';
-import type { InboxSend } from '../../server/inbox/port.js';
 import {
   createIssueAccess,
   previewAppSource,
@@ -156,7 +164,6 @@ import {
   createFakeDriver,
   type FakeDriverState,
 } from '../releases/fixtures.js';
-import { createPermissionSource } from '../../server/agents/commands/permissions.js';
 import { bindStudioGit } from '../../server/git/bind.js';
 import { createGitProviders } from '../../server/git/providers.js';
 import { createGitSecrets } from '../../server/git/sealing.js';
@@ -187,7 +194,6 @@ import {
   createKnowledgeViews,
   type KnowledgeViews,
 } from '../../server/knowledge/views.js';
-import { retrospectiveRule } from '../../server/knowledge/retrospective.js';
 import {
   createKnowledge,
   createKnowledgeTicketRoutes,
@@ -289,6 +295,19 @@ export function knowledgeLevelsOf(role: Role, userId: string): KnowledgeLevels {
   return { read: 'none', propose: 'none', edit: 'none' };
 }
 
+/** What a test may say about an agent `createAgent` makes; the rest is the usual coder. */
+export interface TestAgentInput {
+  readonly id?: string;
+  readonly name?: string;
+  readonly description?: string;
+  readonly instructions?: string | null;
+  readonly actions?: readonly string[];
+  readonly tool?: AgentTool;
+  readonly model?: string;
+  readonly modelEntries?: readonly RunnerModelEntry[];
+  readonly maxConcurrentRuns?: number;
+}
+
 export interface BridgeHarness {
   readonly database: DatabaseManager;
   /** Studio's knowledge base, when asked for: its commands, brief sections, mount, inbox cards and rule. */
@@ -320,6 +339,8 @@ export interface BridgeHarness {
   readonly notices: InboxSend[];
   readonly agents: Agents;
   readonly projects: Projects;
+  /** The project manager, ready: its agent exists, and runs with the first agent `createAgent` made. */
+  readonly manager: ProjectManager;
   /** The work conversations delegated (`conversation/delegation.ts`). */
   readonly delegations: Delegations;
   /** Each user's role; `member` when absent. */
@@ -335,6 +356,8 @@ export interface BridgeHarness {
   /** Pushes and workflow runs webhooks delivered. */
   readonly gitRepoEvents: RepoEvents;
   readonly github: FakeGitHub;
+  /** The pull requests Studio stored something about, in order (`onChanged`). */
+  readonly gitChanges: string[];
   /** People's preferences, by `<userId>:<key>`. */
   readonly preferences: Map<string, unknown>;
   /** What Studio's inbox port was given: every notice sent, and every decision settled. */
@@ -352,9 +375,15 @@ export interface BridgeHarness {
   readonly app: Hono;
   addUser(id: string): Promise<string>;
   viewer(userId: string): Viewer;
-  createAgent(input?: Partial<AgentInput>): Promise<string>;
-  /** Registers a runner (once, with `features` or the usual ones) and claims one run; the claim's payload. */
+  /** An enabled agent discovered from runners (Claude by default), as an administrator enabled it. */
+  createAgent(input?: TestAgentInput): Promise<string>;
+  /**
+   * Registers a runner (once, with `features` or the usual ones) and claims one run; the claim's payload. The runner
+   * reports every tool and model `createAgent` made (and `reportModel` added), so it takes their runs.
+   */
   claimOne(features?: readonly string[]): Promise<any>;
+  /** Makes the runner `claimOne` registers report `model` of `tool` too. */
+  reportModel(tool: AgentTool, model: string): Promise<void>;
   /** The key of the runner `claimOne` registered. */
   runnerKey(): string | undefined;
   /** A runner request for a run (`RUNNER_ROUTES` path with `:runId`), with the registered runner's key; `body` is `data` on success. */
@@ -368,8 +397,6 @@ export interface BridgeHarness {
     readonly runToken?: string;
     readonly user?: string;
   }): Promise<CliManifest>;
-  /** An online run's commands: its manifest's, sent to the harness's API with its token. */
-  commandsOf(identity: CallerIdentity, token: string): Promise<CommandSurface>;
   /** The command manifest of a command identity, as the CLI surface builds a caller from it. */
   manifestFor(identity: CallerIdentity): Promise<CliManifest>;
   request(
@@ -438,6 +465,7 @@ export async function createBridgeHarness(
     readonly releases?: boolean;
     readonly previews?: boolean;
     readonly knowledge?: boolean;
+    readonly inApp?: boolean;
   } = {},
 ): Promise<BridgeHarness> {
   const projectsRoot = packageRoot('@nocobase/app-plugin-projects');
@@ -464,6 +492,17 @@ export async function createBridgeHarness(
           '@nocobase/app-plugin-projects',
         ],
         [AGENTS_MIGRATIONS, AGENTS_PACKAGE],
+        ...(options.inApp
+          ? [
+              [
+                path.join(
+                  packageRoot('@nocobase/app-plugin-notification-in-app'),
+                  'database/migrations',
+                ),
+                '@nocobase/app-plugin-notification-in-app',
+              ] as const,
+            ]
+          : []),
         [
           path.join(
             packageRoot('@nocobase/app-plugin-releases'),
@@ -549,19 +588,11 @@ export async function createBridgeHarness(
   const agentIds = {
     generateString: () => `a-${String((nextAgentId += 1)).padStart(6, '0')}`,
   };
-  // An online run's commands are its manifest's, sent to the harness's API (set once the API is mounted).
-  const online: {
-    commandsOf?: (
-      identity: CallerIdentity,
-      token: string,
-    ) => Promise<CommandSurface>;
-  } = {};
   const agents = createAgents({
     database,
     // Studio's names, as `server/config/agents.ts` gives them.
     app: { id: 'nb-studio', name: 'NocoBase Studio' },
     cli: { name: 'nb-studio', credentialFile: '.nb-studio/run.json' },
-    commandsOf: (identity, token) => online.commandsOf?.(identity, token),
     idGenerator: agentIds,
     secrets: TEST_SECRETS,
     onError: () => undefined,
@@ -605,6 +636,7 @@ export async function createBridgeHarness(
   const releaseServices = releases;
   // Before the agents: the template they add names the workflow event this registers.
   const github = createFakeGitHub();
+  const gitChanges: string[] = [];
   const port = {
     sent: [] as InboxSend[],
     settled: [] as { decisionKey: string; outcome: string }[],
@@ -635,11 +667,11 @@ export async function createBridgeHarness(
     events: gitEvents,
     repoEvents: gitRepoEvents,
   } = bindStudioGit({
+    onChanged: (pullRequestId) => gitChanges.push(pullRequestId),
     preferenceOf: (userId, key) =>
       Promise.resolve(preferences.get(`${userId}:${key}`)),
     projects: () => projects,
-    events: projects.workflowEvents.types,
-    statusRules: projects.statusRules,
+    events: projects.statusEvents.types,
     agents,
     noticeRules: projects.noticeRules,
     inbox: () => inboxPort,
@@ -741,8 +773,10 @@ export async function createBridgeHarness(
     pullRequests: () => gitPullRequests(() => gitEvents),
     onError: () => undefined,
   });
-  bindStudioAgents({
+  const manager = createProjectManager({ agents });
+  const unbindAgents = bindStudioAgents({
     agents,
+    checkoutPullRequests: (issueId) => git.checkoutPullRequests(issueId),
     delegations,
     kinds: projects.kinds,
     catalog: testCatalog,
@@ -770,8 +804,7 @@ export async function createBridgeHarness(
       : {}),
     projects: () => projects,
     noticeRules: projects.noticeRules,
-    statusRules: projects.statusRules,
-    templates: projects.templates,
+    manager,
     access: () => access,
     bindPlanHooks: (hooks) => {
       planHooks = hooks;
@@ -836,7 +869,6 @@ export async function createBridgeHarness(
       port: () => inboxPort,
       onError: () => undefined,
     });
-    projects.statusRules.add(retrospectiveRule({ agents: () => agents }));
   }
 
   const notices: InboxSend[] = [];
@@ -887,6 +919,7 @@ export async function createBridgeHarness(
       access: () => access,
     });
     const api = createPreviewApi({
+      syncPreviewLabels: (issueId) => git.syncPreviewLabels(issueId),
       database,
       previews: () => service,
       issues,
@@ -1056,12 +1089,10 @@ export async function createBridgeHarness(
         authzRequest.keyScope ??
         testKeyScope(context.req.header('x-test-key-scope'));
       const role = roleOf(session.user.id);
-      const held = (resource: { type: string; id: string }, action: string) =>
+      const held = (resource: { type: string; id: string }) =>
         resource.type === 'page'
           ? role !== 'none'
-          : resource.type === 'settings' &&
-              resource.id === 'agents.agents' &&
-              action === 'read'
+          : resource.type === 'settings' && resource.id === 'agents.agents'
             ? role === 'admin'
             : role !== 'none';
       context.set(
@@ -1080,8 +1111,7 @@ export async function createBridgeHarness(
             action: string;
           }) =>
             Promise.resolve(
-              held(resource, action) &&
-                (keyScope?.allows(resource, action) ?? true),
+              held(resource) && (keyScope?.allows(resource, action) ?? true),
             ),
         } as never,
       );
@@ -1122,6 +1152,23 @@ export async function createBridgeHarness(
   container.instance(studioInboxSourceToken, inboxSource);
   container.instance(agentsToken, agents);
   container.instance(studioDelegationsToken, delegations);
+  container.instance(studioProjectManagerToken, manager);
+  // People's preferences, as the users plugin keeps them, in `preferences`.
+  container.instance(userPreferencesServiceToken, {
+    get: (userId: string, key: string) =>
+      Promise.resolve(preferences.get(`${userId}:${key}`)),
+    set: (userId: string, key: string, value: unknown) => {
+      preferences.set(`${userId}:${key}`, structuredClone(value));
+      return Promise.resolve();
+    },
+  } as never);
+  // Studio's roles as far as the routes ask them: an administrator manages agents.
+  container.instance(studioAccessToken, {
+    grantsOfUser: (userId: string) =>
+      Promise.resolve({
+        settings: { 'agents.agents/manage': roleOf(userId) === 'admin' },
+      }),
+  } as never);
   // Studio's pull request and preview routes (`pr`, `preview`), as the provider binds them.
   const gitCallers = createPermissionSource(
     () => access,
@@ -1169,6 +1216,10 @@ export async function createBridgeHarness(
     ...(buildsService ? [buildsRoutes] : []),
   ])
     api.route('/', await contribution.createRouter(appLike));
+  api.route(
+    '/',
+    await taskTreeRoutes.createRouter(appLike as unknown as never),
+  );
   api.route('/', await reportsRoutes.createRouter(appLike as unknown as never));
   api.route(
     '/',
@@ -1177,7 +1228,15 @@ export async function createBridgeHarness(
   api.route('/', await inboxRoutes.createRouter(appLike as unknown as never));
   api.route(
     '/',
-    await stageRunRoutes.createRouter(appLike as unknown as never),
+    await ownerHandoffRoutes.createRouter(appLike as unknown as never),
+  );
+  api.route(
+    '/',
+    await projectManagerRoutes.createRouter(appLike as unknown as never),
+  );
+  api.route(
+    '/',
+    await followUpsRoutes.createRouter(appLike as unknown as never),
   );
   // `issue runs`, `run get`, `run events`, and the agents plugin's `agent list`.
   api.route(
@@ -1243,30 +1302,6 @@ export async function createBridgeHarness(
   app.route('/', createCliRouter(cli, docs));
   const manifestForIdentity: BridgeHarness['manifestFor'] = async (identity) =>
     cli.manifestFor(await docs.getDocument(), await surface.callerOf(identity));
-  online.commandsOf = async (identity, token) => ({
-    bin: 'nb-studio',
-    commands: (await manifestForIdentity(identity)).commands,
-    // The manifest names the routes under `/api`; the harness serves them at its root.
-    send: (request) =>
-      Promise.resolve(
-        app.fetch(
-          new Request(
-            `http://application${request.path.replace(/^\/api\//u, '/')}`,
-            {
-              method: request.method,
-              headers: {
-                [HEADERS.runToken]: token,
-                accept: 'application/json',
-                ...(request.body === undefined
-                  ? {}
-                  : { 'content-type': 'application/json' }),
-              },
-              ...(request.body === undefined ? {} : { body: request.body }),
-            },
-          ),
-        ),
-      ),
-  });
   const manifestOf: BridgeHarness['manifest'] = async (who) => {
     const headers: Record<string, string> = {};
     if (who.runToken) headers[HEADERS.runToken] = who.runToken;
@@ -1313,6 +1348,30 @@ export async function createBridgeHarness(
   };
 
   let runnerKey: string | undefined;
+  let runnerId: string | undefined;
+  // What the harness runner reports: the tools and models of the agents made, so it takes their runs.
+  const reported = new Map<AgentTool, Set<string>>([['claude', new Set()]]);
+  const reportedTools = () =>
+    [...reported].map(([kind, models]) => ({
+      kind,
+      authenticated: true,
+      models: [...models].map((id) => ({ id })),
+    }));
+  async function reportModel(tool: AgentTool, model: string): Promise<void> {
+    const models = reported.get(tool) ?? new Set<string>();
+    if (models.has(model)) return;
+    models.add(model);
+    reported.set(tool, models);
+    if (runnerId)
+      await database
+        .connection()
+        .repository('agRunners')
+        .updateMany({
+          filter: { id: runnerId },
+          values: { tools: reportedTools() },
+        });
+  }
+  await manager.ready();
 
   return {
     database,
@@ -1329,6 +1388,7 @@ export async function createBridgeHarness(
     notices,
     agents,
     projects,
+    manager,
     delegations,
     roles,
     inbox,
@@ -1336,13 +1396,13 @@ export async function createBridgeHarness(
     gitConnections,
     gitRepoEvents,
     github,
+    gitChanges,
     preferences,
     port,
     app,
     request,
     manifest: manifestOf,
     manifestFor: manifestForIdentity,
-    commandsOf: (identity, token) => online.commandsOf!(identity, token),
     async addUser(id) {
       const now = new Date();
       await database
@@ -1367,15 +1427,50 @@ export async function createBridgeHarness(
       permissions: permissionsOf(roleOf(userId), userId),
     }),
     async createAgent(input = {}) {
-      const agent = await agents.agents.create('alice', {
-        name: 'Coder',
-        modelEntries: [{ tool: 'claude', model: null }],
-        access: 'everyone',
-        actions: ['pm.issues/view', 'pm.issues/comment', 'pm.issues/edit'],
-        instructions: 'Prefer small commits.',
-        ...input,
+      const tool = input.tool ?? 'claude';
+      const model = input.model ?? `test-model-${(nextAgentId += 1)}`;
+      // The id discovery would give it, so the harness runner's report finds it rather than another.
+      const id = input.id ?? runnerAgentId(tool, model);
+      await agents.agents.ensureSystem({
+        id,
+        name: input.name ?? 'Coder',
+        description: input.description ?? 'Writes and fixes code.',
+        instructions: input.instructions ?? null,
+        actions: input.actions ?? [
+          'pm.issues/view',
+          'pm.issues/comment',
+          'pm.issues/edit',
+          'studio.git/open-pr',
+        ],
+        modelEntries: input.modelEntries ?? [{ tool, model, effort: null }],
       });
-      return agent.id;
+      // As if discovered from a runner and enabled by an administrator.
+      await database
+        .connection()
+        .query.updateTable('agAgents')
+        .set({
+          source: 'runner',
+          status: 'enabled',
+          tool,
+          model,
+          maxConcurrentRuns: input.maxConcurrentRuns ?? 2,
+        })
+        .where('id', '=', id)
+        .execute();
+      // Reported just now, so the roster lists it.
+      await database
+        .connection()
+        .repository('agAgents')
+        .updateMany({
+          filter: { id },
+          values: { lastReportedAt: new Date().toISOString() },
+        });
+      for (const entry of input.modelEntries ?? [{ tool, model }])
+        if (entry.model) await reportModel(entry.tool, entry.model);
+      const settings = await manager.settings();
+      if (!settings.firstChoiceAgentId)
+        await manager.update('alice', { firstChoiceAgentId: id });
+      return id;
     },
     async claimOne(features) {
       if (!runnerKey) {
@@ -1388,16 +1483,25 @@ export async function createBridgeHarness(
           hostname: 'host',
           os: 'darwin',
           arch: 'arm64',
-          version: '0.0.1',
+          version: JSON.parse(
+            readFileSync(
+              path.resolve(
+                import.meta.dirname,
+                '../../../../app/agent-runner/package.json',
+              ),
+              'utf8',
+            ),
+          ).version,
           protocolVersion: PROTOCOL_VERSION,
           features: (features ?? [
+            'workspaceKey',
             'input',
             'checkout',
             'directories',
             'skills',
             'secrets',
           ]) as RegisterRequest['features'],
-          tools: [{ kind: 'claude', authenticated: true }],
+          tools: reportedTools(),
           slots: 2,
         };
         const registered = await request('POST', '/agents/runners/register', {
@@ -1408,6 +1512,13 @@ export async function createBridgeHarness(
             `Registration failed: ${JSON.stringify(registered.body)}`,
           );
         runnerKey = registered.body.data.runnerKey as string;
+        runnerId = registered.body.data.runnerId as string;
+        await database
+          .connection()
+          .query.updateTable('agRunners')
+          .set({ load: { free: 2, slots: 2 } })
+          .where('id', '=', runnerId)
+          .execute();
       }
       const claimed = await request('POST', '/agents/runners/claim', {
         headers: { [HEADERS.runnerKey]: runnerKey },
@@ -1418,6 +1529,7 @@ export async function createBridgeHarness(
       return claimed.body.data.runs[0];
     },
     runnerKey: () => runnerKey,
+    reportModel,
     async runner(route, runId, body) {
       const answer = await request(
         'POST',
@@ -1429,6 +1541,7 @@ export async function createBridgeHarness(
         : answer;
     },
     async close() {
+      unbindAgents();
       await delegations.settled();
       await releases?.releases.shutdown();
       await testDatabase.destroy();

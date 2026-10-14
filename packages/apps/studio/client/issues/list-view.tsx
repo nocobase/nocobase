@@ -35,6 +35,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 
 import { IssueMarks } from './issue-marks.js';
+import { useIssueAgentWork } from './use-agent-work.js';
 import { issueTableRow } from './rows.js';
 import type { IssuesPage } from './use-issues-page.js';
 
@@ -73,10 +74,14 @@ export function IssueListView({
   const filters: IssueFilters = page.filters;
   const list = useIssuePages(filters, true);
   const statuses = useQuery({
-    queryKey: pmKeys.statuses(filters.projectId ?? null),
-    queryFn: () => api.statuses(filters.projectId),
+    queryKey: pmKeys.statuses,
+    queryFn: () => api.statuses(),
   });
   const issues = flattenIssuePages(list.data?.pages);
+  const work = useIssueAgentWork(
+    list.isPlaceholderData || deleted ? [] : issues,
+    JSON.stringify(filters),
+  );
   const byId = new Map(issues.map((issue) => [issue.id, issue]));
 
   if (list.isError && !list.isFetching)
@@ -129,6 +134,12 @@ export function IssueListView({
               <IssueMarks
                 issue={issue}
                 placement='row'
+                {...(work.has(issue.id)
+                  ? {
+                      workingAgentName:
+                        issue.executorName ?? work.get(issue.id)!,
+                    }
+                  : {})}
                 className='flex-nowrap'
               />
             ) : null;

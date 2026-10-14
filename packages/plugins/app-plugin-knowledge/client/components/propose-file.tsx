@@ -32,7 +32,12 @@ import { knowledgeKeys, useKnowledgeApi } from '../api.js';
 
 /** What the proposal makes: a new file in a space, or the next version of a file entry. */
 export type ProposeFileTarget =
-  | { readonly kind: 'create'; readonly space: SpaceRef }
+  | {
+      readonly kind: 'create';
+      readonly space: SpaceRef;
+      readonly parentId?: string | null;
+      readonly label?: string;
+    }
   | {
       readonly kind: 'update';
       readonly doc: Pick<KnowledgeDoc, 'id' | 'title' | 'version'>;
@@ -57,7 +62,12 @@ export function ProposeFileDialog({
     mutationFn: () =>
       api.proposeFile(
         target.kind === 'create'
-          ? { kind: 'create', space: target.space, reason: reason.trim() }
+          ? {
+              kind: 'create',
+              space: target.space,
+              parentId: target.parentId,
+              reason: reason.trim(),
+            }
           : {
               kind: 'update',
               docId: target.doc.id,
@@ -83,6 +93,11 @@ export function ProposeFileDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
+            {target.kind === 'create' && target.label ? (
+              <span className='block'>
+                {t('knowledge.directory.target', { title: target.label })}
+              </span>
+            ) : null}
             {target.kind === 'create'
               ? t('knowledge.files.proposeNewHint')
               : t('knowledge.files.proposeReplaceHint', {

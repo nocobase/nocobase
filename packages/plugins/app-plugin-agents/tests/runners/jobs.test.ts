@@ -110,6 +110,39 @@ describe('jobs', () => {
       body,
     });
 
+  it('pauses new build jobs on low disk while a held job can still renew its lease, then resumes', async () => {
+    await setUp();
+    const runner = await jobRunner({ slots: 2 });
+    await enqueue();
+    const [held] = await claimJobs(runner);
+    const queued = await enqueue({ subject: { kind: 'preview', id: 'p2' } });
+    const heartbeat = {
+      version: '0.0.2',
+      features: JOB_FEATURES,
+      tools: [],
+      active: [],
+      jobs: [{ jobId: held.job.id }],
+      load: { slots: 2, free: 1 },
+      disk: { freeBytes: 1, totalBytes: 1000, minFreeBytes: 100 },
+    };
+    expect(
+      (
+        await h.request('POST', '/agents/runners/heartbeat', {
+          runnerKey: runner.key,
+          body: heartbeat,
+        })
+      ).status,
+    ).toBe(200);
+    expect(await claimJobs(runner)).toEqual([]);
+    expect((await post(runner, held.job.id, 'lease')).status).toBe(200);
+    await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: runner.key,
+      body: { ...heartbeat, disk: { ...heartbeat.disk, freeBytes: 200 } },
+    });
+    const [next] = await claimJobs(runner);
+    expect(next.job.id).toBe(queued.id);
+  });
+
   it('refuses kinds nobody registered and specs that do not fit', async () => {
     await setUp();
     await expect(

@@ -1,14 +1,13 @@
 /**
- * Ways to open the chat panel: the header button (its tooltip names ⌘J / Ctrl+J), the floating button below `md`, and
+ * Ways to open the chat panel: the ⌘J / Ctrl+J keyboard shortcut, the floating button below `md`, and
  * "Ask agent" on a page, which opens the panel with the page's object pinned to the context and, optionally, a draft
  * in the composer (never sent on its own).
  *
- * The header and floating buttons are plain outlined icon buttons, like the header's other buttons; while the panel's
- * conversation has a reply in progress, a small dot in the primary color sits on their corner.
+ * The floating button is a plain outlined icon button; while the panel's conversation has a reply in progress, a small
+ * dot in the primary color sits on its corner.
  */
 import {
   CHAT_PANEL_ID,
-  modifierKeyLabel,
   useChatPanel,
   useConversation,
   type ChatContextItem,
@@ -17,7 +16,6 @@ import { BotMessageSquareIcon } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Kbd } from '@/components/ui/kbd';
 import {
   Tooltip,
   TooltipContent,
@@ -56,47 +54,6 @@ function ReplyingDot({
       aria-hidden='true'
       data-testid='chat-launcher-replying'
     />
-  );
-}
-
-/** The header button: opens and closes the panel. */
-export function ChatHeaderButton(): ReactElement | null {
-  const panel = useChatPanel();
-  return panel.available ? <HeaderButton /> : null;
-}
-
-function HeaderButton(): ReactElement {
-  const { t } = useChatTranslation();
-  const panel = useChatPanel();
-  const replying = useReplying();
-  const label = t('chat.title');
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              variant='outline'
-              size='icon'
-              className='relative size-10 rounded-xl border-border/70 bg-background/60 text-foreground aria-expanded:border-foreground/40 aria-expanded:bg-accent dark:border-border/70'
-              aria-label={label}
-              aria-expanded={panel.open}
-              aria-controls={CHAT_PANEL_ID}
-              aria-keyshortcuts='Meta+J Control+J'
-              onClick={panel.toggleChat}
-              data-testid='chat-header-button'
-            />
-          }
-        >
-          <BotMessageSquareIcon className='size-5' />
-          {replying ? <ReplyingDot className='-top-0.5 -right-0.5' /> : null}
-        </TooltipTrigger>
-        <TooltipContent side='bottom'>
-          {label}
-          <Kbd className='ml-1.5'>{`${modifierKeyLabel()} J`}</Kbd>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
   );
 }
 

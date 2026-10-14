@@ -7,6 +7,10 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
  * replaces this file, so put the application's own copy in `../en-US.ts` rather than here.
  */
 const systemEnUS = {
+  'auth.passwordResetSuccess':
+    'Your password has been reset. Sign in with your new password.',
+  'auth.requestNewResetLink': 'Request a new reset link',
+
   // The UI Library block of the `/device` page; the keys below may reword it.
   ...deviceApprovalEnUS,
   // The UI Library block of the `/inbox` page; the keys below may reword it.
@@ -25,6 +29,11 @@ const systemEnUS = {
   'auth.forgotTitle': 'Forgot password',
   'auth.forgotDescription':
     'Enter your email and we will send a reset link if the account exists.',
+  'auth.passwordResetUnavailable':
+    'Self-service password reset is not enabled. Contact an administrator to reset your password.',
+  'auth.capabilityLoadFailed': 'Could not check password reset availability.',
+  'auth.retry': 'Retry',
+  'auth.loading': 'Loading',
   'auth.resetDescription': 'Choose a new password for your account.',
   'auth.resetTitle': 'Reset password',
   'auth.identifier': 'Username or email',

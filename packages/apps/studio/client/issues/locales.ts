@@ -9,6 +9,50 @@ import type { KanbanLabels } from '../components/kanban.js';
 import type { AgentQueueLabels } from '../extensions/nocobase-agent-queue/labels.js';
 
 export const issuesEnUS = {
+  tree: {
+    groups: {
+      input: 'Needs input',
+      review: 'Review / acceptance',
+      decision: 'Other decisions',
+      routine: 'Routine work',
+    },
+    reasons: {
+      question: 'needs input',
+      review: 'needs review / acceptance',
+      failedRun: 'needs a failed-run decision',
+      ownerHandoff: 'needs an owner handoff decision',
+    },
+    counts: '{{tasks}} tasks · {{trees}} trees',
+    actions: '{{count}} need action',
+    waiting: '{{count}} waiting for you',
+    waitingForYou: 'Waiting for you',
+    needsAction: 'Needs human action',
+    context: 'Context · outside filter',
+    progress: '{{finished}} / {{total}} subtasks finished',
+    progressScope: 'Finished / visible direct subtasks, including cancellation',
+    explanation: '{{identifier}} {{reason}}',
+    collapseGroup: 'Collapse {{group}}',
+    expandGroup: 'Expand {{group}}',
+    collapseTask: 'Collapse subtasks of {{identifier}}',
+    expandTask: 'Expand subtasks of {{identifier}}',
+    moreGroup: 'Load more in {{group}}',
+    moreChildren: 'Load more subtasks of {{identifier}}',
+    childError: 'Could not load subtasks',
+    loadingChildren: 'Loading subtasks…',
+    refreshError: 'Could not refresh tasks. Showing the last complete result.',
+    refreshing: 'Refreshing tasks…',
+  },
+  relationships: {
+    add: 'Add a relationship',
+    type: 'Relationship type',
+    prerequisite: 'Prerequisite (wait for it)',
+    hint: 'A prerequisite holds this issue until it finishes. Related issues do not block each other.',
+    actions: 'Relationship actions for {identifier}',
+    toRelated: 'Change to related',
+    toBlocker: 'Make a prerequisite (this issue waits)',
+  },
+  agentWorking: 'Agent working',
+  agentWorkingBy: '{{name}} is working on this issue',
   title: 'Issues',
   description:
     'Every issue you may see. Agents take the ones they execute; the Agent view shows their queue.',
@@ -144,8 +188,6 @@ export const issuesEnUS = {
     wait: {
       kinds: {
         failedRun: 'Failed run',
-        approval: 'Approval',
-        proposal: 'Proposal',
         question: 'Question',
         review: 'Review',
       },
@@ -156,7 +198,6 @@ export const issuesEnUS = {
     },
     idle: {
       backlog: 'In backlog; it does not start on its own',
-      noAutoRun: 'This status does not wake the agent',
       neverRan: 'Not run yet',
       lastRun: {
         completed: 'Last run completed · {time}',
@@ -184,6 +225,50 @@ export const issuesEnUS = {
 export type IssuesWording = typeof issuesEnUS;
 
 export const issuesZhCN: IssuesWording = {
+  tree: {
+    groups: {
+      input: '需要输入',
+      review: '待评审 / 验收',
+      decision: '其他待决策',
+      routine: '常规工作',
+    },
+    reasons: {
+      question: '需要输入',
+      review: '待评审 / 验收',
+      failedRun: '等待失败运行决策',
+      ownerHandoff: '等待负责人交接决策',
+    },
+    counts: '{{tasks}} 个任务 · {{trees}} 棵任务树',
+    actions: '{{count}} 个需要处理',
+    waiting: '{{count}} 个等你处理',
+    waitingForYou: '等你处理',
+    needsAction: '需要人工处理',
+    context: '上下文 · 不匹配筛选',
+    progress: '{{finished}} / {{total}} 个子任务已结束',
+    progressScope: '已结束 / 可见的直接子任务，包含已取消',
+    explanation: '{{identifier}} {{reason}}',
+    collapseGroup: '收起{{group}}',
+    expandGroup: '展开{{group}}',
+    collapseTask: '收起{{identifier}}的子任务',
+    expandTask: '展开{{identifier}}的子任务',
+    moreGroup: '加载{{group}}的更多任务',
+    moreChildren: '加载{{identifier}}的更多子任务',
+    childError: '无法加载子任务',
+    loadingChildren: '正在加载子任务…',
+    refreshError: '无法刷新任务，显示上次完整结果。',
+    refreshing: '正在刷新任务…',
+  },
+  relationships: {
+    add: '添加关联',
+    type: '关联类型',
+    prerequisite: '前置依赖（等它完成）',
+    hint: '前置依赖完成前，本任务不会开始；相关任务仅作关联，不会互相阻塞。',
+    actions: '与 {identifier} 的关联操作',
+    toRelated: '改为相关',
+    toBlocker: '改为前置依赖（本任务等它完成）',
+  },
+  agentWorking: 'Agent 工作中',
+  agentWorkingBy: '{{name}} 正在处理这条议题',
   title: '任务',
   description:
     '你有权查看的全部任务。Agent 会领取由它执行的任务，Agent 视图展示它们的队列。',
@@ -317,8 +402,6 @@ export const issuesZhCN: IssuesWording = {
     wait: {
       kinds: {
         failedRun: '运行失败',
-        approval: '审批',
-        proposal: '方案',
         question: '提问',
         review: '评审',
       },
@@ -329,7 +412,6 @@ export const issuesZhCN: IssuesWording = {
     },
     idle: {
       backlog: '在待规划中，不会自动开始',
-      noAutoRun: '此状态不会自动唤醒 Agent',
       neverRan: '尚未运行',
       lastRun: {
         completed: '上次运行已完成 · {time}',

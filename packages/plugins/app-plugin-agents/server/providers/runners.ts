@@ -62,6 +62,17 @@ export class RunnersProvider extends ServiceProvider<AppPluginApplication> {
         console.error('Runners realtime announcement failed.', error);
       }
     };
+    try {
+      // Announcements name the runner by id: signed-in connections only.
+      this.releases.push(
+        realtime.registerTopic(RUNNERS_TOPIC, {
+          audience: 'public',
+          authenticated: true,
+        }),
+      );
+    } catch (error) {
+      console.error('Runners could not register their realtime topic.', error);
+    }
     this.releases.push(
       services.events.onAny((event) => {
         switch (event.type) {

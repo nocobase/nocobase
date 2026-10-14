@@ -1,11 +1,16 @@
 // @vitest-environment node
 /**
- * Whether runners may remove the working directories of an issue (`SubjectBinding.workspaces` of the issue kind), over
- * a real database: an issue is over when it is done or cancelled and every linked pull request is merged or closed, a
- * squash-merged one included, since Studio decides from the pull request's state and not from branch history. An issue
- * still in progress, one with an open pull request, a deleted one, one linking a pull request Studio has no record of,
- * and an id Studio does not know keep their directories.
+ * Whether runners remove the working directories of an issue (`SubjectBinding.workspaces` of the issue kind), over a
+ * real database: an issue is over when it is done or cancelled, whatever its pull requests are. An issue still in
+ * progress, a deleted one and an id Studio does not know keep their directories. A directory named only by its issue's
+ * key resolves to that issue while Studio still has it, on whichever runner keeps it; one of an issue a run has not
+ * finished on stays.
  */
+import {
+  HEADERS,
+  RUNNER_ROUTES,
+  type WorkspacesRequest,
+} from '@nocobase/agent-protocol';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -16,6 +21,7 @@ import {
   upsertPullRequest,
 } from '../../server/git/store.js';
 import { API } from '../git/helpers.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 
 const FULL_NAME = 'acme/app';
@@ -42,21 +48,24 @@ afterEach(async () => {
   await h.close();
 });
 
-async function issueIn(statusKey: string | null): Promise<Issue> {
-  const issue = await h.projects.issues.create(alice(), {
-    title: `Issue in ${statusKey ?? 'its first status'}`,
-    projectId,
-  });
-  if (!statusKey) return issue;
+async function move(issue: Pick<Issue, 'id'>, statusKey: string) {
   const current = await h.projects.issueQueries.detail(alice(), issue.id);
   await h.projects.issues.update(alice(), issue.id, {
     revision: current.revision,
     statusKey,
   });
+}
+
+async function issueIn(statusKey: string | null): Promise<Issue> {
+  const issue = await h.projects.issues.create(alice(), {
+    title: `Issue in ${statusKey ?? 'its first status'}`,
+    projectId,
+  });
+  if (statusKey) await move(issue, statusKey);
   return issue;
 }
 
-/** Links a pull request in `state` to the issue; a merged one as a squash, whose head the base branch never carries. */
+/** Links a pull request in `state` to the issue. */
 async function linkPullRequest(
   issue: Issue,
   state: 'open' | 'merged' | 'closed',
@@ -79,9 +88,9 @@ async function linkPullRequest(
     mergeableState: null,
     mergedAt: state === 'merged' ? new Date().toISOString() : null,
     mergedByLogin: state === 'merged' ? 'alice' : null,
-    mergeCommitSha:
-      state === 'merged' ? 'f1b2c3d4e5f60718293a4b5c6d7e8f9012345678' : null,
-  } as never);
+    mergeCommitSha: null,
+    closedAt: null,
+  });
   await insertLink(conn, {
     issueId: issue.id,
     pullRequestId: pr.id,
@@ -90,59 +99,62 @@ async function linkPullRequest(
   });
 }
 
+const binding = () => h.agents.subjects.get(ISSUE_SUBJECT)!.workspaces!;
+
 async function settled(ids: readonly string[]): Promise<Set<string>> {
-  const workspaces = h.agents.subjects.get(ISSUE_SUBJECT)?.workspaces;
-  expect(workspaces).toBeDefined();
-  return new Set(await workspaces!.settled(h.database.connection(), ids));
+  return new Set(await binding().settled(h.database.connection(), ids));
 }
 
 describe('issue working directories', () => {
-  it('are over for a done or cancelled issue whose pull requests are all merged or closed', async () => {
-    const squashed = await issueIn('done');
-    await linkPullRequest(squashed, 'merged');
-    const abandoned = await issueIn('cancelled');
-    await linkPullRequest(abandoned, 'closed');
-    const both = await issueIn('done');
-    await linkPullRequest(both, 'merged');
-    await linkPullRequest(both, 'closed');
+  it('are over once the issue is done or cancelled, whatever its pull requests are', async () => {
+    const merged = await issueIn('done');
+    await linkPullRequest(merged, 'merged');
+    const stillOpen = await issueIn('done');
+    await linkPullRequest(stillOpen, 'open');
+    const cancelled = await issueIn('cancelled');
+    await linkPullRequest(cancelled, 'open');
+    const dangling = await issueIn('done');
+    await insertLink(h.database.connection(), {
+      issueId: dangling.id,
+      pullRequestId: 'missing-pull-request',
+      linkedByType: 'system',
+      linkedById: null,
+    });
     const withoutPullRequest = await issueIn('done');
 
     expect(
       await settled([
-        squashed.id,
-        abandoned.id,
-        both.id,
+        merged.id,
+        stillOpen.id,
+        cancelled.id,
+        dangling.id,
         withoutPullRequest.id,
       ]),
     ).toEqual(
-      new Set([squashed.id, abandoned.id, both.id, withoutPullRequest.id]),
+      new Set([
+        merged.id,
+        stillOpen.id,
+        cancelled.id,
+        dangling.id,
+        withoutPullRequest.id,
+      ]),
     );
   });
 
-  it('are kept while the issue goes on, a pull request is still open, or the issue is unknown', async () => {
+  it('are kept while the issue goes on, or when it is unknown', async () => {
     const fresh = await issueIn(null);
     const working = await issueIn('in_progress');
     await linkPullRequest(working, 'merged');
-    const stillOpen = await issueIn('done');
-    await linkPullRequest(stillOpen, 'merged');
-    await linkPullRequest(stillOpen, 'open');
     const finished = await issueIn('done');
 
     expect(
-      await settled([
-        fresh.id,
-        working.id,
-        stillOpen.id,
-        'no-such-issue',
-        finished.id,
-      ]),
+      await settled([fresh.id, working.id, 'no-such-issue', finished.id]),
     ).toEqual(new Set([finished.id]));
     expect(await settled([])).toEqual(new Set());
   });
 
   it('are kept for a deleted issue, even one that was done', async () => {
     const deleted = await issueIn('done');
-    await linkPullRequest(deleted, 'merged');
     expect(await settled([deleted.id])).toEqual(new Set([deleted.id]));
 
     // Only an administrator deletes issues.
@@ -151,17 +163,171 @@ describe('issue working directories', () => {
 
     expect(await settled([deleted.id])).toEqual(new Set());
   });
+});
 
-  it('are kept when a linked pull request has no record, as its state cannot be told', async () => {
-    const dangling = await issueIn('done');
-    await linkPullRequest(dangling, 'merged');
-    await insertLink(h.database.connection(), {
-      issueId: dangling.id,
-      pullRequestId: 'missing-pull-request',
-      linkedByType: 'system',
-      linkedById: null,
+describe('directories named by their issue key', () => {
+  it('resolve to the issue Studio still has, and to nothing once it is deleted', async () => {
+    const issue = await issueIn('done');
+    const keys = await binding().resolveKeys!(h.database.connection(), [
+      issue.identifier,
+      'NOPE-1',
+      '',
+    ]);
+    expect(Object.fromEntries(keys)).toEqual({
+      [issue.identifier]: [issue.id],
     });
 
-    expect(await settled([dangling.id])).toEqual(new Set());
+    h.roles.set('alice', 'admin');
+    await h.projects.issues.remove(alice(), issue.id);
+    expect(
+      (
+        await binding().resolveKeys!(h.database.connection(), [
+          issue.identifier,
+          `${issue.identifier}.manager`,
+        ])
+      ).size,
+    ).toBe(0);
+  });
+
+  it("resolve the project manager's directory, named by the key with .manager, to the same issue", async () => {
+    const issue = await issueIn('in_progress');
+    const keys = await binding().resolveKeys!(h.database.connection(), [
+      `${issue.identifier}.manager`,
+      issue.identifier,
+      'NOPE-1.manager',
+      '.manager',
+    ]);
+    expect(Object.fromEntries(keys)).toEqual({
+      [`${issue.identifier}.manager`]: [issue.id],
+      [issue.identifier]: [issue.id],
+    });
+  });
+});
+
+describe("a runner's report", () => {
+  /** An issue of the project its project manager worked on through the harness's runner, its run finished. */
+  async function workedOn(): Promise<{
+    issue: Issue;
+    runId: string;
+    workspaceKey: string;
+  }> {
+    await h.createAgent({ name: `Coder ${nextNumber++}` });
+    const issue = await h.projects.issues.create(alice(), {
+      title: 'Worked on',
+      projectId,
+      statusKey: 'in_progress',
+      executor: { type: 'agent', id: PROJECT_MANAGER_ID },
+    });
+    const payload = await h.claimOne();
+    await h.runner(RUNNER_ROUTES.start, payload.run.id, {
+      workDir: '/tmp/w',
+      adapter: { kind: 'claude' },
+      acceptsInput: false,
+    });
+    const done = await h.runner(RUNNER_ROUTES.complete, payload.run.id, {
+      summary: 'Done.',
+      handledInputIds: payload.inputs.map((input: { id: string }) => input.id),
+    });
+    expect(done.status).toBe(200);
+    return {
+      issue,
+      runId: payload.run.id as string,
+      workspaceKey: payload.workspace.key as string,
+    };
+  }
+
+  async function report(directories: WorkspacesRequest['directories']) {
+    const answer = await h.request(
+      'POST',
+      RUNNER_ROUTES.workspaces.replace(/^\/api/u, ''),
+      {
+        headers: { [HEADERS.runnerKey]: h.runnerKey() ?? '' },
+        body: { reportId: 'report-1', workspaces: [], directories },
+      },
+    );
+    expect(answer.status).toBe(200);
+    return answer.body.data as {
+      remove: string[];
+      keep: string[];
+      decisions: {
+        workDir: string;
+        settled: boolean | null;
+        reason: string;
+        commits: unknown[];
+      }[];
+    };
+  }
+
+  const lastUsedAt = new Date().toISOString();
+  const dir = (workDir: string, subjectKey: string, runId?: string) => ({
+    workDir,
+    subjectKey,
+    unpushed: true,
+    lastUsedAt,
+    ...(runId === undefined ? {} : { runId }),
+  });
+
+  it('lets every directory of a finished issue go, new or old, unpushed or not, whoever worked on it', async () => {
+    const { issue, runId, workspaceKey } = await workedOn();
+    expect(workspaceKey).toBe(`${issue.identifier}.manager`);
+    await linkPullRequest(issue, 'open');
+    await move(issue, 'done');
+    const cancelled = await issueIn('cancelled');
+
+    const answer = await report([
+      dir('/w/new', workspaceKey, runId),
+      dir('/w/old', issue.identifier),
+      dir('/w/manager', `${issue.identifier}.manager`),
+      dir('/w/gone-run', issue.identifier, 'no-such-run'),
+      dir('/w/never', cancelled.identifier),
+      dir('/w/unknown', 'NOPE-1'),
+    ]);
+
+    expect(answer.remove.sort()).toEqual(['no-such-run', runId].sort());
+    const byDir = Object.fromEntries(
+      answer.decisions.map((decision) => [decision.workDir, decision]),
+    );
+    for (const workDir of [
+      '/w/new',
+      '/w/old',
+      '/w/manager',
+      '/w/gone-run',
+      '/w/never',
+    ])
+      expect(byDir[workDir]).toMatchObject({
+        settled: true,
+        reason: 'settled',
+        commits: [],
+      });
+    expect(byDir['/w/unknown']).toMatchObject({
+      settled: null,
+      reason: 'subjectUnknown',
+    });
+  });
+
+  it('keeps them while the issue goes on, or a run on it has not finished', async () => {
+    const { issue, runId } = await workedOn();
+    const answer = await report([
+      dir('/w/new', `${issue.identifier}.manager`, runId),
+      dir('/w/old', issue.identifier),
+    ]);
+    expect(answer.remove).toEqual([]);
+    expect(answer.keep).toEqual([runId]);
+    expect(
+      answer.decisions.map((decision) => [decision.settled, decision.reason]),
+    ).toEqual([
+      [false, 'active'],
+      [false, 'active'],
+    ]);
+
+    // Done, but its run is back in the queue: still kept.
+    await move(issue, 'done');
+    await h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({ filter: { id: runId }, values: { status: 'queued' } });
+    expect(
+      (await report([dir('/w/old', issue.identifier)])).decisions,
+    ).toMatchObject([{ settled: false, reason: 'active' }]);
   });
 });

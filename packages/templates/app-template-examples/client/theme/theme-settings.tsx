@@ -36,7 +36,7 @@ export function ThemeSettings(): ReactElement {
             aria-label={title}
             size='icon'
             variant='outline'
-            className='size-10 rounded-xl border-border/70 bg-background/60 hover:bg-accent/50'
+            className='size-10 rounded-xl border-border bg-background/60 hover:bg-accent/50'
           />
         }
       >
@@ -70,13 +70,15 @@ export function ThemeSettings(): ReactElement {
                 <label
                   key={mode}
                   className={cn(
-                    'relative flex min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors select-none has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring',
+                    'relative flex min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors select-none',
                     isSelected
                       ? 'bg-background text-foreground shadow-xs'
                       : 'text-muted-foreground hover:bg-background/40 hover:text-foreground',
                   )}
                 >
-                  <RadioGroupItem value={mode} className='sr-only' />
+                  {/* `absolute` over the primitive's `relative`, which would keep
+                      the hidden radio in the row and push the words aside. */}
+                  <RadioGroupItem value={mode} className='absolute sr-only' />
                   <ModeIcon aria-hidden='true' className='size-3.5 shrink-0' />
                   <span className='whitespace-nowrap'>
                     {t('appearance.' + mode, {
@@ -109,18 +111,21 @@ export function ThemeSettings(): ReactElement {
                 <label
                   key={item.id}
                   className={cn(
-                    'group relative flex cursor-pointer flex-col rounded-xl border p-2 text-left transition-all select-none has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring',
+                    'group relative flex cursor-pointer flex-col rounded-xl border p-2 text-left transition-all select-none',
                     isSelected
                       ? 'border-primary ring-2 ring-primary/20 bg-primary/5 shadow-xs'
-                      : 'border-border/70 hover:border-border hover:bg-muted/30',
+                      : 'border-border hover:bg-muted/30',
                   )}
                 >
-                  <RadioGroupItem value={item.id} className='sr-only' />
+                  <RadioGroupItem
+                    value={item.id}
+                    className='absolute sr-only'
+                  />
                   <div className='mb-2 h-16 w-full'>
                     <div
                       aria-hidden='true'
                       data-theme={item.id}
-                      className='theme-preview relative flex h-full overflow-hidden rounded-lg border border-border/80 bg-background shadow-2xs'
+                      className='theme-preview relative flex h-full overflow-hidden rounded-lg border border-border bg-background shadow-2xs'
                     >
                       {/* Mini Sidebar */}
                       <div className='flex w-6 flex-col gap-1 border-r border-sidebar-border/50 bg-sidebar p-1'>

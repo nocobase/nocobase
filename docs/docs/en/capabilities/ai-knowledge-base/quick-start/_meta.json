@@ -1,5 +1,0 @@
-[
-  { "type": "file", "name": "index", "label": "建立第一套知识库" },
-  { "type": "file", "name": "preload-manifest", "label": "预载文件到知识库" },
-  { "type": "file", "name": "agent-rag", "label": "配置 AI 员工知识库检索" }
-]

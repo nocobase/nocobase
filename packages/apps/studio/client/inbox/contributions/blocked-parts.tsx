@@ -8,7 +8,7 @@ import {
   pmKeys,
   usePmApi,
 } from '@nocobase/app-plugin-projects/client/kit';
-import { INITIAL_STATUS } from '@nocobase/app-plugin-projects/shared/workflows';
+import { IN_PROGRESS_STATUS } from '@nocobase/app-plugin-projects/shared/statuses';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -33,6 +33,7 @@ import { inboxKeys } from '@nocobase/app-plugin-notification-in-app/client/inbox
 import type { InboxPartProps } from '@/extensions/nocobase-inbox/registry';
 import type { ProjectsModel } from './projects.js';
 import { paramsOf, useParamsOf } from './projects-wording.js';
+import { IssueMarkdown } from '../../issues/markdown.js';
 
 type BlockedAction =
   | { readonly action: 'answer'; readonly content: string }
@@ -56,11 +57,14 @@ export function BlockedActions({
   const issueId = model.issueId ?? '';
   // Back to where the agent was working when it got blocked.
   const back =
-    params.from && params.from !== 'blocked' ? params.from : INITIAL_STATUS;
+    params.from && params.from !== 'blocked' ? params.from : IN_PROGRESS_STATUS;
   const act = useMutation({
     mutationFn: async (request: BlockedAction) => {
       if (request.action === 'answer') {
-        await pm.createComment(issueId, { content: request.content });
+        await pm.createComment(issueId, {
+          content: request.content,
+          ...(params.commentId ? { parentId: params.commentId } : {}),
+        });
         return;
       }
       const revision = issue?.revision ?? 0;
@@ -216,7 +220,7 @@ export function BlockedBrief({
         actor: params.actorName ?? t('inbox.someone'),
       })}
     >
-      {params.question}
+      <IssueMarkdown content={params.question} />
     </blockquote>
   );
 }

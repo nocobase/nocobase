@@ -6,7 +6,13 @@
  * bar's "Pull request".
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -23,7 +29,10 @@ const request = vi.fn();
 vi.mock('@nocobase/app-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@nocobase/app-client')>()),
   useApiClient: () => ({ request }),
-  useService: () => ({ subscribe: () => () => undefined }),
+  useService: () => ({
+    subscribe: () => () => undefined,
+    onOpen: () => () => undefined,
+  }),
 }));
 vi.mock('@nocobase/i18n/client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@nocobase/i18n/client')>()),
@@ -136,14 +145,17 @@ function answer({
   pullRequests,
   previews,
   marks,
+  labels = [],
 }: {
   readonly pullRequests: readonly IssuePullRequest[];
   readonly previews: readonly PreviewView[];
   readonly marks: readonly DeployMark[];
+  readonly labels?: IssuePreviews['labels'];
 }) {
   const state: IssuePreviews = {
     issueId: 'i1',
     identifier: 'PM-1',
+    labels,
     previews,
     blocker: null,
     canEdit: true,
@@ -223,6 +235,46 @@ beforeEach(() => {
 });
 
 describe('IssueCodeSection', () => {
+  it('shows the confirmed no-preview state instead of waiting for a preview', async () => {
+    answer({
+      pullRequests: [pullRequest(12)],
+      previews: [],
+      marks: [],
+      labels: [
+        { pullRequestId: 'pr12', present: true, managed: true, failed: false },
+      ],
+    });
+    show();
+    unfold(await rowOf(12));
+    expect(
+      await screen.findByText('previews.preference.skipped'),
+    ).toBeVisible();
+    expect(screen.queryByText('studioGit.section.noPreview')).toBeNull();
+  });
+  it('keeps an existing preview available and reports a failed label synchronization', async () => {
+    answer({
+      pullRequests: [pullRequest(12)],
+      previews: [preview(12)],
+      marks: [],
+      labels: [
+        { pullRequestId: 'pr12', present: true, managed: true, failed: true },
+      ],
+    });
+    show();
+    const row = await rowOf(12);
+    expect(
+      await within(row).findByRole('button', {
+        name: /studioGit.section.openPreview/u,
+      }),
+    ).toHaveAttribute('href', 'https://web-pr-12.example.com/');
+    unfold(row);
+    expect(
+      await screen.findByText('previews.preference.syncFailed'),
+    ).toBeVisible();
+    expect(
+      await screen.findByText('https://web-pr-12.example.com/'),
+    ).toBeVisible();
+  });
   it('puts each preview under its own pull request: a ready one with its address, a blocked one with its form', async () => {
     answer({
       pullRequests: [pullRequest(12), pullRequest(13)],
@@ -302,6 +354,37 @@ describe('IssueCodeSection', () => {
     const open = await rowOf(12);
     expect(open.querySelector('[data-deploy-mark]')).toBeNull();
     expect(document.querySelector('[data-studio-code-unmatched]')).toBeNull();
+  });
+
+  it('says whether merging completes the issue, and turns it off with the switch', async () => {
+    answer({
+      pullRequests: [
+        pullRequest(12),
+        pullRequest(13, { autoCompleteDisabled: true }),
+      ],
+      previews: [],
+      marks: [],
+    });
+    show();
+    const counted = await rowOf(12);
+    const kept = await rowOf(13);
+    unfold(counted);
+    unfold(kept);
+    const on = within(counted).getByTestId('pr-complete-on-merge');
+    expect(on).toHaveTextContent('studioGit.section.completeOnMerge');
+    expect(on).toHaveTextContent('studioGit.section.completeOnMergeHint');
+    const off = within(kept).getByTestId('pr-complete-on-merge');
+    expect(off).toHaveTextContent('studioGit.section.mergeKeeps');
+    expect(off).toHaveTextContent('studioGit.section.mergeKeepsHint');
+    fireEvent.click(within(on).getByRole('switch'));
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'PATCH',
+          json: { autoCompleteDisabled: true },
+        }),
+      ),
+    );
   });
 
   it('asks before unlinking, saying what leaves the issue', async () => {

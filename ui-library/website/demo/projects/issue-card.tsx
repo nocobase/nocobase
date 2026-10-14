@@ -86,7 +86,11 @@ export function IssueCardDemo(): ReactElement {
                 className='px-3 py-2'
                 marks={
                   issue.id === '1' ? (
-                    <Badge variant='secondary' className='font-normal'>
+                    <Badge
+                      variant='secondary'
+                      data-size='sm'
+                      className='font-normal'
+                    >
                       waiting for 2
                     </Badge>
                   ) : null

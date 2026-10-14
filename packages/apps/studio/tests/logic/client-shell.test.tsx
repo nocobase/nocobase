@@ -1,5 +1,6 @@
 import {
   apiClientToken,
+  realtimeClientToken,
   ClientApplicationContext,
   type ClientApplication,
   createAppClientConfig,
@@ -20,6 +21,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ComponentType, ReactElement } from 'react';
 import { Outlet, MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -27,8 +29,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppRouter } from '../../client/routing/app-router.tsx';
 import { AppThemeProvider } from '../../client/theme/index.ts';
 
-// The agents' chat and the header's inbox button need services these tests do not provide; the agent-chat block is
-// tested in the UI Library and the button in `tests/components/inbox-header-button.test.tsx`.
+// Chat and inbox navigation need services these tests do not provide; their dedicated tests cover those behaviors.
 vi.mock(
   '@nocobase/app-plugin-agents/client/chat',
   () => import('../setup/agents-chat-stub.js'),
@@ -37,8 +38,8 @@ vi.mock(
   '../../client/agents/chat.js',
   () => import('../setup/agents-chat-stub.js'),
 );
-vi.mock('../../client/inbox/header-button.js', () => ({
-  InboxHeaderButton: () => null,
+vi.mock('../../client/inbox/navigation.js', () => ({
+  useInboxNavigation: () => ({ badge: null, label: 'Inbox', hint: 'Inbox' }),
 }));
 
 /** The sidebar's navigation; the header's breadcrumb names the current page as well. */
@@ -102,6 +103,17 @@ describe('application shell', () => {
     expect(
       await screen.findByRole('heading', { name: 'App client is ready' }),
     ).toBeVisible();
+  });
+
+  it('truncates a long sidebar version and keeps it keyboard-focusable', async () => {
+    const version = 'v1.0.0-beta.56.dev.20261013080220';
+    renderApplication('/', true, [], {
+      app: { displayName: 'NocoBase Studio', version: version.slice(1) },
+    });
+
+    const versionLabel = await screen.findByText(version);
+    expect(versionLabel).toHaveClass('truncate');
+    expect(versionLabel).toHaveAttribute('tabindex', '0');
   });
 
   it.each(['/settings', '/settings/workflow/workflows/7'])(
@@ -198,18 +210,25 @@ describe('application shell', () => {
     renderApplication('/', true);
 
     await screen.findByRole('navigation', { name: 'Application navigation' });
-    const sidebar = document.querySelector('[data-slot=sidebar]');
+    // Wait for the shell's asynchronous parts to render, so the sidebar read below is the one that stays mounted.
+    await screen.findByRole('button', { name: 'Open account menu' });
+    const sidebar = (): Element | null =>
+      document.querySelector('[data-slot=sidebar]');
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Collapse navigation' }),
+      await screen.findByRole('button', { name: 'Collapse navigation' }),
     );
-    expect(sidebar).toHaveAttribute('data-collapsible', 'icon');
+    await waitFor(() =>
+      expect(sidebar()).toHaveAttribute('data-collapsible', 'icon'),
+    );
     expect(
       screen.getByRole('button', { name: 'Expand navigation' }),
     ).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(screen.getByRole('button', { name: 'Expand navigation' }));
-    expect(sidebar).toHaveAttribute('data-state', 'expanded');
+    await waitFor(() =>
+      expect(sidebar()).toHaveAttribute('data-state', 'expanded'),
+    );
   });
 
   it('opens and closes the mobile navigation without changing the route', async () => {
@@ -255,6 +274,7 @@ function renderApplication(
   initialEntry: string,
   authenticated: boolean,
   routes: readonly AppClientRegisteredRoute[] = [],
+  publicConfig: Record<string, unknown> = {},
 ): void {
   const clientRoutes = [
     createRoute('home', '/', 'required', HomePage, 'application'),
@@ -274,11 +294,18 @@ function renderApplication(
   };
   const registered = new Map<unknown, unknown>([
     [apiClientToken, apiClient],
+    [
+      realtimeClientToken,
+      { onOpen: () => () => {}, subscribe: () => () => {} },
+    ],
     [authenticationClientToken, authClient],
     [authorizationClientToken, authorizationClient],
   ]);
   const app = {
-    config: createAppClientConfig({ rawConfig: {} }),
+    config: createAppClientConfig({
+      rawConfig: {},
+      rawPublicConfig: publicConfig,
+    }),
     services: {
       has: (token: unknown) => registered.has(token),
       resolve: (token: unknown) => {
@@ -289,13 +316,15 @@ function renderApplication(
   } as unknown as ClientApplication;
   render(
     <ClientApplicationContext.Provider value={app}>
-      <AuthenticationProvider>
-        <MemoryRouter initialEntries={[initialEntry]}>
-          <AppThemeProvider>
-            <AppRouter clientRoutes={clientRoutes} />
-          </AppThemeProvider>
-        </MemoryRouter>
-      </AuthenticationProvider>
+      <QueryClientProvider client={new QueryClient()}>
+        <AuthenticationProvider>
+          <MemoryRouter initialEntries={[initialEntry]}>
+            <AppThemeProvider>
+              <AppRouter clientRoutes={clientRoutes} />
+            </AppThemeProvider>
+          </MemoryRouter>
+        </AuthenticationProvider>
+      </QueryClientProvider>
     </ClientApplicationContext.Provider>,
   );
 }

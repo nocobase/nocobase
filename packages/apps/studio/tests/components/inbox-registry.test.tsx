@@ -3,6 +3,7 @@
  * renders and acts on its own items (release management's deployment requests among them).
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ApiClientError } from '@nocobase/app-client';
 import {
   fireEvent,
   render,
@@ -35,6 +36,7 @@ import { releasesRenderer } from '../../client/inbox/contributions/releases';
 import type { InboxNotice } from '../../shared/inbox';
 
 const request = vi.fn();
+const notify = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 const pm = vi.hoisted(() => ({
   viewer: { userId: 'owner', permissions: { scopes: {} } } as {
     userId: string;
@@ -91,7 +93,7 @@ vi.mock('@nocobase/app-plugin-users/client/preferences', () => ({
   ],
 }));
 vi.mock('../../client/access/notify', () => ({
-  useNotify: () => ({ success: vi.fn(), error: vi.fn() }),
+  useNotify: () => notify,
 }));
 
 function item(id: string, overrides: Partial<InboxItem> = {}): InboxItem {
@@ -484,6 +486,60 @@ describe("a failed run's decision card", () => {
     expect(
       await screen.findByText('inbox.runFailed.forbidden'),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'inbox.runFailed.retry' }),
+    ).toBeNull();
+  });
+  it('reports an already retried run and refreshes the decision after a stale click', async () => {
+    pm.viewer = { userId: 'owner', permissions: { scopes: {} } };
+    pm.issue.mockResolvedValue(detail('owner'));
+    notify.error.mockClear();
+    request.mockRejectedValue(
+      new ApiClientError('Already retried.', {
+        status: 409,
+        reason: 'RUN_ALREADY_RETRIED',
+        method: 'POST',
+        url: '/api/failedRuns/r1/decide',
+      }),
+    );
+    const onAction = renderDetail(failed(), registry([failedRunRenderer]));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'inbox.runFailed.retry' }),
+    );
+    await waitFor(() =>
+      expect(notify.error).toHaveBeenCalledWith(
+        null,
+        'inbox.runFailed.alreadyRetried',
+      ),
+    );
+    await waitFor(() =>
+      expect(onAction).toHaveBeenCalledWith(expect.anything(), 'read'),
+    );
+  });
+
+  it('shows the retry record and replacement link on the settled card', async () => {
+    pm.issue.mockResolvedValue(detail('owner'));
+    const entry = failed();
+    renderDetail(
+      {
+        ...entry,
+        notice: {
+          ...entry.notice!,
+          resolvedAt: '2026-10-12T00:00:00.000Z',
+          outcome: 'retried',
+          data: {
+            ...entry.notice?.data,
+            retriedByName: 'Alice',
+            retrySource: 'cli',
+            retriedRunId: 'r2',
+          },
+        },
+      },
+      registry([failedRunRenderer]),
+    );
+    expect(
+      await screen.findByRole('link', { name: 'issueRuns.alreadyRetried' }),
+    ).toHaveAttribute('href', '/issues/PM-7/runs/r2');
     expect(
       screen.queryByRole('button', { name: 'inbox.runFailed.retry' }),
     ).toBeNull();

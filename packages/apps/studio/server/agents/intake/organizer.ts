@@ -1,7 +1,7 @@
 /**
  * Studio's organiser of requirement intake with AI (`IntakeOrganizer`, bound to `projectsIntakeOrganizerToken`): each
- * request runs an agent once on the `intake` subject, as the person who asked. An online agent is preferred whenever one
- * can answer: it drafts on the server in seconds, with no runner (`intakeAgentOf`). How the request goes is the run's:
+ * request runs an agent once on the `intake` subject, as the person who asked: their default agent, else the team's,
+ * else an enabled agent a runner can take now (`intakeAgentOf`). How the request goes is the run's:
  * queued (and why, from the runs' workload) or held (and the newest thing it reported). A run that ends without handing
  * drafts back fails the request (`watchIntakeRuns`).
  */
@@ -28,9 +28,9 @@ type IntakeAgents = Pick<
 >;
 
 /**
- * The agent a person's request goes to, among those they may wake: an online agent that can answer now (their default
- * chat agent, else the team's, else the first such agent by name), else their default agent or the team's whatever its
- * type, which may have to wait for a runner.
+ * The agent a person's request goes to, among the enabled agents they may wake (the project manager is not one of
+ * them): their default agent or the team's when a runner can take it now, else the first such agent by name a runner
+ * can take now, else their default agent or the team's, which waits for a runner.
  */
 export async function intakeAgentOf(
   agents: IntakeAgents,
@@ -39,7 +39,10 @@ export async function intakeAgentOf(
   const conn = agents.tx.read();
   const usable = (agent: Agent | null): agent is Agent =>
     Boolean(
-      agent && !agent.archivedAt && agents.agents.mayInvoke(agent, userId),
+      agent &&
+      agent.source === 'runner' &&
+      agent.status === 'enabled' &&
+      agents.agents.mayInvoke(agent, userId),
     );
   const defaults: Agent[] = [];
   for (const id of [
@@ -52,7 +55,7 @@ export async function intakeAgentOf(
   const chats = [
     ...defaults,
     ...(await agents.agents.listActive(conn)).filter(usable),
-  ].filter((agent) => agent.type === 'online');
+  ];
   const online = await agents.availability(conn, chats);
   return (
     chats.find((agent) => online.get(agent.id)?.online) ?? defaults[0] ?? null

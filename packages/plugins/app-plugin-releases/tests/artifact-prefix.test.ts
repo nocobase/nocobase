@@ -1,12 +1,77 @@
 // @vitest-environment node
 import path from 'node:path';
-import { readFile, access } from 'node:fs/promises';
+import { readFile, access, mkdtemp, readdir, rm } from 'node:fs/promises';
+import os from 'node:os';
 import { describe, expect, it } from 'vitest';
 import { createReleases } from '../server/composition.js';
 import { createArtifact, createHarness, streamOf } from './harness.js';
 
 // The fake deployment driver reads the stored archive and verifies its checksum on every deployment.
 describe('artifact key prefixes', () => {
+  it('bounds the complete key before writing uploads or promotion copies', async () => {
+    const rootDir = await mkdtemp(path.join(os.tmpdir(), 'release-prefix-'));
+    const diskRoot = path.join(rootDir, 'artifacts');
+    const harness = await createHarness({
+      rootDir,
+      artifact: { disk: 'archives', prefix: 'releases' },
+      drive: {
+        default: 'archives',
+        disks: {
+          archives: { driver: 'fs', location: diskRoot, visibility: 'private' },
+        },
+      },
+    });
+    try {
+      const admin = await harness.as('admin', 'admin');
+      await harness.environment({
+        id: 'staging',
+        name: 'Staging',
+        driver: 'fake',
+      });
+      const sourceId = 's'.repeat(119);
+      const targetId = 't'.repeat(120);
+      for (const id of [sourceId, targetId])
+        await harness.services.releases.createApp(admin, {
+          id,
+          name: id,
+          environmentId: 'staging',
+        });
+      const artifact = await createArtifact(rootDir, '1.0.0');
+      const source = await harness.services.releases.uploadRelease(
+        admin,
+        sourceId,
+        {
+          stream: streamOf(artifact.bytes),
+        },
+      );
+      const key = `releases/${sourceId}/${source.id}.tar.gz`;
+      expect(key).toHaveLength(172);
+      expect(await readFile(path.join(diskRoot, key))).toEqual(artifact.bytes);
+      await expect(
+        harness.services.releases.uploadRelease(admin, targetId, {
+          stream: streamOf(artifact.bytes),
+        }),
+      ).rejects.toMatchObject({ reason: 'INVALID_ARTIFACT_KEY' });
+      await expect(
+        harness.services.releases.promoteRelease(
+          admin,
+          sourceId,
+          source.id,
+          targetId,
+        ),
+      ).rejects.toMatchObject({ reason: 'INVALID_ARTIFACT_KEY' });
+      expect(
+        await harness.services.releases.listReleases(admin, targetId),
+      ).toEqual([]);
+      expect(await readdir(path.join(diskRoot, 'releases'))).toEqual([
+        sourceId,
+      ]);
+    } finally {
+      await harness.close();
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
   it('reads old keys after changing prefix, prefixes new uploads and promotions, rolls back and deletes recorded keys', async () => {
     const harness = await createHarness();
     let current = harness.services;

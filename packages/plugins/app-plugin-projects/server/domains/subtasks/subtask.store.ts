@@ -38,6 +38,28 @@ export async function deleteDependency(
   await dependencies(conn).deleteMany({ filter: { id } });
 }
 
+/** The predicate is part of the UPDATE, so a stale transaction cannot overwrite a changed or removed link. */
+export async function updateDependency(
+  conn: DatabaseConnection,
+  before: DependencyRecord,
+  values: Pick<DependencyRecord, 'issueId' | 'dependsOnIssueId' | 'type'>,
+): Promise<boolean> {
+  const { updatedCount } = await dependencies(conn).updateMany({
+    filter: {
+      id: before.id,
+      issueId: before.issueId,
+      dependsOnIssueId: before.dependsOnIssueId,
+      type: before.type,
+    },
+    values: {
+      issueId: values.issueId,
+      dependsOnIssueId: values.dependsOnIssueId,
+      type: values.type,
+    },
+  });
+  return updatedCount === 1;
+}
+
 export async function findDependency(
   conn: DatabaseConnection,
   id: string,
