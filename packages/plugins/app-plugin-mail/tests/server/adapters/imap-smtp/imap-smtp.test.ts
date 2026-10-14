@@ -779,7 +779,7 @@ describe('IMAP/SMTP mail Provider', () => {
       folders: true,
       labels: false,
       drafts: false,
-      moveMessage: false,
+      moveMessage: true,
       aliases: false,
     });
     expect(imapSmtpMailProviderDefinition.connection).toBeDefined();
@@ -1804,7 +1804,7 @@ function expectMailProviderCompatibility(
   expect(adapter.updateLabels).toBeUndefined();
   expect(adapter.saveDraft).toBeUndefined();
   expect(adapter.updateDraft).toBeUndefined();
-  expect(adapter.moveMessage).toBeUndefined();
+  expect(adapter.moveMessage).toEqual(expect.any(Function));
 }
 
 function sentInput(): MailProviderSendInput {

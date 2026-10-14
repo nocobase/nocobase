@@ -144,6 +144,7 @@ export interface ImapLocationPersistence {
   commitMoved(
     state: ImapMoveState,
     attachments: readonly import('../../../shared/mail.js').NormalizedMailAttachment[],
+    flags: { readonly read: boolean; readonly starred: boolean },
   ): Promise<string>;
   releaseMove(state: ImapMoveState): Promise<void>;
   commitFlags(

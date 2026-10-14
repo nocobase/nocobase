@@ -1050,8 +1050,21 @@ export function createImapLocationPersistence(
           throw new Error('IMAP move token exceeds its storage bound.');
         return reason;
       };
+      const lockMoveAccount = async (q: QueryAdapter): Promise<void> => {
+        const locked = await q
+          .updateTable<AccountRow>('mailAccounts')
+          .set({ id: accountId })
+          .where('id', '=', accountId)
+          .where('status', '=', 'active')
+          .execute();
+        if (locked.updatedCount !== 1)
+          throw mailFailedPrecondition(
+            'MAIL_ACCOUNT_INACTIVE',
+            'The IMAP account is not writable.',
+          );
+      };
       const protectedRows = async (q: QueryAdapter, state: ImapMoveState) => {
-        await lockWritableAccount(q, accountId);
+        await lockMoveAccount(q);
         await check(q);
         const rows = await select(q)
           .where('messageId', '=', messageId)
@@ -1092,7 +1105,7 @@ export function createImapLocationPersistence(
           if (target.operation !== 'move')
             throw new Error('Invalid IMAP operation target.');
           return database.transaction(async ({ query: q }) => {
-            await lockWritableAccount(q, accountId);
+            await lockMoveAccount(q);
             await check(q);
             const rows = await select(q)
               .where('messageId', '=', messageId)
@@ -1203,12 +1216,18 @@ export function createImapLocationPersistence(
               .where('uidValidity', '=', copy.uidValidity)
               .where('uid', '=', copy.uid)
               .executeTakeFirst<ImapLocationRow>();
-            // Neither another UUID nor an independently observed copy may be taken over.
-            if (existing)
+            // Synchronization may have observed this exact, mapped native copy first.
+            // Its confirmed UUID is retained; another UUID or move token is never taken over.
+            if (
+              existing &&
+              (existing.messageId !== messageId ||
+                (existing.status === 'pending' &&
+                  existing.invalidationReason?.startsWith('move-')))
+            )
               throw new Error('The IMAP move destination is already owned.');
             const now = new Date().toISOString();
             const row: ImapLocationRow = {
-              id: copy.locationId,
+              id: existing?.id ?? copy.locationId,
               accountId,
               messageId,
               providerFolderId: copy.folder,
@@ -1222,15 +1241,34 @@ export function createImapLocationPersistence(
               createdAt: now,
               updatedAt: now,
             };
-            await q
-              .insertInto<ImapLocationRow>(IMAP_LOCATIONS)
-              .values(row)
-              .execute();
+            if (existing)
+              await q
+                .updateTable<ImapLocationRow>(IMAP_LOCATIONS)
+                .set({
+                  status: row.status,
+                  invalidationReason: row.invalidationReason,
+                  read: row.read,
+                  starred: row.starred,
+                  receivedAt: row.receivedAt,
+                  updatedAt: row.updatedAt,
+                })
+                .where('id', '=', existing.id)
+                .execute();
+            else
+              await q
+                .insertInto<ImapLocationRow>(IMAP_LOCATIONS)
+                .values(row)
+                .execute();
             const [destination] = await resolve(q, [row]);
             return { ...state, destination: destination };
           });
         },
-        async commitMoved(state, attachments) {
+        async commitMoved(state, attachments, flags) {
+          if (
+            typeof flags.read !== 'boolean' ||
+            typeof flags.starred !== 'boolean'
+          )
+            throw new Error('Invalid IMAP move flag evidence.');
           if (target.operation !== 'move' || !state.destination)
             throw new Error('Invalid IMAP move commit.');
           return database.transaction(async ({ query: q }) => {
@@ -1294,6 +1332,8 @@ export function createImapLocationPersistence(
               .set({
                 status: 'valid',
                 invalidationReason: null,
+                read: flags.read,
+                starred: flags.starred,
                 updatedAt: now,
               })
               .where('id', '=', destination.id)
@@ -1301,7 +1341,9 @@ export function createImapLocationPersistence(
             await q
               .updateTable<MessageRow>('mailMessages')
               .set({
-                providerMessageId: id,
+                ...(owner.providerMessageId.startsWith('local-draft:')
+                  ? { providerDraftMessageId: id }
+                  : { providerMessageId: id }),
                 attachments: jsonOrNull(updated)!,
                 updatedAt: now,
               })

@@ -1818,11 +1818,10 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
         expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
       );
       if (scenario !== 'aggregate') {
-        const folders = screen.getAllByRole('navigation', {
-          name: 'Folders',
-        })[1];
         await user.click(
-          within(folders).getByRole('button', { name: /Inbox/ }),
+          await screen.findByRole('button', {
+            name: /Inbox.*user@example\.com/,
+          }),
         );
       }
       await user.click(await screen.findByText('Selected IMAP copy'));
@@ -1844,6 +1843,10 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
         );
       } else {
         expect(deletion).toHaveAttribute('aria-disabled', 'true');
+        expect(deletion).toHaveAttribute(
+          'aria-describedby',
+          within(menu).getByRole('status').id,
+        );
         expect(within(menu).getByRole('status')).toHaveTextContent(
           scenario === 'aggregate'
             ? 'Open the source folder'

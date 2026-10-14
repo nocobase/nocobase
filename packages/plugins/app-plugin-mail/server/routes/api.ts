@@ -1970,6 +1970,8 @@ function imapMoveLocale(reason: string): string | undefined {
   return (
     {
       MAIL_IMAP_MOVE_SOURCE_REQUIRED: 'errors.imapMoveSourceRequired',
+      MAIL_IMAP_MOVE_LOCATION_CHANGED: 'errors.imapMoveLocationChanged',
+      MAIL_IMAP_MOVE_NOT_WRITABLE: 'errors.imapMoveNotWritable',
       MAIL_IMAP_MOVE_UNSUPPORTED: 'errors.imapMoveUnsupported',
       MAIL_IMAP_TRASH_NOT_FOUND: 'errors.imapTrashNotFound',
       MAIL_IMAP_MOVE_OUTCOME_UNKNOWN: 'errors.imapMoveOutcomeUnknown',

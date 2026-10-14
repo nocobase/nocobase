@@ -2,6 +2,10 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
   errors: {
+    imapMoveLocationChanged:
+      'The selected folder or copy changed. Synchronize and open the source folder again.',
+    imapMoveNotWritable:
+      'The selected folder does not allow this operation. Check its mailbox permissions.',
     imapMoveSourceRequired:
       'Open the source folder before moving or deleting this message.',
     imapMoveUnsupported:

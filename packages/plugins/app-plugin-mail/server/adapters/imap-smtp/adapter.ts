@@ -1,5 +1,5 @@
 import { encodePath } from 'imapflow/lib/tools.js';
-import { mailFailedPrecondition } from '../../services/errors.js';
+import { MailError, mailFailedPrecondition } from '../../services/errors.js';
 import {
   ImapFlow,
   type FetchMessageObject,
@@ -1032,12 +1032,18 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
             folder.path === providerFolderId && !folder.flags.has('\\Noselect'),
         )
       )
-        throw new Error('The destination is not a selectable IMAP folder.');
+        throw mailFailedPrecondition(
+          'MAIL_IMAP_MOVE_LOCATION_CHANGED',
+          'The selected destination is no longer a selectable folder. Synchronize the mailbox.',
+        );
       const destinationMailbox = await client.mailboxOpen(providerFolderId, {
         readOnly: false,
       });
       if (destinationMailbox.readOnly)
-        throw new Error('The destination is read-only.');
+        throw mailFailedPrecondition(
+          'MAIL_IMAP_MOVE_NOT_WRITABLE',
+          'The selected destination is read-only.',
+        );
       state = await this.locations.beginMove();
       const source = await this.openCopy(
         state.source,
@@ -1045,9 +1051,20 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         false,
       );
       if (client.mailbox && client.mailbox.readOnly)
-        throw new Error('The source is read-only.');
+        throw mailFailedPrecondition(
+          'MAIL_IMAP_MOVE_NOT_WRITABLE',
+          'The selected source is read-only.',
+        );
+      if (source && !(source.flags instanceof Set))
+        throw mailFailedPrecondition(
+          'MAIL_IMAP_MOVE_LOCATION_CHANGED',
+          'The server did not report source flags.',
+        );
       if (!source && !state.destination)
-        throw new Error('The selected IMAP source changed.');
+        throw mailFailedPrecondition(
+          'MAIL_IMAP_MOVE_LOCATION_CHANGED',
+          'The selected source changed. Synchronize and open its source folder again.',
+        );
       if (
         client.mailbox &&
         !client.mailbox.readOnly &&
@@ -1056,9 +1073,15 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         !client.mailbox.permanentFlags.has('\\*') &&
         !state.destination
       )
-        throw new Error('The source does not allow deletion flags.');
+        throw mailFailedPrecondition(
+          'MAIL_IMAP_MOVE_NOT_WRITABLE',
+          'The selected source does not allow deletion flags.',
+        );
       if (source?.flags?.has('\\Deleted') && !state.destination)
-        throw new Error('The source already has an external deletion flag.');
+        throw mailFailedPrecondition(
+          'MAIL_IMAP_MOVE_LOCATION_CHANGED',
+          'The selected source already has an external deletion flag.',
+        );
       if (state.source.folder === providerFolderId && source) {
         await this.locations.releaseMove(state);
         state = undefined;
@@ -1068,8 +1091,14 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       // A persisted mapping is resumed without ever issuing another COPY or MOVE.
       if (!state.destination) {
         throwIfAborted(signal);
-        if (!client.capabilities.has('MOVE') && !client.capabilities.has('UIDPLUS'))
-          throw mailFailedPrecondition('MAIL_IMAP_MOVE_UNSUPPORTED', 'This server no longer has a safe move path.');
+        if (
+          !client.capabilities.has('MOVE') &&
+          !client.capabilities.has('UIDPLUS')
+        )
+          throw mailFailedPrecondition(
+            'MAIL_IMAP_MOVE_UNSUPPORTED',
+            'This server no longer has a safe move path.',
+          );
         remoteStarted = true;
         const native = client.capabilities.has('MOVE');
         const tuple = await (this.protocol.transferUid ?? transferUid)(
@@ -1129,6 +1158,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           const id = await this.locations.commitMoved(
             state,
             this.moveAttachments(state.destination!, destination),
+            {
+              read: destination.flags!.has('\\Seen'),
+              starred: destination.flags!.has('\\Flagged'),
+            },
           );
           return { ok: true, value: { providerMessageId: id } };
         }
@@ -1146,7 +1179,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       );
       if (current) {
         if (client.mailbox && client.mailbox.readOnly)
-          throw new Error('The source is read-only.');
+          throw mailFailedPrecondition(
+            'MAIL_IMAP_MOVE_NOT_WRITABLE',
+            'The selected source is read-only.',
+          );
         if (!client.capabilities.has('UIDPLUS'))
           throw new Error('UIDPLUS became unavailable before source cleanup.');
         remoteStarted = true;
@@ -1184,6 +1220,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       const id = await this.locations.commitMoved(
         state,
         this.moveAttachments(state.destination!, destination),
+        {
+          read: destination.flags!.has('\\Seen'),
+          starred: destination.flags!.has('\\Flagged'),
+        },
       );
       return { ok: true, value: { providerMessageId: id } };
     } catch (error) {
@@ -1199,7 +1239,8 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
           'The move is incomplete or its result is unknown. Verify the mailbox before retrying.',
         );
-      throw error;
+      if (error instanceof MailError) throw error;
+      return { ok: false, error: classifyError(error, 'IMAP_MOVE_MESSAGE') };
     }
   }
 
@@ -1222,7 +1263,12 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       },
       { uid: true },
     );
-    if (!result || result.uid !== tuple.uid || result.flags?.has('\\Deleted'))
+    if (
+      !result ||
+      result.uid !== tuple.uid ||
+      !(result.flags instanceof Set) ||
+      result.flags.has('\\Deleted')
+    )
       return undefined;
     const source = this.operation!.source;
     if (
@@ -2327,7 +2373,11 @@ async function transferUid(
       const [first, last = first] = value.split(':').map(Number);
       return first === last && first <= 0xffffffff ? first : undefined;
     };
-    const validity = single(section[1]?.value);
+    const validityValue = section[1]?.value;
+    const validity =
+      typeof validityValue === 'string' && /^[1-9]\d{0,9}$/.test(validityValue)
+        ? single(validityValue)
+        : undefined;
     const source = single(section[2]?.value);
     const destination = single(section[3]?.value);
     if (!validity || source !== uid || !destination) {

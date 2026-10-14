@@ -33,6 +33,7 @@ const server = vi.hoisted(() => {
       | 'missing'
       | 'wrong-source'
       | 'wrong-generation'
+      | 'invalid-generation'
       | 'deleted'
       | 'untagged'
       | 'conflict',
@@ -289,11 +290,14 @@ vi.mock('imapflow', () => {
               section: [
                 { value: 'COPYUID' },
                 {
-                  value: String(
-                    server.mapping === 'wrong-generation'
-                      ? destination.uidValidity + 1n
-                      : destination.uidValidity,
-                  ),
+                  value:
+                    server.mapping === 'invalid-generation'
+                      ? '1:1'
+                      : String(
+                          server.mapping === 'wrong-generation'
+                            ? destination.uidValidity + 1n
+                            : destination.uidValidity,
+                        ),
                 },
                 {
                   value: String(
@@ -2574,7 +2578,28 @@ describe('IMAP selected-copy move and durable protection', () => {
         raw: raw('<external-deleted@example.com>'),
         flags: ['\\Deleted'],
       });
+      let activeTransactions = 0;
+      const executeTransaction = database.transaction.bind(database);
+      const transactions = vi
+        .spyOn(database, 'transaction')
+        .mockImplementation(async (work, name) =>
+          executeTransaction(async (connection) => {
+            activeTransactions += 1;
+            try {
+              return await work(connection);
+            } finally {
+              activeTransactions -= 1;
+            }
+          }, name),
+        );
+      server.onTransfer = () => {
+        expect(activeTransactions).toBe(0);
+      };
+      server.onFlag = () => {
+        expect(activeTransactions).toBe(0);
+      };
       const result = await move(original, 'INBOX');
+      expect(transactions).toHaveBeenCalledTimes(3);
       expect(result).toEqual({
         ok: true,
         value: { providerMessageId: 'MOVE-OBJECT' },
@@ -2644,6 +2669,7 @@ describe('IMAP selected-copy move and durable protection', () => {
     'missing',
     'wrong-source',
     'wrong-generation',
+    'invalid-generation',
     'deleted',
     'conflict',
   ] as const)(
@@ -2680,6 +2706,8 @@ describe('IMAP selected-copy move and durable protection', () => {
       reason: 'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
     });
     server.loseResponse = false;
+    await database.disconnect();
+    await database.reconnect();
     await sync({ mode: 'incremental' }, 'partial');
     const retained = (await messages()).find(
       (message) => message.id === original.id,
@@ -2717,7 +2745,13 @@ describe('IMAP selected-copy move and durable protection', () => {
       server.onTransfer = undefined;
       server.onFlag = undefined;
       server.capabilities.add('UIDPLUS');
+      server.folders.get('Trash')!.messages.get(1)!.flags.add('\\Seen');
+      server.folders.get('Trash')!.messages.get(1)!.flags.add('\\Flagged');
       expect(await move(original, 'INBOX')).toMatchObject({ ok: true });
+      expect((await messages())[0]).toMatchObject({
+        read: true,
+        starred: true,
+      });
       expect(server.transfers).toHaveLength(1);
       expect(server.expunges).toEqual(['UID EXPUNGE']);
       expect((await messages())[0].id).toBe(original.id);
@@ -2757,7 +2791,7 @@ describe('IMAP selected-copy move and durable protection', () => {
   it('releases protection for a definite failed COPY and permits a later explicit attempt', async () => {
     const original = await prepare();
     server.failTransfer = true;
-    await expect(move(original, 'INBOX')).rejects.toThrow('COPY rejected');
+    await expect(move(original, 'INBOX')).resolves.toMatchObject({ ok: false });
     expect(server.stores).toEqual([]);
     expect(server.expunges).toEqual([]);
     expect((await messages())[0].locations[0].status).toBe('valid');
@@ -2850,13 +2884,27 @@ describe('IMAP selected-copy move and durable protection', () => {
       .where('id', '=', original.id)
       .execute();
     const otherId = randomUUID();
+    const other = await store.saveMessage(accountId, {
+      providerMessageId: 'other-owner',
+      providerFolderIds: [],
+      to: [],
+      cc: [],
+      bcc: [],
+      replyTo: [],
+      references: [],
+      subject: 'Other UUID',
+      read: true,
+      starred: false,
+      draft: false,
+      attachments: [],
+    });
     await database
       .query()
       .insertInto('mailMessageImapLocations')
       .values({
         id: otherId,
         accountId,
-        messageId: original.id,
+        messageId: other.id,
         providerFolderId: 'Trash',
         uidValidity: '1',
         uid: 1,
@@ -2910,6 +2958,132 @@ describe('IMAP selected-copy move and durable protection', () => {
     ).rejects.toMatchObject({ reason: 'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN' });
     expect(server.stores).toEqual([]);
   });
+  it('reuses a concurrently recorded mapped destination only for the original UUID', async () => {
+    const original = await prepare(false, true);
+    const destinationId = randomUUID();
+    await database
+      .query()
+      .insertInto('mailMessageImapLocations')
+      .values({
+        id: destinationId,
+        accountId,
+        messageId: original.id,
+        providerFolderId: 'Trash',
+        uidValidity: '1',
+        uid: 1,
+        status: 'valid',
+        read: true,
+        starred: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .execute();
+    expect(await move(original, 'INBOX')).toMatchObject({ ok: true });
+    expect(
+      (await messages())[0].locations.find(
+        (location) => location.folder === 'Trash',
+      ),
+    ).toMatchObject({ id: destinationId, status: 'valid' });
+  });
+  it('fences scheduling and keeps bounded durable tokens while network cleanup is incomplete', async () => {
+    const original = await prepare();
+    server.failFlags.add('INBOX');
+    await expect(move(original, 'INBOX')).rejects.toMatchObject({
+      reason: 'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
+    });
+    const protectedRows = await database
+      .query()
+      .selectFrom('mailMessageImapLocations')
+      .select('invalidationReason')
+      .where('messageId', '=', original.id)
+      .where('status', '=', 'pending')
+      .execute<{ invalidationReason: string }>();
+    expect(
+      protectedRows.map((row) => row.invalidationReason.length).sort(),
+    ).toEqual([34, 39]);
+    await expect(
+      store.createScheduledSubmission(
+        {
+          id: randomUUID(),
+          accountId,
+          status: 'pending',
+          scheduledAt: '2099-01-01T00:00:00.000Z',
+        },
+        'pending-move-schedule',
+        'fingerprint',
+        owner.actorId,
+        {
+          accountId,
+          idempotencyKey: 'pending-move-schedule',
+          draftMessageId: original.id,
+          to: [{ address: 'test@example.com' }],
+          subject: 'Scheduled',
+          text: 'Draft',
+        },
+        {
+          providerMessageId: original.providerMessageId,
+          providerFolderIds: ['INBOX'],
+          to: [],
+          cc: [],
+          bcc: [],
+          replyTo: [],
+          references: [],
+          subject: 'Draft',
+          read: true,
+          starred: false,
+          draft: true,
+          attachments: [],
+        },
+      ),
+    ).rejects.toMatchObject({ reason: 'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN' });
+    expect(server.transfers).toHaveLength(1);
+  });
+
+  it('retains a localized draft identity while relocating its remote locator', async () => {
+    const original = await prepare(false, false, true);
+    await database
+      .query()
+      .updateTable('mailMessages')
+      .set({ draft: true })
+      .where('id', '=', original.id)
+      .execute();
+    const localized = await store.localizeDraft(accountId, original.id);
+    const moved = await service().moveMessage(owner, {
+      accountId,
+      messageId: original.id,
+      providerFolderId: 'Trash',
+      sourceProviderFolderId: 'INBOX',
+    });
+    expect(moved.id).toBe(original.id);
+    expect(moved.providerMessageId).toBe(localized.providerMessageId);
+    expect(moved.providerDraftMessageId).not.toBe(
+      localized.providerDraftMessageId,
+    );
+    expect(moved.providerMessageId).toMatch(/^local-draft:/);
+    await service().updateMessage(owner, {
+      accountId,
+      messageId: original.id,
+      read: true,
+    });
+    expect(
+      server.folders.get('Trash')!.messages.get(1)!.flags.has('\\Seen'),
+    ).toBe(true);
+  });
+
+  it('reloads the explicit IMAP move through private persistence without calling generic store movement', async () => {
+    const original = await prepare();
+    const generic = vi.spyOn(store, 'moveMessage');
+    const moved = await service().moveMessage(owner, {
+      accountId,
+      messageId: original.id,
+      providerFolderId: 'Trash',
+      sourceProviderFolderId: 'INBOX',
+    });
+    expect(moved.id).toBe(original.id);
+    expect(moved.folderIds).toEqual(['Trash']);
+    expect(generic).not.toHaveBeenCalled();
+  });
+
   it('soft deletion goes to Trash, retaining the business UUID', async () => {
     const original = await prepare();
     await service().deleteMessage(owner, {
