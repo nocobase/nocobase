@@ -1,5 +1,5 @@
 // The real daemon and isolated workers, with a deterministic tool and local Git remote.
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, writeFileSync } from 'node:fs';
 import { runTempName, runTempRoot } from '../src/core/run-temp.ts';
 import { runnerPaths } from '../src/lib/home.ts';
 import path from 'node:path';
@@ -166,6 +166,7 @@ it('reports missing identity in the cancellation result and retains uncommitted 
         },
       ],
       env: [],
+      git: { author: { name: 'Test', email: 'test@example.com' } },
     },
     prompt: {
       system: '',
@@ -222,7 +223,15 @@ it.each(['completed', 'failed', 'cancelled'] as const)(
     await server.listen();
     const root = tempDir('ending-continuation-');
     const home = path.join(root, 'home');
-    const env = cliEnv(home);
+    const config = path.join(root, 'host.gitconfig');
+    writeFileSync(
+      config,
+      '[user]\nname = Host User\nemail = host@example.com\n',
+    );
+    const env = cliEnv(home, {
+      GIT_CONFIG_GLOBAL: config,
+      GIT_CONFIG_NOSYSTEM: '1',
+    });
     const remote = makeRemote(root);
     await registerRunner(server.url, env, [
       '--cli',
@@ -239,6 +248,7 @@ it.each(['completed', 'failed', 'cancelled'] as const)(
         },
       ],
       env: [],
+      git: { author: { name: 'Test', email: 'test@example.com' } },
     };
     const subject = {
       key: 'continuation',
@@ -256,7 +266,7 @@ it.each(['completed', 'failed', 'cancelled'] as const)(
       prompt: {
         system: '',
         session: 'fresh',
-        turn: `bash git config --worktree user.name Test\nbash git config --worktree user.email test@example.com\nwrite pending.txt ${ending}\n${tail}`,
+        turn: `write pending.txt ${ending}\n${tail}`,
       },
     });
     const daemon = startDaemon(env);
@@ -301,7 +311,7 @@ it.each(['completed', 'failed', 'cancelled'] as const)(
         prompt: {
           system: '',
           session: 'fresh',
-          turn: 'read pending.txt\nbash git config --worktree user.name Test\nbash git config --worktree user.email test@example.com\nwrite continued.txt resumed\nbash git add .\nbash git -c commit.gpgsign=false commit -m "Continue pending work"\nbash git push origin HEAD:refs/heads/agent/continuation\nsay resumed',
+          turn: 'read pending.txt\nwrite continued.txt resumed\nbash git add .\nbash git -c commit.gpgsign=false commit -m "Continue pending work"\nbash git push origin HEAD:refs/heads/agent/continuation\nsay resumed',
         },
       });
       await waitFor(
