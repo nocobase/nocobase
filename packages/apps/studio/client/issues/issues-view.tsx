@@ -37,6 +37,7 @@ import { IssueListView } from './list-view.js';
 import { GroupedIssueListView } from './grouped-list-view.js';
 import { IssueToolbar, type IssueViewOption } from './toolbar.js';
 import { useIssuesPage } from './use-issues-page.js';
+import { IssuePresentationContext } from './presentation.js';
 import { TableCreateStateContext } from './table-create-state.js';
 
 export type StudioIssueView = 'agent' | 'list' | 'board';
@@ -79,6 +80,11 @@ export function IssuesView({
     views,
     defaultView,
   });
+  const presentation = useContext(IssuePresentationContext);
+  const reportPage = presentation.reportPage;
+  useLayoutEffect(() => {
+    reportPage?.({ view: page.view, queryIdentity: page.queryIdentity });
+  }, [reportPage, page.view, page.queryIdentity]);
   const fetching = useIsFetching({ queryKey: pmKeys.issues }) > 0;
   const canDelete = canDeleteIssues(useViewer());
   const deleted = canDelete && page.filters.deleted === true;
@@ -92,7 +98,7 @@ export function IssuesView({
   // (`issueDetailRoute` in `routes.ts`), so its trail and Back lead to this list as it was left.
   const listPath = useResolvedPath('.').pathname.replace(/\/$/u, '');
   const issueHref = (issueId: string) =>
-    `${listPath}/${encodeURIComponent(issueId)}${location.search}`;
+    `${listPath}/${encodeURIComponent(issueId)}${location.search}${location.hash}`;
   const open = (issueId: string) => void navigate(issueHref(issueId));
 
   const options = views.map((key) => ({
@@ -147,7 +153,12 @@ export function IssuesView({
           <GroupedIssueListView
             page={page}
             issueHref={issueHref}
-            onOpen={open}
+            onOpen={presentation.onPreview ?? open}
+            compact={presentation.compact ?? false}
+            selectedId={presentation.selectedId ?? null}
+            {...(presentation.rowAction
+              ? { rowAction: presentation.rowAction }
+              : {})}
             empty={empty}
           />
         )}
