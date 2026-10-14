@@ -1,5 +1,5 @@
 import { RunPayloadSchema, SkillBundleSchema } from '@nocobase/agent-protocol';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { claim, createHarness, skillMd, type Harness } from './harness.js';
 
@@ -54,7 +54,7 @@ describe('claiming', () => {
     });
   });
 
-  it('matches the tool, the named runners, trust and features', async () => {
+  it('matches the tool, trust and features', async () => {
     h = await createHarness();
     const codex = await h.createAgent({
       modelEntries: [{ tool: 'codex', model: null }],
@@ -79,9 +79,7 @@ describe('claiming', () => {
       'SMP-2',
     ]);
 
-    // Codex signed in; an agent that names another runner is not for this one.
-    const named = await h.createAgent({ runnerIds: [basic.runnerId] });
-    await h.enqueue(named, '3');
+    // Codex signed in.
     const capable = await h.registerRunner({
       tools: [
         { kind: 'claude', authenticated: true },
@@ -91,9 +89,6 @@ describe('claiming', () => {
     });
     expect((await claim(h, capable, 4)).map((run) => run.subject.key)).toEqual([
       'SMP-1',
-    ]);
-    expect((await claim(h, basic, 4)).map((run) => run.subject.key)).toEqual([
-      'SMP-3',
     ]);
   });
 
@@ -107,10 +102,15 @@ describe('claiming', () => {
       ],
     });
     const first = await h.enqueue(agentId, '1');
-    // Codex is not signed in here: the first Claude entry is taken, and recorded on the run.
+    // Codex is not signed in here: the first Claude entry is taken, and recorded on the run. An entry naming a model
+    // needs the runner to report it, under any spelling of it (`opus` is Opus 5.5).
     const claudeOnly = await h.registerRunner({
       tools: [
-        { kind: 'claude', authenticated: true },
+        {
+          kind: 'claude',
+          authenticated: true,
+          models: [{ id: 'claude-opus-5-5' }],
+        },
         { kind: 'codex', authenticated: false },
       ],
     });
@@ -133,7 +133,7 @@ describe('claiming', () => {
     const both = await h.registerRunner({
       tools: [
         { kind: 'claude', authenticated: true },
-        { kind: 'codex', authenticated: true },
+        { kind: 'codex', authenticated: true, models: [{ id: 'gpt-6' }] },
       ],
     });
     const [onCodex] = await claim(h, both);
@@ -191,7 +191,10 @@ describe('claiming', () => {
     const skill = await h.services.skills.create('owner', {
       content: skillMd('pr-etiquette', 'How we write pull requests.'),
     });
-    const agentId = await h.createAgent({ skillIds: [skill.id] });
+    const agentId = await h.createAgent();
+    await h.services.skills.attach({ scope: 'global', scopeId: 'default' }, [
+      skill.id,
+    ]);
     const runId = await h.enqueue(agentId, '1');
     const old = await h.registerRunner({ features: ['input', 'checkout'] });
     expect(await claim(h, old)).toEqual([]);
@@ -253,10 +256,11 @@ describe('claiming', () => {
     const agentId = await h.createAgent({ maxConcurrentRuns: 5 });
     const elsewhere = await h.registerRunner({ slots: 4 });
     const holder = await h.registerRunner({ slots: 4 });
+    const directory = `/srv/${'d'.repeat(1000)}`;
     h.dirs = [
       {
         kind: 'directory',
-        path: '/srv/app',
+        path: directory,
         runnerId: holder.runnerId,
         scopeId: 'res-1',
         initPrompt: 'Run make setup.',
@@ -268,7 +272,7 @@ describe('claiming', () => {
     const claimed = await claim(h, holder, 4);
     expect(claimed.map((payload) => payload.run.id)).toEqual([first]);
     expect(claimed[0].workspace.dirs).toEqual([
-      { kind: 'directory', path: '/srv/app', initPrompt: 'Run make setup.' },
+      { kind: 'directory', path: directory, initPrompt: 'Run make setup.' },
     ]);
     expect(claimed[0].run.requires).toEqual(['directories']);
 
@@ -539,19 +543,16 @@ describe('claiming', () => {
     expect(third).toMatchObject({ runId: first.runId, outcome: 'appended' });
   });
 
-  it('refuses work from someone who may not wake the agent', async () => {
+  it('refuses work for an agent that is not enabled', async () => {
     h = await createHarness();
-    const agentId = await h.createAgent({ access: 'users', userIds: ['bob'] });
-    await expect(
-      h.enqueue(agentId, '1', { actorUserId: 'mallory' }),
-    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    const agentId = await h.createAgent();
     await expect(
       h.enqueue(agentId, '1', { actorUserId: 'bob' }),
     ).resolves.toBeTruthy();
-    await h.services.agents.archive(agentId, 'owner');
+    await h.disableAgent(agentId);
     await expect(
       h.enqueue(agentId, '2', { actorUserId: 'bob' }),
-    ).rejects.toMatchObject({ code: 'AGENT_ARCHIVED' });
+    ).rejects.toMatchObject({ code: 'AGENT_NOT_ENABLED' });
   });
 
   it('leaves a run queued when its payload cannot be assembled, then fails it', async () => {
@@ -564,6 +565,8 @@ describe('claiming', () => {
     expect(await h.services.runs.get(runId)).toMatchObject({
       status: 'queued',
       runnerId: null,
+      failureReason: 'setupFailed',
+      failureDetail: expect.any(String),
     });
     await claim(h, runner);
     await claim(h, runner);
@@ -582,8 +585,7 @@ describe('claiming', () => {
       runnerKey: runner.key,
       body: { free: 1 },
     });
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(h.services.signal.waiting()).toBe(1);
+    await vi.waitFor(() => expect(h.services.signal.waiting()).toBe(1));
     const runId = await h.enqueue(agentId);
     const response = await waiting;
     expect(

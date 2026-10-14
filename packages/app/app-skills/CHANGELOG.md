@@ -1,5 +1,60 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.35
+
+### Patch Changes
+
+- ca0adee: Document the quieter template interface in the application development Skill: the `--hover` token and the navigation built on it, the single border, which a preset with a darker page has to make opaque, and the compact preset's values, one shared focus ring, the two badge sizes, the pointer cursor, cards that lift on hover, and table rows on the `--hover` grey. Add the long-text rule (I14) for `LongText` and `LongTextPreview`, show a record's particulars inline, describe navigation sections and counts beside menu entries, with guideline L8 on which counts belong there, and list the UI Library's new `long-text` item and the inline variant of `property-fields`. The upgrade Skill's theme checks now say to merge a token together with every use of it, and a global attribute rule together with the components that set the attribute.
+- ddfe1b1: Update the UI Library catalog reference for the agents blocks: the agent picker, chat and composer no longer offer online agents or a model choice, and the issue detail no longer has checklist or approval parts.
+- 43d7d1f: Add code-declared lifecycle parameter groups with asynchronous execution resolution, immutable configuration versions, atomic CAS saves, first-submission snapshots, per-execution usage facts and flat reviewer selection rules. Demonstrate shared configuration editors, optional diagram bindings, snapshot expense thresholds, live ticket policy and finite candidate review workflows, and document application integration.
+- 9555de6: Guide agents to expose node-related lifecycle parameters through editing dialogs on process diagrams, with references to the workflow example. Clarify HTTP-compatible browser request IDs and key reuse for transport retries.
+- 758c372: Ask whether users want a flowchart or process interface when developing a lifecycle, respect separate interface and diagram preferences, and document UI Library diagram integration including label callback arguments.
+
+## 0.1.0-beta.34
+
+### Patch Changes
+
+- e6dd56e: Add application development references for application structure, plugins, dependencies and the development server, carrying guidance that previously lived only in the application templates' `AGENTS.md`. Agents now record application-specific guidance in the committed `.agents/rules/` directory indexed from a small `AGENTS.md`, and the upgrade Skill explains how to merge `.agents/rules/` and un-ignore it in older applications.
+
+## 0.1.0-beta.33
+
+### Patch Changes
+
+- 9f02fe3: Route requests to upgrade NocoBase or its core version to the application upgrade Skill, since users rarely refer to the template they generated the application from.
+- 2a54505: Expose the application's resolved `NODE_ENV` to server providers without inheriting an embedded application's host process environment. Mail now warns once during production startup when its effective OAuth return URL still points to the legacy `/dev/mail/accounts` destination. The current root (`/`) default does not trigger the warning or register an account route: applications must register their own authenticated personal account page and configure `mail.oauthReturnUrl` to that page. This warning does not block startup, change configuration, or verify arbitrary client routes.
+
+## 0.1.0-beta.32
+
+### Patch Changes
+
+- 42615cd: Clarify beta, latest and exact-version selection for application upgrades, resolve tags to fixed versions, and prevent implicit channel changes or downgrades.
+
+## 0.1.0-beta.31
+
+### Patch Changes
+
+- 4dee742: Use the beta app-installer in the application deployment Skill so deployment does not resolve an unintended latest release.
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+
+## 0.1.0-beta.30
+
+### Patch Changes
+
+- a827a63: Clarify application access URLs for agents: use the Hono server entry in full-stack development, verify the actual port and base path, and use the local Vite entry only in remote-backend proxy mode.
+- 8de421a: Guide agents to the theme-aware React Flow and ELK diagram components from the application and lifecycle Skills. Document execution history, inline labels and end markers, and synchronize the offline UI Library catalog.
+- 87b8394: Install published applications with `--app @nocobase/studio` or the official shorthand `--app studio`, preserving package identity while building and deploying on the server. Support npm application upgrades, explicit version selection and rebuilding with the existing backup and rollback workflow. Include Studio's shared sources and CLI skills in its published package so it builds outside the repository, and document the deployment route.
+
+## 0.1.0-beta.29
+
+### Patch Changes
+
+- 17a183c: Respect the configured public origin during local development instead of overriding it with a loopback address. Explain rejected sign-in origins with actionable English and Chinese messages, and document verification of the browser-facing address and authentication request.
+- 13620d9: The runner and an application's CLI can now be installed and updated from npm when the application serves no tarball of them and names the exact npm version instead (`agents.dist.npm`). The install script asks with `accept=npm`; for an npm answer it checks for Node.js 24 or newer and `npm` (or `NOCOBASE_NPM`), runs `npm install --prefix <prefix>/versions/<version> --no-save --no-audit --no-fund --omit=optional <package>@<version>` and writes a launcher at `versions/<version>/bin/<command>`, so `current`, the linked command and the runner's user service work as they do for a tarball, and links `<prefix>/node` to the Node.js it checked. The runner declares the `npm` feature and installs a heartbeat's `npmUpgrade` the same way between runs; `nocobase-runner update` and `<cli> update` follow either answer, and an installation moves between tarball and npm versions in both directions (`installNpmVersion`, `npmLauncherScript` and `UpdateTarget` in `@nocobase/app-cli-client/install`). An application that answers no npm form is handled exactly as before.
+
+  `@nocobase/agent-runner` and `@nocobase/app-cli-client` now depend on exactly the `@nocobase/agent-protocol` they were built with, and `@nocobase/studio-cli` and `@nocobase/agent-runner` on exactly their `@nocobase/app-cli-client`, so a version installed from npm behaves as it was built.
+
+  `nocobase skills sync` no longer reads Skills from a packaged application CLI (a dependency declaring `nocobase.cli`, such as `@nocobase/studio-cli`): its `skills/` is for that command's users. NocoBase Studio declares `@nocobase/studio-cli`, so its build pins `nb-studio` to the version it was built with, and its CLI documentation and home-page agent prompt say that `nb-studio` needs Node.js 24 or newer with npm. The application development Skill documents `nocobase cli build --universal`.
+
 ## 0.1.0-beta.28
 
 ### Patch Changes

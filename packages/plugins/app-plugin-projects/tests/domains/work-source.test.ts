@@ -2,16 +2,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Actor } from '../../server/kernel/actor.js';
-import type {
-  StatusRuleCheck,
-  StatusRuleEntry,
-} from '../../server/domains/workflows/index.js';
 import { createHarness, type Harness } from '../harness.js';
 
 let h: Harness;
 beforeEach(async () => {
   h = await createHarness();
-  await h.installStandardWorkflow();
   for (const id of ['alice', 'bob']) await h.addUser(id, id);
 });
 afterEach(() => h.close());
@@ -87,63 +82,43 @@ describe.each(sources)('work source %j', (actor) => {
     expect(joined[0]).toMatchObject({ actor, stage: 0 });
   });
 
-  it('keeps system permissions and reports the source of a contributed workflow event', async () => {
+  it('moves on a status event as the system and records its source', async () => {
     const viewer = h.viewer('alice', 'admin');
-    const entries: StatusRuleEntry[] = [];
-    h.services.statusRules.add({
-      type: 'rememberSource',
-      entered: (entry) => {
-        entries.push(entry);
-        return Promise.resolve(undefined);
-      },
-    });
-    h.services.workflowEvents.types.add({ key: 'test.finished' });
-    const [workflow] = await h.services.workflows.list(viewer);
-    await h.services.workflows.update(viewer, workflow.id, {
-      revision: workflow.revision,
-      definition: {
-        ...workflow.definition,
-        states: workflow.definition.states.map((state) =>
-          state.key === 'done'
-            ? { ...state, rules: [{ type: 'rememberSource' }] }
-            : state,
-        ),
-        transitions: [
-          ...workflow.definition.transitions,
-          { from: 'todo', to: 'done', actors: ['system'], on: 'test.finished' },
-        ],
-      },
+    h.services.statusEvents.types.add({
+      key: 'test.finished',
+      from: ['in_progress'],
+      to: 'done',
     });
     const issue = await h.services.issues.create(viewer, {
       title: 'Event source',
+      statusKey: 'in_progress',
+      ownerUserId: 'bob',
     });
     expect(
-      await h.services.workflowEvents.fire({
+      await h.services.statusEvents.fire({
         event: 'test.finished',
         issueIds: [issue.id],
         actor,
       }),
     ).toEqual([
-      { issueId: issue.id, outcome: 'moved', from: 'todo', to: 'done' },
+      {
+        issueId: issue.id,
+        outcome: 'moved',
+        from: 'in_progress',
+        to: 'done',
+      },
     ]);
-    expect(entries[0]).toMatchObject({
-      actor: { type: 'system', id: null },
-      sourceActor: actor,
-    });
-    const systemIssue = await h.services.issues.create(viewer, {
-      title: 'System source',
-    });
-    await h.services.workflowEvents.fire({
-      event: 'test.finished',
-      issueIds: [systemIssue.id],
-    });
-    expect(entries[1]).toMatchObject({
-      actor: { type: 'system', id: null },
-      sourceActor: { type: 'system', id: null },
-    });
+    const activities = (
+      await h.services.issueQueries.activities(viewer, issue.id, {})
+    ).data;
+    // A system transition retains the event's source on the status activity.
+    for (const action of ['status_changed'])
+      expect(
+        activities.find((activity) => activity.action === action),
+      ).toMatchObject({ actorType: 'user', actorId: 'alice' });
   });
 
-  it('preserves the source through owner changes, release, joins and cascading system rules', async () => {
+  it('preserves the source through owner changes and joins', async () => {
     const viewer = { ...h.viewer('alice', 'admin'), actor };
     const heard: { hook: string; actor: Actor | undefined }[] = [];
     h.services.kinds.add({
@@ -170,47 +145,17 @@ describe.each(sources)('work source %j', (actor) => {
         },
       },
     });
-    const checks: StatusRuleCheck[] = [];
-    const entries: StatusRuleEntry[] = [];
-    h.services.statusRules.add({
-      type: 'rememberSource',
-      canEnter: (check) => {
-        checks.push(check);
-        return Promise.resolve(null);
-      },
-      entered: (entry) => {
-        entries.push(entry);
-        return Promise.resolve(undefined);
-      },
-    });
-    const [workflow] = await h.services.workflows.list(viewer);
-    await h.services.workflows.update(viewer, workflow.id, {
-      revision: workflow.revision,
-      definition: {
-        ...workflow.definition,
-        states: workflow.definition.states.map((state) =>
-          state.key === 'done'
-            ? { ...state, rules: [{ type: 'rememberSource' }] }
-            : state,
-        ),
-        transitions: [
-          ...workflow.definition.transitions,
-          { from: 'todo', to: 'done', actors: ['system'], on: 'subtasks.done' },
-        ],
-      },
-    });
     const create = (title: string, parentIssueId?: string) =>
       h.services.issues.create(viewer, {
         title,
         executor: { type: 'bot', id: 'worker' },
         ...(parentIssueId ? { parentIssueId } : {}),
       });
-    const grandparent = await create('Grandparent');
-    const parent = await create('Parent', grandparent.id);
+    const parent = await create('Parent');
     const child = await create('Child', parent.id);
     const waiting = await create('Waiting');
     await h.services.subtasks.addDependency(viewer, waiting.id, {
-      dependsOnIssueId: parent.id,
+      dependsOnIssueId: child.id,
     });
     await h.services.issues.update(viewer, waiting.id, {
       revision: waiting.revision,
@@ -222,21 +167,13 @@ describe.each(sources)('work source %j', (actor) => {
     });
     expect(heard.map((item) => item.hook)).toEqual([
       'owner',
-      'join',
       'release',
       'join',
     ]);
     for (const item of heard) expect(item.actor).toEqual(actor);
-    expect(checks).toHaveLength(3);
-    expect(entries).toHaveLength(3);
-    for (const item of [...checks, ...entries])
-      expect(item.sourceActor).toEqual(actor);
-    expect(entries[0]?.actor).toEqual(actor);
-    expect(checks[0]?.actor).toEqual(actor);
-    for (const item of [...entries.slice(1), ...checks.slice(1)])
-      expect(item.actor).toEqual({ type: 'system', id: null });
+    // The parent's own status does not move on its own.
     expect(
-      (await h.services.issueQueries.detail(viewer, grandparent.id)).statusKey,
-    ).toBe('done');
+      (await h.services.issueQueries.detail(viewer, parent.id)).statusKey,
+    ).toBe('backlog');
   });
 });

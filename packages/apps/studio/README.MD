@@ -21,7 +21,7 @@ pnpm dev
 pnpm lint && pnpm typecheck && pnpm test && pnpm openapi:check && pnpm cli-reference:check
 ```
 
-Type-aware lint and typecheck load the framework's sources too; give Node a larger heap if they run out of memory (`NODE_OPTIONS=--max-old-space-size=6144`).
+Type-aware lint and typecheck load the framework's sources too. The lint scripts allow a 4 GiB Node heap; give typecheck a larger heap if it runs out of memory (`NODE_OPTIONS=--max-old-space-size=6144`).
 
 Studio's database migrations follow `AGENTS.md`: once a migration has been merged it is never edited, and every later change is a new migration, because installations keep their data across updates.
 
@@ -33,13 +33,13 @@ Studio's database migrations follow `AGENTS.md`: once a migration has been merge
 ## Build
 
 - `pnpm build` builds `dist/`, and `pnpm build --tar` packs it for a deployment.
-- The `Dockerfile` builds an image from the sources with the repository root as the build context, `docker build -f packages/apps/studio/Dockerfile --build-arg APP_DIR=packages/apps/studio .`, or from a `dist/` built with `pnpm build --target linux-x64` and `--build-arg DIST=prebuilt`.
+- The `Dockerfile` builds an image from the sources with the repository root as the build context, `docker build -f packages/apps/studio/Dockerfile --build-arg APP_DIR=packages/apps/studio .`, or from a `dist/` built with `pnpm build --target linux-x64` and `--build-arg DIST=prebuilt`. `pnpm build` also packs the `nb-studio` and `nocobase-runner` packages Studio serves into `dist/runners/` (it needs the npm registry for their dependencies), so every build and image serves the CLI and runner it was built with.
 
 ## Documentation
 
 | File                                                       | What it covers                                                       |
 | ---------------------------------------------------------- | -------------------------------------------------------------------- |
-| `docs/software-development.md`                             | Projects, issues, workflows, online and runner agents                |
+| `docs/software-development.md`                             | Projects, issue statuses, the project manager and agents             |
 | `docs/knowledge.md`                                        | The knowledge base for people and agents                             |
 | `docs/releases.md`                                         | Apps, environments, releases and deployments                         |
 | `docs/permission-scopes.md`, `docs/authorization-needs.md` | Roles and what each business action allows                           |

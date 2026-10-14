@@ -84,7 +84,11 @@ export function UnreleasedChanges({
               </Link>
               <span className='min-w-0 truncate'>{issue.title}</span>
               {issue.staging ? (
-                <Badge variant='secondary' className='ml-auto shrink-0'>
+                <Badge
+                  data-size='sm'
+                  variant='secondary'
+                  className='ml-auto shrink-0'
+                >
                   {words.staging}
                 </Badge>
               ) : null}
@@ -152,7 +156,7 @@ export function PreviewList({
                 {preview.identifier}
               </Link>
               <span className='min-w-0 flex-1 truncate'>{preview.title}</span>
-              <IssueStatusBadge status={preview.status} />
+              <IssueStatusBadge status={preview.status} size='sm' />
               {preview.runtime ? (
                 <span className='text-xs text-muted-foreground'>
                   {preview.runtime}

@@ -1,13 +1,9 @@
 /**
  * "Waiting for you" on the issue page: the decisions about this issue still
  * waiting on the viewer (`GET /api/inbox/waiting?subject=issue:<id>`), each as a card worded and decided by its
- * inbox contributor (`registry.ts`): an approval, a design proposal, a failed run, a suggested executor, a pull request
- * to merge, a blocked agent. A card offers its contributor's actions, or, for a decision a section of the page already
- * holds (the design proposal), the way there (`Here`); deciding marks the inbox item read. Nothing renders while
- * nothing waits.
- *
- * The issue page places it above the description; while a card decides the issue's pending approval, the page leaves out
- * the projects plugin's own approval card (`useWaitingCoversApproval`, `use-waiting.ts`).
+ * inbox contributor (`registry.ts`): a failed run, a pull request to merge, a blocked agent. A card offers its
+ * contributor's actions, or, for a decision a section of the page already holds, the way there (`Here`); deciding marks
+ * the inbox item read. Nothing renders while nothing waits. The issue page places it above the description.
  */
 import { useInboxActions } from '@nocobase/app-plugin-notification-in-app/client/inbox';
 import { PmTag } from '@nocobase/app-plugin-projects/client/kit';
@@ -35,11 +31,16 @@ import { useWaiting } from './use-waiting.js';
 
 export function IssueWaitingSection({
   issue,
+  covered,
 }: {
   readonly issue: IssueDetail;
+  /** Decisions the page already shows elsewhere, such as in its summary; left out here. */
+  readonly covered?: (entry: InboxEntry) => boolean;
 }): ReactElement | null {
   const { t } = useTranslation(APP_NS);
-  const entries = useWaiting(issue).data ?? [];
+  const entries = (useWaiting(issue).data ?? []).filter(
+    (entry) => !covered?.(entry),
+  );
   if (entries.length === 0) return null;
   return (
     <section

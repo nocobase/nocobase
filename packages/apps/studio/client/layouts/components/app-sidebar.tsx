@@ -223,9 +223,19 @@ export function AppSidebarFooter(): ReactElement {
         <div className='truncate text-sm font-medium text-sidebar-foreground'>
           {appName}
         </div>
-        <div className='mt-0.5 text-xs whitespace-nowrap text-sidebar-foreground/70'>
-          {appVersion}
-        </div>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span
+                className='mt-0.5 block min-w-0 max-w-full truncate rounded-sm text-xs text-sidebar-foreground/70 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring'
+                tabIndex={0}
+              />
+            }
+          >
+            {appVersion}
+          </TooltipTrigger>
+          <TooltipContent>{appVersion}</TooltipContent>
+        </Tooltip>
       </div>
     </SidebarFooter>
   );

@@ -92,7 +92,6 @@ export function createProjectRoutes(projects: ProjectService): Hono<ViewerEnv> {
         args: ['name'],
         flags: {
           leadUserId: { name: 'lead' },
-          workflowId: { name: 'workflow' },
           description: { contentFile: true },
         },
         action: 'pm.projects/create',
@@ -158,11 +157,10 @@ export function createProjectRoutes(projects: ProjectService): Hono<ViewerEnv> {
         flags: {
           projectId: { name: 'project' },
           leadUserId: { name: 'lead' },
-          workflowId: { name: 'workflow' },
           description: { contentFile: true },
         },
       }),
-      description: `${manage} Switching \`workflowId\` is refused while an issue is in a status the new workflow lacks (400 \`WORKFLOW_STATUS_CONFLICT\`).`,
+      description: manage,
       responses: {
         200: dataResponse(ProjectDetailSchema),
         ...apiErrorResponses,

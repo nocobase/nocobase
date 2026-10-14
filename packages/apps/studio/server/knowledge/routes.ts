@@ -1,8 +1,8 @@
 /**
  * `/api/kb`: the knowledge base as the person or the run asking reads it, the `nb-studio kb` commands (`views.ts`). A
  * person signs in or uses an API key (its scope honoured); a run uses its token. Reading needs `kb.knowledge` `read`,
- * proposing `propose`, from Studio's roles, and for a run only what its agent is configured with
- * (those agents may be given, `../access/action-policy.ts`, through the action gate), checked before the input.
+ * proposing `propose`, from Studio's roles, within Studio's command scope for runs
+ * (`../access/action-policy.ts`, through the action gate), checked before the input.
  *
  * | route                          | command                  | what                                                     |
  * | ------------------------------ | ------------------------ | -------------------------------------------------------- |

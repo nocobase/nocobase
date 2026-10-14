@@ -16,16 +16,15 @@ nb-studio project create <name>
 | -------- | ----------- |
 | `name`   |             |
 
-| Flag            | Type        | Description                    |
-| --------------- | ----------- | ------------------------------ |
-| `--description` | string      | (or --description-file <path>) |
-| `--visibility`  | everyone \\ | members                        |           |
-| `--status`      | planned \\  | in_progress \\                 | paused \\ | completed \\ | cancelled |     |
-| `--priority`    | urgent \\   | high \\                        | medium \\ | low \\       | none      |     |
-| `--lead`        | string      |                                |
-| `--start-date`  | string      |                                |
-| `--due-date`    | string      |                                |
-| `--workflow`    | string      |                                |
+| Flag            | Type                                                       | Description                    |
+| --------------- | ---------------------------------------------------------- | ------------------------------ |
+| `--description` | string                                                     | (or --description-file <path>) |
+| `--visibility`  | everyone \| members                                        |                                |
+| `--status`      | planned \| in_progress \| paused \| completed \| cancelled |                                |
+| `--priority`    | urgent \| high \| medium \| low \| none                    |                                |
+| `--lead`        | string                                                     |                                |
+| `--start-date`  | string                                                     |                                |
+| `--due-date`    | string                                                     |                                |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -38,6 +37,42 @@ nb-studio project create <name>
 ```bash
 nb-studio project create "Mobile app" --lead <user>
 ```
+
+## project default-skills get
+
+Get the default skills for new projects
+
+An empty list by default. Existing projects keep their own attachments. Requires agents.agents read or manage.
+
+```bash
+nb-studio project default-skills get
+```
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key); needs the action `agents.agents/read`.
+
+**Request:** `GET /api/projectDefaultSkills` (`projectDefaultSkillsGet`)
+
+## project default-skills set
+
+Set the default skills for new projects
+
+Validates skill ids and replaces the defaults. An empty array clears them. Only projects created afterwards copy this list, within their creation transaction. Requires agents.agents manage.
+
+```bash
+nb-studio project default-skills set --skills <string[]>
+```
+
+| Flag       | Type     | Description            |
+| ---------- | -------- | ---------------------- |
+| `--skills` | string[] | (required; repeatable) |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key); needs the action `agents.agents/manage`.
+
+**Request:** `PUT /api/projectDefaultSkills` (`projectDefaultSkillsSet`)
 
 ## project delete
 
@@ -140,6 +175,10 @@ nb-studio project invitation resend <invitation>
 | ------------ | ----------- |
 | `invitation` |             |
 
+| Flag           | Type    | Description                                                                                                |
+| -------------- | ------- | ---------------------------------------------------------------------------------------------------------- |
+| `--send-email` | boolean | Defaults to true. Set false to generate a new link without sending email. The previous link stops working. |
+
 **Output:** One record, field by field; with `--json`, `result.data`.
 
 **Who:** People (a sign-in or an API key).
@@ -200,17 +239,17 @@ nb-studio project location add <project>
 | --------- | ----------- |
 | `project` |             |
 
-| Flag                 | Type       | Description                                                                                                                                                                                                                                                             |
-| -------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--code-location`    | newRepo \\ | existingRepo \\                                                                                                                                                                                                                                                         | runnerDirectory |     |
-| `--init-agent`       | string     |                                                                                                                                                                                                                                                                         |
-| `--new-repo`         | json       |                                                                                                                                                                                                                                                                         |
-| `--existing-repo`    | json       | Picked through a connection (`connectionId`, `repoId`, `fullName`), or given by its clone URL alone.                                                                                                                                                                    |
-| `--runner-directory` | json       |                                                                                                                                                                                                                                                                         |
-| `--label`            | string     |                                                                                                                                                                                                                                                                         |
-| `--deploy`           | json       | A repository’s "Deploy & previews" choices: the Apps they need are created and linked once it is added.                                                                                                                                                                 |
-| `--ci`               | json       | A "Configure CI" run carried out once the repository is added: a new repository’s workflows are committed once it is initialized, an existing one’s proposed in a pull request, an agent’s issue created (`POST /api/repositoryDeployments/{resourceId}/ci/configure`). |
-| `--file`             | path       | The request body as a JSON object; the flags override its fields.                                                                                                                                                                                                       |
+| Flag                 | Type                                       | Description                                                                                                                                                                                                                                                             |
+| -------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--code-location`    | newRepo \| existingRepo \| runnerDirectory |                                                                                                                                                                                                                                                                         |
+| `--init-agent`       | string                                     |                                                                                                                                                                                                                                                                         |
+| `--new-repo`         | json                                       |                                                                                                                                                                                                                                                                         |
+| `--existing-repo`    | json                                       | Picked through a connection (`connectionId`, `repoId`, `fullName`), or given by its clone URL alone.                                                                                                                                                                    |
+| `--runner-directory` | json                                       |                                                                                                                                                                                                                                                                         |
+| `--label`            | string                                     |                                                                                                                                                                                                                                                                         |
+| `--deploy`           | json                                       | A repository’s "Deploy & previews" choices: the Apps they need are created and linked once it is added.                                                                                                                                                                 |
+| `--ci`               | json                                       | A "Configure CI" run carried out once the repository is added: a new repository’s workflows are committed once it is initialized, an existing one’s proposed in a pull request, an agent’s issue created (`POST /api/repositoryDeployments/{resourceId}/ci/configure`). |
+| `--file`             | path                                       | The request body as a JSON object; the flags override its fields.                                                                                                                                                                                                       |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -307,16 +346,16 @@ nb-studio project resource add <project> --type <string>
 | --------- | ----------- |
 | `project` |             |
 
-| Flag            | Type       | Description                    |
-| --------------- | ---------- | ------------------------------ |
-| `--type`        | gitRepo \\ | directory                      | (required) |
-| `--url`         | string     |                                |
-| `--default-ref` | string     |                                |
-| `--binding`     | json       |                                |
-| `--runner`      | string     |                                |
-| `--path`        | string     |                                |
-| `--label`       | string     |                                |
-| `--init-prompt` | string     | (or --init-prompt-file <path>) |
+| Flag            | Type                 | Description                    |
+| --------------- | -------------------- | ------------------------------ |
+| `--type`        | gitRepo \| directory | (required)                     |
+| `--url`         | string               |                                |
+| `--default-ref` | string               |                                |
+| `--binding`     | json                 |                                |
+| `--runner`      | string               |                                |
+| `--path`        | string               |                                |
+| `--label`       | string               |                                |
+| `--init-prompt` | string               | (or --init-prompt-file <path>) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -440,20 +479,20 @@ For whoever may create projects. Creates the project with its workflow and worki
 nb-studio project setup create
 ```
 
-| Flag                 | Type       | Description                                                                                                                                                                                                                                                             |
-| -------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--name`             | string     |                                                                                                                                                                                                                                                                         |
-| `--description`      | string     |                                                                                                                                                                                                                                                                         |
-| `--workflow`         | string     |                                                                                                                                                                                                                                                                         |
-| `--code-location`    | newRepo \\ | existingRepo \\                                                                                                                                                                                                                                                         | runnerDirectory \\ | none |     |
-| `--init-agent`       | string     |                                                                                                                                                                                                                                                                         |
-| `--new-repo`         | json       |                                                                                                                                                                                                                                                                         |
-| `--existing-repo`    | json       | Picked through a connection (`connectionId`, `repoId`, `fullName`), or given by its clone URL alone.                                                                                                                                                                    |
-| `--runner-directory` | json       |                                                                                                                                                                                                                                                                         |
-| `--label`            | string     |                                                                                                                                                                                                                                                                         |
-| `--deploy`           | json       | A repository’s "Deploy & previews" choices: the Apps they need are created and linked once it is added.                                                                                                                                                                 |
-| `--ci`               | json       | A "Configure CI" run carried out once the repository is added: a new repository’s workflows are committed once it is initialized, an existing one’s proposed in a pull request, an agent’s issue created (`POST /api/repositoryDeployments/{resourceId}/ci/configure`). |
-| `--file`             | path       | The request body as a JSON object; the flags override its fields.                                                                                                                                                                                                       |
+| Flag                 | Type                                               | Description                                                                                                                                                                                                                                                             |
+| -------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--name`             | string                                             |                                                                                                                                                                                                                                                                         |
+| `--description`      | string                                             |                                                                                                                                                                                                                                                                         |
+| `--workflow`         | string                                             |                                                                                                                                                                                                                                                                         |
+| `--code-location`    | newRepo \| existingRepo \| runnerDirectory \| none |                                                                                                                                                                                                                                                                         |
+| `--init-agent`       | string                                             |                                                                                                                                                                                                                                                                         |
+| `--new-repo`         | json                                               |                                                                                                                                                                                                                                                                         |
+| `--existing-repo`    | json                                               | Picked through a connection (`connectionId`, `repoId`, `fullName`), or given by its clone URL alone.                                                                                                                                                                    |
+| `--runner-directory` | json                                               |                                                                                                                                                                                                                                                                         |
+| `--label`            | string                                             |                                                                                                                                                                                                                                                                         |
+| `--deploy`           | json                                               | A repository’s "Deploy & previews" choices: the Apps they need are created and linked once it is added.                                                                                                                                                                 |
+| `--ci`               | json                                               | A "Configure CI" run carried out once the repository is added: a new repository’s workflows are committed once it is initialized, an existing one’s proposed in a pull request, an agent’s issue created (`POST /api/repositoryDeployments/{resourceId}/ci/configure`). |
+| `--file`             | path                                               | The request body as a JSON object; the flags override its fields.                                                                                                                                                                                                       |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -512,7 +551,7 @@ nb-studio project setup retry <project>
 
 Update a project
 
-Needs `manage` on the project: its lead, or a wider scope. Switching `workflowId` is refused while an issue is in a status the new workflow lacks (400 `WORKFLOW_STATUS_CONFLICT`).
+Needs `manage` on the project: its lead, or a wider scope.
 
 ```bash
 nb-studio project update <project>
@@ -522,17 +561,16 @@ nb-studio project update <project>
 | --------- | ----------- |
 | `project` |             |
 
-| Flag            | Type        | Description                    |
-| --------------- | ----------- | ------------------------------ |
-| `--name`        | string      |                                |
-| `--description` | string      | (or --description-file <path>) |
-| `--visibility`  | everyone \\ | members                        |           |
-| `--status`      | planned \\  | in_progress \\                 | paused \\ | completed \\ | cancelled |     |
-| `--priority`    | urgent \\   | high \\                        | medium \\ | low \\       | none      |     |
-| `--lead`        | string      |                                |
-| `--start-date`  | string      |                                |
-| `--due-date`    | string      |                                |
-| `--workflow`    | string      |                                |
+| Flag            | Type                                                       | Description                    |
+| --------------- | ---------------------------------------------------------- | ------------------------------ |
+| `--name`        | string                                                     |                                |
+| `--description` | string                                                     | (or --description-file <path>) |
+| `--visibility`  | everyone \| members                                        |                                |
+| `--status`      | planned \| in_progress \| paused \| completed \| cancelled |                                |
+| `--priority`    | urgent \| high \| medium \| low \| none                    |                                |
+| `--lead`        | string                                                     |                                |
+| `--start-date`  | string                                                     |                                |
+| `--due-date`    | string                                                     |                                |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

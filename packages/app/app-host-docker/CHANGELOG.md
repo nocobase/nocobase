@@ -1,5 +1,15 @@
 # @nocobase/app-host-docker
 
+## 0.1.0-beta.1
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-host@0.1.0-beta.15
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/logging@0.1.0-beta.7
+
 ## 0.1.0-beta.0
 
 ### Minor Changes

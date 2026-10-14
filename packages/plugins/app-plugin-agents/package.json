@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-agents",
   "displayName": "Agents",
   "description": "Agents for NocoBase applications: agents, the model services online agents call, their runs and conversations, and the runners people connect to run them (registration, the long-poll claim, slots, the sweeper, build jobs, and the runner and CLI tarballs the application serves).",
-  "version": "0.1.0-beta.4",
+  "version": "0.1.0-beta.10",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -66,9 +66,9 @@
       "types": "./shared/conversations.ts",
       "import": "./shared/conversations.ts"
     },
-    "./shared/presets": {
-      "types": "./shared/presets.ts",
-      "import": "./shared/presets.ts"
+    "./shared/model-catalog": {
+      "types": "./shared/model-catalog.ts",
+      "import": "./shared/model-catalog.ts"
     },
     "./shared/models": {
       "types": "./shared/models.ts",
@@ -181,9 +181,9 @@
         "types": "./dist/shared/conversations.d.ts",
         "import": "./dist/shared/conversations.js"
       },
-      "./shared/presets": {
-        "types": "./dist/shared/presets.d.ts",
-        "import": "./dist/shared/presets.js"
+      "./shared/model-catalog": {
+        "types": "./dist/shared/model-catalog.d.ts",
+        "import": "./dist/shared/model-catalog.js"
       },
       "./shared/models": {
         "types": "./dist/shared/models.d.ts",
@@ -233,7 +233,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && node ./scripts/bundle-just-bash.mjs && nocobase-db-manifests",
+    "build": "tsc -p tsconfig.json && nocobase-db-manifests",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.type-tests.json --noEmit",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint . --max-warnings 0",
@@ -300,10 +300,8 @@
     "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
-    "esbuild": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
-    "just-bash": "catalog:",
     "prettier": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",

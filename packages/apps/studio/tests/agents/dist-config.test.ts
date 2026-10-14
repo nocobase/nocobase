@@ -9,11 +9,13 @@ import { pathToFileURL } from 'node:url';
 import runnerPackage from '@nocobase/agent-runner/package.json' with { type: 'json' };
 import studioCliPackage from '@nocobase/studio-cli/package.json' with { type: 'json' };
 import { RUNNER_PRODUCT } from '@nocobase/agent-protocol';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   installedServedVersions,
+  packedVersionProblems,
   SERVED_NPM_PACKAGES,
+  servedPackagesDir,
   servedVersions,
 } from '../../server/agents/served-versions.js';
 import agents from '../../server/config/agents.js';
@@ -26,10 +28,63 @@ const configWith = (env: Record<string, string | undefined>) =>
   agents({ paths, env } as unknown as Parameters<typeof agents>[0]);
 
 describe('agents.dist.dir', () => {
+  it('defaults run retention to 14 days and publishes only its safe leaf', () => {
+    expect(configWith({}).runs?.retentionDays).toBe(14);
+    expect(agents.rules?.public).toEqual(['runs.retentionDays']);
+  });
+
+  it('reports invalid retention as a configuration error and accepts zero', async () => {
+    const error = vi.fn();
+    const context = { error, warning: vi.fn(), isUserProvided: () => true };
+    const validate = agents.rules!.validators[0]!;
+    await validate({ runs: { retentionDays: 0 } } as never, context);
+    expect(error).not.toHaveBeenCalled();
+    for (const days of [-1, 1.5, '14', null, false]) {
+      await validate({ runs: { retentionDays: days } } as never, context);
+      expect(error).toHaveBeenLastCalledWith(
+        'runs.retentionDays',
+        'Must be a non-negative integer.',
+      );
+    }
+    expect(error).toHaveBeenCalledTimes(5);
+  });
   const directories: string[] = [];
   afterEach(() => {
     for (const directory of directories.splice(0))
       rmSync(directory, { recursive: true, force: true });
+  });
+
+  const tempDir = (prefix: string): string => {
+    const directory = mkdtempSync(path.join(tmpdir(), prefix));
+    directories.push(directory);
+    return directory;
+  };
+
+  it('serves the packages the build carries', () => {
+    const built = tempDir('studio-built-');
+    mkdirSync(path.join(built, 'stable'));
+    expect(servedPackagesDir(undefined, pathToFileURL(`${built}/`))).toBe(
+      built,
+    );
+  });
+
+  it('prefers NB_STUDIO_RUNNERS_DIST over the packages the build carries', () => {
+    const built = tempDir('studio-built-');
+    mkdirSync(path.join(built, 'stable'));
+    const variable = tempDir('studio-runners-');
+    mkdirSync(path.join(variable, 'stable'));
+    expect(servedPackagesDir(variable, pathToFileURL(`${built}/`))).toBe(
+      variable,
+    );
+    const empty = tempDir('studio-runners-');
+    expect(servedPackagesDir(empty, pathToFileURL(`${built}/`))).toBe(built);
+  });
+
+  it('keeps the plugin default when the build carries no packages', () => {
+    const built = tempDir('studio-built-');
+    expect(
+      servedPackagesDir(undefined, pathToFileURL(`${built}/`)),
+    ).toBeUndefined();
   });
 
   it('serves the tarballs the image baked in', () => {
@@ -49,6 +104,70 @@ describe('agents.dist.dir', () => {
     expect(
       configWith({ NB_STUDIO_RUNNERS_DIST: directory }).dist?.dir,
     ).toBeUndefined();
+  });
+});
+
+describe('the packages a build carries', () => {
+  const directories: string[] = [];
+  afterEach(() => {
+    for (const directory of directories.splice(0))
+      rmSync(directory, { recursive: true, force: true });
+  });
+
+  const recorded = {
+    [RUNNER_PRODUCT]: { package: '@nocobase/agent-runner', version: '1.2.3' },
+    'nb-studio': { package: '@nocobase/studio-cli', version: '0.4.0' },
+  };
+  const pack = (
+    dir: string,
+    product: string,
+    versions: Record<string, string[]>,
+  ): void => {
+    mkdirSync(path.join(dir, 'stable', product), { recursive: true });
+    writeFileSync(
+      path.join(dir, 'stable', product, 'manifest.json'),
+      JSON.stringify({
+        schema: 1,
+        product,
+        versions: Object.fromEntries(
+          Object.entries(versions).map(([version, targets]) => [
+            version,
+            {
+              targets: Object.fromEntries(
+                targets.map((target) => [target, {}]),
+              ),
+            },
+          ]),
+        ),
+      }),
+    );
+  };
+
+  it('agree with the recorded versions when each lists exactly its own', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'studio-packed-'));
+    directories.push(dir);
+    pack(dir, RUNNER_PRODUCT, { '1.2.3': ['universal'] });
+    pack(dir, 'nb-studio', { '0.4.0': ['universal'] });
+    expect(packedVersionProblems(dir, recorded)).toEqual([]);
+  });
+
+  it('report a missing, different, extra or non-universal package', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'studio-packed-'));
+    directories.push(dir);
+    pack(dir, RUNNER_PRODUCT, { '1.2.4': ['universal'] });
+    expect(packedVersionProblems(dir, recorded)).toEqual([
+      `${RUNNER_PRODUCT}: packed 1.2.4, but @nocobase/agent-runner@1.2.3 is recorded.`,
+      expect.stringMatching(/^nb-studio: .* is missing or not JSON\.$/u),
+    ]);
+    pack(dir, RUNNER_PRODUCT, {
+      '1.2.3': ['universal'],
+      '1.2.2': ['universal'],
+    });
+    pack(dir, 'nb-studio', { '0.4.0': ['linux-x64'] });
+    expect(packedVersionProblems(dir, recorded)).toEqual([
+      `${RUNNER_PRODUCT}: packed 1.2.3, 1.2.2, but @nocobase/agent-runner@1.2.3 is recorded.`,
+      'nb-studio: 0.4.0 has no universal package.',
+    ]);
   });
 });
 

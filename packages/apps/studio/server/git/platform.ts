@@ -89,6 +89,7 @@ export interface GitAuth {
 
 /** What Studio stores of a pull request (`studioPullRequests`). */
 export interface PullRequestSnapshot {
+  readonly labels?: readonly string[];
   readonly repo: string;
   readonly number: number;
   readonly url: string;
@@ -97,6 +98,8 @@ export interface PullRequestSnapshot {
   readonly state: PullRequestState;
   readonly draft: boolean;
   readonly headRef: string;
+  /** Fresh host response only; unknown source repositories are ineligible for a run's starting branch. */
+  readonly headRepo?: string;
   readonly baseRef: string;
   readonly headSha: string;
   readonly authorLogin: string;
@@ -359,6 +362,19 @@ export interface WebhookParse {
 }
 
 export interface GitPlatform {
+  addPullRequestLabel(
+    auth: GitAuth,
+    repo: string,
+    number: number,
+    label: string,
+  ): Promise<void>;
+  removePullRequestLabel(
+    auth: GitAuth,
+    repo: string,
+    number: number,
+    label: string,
+  ): Promise<void>;
+
   /** Which provider it is, and what it offers (`providers.ts`). */
   readonly descriptor: GitProviderDescriptor;
   /** Where a host's REST API is, from its web origin (`overrides` by host, `studio.git.apiBaseUrls`). */
@@ -591,12 +607,16 @@ export interface GitPlatform {
   ): Promise<string | null>;
   /**
    * An installation token: for the API with the installation's permissions, or, with `repositories`, limited to them
-   * and to writing their contents (a push credential).
+   * and to writing their contents (a push credential). A kept token is reused while it has enough validity left; with
+   * `refresh`, a new one is minted whatever is kept.
    */
   installationToken(
     app: AppCredentials,
     installationId: string,
-    options?: { readonly repositories?: readonly string[] },
+    options?: {
+      readonly repositories?: readonly string[];
+      readonly refresh?: boolean;
+    },
   ): Promise<ExpiringToken>;
   /** An installation of the app by its id, with the account it is on; null when it is not the app's. */
   getInstallation(
@@ -660,15 +680,21 @@ export interface GitPlatform {
  */
 export class GitApiError extends Error {
   public readonly retryAt: string | null;
+  /** The error code the host's OAuth pages refused with (`bad_verification_code`), when they did. */
+  public readonly hostError: string | null;
 
   public constructor(
     public readonly status: number,
     message: string,
-    options: { readonly retryAt?: string | null } = {},
+    options: {
+      readonly retryAt?: string | null;
+      readonly hostError?: string | null;
+    } = {},
   ) {
     super(message);
     this.name = 'GitApiError';
     this.retryAt = options.retryAt ?? null;
+    this.hostError = options.hostError ?? null;
   }
 
   /** Whether the host refused because of its rate limit. */

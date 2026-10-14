@@ -9,9 +9,7 @@ import { MarkdownView } from '#components/markdown-view';
 import {
   IssueAddBar,
   IssueAddButton,
-  IssueApprovalCard,
   IssueAttachments,
-  IssueChecklist,
   IssueDeleteButton,
   IssueDependencies,
   IssueDescription,
@@ -19,7 +17,6 @@ import {
   IssueFileDrop,
   IssueFilesButton,
   IssueHeader,
-  IssueRecentApprovals,
   IssueSection,
   IssueSubtasks,
   IssueSurface,
@@ -153,50 +150,6 @@ export function IssueDetailDemo(): ReactElement {
                 </IssueAddButton>
               )}
             </IssueAddBar>
-            <IssueApprovalCard
-              from={IN_PROGRESS}
-              to={DONE}
-              requester='Ada Lovelace'
-              requestedAt={ago(20)}
-              approvers={['Grace Hopper']}
-              canDecide
-              canWithdraw={false}
-              onDecide={later}
-            />
-            <IssueRecentApprovals
-              approvals={[
-                {
-                  id: 'a1',
-                  from: TODO,
-                  to: IN_PROGRESS,
-                  outcome: 'Approved',
-                  outcomeTone: 'green',
-                  decidedBy: 'Grace Hopper',
-                  at: ago(300),
-                },
-              ]}
-            />
-            <IssueChecklist
-              status={IN_PROGRESS}
-              items={[
-                {
-                  key: 'tests',
-                  label: 'Tests pass',
-                  required: true,
-                  checked: true,
-                  checkedBy: 'Code Agent',
-                  checkedAt: ago(5),
-                },
-                {
-                  key: 'docs',
-                  label: 'Docs updated',
-                  required: false,
-                  checked: false,
-                },
-              ]}
-              complete
-              onToggle={later}
-            />
             <IssueSubtasks
               groups={[
                 {

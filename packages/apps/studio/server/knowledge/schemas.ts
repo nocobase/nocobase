@@ -62,7 +62,6 @@ export const KnowledgeSearchConfigSchema: z.ZodType<KnowledgeSearchConfig> = z
         description:
           'The spaces with contextual retrieval, as `system:` or `project:<id>`.',
       }),
-      wholeTokens: z.number().int(),
       chunking: z
         .object({
           headingDepth: z.number().int(),
@@ -95,10 +94,6 @@ export const KnowledgeSearchConfigSchema: z.ZodType<KnowledgeSearchConfig> = z
           type: z.string().meta({
             description:
               'The vector store type, such as `sqlite-vec` or `pgvector`.',
-          }),
-          target: z.string().nullable().meta({
-            description:
-              'Where it points, with no secret: a file path, or `postgres://user@host:port/database`.',
           }),
         })
         .nullable()

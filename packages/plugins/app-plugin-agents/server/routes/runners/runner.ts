@@ -269,6 +269,7 @@ export function createRunnerRoutes(
         const response: HeartbeatResponse = {
           ok: true,
           serverTime: services.clock.now().toISOString(),
+          protocolVersion: PROTOCOL_VERSION,
           ...upgradeFields(upgrade),
           compatibility: upgradeRequiredOf(runner.protocolVersion),
           cancelRequested: [],
@@ -300,6 +301,7 @@ export function createRunnerRoutes(
       const response: HeartbeatResponse = {
         ok: true,
         serverTime: services.clock.now().toISOString(),
+        protocolVersion: PROTOCOL_VERSION,
         ...upgradeFields(upgrade),
         cancelRequested,
         release,

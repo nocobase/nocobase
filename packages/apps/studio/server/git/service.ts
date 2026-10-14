@@ -49,8 +49,16 @@ import {
   PR_ACTIVITIES,
   WEBHOOK_SECRET_MAX,
   WEBHOOK_SECRET_MIN,
+  FORCE_REASON_MAX,
+  REFERENCE_CHECK_MAX,
+  REFERENCE_CHECKS_MAX,
+  checkSummaryOf,
+  isReferenceCheck,
   mergeBlockerOf,
   mergeCommitTitle,
+  type CheckSummary,
+  type FailedCheckReport,
+  type PullRequestFailedChecks,
   COMMIT_ATTRIBUTIONS,
   type CommitAttribution,
   type GitProjectSettings,
@@ -76,6 +84,7 @@ import {
 } from './links.js';
 import {
   GitApiError,
+  type FailedCheck,
   type GitAuth,
   type GitEvent,
   type PullRequestSnapshot,
@@ -100,6 +109,7 @@ import {
   linkedOpenPullRequests,
   linksOfPullRequest,
   openPullRequestsOf,
+  previewManagedOpenPullRequests,
   pullRequestsOfIssue,
   pullRequestsOfIssues,
   pullRequestView,
@@ -114,6 +124,8 @@ import {
   type RepoRow,
 } from './store.js';
 import { hasLivePreviews } from '../previews/store.js';
+import { createPreviewLabelSync } from './preview-labels.js';
+import { previewLabelState } from '../previews/preferences.js';
 import type { PullRequestEvents, RepoEvents } from './events.js';
 import { createWebhookReceiver, type WebhookReceiver } from './webhooks.js';
 
@@ -149,7 +161,7 @@ export interface StudioGitDeps {
     | 'issueContext'
     | 'projects'
     | 'kinds'
-    | 'workflowEvents'
+    | 'statusEvents'
   >;
   readonly providers: GitProviders;
   readonly connections: GitConnections;
@@ -166,6 +178,8 @@ export interface StudioGitDeps {
   readonly events?: PullRequestEvents;
   /** Where pushes and workflow runs a webhook delivers are told (`events.ts`). */
   readonly repoEvents?: RepoEvents;
+  /** A pull request's preview label state changed, so open pages read the issue's previews again. */
+  readonly onLabelChanged?: (pullRequestId: string) => void;
 }
 
 /** Who links: a person, or an agent on a run (named by its id). */
@@ -205,6 +219,10 @@ export interface ClosePullRequestInput {
 }
 
 export interface StudioGit {
+  /** Fresh same-repository open PR heads, read before the claim transaction. No stored snapshot changes. */
+  checkoutPullRequests(issueId: string): Promise<ReadonlyMap<string, string>>;
+  syncPreviewLabels(issueId: string): Promise<void>;
+
   list(viewer: Viewer, issue: string): Promise<IssuePullRequests>;
   link(
     viewer: Viewer,
@@ -260,13 +278,25 @@ export interface StudioGit {
     issue: string,
     pullRequestId: string,
   ): Promise<IssuePullRequest>;
-  /** Merges from Studio as the viewer when they authorized the app, else as the repository's connection. */
+  /**
+   * Merges from Studio as the viewer when they authorized the app, else as the repository's connection; `force` goes
+   * past failed required checks with a `reason` (`MergePullRequestRequest`).
+   */
   merge(
     viewer: Viewer,
     issue: string,
     pullRequestId: string,
     expectedHeadSha: unknown,
+    options?: { readonly force?: unknown; readonly reason?: unknown },
   ): Promise<IssuePullRequest>;
+  /** Why the checks of a linked pull request's head failed, read from the host now (`nb-studio pr checks`). */
+  failedChecks(
+    viewer: Viewer,
+    issue: string,
+    pullRequestId: string,
+  ): Promise<PullRequestFailedChecks>;
+  /** The failed checks of a commit, read through the repository's connection, for an agent woken by them (`flow.ts`). */
+  explainFailures(repo: RepoRow, sha: string): Promise<FailedCheck[]>;
   markMerged(
     viewer: Viewer,
     issue: string,
@@ -475,6 +505,40 @@ type Ci = NonNullable<StoreOptions['ci']>;
 const text = (value: unknown, max: number): string | null =>
   typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : null;
 
+/** What a forced merge says on the pull request's conversation: who decided is the comment's author. */
+function forceMergeComment(audit: {
+  readonly reason: string;
+  readonly headSha: string;
+  readonly failedChecks: PullRequestMergePreflight['failedChecks'];
+}): string {
+  const checks = audit.failedChecks.map(({ name, url }) =>
+    url ? `- [${name}](${url})` : `- ${name}`,
+  );
+  return [
+    `Merged from NocoBase Studio although required checks failed on ${audit.headSha.slice(0, 12)}.`,
+    '',
+    `Reason: ${audit.reason}`,
+    ...(checks.length > 0 ? ['', 'Failed checks:', ...checks] : []),
+  ].join('\n');
+}
+
+/** A failed check as `nb-studio pr checks` answers it. */
+export function reportOf(
+  check: FailedCheck,
+  reference: boolean,
+): FailedCheckReport {
+  return {
+    name: check.name,
+    conclusion: check.conclusion,
+    url: check.url,
+    reference,
+    summary: check.summary,
+    annotations: check.annotations,
+    log: check.log,
+    logUnavailable: check.logUnavailable,
+  };
+}
+
 export function createStudioGit(deps: StudioGitDeps): StudioGit {
   const { providers, connections, secrets, flow } = deps;
   /** The platform of the repository's host. */
@@ -486,6 +550,13 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
 
   const readAuth = async (repo: RepoRow): Promise<GitAuth> =>
     (await connections.connectionAuth(repo)).auth;
+
+  const previewLabels = createPreviewLabelSync({
+    conn,
+    platformOf,
+    readAuth,
+    ...(deps.onLabelChanged ? { onChanged: deps.onLabelChanged } : {}),
+  });
 
   /** Whether Studio keeps every open pull request of the repository, linked or not: one of them has a live preview. */
   const tracks = (repo: RepoRow): Promise<boolean> =>
@@ -500,7 +571,13 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
   }
 
   /** The issue as the viewer may see it, else 404 (`DomainError` from the projects plugin, translated by callers). */
+  /** The issue, 404 unless the viewer sees it; nothing of what its page shows. */
   async function visibleIssue(viewer: Viewer, idOrKey: string) {
+    return projects().issueQueries.visible(viewer, idOrKey);
+  }
+
+  /** The issue as its page shows it (its statuses, for what a merge moves it to). */
+  async function issueDetail(viewer: Viewer, idOrKey: string) {
     return projects().issueQueries.detail(viewer, idOrKey);
   }
 
@@ -519,6 +596,29 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       projectId: issue.projectId,
     });
     return access?.manage === true;
+  }
+
+  /** Who may merge past failed required checks: a manager of the issue's project, or whoever closes any issue. */
+  async function canForce(
+    viewer: Viewer,
+    issue: { projectId: string | null },
+  ): Promise<boolean> {
+    if (viewer.actor.type === AGENT_KIND) return false;
+    if (viewer.permissions.scopes['pm.issues/close'] === 'all') return true;
+    if (!issue.projectId) return false;
+    const access = await projects().projects.accessTo(viewer, {
+      projectId: issue.projectId,
+    });
+    return access?.manage === true;
+  }
+
+  /** The blocker of what was read, its required checks folded apart from the repository's reference checks. */
+  function blockerOf(
+    pr: Omit<Parameters<typeof mergeBlockerOf>[0], 'ciState'>,
+    summary: CheckSummary,
+    mergeable?: boolean | null,
+  ): PullRequestMergeBlocker | null {
+    return mergeBlockerOf({ ...pr, ciState: summary.ciState }, mergeable);
   }
 
   async function views(
@@ -542,12 +642,14 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         .map(({ link }) => link.linkedById),
     );
     const reachable = new Map<string, boolean>();
+    const references = new Map<string, readonly string[]>();
     for (const repoId of new Set(rows.map(({ pr }) => pr.repoId))) {
       const repo = await findRepoById(connection, repoId);
       reachable.set(
         repoId,
         !!repo?.connectionId && !!(await connections.find(repo.connectionId)),
       );
+      references.set(repoId, repo?.referenceChecks ?? []);
     }
     return rows.map(({ link, pr }) => ({
       ...pullRequestView(
@@ -566,7 +668,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       autoCompleteDisabled: link.autoCompleteDisabled,
       linkedAt: link.createdAt,
       mergeBlocker:
-        mergeBlockerOf(pr) ??
+        blockerOf(pr, checkSummaryOf(pr, references.get(pr.repoId) ?? [])) ??
         (reachable.get(pr.repoId) ? null : ('notConfigured' as const)),
     }));
   }
@@ -714,7 +816,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     };
   }
 
-  /** Reads one linked pull request with its validators; writes only when something changed. */
+  /** Reads one watched pull request with its validators; writes only when something changed. */
   async function pollPullRequest(
     repo: RepoRow,
     pr: PullRequestRow,
@@ -736,7 +838,10 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         ? { status: null, runs: null }
         : { status: pr.statusEtag, runs: pr.runsEtag },
     );
-    if (pull.notModified && !ci) return;
+    if (pull.notModified && !ci) {
+      await flow.deliverSignals(repo, pr);
+      return;
+    }
     await flow.store(repo, snapshot, {
       ...(pull.notModified ? {} : { pullEtag: pull.etag }),
       ...(ci ? { ci } : {}),
@@ -745,6 +850,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
 
   /** A new link: the owner is asked to merge it when the issue is in review, and the rest of Studio hears of it. */
   async function afterLink(issueId: string, pullRequestId: string) {
+    await previewLabels.sync(pullRequestId);
     await flow.requestMerges(issueId, pullRequestId);
     await deps.events?.emit({ type: 'linked', issueId, pullRequestId });
   }
@@ -820,7 +926,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     if (others.length > 0) return keep('otherPrs');
     let target: string | null;
     try {
-      target = (await projects().workflowEvents.target(MERGED_EVENT, issue.id))
+      target = (await projects().statusEvents.target(MERGED_EVENT, issue.id))
         .to;
     } catch {
       // The event is not registered (an application without Studio's workflow binding): nothing moves it.
@@ -850,33 +956,39 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     pr: PullRequestRow;
     auth: GitAuth;
   }> {
-    const issue = await visibleIssue(viewer, idOrKey);
+    const issue = await issueDetail(viewer, idOrKey);
     if (!(await canMerge(viewer, issue)))
       throw forbidden(
         'Only the issue’s owner or a manager of its project may merge.',
       );
     const { link, pr, repo } = await linked(issue.id, pullRequestId);
     const statusAfter = await outcomeOf(issue, link);
+    const mayForce = await canForce(viewer, issue);
     const acting = await connections
       .actingAuth(repo, viewer.userId)
       .catch((error: unknown) => {
         throw hostFailure(error);
       });
-    if (acting.as === 'none')
+    if (acting.as === 'none') {
+      const summary = checkSummaryOf(pr, repo.referenceChecks);
       return {
         issueId: issue.id,
         repo,
         pr,
         auth: acting.auth,
         preflight: {
-          blocker: mergeBlockerOf(pr) ?? 'notConfigured',
+          blocker: blockerOf(pr, summary) ?? 'notConfigured',
           method: 'squash',
           headSha: pr.headSha,
           baseRef: pr.baseRef,
           commitTitle: mergeCommitTitle(pr),
           statusAfter,
+          failedChecks: summary.failed,
+          referenceFailures: summary.referenceFailed,
+          canForce: false,
         },
       };
+    }
     let full;
     try {
       full = await readFull(repo, pr.number, acting.auth);
@@ -887,21 +999,22 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       pullEtag: full.pullEtag,
       ci: full.ci,
     });
+    const summary = checkSummaryOf(full.ci, repo.referenceChecks);
     return {
       issueId: issue.id,
       repo,
       pr: stored,
       auth: acting.auth,
       preflight: {
-        blocker: mergeBlockerOf(
-          { ...full.snapshot, ciState: full.ci.ciState },
-          full.mergeable,
-        ),
+        blocker: blockerOf(full.snapshot, summary, full.mergeable),
         method: 'squash',
         headSha: full.snapshot.headSha,
         baseRef: full.snapshot.baseRef,
         commitTitle: mergeCommitTitle(full.snapshot),
         statusAfter,
+        failedChecks: summary.failed,
+        referenceFailures: summary.referenceFailed,
+        canForce: mayForce,
       },
     };
   }
@@ -927,6 +1040,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     if (links.length === 0 && created === 0 && !tracked)
       return 'notLinked' as const;
     const pr = await findPullRequest(conn(), repo.id, number);
+    if (pr?.state === 'open' && created === 0) await previewLabels.sync(pr.id);
     if (pr?.state === 'open' && !pr.draft) {
       if (MERGE_CHECK_ACTIONS.has(event.action))
         await scheduleMergeChecks(
@@ -944,21 +1058,20 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
   async function receiveChecks(
     repo: RepoRow,
     sha: string,
-    reported: PullRequestCiState | null,
+    _reported: PullRequestCiState | null,
   ) {
     const prs = await linkedOpenAtHead(conn(), repo.id, sha);
     if (prs.length === 0) return 'notLinked' as const;
-    // Every check and status of the head together, as polling reads them; what the delivery says when the host cannot
-    // be read (a private repository without a connection).
+    // Read the complete check set, then revalidate the head under the write lock before applying it.
     const ci = await readAuth(repo)
       .then((auth) => readCi(auth, repo, sha, { status: null, runs: null }))
-      .catch((): Ci | null =>
-        reported === null
-          ? null
-          : { ciState: reported, checks: [], statusEtag: null, runsEtag: null },
-      );
-    if (ci)
-      for (const pr of prs) await flow.store(repo, snapshotOfRow(pr), { ci });
+      .catch((): Ci | null => {
+        console.error(
+          'Studio could not read the complete check set; awaiting a fresh snapshot.',
+        );
+        return null;
+      });
+    if (ci) for (const pr of prs) await flow.storeChecks(repo, pr, sha, ci);
     return null;
   }
 
@@ -1076,7 +1189,9 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       connection: host ? choiceOf(host) : null,
       branchRules: row?.branchRules ?? [],
       wakeOnChecks: row?.wakeOnChecks ?? true,
+      wakeOnChecksPassed: row?.wakeOnChecksPassed ?? true,
       wakeOnConflict: row?.wakeOnConflict ?? true,
+      referenceChecks: row?.referenceChecks ?? [],
       polledAt: row?.polledAt ?? null,
       pollError: row?.pollError ?? null,
       webhookUrl:
@@ -1270,6 +1385,34 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     commitsContained,
     updatePullRequestSection,
 
+    async checkoutPullRequests(issueId) {
+      const heads = new Map<string, string>();
+      for (const { pr } of await pullRequestsOfIssue(conn(), issueId)) {
+        if (pr.state !== 'open') continue;
+        const repo = await findRepoById(conn(), pr.repoId);
+        if (!repo) continue;
+        try {
+          const pull = await platformOf(repo).getPullRequest(
+            await readAuth(repo),
+            repo.repo,
+            pr.number,
+            null,
+          );
+          if (pull.notModified) continue;
+          const snapshot = pull.body.snapshot;
+          if (
+            snapshot.state === 'open' &&
+            snapshot.headRef &&
+            snapshot.headRepo?.toLowerCase() === repo.repo.toLowerCase()
+          )
+            heads.set(pr.id, snapshot.headRef);
+        } catch {
+          // Without fresh source evidence, use the configured branch rule rather than a possibly fork-owned head.
+        }
+      }
+      return heads;
+    },
+
     async list(viewer, idOrKey) {
       const issue = await visibleIssue(viewer, idOrKey);
       const data = await views(conn(), issue.id);
@@ -1354,7 +1497,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     },
 
     async open(viewer, idOrKey, input, by, actingUserId) {
-      const issue = await visibleIssue(viewer, idOrKey);
+      const issue = await issueDetail(viewer, idOrKey);
       if (!canLink(viewer))
         throw forbidden('You may not change this issue’s pull requests.');
       const title = text(input.title, PR_TITLE_MAX);
@@ -1427,7 +1570,10 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
           { pullRequestId: pr.id },
           new Date(now().getTime() + MERGE_CHECK_DELAY_SECONDS * 1000),
         );
-      return viewOf(issue.id, pr.id);
+      return {
+        ...(await viewOf(issue.id, pr.id)),
+        previewLabelSyncFailed: (await previewLabelState(conn(), pr.id)).failed,
+      };
     },
 
     async edit(viewer, idOrKey, pullRequestId, input, actingUserId) {
@@ -1598,6 +1744,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         throw forbidden('You may not change this issue’s pull requests.');
       if (!(await deleteLink(conn(), issue.id, pullRequestId)))
         throw notFound('The pull request link');
+      await previewLabels.sync(pullRequestId);
       await deps.events?.emit({
         type: 'unlinked',
         issueId: issue.id,
@@ -1642,6 +1789,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         pullEtag: full.pullEtag,
         ci: full.ci,
       });
+      await previewLabels.sync(pullRequestId);
       return viewOf(issue.id, pullRequestId);
     },
 
@@ -1649,20 +1797,55 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       return (await check(viewer, idOrKey, pullRequestId)).preflight;
     },
 
-    async merge(viewer, idOrKey, pullRequestId, expectedHeadSha) {
+    async merge(viewer, idOrKey, pullRequestId, expectedHeadSha, options = {}) {
       if (typeof expectedHeadSha !== 'string' || expectedHeadSha.trim() === '')
         throw new ProtocolError(
           'INVALID_REQUEST',
           'expectedHeadSha must be the head commit shown when confirming.',
           { code: 'INVALID_EXPECTED_HEAD' },
         );
+      const force = options.force === true;
+      const reason =
+        typeof options.reason === 'string' ? options.reason.trim() : '';
+      if (force && (!reason || reason.length > FORCE_REASON_MAX))
+        throw new ProtocolError(
+          'INVALID_REQUEST',
+          `A forced merge needs a reason of 1 to ${FORCE_REASON_MAX} characters.`,
+          { code: 'INVALID_FORCE_REASON' },
+        );
       const { preflight, repo, pr, issueId, auth } = await check(
         viewer,
         idOrKey,
         pullRequestId,
       );
-      if (preflight.blocker) throw notMergeable(preflight.blocker);
+      // Only failed required checks can be forced; anything else that blocks the merge still does.
+      if (preflight.blocker && !(force && preflight.blocker === 'ciFailed'))
+        throw notMergeable(preflight.blocker);
+      if (preflight.blocker && !preflight.canForce)
+        throw forbidden(
+          'Only a manager of the issue’s project may merge past failed checks.',
+        );
       if (preflight.headSha !== expectedHeadSha.trim()) throw prChanged();
+      const forced = preflight.blocker === 'ciFailed';
+      const audit = forced
+        ? {
+            reason,
+            headSha: preflight.headSha,
+            failedChecks: preflight.failedChecks,
+          }
+        : null;
+      if (audit)
+        try {
+          // The reason stands on the pull request's conversation before the merge; no merge without it.
+          await platformOf(repo).commentOnPullRequest(
+            auth,
+            repo.repo,
+            pr.number,
+            forceMergeComment(audit),
+          );
+        } catch (error) {
+          throw hostFailure(error);
+        }
       let merged: { sha: string };
       try {
         merged = await platformOf(repo).mergePullRequest(
@@ -1675,7 +1858,16 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
           },
         );
       } catch (error) {
-        throw mergeFailure(error);
+        const failure = mergeFailure(error);
+        if (audit)
+          await recordActivity(
+            viewer,
+            issueId,
+            PR_ACTIVITIES.forceMergeRefused,
+            pr,
+            { ...audit, error: failure.message },
+          );
+        throw failure;
       }
       // The squash commit the host made: deployment marks look for it, as the squashed head never reaches the base.
       const mergeCommitSha = /^[0-9a-f]{7,64}$/u.test(merged.sha)
@@ -1694,11 +1886,49 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
               mergedAt: now().toISOString(),
               mergeCommitSha,
             };
-      await flow.store(repo, snapshot, {
+      const stored = await flow.store(repo, snapshot, {
         mergedByUserId: viewer.userId,
         ...(full ? { pullEtag: full.pullEtag } : {}),
       });
+      if (audit)
+        await recordActivity(
+          viewer,
+          issueId,
+          PR_ACTIVITIES.forceMerged,
+          stored,
+          audit,
+        );
       return viewOf(issueId, pullRequestId);
+    },
+
+    async failedChecks(viewer, idOrKey, pullRequestId) {
+      const issue = await visibleIssue(viewer, idOrKey);
+      const { pr, repo } = await linked(issue.id, pullRequestId);
+      if (!pr.headSha) return { headSha: '', checks: [] };
+      let found: FailedCheck[];
+      try {
+        found = await platformOf(repo).failedChecks(
+          await readAuth(repo),
+          repo.repo,
+          pr.headSha,
+        );
+      } catch (error) {
+        throw hostFailure(error);
+      }
+      return {
+        headSha: pr.headSha,
+        checks: found.map((check) =>
+          reportOf(check, isReferenceCheck(check.name, repo.referenceChecks)),
+        ),
+      };
+    },
+
+    async explainFailures(repo, sha) {
+      return platformOf(repo).failedChecks(
+        await readAuth(repo),
+        repo.repo,
+        sha,
+      );
     },
 
     async markMerged(viewer, idOrKey, pullRequestId) {
@@ -1802,8 +2032,28 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       }
       if (typeof input.wakeOnChecks === 'boolean')
         values.wakeOnChecks = input.wakeOnChecks;
+      if (typeof input.wakeOnChecksPassed === 'boolean')
+        values.wakeOnChecksPassed = input.wakeOnChecksPassed;
       if (typeof input.wakeOnConflict === 'boolean')
         values.wakeOnConflict = input.wakeOnConflict;
+      if (input.referenceChecks !== undefined) {
+        const names = Array.isArray(input.referenceChecks)
+          ? input.referenceChecks.map((name) =>
+              typeof name === 'string' ? name.trim() : '',
+            )
+          : null;
+        if (
+          !names ||
+          names.length > REFERENCE_CHECKS_MAX ||
+          names.some((name) => !name || name.length > REFERENCE_CHECK_MAX)
+        )
+          throw new ProtocolError(
+            'INVALID_REQUEST',
+            `A repository has at most ${REFERENCE_CHECKS_MAX} reference checks, each a check name of 1 to ${REFERENCE_CHECK_MAX} characters.`,
+            { code: 'INVALID_REFERENCE_CHECKS' },
+          );
+        values.referenceChecks = [...new Set(names)];
+      }
       await updateRepo(conn(), row.id, values);
       return settingsOf(await findRepoById(conn(), row.id), true);
     },
@@ -1812,16 +2062,26 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       const ids = [...new Set(issueIds)].slice(0, MARKS_MAX);
       const all = await pullRequestsOfIssues(conn(), ids);
       const result: Record<string, PullRequestMark> = {};
-      // Whoever sees every issue needs no check per issue.
+      // Whoever sees every issue needs no check; anyone else's are checked in one read.
       const everything = viewer.permissions.scopes['pm.issues/view'] === 'all';
-      for (const [issueId, rows] of all) {
-        if (rows.length === 0) continue;
-        if (!everything)
-          try {
-            await visibleIssue(viewer, issueId);
-          } catch {
-            continue;
-          }
+      const linked = [...all].filter(([, rows]) => rows.length > 0);
+      const seen =
+        everything || linked.length === 0
+          ? null
+          : new Set(
+              (
+                await projects().issueQueries.matching(
+                  viewer,
+                  {},
+                  {
+                    issueIds: linked.map(([issueId]) => issueId),
+                    limit: linked.length,
+                  },
+                )
+              ).issues.map((issue) => issue.id),
+            );
+      for (const [issueId, rows] of linked) {
+        if (seen && !seen.has(issueId)) continue;
         const prs = rows.map(({ pr }) => pr);
         const open = prs.filter((pr) => pr.state === 'open');
         const merged = prs.filter((pr) => pr.state === 'merged').length;
@@ -1879,6 +2139,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       return { attribution };
     },
 
+    syncPreviewLabels: (issueId) => previewLabels.syncIssue(issueId),
     repoOfResource,
 
     async syncRepos() {
@@ -1923,8 +2184,15 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         }
         const open = (await tracks(repo))
           ? await openPullRequestsOf(conn(), repo.id)
-          : await linkedOpenPullRequests(conn(), repo.id);
-        for (const pr of open) await pollPullRequest(repo, pr);
+          : [
+              ...(await linkedOpenPullRequests(conn(), repo.id)),
+              ...(await previewManagedOpenPullRequests(conn(), repo.id)),
+            ];
+        // Unlinked PRs still retry label removal, but must stop once the host closes or merges them.
+        for (const pr of new Map(open.map((pr) => [pr.id, pr])).values()) {
+          await pollPullRequest(repo, pr);
+          await previewLabels.sync(pr.id);
+        }
         await updateRepo(conn(), repo.id, {
           polledAt: new Date(),
           pollError: null,

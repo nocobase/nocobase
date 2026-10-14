@@ -71,7 +71,7 @@ a stable `409 ALREADY_EXISTS` instead of exposing a database error.
 | `POST`   | `/api/users/invitations/lookup`               | `200 { data }`, public, `{ token }`                    |
 | `POST`   | `/api/users/invitations/accept`               | `200 { data }`, public, `{ token, name, password }`    |
 
-The invitation list holds pending and expired invitations only, so it is not paged. `lookup` and `accept` need no session: the token in the body is the credential.
+The invitation list holds pending and expired invitations only, so it is not paged. `lookup` needs no session. New accounts supply the invitation token, name and password to `accept`; existing accounts must authenticate with the invited email.
 
 Each route is described, with its parameters, request and response schemas and error statuses, in the application's API document at `/api/swagger/docs` (JSON at `/api/swagger`, served to a signed-in user or a valid API key), under the `Users` tag with operation ids such as `usersDisableUser`.
 
@@ -132,3 +132,13 @@ When the authorization plugin is installed, Users automatically registers the `a
 `DELETE /api/users/:userId?confirm=true` requires the `user/delete` action and the `confirm=true` query parameter, and answers `204`. The service also rejects deleting the acting user. Application role scopes can implement `assertCanDelete(userId, actorId, connection)` and `onDelete(userId, connection)` to protect owned resources and remove credentials in the same transaction. Users does not grant access by default. Failed cleanup rolls back the deletion. Repeating a deletion changes nothing and answers `404 USER_NOT_FOUND`.
 
 Deletion removes the user from management lists, revokes sessions and removes sign-in accounts. Authentication retains a disabled identity with `deletedAt` and `deletedBy` for historical attribution; it cannot be re-enabled through user management. Email and username remain reserved. The authenticated deletion route emits a structured `user.delete` security event without credentials.
+
+## Invitation links
+
+Authorized inviters receive `inviteUrl` on creation, regardless of email delivery. An invitation closed or rotated before its queued send returns `emailSent=false` without a link; other recipients still complete. The original inviter can renew with `POST /api/users/invitations/{invitationId}/resend?sendEmail=false`; choosing roles still requires `assign-role`. Plugin invitations must use their domain-authorized endpoint. Other managers can resend email but do not receive links. Invitation lists never expose tokens. Renewal invalidates the previous invitation token; acceptance applies only the supplied invitation.
+
+New accounts register directly from the invitation link with a name and password; acceptance leaves `emailVerified=false`. Email delivery is optional: authorized original inviters can privately forward the link when the email channel is absent or fails. Links use `app.publicOrigin` when configured, otherwise the invitation request origin. Existing accounts must sign in with the invited email. Acceptance consumes only the supplied invitation and applies only its grants; handlers run in its transaction and roll back account creation on failure.
+
+Invitation emails use `notificationService.sendTransient()` so credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication. Failures retain safe status/category diagnostics without raw provider messages. The inviter can generate and privately deliver a new link if delivery fails. Historical notification snapshots are not rewritten.
+
+Batch invitations send at most five emails concurrently with a shared 30-second mail-delivery budget. Links are returned even when the budget is exhausted: `emailSent=false` also covers an unattempted or uncertain delivery. Timed-out providers may still complete delivery; no automatic retry is scheduled. Authorized inviters can copy the returned link or resend the invitation.

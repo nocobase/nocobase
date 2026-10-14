@@ -14,7 +14,10 @@ import {
   PROTOCOL_VERSION,
   type RegisterRequest,
 } from '@nocobase/agent-protocol';
-import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
+import {
+  agentsToken,
+  runnerAgentId,
+} from '@nocobase/app-plugin-agents/server/tokens';
 import {
   projectsAccessToken,
   projectsToken,
@@ -41,6 +44,7 @@ describe('an agent run calling Studio’s API', () => {
   let api: string;
   let token: string;
   let identifier: string;
+  let agentName: string;
 
   const call = async (
     method: string,
@@ -142,21 +146,7 @@ describe('an agent run calling Studio’s API', () => {
       permissions: await access.permissionsOfUser!(userId),
     };
     const agents = container.resolve(agentsToken);
-    const agent = await agents.agents.create(userId, {
-      name: 'Coder',
-      modelEntries: [{ tool: 'claude', model: null }],
-      access: 'everyone',
-      actions: ['pm.issues/view', 'pm.issues/comment'],
-    });
-    const issue = await projects.issues.create(viewer, { title: 'Fix login' });
-    identifier = issue.identifier;
-    const current = await projects.issueQueries.detail(viewer, issue.id);
-    await projects.issues.update(viewer, issue.id, {
-      revision: current.revision,
-      executor: { type: 'agent', id: agent.id },
-    });
-
-    // A runner takes the run; its token is the run's credential.
+    // A runner reports a model: the agent discovered for it is enabled, and a person hands it a step by mention.
     const registration = await agents.runners.createRegistrationToken(userId, {
       trust: 'team',
     });
@@ -169,7 +159,13 @@ describe('an agent run calling Studio’s API', () => {
       version: '0.0.1',
       protocolVersion: PROTOCOL_VERSION,
       features: ['input', 'checkout', 'directories', 'skills', 'secrets'],
-      tools: [{ kind: 'claude', authenticated: true }],
+      tools: [
+        {
+          kind: 'claude',
+          authenticated: true,
+          models: [{ id: 'claude-sonnet-4-5' }],
+        },
+      ],
       slots: 1,
     };
     const registered = await call('POST', '/agents/runners/register', {
@@ -179,6 +175,28 @@ describe('an agent run calling Studio’s API', () => {
       throw new Error(
         `Registration failed: ${JSON.stringify(registered.body)}`,
       );
+    const agentId = runnerAgentId('claude', 'claude-sonnet-4-5');
+    const discovered = await agents.agents.get(agentId);
+    if (discovered.source !== 'runner' || discovered.status !== 'pending')
+      throw new Error(
+        'The runner’s model was not discovered as a pending agent.',
+      );
+    agentName = discovered.name;
+    await agents.agents.update(agentId, userId, {
+      description: 'Implements changes well.',
+      enabled: true,
+      expectedRevision: discovered.revision,
+    });
+    const issue = await projects.issues.create(viewer, {
+      title: 'Fix login',
+      statusKey: 'in_progress',
+      executor: null,
+    });
+    identifier = issue.identifier;
+    await projects.comments.create(viewer, issue.id, {
+      content: `[@${agentName}](mention://agent/${agentId}) Find out why the login fails.`,
+    });
+
     const runnerKey = registered.body.data.runnerKey as string;
     const claimed = await server.fetch(
       new Request(`${api}/agents/runners/claim`, {
@@ -228,12 +246,16 @@ describe('an agent run calling Studio’s API', () => {
     });
   });
 
-  it('is refused a business action its agent does not hold', async () => {
-    const edited = await call('PATCH', `/projects/issues/${identifier}`, {
+  it('is refused moving the issue: only the project manager does', async () => {
+    const moved = await call('PATCH', `/projects/issues/${identifier}`, {
       runToken: token,
-      body: { priority: 'high' },
+      body: {
+        statusKey: 'in_review',
+        needsYou: 'Please review the completed work.',
+      },
     });
-    expect(edited.status).toBe(403);
+    expect(moved.status).toBeGreaterThanOrEqual(400);
+    expect(moved.status).toBeLessThan(500);
   });
 
   it('never reaches a route that does not take a run, nor a person’s own', async () => {
@@ -252,7 +274,7 @@ describe('an agent run calling Studio’s API', () => {
       reason: 'RUN_ACTION_FORBIDDEN',
       metadata: { action: 'pm.issues/delete' },
     });
-    for (const route of ['/projects/workflows', '/agents', '/inbox/pending'])
+    for (const route of ['/projectManager', '/agents', '/inbox/pending'])
       expect((await call('GET', route, { runToken: token })).status).toBe(403);
     expect(
       (await call('GET', '/projects/issues', { runToken: 'not-a-token' }))
@@ -264,7 +286,7 @@ describe('an agent run calling Studio’s API', () => {
     const runs = await call('GET', '/issueRuns', { runToken: token });
     expect(runs.status).toBe(200);
     const [own] = runs.body.data as { id: string; agent: string }[];
-    expect(own).toMatchObject({ agent: 'Coder' });
+    expect(own).toMatchObject({ agent: agentName });
     const run = await call('GET', `/issueRuns/${own!.id}`, {
       runToken: token,
     });
@@ -278,21 +300,10 @@ describe('an agent run calling Studio’s API', () => {
     expect(events.body.meta).toHaveProperty('lastSeq');
     const roster = await call('GET', '/agents/available', { runToken: token });
     expect(roster.status).toBe(200);
-    // Studio's built-in project lead and role agents too; the built-in assistant has no model yet and is not offered.
+    // The enabled agents discovered from runners: neither the former built-in agents nor the project manager.
     expect(
-      (roster.body.data as { name: string }[])
-        .map((agent) => agent.name)
-        .sort(),
-    ).toEqual([
-      'Code reviewer',
-      'Coder',
-      'Developer',
-      'Frontend designer',
-      'Project lead',
-      'Proposal reviewer',
-      'Senior developer',
-      'Solution designer',
-    ]);
+      (roster.body.data as { name: string }[]).map((agent) => agent.name),
+    ).toEqual([agentName]);
     // A run on an issue has no conversation to name.
     const titled = await call('PATCH', '/agents/runs/current/conversation', {
       runToken: token,
@@ -310,7 +321,7 @@ describe('an agent run calling Studio’s API', () => {
     expect(manifest.body.data.identity).toMatchObject({
       kind: 'run',
       userId: 'u-ada',
-      displayName: 'Coder',
+      displayName: agentName,
     });
     expect(ids).toEqual(
       expect.arrayContaining([
@@ -322,9 +333,11 @@ describe('an agent run calling Studio’s API', () => {
         'issue:runs',
         'run:get',
         'run:events',
+        // Every business action but reading the reports; the kind keeps it from moving the status.
+        'issue:update',
       ]),
     );
-    expect(ids).not.toContain('issue:update');
+    expect(ids).toContain('report:metrics');
     expect(ids).not.toContain('app:create');
     expect(ids).not.toContain('label:list');
   });

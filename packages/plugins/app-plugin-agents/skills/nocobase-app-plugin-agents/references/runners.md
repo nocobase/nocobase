@@ -1,5 +1,11 @@
 # Runners
 
+## Ended workspace diagnostics
+
+For application-owned task cleanup, keep `SubjectWorkspaces.settled` conservative and optionally register `resolveKeys` for legacy directory keys and `commits` for trusted merged PR heads by repository URL. The plugin checks current or historical runner ownership and excludes nonterminal runs; directory keys alone never authorize lookup or cleanup. Use the head at merge time, not a squash merge commit. See `packages/plugins/app-plugin-agents/docs/workspace-cleanup.md` in the source repository for protocol and integration details.
+
+Runtime pages distinguish application settlement from the runner's local cleanup check. An allowed check is not a deletion receipt. Directory diagnostics require explicit `canSeeMachine: true`; disk warnings use the report's measurement time and show expired or offline readings as prior reports. An ended workspace still stays when tracked changes, unpushed submodule commits, missing local objects or insufficient evidence prevent verification. Upgrade and serve both plugin and runner before expecting new diagnostics.
+
 A runner (shown as a runtime) is `nocobase-runner` from `@nocobase/agent-runner`, running on a server, a VM or someone's own device. It registers with one or more Apps, long-polls them for work and drives a coding tool for runner agents' runs. The wire protocol is `@nocobase/agent-protocol`. The README's "What it does" section (Runners, The claim, Runs, The sweep) and `@nocobase/agent-runner`'s README are the reference.
 
 ## Registering a runner

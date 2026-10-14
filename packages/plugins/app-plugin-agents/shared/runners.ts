@@ -11,9 +11,12 @@ import {
   type ToolInfo,
   type ToolLoad,
   type ToolSlots,
+  type WorkspaceDecision,
+  type WorkspaceCleanupResult,
 } from '@nocobase/agent-protocol';
 
-import { entryTools, type AgentModelEntry } from './agents.js';
+import type { RunnerModelEntry } from './agents.js';
+import { normalizeModel } from './model-catalog.js';
 
 /**
  * `team` runs anyone's work; `ownerOnly` (shown as "personal") runs only work its owner started. A runner added by its
@@ -36,6 +39,16 @@ export const RUNNER_STATUSES = [
 ] as const;
 
 export type RunnerStatus = (typeof RUNNER_STATUSES)[number];
+
+/**
+ * Optional payload support is established by capabilities, never package versions.
+ * Protocol 9 runners may ignore workspace.key; only its explicit declaration is evidence.
+ */
+export function supportsWorkspaceKey(
+  runner: Pick<Runner, 'features'>,
+): boolean {
+  return runner.features.includes('workspaceKey');
+}
 
 export interface Runner {
   readonly id: string;
@@ -77,6 +90,9 @@ export interface Runner {
    * and could take now, across every application it serves. Null or absent when it reported none (unknown: read as
    * room left).
    */
+  /** Last heartbeat free slots across all applications; absent before a heartbeat. */
+  readonly globalFree?: number;
+  readonly draining?: 'updatePending' | 'pruning';
   readonly toolLoad?: Readonly<Partial<Record<AgentTool, ToolLoad>>> | null;
   /**
    * Its owner (or a manager of runners) lets it take jobs: builds and other steps an application configures, run
@@ -101,21 +117,38 @@ export interface Runner {
    * reported them. Null or absent when it never reported any (a runner that does not report, or one that has not yet).
    */
   readonly workspaceUsage?: RunnerWorkspaceUsage | null;
+  /**
+   * The tools and models a run failed `modelUnavailable` with here: not offered here until the runner reports that
+   * tool's models differently. Null or absent for none.
+   */
+  readonly unavailableModels?: readonly UnavailableModel[] | null;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
 
+/** A tool and model a run failed `modelUnavailable` with on a runner (`Runner.unavailableModels`). */
+export interface UnavailableModel {
+  readonly tool: AgentTool;
+  /** Normalized (`normalizeModel`). */
+  readonly model: string;
+  readonly at: string;
+  /** The tool's models as the runner reported them then, normalized: a different report lifts the mark. */
+  readonly reported: readonly string[];
+}
+
 /** A runner's working directories, as it last reported them (`Runner.workspaceUsage`). */
 export interface RunnerWorkspaceUsage {
+  readonly diskMeasuredAt?: string;
+  readonly intervalMs?: number;
   /** The disk holding the runner's working directories; null when it did not say. */
   readonly disk: RunnerWorkspaceDisk | null;
   /** How many it keeps for this application. */
   readonly count: number;
   /** How many of those hold work that was never pushed, and are never removed on the application's word. */
   readonly unpushedCount: number;
-  /** When it reported them. */
-  readonly measuredAt: string;
+  /** When directories were collected; null until the first directory report. */
+  readonly measuredAt: string | null;
   /** This application's, most recently used first. */
   readonly workspaces: readonly RunnerWorkspace[];
 }
@@ -130,8 +163,12 @@ export interface RunnerWorkspaceDisk {
 
 /** One working directory a runner keeps for this application. */
 export interface RunnerWorkspace {
+  readonly subjectKey?: string;
+  readonly sizeBytes?: number;
+  readonly decision?: WorkspaceDecision;
+  readonly cleanup?: WorkspaceCleanupResult;
   /** The last run that worked in it. */
-  readonly runId: string;
+  readonly runId?: string;
   /** Where it is on the runner. */
   readonly workDir: string;
   /** It holds changes not committed, or commits the remote task branch lacks. */
@@ -181,6 +218,7 @@ export interface RunnerRecentRun {
  * is null and the tools carry no `path` for everyone else.
  */
 export interface RunnerSummary extends Omit<Runner, 'hostname'> {
+  readonly canSeeMachine?: boolean;
   /** Null when the viewer may not manage it. */
   readonly hostname: string | null;
   /** Runs it holds now. */
@@ -291,6 +329,44 @@ export function runsTool(
   );
 }
 
+/**
+ * The models a runner reports for `tool`, normalized and each once, when the tool is enabled there and signed in;
+ * empty otherwise, and when the runner reported no models.
+ */
+export function reportedModels(
+  runner: Pick<Runner, 'enabledTools' | 'tools'>,
+  tool: AgentTool,
+): string[] {
+  if (!runsTool(runner, tool)) return [];
+  const info = runner.tools.find(
+    (item) => item.kind === tool && item.authenticated,
+  );
+  return [
+    ...new Set(
+      (info?.models ?? []).map((model) => normalizeModel(tool, model.id)),
+    ),
+  ];
+}
+
+/**
+ * Whether `runner` can run `entry`: its tool enabled, installed and signed in, and, for an entry naming a model, the
+ * model among those the runner reports for the tool and not marked unavailable there (`unavailableModels`).
+ */
+export function runsEntry(
+  runner: Pick<Runner, 'enabledTools' | 'tools' | 'unavailableModels'>,
+  entry: Pick<RunnerModelEntry, 'tool' | 'model'>,
+): boolean {
+  if (!runsTool(runner, entry.tool)) return false;
+  if (!entry.model) return true;
+  const model = normalizeModel(entry.tool, entry.model);
+  return (
+    reportedModels(runner, entry.tool).includes(model) &&
+    !(runner.unavailableModels ?? []).some(
+      (mark) => mark.tool === entry.tool && mark.model === model,
+    )
+  );
+}
+
 /** The job kinds a runner reports it executes (`jobs.<kind>` features). */
 export function jobKindsOf(runner: Pick<Runner, 'features'>): string[] {
   return runner.features
@@ -328,12 +404,29 @@ export function listedTools(runner: Pick<Runner, 'tools'>): AgentTool[] {
  * no work whatever their slots say.
  */
 export type RunnerActivity =
-  'online' | 'busy' | 'offline' | 'revoked' | 'upgrade_required';
+  | 'online'
+  | 'busy'
+  | 'low_disk'
+  | 'offline'
+  | 'revoked'
+  | 'upgrade_required'
+  | 'updatePending'
+  | 'pruning';
 
 export function runnerActivity(
-  runner: Pick<RunnerSummary, 'status' | 'slots' | 'activeRuns' | 'activeJobs'>,
+  runner: Pick<
+    RunnerSummary,
+    | 'status'
+    | 'slots'
+    | 'activeRuns'
+    | 'activeJobs'
+    | 'workspaceUsage'
+    | 'draining'
+  >,
 ): RunnerActivity {
   if (runner.status !== 'online') return runner.status;
+  if (runner.draining) return runner.draining;
+  if (runnerLowOnDisk(runner)) return 'low_disk';
   return runner.activeRuns + runner.activeJobs >= runner.slots
     ? 'busy'
     : 'online';
@@ -379,25 +472,42 @@ export function toolUsage(
 export interface RunnerAgentFit {
   readonly id: string;
   readonly name: string;
-  /** Runner agents list their coding tools; online agents' entries name none, and never run on a runner. */
-  readonly modelEntries: readonly AgentModelEntry[];
-  /** The runners it is limited to; empty for any runner that fits. */
-  readonly runnerIds: readonly string[];
+  /** Its coding tools and models, in order. */
+  readonly modelEntries: readonly RunnerModelEntry[];
 }
 
 /**
- * Whether `runner` may take `agent`'s runs, by what people configured and what it reported: the agent is not limited
- * to other runners, one of its tools is enabled, installed and signed in here, and the owner's local policy lets it in. Whether
- * the runner is online right now is left to the caller.
+ * Whether `runner` may take `agent`'s runs, by what it reported: one of the agent's tools and models is enabled, signed
+ * in and reported here (`runsEntry`), and the owner's local policy lets it in. Whether the runner is online right now is
+ * left to the caller.
  */
+/** Shared by admission, availability and the page; does not affect existing leases. */
+export function runnerLowOnDisk(
+  runner: Pick<Runner, 'workspaceUsage'>,
+): boolean {
+  const disk = runner.workspaceUsage?.disk;
+  return (
+    disk != null &&
+    disk.minFreeBytes !== null &&
+    disk.freeBytes < disk.minFreeBytes
+  );
+}
+
 export function runnerTakesAgent(
-  runner: Pick<Runner, 'id' | 'enabledTools' | 'tools' | 'policy'>,
+  runner: Pick<
+    Runner,
+    | 'id'
+    | 'enabledTools'
+    | 'tools'
+    | 'policy'
+    | 'unavailableModels'
+    | 'workspaceUsage'
+  >,
   agent: RunnerAgentFit,
 ): boolean {
-  if (agent.runnerIds.length > 0 && !agent.runnerIds.includes(runner.id))
-    return false;
   return (
-    entryTools(agent).some((tool) => runsTool(runner, tool)) &&
+    !runnerLowOnDisk(runner) &&
+    agent.modelEntries.some((entry) => runsEntry(runner, entry)) &&
     policyAllowsAgent(runner.policy, agent)
   );
 }

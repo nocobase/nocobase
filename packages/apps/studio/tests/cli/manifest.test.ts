@@ -16,7 +16,10 @@ import {
   PROTOCOL_VERSION,
   type RegisterRequest,
 } from '@nocobase/agent-protocol';
-import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
+import {
+  agentsToken,
+  runnerAgentId,
+} from '@nocobase/app-plugin-agents/server/tokens';
 import {
   projectsAccessToken,
   projectsToken,
@@ -155,14 +158,9 @@ describe('Studio’s command manifest', () => {
       await request('/auth/get-session', { headers: { cookie } })
     ).json()) as { user: { id: string } };
 
-    // An agent configured with every action an agent may hold, working on an issue the administrator gave it.
+    // An agent discovered from the runner's report and enabled, with the actions every such agent holds, working on a
+    // step the administrator handed it on an issue.
     const agents = application.container.resolve(agentsToken);
-    const agent = await agents.agents.create(me.user.id, {
-      name: 'Coder',
-      modelEntries: [{ tool: 'claude', model: null }],
-      access: 'everyone',
-      actions: [...agents.actions.keys()],
-    });
     const registration = await agents.runners.createRegistrationToken(
       me.user.id,
       { trust: 'team' },
@@ -176,7 +174,13 @@ describe('Studio’s command manifest', () => {
       version: '0.0.1',
       protocolVersion: PROTOCOL_VERSION,
       features: ['input', 'checkout', 'directories', 'skills', 'secrets'],
-      tools: [{ kind: 'claude', authenticated: true }],
+      tools: [
+        {
+          kind: 'claude',
+          authenticated: true,
+          models: [{ id: 'claude-sonnet-4-5' }],
+        },
+      ],
       slots: 1,
     };
     const registered = await request('/agents/runners/register', {
@@ -186,6 +190,13 @@ describe('Studio’s command manifest', () => {
     const runnerKey = (
       (await registered.json()) as { data: { runnerKey: string } }
     ).data.runnerKey;
+    const agentId = runnerAgentId('claude', 'claude-sonnet-4-5');
+    const discovered = await agents.agents.get(agentId);
+    await agents.agents.update(agentId, me.user.id, {
+      description: 'Writes and fixes code.',
+      enabled: true,
+      expectedRevision: discovered.revision,
+    });
     const access = application.container.resolve(projectsAccessToken);
     const viewer: Viewer = {
       userId: me.user.id,
@@ -193,11 +204,14 @@ describe('Studio’s command manifest', () => {
       permissions: await access.permissionsOfUser!(me.user.id),
     };
     const projects = application.container.resolve(projectsToken);
-    const issue = await projects.issues.create(viewer, { title: 'Fix login' });
-    const current = await projects.issueQueries.detail(viewer, issue.id);
-    await projects.issues.update(viewer, issue.id, {
-      revision: current.revision,
-      executor: { type: 'agent', id: agent.id },
+    const issue = await projects.issues.create(viewer, {
+      title: 'Fix login',
+      executor: null,
+      statusKey: 'in_progress',
+      start: false,
+    });
+    await projects.comments.post({ type: 'user', id: me.user.id }, issue.id, {
+      content: `[@Coder](mention://agent/${agentId}) fix it`,
     });
     const claimed = await request('/agents/runners/claim', {
       method: 'POST',
@@ -224,6 +238,11 @@ describe('Studio’s command manifest', () => {
   it('offers a person every Studio area, and nothing Studio does not serve', async () => {
     const manifest = await manifestOf({ cookie });
     expect(manifest.identity.kind).toBe('person');
+    expect(
+      manifest.commands
+        .find((command) => command.id === 'issue:update')
+        ?.parameters.map((parameter) => parameter.name),
+    ).toEqual(expect.arrayContaining(['needs-you', 'next']));
     const lines = manifest.commands.map(line);
     expect(lines.join('\n')).toMatchSnapshot();
     for (const command of manifest.commands) {
@@ -235,6 +254,11 @@ describe('Studio’s command manifest', () => {
   it('offers a run what its agent may do, on the routes that take a run token', async () => {
     const manifest = await manifestOf({ [HEADERS.runToken]: token });
     expect(manifest.identity.kind).toBe('run');
+    expect(
+      manifest.commands
+        .find((command) => command.id === 'issue:update')
+        ?.parameters.map((parameter) => parameter.name),
+    ).toEqual(expect.arrayContaining(['needs-you', 'next']));
     expect(manifest.commands.map(line).join('\n')).toMatchSnapshot();
     for (const command of manifest.commands)
       expect(command.identities).toContain('run');

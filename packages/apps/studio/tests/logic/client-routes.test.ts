@@ -86,17 +86,18 @@ describe('app client routes', () => {
     ).toEqual([]);
   });
 
-  it('orders the sidebar with Home and Dashboard first, then My issues, the Development, Releases and Agent team sections, and Settings', () => {
-    // The inbox is not among them: it is the header's button (`client/inbox/header-button.tsx`).
+  it('orders My tasks, My agents, Inbox, Dashboard and My follow-ups without a Home entry, followed by the existing sections', () => {
     const menu = (routes: readonly AppClientRegisteredRoute[]) =>
       routes.flatMap((route) =>
         route.navigation ? [route.navigation.title] : [],
       );
     const { routes } = resolveRoutes();
     expect(menu(routes)).toEqual([
-      'navigation.home',
-      'navigation.dashboard',
       'navigation.myIssues',
+      'navigation.agentSessions',
+      'navigation.inbox',
+      'navigation.dashboard',
+      'navigation.followUps',
       'navigation.development',
       'navigation.releases',
       'navigation.agentTeam',
@@ -155,19 +156,15 @@ describe('app client routes', () => {
       expect(new Set(own.map((page) => page.authorizedAs)).size).toBe(1);
     }
     expect(all.filter((page) => !teamNames.has(page.name))).toEqual([
+      { name: 'landing', authorizedAs: null },
+      // Chat actions reach the composer; bookmarked home links redirect there.
+      { name: 'chat-new', authorizedAs: null },
       { name: 'home', authorizedAs: null },
       // One conversation full screen: a conversation is its owner's alone, which its API checks.
       { name: 'chat', authorizedAs: null },
       // The person's own settings; every category's API checks what it serves.
       { name: 'account', authorizedAs: null },
       { name: 'account-category', authorizedAs: null },
-      // The viewer's own inbox, opened from the header rather than the menu.
-      { name: 'inbox', authorizedAs: null },
-      // Legacy `/pm` links: redirects that open the agents' chat panel, which checks what it opens.
-      { name: 'chat-pm', authorizedAs: null },
-      { name: 'chat-pm-conversation', authorizedAs: null },
-      // The dashboard, behind the reports grant its figures' API checks too.
-      { name: 'dashboard', authorizedAs: 'reports' },
       { name: 'pm-my-issues', authorizedAs: 'pm-my-issues' },
       { name: 'pm-my-issues-owned', authorizedAs: 'pm-my-issues' },
       // An issue opened from a list is declared under it, behind the list's grant (`issueDetailRoute`).
@@ -192,6 +189,17 @@ describe('app client routes', () => {
         name: 'pm-my-issues-executing-issue-run',
         authorizedAs: 'pm-my-issues',
       },
+      // Legacy `/pm` links open the chat panel; the inbox needs no page grant.
+      { name: 'chat-pm', authorizedAs: null },
+      { name: 'chat-pm-conversation', authorizedAs: null },
+      // My agents: a session is its owner's alone, which its API checks.
+      { name: 'agent-sessions', authorizedAs: null },
+      { name: 'agent-sessions-session', authorizedAs: null },
+      { name: 'inbox', authorizedAs: null },
+      // The dashboard, behind the reports grant its figures' API checks too.
+      { name: 'dashboard', authorizedAs: 'reports' },
+      // My follow-ups opens with My issues' grant.
+      { name: 'follow-ups', authorizedAs: 'pm-my-issues' },
       { name: 'pm-issues', authorizedAs: 'pm-issues' },
       { name: 'pm-issue-new', authorizedAs: 'pm-issues' },
       { name: 'pm-plan', authorizedAs: 'pm-issues' },
@@ -233,6 +241,7 @@ describe('app client routes', () => {
       { name: 'config', authorizedAs: null },
       { name: 'config-general', authorizedAs: 'settings:pm.general' },
       { name: 'config-members', authorizedAs: 'settings:pm.members' },
+      { name: 'config-member-reset-password', authorizedAs: null },
       { name: 'config-roles', authorizedAs: 'settings:pm.members' },
       { name: 'config-role', authorizedAs: 'settings:pm.members' },
       { name: 'config-api-keys', authorizedAs: 'settings:studio.apiKeys' },
@@ -241,8 +250,6 @@ describe('app client routes', () => {
         authorizedAs: 'settings:studio.knowledgeSearch',
       },
       { name: 'config-git', authorizedAs: 'settings:studio.git' },
-      { name: 'config-workflows', authorizedAs: 'settings:pm.workflows' },
-      { name: 'config-workflow', authorizedAs: 'settings:pm.workflows' },
       { name: 'config-labels', authorizedAs: 'settings:pm.labels' },
     ]);
   });

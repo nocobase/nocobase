@@ -3,8 +3,7 @@
  * webhooks reach them through `gitWebhookRoutes` (`routes.ts`). The code hosts are the providers registered here
  * (`providers.ts`): GitHub (`github.ts`), which covers GitHub Enterprise Server by its address.
  *
- * Boots before `StudioAgentsProvider` (`server/providers/index.ts`), so the workflow event `studio.merged` is registered
- * before the "Software development" template that names it is installed.
+ * Registers the status event `studio.merged`, which moves an issue whose pull requests are all merged to done.
  *
  * Configuration (`studio.git`, all optional):
  *
@@ -19,9 +18,8 @@
 import {
   projectsAccessToken,
   projectsNoticeRulesToken,
-  projectsStatusRulesToken,
+  projectsStatusEventsToken,
   projectsToken,
-  projectsWorkflowEventsToken,
 } from '@nocobase/app-plugin-projects/server/tokens';
 import type { Application } from '@nocobase/app-server/application';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
@@ -60,6 +58,8 @@ import { createGitSecrets, createGitSecretsStores } from './sealing.js';
 import type { StudioGit } from './service.js';
 import type { PullRequestEvents, RepoEvents } from './events.js';
 import { studioGitToken } from './token.js';
+import { createGitAnnouncer, type GitAnnouncer } from './announcer.js';
+import { issuesOfPullRequests } from './store.js';
 
 interface GitConfig {
   readonly pollIntervalSeconds?: number;
@@ -77,7 +77,7 @@ export default class StudioGitProvider extends ServiceProvider<Application> {
   private release: (() => void) | undefined;
   private poller: GitPoller | undefined;
   private topic: DefinedRealtimeTopic<StudioGitEvent, 'public'> | undefined;
-  private announcing: ReturnType<typeof setTimeout> | undefined;
+  private announcer: GitAnnouncer | undefined;
   private stopPurge: (() => Promise<void>) | undefined;
 
   private config(): GitConfig {
@@ -179,16 +179,6 @@ export default class StudioGitProvider extends ServiceProvider<Application> {
     return `${origin}${base}${path}`;
   }
 
-  /** Tells open pages once for the stores of a moment (a poll stores several pull requests in a row). */
-  private announce(): void {
-    if (this.announcing || !this.topic) return;
-    this.announcing = setTimeout(() => {
-      this.announcing = undefined;
-      void this.topic?.publish({ kind: 'studio.git.changed' });
-    }, 250);
-    this.announcing.unref?.();
-  }
-
   private requireGit(): StudioGit {
     if (!this.git)
       throw new Error('Studio pull requests need the projects plugin.');
@@ -199,22 +189,33 @@ export default class StudioGitProvider extends ServiceProvider<Application> {
     const { container } = this.app;
     if (this.release || !container.has(projectsToken)) return Promise.resolve();
     const config = this.config();
-    if (container.has(realtimeServiceToken))
-      this.topic = container
+    if (container.has(realtimeServiceToken)) {
+      // Announcements name issues by id: signed-in connections only.
+      const topic = container
         .resolve(realtimeServiceToken)
         .defineTopic<StudioGitEvent, 'public'>(STUDIO_GIT_TOPIC, {
           audience: 'public',
+          authenticated: true,
         });
+      this.topic = topic;
+      this.announcer = createGitAnnouncer({
+        issuesOf: (ids) =>
+          issuesOfPullRequests(container.resolve(projectsToken).tx.read(), ids),
+        publish: (event) => topic.publish(event),
+        onError: (error) =>
+          console.error(
+            'Studio could not announce pull request changes.',
+            error,
+          ),
+      });
+    }
     const agents = container.has(agentsToken)
       ? container.resolve(agentsToken)
       : undefined;
     const bound = bindStudioGit({
       projects: () => container.resolve(projectsToken),
-      ...(container.has(projectsWorkflowEventsToken)
-        ? { events: container.resolve(projectsWorkflowEventsToken) }
-        : {}),
-      ...(container.has(projectsStatusRulesToken)
-        ? { statusRules: container.resolve(projectsStatusRulesToken) }
+      ...(container.has(projectsStatusEventsToken)
+        ? { events: container.resolve(projectsStatusEventsToken) }
         : {}),
       ...(container.has(projectsNoticeRulesToken)
         ? { noticeRules: container.resolve(projectsNoticeRulesToken) }
@@ -244,7 +245,7 @@ export default class StudioGitProvider extends ServiceProvider<Application> {
         container.has(userPreferencesServiceToken)
           ? container.resolve(userPreferencesServiceToken).get(userId, key)
           : Promise.resolve(undefined),
-      onChanged: () => this.announce(),
+      onChanged: (pullRequestId) => this.announcer?.changed(pullRequestId),
       pollSeconds: {
         normal: this.pollSeconds().intervalSeconds,
         fallback: this.pollSeconds().fallbackSeconds,
@@ -279,8 +280,8 @@ export default class StudioGitProvider extends ServiceProvider<Application> {
     this.stopPurge = undefined;
     await stopPurge?.();
     this.poller?.stop();
-    if (this.announcing) clearTimeout(this.announcing);
-    this.announcing = undefined;
+    this.announcer?.close();
+    this.announcer = undefined;
     this.topic?.close();
     this.topic = undefined;
     this.release?.();

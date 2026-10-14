@@ -20,6 +20,7 @@ import projects from '@nocobase/app-plugin-projects/server';
 import agents from '@nocobase/app-plugin-agents/server';
 import releases from '@nocobase/app-plugin-releases/server';
 import knowledge from '@nocobase/app-plugin-knowledge/server';
+import agentSessions from '@nocobase/app-plugin-agent-sessions/server';
 
 const serverPlugins: AppServerPlugins = defineServerPlugins([
   authentication,
@@ -45,6 +46,7 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   // The knowledge base: spaces of versioned documents, proposals and snapshots; Studio names its spaces (the system's and
   // one per project) and decides who reads, proposes and edits them (`server/knowledge`).
   knowledge,
+  agentSessions,
 ]);
 
 export default serverPlugins;

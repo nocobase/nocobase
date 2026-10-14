@@ -1,6 +1,6 @@
 # Getting started with `nb-studio`
 
-`nb-studio` is Studio on the command line. It ships no business commands of its own: once you are signed in it asks the server which commands you may run (`GET /api/cli/manifest`), and every one of them is a request to one API route, so the commands follow the server's version and your permissions. The [command reference](reference/index.md) lists every command; [coverage](coverage.md) says what stays in the web page.
+`nb-studio` is Studio on the command line. It ships no business commands of its own: once you are signed in it asks the server which commands you may run (`GET /api/cli/manifest`), and every one of them is a request to one API route, so the commands follow the server's version and your permissions. The [business command reference](reference/index.md) lists the server commands; the [static command reference](static-commands.md) documents local Skill installation and status; [coverage](coverage.md) says what stays in the web page.
 
 ## Install
 
@@ -13,7 +13,7 @@ curl -fsSL https://studio.example.com/api/agents/dist/installScript | sh -s -- -
 nb-studio login --server https://studio.example.com
 ```
 
-It puts `nb-studio` in `~/.local/share/studio/versions/<version>` (`node_modules/@nocobase/studio-cli` and a launcher in `bin/`, which runs it on the Node.js the script found, linked as `~/.local/share/studio/node`) and links `~/.local/bin/nb-studio` to it (`--prefix`, `--bin-dir` move them; `--dry-run` shows what it would do). A download token downloads the CLI for one platform, three times at most, and registers nothing; to make a machine a runtime as well, use Agent team › Runtimes › Add runtime, whose line adds `--runner` and a registration token: it also installs the runner, `nocobase-runner`, in `~/.local/share/nocobase-runner` (`--runner-prefix`), registers it and starts it as a user service, or with `--no-service` registers it without starting it. A token of the other kind is refused before anything is installed. In this repository, `pnpm nocobase cli link` in this repository makes `nb-studio` a command in `node_modules/.bin` (`pnpm exec studio`; `--bin-dir ~/.local/bin` puts it on your PATH) that runs from the sources.
+It puts `nb-studio` in `~/.local/share/nb-studio/versions/<version>` (the package Studio's build packed, or `node_modules/@nocobase/studio-cli` from npm on a Studio without one, and a launcher in `bin/`, which runs it on the Node.js the script found, linked as `~/.local/share/nb-studio/node`) and links `~/.local/bin/nb-studio` to it (`--prefix`, `--bin-dir` move them; `--dry-run` shows what it would do). A download token downloads the CLI for one platform, three times at most, and registers nothing; to make a machine a runtime as well, use Agent team › Runtimes › Add runtime, whose line adds `--runner` and a registration token: it also installs the runner, `nocobase-runner`, in `~/.local/share/nocobase-runner` (`--runner-prefix`), registers it and starts it as a user service, or with `--no-service` registers it without starting it. The CLI install directory can also be set with `NOCOBASE_CLI_INSTALL_DIR`; the runner and command-link directories use `NOCOBASE_RUNNER_INSTALL_DIR` and `NOCOBASE_CLI_BIN_DIR`. `NB_STUDIO_HOME` moves the CLI's state directory; it does not change where the CLI is installed. A token of the other kind is refused before anything is installed. In this repository, `pnpm nocobase cli link` makes `nb-studio` a command in `node_modules/.bin` (`pnpm exec nb-studio`; `--bin-dir ~/.local/bin` puts it on your PATH) that runs from the sources.
 
 ### Update
 
@@ -24,9 +24,19 @@ nb-studio update --check   # only say whether there is one
 
 `nb-studio update` asks the server you are signed in to which version it names, installs it beside the running one (with npm, or from the server's tarball, checking its SHA-256), switches to it and keeps the previous version beside it. `nb-studio login` and business commands print a line when a newer version is served, at most every 12 hours. The runner is installed and updated apart: it updates itself between runs, and `nocobase-runner update` updates it now.
 
-### Serving the CLI from a local Studio
+### Install the agent Skill
 
-A Studio started from this repository names the versions of `@nocobase/studio-cli` and `@nocobase/agent-runner` in its workspace, which are on npm only once released; to try unreleased ones, serve tarballs from its storage, `storage/runners/dist` (`agents.dist.dir` moves it), which win over npm. Build them by hand in this repository. `cli build` packs `nb-studio` as `package.json` declares it under `nocobase.cli`, and `cli build --runner` packs `nocobase-runner`; `--targets` narrows the platforms to the ones you need, `--host-node` uses this machine's Node.js for its own platform instead of downloading it, `--universal` packs one tarball without Node.js for every platform, and `--version` packs a later version to try `nb-studio update`:
+On your own machine, run `nb-studio skills install` to install the packaged `nb-studio-cli` Skill for detected Claude Code and Codex tools. To select tools explicitly, use `nb-studio skills install --tool all` or `--tool claude` / `--tool codex`. These commands work offline without a login. `nb-studio skills install --dry-run --json` previews changes; `nb-studio skills status --json` checks whether installed contents match the current CLI package.
+
+Claude Code reads `~/.claude/skills/nb-studio-cli` (`CLAUDE_CONFIG_DIR` can move its configuration directory). Codex reads the [official user Skill directory](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills), `~/.agents/skills/nb-studio-cli`. `CODEX_HOME` does not move this new target; it helps detect Codex and locates legacy copies under `$CODEX_HOME/skills/nb-studio-cli`, or `~/.codex/skills/nb-studio-cli` when unset. Status shows both paths when new and old copies coexist. New installation does not create, move or remove the legacy copy.
+
+`nb-studio update` automatically synchronizes registered copies from the newly installed package. A Skill failure warns while leaving the CLI upgrade successful, and failed replacement restores the old Skill. Unregistered copies prompt an installation reminder. After an npm global upgrade or another external upgrade, run `nb-studio skills install` again. See the [static command reference](static-commands.md) for output and recovery. The runner supplies this Skill to agent runs automatically; installation inside a run is refused, and read-only status remains available.
+
+### Where the CLI and the runner come from
+
+A deployed Studio serves `nb-studio` and `nocobase-runner` from its own build: `pnpm build` packs both, as universal packages without Node.js, into `dist/runners/stable/<product>/`, at the versions it records in `dist/server/agents/served-versions.json` (`nb-studio` at `@nocobase/studio-cli`'s version, the runner at `@nocobase/agent-runner`'s), and fails when they differ. Packing installs their dependencies with npm, so the build needs the npm registry. `NB_STUDIO_RUNNERS_DIST` or `agents.dist.dir` in `config.yml` serve another directory instead.
+
+A Studio started from this repository with `pnpm dev` has no build, so it names the same versions on npm, where they exist only once released. To try unreleased ones, serve packages from its storage, `storage/runners/dist` (`agents.dist.dir` moves it), which win over npm. Build them by hand in this repository. `cli build` packs `nb-studio` as `package.json` declares it under `nocobase.cli`, and `cli build --runner` packs `nocobase-runner`; `--targets` narrows the platforms to the ones you need, `--host-node` uses this machine's Node.js for its own platform instead of downloading it, `--universal` packs one tarball without Node.js for every platform, and `--version` packs a later version to try `nb-studio update`:
 
 ```bash
 pnpm nocobase cli build --targets darwin-arm64 --host-node
@@ -96,7 +106,7 @@ Shell completion reads the commands the server last offered you, so it works off
 ```bash
 nb-studio completion zsh > "${fpath[1]}/_nb-studio"                     # zsh
 echo 'source <(nb-studio completion bash)' >> ~/.bashrc              # bash
-nb-studio completion fish > ~/.config/fish/completions/studio.fish    # fish
+nb-studio completion fish > ~/.config/fish/completions/nb-studio.fish # fish
 ```
 
 ## Every command takes

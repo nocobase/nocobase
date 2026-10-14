@@ -11,6 +11,7 @@ import {
 import {
   useQuery,
   useQueryClient,
+  type QueryClient,
   type UseQueryResult,
 } from '@tanstack/react-query';
 import { useEffect } from 'react';
@@ -39,8 +40,11 @@ import {
   type IssuePullRequests,
   type PullRequestMark,
   type PullRequestMergePreflight,
+  type StudioGitEvent,
   type UpdateGitRepoRequest,
 } from '../../shared/git.js';
+import { issueProgressKey } from '../issues/detail/progress-text.js';
+import { previewKeys } from '../previews/api.js';
 
 export const gitKeys = {
   all: ['studio', 'git'] as const,
@@ -168,17 +172,20 @@ export class GitApi {
     return body.data;
   }
 
-  /** Squash-merges the head the person confirmed. */
+  /** Squash-merges the head the person confirmed; `force` past failed required checks, with a reason. */
   public async merge(
     issue: string,
     id: string,
     expectedHeadSha: string,
+    force?: { readonly reason: string },
   ): Promise<IssuePullRequest> {
     const body = await this.api.request<{ data: IssuePullRequest }>({
       method: 'POST',
       path: `${prPath(id)}/merge`,
       query: { issueId: issue },
-      json: { expectedHeadSha },
+      json: force
+        ? { expectedHeadSha, force: true, reason: force.reason }
+        : { expectedHeadSha },
     });
     return body.data;
   }
@@ -472,24 +479,97 @@ export function useGitApi(): GitApi {
   return new GitApi(useApiClient());
 }
 
+/** Whether a query key reads one of `issueIds` (`[...prefix, issueId, ...]`). */
+function readsIssue(
+  key: readonly unknown[],
+  prefixLength: number,
+  issueIds: ReadonlySet<string>,
+): boolean {
+  const id = key[prefixLength];
+  return typeof id === 'string' && issueIds.has(id);
+}
+
+/** What an issue's pull request change refreshes besides git: its previews and what it waits for. */
+const ISSUE_PREFIXES = [
+  previewKeys.issue('').slice(0, -1),
+  issueProgressKey('').slice(0, -1),
+] as const;
+
+/**
+ * Reads again what a `STUDIO_GIT_TOPIC` announcement concerns: with `issueIds`, the pull requests, marks, previews and
+ * progress of those issues alone; without, every git read (an open merge confirmation keeps its own read of GitHub)
+ * and every issue's previews and progress.
+ */
+export function refreshGitChanges(
+  client: Pick<QueryClient, 'invalidateQueries'>,
+  payload: unknown,
+): void {
+  const ids = (payload as Partial<StudioGitEvent> | null)?.issueIds;
+  if (!Array.isArray(ids)) {
+    void client.invalidateQueries({
+      queryKey: gitKeys.all,
+      predicate: (query) => query.queryKey[2] !== 'preflight',
+    });
+    for (const queryKey of ISSUE_PREFIXES)
+      void client.invalidateQueries({ queryKey: [...queryKey] });
+    return;
+  }
+  const issueIds = new Set(ids);
+  void client.invalidateQueries({
+    queryKey: gitKeys.all,
+    predicate: (query) =>
+      (query.queryKey[2] === 'issue' || query.queryKey[2] === 'mark') &&
+      readsIssue(query.queryKey, 3, issueIds),
+  });
+  for (const queryKey of ISSUE_PREFIXES)
+    void client.invalidateQueries({
+      queryKey: [...queryKey],
+      predicate: (query) =>
+        readsIssue(query.queryKey, queryKey.length, issueIds),
+    });
+}
+
+/** One subscription per query cache, however many components follow it. */
+const followers = new WeakMap<
+  QueryClient,
+  { count: number; stop: () => void }
+>();
+
 /**
  * Follows `STUDIO_GIT_TOPIC` while mounted: when the server stores something new about a pull request (a webhook
- * delivery, a poll, a merge), the pull requests are read again at once. An open merge confirmation keeps its own read
- * of GitHub.
+ * delivery, a poll, a merge), what is shown of the issues it is linked to is read again at once (`refreshGitChanges`),
+ * and everything after a reconnect, since announcements made while disconnected were missed. Every component that
+ * follows it shares one subscription.
  */
 export function useGitRealtime(): void {
   const realtime = useService(realtimeClientToken);
   const queryClient = useQueryClient();
-  useEffect(
-    () =>
-      realtime.subscribe<unknown>(STUDIO_GIT_TOPIC, () => {
-        void queryClient.invalidateQueries({
-          queryKey: gitKeys.all,
-          predicate: (query) => query.queryKey[2] !== 'preflight',
-        });
-      }),
-    [realtime, queryClient],
-  );
+  useEffect(() => {
+    let entry = followers.get(queryClient);
+    if (!entry) {
+      const stops = [
+        realtime.subscribe<unknown>(STUDIO_GIT_TOPIC, (event) =>
+          refreshGitChanges(queryClient, event?.payload),
+        ),
+        realtime.onOpen(() => refreshGitChanges(queryClient, null)),
+      ];
+      entry = {
+        count: 0,
+        stop: () => {
+          for (const stop of stops) stop?.();
+        },
+      };
+      followers.set(queryClient, entry);
+    }
+    const shared = entry;
+    shared.count += 1;
+    return () => {
+      shared.count -= 1;
+      if (shared.count > 0) return;
+      shared.stop();
+      followers.delete(queryClient);
+    };
+  }, [realtime, queryClient]);
 }
 
 export function useIssuePullRequests(

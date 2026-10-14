@@ -1,8 +1,8 @@
 /**
  * Settings › Knowledge search in the browser: the search status (keyword search always, semantic search with why it is
  * unavailable and how to fix it), the vector store with its location and index progress, the model pickers' link to
- * the model services and their empty hint, contextual retrieval as a switch with its model and spaces, and the
- * whole-knowledge threshold with its approximate size. Each part saves on its own over the latest settings.
+ * the model services and their empty hint, and contextual retrieval as a switch with its model and spaces. Each part
+ * saves on its own over the latest settings.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
@@ -72,7 +72,7 @@ function config(
     settings: DEFAULT_KNOWLEDGE_SEARCH,
     index: {
       available: true,
-      store: { type: 'sqlite-vec', target: 'storage/vectors.sqlite' },
+      store: { type: 'sqlite-vec' },
       reason: null,
       active: null,
       building: null,
@@ -113,7 +113,7 @@ const section = (name: string) =>
   );
 
 describe('the knowledge search settings page', () => {
-  it('says why semantic search is unavailable, how to fix it, and where the store points', async () => {
+  it('says why semantic search is unavailable, how to fix it, and names the store type', async () => {
     api.knowledgeSearch.mockResolvedValue(
       config({
         index: {
@@ -156,8 +156,8 @@ describe('the knowledge search settings page', () => {
       screen.getByText('knowledge.searchSettings.store.types.pgvector'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('postgres://vec@db.internal:5432/vectors'),
-    ).toBeInTheDocument();
+      screen.queryByText('postgres://vec@db.internal:5432/vectors'),
+    ).not.toBeInTheDocument();
     expect(screen.getByText(/agents:\s+vectors:/u)).toBeInTheDocument();
   });
 
@@ -170,7 +170,7 @@ describe('the knowledge search settings page', () => {
         },
         index: {
           available: true,
-          store: { type: 'sqlite-vec', target: 'storage/vectors.sqlite' },
+          store: { type: 'sqlite-vec' },
           reason: null,
           active: null,
           building: {
@@ -196,7 +196,9 @@ describe('the knowledge search settings page', () => {
     expect(
       screen.getByText('knowledge.searchSettings.store.types.sqlite-vec'),
     ).toBeInTheDocument();
-    expect(screen.getByText('storage/vectors.sqlite')).toBeInTheDocument();
+    expect(
+      screen.queryByText('storage/vectors.sqlite'),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole('progressbar', {
         name: /store\.buildingIndex .*"indexed":120,"total":480/u,
@@ -279,36 +281,6 @@ describe('the knowledge search settings page', () => {
         ...DEFAULT_KNOWLEDGE_SEARCH,
         contextModel: null,
         contextual: ['project:p1'],
-      }),
-    );
-  });
-
-  it('names the whole-knowledge threshold and states its size', async () => {
-    api.knowledgeSearch.mockResolvedValue(config());
-    render(wrap(<KnowledgeSearchSettingsPage />));
-    expect(
-      await screen.findByText('knowledge.searchSettings.whole.title'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/whole\.approx .*"value":"150K"/u),
-    ).toBeInTheDocument();
-    const input = screen.getByRole('textbox', {
-      name: 'knowledge.searchSettings.whole.title',
-    });
-    await userEvent.clear(input);
-    await userEvent.type(input, '20000');
-    expect(
-      screen.getByText(/whole\.approx .*"value":"20K"/u),
-    ).toBeInTheDocument();
-    await userEvent.click(
-      section('whole').getByRole('button', {
-        name: 'knowledge.searchSettings.save',
-      }),
-    );
-    await waitFor(() =>
-      expect(api.updateKnowledgeSearch).toHaveBeenLastCalledWith({
-        ...DEFAULT_KNOWLEDGE_SEARCH,
-        wholeTokens: 20000,
       }),
     );
   });

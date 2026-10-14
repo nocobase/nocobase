@@ -65,6 +65,7 @@ it('recreates detection on a refresh command and after ten minutes, acknowledgin
   await daemon.start();
   await waitFor(() => server.lastHeartbeat(), 5000);
   expect(server.lastHeartbeat()?.tools[0]?.authenticated).toBe(false);
+  // Each generation inspects installation once before reporting and once for background model discovery.
   const initial = detect.mock.calls.length;
   authenticated = true;
   server.toolsRefreshRequestId = 'refresh-one';
@@ -73,13 +74,13 @@ it('recreates detection on a refresh command and after ten minutes, acknowledgin
     5000,
   );
   expect(server.lastHeartbeat()?.tools[0]?.authenticated).toBe(true);
-  expect(detect).toHaveBeenCalledTimes(initial + 1);
+  expect(detect).toHaveBeenCalledTimes(initial + 2);
   const sent = server.runners.values().next().value!.heartbeatsSent;
   await waitFor(
     () => server.runners.values().next().value!.heartbeatsSent > sent + 1,
     5000,
   );
-  expect(detect).toHaveBeenCalledTimes(initial + 1);
+  expect(detect).toHaveBeenCalledTimes(initial + 2);
   server.toolsRefreshRequestId = undefined;
   const now = Date.now.bind(Date);
   vi.spyOn(Date, 'now').mockImplementation(() => now() + 10 * 60_000 + 1000);
@@ -88,7 +89,7 @@ it('recreates detection on a refresh command and after ten minutes, acknowledgin
     () => server.lastHeartbeat()?.tools[0]?.authenticated === false,
     5000,
   );
-  expect(detect).toHaveBeenCalledTimes(initial + 2);
+  expect(detect).toHaveBeenCalledTimes(initial + 4);
 });
 
 it('refreshes stale detection before claiming even when the next heartbeat is not due', async () => {
@@ -118,6 +119,7 @@ it('refreshes stale detection before claiming even when the next heartbeat is no
   });
   await daemon.start();
   expect(server.lastHeartbeat()?.tools[0]?.authenticated).toBe(false);
+  // Each generation inspects installation once before reporting and once for background model discovery.
   const initial = detect.mock.calls.length;
   authenticated = true;
   const now = Date.now.bind(Date);
@@ -126,13 +128,15 @@ it('refreshes stale detection before claiming even when the next heartbeat is no
     () => server.lastHeartbeat()?.tools[0]?.authenticated === true,
     5000,
   );
-  expect(detect).toHaveBeenCalledTimes(initial + 1);
+  expect(detect).toHaveBeenCalledTimes(initial + 2);
 });
 
-// Protocol 8 receivers predating requested detection validate this closed vocabulary before ignoring unknown fields.
+// Protocol 11 receivers predating requested detection validate this closed vocabulary before ignoring unknown fields.
 const legacyFeatures = z.object({
   features: z.array(
     z.enum([
+      'workspaceKey',
+      'gitCredentials',
       'input',
       'steer',
       'attachments',
@@ -256,7 +260,7 @@ it('waits for concurrent heartbeat detection and its acknowledged report before 
     await claim;
   }
   expect(server.runners.values().next().value!.claims).toBe(1);
-  expect(detect).toHaveBeenCalledTimes(2);
+  expect(detect).toHaveBeenCalledTimes(4);
 });
 
 it('withholds claims after a failed fresh report and retries reporting on the next poll', async () => {

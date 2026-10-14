@@ -1,5 +1,27 @@
 # @nocobase/app-testing
 
+## 0.1.0-beta.3
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-cli@1.0.0-beta.19
+  - @nocobase/app-client@3.0.0-beta.1
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/db-dameng@0.1.0-beta.4
+  - @nocobase/db-kingbase@0.1.0-beta.4
+  - @nocobase/db-mssql@0.1.0-beta.4
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oceanbase@0.1.0-beta.4
+  - @nocobase/db-oracle@0.1.0-beta.4
+  - @nocobase/db-postgres@0.1.0-beta.4
+  - @nocobase/db-sqlite@0.1.0-beta.5
+  - @nocobase/db-testing@0.1.0-beta.1
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 0.1.0-beta.2
 
 ### Patch Changes

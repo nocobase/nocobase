@@ -1,8 +1,7 @@
 /**
  * The projects plugin's sections of an issue's main column, drawn with the installed `issue-detail` block and
  * `attachment-list` over the plugin's headless hooks (`client/issues`), in the plugin's words: the header, the
- * description, the add bar under it, a status change waiting for approval and the last decided ones, the checklist, the
- * sub-issues, the dependencies and the files. A part with nothing to show renders nothing; the add bar adds its first
+ * description, the add bar under it, the sub-issues, the dependencies and the files. A part with nothing to show renders nothing; the add bar adds its first
  * item. Each checks the viewer's permissions: without `issues/edit` nothing here changes the issue.
  */
 import {
@@ -12,19 +11,15 @@ import {
   groupSubtasksByStage,
   statusTone,
   useIntakeBreakdown,
-  useKindLabel,
   useMentionSearch,
-  useStatusName,
   type IssuePageActions,
   type IssueUpdate,
 } from '@nocobase/app-plugin-projects/client/issues';
 import { useViewer } from '@nocobase/app-plugin-projects/client/kit';
-import type {
-  IssueDetail,
-  StatusDefinition,
-} from '@nocobase/app-plugin-projects/shared/issues';
+import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
+  CornerLeftUpIcon,
   Link2Icon,
   ListTreeIcon,
   PaperclipIcon,
@@ -37,24 +32,20 @@ import { Link, useNavigate } from 'react-router';
 import {
   IssueAddBar,
   IssueAddButton,
-  IssueApprovalCard,
   IssueAttachments,
-  IssueChecklist,
   IssueDeleteButton,
   IssueDependencies,
   IssueDescription,
   IssueFilesButton,
-  IssueHeader,
-  IssueRecentApprovals,
   IssueSubtasks,
   type DependencyItem,
   type IssueDetailLink,
-  type IssueDetailStatus,
 } from '@/extensions/nocobase-issue-detail/issue-detail';
 
 import { toneColor } from '../rows.js';
 import { IssueMarkdown } from '../markdown.js';
 import { attachmentFile, useFilePreviewState } from './files.js';
+import { useDependencyActions } from './dependency-actions.js';
 import { issueHrefUnder, useIssueParent } from './issue-parent.js';
 import { useIssueTrail } from './issue-trail.js';
 import { useIssuePageWording } from './labels.js';
@@ -67,27 +58,18 @@ const routerLink: IssueDetailLink = ({ href, className, children }) => (
   </Link>
 );
 
-/** A status of the issue's workflow as the block shows it. */
-function useStatusOf(
-  statuses: readonly StatusDefinition[],
-): (key: string) => IssueDetailStatus {
-  const statusName = useStatusName();
-  return (key) => ({
-    name: statusName(statuses, key),
-    color: toneColor(statusTone(statuses, key)),
-  });
-}
-
-/** The header: the page's `actions` and "Delete", the parent, the title and the meta; the trail by the issue's project and parent goes in the shell header (`issue-trail.ts`). */
-export function IssueHeaderSection({
+/**
+ * The body card's first row: the parent issue, the project and the page's marks (`meta`), then the page's `actions`
+ * and "Delete". The title, key and status are the pinned summary's (`../live/issue-summary.tsx`), which renames the
+ * issue; the trail by the issue's project and parent goes in the shell header (`issue-trail.ts`).
+ */
+export function IssueBodyHeader({
   detail,
-  update,
   actions,
   pageActions,
   meta,
 }: {
   readonly detail: IssueDetail;
-  readonly update: IssueUpdate;
   readonly actions?: ReactNode;
   readonly pageActions: IssuePageActions;
   readonly meta?: ReactNode;
@@ -95,57 +77,47 @@ export function IssueHeaderSection({
   const { detail: labels } = useIssuePageWording();
   const viewer = useViewer();
   const navigate = useNavigate();
-  const statusOf = useStatusOf(detail.statuses);
   const parent = useIssueParent();
   useIssueTrail(detail);
   return (
-    <IssueHeader
-      identifier={detail.identifier}
-      title={detail.title}
-      status={statusOf(detail.statusKey)}
-      parent={
-        detail.parent
-          ? {
-              identifier: detail.parent.identifier,
-              title: detail.parent.title,
-              href: issueHrefUnder(parent, detail.parent.id),
-            }
-          : null
-      }
-      project={
-        detail.project
-          ? {
-              name: detail.project.name,
-              href: `/projects/${encodeURIComponent(detail.project.id)}`,
-            }
-          : null
-      }
-      actions={
-        <>
-          {actions}
-          {canDeleteIssues(viewer) ? (
-            <IssueDeleteButton
-              identifier={detail.identifier}
-              labels={labels}
-              onDelete={async () => {
-                await pageActions.deleteIssue();
-                void navigate('..', { relative: 'path' });
-              }}
-            />
-          ) : null}
-        </>
-      }
-      meta={meta}
-      {...(canEditIssues(viewer)
-        ? {
-            onRename: async (title: string) => {
-              await update.mutateAsync({ title });
-            },
-          }
-        : {})}
-      link={routerLink}
-      labels={labels}
-    />
+    <div
+      className='flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground'
+      data-slot='issue-body-header'
+    >
+      {detail.parent ? (
+        <Link
+          to={issueHrefUnder(parent, detail.parent.id)}
+          className='inline-flex max-w-full min-w-0 items-center gap-1.5 hover:text-foreground'
+        >
+          <CornerLeftUpIcon className='size-3.5 shrink-0' aria-hidden='true' />
+          <span className='shrink-0'>{labels.parent}</span>
+          <span className='shrink-0 font-mono'>{detail.parent.identifier}</span>
+          <span className='truncate'>{detail.parent.title}</span>
+        </Link>
+      ) : null}
+      {detail.project ? (
+        <Link
+          to={`/projects/${encodeURIComponent(detail.project.id)}`}
+          className='truncate hover:text-foreground hover:underline'
+        >
+          {detail.project.name}
+        </Link>
+      ) : null}
+      {meta}
+      <span className='ml-auto flex shrink-0 items-center gap-1'>
+        {actions}
+        {canDeleteIssues(viewer) ? (
+          <IssueDeleteButton
+            identifier={detail.identifier}
+            labels={labels}
+            onDelete={async () => {
+              await pageActions.deleteIssue();
+              void navigate('..', { relative: 'path' });
+            }}
+          />
+        ) : null}
+      </span>
+    </div>
   );
 }
 
@@ -291,112 +263,6 @@ export function IssueAddSection({
   );
 }
 
-const OUTCOME_TONE = {
-  approved: 'green',
-  rejected: 'red',
-  withdrawn: 'grey',
-  stale: 'amber',
-} as const;
-
-/** A status change waiting for approval (unless `hidePending`, shown elsewhere), then the last decided ones. */
-export function IssueApprovalsSection({
-  detail,
-  pageActions,
-  hidePending,
-}: {
-  readonly detail: IssueDetail;
-  readonly pageActions: IssuePageActions;
-  readonly hidePending: boolean;
-}): ReactElement {
-  const { i18n } = useTranslation();
-  const { t, detail: labels } = useIssuePageWording();
-  const viewer = useViewer();
-  const kindLabel = useKindLabel();
-  const statusOf = useStatusOf(detail.statuses);
-  const pending = detail.pendingApproval;
-  return (
-    <>
-      {pending && !hidePending ? (
-        <IssueApprovalCard
-          from={statusOf(pending.fromStatus)}
-          to={statusOf(pending.toStatus)}
-          requester={`${pending.requestedByName ?? t('common.unknown')}${
-            pending.requestedByType === 'user'
-              ? ''
-              : ` · ${kindLabel(pending.requestedByType)}`
-          }`}
-          requestedAt={pending.createdAt}
-          approvers={pending.approverNames}
-          canDecide={
-            viewer !== undefined &&
-            pending.approverUserIds.includes(viewer.userId)
-          }
-          canWithdraw={
-            pending.requestedByType === 'user' &&
-            pending.requestedById === viewer?.userId
-          }
-          onDecide={(decision, comment) =>
-            pageActions.decideApproval(pending.id, decision, comment)
-          }
-          locale={i18n.language}
-          labels={labels}
-        />
-      ) : null}
-      <IssueRecentApprovals
-        approvals={detail.recentApprovals.map((approval) => ({
-          id: approval.id,
-          from: statusOf(approval.fromStatus),
-          to: statusOf(approval.toStatus),
-          outcome: t(`approvals.outcomes.${approval.status}`),
-          outcomeTone:
-            OUTCOME_TONE[approval.status as keyof typeof OUTCOME_TONE] ??
-            'grey',
-          decidedBy: approval.decidedByName,
-          at: approval.decidedAt ?? approval.updatedAt,
-          comment: approval.comment,
-        }))}
-        locale={i18n.language}
-        labels={labels}
-      />
-    </>
-  );
-}
-
-/** The checklist of the current status, when its workflow has one. */
-export function IssueChecklistSection({
-  detail,
-  pageActions,
-}: {
-  readonly detail: IssueDetail;
-  readonly pageActions: IssuePageActions;
-}): ReactElement | null {
-  const { i18n } = useTranslation();
-  const { t, detail: labels } = useIssuePageWording();
-  const viewer = useViewer();
-  const statusOf = useStatusOf(detail.statuses);
-  const checklist = detail.checklist;
-  if (!checklist) return null;
-  return (
-    <IssueChecklist
-      status={statusOf(checklist.statusKey)}
-      items={checklist.items.map((item) => ({
-        key: item.itemKey,
-        label: item.label,
-        required: item.required,
-        checked: item.checked,
-        checkedBy: item.checkedByName ?? t('common.unknown'),
-        checkedAt: item.checkedAt,
-      }))}
-      complete={checklist.complete}
-      {...(canEditIssues(viewer)
-        ? { onToggle: pageActions.toggleChecklistItem }
-        : {})}
-      locale={i18n.language}
-      labels={labels}
-    />
-  );
-}
-
 /**
  * The sub-issues by stage, with "Break into sub-issues" and "New sub-issue" for whoever may edit; nothing without any
  * (`IssueAddSection` offers the first).
@@ -486,6 +352,7 @@ export function IssueDependenciesSection({
   const { t, detail: labels } = useIssuePageWording();
   const viewer = useViewer();
   const parent = useIssueParent();
+  const dependencies = useDependencyActions(detail.id);
   const item = (
     dependency: IssueDetail['blockedBy'][number],
   ): DependencyItem => ({
@@ -512,7 +379,8 @@ export function IssueDependenciesSection({
       }
       {...(canEdit
         ? {
-            onAdd: (issue: { id: string }) => pageActions.addBlocker(issue.id),
+            onAdd: (issue, type) => dependencies.add(issue.id, type),
+            onChangeType: dependencies.change,
             onRemove: (dependency: DependencyItem) =>
               pageActions.removeDependency(dependency.id),
           }

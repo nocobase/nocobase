@@ -1,28 +1,26 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`issue brief > makes the design proposal the report of a run in Analysis 1`] = `
+exports[`issue brief > renders an agent’s step: one reply in its thread, no reason that only the project manager has 1`] = `
 "Issue PM-12: Fix login on Safari
 
-You have been given this issue to work on. Do the work it asks for.
+You were mentioned in a comment. Do what it asks.
+
+When you finish:
+- Reply once on PM-12, in the thread of the comment that handed you the step: what you did, the result, links to branches or pull requests, and what is left."
+`;
+
+exports[`issue brief > renders the project manager’s task and the issue context 1`] = `
+"Issue PM-12: Fix login on Safari
+
+You have been given this issue to arrange. Decide its first step and hand it over.
 Someone commented on the issue you are working on. Take it into account.
 
 When you finish:
-- If you wrote or revised the proposal, submit it with \`nb-studio issue design-proposal PM-12 --content-file proposal.md\`: it is your report, and submitting moves the issue to proposal_review. End your turn without a comment restating or summarising it.
-- If you only answered comments, end your turn."
+- Act: hand the next step over, answer, or move the status, in a comment on PM-12 that starts with its "Next" line. Then end your turn.
+- At this read, the current status is in_progress; available next transitions are: blocked, in_review (\`nb-studio issue update PM-12 --status <status>\`). This list is a snapshot of the current state, not a fixed restriction after the status changes. If unsure of the current status, read it with \`nb-studio issue get PM-12\` before attempting a move. The server authorizes each move; never bypass a refusal."
 `;
 
-exports[`issue brief > renders the task and the issue context 1`] = `
-"Issue PM-12: Fix login on Safari
-
-You have been given this issue to work on. Do the work it asks for.
-Someone commented on the issue you are working on. Take it into account.
-
-When you finish:
-- Post a comment on PM-12 that says what you did and what is left, with links to branches or pull requests.
-- Move the issue to the status that fits (\`nb-studio issue update PM-12 --status <status>\`); you may move it to: in_review."
-`;
-
-exports[`issue brief > renders the task and the issue context 2`] = `
+exports[`issue brief > renders the project manager’s task and the issue context 2`] = `
 "# PM-12 Fix login on Safari
 
 - Status: In progress (in_progress, started)
@@ -32,7 +30,7 @@ exports[`issue brief > renders the task and the issue context 2`] = `
 - Due: 2026-10-15
 - Project: Web
 - Parent: PM-10 Login reliability
-- Statuses: backlog, todo, in_progress, in_review, done
+- Statuses: backlog, in_progress, blocked, in_review, done, cancelled
 
 ## Description
 
@@ -51,12 +49,7 @@ See the attached HAR.
 
 ## Sub-issues
 
-- PM-13 Add a test (todo)
-
-## Checklist (incomplete)
-
-- [x] Reproduce (required)
-- [ ] Add a test
+- PM-13 Add a test (backlog)
 
 ## Recent comments
 
@@ -65,14 +58,4 @@ See the attached HAR.
 登录按钮点了没反应。
 
 Attached: 截图.png (image/png, 20480 bytes) [5c1f0e2a-3b4d-4e6f-8a9b-0c1d2e3f4a5b]"
-`;
-
-exports[`issue brief > tells an agent the workflow does not let it move the status 1`] = `
-"Issue PM-12: Fix login on Safari
-
-Continue the work on this issue.
-
-When you finish:
-- Post a comment on PM-12 that says what you did and what is left, with links to branches or pull requests.
-- Leave the status as it is: the workflow does not let you move it from here."
 `;

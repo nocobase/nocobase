@@ -1,22 +1,23 @@
 /**
- * The agent collections: `agAgents` and the `agAgentUsers` allow-list. Only this file reads or writes them.
+ * The agent collection, `agAgents`. Only this file reads or writes it. An agent removed by an earlier version keeps its
+ * row with `deletedAt`, so the runs, comments and conversations that name it still show its name; lists leave it out.
  */
 import type { DatabaseConnection, Repository } from '@nocobase/db';
 
 import { AGENT_TOOLS, type AgentTool } from '@nocobase/agent-protocol';
 
-import type {
-  Agent,
-  AgentAccess,
-  AgentModelEntry,
-  AgentType,
+import {
+  AGENT_STATUSES,
+  type Agent,
+  type AgentName,
+  type AgentSource,
+  type AgentStatus,
+  type RunnerModelEntry,
 } from '../../../shared/agents.js';
 import type { I18nText } from '../../../shared/i18n.js';
 import { jsonObject, stringArray } from '../../kernel/values.js';
-import { attachedSkillIdsOf } from '../skills/skill.store.js';
 
 const AGENTS = 'agAgents';
-const AGENT_USERS = 'agAgentUsers';
 
 export interface AgentRecord {
   readonly id: string;
@@ -26,6 +27,10 @@ export interface AgentRecord {
   readonly descriptionText: Readonly<Record<string, unknown>> | null;
   readonly avatar: string | null;
   readonly type: string;
+  readonly source: string | null;
+  readonly status: string;
+  readonly tool: string | null;
+  readonly model: string | null;
   readonly modelEntries: readonly unknown[];
   readonly instructions: string | null;
   readonly runnerIds: readonly unknown[];
@@ -37,32 +42,26 @@ export interface AgentRecord {
   readonly maxAttempts: number;
   readonly toolPolicy: Readonly<Record<string, unknown>> | null;
   readonly lastClaimAt: string | null;
+  readonly lastReportedAt: string | null;
   readonly archivedAt: string | null;
+  readonly deletedAt: string | null;
   readonly revision: number;
   readonly createdAt: string;
   readonly updatedAt: string;
-}
-
-interface AgentUserRecord {
-  readonly id: string;
-  readonly agentId: string;
-  readonly userId: string;
-  readonly createdAt: string;
 }
 
 export function agentsRepo(conn: DatabaseConnection): Repository<AgentRecord> {
   return conn.repository<AgentRecord>(AGENTS);
 }
 
-function agentUsers(conn: DatabaseConnection): Repository<AgentUserRecord> {
-  return conn.repository<AgentUserRecord>(AGENT_USERS);
-}
-
 const text = (value: unknown): string | null =>
   typeof value === 'string' && value.trim() !== '' ? value : null;
 
-/** The stored entries of an agent of `type`, dropping what does not fit it. */
-export function entriesOf(type: AgentType, value: unknown): AgentModelEntry[] {
+const isTool = (value: unknown): value is AgentTool =>
+  typeof value === 'string' && AGENT_TOOLS.includes(value as AgentTool);
+
+/** The stored entries, dropping any that names no coding tool (an online agent's, kept by earlier versions). */
+export function entriesOf(value: unknown): RunnerModelEntry[] {
   let list: unknown = value;
   if (typeof list === 'string') {
     try {
@@ -71,20 +70,16 @@ export function entriesOf(type: AgentType, value: unknown): AgentModelEntry[] {
       list = [];
     }
   }
-  const entries: AgentModelEntry[] = [];
+  const entries: RunnerModelEntry[] = [];
   for (const item of Array.isArray(list) ? (list as unknown[]) : []) {
     if (item === null || typeof item !== 'object') continue;
     const raw = item as Record<string, unknown>;
-    const model = text(raw.model);
-    const effort = text(raw.effort);
-    if (type === 'runner') {
-      const tool = raw.tool;
-      if (typeof tool === 'string' && AGENT_TOOLS.includes(tool as AgentTool))
-        entries.push({ tool: tool as AgentTool, model, effort });
-      continue;
-    }
-    const modelService = text(raw.modelService);
-    if (modelService && model) entries.push({ modelService, model, effort });
+    if (isTool(raw.tool))
+      entries.push({
+        tool: raw.tool,
+        model: text(raw.model),
+        effort: text(raw.effort),
+      });
   }
   return entries;
 }
@@ -97,13 +92,16 @@ function i18nTextOf(value: unknown): I18nText | null {
     : null;
 }
 
-export function toAgent(
-  record: AgentRecord,
-  userIds: readonly string[],
-  skillIds: readonly string[],
-): Agent {
+export function toAgent(record: AgentRecord): Agent {
   const toolPolicy =
     record.toolPolicy === null ? null : jsonObject(record.toolPolicy);
+  const source: AgentSource = record.source === 'system' ? 'system' : 'runner';
+  const status: AgentStatus =
+    record.deletedAt || record.archivedAt
+      ? 'disabled'
+      : (AGENT_STATUSES as readonly string[]).includes(record.status)
+        ? (record.status as AgentStatus)
+        : 'pending';
   return {
     id: record.id,
     name: record.name,
@@ -111,79 +109,94 @@ export function toAgent(
     nameText: i18nTextOf(record.nameText),
     descriptionText: i18nTextOf(record.descriptionText),
     avatar: record.avatar,
-    type: record.type as AgentType,
-    modelEntries: entriesOf(record.type as AgentType, record.modelEntries),
+    source,
+    status,
+    tool: isTool(record.tool) ? record.tool : null,
+    model: record.model,
+    modelEntries: entriesOf(record.modelEntries),
     instructions: record.instructions,
     actions: stringArray(record.actions),
     confirmChanges: record.confirmChanges === 'always' ? 'always' : 'larger',
-    access: record.access as AgentAccess,
-    userIds,
-    ownerUserId: record.ownerUserId,
-    runnerIds: stringArray(record.runnerIds),
-    skillIds,
     maxConcurrentRuns: Number(record.maxConcurrentRuns),
     maxAttempts: Number(record.maxAttempts),
     toolPolicy,
-    archivedAt: record.archivedAt,
+    lastReportedAt: record.lastReportedAt,
     revision: Number(record.revision),
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
 }
 
-export async function usersOf(
-  conn: DatabaseConnection,
-  agentIds: readonly string[],
-): Promise<Map<string, string[]>> {
-  const result = new Map<string, string[]>();
-  if (agentIds.length === 0) return result;
-  const rows = await agentUsers(conn).findMany({
-    filter: (f) => f.or(agentIds.map((id) => f.string('agentId').eq(id))),
-    sort: (sort) => sort.field('createdAt').asc(),
-  });
-  for (const row of rows) {
-    const list = result.get(row.agentId) ?? [];
-    list.push(row.userId);
-    result.set(row.agentId, list);
-  }
-  return result;
-}
-
+/** Any agent by id, a removed one included: runs and comments name it. */
 export async function findAgent(
   conn: DatabaseConnection,
   id: string,
 ): Promise<Agent | null> {
   const record = await agentsRepo(conn).findOne({ filter: { id } });
   if (!record) return null;
-  return toAgent(
-    record,
-    (await usersOf(conn, [id])).get(id) ?? [],
-    (await attachedSkillIdsOf(conn, 'agent', [id])).get(id) ?? [],
-  );
+  return toAgent(record);
 }
 
-export async function listAgents(
+/** Whether the agent is gone, or was removed by an earlier version (its row kept for the names in its history). */
+export async function isRemoved(
   conn: DatabaseConnection,
-  includeArchived: boolean,
-): Promise<Agent[]> {
+  id: string,
+): Promise<boolean> {
+  const record = await agentsRepo(conn).findOne({ filter: { id } });
+  return !record || record.deletedAt !== null;
+}
+
+/** The names of agents by id, removed ones included: runs name them. */
+export async function agentNamesOf(
+  conn: DatabaseConnection,
+  ids: readonly string[],
+): Promise<Map<string, string>> {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return new Map();
   const records = await agentsRepo(conn).findMany({
-    ...(includeArchived ? {} : { filter: (f) => f.date('archivedAt').empty() }),
+    filter: (f) => f.or(unique.map((id) => f.string('id').eq(id))),
+  });
+  return new Map(records.map((record) => [record.id, record.name]));
+}
+
+/** Every agent's name, removed ones included, by name. */
+export async function agentDirectory(
+  conn: DatabaseConnection,
+): Promise<AgentName[]> {
+  const records = await agentsRepo(conn).findMany({
     sort: (sort) => [sort.field('name').asc(), sort.field('id').asc()],
   });
-  const ids = records.map((record) => record.id);
-  const users = await usersOf(conn, ids);
-  const skills = await attachedSkillIdsOf(conn, 'agent', ids);
-  return records.map((record) =>
-    toAgent(record, users.get(record.id) ?? [], skills.get(record.id) ?? []),
-  );
+  return records.map((record) => ({
+    id: record.id,
+    name: record.name,
+    nameText: i18nTextOf(record.nameText),
+  }));
+}
+
+/** The agents not removed, by name. */
+export async function listAgents(conn: DatabaseConnection): Promise<Agent[]> {
+  const records = await agentsRepo(conn).findMany({
+    filter: (f) => f.date('deletedAt').empty(),
+    sort: (sort) => [sort.field('name').asc(), sort.field('id').asc()],
+  });
+  return records.map(toAgent);
 }
 
 export async function insertAgent(
   conn: DatabaseConnection,
-  values: Omit<AgentRecord, 'lastClaimAt' | 'archivedAt' | 'revision'>,
+  values: Omit<
+    AgentRecord,
+    'lastClaimAt' | 'archivedAt' | 'deletedAt' | 'revision'
+  >,
 ): Promise<void> {
   await agentsRepo(conn).createOne({
-    values: { ...values, lastClaimAt: null, archivedAt: null, revision: 1 },
+    values: {
+      ...values,
+      lastClaimAt: null,
+      archivedAt: null,
+      deletedAt: null,
+      revision: 1,
+    },
   });
 }
 
@@ -196,8 +209,8 @@ export async function updateAgent(
 }
 
 /**
- * Writes a change to the agent's configuration made against `revision`, raising it by one. False, writing nothing,
- * when the agent is no longer at that revision.
+ * Writes a change made against `revision`, raising it by one. False, writing nothing, when the agent is no longer at
+ * that revision.
  */
 export async function reviseAgent(
   conn: DatabaseConnection,
@@ -210,31 +223,6 @@ export async function reviseAgent(
     values: { ...values, revision: revision + 1 },
   });
   return updatedCount > 0;
-}
-
-export async function deleteAgent(
-  conn: DatabaseConnection,
-  id: string,
-): Promise<void> {
-  await agentUsers(conn).deleteMany({ filter: { agentId: id } });
-  await conn
-    .repository('agAgentChanges')
-    .deleteMany({ filter: { agentId: id } });
-  await agentsRepo(conn).deleteMany({ filter: { id } });
-}
-
-export async function replaceUsers(
-  conn: DatabaseConnection,
-  agentId: string,
-  userIds: readonly string[],
-  ids: () => string,
-  now: string,
-): Promise<void> {
-  await agentUsers(conn).deleteMany({ filter: { agentId } });
-  for (const userId of userIds)
-    await agentUsers(conn).createOne({
-      values: { id: ids(), agentId, userId, createdAt: now },
-    });
 }
 
 /**

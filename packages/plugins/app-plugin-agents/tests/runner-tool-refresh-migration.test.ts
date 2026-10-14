@@ -11,16 +11,32 @@ const sources: readonly MigrationSource[] = [
   },
 ];
 
-describeMigration('202610220021_ag_add_runner_tool_refresh', {
+describeMigration('202610260003_ag_add_runner_tool_refresh', {
   sources,
   up: async ({ expectCollection }) => {
     await expectCollection('agRunEvents').toHaveIndex(['runId', 'type', 'seq']);
+    await expectCollection('agRuns').toHaveField('revision', {
+      type: 'integer',
+      nullable: false,
+    });
+    await expectCollection('agRuns').not.toHaveIndex([
+      'directoryKey',
+      'status',
+    ]);
     await expectCollection('agRunners').toHaveField('toolsRefreshRequestId', {
       nullable: true,
     });
   },
   down: async ({ expectCollection }) => {
     await expectCollection('agRunEvents').toHaveIndex(['runId', 'type', 'seq']);
+    await expectCollection('agRuns').toHaveField('revision', {
+      type: 'integer',
+      nullable: false,
+    });
+    await expectCollection('agRuns').not.toHaveIndex([
+      'directoryKey',
+      'status',
+    ]);
     await expectCollection('agRunners').not.toHaveField(
       'toolsRefreshRequestId',
     );

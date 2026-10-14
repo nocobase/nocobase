@@ -25,7 +25,7 @@ describe('model kinds', () => {
 
   const create = async () => {
     h = await createHarness();
-    await h.services.online.services.create({
+    await h.services.models.services.create({
       title: 'Local',
       provider: 'openai-compatible',
       baseUrl: mock.url,
@@ -41,7 +41,7 @@ describe('model kinds', () => {
 
   it('keeps each model of a kind its provider serves, and lists the catalog by kind', async () => {
     const harness = await create();
-    const services = harness.services.online.services;
+    const services = harness.services.models.services;
     await expect(
       services.create({
         title: 'Claude',
@@ -55,7 +55,7 @@ describe('model kinds', () => {
         models: [{ value: 'mock-model', dimensions: 8 }],
       }),
     ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
-    const gateway = harness.services.online.gateway;
+    const gateway = harness.services.models.gateway;
     const names = async (kind?: 'chat' | 'embedding' | 'rerank') =>
       (await gateway.catalog(kind)).services.flatMap((service) =>
         service.models.map((model) => model.value),
@@ -88,7 +88,7 @@ describe('model kinds', () => {
 
   it('embeds, reranks and writes short texts, recording each use apart from runs', async () => {
     const harness = await create();
-    const gateway = harness.services.online.gateway;
+    const gateway = harness.services.models.gateway;
     const embedded = await gateway.embed({
       model: { modelService: 'local', model: 'mock-embed' },
       values: ['a', 'bbb'],
@@ -197,7 +197,7 @@ describe('model kinds', () => {
 
   it('checks a model as its kind says', async () => {
     const harness = await create();
-    const services = harness.services.online.services;
+    const services = harness.services.models.services;
     expect(
       await services.check({
         service: 'local',

@@ -207,7 +207,7 @@ export function createWorld(overrides: Partial<FakeWorld> = {}): FakeWorld {
       const cli = args.slice(1).filter((arg) => arg !== '--json');
       const key =
         cli[0] === 'db' && cli.includes('--dry-run')
-          ? 'db apply --dry-run'
+          ? `${cli.slice(0, 2).join(' ')} --dry-run`
           : cli.slice(0, 2).join(' ');
       const override = world.cli[key];
       if (override !== undefined) {
@@ -247,7 +247,12 @@ export function createWorld(overrides: Partial<FakeWorld> = {}): FakeWorld {
         stdout: JSON.stringify({
           ok: true,
           status: 'success',
-          result: key === 'db apply --dry-run' ? { plan: [{ tasks }] } : {},
+          result:
+            key === 'db apply --dry-run'
+              ? { plan: [{ tasks }] }
+              : key === 'db repair --dry-run'
+                ? { dryRun: true, results: [] }
+                : {},
         }),
         stderr: '',
       };

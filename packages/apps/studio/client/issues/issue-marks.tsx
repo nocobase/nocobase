@@ -10,15 +10,18 @@ import { cn } from 'cn';
 
 import { DeployMarkTags, type IssueMarkPlacement } from '../deploys/marks.js';
 import { PullRequestMarkBadge } from '../git/pull-requests.js';
+import { AgentWorkMark } from './agent-work-mark.js';
 
 export function IssueMarks({
   issue,
   placement,
   className,
+  workingAgentName,
 }: {
   readonly issue: Pick<Issue, 'id' | 'revision'>;
   readonly placement: IssueMarkPlacement;
   readonly className?: string;
+  readonly workingAgentName?: string;
 }): ReactElement {
   return (
     <span
@@ -28,6 +31,7 @@ export function IssueMarks({
         className,
       )}
     >
+      {workingAgentName ? <AgentWorkMark name={workingAgentName} /> : null}
       <PullRequestMarkBadge issue={issue} />
       <DeployMarkTags issue={issue} placement={placement} />
     </span>

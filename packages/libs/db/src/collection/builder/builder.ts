@@ -191,6 +191,14 @@ export class CollectionBuilder {
     return this.plannedCollections.has(name);
   }
 
+  /** Inspect the current definition before an incremental schema change. */
+  async getCollection(name: string): Promise<CollectionDefinition | undefined> {
+    const definition = this.collections
+      ? await this.collections.get(name)
+      : this.plannedCollections.get(name);
+    return definition ? structuredClone(definition) : undefined;
+  }
+
   async alterCollection(
     name: string,
     input: CollectionAlterInput,
@@ -407,7 +415,7 @@ export class CollectionBuilder {
       assertMetadataFieldChanges(executedOperations, compilerContext);
       await this.assertDocumentMetadataWritable(executedOperations);
       await this.schemaAdapter.execute(schemaOperations);
-      this.updatePlannedCollections(executedOperations);
+      this.updatePlannedCollections(executedOperations, compilerContext);
       this.invalidatePhysicalSchema(effectiveOperations);
       await this.applyDocumentMetadataChanges(
         executedOperations,
@@ -522,7 +530,10 @@ export class CollectionBuilder {
     return { collections };
   }
 
-  private updatePlannedCollections(operations: CollectionOperation[]): void {
+  private updatePlannedCollections(
+    operations: CollectionOperation[],
+    context: CollectionCompilerContext,
+  ): void {
     if (this.collections) return;
     for (const operation of operations) {
       switch (operation.type) {
@@ -530,10 +541,17 @@ export class CollectionBuilder {
         case 'createViewCollection':
         case 'replaceViewCollection':
         case 'createMaterializedViewCollection':
-          this.plannedCollections.set(operation.name, {
-            ...structuredClone(operation.definition),
-            name: operation.name,
-          });
+          this.plannedCollections.set(
+            operation.name,
+            this.compiler.resolveCollectionNames(
+              operation.name,
+              {
+                ...structuredClone(operation.definition),
+                name: operation.name,
+              },
+              context,
+            ),
+          );
           break;
         case 'dropCollection':
           this.plannedCollections.delete(operation.collection);
@@ -554,7 +572,12 @@ export class CollectionBuilder {
           if (current) {
             this.plannedCollections.set(
               operation.collection,
-              applyAlterMetadata(current, operation.changes),
+              this.applyPlannedChanges(
+                operation.collection,
+                current,
+                operation.changes,
+                context,
+              ),
             );
           }
           break;
@@ -595,10 +618,60 @@ export class CollectionBuilder {
           }
           break;
         }
+        case 'addIndex':
+        case 'dropIndex':
+        case 'addConstraint':
+        case 'dropConstraint': {
+          const current = this.plannedCollections.get(operation.collection);
+          if (current) {
+            const changes =
+              operation.type === 'addIndex'
+                ? { addIndexes: [operation.index] }
+                : operation.type === 'dropIndex'
+                  ? { dropIndexes: [operation.index] }
+                  : operation.type === 'addConstraint'
+                    ? { addConstraints: [operation.constraint] }
+                    : { dropConstraints: [operation.constraint] };
+            this.plannedCollections.set(
+              operation.collection,
+              this.applyPlannedChanges(
+                operation.collection,
+                current,
+                changes,
+                context,
+              ),
+            );
+          }
+          break;
+        }
         default:
           break;
       }
     }
+  }
+
+  private applyPlannedChanges(
+    name: string,
+    current: CollectionDefinition,
+    changes: CollectionAlterDefinition,
+    context: CollectionCompilerContext,
+  ): CollectionDefinition {
+    // Name additions before applying drops, including when both occur in one alteration.
+    const additions = this.compiler.resolveCollectionNames(
+      name,
+      {
+        ...current,
+        fields: [...(current.fields ?? []), ...(changes.addFields ?? [])],
+        indexes: changes.addIndexes,
+        constraints: changes.addConstraints,
+      },
+      context,
+    );
+    return applyAlterMetadata(current, {
+      ...changes,
+      addIndexes: additions.indexes,
+      addConstraints: additions.constraints,
+    });
   }
 
   private async applyDocumentMetadataChanges(

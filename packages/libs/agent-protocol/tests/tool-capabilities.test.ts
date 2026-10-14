@@ -8,6 +8,7 @@ import {
   ToolInfoSchema,
   ReportedToolInfoSchema,
   PROTOCOL_VERSION,
+  isProtocolSupported,
 } from '../src/index.js';
 
 const legacy = { kind: 'pi', authenticated: true };
@@ -43,6 +44,7 @@ describe('tool capabilities within protocol 7', () => {
       modelsDetectedAt: 'yesterday',
       modelsDetectionStatus: 'future-status',
       modelsDetectionError: 'future-error',
+      modelsSource: 'future-source',
     };
     expect(ReportedToolInfoSchema.parse(tool)).toEqual({
       ...legacy,
@@ -57,6 +59,19 @@ describe('tool capabilities within protocol 7', () => {
       ReportedToolInfoSchema.safeParse({ ...tool, kind: 'unknown-tool' })
         .success,
     ).toBe(false);
+  });
+
+  it('accepts where a model list came from', () => {
+    expect(
+      ReportedToolInfoSchema.parse({
+        ...legacy,
+        models: [{ id: 'gpt-6-sol' }],
+        modelsSource: 'builtin',
+      }).modelsSource,
+    ).toBe('builtin');
+    expect(
+      ToolInfoSchema.safeParse({ ...legacy, modelsSource: 'detected' }).success,
+    ).toBe(true);
   });
 
   it('bounds received suggestions and ignores malformed capability containers', () => {
@@ -105,6 +120,7 @@ describe('tool capabilities within protocol 7', () => {
 
   it('accepts legacy tools and lets legacy receivers strip the optional additions', () => {
     expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(7);
+    expect(isProtocolSupported(7)).toBe(true);
     expect(ToolInfoSchema.parse(legacy)).toEqual(legacy);
     expect(
       z

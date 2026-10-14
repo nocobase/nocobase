@@ -1,3 +1,8 @@
+import {
+  PasswordResetPolicy,
+  type PasswordResetConfig,
+  type PasswordResetServices,
+} from './password-reset.js';
 import type { DatabaseConnection } from '@nocobase/db';
 import {
   APIError,
@@ -26,9 +31,12 @@ import {
   routeAcceptsScheme,
 } from '@nocobase/app-server/router';
 import { databaseAdapter } from './better-auth/database-adapter.js';
+import { createAuthMiddleware } from 'better-auth/api';
 
 export interface AuthOptions extends Omit<BetterAuthOptions, 'database'> {
   connection: DatabaseConnection;
+  passwordReset?: PasswordResetConfig;
+  passwordResetServices?: PasswordResetServices;
 }
 
 export interface CreateAuthenticationOptions extends Omit<
@@ -102,6 +110,11 @@ export interface AuthMiddlewareOptions {
   skip?: (context: Context) => boolean;
 }
 
+export interface AuthRequestOptions {
+  /** The transport's real connection peer, never a client-supplied header. */
+  readonly clientAddress?: string;
+}
+
 export interface RequiredAuthMiddlewareOptions extends AuthMiddlewareOptions {
   /**
    * Accept scoped credentials: an API key limited to a scope, and every key of a service account. Such a session is
@@ -144,11 +157,19 @@ export class Auth {
   private readonly auth;
   private readonly connection: DatabaseConnection;
   private readonly options: AuthOptions;
+  private readonly resetPolicy: PasswordResetPolicy;
   private scopedCredentialChecks = new Set<ScopedCredentialCheck>();
   private credentialResolvers = new Set<CredentialResolver>();
 
   constructor(options: AuthOptions) {
-    const { connection, ...config } = options;
+    const { connection, passwordReset, passwordResetServices, ...config } =
+      options;
+    this.resetPolicy = new PasswordResetPolicy(
+      passwordReset ?? {},
+      config,
+      connection,
+      passwordResetServices ?? {},
+    );
     this.connection = connection;
     this.options = options;
     if (!config.secret?.trim() && !config.secrets?.length) {
@@ -161,8 +182,12 @@ export class Auth {
       : [username({ displayUsername: false }), ...(config.plugins ?? [])];
     const configuredSessionCreate = config.databaseHooks?.session?.create;
     const configuredAccountCreate = config.databaseHooks?.account?.create;
-    const configuredSendResetPassword =
-      config.emailAndPassword?.sendResetPassword;
+    const configuredAccountUpdate = config.databaseHooks?.account?.update;
+    const configuredBefore =
+      config.hooks?.before ?? createAuthMiddleware(async () => undefined);
+    const resetGate = createAuthMiddleware(async (context) =>
+      this.resetPolicy.prepareRequest(context),
+    );
     // Read through the hook's own adapter when there is one: it runs on the sign-in's transaction, which may hold
     // the only connection (SQLite).
     const userKindOf = async (
@@ -192,17 +217,30 @@ export class Auth {
       ...config,
       appName: config.appName ?? 'NocoBase3',
       database: databaseAdapter(connection),
-      plugins,
+      plugins: [...(plugins ?? []), this.resetPolicy.plugin()],
+      hooks: {
+        ...config.hooks,
+        // Delegate the original middleware with its header/response envelope intact.
+        before: Object.assign(
+          async (...args: Parameters<typeof configuredBefore>) => {
+            await resetGate(...args);
+            return configuredBefore(...args);
+          },
+          configuredBefore,
+        ),
+      },
       emailAndPassword: {
         ...config.emailAndPassword,
         enabled: config.emailAndPassword?.enabled ?? true,
-        // A service account has an unroutable address and no password; its reset link is never sent.
-        ...(configuredSendResetPassword
+        ...(this.resetPolicy.available
+          ? { sendResetPassword: this.resetPolicy.send }
+          : { sendResetPassword: undefined }),
+        ...(this.resetPolicy.automatic
           ? {
-              sendResetPassword: async (data, request) => {
-                if (isServiceAccount(data.user)) return;
-                await configuredSendResetPassword(data, request);
-              },
+              resetPasswordTokenExpiresIn:
+                config.emailAndPassword?.resetPasswordTokenExpiresIn ?? 3600,
+              revokeSessionsOnPasswordReset:
+                config.emailAndPassword?.revokeSessionsOnPasswordReset ?? true,
             }
           : {}),
       },
@@ -237,7 +275,25 @@ export class Auth {
             before: async (account, context) => {
               if ((await userKindOf(account.userId, context)) === 'service')
                 throw serviceAccountRefusal();
-              return configuredAccountCreate?.before?.(account, context);
+              const result = await configuredAccountCreate?.before?.(
+                account,
+                context,
+              );
+              if (result === false) return false;
+              await this.resetPolicy.guardWrite(context);
+              return result;
+            },
+          },
+          update: {
+            ...configuredAccountUpdate,
+            before: async (account, context) => {
+              const result = await configuredAccountUpdate?.before?.(
+                account,
+                context,
+              );
+              if (result === false) return false;
+              await this.resetPolicy.guardWrite(context);
+              return result;
             },
           },
         },
@@ -318,8 +374,21 @@ export class Auth {
     });
   }
 
-  handler(request: Request): Promise<Response> {
-    return this.auth.handler(request);
+  handler(
+    request: Request,
+    options: AuthRequestOptions = {},
+  ): Promise<Response> {
+    return this.resetPolicy.runRequest(options.clientAddress, () =>
+      this.auth.handler(request),
+    );
+  }
+
+  passwordResetAvailable(): boolean {
+    return this.resetPolicy.available;
+  }
+
+  async close(): Promise<void> {
+    await this.resetPolicy.close();
   }
 
   async getSession(
@@ -399,6 +468,19 @@ export class Auth {
       return invalidCsrfOrigin(context);
     }
 
+    // Match Better Auth's request context when no base URL is configured; never derive trust from the Origin header.
+    const requestBaseURL = authContext.options.baseURL
+      ? undefined
+      : getBaseURL(
+          undefined,
+          authContext.options.basePath,
+          context.req.raw,
+          undefined,
+          authContext.options.advanced?.trustedProxyHeaders,
+        );
+    const requestOrigin = requestBaseURL
+      ? getOrigin(requestBaseURL)
+      : undefined;
     // Better Auth also accepts per-request trusted origins. Its static context contains the
     // configured base URL, static origins, plugin origins, and BETTER_AUTH_TRUSTED_ORIGINS.
     const configuredOrigins = authContext.options.trustedOrigins;
@@ -409,6 +491,7 @@ export class Auth {
     const requestAuthContext = Object.create(authContext) as typeof authContext;
     requestAuthContext.trustedOrigins = [
       ...authContext.trustedOrigins,
+      ...(requestOrigin ? [requestOrigin] : []),
       ...mergedOrigins.filter(
         (origin): origin is string =>
           typeof origin === 'string' && Boolean(origin),

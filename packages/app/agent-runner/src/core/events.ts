@@ -193,7 +193,11 @@ export class EventSpool<E extends SpooledEvent = RunEvent> {
   start(): void {
     if (this.timer !== undefined) return;
     this.timer = setInterval(() => {
-      void this.flush();
+      void this.flush().catch((error: unknown) => {
+        this.options.log?.(
+          `events: local spool flush failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      });
     }, this.options.flushIntervalMs ?? 500);
     this.timer.unref();
   }

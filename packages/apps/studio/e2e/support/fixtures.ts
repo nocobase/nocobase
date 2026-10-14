@@ -15,8 +15,15 @@ import {
   type BrowserContext,
   type Page,
 } from '@playwright/test';
+import { rmSync } from 'node:fs';
 
-import { ADMIN, readState } from './server.ts';
+import {
+  ADMIN,
+  readState,
+  startStudio,
+  stopStudio,
+  type ServerState,
+} from './server.ts';
 
 export { expect };
 
@@ -43,17 +50,24 @@ export const USERS = {
 
 export type DemoUser = keyof typeof USERS;
 
+interface UserCredentials {
+  readonly email: string;
+  readonly password: string;
+}
+
 export const server = readState();
+const contextServers = new WeakMap<BrowserContext, ServerState>();
+const requestServers = new WeakMap<APIRequestContext, ServerState>();
 
 /** The address of a page under Studio's mount, such as `url('/issues')`. */
-export const url = (path: string): string =>
-  `${server.baseURL}${path.startsWith('/') ? path : `/${path}`}`;
+export const url = (path: string, target = server): string =>
+  `${target.baseURL}${path.startsWith('/') ? path : `/${path}`}`;
 
-/** Matches Studio's home page, with or without a trailing slash after the mount, and the given query. */
-export const atHome =
+/** Matches Studio's default inbox page and the given query. */
+export const atInbox =
   (search = '') =>
   (address: URL): boolean =>
-    address.pathname.replace(/\/$/u, '') === new URL(server.baseURL).pathname &&
+    address.pathname === new URL(url('/inbox')).pathname &&
     address.search === search;
 
 /**
@@ -64,7 +78,10 @@ export const atHome =
 const CONNECTION_HEADERS = { origin: server.origin, connection: 'close' };
 
 export class Api {
-  constructor(private readonly request: APIRequestContext) {}
+  constructor(
+    private readonly request: APIRequestContext,
+    private readonly target = requestServers.get(request) ?? server,
+  ) {}
 
   private async send<T>(
     method: string,
@@ -72,11 +89,18 @@ export class Api {
     body?: unknown,
     headers: Record<string, string> = {},
   ): Promise<T> {
-    const response = await this.request.fetch(url(`/api/${path}`), {
-      method,
-      headers: { ...CONNECTION_HEADERS, ...headers },
-      ...(body === undefined ? {} : { data: body as object }),
-    });
+    const response = await this.request.fetch(
+      `${this.target.baseURL}/api/${path}`,
+      {
+        method,
+        headers: {
+          ...CONNECTION_HEADERS,
+          origin: this.target.origin,
+          ...headers,
+        },
+        ...(body === undefined ? {} : { data: body as object }),
+      },
+    );
     const text = await response.text();
     if (!response.ok())
       throw new Error(
@@ -101,8 +125,12 @@ export class Api {
     return this.send<T>('POST', path, body, headers);
   }
 
-  patch<T = unknown>(path: string, body: unknown) {
-    return this.send<T>('PATCH', path, body);
+  patch<T = unknown>(
+    path: string,
+    body: unknown,
+    headers?: Record<string, string>,
+  ) {
+    return this.send<T>('PATCH', path, body, headers);
   }
 
   put<T = unknown>(path: string, body: unknown) {
@@ -117,22 +145,28 @@ export class Api {
 /** Signs a browser context in through the API; the context's pages and requests then share the session cookie. */
 export async function signIn(
   context: BrowserContext,
-  user: DemoUser,
+  user: DemoUser | UserCredentials,
+  target = contextServers.get(context) ?? server,
 ): Promise<void> {
-  const { email, password } = USERS[user];
-  const response = await context.request.post(url('/api/auth/sign-in/email'), {
-    data: { email, password },
-    headers: CONNECTION_HEADERS,
-  });
+  const { email, password } = typeof user === 'string' ? USERS[user] : user;
+  const response = await context.request.post(
+    `${target.baseURL}/api/auth/sign-in/email`,
+    {
+      data: { email, password },
+      headers: { ...CONNECTION_HEADERS, origin: target.origin },
+    },
+  );
   if (!response.ok())
     throw new Error(
-      `Signing in as ${user} failed: ${response.status()} ${await response.text()}`,
+      `Signing in as ${email} failed: ${response.status()} ${await response.text()}`,
     );
+  contextServers.set(context, target);
+  requestServers.set(context.request, target);
 }
 
 /** Opens a page and waits until the application has rendered its first screen. */
 export async function open(page: Page, path: string): Promise<void> {
-  await page.goto(url(path));
+  await page.goto(url(path, contextServers.get(page.context()) ?? server));
   await page.waitForLoadState('networkidle');
 }
 
@@ -169,12 +203,36 @@ interface Fixtures {
   api: Api;
   /** Errors thrown in the page; the test fails if any occurred. */
   pageErrors: string[];
+  studioEvidence: void;
+  studio: ServerState;
 }
 
-export const test = base.extend<Fixtures>({
+interface WorkerFixtures {
+  /** Global PM settings cannot be isolated by giving issues and runner models unique names. */
+  isolatedStudio: boolean;
+}
+
+export const test = base.extend<Fixtures, WorkerFixtures>({
+  isolatedStudio: [false, { scope: 'worker', option: true }],
+  studio: [
+    async ({ isolatedStudio }, use) => {
+      if (!isolatedStudio) return use(server);
+      const owned = await startStudio({ isolated: true });
+      try {
+        expect(owned.origin).not.toBe(server.origin);
+        expect(owned.directory).not.toBe(server.directory);
+        await use(owned);
+      } finally {
+        await stopStudio(owned);
+        if (!process.env.NB_STUDIO_E2E_KEEP)
+          rmSync(owned.directory, { recursive: true, force: true });
+      }
+    },
+    { timeout: 180_000 },
+  ],
   user: ['alex', { option: true }],
-  context: async ({ context, user }, use) => {
-    await signIn(context, user);
+  context: async ({ context, user, studio }, use) => {
+    await signIn(context, user, studio);
     await use(context);
   },
   api: async ({ context }, use) => {
@@ -189,14 +247,31 @@ export const test = base.extend<Fixtures>({
     },
     { auto: true },
   ],
+  studioEvidence: [
+    async ({ studio, isolatedStudio }, use, info) => {
+      if (isolatedStudio)
+        await info.attach('studio-isolation.json', {
+          body: JSON.stringify({
+            workerIndex: info.workerIndex,
+            origin: studio.origin,
+            sharedOrigin: server.origin,
+            isolated: studio.isolated,
+          }),
+          contentType: 'application/json',
+        });
+      await use();
+    },
+    { auto: true },
+  ],
 });
 
-/** An API client signed in as another demo account, in a context of its own. */
+/** An API client signed in as another account, in a context of its own. */
 export async function apiAs(
   browser: import('@playwright/test').Browser,
-  user: DemoUser,
+  user: DemoUser | UserCredentials,
+  target = server,
 ): Promise<{ api: Api; close: () => Promise<void> }> {
   const context = await browser.newContext();
-  await signIn(context, user);
+  await signIn(context, user, target);
   return { api: new Api(context.request), close: () => context.close() };
 }

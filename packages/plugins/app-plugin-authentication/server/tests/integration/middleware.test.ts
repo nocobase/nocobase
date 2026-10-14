@@ -131,6 +131,104 @@ describe('Auth middleware', () => {
     ).toBe(200);
   });
 
+  it('checks cookie writes against each request origin when no base URL is configured', async () => {
+    const { auth, router, signUp } = await setup({ baseURL: undefined });
+    const { cookie } = await signUp();
+    expect(cookie).not.toBe('');
+    for (const requestOrigin of [
+      'http://localhost',
+      'https://app.example.com',
+    ]) {
+      for (const requestCookie of [
+        cookie,
+        'analytics=unrelated',
+        `${await auth.sessionCookieName()}=expired`,
+      ]) {
+        const send = (headers: Record<string, string>) =>
+          router.request(`${requestOrigin}/optional`, {
+            method: 'POST',
+            headers: { cookie: requestCookie, ...headers },
+          });
+        for (const headers of [
+          { origin: requestOrigin },
+          { referer: `${requestOrigin}/invite/token` },
+          { origin: 'null', 'sec-fetch-site': 'same-origin' },
+        ])
+          expect((await send(headers)).status).toBe(200);
+        for (const headers of [
+          {},
+          { origin: 'null' },
+          { origin: 'https://evil.example' },
+          { origin: `${requestOrigin}.evil.example` },
+          {
+            origin: 'https://evil.example',
+            'x-forwarded-host': 'evil.example',
+            'x-forwarded-proto': 'https',
+          },
+        ]) {
+          const response = await send(headers);
+          expect(response.status).toBe(403);
+          expect(await response.json()).toMatchObject({
+            error: { reason: 'INVALID_CSRF_ORIGIN' },
+          });
+        }
+      }
+      expect(
+        (
+          await router.request(`${requestOrigin}/private`, {
+            method: 'POST',
+            headers: { cookie, origin: requestOrigin },
+          })
+        ).status,
+      ).toBe(200);
+    }
+  });
+
+  it('keeps a configured base URL authoritative over the request URL', async () => {
+    const { router, signUp } = await setup();
+    const { cookie } = await signUp();
+    for (const origin of ['http://localhost', 'https://other.example']) {
+      const response = await router.request('https://other.example/private', {
+        method: 'POST',
+        headers: { cookie, origin },
+      });
+      expect(response.status).toBe(origin === 'http://localhost' ? 200 : 403);
+    }
+  });
+
+  it.each([false, true])(
+    'infers the request origin with trusted proxy headers enabled: %s',
+    async (trustedProxyHeaders) => {
+      const { router, signUp } = await setup({
+        baseURL: undefined,
+        advanced: { trustedProxyHeaders },
+      });
+      const { cookie } = await signUp();
+      for (const origin of [
+        'https://app.example.com',
+        'https://evil.example',
+      ]) {
+        const response = await router.request(
+          'http://internal.example/optional',
+          {
+            method: 'POST',
+            headers: {
+              cookie,
+              origin,
+              'x-forwarded-host': 'app.example.com',
+              'x-forwarded-proto': 'https',
+            },
+          },
+        );
+        expect(response.status).toBe(
+          trustedProxyHeaders && origin === 'https://app.example.com'
+            ? 200
+            : 403,
+        );
+      }
+    },
+  );
+
   it('uses trusted proxy headers when a browser sends a null origin', async () => {
     const { connection, signUp } = await setup();
     const { cookie } = await signUp();

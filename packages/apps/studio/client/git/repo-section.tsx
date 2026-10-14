@@ -1,8 +1,9 @@
 /**
  * A repository's branch rules and GitHub settings, a card of the project's Settings › Branch rules (`projects/settings`),
  * shown only while the workspace has a Git connection: the connection Studio follows the repository through, its branch
- * rules (the first names the agents' branches), saved with the card's Save; its webhook (`webhook-section.tsx`); and
- * whether failing checks and conflicts wake the agent, which take effect as they are switched. Only the project's
+ * rules (the first names the agents' branches) and its reference checks (failures only shown), saved with the card's
+ * Save; its webhook (`webhook-section.tsx`); and
+ * whether failing checks, passing checks and conflicts wake the project manager, which take effect as they are switched. Only the project's
  * managers open the page; the server checks it again.
  */
 import { useUnsavedChanges } from '@nocobase/app-client';
@@ -49,8 +50,12 @@ export function GitRepoSection({
   const status = useGitStatus();
   const query = useRepoSettings(resource.id);
   const [rules, setRules] = useState<string | null>(null);
+  const [references, setReferences] = useState<string | null>(null);
   const stored = query.data?.branchRules.join('\n') ?? '';
-  const changed = rules !== null && rules !== stored;
+  const storedReferences = query.data?.referenceChecks.join('\n') ?? '';
+  const changed =
+    (rules !== null && rules !== stored) ||
+    (references !== null && references !== storedReferences);
   useUnsavedChanges(changed);
   const save = useMutation({
     mutationFn: (input: UpdateGitRepoRequest) =>
@@ -58,6 +63,7 @@ export function GitRepoSection({
     onSuccess: (settings) => {
       queryClient.setQueryData(gitKeys.repo(resource.id), settings);
       setRules(null);
+      setReferences(null);
       notify.success(t('studioGit.repo.saved'));
     },
     onError: (error) => notify.error(error),
@@ -113,7 +119,12 @@ export function GitRepoSection({
           type='button'
           size='sm'
           disabled={save.isPending || !changed}
-          onClick={() => save.mutate({ branchRules: rulesOf(rules ?? stored) })}
+          onClick={() =>
+            save.mutate({
+              branchRules: rulesOf(rules ?? stored),
+              referenceChecks: rulesOf(references ?? storedReferences),
+            })
+          }
         >
           {save.isPending ? <Spinner data-icon='inline-start' /> : null}
           {t('studioGit.repo.saveRules')}
@@ -135,10 +146,27 @@ export function GitRepoSection({
           {t('studioGit.repo.branchRulesHint')}
         </FieldDescription>
       </Field>
+      <Field>
+        <FieldLabel htmlFor={`git-references-${resource.id}`}>
+          {t('studioGit.repo.referenceChecks')}
+        </FieldLabel>
+        <Textarea
+          id={`git-references-${resource.id}`}
+          rows={2}
+          className='font-mono text-xs'
+          value={references ?? storedReferences}
+          onChange={(event) => setReferences(event.target.value)}
+        />
+        <FieldDescription>
+          {t('studioGit.repo.referenceChecksHint')}
+        </FieldDescription>
+      </Field>
       <Separator />
       <WebhookSection resourceId={resource.id} settings={settings} />
       <div className='flex flex-col gap-3'>
-        {(['wakeOnChecks', 'wakeOnConflict'] as const).map((key) => (
+        {(
+          ['wakeOnChecks', 'wakeOnChecksPassed', 'wakeOnConflict'] as const
+        ).map((key) => (
           <Field key={key} orientation='horizontal'>
             <Switch
               id={`git-${key}-${resource.id}`}

@@ -50,6 +50,10 @@ secrets:
       key: replace-with-a-unique-secret
 
 auth:
+  passwordReset:
+    # Set app.publicOrigin (or APP_PUBLIC_ORIGIN) to the public origin before enabling automatic recovery.
+    enabled: true # Requires an enabled SMTP or Resend channel; operators opt in in their deployment configuration.
+    emailChannel: system-email
   emailAndPassword:
     enabled: true
     autoSignIn: false
@@ -125,6 +129,8 @@ snowflake:
 # own (it never uses the application's database connection). false turns semantic search off. Changing it builds the
 # index again in the background.
 # agents:
+#   runs:
+#     retentionDays: 14 # Events and prompt snapshots of finished runs; 0 disables cleanup.
 #   vectors:
 #     store: sqlite-vec # sqlite-vec | pgvector | false
 #     path: storage/vectors.sqlite
@@ -137,6 +143,7 @@ snowflake:
 # process that is killed loses what changed since it started. It serves one process: every other process or instance
 # would run its own copy. Set default to memory to keep that without the startup warning, or to redis to run several.
 # Redis must persist its data (AOF or RDB) and use maxmemory-policy noeviction, or schedules can be lost.
+# Agents' hourly run process cleanup also uses these jobs; instances must share the Redis namespace.
 # jobs:
 #   default: redis
 #   redis:
@@ -172,3 +179,9 @@ logging:
     enabled: true
     # Set true for human-readable terminal output.
     pretty: false
+
+# Structured manager idle recovery; timeout 0 disables it. Sweep interval must be positive.
+studio:
+  agents:
+    managerIdleMinutes: 15
+    managerIdleSweepMinutes: 5

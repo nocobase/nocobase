@@ -10,6 +10,15 @@ import type {
 } from '../../metadata/document-store.js';
 import { DefaultNamingStrategy } from '../../naming/default-strategy.js';
 import type { PhysicalCollectionIdentifier } from '../../schema/inspector/types.js';
+import {
+  readMetadataNamingSnapshot,
+  type CollectionMetadataNamingSnapshot,
+} from '../../metadata/internal/naming-snapshot.js';
+
+const indexes = new WeakMap<
+  CollectionMetadataNamingSnapshot,
+  Map<string, CollectionNamingIndex>
+>();
 
 export interface IndexedCollectionIdentity extends CollectionNamingIdentity {
   readonly tableName: string;
@@ -31,13 +40,11 @@ export class CollectionNamingIndex implements CollectionResolutionContext {
     naming: NamingOptions = {},
     overrides: readonly CollectionMetadataSummary[] = [],
   ): Promise<CollectionNamingIndex> {
-    const summaries: CollectionMetadataSummary[] = [];
-    let cursor: string | undefined;
-    do {
-      const page = await store.list({ limit: 1000, cursor });
-      summaries.push(...page.items);
-      cursor = page.nextCursor;
-    } while (cursor);
+    const snapshot = await readMetadataNamingSnapshot(store);
+    const key = JSON.stringify(effectiveNaming(naming));
+    const cached = indexes.get(snapshot)?.get(key);
+    if (cached && overrides.length === 0) return cached;
+    const summaries = [...snapshot];
     for (const override of overrides) {
       const index = summaries.findIndex((item) => item.name === override.name);
       if (index >= 0) summaries[index] = override;
@@ -71,7 +78,18 @@ export class CollectionNamingIndex implements CollectionResolutionContext {
       byName.set(summary.name, identity);
       byTableName.set(tableName, identity);
     }
-    return new CollectionNamingIndex(effectiveDefault, byName, byTableName);
+    const index = new CollectionNamingIndex(
+      effectiveDefault,
+      byName,
+      byTableName,
+    );
+    if (overrides.length === 0) {
+      const variants =
+        indexes.get(snapshot) ?? new Map<string, CollectionNamingIndex>();
+      variants.set(key, index);
+      indexes.set(snapshot, variants);
+    }
+    return index;
   }
 
   resolveLogicalCollection(name: string): IndexedCollectionIdentity {

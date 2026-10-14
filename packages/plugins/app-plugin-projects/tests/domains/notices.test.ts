@@ -17,7 +17,6 @@ import { createHarness, permissionsOf, type Harness } from '../harness.js';
 
 let h: Harness;
 let sent: ProjectNotice[];
-let resolved: Parameters<ProjectsNotices['resolve']>[0][];
 let stop: () => void;
 
 /** An application that binds its own notices and translates keys as `key(values)`. */
@@ -28,10 +27,6 @@ function application(): AppPluginApplication {
       {
         send: (notice: ProjectNotice) => {
           sent.push(notice);
-          return Promise.resolve();
-        },
-        resolve: (ref: Parameters<ProjectsNotices['resolve']>[0]) => {
-          resolved.push(ref);
           return Promise.resolve();
         },
       } satisfies ProjectsNotices,
@@ -62,10 +57,8 @@ function application(): AppPluginApplication {
 
 beforeEach(async () => {
   h = await createHarness();
-  await h.installStandardWorkflow();
   for (const id of ['admin', 'lead', 'alice']) await h.addUser(id, id);
   sent = [];
-  resolved = [];
   stop = startNotifications(application(), h.services.events);
 });
 afterEach(async () => {
@@ -86,245 +79,47 @@ async function moveTo(
   return h.services.issues.update(viewer, issue.id, {
     revision: current.revision,
     statusKey: to,
+    ...(to === 'blocked' || to === 'in_review'
+      ? { needsYou: 'Choose how to proceed.' }
+      : {}),
   });
 }
 
-/** An issue of a project `lead` leads, in review, whose move to done waits for the project lead. */
-async function heldIssue(): Promise<{ issue: Issue; requestId: string }> {
-  const [workflow] = await h.services.workflows.list(admin());
-  await h.services.workflows.update(admin(), workflow.id, {
-    revision: workflow.revision,
-    definition: {
-      ...workflow.definition,
-      transitions: [
-        ...workflow.definition.transitions,
-        {
-          from: 'in_review',
-          to: 'done',
-          actors: ['user'],
-          approval: { approvers: ['projectLead'] },
-        },
-      ],
-    },
-  });
-  const project = await h.services.projects.create(lead(), {
-    name: 'Payments',
-  });
-  const created = await h.services.issues.create(alice(), {
-    title: 'Retry callbacks',
-    projectId: project.id,
-  });
-  const issue = await moveTo(alice(), created, 'in_review');
-  const held = await moveTo(alice(), issue, 'done');
-  return { issue, requestId: held.pendingApproval?.id ?? '' };
-}
-
-describe('notices', () => {
-  it('asks the approvers to decide, then resolves the decision and tells whoever asked', async () => {
-    const { issue, requestId } = await heldIssue();
-    await vi.waitFor(() => expect(sent).toHaveLength(1));
-    expect(sent[0]).toMatchObject({
-      key: `pm:approval-requested:${requestId}`,
-      kind: 'decision',
-      type: 'approval_requested',
-      userIds: ['lead'],
-      title: `notifications.approvalRequested(identifier=${issue.identifier},status=status.done())`,
-      body: 'Retry callbacks',
-      path: `/issues/${issue.identifier}`,
-      issue: { id: issue.id, identifier: issue.identifier },
-      approvalRequestId: requestId,
-      params: {
-        identifier: issue.identifier,
-        status: 'done',
-        statusName: 'Done',
-      },
+describe('owner notified', () => {
+  it('tells the owner when someone else moves the issue to blocked or in review', async () => {
+    const issue = await h.services.issues.create(lead(), {
+      title: 'Retry callbacks',
+      statusKey: 'in_progress',
     });
-
-    await h.services.approvals.approve(lead(), requestId, {
-      comment: 'Ship it',
-    });
-    await vi.waitFor(() => expect(sent).toHaveLength(2));
-    expect(resolved).toEqual([
-      { approvalRequestId: requestId, outcome: 'approved' },
-    ]);
-    expect(sent[1]).toMatchObject({
-      kind: 'info',
-      type: 'approval_decided',
-      userIds: ['alice'],
-      body: 'Ship it',
-      approvalRequestId: requestId,
-      params: { outcome: 'approved' },
-    });
-  });
-
-  it('resolves a withdrawn request without telling anyone', async () => {
-    const { requestId } = await heldIssue();
-    await vi.waitFor(() => expect(sent).toHaveLength(1));
-    await h.services.approvals.withdraw(alice(), requestId);
+    await moveTo(alice(), issue, 'blocked');
     await vi.waitFor(() =>
-      expect(resolved).toEqual([
-        { approvalRequestId: requestId, outcome: 'withdrawn' },
-      ]),
-    );
-    expect(sent).toHaveLength(1);
-  });
-});
-
-describe('approval outcomes', () => {
-  /** An approval request's outcome, as the approvals domain announces it. */
-  const decided = (
-    issue: Issue,
-    overrides: Partial<{
-      status: 'approved' | 'rejected' | 'withdrawn' | 'stale';
-      requestedBy: { type: string; id: string };
-      decidedById: string | null;
-      staleReason: {
-        code: string;
-        message: string | null;
-        attemptedById: string | null;
-      } | null;
-    }>,
-  ) =>
-    h.services.events.emit({
-      type: 'approval.decided',
-      requestId: 'r1',
-      issueId: issue.id,
-      identifier: issue.identifier,
-      title: issue.title,
-      status: 'approved',
-      toStatus: 'done',
-      toStatusName: 'Done',
-      requestedBy: { type: 'agent', id: 'coder' },
-      ownerUserId: issue.ownerUserId,
-      approverUserIds: ['lead'],
-      decidedById: 'lead',
-      comment: null,
-      staleReason: null,
-      ...overrides,
-    });
-
-  it("tells the issue's owner the outcome of a request an agent made", async () => {
-    const issue = await h.services.issues.create(alice(), { title: 'Agent' });
-    decided(issue, { status: 'rejected' });
-    await vi.waitFor(() => expect(sent).toHaveLength(1));
-    expect(sent[0]).toMatchObject({
-      key: 'pm:approval-decided:r1',
-      kind: 'info',
-      type: 'approval_decided',
-      userIds: ['alice'],
-      params: { outcome: 'rejected', requestedByType: 'agent' },
-    });
-  });
-
-  it('tells nobody when the owner decided the request an agent made', async () => {
-    const issue = await h.services.issues.create(alice(), { title: 'Agent' });
-    decided(issue, { decidedById: 'alice' });
-    await vi.waitFor(() =>
-      expect(resolved).toEqual([
-        { approvalRequestId: 'r1', outcome: 'approved' },
-      ]),
-    );
-    expect(sent).toHaveLength(0);
-  });
-
-  it('tells the approvers and the asker that an approved request no longer applies, but not who approved it', async () => {
-    const issue = await h.services.issues.create(alice(), { title: 'Stale' });
-    decided(issue, {
-      status: 'stale',
-      requestedBy: { type: 'user', id: 'alice' },
-      decidedById: null,
-      staleReason: {
-        code: 'CHECKLIST_INCOMPLETE',
-        message: 'Check the required items of in_review first: Tests.',
-        attemptedById: 'lead',
-      },
-    });
-    await vi.waitFor(() => expect(sent).toHaveLength(1));
-    expect(sent[0]).toMatchObject({
-      key: 'pm:approval-stale:r1',
-      kind: 'info',
-      type: 'approval_stale',
-      userIds: ['alice'],
-      body: 'Check the required items of in_review first: Tests.',
-      params: {
-        outcome: 'stale',
-        code: 'CHECKLIST_INCOMPLETE',
-        status: 'done',
-      },
-    });
-  });
-
-  it('tells nobody when a request went stale because the issue moved on', async () => {
-    const issue = await h.services.issues.create(alice(), { title: 'Moved' });
-    decided(issue, {
-      status: 'stale',
-      requestedBy: { type: 'user', id: 'alice' },
-      decidedById: null,
-    });
-    await vi.waitFor(() =>
-      expect(resolved).toEqual([{ approvalRequestId: 'r1', outcome: 'stale' }]),
-    );
-    expect(sent).toHaveLength(0);
-  });
-
-  it('carries why an approved request went stale', async () => {
-    const [workflow] = await h.services.workflows.list(admin());
-    await h.services.workflows.update(admin(), workflow.id, {
-      revision: workflow.revision,
-      definition: {
-        states: workflow.definition.states.map((state) =>
-          state.key === 'in_review'
-            ? {
-                ...state,
-                rules: [
-                  {
-                    type: 'checklist',
-                    config: {
-                      items: [{ key: 'tests', label: 'Tests', required: true }],
-                    },
-                  },
-                ],
-              }
-            : state,
-        ),
-        transitions: [
-          ...workflow.definition.transitions,
-          {
-            from: 'in_review',
-            to: 'done',
-            actors: ['user'],
-            approval: { approvers: ['projectLead'] },
-          },
-        ],
-      },
-    });
-    const project = await h.services.projects.create(lead(), { name: 'P' });
-    const created = await h.services.issues.create(alice(), {
-      title: 'Checked',
-      projectId: project.id,
-    });
-    const issue = await moveTo(alice(), created, 'in_review');
-    await h.services.checklists.set(alice(), issue.id, 'in_review', 'tests', {
-      checked: true,
-    });
-    const held = await moveTo(alice(), issue, 'done');
-    await h.services.checklists.set(alice(), issue.id, 'in_review', 'tests', {
-      checked: false,
-    });
-    await h.services.approvals.approve(
-      lead(),
-      held.pendingApproval?.id ?? '',
-      {},
-    );
-    await vi.waitFor(() =>
-      expect(sent.map((notice) => notice.type)).toContain('approval_stale'),
+      expect(
+        sent.filter((notice) => notice.type === 'owner_notified'),
+      ).toHaveLength(1),
     );
     expect(
-      sent.find((notice) => notice.type === 'approval_stale'),
+      sent.find((notice) => notice.type === 'owner_notified'),
     ).toMatchObject({
-      userIds: ['alice'],
-      params: { code: 'CHECKLIST_INCOMPLETE' },
+      kind: 'info',
+      userIds: ['lead'],
+      title: `notifications.ownerNotified(identifier=${issue.identifier},status=status.blocked())`,
+      body: 'Retry callbacks',
+      params: { status: 'blocked', statusName: 'Blocked' },
     });
+    await moveTo(alice(), issue, 'in_review');
+    await vi.waitFor(() =>
+      expect(
+        sent.filter((notice) => notice.type === 'owner_notified'),
+      ).toHaveLength(2),
+    );
+    // The owner's own move tells nobody; a status that does not ask for the owner neither.
+    await moveTo(lead(), issue, 'blocked');
+    await moveTo(alice(), issue, 'in_progress');
+    expect(
+      (await h.services.issueQueries.activities(admin(), issue.id, {})).data
+        .filter((activity) => activity.action === 'owner_notified')
+        .map((activity) => activity.details.statusKey),
+    ).toEqual(['blocked', 'in_review']);
   });
 });
 
@@ -401,7 +196,7 @@ describe('collaboration notices', () => {
       ['status_changed', ['carol', 'bob']],
     ]);
     expect(sent[2]?.params).toMatchObject({
-      from: 'todo',
+      from: 'backlog',
       status: 'in_progress',
       statusName: 'In progress',
     });

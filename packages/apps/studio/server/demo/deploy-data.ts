@@ -113,7 +113,7 @@ export const DEMO_RUNNER_DIRECTORY = {
 /** The pull request that adds the website's workflow, waiting to be merged. */
 export const DEMO_CI_PULL_REQUEST = 12;
 
-/** The title of the issue the platform's agent connects its CI in. */
+/** The title of the issue the project manager connects the platform's CI in. */
 export const DEMO_CI_TASK_TITLE = 'Set up deployment';
 
 /** A fixed 40-hex commit, readable in the demo by its first characters. */
@@ -140,6 +140,7 @@ export interface DemoDeployIssue {
   readonly title: string;
   readonly description: string;
   readonly status: string;
+  readonly needsYou?: string;
   readonly priority: string;
   readonly owner: string;
   readonly executor: string;
@@ -167,6 +168,8 @@ export const DEMO_DEPLOY_ISSUES: readonly DemoDeployIssue[] = [
     description:
       'The sales team needs to import customers in bulk from Excel: a template to download, field mapping and an import results report.\n\nThe preview is deployed; open it from Preview on the right to try it.',
     status: 'in_review',
+    needsYou:
+      'Please try the customer import preview and approve the import workflow.',
     priority: 'high',
     owner: 'alex',
     executor: 'lisa',
@@ -187,6 +190,8 @@ export const DEMO_DEPLOY_ISSUES: readonly DemoDeployIssue[] = [
     description:
       'The opportunity board has a column per stage; drag a card to change its stage and order. The map view needs the SMS verification service key, so the preview is waiting for that variable.',
     status: 'in_review',
+    needsYou:
+      'Please review opportunity dragging and provide the SMS verification service key.',
     priority: 'medium',
     owner: 'alex',
     executor: 'leo',
