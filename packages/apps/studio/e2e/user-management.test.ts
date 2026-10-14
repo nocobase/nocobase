@@ -133,9 +133,29 @@ test('maintains a disabled account, profile, password deep link and role permiss
     .getByRole('button', { name: 'Disable user', exact: true })
     .click();
   await expect(row.getByText('Disabled', { exact: true })).toBeVisible();
+  // The all-status list already shows this disabled row. Wait for the new query
+  // before opening its menu, since switching lists replaces the row's controls.
+  const disabledUsers = page.waitForResponse((response) => {
+    const address = new URL(response.url());
+    return (
+      response.request().method() === 'GET' &&
+      address.pathname === new URL(url('/api/users')).pathname &&
+      address.searchParams.get('q') === 'Synthetic reviewer' &&
+      address.searchParams.get('status') === 'disabled'
+    );
+  });
   await page
     .getByRole('combobox', { name: 'Status', exact: true })
     .selectOption('disabled');
+  const filtered = await disabledUsers;
+  expect(filtered.status()).toBe(200);
+  const disabledPage = (await filtered.json()) as {
+    data: { id: string; disabledAt: string | null }[];
+  };
+  expect(disabledPage.data.map((user) => user.id)).toContain(account.id);
+  expect(disabledPage.data.every((user) => Boolean(user.disabledAt))).toBe(
+    true,
+  );
   await expect(row.getByText('Disabled', { exact: true })).toBeVisible();
   await shot('disabled-users-en');
   await row.getByRole('button', { name: 'Member actions' }).click();
