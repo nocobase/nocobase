@@ -72,7 +72,7 @@ import type { People } from '../../kernel/people.js';
 import type { IdSource } from '../../kernel/ids.js';
 import { runSecretsKey, type SecretMemory } from '../../kernel/redaction.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
-import { cleanList, covers, jsonObject } from '../../kernel/values.js';
+import { cleanList, covers } from '../../kernel/values.js';
 import { findAgent, lockAgentForClaim } from '../agents/index.js';
 import { joinBrief, renderBrief } from '../brief/index.js';
 import { cliPackageFor } from './cli-package.js';
@@ -114,7 +114,6 @@ import {
   type InputRecord,
   runsOfKey,
   runsRepo,
-  inputsRepo,
   sessionsRepo,
   toInput,
   toRun,
@@ -123,22 +122,12 @@ import {
 import { dropInputs } from './input-gate.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
 import { refreshQueuedIdentity } from './identity.js';
-import {
-  lockCommentRoot,
-  currentCommentOwner,
-  commentDecision,
-  commentFromOwner,
-  withdrawCommentRequests,
-} from './comment-consent.js';
-import { insertRunRequest, runRequestsRepo } from './run-requests.js';
 import { consumeReset, saveBrief } from './workspace.store.js';
 
 /** Queued runs looked at per claim, oldest first by priority. */
 const CANDIDATES = 50;
 
 export interface ClaimService {
-  reconcileCommentConsent(unit: Tx, runId: string): Promise<void>;
-  reconcileCommentQueue(): Promise<void>;
   /** Structured ordered-model diagnostics; machine visibility is enforced by the caller. */
   selectionWait(
     runId: string,
@@ -559,17 +548,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     run: Run,
     agent: Agent,
     requirePolicy = true,
-    trust?: 'team' | 'personal',
   ): Promise<ModelSelectionWait | null> {
     const policy = await deps.selectionPolicies?.forRun(conn, run);
     if ((requirePolicy && !policy) || !deps.runners) return null;
     const now = clock.now();
     const start = queueStart(run);
-    const registered = (await deps.runners.all(conn)).filter(
-      (runner) =>
-        !trust ||
-        (trust === 'team' ? runner.trust === 'team' : runner.trust !== 'team'),
-    );
+    const registered = await deps.runners.all(conn);
     const binding = deps.subjects.get(run.subject.kind);
     if (!binding)
       throw new Error(`No context provider for ${run.subject.kind}.`);
@@ -1093,129 +1077,23 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     });
   }
 
-  async function reconcileCommentConsent(
-    unit: Tx,
-    runId: string,
-  ): Promise<void> {
-    let run: RunRecord | null | undefined = await findRunRecord(
-      unit.conn,
-      runId,
-    );
-    if (!run?.commentRootRunId) return;
-    const root = await lockCommentRoot(unit.conn, run.commentRootRunId);
-    run = await findRunRecord(unit.conn, runId);
-    if (!run || run.status !== 'queued') {
-      await withdrawCommentRequests(
-        unit,
-        root.id,
-        clock.now().toISOString(),
-        runId,
-      );
-      return;
-    }
-    run = await refreshQueuedIdentity(unit, deps, run);
-    if (!run) return;
-    if (!(await currentCommentOwner(unit.conn, deps.subjects, root))) {
-      await finishRun(unit, deps, run, {
-        status: 'cancelled',
-        reason: null,
-        detail: 'The comment belongs to an earlier owner assignment.',
-      });
-      return;
-    }
-    if (root.commentExecution === 'requester') return;
-    if (
-      (await commentFromOwner(unit.conn, root)) ||
-      run.actorUserId !== root.ownerUserId
-    )
-      return;
-    const decision = await commentDecision(unit.conn, root);
-    if (decision === 'rejected') {
-      await finishRun(unit, deps, run, {
-        status: 'cancelled',
-        reason: null,
-        detail: 'The comment personal runner authorization is no longer valid.',
-      });
-      return;
-    }
-    if (decision === 'confirmed' || decision === 'pending') return;
-    const agent = await findAgent(unit.conn, run.agentId);
-    if (!agent) return;
-    const team = await selectionFacts(
-      unit.conn,
-      toRun(run),
-      agent,
-      false,
-      'team',
-    );
-    if (
-      !team ||
-      team.entries.some(
-        (e) =>
-          e.compatibleCount > 0 ||
-          e.reason === 'unknown' ||
-          e.blockers?.includes('unknown'),
-      )
-    )
-      return;
-    const personal = await selectionFacts(
-      unit.conn,
-      toRun(run),
-      agent,
-      false,
-      'personal',
-    );
-    if (!personal?.entries.some((e) => e.compatibleCount > 0)) return;
-    const sourceInputs = await inputsRepo(unit.conn).findMany({
-      filter: { runId: root.id },
-      sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
-    });
-    const input =
-      sourceInputs.find(
-        (input) =>
-          input.type === 'comment' &&
-          jsonObject(input.payload).commentSourceSnapshot === true,
-      ) ?? sourceInputs.find((input) => input.type === 'comment');
-    if (!input) return;
-    await insertRunRequest(unit, deps, {
-      purpose: 'personalRunner',
-      commentRootRunId: root.id,
-      commentRunId: run.id,
-      commentOwnerKey: root.commentOwnerKey ?? null,
-      agentId: run.agentId,
-      subject: toRun(run).subject,
-      threadScope: run.threadScope,
-      responsibleUserId: root.ownerUserId,
-      requestedByUserId: root.requestedByUserId ?? root.actorUserId,
-      ownerUserId: root.ownerUserId,
-      priority: Number(run.priority),
-      requires: toRun(run).requires,
-      fireAt: run.availableAt,
-      maxAttempts: Number(run.maxAttempts),
-      input: toInput(input),
-    });
-  }
-
   async function admit(
     unit: Tx,
     run: RunRecord,
     agent: Agent,
     runner: Runner | null,
     inputs: readonly RunInput[],
-    prepared?: unknown,
   ): Promise<boolean> {
-    const rejection = await deps.subjects.get(run.subjectKind)?.context.admit?.(
-      unit.conn,
-      {
+    const rejection = await deps.subjects
+      .get(run.subjectKind)
+      ?.context.admit?.(unit.conn, {
         run: toRun(run),
         agent,
         runner,
         inputs,
         cli: deps.cli.name,
         appName: deps.app.name,
-      },
-      prepared,
-    );
+      });
     if (!rejection) return true;
     await finishRun(unit, deps, run, {
       status: 'cancelled',
@@ -1234,8 +1112,6 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     // Repair pre-upgrade queued work before even checking personal runner ownership.
     if (deps.subjects.get(candidate.subjectKind)?.actsAs) {
       const current = await tx.run(async (unit) => {
-        if (candidate.commentRootRunId)
-          await lockCommentRoot(unit.conn, candidate.commentRootRunId);
         await lockAgentForClaim(unit.conn, agent.id, clock.now().toISOString());
         const run = await findRunRecord(unit.conn, candidate.id);
         return run?.status === 'queued'
@@ -1280,9 +1156,6 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         const { conn } = unit;
         const now = clock.now();
         const nowText = now.toISOString();
-        const root = candidate.commentRootRunId
-          ? await lockCommentRoot(conn, candidate.commentRootRunId)
-          : null;
         await lockAgentForClaim(conn, agent.id, nowText);
         const queuedRun = await findRunRecord(conn, candidate.id);
         if (!queuedRun || queuedRun.status !== 'queued') return null;
@@ -1290,32 +1163,6 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         // Providers were prepared for the candidate's identity outside this transaction.
         if (!identity || identity.actorUserId !== candidate.actorUserId)
           return null;
-        if (root && !(await currentCommentOwner(conn, deps.subjects, root)))
-          return null;
-        if (
-          root &&
-          root.commentExecution !== 'requester' &&
-          !(await commentFromOwner(conn, root)) &&
-          identity.actorUserId === root.ownerUserId
-        ) {
-          const decision = await commentDecision(conn, root);
-          if (decision === 'rejected') return null;
-          if (runner.trust !== 'team' && decision !== 'confirmed') return null;
-          if (decision === 'confirmed') {
-            const confirmation = await runRequestsRepo(conn).findOne({
-              filter: {
-                commentRootRunId: root.id,
-                purpose: 'personalRunner',
-                status: 'confirmed',
-              },
-            });
-            if (confirmation?.settledById)
-              await runsRepo(conn).updateMany({
-                filter: { id: identity.id, status: 'queued' },
-                values: { confirmedByUserId: confirmation.settledById },
-              });
-          }
-        }
         if (
           (await countActive(conn, 'agentId', agent.id)) >=
           agent.maxConcurrentRuns
@@ -1367,25 +1214,11 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         });
         if (claimed.updatedCount !== 1) return null;
         const run = (await findRunRecord(conn, candidate.id))!;
-        const pending = (await pendingInputs(conn, run.id)).filter(
-          (input) =>
-            !run.commentRootRunId ||
-            input.type !== 'comment' ||
-            jsonObject(input.payload).commentRootRunId === run.commentRootRunId,
-        );
+        const pending = await pendingInputs(conn, run.id);
         let assembled: Assembled;
         let selectionSnapshot: RunExecutionSnapshot['selection'];
         try {
-          if (
-            !(await admit(
-              unit,
-              run,
-              agent,
-              runner,
-              pending.map(toInput),
-              prepared.get('subject'),
-            ))
-          )
+          if (!(await admit(unit, run, agent, runner, pending.map(toInput))))
             return null;
           // Admission must precede preflight assembly: a missing or obsolete
           // subject is cancelled normally, rather than counted as setup failure.
@@ -1487,8 +1320,6 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
               subject: { kind: 'run', id: run.id, label: run.id },
             },
           });
-        if (root && runner.trust === 'team')
-          await withdrawCommentRequests(unit, root.id, nowText, run.id);
         return assembled.payload;
       });
     } catch (error) {
@@ -1605,29 +1436,6 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
   }
 
   return {
-    reconcileCommentConsent,
-    async reconcileCommentQueue() {
-      const queued = await runsRepo(tx.read()).findMany({
-        filter: (f) =>
-          f.and([
-            f.string('status').eq('queued'),
-            f.string('commentRootRunId').notEmpty(),
-          ]),
-        sort: (s) => [s.field('createdAt').asc()],
-        limit: 100,
-      });
-      const pending = await runRequestsRepo(tx.read()).findMany({
-        filter: { purpose: 'personalRunner', status: 'pending' },
-        limit: 100,
-      });
-      for (const id of new Set([
-        ...queued.map((run) => run.id),
-        ...pending
-          .map((request) => request.commentRunId)
-          .filter((id): id is string => Boolean(id)),
-      ]))
-        await tx.run((unit) => reconcileCommentConsent(unit, id));
-    },
     diagnose: (conn, run, agent) => selectionFacts(conn, run, agent, false),
     async selectionWait(runId) {
       const conn = tx.read();

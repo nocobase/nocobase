@@ -131,7 +131,6 @@ export interface ContextProvider {
   admit?(
     conn: DatabaseConnection,
     claim: ClaimContext,
-    prepared?: unknown,
   ): Promise<{ readonly reason: string; readonly detail?: string } | null>;
 
   /**
@@ -235,16 +234,6 @@ export interface SubjectReports {
 
 export interface SubjectBinding {
   readonly kind: string;
-  /** Reads current issue visibility outside database transactions for comment-origin work. */
-  readonly commentActorMayRead?: (
-    subjectId: string,
-    userId: string,
-  ) => Promise<boolean>;
-  /** Current owner assignment key, used only for comment-origin personal runner consent. */
-  readonly commentOwnerKey?: (
-    conn: DatabaseConnection,
-    subjectId: string,
-  ) => Promise<string | null>;
   /** Overrides execution identity for selected work. Undefined preserves the caller's identity; a null actorUserId refuses it.
    * Read in the enqueue/claim transaction. Claimed runs keep their identity until they finish.
    */
@@ -254,9 +243,6 @@ export interface SubjectBinding {
       readonly subjectId: string;
       readonly agentId: string;
       readonly causedByRunId?: string;
-      /** Server-managed comment execution mode; absent for independent events. */
-      readonly commentExecution?: Run['commentExecution'];
-      readonly actorUserId?: string;
       readonly inputs: readonly Pick<RunInput, 'actor' | 'payload'>[];
     },
   ) => Promise<

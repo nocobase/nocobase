@@ -32,48 +32,6 @@ const issue = () =>
 const mention = (id: string) => `[@Agent](mention://agent/${id}) do the step`;
 
 describe('manager and delegated identities', () => {
-  it('keeps the original comment through delegation, isolates replies, and leaves notes asleep', async () => {
-    const task = await issue();
-    const source = await h.projects.comments.create(h.viewer('bob'), task.id, {
-      content: 'Please continue the work.',
-    });
-    const [root] = await runs(task.id);
-    expect(root).toMatchObject({
-      actorUserId: 'alice',
-      requestedByUserId: 'bob',
-      commentRootRunId: root.id,
-      commentExecution: 'owner',
-    });
-    await h.claimOne();
-    const worker = await h.createAgent({ name: 'Comment worker' });
-    const delegated = await h.projects.comments.create(
-      {
-        ...h.viewer('alice'),
-        actor: { type: 'agent', id: PM, trace: { runId: root.id } },
-      },
-      task.id,
-      { content: mention(worker), parentId: source.comment.id },
-    );
-    const step = (await runs(task.id)).find((run) => run.agentId === worker)!;
-    expect(step).toMatchObject({
-      actorUserId: 'alice',
-      requestedByUserId: 'bob',
-      commentRootRunId: root.id,
-    });
-    await h.projects.comments.create(h.viewer('bob'), task.id, {
-      content: 'A separate request.',
-      parentId: delegated.comment.id,
-    });
-    expect(
-      (await runs(task.id)).filter((run) => run.commentRootRunId !== root.id)
-        .length,
-    ).toBeGreaterThan(0);
-    const count = (await runs(task.id)).length;
-    await h.projects.comments.create(h.viewer('bob'), task.id, {
-      content: `/note ${mention(worker)}`,
-    });
-    expect((await runs(task.id)).length).toBe(count);
-  });
   it('keeps three handled retries and their subsequent delegation in the manager chain at enqueue and claim', async () => {
     const task = await issue();
     const worker = await h.createAgent({ name: 'Worker' });
@@ -143,7 +101,7 @@ describe('manager and delegated identities', () => {
     expect(runTriggerActor(detail)?.id).toBe('alice');
   });
 
-  it('preserves the owner and original commenter for directly mentioned workers through retries', async () => {
+  it('preserves the retrying person for a direct worker through repeated handled retries', async () => {
     const task = await issue();
     const worker = await h.createAgent({ name: 'Direct worker' });
     await h.projects.comments.create(h.viewer('bob'), task.id, {
@@ -160,8 +118,7 @@ describe('manager and delegated identities', () => {
           values: { handledAt: new Date().toISOString() },
         });
       run = await h.agents.runs.retry(run.id, 'bob');
-      expect(run.actorUserId).toBe('alice');
-      expect(run.requestedByUserId).toBe('bob');
+      expect(run.actorUserId).toBe('bob');
     }
   });
 
@@ -241,22 +198,14 @@ describe('manager and delegated identities', () => {
     expect(run).toMatchObject({
       agentId: PM,
       actorUserId: 'alice',
-      requestedByUserId: 'bob',
+      requestedByUserId: 'alice',
       ownerUserId: 'alice',
     });
     expect(
       (await h.agents.runs.detail(run.id)).inputs.map(
         (input) => input.actor.id,
       ),
-    ).toEqual(['bob']);
-    const ownerStart = (await runs(task.id)).find(
-      (candidate) => candidate.id !== run.id,
-    )!;
-    expect(ownerStart).toMatchObject({
-      requestedByUserId: 'alice',
-      commentRootRunId: null,
-    });
-    await h.agents.runs.cancel(ownerStart.id, 'alice');
+    ).toEqual(['alice', 'bob']);
     await h.agents.runs.cancel(run.id, 'bob');
     const retried = await h.agents.runs.retry(run.id, 'bob');
     expect(retried).toMatchObject({
@@ -312,7 +261,7 @@ describe('manager and delegated identities', () => {
     expect(await runs(task.id)).toEqual([]);
   });
 
-  it('uses the owner for direct mentions, delegated steps, and replies while preserving their source', async () => {
+  it('covers the delegated chain but preserves direct human worker mentions', async () => {
     const task = await issue();
     const worker = await h.createAgent({ name: 'Worker' });
     const next = await h.createAgent({ name: 'Next' });
@@ -321,7 +270,7 @@ describe('manager and delegated identities', () => {
     });
     expect(
       (await runs(task.id)).find((run) => run.agentId === worker)?.actorUserId,
-    ).toBe('alice');
+    ).toBe('bob');
     const delegated = await h.projects.comments.create(
       { ...h.viewer('bob'), actor: { type: 'agent', id: PM } },
       task.id,
@@ -354,10 +303,7 @@ describe('manager and delegated identities', () => {
     const switched = await runs(task.id);
     expect(
       switched.find(
-        (run) =>
-          run.agentId === worker &&
-          run.actorUserId === 'alice' &&
-          run.requestedByUserId === 'bob',
+        (run) => run.agentId === worker && run.actorUserId === 'bob',
       ),
     ).toBeDefined();
     expect(switched.every((run) => run.status === 'cancelled')).toBe(true);
@@ -366,7 +312,7 @@ describe('manager and delegated identities', () => {
     );
   });
 
-  it('refreshes a comment worker identity at claim and requests cancellation on transfer', async () => {
+  it('corrects legacy delegated data at claim and requests cancellation on transfer', async () => {
     const task = await issue();
     const worker = await h.createAgent({ name: 'Worker' });
     await h.projects.comments.create(
@@ -376,7 +322,7 @@ describe('manager and delegated identities', () => {
     );
     const [run] = await runs(task.id);
     const original = (await h.agents.runs.detail(run.id)).inputs;
-    // Refresh the selected identity without changing this comment's authorization chain.
+    // Simulate a pre-upgrade hand-over, without the new identity marker.
     await h.database
       .connection()
       .repository('agRuns')
@@ -389,7 +335,6 @@ describe('manager and delegated identities', () => {
         values: {
           payload: {
             commentId: (original[0].payload as { commentId: string }).commentId,
-            commentRootRunId: run.commentRootRunId,
           },
         },
       });
@@ -659,10 +604,7 @@ describe('manager and delegated identities', () => {
     expect(retry.actorUserId).toBe('bob');
     expect(
       (await h.agents.runs.detail(retry.id)).inputs.map((input) => input.type),
-    ).toEqual(['comment', 'retry']);
-    expect(retry.commentRootRunId).toBe(retry.id);
-    expect(retry.commentRootRunId).not.toBe(previous.commentRootRunId);
-    expect(retry.confirmedByUserId).toBeNull();
+    ).toEqual(['retry']);
     const claimed = await h.claimOne();
     expect(claimed.run.id).toBe(retry.id);
     expect((await h.agents.runs.get(retry.id)).actorUserId).toBe('bob');

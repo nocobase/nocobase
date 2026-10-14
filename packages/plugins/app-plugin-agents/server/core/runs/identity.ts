@@ -1,11 +1,9 @@
 /** Subject-selected identities, refreshed before a queued run can borrow a runner or credentials. */
 import type { Tx } from '../../kernel/tx.js';
 import type { TransitionDeps } from './transitions.js';
-import { currentCommentOwner } from './comment-consent.js';
 import { finishRun } from './transitions.js';
 import {
   inputsRepo,
-  findRunRecord,
   runsRepo,
   toInput,
   toExecutions,
@@ -17,17 +15,6 @@ export async function refreshQueuedIdentity(
   deps: TransitionDeps,
   run: RunRecord,
 ): Promise<RunRecord | null> {
-  if (run.commentRootRunId && run.status === 'queued') {
-    const root = await findRunRecord(unit.conn, run.commentRootRunId);
-    if (!root || !(await currentCommentOwner(unit.conn, deps.subjects, root))) {
-      await finishRun(unit, deps, run, {
-        status: 'cancelled',
-        reason: null,
-        detail: 'The comment belongs to an earlier owner assignment.',
-      });
-      return null;
-    }
-  }
   const resolve = deps.subjects.get(run.subjectKind)?.actsAs;
   // A run returned to the queue after a lease loss has already fixed its identity.
   if (
@@ -45,8 +32,6 @@ export async function refreshQueuedIdentity(
     subjectId: run.subjectId,
     agentId: run.agentId,
     causedByRunId: run.retryOfRunId ?? undefined,
-    commentExecution: run.commentExecution,
-    actorUserId: run.actorUserId,
     inputs: inputs.map(toInput),
   });
   if (!identity) return run;
@@ -58,7 +43,6 @@ export async function refreshQueuedIdentity(
     });
     return null;
   }
-  if (run.commentExecution === 'requester') return run;
   if (
     run.actorUserId === identity.actorUserId &&
     run.ownerUserId === identity.actorUserId
