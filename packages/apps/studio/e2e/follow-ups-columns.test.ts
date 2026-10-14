@@ -4,8 +4,10 @@
  */
 import type { Locator, Page } from '@playwright/test';
 
-import { expect, open, test, unique } from './support/fixtures.ts';
+import { expect, open, test, unique, signIn } from './support/fixtures.ts';
 import type { Issue } from './support/runner.ts';
+
+test.use({ user: 'admin' });
 
 /** What the test reads from a scrolling element, without the DOM library. */
 interface ScrollArea {
@@ -49,10 +51,21 @@ test.describe('My follow-ups columns', () => {
   test('each column scrolls to its last item at common desktop sizes', async ({
     page,
     api,
+    context,
   }) => {
     test.setTimeout(180_000);
-    const me = await api.get<{ userId: string }>('projects/me');
     const suffix = unique();
+    const owner = {
+      email: `follow-ups-columns-${suffix}@example.com`,
+      password: 'isolated-follow-ups-password',
+    };
+    await api.post('users', {
+      ...owner,
+      name: 'Follow-ups test owner',
+      roleScopes: { studio: ['admin'] },
+    });
+    await signIn(context, owner);
+    const me = await api.get<{ userId: string }>('projects/me');
     const issues: Issue[] = [];
     for (let index = 0; index < 32; index += 1) {
       const created = await api.post<Issue>('projects/issues', {
@@ -65,6 +78,7 @@ test.describe('My follow-ups columns', () => {
       await api.patch(`projects/issues/${created.id}`, {
         revision: created.revision,
         statusKey: 'in_review',
+        needsYou: 'Please review the completed work.',
       });
       issues.push(created);
     }

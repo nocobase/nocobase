@@ -72,6 +72,9 @@ async function move(issue: Pick<Issue, 'id'>, statusKey: string) {
   return h.projects.issues.update(alice(), issue.id, {
     revision: current.revision,
     statusKey,
+    ...(statusKey === 'blocked' || statusKey === 'in_review'
+      ? { needsYou: 'Accept the result or provide a decision.' }
+      : {}),
   });
 }
 
@@ -939,6 +942,9 @@ describe('done by hand', () => {
       return h.projects.issues.update(h.viewer('carol'), issue.id, {
         revision: current.revision,
         statusKey: to,
+        ...(to === 'blocked' || to === 'in_review'
+          ? { needsYou: 'Accept the result.' }
+          : {}),
       });
     };
     await carolMoves('in_progress');

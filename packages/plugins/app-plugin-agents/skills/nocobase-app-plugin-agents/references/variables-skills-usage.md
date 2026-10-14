@@ -8,7 +8,9 @@ On the App's own pages, `VariablesSection` from `client/kit` edits a scope's var
 
 ## The skill library
 
-Skills (`agSkills`) follow the open Agent Skills format: a directory with `SKILL.md` (front matter `name` and `description` required) and supporting files under `scripts/`, `references/` and `assets/`. Every save is a version runs get at once; saves name the revision they were made against and conflict with 409 `REVISION_CONFLICT`. Skills are attached to agents, and as defaults to a working directory or a registered scope (`DefaultSkillsSection` in `client/kit`). Agents may run a skill's scripts. File contents go to the Drive disk `agents.skills.disk` names. See the README's "What it does" (Skills) and "Configuration" sections.
+Skills (`agSkills`) follow the open Agent Skills format: a directory with `SKILL.md` (front matter `name` and `description` required) and supporting files under `scripts/`, `references/` and `assets/`. Every save is a version runs get at once; saves name the revision they were made against and conflict with 409 `REVISION_CONFLICT`. Skills are attached to the fixed `global/default` target, a registered application scope, or a working directory (`DefaultSkillsSection` in `client/kit`). Agents may run a skill's scripts. File contents go to the Drive disk `agents.skills.disk` names. See the README's "What it does" (Skills) and "Configuration" sections.
+
+Every run merges global → application scopes → workdir; later targets override the same slug. `skill attachment get/set global default` requires `agents.agents` read/manage for reading and manage for writing. An empty `skillIds` array clears the target. Agent skill attachments are refused and legacy rows are ignored; agent variables remain supported. `global` is reserved and cannot be registered as an application scope or used for variables. Global changes affect subsequent claims and their existing skill fingerprint; no runner protocol change is needed.
 
 Skills the App's CLI ships (`nocobase.cli.skills`) reach every run beside the run's own.
 

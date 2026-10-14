@@ -18,7 +18,6 @@ import {
   askOf,
   nowLine,
   pullRequestLabel,
-  shortQuestion,
 } from '../../client/issues/live/summary-model.js';
 import type { FollowUpIssue, FollowUpsView } from '../../shared/follow-ups.js';
 import type { IssuePullRequest } from '../../shared/git.js';
@@ -289,10 +288,10 @@ describe('what the page lists', () => {
     const mark = { label: 'nocobase/nocobase#10662', state: 'open' } as const;
     expect(pullRequestLabel(mark)).toBe('PR #10662');
     expect(askOf(t, issue({ statusKey: 'in_review' }), mark)).toBe(
-      'issueLive.ask.acceptPullRequest {"label":"PR #10662"}',
+      'issueLive.ask.legacy',
     );
     expect(askOf(t, issue({ statusKey: 'in_review' }), null)).toBe(
-      'issueLive.ask.acceptIssue',
+      'issueLive.ask.legacy',
     );
     const progress = {
       state: 'needsDecision' as const,
@@ -301,7 +300,8 @@ describe('what the page lists', () => {
       since: null,
       runner: null,
       pullRequest: null,
-      question: 'Push again?',
+      needsYou: 'Push again?',
+      explanationCommentId: null,
       next: null,
       handOver: false,
     };
@@ -314,25 +314,9 @@ describe('what the page lists', () => {
     expect(
       nowLine(t, issue({ statusKey: 'blocked', owned: false, progress }), null),
     ).toEqual({
-      text: 'issueProgress.needsDecision {"question":"Push again?"}',
+      text: 'issueProgress.needsDecisionNoQuestion',
       needsViewer: false,
     });
     expect(nowLine(t, issue({ statusKey: 'backlog' }), null)).toBeNull();
-  });
-
-  it('asks a question as its first sentence, without Markdown or code', () => {
-    expect(
-      shortQuestion(
-        '已读完整评论。Sol 本步骤未完成：无提交，head `33cc199`。\n\n见 [PR #12](https://x)',
-      ),
-    ).toBe('已读完整评论。');
-    expect(
-      shortQuestion(
-        'Should we push `33cc199` again, or see [PR #12](https://x) first? More text.',
-      ),
-    ).toBe('Should we push 33cc199 again, or see PR #12 first?');
-    expect(shortQuestion('**Retry?**')).toBe('Retry?');
-    expect(shortQuestion('   ')).toBeNull();
-    expect(shortQuestion('x'.repeat(300))?.length).toBe(120);
   });
 });

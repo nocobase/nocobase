@@ -65,6 +65,12 @@ async function seed({ queued: withQueued = true } = {}): Promise<void> {
     await h.projects.issues.update(as, issueId, {
       revision: current.revision,
       statusKey,
+      ...(statusKey === 'blocked' || statusKey === 'in_review'
+        ? {
+            needsYou: `  Decide on the ${statusKey} issue.\nKeep the complete request.  `,
+            next: 'Wait for the structured decision.',
+          }
+        : {}),
     });
   };
 
@@ -106,6 +112,9 @@ async function seed({ queued: withQueued = true } = {}): Promise<void> {
     content: 'Next: wait for the owner\nNeeds you: pick A or B?',
   });
   await move(blocked.id, 'blocked', manager());
+  await h.projects.comments.create(manager(), blocked.id, {
+    content: 'Next: obsolete next\nNeeds you: obsolete question',
+  });
 
   const queued = await create('in_progress');
   await h.projects.comments.create(manager(), queued.id, {
@@ -226,6 +235,21 @@ describe('the progress of My follow-ups rows', () => {
       });
       states.add(row.state);
       expect(row).toEqual(asRow(own));
+      expect(row.needsYou).toBe(issue.needsYou);
+      expect(row.next).toBe(issue.next);
+      if (issue.statusKey === 'blocked') {
+        const [latest] = await h.projects.commentQueries.newestBy(
+          conn,
+          issue.id,
+          { type: 'agent', id: PROJECT_MANAGER_ID },
+          { live: true, limit: 1 },
+        );
+        expect(row.needsYou).toBe(
+          '  Decide on the blocked issue.\nKeep the complete request.  ',
+        );
+        expect(row.next).toBe('Wait for the structured decision.');
+        expect(row.explanationCommentId).toBe(latest.id);
+      }
     }
     expect([...states].sort()).toEqual(
       [

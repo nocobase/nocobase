@@ -17,6 +17,7 @@
  * `RUN_ACTION_FORBIDDEN` before the route runs (`runScopeStep`).
  */
 import { ApiError, declaredRouteActionOf } from '@nocobase/app-server/router';
+import { requireManagerProgress } from './manager/progress-validation.js';
 import type { AuthSession } from '@nocobase/app-plugin-authentication';
 import type {
   Actor,
@@ -206,6 +207,7 @@ export function runScopeStep(
             : 'This route names no action an agent may be given.',
           ...(action ? { metadata: { action } } : {}),
         });
+      await requireManagerProgress(request.http, identity);
       // A consulted agent's run reads only, but the plans it proposes reach as far as its agent and person do: the
       // person confirms them.
       request.keyScope = runKeyScope(

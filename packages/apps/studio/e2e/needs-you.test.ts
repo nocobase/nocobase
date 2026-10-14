@@ -1,5 +1,43 @@
-import { expect, open, test, unique, signIn, Api } from './support/fixtures.ts';
+import type { Page, WebSocket } from '@playwright/test';
+import { PM_REALTIME_TOPIC } from '@nocobase/app-plugin-projects/shared/realtime';
+import { expect, url, test, unique, signIn, Api } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
+import type { ServerState } from './support/server.ts';
+
+// Live projections require an acknowledged subscription, not global HTTP idleness or a polling fallback.
+async function open(
+  target: Page,
+  path: string,
+  studio: ServerState,
+): Promise<void> {
+  const topics = new Set<string>();
+  const observe = (socket: WebSocket): void => {
+    socket.on('framereceived', ({ payload }) => {
+      try {
+        const message = JSON.parse(payload.toString()) as {
+          type?: string;
+          topic?: string;
+        };
+        if (message.type === 'subscribed' && message.topic)
+          topics.add(message.topic);
+      } catch {
+        // Non-JSON transport frames cannot acknowledge a subscription.
+      }
+    });
+  };
+  target.on('websocket', observe);
+  try {
+    await target.goto(url(path, studio));
+    await expect
+      .poll(() => topics.has(PM_REALTIME_TOPIC), {
+        message:
+          'The issue change subscription must be acknowledged before live mutations',
+      })
+      .toBe(true);
+  } finally {
+    target.off('websocket', observe);
+  }
+}
 
 test.use({
   isolatedStudio: true,
@@ -9,7 +47,7 @@ test.use({
   navigationTimeout: 30_000,
 });
 
-test('one decision card, fixed blocked source, matching follow-ups and live resume', async ({
+test('structured owner request, latest explanation, matching follow-ups and live resume', async ({
   page,
   api,
   browser,
@@ -159,7 +197,7 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     const { issue, running, headers } = await make(
       'PM-331: restore the execution disk',
     );
-    const source = await comment(
+    const previous = await comment(
       api,
       issue,
       'Next: wait for the disk to recover.\nNeeds you: Restore the execution machine.\n\n[@Test operator](mention://user/test-operator) The disk is full. See [the runbook](https://example.com/runbook) and run `df -h`.\n\n```sh\ndf -h\n```',
@@ -167,18 +205,17 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     );
     await api.patch(
       `projects/issues/${issue.id}`,
-      { revision: (await current(issue)).revision, statusKey: 'blocked' },
+      {
+        revision: (await current(issue)).revision,
+        statusKey: 'blocked',
+        needsYou:
+          'Restore the execution machine. Verify the recovered disk capacity.',
+        next: 'Resume implementation after disk recovery.',
+      },
       headers,
     );
-    await comment(
-      api,
-      issue,
-      'Next: dispatch the next step.\n\nThe report was received; continue implementation.',
-      headers,
-    );
-    await runner.complete(running.runId, 'Reported the blocked source.');
     await api.put('followUps/following', { issueIds: [issue.id] });
-    await open(page, `/issues/${issue.identifier}`);
+    await open(page, `/issues/${issue.identifier}`, studio);
     const summary = page.getByTestId('issue-summary');
     await expect(summary.getByTestId('issue-needs-you')).toContainText(
       'Restore the execution machine.',
@@ -189,12 +226,42 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     await expect(page.locator('[data-decision="agent_blocked"]')).toHaveCount(
       0,
     );
+    await expect(summary).not.toContainText('The disk is full.');
+    await expect(summary).toContainText('Verify the recovered disk capacity.');
+    await expect(summary).toContainText(
+      'Resume implementation after disk recovery.',
+    );
+    await expect(summary).not.toContainText('dispatch the next step');
+    const explanationLink = summary.getByRole('link', {
+      name: 'View the project manager’s latest explanation',
+    });
+    await expect(explanationLink).toHaveAttribute(
+      'href',
+      new RegExp(`comment=${previous.comment.id}`),
+    );
+    const explanation = await comment(
+      api,
+      issue,
+      'Next: dispatch the next step.\n\nThe report was received; continue implementation.',
+      headers,
+    );
+    await runner.complete(running.runId, 'Reported the blocked source.');
     await expect(
-      summary.getByText('@Test operator', { exact: true }),
-    ).toBeVisible();
+      summary.getByTestId('issue-needs-you').locator('span').first(),
+    ).toHaveText(
+      'Restore the execution machine. Verify the recovered disk capacity.',
+    );
+    await expect(explanationLink).toHaveAttribute(
+      'href',
+      new RegExp(`comment=${explanation.comment.id}`),
+    );
+    await explanationLink.click();
+    await expect(page).toHaveURL(
+      new RegExp(`comment=${explanation.comment.id}`),
+    );
     await expect(
-      summary.getByRole('link', { name: 'the runbook' }),
-    ).toHaveAttribute('href', 'https://example.com/runbook');
+      page.locator(`[data-comment-id="${explanation.comment.id}"]`),
+    ).toBeInViewport();
     await shot('blocked-request');
     await summary.getByRole('button', { name: 'Reply', exact: true }).click();
     const editor = page.getByRole('textbox', { name: 'Comment' });
@@ -209,13 +276,13 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
           { root: { id: string }; replies: { content: string }[] }[]
         >(`projects/issues/${issue.id}/comments`);
         return threads
-          .find((thread) => thread.root.id === source.comment.id)
+          .find((thread) => thread.root.id === explanation.comment.id)
           ?.replies.some((reply) =>
             reply.content.includes('has been restored'),
           );
       })
       .toBe(true);
-    await open(page, '/follow-ups');
+    await open(page, '/follow-ups', studio);
     const rail = page.getByTestId('follow-ups-following');
     const mine = page.getByTestId('follow-ups-mine');
     await mine.getByRole('button', { name: /^Blocked\b/u }).click();
@@ -223,7 +290,7 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     const ownedRow = mine.locator(`[data-issue="${issue.identifier}"]`);
     const panel = page.getByTestId('follow-ups-activity');
     const standalone = await page.context().newPage();
-    await open(standalone, `/issues/${issue.identifier}`);
+    await open(standalone, `/issues/${issue.identifier}`, studio);
     const standaloneSummary = standalone.getByTestId('issue-summary');
     await expect(
       standaloneSummary.getByText('Blocked', { exact: true }),
@@ -231,8 +298,38 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     await expect(rail).toContainText(
       'Needs you: Restore the execution machine.',
     );
-    await expect(mine).toContainText(
+    await expect(rail).toContainText('Verify the recovered disk capacity.');
+    await expect(ownedRow.getByText('Blocked', { exact: true })).toBeVisible();
+    await expect(ownedRow).toContainText(
       'Needs you: Restore the execution machine.',
+    );
+    const panelSummary = panel.getByTestId('issue-summary');
+    await panelSummary
+      .getByRole('link', {
+        name: 'View the project manager’s latest explanation',
+      })
+      .click();
+    await expect(page).toHaveURL(
+      new RegExp(`comment=${explanation.comment.id}`),
+    );
+    const focusedExplanation = panel.locator(
+      `[data-comment-id="${explanation.comment.id}"]`,
+    );
+    await expect(focusedExplanation).toBeInViewport();
+    await expect(focusedExplanation).toHaveClass(/ring-2/u);
+    await test.info().attach('follow-ups-explanation-location.json', {
+      body: JSON.stringify({
+        entryURL: page.url(),
+        issue: issue.identifier,
+        commentId: explanation.comment.id,
+        highlighted: true,
+      }),
+      contentType: 'application/json',
+    });
+    await shot('blocked-follow-ups-explanation');
+    await panelSummary.scrollIntoViewIfNeeded();
+    await expect(panelSummary).toContainText(
+      'Restore the execution machine. Verify the recovered disk capacity.',
     );
     await shot('blocked-follow-ups');
     // Changes arrive through the live channel before either overview or progress polling interval.
@@ -315,7 +412,7 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
       timeout: 3000,
     });
     await standalone.close();
-    await open(page, `/issues/${issue.identifier}`);
+    await open(page, `/issues/${issue.identifier}`, studio);
     await expect(page.getByTestId('issue-needs-you')).toHaveCount(0);
     await expect(page.locator('[data-decision="agent_blocked"]')).toHaveCount(
       0,
@@ -333,13 +430,15 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
       {
         revision: (await current(waiting.issue)).revision,
         statusKey: 'blocked',
+        needsYou: 'Please restore the execution checkout.',
+        next: 'Resume work after checkout recovery.',
       },
       waiting.headers,
     );
     await runner.complete(waiting.running.runId, 'Reported checkout failure.');
-    await open(page, `/issues/${waiting.issue.identifier}`);
+    await open(page, `/issues/${waiting.issue.identifier}`, studio);
     await expect(page.getByTestId('issue-needs-you')).toContainText(
-      'Waiting: The checkout failed',
+      'Please restore the execution checkout.',
     );
     await expect(page.getByTestId('studio-issue-waiting')).toHaveCount(0);
     await shot('blocked-waiting');
@@ -355,16 +454,19 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     await api.patch(`projects/issues/${review.id}`, {
       revision: (await current(review)).revision,
       statusKey: 'in_review',
+      needsYou: 'Please review the card and live refresh implementation.',
     });
-    await open(page, `/issues/${review.identifier}`);
-    await expect(page.getByTestId('issue-delivery')).toBeVisible();
-    await expect(page.getByTestId('issue-delivery')).toContainText(
+    await open(page, `/issues/${review.identifier}`, studio);
+    await expect(page.getByTestId('issue-needs-you')).toContainText(
+      'Please review the card and live refresh implementation.',
+    );
+    await expect(page.getByTestId('issue-summary')).not.toContainText(
       'The card and live refresh are implemented.',
     );
     await expect(
       page
-        .getByTestId('issue-delivery')
-        .getByRole('heading', { name: /^Delivery notes/u }),
+        .getByTestId('issue-summary')
+        .getByRole('button', { name: 'Send back', exact: true }),
     ).toBeVisible();
     await shot('acceptance');
     const limited = await make('PM-297: continue comment-triggered runs');
@@ -401,7 +503,7 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     await expect
       .poll(() => api.get(`issueCommentRuns/${limited.issue.id}`))
       .not.toBeNull();
-    await open(page, `/issues/${limited.issue.identifier}`);
+    await open(page, `/issues/${limited.issue.identifier}`, studio);
     await expect(
       page.getByRole('button', { name: 'Continue', exact: true }),
     ).toBeVisible();
@@ -447,7 +549,7 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
       });
       await recipient.api.patch('users/me/preferences', { locale: 'en-US' });
       const recipientPage = await recipientContext.newPage();
-      await open(recipientPage, `/issues/${transfer.issue.identifier}`);
+      await open(recipientPage, `/issues/${transfer.issue.identifier}`, studio);
       await expect(
         recipientPage.getByRole('button', { name: 'Take over', exact: true }),
       ).toBeVisible();

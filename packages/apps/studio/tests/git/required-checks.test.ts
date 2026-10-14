@@ -41,6 +41,9 @@ async function move(issue: Pick<Issue, 'id'>, statusKey: string) {
   return h.projects.issues.update(alice(), issue.id, {
     revision: current.revision,
     statusKey,
+    ...(statusKey === 'in_review'
+      ? { needsYou: 'Please review this change.' }
+      : {}),
   });
 }
 

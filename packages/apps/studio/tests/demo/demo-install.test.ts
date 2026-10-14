@@ -13,6 +13,8 @@ import { databaseManagerToken } from '@nocobase/db';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createStandaloneServer } from '../../server/standalone.ts';
+import { DEMO_ISSUES } from '../../server/demo/data.ts';
+import { DEMO_DEPLOY_ISSUES } from '../../server/demo/deploy-data.ts';
 import { expectDeployDemo } from './deploy-demo-expectations.ts';
 
 describe('the demo on a fresh installation', () => {
@@ -60,6 +62,27 @@ describe('the demo on a fresh installation', () => {
           .select('id')
           .execute();
         expect(projects.length).toBeGreaterThan(0);
+        const issues = await query
+          .selectFrom('pmIssues')
+          .select(['id', 'title', 'statusKey', 'needsYou'])
+          .execute();
+        for (const spec of [...DEMO_ISSUES, ...DEMO_DEPLOY_ISSUES]) {
+          const issue = issues.find((each) => each.title === spec.title)!;
+          expect(issue).toMatchObject({
+            statusKey: spec.status,
+            needsYou: spec.needsYou ?? null,
+          });
+          if ('comments' in spec && spec.comments?.length) {
+            const comments = await query
+              .selectFrom('pmComments')
+              .select('id')
+              .where('issueId', '=', issue.id)
+              .execute();
+            expect(comments.length).toBeGreaterThanOrEqual(
+              spec.comments.length,
+            );
+          }
+        }
         // The preset labels, in English without a configured locale, which the demo's own labels reuse.
         const labelNames = (
           await query.selectFrom('pmLabels').select('name').execute()

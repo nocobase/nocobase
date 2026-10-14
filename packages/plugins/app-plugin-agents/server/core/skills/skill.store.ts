@@ -121,3 +121,58 @@ export async function replaceAttachments(
     });
   return unique;
 }
+
+export interface RunSkillRow {
+  readonly scope: string;
+  readonly scopeId: string;
+  readonly slug: string;
+  readonly name: string;
+  readonly description: string;
+  readonly version: number;
+  readonly hash: string | null;
+}
+
+/** Current delivery metadata in one portable query; a missing version remains visible. */
+export async function runSkillRows(
+  conn: DatabaseConnection,
+  targets: readonly { scope: string; scopeId: string }[],
+): Promise<RunSkillRow[]> {
+  if (targets.length === 0) return [];
+  const rows = await conn.query
+    .selectFrom('agSkillAttachments as a')
+    .innerJoin('agSkills as s', 's.id', 'a.skillId')
+    .leftJoin('agSkillVersions as v', (join) =>
+      join
+        .onRef('v.skillId', '=', 's.id')
+        .onRef('v.version', '=', 's.currentVersion'),
+    )
+    .select([
+      'a.scope',
+      'a.scopeId',
+      'a.createdAt',
+      'a.id',
+      's.slug',
+      's.name',
+      's.description',
+      's.currentVersion as version',
+      'v.contentHash as hash',
+    ])
+    .where((eb) =>
+      eb.or(
+        targets.map((target) =>
+          eb.and([
+            eb('a.scope', '=', target.scope),
+            eb('a.scopeId', '=', target.scopeId),
+          ]),
+        ),
+      ),
+    )
+    .orderBy('a.createdAt')
+    .orderBy('a.id')
+    .execute<RunSkillRow>();
+  return targets.flatMap((target) =>
+    rows.filter(
+      (row) => row.scope === target.scope && row.scopeId === target.scopeId,
+    ),
+  );
+}

@@ -60,7 +60,7 @@ export async function git(
     return stdout.trim();
   } catch (error) {
     if (options.signal?.aborted === true) await options.onAbort?.();
-    const stderr = (error as { stderr?: string }).stderr?.trim();
+    const stderr = (error as { stderr?: string }).stderr;
     throw new CheckoutError(
       `git ${args.join(' ')} failed${stderr ? `: ${stderr}` : ''}`,
     );

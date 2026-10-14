@@ -1,5 +1,6 @@
-/** Real application consent decisions, using isolated demo people and runner protocol clients. */
-import { Api, expect, open, signIn, test, unique } from './support/fixtures.ts';
+/** Consent decisions own their server: concurrent tests may change the shared manager's model choices. */
+import type { Page } from '@playwright/test';
+import { Api, expect, signIn, test, unique } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
 import type { IssueProgress } from '../shared/project-manager.ts';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
@@ -11,6 +12,7 @@ test.use({
   trace: 'off',
   isolatedStudio: true,
 });
+test.setTimeout(240_000);
 
 async function createRequester(api: Api) {
   // Preferences persist on the account; never change the demo person used by parallel sign-in tests.
@@ -32,13 +34,16 @@ test('comment work shares the decision card and runs only on an authorized ident
   browser,
   studio,
 }) => {
-  test.setTimeout(240_000);
+  const open = async (target: Page, route: string) => {
+    await target.goto(`${studio.baseURL}${route}`);
+    await target.waitForLoadState('networkidle');
+  };
   const requesterContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     locale: 'en-US',
   });
   await signIn(requesterContext, await createRequester(api), studio);
-  const requester = new Api(requesterContext.request);
+  const requester = new Api(requesterContext.request, studio);
   const requesterPage = await requesterContext.newPage();
   await requester.patch('users/me/preferences', { locale: 'en-US' });
   await api.patch('users/me/preferences', { locale: 'en-US' });
@@ -130,6 +135,29 @@ test('comment work shares the decision card and runs only on an authorized ident
       card.getByRole('button', { name: 'Confirm', exact: true }),
     ).toBeVisible();
     await shot('owner-consent-original');
+    for (const statusKey of ['blocked', 'in_review']) {
+      const needsYou =
+        'Confirm the recovery decision. Review the personal runner request separately.';
+      await api.patch(`projects/issues/${personalIssue.id}`, {
+        statusKey,
+        needsYou,
+        next: 'Continue after the owner decisions.',
+      });
+      await expect(card.getByTestId('issue-needs-you')).toContainText(needsYou);
+      await expect(
+        card.getByRole('button', { name: 'Confirm', exact: true }),
+      ).toBeVisible();
+      await expect(
+        card.getByRole('button', { name: 'Reject', exact: true }),
+      ).toBeVisible();
+      await expect(card).not.toContainText(original);
+      await expect(page.getByTestId('issue-feed')).toContainText(original);
+    }
+    await api.patch(`projects/issues/${personalIssue.id}`, {
+      statusKey: 'in_progress',
+    });
+    await expect(card.getByText(original)).toBeVisible();
+
     await open(requesterPage, `/issues/${personalIssue.identifier}`);
     await expect(
       requesterPage.getByText(
@@ -171,6 +199,16 @@ test('comment work shares the decision card and runs only on an authorized ident
     await laptop.complete(
       personalRun.runId,
       'The owner confirmed this isolated comment chain.',
+    );
+
+    // Returning to In progress legitimately queues the owner's main run; settle it before checking denied comment work.
+    const resumed = await laptop.start(personalIssue.identifier);
+    expect(
+      (await api.get<RunDetail>(`agents/runs/${resumed.runId}`)).actorUserId,
+    ).toBe(owner.userId);
+    await laptop.complete(
+      resumed.runId,
+      'The owner resumed work after the structured decisions.',
     );
 
     const rejectedIssue = await make(
@@ -266,13 +304,16 @@ test('owner delegation needs no extra consent and Run as me preserves both comme
   browser,
   studio,
 }) => {
-  test.setTimeout(240_000);
+  const open = async (target: Page, route: string) => {
+    await target.goto(`${studio.baseURL}${route}`);
+    await target.waitForLoadState('networkidle');
+  };
   const requesterContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     locale: 'en-US',
   });
   await signIn(requesterContext, await createRequester(api), studio);
-  const requester = new Api(requesterContext.request);
+  const requester = new Api(requesterContext.request, studio);
   const requesterPage = await requesterContext.newPage();
   await requester.patch('users/me/preferences', { locale: 'en-US' });
   await api.patch('users/me/preferences', { locale: 'en-US' });
