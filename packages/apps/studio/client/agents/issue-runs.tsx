@@ -218,7 +218,7 @@ function useHistoryRuns(
     retrying:
       run.status === 'queued' && run.failureReason
         ? [
-            run.attempt > 1
+            run.attempt > 1 && run.failureReason !== 'setupFailed'
               ? t('issueRuns.attemptFailed', { attempt: run.attempt - 1 })
               : t('issueRuns.preparationFailed'),
             failureMessage(run, failure),

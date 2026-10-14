@@ -234,12 +234,16 @@ describe('Studio issue run transcript', () => {
     },
   );
 
-  it.each([null, '2020-01-01T00:00:00.000Z'])(
-    'describes preparation failures without a zeroth attempt (%s)',
-    async (availableAt) => {
+  it.each([
+    [1, null],
+    [1, '2020-01-01T00:00:00.000Z'],
+    [2, null],
+  ] as const)(
+    'describes preparation failures without blaming a previous attempt (%s, %s)',
+    async (attempt, availableAt) => {
       state.run = {
         status: 'queued',
-        attempt: 1,
+        attempt,
         failureReason: 'setupFailed',
         failureDetail: 'Preparation error',
         availableAt,
@@ -249,6 +253,7 @@ describe('Studio issue run transcript', () => {
       expect(waiting).toHaveTextContent('Run preparation failed');
       expect(waiting).toHaveTextContent('Waiting to be dispatched again');
       expect(waiting).not.toHaveTextContent('Attempt 0');
+      expect(waiting).not.toHaveTextContent('Attempt 1 failed');
       expect(waiting).not.toHaveTextContent('scheduled');
     },
   );
