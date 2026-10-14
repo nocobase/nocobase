@@ -5,6 +5,7 @@ import {
 } from '../agents/comment-guard.js';
 import { readManagerSettings } from '../agents/manager/settings.js';
 import { createHash } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 /**
  * What a pull request's state does to its issues. Every read of the code host ends here (`store`): a webhook delivery, the poller, a merge check, a link,
  * a refresh, a merge preflight, a merge or a person marking it merged.
@@ -123,6 +124,32 @@ export interface GitFlow {
   requestMerges(issueId: string, onlyPullRequestId?: string): Promise<void>;
   /** An issue left In review for anything but a merge: its cards are withdrawn. */
   withdrawMerges(issueId: string): Promise<void>;
+}
+
+function signalReports(
+  repo: RepoRow,
+  pr: PullRequestRow,
+): [Signal, boolean | null][] {
+  const summary = checkSummaryOf(pr, repo.referenceChecks);
+  return [
+    ['checks', checksFailing(summary)],
+    [
+      'conflict',
+      pr.mergeableState === 'dirty'
+        ? true
+        : mergeableKnown(pr.mergeableState)
+          ? false
+          : null,
+    ],
+    ['passed', summary.ciState === 'success'],
+  ];
+}
+function signalEnabled(repo: RepoRow, signal: Signal): boolean {
+  return signal === 'checks'
+    ? repo.wakeOnChecks
+    : signal === 'passed'
+      ? repo.wakeOnChecksPassed
+      : repo.wakeOnConflict;
 }
 
 type After = (() => Promise<void>)[];
@@ -391,6 +418,79 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
       );
   }
 
+  async function hasRetryCandidate(
+    conn: DatabaseConnection,
+    repo: RepoRow,
+    pr: PullRequestRow,
+  ): Promise<boolean> {
+    if (pr.state !== 'open' || !pr.headSha || !deps.agents()) return false;
+    const fingerprint = checksFingerprint(pr, repo.referenceChecks);
+    const round =
+      pr.signals.observed?.fingerprint === fingerprint
+        ? pr.signals.observed.round
+        : (pr.signals.observed?.round ?? 0) + 1;
+    const pending = signalReports(repo, pr).filter(
+      ([signal, present]) => present === true && signalEnabled(repo, signal),
+    );
+    if (!pending.length) return false;
+    for (const link of await linksOfPullRequest(conn, pr.id)) {
+      const signals = pending.filter(([signal]) => {
+        const key = `${signal}@${pr.headSha}${signal === 'conflict' ? '' : `:${round}`}`;
+        const state = pr.signals[signal];
+        return (
+          state?.delivered?.[link.issueId] !== key &&
+          (signal === 'passed' ||
+            (state?.counts
+              ? (state.counts[link.issueId] ?? 0)
+              : (state?.count ?? 0)) < SIGNAL_WAKE_LIMIT)
+        );
+      });
+      if (!signals.length) continue;
+      const issue = await deps
+        .projects()
+        .issueContext.contextFor(conn, link.issueId);
+      if (
+        !issue ||
+        issue.status.category === 'done' ||
+        issue.status.category === 'closed' ||
+        issue.status.key === 'backlog' ||
+        issue.executor?.type !== AGENT_KIND
+      )
+        continue;
+      if ((await readOwnerHandoff(conn, issue.id))?.waiting) continue;
+      const held = await commentGuards(conn).findOne({
+        filter: { id: commentGuardId(issue.id) },
+      });
+      if (
+        held?.pendingToken ||
+        (await recentCommentRunCount(conn, issue.id, 24)) >=
+          (await readManagerSettings(conn)).commentRunLimit
+      )
+        continue;
+      const businessIssue = await conn
+        .repository<
+          import('@nocobase/app-plugin-projects/shared/issues').Issue
+        >('pmIssues')
+        .findOne({ filter: { id: issue.id } });
+      if (
+        businessIssue &&
+        (await deps.projects().subtasks.blockersOf(conn, businessIssue)).length
+      )
+        continue;
+      const agents = deps.agents();
+      if (!agents) return false;
+      const agent = await agents.agents.findWorkable(conn, issue.executor.id);
+      if (!agent || !agents.agents.mayInvoke(agent, issue.owner.id)) continue;
+      if (
+        agent.id === PROJECT_MANAGER_ID &&
+        !(await validIssueOwner(conn, issue.owner.id))
+      )
+        continue;
+      return true;
+    }
+    return false;
+  }
+
   async function wake(
     tx: ProjectsTx,
     repo: RepoRow,
@@ -404,6 +504,12 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
     const summary = checkSummaryOf(pr, repo.referenceChecks);
     const agents = deps.agents();
     for (const link of await linksOfPullRequest(tx.conn, pr.id)) {
+      // Delivered issues need no row lock, including when another linked issue is still pending.
+      if (
+        pr.signals[signal]?.delivered?.[link.issueId] ===
+        pr.signals[signal]?.key
+      )
+        continue;
       await tx.conn.query
         .updateTable('pmIssues')
         .set({ id: link.issueId })
@@ -429,8 +535,6 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
         continue;
       }
       if (issue.executor?.type !== AGENT_KIND || issue.status.key === 'backlog')
-        continue;
-      if (pr.signals[signal]?.delivered?.[issue.id] === pr.signals[signal]?.key)
         continue;
       const held = await commentGuards(tx.conn).findOne({
         filter: { id: commentGuardId(issue.id) },
@@ -550,18 +654,7 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
         : (observed?.round ?? 0) + 1;
     const next = { ...pr.signals, observed: { fingerprint, round } };
     const summary = checkSummaryOf(pr, repo.referenceChecks);
-    const reports: [Signal, boolean | null][] = [
-      ['checks', checksFailing(summary)],
-      [
-        'conflict',
-        pr.mergeableState === 'dirty'
-          ? true
-          : mergeableKnown(pr.mergeableState)
-            ? false
-            : null,
-      ],
-      ['passed', summary.ciState === 'success'],
-    ];
+    const reports = signalReports(repo, pr);
     for (const [signal, present] of reports) {
       const stored = next[signal];
       if (present !== true) {
@@ -593,13 +686,7 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
         delivered: stored?.key === key ? { ...stored.delivered } : {},
       };
       next[signal] = state;
-      if (
-        signal === 'checks'
-          ? repo.wakeOnChecks
-          : signal === 'passed'
-            ? repo.wakeOnChecksPassed
-            : repo.wakeOnConflict
-      ) {
+      if (signalEnabled(repo, signal)) {
         const delivered = await wake(
           tx,
           repo,
@@ -615,7 +702,8 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
         }
       }
     }
-    await updatePullRequest(tx.conn, pr.id, { signals: next });
+    if (!isDeepStrictEqual(next, pr.signals))
+      await updatePullRequest(tx.conn, pr.id, { signals: next });
   }
 
   async function runAfter(after: After): Promise<void> {
@@ -699,14 +787,39 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
       await deps.onStored?.(stored);
     },
     async retrySignals(repo, pr) {
+      // A 304 is the hot path: read current delivery markers before opening any write transaction.
+      const observed = await findPullRequest(
+        deps.projects().tx.read(),
+        repo.id,
+        pr.number,
+      );
+      if (
+        !observed ||
+        observed.headSha !== pr.headSha ||
+        !(await hasRetryCandidate(deps.projects().tx.read(), repo, observed))
+      )
+        return;
       const after: After = [];
       await deps.projects().tx.run(async (tx) => {
         await tx.conn
           .repository('studioPullRequests')
           .updateMany({ filter: { id: pr.id }, values: { id: pr.id } });
         const current = await findPullRequest(tx.conn, repo.id, pr.number);
-        if (current && current.headSha === pr.headSha)
-          await signals(tx, repo, current, after, null);
+        // A competing refresh or retry may have consumed this observation while we waited for the lock.
+        if (
+          !current ||
+          current.state !== 'open' ||
+          current.headSha !== observed.headSha ||
+          checksFingerprint(current, repo.referenceChecks) !==
+            checksFingerprint(observed, repo.referenceChecks) ||
+          !isDeepStrictEqual(
+            current.signals.observed,
+            observed.signals.observed,
+          ) ||
+          !(await hasRetryCandidate(tx.conn, repo, current))
+        )
+          return;
+        await signals(tx, repo, current, after, null);
       });
       await runAfter(after);
     },

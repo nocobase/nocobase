@@ -1,5 +1,6 @@
 /** Persistent idle epochs are derived from external progress, never the fallback's own manager loop. */
 import { createHash } from 'node:crypto';
+import type { DatabaseConnection } from '@nocobase/db';
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
 import type { Projects } from '@nocobase/app-plugin-projects/server/tokens';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
@@ -70,9 +71,106 @@ export async function sweepManagerIdle(
           f.date('deletedAt').empty(),
         ]),
     });
-  for (const candidate of rows)
+  async function inspect(conn: DatabaseConnection, issue: IssueRow) {
+    if (
+      (await agents.runs.openOn(conn, { kind: 'issue', id: issue.id })).length
+    )
+      return null;
+    const comments = (
+      await projects.commentQueries.list(conn, issue.id)
+    ).filter((c) => !c.deleted);
+    const latest = comments
+      .filter(
+        (c) => c.authorId === PROJECT_MANAGER_ID && c.authorType === 'agent',
+      )
+      .at(-1);
+    const waiting = waitingKind(latest ? nextLineOf(latest.content) : null);
+    if (!waiting) return null;
+    const workers = await conn
+      .repository<{
+        id: string;
+        subjectKind: string;
+        subjectId: string;
+        agentId: string;
+        status: string;
+        createdAt: string;
+        finishedAt: string | null;
+      }>('agRuns')
+      .findMany({ filter: { subjectKind: 'issue', subjectId: issue.id } });
+    const delegated = [];
+    for (const run of workers.filter((r) => r.agentId !== PROJECT_MANAGER_ID)) {
+      const detail = await agents.runs.identityInputs(conn, run.id);
+      if (detail && (await managerDelegation(conn, detail.run)))
+        delegated.push(run);
+    }
+    const prs = await pullRequestsOfIssue(conn, issue.id);
+    if (!(
+      (waiting.agent && delegated.length) ||
+      (waiting.checks && prs.some(({ pr }) => pr.state === 'open'))
+    ))
+      return null;
+    const prProgress = await Promise.all(
+      prs.map(async ({ pr }) => [
+        pr.id,
+        pr.state,
+        checksFingerprint(
+          pr,
+          (await findRepoById(conn, pr.repoId))?.referenceChecks ?? [],
+        ),
+      ]),
+    );
+    const external = comments.filter(
+      (c) => c.authorId !== PROJECT_MANAGER_ID || c.authorType !== 'agent',
+    );
+    const epoch = createHash('sha256')
+      .update(
+        JSON.stringify([
+          issue.revision,
+          issue.projectId,
+          issue.title,
+          issue.statusKey,
+          issue.ownerUserId,
+          issue.executorId,
+          issue.priority,
+          external.map((c) => [c.id, c.editedAt]),
+          delegated.map((r) => [r.id, r.status, r.finishedAt]).sort(),
+          prProgress.sort(),
+        ]),
+      )
+      .digest('hex');
+    const state = await conn
+      .repository<IdleState>('studioManagerIdle')
+      .findOne({ filter: { id: issue.id } });
+    return {
+      epoch,
+      state,
+      times: [
+        issue.createdAt,
+        issue.lastActivityAt,
+        latest?.createdAt,
+        ...external.map((c) => c.editedAt ?? c.createdAt),
+        ...delegated.map((r) => r.finishedAt ?? r.createdAt),
+      ]
+        .filter(Boolean)
+        .map((t) => new Date(t!).getTime()),
+    };
+  }
+  function needsWork(
+    observation: NonNullable<Awaited<ReturnType<typeof inspect>>>,
+  ) {
+    const { epoch, state } = observation;
+    return (
+      !state ||
+      state.epoch !== epoch ||
+      (state.wokenEpoch !== epoch &&
+        now.getTime() - new Date(state.lastAt).getTime() >= minutes * 60_000)
+    );
+  }
+  for (const candidate of rows) {
+    const observation = await inspect(projects.tx.read(), candidate);
+    if (!observation || !needsWork(observation)) continue;
     await projects.tx.run(async (tx) => {
-      // Lock before checking active runs and committing the epoch plus input. Duplicate sweepers wait here.
+      // Only candidates acquire the issue lock; recheck eligibility and epoch before committing any input.
       await tx.conn.query
         .updateTable('pmIssues')
         .set({ id: candidate.id })
@@ -89,88 +187,13 @@ export async function sweepManagerIdle(
         issue.executorId !== PROJECT_MANAGER_ID
       )
         return;
-      if (
-        (await agents.runs.openOn(tx.conn, { kind: 'issue', id: issue.id }))
-          .length
-      )
-        return;
-      const comments = (
-        await projects.commentQueries.list(tx.conn, issue.id)
-      ).filter((c) => !c.deleted);
-      const latest = comments
-        .filter(
-          (c) => c.authorId === PROJECT_MANAGER_ID && c.authorType === 'agent',
-        )
-        .at(-1);
-      const waiting = waitingKind(latest ? nextLineOf(latest.content) : null);
-      if (!waiting) return;
-      const workers = await tx.conn
-        .repository<{
-          id: string;
-          subjectKind: string;
-          subjectId: string;
-          agentId: string;
-          status: string;
-          createdAt: string;
-          finishedAt: string | null;
-        }>('agRuns')
-        .findMany({ filter: { subjectKind: 'issue', subjectId: issue.id } });
-      const delegated = [];
-      for (const run of workers.filter(
-        (r) => r.agentId !== PROJECT_MANAGER_ID,
-      )) {
-        const detail = await agents.runs.identityInputs(tx.conn, run.id);
-        if (detail && (await managerDelegation(tx.conn, detail.run)))
-          delegated.push(run);
-      }
-      const prs = await pullRequestsOfIssue(tx.conn, issue.id);
-      if (!(
-        (waiting.agent && delegated.length) ||
-        (waiting.checks && prs.some(({ pr }) => pr.state === 'open'))
-      ))
-        return;
-      const prProgress = await Promise.all(
-        prs.map(async ({ pr }) => [
-          pr.id,
-          pr.state,
-          checksFingerprint(
-            pr,
-            (await findRepoById(tx.conn, pr.repoId))?.referenceChecks ?? [],
-          ),
-        ]),
-      );
-      const external = comments.filter(
-        (c) => c.authorId !== PROJECT_MANAGER_ID || c.authorType !== 'agent',
-      );
-      const epoch = createHash('sha256')
-        .update(
-          JSON.stringify([
-            issue.revision,
-            issue.projectId,
-            issue.title,
-            issue.statusKey,
-            issue.ownerUserId,
-            issue.executorId,
-            issue.priority,
-            external.map((c) => [c.id, c.editedAt]),
-            delegated.map((r) => [r.id, r.status, r.finishedAt]).sort(),
-            prProgress.sort(),
-          ]),
-        )
-        .digest('hex');
+      const current = await inspect(tx.conn, issue);
+      if (!current || !needsWork(current)) return;
+      const { epoch, times } = current;
+      let { state } = current;
       const states = tx.conn.repository<IdleState>('studioManagerIdle');
-      let state = await states.findOne({ filter: { id: issue.id } });
       if (!state || state.epoch !== epoch) {
         // A first observation uses the latest genuine activity. Later changed snapshots begin a new idle period now.
-        const times = [
-          issue.createdAt,
-          issue.lastActivityAt,
-          latest?.createdAt,
-          ...external.map((c) => c.editedAt ?? c.createdAt),
-          ...delegated.map((r) => r.finishedAt ?? r.createdAt),
-        ]
-          .filter(Boolean)
-          .map((t) => new Date(t!).getTime());
         const lastAt = state
           ? now.toISOString()
           : new Date(Math.max(...times)).toISOString();
@@ -204,4 +227,5 @@ export async function sweepManagerIdle(
           values: { wokenEpoch: epoch },
         });
     });
+  }
 }
