@@ -57,7 +57,6 @@ import {
   type RunRecord,
 } from './run.store.js';
 import { finishRun, requeueRun, type TransitionDeps } from './transitions.js';
-import { activityVersion } from './activity.js';
 
 const executionReport = z.object({
   effort: z.string().trim().min(1).max(200).nullable(),
@@ -309,20 +308,22 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         const cancelRequested = run.cancelRequestedAt !== null;
         if (run.status === 'dispatched' && !cancelRequested) {
           const now = clock.now().toISOString();
-          await conn.query
-            .updateTable('agRuns')
-            .where('id', '=', run.id)
-            .where('status', '=', 'dispatched')
-            .set({
+          await runsRepo(conn).updateMany({
+            filter: (f) =>
+              f.and([
+                f.string('id').eq(run.id),
+                f.string('status').eq('dispatched'),
+              ]),
+            values: {
               status: 'running',
               startedAt: now,
-              lastActivityAt: (await activityVersion(conn, now)).expression,
+              lastActivityAt: now,
               workDir: request.workDir,
               acceptsInput: request.acceptsInput,
               ...(request.sessionId ? { sessionId: request.sessionId } : {}),
               updatedAt: now,
-            })
-            .execute();
+            },
+          });
           unit.emit({ type: 'run.changed', runId: run.id, status: 'running' });
         }
         const leaseExpiresAt = await extendLease(conn, run);
@@ -416,13 +417,10 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
               });
           }
         }
-        await conn.query
-          .updateTable('agRuns')
-          .where('id', '=', run.id)
-          .set({
-            lastActivityAt: (await activityVersion(conn, now)).expression,
-          })
-          .execute();
+        await runsRepo(conn).updateMany({
+          filter: { id: run.id },
+          values: { lastActivityAt: now },
+        });
         await recordActualModels(conn, run, reportedUsage, now, efforts, true);
         if (accepted > 0)
           unit.emit({ type: 'run.events', runId: run.id, lastSeq });
@@ -456,8 +454,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
     complete: (runner, runId, request) =>
       tx.run(async (unit) => {
         const handled = new Set(request.handledInputIds);
-        let recorded = false;
-        // Activity conflicts are bounded; exhaustion rolls back every outcome write.
+        // Revision conflicts are bounded; exhaustion rolls back the transaction.
         for (let attempt = 0; attempt < 4; attempt += 1) {
           const run = await held(unit.conn, runner, runId);
           if (run.status !== 'running')
@@ -477,11 +474,6 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
                 inputs: missing.map(toInput),
               },
             );
-          if (!recorded) {
-            await recordOutcome(unit, run, request);
-            await rememberSession(unit, run, request.sessionId, false);
-            recorded = true;
-          }
           const ended = await finishRun(
             unit,
             deps,
@@ -492,6 +484,10 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
               ...(request.sessionId ? { sessionId: request.sessionId } : {}),
             },
             true,
+            async () => {
+              await recordOutcome(unit, run, request);
+              await rememberSession(unit, run, request.sessionId, false);
+            },
           );
           if (ended) {
             secrets.forget(runSecretsKey(run.id));
@@ -500,7 +496,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         }
         throw new ProtocolError(
           'RUN_INPUT_PENDING',
-          'The run activity changed during completion; collect input and retry.',
+          'The run revision changed during completion; collect input and retry.',
           { inputIds: [], inputs: [] },
         );
       }),

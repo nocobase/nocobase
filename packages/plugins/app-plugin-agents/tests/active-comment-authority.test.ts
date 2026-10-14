@@ -31,6 +31,7 @@ describe('active comment source authority', () => {
       const sample = h.services.subjects.get('sample')!;
       h.services.subjects.register({
         ...sample,
+        kind: 'authorized-sample',
         actsAs: async () => ({ actorUserId: 'owner' }),
         responsibleUserId: async () => 'owner',
         commentOwnerKey: async () => key,
@@ -50,7 +51,7 @@ describe('active comment source authority', () => {
       });
       const source = await h.services.runs.enqueue({
         agentId: manager,
-        subject: { kind: 'sample', id: '1' },
+        subject: { kind: 'authorized-sample', id: '1' },
         actorUserId: foreign ? 'bob' : 'owner',
         ownerUserId: 'owner',
         comment: { ownerKey: key },
@@ -81,7 +82,7 @@ describe('active comment source authority', () => {
       });
       const original = await h.services.runs.enqueue({
         agentId: worker,
-        subject: { kind: 'sample', id: '1' },
+        subject: { kind: 'authorized-sample', id: '1' },
         actorUserId: 'owner',
         ownerUserId: 'owner',
         comment: { ownerKey: key },
@@ -121,7 +122,7 @@ describe('active comment source authority', () => {
       }
       const added = await h.services.runs.enqueue({
         agentId: worker,
-        subject: { kind: 'sample', id: '1' },
+        subject: { kind: 'authorized-sample', id: '1' },
         actorUserId: 'owner',
         ownerUserId: 'owner',
         causedByRunId: source.runId!,

@@ -1,4 +1,3 @@
-import { activityVersion } from './activity.js';
 /**
  * Claiming: handing queued runs to a runner that fits them, within each agent's concurrency limit, one run per
  * (agent, subject, thread) at a time, through the runners' one long-poll (`routes/runners/runner.ts`), which hands
@@ -1450,12 +1449,14 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         if (busy.length > 0) return null;
 
         const leaseExpiresAt = later(now, TIMINGS.leaseMs);
-        const claimed = await conn.query
-          .updateTable('agRuns')
-          .where('id', '=', candidate.id)
-          .where('status', '=', 'queued')
-          .where('actorUserId', '=', candidate.actorUserId)
-          .set({
+        const claimed = await runsRepo(conn).updateMany({
+          filter: (f) =>
+            f.and([
+              f.string('id').eq(candidate.id),
+              f.string('status').eq('queued'),
+              f.string('actorUserId').eq(candidate.actorUserId),
+            ]),
+          values: {
             status: 'dispatched',
             failureReason: null,
             failureDetail: null,
@@ -1465,14 +1466,14 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             tool: entry.tool,
             leaseExpiresAt,
             dispatchedAt: nowText,
-            lastActivityAt: (await activityVersion(conn, nowText)).expression,
+            lastActivityAt: nowText,
             availableAt: null,
             updatedAt: nowText,
             ...(consent.confirmedByUserId
               ? { confirmedByUserId: consent.confirmedByUserId }
               : {}),
-          })
-          .execute();
+          },
+        });
         if (claimed.updatedCount !== 1) return null;
         const run = (await findRunRecord(conn, candidate.id))!;
         const pending = (await pendingInputs(conn, run.id)).filter(

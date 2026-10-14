@@ -93,7 +93,6 @@ import {
   commentConsent,
   commentFromOwner,
 } from './comment-consent.js';
-import { guardVersion } from './activity.js';
 
 export const DEFAULT_THREAD = 'main';
 
@@ -710,28 +709,31 @@ export function createRunService(deps: RunServiceDeps): RunService {
     if (work.preferActive) {
       const commentId = jsonObject(work.input.payload).commentId;
       if (typeof commentId === 'string') {
-        const prior = await inputsRepo(unit.conn).findMany({
+        const prior = await inputsRepo(unit.conn).findOne({
           filter: (f) =>
             f.and([
               f.string('type').eq('comment'),
               f.json('payload').path(['commentId']).eq(commentId),
+              f
+                .relation('run')
+                .some((r) =>
+                  r.and([
+                    r.string('agentId').eq(agent.id),
+                    r.string('subjectKind').eq(work.subject.kind),
+                    r.string('subjectId').eq(work.subject.id),
+                  ]),
+                ),
             ]),
         });
-        for (const input of prior) {
-          const run = await findRunRecord(unit.conn, input.runId);
-          if (
-            run &&
-            run.agentId === agent.id &&
-            run.subjectKind === work.subject.kind &&
-            run.subjectId === work.subject.id
-          )
-            return {
-              runId: run.id,
-              inputId: input.id,
-              outcome: 'appended',
-              status: run.status,
-              duplicate: true,
-            };
+        if (prior) {
+          const run = (await findRunRecord(unit.conn, prior.runId))!;
+          return {
+            runId: run.id,
+            inputId: prior.id,
+            outcome: 'appended',
+            status: run.status,
+            duplicate: true,
+          };
         }
       }
     }
@@ -773,10 +775,13 @@ export function createRunService(deps: RunServiceDeps): RunService {
           continue;
         const runner = await deps.runners.find(unit.conn, candidate.runnerId);
         if (!runner?.features.includes('steer')) continue;
-        if (!(await equivalentCommentAuthority(unit, candidate, work)))
-          continue;
       }
       for (let attempt = 0; attempt < 4; attempt += 1) {
+        if (
+          work.preferActive &&
+          !(await equivalentCommentAuthority(unit, candidate, work))
+        )
+          break;
         const input = {
           id: '',
           at: clock.now().toISOString(),
@@ -795,23 +800,16 @@ export function createRunService(deps: RunServiceDeps): RunService {
             .length === 0
         )
           break;
-        const next = new Date(
-          Math.max(
-            clock.now().getTime(),
-            candidate.lastActivityAt
-              ? Date.parse(candidate.lastActivityAt) + 1
-              : 0,
-          ),
-        ).toISOString();
-        const touched = await guardVersion(
-          unit.conn,
-          candidate.id,
-          candidate.lastActivityAt,
-        )
-          .where('status', '=', candidate.status)
-          .where('cancelRequestedAt', 'is', null)
-          .set({ lastActivityAt: next })
-          .execute();
+        const touched = await runsRepo(unit.conn).updateMany({
+          filter: (f) =>
+            f.and([
+              f.string('id').eq(candidate.id),
+              f.string('status').eq(candidate.status),
+              f.number('revision').eq(candidate.revision),
+              f.date('cancelRequestedAt').empty(),
+            ]),
+          values: { updatedAt: clock.now().toISOString() },
+        });
         if (touched.updatedCount === 1) {
           working = candidate;
           break;
@@ -828,6 +826,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
           break;
         // A claim/start may change the holder or tool; re-evaluate those on a subsequent dispatch.
         if (
+          current.actorUserId !== work.actorUserId ||
+          current.threadScope !== work.threadScope ||
           current.runnerId !== candidate.runnerId ||
           current.tool !== candidate.tool
         )
@@ -835,7 +835,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         candidate = current;
         if (attempt === 3)
           throw conflict(
-            'The run activity changed during append; retry the dispatch.',
+            'The run revision changed during append; retry the dispatch.',
           );
       }
       if (working) break;
@@ -1362,22 +1362,14 @@ export function createRunService(deps: RunServiceDeps): RunService {
         if (isActive(run.status)) {
           let current = run;
           for (let attempt = 0; attempt < 4; attempt += 1) {
-            const version = new Date(
-              Math.max(
-                clock.now().getTime(),
-                current.lastActivityAt
-                  ? Date.parse(current.lastActivityAt) + 1
-                  : 0,
-              ),
-            ).toISOString();
-            const updated = await guardVersion(
-              unit.conn,
-              current.id,
-              current.lastActivityAt,
-            )
-              .where('status', '=', current.status)
-              .set({ lastActivityAt: version })
-              .execute();
+            const updated = await runsRepo(unit.conn).updateMany({
+              filter: {
+                id: current.id,
+                status: current.status,
+                revision: current.revision,
+              },
+              values: { updatedAt: clock.now().toISOString() },
+            });
             if (updated.updatedCount === 1)
               return insertInput(unit, current.id, input);
             current = await require(unit.conn, run.id);
@@ -1385,7 +1377,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
               throw conflict('The run moved on before input was appended.');
           }
           throw conflict(
-            'The run activity changed during append; retry the input.',
+            'The run revision changed during append; retry the input.',
           );
         }
         return insertInput(unit, run.id, input);

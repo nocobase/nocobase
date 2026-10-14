@@ -31,7 +31,7 @@ function barrier() {
   return { promise, release };
 }
 
-describe('active input activity versions', () => {
+describe('active input revisions', () => {
   let h: Harness;
   afterEach(async () => {
     vi.restoreAllMocks();
@@ -58,7 +58,7 @@ describe('active input activity versions', () => {
         ? queries.filter((q) => q.__knexTxId === transaction)
         : queries;
       const guards = measured.filter(
-        (q) => /^update/i.test(q.sql) && /where.*last_activity_at/i.test(q.sql),
+        (q) => /^update/i.test(q.sql) && /where.*revision/i.test(q.sql),
       );
       const sample = {
         dialect: testDatabaseDialect(),
@@ -206,12 +206,106 @@ describe('active input activity versions', () => {
       const { runId, append } = await setup();
       const [a, b] = await Promise.all([append(), append()]);
       expect(a.runId).toBe(runId);
-      expect(b).toMatchObject({ runId, inputId: a.inputId, duplicate: true });
+      expect(b).toMatchObject({ runId, inputId: a.inputId });
+      expect([a, b].filter((result) => result.duplicate)).toHaveLength(1);
+      expect(await store.runsRepo(h.database.connection()).count()).toBe(1);
       expect(
         await store
           .inputsRepo(h.database.connection())
           .findMany({ filter: { runId } }),
       ).toHaveLength(2);
+    },
+  );
+
+  it('retries a heartbeat revision conflict before completing', async () => {
+    const { runner, runId, request } = await setup();
+    const pending = store.pendingInputs;
+    let reads = 0;
+    vi.spyOn(store, 'pendingInputs').mockImplementation(async (conn, id) => {
+      const inputs = await pending(conn, id);
+      if (reads++ === 0)
+        await store
+          .runsRepo(conn)
+          .updateMany({
+            filter: { id },
+            values: { updatedAt: h.clock.now().toISOString() },
+          });
+      return inputs;
+    });
+    expect(
+      await measure('complete-conflict-heartbeat', () =>
+        complete(runner, runId, request),
+      ),
+    ).toEqual({ status: 'completed' });
+    expect(reads).toBe(2);
+  });
+
+  it('handles simultaneous append and complete without dropping or replaying input', async () => {
+    const { runner, runId, request, append } = await setup();
+    const [ended, added] = await Promise.allSettled([
+      complete(runner, runId, request),
+      append(),
+    ]);
+    expect(added.status).toBe('fulfilled');
+    if (added.status !== 'fulfilled') throw added.reason;
+    if (ended.status === 'fulfilled') expect(added.value.runId).not.toBe(runId);
+    else {
+      expect(ended.reason).toMatchObject({ code: 'RUN_INPUT_PENDING' });
+      expect(added.value.runId).toBe(runId);
+    }
+    expect(
+      (await store.findRunRecord(h.database.connection(), added.value.runId!))!
+        .status,
+    ).not.toBe('completed');
+    expect(await append()).toMatchObject({
+      runId: added.value.runId,
+      inputId: added.value.inputId,
+      duplicate: true,
+    });
+    expect(await store.runsRepo(h.database.connection()).count()).toBe(
+      ended.status === 'fulfilled' ? 2 : 1,
+    );
+  });
+
+  it.runIf(POSTGRES)(
+    'falls back when complete commits after append selected its candidate',
+    async () => {
+      const { runner, runId, request, append } = await setup();
+      const selected = barrier();
+      const resume = barrier();
+      const runsRepo = store.runsRepo;
+      let once = true;
+      vi.spyOn(store, 'runsRepo').mockImplementation((conn) => {
+        const repo = runsRepo(conn);
+        const update = repo.updateMany.bind(repo);
+        repo.updateMany = async (options) => {
+          // Append's CAS uses a callback; the completion also has one, but starts after the barrier.
+          if (once && typeof options.filter === 'function') {
+            once = false;
+            selected.release();
+            await resume.promise;
+          }
+          return update(options);
+        };
+        return repo;
+      });
+      const adding = measure('append-complete-wins', () => append());
+      await selected.promise;
+      await complete(runner, runId, request);
+      resume.release();
+      const added = await adding;
+      expect(added).toMatchObject({ outcome: 'created' });
+      expect(added.runId).not.toBe(runId);
+      expect(await append()).toMatchObject({
+        runId: added.runId,
+        inputId: added.inputId,
+        duplicate: true,
+      });
+      expect(
+        await store
+          .inputsRepo(h.database.connection())
+          .count({ filter: { runId } }),
+      ).toBe(1);
     },
   );
 
@@ -358,13 +452,13 @@ describe('active input activity versions', () => {
   it('strictly advances same-millisecond claim/start/events and cannot regress on delayed events', async () => {
     const { runner, runId, request, append } = await setup();
     const old = (await store.findRunRecord(h.database.connection(), runId))!
-      .lastActivityAt!;
+      .revision;
     const input = await append();
     const advanced = (await store.findRunRecord(
       h.database.connection(),
       runId,
-    ))!.lastActivityAt!;
-    expect(Date.parse(advanced)).toBeGreaterThan(Date.parse(old));
+    ))!.revision;
+    expect(advanced).toBeGreaterThan(old);
     await h.services.reports.events({ id: runner.runnerId }, runId, {
       events: [
         {
@@ -376,8 +470,8 @@ describe('active input activity versions', () => {
       ],
     });
     const current = (await store.findRunRecord(h.database.connection(), runId))!
-      .lastActivityAt!;
-    expect(Date.parse(current)).toBeGreaterThan(Date.parse(advanced));
+      .revision;
+    expect(current).toBeGreaterThan(advanced);
     await expect(
       measure('pending', () => complete(runner, runId, request)),
     ).rejects.toMatchObject({

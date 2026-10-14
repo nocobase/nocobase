@@ -64,11 +64,38 @@ async function setup(tool: 'claude' | 'codex') {
   return { issue, worker, manager, dispatch, original, payload };
 }
 
+async function measured<T>(name: string, action: () => Promise<T>): Promise<T> {
+  const client = await h.database.connection().client<Knex>();
+  const queries: string[] = [];
+  const listener = (q: { sql: string }) => queries.push(q.sql);
+  client.on('query', listener);
+  try {
+    return await action();
+  } finally {
+    client.off('query', listener);
+    if (process.env.PM385_SQL_REPORT)
+      await appendFile(
+        process.env.PM385_SQL_REPORT,
+        JSON.stringify({
+          dialect: h.database.connection().dialect,
+          name,
+          statements: queries.length,
+          reads: queries.filter((q) => /^\s*select/i.test(q)).length,
+          writes: queries.filter((q) => /^\s*(insert|update|delete)/i.test(q))
+            .length,
+          transactions: queries.filter((q) => /^begin/i.test(q)).length,
+          sql: queries,
+        }) + '\n',
+      );
+  }
+}
+
 describe('manager active dispatch', () => {
   it.each(['claude', 'codex'] as const)(
     'appends a new %s dispatch root and records one system reply without waking agents',
     async (tool) => {
-      const { issue, dispatch, original, payload, worker } = await setup(tool);
+      const { issue, dispatch, original, payload, worker, manager } =
+        await setup(tool);
       const client = await h.database.connection().client<Knex>();
       const queries: string[] = [];
       const listener = (q: { sql: string }) => queries.push(q.sql);
@@ -107,6 +134,33 @@ describe('manager active dispatch', () => {
       expect(reply?.content).toContain(
         `Appended to run ${payload.run.id} (input ${added.id})`,
       );
+      // Replaying the same trusted source is idempotent, including its system announcement.
+      const replay = () =>
+        h.projects.tx.run((tx) =>
+          h.projects.kinds.get('agent')!.work!.onCommentCreated!(tx, {
+            issue,
+            comment: followup.comment,
+            parent: null,
+            actor: manager.actor,
+            userId: 'alice',
+            mentions: [{ kind: 'agent', id: worker }],
+          }),
+        );
+      await measured('studio-duplicate-' + tool, replay);
+      const afterReplay = await h.projects.commentQueries.list(
+        h.database.connection(),
+        issue.id,
+      );
+      expect(
+        afterReplay.filter(
+          (comment) =>
+            comment.parentId === followup.comment.id &&
+            comment.authorType === 'system',
+        ),
+      ).toHaveLength(1);
+      expect((await h.agents.runs.detail(payload.run.id)).inputs).toHaveLength(
+        2,
+      );
       const response = await h.runner(RUNNER_ROUTES.lease, payload.run.id, {});
       expect(response.status).toBe(200);
       expect(response.body.inputs.map((i: { id: string }) => i.id)).toContain(
@@ -125,6 +179,61 @@ describe('manager active dispatch', () => {
             sql: queries,
           }) + '\n',
         );
+    },
+  );
+  it.each(['unsupported', 'ended'] as const)(
+    'preserves %s fallback for a complete manager comment dispatch',
+    async (reason) => {
+      const { issue, dispatch, payload, worker } = await setup('claude');
+      if (reason === 'unsupported') {
+        const conn = h.database.connection();
+        const run = (await conn
+          .repository('agRuns')
+          .findOne({ filter: { id: payload.run.id } }))!;
+        await conn
+          .repository('agRunners')
+          .updateMany({
+            filter: { id: run.runnerId },
+            values: {
+              features: features.filter((feature) => feature !== 'steer'),
+            },
+          });
+      } else {
+        expect(
+          (
+            await h.runner(RUNNER_ROUTES.complete, payload.run.id, {
+              summary: 'done',
+              handledInputIds: payload.inputs.map(
+                (input: { id: string }) => input.id,
+              ),
+            })
+          ).status,
+        ).toBe(200);
+      }
+      const added = await measured('studio-' + reason, dispatch);
+      const open = await h.agents.runs.openOn(
+        h.database.connection(),
+        { kind: 'issue', id: issue.id },
+        worker,
+      );
+      const next = open.find((run) => run.id !== payload.run.id)!;
+      expect(next.status).toBe('queued');
+      const detail = await h.agents.runs.detail(next.id);
+      expect(detail.inputs).toHaveLength(1);
+      expect(detail.inputs[0].payload).toMatchObject({
+        commentId: added.comment.id,
+      });
+      const comments = await h.projects.commentQueries.list(
+        h.database.connection(),
+        issue.id,
+      );
+      expect(
+        comments.filter(
+          (comment) =>
+            comment.parentId === added.comment.id &&
+            comment.authorType === 'system',
+        ),
+      ).toHaveLength(0);
     },
   );
 });

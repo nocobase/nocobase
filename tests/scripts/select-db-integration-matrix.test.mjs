@@ -131,7 +131,8 @@ test('unrelated paths and empty changes skip the matrix', () => {
 const claimConcurrency = {
   dialect: 'postgres',
   filter: '@nocobase/app-plugin-agents',
-  tests: 'tests/claim-concurrency.test.ts tests/active-input.test.ts',
+  tests:
+    'tests/claim-concurrency.test.ts tests/active-input.test.ts tests/run-revision-migration.test.ts',
 };
 
 test('a guarded package path selects its dialect suite, and nothing else does', () => {
@@ -140,6 +141,7 @@ test('a guarded package path selects its dialect suite, and nothing else does', 
     'packages/plugins/app-plugin-agents/server/core/runs/comment-consent.ts',
     'packages/plugins/app-plugin-agents/server/core/agents/agent.store.ts',
     'packages/plugins/app-plugin-agents/tests/claim-concurrency.test.ts',
+    'packages/plugins/app-plugin-agents/database/migrations/202610260001_ag_run_revision.ts',
   ]) {
     assert.deepEqual(selectPackageSuites([file]), [claimConcurrency], file);
     assert.deepEqual(selectDatabases([file]), [], file);
