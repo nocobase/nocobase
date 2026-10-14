@@ -196,15 +196,9 @@ function IssuePage({
         notificationKey: handoff?.handoff?.notificationKey,
         pullRequest: selectedPr,
         blocked: detail.statusKey === 'blocked',
-        commentId:
-          !progress?.personalRunnerRequests?.some(
-            (request) => request.canDecide,
-          ) &&
-          !handoffWaitsOn(handoff) &&
-          !pending &&
-          viewer?.userId === detail.ownerUserId
-            ? progress?.blockedComment?.id
-            : null,
+        ownerRequest:
+          detail.statusKey === 'blocked' &&
+          viewer?.userId === detail.ownerUserId,
         continuation:
           Boolean(pending) &&
           !progress?.personalRunnerRequests?.some(

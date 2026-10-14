@@ -30,7 +30,12 @@ export interface BoardMove {
  * failure snaps the card back with a notice. The override goes only after the list has been refetched, so an accepted
  * card does not flicker back to its old column in between. Moving an issue to `in_progress` starts its work.
  */
-export function useBoardMove(): BoardMove {
+export function useBoardMove(
+  requestNeedsYou?: (
+    issue: IssueListItem,
+    statusKey: string,
+  ) => Promise<string | null>,
+): BoardMove {
   // Named: the application calls this from its own page, in its own namespace.
   const { t } = useTranslation(ACCESS_NAMESPACE);
   const api = usePmApi();
@@ -52,9 +57,15 @@ export function useBoardMove(): BoardMove {
 
   async function send(issue: IssueListItem, statusKey: string): Promise<void> {
     try {
+      const needsOwner = statusKey === 'blocked' || statusKey === 'in_review';
+      const needsYou = needsOwner
+        ? await requestNeedsYou?.(issue, statusKey)
+        : null;
+      if (needsOwner && !needsYou?.trim()) return;
       await api.updateIssue(issue.id, {
         revision: issue.revision,
         statusKey,
+        ...(needsOwner ? { needsYou } : {}),
       });
       await queryClient.invalidateQueries({ queryKey: pmKeys.issues });
       void queryClient.invalidateQueries({ queryKey: pmKeys.issue(issue.id) });

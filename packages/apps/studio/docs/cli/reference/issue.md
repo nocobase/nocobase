@@ -512,22 +512,24 @@ nb-studio issue update <issue>
 | -------- | ----------- |
 | `issue`  |             |
 
-| Flag            | Type                                    | Description                                                                          |
-| --------------- | --------------------------------------- | ------------------------------------------------------------------------------------ |
-| `--title`       | string                                  |                                                                                      |
-| `--description` | string                                  | (or --description-file <path>)                                                       |
-| `--status`      | string                                  | Move it to this status: backlog, in_progress, blocked, in_review, done or cancelled. |
-| `--priority`    | urgent \| high \| medium \| low \| none |                                                                                      |
-| `--owner`       | string                                  |                                                                                      |
-| `--executor`    | json                                    |                                                                                      |
-| `--parent`      | string                                  |                                                                                      |
-| `--stage`       | integer                                 |                                                                                      |
-| `--project`     | string                                  |                                                                                      |
-| `--start-date`  | string                                  |                                                                                      |
-| `--due-date`    | string                                  |                                                                                      |
-| `--label`       | string[]                                | (repeatable)                                                                         |
-| `--start`       | boolean                                 |                                                                                      |
-| `--file`        | path                                    | The request body as a JSON object; the flags override its fields.                    |
+| Flag            | Type                                    | Description                                                                                                                                     |
+| --------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--needs-you`   | string                                  | The decision or input required from the owner. Required with blocked or in_review; cleared outside those statuses. (or --needs-you-file <path>) |
+| `--next`        | string                                  | The next step. Omit to retain; null or whitespace clears it. Terminal statuses clear it. (or --next-file <path>)                                |
+| `--title`       | string                                  |                                                                                                                                                 |
+| `--description` | string                                  | (or --description-file <path>)                                                                                                                  |
+| `--status`      | string                                  | Move it to this status: backlog, in_progress, blocked, in_review, done or cancelled.                                                            |
+| `--priority`    | urgent \| high \| medium \| low \| none |                                                                                                                                                 |
+| `--owner`       | string                                  |                                                                                                                                                 |
+| `--executor`    | json                                    |                                                                                                                                                 |
+| `--parent`      | string                                  |                                                                                                                                                 |
+| `--stage`       | integer                                 |                                                                                                                                                 |
+| `--project`     | string                                  |                                                                                                                                                 |
+| `--start-date`  | string                                  |                                                                                                                                                 |
+| `--due-date`    | string                                  |                                                                                                                                                 |
+| `--label`       | string[]                                | (repeatable)                                                                                                                                    |
+| `--start`       | boolean                                 |                                                                                                                                                 |
+| `--file`        | path                                    | The request body as a JSON object; the flags override its fields.                                                                               |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -538,6 +540,6 @@ nb-studio issue update <issue>
 **Examples:**
 
 ```bash
-nb-studio issue update PM-12 --status in_review
+nb-studio issue update PM-12 --status in_review --needs-you "Review the change and accept it or send it back."
 nb-studio issue update PM-12 --file change.json
 ```

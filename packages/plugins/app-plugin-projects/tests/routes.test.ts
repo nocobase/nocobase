@@ -164,6 +164,85 @@ const call = (path: string, init: RequestInit & { role?: string } = {}) => {
 };
 
 describe('the /api/projects guard', () => {
+  it.each([false, true])(
+    'updates structured progress through PATCH (delegated=%s)',
+    async (delegated) => {
+      if (delegated) {
+        container.instance(projectsDelegatedWritesToken, {
+          covers: () => true,
+          write: async (viewer, request) => {
+            const plan = await h.services.plans.create(
+              viewer,
+              {
+                title: request.title,
+                source: { kind: 'test' },
+                rows: request.rows,
+              },
+              { execute: true },
+            );
+            return { plan, meta: {} };
+          },
+        });
+      }
+      const issue = await h.services.issues.create(h.viewer('alice'), {
+        title: 'Progress',
+        statusKey: 'in_progress',
+      });
+      const request = (body: unknown, role?: string) =>
+        call(`/issues/${issue.id}`, {
+          role,
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        });
+      expect(
+        (await request({ statusKey: 'blocked', needsYou: 'Choose.' })).status,
+      ).toBe(401);
+      expect(
+        (await request({ statusKey: 'blocked', needsYou: 'Choose.' }, 'none'))
+          .status,
+      ).toBe(delegated ? 400 : 404);
+      const rejected = await request(
+        { statusKey: 'blocked', next: 'Not saved' },
+        'member',
+      );
+      expect(rejected.status).toBe(400);
+      expect(
+        await h.services.issueQueries.detail(h.viewer('alice'), issue.id),
+      ).toMatchObject({ statusKey: 'in_progress', needsYou: null, next: null });
+      const changed = await request(
+        {
+          statusKey: 'blocked',
+          needsYou: 'Choose the source. Provide its URL.',
+          next: 'Implement the choice.',
+        },
+        'member',
+      );
+      expect(changed.status).toBe(200);
+      expect(await changed.json()).toMatchObject({
+        data: {
+          issue: {
+            statusKey: 'blocked',
+            needsYou: 'Choose the source. Provide its URL.',
+            next: 'Implement the choice.',
+          },
+        },
+      });
+      expect(
+        (
+          await request(
+            { statusKey: 'in_review', needsYou: 'Accept the result.' },
+            'member',
+          )
+        ).status,
+      ).toBe(200);
+      expect(
+        (await request({ statusKey: 'in_progress' }, 'member')).status,
+      ).toBe(200);
+      expect(
+        await h.services.issueQueries.detail(h.viewer('alice'), issue.id),
+      ).toMatchObject({ needsYou: null, next: 'Implement the choice.' });
+    },
+  );
   it.each([true, false])(
     'returns safe shareable links to project leads when emailSent=%s',
     async (emailSent) => {

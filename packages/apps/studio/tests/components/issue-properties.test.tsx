@@ -78,7 +78,7 @@ const detail = {
 } as never;
 
 describe('the issue properties', () => {
-  it('lists the six fixed statuses and moves the issue with a plain change', async () => {
+  it('lists the six fixed statuses and submits owner input with a waiting status', async () => {
     const mutate = vi.fn();
     render(
       <QueryClientProvider client={new QueryClient()}>
@@ -104,8 +104,24 @@ describe('the issue properties', () => {
     await userEvent.click(
       within(list).getByRole('option', { name: 'Blocked' }),
     );
+    expect(mutate).not.toHaveBeenCalled();
+    const save = screen.getByRole('button', {
+      name: 'issueLive.summary.saveStatus',
+    });
+    expect(save).toBeDisabled();
+    const input = screen.getByRole('textbox', {
+      name: 'issueLive.summary.needsYou',
+    });
+    await userEvent.type(input, 'Choose the source. Provide its URL.');
+    await userEvent.click(save);
     await waitFor(() =>
-      expect(mutate).toHaveBeenCalledWith({ statusKey: 'blocked' }),
+      expect(mutate).toHaveBeenCalledWith(
+        {
+          statusKey: 'blocked',
+          needsYou: 'Choose the source. Provide its URL.',
+        },
+        expect.objectContaining({ onSuccess: expect.any(Function) }),
+      ),
     );
   });
 

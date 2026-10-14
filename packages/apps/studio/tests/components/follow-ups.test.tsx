@@ -93,7 +93,8 @@ const progress = (overrides: Partial<IssueProgress> = {}): IssueProgress => ({
   since: null,
   runner: null,
   pullRequest: null,
-  question: null,
+  needsYou: null,
+  explanationCommentId: null,
   next: null,
   handOver: false,
   ...overrides,
@@ -133,7 +134,11 @@ beforeEach(() => {
         statusKey: 'in_review',
         followed: true,
         unread: 2,
-        progress: progress({ state: 'inReview' }),
+        progress: progress({
+          state: 'inReview',
+          needsYou: 'Review the export. Accept it or send it back.',
+          explanationCommentId: 'manager-explanation',
+        }),
       }),
       issue({
         id: 'b1',
@@ -143,7 +148,8 @@ beforeEach(() => {
         lastActivityAt: at(3),
         progress: progress({
           state: 'needsDecision',
-          question: 'Push again?',
+          needsYou: 'Push again?',
+          explanationCommentId: null,
         }),
       }),
       issue({
@@ -207,7 +213,12 @@ beforeEach(() => {
         });
       if (request.path.startsWith('issueProgress/'))
         return Promise.resolve({
-          data: progress({ state: 'inReview', next: 'merge once accepted' }),
+          data: progress({
+            state: 'inReview',
+            next: 'merge once accepted',
+            needsYou: 'Review the export. Accept it or send it back.',
+            explanationCommentId: 'manager-explanation',
+          }),
         });
       return Promise.resolve(undefined);
     },
@@ -265,11 +276,55 @@ const card = (rail: HTMLElement, identifier: string) =>
   rail.querySelector<HTMLElement>(`[data-issue="${identifier}"]`)!;
 
 describe('My follow-ups', () => {
+  it.each(['blocked', 'in_review'])(
+    'shows complete structured text and the explanation link for %s without comment content',
+    async (statusKey) => {
+      const needsYou =
+        'Choose this source.\nProvide the URL and select the deployment region.';
+      const value = progress({
+        state: statusKey === 'blocked' ? 'needsDecision' : 'inReview',
+        needsYou,
+        next: 'Implement the selected source.',
+        explanationCommentId: 'new-explanation',
+      });
+      view.issues = view.issues.map((item) =>
+        item.id === 'r1' ? { ...item, statusKey, progress: value } : item,
+      );
+      const original = mocks.request.getMockImplementation()!;
+      mocks.request.mockImplementation((request) =>
+        request.path.startsWith('issueProgress/')
+          ? Promise.resolve({ data: value })
+          : original(request),
+      );
+      const rail = await mount();
+      expect(card(rail, 'WEB-5').textContent).toContain(needsYou);
+      const panel = await screen.findByTestId('follow-ups-activity');
+      await waitFor(() =>
+        expect(
+          within(panel).getByTestId('issue-needs-you').textContent,
+        ).toContain(needsYou),
+      );
+      const summary = within(panel).getByTestId('issue-summary');
+      expect(summary.textContent).not.toContain(
+        'Implement the change and open a PR.',
+      );
+      const link = within(summary).getByRole('link', {
+        name: 'View the project manager’s latest explanation',
+      });
+      expect(link.getAttribute('href')).toContain('comment=new-explanation');
+      fireEvent.click(link);
+      expect(
+        within(panel).getByTestId('issue-needs-you').textContent,
+      ).toContain(needsYou);
+    },
+  );
   it('shows the followed issues, what needs the viewer and what is new, with the first one open', async () => {
     const rail = await mount();
     const first = card(rail, 'WEB-5');
     await waitFor(() =>
-      expect(first.textContent).toContain('Needs you: Accept: PR #12'),
+      expect(first.textContent).toContain(
+        'Needs you: Review the export. Accept it or send it back.',
+      ),
     );
     // The open issue's count is not shown; the other one's is.
     expect(first.getAttribute('aria-current')).toBe('true');
@@ -293,14 +348,20 @@ describe('My follow-ups', () => {
       expect(panel.textContent).toContain('Checks passed · Has conflicts'),
     );
     expect(within(panel).getByTestId('issue-needs-you').textContent).toContain(
-      'Accept: PR #12',
+      'Review the export. Accept it or send it back.',
     );
     expect(within(panel).getByTestId('follow-toggle').textContent).toContain(
       'Following · 2/5',
     );
     // In review: what was delivered and Send back; the feed and the reply box under it.
     const delivery = within(panel).getByTestId('issue-delivery');
-    expect(delivery.textContent).toContain('Implement the change');
+    expect(delivery.textContent).not.toContain('Implement the change');
+    const explanation = within(delivery).getByRole('link', {
+      name: 'View the project manager’s latest explanation',
+    });
+    expect(explanation.getAttribute('href')).toContain(
+      'comment=manager-explanation',
+    );
     fireEvent.click(
       within(delivery).getByRole('button', { name: 'Send back' }),
     );

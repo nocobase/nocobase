@@ -7,6 +7,7 @@ import type { DatabaseConnection } from '@nocobase/db';
 import { PRIORITIES, type Priority } from '../../../shared/common.js';
 import {
   ISSUE_DESCRIPTION_MAX,
+  ISSUE_PROGRESS_MAX,
   ISSUE_TITLE_MAX,
   type CreateIssueRequest,
   type Executor,
@@ -45,6 +46,39 @@ import {
 import { isTerminal, type StatusCatalog, type StatusService } from './ports.js';
 
 const MAX_PARENT_DEPTH = 50;
+
+/** Status writes and progress-only writes share these rules, including system events. */
+export function progressValues(
+  before: Issue,
+  patch: Pick<UpdateIssueRequest, 'statusKey' | 'needsYou' | 'next'>,
+): IssueValues {
+  const target = patch.statusKey ?? before.statusKey;
+  const needsOwner = target === 'blocked' || target === 'in_review';
+  const values: { needsYou?: string | null; next?: string | null } = {};
+  if (
+    needsOwner &&
+    (patch.statusKey !== undefined || patch.needsYou !== undefined)
+  ) {
+    if (typeof patch.needsYou !== 'string' || !patch.needsYou.trim())
+      throw invalid(
+        'NEEDS_YOU_REQUIRED',
+        'Fill in needsYou with the decision or input the owner needs to provide before entering blocked or in_review.',
+      );
+    values.needsYou = optionalText(
+      patch.needsYou,
+      'needsYou',
+      ISSUE_PROGRESS_MAX,
+    );
+  } else if (!needsOwner) {
+    values.needsYou = null;
+  }
+  if (patch.next !== undefined)
+    values.next = optionalText(patch.next, 'next', ISSUE_PROGRESS_MAX)?.trim()
+      ? patch.next
+      : null;
+  if (target === 'done' || target === 'cancelled') values.next = null;
+  return values;
+}
 
 export interface FieldDeps {
   readonly users: UserDirectory;
@@ -385,6 +419,10 @@ export async function resolveUpdate(
   change('projectId', 'project_changed', projectId);
   const catalog = ctx.statuses.catalog();
   let statusChange: Changes['status'];
+  const progress = progressValues(before, patch);
+  for (const field of ['needsYou', 'next'] as const)
+    if (progress[field] !== undefined && progress[field] !== before[field])
+      values[field] = progress[field];
   if (patch.statusKey !== undefined) {
     const target = status(catalog, patch.statusKey);
     if (target !== before.statusKey) {

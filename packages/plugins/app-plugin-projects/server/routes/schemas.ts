@@ -425,6 +425,14 @@ export type UpdateIssueInput = Omit<UpdateIssueRequest, 'revision'> & {
 };
 
 export const UpdateIssueBody: z.ZodType<UpdateIssueInput> = z.strictObject({
+  needsYou: z.string().nullable().optional().meta({
+    description:
+      'The decision or input required from the owner. Required with blocked or in_review; cleared outside those statuses.',
+  }),
+  next: z.string().nullable().optional().meta({
+    description:
+      'The next step. Omit to retain; null or whitespace clears it. Terminal statuses clear it.',
+  }),
   revision: z.number().int().optional().meta({
     description:
       'The revision the change is based on; left out, the change applies to the issue as it is now.',
@@ -905,6 +913,20 @@ const issueShape = {
   title: z.string(),
   description: z.string().meta({ description: 'Markdown.' }),
   statusKey: z.string(),
+  needsYou: z
+    .string()
+    .nullable()
+    .meta({
+      description:
+        'The decision or input required from the owner; null outside Blocked and In review, or on historical issues.',
+    }),
+  next: z
+    .string()
+    .nullable()
+    .meta({
+      description:
+        'The next step; null when none is recorded or the issue is Done or Cancelled.',
+    }),
   priority: z.enum(PRIORITIES),
   ownerUserId: z.string(),
   executor: ExecutorSchema.nullable(),
@@ -1129,7 +1151,12 @@ const PlanRowInputSchema: z.ZodType<PlanRowInput> = z
       ref: z.string().optional(),
       params: z.object({
         issue: issueTarget,
-        set: z.object({ title: z.string().optional(), ...issueFieldChanges }),
+        set: z.object({
+          title: z.string().optional(),
+          ...issueFieldChanges,
+          needsYou: z.string().nullable().optional(),
+          next: z.string().nullable().optional(),
+        }),
         start: z.boolean().optional(),
       }),
     }),

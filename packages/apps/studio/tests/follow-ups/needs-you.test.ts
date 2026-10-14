@@ -17,7 +17,8 @@ const progress = (patch: Partial<IssueProgress> = {}): IssueProgress => ({
   since: null,
   runner: null,
   pullRequest: null,
-  question: null,
+  needsYou: null,
+  explanationCommentId: null,
   next: null,
   handOver: false,
   ...patch,
@@ -102,12 +103,12 @@ describe('the shared Needs you text and coverage', () => {
           'blocked',
           progress({
             state: 'waitingForContinuation',
-            question: 'A report was received.',
+            needsYou: 'A report was received.',
           }),
         ),
         null,
       ),
-    ).toBe('issueLive.ask.continue');
+    ).toBe('A report was received.');
     expect(
       askOf(
         t,
@@ -116,32 +117,41 @@ describe('the shared Needs you text and coverage', () => {
       ),
     ).toBe('issueLive.ask.continue');
   });
-  it('shows a declared line without calling it a question; a report without a line is only Waiting', () => {
-    expect(
-      askOf(
-        t,
-        issue('blocked', progress({ question: 'Confirm **this** proposal.' })),
-        null,
-      ),
-    ).toBe('Confirm this proposal.');
-    const waiting = issue(
-      'blocked',
-      progress({
-        blockedComment: {
-          id: 'source',
-          content: 'Next: wait.\n\nThe read-only report is complete.',
-        },
-      }),
-    );
-    expect(nowLine(t, waiting, null)).toEqual({
-      text: 'issueLive.ask.waiting{"reason":"The read-only report is complete."}',
-      needsViewer: false,
-    });
-  });
+  it.each(['blocked', 'in_review'])(
+    'shows the entire structured request and historical fallback for %s',
+    (statusKey) => {
+      const needsYou =
+        'Confirm **this** proposal.\nProvide the URL and choose the region.';
+      expect(askOf(t, issue(statusKey, progress({ needsYou })), null)).toBe(
+        needsYou,
+      );
+      expect(
+        askOf(
+          t,
+          issue(
+            statusKey,
+            progress({
+              needsYou,
+              state: 'waitingForContinuation',
+              waiting: { reason: 'waitingOwner', owner: null },
+            }),
+          ),
+          null,
+        ),
+      ).toBe(needsYou);
+      expect(
+        nowLine(
+          t,
+          issue(statusKey, progress({ explanationCommentId: 'latest' })),
+          null,
+        ),
+      ).toEqual({ text: 'issueLive.ask.legacy', needsViewer: true });
+    },
+  );
   it('PM-331 hides the old blocked request immediately after leaving Blocked', () => {
     const stale = progress({
       state: 'needsDecision',
-      question: 'Restore the disk.',
+      needsYou: 'Restore the disk.',
     });
     expect(askOf(t, issue('in_progress', stale), null)).toBeNull();
     expect(
@@ -176,15 +186,16 @@ describe('the shared Needs you text and coverage', () => {
         label: 'acme/app#7',
         state: 'open',
       }),
-    ).toBe('issueLive.ask.acceptPullRequest{"label":"PR #7"}');
+    ).toBe('issueLive.ask.legacy');
   });
-  it('covers only the selected PR, handoff instance and blocked comment', () => {
+  it('covers the selected PR, handoff instance and the structured blocked request regardless of explanation ID', () => {
     const shown = {
       accepting: true,
       handoff: true,
       pullRequest: { repo: 'acme/app', number: 7 },
       notificationKey: 'current',
       blocked: true,
+      ownerRequest: true,
       commentId: 'source',
     };
     expect(
@@ -229,6 +240,6 @@ describe('the shared Needs you text and coverage', () => {
         entry('agent_blocked', { commentId: 'independent' }),
         shown,
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 });

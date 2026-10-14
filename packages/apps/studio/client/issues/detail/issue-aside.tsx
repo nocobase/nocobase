@@ -32,7 +32,9 @@ import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
 import { enUS, zhCN } from 'date-fns/locale';
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
+import { Textarea } from '@/components/ui/textarea';
+import { ISSUE_PROGRESS_MAX } from '@nocobase/app-plugin-projects/shared/issues';
 
 import { PreviewPreferenceField } from '../../previews/preference-field.js';
 
@@ -102,6 +104,8 @@ export function IssuePropertiesCard({
   });
   const others = useExecutorOptions();
   const executorAgent = useExecutorAgent();
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+  const [needsYou, setNeedsYou] = useState('');
 
   const canEdit = canEditIssues(viewer);
   const canClose = canEdit && canCloseIssue(viewer, detail);
@@ -138,14 +142,60 @@ export function IssuePropertiesCard({
               option.key !== detail.statusKey &&
               isClosing(option.category),
           }))}
-          value={detail.statusKey}
+          value={pendingStatus ?? detail.statusKey}
           disabled={disabled}
           renderValue={(key) => <IssueStatusBadge status={status(key)} />}
           onChange={(statusKey) => {
-            if (statusKey) update.mutate({ statusKey });
+            if (statusKey === 'blocked' || statusKey === 'in_review') {
+              setNeedsYou('');
+              setPendingStatus(statusKey);
+            } else if (statusKey) {
+              setPendingStatus(null);
+              update.mutate({ statusKey });
+            }
           }}
         />
       </PropertyRow>
+      {pendingStatus ? (
+        <PropertyRow
+          label={studioT('issueLive.summary.needsYou')}
+          htmlFor='pm-prop-needs-you'
+        >
+          <div className='flex flex-col gap-2'>
+            <Textarea
+              id='pm-prop-needs-you'
+              aria-required='true'
+              maxLength={ISSUE_PROGRESS_MAX}
+              value={needsYou}
+              onChange={(event) => setNeedsYou(event.target.value)}
+              placeholder={studioT('issueLive.summary.needsYouHint')}
+              disabled={busy}
+            />
+            <div className='flex gap-2'>
+              <Button
+                size='sm'
+                disabled={busy || !needsYou.trim()}
+                onClick={() =>
+                  update.mutate(
+                    { statusKey: pendingStatus, needsYou },
+                    { onSuccess: () => setPendingStatus(null) },
+                  )
+                }
+              >
+                {studioT('issueLive.summary.saveStatus')}
+              </Button>
+              <Button
+                size='sm'
+                variant='ghost'
+                disabled={busy}
+                onClick={() => setPendingStatus(null)}
+              >
+                {studioT('actions.cancel')}
+              </Button>
+            </div>
+          </div>
+        </PropertyRow>
+      ) : null}
       <PropertyRow label={t('properties.priority')} htmlFor='pm-prop-priority'>
         <PropertySelect
           id='pm-prop-priority'

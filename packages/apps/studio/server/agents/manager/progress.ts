@@ -1,8 +1,7 @@
 /**
  * What an issue waits for now (`IssueProgress`, `shared/project-manager.ts`), worked out from what the system knows
  * rather than from what anybody wrote: an agent's run on it (working, or queued), else a linked open pull request whose
- * checks have not finished, else its status. The project manager's latest "Next" line (`texts.ts`) goes with it, and on
- * a blocked issue the Needs you line and explanation from the comment at its status transition. `handOver` says the project manager executes the open issue
+ * checks have not finished, else its status. Structured needsYou and next fields go with it, with a link to the latest manager explanation. `handOver` says the project manager executes the open issue
  * but never worked on it (an issue an earlier version gave to an agent, say): someone may hand it over to go on.
  */
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
@@ -20,7 +19,6 @@ import { pullRequestsOfIssue } from '../../git/store.js';
 import { ISSUE_SUBJECT } from '../catalog/triggers.js';
 import { AGENT_KIND } from '../tx.js';
 import { commentGuards, commentGuardId } from '../comment-guard.js';
-import { nextLineOf } from './texts.js';
 import {
   issueExecutionIdentity,
   validIssueOwner,
@@ -31,7 +29,7 @@ import {
   readOwnerHandoff,
 } from '../../issues/owner-handoff.js';
 
-/** How much of a step or a question the line carries. */
+/** How much of a running step the line carries. */
 const LINE_LENGTH = 160;
 
 /** The first line of a text that says something, without mention links and Markdown marks, cut to `LINE_LENGTH`. */
@@ -48,13 +46,6 @@ export function firstLineOf(text: string): string | null {
       : line;
   }
   return null;
-}
-
-/** A comment's text without its "Next" line. */
-function withoutNextLine(content: string): string {
-  return nextLineOf(content) === null
-    ? content
-    : content.trimStart().split('\n').slice(1).join('\n');
 }
 
 const HELD = new Set(['dispatched', 'running']);
@@ -106,7 +97,6 @@ export async function issueProgress(
   );
   const latest =
     managerComments.filter((comment) => !comment.deleted).at(-1) ?? null;
-  const next = latest ? nextLineOf(latest.content) : null;
   const category = statusCategory(issue.statusKey);
   const managed =
     issue.executor?.type === AGENT_KIND &&
@@ -130,8 +120,9 @@ export async function issueProgress(
     since: null,
     runner: null,
     pullRequest: null,
-    question: null,
-    next,
+    needsYou: issue.needsYou,
+    explanationCommentId: latest?.id ?? null,
+    next: issue.next,
     handOver: managed && open && managerRuns.length === 0,
   };
 
@@ -197,52 +188,6 @@ export async function issueProgress(
       });
     }
     base = { ...base, personalRunnerRequests };
-  }
-
-  if (issue.statusKey === 'blocked') {
-    const transition = await conn
-      .repository<{
-        id: string;
-        issueId: string;
-        action: string;
-        createdAt: string;
-        details: { to?: string };
-      }>('pmActivities')
-      .findOne({
-        filter: { issueId: issue.id, action: 'status_changed' },
-        sort: (sort) => [
-          sort.field('createdAt').desc(),
-          sort.field('id').desc(),
-        ],
-      });
-    const source =
-      transition?.details?.to === 'blocked'
-        ? [...managerComments]
-            .reverse()
-            .find(
-              (comment) =>
-                Date.parse(comment.createdAt) <
-                  Date.parse(transition.createdAt) ||
-                (Date.parse(comment.createdAt) ===
-                  Date.parse(transition.createdAt) &&
-                  comment.id < transition.id),
-            )
-        : null;
-    if (source && !source.deleted) {
-      base = {
-        ...base,
-        blockedComment: { id: source.id, content: source.content },
-        question:
-          source.content
-            .split('\n')
-            .map((line) =>
-              /^(?:需要你\s*[：:]|Needs you\s*:)(.*)$/iu
-                .exec(line.trim())?.[1]
-                ?.trim(),
-            )
-            .find(Boolean) ?? null,
-      };
-    }
   }
 
   if (await ownerHandoffWaiting(conn, issue))
@@ -327,7 +272,7 @@ export async function issueProgress(
         run.agentId === PROJECT_MANAGER_ID
           ? null
           : input
-            ? firstLineOf(withoutNextLine(input.text))
+            ? firstLineOf(input.text)
             : null,
       since: run.startedAt ?? run.dispatchedAt ?? run.createdAt,
       runner,

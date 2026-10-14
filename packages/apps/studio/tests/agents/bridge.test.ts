@@ -51,6 +51,9 @@ async function openIssue(
     : h.projects.issues.update(viewer, issue.id, {
         revision: issue.revision,
         statusKey: target,
+        ...(target === 'blocked' || target === 'in_review'
+          ? { needsYou: 'Choose how to proceed.' }
+          : {}),
       });
 }
 
@@ -977,7 +980,13 @@ describe('the API as a run', () => {
     const refused = await h.request(
       'PATCH',
       `/projects/issues/${issue.identifier}`,
-      { runToken: token, body: { statusKey: 'in_review' } },
+      {
+        runToken: token,
+        body: {
+          statusKey: 'in_review',
+          needsYou: 'Accept the result or send it back.',
+        },
+      },
     );
     expect(refused.status).toBe(400);
     expect(refused.body.error.reason).toBe('TRANSITION_NOT_ALLOWED');
@@ -990,7 +999,13 @@ describe('the API as a run', () => {
     const moved = await h.request(
       'PATCH',
       `/projects/issues/${issue.identifier}`,
-      { runToken: token, body: { statusKey: 'in_review' } },
+      {
+        runToken: token,
+        body: {
+          statusKey: 'in_review',
+          needsYou: 'Accept the result or send it back.',
+        },
+      },
     );
     expect(moved.status).toBe(200);
     expect(moved.body.data.issue.statusKey).toBe('in_review');
@@ -1009,7 +1024,13 @@ describe('the API as a run', () => {
     const blocked = await h.request(
       'PATCH',
       `/projects/issues/${issue.identifier}`,
-      { runToken: token, body: { statusKey: 'blocked' } },
+      {
+        runToken: token,
+        body: {
+          statusKey: 'blocked',
+          needsYou: 'Which database should the migration target?',
+        },
+      },
     );
     expect(blocked.status).toBe(200);
     const restoredBlocked = await h.request(
