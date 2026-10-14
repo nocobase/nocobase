@@ -181,6 +181,28 @@ for (const preset of ['compact', 'default'] as const) {
       );
       await expect(table).toBeVisible();
       await expect(row(parent)).toBeVisible();
+      // Long plain names must stay inside their own table cells, including the full-width view.
+      await expect(
+        row(parent).getByText('Workspace Demo Viewer', { exact: true }),
+      ).toHaveCount(2);
+      expect(
+        await row(parent)
+          .getByText('Workspace Demo Viewer', { exact: true })
+          .evaluateAll(
+            (
+              elements: {
+                getBoundingClientRect(): { width: number };
+                parentElement: { clientWidth: number } | null;
+              }[],
+            ) =>
+              elements.every(
+                (element) =>
+                  element.parentElement !== null &&
+                  element.getBoundingClientRect().width <=
+                    element.parentElement.clientWidth,
+              ),
+          ),
+      ).toBe(true);
       await expect(following).toHaveCount(0);
       await capture('desktop-zero-following');
       const disclosure = page.getByRole('button', {
@@ -238,6 +260,13 @@ for (const preset of ['compact', 'default'] as const) {
         statusKey: 'in_review',
       });
       await expect(row(incoming)).toContainText('In review');
+      const status = row(incoming).getByText('In review', { exact: true });
+      expect(
+        await status.evaluate(
+          (element: { clientHeight: number; scrollHeight: number }) =>
+            element.clientHeight >= element.scrollHeight,
+        ),
+      ).toBe(true);
       await expect
         .poll(
           async () =>

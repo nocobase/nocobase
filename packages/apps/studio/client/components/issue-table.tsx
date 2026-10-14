@@ -220,7 +220,11 @@ export function IssuePerson({
   const agent = person.kind === 'agent';
   // Initials beside the name say nothing more, so a person without a picture shows the name alone.
   if (!agent && !person.avatar)
-    return <span className='truncate text-sm'>{person.name}</span>;
+    return (
+      <span className='block truncate text-sm' title={person.name}>
+        {person.name}
+      </span>
+    );
   if (agent)
     return (
       <span className='flex min-w-0 items-center gap-2 text-sm'>
@@ -616,7 +620,8 @@ export function IssueTable({
                     status={row.status}
                     {...(compact
                       ? {
-                          className: 'max-w-full whitespace-normal break-words',
+                          className:
+                            'h-auto min-h-5 max-w-full whitespace-normal break-words',
                         }
                       : {})}
                   />
