@@ -191,6 +191,14 @@ export class CollectionBuilder {
     return this.plannedCollections.has(name);
   }
 
+  /** Inspect the current definition before an incremental schema change. */
+  async getCollection(name: string): Promise<CollectionDefinition | undefined> {
+    const definition = this.collections
+      ? await this.collections.get(name)
+      : this.plannedCollections.get(name);
+    return definition ? structuredClone(definition) : undefined;
+  }
+
   async alterCollection(
     name: string,
     input: CollectionAlterInput,
@@ -592,6 +600,27 @@ export class CollectionBuilder {
                 (field) => field.name !== operation.field,
               ),
             });
+          }
+          break;
+        }
+        case 'addIndex':
+        case 'dropIndex':
+        case 'addConstraint':
+        case 'dropConstraint': {
+          const current = this.plannedCollections.get(operation.collection);
+          if (current) {
+            const changes =
+              operation.type === 'addIndex'
+                ? { addIndexes: [operation.index] }
+                : operation.type === 'dropIndex'
+                  ? { dropIndexes: [operation.index] }
+                  : operation.type === 'addConstraint'
+                    ? { addConstraints: [operation.constraint] }
+                    : { dropConstraints: [operation.constraint] };
+            this.plannedCollections.set(
+              operation.collection,
+              applyAlterMetadata(current, changes),
+            );
           }
           break;
         }

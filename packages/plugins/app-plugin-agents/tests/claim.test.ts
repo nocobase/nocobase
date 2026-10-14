@@ -253,10 +253,11 @@ describe('claiming', () => {
     const agentId = await h.createAgent({ maxConcurrentRuns: 5 });
     const elsewhere = await h.registerRunner({ slots: 4 });
     const holder = await h.registerRunner({ slots: 4 });
+    const directory = `/srv/${'d'.repeat(1000)}`;
     h.dirs = [
       {
         kind: 'directory',
-        path: '/srv/app',
+        path: directory,
         runnerId: holder.runnerId,
         scopeId: 'res-1',
         initPrompt: 'Run make setup.',
@@ -268,7 +269,7 @@ describe('claiming', () => {
     const claimed = await claim(h, holder, 4);
     expect(claimed.map((payload) => payload.run.id)).toEqual([first]);
     expect(claimed[0].workspace.dirs).toEqual([
-      { kind: 'directory', path: '/srv/app', initPrompt: 'Run make setup.' },
+      { kind: 'directory', path: directory, initPrompt: 'Run make setup.' },
     ]);
     expect(claimed[0].run.requires).toEqual(['directories']);
 
