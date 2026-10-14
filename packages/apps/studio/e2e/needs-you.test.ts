@@ -145,7 +145,6 @@ test('structured owner request, latest explanation, matching follow-ups and live
       },
       headers,
     );
-    await runner.complete(running.runId, 'Reported the blocked source.');
     await api.put('followUps/following', { issueIds: [issue.id] });
     await open(page, `/issues/${issue.identifier}`);
     const summary = page.getByTestId('issue-summary');
@@ -177,7 +176,10 @@ test('structured owner request, latest explanation, matching follow-ups and live
       'Next: dispatch the next step.\n\nThe report was received; continue implementation.',
       headers,
     );
-    await expect(summary.getByTestId('issue-needs-you')).toHaveText(
+    await runner.complete(running.runId, 'Reported the blocked source.');
+    await expect(
+      summary.getByTestId('issue-needs-you').locator('span').first(),
+    ).toHaveText(
       'Restore the execution machine. Verify the recovered disk capacity.',
     );
     await expect(explanationLink).toHaveAttribute(
