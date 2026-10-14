@@ -12,39 +12,49 @@ import {
   type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
 
-// Optional routes retained for applications that explicitly enable the Workflow plugin.
-export const workflowExampleRoutes: AppClientRouteContribution =
-  defineAppRoutes([
-    {
-      auth: 'required',
-      name: 'workflowExamples',
-      path: '/workflow',
-      navigation: { title: 'navigation.workflow', icon: Workflow },
-      children: [
-        {
-          auth: 'required',
-          authz: 'skip',
-          name: 'workflowWaitingTasks',
-          path: 'waiting-tasks',
-          navigation: { title: 'navigation.workflowWaitingTasks' },
-          breadcrumb: { title: 'navigation.workflowWaitingTasks' },
-          componentLoader: () =>
-            import('./pages/workflow-waiting-tasks/index.js'),
-        },
-        {
-          auth: 'required',
-          authz: 'skip',
-          name: 'workflowWaitingTask',
-          path: 'waiting-tasks/:id',
-          breadcrumb: { title: 'workflowTasks.detailTitle' },
-          componentLoader: () =>
-            import('./pages/workflow-waiting-tasks/task.js'),
-        },
-      ],
-    },
-  ]);
-
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
+  {
+    name: 'workflows',
+    parent: '@nocobase/app-plugin-lifecycle-example:lifecycleExample',
+    path: '/workflows',
+    auth: 'required',
+    authz: 'skip',
+    navigation: { title: 'workflows.title', icon: Workflow },
+    breadcrumb: { title: 'workflows.title' },
+    componentLoader: () => import('./pages/workflows/index.js'),
+    children: [
+      {
+        name: 'workflowDefinitions',
+        path: 'definitions',
+        authz: 'skip',
+        breadcrumb: { title: 'workflows.definitions' },
+        componentLoader: () => import('./pages/workflows/definitions.js'),
+        children: [
+          {
+            name: 'workflowDefinition',
+            path: ':workflowId',
+            authz: 'skip',
+            componentLoader: () => import('./pages/workflows/definition.js'),
+          },
+        ],
+      },
+      {
+        name: 'workflowExecutions',
+        path: 'executions',
+        authz: 'skip',
+        breadcrumb: { title: 'workflows.executions' },
+        componentLoader: () => import('./pages/workflows/executions.js'),
+        children: [
+          {
+            name: 'workflowExecution',
+            path: ':workflowId/:recordId',
+            authz: 'skip',
+            componentLoader: () => import('./pages/workflows/execution.js'),
+          },
+        ],
+      },
+    ],
+  },
   {
     // Every signed-in user reaches the landing page. `authz: 'skip'` takes it out of page authorization entirely, so
     // no permission change can leave a user signed in with nowhere to land.

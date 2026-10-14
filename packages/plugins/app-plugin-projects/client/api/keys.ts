@@ -16,26 +16,11 @@ export const pmKeys = {
   invitations: ['pm', 'members', 'invitations'] as const,
   settings: ['pm', 'settings'] as const,
   labels: ['pm', 'labels'] as const,
-  /** One workflow is read from the list, so refreshing the list refreshes every workflow page. */
-  workflows: ['pm', 'workflows'] as const,
   projects: ['pm', 'projects'] as const,
   project: (id: string): QueryKey => ['pm', 'projects', id],
   issues: ['pm', 'issues'] as const,
-  /** Under `issues`: an issue change may decide or add a request. */
-  approvals: ['pm', 'issues', 'approvals'] as const,
-  /** Under `['pm', 'statuses']`, so a workflow change refreshes every project's. */
-  statuses: (projectId: string | null): QueryKey => [
-    'pm',
-    'statuses',
-    projectId,
-  ],
-  /** Under `['pm', 'statuses']`, so a workflow change refreshes them too. */
-  starts: (projectId: string | null): QueryKey => [
-    'pm',
-    'statuses',
-    projectId,
-    'starts',
-  ],
+  /** The fixed statuses. */
+  statuses: ['pm', 'statuses'] as const,
   issuePages: (query: IssueListQuery): QueryKey => [
     'pm',
     'issues',

@@ -2,7 +2,6 @@
 '@nocobase/app-client': major
 '@nocobase/app-plugin-authentication': major
 '@nocobase/app-plugin-users': major
-'@nocobase/app-plugin-workflow': major
 '@nocobase/app-server': major
 '@nocobase/app-cli': patch
 '@nocobase/app-host': patch

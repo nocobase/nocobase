@@ -80,7 +80,9 @@ export default function I18nExamplesPage(): ReactElement {
             </CardDescription>
           </CardHeader>
           <CardContent className='flex flex-col gap-5'>
-            <Badge variant='secondary'>{locale}</Badge>
+            <Badge variant='secondary' data-size='sm'>
+              {locale}
+            </Badge>
             <FieldGroup>
               <Field data-invalid={!validCount}>
                 <FieldLabel htmlFor='plural-count'>

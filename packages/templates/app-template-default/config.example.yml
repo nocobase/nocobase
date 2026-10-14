@@ -137,6 +137,11 @@ snowflake:
 # scheduler:
 #   jobs: redis
 
+# Mail is registered by default. Configure mailbox provider instances before connecting accounts.
+# See .agents/skills/nocobase-app-plugin-mail/references/configuration-and-accounts.md.
+mail:
+  providers: {}
+
 # File logging is independent of terminal formatting.
 logging:
   level: info

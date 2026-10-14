@@ -148,7 +148,6 @@ const accessEnUS = {
       pm: {
         general: 'General',
         labels: 'Labels',
-        workflows: 'Workflow templates',
         members: 'Members',
       },
     },
@@ -165,7 +164,7 @@ const accessEnUS = {
       },
       settings: {
         title: 'Project settings',
-        description: 'General settings, labels and workflow templates.',
+        description: 'General settings and labels.',
       },
     },
     actions: {

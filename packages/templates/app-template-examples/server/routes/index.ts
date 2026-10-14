@@ -11,11 +11,11 @@ import {
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
 
+import { workflowRoutes } from './workflows.js';
 import { articlesRoutes } from './articles.js';
 import { numericExamplesRoutes } from './numeric-examples.js';
 import { analyticsRoutes } from './analytics.js';
 import { externalCrmRoutes } from './external-crm.js';
-export { quotationReviewTaskRoutes } from './quotation-review-tasks.js';
 import { EXAMPLES_APP_TAGS as tags } from './domain.js';
 import { ExampleGreeting } from './schemas.js';
 
@@ -84,6 +84,7 @@ const routes: readonly AppRouteContribution<Application>[] = [
   apiRoutes,
   rootRoutes,
   articlesRoutes,
+  workflowRoutes,
   analyticsRoutes,
   externalCrmRoutes,
   numericExamplesRoutes,

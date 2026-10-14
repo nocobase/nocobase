@@ -14,18 +14,14 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { buildAgentEnv } from '../src/agent/env.ts';
-import { agentWritableRoots } from '../src/agent/prepare/index.ts';
 import { workspaceNotes } from '../src/agent/worker.ts';
 import { workspaceRecordPath } from '../src/core/checkout.ts';
 import { RunnerDaemon } from '../src/core/loop.ts';
-import { isInside } from '../src/core/command-policy.ts';
+import { isInside } from '../src/lib/paths.ts';
 import {
   ensurePnpmStore,
-  pnpmImportMethod,
   pnpmStoreEnv,
-  probeReflink,
   pruneCommand,
-  type PnpmImportMethod,
   prunePnpmStore,
 } from '../src/core/pnpm-store.ts';
 import { readConnections, readSettings } from '../src/lib/config.ts';
@@ -62,81 +58,33 @@ describe('the shared pnpm store', () => {
     expect(statSync(paths.pnpmStoreDir).isDirectory()).toBe(true);
   });
 
-  it("is named in the agent's environment for every pnpm, imported without hard links, and a run cannot change either", () => {
+  it("is named in the agent's environment for every pnpm, and a run cannot change it", () => {
     const env = buildAgentEnv({
-      source: {
-        PATH: '/bin',
-        npm_config_store_dir: '/real',
-        npm_config_package_import_method: 'hardlink',
-      },
+      source: { PATH: '/bin', npm_config_store_dir: '/real' },
       pnpmStoreDir: '/w/.pnpm-store',
-      pnpmImportMethod: 'clone',
       workspace: {
         env: [
           { name: 'pnpm_config_store_dir', value: '/x' },
           { name: 'PNPM_CONFIG_STORE_DIR', value: '/x' },
-          { name: 'pnpm_config_package_import_method', value: 'hardlink' },
-          { name: 'NPM_CONFIG_PACKAGE_IMPORT_METHOD', value: 'hardlink' },
         ],
-        passthrough: [
-          'npm_config_store_dir',
-          'npm_config_package_import_method',
-        ],
+        passthrough: ['npm_config_store_dir'],
       },
     });
     expect(env).toMatchObject({
       pnpm_config_store_dir: '/w/.pnpm-store',
       npm_config_store_dir: '/w/.pnpm-store',
-      pnpm_config_package_import_method: 'clone',
-      npm_config_package_import_method: 'clone',
     });
     expect(env.PNPM_CONFIG_STORE_DIR).toBeUndefined();
-    expect(env.NPM_CONFIG_PACKAGE_IMPORT_METHOD).toBeUndefined();
-    // Without a probed method, a copy: never pnpm's fallback to hard links.
-    expect(
-      buildAgentEnv({ source: {}, pnpmStoreDir: '/s' })
-        .pnpm_config_package_import_method,
-    ).toBe('copy');
-    expect(pnpmStoreEnv('/s', 'copy')).toEqual({
-      pnpm_config_store_dir: '/s',
-      npm_config_store_dir: '/s',
-      pnpm_config_package_import_method: 'copy',
-      npm_config_package_import_method: 'copy',
-    });
   });
 
-  it('is imported with clone where the work root clones, with copy otherwise, probed once', async () => {
-    const probed: string[] = [];
-    const clones = (result: boolean) => (workRoot: string) => {
-      probed.push(workRoot);
-      return Promise.resolve(result);
-    };
-    const other = (name: string) =>
-      runnerPaths(path.join(root, 'home'), path.join(root, name));
-    expect(await pnpmImportMethod(other('reflink'), clones(true))).toBe(
-      'clone',
-    );
-    expect(await pnpmImportMethod(other('reflink'), clones(false))).toBe(
-      'clone',
-    );
-    expect(await pnpmImportMethod(other('ext4'), clones(false))).toBe('copy');
-    expect(
-      await pnpmImportMethod(other('broken'), () =>
-        Promise.reject(new Error('EACCES')),
-      ),
-    ).toBe('copy');
-    expect(probed).toEqual([
-      path.join(root, 'reflink'),
-      path.join(root, 'ext4'),
-    ]);
-    // The real probe answers either way, and leaves nothing in the work root but the root itself. A Mac's temporary
-    // directory is on APFS, which clones.
-    const real = await probeReflink(paths.workRoot);
-    if (process.platform === 'darwin') expect(real).toBe(true);
-    else expect(typeof real).toBe('boolean');
-    expect(readdirSync(paths.workRoot)).toEqual([]);
-    expect(await probeReflink(paths.workRoot, 'linux')).toBeTypeOf('boolean');
-    expect(readdirSync(paths.workRoot)).toEqual([]);
+  it("leaves the import method at pnpm's default", () => {
+    const env = buildAgentEnv({ source: {}, pnpmStoreDir: '/s' });
+    expect(env.pnpm_config_package_import_method).toBeUndefined();
+    expect(env.npm_config_package_import_method).toBeUndefined();
+    expect(pnpmStoreEnv('/s')).toEqual({
+      pnpm_config_store_dir: '/s',
+      npm_config_store_dir: '/s',
+    });
   });
 
   it("is pruned from the runner's own empty directory, named on the command line, with an environment built from nothing", () => {
@@ -170,14 +118,9 @@ describe('the shared pnpm store', () => {
     });
   });
 
-  it("is writable in a sandboxing tool's session", () => {
-    expect(
-      agentWritableRoots([], '/w/task-a/repo', ['/w/.pnpm-store']),
-    ).toEqual(['/w/.pnpm-store']);
-  });
-
   it('is what the agent is told to install with, instead of a store of its own', () => {
     const notes = workspaceNotes({
+      tmpDir: '/tmp/n-12345678/1234567890abcdef',
       workDir: '/w/task-a',
       cwd: '/w/task-a',
       dirs: [],
@@ -186,10 +129,12 @@ describe('the shared pnpm store', () => {
     });
     expect(notes).toContain('/w/.pnpm-store');
     expect(notes).toContain('without `--store-dir`');
-    expect(notes).toContain('cloned or copied');
-    expect(notes).toContain('`pnpm patch`');
+    expect(notes).toContain('hard links into that store');
+    expect(notes).toContain('never edit them in place');
+    expect(notes).toContain('`pnpm patch <pkg>`');
     expect(
       workspaceNotes({
+        tmpDir: '/tmp/n-12345678/1234567890abcdef',
         workDir: '/w/task-a',
         cwd: '/w/task-a',
         dirs: [],
@@ -220,9 +165,9 @@ describe('the shared pnpm store', () => {
       const env = {
         PATH: process.env.PATH ?? '',
         HOME: path.join(root, 'user-home'),
-        ...pnpmStoreEnv(storeDir, 'copy'),
+        ...pnpmStoreEnv(storeDir),
       };
-      const install = (name: string, method: PnpmImportMethod): string => {
+      const install = (name: string): string => {
         const dir = path.join(paths.workRoot, 'app', name);
         mkdirSync(dir, { recursive: true });
         writeFileSync(path.join(dir, 'pnpm-workspace.yaml'), 'packages: []\n');
@@ -236,17 +181,16 @@ describe('the shared pnpm store', () => {
         );
         execFileSync('pnpm', ['install', '--offline'], {
           cwd: dir,
-          env: { ...env, ...pnpmStoreEnv(storeDir, method) },
+          env,
           stdio: 'ignore',
         });
         return dir;
       };
 
-      // What this machine probes to (`clone` on APFS, `copy` on ext4), and `copy`: neither hard-links.
-      const first = install('first-app', await pnpmImportMethod(paths));
+      const first = install('first-app');
       const stored = storeFiles(storeDir);
       expect(stored).not.toEqual([]);
-      const second = install('second-app', 'copy');
+      const second = install('second-app');
       expect(storeFiles(storeDir)).toEqual(stored);
       for (const dir of [first, second])
         expect(
@@ -255,12 +199,6 @@ describe('the shared pnpm store', () => {
             'utf8',
           ),
         ).toBe('export default 42;\n');
-      // Imported as a clone or a copy: a file of its own, not the store's file under another name.
-      for (const dir of [first, second])
-        expect(
-          statSync(path.join(dir, 'node_modules', 'shared-dep', 'index.js'))
-            .nlink,
-        ).toBe(1);
       // Neither project keeps a store of its own.
       expect(existsSync(path.join(first, '.pnpm-store'))).toBe(false);
       expect(existsSync(path.join(second, '.pnpm-store'))).toBe(false);

@@ -153,7 +153,11 @@ authz.resourceTypes.add({
 
 const settings = new ResourceItems();
 authz.resourceTypes.add({ type: 'settings', items: settings });
-settings.add({ id: 'workflow', title: 'Workflow', actions: ['manage'] });
+settings.add({
+  id: 'scheduler.schedules',
+  title: 'Scheduled tasks',
+  actions: ['read'],
+});
 ```
 
 In a catalog type an item that omits `actions` inherits the type's declared actions and their titles; a catalog type that declares none requires actions on every item. A type action may carry its own `authorize` and `authorizeUnrestricted`. Unsupported items and actions stay denied even for unrestricted identities.

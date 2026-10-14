@@ -98,6 +98,81 @@ afterEach(() => {
 });
 
 describe('upgrade', () => {
+  it.each([
+    {
+      ok: false,
+      error: {
+        code: 'COMMAND_NOT_FOUND',
+        message: 'db repair is not supported',
+      },
+    },
+    { ok: true, result: {} },
+  ])(
+    'rejects an unsupported checksum preview before downtime: %j',
+    async (preview) => {
+      await installOld();
+      world.pm2.calls.length = 0;
+      world.cli['db repair --dry-run'] = preview;
+      const result = await upgrade();
+      expect(result.json.ok).toBe(false);
+      expect(world.pm2.calls.some((call) => call.startsWith('stop '))).toBe(
+        false,
+      );
+      expect(currentVersion()).toBe('1.0.0');
+      expect(database()).toBe('schema of 1.0.0');
+      expect(state().pending).toBeUndefined();
+    },
+  );
+
+  it('reports that external database history was not restored after a repair-only failure', async () => {
+    await installOld(['--dialect', 'postgres']);
+    writeFileSync(
+      path.join(root, 'config.yml'),
+      'database:\n  connections:\n    main: { dialect: postgres, host: db }\n',
+    );
+    world.pendingTasks = {};
+    world.cli['db repair --dry-run'] = {
+      ok: true,
+      result: {
+        dryRun: true,
+        results: [
+          {
+            connection: 'main',
+            kind: 'seeds',
+            status: 'completed',
+            repaired: [
+              {
+                packageName: 'shop',
+                name: '001_seed',
+                recordedChecksum: 'old',
+                sourceChecksum: 'new',
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const target = archive('1.1.0');
+    const args = ['upgrade', '--dir', root, '--archive', target, '--yes'];
+    const preview = await installer(world, args);
+    const plan = preview.json.error!.details!.checksumRepair as {
+      token: string;
+    };
+    const authorized = [...args, '--repair-checksums', plan.token];
+    expect((await installer(world, authorized)).json.error?.code).toBe(
+      'BACKUP_REQUIRED',
+    );
+    world.startQueue = ['errored'];
+    const failed = await installer(world, [...authorized, '--backup-done']);
+    expect(failed.code).toBe(3);
+    expect(failed.json.error?.details?.databaseRestored).toBe(false);
+    expect(failed.json.error?.message).toContain('these were not restored');
+    expect(state().history.at(-1)).toMatchObject({
+      migrations: 0,
+      checksumRepairs: 1,
+    });
+  });
+
   it('backs up, switches, migrates and starts the new release', async () => {
     await installOld();
     const from = state().current;

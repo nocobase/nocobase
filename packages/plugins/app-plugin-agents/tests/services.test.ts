@@ -41,7 +41,7 @@ describe('model services', () => {
 
   it('adds services, never answers their keys, and offers their models', async () => {
     h = await createHarness();
-    const services = h.services.online.services;
+    const services = h.services.models.services;
     expect(await services.create(local())).toEqual({
       name: 'local',
       title: 'Local',
@@ -66,7 +66,7 @@ describe('model services', () => {
       .repository<{ apiKeyEncrypted: string }>('agModelServices')
       .findMany({});
     expect(stored[0]?.apiKeyEncrypted).not.toContain('test-key');
-    expect(await h.services.online.gateway.catalog()).toEqual({
+    expect(await h.services.models.gateway.catalog()).toEqual({
       services: [
         expect.objectContaining({
           name: 'local',
@@ -81,7 +81,7 @@ describe('model services', () => {
 
   it('replaces and clears the key, switches a service off and deletes it with its prices', async () => {
     h = await createHarness();
-    const services = h.services.online.services;
+    const services = h.services.models.services;
     await services.create(local());
     expect((await services.update('local', { apiKey: null })).apiKeySet).toBe(
       false,
@@ -90,7 +90,7 @@ describe('model services', () => {
       (await services.update('local', { apiKey: 'other' })).apiKeySet,
     ).toBe(true);
     await services.update('local', { enabled: false });
-    expect(await h.services.online.gateway.catalog()).toEqual({
+    expect(await h.services.models.gateway.catalog()).toEqual({
       services: [],
       defaultModel: null,
     });
@@ -116,7 +116,7 @@ describe('model services', () => {
 
   it('needs a base URL where the provider has no default, and an http(s) one', async () => {
     h = await createHarness();
-    const services = h.services.online.services;
+    const services = h.services.models.services;
     await expect(
       services.create({ title: 'Mine', provider: 'openai-compatible' }),
     ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
@@ -132,13 +132,13 @@ describe('model services', () => {
   it('refuses to keep a key without the agents key', async () => {
     h = await createHarness({ secrets: null });
     await expect(
-      h.services.online.services.create(local()),
+      h.services.models.services.create(local()),
     ).rejects.toMatchObject({ code: 'SECRETS_KEY_MISSING' });
   });
 
   it('fetches models and checks one over a connection being edited or saved', async () => {
     h = await createHarness();
-    const services = h.services.online.services;
+    const services = h.services.models.services;
     // Before saving: what is being edited.
     expect(
       await services.models({
@@ -182,7 +182,7 @@ describe('model services', () => {
 
   it('says a model looks like another kind when it answers as that kind instead', async () => {
     h = await createHarness();
-    const services = h.services.online.services;
+    const services = h.services.models.services;
     await services.create(local());
     // The mock embeds any model: a model that will not chat but embeds looks like an embedding model.
     mock.answer({ status: 404, error: { message: 'Not a chat model.' } });
@@ -210,7 +210,7 @@ describe('model services', () => {
 
   it('makes the first chat model enabled the default chat model, and keeps the one set', async () => {
     h = await createHarness();
-    const services = h.services.online.services;
+    const services = h.services.models.services;
     expect(await services.defaults()).toEqual({
       chat: null,
       effectiveChat: null,
@@ -241,7 +241,7 @@ describe('model services', () => {
       { modelService: 'local', model: 'mock-model' },
       'admin',
     );
-    expect((await h.services.online.gateway.catalog()).defaultModel).toEqual({
+    expect((await h.services.models.gateway.catalog()).defaultModel).toEqual({
       modelService: 'local',
       model: 'mock-model',
     });

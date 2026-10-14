@@ -1,7 +1,8 @@
 /**
- * The online agents' model endpoints under `/api/agents` (`shared/models.ts` lists them): the catalog and a model check
- * for whoever picks a model for an agent, and the model services as an administrator manages them, behind
- * `agents.services` (read lists them; manage writes, reaches a provider or uses a key). Keys are never answered.
+ * The model endpoints under `/api/agents` (`shared/models.ts` lists them): the catalog and a model check for whoever
+ * picks a model for the application's own model calls (a knowledge base's embeddings, say), and the model services as
+ * an administrator manages them, behind `agents.services` (read lists them; manage writes, reaches a provider or uses a
+ * key). Keys are never answered.
  */
 import {
   apiErrorResponse,
@@ -22,7 +23,6 @@ import { domainRouter } from '../kernel/http.js';
 import type { AdminEnv } from '../routes/admin.js';
 import { tags } from '../routes/openapi.js';
 import {
-  DefaultModelsSchema,
   ModelCatalogQuery,
   ModelCatalogServiceSchema,
   ModelCheckSchema,
@@ -48,7 +48,7 @@ export function createModelRoutes(
   scoped: MiddlewareHandler<AdminEnv> = guard,
 ): Hono<AdminEnv> {
   const router = domainRouter<AdminEnv>();
-  const { online } = agents;
+  const online = agents.models;
 
   const allow =
     (
@@ -118,58 +118,6 @@ export function createModelRoutes(
     async (context) =>
       context.json({
         data: await online.gateway.check(context.req.valid('json')),
-      }),
-  );
-
-  // The system default chat model: what online agents with no models of their own answer with.
-  router.get(
-    '/defaultModels',
-    guard,
-    describeRoute({
-      tags,
-      summary: 'Show the default models',
-      operationId: 'agentsGetDefaultModels',
-      ...cliRoute({ command: 'model default get' }),
-      description:
-        'The system default chat model online agents with no models of their own answer with: as set (`chat`), and as used now (`effectiveChat`), which is the first chat model an enabled service offers when none is set or the one set is no longer offered. Adding the first chat model sets it.',
-      responses: {
-        200: dataResponse(DefaultModelsSchema),
-        ...apiErrorResponses,
-      },
-    }),
-    async (context) => context.json({ data: await online.services.defaults() }),
-  );
-  router.put(
-    '/defaultModels/chat',
-    scoped,
-    allow('agents.services', 'manage'),
-    describeRoute({
-      tags,
-      summary: 'Set the default chat model',
-      operationId: 'agentsSetDefaultChatModel',
-      ...cliRoute({
-        command: 'model default set',
-        flags: { modelService: { name: 'service' } },
-        examples: ['model default set --service openai --model gpt-5'],
-      }),
-      description:
-        'Sets the chat model online agents with no models of their own answer with. It must be a chat model an enabled service offers. Needs `agents.services` manage.',
-      responses: {
-        200: dataResponse(DefaultModelsSchema),
-        400: apiErrorResponse(
-          400,
-          'No enabled model service offers that chat model (`INVALID_REQUEST`).',
-        ),
-        ...apiErrorResponses,
-      },
-    }),
-    apiValidator('json', ModelRefSchema),
-    async (context) =>
-      context.json({
-        data: await online.services.setDefaultChat(
-          context.req.valid('json'),
-          context.get('caller').userId,
-        ),
       }),
   );
 

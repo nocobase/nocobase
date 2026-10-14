@@ -3,7 +3,6 @@
 '@nocobase/authorization': patch
 '@nocobase/app-plugin-authentication': patch
 '@nocobase/app-plugin-file': patch
-'@nocobase/app-plugin-workflow': patch
 '@nocobase/app-plugin-file-example': patch
 '@nocobase/app-plugin-repository-example': patch
 '@nocobase/app-template-default': patch

@@ -97,8 +97,7 @@ Prefer props and page composition in `client/pages/auth/`, then new application 
 
 ## Constraints
 
-- Mounting under `/api` authenticates nothing. A route is protected only by
-  `auth.required()` on it. `auth.optional()` never rejects.
+- Mounting under `/api` authenticates nothing. A route is protected only by `auth.required()` on it. `auth.optional()` accepts anonymous requests but still rejects invalid credentials and untrusted cookie write origins. Without a configured authentication base URL, cookie write checks derive the trusted origin from each request URL using Better Auth's trusted-proxy-header policy; the `Origin` header is checked against that origin, never used to establish trust.
 - Browser guards are navigation, not security. The server authenticates every
   request independently.
 - Configuring a Better Auth plugin changes no database. Any model or field it

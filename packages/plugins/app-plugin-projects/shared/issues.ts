@@ -1,15 +1,12 @@
-import type { ApprovalRequest } from './approvals.js';
 import type { Attachment } from './attachments.js';
-import type { IssueChecklist } from './checklists.js';
 import type { CommentThread } from './comments.js';
 import type { Color, Page, Priority, UserRef } from './common.js';
 import type { Label } from './labels.js';
 import type { ActivityVia } from './plans.js';
 import type { IssueSubscriber } from './subscriptions.js';
 import type { Blocker, IssueDependency, SubtaskSummary } from './subtasks.js';
-import type { RuleMessage } from './workflows.js';
 
-/** Every status belongs to one category; rules and reports read the category, never the status key. */
+/** Every status belongs to one category; reports read the category. */
 export type StatusCategory = 'unstarted' | 'started' | 'done' | 'closed';
 
 export interface StatusDefinition {
@@ -38,6 +35,10 @@ export interface Issue {
   /** Markdown. */
   readonly description: string;
   readonly statusKey: string;
+  /** The owner's optional decision or input; applications may constrain authenticated callers. */
+  readonly needsYou: string | null;
+  /** The next step; independent of comments. */
+  readonly next: string | null;
   readonly priority: Priority;
   /** The accountable person; never empty. */
   readonly ownerUserId: string;
@@ -102,7 +103,7 @@ export interface Activity {
 
 export interface IssueDetail extends IssueListItem {
   readonly parent: IssueRef | null;
-  /** The statuses of the issue's workflow, in order. */
+  /** The fixed statuses, in order. */
   readonly statuses: readonly StatusDefinition[];
   /** The newest activities, oldest first; `activitiesNextCursor` is the `pageToken` of older ones. */
   readonly activities: readonly Activity[];
@@ -114,12 +115,6 @@ export interface IssueDetail extends IssueListItem {
   readonly subscribers: readonly IssueSubscriber[];
   /** The issue's own files, oldest first (its comments carry theirs). */
   readonly attachments: readonly Attachment[];
-  /** The checklist of the current status, if it has one. */
-  readonly checklist: IssueChecklist | null;
-  /** The status change waiting for approval, if any (one at a time). */
-  readonly pendingApproval: ApprovalRequest | null;
-  /** The last `RECENT_DECIDED_APPROVALS` decided requests, the most recently decided first. */
-  readonly recentApprovals: readonly ApprovalRequest[];
   /** Live sub-issues, by number. */
   readonly subtasks: readonly SubtaskSummary[];
   /** What it waits for, what waits for it, and what is only linked to it; issues the viewer cannot see are left out. */
@@ -132,14 +127,9 @@ export interface IssueDetail extends IssueListItem {
   readonly hiddenBlockerCount: number;
 }
 
-/**
- * `PATCH /api/projects/issues/{issueId}` answers `{ data: UpdateIssueResult }`: with 200, the issue after the change
- * and no `pendingApproval`; with 202, the issue unchanged and the request that holds the status change for approval
- * (nothing else in the request is applied then).
- */
+/** `PATCH /api/projects/issues/{issueId}` answers `{ data: UpdateIssueResult }`: the issue after the change. */
 export interface UpdateIssueResult {
   readonly issue: Issue;
-  readonly pendingApproval: ApprovalRequest | null;
 }
 
 export interface BoardColumn {
@@ -188,33 +178,15 @@ export interface IssueListQuery {
   readonly limit?: number;
 }
 
-/**
- * One way to start a new issue (`GET /api/projects/issues/starts`): a status of the workflow, with the label and hint of its
- * `startOption` rule, or none for the workflow's initial status when no rule offers it.
- */
-export interface IssueStartOption {
-  readonly status: StatusDefinition;
-  readonly label: RuleMessage | null;
-  readonly hint: RuleMessage | null;
-}
-
-/**
- * The ways a new issue may start in a project's workflow: empty while the workflow offers none (the issue starts in
- * `initialStatus`); otherwise the initial status first, then every status carrying a `startOption` rule, in order.
- */
-export interface IssueStarts {
-  readonly initialStatus: string;
-  readonly options: readonly IssueStartOption[];
-}
-
 export interface CreateIssueRequest {
   readonly title: string;
   readonly description?: string;
-  /** Defaults to `todo`; a done or closed status is refused. */
+  /** `in_progress` (start now) or `backlog` (later, the default; `START_STATUSES`). */
   readonly statusKey?: string;
   readonly priority?: Priority;
   /** Defaults to the creator. */
   readonly ownerUserId?: string;
+  /** Left out: the default executor a kind names (`PrincipalKind.defaultExecutor`), if any; null: nobody. */
   readonly executor?: Executor | null;
   readonly parentIssueId?: string | null;
   /** Only with a parent. */
@@ -241,6 +213,10 @@ export interface UpdateIssueRequest {
   readonly title?: string;
   readonly description?: string;
   readonly statusKey?: string;
+  /** Optional owner input: omit to retain; null or whitespace clears it. Cleared outside waiting statuses. */
+  readonly needsYou?: string | null;
+  /** Omitted: keep; null or whitespace: clear. Terminal statuses always clear it. */
+  readonly next?: string | null;
   readonly priority?: Priority;
   readonly ownerUserId?: string;
   readonly executor?: Executor | null;
@@ -248,7 +224,6 @@ export interface UpdateIssueRequest {
   readonly parentIssueId?: string | null;
   /** Only for a sub-issue. */
   readonly stage?: number | null;
-  /** A status the new project's workflow lacks must be replaced in the same request. */
   readonly projectId?: string | null;
   readonly startDate?: string | null;
   readonly dueDate?: string | null;
@@ -260,5 +235,6 @@ export interface UpdateIssueRequest {
 
 export const ISSUE_TITLE_MAX = 500;
 export const ISSUE_DESCRIPTION_MAX = 200_000;
+export const ISSUE_PROGRESS_MAX = 2_000;
 export const ISSUE_PAGE_LIMIT = { default: 50, max: 100 } as const;
 export const ACTIVITY_PAGE_LIMIT = { default: 50, max: 200 } as const;

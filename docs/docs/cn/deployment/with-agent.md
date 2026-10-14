@@ -25,7 +25,7 @@ description: 准备连接信息，复制对应场景的提示词，让 Agent 完
 用 app-installer 安装应用时，在 Agent 运行的机器安装全局 Skill：
 
 ```bash
-npx skills add https://github.com/nocobase/nocobase/tree/v3-develop/skills/nocobase-app-installer --skill nocobase-app-installer -g
+npx skills@latest add nocobase/skills-v3 --skill nocobase-app-installer -g
 ```
 
 安装后重新开启 Agent 会话。本机 Agent 通过 SSH 部署时，Skill 安装在本机；直接在服务器运行 Agent 时，安装在服务器。不要同时让两个会话操作同一个安装目录。
@@ -112,6 +112,6 @@ Docker 更新应指定新镜像标签或摘要，复用 Compose 配置和持久�
 - 健康检查地址及响应、正式访问地址、已完成的登录与业务检查。
 - 更新时的旧版本、备份位置、回滚办法；未完成的检查、原因和具体下一步。
 
-收到报告后，通过正式地址登录一次。首次部署可用约定的测试数据验证写入、上传及重启后的持久性；已有生产应用需先约定测试记录和重启窗口，不要为验收随意写业务数据、触发工作流或重启。Agent 无法操作浏览器时，这些检查由你完成并标为待验收。
+收到报告后，通过正式地址登录一次。首次部署可用约定的测试数据验证写入、上传及重启后的持久性；已有生产应用需先约定测试记录和重启窗口，不要为验收随意写业务数据、触发业务流程或重启。Agent 无法操作浏览器时，这些检查由你完成并标为待验收。
 
 “配置已生成”“请求已接受”“容器已启动”和“本机健康正常”都只是阶段结果；公网访问、业务验证或迁移结果未确认时，应明确保留待办。

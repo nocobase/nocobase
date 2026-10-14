@@ -1,4 +1,4 @@
-import { CalendarClock, ListChecks, Workflow } from 'lucide-react';
+import { CalendarClock, Cog, ListChecks } from 'lucide-react';
 import {
   defineAppRoutes,
   type AppClientRouteContribution,
@@ -8,7 +8,7 @@ const routes: readonly AppClientRouteContribution[] = [
   defineAppRoutes([
     {
       name: 'jobsExample',
-      navigation: { title: 'navigation.group', icon: Workflow },
+      navigation: { title: 'navigation.group', icon: Cog },
       breadcrumb: { title: 'navigation.group' },
       children: [
         {

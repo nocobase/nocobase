@@ -8,11 +8,11 @@ See [server routes](server-routes.md) for mounting, authentication and authoriza
 
 - **Segments are camelCase.** `/apiKeys`, `/permissionSets`, never `/api-keys` or `/api_keys`. Collections are plural nouns.
 - **A plugin's routes start with its namespace:** the package name without `app-plugin-`, in camelCase, in its singular or its plural form, whichever reads as the plugin's main resource. Every resource of the plugin lives under that one namespace. The application's own routes have no namespace: `/orders`.
-- **When the main resource has the plugin's own name, the segment appears once.** The users plugin lists users at `/users` and disables one at `/users/{userId}/disable`, never `/users/users`. The workflow plugin's workflows are `/workflows` and `/workflows/{workflowId}/enable`, and its other resources nest under the same word: `/workflows/runs`, `/workflows/runs/{runId}/nodeRuns`.
+- **When the main resource has the plugin's own name, the segment appears once.** The users plugin lists users at `/users` and disables one at `/users/{userId}/disable`, never `/users/users`.
 - **When the resource word differs from the plugin's, the namespace comes first.** The scheduler plugin lists schedules at `/scheduler/schedules`. `@nocobase/app-plugin-notification-in-app` owns `/notificationInApp/...`.
 - **A plugin mounted through another plugin's dispatcher keeps the host's namespace.** The authorization rule plugins answer under `/authorization/defaultAccess`, `/authorization/sharingRules` and `/authorization/restrictionRules`, because the authorization plugin owns `/authorization` and dispatches to them. Their errors use the host's domain too.
 - **`/swagger`, `/auth` and `/healthz` are reserved** for the generated API documentation, Better Auth and the health check.
-- **Fixed segments go before path parameters.** Hono matches in registration order and the first match wins without warning, so register `/workflows/runs` before `/workflows/:workflowId`. A user-chosen id must then never equal a fixed sibling segment: reject it when the resource is created, with `400 INVALID_ARGUMENT` and a field violation. A workflow named `runs` would otherwise be unreachable behind `/workflows/runs`.
+- **Fixed segments go before path parameters.** Hono matches in registration order and the first match wins without warning, so register `/orders/archived` before `/orders/:orderId`. A user-chosen id must then never equal a fixed sibling segment: reject it when the resource is created, with `400 INVALID_ARGUMENT` and a field violation. A record whose chosen id is `archived` would otherwise be unreachable behind `/orders/archived`.
 - **Two routes with the same method and path fail application start.** Hono would otherwise run only the first; parameter names do not distinguish routes, so `/orders/:id` and `/orders/:orderId` are the same route, while `/orders/:orderId` and `/orders/archived` are not.
 - **The client encodes ids.** An id containing `/` or `:` reaches the route encoded and arrives decoded in `context.req.param()`.
 
@@ -48,7 +48,7 @@ The method follows the resource it acts on: `/{collection}/{id}/{verb}` for one 
 
 A custom method answers `200 { data }` when it has a result, `202` when the work continues asynchronously, and `204` with no body when there is nothing to return.
 
-One operation has one URL across the whole system. Enabling a workflow is `POST /workflows/{workflowId}/enable` and nothing else.
+One operation has one URL across the whole system. Disabling a user is `POST /users/{userId}/disable` and nothing else.
 
 ## Responses
 
@@ -275,14 +275,14 @@ A plugin can add its own access check through `apiDocsToken`: `container.resolve
 
 Every hand-written `/api` route declares itself with `describeRoute()` from `@nocobase/app-server/router`, as in the example above, after its authentication and permission middleware and before its `apiValidator()`s. A route that declares nothing is a defect the API check reports by name.
 
-- **`tags`**: the plugin name in PascalCase, such as `Workflow`, `Users` or `Scheduler`. The application's own routes tag the resource, such as `Orders`.
-- **`summary`**: an English verb phrase, such as `List workflow runs`.
-- **`operationId`**: the namespace, a verb and the resource in camelCase, unique across the application, such as `workflowsListWorkflowRuns`; the application's own routes have no namespace, `cancelOrder`.
+- **`tags`**: the plugin name in PascalCase, such as `Scheduler`, `Users` or `Agents`. The application's own routes tag the resource, such as `Orders`.
+- **`summary`**: an English verb phrase, such as `Enable a Schedule`.
+- **`operationId`**: the namespace, a verb and the resource in camelCase, unique across the application, such as `schedulerListOccurrences`; the application's own routes have no namespace, `cancelOrder`.
 - **`description`**: what a caller cannot read from the schemas, such as the permission a route requires or which credential it expects. A credential that is not one of the document's security schemes is described here and only here.
 - **Inputs**: `apiValidator()` for every path, query, header and JSON input, which documents the parameters and the body.
 - **Responses**: `dataResponse(schema)` for `{ data }`, `listResponse(itemSchema, metaSchema?)` for `{ data, meta }`, `emptyResponse()` for a `204`, and the standard error body through `apiErrorResponse(status)` or `apiErrorResponse(409, 'When …')`. Do not list `400` for input validation: a route that uses `apiValidator` gets the `400` automatically. List `400` yourself only for another reason, such as a failed precondition. `apiErrorResponses` is `401`, `403` and `500`, for an authenticated route with a permission check; otherwise list each status the route can return with `apiErrorResponse(code)`.
 - **Security**: a route a caller reaches without a credential, such as a status probe or the locales the sign-in page reads, declares `security: []`. Every other route inherits the document's top-level requirement, a session cookie (`cookieAuth`) or an API key in `x-api-key` (`apiKeyAuth`), which the authentication and API keys plugins contribute.
-- **Schemas** live in the plugin's `server/routes/schemas.ts`. A schema several routes share carries `.meta({ ref: '<PluginName><Thing>' })`, such as `WorkflowRun`, and becomes a named component; public fields carry `.meta({ description })`, which stays next to the `$ref` when the field's schema is a shared one. A response object is documented open, so adding a field later is not a breaking change, unless its schema is `z.strictObject()`; a JSON body validated with `z.strictObject()` is documented closed. Recursive schemas such as `z.json()` need no workaround: they become components, named by their `ref` when they declare one.
+- **Schemas** live in the plugin's `server/routes/schemas.ts`. A schema several routes share carries `.meta({ ref: '<PluginName><Thing>' })`, such as `SchedulerSchedule`, and becomes a named component; public fields carry `.meta({ description })`, which stays next to the `$ref` when the field's schema is a shared one. A response object is documented open, so adding a field later is not a breaking change, unless its schema is `z.strictObject()`; a JSON body validated with `z.strictObject()` is documented closed. Recursive schemas such as `z.json()` need no workaround: they become components, named by their `ref` when they declare one.
 - **Response schemas describe what the handler returns.** Read the handler and the service it calls rather than guessing, and annotate the schema with the service's view type, `export const OrderSchema: z.ZodType<OrderView> = z.object({ ... })`, so that a response and its documentation cannot drift apart without failing `typecheck`.
 
 Import all of these from `@nocobase/app-server/router`, never from `hono-openapi`: the declarations are attached to middleware under a symbol that module owns, and only the application's copy generates the document. A plugin that declares `hono-openapi` fails `pnpm peers:check`.

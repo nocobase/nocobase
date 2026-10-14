@@ -45,6 +45,15 @@ const paging = {
     .default(DEFAULT_PAGE_SIZE),
 };
 
+/** A page of a list that does not depend on who asks. */
+export const PageQuery: z.ZodObject<
+  {
+    page: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
+    pageSize: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
+  },
+  z.core.$strip
+> = z.object(paging);
+
 export const ListTicketsQuery: z.ZodObject<
   {
     actAs: z.ZodEnum<Record<string, string>>;
@@ -242,8 +251,17 @@ export const ListMeta: z.ZodObject<
   }),
 });
 
-export const TriggersRun: z.ZodType<{ readonly fired: number }> = z.object({
-  fired: z.number().meta({ description: 'How many transitions fired.' }),
+export const TriggersRun: z.ZodType<{
+  readonly fired: number;
+  readonly redelivered: number;
+}> = z.object({
+  fired: z.number().meta({
+    description: 'How many transitions the triggers and renewals fired.',
+  }),
+  redelivered: z.number().meta({
+    description:
+      'How many sandbox webhooks were delivered again after an error.',
+  }),
 });
 
 const BlockerSchema: z.ZodType<Blocker> = z
@@ -357,6 +375,7 @@ export const RecordViewSchema: z.ZodType<RecordView> = z
 
 export const FireViewSchema: z.ZodType<FireView> = z
   .object({
+    parameterValues: z.record(z.string(), z.unknown()).optional(),
     ...recordView,
     replayed: z.boolean().meta({
       description: 'True when this request id had already fired it.',
@@ -367,6 +386,43 @@ export const FireViewSchema: z.ZodType<FireView> = z
 export const DescriptionViewSchema: z.ZodType<LifecycleDescriptionView> = z
   .object({
     description: z.object({
+      parameterConfiguration: z
+        .object({
+          readMode: z.string(),
+          snapshotTransition: z.string().optional(),
+          groups: z.array(
+            z.object({
+              key: z.string(),
+              title: z.string(),
+              schemaVersion: z.number(),
+              fields: z.record(
+                z.string(),
+                z.object({
+                  type: z.enum([
+                    'number',
+                    'string',
+                    'boolean',
+                    'object',
+                    'reviewers',
+                  ]),
+                  title: z.string(),
+                  readMode: z.enum(['snapshot', 'live']).optional(),
+                  minimum: z.number().optional(),
+                  maximum: z.number().optional(),
+                  bindings: z
+                    .array(
+                      z.object({
+                        state: z.string().optional(),
+                        transition: z.string().optional(),
+                      }),
+                    )
+                    .optional(),
+                }),
+              ),
+            }),
+          ),
+        })
+        .optional(),
       name: z.string(),
       initial: z.string(),
       initialStates: z.array(z.string()),

@@ -21,11 +21,11 @@ Most packages never import this directly. `defineClientPlugin` and `defineServer
 
 A namespace is a package name. Nothing is declared and nothing collides, because npm already guarantees the names are unique.
 
-| Source               | Namespace                       |
-| -------------------- | ------------------------------- |
-| The application      | its `package.json` name         |
-| An official plugin   | `@nocobase/app-plugin-workflow` |
-| A third-party plugin | `@acme/app-plugin-crm`          |
+| Source               | Namespace                        |
+| -------------------- | -------------------------------- |
+| The application      | its `package.json` name          |
+| An official plugin   | `@nocobase/app-plugin-scheduler` |
+| A third-party plugin | `@acme/app-plugin-crm`           |
 
 ### The fallback chain
 
@@ -64,8 +64,8 @@ An application reroutes a plugin's copy without touching its source, through an 
 export default {
   welcome: '欢迎',
   overrides: {
-    '@nocobase/app-plugin-workflow': {
-      trigger: { title: '触发条件' },
+    '@nocobase/app-plugin-scheduler': {
+      nav: { schedules: '计划任务' },
     },
   },
 };
@@ -129,11 +129,11 @@ Leaves widen to `string`, so a translation is not tied to the English wording. U
 Keys nest and are addressed with dots:
 
 ```ts
-const enUS: WorkflowResource = {
-  trigger: { title: 'Trigger', types: { schedule: 'Schedule' } },
+const enUS: SchedulerResource = {
+  target: { title: 'Target', states: { ready: 'Ready' } },
 };
 
-t('trigger.types.schedule'); // 'Schedule'
+t('target.states.ready'); // 'Ready'
 ```
 
 `pnpm i18n:check` reports keys a locale is missing, without blocking development. It is this monorepo's own script and reads every `locales/` directory under `packages/`; an application built from a template runs `pnpm nocobase locales check` instead, which compares the languages its `client/locales/` and `server/locales/` declare.
@@ -208,7 +208,7 @@ Background jobs, cron, and webhooks have no request to read, and must load the l
 ```ts
 await i18n.ensureLocaleLoaded(user.appLang);
 const t = i18n.getFixedT(NS, user.appLang);
-t('job.failed', { name: workflow.title });
+t('job.failed', { name: schedule.title });
 ```
 
 Skipping `ensureLocaleLoaded` does not throw. Translations quietly fall back to the key or the default language, which is easy to miss.
@@ -220,9 +220,9 @@ Skipping `ensureLocaleLoaded` does not throw. Translations quietly fall back to 
 `AppI18nError` carries what it needs to be translated rather than a message translated when it was thrown:
 
 ```ts
-throw new AppI18nError('WORKFLOW_TRIGGER_INVALID', {
+throw new AppI18nError('SCHEDULE_TARGET_INVALID', {
   ns: NS,
-  key: 'errors.triggerInvalid',
+  key: 'errors.targetInvalid',
   params: { field: 'name' },
 });
 ```
@@ -245,13 +245,13 @@ import {
 } from '@nocobase/i18n/server';
 import type { Context } from 'hono';
 
-function toWorkflowsApiError(error: AppI18nError, context: Context): ApiError {
+function toSchedulerApiError(error: AppI18nError, context: Context): ApiError {
   const locale = getRequestLocale(context) ?? 'en-US';
   const serialized = serializeI18nError(i18n, error, locale);
   return new ApiError({
     status: apiErrorStatusFromHttp(error.status),
     reason: serialized.code,
-    domain: 'workflows',
+    domain: 'scheduler',
     message: error.message,
     localizedMessage: { locale, message: serialized.message },
     metadata: {
@@ -265,7 +265,7 @@ function toWorkflowsApiError(error: AppI18nError, context: Context): ApiError {
 
 router.onError((error, context) =>
   apiErrorHandler(
-    isAppI18nError(error) ? toWorkflowsApiError(error, context) : error,
+    isAppI18nError(error) ? toSchedulerApiError(error, context) : error,
     context,
   ),
 );
@@ -278,16 +278,16 @@ The response then carries the error's code as `reason`, the translated text as `
   "error": {
     "code": 400,
     "status": "INVALID_ARGUMENT",
-    "reason": "WORKFLOW_TRIGGER_INVALID",
-    "domain": "workflows",
-    "message": "WORKFLOW_TRIGGER_INVALID: @nocobase/app-plugin-workflow:errors.triggerInvalid",
+    "reason": "SCHEDULE_TARGET_INVALID",
+    "domain": "scheduler",
+    "message": "SCHEDULE_TARGET_INVALID: @nocobase/app-plugin-scheduler:errors.targetInvalid",
     "localizedMessage": {
       "locale": "zh-CN",
-      "message": "触发条件配置无效：缺少 name 字段",
+      "message": "执行目标配置无效：缺少 name 字段",
     },
     "metadata": {
-      "ns": "@nocobase/app-plugin-workflow",
-      "key": "errors.triggerInvalid",
+      "ns": "@nocobase/app-plugin-scheduler",
+      "key": "errors.targetInvalid",
       "params": { "field": "name" },
     },
     "requestId": "7f1c9a3e-…",

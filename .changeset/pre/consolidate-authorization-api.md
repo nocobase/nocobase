@@ -5,7 +5,6 @@
 '@nocobase/app-plugin-authz-sharing-rules': minor
 '@nocobase/app-plugin-authz-restriction-rules': minor
 '@nocobase/app-client': minor
-'@nocobase/app-plugin-workflow': patch
 '@nocobase/app-plugin-scheduler': patch
 '@nocobase/app-plugin-users': patch
 '@nocobase/app-plugin-notification': patch

@@ -340,7 +340,7 @@ export function apiRateLimitMiddleware(
   const windows = new Map<string, RateLimitWindow>();
   return createMiddleware(async (context, next): Promise<Response | void> => {
     if (exemptPaths.has(context.req.path)) return next();
-    const client = clientAddress(context);
+    const client = getClientAddress(context);
     if (client === undefined) return next();
     const time = now();
     for (const [key, window] of windows) {
@@ -381,7 +381,7 @@ interface NodeIncomingBindings {
 }
 
 /** The remote address of the connection, as `@hono/node-server` exposes it, or `undefined` outside a Node server. */
-function clientAddress(context: Context): string | undefined {
+export function getClientAddress(context: Context): string | undefined {
   const env = context.env as
     | (NodeIncomingBindings & { readonly server?: NodeIncomingBindings })
     | undefined;

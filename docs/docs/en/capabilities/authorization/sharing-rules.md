@@ -1,35 +1,51 @@
 ---
 title: 'Sharing rules'
-description: 'Let selected people collaborate on records beyond their regular responsibilities.'
 ---
 
 # Sharing rules
 
-Sharing rules provide additional records for temporary collaboration or handover. For example, Bob can ask Alice to review an order by sharing viewing access to that order.
+Sharing adds record scope for selected people or registered organizational subjects. Recipients still need the corresponding page and action permissions.
 
-## Example: a colleague reviews an order
+## Temporary collaboration
 
-Alice already has View orders permission and normally views her own orders. She now needs to review a pending order from Bob:
+Temporary collaboration may require access to specific records without broadening a person’s whole job scope. Share the selected records while preserving ownership and regular permissions.
 
 ```text
-Share Bob's PO-2026-004 with Alice so she can review it.
-Alice already has View orders permission; add viewing access to this order.
-Keep her existing responsibilities. Order reviewers still process approvals.
-Let administrators manage this sharing rule in Settings.
+Alice needs Bob to help follow up transport order NS-2026-001.
+Bob already has order viewing permission; share this order's viewing scope with him.
+Keep Alice as owner and preserve Bob's normal job and owned-record scope.
+Do not grant editing, driver assignment, or approval through this sharing.
+Let administrators select an employee and order in Access rules, save a view-only sharing rule, and remove it after collaboration ends.
 ```
 
-In Settings → Authorization → Sharing Rules, administrators create a rule, select the order-viewing action, choose the order, and select Alice as the recipient.
+Bob views the collaboration order in the existing orders page alongside his existing scope. Sharing does not change ownership.
 
-![Choose the shared order and recipient](../../../cn/capabilities/authorization/assets/sharing-rule.png)
+## Specify actions
 
-### View the result
+Share viewing for review-only collaboration. Editing requires its own permission and scope. Sharing cannot bypass applicable restrictions.
 
-Alice opens the order list and can view Bob's PO-2026-004. Her existing records remain available under their current rules.
+Removing a rule removes that source, but other job, default, or sharing sources may remain. Use [inspection](./inspector.md) to understand the result.
 
-![Alice views a pending order shared by her colleague](../../../cn/capabilities/authorization/assets/shared-orders.png)
+Sharing with teams or departments requires registered subjects and real membership.
 
-## After collaboration
+## Select an employee and order
 
-Administrators can adjust or delete the rule. Sharing adds a record scope; recipients still need the corresponding page and action permissions. If collaboration requires editing or approval, describe those responsibilities and configure the scope for each action.
+Open **Access rules → Order sharing**, select Bob and Alice’s **NS-2026-001**, then click **Save rule**. Current rules show the recipient, order and view operation. Removing a rule requires confirmation.
 
-Applications with integrated teams or departments can also assign rules to those subjects.
+![Share Alice’s order with Bob](../assets/northstar-sharing-config-en.png)
+
+**The sharing rule gives Bob viewing access to the selected order.**
+
+## See the recipient’s result
+
+With only his job scope, Bob sees four orders. Sharing adds NS-2026-001, bringing the list to five; its owner remains Alice.
+
+![Bob’s orders before sharing](../assets/northstar-sharing-before-en.png)
+
+**Before sharing, Bob sees his four orders.**
+
+![Bob sees Alice’s shared order](../assets/northstar-sharing-after-en.png)
+
+**After sharing, Bob sees Alice’s selected order without changing its owner.**
+
+These results show sharing before adding common access and fee limits. Sharing does not grant editing or dispatch permissions.

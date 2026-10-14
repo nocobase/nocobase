@@ -1,5 +1,276 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.50
+
+### Minor Changes
+
+- 43d7d1f: Add unified workflow management to the Examples application, including all lifecycle and office workflow definitions, paginated execution records, node parameter editing, and diagram history replay with current and visited paths highlighted. Consolidate lifecycle and office navigation under one Workflow entry with flat Business workflows and Workflow management sections. Expose the existing example services and reusable lifecycle diagram components for application composition.
+
+### Patch Changes
+
+- 9e99702: Add a lightweight SMTP/Resend mailer and host email service using the existing notification channel configuration. Built-in notification email Providers delegate to the shared transport implementation while retaining their registration and submission-result contracts. Email diagnostics now use fixed messages that cannot expose provider bodies or credentials.
+
+  Add explicitly enabled automatic password recovery through the host mailer, with bounded background submission, account-independent rate limiting, account-state checks. Existing custom senders remain available when no password reset switch is declared; explicit disablement or disabling password sign-in closes all reset endpoints. Only automatic recovery defaults to revoking existing sessions, and explicit session configuration wins.
+
+  Register the host mailer in both templates and Studio, add bilingual reset success and retry feedback, and show opt-in recovery in Studio's example configuration. Operators must explicitly enable recovery and configure an enabled SMTP/Resend channel in their deployment; existing deployments are not modified.
+
+  Automatic credential links require an explicitly configured public origin (`app.publicOrigin` / `APP_PUBLIC_ORIGIN`), or a direct Better Auth consumer's restricted host configuration, so a client-controlled Host cannot choose the reset-link destination. Custom sender configuration remains compatible.
+
+  Reject malformed SMTP authentication settings when validating email channel availability.
+
+  Keep default SMTP password and Resend API key environment mappings optional and secret in deployment manifests. Applications may explicitly require selected credentials, while enabled email channels still validate their configuration.
+
+  Space recovery links on reset error pages in both templates and Studio, allowing them to wrap on narrow screens.
+
+  Request-logging middleware remains unchanged. Default email links first reach a token-bearing API path, which request path/message logs may record. Default output sanitizes token query values in Referer strings, while raw/custom outputs may still retain them; deployment and request-log protection need separate follow-up before exposing this flow.
+
+- 659c22e: Load reviewer references on demand by selected type and name, with scoped pagination and individual saved-reference lookup instead of preloading the entire directory.
+
+  Keep the workflow execution link compact and aligned to the right in definition drawers.
+
+- ecaf517: Refine authentication pages with a cohesive dark palette, quieter form controls, and a simplified brand panel while preserving the application-wide theme.
+- ca0adee: Quieten the default interface: every border takes one faint line, the sidebar's own rules and the Appearance options included, and a new `--hover` grey marks hovered rows, buttons and cards, table headers, and the navigation's hovered entries; the current entry keeps its faint primary tint, with its words and icon in the primary color. Inputs, buttons, links, tabs, checkboxes, switches and radios share one light focus ring. Cards and overlays are framed by the general border, and overlays sit on a faint, blurred backdrop. The compact preset uses `--spacing` 0.225rem and `--radius` 0.5rem. Page titles are `text-2xl`. A badge has a small size, `data-size='sm'` (`size='sm'` on `StatusBadge`), for one beside a title or on a dense card. Line tabs run full width from the left over a 2px underline. Table rows take the `--hover` grey and keep the primitive's padding. Scrollbars are thin and appear only while a region scrolls or the pointer nears its edge. Whatever can be clicked shows the pointer cursor.
+
+  The navigation renders a top-level group with no page of its own as a labelled section with its entries always visible (`sections` on `NavigationMenu`), and its rows are a little roomier than the sidebar primitive's in a sidebar 64 spacing units wide. An entry can show a count, such as unread items, passed by the App layout in `NavigationMenu`'s `badges` keyed by route name: a number on a round ground, or work under way in the primary color behind a pulsing dot, hidden at zero, "99+" above 99, in the entry's accessible name and tooltip, and a dot on the icon when the sidebar is collapsed. Home cards lift on hover, and the inbox list and its tabs are restyled. The Appearance popover's color modes and presets are centered again: their hidden radios no longer take a place in the row. The sidebar footer's tagline and the descriptions under the sign-in, registration and password pages' titles and the sign-in page's brand panel drop their full stops in Chinese.
+
+  Examples now carries everything Default has in its shell: the brand loading mark, dialog, confirmation, alert, toast, badge and table styles, `AlertDialog`, `StatusBadge` and the branded startup screen. Its example pages put the small badge on cards and beside words, keep the default one in table columns and page headers, and no longer size badges with their own utilities.
+
+- 5ec0ec1: Replace workflow source, state and transition columns with sortable execution counts that link to the workflow's execution records.
+
+  Keep the execution records table and its headers visible when no records are available.
+
+  Use a single refresh action to reload execution data and return from history to the latest progress.
+
+- Updated dependencies [43d7d1f]
+- Updated dependencies [9e99702]
+- Updated dependencies [43d7d1f]
+- Updated dependencies [659c22e]
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.5
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.4
+  - @nocobase/app-server@2.0.0-beta.6
+  - @nocobase/app-plugin-authentication@2.0.0-beta.8
+  - @nocobase/app-plugin-notification-providers@0.2.0-beta.12
+  - @nocobase/lifecycle@0.1.0-beta.2
+
+## 1.0.0-beta.49
+
+### Patch Changes
+
+- e6dd56e: Slim `AGENTS.md` to an index of always-on rules, at most 32 KB, and move template-specific guidance into a committed `.agents/rules/` directory that ships with the template and is linked from that index. Framework-wide guidance is linked from the synchronized `nocobase-app-development` Skill instead of being copied. `CLAUDE.md` now only imports `AGENTS.md`. `.gitignore`, `.npmignore` and `.prettierignore` ignore `.agents/*` except `.agents/rules/`, and `tests/logic/agents-md.test.ts` enforces the size limit and the links. Existing applications that upgrade should change a `/.agents/` line in their `.gitignore` to `/.agents/*` followed by `!/.agents/rules/`.
+- Updated dependencies [e6dd56e]
+- Updated dependencies [f675e8d]
+  - @nocobase/app-cli@1.0.0-beta.21
+  - @nocobase/app-plugin-mail@1.0.0-beta.13
+
+## 1.0.0-beta.48
+
+### Patch Changes
+
+- 9f02fe3: Route requests to upgrade NocoBase or its core version to the application upgrade Skill, since users rarely refer to the template they generated the application from.
+- 2a54505: Compose all seven MAIL_* environment mappings with the Mail configuration section and preserve them in the examples application. Keep the legacy fully prefixed application-level mappings compatible. Deployment environment values now override configuration files and code defaults automatically: review existing OAuth, sync, webhook and jobs variables before upgrading, including empty or invalid integers. Applications with custom parsers must retain or override the section rules explicitly; calling the defaults factory alone does not inherit them. Mail server configuration and webhook secrets remain outside public browser configuration.
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+- Updated dependencies [2a54505]
+  - @nocobase/app-plugin-mail@1.0.0-beta.12
+  - @nocobase/app-server@2.0.0-beta.5
+
+## 1.0.0-beta.47
+
+### Patch Changes
+
+- 9e84d15: Exclude `database/*/migrations/` and `database/*/seeds/` from Prettier in generated applications, so formatting never changes the checksum an installation recorded for an applied migration or seed.
+
+## 1.0.0-beta.46
+
+### Patch Changes
+
+- d54dd59: Show actionable origin errors with the browser address and the app.publicOrigin setting in config.yml. Use localized authentication errors for sign-out in both templates while preserving the session on failure.
+- Updated dependencies [d54dd59]
+- Updated dependencies [d54dd59]
+- Updated dependencies [693e43d]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.7
+  - @nocobase/app-cli@1.0.0-beta.20
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.16
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.16
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.13
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.12
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.13
+  - @nocobase/app-plugin-cli-example@0.1.0-beta.7
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.14
+  - @nocobase/app-plugin-i18n@1.0.0-beta.16
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.4
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.6
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.3
+
+## 1.0.0-beta.45
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-cli@1.0.0-beta.19
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.15
+  - @nocobase/app-plugin-authentication@2.0.0-beta.6
+  - @nocobase/app-plugin-authorization@1.0.0-beta.27
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.15
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.12
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.11
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.12
+  - @nocobase/app-plugin-cli-example@0.1.0-beta.6
+  - @nocobase/app-plugin-database-example@0.1.0-beta.8
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.13
+  - @nocobase/app-plugin-file@1.0.0-beta.23
+  - @nocobase/app-plugin-file-example@1.0.0-beta.19
+  - @nocobase/app-plugin-i18n@1.0.0-beta.15
+  - @nocobase/app-plugin-jobs-example@1.0.0-beta.6
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.3
+  - @nocobase/app-plugin-mail@1.0.0-beta.11
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.5
+  - @nocobase/app-plugin-notification@1.0.0-beta.27
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.8
+  - @nocobase/app-plugin-notification-in-app@1.0.0-beta.24
+  - @nocobase/app-plugin-notification-providers@0.2.0-beta.11
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.2
+  - @nocobase/app-plugin-queue-example@1.0.0-beta.11
+  - @nocobase/app-plugin-realtime-example@0.1.0-beta.8
+  - @nocobase/app-plugin-repository-example@1.0.0-beta.21
+  - @nocobase/app-plugin-routes-example@1.0.0-beta.20
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.17
+  - @nocobase/app-plugin-service-provider-example@1.0.0-beta.8
+  - @nocobase/app-plugin-skills-example@1.0.0-beta.7
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.6
+  - @nocobase/app-plugin-users@2.0.0-beta.4
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/authorization@1.0.0-beta.13
+  - @nocobase/caching@0.1.0-beta.3
+  - @nocobase/config@0.1.0-beta.3
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/db-sqlite@0.1.0-beta.5
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/lifecycle@0.1.0-beta.1
+  - @nocobase/queue@0.1.0-beta.9
+  - @nocobase/repository-input@0.1.0-beta.3
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/snowflake@1.0.0-beta.4
+
+## 1.0.0-beta.44
+
+### Patch Changes
+
+- 251d19e: Report password reset availability from the authentication server, hide unavailable self-service recovery, and let authorized Studio members reset another member's password.
+- a827a63: Clarify application access URLs for agents: use the Hono server entry in full-stack development, verify the actual port and base path, and use the local Vite entry only in remote-backend proxy mode.
+- Updated dependencies [251d19e]
+- Updated dependencies [ca0bfe2]
+- Updated dependencies [8de421a]
+- Updated dependencies [8de421a]
+- Updated dependencies [8de421a]
+- Updated dependencies [8de421a]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.3
+  - @nocobase/app-plugin-notification@1.0.0-beta.26
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.2
+
+## 1.0.0-beta.43
+
+### Patch Changes
+
+- d515c68: Let nested navigation icons inherit the menu item's text color so idle, hovered and selected icons follow the same state as their labels instead of always using the brand accent.
+- Updated dependencies [17a183c]
+- Updated dependencies [13620d9]
+- Updated dependencies [459c33f]
+  - @nocobase/app-cli@1.0.0-beta.18
+  - @nocobase/app-plugin-authentication@2.0.0-beta.4
+
+## 1.0.0-beta.42
+
+### Minor Changes
+
+- 7cdb5ba: The default template's homepage now explains that the application is developed by describing requirements to a coding agent, with a sample request to copy, and lists the built-in capabilities (authentication, permissions, scheduled tasks, notifications, mail, files, template printing, languages and themes) as cards. Each card opens a dialog with ready-made prompts that can be edited and copied; edits are not saved once the dialog closes.
+
+  Both templates now keep their own copy in `client/locales/system/`, which `client/locales/en-US.ts` and `zh-CN.ts` spread before the application's groups, so a template upgrade can replace the system copy without touching the application's. An application that extends a shared group such as `navigation` spreads the system group first. To upgrade an existing application, take the template's `client/locales/system/` and reduce each application locale file to the spread followed by the groups the application added; the `nocobase-app-upgrade` Skill describes the steps, and the frontend references of `nocobase-app-development` describe the new layout.
+
+## 1.0.0-beta.41
+
+### Minor Changes
+
+- c796cb9: Remove NocoBase Hub. `@nocobase/app-plugin-hub`, `@nocobase/app-template-hub` and `@nocobase/hub-cli` are no longer published, and every package that offered or described the Hub drops it.
+
+  Breaking for `@nocobase/app-installer`: it installs, upgrades and rolls back from a deployment archive only. `install --template`, `install --keep-source`, `upgrade --to`, `upgrade --rebuild`, `upgrade --keep-source` and `status --offline` are removed, as are the `latest` and `updateAvailable` members of the `status` result and the `rebuilt` and `notes` members of the `upgrade` result. An installation an earlier version built from the published Hub template is refused with `STATE_UNSUPPORTED`; manage it with the app-installer version that installed it. The error codes that only a template build reported (`PNPM_MISSING`, `PNPM_UNSUPPORTED`, `REGISTRY_UNREACHABLE`, `VERSION_NOT_FOUND`, `DISK_LOW`, `CREATE_FAILED`, `DRIVER_INSTALL_FAILED` and `BUILD_FAILED`) are no longer produced, and pm2 always kills the process tree of an application it stops.
+
+  Breaking for `@nocobase/create-app`: `--template hub` is no longer a template name, and a generated application no longer gets a `.env`.
+
+  The Default template no longer depends on `@nocobase/hub-cli`, so an application generated from it has no `pnpm nocobase hub` commands. An application upgraded from an earlier version that published to a Hub removes the dependency with `pnpm nocobase package remove @nocobase/hub-cli` and deletes `.nocobase/hub.json`; the `nocobase-app-upgrade` Skill describes the steps. The application Skills, the plugins' documentation and the in-app test notification text no longer mention the Hub.
+
+- c796cb9: Remove the Settings and Dev route surfaces. `@nocobase/app-client` no longer exports `defineSettingsRoutes()`, `defineDevRoutes()`, `isAppClientSettingsRouteGroup()`, `isAppClientDevRouteGroup()` or their definition, contribution and registered-route types, and the resolved runtime no longer carries `settingsRouteTree`, `devRouteTree`, `settings`, `settingGroups`, `devRoutes` or `devRouteGroups`. `AppClientSettingsRouteNavigation` is renamed `AppClientRouteNavigation` and `AppClientSettingIcon` is renamed `AppClientRouteIcon`. A contribution to any parent other than `app` now fails registration with a message that names `defineAppRoutes()`. Plugins contribute no settings or dev pages; an application that wants a configuration page declares it with `defineAppRoutes()` in its own navigation, for example under a Settings group.
+
+  The default and examples templates drop the settings layout, the `/settings/*` route, the dev route plumbing, and the Settings and Inbox buttons in the header; the `/inbox` page and the inbox block stay. The examples template no longer registers `@nocobase/app-plugin-departments-example`, which is removed. Upgrading an application means removing `defineSettingsRoutes([])` from `client/routes.ts`, the `settingsRouteTree` and `devRouteTree` props passed to `AppRouter`, and any settings layout it kept, and moving its own settings pages to `defineAppRoutes()`. Every package that depends on or peers with `@nocobase/app-client` is released again so that its published range accepts `3.0.0-beta.0`.
+
+- 98e79a5: Remove the Workflow plugin from the repository
+
+  `@nocobase/app-plugin-workflow` was already disabled in every template; it is now deleted and will not be released again. Record lifecycles built with `@nocobase/lifecycle` take its place for business processes, and the Workflow pages of the documentation now describe them.
+
+  Breaking for the Default and Examples templates: they no longer depend on `@nocobase/app-plugin-workflow` and drop `server/config/workflow.ts`, the `workflows` directory in `files`, and the TypeScript and ESLint settings for workflow packages. The Examples template also drops its flow examples: its `workflows` directory, the quotation review task API under `/api/quotationReviewTasks`, the waiting-task pages under `/workflow/waiting-tasks`, and the two schedules that ran the analytics report and the scheduled test flow. A new migration, `202610100001_drop_review_tasks_and_daily_reports`, drops the `quotationReviewTasks` and `exampleDailyReports` tables nothing uses any more. Workflow rows an existing database already holds stay where they are, since no remaining plugin owns them. An application that still uses the plugin keeps its dependency on the last published version, whose peer ranges will stop accepting the runtime as it moves on.
+
+  The scheduler no longer describes a `workflow` target or ships labels for it; every schedule points at a target the application or a plugin registers with `registerTarget()`, and an unlabelled target type or reason is shown as it is. The application development, deployment and upgrade Skills no longer route approvals to the plugin, describe its wait node, its Artifacts after a production build or its pages, and their examples use other plugins. The command help of `@nocobase/app-cli`, the i18n Skill, and the plugin scaffold's guidance use other plugins as examples too.
+
+### Patch Changes
+
+- 98e79a5: Add five durable flows to `@nocobase/app-plugin-lifecycle-example`: processes that stop to wait for systems outside the application and are moved on by them. An order is paid on a payment provider's hosted checkout and confirmed only by the provider's webhook, which replays when it is delivered twice, is accepted when it overtakes the checkout's own effect, and is refunded when it arrives after the order was cancelled or expired; an export from a vendor without webhooks is polled by a trigger-driven self-transition until a deadline written on the record; a flash-sale purchase reserves stock and then charges the card, and undoes the reservation by a compensating step of its own when the charge is refused, stopping for a person when the compensation keeps failing; a shipment waits for the payment and the warehouse in either order and then applies carrier events by when they happened rather than when they arrived; and a subscription is renewed by the sweep at its own period end and retried by a dunning trigger until it cancels. A sandbox in the plugin's own tables plays the payment provider, warehouse, vendor and carrier, idempotent by key, and sends signed webhooks to `POST /api/lifecycleExample/webhooks/{source}`, which takes no session and checks the signature instead; each flow has a page with a console to pay, decline, send, hold and redeliver those webhooks. Every page, and the record panel the help desk and expense reports already had, now draws the lifecycle as a Mermaid diagram with the record's current state filled and the states it passed through outlined. A new migration, `202610090001_lifecycle_example_create_durable_flows`, creates the five record tables and the sandbox's two. The plugin now declares `@nocobase/markdown-mermaid` as a peer dependency, which the examples template provides. Its pages no longer poll every few seconds: the provider publishes which record changed on the realtime topic `lifecycle-example:changes`, and a page reloads when told, looking again on its own only while one of the record's effect runs is still queued or running.
+- 98e79a5: Reorganize the examples application's menu around workflows. The menu group of `@nocobase/app-plugin-lifecycle-example` is now called **Workflow** (工作流 in Chinese) instead of **Lifecycle Example**, and uses the workflow icon. The group of `@nocobase/app-plugin-office-flows-example` is now called **Workflow: Lightweight Approval** (工作流：轻量审批) instead of **Office Flows Example** and uses a stamp icon, and the group of `@nocobase/app-plugin-jobs-example` uses a cog icon, so neither shares the workflow icon any more. The examples template no longer has its own **Workflow** menu group or the **Waiting tasks** pages under `/workflow/waiting-tasks`, which went with the Workflow plugin.
+- c796cb9: Remove the AI employee packages from the repository
+
+  `@nocobase/app-plugin-ai-employee`, `@nocobase/ai-employee` and `@nocobase/app-plugin-ai-employee-example` were already deprecated and no template installed them; they are now deleted and will not be released again. The Default and Examples templates drop `@nocobase/ai-employee-avatars`, which only the plugin's avatars used.
+
+  Generated plugins' `AGENTS.md` and the copies shipped with existing plugins no longer list `@nocobase/ai-employee` among the identity-sensitive packages. The HTTP API references in the application development Skill use other plugins for their examples, and the upgrade Skill tells an application that still depends on the removed packages to review their usage before removing them, because the runtime will move past what their peer ranges accept.
+
+  `pnpm build` no longer copies `ai/skills` into `dist/ai/skills`. The AI employee plugin was the only reader of that directory; an application that keeps Skills there for another purpose has to copy them itself, for example from a build hook.
+
+- eea95a7: Align shared theme presets and navigation with Default, keep preinstalled overlays and inbox actions synchronized with the UI Library, and use the application Spinner for file upload progress.
+- Updated dependencies [98e79a5]
+- Updated dependencies [98e79a5]
+- Updated dependencies [98e79a5]
+- Updated dependencies [c796cb9]
+- Updated dependencies [c796cb9]
+- Updated dependencies [c796cb9]
+- Updated dependencies [c796cb9]
+- Updated dependencies [98e79a5]
+- Updated dependencies [eea95a7]
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.1
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.1
+  - @nocobase/app-plugin-jobs-example@1.0.0-beta.5
+  - @nocobase/app-cli@1.0.0-beta.17
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.14
+  - @nocobase/app-plugin-file-example@1.0.0-beta.18
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.4
+  - @nocobase/app-plugin-repository-example@1.0.0-beta.20
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.14
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.11
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.10
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.11
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.12
+  - @nocobase/app-plugin-users@2.0.0-beta.2
+  - @nocobase/app-server@2.0.0-beta.3
+  - @nocobase/app-plugin-authentication@2.0.0-beta.3
+  - @nocobase/app-plugin-authorization@1.0.0-beta.26
+  - @nocobase/app-plugin-notification@1.0.0-beta.25
+  - @nocobase/app-plugin-mail@1.0.0-beta.10
+  - @nocobase/app-plugin-notification-in-app@1.0.0-beta.23
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.16
+  - @nocobase/app-plugin-routes-example@1.0.0-beta.19
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.7
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.5
+  - @nocobase/app-plugin-file@1.0.0-beta.22
+  - @nocobase/app-plugin-i18n@1.0.0-beta.14
+  - @nocobase/i18n@1.0.0-beta.6
+
 ## 1.0.0-beta.40
 
 ### Minor Changes

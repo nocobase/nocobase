@@ -176,14 +176,16 @@ describe('localNameFor', () => {
   });
 
   it('keeps a single-word package name as it is', () => {
-    expect(localNameFor('@nocobase/app-plugin-workflow')).toBe('workflow');
+    expect(localNameFor('@nocobase/app-plugin-notification-in-app')).toBe(
+      'notificationInApp',
+    );
   });
 
   it('rejects a package outside the plugin namespace', () => {
     expect(() => localNameFor('@nocobase/other')).toThrow(
       'must match @nocobase/app-plugin-<name>',
     );
-    expect(() => localNameFor('workflow')).toThrow(
+    expect(() => localNameFor('scheduler')).toThrow(
       'must match @nocobase/app-plugin-<name>',
     );
   });

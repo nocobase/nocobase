@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/service-provider",
   "description": "Service container and provider lifecycle infrastructure for NocoBase applications.",
-  "version": "0.0.2-beta.1",
+  "version": "0.0.2-beta.2",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,

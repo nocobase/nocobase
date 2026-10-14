@@ -3,7 +3,7 @@
 Every endpoint request goes through the HTTP client the application provides:
 
 - **Do not** create your own client, do not use `fetch` or axios, do not hard-code `/api`, and do not build endpoint URLs from `location`. The client's base URL (the configuration key `api.baseURL`, by default `resolveAppUrl('/api')`) already includes the deployment base path (for example `/main`).
-- For a URL served by the application, such as an API download `href`, an API-backed image or a page link, use `resolveAppUrl('/api/…')` from `@nocobase/app-client`, which adds the runtime deployment base path. Keep runtime-generated resources, including workflow artifacts, on this helper.
+- For a URL served by the application, such as an API download `href`, an API-backed image or a page link, use `resolveAppUrl('/api/…')` from `@nocobase/app-client`, which adds the runtime deployment base path. Keep runtime-generated resources on this helper.
 - For a static file shipped in the frontend build, use `resolveAssetUrl('/assets/logo.png')` from `@nocobase/app-client`. Paths are relative to the client output root (`dist/client/assets/logo.png` in this example), with or without a leading slash. The helper uses Vite's absolute HTTP(S) `base` when configured, and otherwise falls back to `resolveAppUrl`; existing absolute, protocol-relative, data and blob URLs are preserved. The templates set `base` from `CDN_BASE_URL` during the build, and Vite writes it into the client code as `import.meta.env.BASE_URL`. Changing CDN settings requires rebuilding and uploading the matching files. Business code should call the helper rather than read the build variable itself.
 - Import `useApiClient`, `apiClientToken`, the `ApiClient` type and `ApiClientError` from `@nocobase/app-client`. That way the application and plugins share one runtime and one error class, which is what makes `instanceof ApiClientError` reliable.
 
@@ -297,6 +297,18 @@ Other points:
 - List every dependency: `[api, projectId, reloadCount]`. `useApiClient()` returns the same object every time, so it does not cause repeated requests.
 - When loading through a Repository (see "Remote Repository"), the request cannot take a `signal` and cannot be aborted, but still check `controller.signal.aborted` in the callbacks to discard stale results.
 - For the complete list page (search conditions written to the URL, empty and no-results states, the `Spinner` in the toolbar while reloading), see [`table.md`](table.md) and [`example/list-page.md`](example/list-page.md); for loading the latest data before an edit form opens, see [`form.md`](form.md); for the detail drawer, see [`overlay.md`](overlay.md).
+
+## Keeping lists and charts live
+
+When realtime events refresh what a page shows:
+
+- An event that names items refreshes those items: gather the ids of a burst (a few hundred milliseconds), read only those rows, keep one such request in flight, and merge the answer into what the page holds. Read the whole list again only when its membership changed (an item joined or left it, or moved between its groups) or the event names nothing.
+- Do not read a whole list or overview again on every event.
+- Recompute a chart's figures at most every few seconds while it is visible, and not at all while the page is hidden; or update only the figure the event affects.
+- Read nothing for a page that is not shown; read it when it is shown again.
+- A component that needs one small fact reads the small endpoint that answers it, not the list that happens to contain it.
+
+The server side of these reads is in [server routes](../../server-routes.md#lists-and-statistics-a-fixed-number-of-queries).
 
 ## Error handling
 

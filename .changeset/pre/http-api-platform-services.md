@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-workflow': major
 '@nocobase/app-plugin-scheduler': major
 '@nocobase/app-plugin-i18n': major
 '@nocobase/app-plugin-notification': major

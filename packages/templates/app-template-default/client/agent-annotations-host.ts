@@ -6,11 +6,17 @@ export default defineClientExtension({
   host: {
     theme: () =>
       document.documentElement.classList.contains('dark') ? 'dark' : 'light',
-    brandColor: () => '#6d28d9',
+    brandColor: () => {
+      const primary = getComputedStyle(document.documentElement)
+        .getPropertyValue('--primary')
+        .trim();
+      // The annotation host accepts only #RRGGBB; custom themes may use other CSS color formats.
+      return /^#[\da-f]{6}$/i.test(primary) ? primary : '#002ad1';
+    },
     subscribe(listener) {
       const observer = new MutationObserver(listener);
       observer.observe(document.documentElement, {
-        attributeFilter: ['class'],
+        attributeFilter: ['class', 'data-theme'],
         attributes: true,
       });
       return () => observer.disconnect();

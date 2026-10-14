@@ -26,6 +26,7 @@ import {
 } from '../../kernel/values.js';
 
 export interface RunRecord {
+  readonly revision: number;
   readonly id: string;
   readonly agentId: string;
   readonly agentType: string;
@@ -44,6 +45,11 @@ export interface RunRecord {
   readonly subjectKind: string;
   readonly subjectId: string;
   readonly threadScope: string;
+  readonly freshSession?: boolean;
+  /** Server-managed authorization for runs caused by one comment, never independent events. */
+  readonly commentRootRunId?: string | null;
+  readonly commentExecution?: 'owner' | 'requester' | null;
+  readonly commentOwnerKey?: string | null;
   readonly actorUserId: string;
   /** Null only on a run older than the column that no backfill reached; read as the actor then. */
   readonly requestedByUserId?: string | null;
@@ -52,6 +58,7 @@ export interface RunRecord {
   readonly requires: readonly unknown[];
   readonly acceptsInput: boolean;
   readonly availableAt: string | null;
+  readonly queueEnteredAt?: string | null;
   readonly leaseExpiresAt: string | null;
   readonly dispatchedAt: string | null;
   readonly startedAt: string | null;
@@ -69,6 +76,8 @@ export interface RunRecord {
   readonly payloadFingerprint: string | null;
   /** While queued: the variables for team runners only that kept a personal runner off it (`VariableRef[]`). */
   readonly teamOnlyVariables?: JsonColumn;
+  /** While held: the repository URLs its runner may ask credentials for on demand (`RunGit.onDemand`); null otherwise. */
+  readonly gitCredentialUrls?: JsonColumn;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -124,6 +133,8 @@ export interface RepoRecord {
   readonly branch: string;
   readonly pushed: boolean;
   readonly headSha: string | null;
+  readonly failureReason?: string | null;
+  readonly failureDetail?: string | null;
   readonly updatedAt: string;
 }
 
@@ -243,9 +254,13 @@ export function toRun(record: RunRecord): Run {
     attempt: Number(record.attempt),
     maxAttempts: Number(record.maxAttempts),
     retryOfRunId: record.retryOfRunId,
+    freshSession: Boolean(record.freshSession),
     parentRunId: record.parentRunId ?? null,
     subject: { kind: record.subjectKind, id: record.subjectId },
     threadScope: record.threadScope,
+    commentRootRunId: record.commentRootRunId ?? null,
+    commentExecution: record.commentExecution ?? null,
+    commentOwnerKey: record.commentOwnerKey ?? null,
     actorUserId: record.actorUserId,
     requestedByUserId: record.requestedByUserId ?? record.actorUserId,
     confirmedByUserId: record.confirmedByUserId ?? null,
@@ -253,6 +268,7 @@ export function toRun(record: RunRecord): Run {
     requires: stringArray(record.requires) as RunnerFeature[],
     acceptsInput: Boolean(record.acceptsInput),
     availableAt: record.availableAt,
+    queueEnteredAt: record.queueEnteredAt ?? record.createdAt,
     leaseExpiresAt: record.leaseExpiresAt,
     dispatchedAt: record.dispatchedAt,
     startedAt: record.startedAt,
@@ -307,6 +323,13 @@ export function toRepo(record: RepoRecord): RunRepo {
     branch: record.branch,
     pushed: Boolean(record.pushed),
     headSha: record.headSha,
+    failure:
+      record.failureReason === null || record.failureReason === undefined
+        ? null
+        : {
+            reason: record.failureReason,
+            message: record.failureDetail ?? '',
+          },
     updatedAt: record.updatedAt,
   };
 }

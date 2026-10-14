@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="470" viewBox="0 0 1120 470" role="img" aria-labelledby="title"><title id="title">会签与或签</title>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#64748b"/></marker></defs>
+<rect width="1120" height="470" rx="20" fill="#f8fafc"/>
+<g font-family="Arial, Noto Sans SC, Microsoft YaHei, sans-serif">
+<text x="48" y="62" font-size="26" font-weight="700" fill="#0f172a">会签与或签</text>
+<text x="48" y="130" font-size="16" font-weight="600" fill="#475569">会签</text>
+<text x="359" y="198" text-anchor="middle" font-size="24" fill="#64748b">+</text>
+<rect x="48" y="155" width="285" height="72" rx="12" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5"/>
+<text x="190.5" y="198" text-anchor="middle" font-size="17" font-weight="600" fill="#0f172a">运营：已同意</text>
+<path d="M683 191H736" stroke="#64748b" stroke-width="2.5" fill="none" marker-end="url(#a)"/>
+<rect x="398" y="155" width="285" height="72" rx="12" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5"/>
+<text x="540.5" y="198" text-anchor="middle" font-size="17" font-weight="600" fill="#0f172a">财务：待审批</text>
+<rect x="748" y="155" width="285" height="72" rx="12" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+<text x="890.5" y="198" text-anchor="middle" font-size="17" font-weight="600" fill="#0f172a">继续等待</text>
+<text x="48" y="290" font-size="16" font-weight="600" fill="#475569">或签</text>
+<text x="359" y="358" text-anchor="middle" font-size="24" fill="#64748b">+</text>
+<rect x="48" y="315" width="285" height="72" rx="12" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5"/>
+<text x="190.5" y="358" text-anchor="middle" font-size="17" font-weight="600" fill="#0f172a">主管 A：已同意</text>
+<path d="M683 351H736" stroke="#64748b" stroke-width="2.5" fill="none" marker-end="url(#a)"/>
+<rect x="398" y="315" width="285" height="72" rx="12" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5"/>
+<text x="540.5" y="358" text-anchor="middle" font-size="17" font-weight="600" fill="#0f172a">主管 B：待审批</text>
+<rect x="748" y="315" width="285" height="72" rx="12" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+<text x="890.5" y="358" text-anchor="middle" font-size="17" font-weight="600" fill="#0f172a">环节通过</text>
+<text x="48" y="438" font-size="13" fill="#64748b">图示：审批规则与任务关系</text>
+</g></svg>

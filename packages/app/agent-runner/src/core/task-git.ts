@@ -2,14 +2,27 @@
 import { lstat, readdir, readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 
-import { CheckoutError, git } from './git.ts';
-import { isInside } from './command-policy.ts';
+import {
+  CheckoutError,
+  git,
+  gitAuthEnv,
+  type GitAuth,
+  type GitInvocationOptions,
+} from './git.ts';
+import { isInside } from '../lib/paths.ts';
 import { GIT_LOW_SPEED_CONFIG } from './git-retry.ts';
 
 export interface TaskGitContext {
   readonly dir: string;
   readonly cache: string;
   readonly url: string;
+}
+
+export interface TaskGitOptions extends GitInvocationOptions {
+  /** Run credentials replace every host helper; rejection must not fall back to machine credentials. */
+  readonly auth?: GitAuth;
+  /** Submodules may share credentials only within their parent's HTTP origin. Defaults to the repository URL. */
+  readonly authScope?: string;
 }
 
 // Keep this list narrow: new Git configuration can introduce new ways to execute code or redirect credentials.
@@ -27,7 +40,7 @@ const SAFE_KEYS = [
   /^rerere\.enabled$/iu,
   /^commit\.gpgsign$/iu,
   /^credential\.helper$/iu,
-  /^extensions\.objectformat$/iu,
+  /^extensions\.(objectformat|worktreeconfig)$/iu,
   /^gc\.(auto|pruneexpire)$/iu,
   /^maintenance\.auto$/iu,
 ];
@@ -124,10 +137,7 @@ async function checkMetadata(
   context: TaskGitContext,
 ): Promise<void> {
   await checkConfig(path.join(dir, 'config'), context);
-  if (await regularFile(path.join(dir, 'config.worktree')))
-    throw new CheckoutError(
-      `${dir}: per-worktree Git configuration is unsupported`,
-    );
+  await checkConfig(path.join(dir, 'config.worktree'), context);
   const modules = path.join(dir, 'modules');
   const walk = async (current: string): Promise<void> => {
     const info = await lstat(current).catch((error: NodeJS.ErrnoException) => {
@@ -200,15 +210,19 @@ export async function taskGit(
   context: TaskGitContext,
   args: string[],
   env: Record<string, string> = {},
+  options: TaskGitOptions = {},
 ): Promise<string> {
   const gitDir = await taskGitDir(context);
   await checkMetadata(gitDir, context);
-  // The cache is runner-owned. Retain its host credential helper, never one supplied by the task's config.
+  // The cache is runner-owned. Retain its host helper only when this invocation has no run credential.
   // --get-urlmatch returns only the last matching helper if the host config contains several.
-  const trustedHelpers = await git(
-    ['config', '--get-urlmatch', 'credential.helper', context.url],
-    context.cache,
-  ).catch(() => '');
+  const trustedHelpers =
+    options.auth === undefined
+      ? await git(
+          ['config', '--get-urlmatch', 'credential.helper', context.url],
+          context.cache,
+        ).catch(() => '')
+      : '';
   const fileTransport = await git(
     ['config', '--get', 'protocol.file.allow'],
     context.cache,
@@ -247,7 +261,12 @@ export async function taskGit(
       .flatMap((value) => ['-c', value])
       .concat(GIT_LOW_SPEED_CONFIG, helperArgs, args),
     context.dir,
-    { ...env, ...helperEnv },
+    {
+      ...env,
+      ...gitAuthEnv(options.auth, options.authScope ?? context.url),
+      ...helperEnv,
+    },
+    options,
   );
 }
 

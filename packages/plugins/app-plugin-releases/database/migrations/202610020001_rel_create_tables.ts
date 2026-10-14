@@ -79,7 +79,7 @@ const migration: MigrationDefinition = defineMigration({
           c.string('appId', { length: 128 }).notNull();
           c.string('kind', { length: 16 }).notNull();
           c.string('version', { length: 255 }).notNull();
-          c.string('artifactKey', { length: 1024 }).nullable();
+          c.string('artifactKey', { length: 172 }).nullable();
           c.string('checksum', { length: 64 }).notNull();
           c.bigInt('size').nullable();
           c.text('configTemplate').nullable();

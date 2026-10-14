@@ -42,7 +42,6 @@ import type { Context, Hono, MiddlewareHandler } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { z } from 'zod';
 
-import { policyAllowsAgent } from '@nocobase/agent-protocol';
 import {
   reaches,
   type BusinessKey,
@@ -51,23 +50,15 @@ import {
   type SettingsAction,
   type SettingsItem,
 } from '../../shared/access.js';
-import type { AgentSummary, Agent } from '../../shared/agents.js';
-import { offersEntry } from '../../shared/models.js';
 import { SKILL_UPLOAD_MAX_BYTES, type SkillView } from '../../shared/skills.js';
 import { CONVERSATION_SUBJECT } from '../../shared/conversations.js';
 import type { Run } from '../../shared/runs.js';
 import type { VariableScope } from '../../shared/variables.js';
 import type { AgentsVocabulary } from '../../shared/vocabulary.js';
 import type { Agents } from '../composition.js';
-import { AgentInputSchema, AgentPatchSchema } from '../core/agents/index.js';
+import { AgentPatchSchema, agentViews } from '../core/agents/index.js';
 import { ModelPricesSchema } from '../core/reports/index.js';
-import {
-  countActive,
-  hasTool,
-  onlineEntryOf,
-  runForViewer,
-  type RunMachineViewer,
-} from '../core/runs/index.js';
+import { runForViewer, type RunMachineViewer } from '../core/runs/index.js';
 import {
   SkillIdsSchema,
   SkillImportSchema,
@@ -86,10 +77,10 @@ import {
   AgentActionOptionSchema,
   AgentChangeSchema,
   AgentHistoryQuery,
-  AgentListQuery,
   AgentParams,
+  AgentNameSchema,
   AgentSchema,
-  AgentSummarySchema,
+  AgentViewSchema,
   BriefPreviewSchema,
   ModelUsageReportSchema,
   PageTokenMetaSchema,
@@ -273,60 +264,6 @@ export function createAdminRoutes(
     (await services.people.names(services.tx.read(), [userId])).get(userId) ??
     userId;
 
-  /** The agents with what the list shows about their runs and runners, and whether the caller may change each. */
-  const summarize = async (
-    who: AdminCaller,
-    agents: readonly Agent[],
-  ): Promise<AgentSummary[]> => {
-    const conn = services.tx.read();
-    const online = await services.runners.online(conn);
-    const owners = await services.people.names(
-      conn,
-      agents.map((agent) => agent.ownerUserId),
-    );
-    const catalog = await services.online.gateway.catalog();
-    const result: AgentSummary[] = [];
-    for (const agent of agents)
-      result.push({
-        ...agent,
-        ownerName: owners.get(agent.ownerUserId) ?? null,
-        activeRuns: await countActive(conn, 'agentId', agent.id),
-        // An online agent runs here: "online" while the service of its first entry offers its model.
-        onlineRunners:
-          agent.type === 'online'
-            ? Number(
-                offersEntry(
-                  catalog,
-                  onlineEntryOf(agent, undefined, catalog.defaultModel ?? null),
-                ),
-              )
-            : online.filter(
-                (runner) =>
-                  hasTool(runner, agent) &&
-                  policyAllowsAgent(runner.policy, agent) &&
-                  (agent.runnerIds.length === 0 ||
-                    agent.runnerIds.includes(runner.id)),
-              ).length,
-        canEdit: await mayEdit(who, agent.ownerUserId),
-        owned: agent.ownerUserId === who.userId,
-        canCopy: services.agents.mayInvoke(agent, who.userId),
-      });
-    return result;
-  };
-
-  /** Only a caller who may change the agent of the path goes on: 404 when they may not read it, 403 when not change it. */
-  const editableAgent: MiddlewareHandler<AdminEnv> = async (context, next) => {
-    const who = caller(context);
-    const agent = await services.agents.get(context.req.param('agentId') ?? '');
-    if (!(await mayEdit(who, agent.ownerUserId))) {
-      if (!(await who.can('agents.agents', 'read'))) throw notFound('Agent');
-      throw forbidden(
-        'Only its owner (with the related level of agents.agents edit) or a manager of agents may change this agent.',
-      );
-    }
-    await next();
-  };
-
   /** Only a caller who may edit the skill of the path goes on: 404 when they may not read it, 403 when not edit it. */
   const editableSkill: MiddlewareHandler<AdminEnv> = async (context, next) => {
     const who = caller(context);
@@ -357,11 +294,18 @@ export function createAdminRoutes(
     const allowed = services.scopes
       .keys()
       .filter((key) => withAgent || key !== 'agent');
-    if (!allowed.includes(scope) || !scopeId) throw notFound('Scope');
     const who = caller(context);
+    if (!withAgent && scope === 'global') {
+      if (scopeId !== 'default') throw notFound('Scope');
+      const manage = await who.can('agents.agents', 'manage');
+      if (!manage && !(await who.can('agents.agents', 'read')))
+        throw notFound('Scope');
+      return { scope, scopeId, manage };
+    }
+    if (!allowed.includes(scope) || !scopeId) throw notFound('Scope');
     if (scope === 'agent') {
-      const agent = await services.agents.get(scopeId);
-      const manage = await mayEdit(who, agent.ownerUserId);
+      await services.agents.get(scopeId);
+      const manage = await who.can('agents.agents', 'manage');
       if (!manage && !(await who.can('agents.agents', 'read')))
         throw notFound('Agent');
       return { scope: 'agent', scopeId, manage };
@@ -474,6 +418,93 @@ export function createAdminRoutes(
     }),
     async (context) => {
       const data = await services.people.list(services.tx.read());
+      return context.json({ data, meta: { total: data.length } });
+    },
+  );
+
+  router.put(
+    '/discoveryPreferences',
+    scoped,
+    can('agents.agents', 'manage'),
+    describeRoute({
+      tags,
+      summary: 'Ignore or restore discovery groups',
+      operationId: 'agentsSetDiscoveryPreferences',
+      ...cliRoute({ command: 'agent discovery set', bodyFile: 'input' }),
+      description:
+        'Shared administrator preferences. Only pending groups can be changed. Batches are atomic and checked against each group revision. Reports do not reset preferences.',
+      responses: {
+        200: listResponse(
+          z.object({
+            key: z.string(),
+            ignored: z.boolean(),
+            revision: z.number().int(),
+          }),
+        ),
+        400: apiErrorResponse(400, 'The group contains a non-pending agent.'),
+        409: apiErrorResponse(409, 'The discovery group changed.'),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator(
+      'json',
+      z.strictObject({
+        groups: z
+          .array(
+            z.strictObject({
+              key: z
+                .string()
+                .min(1)
+                .max(256)
+                .meta({ description: 'The discoveryKey from the agent list.' }),
+              expectedRevision: z.number().int().min(0).meta({
+                description: 'The discoveryRevision from the agent list.',
+              }),
+            }),
+          )
+          .min(1)
+          .max(256)
+          .refine(
+            (groups) =>
+              new Set(groups.map((group) => group.key)).size === groups.length,
+            'Groups must be unique.',
+          )
+          .meta({
+            description:
+              'Unique pending discovery groups to update atomically.',
+          }),
+        ignored: z.boolean().meta({
+          description:
+            'True to ignore pending discoveries; false to restore them without enabling.',
+        }),
+      }),
+    ),
+    async (context) => {
+      const { groups, ignored } = context.req.valid('json');
+      const data = await services.agents.setIgnored(groups, ignored);
+      return context.json({ data, meta: { total: data.length } });
+    },
+  );
+
+  // Every agent's name, removed ones and the application's own included, for the runs that name them.
+  router.get(
+    '/agentNames',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'List the names of agents',
+      operationId: 'agentsListAgentNames',
+      // UI-only: the names runs show.
+      ...cliRoute(false),
+      description:
+        'Every agent there has been, removed ones and the application’s own included, by id and name: what the runs that name them show.',
+      responses: {
+        200: listResponse(AgentNameSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    async (context) => {
+      const data = await services.agents.directory(services.tx.read());
       return context.json({ data, meta: { total: data.length } });
     },
   );
@@ -762,7 +793,7 @@ export function createAdminRoutes(
       operationId: 'agentsListSkills',
       ...cliRoute({
         command: 'skill list',
-        columns: ['id', 'name', 'version', 'agentCount', 'updatedAt'],
+        columns: ['id', 'name', 'version', 'updatedAt'],
       }),
       description: 'The skill library. Needs `agents.agents` read.',
       responses: { 200: listResponse(SkillSchema), ...apiErrorResponses },
@@ -1234,17 +1265,17 @@ export function createAdminRoutes(
           scopeKind: {
             name: 'kind',
             description:
-              'The scope kind: `agent`, `workdir`, or one the application registers.',
+              'The scope kind: `global`, `workdir`, or one the application registers.',
           },
           scopeId: {
             name: 'scope',
             description:
-              'The scope: an agent id, a working directory id, or the id the application gives.',
+              'The scope: `default` for global, a working directory id, or the id the application gives.',
           },
         },
       }),
       description:
-        "The skills every run working in the scope gets (a working directory, or a scope the application registers; an agent's own skills are its `skillIds`).",
+        'The skills every run gets: global default, then application scopes, then working directories; later scopes override the same slug. Global reads require agents.agents read or manage.',
       responses: {
         200: dataResponse(SkillAttachmentsSchema),
         404: noScope,
@@ -1273,21 +1304,23 @@ export function createAdminRoutes(
           scopeKind: {
             name: 'kind',
             description:
-              'The scope kind: `agent`, `workdir`, or one the application registers.',
+              'The scope kind: `global`, `workdir`, or one the application registers.',
           },
           scopeId: {
             name: 'scope',
             description:
-              'The scope: an agent id, a working directory id, or the id the application gives.',
+              'The scope: `default` for global, a working directory id, or the id the application gives.',
           },
           skillIds: { name: 'skills' },
         },
         examples: [
+          'skill attachment set global default --skills <skill>,<skill>',
+          'skill attachment set global default --file empty-skills.json',
           'skill attachment set workdir <workdir> --skills <skill>,<skill>',
         ],
       }),
       description:
-        'Makes `skillIds` the skills attached to the scope. Needs the right to change the scope.',
+        'Makes `skillIds` the skills attached to the scope. Global accepts only default and requires agents.agents manage; other scopes need the right to change that scope. An empty skillIds array clears attachments. Agent attachments are refused.',
       responses: {
         200: dataResponse(SkillAttachmentsSchema),
         400: apiErrorResponse(
@@ -1474,7 +1507,7 @@ export function createAdminRoutes(
         flags: { runId: { name: 'run' }, pageSize: { name: 'limit' } },
         columns: ['seq', 'at', 'type', 'tool'],
       }),
-      description: `The run's transcript as JSON pages, in order: a page holds the events after \`after\` (a \`seq\`), up to \`pageSize\`. Not a stream: to follow a run, ask again with \`after\` set to \`meta.lastSeq\`, when the run's realtime topic announces a change. ${runVisibility}`,
+      description: `The run's transcript as JSON pages, in order: a page holds the events after \`after\` (a \`seq\`), up to \`pageSize\`. Repeat \`type\` to filter raw event types before paging; omit it for all events. Keep the same types while paging. Not a stream: to follow a run, ask again with \`after\` set to \`meta.lastSeq\`, when the run's realtime topic announces a change. ${runVisibility}`,
       responses: {
         200: listResponse(RunEventItemSchema, SeqPageMetaSchema),
         404: noRun,
@@ -1484,7 +1517,7 @@ export function createAdminRoutes(
     runParam,
     apiValidator('query', RunEventsQuery),
     async (context) => {
-      const { after, pageSize, pageToken } = context.req.valid('query');
+      const { after, pageSize, pageToken, type } = context.req.valid('query');
       const from =
         pageToken === undefined
           ? (after ?? 0)
@@ -1493,6 +1526,7 @@ export function createAdminRoutes(
         context.req.valid('param').runId,
         from,
         pageSize,
+        type,
       );
       return context.json({
         data: page.events,
@@ -1554,12 +1588,12 @@ export function createAdminRoutes(
         flags: { runId: { name: 'run' } },
       }),
       description:
-        'Queues a new run with the same input. Whoever started or owns it, or a manager of agents, may.',
+        'Queues a new run with the same input once. Whoever started or owns it, or a manager of agents, may. Repeating a retry returns RUN_ALREADY_RETRIED (FAILED_PRECONDITION) with the replacement run id.',
       responses: {
         200: dataResponse(RunSchema),
         400: apiErrorResponse(
           400,
-          'The run cannot be retried (`RUN_NOT_RETRYABLE`).',
+          'The run cannot be retried (`RUN_NOT_RETRYABLE`) or has already been retried (`RUN_ALREADY_RETRIED`).',
         ),
         404: noRun,
         ...apiErrorResponses,
@@ -1572,6 +1606,11 @@ export function createAdminRoutes(
           await services.runs.retry(
             context.req.valid('param').runId,
             caller(context).userId,
+            // Display attribution trusts the client header. Other HTTP callers,
+            // including API-key scripts, are runRecord; api is for service callers.
+            context.req.header('x-nocobase-client') === 'cli'
+              ? 'cli'
+              : 'runRecord',
           ),
           await machineViewer(context),
         ),
@@ -1771,95 +1810,36 @@ export function createAdminRoutes(
   // Agents, last: `/:agentId` would otherwise shadow the fixed segments above.
   const agentParam = apiValidator('param', AgentParams);
   const noAgent = notFoundAs('The agent');
-  const editAccess =
-    'Its owner (at the related level of `agents.agents` edit) or a manager of agents may.';
   router.get(
     '/',
-    scoped,
-    can('agents.agents', 'read'),
+    guard,
     describeRoute({
       tags,
       summary: 'List agents',
       operationId: 'agentsListAgents',
       ...cliRoute({
         command: 'agent list-all',
-        flags: { includeArchived: { name: 'archived' } },
-        columns: [
-          'id',
-          'name',
-          'type',
-          'ownerName',
-          'activeRuns',
-          'archivedAt',
-        ],
-        examples: ['agent list-all --archived'],
+        columns: ['id', 'name', 'status', 'unusable', 'busy', 'description'],
+        examples: ['agent list-all', 'agent list-all --json'],
       }),
       description:
-        'With what the list shows about their runs and runners, and whether the caller may change each. Needs `agents.agents` read.',
+        'Every agent discovered from runners: one for each coding tool and model they report, with whether it is enabled, what it is good at, where it can run now (team and personal runners, the caller’s own among them), why it cannot take the caller’s work, and whether the caller may change it. Anyone signed in may read them; only a manager of agents (`agents.agents` manage) changes them.',
       responses: {
-        200: listResponse(AgentSummarySchema),
+        200: listResponse(AgentViewSchema),
         ...apiErrorResponses,
       },
     }),
-    apiValidator('query', AgentListQuery),
     async (context) => {
-      const data = await summarize(
-        caller(context),
-        await services.agents.list({
-          includeArchived: context.req.valid('query').includeArchived === true,
-        }),
-      );
+      const who = caller(context);
+      const data = await services.views(services.tx.read(), who.userId, {
+        canEdit: await who.can('agents.agents', 'manage'),
+      });
       return context.json({ data, meta: { total: data.length } });
     },
   );
-  router.post(
-    '/',
-    scoped,
-    can('agents.agents', 'manage'),
-    describeRoute({
-      tags,
-      summary: 'Create an agent',
-      operationId: 'agentsCreateAgent',
-      ...cliRoute({
-        command: 'agent create',
-        bodyFile: 'file',
-        flags: {
-          instructions: { contentFile: true },
-          modelEntries: { name: 'models' },
-          ownerUserId: { name: 'owner' },
-          runnerIds: { name: 'runtimes' },
-          skillIds: { name: 'skills' },
-          userIds: { name: 'users' },
-        },
-        examples: [
-          'agent create --name Coder --models \'[{"tool":"claude"},{"tool":"codex","model":"gpt-5"}]\'',
-          'agent create --name PM --type online --models \'[{"modelService":"openai","model":"gpt-5"}]\'',
-          'agent create --file agent.json',
-        ],
-      }),
-      description:
-        '`modelEntries` lists the tools and models it works with, in order (the first is its default): `{ tool, model? }` for a runner agent, `{ modelService, model }` for an online one. Needs `agents.agents` manage.',
-      responses: {
-        201: dataResponse(AgentSchema, 'Created.'),
-        ...apiErrorResponses,
-      },
-    }),
-    apiValidator('json', AgentInputSchema),
-    async (context) =>
-      context.json(
-        {
-          data: await services.agents.create(
-            caller(context).userId,
-            context.req.valid('json'),
-          ),
-        },
-        201,
-      ),
-  );
   router.get(
     '/:agentId',
-    scoped,
-    can('agents.agents', 'read'),
+    guard,
     describeRoute({
       tags,
       summary: 'Get an agent',
@@ -1869,19 +1849,27 @@ export function createAdminRoutes(
         args: ['agentId'],
         flags: { agentId: { name: 'agent' } },
       }),
-      description: 'Needs `agents.agents` read.',
+      description:
+        'An agent as the Agent page shows it. An application’s own agent, such as a project manager, is answered too.',
       responses: {
-        200: dataResponse(AgentSummarySchema),
+        200: dataResponse(AgentViewSchema),
         404: noAgent,
         ...apiErrorResponses,
       },
     }),
     agentParam,
     async (context) => {
-      const [agent] = await summarize(caller(context), [
-        await services.agents.get(context.req.valid('param').agentId),
-      ]);
-      return context.json({ data: agent });
+      const who = caller(context);
+      const agent = await services.agents.get(
+        context.req.valid('param').agentId,
+      );
+      const [data] = await agentViews(services.tx.read(), [agent], {
+        availability: services.availability,
+        userId: who.userId,
+        canEdit: await who.can('agents.agents', 'manage'),
+        now: services.clock.now(),
+      });
+      return context.json({ data });
     },
   );
   router.get(
@@ -1944,7 +1932,7 @@ export function createAdminRoutes(
   router.patch(
     '/:agentId',
     scoped,
-    editableAgent,
+    can('agents.agents', 'manage'),
     describeRoute({
       tags,
       summary: 'Update an agent',
@@ -1952,157 +1940,39 @@ export function createAdminRoutes(
       ...cliRoute({
         command: 'agent update',
         args: ['agentId'],
-        bodyFile: 'file',
         flags: {
           agentId: { name: 'agent' },
-          instructions: { contentFile: true },
-          modelEntries: { name: 'models' },
-          ownerUserId: { name: 'owner' },
-          runnerIds: { name: 'runtimes' },
-          skillIds: { name: 'skills' },
-          userIds: { name: 'users' },
-          expectedRevision: { name: 'revision' },
+          description: { name: 'good-at', contentFile: true },
         },
         examples: [
-          'agent update <agent> --instructions-file notes.md --revision 4',
-          'agent update <agent> --models \'[{"tool":"codex"},{"tool":"claude","model":"opus"}]\' --revision 4',
+          'agent update <agent> --good-at "Code review" --enabled --expected-revision 2',
+          'agent update <agent> --no-enabled --expected-revision 3',
         ],
       }),
-      description: `Changes the fields given, against \`expectedRevision\`. ${editAccess} Only a manager of agents may give it to another owner, and an owner adds only business actions they hold themselves.`,
+      description:
+        "Writes what an agent discovered from runners is good at, its default reasoning effort, and enables or disables it, against the revision the edit was made from. An agent is enabled only with a description. Disabling withdraws its queued runs. An application's own agent is changed through the application. Needs `agents.agents` manage.",
       responses: {
         200: dataResponse(AgentSchema),
+        400: apiErrorResponse(
+          400,
+          'Enabling without a description (`GOOD_AT_REQUIRED`), an effort its tool does not take (`EFFORT_UNSUPPORTED`), or an application’s own agent (`AGENT_MANAGED`).',
+        ),
         404: noAgent,
-        409: revisionConflict('agent'),
+        409: apiErrorResponse(
+          409,
+          'Someone changed the agent since the revision named (`REVISION_CONFLICT`, `metadata.revision`).',
+        ),
         ...apiErrorResponses,
       },
     }),
     agentParam,
     apiValidator('json', AgentPatchSchema),
-    async (context) => {
-      const who = caller(context);
-      const agent = await services.agents.get(
-        context.req.valid('param').agentId,
-      );
-      const patch = context.req.valid('json');
-      if (!(await who.can('agents.agents', 'manage'))) {
-        // Someone editing as the owner gives the agent only what they may grant themselves.
-        if (
-          patch.ownerUserId !== undefined &&
-          patch.ownerUserId !== agent.ownerUserId
-        )
-          throw forbidden(
-            'Only a manager of agents may give an agent to another owner.',
-          );
-        if (patch.actions !== undefined) {
-          const held = await services.gate.allowed({
-            kind: 'user',
-            userId: who.userId,
-            displayName: who.userId,
-          });
-          const beyond = patch.actions.filter(
-            (action) => !agent.actions.includes(action) && !held.has(action),
-          );
-          if (beyond.length > 0)
-            throw forbidden(
-              `You may not give the agent business actions you do not hold yourself: ${beyond.join(', ')}.`,
-            );
-        }
-      }
-      return context.json({
-        data: await services.agents.update(agent.id, who.userId, patch),
-      });
-    },
-  );
-  router.delete(
-    '/:agentId',
-    scoped,
-    editableAgent,
-    describeRoute({
-      tags,
-      summary: 'Delete an agent',
-      operationId: 'agentsDeleteAgent',
-      ...cliRoute({
-        command: 'agent delete',
-        args: ['agentId'],
-        flags: { agentId: { name: 'agent' } },
-        confirm: 'Delete this archived agent with its variables and history?',
-      }),
-      description: `Deletes an archived agent with no open runs, with its variables, skill attachments and history; its past runs stay. ${editAccess}`,
-      responses: {
-        204: emptyResponse(),
-        400: apiErrorResponse(
-          400,
-          'The agent is not archived, or has open runs (`AGENT_NOT_ARCHIVED`, `AGENT_HAS_ACTIVE_RUNS`).',
-        ),
-        404: noAgent,
-        ...apiErrorResponses,
-      },
-    }),
-    agentParam,
-    async (context) => {
-      await services.agents.remove(
-        context.req.valid('param').agentId,
-        caller(context).userId,
-      );
-      return context.body(null, 204);
-    },
-  );
-  router.post(
-    '/:agentId/archive',
-    scoped,
-    editableAgent,
-    describeRoute({
-      tags,
-      summary: 'Archive an agent',
-      operationId: 'agentsArchiveAgent',
-      ...cliRoute({
-        command: 'agent archive',
-        args: ['agentId'],
-        flags: { agentId: { name: 'agent' } },
-        confirm: 'Archive this agent? Its queued runs are withdrawn.',
-      }),
-      description: `An archived agent is not run: its queued runs are withdrawn. ${editAccess}`,
-      responses: {
-        200: dataResponse(AgentSchema),
-        404: noAgent,
-        ...apiErrorResponses,
-      },
-    }),
-    agentParam,
     async (context) =>
       context.json({
-        data: await services.agents.archive(
+        data: await services.agents.update(
           context.req.valid('param').agentId,
           caller(context).userId,
-        ),
-      }),
-  );
-  router.post(
-    '/:agentId/restore',
-    scoped,
-    editableAgent,
-    describeRoute({
-      tags,
-      summary: 'Restore an archived agent',
-      operationId: 'agentsRestoreAgent',
-      ...cliRoute({
-        command: 'agent restore',
-        args: ['agentId'],
-        flags: { agentId: { name: 'agent' } },
-      }),
-      description: editAccess,
-      responses: {
-        200: dataResponse(AgentSchema),
-        404: noAgent,
-        ...apiErrorResponses,
-      },
-    }),
-    agentParam,
-    async (context) =>
-      context.json({
-        data: await services.agents.restore(
-          context.req.valid('param').agentId,
-          caller(context).userId,
+          context.req.valid('json'),
         ),
       }),
   );

@@ -94,6 +94,7 @@ jobs:
         with:
           node-version: 24
           registry-url: ${{ secrets.PRO_NPM_REGISTRY }}
+          scope: '@nocobase'
 
       - name: Inspect prerelease state
         id: release_state
@@ -114,6 +115,7 @@ jobs:
         id: oss
         env:
           OSS_SHA: ${{ inputs.oss_sha }}
+          NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
         run: |
           ARGS=(--branch develop)
           if [ -n "$OSS_SHA" ]; then ARGS+=(--sha "$OSS_SHA"); fi
@@ -199,7 +201,9 @@ jobs:
           PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
         run: node ./scripts/publish-commercial-packages.mjs --registry "$PRO_NPM_REGISTRY" --tag beta
 
-      - name: Point beta at this release and push package tags
+      # Point latest at each release as well as beta, so installing a Pro package without a tag gets the version that was
+      # just published, as the OSS beta release does.
+      - name: Point beta and latest at this release and push package tags
         if: "!inputs.dry_run && steps.release_state.outputs.release == 'true'"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
@@ -209,9 +213,11 @@ jobs:
           FAILED=0
           while IFS= read -r SPEC; do
             [ -n "$SPEC" ] || continue
-            npm dist-tag add "$SPEC" beta --registry "$PRO_NPM_REGISTRY" || FAILED=1
+            for TAG in beta latest; do
+              npm dist-tag add "$SPEC" "$TAG" --registry "$PRO_NPM_REGISTRY" || FAILED=1
+            done
           done < "$RUNNER_TEMP/pro-released-specs.txt"
-          test "$FAILED" = 0 || { echo '::error::One or more Pro beta dist-tags could not be updated'; exit 1; }
+          test "$FAILED" = 0 || { echo '::error::One or more Pro beta or latest dist-tags could not be updated'; exit 1; }
           git push origin --tags
 
       - name: Merge release metadata back into Pro develop
@@ -256,7 +262,7 @@ jobs:
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           RELEASE_URL: ${{ github.server_url }}/nocobase/nocobase3-pro/releases
           TABLE_JSON: ${{ steps.changed.outputs.rows }}
-          CONTENT: 版本 **${{ steps.branch.outputs.batch }}** 已发布到私有 npm（dist-tag `beta`）。
+          CONTENT: 版本 **${{ steps.branch.outputs.batch }}** 已发布到私有 npm（dist-tag `beta` 和 `latest`）。
         run: ./vendor/nocobase3/scripts/feishu-notify.sh
 
       - name: Notify failure
