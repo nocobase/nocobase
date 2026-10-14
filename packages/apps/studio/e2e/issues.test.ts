@@ -1,3 +1,4 @@
+import { writeFileSync } from 'node:fs';
 import {
   expect,
   horizontalOverflow,
@@ -140,14 +141,18 @@ test.describe('issues', () => {
       await testInfo.attach(
         path.startsWith('/my-issues') ? 'my-issues-1366' : 'issues-1366',
         {
-          body: await page.screenshot(),
+          body: await page.screenshot({
+            path: testInfo.outputPath(
+              path.startsWith('/my-issues') ? 'my-issues.png' : 'issues.png',
+            ),
+          }),
           contentType: 'image/png',
         },
       );
     }
     expect(heights.every((height) => height > 500)).toBe(true);
 
-    await page.route('**/api/projects/issues*', async (route) => {
+    await page.route('**/api/taskTrees*', async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 700));
       await route.continue();
     });
@@ -173,8 +178,13 @@ test.describe('issues', () => {
         await page.getByRole('button', { name: '清除筛选' }).click();
       }
     }
+    const measurements = testInfo.outputPath('content-heights.json');
+    writeFileSync(
+      measurements,
+      JSON.stringify({ viewport: '1366x768', pages, heights }, null, 2),
+    );
     await testInfo.attach('content-heights', {
-      body: JSON.stringify({ viewport: '1366x768', pages, heights }),
+      path: measurements,
       contentType: 'application/json',
     });
   });
@@ -204,7 +214,14 @@ test.describe('issues', () => {
         path.startsWith('/my-issues')
           ? 'my-issues-375-filters'
           : 'issues-375-filters',
-        { body: await page.screenshot(), contentType: 'image/png' },
+        {
+          body: await page.screenshot({
+            path: testInfo.outputPath(
+              path.startsWith('/my-issues') ? 'my-issues.png' : 'issues.png',
+            ),
+          }),
+          contentType: 'image/png',
+        },
       );
       await search.press('Escape');
       await expect(filters).toBeHidden();
