@@ -462,7 +462,7 @@ describe('the project manager’s settings', () => {
     expect(instructions).toContain('You are the project manager of the issue');
     expect(instructions).toContain('Give every step to the Coder.');
     expect(instructions).toContain(
-      'Every explicit blocked or in_review status submission MUST include a nonblank needsYou in the same request',
+      'Every explicit blocked or in_review status submission from your authenticated manager run MUST include a nonblank needsYou in the same request',
     );
     expect(instructions).toContain(
       'This requirement applies regardless of custom allocation principles.',
