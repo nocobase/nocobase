@@ -14,15 +14,17 @@ Preview pending work with the target CLI:
 pnpm nocobase db apply --dry-run --json
 ```
 
-The default connection is selected unless `--connection <name>` or `--all` is supplied. Keep preview, repair, and apply scoped to the same intended managed connections; plugins contribute to the default connection. A dry run lists work without executing migration bodies, so it does not prove that existing data satisfies a new bound or constraint. Check documented data prerequisites separately. A strict checksum policy can reject even this preview until the reviewed drift is acknowledged.
+The default connection is selected unless `--connection <name>` or `--all` is supplied. Keep preview, repair, and apply scoped to the same intended managed connections; plugins contribute to the default connection. An apply dry run discovers pending tasks by comparing their names with execution history. It does not check recorded checksums, even with `onChecksumMismatch: error`, and does not execute migration bodies or validate existing data against new constraints. A successful preview is therefore not evidence that checksums or data prerequisites are satisfied.
 
 ## Review checksum drift
 
-Checksum repair is conditional, not a routine upgrade step. If a target release documents a correction to an executed migration, or drift appears during the preview, inspect it first:
+Before applying target migrations or starting the target application against retained data, inspect checksums independently with the target CLI, even when release notes mention no historical corrections and the apply preview succeeds:
 
 ```bash
 pnpm nocobase db repair --dry-run --json
 ```
+
+This preview is read-only and checks both executed migrations and seeds. If it proposes no checksum changes, skip the actual repair command and continue with the pending tasks and data prerequisites. Writing repaired checksums remains conditional on reviewing and authorizing the changes below.
 
 Match every proposed change to its owning package, migration or seed name, and the documented source change. `db repair` updates all mismatching executed migration and seed checksums in the selected connections; it has no per-migration allowlist. An unexplained entry means investigate before repairing that connection, even when other entries are expected. Do not weaken the checksum policy, edit migration sources or history by hand, or use `db reset` or `db redo` to bypass the failure.
 
@@ -36,7 +38,7 @@ The CLI confirms before writing; non-interactive execution requires `--force`. U
 
 ## Apply and verify
 
-After any required repair and data preparation, repeat the apply preview and execute `pnpm nocobase db apply --json` for a source application within the authorized upgrade scope. For a deployment, use its migration step or the installer's upgrade operation instead. Check the command result and relevant application behavior, including reads and writes affected by the migration; a running process alone is insufficient. Keep the reviewed checksum changes, migration results, and recovery path in the upgrade report.
+After completing the independent checksum check, any required repair, and the documented data preparation, review the pending tasks again with the apply preview and execute `pnpm nocobase db apply --json` for a source application within the authorized upgrade scope. For a deployment, use its migration step or the installer's upgrade operation instead. Check the command result and relevant application behavior, including reads and writes affected by the migration; a running process alone is insufficient. Keep the reviewed checksum changes, migration results, and recovery path in the upgrade report.
 
 If a migration rejects existing data, preserve it and resolve the reported records under a data migration plan before retrying. For example, shortening a stored archive key without moving the corresponding archive breaks downloads. Do not silently truncate data to make a constraint pass.
 
