@@ -608,11 +608,6 @@ function RunLine({
               {relativeTime(at, locale)}
             </time>
           </span>
-          {run.failure ? (
-            <span className='block text-xs text-destructive'>
-              {run.failure}
-            </span>
-          ) : null}
           {run.retrying ? (
             <span className='block text-xs text-muted-foreground'>
               {run.retrying}
@@ -823,8 +818,7 @@ export function RunActivityRow({
       <span className='text-foreground'>
         {fillLabel(labels.activity[run.status], { name: run.agentName })}
       </span>
-      {(run.status === 'failed' || run.status === 'cancelled') &&
-      run.failure ? (
+      {run.status === 'failed' && run.failure ? (
         <span className='text-xs text-destructive'>· {run.failure}</span>
       ) : null}
       {run.retrying ? <span className='text-xs'>· {run.retrying}</span> : null}
