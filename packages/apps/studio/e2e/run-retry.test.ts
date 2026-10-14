@@ -2,11 +2,25 @@ import path from 'node:path';
 
 import type { RunDetail } from '@nocobase/app-plugin-agents/shared/runs';
 
-import { expect, open, test, unique } from './support/fixtures.ts';
+import { expect, open, signIn, test, unique } from './support/fixtures.ts';
 import { FakeRunner } from './support/runner.ts';
 
 test.use({ user: 'admin', locale: 'en-US' });
 test.setTimeout(180_000);
+
+test.beforeEach(async ({ api, context }) => {
+  // Account preferences, issue ownership and runner identity belong to this test alone.
+  const owner = {
+    email: `retry-owner-${unique()}@example.com`,
+    password: 'retry-e2e-password',
+  };
+  await api.post('users', {
+    ...owner,
+    name: 'Retry test owner',
+    roleScopes: { studio: ['admin'] },
+  });
+  await signIn(context, owner);
+});
 
 test('removes an old failure when a real retry resumes and preserves historical errors', async ({
   page,

@@ -6,6 +6,20 @@ import type { RunDetail } from '@nocobase/app-plugin-agents/shared/runs';
 
 test.use({ user: 'admin', locale: 'en-US', trace: 'off' });
 
+test.beforeEach(async ({ api, context }) => {
+  // Keep the owner's preferences and personal runner identity private to each case.
+  const owner = {
+    email: `consent-owner-${unique()}@example.com`,
+    password: 'consent-owner-e2e-password',
+  };
+  await api.post('users', {
+    ...owner,
+    name: 'Consent test owner',
+    roleScopes: { studio: ['admin'] },
+  });
+  await signIn(context, owner);
+});
+
 async function createRequester(api: Api) {
   // Preferences persist on the account; never change the demo person used by parallel sign-in tests.
   const credentials = {
