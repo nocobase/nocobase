@@ -1,24 +1,48 @@
+import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test as base, type Page } from '@playwright/test';
 
 import type { Role } from '../shared/access.js';
-import { Api, USERS, url } from './support/fixtures.ts';
+import { Api, apiAs, signIn, unique, url } from './support/fixtures.ts';
 
-// The standard harness supplies its own administrator; isolated development runs may supply a temporary one.
+// Preferences belong to the identity: shell tests may change the shared administrator's language in parallel.
+const test = base.extend<{ roleIdentity: void }>({
+  roleIdentity: [
+    async ({ browser, context }, use) => {
+      const admin = await apiAs(browser, 'admin');
+      try {
+        const credentials = {
+          email: `role-save-${unique()}@example.invalid`,
+          password: randomBytes(24).toString('hex'),
+        };
+        const user = await admin.api.post<{ id: string }>('users', {
+          ...credentials,
+          name: 'Role save test',
+          roleScopes: { studio: ['admin'] },
+        });
+        try {
+          await signIn(context, credentials);
+          await new Api(context.request).patch('users/me/preferences', {
+            locale: 'en-US',
+          });
+          await use();
+        } finally {
+          // Studio retains historical identities. Disable revokes sessions; the harness removes the database.
+          await admin.api.post(`users/${user.id}/disable`);
+        }
+      } finally {
+        await admin.close();
+      }
+    },
+    { auto: true },
+  ],
+});
+
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() =>
     localStorage.setItem('nocobase.locale', 'en-US'),
   );
-  await page.goto(url('/login'));
-  await page
-    .getByRole('textbox', { name: 'Username or email' })
-    .fill(process.env.E2E_USERNAME ?? USERS.admin.email);
-  await page
-    .getByRole('textbox', { name: 'Password' })
-    .fill(process.env.E2E_PASSWORD ?? USERS.admin.password);
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page).not.toHaveURL(/\/login/);
 });
 
 async function withRole(
