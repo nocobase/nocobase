@@ -613,6 +613,7 @@ describe('what an issue waits for', () => {
     const issue = await create();
     expect(await progress(issue.id)).toEqual({
       state: 'notStarted',
+      personalRunnerRequests: [],
       agent: null,
       step: null,
       since: null,
