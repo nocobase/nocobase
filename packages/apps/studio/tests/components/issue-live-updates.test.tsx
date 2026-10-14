@@ -30,7 +30,7 @@ vi.mock('@nocobase/app-plugin-projects/client/kit', async (importOriginal) => ({
   usePmApi: () => pmApi,
 }));
 
-const { useLiveIssue } =
+const { useLiveIssue, IDLE_POLL_MS, WAKE_POLL_MS, WAKE_WINDOW_MS } =
   await import('../../client/pages/issues/detail/use-live-issue.js');
 const { useIssueRuns } = await import('../../client/agents/use-issue-runs.js');
 const { useIssueTimeline } =
@@ -277,26 +277,26 @@ describe('live issue updates with the real subject run cache', () => {
     await invalidate();
     await advance(1000);
     serverRuns = [run()];
-    await advance(1000);
+    await advance(WAKE_POLL_MS);
     expect(screen.getByLabelText('Activity runs')).toHaveTextContent('running');
   });
 
-  it('returns to idle polling after 30 seconds when no agent wakes', async () => {
+  it('returns to idle polling after the wake window when no agent wakes', async () => {
     await show();
     await invalidate();
-    await advance(30_000);
+    await advance(WAKE_WINDOW_MS);
     const calls = api.request.mock.calls.length;
-    await advance(2000);
+    await advance(WAKE_POLL_MS);
     expect(api.request).toHaveBeenCalledTimes(calls);
     serverRuns = [run()];
-    await advance(3000);
+    await advance(IDLE_POLL_MS);
     expect(screen.getByLabelText('Activity runs')).toHaveTextContent('running');
   });
 
   it('discovers externally triggered work from an idle page, without an issue edit', async () => {
     await show();
     serverRuns = [run()];
-    await advance(5000);
+    await advance(IDLE_POLL_MS);
     expect(screen.getByLabelText('Activity runs')).toHaveTextContent('running');
     expect(detail.revision).toBe(1);
   });
@@ -304,10 +304,10 @@ describe('live issue updates with the real subject run cache', () => {
   it('shares a slow idle refresh until externally triggered work becomes visible', async () => {
     await show();
     api.request.mockClear();
-    delayRunResponses(6000);
+    delayRunResponses(IDLE_POLL_MS + 1000);
     serverRuns = [run()];
-    await advance(5000);
-    await advance(5000);
+    await advance(IDLE_POLL_MS);
+    await advance(IDLE_POLL_MS);
     await advance(1000);
     expect(screen.getByLabelText('Activity runs')).toHaveTextContent('running');
     expect(screen.getByLabelText('Run panel')).toHaveTextContent('running');
@@ -362,18 +362,18 @@ describe('live issue updates with the real subject run cache', () => {
   it('keeps discovering work when an invalidation reuses an older empty response', async () => {
     await show();
     api.request.mockClear();
-    delayRunResponses(6500);
-    await advance(5000);
+    const delay = WAKE_POLL_MS * 2 + 500;
+    delayRunResponses(delay);
+    await advance(IDLE_POLL_MS);
     serverRuns = [run()];
     await invalidate();
     // The request already in flight captured the empty list before the comment woke work.
-    await advance(2000);
-    await advance(2000);
-    await advance(2000);
-    await advance(500);
+    await advance(WAKE_POLL_MS);
+    await advance(WAKE_POLL_MS);
+    await advance(delay - WAKE_POLL_MS * 2);
     expect(screen.getByLabelText('Activity runs')).toBeEmptyDOMElement();
     expect(api.request).toHaveBeenCalledTimes(1);
-    for (let tick = 0; tick < 5; tick++) await advance(2000);
+    for (let tick = 0; tick < 5; tick++) await advance(WAKE_POLL_MS);
     expect(screen.getByLabelText('Activity runs')).toHaveTextContent('running');
     expect(screen.getByLabelText('Run panel')).toHaveTextContent('running');
   });
@@ -453,7 +453,7 @@ describe('live issue updates with the real subject run cache', () => {
     threadRequest.mockImplementation(() => {
       const data = olderThreads;
       return new Promise((resolve) =>
-        setTimeout(() => resolve({ data, meta: {} }), 6000),
+        setTimeout(() => resolve({ data, meta: {} }), IDLE_POLL_MS + 1000),
       );
     });
     olderThreads = [
@@ -468,8 +468,8 @@ describe('live issue updates with the real subject run cache', () => {
         ],
       },
     ];
-    await advance(5000);
-    await advance(5000);
+    await advance(IDLE_POLL_MS);
+    await advance(IDLE_POLL_MS);
     expect(threadRequest).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('Slow reply')).toBeNull();
     await advance(1000);
@@ -477,21 +477,21 @@ describe('live issue updates with the real subject run cache', () => {
 
     const visibility = vi.spyOn(document, 'visibilityState', 'get');
     visibility.mockReturnValue('hidden');
-    await advance(10_000);
+    await advance(IDLE_POLL_MS * 2);
     expect(threadRequest).toHaveBeenCalledTimes(1);
     visibility.mockReturnValue('visible');
-    await advance(5000);
+    await advance(IDLE_POLL_MS);
     expect(threadRequest).toHaveBeenCalledTimes(2);
     visibility.mockRestore();
   });
 
-  it('bounds idle requests to one detail and run refresh every five seconds', async () => {
+  it('bounds idle requests to one detail and run refresh every idle interval', async () => {
     await show();
     api.request.mockClear();
     pmApi.issue.mockClear();
-    await advance(60_000);
-    expect(api.request).toHaveBeenCalledTimes(12);
-    expect(pmApi.issue).toHaveBeenCalledTimes(12);
+    await advance(IDLE_POLL_MS * 3);
+    expect(api.request).toHaveBeenCalledTimes(3);
+    expect(pmApi.issue).toHaveBeenCalledTimes(3);
   });
 
   it('stops refreshing the previous issue when the page switches issues', async () => {
@@ -512,7 +512,7 @@ describe('live issue updates with the real subject run cache', () => {
     await invalidate(previous.identifier);
     await advance(2000);
     expect(api.request).not.toHaveBeenCalled();
-    await advance(3000);
+    await advance(IDLE_POLL_MS - 2000);
     expect(api.request).toHaveBeenCalledTimes(1);
     expect(api.request).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -552,7 +552,7 @@ describe('live issue updates with the real subject run cache', () => {
     serverRuns = [run('completed')];
     await show();
     detail = { ...detail, statusKey: 'done' };
-    await advance(5000);
+    await advance(IDLE_POLL_MS);
     expect(screen.getByLabelText('Issue status')).toHaveTextContent('done');
   });
 
@@ -575,11 +575,11 @@ describe('live issue updates with the real subject run cache', () => {
     const calls = api.request.mock.calls.length;
     const detailCalls = pmApi.issue.mock.calls.length;
     serverRuns = [run()];
-    await advance(5000);
+    await advance(IDLE_POLL_MS);
     expect(api.request).toHaveBeenCalledTimes(calls);
     expect(pmApi.issue).toHaveBeenCalledTimes(detailCalls);
     visibility.mockReturnValue('visible');
-    await advance(5000);
+    await advance(IDLE_POLL_MS);
     expect(screen.getByLabelText('Activity runs')).toHaveTextContent('running');
     visibility.mockRestore();
   });

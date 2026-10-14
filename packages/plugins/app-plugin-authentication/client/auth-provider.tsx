@@ -3,11 +3,16 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type PropsWithChildren,
   type ReactElement,
 } from 'react';
-import { useService } from '@nocobase/app-client';
+import {
+  realtimeClientToken,
+  useClientApplication,
+  useService,
+} from '@nocobase/app-client';
 import { Navigate, useLocation } from 'react-router';
 import { authenticationClientToken } from './tokens.js';
 import type { AuthClient } from './auth-client.js';
@@ -39,6 +44,21 @@ export function AuthenticationProvider({
   useEffect(() => {
     void refresh();
   }, [client]);
+  // A realtime connection is signed in as whoever opened it: when the person changes, an open one connects again so
+  // topics for signed-in connections reach them without a reload. An application without realtime has none.
+  const services = useClientApplication().services;
+  const userId = session?.user.id ?? null;
+  const connectedAsRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (isPending) return;
+    if (
+      connectedAsRef.current !== undefined &&
+      connectedAsRef.current !== userId &&
+      services.has(realtimeClientToken)
+    )
+      services.resolveIfCreated(realtimeClientToken)?.reconnect();
+    connectedAsRef.current = userId;
+  }, [isPending, userId, services]);
   return (
     <AuthenticationContext.Provider
       value={{ client, session, isPending, refresh }}

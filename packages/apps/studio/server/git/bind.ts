@@ -110,6 +110,7 @@ export function bindStudioGit(deps: StudioGitBindDeps): {
     ...(deps.webhookUrl ? { webhookUrl: deps.webhookUrl } : {}),
     ...(deps.pollSeconds ? { pollSeconds: deps.pollSeconds } : {}),
     ...(deps.now ? { now: deps.now } : {}),
+    ...(deps.onChanged ? { onLabelChanged: deps.onChanged } : {}),
   });
   if (deps.noticeRules)
     releases.push(deps.noticeRules.add(prMergedRule(deps.projects)));
