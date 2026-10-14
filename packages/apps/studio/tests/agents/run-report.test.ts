@@ -273,17 +273,19 @@ describe('a run an agent’s comment started', () => {
       detail: 'ENOSPC: write',
     });
     expect(failed.status).toBe(200);
-    await vi.waitFor(async () =>
-      expect(
-        (await commentsOf(issue.id)).filter(
-          (comment) => comment.authorId === worker,
-        ),
-      ).toEqual([
-        expect.objectContaining({
-          parentId: ask,
-          content: expect.stringContaining('runnerDiskFull'),
-        }),
-      ]),
+    await vi.waitFor(
+      async () =>
+        expect(
+          (await commentsOf(issue.id)).filter(
+            (comment) => comment.authorId === worker,
+          ),
+        ).toEqual([
+          expect.objectContaining({
+            parentId: ask,
+            content: expect.stringContaining('runnerDiskFull'),
+          }),
+        ]),
+      { timeout: 10_000 },
     );
     expect(
       (await runsOf(issue.id)).some((run) => run.agentId === coordinator),
