@@ -66,6 +66,7 @@ import {
 } from '../../../shared/runners.js';
 import { queueStart } from './selection.js';
 import type { DatabaseConnection } from '@nocobase/db';
+import type { Slots } from '../../runners/slots.js';
 import { createHash } from 'node:crypto';
 
 import type { Agent, RunnerModelEntry } from '../../../shared/agents.js';
@@ -83,7 +84,7 @@ import type { IdSource } from '../../kernel/ids.js';
 import { runSecretsKey, type SecretMemory } from '../../kernel/redaction.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { cleanList, covers, jsonObject } from '../../kernel/values.js';
-import { findAgent, lockAgentForClaim } from '../agents/index.js';
+import { findAgent, findAgents, lockAgentForClaim } from '../agents/index.js';
 import { joinBrief, renderBrief } from '../brief/index.js';
 import { cliPackageFor } from './cli-package.js';
 import { executionHistory } from './execution.js';
@@ -91,6 +92,7 @@ import type { SkillService, SkillTarget } from '../skills/index.js';
 import {
   describeVariables,
   variableRefs,
+  type RunVariables,
   type VariableService,
   type VariableTarget,
 } from '../variables/index.js';
@@ -113,7 +115,6 @@ import {
 } from './ports.js';
 import { MAX_CLAIM_FAILURES, toolPolicyFor, type AgentCli } from './policy.js';
 import { mintRunToken } from './run-tokens.js';
-import { runsHeldByTool } from './runner-view.js';
 import {
   ACTIVE,
   countActive,
@@ -193,6 +194,7 @@ export interface ClaimDeps extends TransitionDeps {
   /** The tarballs the application serves, for a `served` CLI. */
   readonly dist?: Pick<DistService, 'find'>;
   /** What a runner holds now (its slots); runs and jobs share them. */
+  readonly slotsHeld: Slots['held'];
   readonly slotsUsed: (
     conn: DatabaseConnection,
     runnerId: string,
@@ -516,6 +518,31 @@ async function settleClaimInputs(
 export function createClaimService(deps: ClaimDeps): ClaimService {
   const { tx, clock } = deps;
 
+  /** Reuse only identical ordered targets, within this attempt and connection. */
+  function claimResources(conn: DatabaseConnection, runId: string) {
+    const cache = new Map<
+      string,
+      Promise<{
+        skills: RunSkill[];
+        variables: RunVariables;
+      }>
+    >();
+    return (agent: Agent, assembly: SubjectAssembly) => {
+      const skills = skillTargets(agent, assembly);
+      const variables = variableTargets(agent, assembly);
+      const key = JSON.stringify([skills, variables]);
+      let result = cache.get(key);
+      if (!result) {
+        result = (async () => ({
+          skills: await deps.skills.forRun(conn, skills, runId),
+          variables: await deps.variables.prepareRun(conn, variables),
+        }))();
+        cache.set(key, result);
+      }
+      return result;
+    };
+  }
+
   /** Database reads only; used by the actual claim and ordered-model diagnostics. */
   async function assemblyCompatibility(
     conn: DatabaseConnection,
@@ -523,19 +550,15 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     agent: Agent,
     runner: Runner,
     assembly: SubjectAssembly,
+    resources = claimResources(conn, run.id),
   ): Promise<'ready' | 'incompatible' | 'restricted'> {
     if (
       !isProtocolSupported(runner.protocolVersion) ||
       (assembly.workspaceKey && !supportsWorkspaceKey(runner))
     )
       return 'incompatible';
-    const skills = await deps.skills.forRun(
-      conn,
-      skillTargets(agent, assembly),
-      run.id,
-    );
-    const targets = variableTargets(agent, assembly);
-    const names = await deps.variables.namesOf(conn, targets);
+    const { skills, variables } = await resources(agent, assembly);
+    const names = variables.names;
     if (
       !covers(runner.features, [
         ...run.requires,
@@ -558,10 +581,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       )
     )
       return 'restricted';
-    if (
-      runner.trust !== 'team' &&
-      (await deps.variables.teamOnly(conn, targets)).length > 0
-    )
+    if (runner.trust !== 'team' && variables.teamOnly.length > 0)
       return 'restricted';
     return 'ready';
   }
@@ -572,6 +592,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     agent: Agent,
     requirePolicy = true,
     trust?: 'team' | 'personal',
+    resources = claimResources(conn, run.id),
   ): Promise<ModelSelectionWait | null> {
     const policy = await deps.selectionPolicies?.forRun(conn, run);
     if ((requirePolicy && !policy) || !deps.runners) return null;
@@ -669,6 +690,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           single,
           runner,
           assembly,
+          resources,
         );
         if (reason !== 'ready') {
           incompatible ||= reason === 'incompatible';
@@ -680,10 +702,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           });
           continue;
         }
-        const requiredVariables = await deps.variables.passthroughOf(
-          conn,
-          variableTargets(single, assembly),
-        );
+        const requiredVariables = (await resources(single, assembly)).variables
+          .passthrough;
         if (requiredVariables.length > 0 && runner.variables == null) {
           unknown = true;
           continue;
@@ -691,8 +711,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         if (requiredVariables.some((name) => !runner.variables?.includes(name)))
           continue;
         compatible.push(runner);
-        const byTool = await runsHeldByTool(conn, runner.id);
-        const used = await deps.slotsUsed(conn, runner.id);
+        const held = await deps.slotsHeld(conn, runner.id);
+        const byTool = held.byTool ?? {};
+        const used = held.jobs + held.runs;
         const directory = directoryKeyOf(runner.id, payloadDirs(assembly.dirs));
         const blockedDirectory =
           directory !== null &&
@@ -801,6 +822,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     leaseExpiresAt: string,
     prepared: Prepared,
     entry: RunnerModelEntry,
+    resources = claimResources(conn, run.id),
   ): Promise<Assembled> {
     const binding = deps.subjects.get(run.subjectKind);
     if (!binding)
@@ -829,6 +851,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         agent,
         runner,
         assembly,
+        resources,
       )) === 'incompatible'
     )
       throw new NotForThisRunner();
@@ -859,13 +882,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     )
       throw new NotForThisRunner();
 
-    const skills = await deps.skills.forRun(
-      conn,
-      skillTargets(agent, assembly),
-      run.id,
-    );
-    const variables = variableTargets(agent, assembly);
-    const names = await deps.variables.namesOf(conn, variables);
+    const { skills, variables } = await resources(agent, assembly);
+    const names = variables.names;
     const requires = cleanList([
       ...view.requires,
       ...payloadRequires(
@@ -878,19 +896,19 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     if (!covers(runner.features, requires)) throw new NotForThisRunner();
     // A variable for team runners only keeps a personal runner off the run.
     if (names.length > 0 && runner.trust !== 'team') {
-      const teamOnly = await deps.variables.teamOnly(conn, variables);
+      const teamOnly = variables.teamOnly;
       if (teamOnly.length > 0) throw new TeamRunnersOnly(teamOnly);
     }
     const env =
       names.length > 0
-        ? await deps.variables.forRun(conn, variables, {
+        ? await variables.deliver({
             runId: run.id,
             runnerId: runner.id,
           })
         : [];
     // Variables taken from the runner: names only. A runner that does not provide one fails the run while preparing
     // it, saying how to provide it; runners are not chosen by them.
-    const passthrough = await deps.variables.passthroughOf(conn, variables);
+    const passthrough = variables.passthrough;
     const nowText = clock.now().toISOString();
     const clean = await consumeReset(
       conn,
@@ -1358,8 +1376,6 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     const conn = tx.read();
     // Rules that do not depend on who the run acts as come first, and settle the rest of the pass: an agent at its
     // limit is checked once per poll, not once per queued run.
-    if ((await deps.slotsUsed(conn, runner.id)) >= runner.slots)
-      return { kind: 'full', scope: 'runner' };
     if (
       (await countActive(conn, 'agentId', agent.id)) >= agent.maxConcurrentRuns
     )
@@ -1408,6 +1424,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       }
     }
     let taken: RunPayload | null;
+    let runnerFull = false;
     try {
       taken = await tx.run(async (unit): Promise<RunPayload | null> => {
         const { conn } = unit;
@@ -1426,11 +1443,14 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         )
           return null;
         // Slots are shared with the jobs the runner holds.
-        if ((await deps.slotsUsed(conn, runner.id)) >= runner.slots)
+        const held = await deps.slotsHeld(conn, runner.id);
+        if (held.runs + held.jobs >= runner.slots) {
+          runnerFull = true;
           return null;
-        // The first of the agent's tools with room, by its limit here and by what the runner said it can take.
-        const byTool = await runsHeldByTool(conn, runner.id);
-        const current = await findRunRecord(conn, candidate.id);
+        }
+        // Total and per-tool room come from the same locked snapshot.
+        const byTool = held.byTool ?? {};
+        const current = identity;
         if (
           !current ||
           current.status !== 'queued' ||
@@ -1449,6 +1469,23 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         if (busy.length > 0) return null;
 
         const leaseExpiresAt = later(now, TIMINGS.leaseMs);
+        const dispatchValues = {
+          status: 'dispatched',
+          failureReason: null,
+          failureDetail: null,
+          runnerId: runner.id,
+          // Brief providers observe this reservation inside the claim transaction.
+          // Replace a previous attempt's tool before computing the roster.
+          tool: entry.tool,
+          leaseExpiresAt,
+          dispatchedAt: nowText,
+          lastActivityAt: nowText,
+          availableAt: null,
+          updatedAt: nowText,
+          ...(consent.confirmedByUserId
+            ? { confirmedByUserId: consent.confirmedByUserId }
+            : {}),
+        } as const;
         const claimed = await runsRepo(conn).updateMany({
           filter: (f) =>
             f.and([
@@ -1456,26 +1493,10 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
               f.string('status').eq('queued'),
               f.string('actorUserId').eq(candidate.actorUserId),
             ]),
-          values: {
-            status: 'dispatched',
-            failureReason: null,
-            failureDetail: null,
-            runnerId: runner.id,
-            // Brief providers observe this reservation inside the claim transaction.
-            // Replace a previous attempt's tool before computing the roster.
-            tool: entry.tool,
-            leaseExpiresAt,
-            dispatchedAt: nowText,
-            lastActivityAt: nowText,
-            availableAt: null,
-            updatedAt: nowText,
-            ...(consent.confirmedByUserId
-              ? { confirmedByUserId: consent.confirmedByUserId }
-              : {}),
-          },
+          values: dispatchValues,
         });
         if (claimed.updatedCount !== 1) return null;
-        const run = (await findRunRecord(conn, candidate.id))!;
+        const run: RunRecord = { ...current, ...dispatchValues };
         const pending = (await pendingInputs(conn, run.id)).filter(
           (input) =>
             !run.commentRootRunId ||
@@ -1498,7 +1519,15 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             return null;
           // Admission must precede preflight assembly: a missing or obsolete
           // subject is cancelled normally, rather than counted as setup failure.
-          const selection = await selectionFacts(conn, toRun(current), agent);
+          const resources = claimResources(conn, run.id);
+          const selection = await selectionFacts(
+            conn,
+            toRun(current),
+            agent,
+            true,
+            undefined,
+            resources,
+          );
           const elapsed = Math.max(
             0,
             (now.getTime() - queueStart(toRun(current))) / 1000,
@@ -1532,6 +1561,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             leaseExpiresAt,
             prepared,
             entry,
+            resources,
           );
         } catch (error) {
           if (error instanceof NotForThisRunner) throw error;
@@ -1608,7 +1638,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     }
     if (!taken) {
       await discardRepoAccess(candidate, prepared);
-      return { kind: 'skipped' };
+      return runnerFull
+        ? { kind: 'full', scope: 'runner' }
+        : { kind: 'skipped' };
     }
     // After the claim commits, never inside it: decisions settle the request before touching runs, so a claim that
     // held its run while waiting for the request could deadlock with them. A request left pending by a crash here is
@@ -1689,13 +1721,16 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     if (runner.draining) return null;
     const conn = tx.read();
     const queued = await candidates();
-    const agents = new Map<string, Agent | null>();
+    const agents = await findAgents(
+      conn,
+      queued
+        .filter((candidate) => !seen.has(candidate.id))
+        .map((candidate) => candidate.agentId),
+    );
     const full = new Set<string>();
     for (const candidate of queued) {
       if (seen.has(candidate.id) || full.has(candidate.agentId)) continue;
       seen.add(candidate.id);
-      if (!agents.has(candidate.agentId))
-        agents.set(candidate.agentId, await findAgent(conn, candidate.agentId));
       const agent = agents.get(candidate.agentId);
       if (
         !agent ||
@@ -1771,13 +1806,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     },
     async claim(runner, free, tools) {
       if (runner.status !== 'online' || runnerLowOnDisk(runner)) return [];
-      if ((await deps.slotsUsed(tx.read(), runner.id)) >= runner.slots)
-        return [];
       const payloads: RunPayload[] = [];
       const seen = new Set<string>();
       const limit = Math.min(free, runner.slots);
       const reported = toolRoom(tools);
       while (payloads.length < limit) {
+        if ((await deps.slotsUsed(tx.read(), runner.id)) >= runner.slots) break;
         const payload = await claimOne(runner, seen, reported);
         if (!payload) break;
         payloads.push(payload);
