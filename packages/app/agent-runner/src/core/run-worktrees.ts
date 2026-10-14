@@ -259,11 +259,13 @@ export async function canRetryWorkspaceRemoval(
   if (
     !isInside(paths.workRoot, workDir) ||
     meta.runWorktrees !== true ||
-    meta.repos.length === 0
+    meta.repos.length === 0 ||
+    (meta.recoveryRequired === true &&
+      (!/git worktree remove [^\n]* failed/u.test(meta.recoveryReason ?? '') ||
+        meta.repos.some((repo) => !repo.pushedSha)))
   )
     return false;
   for (const repo of meta.repos) {
-    const dir = path.join(workDir, repo.path);
     if (
       repo.removing !== true ||
       repo.localBranch !== runBranch(workDir, repo.path) ||
@@ -295,27 +297,7 @@ export async function canRetryWorkspaceRemoval(
           ))
         )
           return false;
-        // Missing .git is expected after partial removal; surviving Git must prove the actual checkout is saved.
-        if (existsSync(path.join(dir, '.git'))) {
-          const context = { dir, cache: repo.cache, url: repo.url };
-          await assertWorktreeIdentity(context, repo.localBranch);
-          if ((await taskGit(context, ['status', '--porcelain'])) !== '')
-            return false;
-          const actualHead = await taskGit(context, [
-            'rev-parse',
-            '--verify',
-            'HEAD^{commit}',
-          ]);
-          if (
-            !(await taskGitOk(context, [
-              'merge-base',
-              '--is-ancestor',
-              actualHead,
-              repo.pushedSha,
-            ]))
-          )
-            return false;
-        }
+        // Saving and pushing preceded the removal marker. A partial removal is not new work.
       }
     } catch {
       return false;
@@ -346,6 +328,7 @@ export async function retryWorkspaceRemoval(
     )
       return false;
     if (!(await canRetryWorkspaceRemoval(paths, workDir, meta))) {
+      if (meta.recoveryRequired === true) return false;
       const reason =
         'Removal candidate is not verified clean and pushed; retain it for recovery.';
       await writeWorkspaceMeta(paths, workDir, {
@@ -442,7 +425,9 @@ export async function addRunWorktree(options: {
     const record = await readWorkspaceMeta(paths, previous);
     if (record?.recoveryRequired === true)
       warnings.push(
-        `Recovery work remains in ${previous}${record.recoveryReason ? `: ${record.recoveryReason}` : ''}. Resolve or recover it before continuing; this run's checkout cannot represent its unresolved index or uncommitted files.`,
+        options.readOnly
+          ? `Recovery work remains in ${previous}; this run's checkout does not contain its pending changes. You may continue this read-only run.`
+          : `Recovery work remains in ${previous}${record.recoveryReason ? `: ${record.recoveryReason}` : ''}. Resolve or recover it before continuing; this run's checkout cannot represent its unresolved index or uncommitted files.`,
       );
   }
   await mkdir(path.dirname(dir), { recursive: true });
