@@ -439,6 +439,11 @@ export interface HeartbeatResponse {
   };
   /** The application accepts reports of the runner's working directories (`workspaces.ts`); absent when it does not. */
   readonly workspaces?: WorkspaceReporting;
+  /**
+   * The protocol the server speaks (`PROTOCOL_VERSION`), added within version 11: a runner speaking an older one is
+   * served but not handed runs that need what it lacks, so it updates or tells its owner. Absent from older servers.
+   */
+  readonly protocolVersion?: number;
 }
 
 export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
@@ -468,6 +473,7 @@ export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
     })
     .optional(),
   workspaces: WorkspaceReportingSchema.optional(),
+  protocolVersion: z.number().int().optional(),
 });
 
 export interface ClaimRequest {

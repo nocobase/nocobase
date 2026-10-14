@@ -16,6 +16,7 @@ export {
 export {
   BridgeHttpError,
   BridgeStopped,
+  BridgeUpgradeRequired,
   runBridge,
   type BridgeOptions,
 } from './bridge.js';

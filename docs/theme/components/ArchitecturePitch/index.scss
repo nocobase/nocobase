@@ -78,7 +78,8 @@
   .nav {
     position: sticky;
     top: env(safe-area-inset-top, 0px);
-    z-index: 50;
+    // Keep section navigation below the site header and its language menu.
+    z-index: 40;
     background: oklch(0.984 0.003 255 / 0.92);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
