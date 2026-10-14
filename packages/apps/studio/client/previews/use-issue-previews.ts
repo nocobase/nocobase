@@ -50,6 +50,8 @@ export function useIssuePreviews(issueId: string): IssuePreviewsState {
         ? IDLE_POLL_MS
         : false;
     },
+    // A hidden tab does not poll; it reads again when shown.
+    refetchIntervalInBackground: false,
   });
   return {
     query,
