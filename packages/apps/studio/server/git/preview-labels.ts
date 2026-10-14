@@ -22,7 +22,7 @@ export function createPreviewLabelSync(deps: {
   platformOf(repo: RepoRow): GitPlatform;
   readAuth(repo: RepoRow): Promise<GitAuth>;
   /** The stored label state changed (`present`, `failed` or `managed`). */
-  onChanged?(): void;
+  onChanged?(pullRequestId: string): void;
 }) {
   const running = new Map<string, Promise<void>>();
   async function reconcile(pullRequestId: string): Promise<void> {
@@ -39,7 +39,7 @@ export function createPreviewLabelSync(deps: {
         stored.failed !== before.failed ||
         stored.managed !== before.managed
       )
-        deps.onChanged?.();
+        deps.onChanged?.(pullRequestId);
     };
     try {
       const repo = await findRepoById(conn, pr.repoId);
