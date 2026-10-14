@@ -116,6 +116,14 @@ A repository's credential (`workspace.git`) is kept in the worker's memory (`src
 
 An agent's tool policy from the application (`RunTool.policy`) still sets the idle timeout and the turn limit; its permission mode and command patterns are accepted and ignored.
 
+### Tool status refresh
+
+Each application's tool inspection refreshes in the background every five minutes, triggered by its next heartbeat. Every round creates fresh detection adapters for all tools, including tools previously missing or too old. Basic inspection has a 30-second budget per tool; model discovery has a separate 30-second budget and uses the same round's adapter. Detection commands have a 15-second limit and cancellation ends their process trees. A failed basic inspection removes the previous usable tool; a failed model query keeps the latest basic information and clears old model suggestions. Changing the application's detection environment cancels its old inspection. These adapters are separate from those executing active tasks.
+
+With a healthy connection and responsive local filesystem, basic changes reach the next heartbeat within `300 seconds + 30 seconds + 2 × heartbeat interval` (360 seconds with the default 15-second heartbeat); models can take another 30 seconds. This is the reporting budget, excluding network delivery, server processing and browser query time. Studio's existing runner change notification refreshes its queries. Cleanup gets up to three seconds before releasing an in-flight round, within the five-minute interval. Initial registration also bounds each basic inspection to 30 seconds. Network outages, a suspended computer or browser and a stalled filesystem have no visibility guarantee.
+
+Authentication keeps each tool's existing CLI semantics: OpenCode reports whether its CLI sees configured credentials, including environment credentials passed to that application, rather than validating a remote model call. Inspection does not read credential files or report their contents.
+
 ### Development
 
 `src/core/` is the daemon, the claim loop, the supervisor, leases, the event spool, checkouts, jobs, the local policy and isolation; `src/agent/` is agent runs: the coding tools' adapters, the run worker and the preparation of a run's workspace, skills, mounts, Codex home, environment, CLI and credentials; `src/commands/` the commands; `src/host.ts` the command the runner runs as.

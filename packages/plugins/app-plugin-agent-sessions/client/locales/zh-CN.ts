@@ -63,6 +63,12 @@ const zhCN: AgentSessionsResource = {
     unknown: '未知',
   },
   newSession: {
+    settingsOffline: '此电脑已离线。请重新连接桥接程序以加载设置和发送消息。',
+    settingsLoading: '正在加载设置…',
+    settingsFailed: '无法加载智能体设置。',
+    settingsRetry: '重试设置',
+    settingsUnsupported: '此智能体不提供设置，将使用默认值。',
+    settingsEmpty: '此智能体没有可配置的设置，将使用默认值。',
     title: '新会话',
     subtitle:
       '在自己的电脑上与 Agent 讨论并澄清需求、记录任务、跟进进展。开始任务后，Studio 项目经理会协调 Agent 进行开发。',
@@ -134,6 +140,8 @@ const zhCN: AgentSessionsResource = {
     recordBody: '完整记录保存在这里，只有你能看到。',
   },
   composer: {
+    expand: '展开输入',
+    collapse: '收起输入',
     placeholder: '回复，或者说下一件事…',
     busy: 'Agent 正在回复，消息会在这一轮结束后发出。',
     waiting: '先回答上面的请求，或者写消息排在它之后。',
@@ -226,6 +234,7 @@ const zhCN: AgentSessionsResource = {
     truncated: '只显示前 500 个文件夹。',
   },
   computers: {
+    offline: '离线',
     title: '我的电脑',
     description:
       '这里的电脑只运行你自己的会话，Agent 以你的身份工作。给团队跑后台任务的机器在别处管理。',

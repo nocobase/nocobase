@@ -50,15 +50,10 @@ export class FakeRunner {
     private readonly api: Api,
     private readonly name: string,
     private readonly workspaceKey = false,
-    private readonly options: {
-      readonly trust?: 'team' | 'ownerOnly';
-      readonly model?: string;
-    } = {},
   ) {}
 
   /** The model this runner reports: its own, so only it has the agent discovered from it. */
   private get model(): string {
-    if (this.options.model) return this.options.model;
     return `e2e-${this.name.toLowerCase().replace(/[^a-z0-9]+/gu, '-')}`;
   }
 
@@ -78,7 +73,7 @@ export class FakeRunner {
     if (this.runnerKey) return this.runnerKey;
     const token = await this.api.post<{ token: string }>(
       'agents/runners/registrationTokens',
-      { trust: this.options.trust ?? 'team' },
+      { trust: 'team' },
     );
     const registered = await this.runner<{ runnerKey: string }>(
       'POST',
@@ -149,7 +144,7 @@ export class FakeRunner {
     return claimed.cli!.credential!.content!.token!;
   }
 
-  /** A single claim poll for assertions that a runner must receive no unauthorized work. */
+  /** A single claim poll; returns every claimed run so unexpected work cannot be silently discarded. */
   async probe(): Promise<readonly string[]> {
     const runnerKey = await this.register();
     const claimed = await this.runner<{ runs?: ClaimedRun[] }>(

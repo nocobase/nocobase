@@ -100,6 +100,10 @@ export function useSession(sessionId: string): UseQueryResult<Session> {
   return useQuery({
     queryKey: keys.session(sessionId),
     queryFn: () => data<Session>(api, { path: path('sessions', sessionId) }),
+    // Linked records may change without a session event (for example, an issue accepted elsewhere).
+    refetchInterval: (query) =>
+      query.state.data?.links.length ? 5_000 : false,
+    refetchOnWindowFocus: true,
   });
 }
 

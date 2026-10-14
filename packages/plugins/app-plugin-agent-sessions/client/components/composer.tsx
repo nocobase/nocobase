@@ -10,11 +10,14 @@ import {
   ArrowUpIcon,
   HashIcon,
   ImageIcon,
+  Maximize2Icon,
+  Minimize2Icon,
   SlashSquareIcon,
   XIcon,
 } from 'lucide-react';
 import {
   Fragment,
+  useLayoutEffect,
   useRef,
   useState,
   type ClipboardEvent,
@@ -52,6 +55,8 @@ export interface ComposerProps {
   readonly trailing?: ReactNode;
   /** A taller box, for a session's first message. */
   readonly large?: boolean;
+  /** A session's reply box starts at one line on a phone, with optional expansion. */
+  readonly compact?: boolean;
   /** The keys it takes, under the box. */
   readonly hints?: boolean;
   readonly autoFocus?: boolean;
@@ -94,18 +99,27 @@ export function Composer({
   toolbar,
   trailing,
   large,
+  compact,
   hints,
   autoFocus,
   onSend,
 }: ComposerProps): ReactElement {
   const { t } = useTranslation();
   const [text, setText] = useState('');
+  const [expanded, setExpanded] = useState(false);
   const [caret, setCaret] = useState(0);
   const [images, setImages] = useState<Pending[]>([]);
   const [mentioned, setMentioned] = useState<Reference[]>([]);
   const [highlight, setHighlight] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const filesRef = useRef<HTMLInputElement>(null);
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    if (!compact || !input) return;
+    // Keep multiline editing usable in browsers without field-sizing support.
+    input.style.height = 'auto';
+    input.style.height = `${input.scrollHeight}px`;
+  }, [compact, text, expanded]);
 
   const slash = /^\/(\S*)$/u.exec(text)?.[1];
   // The `#word` right before the caret, while it is being typed.
@@ -314,6 +328,8 @@ export function Composer({
       <div
         className={cn(
           'bg-card focus-within:border-primary flex flex-col rounded-[10px] border shadow-xs transition-colors',
+          compact &&
+            'max-md:max-h-[calc(var(--agent-session-height,100dvh)*0.55)] max-md:overflow-y-auto max-md:overscroll-y-contain',
           disabled && 'opacity-60',
         )}
         onDragOver={(event) => event.preventDefault()}
@@ -325,7 +341,14 @@ export function Composer({
           </div>
         )}
         {images.length > 0 && (
-          <div className='flex flex-wrap gap-2 px-3.5 pt-3'>
+          <div
+            className={cn(
+              'flex gap-2 px-3.5 pt-3',
+              compact
+                ? 'max-md:max-h-20 max-md:flex-nowrap max-md:overflow-x-auto md:flex-wrap'
+                : 'flex-wrap',
+            )}
+          >
             {images.map((image) => (
               <div key={image.id} className='relative'>
                 <img
@@ -352,7 +375,7 @@ export function Composer({
         <textarea
           ref={inputRef}
           value={text}
-          rows={large ? 4 : 2}
+          rows={large ? 4 : compact ? 1 : 2}
           autoFocus={autoFocus}
           disabled={disabled}
           placeholder={placeholder}
@@ -367,12 +390,26 @@ export function Composer({
           onPaste={onPaste}
           className={cn(
             // 16px on a phone, so that focusing it does not zoom the page.
-            'field-sizing-content max-h-80 resize-none bg-transparent px-3.5 pb-1 text-base leading-relaxed outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed sm:text-sm',
-            large ? 'min-h-30 pt-3.5' : 'min-h-14 pt-3',
+            'field-sizing-content resize-none bg-transparent px-3.5 pb-1 text-base leading-relaxed outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed sm:text-sm',
+            compact
+              ? 'max-h-[min(calc(var(--agent-session-height,100dvh)*0.3),12rem)] md:max-h-80'
+              : 'max-h-80',
+            large
+              ? 'min-h-30 pt-3.5'
+              : compact
+                ? expanded
+                  ? 'min-h-[min(calc(var(--agent-session-height,100dvh)*0.2),10rem)] pt-2 md:min-h-14'
+                  : 'min-h-10 pt-2 md:min-h-14 md:pt-3'
+                : 'min-h-14 pt-3',
           )}
         />
         {/* On a phone the agent's choices take a row of their own above the buttons, swiped when they do not fit. */}
-        <div className='flex flex-wrap items-center gap-0.5 px-2 pb-2 sm:flex-nowrap'>
+        <div
+          className={cn(
+            'flex flex-wrap items-center gap-0.5 px-2 pb-2 sm:flex-nowrap',
+            compact && 'max-md:sticky max-md:bottom-0 max-md:bg-card',
+          )}
+        >
           <ToolButton
             label={t('composer.addImage')}
             disabled={disabled}
@@ -380,6 +417,24 @@ export function Composer({
           >
             <ImageIcon className='size-4' />
           </ToolButton>
+          {compact && (
+            <span className='md:hidden'>
+              <ToolButton
+                label={expanded ? t('composer.collapse') : t('composer.expand')}
+                disabled={disabled}
+                onClick={() => {
+                  setExpanded(!expanded);
+                  inputRef.current?.focus();
+                }}
+              >
+                {expanded ? (
+                  <Minimize2Icon className='size-4' />
+                ) : (
+                  <Maximize2Icon className='size-4' />
+                )}
+              </ToolButton>
+            </span>
+          )}
           <input
             ref={filesRef}
             type='file'

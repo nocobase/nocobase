@@ -69,41 +69,57 @@ export function ChoiceMenus({
     values?.[choice.id] ?? choice.currentValue;
   return (
     <>
-      {offered.filter(onBar).map((choice) => (
-        <DropdownMenu key={choice.id}>
-          <DropdownMenuTrigger
-            disabled={disabled}
+      {offered
+        .filter((choice) => choice.options.length === 1)
+        .map((choice) => (
+          <span
+            key={choice.id}
             title={choice.name}
             className={`${TRIGGER} shrink-0`}
           >
             <ChoiceIcon category={choice.category} />
-            <span
-              className={cn(
-                'text-foreground font-medium',
-                // A model's name can be long; the others are a word or two.
-                choice.category === 'model' && 'max-w-40 truncate',
-              )}
-            >
-              {valueName(choice, valueOf(choice))}
+            <span>
+              {choice.name}: {valueName(choice, valueOf(choice))}
             </span>
-            <ChevronDownIcon className='size-3.5 shrink-0' />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align='start'
-            className='max-h-96 w-72 overflow-y-auto'
-          >
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>{choice.name}</DropdownMenuLabel>
-              <Options
-                choice={choice}
-                value={valueOf(choice)}
-                onChoose={onChoose}
-              />
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ))}
-      {more.length > 0 && (
+          </span>
+        ))}
+      {offered
+        .filter((choice) => onBar(choice) && choice.options.length > 1)
+        .map((choice) => (
+          <DropdownMenu key={choice.id}>
+            <DropdownMenuTrigger
+              disabled={disabled}
+              title={choice.name}
+              className={`${TRIGGER} shrink-0`}
+            >
+              <ChoiceIcon category={choice.category} />
+              <span
+                className={cn(
+                  'text-foreground font-medium',
+                  // A model's name can be long; the others are a word or two.
+                  choice.category === 'model' && 'max-w-40 truncate',
+                )}
+              >
+                {valueName(choice, valueOf(choice))}
+              </span>
+              <ChevronDownIcon className='size-3.5 shrink-0' />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align='start'
+              className='max-h-96 w-72 overflow-y-auto'
+            >
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>{choice.name}</DropdownMenuLabel>
+                <Options
+                  choice={choice}
+                  value={valueOf(choice)}
+                  onChoose={onChoose}
+                />
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ))}
+      {more.some((choice) => choice.options.length > 1) && (
         <DropdownMenu>
           <DropdownMenuTrigger
             disabled={disabled}
@@ -114,23 +130,27 @@ export function ChoiceMenus({
             <SlidersHorizontalIcon className='size-4' />
           </DropdownMenuTrigger>
           <DropdownMenuContent align='start' className='w-64'>
-            {more.map((choice) => (
-              <DropdownMenuSub key={choice.id}>
-                <DropdownMenuSubTrigger>
-                  <span className='min-w-0 flex-1 truncate'>{choice.name}</span>
-                  <span className='text-muted-foreground text-xs'>
-                    {valueName(choice, valueOf(choice))}
-                  </span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className='max-h-96 w-64 overflow-y-auto'>
-                  <Options
-                    choice={choice}
-                    value={valueOf(choice)}
-                    onChoose={onChoose}
-                  />
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            ))}
+            {more
+              .filter((choice) => choice.options.length > 1)
+              .map((choice) => (
+                <DropdownMenuSub key={choice.id}>
+                  <DropdownMenuSubTrigger>
+                    <span className='min-w-0 flex-1 truncate'>
+                      {choice.name}
+                    </span>
+                    <span className='text-muted-foreground text-xs'>
+                      {valueName(choice, valueOf(choice))}
+                    </span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className='max-h-96 w-64 overflow-y-auto'>
+                    <Options
+                      choice={choice}
+                      value={valueOf(choice)}
+                      onChoose={onChoose}
+                    />
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              ))}
           </DropdownMenuContent>
         </DropdownMenu>
       )}

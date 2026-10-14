@@ -33,6 +33,57 @@ describe('runners', () => {
     await h?.close();
   });
 
+  it('replaces installation and login status from heartbeats in the stored runner and page query', async () => {
+    h = await createHarness();
+    const runner = await h.registerRunner();
+    for (const tools of [
+      [],
+      [
+        {
+          kind: 'opencode',
+          version: '2.0.28',
+          path: '/first/opencode',
+          authenticated: false,
+        },
+      ],
+      [
+        {
+          kind: 'opencode',
+          version: '2.0.29',
+          path: '/first/opencode',
+          authenticated: true,
+        },
+      ],
+      [
+        {
+          kind: 'opencode',
+          version: '2.0.30',
+          path: '/second/opencode',
+          authenticated: false,
+        },
+      ],
+      [],
+    ]) {
+      const beat = await h.request('POST', '/agents/runners/heartbeat', {
+        runnerKey: runner.key,
+        body: { ...heartbeat, tools },
+      });
+      expect(beat.status).toBe(200);
+      expect((await h.services.runners.get(runner.runnerId)).tools).toEqual(
+        tools,
+      );
+      const read = await h.request(
+        'GET',
+        `/agents/runners/${runner.runnerId}`,
+        { user: 'reader', can: ['agents.agents/read'] },
+      );
+      expect(read.status).toBe(200);
+      expect(read.body.data.tools).toEqual(
+        tools.map(({ path: _path, ...tool }) => tool),
+      );
+    }
+  });
+
   it('merges heartbeat disk readings with directory diagnostics, blocks claims while low, and resumes after recovery', async () => {
     h = await createHarness();
     const runner = await h.registerRunner();

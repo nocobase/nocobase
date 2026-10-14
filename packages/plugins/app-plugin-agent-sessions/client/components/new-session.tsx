@@ -1,7 +1,7 @@
 /**
  * A new session: which of the viewer's computers, which agent there, which folder and, when the application has
- * projects, which project it works for; the agent's choices; then the first message. The choices start from what the
- * agent offered in its latest session on that computer, with the mode the bridge opens sessions in. Folders are chosen
+ * projects, which project it works for; the agent's choices; then the first message. Choices are discovered from the
+ * installed agent in the selected directory before sending, with the mode the bridge opens sessions in. Folders are chosen
  * by browsing the computer, never typed. The computer, agent, folder and project last used are remembered in this
  * browser. Without a connected computer it says how to connect one.
  */
@@ -16,7 +16,7 @@ import {
   FolderSearchIcon,
   LaptopIcon,
 } from 'lucide-react';
-import { useState, type ReactElement, type ReactNode } from 'react';
+import { useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 
 import { Button } from './ui/button.js';
@@ -39,6 +39,7 @@ import {
 } from '../api.js';
 import { installedAgents, otherAgentNames } from '../lib/agents.js';
 import { offeredChoices } from '../lib/choices.js';
+import { useChoiceDiscovery } from '../use-choice-discovery.js';
 import { errorText } from '../lib/errors.js';
 import { shortTime, systemName } from '../lib/format.js';
 import { displayPath, isWithin, wholeHome } from '../lib/paths.js';
@@ -73,12 +74,14 @@ export function NewSession(): ReactElement {
   const create = useCreateSession();
   const [computersOpen, setComputersOpen] = useState(false);
   const [choice, setChoice] = useState<Choice>(remembered);
-  const [picked, setPicked] = useState<Readonly<Record<string, string>>>({});
+  const sendingRef = useRef(false);
 
   const all = computers.data ?? [];
   const online = all.filter((computer) => computer.online);
   const computer =
-    online.find((candidate) => candidate.id === choice.computerId) ?? online[0];
+    all.find((candidate) => candidate.id === choice.computerId) ?? online[0];
+  if (computer && choice.computerId !== computer.id)
+    setChoice({ ...choice, computerId: computer.id });
   const installed = computer ? installedAgents(computer) : [];
   const agents = installed.filter((agent) => !agent.problem);
   const agent =
@@ -99,14 +102,31 @@ export function NewSession(): ReactElement {
   const project = projects.data?.find(
     (candidate) => candidate.id === choice.projectId,
   );
-  const offered = computer && agent ? computer.choices[agent.id] : undefined;
-  const values = { ...initialValues(offered, agent), ...picked };
+  const discovery = useChoiceDiscovery(
+    JSON.stringify([
+      computer?.id,
+      agent,
+      cwd,
+      computer?.online,
+      computer?.folders,
+    ]),
+    {
+      computerId: computer?.id ?? '',
+      agentId: agent?.id ?? '',
+      cwd,
+      enabled: Boolean(computer?.online && agent && cwd),
+    },
+  );
+  const offered = discovery.result?.choices;
+  const values = Object.fromEntries(
+    (offered ?? []).map((offer) => [offer.id, offer.currentValue]),
+  );
+  const ready = Boolean(computer?.online && agent && cwd && discovery.result);
 
   const pick = (next: Choice): void => {
+    if (sendingRef.current) return;
     const merged = { ...choice, ...next };
     setChoice(merged);
-    if (next.computerId !== undefined || next.agentId !== undefined)
-      setPicked({});
     try {
       localStorage.setItem(REMEMBERED, JSON.stringify(merged));
     } catch {
@@ -114,7 +134,7 @@ export function NewSession(): ReactElement {
     }
   };
 
-  if (computers.data && online.length === 0) {
+  if (computers.data && !computer) {
     return (
       <div className='h-full overflow-y-auto'>
         <div className='mx-auto flex max-w-[560px] flex-col gap-4 px-4 py-10 sm:pt-24'>
@@ -169,19 +189,26 @@ export function NewSession(): ReactElement {
             large
             autoFocus
             placeholder={t('newSession.placeholder')}
-            disabled={!computer || !agent || !cwd}
+            disabled={!ready}
             sending={create.isPending}
             commands={computer && agent ? computer.commands[agent.id] : []}
             mentions={{ projectId: project?.id ?? null }}
             header={
-              <>
+              <div className='contents' inert={create.isPending}>
                 <Picker
                   label={
                     <>
                       <LaptopIcon className='size-4' />
                       {computer?.name ?? t('newSession.pickComputer')}
                       {computer && (
-                        <span className='size-2 rounded-full bg-emerald-500' />
+                        <span
+                          className={cn(
+                            'size-2 rounded-full',
+                            computer.online
+                              ? 'bg-emerald-500'
+                              : 'bg-muted-foreground',
+                          )}
+                        />
                       )}
                     </>
                   }
@@ -258,19 +285,43 @@ export function NewSession(): ReactElement {
                     onManage={() => setComputersOpen(true)}
                   />
                 )}
-              </>
+              </div>
             }
             toolbar={
-              <ChoiceMenus
-                choices={offered}
-                values={values}
-                onChoose={(choiceId, value) =>
-                  setPicked((current) => ({ ...current, [choiceId]: value }))
-                }
-              />
+              <>
+                <ChoiceMenus
+                  choices={offered}
+                  values={values}
+                  disabled={create.isPending || discovery.loading}
+                  onChoose={discovery.choose}
+                />
+                <span role='status' className='text-muted-foreground text-xs'>
+                  {!computer?.online
+                    ? t('newSession.settingsOffline')
+                    : discovery.loading
+                      ? t('newSession.settingsLoading')
+                      : discovery.error
+                        ? errorText(
+                            discovery.error,
+                            t('newSession.settingsFailed'),
+                          )
+                        : discovery.result?.status === 'unsupported'
+                          ? t('newSession.settingsUnsupported')
+                          : discovery.result &&
+                              offeredChoices(offered).length === 0
+                            ? t('newSession.settingsEmpty')
+                            : null}
+                </span>
+                {discovery.error && (
+                  <Button variant='ghost' size='sm' onClick={discovery.retry}>
+                    {t('newSession.settingsRetry')}
+                  </Button>
+                )}
+              </>
             }
             onSend={async (content, _interrupt, mentions) => {
-              if (!computer || !agent) return;
+              if (!computer || !agent || !ready || sendingRef.current) return;
+              sendingRef.current = true;
               try {
                 const session = await create.mutateAsync({
                   computerId: computer.id,
@@ -293,6 +344,8 @@ export function NewSession(): ReactElement {
                   title: errorText(error, t('errors.generic')),
                 });
                 throw error;
+              } finally {
+                sendingRef.current = false;
               }
             }}
           />
@@ -313,24 +366,6 @@ export function NewSession(): ReactElement {
       <ComputersDialog open={computersOpen} onOpenChange={setComputersOpen} />
     </div>
   );
-}
-
-/** The values a new session opens with: what the agent last offered here, in the full-access mode the bridge opens it in. */
-function initialValues(
-  offered: Computer['choices'][string] | undefined,
-  agent: AgentInfo | undefined,
-): Record<string, string> {
-  const values: Record<string, string> = {};
-  for (const choice of offeredChoices(offered)) {
-    const opening =
-      choice.category === 'mode'
-        ? agent?.modes?.find((mode) =>
-            choice.options.some((option) => option.value === mode),
-          )
-        : undefined;
-    values[choice.id] = opening ?? choice.currentValue;
-  }
-  return values;
 }
 
 /** Where the session works: a folder used before on this computer, or another one found by browsing it. */
@@ -579,8 +614,13 @@ function ComputerDetails({
           <LaptopIcon className='size-4' />
           {t('newSession.thisComputer')}
           <span className='text-muted-foreground ml-auto inline-flex items-center gap-1.5 font-normal'>
-            <span className='size-2 rounded-full bg-emerald-500' />
-            {t('computers.online')}
+            <span
+              className={cn(
+                'size-2 rounded-full',
+                computer.online ? 'bg-emerald-500' : 'bg-muted-foreground',
+              )}
+            />
+            {t(computer.online ? 'computers.online' : 'computers.offline')}
           </span>
         </h3>
         <dl className='grid grid-cols-[4rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-xs'>

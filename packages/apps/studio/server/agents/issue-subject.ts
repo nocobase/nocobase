@@ -427,7 +427,6 @@ export function createIssueContextProvider(
   checkoutPullRequests?: (
     issueId: string,
   ) => Promise<ReadonlyMap<string, string>>,
-  commentActorMayRead?: SubjectBinding['commentActorMayRead'],
 ): ContextProvider {
   return {
     async prepare(run) {
@@ -441,48 +440,13 @@ export function createIssueContextProvider(
           ? new Map<string, string>()
           : ((await checkoutPullRequests?.(run.subject.id)) ??
             new Map<string, string>());
-      const canRead =
-        run.commentRootRunId && commentActorMayRead
-          ? await commentActorMayRead(run.subject.id, run.actorUserId)
-          : true;
-      return { allowed, heads, canRead };
+      return { allowed, heads };
     },
-    async admit(conn, claim, prepared) {
-      if (
-        claim.runner &&
-        claim.run.commentRootRunId &&
-        (prepared as { canRead?: boolean } | undefined)?.canRead === false
-      )
-        return {
-          reason: 'notAllowed',
-          detail: 'The acting user may no longer read this issue.',
-        };
+    async admit(conn, claim) {
       if ((await readOwnerHandoff(conn, claim.run.subject.id))?.waiting)
         return {
           reason: 'waitingOwner',
           detail: 'Waiting for the new issue owner to take over.',
-        };
-      if (
-        claim.runner &&
-        !claim.run.commentRootRunId &&
-        (
-          (await agents.runs.identityInputs(conn, claim.run.id))?.inputs ??
-          claim.inputs
-        ).some(
-          (input) =>
-            input.type === 'comment' &&
-            !(
-              input.actor.kind === 'user' &&
-              input.actor.id === claim.run.ownerUserId &&
-              (input.payload as Record<string, unknown> | null)?.byAgent !==
-                true
-            ),
-        )
-      )
-        return {
-          reason: 'commentRetriggerRequired',
-          detail:
-            'Older queued comment work was withdrawn. Post the comment again to start a new authorized chain.',
         };
       const context = await projects().issueContext.contextFor(
         conn,
@@ -517,7 +481,6 @@ export function createIssueContextProvider(
         claim.run.id,
       );
       const delta = await commentDelta(conn, projects(), {
-        commentRootRunId: claim.run.commentRootRunId,
         agentId: claim.agent.id,
         issueId: context.id,
         runId: claim.run.id,
@@ -562,12 +525,7 @@ export function createIssueContextProvider(
         turn: {
           prompt: agents.briefs.turnPrompt(inputs, { subject }),
           ...(previousSummary ? { previousSummary } : {}),
-          ...deltaNotes(
-            delta,
-            context.identifier,
-            claim.cli,
-            Boolean(claim.run.commentRootRunId),
-          ),
+          ...deltaNotes(delta, context.identifier, claim.cli),
         },
         data: { kind: ISSUE_SUBJECT, issue: context },
         // The project manager checks nothing out, in a work directory of its own.
@@ -714,22 +672,10 @@ export function issueBinding(
   checkoutPullRequests?: (
     issueId: string,
   ) => Promise<ReadonlyMap<string, string>>,
-  commentActorMayRead?: SubjectBinding['commentActorMayRead'],
 ): SubjectBinding {
   return {
     kind: ISSUE_SUBJECT,
-    commentActorMayRead,
     actsAs: issueExecutionIdentity(agents, projects),
-    responsibleUserId: async (conn, subjectId) =>
-      (await readOwnerHandoff(conn, subjectId))?.waiting
-        ? null
-        : ((
-            await projects().issueContext.contextFor(conn, subjectId, {
-              kind: AGENT_KIND,
-            })
-          )?.owner.id ?? null),
-    commentOwnerKey: async (conn, subjectId) =>
-      (await readOwnerHandoff(conn, subjectId))?.notificationKey ?? null,
     ...(queuedExpiryMs > 0 ? { queuedExpiryMs } : {}),
     title: ISSUE_TITLE,
     groupTitle: PROJECT_TITLE,
@@ -737,12 +683,7 @@ export function issueBinding(
     groupPath: '/projects/{id}',
     triggers: ISSUE_TRIGGER_TITLES,
     preview: issueSample(agents),
-    context: createIssueContextProvider(
-      agents,
-      projects,
-      checkoutPullRequests,
-      commentActorMayRead,
-    ),
+    context: createIssueContextProvider(agents, projects, checkoutPullRequests),
     ...(sink ? { sink } : {}),
   };
 }

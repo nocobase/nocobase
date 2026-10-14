@@ -102,18 +102,9 @@ describe('manager delegated queue timeout', () => {
     expect(
       await rule(h.database.connection(), run, new Date(entered + 600_000)),
     ).toMatchObject({ reason: 'delegatedQueueTimeout' });
-    await h.projects.comments.create(
-      {
-        ...manager(),
-        actor: {
-          type: 'agent',
-          id: PROJECT_MANAGER_ID,
-          trace: { runId: run.id },
-        },
-      },
-      issue.id,
-      { content: `[@Worker](mention://agent/${worker}) additional context` },
-    );
+    await h.projects.comments.create(manager(), issue.id, {
+      content: `[@Worker](mention://agent/${worker}) additional context`,
+    });
     const allInputs = (await h.agents.runs.detail(run.id)).inputs;
     const later = allInputs.at(-1)!;
     await h.database
