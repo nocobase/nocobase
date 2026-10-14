@@ -243,6 +243,10 @@ test('structured requests survive later explanations and locate their latest com
       );
     }
   } finally {
-    await api.patch('projectManager', settings);
+    await api.patch('projectManager', {
+      name: settings.name,
+      firstChoiceAgentId: settings.firstChoiceAgentId,
+      fallbackAgentId: settings.fallbackAgentId,
+    });
   }
 });
