@@ -55,6 +55,7 @@ export function resolveArtifact(
     if (!(error instanceof DriveDiskConfigError)) throw error;
     throw new Error(
       `Invalid drive.disks ${JSON.stringify(name)} for releases.artifact.disk: ${error.message}`,
+      { cause: error },
     );
   }
   // Release archives carry server code and configuration templates, so they must not be readable without the
