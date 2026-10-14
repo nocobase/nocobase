@@ -341,11 +341,26 @@ for (const preset of ['compact', 'default'] as const) {
         name: child.identifier,
         exact: true,
       });
+      const clickedSource = await returnTarget.elementHandle();
+      expect(clickedSource).not.toBeNull();
       for (const width of [1320, 375, 390]) {
         await page.setViewportSize({ width, height: 844 });
         await expect
           .poll(() => workspaceGeometry(workspace))
           .toMatchObject({ columns: false, consistent: true });
+        if (width === 1320) {
+          // Compact-to-full rendering replaces the original link. Return must focus the visible partition.
+          await expect
+            .poll(() =>
+              clickedSource!.evaluate(
+                (element: { isConnected: boolean }) => element.isConnected,
+              ),
+            )
+            .toBe(false);
+          returnTarget = page
+            .getByRole('navigation', { name: 'Personal task sections' })
+            .getByRole('button', { name: 'My tasks-α', exact: true });
+        }
         await assertDraft(await openComposer());
         await expect(activity.getByTestId('issue-composer')).toBeInViewport({
           ratio: 1,
