@@ -62,9 +62,15 @@ export function roleOf(grants: readonly Grant[], catalog: Catalog): RoleGrants {
       if (granted.policy !== undefined) continue;
       if (type === 'page' && granted.action === 'access')
         for (const page of PAGES) if (matches(id, page)) pages.add(page);
+      if (
+        type === 'user' &&
+        id === '*' &&
+        catalog.settingsKeys.includes('user/' + granted.action)
+      )
+        settings['user/' + granted.action] = true;
       if (type === 'settings')
         for (const item of catalog.settings)
-          if (matches(id, item.id))
+          if (item.id !== 'user' && matches(id, item.id))
             for (const action of item.actions)
               if (action.name === granted.action) settings[action.key] = true;
       if (catalog.isBusinessType(type))
@@ -100,7 +106,13 @@ export function grantsOf(role: RoleGrants, catalog: Catalog): Grant[] {
       .filter((action) => role.settings[action.key])
       .map(({ name }) => ({ action: name }));
     if (actions.length > 0)
-      grants.push({ resource: { type: 'settings', id: item.id }, actions });
+      grants.push({
+        resource:
+          item.id === 'user'
+            ? { type: 'user', id: '*' }
+            : { type: 'settings', id: item.id },
+        actions,
+      });
   }
   for (const business of catalog.businesses) {
     const actions: GrantAction[] = business.actions.flatMap((action) => {
@@ -160,7 +172,12 @@ export function narrowedByScope(
     for (const action of item.actions)
       settings[action.key] =
         role.settings[action.key] === true &&
-        scope.allows({ type: 'settings', id: item.id }, action.name);
+        scope.allows(
+          item.id === 'user'
+            ? { type: 'user', id: '*' }
+            : { type: 'settings', id: item.id },
+          action.name,
+        );
   const abilities = noAbilities(catalog);
   for (const business of catalog.businesses)
     for (const action of business.actions) {
@@ -181,4 +198,59 @@ export function narrowedByScope(
     settings,
     abilities,
   };
+}
+
+/** Replace only losslessly editable action groups; advanced grants remain byte-for-byte values. */
+export function preserveUnmanagedGrants(
+  existing: readonly Grant[],
+  replacement: readonly Grant[],
+  catalog: Catalog,
+  groups: ReadonlySet<string>,
+): Grant[] {
+  const managed = (grant: Grant, action: GrantAction) => {
+    if (
+      action.policy !== undefined ||
+      Object.keys(action).some((key) => key !== 'action') ||
+      Object.keys(grant).some(
+        (key) => key !== 'resource' && key !== 'actions',
+      ) ||
+      Object.keys(grant.resource).some((key) => key !== 'type' && key !== 'id')
+    )
+      return false;
+    const { type, id } = grant.resource;
+    if (type === 'page')
+      return (
+        groups.has('pages') &&
+        PAGES.includes(id as Page) &&
+        action.action === 'access'
+      );
+    if (type === 'user')
+      return (
+        groups.has('settings') &&
+        id === '*' &&
+        catalog.settingsKeys.includes('user/' + action.action)
+      );
+    if (type === 'settings')
+      return (
+        groups.has('settings') &&
+        id !== '*' &&
+        catalog.settingsKeys.includes(id + '/' + action.action)
+      );
+    return (
+      groups.has('abilities') &&
+      id !== '*' &&
+      !!catalog.grantOf(grant.resource, action.action)
+    );
+  };
+  const kept = existing.flatMap((grant) => {
+    const actions = grant.actions.filter((action) => !managed(grant, action));
+    return actions.length ? [{ ...grant, actions }] : [];
+  });
+  return [
+    ...kept,
+    ...replacement.flatMap((grant) => {
+      const actions = grant.actions.filter((action) => managed(grant, action));
+      return actions.length ? [{ ...grant, actions }] : [];
+    }),
+  ];
 }

@@ -1,3 +1,4 @@
+import { useStudioPermissionRefresh } from '../access/permission-refresh.js';
 import { PageBreadcrumbProvider } from '@nocobase/app-client';
 import { useSyncServerLocale } from '@nocobase/app-plugin-i18n/client';
 import type { ReactElement } from 'react';
@@ -51,6 +52,7 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
   const inbox = useInboxNavigation();
   const myTasks = useMyTasksNavigation();
   useStudioIssueRefresh();
+  useStudioPermissionRefresh();
 
   const { t } = useTranslation();
   const { items: menuItems, denied } = useRouteNavigation(routes);

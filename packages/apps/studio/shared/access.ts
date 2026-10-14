@@ -49,7 +49,7 @@ export function reaches(
 
 /**
  * What a signed-in user may do, decided once per request, over the whole catalog: each business action
- * (`pm.issues/edit`) with its level resolved for them, each settings capability (`pm.members/read`) on or off.
+ * (`pm.issues/edit`) with its level resolved for them, each settings capability (`studio.roles/read`) on or off.
  */
 export interface Permissions {
   readonly scopes: Readonly<Record<string, Scope>>;
@@ -98,7 +98,7 @@ export interface CatalogBusiness {
   readonly actions: readonly CatalogBusinessAction[];
 }
 
-/** A settings capability, `pm.members/read`. */
+/** A settings capability, `studio.roles/read`. */
 export interface CatalogSettingsAction {
   readonly key: string;
   readonly name: string;
@@ -165,6 +165,7 @@ export type StudioPage = (typeof STUDIO_PAGES)[number];
  * personal keys off by taking it from its roles. No API key holds any (`server/access/action-policy.ts`).
  */
 export const STUDIO_SETTINGS_ACTIONS = {
+  'studio.roles': ['read', 'manage'],
   'studio.apiKeys': ['read', 'manage'],
   'studio.personalApiKeys': ['create'],
   'studio.git': ['read', 'manage'],
@@ -176,6 +177,7 @@ export type RoleTitle = CatalogText;
 
 /** A row of `GET /api/access/roles`. */
 export interface Role {
+  readonly advancedGrantCount?: number;
   readonly key: string;
   readonly title: RoleTitle | null;
   readonly builtIn: boolean;

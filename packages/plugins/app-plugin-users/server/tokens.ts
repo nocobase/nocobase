@@ -1,3 +1,4 @@
+import type { AuthorizationIdentity } from '@nocobase/authorization/core';
 import type { DatabaseConnection } from '@nocobase/db';
 import {
   createServiceToken,
@@ -26,6 +27,39 @@ export interface UserRoleOption {
   readonly removable?: boolean;
 }
 
+/** Trusted server context. Never accept this value from an HTTP body. */
+export interface UserRoleMutationContext {
+  /** Original server authorization identity, including credential narrowing. */
+  readonly identity?: AuthorizationIdentity;
+  readonly operation: 'replace' | 'create' | 'invitation';
+  readonly actor: { readonly type: 'user'; readonly id: string };
+  readonly credential: 'session' | 'api-key' | 'invitation' | 'issued';
+  readonly invitationId?: string;
+}
+
+export interface UserManagementPolicy {
+  excludedUserIds(connection: DatabaseConnection): Promise<readonly string[]>;
+  assertTarget(
+    action: string,
+    userId: string,
+    connection: DatabaseConnection,
+  ): Promise<void>;
+  assertAction(
+    action: string,
+    context: UserRoleMutationContext | undefined,
+  ): Promise<void>;
+}
+
+export interface UserManagementPolicyRegistry {
+  current(): UserManagementPolicy | undefined;
+  register(policy: UserManagementPolicy): () => void;
+}
+
+export const userManagementPolicyToken: ServiceToken<UserManagementPolicyRegistry> =
+  createServiceToken<UserManagementPolicyRegistry>(
+    '@nocobase/app-plugin-users/management-policy',
+  );
+
 export interface UserRoleScope {
   readonly key: string;
   readonly label: string;
@@ -35,7 +69,11 @@ export interface UserRoleScope {
   readonly requiredOnCreate?: boolean;
   /** The scope shows direct roles while authenticated-subject permissions apply separately. */
   readonly hasAuthenticatedDefaultAccess?: boolean;
-  options(): Promise<readonly UserRoleOption[]>;
+  /** True when replacement already publishes its own transaction-bound notifications. */
+  readonly notifiesChanges?: boolean;
+  options(
+    context?: UserRoleMutationContext,
+  ): Promise<readonly UserRoleOption[]>;
   get(userId: string, connection: DatabaseConnection): Promise<UserRoleValue>;
   getMany?(
     userIds: readonly string[],
@@ -49,6 +87,7 @@ export interface UserRoleScope {
     userId: string,
     value: UserRoleValue,
     connection: DatabaseConnection,
+    context?: UserRoleMutationContext,
   ): Promise<void>;
   assertCanDelete?(
     userId: string,
@@ -73,6 +112,8 @@ export interface ManagedUser extends AdministratedUser {
 }
 
 export interface ManagedUserPage {
+  readonly systemAdministratorCount?: number;
+  readonly message?: string;
   readonly items: readonly ManagedUser[];
   readonly total: number;
   readonly page: number;
@@ -197,21 +238,36 @@ export type UserInvitationAcceptedHandler = (
 ) => Promise<void>;
 
 export interface UserManagementService {
-  options(): Promise<UserManagementOptions>;
+  options(context?: UserRoleMutationContext): Promise<UserManagementOptions>;
   list(input?: ListManagedUsersInput): Promise<ManagedUserPage>;
-  create(input: CreateManagedUserInput): Promise<ManagedUser>;
+  create(
+    input: CreateManagedUserInput,
+    context?: UserRoleMutationContext,
+  ): Promise<ManagedUser>;
   update(
     userId: string,
     input: UpdateAdministratedUserInput,
+    context?: UserRoleMutationContext,
   ): Promise<ManagedUser>;
-  disable(userId: string): Promise<ManagedUser>;
-  enable(userId: string): Promise<ManagedUser>;
+  disable(
+    userId: string,
+    context?: UserRoleMutationContext,
+  ): Promise<ManagedUser>;
+  enable(
+    userId: string,
+    context?: UserRoleMutationContext,
+  ): Promise<ManagedUser>;
   replaceRoleScope(
     userId: string,
     scope: string,
     value: UserRoleValue,
+    context?: UserRoleMutationContext,
   ): Promise<ManagedUser>;
-  resetPassword(userId: string, password: string): Promise<void>;
+  resetPassword(
+    userId: string,
+    password: string,
+    context?: UserRoleMutationContext,
+  ): Promise<void>;
   revokeSessions(userId: string): Promise<void>;
   remove(userId: string, actorId: string): Promise<void>;
   /** Invites each address; one without an account gets a link by email. */
@@ -260,7 +316,7 @@ export class UserManagementError extends Error {
       | 'INVITATION_CLOSED'
       | 'INVITATION_SIGN_IN_REQUIRED',
     message: string,
-    readonly status: 400 | 404 | 409 = 400,
+    readonly status: 400 | 403 | 404 | 409 = 400,
   ) {
     super(message);
     this.name = 'UserManagementError';
@@ -272,7 +328,7 @@ export class UserRoleScopeError extends Error {
   constructor(
     readonly code: string,
     message: string,
-    readonly status: 400 | 404 | 409 = 400,
+    readonly status: 400 | 403 | 404 | 409 = 400,
   ) {
     super(message);
     this.name = 'UserRoleScopeError';

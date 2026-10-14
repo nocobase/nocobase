@@ -15,6 +15,49 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  'userManagement.lastAssignment':
+    'The last active protected assignment must remain.',
+  'userManagement.disabledAssignment':
+    'Disabled users cannot receive new roles.',
+  'userManagement.ownerRequired':
+    'Only a direct owner may grant or revoke the owner role.',
+  'studioAgents.actionReasons.studio.roles':
+    'Role definitions are administered by people.',
+  'studioAgents.actionReasons.user':
+    'User administration is not delegated to agents.',
+  'roles.advancedGrants':
+    'Advanced permissions are preserved. Clearing a checkbox does not revoke an advanced grant that still authorizes that action.',
+  'userManagement.clearFilters': 'Clear filters',
+  'userManagement.edit': 'Edit profile',
+  'userManagement.enable': 'Enable user',
+  'userManagement.disable': 'Disable user',
+  'userManagement.enableNotice': 'Enable {{name}}? They can sign in again.',
+  'userManagement.disableNotice':
+    'Disable {{name}}? Existing sessions will be revoked. Their roles remain assigned.',
+  'userManagement.saved': 'User updated.',
+  'userManagement.conflict': 'This username or email is already in use.',
+  'userManagement.username': 'Username',
+  'userManagement.identifier': 'User ID',
+  'userManagement.status': 'Status',
+  'userManagement.enabled': 'Enabled',
+  'userManagement.disabled': 'Disabled',
+  'userManagement.all': 'All statuses',
+  'userManagement.search': 'Search users',
+  'userManagement.systemAdministrators':
+    '{{count}} system administrators have full access and are outside this list.',
+  'userManagement.total': '{{count}} users',
+  'userManagement.previous': 'Previous',
+  'userManagement.next': 'Next',
+  'roles.userActions.read': 'View users',
+  'roles.userActions.update': 'Update profiles',
+  'roles.userActions.disable': 'Disable users',
+  'roles.userActions.enable': 'Enable users',
+  'roles.userActions.reset-password': 'Reset passwords',
+  'roles.userActions.assign-role': 'Assign Studio roles',
+  'roles.items.roles': 'Studio roles',
+  'roles.capabilities.roles.read': 'View Studio roles',
+  'roles.capabilities.roles.manage': 'Manage Studio roles',
+
   'auth.passwordResetSuccess':
     'Your password has been reset. Sign in with your new password.',
   'auth.requestNewResetLink': 'Request a new reset link',

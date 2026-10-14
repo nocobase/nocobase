@@ -17,7 +17,10 @@ import { releasesToken } from '@nocobase/app-plugin-releases/server/tokens';
 import { projectsKeyScopeObjects } from '@nocobase/app-plugin-projects/server';
 import { projectsAccessToken } from '@nocobase/app-plugin-projects/server/tokens';
 import { agentsAccessToken } from '@nocobase/app-plugin-agents/server/tokens';
-import { userRoleScopeRegistryToken } from '@nocobase/app-plugin-users/server/tokens';
+import {
+  userManagementPolicyToken,
+  userRoleScopeRegistryToken,
+} from '@nocobase/app-plugin-users/server/tokens';
 import type { Application } from '@nocobase/app-server/application';
 import { idGeneratorToken } from '@nocobase/app-server/id-generator';
 import { databaseManagerToken } from '@nocobase/db';
@@ -31,6 +34,7 @@ import { registerStudioKeyScopes } from './key-scopes.js';
 import { createStudioAccess } from './service.js';
 import { registerStudioSettings } from './settings.js';
 import { studioAccessToken, studioApiKeysToken } from './token.js';
+import { studioUserManagementPolicy } from './user-management-policy.js';
 import { createStudioUserRoleScope } from './user-scope.js';
 
 interface PermissionSetsConfig {
@@ -140,6 +144,12 @@ export default class StudioAccessProvider extends ServiceProvider<Application> {
           },
           () => container.resolve(studioAccessToken).catalog(),
         ),
+      );
+    if (container.has(userManagementPolicyToken))
+      this.releases.push(
+        container
+          .resolve(userManagementPolicyToken)
+          .register(studioUserManagementPolicy(this.sets().rootSet)),
       );
     if (container.has(userRoleScopeRegistryToken))
       this.releases.push(

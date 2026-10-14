@@ -95,13 +95,14 @@ export const RoleSchema: z.ZodType<Role> = z
     key: z.string(),
     title: RoleTitleSchema.nullable(),
     builtIn: z.boolean(),
+    advancedGrantCount: z.number().int().optional(),
     editable: z.boolean().meta({
       description: 'Whether its grants may be changed (not `owner`).',
     }),
     pages: z.array(z.enum(PAGES)),
     settings: z.record(z.string(), z.boolean()).meta({
       description:
-        'Every settings capability of the catalog (`pm.members/read`), on or off.',
+        'Every settings capability of the catalog (`studio.roles/read`), on or off.',
     }),
     abilities: z.record(z.string(), z.enum(LEVELS)).meta({
       description:

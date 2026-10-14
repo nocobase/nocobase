@@ -1,3 +1,4 @@
+import { useCan } from '@nocobase/app-plugin-authorization/client';
 /**
  * Who may do what in a Studio knowledge space, for the knowledge view's space access sheet: Studio's roles with what each
  * of read, propose, edit and manage gives in this space (`server/knowledge/access.ts` decides the same on the server), where the viewer's access comes
@@ -6,10 +7,7 @@
  */
 import type { KnowledgeAccessDetails } from '@nocobase/app-plugin-knowledge/client/pages';
 import type { SpaceRef } from '@nocobase/app-plugin-knowledge/shared/knowledge';
-import {
-  canUseSetting,
-  useViewer,
-} from '@nocobase/app-plugin-projects/client/kit';
+import {} from '@nocobase/app-plugin-projects/client/kit';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
 
@@ -48,8 +46,14 @@ export function useKnowledgeAccessDetails(
 ): KnowledgeAccessDetails {
   const { t } = useTranslation();
   const api = useStudioApi();
-  const viewer = useViewer();
-  const readsRoles = canUseSetting(viewer, 'pm.members', 'read');
+  const managesRoles = useCan({
+    resource: { type: 'settings', id: 'studio.roles' },
+    action: 'manage',
+  }).can;
+  const readsRoles = useCan({
+    resource: { type: 'settings', id: 'studio.roles' },
+    action: 'read',
+  }).can;
   const me = useQuery({ queryKey: studioKeys.me, queryFn: () => api.me() });
   const roles = useQuery({
     queryKey: studioKeys.roles,
@@ -120,8 +124,6 @@ export function useKnowledgeAccessDetails(
           t('knowledge.access.systemEdit'),
           t('knowledge.access.systemManage'),
         ],
-    ...(canUseSetting(viewer, 'pm.members', 'define-roles')
-      ? { manage: { href: '/config/roles' } }
-      : {}),
+    ...(managesRoles ? { manage: { href: '/config/roles' } } : {}),
   };
 }

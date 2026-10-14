@@ -2,7 +2,6 @@ import { ApiClientError, useApiClient } from '@nocobase/app-client';
 import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { UsersClient } from '@nocobase/app-plugin-users/client/user-client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useQuery } from '@tanstack/react-query';
 import { KeyRoundIcon } from 'lucide-react';
 import { useMemo, useState, type FormEvent, type ReactElement } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -18,23 +17,17 @@ import {
 } from '@/components/ui/field';
 import { PasswordInput } from '@/extensions/nocobase-auth-forms/password-input';
 import { useNotify } from '../../../access/notify.js';
-import { studioKeys, useStudioApi } from '../../../access/api.js';
 import { useViewer } from '@nocobase/app-plugin-projects/client/kit';
 
 export default function ResetPasswordDialog(): ReactElement {
   const { t } = useTranslation();
   const { userId = '' } = useParams();
   const navigate = useNavigate();
-  const api = useStudioApi();
   const viewer = useViewer();
   const notify = useNotify();
   const client = useApiClient();
   const users = useMemo(() => new UsersClient(client), [client]);
-  const members = useQuery({
-    queryKey: studioKeys.members,
-    queryFn: () => api.members(),
-  });
-  const member = members.data?.find((item) => item.userId === userId);
+  const member = userId ? { name: userId, email: '', userId } : undefined;
   const access = useCan({
     resource: { type: 'user', id: userId },
     action: 'reset-password',
@@ -116,7 +109,7 @@ export default function ResetPasswordDialog(): ReactElement {
           <Button
             form='reset-member-password'
             type='submit'
-            disabled={pending || !access.can || !member}
+            disabled={pending || own || !access.can || !member}
           >
             {pending
               ? t('members.resettingPassword')
@@ -188,14 +181,8 @@ export default function ResetPasswordDialog(): ReactElement {
             </Field>
           </FieldGroup>
         </form>
-      ) : members.isSuccess ? (
-        <div className='text-sm text-muted-foreground'>
-          {t('members.memberNotFound')}
-        </div>
       ) : (
-        <div className='text-sm text-muted-foreground'>
-          {members.isError ? t('members.loadFailed') : t('status.loading')}
-        </div>
+        <div>{t('members.memberNotFound')}</div>
       )}
     </RouteDialog>
   );

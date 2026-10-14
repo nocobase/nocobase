@@ -8,11 +8,9 @@
  * | route                                          | needs                       |
  * | ---------------------------------------------- | --------------------------- |
  * | `GET /access/me`                               | signed in                   |
- * | `GET /access/catalog`                          | signed in                   |
- * | `GET /access/roles`, `/access/roles/:roleKey`  | `pm.members/read`           |
- * | `POST`, `PATCH`, `DELETE /access/roles…`       | `pm.members/define-roles`   |
- * | `GET /access/members`                          | `pm.members/read`           |
- * | `PATCH /access/members/:userId` `{ roles }`    | `pm.members/assign`         |
+ * | `GET /access/catalog`                          | `studio.roles/read`         |
+ * | `GET /access/roles`, `/access/roles/:roleKey`  | `studio.roles/read`           |
+ * | `POST`, `PATCH`, `DELETE /access/roles…`       | `studio.roles/manage`   |
  * | `GET` / `PUT /access/settings`                 | `pm.general/read`, `update` |
  * | `GET /organizationKeys…`                       | `studio.apiKeys/read`        |
  * | any write of `/organizationKeys…`              | `studio.apiKeys/manage`      |
@@ -38,6 +36,13 @@ import {
 import type { AuthorizationIdentity } from '@nocobase/authorization/core';
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 
+import { databaseManagerToken } from '@nocobase/db';
+import { z } from 'zod';
+import { prepareStudioAccessUpgrade } from './upgrade-preflight.js';
+import {
+  restoreStudioAccess,
+  type AccessUpgradeChange,
+} from './upgrade-recovery.js';
 import { studioError, studioErrorHandler } from '../http/errors.js';
 import { boundedList } from '../http/input.js';
 import {
@@ -50,15 +55,12 @@ import {
   CreateRoleInput,
   KeyParams,
   KeyScopeOptionsSchema,
-  MemberParams,
-  MemberSchema,
   OrgApiKeyEventSchema,
   OrgApiKeySchema,
   RoleParams,
   RoleSchema,
   SaveRoleInput,
   SetOrgKeyScopeInput,
-  UpdateMemberInput,
   UpdateOrgKeyInput,
 } from './schemas.js';
 import type { AccessViewer } from './service.js';
@@ -79,7 +81,8 @@ function requires(key: SettingKey, message: string): MiddlewareHandler<Env> {
 }
 
 export const accessRoutes: AppApiRouteContribution<Application> =
-  defineApiRoutes(({ container }) => {
+  defineApiRoutes((app) => {
+    const { container } = app;
     // Without authentication and authorization (an application's own tests) there is nothing to serve.
     if (
       !container.has(authorizationToken) ||
@@ -116,11 +119,11 @@ export const accessRoutes: AppApiRouteContribution<Application> =
     const viewer = (context: Context<Env>) => context.get('studioViewer');
 
     const readMembers = requires(
-      'pm.members/read',
+      'studio.roles/read',
       'You may not read the member settings.',
     );
     const defineRoles = requires(
-      'pm.members/define-roles',
+      'studio.roles/manage',
       'Only someone who may define roles may do this.',
     );
 
@@ -142,6 +145,7 @@ export const accessRoutes: AppApiRouteContribution<Application> =
     );
     settings.get(
       '/catalog',
+      readMembers,
       describeRoute({
         tags,
         summary: 'Get what a role can hold',
@@ -171,7 +175,7 @@ export const accessRoutes: AppApiRouteContribution<Application> =
           command: 'access role list',
           columns: ['key', 'title', 'builtIn', 'holderCount'],
         }),
-        description: 'Needs `pm.members` `read`.',
+        description: 'Needs `studio.roles` `read`.',
         responses: { 200: listResponse(RoleSchema), ...apiErrorResponses },
       }),
       async (c) => c.json(boundedList(await roles.list(viewer(c)))),
@@ -216,7 +220,7 @@ export const accessRoutes: AppApiRouteContribution<Application> =
           command: 'access role get',
           flags: { roleKey: { name: 'role' } },
         }),
-        description: 'Needs `pm.members` `read`.',
+        description: 'Needs `studio.roles` `read`.',
         responses: {
           200: dataResponse(RoleSchema),
           404: apiErrorResponse(404),
@@ -293,61 +297,6 @@ export const accessRoutes: AppApiRouteContribution<Application> =
         await roles.remove(viewer(c), c.req.valid('param').roleKey);
         return c.body(null, 204);
       },
-    );
-    settings.get(
-      '/members',
-      readMembers,
-      describeRoute({
-        tags,
-        summary: 'List the members with their roles',
-        operationId: 'accessListMembers',
-        ...cliRoute({
-          command: 'access member list',
-          columns: ['userId', 'name', 'email', 'roles'],
-        }),
-        description:
-          'Needs `pm.members` `read`. System administrators and API key identities are not listed.',
-        responses: { 200: listResponse(MemberSchema), ...apiErrorResponses },
-      }),
-      async (c) => c.json(boundedList(await roles.members(viewer(c)))),
-    );
-    settings.patch(
-      '/members/:userId',
-      requires(
-        'pm.members/assign',
-        'Only someone who may assign roles may do this.',
-      ),
-      describeRoute({
-        tags,
-        summary: 'Replace a member’s roles',
-        operationId: 'accessUpdateMember',
-        ...cliRoute({
-          command: 'access member update',
-          flags: { userId: { name: 'user' } },
-          examples: ['access member update bob --roles admin'],
-        }),
-        description:
-          'Needs `pm.members` `assign`; only an owner grants or revokes `owner`, and the last owner keeps it.',
-        responses: {
-          200: dataResponse(MemberSchema),
-          400: apiErrorResponse(
-            400,
-            'When a role does not exist, the account is disabled, or the last owner would lose `owner`.',
-          ),
-          404: apiErrorResponse(404),
-          ...apiErrorResponses,
-        },
-      }),
-      apiValidator('param', MemberParams),
-      apiValidator('json', UpdateMemberInput),
-      async (c) =>
-        c.json({
-          data: await roles.assign(
-            viewer(c),
-            c.req.valid('param').userId,
-            c.req.valid('json'),
-          ),
-        }),
     );
     settings.get(
       '/settings',
@@ -665,6 +614,114 @@ export const accessRoutes: AppApiRouteContribution<Application> =
       async (c) => {
         await apiKeys().remove(viewer(c), c.req.valid('param').keyId);
         return c.body(null, 204);
+      },
+    );
+
+    settings.get(
+      '/upgrades/pm358/prepare',
+      defineRoles,
+      requireSignInSession() as unknown as MiddlewareHandler,
+      describeRoute({
+        tags,
+        summary: 'Prepare a credentials-free Studio access upgrade inventory',
+        operationId: 'accessPrepareUpgrade',
+        ...cliRoute({
+          command: 'access upgrade prepare',
+          identities: ['user'],
+        }),
+        responses: {
+          200: dataResponse(
+            z.object({
+              version: z.string(),
+              roles: z.array(
+                z.object({
+                  roleId: z.string(),
+                  roleKey: z.string(),
+                  beforeGrants: z.string(),
+                  afterGrants: z.string().nullable(),
+                  blocked: z.string().nullable(),
+                }),
+              ),
+              assignmentHash: z.string(),
+              defaultRoleHash: z.string(),
+              keyReviewRequired: z.number().int(),
+              unknownAccountKindCount: z.number().int(),
+            }),
+          ),
+          ...apiErrorResponses,
+        },
+      }),
+      async (c) =>
+        c.json({
+          data: await prepareStudioAccessUpgrade(
+            container.resolve(databaseManagerToken).connection(),
+            access,
+          ),
+        }),
+    );
+    settings.get(
+      '/upgrades/pm358',
+      defineRoles,
+      requireSignInSession() as unknown as MiddlewareHandler,
+      describeRoute({
+        tags,
+        summary: 'Read the Studio access upgrade recovery record',
+        operationId: 'accessReadUpgradeChanges',
+        ...cliRoute({
+          command: 'access upgrade inspect',
+          identities: ['user'],
+        }),
+        responses: {
+          200: dataResponse(
+            z.object({ version: z.string(), changedRoles: z.number().int() }),
+          ),
+          ...apiErrorResponses,
+        },
+      }),
+      async (c) => {
+        const rows = await container
+          .resolve(databaseManagerToken)
+          .connection()
+          .repository<AccessUpgradeChange>('studioAccessUpgradeChanges')
+          .findMany({ filter: { version: 'pm358-v1' } });
+        return c.json({
+          data: { version: 'pm358-v1', changedRoles: rows.length },
+        });
+      },
+    );
+    settings.post(
+      '/upgrades/pm358/restore',
+      defineRoles,
+      requireSignInSession() as unknown as MiddlewareHandler,
+      describeRoute({
+        tags,
+        summary: 'Restore the Studio access grants during maintenance',
+        operationId: 'accessRestoreUpgradeChanges',
+        ...cliRoute({
+          command: 'access upgrade restore',
+          identities: ['user'],
+          confirm:
+            'Restore the recorded role grants? All old writers must remain stopped.',
+        }),
+        responses: {
+          200: dataResponse(z.object({ restored: z.number().int() })),
+          ...apiErrorResponses,
+        },
+      }),
+      async (c) => {
+        if (
+          app.config.get<boolean>('studio.accessUpgrade.maintenance') !== true
+        )
+          throw studioError(
+            'FAILED_PRECONDITION',
+            'STUDIO_ACCESS_MAINTENANCE_REQUIRED',
+            'Stop old writers and confirm maintenance before restoration.',
+          );
+        const restored = await restoreStudioAccess(
+          container.resolve(databaseManagerToken),
+          authorization,
+        );
+        return c.json({ data: { restored } });
       },
     );
 

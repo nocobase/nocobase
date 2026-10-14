@@ -1,6 +1,7 @@
+import { canUseSetting } from '@nocobase/app-plugin-projects/client/kit';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { GeneralSettings } from '@nocobase/app-plugin-projects/client/config';
 import {
-  canUseSetting,
   SectionHeading,
   SettingsPageHeader,
   useViewer,
@@ -34,7 +35,10 @@ function DefaultRoleSection(): ReactElement | null {
   const queryClient = useQueryClient();
   const viewer = useViewer();
   const canEdit = canUseSetting(viewer, 'pm.general', 'update');
-  const canReadRoles = canUseSetting(viewer, 'pm.members', 'read');
+  const canReadRoles = useCan({
+    resource: { type: 'settings', id: 'studio.roles' },
+    action: 'read',
+  }).can;
   const settings = useQuery({
     queryKey: studioKeys.settings,
     queryFn: () => api.settings(),

@@ -180,8 +180,12 @@ logging:
     # Set true for human-readable terminal output.
     pretty: false
 
-# Structured manager idle recovery; timeout 0 disables it. Sweep interval must be positive.
 studio:
+  # Enable only inside an authorized access-upgrade maintenance window.
+  # Stop and drain all old processes and workers before setting this flag.
+  accessUpgrade:
+    maintenance: false
+  # Structured manager idle recovery; timeout 0 disables it. Sweep interval must be positive.
   agents:
     managerIdleMinutes: 15
     managerIdleSweepMinutes: 5

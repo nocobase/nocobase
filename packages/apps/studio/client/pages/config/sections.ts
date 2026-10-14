@@ -29,7 +29,12 @@ export interface SettingsSectionGroup {
 }
 
 type Item =
-  SettingsItem | 'studio.apiKeys' | 'studio.git' | 'studio.knowledgeSearch';
+  | SettingsItem
+  | 'user'
+  | 'studio.roles'
+  | 'studio.apiKeys'
+  | 'studio.git'
+  | 'studio.knowledgeSearch';
 
 /**
  * The settings menu, in the order the sidebar shows it. The projects plugin's items come with the viewer
@@ -71,13 +76,13 @@ const GROUPS: readonly {
     sections: [
       {
         path: 'members',
-        item: 'pm.members',
+        item: 'user',
         label: 'config.nav.members',
         icon: Users,
       },
       {
         path: 'roles',
-        item: 'pm.members',
+        item: 'studio.roles',
         label: 'config.nav.roles',
         icon: ShieldCheck,
       },
@@ -124,14 +129,26 @@ export function useSettingsSections(): {
     resource: { type: 'settings', id: 'studio.knowledgeSearch' },
     action: 'read',
   }).can;
+  const users = useCan({
+    resource: { type: 'user', id: '*' },
+    action: 'read',
+  }).can;
+  const roles = useCan({
+    resource: { type: 'settings', id: 'studio.roles' },
+    action: 'read',
+  }).can;
   const readable = (item: Item): boolean =>
-    item === 'studio.apiKeys'
-      ? apiKeys
-      : item === 'studio.git'
-        ? git
-        : item === 'studio.knowledgeSearch'
-          ? knowledgeSearch
-          : canUseSetting(viewer, item, 'read');
+    item === 'user'
+      ? users
+      : item === 'studio.roles'
+        ? roles
+        : item === 'studio.apiKeys'
+          ? apiKeys
+          : item === 'studio.git'
+            ? git
+            : item === 'studio.knowledgeSearch'
+              ? knowledgeSearch
+              : canUseSetting(viewer, item, 'read');
   const groups = GROUPS.map((group) => ({
     id: group.id,
     label: group.label,

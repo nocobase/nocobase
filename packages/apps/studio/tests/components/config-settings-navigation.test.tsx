@@ -91,7 +91,8 @@ describe('the settings navigation', () => {
     readable.clear();
     for (const item of [
       'pm.general',
-      'pm.members',
+      '*',
+      'studio.roles',
       'pm.labels',
       'studio.apiKeys',
       'studio.git',
@@ -136,7 +137,7 @@ describe('the settings navigation', () => {
     ).toBeNull();
   });
 
-  it('hides members and roles without pm.members read, and the groups left empty', () => {
+  it('hides members and roles without their independent read actions, and the groups left empty', () => {
     readable.clear();
     readable.add('pm.general');
     renderAt('/config/general');
@@ -147,6 +148,16 @@ describe('the settings navigation', () => {
     expect(groupLinks('config.nav.groups.workspace')).toEqual([
       'config.nav.general',
     ]);
+  });
+
+  it('shows account and role navigation independently', () => {
+    readable.clear();
+    readable.add('*');
+    renderAt('/config/members');
+    expect(
+      screen.getByRole('link', { name: 'config.nav.members' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'config.nav.roles' })).toBeNull();
   });
 
   it('leaves the agents plugin’s pages and the models to the Agent team section', () => {

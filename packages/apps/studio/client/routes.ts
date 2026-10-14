@@ -542,7 +542,8 @@ const configRoutes: AppClientRouteContribution = defineAppRoutes([
         name: 'config-members',
         path: 'members',
         breadcrumb: { title: 'config.nav.members' },
-        authz: setting('pm.members'),
+        // The nested password dialog is authorized independently of listing users.
+        authz: 'skip',
         componentLoader: () => import('./pages/config/members.js'),
         children: [
           {
@@ -559,7 +560,7 @@ const configRoutes: AppClientRouteContribution = defineAppRoutes([
         name: 'config-roles',
         path: 'roles',
         breadcrumb: { title: 'config.nav.roles' },
-        authz: setting('pm.members'),
+        authz: setting('studio.roles'),
         componentLoader: () => import('./pages/config/roles.js'),
         children: [
           {

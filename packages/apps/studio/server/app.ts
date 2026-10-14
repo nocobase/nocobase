@@ -1,3 +1,4 @@
+import type { Context } from 'hono';
 import { MailerProvider } from '@nocobase/app-server/mailer';
 import type { Application } from '@nocobase/app-server/application';
 import { DatabaseProvider } from '@nocobase/app-server/database';
@@ -16,7 +17,12 @@ import {
   SessionProvider,
   sessionHttpMiddleware,
 } from '@nocobase/app-server/session';
-import { healthCheckApiRoutes } from '@nocobase/app-server/router';
+import {
+  defineHttpMiddleware,
+  apiErrorHandler,
+  ApiError,
+  healthCheckApiRoutes,
+} from '@nocobase/app-server/router';
 import {
   createAppFromRuntime,
   type AppRuntimeContext,
@@ -44,6 +50,34 @@ export function createApp(runtime: AppRuntimeContext): Application {
   app.addHttpMiddleware(requestLoggingMiddleware);
   app.addHttpMiddleware(sessionHttpMiddleware);
   app.addHttpMiddleware(i18nHttpMiddleware);
+  app.addHttpMiddleware(
+    defineHttpMiddleware({
+      name: 'studio/access-maintenance',
+      register(router, application) {
+        router.use('*', async (context: Context, next) => {
+          const path = context.req.path;
+          if (
+            application.config.get<boolean>(
+              'studio.accessUpgrade.maintenance',
+            ) === true &&
+            !['GET', 'HEAD', 'OPTIONS'].includes(context.req.method) &&
+            !path.includes('/api/auth/') &&
+            !path.endsWith('/api/access/upgrades/pm358/restore')
+          )
+            return apiErrorHandler(
+              new ApiError({
+                status: 'UNAVAILABLE',
+                domain: 'studio',
+                reason: 'STUDIO_ACCESS_MAINTENANCE',
+                message: 'Studio is read-only during access maintenance.',
+              }),
+              context,
+            );
+          await next();
+        });
+      },
+    }),
+  );
   app.addRoutes(healthCheckApiRoutes);
   app.addRuntimeContributions(runtime);
   app.addRoutes(spaRootRoutes);

@@ -10,14 +10,12 @@ import { MoreHorizontalIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 import { type FormEvent, type ReactElement, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
-  canUseSetting,
   DataTable,
   PmListSkeleton,
   PmLoadError,
   PmTag,
   SettingsPageHeader,
   UnsavedChangesBoundary,
-  useViewer,
 } from '@nocobase/app-plugin-projects/client/kit';
 
 import {
@@ -47,6 +45,9 @@ import {
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import type { Role } from '../../../../shared/access.js';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
+import { UsersClient } from '@nocobase/app-plugin-users/client/user-client';
+import { useApiClient } from '@nocobase/app-client';
 import { rolePath, roleTitle } from './roles-model.js';
 import { useRoleError } from './use-role-error.js';
 import { studioKeys, useStudioApi } from '../../../access/api.js';
@@ -137,7 +138,7 @@ function NewRoleDialog({
 
 /**
  * The roles tab: every role of projects with its kind (built-in / custom) and how many people hold it. Whoever holds
- * `pm.members/define-roles` creates roles here and deletes custom ones nobody holds; a role opens as a covering page
+ * `studio.roles/manage` creates roles here and deletes custom ones nobody holds; a role opens as a covering page
  * (`roles/:key`).
  */
 export function RolesPanel(): ReactElement {
@@ -150,11 +151,20 @@ export function RolesPanel(): ReactElement {
     queryKey: studioKeys.roles,
     queryFn: () => api.roles(),
   });
+  const users = new UsersClient(useApiClient());
+  const mayReadUsers = useCan({
+    resource: { type: 'user', id: '*' },
+    action: 'read',
+  }).can;
   const members = useQuery({
-    queryKey: studioKeys.members,
-    queryFn: () => api.members(),
+    queryKey: ['studio', 'users', 'role-holders'],
+    queryFn: () => users.list({ pageSize: 100 }),
+    enabled: mayReadUsers,
   });
-  const canDefine = canUseSetting(useViewer(), 'pm.members', 'define-roles');
+  const canDefine = useCan({
+    resource: { type: 'settings', id: 'studio.roles' },
+    action: 'manage',
+  }).can;
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<Role | null>(null);
   const [inUse, setInUse] = useState<readonly string[]>([]);
@@ -253,7 +263,7 @@ export function RolesPanel(): ReactElement {
   );
 
   const nameOf = (userId: string): string =>
-    members.data?.find((member) => member.userId === userId)?.name ?? userId;
+    members.data?.items.find((member) => member.id === userId)?.name ?? userId;
 
   let content: ReactElement;
   if (roles.isError && !roles.data) {

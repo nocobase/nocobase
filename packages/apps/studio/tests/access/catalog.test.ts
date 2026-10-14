@@ -146,10 +146,12 @@ describe('the catalog', () => {
       'agents.prices',
       'agents.services',
       'rel.environments',
+      'studio.roles',
       'studio.apiKeys',
       'studio.personalApiKeys',
       'studio.git',
       'studio.knowledgeSearch',
+      'user',
     ]);
   });
 
@@ -254,7 +256,13 @@ describe('Studio’s annotations', () => {
         for (const action of actions) {
           if (resource.type === 'page') continue;
           const held = catalog.grantOf(resource, action);
-          covered.add(held ? held.key : `${resource.id}/${action}`);
+          covered.add(
+            resource.type === 'user'
+              ? `user/${action}`
+              : held
+                ? held.key
+                : `${resource.id}/${action}`,
+          );
         }
     const offered = Object.entries(ACTION_POLICIES)
       .filter(([, policy]) => policy.keys === true)

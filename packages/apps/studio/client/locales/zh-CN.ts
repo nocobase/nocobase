@@ -15,6 +15,44 @@ import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
+  'userManagement.lastAssignment': '必须保留最后一个活跃的受保护分配。',
+  'userManagement.disabledAssignment': '停用用户不能获得新角色。',
+  'userManagement.ownerRequired': '只有直接 owner 可以授予或撤销 owner 角色。',
+  'studioAgents.actionReasons.studio.roles': '角色定义由人管理。',
+  'studioAgents.actionReasons.user': '用户管理不委派给 Agent。',
+  'roles.advancedGrants':
+    '高级授权将保留。取消勾选不会撤销仍授予该动作的高级授权。',
+  'userManagement.clearFilters': '清除筛选',
+  'userManagement.edit': '编辑资料',
+  'userManagement.enable': '启用用户',
+  'userManagement.disable': '停用用户',
+  'userManagement.enableNotice': '启用 {{name}}？该用户可以重新登录。',
+  'userManagement.disableNotice':
+    '停用 {{name}}？会话将撤销，角色分配保持不变。',
+  'userManagement.saved': '用户已更新。',
+  'userManagement.conflict': '用户名或邮箱已被使用。',
+  'userManagement.username': '用户名',
+  'userManagement.identifier': '用户 ID',
+  'userManagement.status': '状态',
+  'userManagement.enabled': '已启用',
+  'userManagement.disabled': '已停用',
+  'userManagement.all': '全部状态',
+  'userManagement.search': '搜索用户',
+  'userManagement.systemAdministrators':
+    '{{count}} 位系统管理员拥有全部权限，不在此列表中。',
+  'userManagement.total': '{{count}} 位用户',
+  'userManagement.previous': '上一页',
+  'userManagement.next': '下一页',
+  'roles.userActions.read': '查看用户',
+  'roles.userActions.update': '修改资料',
+  'roles.userActions.disable': '停用用户',
+  'roles.userActions.enable': '启用用户',
+  'roles.userActions.reset-password': '重置密码',
+  'roles.userActions.assign-role': '分配 Studio 角色',
+  'roles.items.roles': 'Studio 角色',
+  'roles.capabilities.roles.read': '查看 Studio 角色',
+  'roles.capabilities.roles.manage': '管理 Studio 角色',
+
   'auth.passwordResetSuccess': '密码已重置，请用新密码登录。',
   'auth.requestNewResetLink': '重新申请重置链接',
 

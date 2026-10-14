@@ -1,6 +1,6 @@
 /**
  * What Studio allows of each action the plugins register (`catalog.ts`) beyond roles, keyed as Studio names them
- * (`pm.issues/edit`, `pm.members/read`):
+ * (`pm.issues/edit`, `studio.roles/read`):
  *
  * - `keys`: whether an API key's scope may hold it (a permission group covers it, `key-scopes.ts`), or why a person
  *   decides it;
@@ -118,11 +118,15 @@ export const ACTION_POLICIES: Readonly<Record<string, ActionPolicy>> = {
   ...BUSINESS,
   ...settings('pm.general', { read: true, update: true }),
   ...settings('pm.labels', { read: true, update: true }),
-  ...settings('pm.members', {
+  ...settings('pm.members', { invite: true }),
+  ...settings('studio.roles', { read: true, manage: true }),
+  ...settings('user', {
     read: true,
-    invite: true,
-    assign: true,
-    'define-roles': true,
+    'assign-role': true,
+    update: notKeys('Only a signed-in person may change account profiles.'),
+    disable: notKeys('Only a signed-in person may disable accounts.'),
+    enable: notKeys('Only a signed-in person may enable accounts.'),
+    'reset-password': notKeys('Only a signed-in person may reset passwords.'),
   }),
   ...settings('agents.agents', { read: true, manage: true }),
   ...settings('agents.runners', { read: true, manage: true }),

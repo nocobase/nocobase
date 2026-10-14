@@ -784,6 +784,10 @@ describe('@nocobase/app-plugin-users API routes', () => {
       'user-1',
       'teams',
       [],
+      expect.objectContaining({
+        operation: 'replace',
+        actor: { type: 'user', id: 'admin-1' },
+      }),
     );
   });
 
@@ -901,6 +905,7 @@ function createApplication(
     middleware: () => async (context, next) => {
       context.set('authz', {
         identity: { principal: { type: 'user', id: 'admin-1' } },
+        can: async () => false,
         require:
           options.requireAction ??
           (() =>

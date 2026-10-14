@@ -29,7 +29,7 @@ const ROLE_READER: AccessViewer = {
   userId: 'studio-knowledge',
   permissions: {
     scopes: {},
-    settings: { 'pm.members/read': true },
+    settings: { 'studio.roles/read': true },
   } satisfies Permissions,
 };
 

@@ -1,17 +1,15 @@
 import type { ReactElement } from 'react';
 import { Outlet } from 'react-router';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
 
 import { MemberRolesPanel } from './members/member-roles-panel.js';
 
-/**
- * `/config/members`: everyone who uses Studio, system administrators aside, with their roles, and the pending
- * invitations. Roles themselves are the next page (`/config/roles`). Who may change what is the `pm.members` settings
- * item (`assign`, `invite`, `define-roles`), checked again by every endpoint.
- */
+/** The account directory requires user/read; password deep links check their own action. */
 export default function MembersSettingsPage(): ReactElement {
+  const read = useCan({ resource: { type: 'user', id: '*' }, action: 'read' });
   return (
     <>
-      <MemberRolesPanel />
+      {read.can ? <MemberRolesPanel /> : null}
       <Outlet />
     </>
   );

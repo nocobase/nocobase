@@ -134,13 +134,20 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
 
   // People.
   for (const user of DEMO_USERS) {
-    const account = await deps.users.create({
-      name: user.name,
-      username: user.key,
-      email: user.email,
-      password: DEMO_PASSWORD,
-      roleScopes: { studio: [...user.roles] },
-    });
+    const account = await deps.users.create(
+      {
+        name: user.name,
+        username: user.key,
+        email: user.email,
+        password: DEMO_PASSWORD,
+        roleScopes: { studio: [...user.roles] },
+      },
+      {
+        operation: 'create',
+        actor: { type: 'user', id: deps.adminId },
+        credential: 'issued',
+      },
+    );
     userIds.set(user.key, account.id);
     names.set(user.key, user.name);
     created('users');

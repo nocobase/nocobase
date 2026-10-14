@@ -220,6 +220,8 @@ nb-studio user list
 
 List the role scopes and roles a user can be assigned
 
+Requires user/read or user/assign-role; role definition access is not required.
+
 ```bash
 nb-studio user options
 ```

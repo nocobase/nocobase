@@ -59,12 +59,15 @@ export const STUDIO_KEY_SCOPE_GROUPS: readonly KeyScopeGroup[] = [
     title: text('keyScopes.members.title'),
     description: text('keyScopes.members.description'),
     levels: {
-      read: [{ kind: 'settings', id: 'pm.members', action: 'read' }],
+      read: [
+        { kind: 'settings', id: 'user', action: 'read' },
+        { kind: 'settings', id: 'studio.roles', action: 'read' },
+      ],
       write: [
         { kind: 'settings', id: 'pm.members', action: 'invite' },
-        { kind: 'settings', id: 'pm.members', action: 'assign' },
+        { kind: 'settings', id: 'user', action: 'assign-role' },
       ],
-      admin: [{ kind: 'settings', id: 'pm.members', action: 'define-roles' }],
+      admin: [{ kind: 'settings', id: 'studio.roles', action: 'manage' }],
     },
   },
   {

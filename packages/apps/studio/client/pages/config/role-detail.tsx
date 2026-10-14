@@ -3,9 +3,9 @@ import {
   usePageBreadcrumb,
   useUnsavedChangesGuard,
 } from '@nocobase/app-client';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
-  canUseSetting,
   PmDetailSkeleton,
   PmLoadError,
   PmTag,
@@ -188,6 +188,11 @@ function RoleBody({
           />
         </Field>
       ) : null}
+      {role.advancedGrantCount ? (
+        <Alert>
+          <AlertDescription>{t('roles.advancedGrants')}</AlertDescription>
+        </Alert>
+      ) : null}
       <RoleEditor
         catalog={catalog}
         draft={draft}
@@ -200,7 +205,7 @@ function RoleBody({
 
 /**
  * `/config/roles/:roleKey`: one role as a covering page — the pages it opens, the settings it may change and
- * what each business action reaches (`RoleEditor`), saved by whoever holds `pm.members/define-roles`; everyone else
+ * what each business action reaches (`RoleEditor`), saved by whoever holds `studio.roles/manage`; everyone else
  * who may read the member settings sees it read-only. `owner` holds everything and is read-only.
  */
 export default function RoleDetailPage(): ReactElement {
@@ -208,6 +213,10 @@ export default function RoleDetailPage(): ReactElement {
   const { t } = useTranslation();
   const api = useStudioApi();
   const viewer = useViewer();
+  const canDefineRoles = useCan({
+    resource: { type: 'settings', id: 'studio.roles' },
+    action: 'manage',
+  }).can;
   const roles = useQuery({
     queryKey: studioKeys.roles,
     queryFn: () => api.roles(),
@@ -262,7 +271,7 @@ export default function RoleDetailPage(): ReactElement {
         key={role.key}
         catalog={catalog.data}
         role={role}
-        canDefine={canUseSetting(viewer, 'pm.members', 'define-roles')}
+        canDefine={canDefineRoles}
       />
     );
 

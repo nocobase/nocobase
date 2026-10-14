@@ -384,7 +384,12 @@ export function createInvitationManager(
           });
           userId = created.id;
           for (const [key, value] of Object.entries(row.roleScopes))
-            await options.requireScope(key).replace(userId, value, connection);
+            await options.requireScope(key).replace(userId, value, connection, {
+              operation: 'invitation',
+              actor: { type: 'user', id: row.invitedById },
+              credential: 'invitation',
+              invitationId: row.id,
+            });
         }
         if (!(await claimInvitation(connection, row.id, userId, row.tokenHash)))
           throw new UserManagementError(

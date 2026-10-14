@@ -69,13 +69,20 @@ const catalog: AccessCatalog = {
       id: 'pm.members',
       title: text('members'),
       actions: [
-        { key: 'pm.members/read', name: 'read', title: text('read') },
         { key: 'pm.members/invite', name: 'invite', title: text('invite') },
-        {
-          key: 'pm.members/define-roles',
-          name: 'define-roles',
-          title: text('defineRoles'),
-        },
+      ],
+    },
+    {
+      id: 'user',
+      title: text('accounts'),
+      actions: [{ key: 'user/read', name: 'read', title: text('read') }],
+    },
+    {
+      id: 'studio.roles',
+      title: text('roles'),
+      actions: [
+        { key: 'studio.roles/read', name: 'read', title: text('read') },
+        { key: 'studio.roles/manage', name: 'manage', title: text('manage') },
       ],
     },
   ],
@@ -93,9 +100,9 @@ function draft(): RoleDraft {
     settings: {
       'pm.labels/read': true,
       'pm.labels/update': false,
-      'pm.members/read': false,
+      'user/read': false,
       'pm.members/invite': false,
-      'pm.members/define-roles': false,
+      'studio.roles/manage': false,
     },
     abilities: { ...noAbilities(), 'pm.issues/close': 'related' },
   };
@@ -226,10 +233,10 @@ describe('the role editor', () => {
         onChange={onChange}
       />,
     );
-    fireEvent.click(screen.getByRole('switch', { name: 'define-roles' }));
+    fireEvent.click(screen.getByRole('switch', { name: 'manage' }));
     const next = onChange.mock.calls[0]?.[0] as RoleDraft;
-    expect(next.settings['pm.members/define-roles']).toBe(true);
-    expect(next.settings['pm.members/read']).toBe(false);
+    expect(next.settings['studio.roles/manage']).toBe(true);
+    expect(next.settings['user/read']).toBe(false);
   });
 
   it('gives each business action a switch, and the level select only to one with related records', async () => {

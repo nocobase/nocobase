@@ -40,6 +40,8 @@ export interface ManagedUser {
 }
 
 export interface ManagedUserPage {
+  readonly systemAdministratorCount?: number;
+  readonly message?: string;
   readonly items: readonly ManagedUser[];
   readonly total: number;
   readonly page: number;
@@ -143,6 +145,8 @@ interface DataResponse<T> {
 interface ListResponse<T> {
   readonly data: readonly T[];
   readonly meta: {
+    readonly systemAdministratorCount?: number;
+    readonly message?: string;
     readonly page: number;
     readonly pageSize: number;
     readonly total: number;

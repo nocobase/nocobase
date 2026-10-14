@@ -186,6 +186,13 @@ beforeEach(async () => {
           ),
           '@nocobase/app-plugin-authorization',
         ],
+        [
+          path.join(
+            packageRoot('@nocobase/app-plugin-users'),
+            'database/migrations',
+          ),
+          '@nocobase/app-plugin-users',
+        ],
         [path.join(packageRoot(PROJECTS), 'database/migrations'), PROJECTS],
         [path.join(ROOT, 'database/main/migrations'), 'studio'],
       ] as const
@@ -262,7 +269,7 @@ beforeEach(async () => {
   releaseProtections = await service.protectAll();
 });
 afterEach(async () => {
-  releaseProtections();
+  releaseProtections?.();
   await testDatabase.destroy();
 });
 
@@ -531,8 +538,15 @@ describe('a key’s identity', () => {
       apiKeySetOf(id),
     );
     await expect(
-      database.transaction((conn) => scope.replace(id, ['contributor'], conn)),
-    ).rejects.toMatchObject({ code: 'INVALID_ROLE_SCOPE_VALUE' });
+      database.transaction((conn) =>
+        scope.replace(id, ['contributor'], conn, {
+          operation: 'replace',
+          actor: { type: 'user', id: 'root' },
+          credential: 'session',
+          identity: identity('root'),
+        }),
+      ),
+    ).rejects.toMatchObject({ code: 'USER_OUT_OF_SCOPE' });
     // The generic permission-set surface neither lists it nor changes it.
     expect(authz.permissionSets.protection(apiKeySetOf(id))).toMatchObject({
       hidden: true,

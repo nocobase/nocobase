@@ -99,7 +99,7 @@ function relatedWording(
 export interface Catalog extends AccessCatalog {
   /** Every business action key, in catalog order. */
   readonly businessKeys: readonly string[];
-  /** Every settings capability key (`pm.members/read`), in catalog order. */
+  /** Every settings capability key (`studio.roles/read`), in catalog order. */
   readonly settingsKeys: readonly string[];
   /** The business action of a key. */
   action(key: string): CatalogBusinessAction | undefined;
@@ -195,6 +195,30 @@ export function readCatalog(authz: AppAuthorization): Catalog {
         })),
       };
     });
+  for (const item of settings)
+    if (item.id === 'pm.members')
+      (item as { actions: typeof item.actions }).actions = item.actions.filter(
+        (action) => action.name === 'invite',
+      );
+  settings.push({
+    id: 'user',
+    title: { key: 'members.title', ns: '@nocobase/i18n/application' },
+    actions: [
+      'read',
+      'update',
+      'disable',
+      'enable',
+      'reset-password',
+      'assign-role',
+    ].map((name) => ({
+      key: 'user/' + name,
+      name,
+      title: {
+        key: 'roles.userActions.' + name,
+        ns: '@nocobase/i18n/application',
+      },
+    })),
+  });
   return catalogOf({ businesses, settings });
 }
 

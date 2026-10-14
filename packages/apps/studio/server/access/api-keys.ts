@@ -233,6 +233,8 @@ function holds(
       action === 'access' &&
       (holder.pages as readonly string[]).includes(resource.id)
     );
+  if (resource.type === 'user')
+    return resource.id === '*' && holder.settings[`user/${action}`] === true;
   if (resource.type === 'settings')
     return holder.settings[`${resource.id}/${action}`] === true;
   const granted = catalog.grantOf(resource, action);

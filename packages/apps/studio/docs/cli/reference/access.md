@@ -32,52 +32,6 @@ nb-studio access me
 
 **Request:** `GET /api/access/me` (`accessGetMe`)
 
-## access member list
-
-List the members with their roles
-
-Needs `pm.members` `read`. System administrators and API key identities are not listed.
-
-```bash
-nb-studio access member list
-```
-
-**Output:** A list (table columns: `userId`, `name`, `email`, `roles`); with `--json`, `result.data` is the array and `result.meta` the paging.
-
-**Who:** People (a sign-in or an API key).
-
-**Request:** `GET /api/access/members` (`accessListMembers`)
-
-## access member update
-
-Replace a member’s roles
-
-Needs `pm.members` `assign`; only an owner grants or revokes `owner`, and the last owner keeps it.
-
-```bash
-nb-studio access member update <user> --roles <string[]>
-```
-
-| Argument | Description |
-| -------- | ----------- |
-| `user`   |             |
-
-| Flag      | Type     | Description            |
-| --------- | -------- | ---------------------- |
-| `--roles` | string[] | (required; repeatable) |
-
-**Output:** One record, field by field; with `--json`, `result.data`.
-
-**Who:** People (a sign-in or an API key).
-
-**Request:** `PATCH /api/access/members/{userId}` (`accessUpdateMember`)
-
-**Examples:**
-
-```bash
-nb-studio access member update bob --roles admin
-```
-
 ## access org-key create
 
 Create an organization API key
@@ -396,7 +350,7 @@ nb-studio access role get <role>
 
 List the roles
 
-Needs `pm.members` `read`.
+Needs `studio.roles` `read`.
 
 ```bash
 nb-studio access role list
@@ -477,3 +431,49 @@ nb-studio access settings set --default-role <string>
 ```bash
 nb-studio access settings set --default-role contributor
 ```
+
+## access upgrade inspect
+
+Read the Studio access upgrade recovery record
+
+```bash
+nb-studio access upgrade inspect
+```
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key).
+
+**Request:** `GET /api/access/upgrades/pm358` (`accessReadUpgradeChanges`)
+
+## access upgrade prepare
+
+Prepare a credentials-free Studio access upgrade inventory
+
+```bash
+nb-studio access upgrade prepare
+```
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key).
+
+**Request:** `GET /api/access/upgrades/pm358/prepare` (`accessPrepareUpgrade`)
+
+## access upgrade restore
+
+Restore the Studio access grants during maintenance
+
+```bash
+nb-studio access upgrade restore
+```
+
+| Flag    | Type    | Description                                                                                      |
+| ------- | ------- | ------------------------------------------------------------------------------------------------ |
+| `--yes` | boolean | Go ahead without asking “Restore the recorded role grants? All old writers must remain stopped.” |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key).
+
+**Request:** `POST /api/access/upgrades/pm358/restore` (`accessRestoreUpgradeChanges`)

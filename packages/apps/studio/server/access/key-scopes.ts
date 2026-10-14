@@ -24,6 +24,8 @@ export function studioAccessMapping(catalog: () => Catalog): AccessMapping {
   return (ref) => {
     if (ref.kind === 'page')
       return { resource: { type: 'page', id: ref.id }, action: 'access' };
+    if (ref.kind === 'settings' && ref.id === 'user')
+      return { resource: { type: 'user', id: '*' }, action: ref.action };
     if (ref.kind === 'settings')
       return { resource: { type: 'settings', id: ref.id }, action: ref.action };
     const action = catalog().action(`${ref.id}/${ref.action}`);

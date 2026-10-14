@@ -7,13 +7,14 @@
  *   `edit.related`), each level resolved to the users it reaches for them (`scope-levels.ts`); a holder of the
  *   superuser set may do everything.
  * - Someone who becomes a member gets the default role for new members once (`admit`); it may be taken away later.
- * - Who may: `pm.members` `read` lists, `assign` gives and takes roles, `define-roles` creates, edits and deletes
- *   them; `pm.general` `update` changes the default role. Only an owner grants or revokes `owner`, the last owner
+ * - Users actions authorize account reads and role assignment; `studio.roles` authorizes role definitions.
+ *   `pm.general` `update` changes the default role. Only an owner grants or revokes `owner`, the last owner
  *   keeps it (409 `LAST_OWNER`), `owner` is not edited and no built-in role is deleted.
  * - A system administrator (a holder of the superuser set) is not listed and not assigned here.
  * - An organization's API key acts as a hidden identity (a `service` user) holding a permission set of its own
  *   (`api-keys.ts`). That set is never a role, and the identity is never a member nor given a role here.
  */
+import { createStudioUserRoleScope } from './user-scope.js';
 import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
 import type { ProjectsAccess } from '@nocobase/app-plugin-projects/server/tokens';
 import * as projectAccess from '@nocobase/app-plugin-projects/shared/access';
@@ -49,6 +50,7 @@ import {
 import {
   everything,
   grantsOf,
+  preserveUnmanagedGrants,
   narrowedByScope,
   roleOf,
   type Grant,
@@ -275,8 +277,27 @@ export function createStudioAccess(options: StudioAccessOptions): StudioAccess {
   }
 
   function describe(set: PermissionSet, holderIds: readonly string[]): Role {
-    const grants = roleOf(set.grants, catalog());
+    const unmanaged = preserveUnmanagedGrants(
+      set.grants,
+      [],
+      catalog(),
+      new Set(['pages', 'settings', 'abilities']),
+    );
+    const advanced = new Set(unmanaged.flatMap((grant) => grant.actions));
+    const grants = roleOf(
+      set.grants.map((grant) => ({
+        ...grant,
+        actions: grant.actions.filter((action) => !advanced.has(action)),
+      })),
+      catalog(),
+    );
     return {
+      advancedGrantCount: preserveUnmanagedGrants(
+        set.grants,
+        [],
+        catalog(),
+        new Set(['pages', 'settings', 'abilities']),
+      ).reduce((sum, grant) => sum + grant.actions.length, 0),
       key: set.key,
       title: (set.title as Role['title']) ?? null,
       builtIn: BUILT_IN_ROLES.includes(set.key),
@@ -436,7 +457,7 @@ export function createStudioAccess(options: StudioAccessOptions): StudioAccess {
     async list(viewer) {
       requireSetting(
         viewer,
-        'pm.members/read',
+        'studio.roles/read',
         'You may not read the member settings.',
       );
       const conn = database.connection();
@@ -453,7 +474,7 @@ export function createStudioAccess(options: StudioAccessOptions): StudioAccess {
     async get(viewer, key) {
       requireSetting(
         viewer,
-        'pm.members/read',
+        'studio.roles/read',
         'You may not read the member settings.',
       );
       return view(key);
@@ -462,7 +483,7 @@ export function createStudioAccess(options: StudioAccessOptions): StudioAccess {
     async create(viewer, input) {
       requireSetting(
         viewer,
-        'pm.members/define-roles',
+        'studio.roles/manage',
         'Only someone who may define roles may do this.',
       );
       const body = bodyOf(input);
@@ -478,7 +499,7 @@ export function createStudioAccess(options: StudioAccessOptions): StudioAccess {
     async update(viewer, key, input) {
       requireSetting(
         viewer,
-        'pm.members/define-roles',
+        'studio.roles/manage',
         'Only someone who may define roles may do this.',
       );
       if (!isRole(key)) throw notFound('Role');
@@ -506,7 +527,20 @@ export function createStudioAccess(options: StudioAccessOptions): StudioAccess {
       const title =
         body.title === undefined ? existing.title : titleOf(body.title);
       await mapped(
-        async () => void (await sets.update(key, written(key, title, grants))),
+        async () =>
+          void (await sets.update(key, {
+            ...written(key, title, grants),
+            grants: preserveUnmanagedGrants(
+              existing.grants,
+              grantsOf(grants, catalog()),
+              catalog(),
+              new Set(
+                ['pages', 'settings', 'abilities'].filter(
+                  (group) => body[group] !== undefined,
+                ),
+              ),
+            ),
+          })),
       );
       return view(key);
     },
@@ -514,7 +548,7 @@ export function createStudioAccess(options: StudioAccessOptions): StudioAccess {
     async remove(viewer, key) {
       requireSetting(
         viewer,
-        'pm.members/define-roles',
+        'studio.roles/manage',
         'Only someone who may define roles may do this.',
       );
       if (!isRole(key)) throw notFound('Role');
@@ -544,7 +578,7 @@ export function createStudioAccess(options: StudioAccessOptions): StudioAccess {
     async members(viewer) {
       requireSetting(
         viewer,
-        'pm.members/read',
+        'studio.roles/read',
         'You may not read the member settings.',
       );
       const conn = database.connection();
@@ -573,53 +607,24 @@ export function createStudioAccess(options: StudioAccessOptions): StudioAccess {
       const keys = [...new Set(requested as string[])];
       requireSetting(
         viewer,
-        'pm.members/assign',
+        'user/assign-role',
         'Only someone who may assign roles may do this.',
       );
       const result = await database.transaction(async (conn) => {
-        if ((await superusers(conn)).has(userId))
-          throw forbidden(
-            'A system administrator’s roles are not managed here.',
-            'SYSTEM_ADMIN',
-          );
+        await createStudioUserRoleScope(authz, { isRole }, rootSet).replace(
+          userId,
+          keys,
+          conn,
+          {
+            operation: 'replace',
+            actor: { type: 'user', id: viewer.userId },
+            credential: 'issued',
+          },
+        );
         const user = await conn
           .repository<UserRow>('user')
           .findOne({ filter: { id: userId } });
         if (!user) throw notFound('User');
-        // An API key's identity holds exactly the permissions chosen on the key, never a role.
-        if (user.kind === 'service')
-          throw forbidden(
-            'An API key’s permissions are chosen on the key, not by roles.',
-            'API_KEY_IDENTITY',
-          );
-        const available = (await roleSets(conn)).map((set) => set.key);
-        for (const key of keys)
-          if (!available.includes(key))
-            throw invalid('UNKNOWN_ROLE', `There is no role ${key}.`);
-        const assignments = await bound(conn).listAssignments();
-        const current = heldBy(assignments, userId);
-        const operatorIsOwner = heldBy(assignments, viewer.userId).includes(
-          ROLES.owner,
-        );
-        const changed = [
-          ...keys.filter((key) => !current.includes(key)),
-          ...current.filter((key) => !keys.includes(key)),
-        ];
-        if (changed.includes(ROLES.owner) && !operatorIsOwner)
-          throw forbidden('Only an owner may grant or revoke the owner role.');
-        const active = !user.disabledAt && !user.deletedAt;
-        if (!active && keys.some((key) => !current.includes(key)))
-          throw invalid(
-            'USER_DISABLED',
-            'A disabled account cannot be given a role.',
-          );
-        await mapped(() =>
-          bound(conn).replaceSubjectAssignments({
-            subject: { type: 'user', id: userId },
-            managedPermissionSets: available,
-            permissionSets: keys,
-          }),
-        );
         return {
           userId,
           name: nameOf(user),
@@ -627,7 +632,6 @@ export function createStudioAccess(options: StudioAccessOptions): StudioAccess {
           roles: heldBy(await bound(conn).listAssignments(), userId),
         };
       });
-      await sets.notifyAssignmentsChanged({ type: 'user', id: userId });
       return result;
     },
 
