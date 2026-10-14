@@ -50,6 +50,7 @@ import {
   KNOWLEDGE_SUMMARY_MAX,
   KNOWLEDGE_TITLE_MAX,
   type KnowledgeDoc,
+  type KnowledgeAccess,
   type KnowledgeDocSummary,
   type SpaceRef,
 } from '../../shared/knowledge.js';
@@ -384,14 +385,16 @@ function ParentSelect({
   docs,
   value,
   onChange,
+  rootAllowed = true,
 }: {
   readonly docs: readonly KnowledgeDocSummary[];
   readonly value: string | null;
   readonly onChange: (value: string | null) => void;
+  readonly rootAllowed?: boolean;
 }): ReactElement {
   const { t } = useTranslation(ACCESS_NAMESPACE);
   const items = [
-    { value: ROOT, label: t('knowledge.doc.root') },
+    ...(rootAllowed ? [{ value: ROOT, label: t('knowledge.doc.root') }] : []),
     ...docs.map((doc) => ({ value: doc.id, label: doc.title })),
   ];
   return (
@@ -420,6 +423,9 @@ export function NewDocDialog({
   open,
   onOpenChange,
   space,
+  spaceLabel,
+  access,
+  onProposed,
   docs,
   parentId,
   kind: initialKind = 'article',
@@ -428,6 +434,9 @@ export function NewDocDialog({
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly space: SpaceRef;
+  readonly spaceLabel?: string;
+  readonly access?: KnowledgeAccess;
+  readonly onProposed?: () => void;
   readonly docs: readonly KnowledgeDocSummary[];
   readonly parentId: string | null;
   readonly kind?: NewEntryKind;
@@ -443,10 +452,28 @@ export function NewDocDialog({
   const [content, setContent] = useState('');
   const [kind, setKind] = useState<NewEntryKind>(initialKind);
   const [parent, setParent] = useState<string | null>(parentId);
+  const [reason, setReason] = useState('');
+  const rights = parent
+    ? docs.find((doc) => doc.id === parent)?.access
+    : access;
+  const propose = rights !== undefined && !rights.edit;
   const folder = kind === 'folder';
   const create = useMutation({
-    mutationFn: () =>
-      api.create({
+    mutationFn: async () => {
+      if (propose) {
+        await api.propose({
+          kind: 'create',
+          ...space,
+          title,
+          content,
+          summary,
+          ...(slug.trim() ? { slug: slug.trim() } : {}),
+          ...(parent ? { parentId: parent } : {}),
+          reason,
+        });
+        return null;
+      }
+      return api.create({
         ...space,
         kind,
         title,
@@ -454,24 +481,33 @@ export function NewDocDialog({
         ...(summary.trim() && !folder ? { summary: summary.trim() } : {}),
         ...(slug.trim() ? { slug: slug.trim() } : {}),
         ...(parent ? { parentId: parent } : {}),
-      }),
+      });
+    },
     onSuccess: (doc) => {
-      notify.success(t('knowledge.editor.created'));
+      notify.success(
+        t(propose ? 'knowledge.editor.proposed' : 'knowledge.editor.created'),
+      );
       void queryClient.invalidateQueries({ queryKey: knowledgeKeys.all });
-      onCreated(doc);
+      if (propose) onProposed?.();
+      else if (doc) onCreated(doc);
       onOpenChange(false);
     },
     onError: (error) => notify.error(error),
   });
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => !create.isPending && onOpenChange(next)}
+    >
       <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl'>
         <DialogHeader>
           <DialogTitle>
             {folder ? t('knowledge.new.folder') : t('knowledge.new.article')}
           </DialogTitle>
-          <DialogDescription className='sr-only'>
-            {t('knowledge.tree.newDoc')}
+          <DialogDescription className={spaceLabel ? undefined : 'sr-only'}>
+            {spaceLabel
+              ? t('knowledge.directory.target', { title: spaceLabel })
+              : t('knowledge.tree.newDoc')}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -492,11 +528,20 @@ export function NewDocDialog({
               <TabsTrigger value='article'>
                 {t('knowledge.kinds.article')}
               </TabsTrigger>
-              <TabsTrigger value='folder'>
-                {t('knowledge.kinds.folder')}
-              </TabsTrigger>
+              {!propose ? (
+                <TabsTrigger value='folder'>
+                  {t('knowledge.kinds.folder')}
+                </TabsTrigger>
+              ) : null}
             </TabsList>
           </Tabs>
+          {create.isError ? (
+            <Alert variant='destructive'>
+              <AlertDescription>
+                {t('knowledge.directory.createFailed')}
+              </AlertDescription>
+            </Alert>
+          ) : null}
           <Field>
             <FieldLabel htmlFor='knowledge-new-title'>
               {t('knowledge.editor.title')}
@@ -530,7 +575,15 @@ export function NewDocDialog({
               {t('knowledge.editor.parent')}
             </FieldLabel>
             <ParentSelect
-              docs={parentOptions(docs, null)}
+              docs={parentOptions(docs, null).filter((doc) =>
+                folder
+                  ? doc.access.edit
+                  : doc.access.propose || doc.access.edit,
+              )}
+              rootAllowed={
+                !access ||
+                (folder ? access.edit : access.propose || access.edit)
+              }
               value={parent}
               onChange={setParent}
             />
@@ -561,18 +614,42 @@ export function NewDocDialog({
               </Field>
             </>
           )}
+          {propose ? (
+            <Field>
+              <FieldLabel htmlFor='knowledge-new-reason'>
+                {t('knowledge.proposals.reason')} *
+              </FieldLabel>
+              <Input
+                id='knowledge-new-reason'
+                value={reason}
+                required
+                maxLength={KNOWLEDGE_REASON_MAX}
+                onChange={(event) => setReason(event.target.value)}
+              />
+            </Field>
+          ) : null}
         </form>
         <DialogFooter>
-          <Button variant='outline' onClick={() => onOpenChange(false)}>
+          <Button
+            variant='outline'
+            disabled={create.isPending}
+            onClick={() => onOpenChange(false)}
+          >
             {t('knowledge.editor.cancel')}
           </Button>
           <Button
             type='submit'
             form='knowledge-new'
-            disabled={create.isPending || !title.trim()}
+            disabled={
+              create.isPending || !title.trim() || (propose && !reason.trim())
+            }
           >
             {create.isPending ? <Spinner data-icon='inline-start' /> : null}
-            {t('knowledge.editor.create')}
+            {t(
+              propose
+                ? 'knowledge.editor.submitProposal'
+                : 'knowledge.editor.create',
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

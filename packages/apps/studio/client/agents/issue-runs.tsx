@@ -683,6 +683,9 @@ export function IssueRunTranscript({
           </span>
         ) : null}
         {` · ${appT('runTranscript.actingAs', { actor: detail.actorName ?? detail.actorUserId })}`}
+        {detail.confirmedByUserId
+          ? ` · ${appT('runTranscript.confirmedBy', { person: detail.confirmedByName ?? detail.confirmedByUserId })}`
+          : null}
         {triggerActor?.kind === 'system'
           ? ` · ${appT('runTranscript.systemTrigger')}`
           : triggerActor

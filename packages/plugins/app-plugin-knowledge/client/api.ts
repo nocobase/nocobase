@@ -99,6 +99,15 @@ export interface KnowledgeSubjectResults {
   readonly types: readonly KnowledgeSubjectType[];
 }
 
+export interface KnowledgeProposalPage {
+  readonly data: readonly KnowledgeProposal[];
+  readonly meta: {
+    readonly page: number;
+    readonly pageSize: number;
+    readonly total: number;
+  };
+}
+
 const base = 'knowledge';
 const LIST_PAGE_SIZE = 100;
 const docPath = (id: string) => `${base}/docs/${encodeURIComponent(id)}`;
@@ -239,19 +248,69 @@ export class KnowledgeApi {
     });
   }
 
-  public proposals(
-    space: SpaceRef | null,
+  /** The server counts after permission filtering; the badge does not count a partially loaded page. */
+  public async reviewTotal(signal?: AbortSignal): Promise<number> {
+    const response = await this.api.request<{
+      data: KnowledgeProposal[];
+      meta: { total: number };
+    }>({
+      path: `${base}/proposals`,
+      query: { status: 'pending', decidable: 'true', page: 1, pageSize: 1 },
+      signal,
+    });
+    return response.meta.total;
+  }
+
+  public proposalPage(
+    page: number,
+    status: KnowledgeProposalStatus,
+    decidable: boolean,
+    docId: string | null,
     signal?: AbortSignal,
-    status: KnowledgeProposalStatus = 'pending',
-  ): Promise<KnowledgeProposal[]> {
-    return this.list<KnowledgeProposal>({
+  ): Promise<KnowledgeProposalPage> {
+    return this.api.request<KnowledgeProposalPage>({
       path: `${base}/proposals`,
       query: {
+        page,
+        pageSize: 20,
         status,
-        ...(space ? { scope: space.scope, scopeId: space.scopeId } : {}),
+        ...(decidable ? { decidable: 'true' } : {}),
+        ...(docId ? { docId } : {}),
       },
       signal,
     });
+  }
+
+  public async proposals(
+    space: SpaceRef | null,
+    signal?: AbortSignal,
+    status: KnowledgeProposalStatus = 'pending',
+    decidable = false,
+  ): Promise<KnowledgeProposal[]> {
+    const result: KnowledgeProposal[] = [];
+    let page = 1;
+    let total = Infinity;
+    while (result.length < total) {
+      const response = await this.api.request<{
+        data: KnowledgeProposal[];
+        meta: { total: number };
+      }>({
+        path: `${base}/proposals`,
+        query: {
+          status,
+          page,
+          pageSize: LIST_PAGE_SIZE,
+          ...(decidable ? { decidable: 'true' } : {}),
+          ...(space ? { scope: space.scope, scopeId: space.scopeId } : {}),
+        },
+        signal,
+      });
+      result.push(...response.data);
+      total = response.meta.total;
+      if (response.data.length === 0) break;
+      page++;
+    }
+    return result;
   }
 
   public proposal(
@@ -486,11 +545,13 @@ export function useKnowledgeRefresh(): void {
 export function useKnowledgeTree(
   space: SpaceRef,
   archived = false,
+  enabled = true,
 ): UseQueryResult<KnowledgeTree> {
   const api = useKnowledgeApi();
   return useQuery({
     queryKey: knowledgeKeys.tree(space, archived),
     queryFn: ({ signal }) => api.tree(space, archived, signal),
+    enabled,
     retry: false,
   });
 }
@@ -591,11 +652,14 @@ export function useKnowledgeChunking(
 export function useKnowledgeProposals(
   space: SpaceRef | null,
   status: KnowledgeProposalStatus = 'pending',
+  decidable = false,
+  enabled = true,
 ): UseQueryResult<KnowledgeProposal[]> {
   const api = useKnowledgeApi();
   return useQuery({
-    queryKey: knowledgeKeys.proposals(space, status),
-    queryFn: ({ signal }) => api.proposals(space, signal, status),
+    queryKey: [...knowledgeKeys.proposals(space, status), decidable],
+    queryFn: ({ signal }) => api.proposals(space, signal, status, decidable),
+    enabled,
     retry: false,
   });
 }

@@ -1,5 +1,7 @@
 // The real daemon and isolated workers, with a deterministic tool and local Git remote.
 import { existsSync, readdirSync } from 'node:fs';
+import { runTempName, runTempRoot } from '../src/core/run-temp.ts';
+import { runnerPaths } from '../src/lib/home.ts';
 import path from 'node:path';
 import { expect, it } from 'vitest';
 import { FakeServer, waitFor } from './fake-server.ts';
@@ -200,6 +202,15 @@ it.each(['completed', 'failed', 'cancelled'] as const)(
           first.status === ending && !existsSync(String(first.start?.workDir)),
         30_000,
         'saved and removed first attempt',
+      );
+      const tmp = path.join(
+        await runTempRoot(runnerPaths(home)),
+        runTempName(String(first.start?.workDir)),
+      );
+      await waitFor(
+        () => !existsSync(tmp),
+        5_000,
+        'temporary directory removal',
       );
       expect(
         git(

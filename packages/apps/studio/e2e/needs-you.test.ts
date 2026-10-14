@@ -65,6 +65,7 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
   await signIn(context, owner);
   const me = await api.get<{ userId: string }>('projects/me');
   const settings = await api.get<{
+    name: string;
     firstChoiceAgentId: string | null;
     fallbackAgentId: string | null;
     commentRunLimit: number;
@@ -73,6 +74,7 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
   const agent = await runner.agent();
   await api.patch('users/me/preferences', { locale: 'en-US' });
   await api.patch('projectManager', {
+    name: 'Project manager',
     firstChoiceAgentId: agent,
     fallbackAgentId: null,
   });
@@ -363,17 +365,25 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
       'First implementation report.',
       codingHeaders,
     );
-    await runner.complete(
-      limited.running.runId,
-      'Received the first implementation report.',
+    // A new comment has its own authorization chain instead of being injected into the earlier running manager.
+    const earlier = await api.get<{ inputs: { text: string }[] }>(
+      `agents/runs/${limited.running.runId}`,
     );
+    expect(
+      earlier.inputs.some(
+        (input) => input.text === 'First implementation report.',
+      ),
+    ).toBe(false);
+    await runner.complete(limited.running.runId, 'Done.');
+    const reportRun = await runner.start(limited.issue.identifier);
     await comment(
       api,
       limited.issue,
       'Second implementation report.',
       codingHeaders,
     );
-    await coder.complete(coding.runId, 'Posted both implementation reports.');
+    await coder.complete(coding.runId, 'Done.');
+    await runner.complete(reportRun.runId, 'Done.');
     await expect
       .poll(() => api.get(`issueCommentRuns/${limited.issue.id}`))
       .not.toBeNull();
@@ -432,6 +442,7 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     }
   } finally {
     await api.patch('projectManager', {
+      name: settings.name,
       firstChoiceAgentId: settings.firstChoiceAgentId,
       fallbackAgentId: settings.fallbackAgentId,
       commentRunLimit: settings.commentRunLimit,

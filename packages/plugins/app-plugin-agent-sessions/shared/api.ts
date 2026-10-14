@@ -10,6 +10,7 @@ import type {
 } from '@nocobase/acp-bridge/protocol';
 
 export type {
+  DiscoveredChoices,
   AgentInfo,
   FolderListing,
   PromptContent,
@@ -36,7 +37,7 @@ export interface Computer {
   readonly home: string | null;
   readonly roots: readonly string[];
   readonly agents: readonly AgentInfo[];
-  /** What each agent offered in its latest session here, by agent id: the choices a new session starts from. */
+  /** Historical choices from the latest session; new sessions discover their own choices. */
   readonly choices: Readonly<Record<string, readonly SessionChoice[]>>;
   /** The slash commands each agent offered in its latest session here, by agent id, for a new session. */
   readonly commands: Readonly<Record<string, SessionState['commands']>>;

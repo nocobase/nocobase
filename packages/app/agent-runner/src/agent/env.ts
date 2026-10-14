@@ -9,7 +9,7 @@
 // Tool detection runs in the same environment, without the run's own (`detectionEnv`), so a tool that reads its login
 // or its key from a variable is detected as it will run.
 //
-// HOME is the real home of the user the runner runs as. The runner then sets what it owns: TMPDIR (inside the working
+// HOME is the real home of the user the runner runs as. The runner then sets what it owns: TMPDIR/TMP/TEMP (the short private run temporary
 // directory), Codex's CODEX_HOME (codex-home.ts), the machine's shared pnpm store (core/pnpm-store.ts), the runner's own Node.js and pnpm with pnpm kept from
 // switching versions (runner-tools.ts), the run's process tag (`AGENT_RUN_PROCESS_TAG`,
 // which marks what the tool starts as the run's, see core/process-tree.ts), the application CLI's directory first on
@@ -120,7 +120,7 @@ export function forbidden(name: string): boolean {
     /^(NOCOBASE_RUNNER_|AGENT_RUN_|GIT_CONFIG|GIT_DIR$|GIT_WORK_TREE$|GIT_EXEC_PATH$)/i.test(
       name,
     ) ||
-    ['PATH', 'HOME', 'TMPDIR', 'CODEX_HOME'].includes(name) ||
+    ['PATH', 'HOME', 'TMPDIR', 'TMP', 'TEMP', 'CODEX_HOME'].includes(name) ||
     PNPM_STORE_ENV.includes(name.toLowerCase()) ||
     !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)
   );
@@ -197,7 +197,8 @@ export function buildAgentEnv(
       env.PATH === undefined || env.PATH === ''
         ? options.binDir
         : `${options.binDir}${path.delimiter}${env.PATH}`;
-  if (options.tmpDir !== undefined) env.TMPDIR = options.tmpDir;
+  if (options.tmpDir !== undefined)
+    for (const name of ['TMPDIR', 'TMP', 'TEMP']) env[name] = options.tmpDir;
   if (options.codexHome !== undefined) env.CODEX_HOME = options.codexHome;
   if (options.pnpmStoreDir !== undefined)
     Object.assign(

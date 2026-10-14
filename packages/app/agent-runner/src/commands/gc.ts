@@ -1,5 +1,6 @@
 import { Flags, type Interfaces } from '@oclif/core';
 
+import { gcRunTemps } from '../core/run-temp.ts';
 import { RunnerCommand } from '../lib/command.ts';
 import {
   minFreeDisk,
@@ -48,6 +49,7 @@ interface GcWorkspace {
 
 interface GcResult {
   applied: boolean;
+  temporaryDirectories: { dir: string; removed: boolean }[];
   /** The disk holding the working directories; null when the file system cannot say. */
   disk: { freeBytes: number; totalBytes: number } | null;
   /** What the runner keeps free on it (`min-free-disk`); null for nothing. */
@@ -170,6 +172,11 @@ export default class Gc extends RunnerCommand {
       }
       after = await readDisk(this.paths.workRoot);
     }
+    const temporaryDirectories = await gcRunTemps(this.paths, apply);
+    for (const item of temporaryDirectories)
+      this.log(
+        `${item.removed ? 'removed' : 'would remove'} run temporary directory: ${item.dir}`,
+      );
     const workspaces: GcWorkspace[] = entries
       .sort((a, b) => Date.parse(a.lastUsedAt) - Date.parse(b.lastUsedAt))
       .map((entry) => ({
@@ -235,6 +242,7 @@ export default class Gc extends RunnerCommand {
       this.log(`${warning.charAt(0).toUpperCase()}${warning.slice(1)}`);
     return {
       applied: apply,
+      temporaryDirectories,
       disk:
         after === undefined
           ? null

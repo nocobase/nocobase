@@ -26,7 +26,10 @@ import {
   validIssueOwner,
 } from '../execution-identity.js';
 import { userName } from '../work.js';
-import { ownerHandoffWaiting } from '../../issues/owner-handoff.js';
+import {
+  ownerHandoffWaiting,
+  readOwnerHandoff,
+} from '../../issues/owner-handoff.js';
 
 /** How much of a step or a question the line carries. */
 const LINE_LENGTH = 160;
@@ -131,6 +134,70 @@ export async function issueProgress(
     next,
     handOver: managed && open && managerRuns.length === 0,
   };
+
+  if (viewer?.userId && deps.agents.runs.requests) {
+    const handoff = await readOwnerHandoff(conn, issue.id);
+    const requests = await deps.agents.runs.requests.list({
+      userId: viewer.userId,
+      subject,
+      limit: 50,
+    });
+    const personalRunnerRequests: NonNullable<
+      IssueProgress['personalRunnerRequests']
+    >[number][] = [];
+    for (const request of requests) {
+      if (
+        request.purpose !== 'personalRunner' ||
+        request.runId ||
+        !request.commentRootRunId ||
+        request.responsibleUserId !== issue.ownerUserId ||
+        (request.commentOwnerKey ?? null) !==
+          (handoff?.notificationKey ?? null) ||
+        !['pending', 'rejected'].includes(request.status)
+      )
+        continue;
+      if (request.status === 'pending' && request.commentRunId) {
+        const target = await deps.agents.runs.identityInputs(
+          conn,
+          request.commentRunId,
+        );
+        if (target?.run.status !== 'queued') continue;
+      }
+      const origin = await deps.agents.runs.identityInputs(
+        conn,
+        request.commentRootRunId,
+      );
+      const input =
+        origin?.inputs.find(
+          (input) =>
+            input.type === 'comment' &&
+            (input.payload as Record<string, unknown> | null)
+              ?.commentSourceSnapshot === true,
+        ) ?? origin?.inputs.find((input) => input.type === 'comment');
+      const payload =
+        input?.payload && typeof input.payload === 'object'
+          ? (input.payload as Record<string, unknown>)
+          : {};
+      if (!input || typeof payload.commentId !== 'string') continue;
+      personalRunnerRequests.push({
+        id: request.id,
+        status: request.status as 'pending' | 'rejected',
+        requestedBy: {
+          id: request.requestedByUserId,
+          name: request.requestedByName ?? input.actor.name,
+        },
+        commentId: payload.commentId,
+        commentText: input.text,
+        canDecide:
+          !handoff?.waiting &&
+          request.status === 'pending' &&
+          viewer.userId === issue.ownerUserId,
+        canRunAsMe:
+          !handoff?.waiting && viewer.userId === request.requestedByUserId,
+      });
+    }
+    base = { ...base, personalRunnerRequests };
+  }
 
   if (issue.statusKey === 'blocked') {
     const transition = await conn
