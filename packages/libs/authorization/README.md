@@ -447,6 +447,8 @@ await database.transaction(async (connection) => {
 });
 ```
 
+`replaceSubjectAssignments` accepts an optional server-side `beforeReplace: () => Promise<void>` validation callback only on an API bound with `withTransaction`. It runs after protection locks and before assignment reads or writes. Perform validation through that same transaction connection; throwing aborts the replacement and lets the caller roll back the entire operation. The callback is never accepted by HTTP management routes. It does not bind an independent runtime authorization context to the transaction. Callers without a callback retain their existing behavior.
+
 ### Exports
 
 | Export                                | Kind     | Signature                                                                                                                                                                                                                                           | Purpose                                                      |
