@@ -1,14 +1,19 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router';
+import { useEffect } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import {
   AuthenticationProvider,
   GuestAuthentication,
   RequiredAuthentication,
+  useAuthentication,
 } from '../../auth-provider.js';
 
 const useService = vi.hoisted(() => vi.fn());
-vi.mock('@nocobase/app-client', () => ({ useService }));
+vi.mock('@nocobase/app-client', () => ({
+  useService,
+  realtimeClientToken: 'realtime',
+}));
 
 function Device() {
   const [params] = useSearchParams();
@@ -62,4 +67,35 @@ describe('AuthenticationGuard', () => {
       expect(await screen.findByText(expected)).toBeInTheDocument();
     },
   );
+
+  it('connects realtime again once the signed-in person changes', async () => {
+    const reconnect = vi.fn();
+    let session: unknown = null;
+    const getSession = vi.fn(async () => ({ data: session }));
+    useService.mockReturnValue({ getSession, reconnect });
+    const captured: { refresh?: () => Promise<void> } = {};
+    function Capture() {
+      const { refresh } = useAuthentication();
+      useEffect(() => {
+        captured.refresh = refresh;
+      });
+      return <div>Ready</div>;
+    }
+    const refresh = () => captured.refresh!();
+    render(
+      <MemoryRouter>
+        <AuthenticationProvider>
+          <Capture />
+        </AuthenticationProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByText('Ready');
+    await act(async () => refresh());
+    expect(reconnect).not.toHaveBeenCalled();
+    session = { user: { id: 'user' }, session: { id: 'session' } };
+    await act(async () => refresh());
+    expect(reconnect).toHaveBeenCalledOnce();
+    await act(async () => refresh());
+    expect(reconnect).toHaveBeenCalledOnce();
+  });
 });

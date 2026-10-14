@@ -474,6 +474,7 @@ export default class StudioAgentsProvider extends ServiceProvider<Application> {
         .resolve(realtimeServiceToken)
         .defineTopic<StudioIssueRunsEvent, 'public'>(STUDIO_ISSUE_RUNS_TOPIC, {
           audience: 'public',
+          authenticated: true,
         });
       const database = container.resolve(databaseManagerToken);
       const stop = announceIssueRuns({

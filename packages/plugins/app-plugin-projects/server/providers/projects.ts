@@ -116,8 +116,10 @@ export class ProjectsProvider extends ServiceProvider<AppPluginApplication> {
     if (container.has(realtimeServiceToken)) {
       const topic = container
         .resolve(realtimeServiceToken)
+        // Announcements name issues by id: signed-in connections only.
         .defineTopic<PmChangeEvent, 'public'>(PM_REALTIME_TOPIC, {
           audience: 'public',
+          authenticated: true,
         });
       const announcer = createChangeAnnouncer((change) =>
         topic.publish(change),
