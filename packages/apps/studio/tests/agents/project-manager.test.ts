@@ -287,7 +287,6 @@ describe('the project manager’s settings', () => {
             modelEntries: agent.modelEntries,
             status: agent.status,
             instructions: agent.instructions,
-            skillIds: agent.skillIds,
             toolPolicy: agent.toolPolicy,
             history: await h.agents.agents.history(id),
           };

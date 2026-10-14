@@ -109,7 +109,7 @@ describe('skill pages', () => {
         },
       ],
       attachments: [
-        { scope: 'agent', scopeId: 'a1', name: 'Coder' },
+        { scope: 'global', scopeId: 'default', name: null },
         { scope: 'project', scopeId: 'p1', name: null },
       ],
     });
@@ -120,7 +120,6 @@ describe('skill pages', () => {
             name: 'pr-etiquette',
             version: 2,
             fileCount: 2,
-            agentCount: 1,
             scriptCount: 1,
             scripts: ['scripts/check.sh'],
             compatibility: 'Needs git',
@@ -177,7 +176,7 @@ describe('skill pages', () => {
     );
   });
 
-  it('lists skills with their scripts, compatibility, version and agents', async () => {
+  it('lists skills with their scripts, compatibility, version and scope defaults', async () => {
     renderPage(<SkillsPage />);
     const row = await screen.findByTestId('skill-s1');
     expect(within(row).getByText('pr-etiquette')).toBeInTheDocument();
@@ -192,7 +191,8 @@ describe('skill pages', () => {
     renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
     expect(await screen.findByText('Pull requests')).toBeInTheDocument();
     expect(screen.queryByText(/name: pr-etiquette/u)).toBeNull();
-    expect(screen.getByText('Coder')).toBeInTheDocument();
+    expect(screen.queryByText('Coder')).not.toBeInTheDocument();
+    expect(screen.queryByText('skills.mountedAgents')).not.toBeInTheDocument();
     expect(screen.getByTestId('skill-scripts-note')).toHaveTextContent(
       'skills.scriptsNote',
     );
