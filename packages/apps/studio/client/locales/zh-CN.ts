@@ -1051,6 +1051,8 @@ const zhCN: AppResource = {
       stageEntered: '流程阶段',
       planDecided: '计划已决定',
       prChecksFailed: '检查失败',
+      stepEnded: '执行步骤已结束',
+      managerIdle: '空闲等待复核',
       prChecksPassed: '检查通过',
       started: '开始',
       prConflict: 'PR 冲突',

@@ -320,14 +320,18 @@ export async function reposToPoll(
 // --- Pull requests -------------------------------------------------------------------------------------------------
 
 export interface SignalState {
-  /** `<kind>@<headSha>` of the signal last reported. */
+  /** Kind, head and effective round of the observed signal. */
   readonly key: string;
-  /** How many heads in a row it was reported for. */
+  /** Observed failure rounds; per-issue delivery budgets live in `counts`. */
   readonly count: number;
+  readonly delivered?: Readonly<Record<string, string>>;
+  readonly counts?: Readonly<Record<string, number>>;
 }
 
 export type Signals = Readonly<
-  Partial<Record<'checks' | 'conflict' | 'passed', SignalState>>
+  Partial<Record<'checks' | 'conflict' | 'passed', SignalState>> & {
+    observed?: { fingerprint: string; round: number };
+  }
 >;
 
 export interface PullRequestRow {

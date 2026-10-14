@@ -125,6 +125,10 @@ const TRIGGER_TASKS: Readonly<Record<string, string>> = {
     'An earlier attempt did not finish. Start again from where the issue is now.',
   prChecksFailed:
     'The checks of a pull request of this issue failed. Decide who reads the failure or fixes it.',
+  stepEnded:
+    'A delegated worker reached a terminal state; read its run and dispatch thread before handing work on.',
+  managerIdle:
+    'Idle waiting timed out once in this activity period; recheck runs and checks before deciding what next.',
   prChecksPassed:
     'The checks of a pull request of this issue passed. Decide whether the change is ready for acceptance.',
   prConflict:
@@ -392,6 +396,8 @@ const MANAGER_ONLY_TRIGGERS: ReadonlySet<string> = new Set([
   'prChecksFailed',
   'prChecksPassed',
   'prConflict',
+  'stepEnded',
+  'managerIdle',
 ]);
 
 /**

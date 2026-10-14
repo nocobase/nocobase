@@ -1,3 +1,6 @@
+import type { ScheduleExecutor } from '@nocobase/jobs';
+import { scheduleManagerWake } from './manager/wake-job.js';
+import { sweepManagerIdle } from './manager/idle.js';
 /**
  * Studio's join of the agents plugin and the projects plugin; neither plugin knows the other. The agents plugin knows
  * no domain of its own, so Studio fills its extension points with projects and issues. Binding it:
@@ -96,7 +99,11 @@ import { inactiveUsers } from './users.js';
 import { createAgentWork } from './work.js';
 import { commentRunNoticeRule } from './comment-run-limit.js';
 import { delegationTimeout } from './delegated-queue.js';
-import { stageRunReport, reportCommentRuns } from './run-report.js';
+import {
+  stageRunReport,
+  reportCommentRuns,
+  drainRunReports,
+} from './run-report.js';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { bindCommentConsentInbox } from './comment-consent-inbox.js';
 import {
@@ -154,6 +161,8 @@ export interface StudioAgentsDeps {
    * (`notices.ts`); 0 waits forever. `DEFAULT_QUEUED_EXPIRY_HOURS` when left out.
    */
   readonly queuedExpiryMs?: number;
+  readonly managerIdleMinutes?: number;
+  readonly wakeExecutor?: ScheduleExecutor | null;
   /** Follows the work conversations hand to agents (`conversation/delegation.ts`); nothing is followed without. */
   readonly delegations?: Delegations;
   readonly onError?: (message: string, error: unknown) => void;
@@ -163,7 +172,7 @@ export interface StudioAgentsDeps {
 export const DEFAULT_QUEUED_EXPIRY_HOURS = 24;
 
 /** Connects agents to issues; returns what disconnects them. */
-export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
+export function bindStudioAgents(deps: StudioAgentsDeps): () => Promise<void> {
   const { agents } = deps;
   const onError =
     deps.onError ?? ((message, error) => console.error(message, error));
@@ -172,6 +181,45 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
   const viewerOf = (userId: string) =>
     permissions.viewerOf({ kind: 'user', userId, displayName: userId });
   const work = createAgentWork({ agents, projects: deps.projects, viewerOf });
+  const authorizeReport = async (
+    _conn: import('@nocobase/db').DatabaseConnection,
+    run: import('@nocobase/app-plugin-agents/shared/runs').Run,
+  ) => {
+    const context = await deps
+      .projects()
+      .issueContext.contextFor(_conn, run.subject.id);
+    const viewer = await viewerOf(context?.owner.id ?? run.actorUserId);
+    if (
+      viewer.permissions.scopes[businessKey('pm.issues', 'comment')] === 'none'
+    )
+      throw new Error('The acting user may no longer comment on this issue.');
+    await deps.projects().issueQueries.detail(viewer, run.subject.id);
+    return context?.owner.id ?? run.actorUserId;
+  };
+  let stopped = false;
+  const wakeSchedule = scheduleManagerWake(
+    async () => {
+      if (stopped) return;
+      await drainRunReports(
+        agents,
+        deps.projects(),
+        new Date(),
+        authorizeReport,
+        work,
+      );
+      await sweepManagerIdle(
+        agents,
+        deps.projects(),
+        work,
+        deps.managerIdleMinutes ?? 15,
+      );
+    },
+    deps.wakeExecutor ?? null,
+    (error) => onError('Studio could not check manager idle periods.', error),
+  );
+  void wakeSchedule.catch((error) =>
+    onError('Studio could not schedule manager idle checks.', error),
+  );
   const direct = createDirectWrites({ agents, projects: deps.projects });
   const principal = createRunPrincipal({
     askerOf,
@@ -302,17 +350,8 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
           'Agents could not report a run an agent comment started.',
           error,
         ),
-      async (_conn, run) => {
-        const viewer = await viewerOf(run.actorUserId);
-        if (
-          viewer.permissions.scopes[businessKey('pm.issues', 'comment')] ===
-          'none'
-        )
-          throw new Error(
-            'The acting user may no longer comment on this issue.',
-          );
-        await deps.projects().issueQueries.detail(viewer, run.subject.id);
-      },
+      authorizeReport,
+      work,
     ),
     releaseRemovedAgents(agents, deps.projects, (error) =>
       onError('Agents could not clear a removed agent as executor.', error),
@@ -364,7 +403,13 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
           );
       }),
     );
-  return () => {
+  return async () => {
+    stopped = true;
+    await wakeSchedule
+      .then((stop) => stop())
+      .catch((error) =>
+        onError('Studio could not stop manager wake checks.', error),
+      );
     for (const release of releases.splice(0).reverse()) release();
   };
 }

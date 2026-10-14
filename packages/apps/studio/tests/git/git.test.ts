@@ -421,7 +421,9 @@ describe('pull requests', () => {
     expect(await passed()).toEqual([
       expect.objectContaining({
         type: 'signal',
-        text: expect.stringContaining('All checks of pull request'),
+        text: expect.stringContaining(
+          'Currently reported required checks of pull request',
+        ),
         payload: expect.objectContaining({
           trigger: 'prChecksPassed',
           number: 15,

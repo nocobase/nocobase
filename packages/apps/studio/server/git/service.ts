@@ -825,7 +825,10 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         ? { status: null, runs: null }
         : { status: pr.statusEtag, runs: pr.runsEtag },
     );
-    if (pull.notModified && !ci) return;
+    if (pull.notModified && !ci) {
+      await flow.retrySignals(repo, pr);
+      return;
+    }
     await flow.store(repo, snapshot, {
       ...(pull.notModified ? {} : { pullEtag: pull.etag }),
       ...(ci ? { ci } : {}),
@@ -1042,7 +1045,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
   async function receiveChecks(
     repo: RepoRow,
     sha: string,
-    reported: PullRequestCiState | null,
+    _reported: PullRequestCiState | null,
   ) {
     const prs = await linkedOpenAtHead(conn(), repo.id, sha);
     if (prs.length === 0) return 'notLinked' as const;
@@ -1050,11 +1053,12 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     // be read (a private repository without a connection).
     const ci = await readAuth(repo)
       .then((auth) => readCi(auth, repo, sha, { status: null, runs: null }))
-      .catch((): Ci | null =>
-        reported === null
-          ? null
-          : { ciState: reported, checks: [], statusEtag: null, runsEtag: null },
-      );
+      .catch((): Ci | null => {
+        console.error(
+          'Studio could not read the complete check set; awaiting a fresh snapshot.',
+        );
+        return null;
+      });
     if (ci)
       for (const pr of prs) await flow.store(repo, snapshotOfRow(pr), { ci });
     return null;

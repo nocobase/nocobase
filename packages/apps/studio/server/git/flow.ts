@@ -1,3 +1,10 @@
+import {
+  commentGuards,
+  commentGuardId,
+  recentCommentRunCount,
+} from '../agents/comment-guard.js';
+import { readManagerSettings } from '../agents/manager/settings.js';
+import { createHash } from 'node:crypto';
 /**
  * What a pull request's state does to its issues. Every read of the code host ends here (`store`): a webhook delivery, the poller, a merge check, a link,
  * a refresh, a merge preflight, a merge or a person marking it merged.
@@ -10,13 +17,13 @@
  *   the followers of every linked issue hear it (`pr_merged`, `notices.ts`).
  * - **Closed** without a merge: merge cards settle `closed`.
  * - **Signals**, while it is open: failed required checks and a conflict (`mergeableState = dirty`) wake the agent
- *   executing each linked issue (an issue run input, trigger `prChecksFailed` / `prConflict`), once per head commit, at
- *   most `SIGNAL_WAKE_LIMIT` heads in a row; after that the owner is told instead. Passing checks or a known mergeable
+ *   executing each linked issue (an issue run input, trigger `prChecksFailed` / `prConflict`), once per effective round and issue, at
+ *   most `SIGNAL_WAKE_LIMIT` consecutive delivered failures; after that the owner is told instead. Passing checks or a known mergeable
  *   state clear the count. A repository can turn each signal off. Checks wake the agent only once every required check of
  *   the head has finished, and a failed reference check (`RepoRow.referenceChecks`) never does (`checkSummaryOf`). The
  *   input names every failed check and carries why it failed (`GitFlowDeps.explain`, read before the transaction):
  *   annotations and the failing part of each log, or where another CI keeps it.
- *   Required checks that all finished without failure wake it once per head (`prChecksPassed`).
+ *   Required checks that all finished without failure wake it once per effective round and issue (`prChecksPassed`).
  *
  * Writes run in one projects transaction, so the issue moves and the stored state commit together; inbox items go out
  * after the commit.
@@ -68,7 +75,7 @@ import {
 export interface GitFlowDeps {
   readonly projects: () => Pick<
     Projects,
-    'tx' | 'statusEvents' | 'issueContext' | 'activity'
+    'tx' | 'statusEvents' | 'issueContext' | 'activity' | 'subtasks'
   >;
   readonly agents: () => Pick<Agents, 'agents' | 'runs'> | undefined;
   readonly inbox: () => StudioInboxPort | undefined;
@@ -103,6 +110,8 @@ export interface GitFlow {
     snapshot: PullRequestSnapshot,
     options?: StoreOptions,
   ): Promise<PullRequestRow>;
+  /** Retry undelivered signals on an unchanged authoritative snapshot, without recording fresh PR activity. */
+  retrySignals(repo: RepoRow, pr: PullRequestRow): Promise<void>;
   /** An issue entered In review, or a pull request was linked while it was there: cards for its ready pull requests. */
   requestMerges(issueId: string, onlyPullRequestId?: string): Promise<void>;
   /** An issue left In review for anything but a merge: its cards are withdrawn. */
@@ -110,6 +119,26 @@ export interface GitFlow {
 }
 
 type After = (() => Promise<void>)[];
+
+/** Only effective check results define a round; polling times, links and reference checks do not. */
+export function checksFingerprint(
+  pr: Pick<PullRequestRow, 'headSha' | 'checks' | 'ciState'>,
+  references: readonly string[],
+): string {
+  const checks = pr.checks
+    .filter((c) => !isReferenceCheck(c.name, references))
+    .map((c) => [
+      c.kind,
+      c.name.trim(),
+      c.executionId ?? null,
+      c.status,
+      c.conclusion,
+    ])
+    .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  return createHash('sha256')
+    .update(JSON.stringify([pr.headSha, checks.length ? checks : pr.ciState]))
+    .digest('hex');
+}
 
 type Signal = 'checks' | 'conflict' | 'passed';
 
@@ -238,7 +267,7 @@ function signalText(
 ): string {
   const ref = `${pr.repo}#${pr.number} (${pr.url}, branch \`${pr.headRef}\`, head ${pr.headSha.slice(0, 12)})`;
   if (signal === 'passed')
-    return `All checks of pull request ${ref} passed. Decide whether the change is ready for acceptance.`;
+    return `Currently reported required checks of pull request ${ref} passed. Verify the complete expected check set, then decide whether the change is ready for acceptance.`;
   return signal === 'checks'
     ? checksText(
         ref,
@@ -356,13 +385,19 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
     repo: RepoRow,
     pr: PullRequestRow,
     signal: Signal,
-    count: number,
+    _count: number,
     after: After,
     explained: readonly FailedCheck[] | null,
-  ): Promise<void> {
+  ): Promise<string[]> {
+    const delivered: string[] = [];
     const summary = checkSummaryOf(pr, repo.referenceChecks);
     const agents = deps.agents();
     for (const link of await linksOfPullRequest(tx.conn, pr.id)) {
+      await tx.conn.query
+        .updateTable('pmIssues')
+        .set({ id: link.issueId })
+        .where('id', '=', link.issueId)
+        .execute();
       const issue = await deps
         .projects()
         .issueContext.contextFor(tx.conn, link.issueId);
@@ -382,11 +417,38 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
         tx.emit({ type: 'issue.changed', issueId: issue.id });
         continue;
       }
-      if (issue.executor?.type !== AGENT_KIND) continue;
-      if (signal !== 'passed' && count > SIGNAL_WAKE_LIMIT) {
+      if (issue.executor?.type !== AGENT_KIND || issue.status.key === 'backlog')
+        continue;
+      if (pr.signals[signal]?.delivered?.[issue.id] === pr.signals[signal]?.key)
+        continue;
+      const held = await commentGuards(tx.conn).findOne({
+        filter: { id: commentGuardId(issue.id) },
+      });
+      const businessIssue = await tx.conn
+        .repository<
+          import('@nocobase/app-plugin-projects/shared/issues').Issue
+        >('pmIssues')
+        .findOne({ filter: { id: issue.id } });
+      if (
+        businessIssue &&
+        (await deps.projects().subtasks.blockersOf(tx.conn, businessIssue))
+          .length
+      )
+        continue;
+      if (
+        held?.pendingToken ||
+        (await recentCommentRunCount(tx.conn, issue.id, 24)) >=
+          (await readManagerSettings(tx.conn)).commentRunLimit
+      )
+        continue;
+      const issueCount =
+        signal === 'passed'
+          ? 1
+          : (pr.signals[signal]?.counts?.[issue.id] ?? 0) + 1;
+      if (signal !== 'passed' && issueCount > SIGNAL_WAKE_LIMIT) {
         const port = deps.inbox();
         const card = await cardIssue(tx.conn, issue.id);
-        if (port && card && count === SIGNAL_WAKE_LIMIT + 1)
+        if (port && card && issueCount === SIGNAL_WAKE_LIMIT + 1)
           after.push(() => sendSignalStopped(port, card, pr, signal));
         continue;
       }
@@ -418,7 +480,7 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
         }
       }
       if (!allowed) continue;
-      await agents.runs.enqueue(
+      const queued = await agents.runs.enqueue(
         {
           agentId: agent.id,
           subject: { kind: ISSUE_SUBJECT, id: issue.id },
@@ -448,13 +510,15 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
               url: pr.url,
               headRef: pr.headRef,
               headSha: pr.headSha,
-              attempt: count,
+              attempt: issueCount,
             },
           },
         },
         agentsTx(tx),
       );
+      if (queued.outcome !== 'pending') delivered.push(issue.id);
     }
+    return delivered;
   }
 
   async function signals(
@@ -465,8 +529,18 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
     explained: readonly FailedCheck[] | null,
   ): Promise<void> {
     if (pr.state !== 'open' || !pr.headSha) return;
-    const reports: ['checks' | 'conflict', boolean | null][] = [
-      ['checks', checksFailing(checkSummaryOf(pr, repo.referenceChecks))],
+    // upsert acquired the PR row lock; reread signals after any competing store committed.
+    pr = (await findPullRequest(tx.conn, repo.id, pr.number)) ?? pr;
+    const fingerprint = checksFingerprint(pr, repo.referenceChecks);
+    const observed = pr.signals.observed;
+    const round =
+      observed?.fingerprint === fingerprint
+        ? observed.round
+        : (observed?.round ?? 0) + 1;
+    const next = { ...pr.signals, observed: { fingerprint, round } };
+    const summary = checkSummaryOf(pr, repo.referenceChecks);
+    const reports: [Signal, boolean | null][] = [
+      ['checks', checksFailing(summary)],
       [
         'conflict',
         pr.mergeableState === 'dirty'
@@ -475,38 +549,62 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
             ? false
             : null,
       ],
+      ['passed', summary.ciState === 'success'],
     ];
-    const next: Record<string, unknown> = { ...pr.signals };
-    let changed = false;
-    for (const [signal, failing] of reports) {
-      if (failing === null) continue;
-      const stored = pr.signals[signal];
-      if (!failing) {
-        if (stored) {
-          delete next[signal];
-          changed = true;
-        }
+    for (const [signal, present] of reports) {
+      const stored = next[signal];
+      if (present !== true) {
+        if (present === false && signal !== 'checks') delete next[signal];
+        // Keep failure count through pending reruns; only success resets the failure budget.
+        if (signal === 'checks' && summary.ciState === 'success')
+          delete next.checks;
         continue;
       }
-      const key = `${signal}@${pr.headSha}`;
-      if (stored?.key === key) continue;
-      const count = (stored?.count ?? 0) + 1;
-      next[signal] = { key, count };
-      changed = true;
-      if (signal === 'checks' ? repo.wakeOnChecks : repo.wakeOnConflict)
-        await wake(tx, repo, pr, signal, count, after, explained);
-    }
-    // All checks of this head finished without a failure: once per head.
-    if (checkSummaryOf(pr, repo.referenceChecks).ciState === 'success') {
-      const key = `passed@${pr.headSha}`;
-      if (pr.signals.passed?.key !== key) {
-        next.passed = { key, count: 1 };
-        changed = true;
-        if (repo.wakeOnChecksPassed)
-          await wake(tx, repo, pr, 'passed', 1, after, explained);
+      const key = `${signal}@${pr.headSha}${signal === 'conflict' ? '' : `:${round}`}`;
+      const count =
+        signal === 'passed'
+          ? 1
+          : stored?.key === key
+            ? stored.count
+            : (stored?.count ?? 0) + 1;
+      const counts =
+        stored?.counts ??
+        Object.fromEntries(
+          (stored && signal !== 'passed'
+            ? await linksOfPullRequest(tx.conn, pr.id)
+            : []
+          ).map((link) => [link.issueId, stored!.count]),
+        );
+      const state = {
+        key,
+        count,
+        counts: { ...counts },
+        delivered: stored?.key === key ? { ...stored.delivered } : {},
+      };
+      next[signal] = state;
+      if (
+        signal === 'checks'
+          ? repo.wakeOnChecks
+          : signal === 'passed'
+            ? repo.wakeOnChecksPassed
+            : repo.wakeOnConflict
+      ) {
+        const delivered = await wake(
+          tx,
+          repo,
+          { ...pr, signals: next },
+          signal,
+          count,
+          after,
+          explained,
+        );
+        for (const issueId of delivered) {
+          state.delivered[issueId] = key;
+          state.counts[issueId] = (state.counts[issueId] ?? 0) + 1;
+        }
       }
     }
-    if (changed) await updatePullRequest(tx.conn, pr.id, { signals: next });
+    await updatePullRequest(tx.conn, pr.id, { signals: next });
   }
 
   async function runAfter(after: After): Promise<void> {
@@ -537,7 +635,14 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
         repo.id,
         snapshot.number,
       );
-      if (stored?.signals.checks?.key === `checks@${snapshot.headSha}`)
+      if (
+        stored?.signals.observed?.fingerprint ===
+          checksFingerprint(
+            { ...stored, ...options.ci, headSha: snapshot.headSha },
+            repo.referenceChecks,
+          ) &&
+        stored?.signals.checks?.key
+      )
         return null;
       if (
         (stored?.signals.checks?.count ?? 0) >= SIGNAL_WAKE_LIMIT ||
@@ -554,6 +659,18 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
   }
 
   return {
+    async retrySignals(repo, pr) {
+      const after: After = [];
+      await deps.projects().tx.run(async (tx) => {
+        await tx.conn
+          .repository('studioPullRequests')
+          .updateMany({ filter: { id: pr.id }, values: { id: pr.id } });
+        const current = await findPullRequest(tx.conn, repo.id, pr.number);
+        if (current && current.headSha === pr.headSha)
+          await signals(tx, repo, current, after, null);
+      });
+      await runAfter(after);
+    },
     async store(repo, snapshot, options = {}) {
       const after: After = [];
       const explained = await explainFirst(repo, snapshot, options);
