@@ -142,6 +142,79 @@ it('starts an unmarked writer alongside another, cancels, resumes one head and r
   }
 }, 150_000);
 
+it('reports missing identity in the cancellation result and retains uncommitted work', async () => {
+  const server = new FakeServer();
+  await server.listen();
+  const root = tempDir('missing-save-identity-');
+  const home = path.join(root, 'home');
+  const env = cliEnv(home);
+  const remote = makeRemote(root);
+  await registerRunner(server.url, env, [
+    '--cli',
+    `appcli=${writeFakeCli(root)}`,
+  ]);
+  const run = server.enqueue({
+    subject: { key: 'identity', url: 'http://app.test/identity' },
+    workspace: {
+      dirs: [
+        {
+          kind: 'repo',
+          url: remote,
+          path: 'repo',
+          branch: 'agent/identity',
+          defaultBranch: 'main',
+        },
+      ],
+      env: [],
+    },
+    prompt: {
+      system: '',
+      session: 'fresh',
+      turn: 'bash git config --worktree user.email ""\nwrite pending.txt retained\nhang',
+    },
+  });
+  const daemon = startDaemon(env);
+  try {
+    await waitFor(
+      () =>
+        existsSync(
+          path.join(String(run.start?.workDir), 'repo', 'pending.txt'),
+        ),
+      30_000,
+      'pending work',
+    );
+    const repo = path.join(String(run.start?.workDir), 'repo');
+    const head = git(['rev-parse', 'HEAD'], repo);
+    server.cancel(run.payload.run.id);
+    await waitFor(
+      () => run.status === 'cancelled',
+      30_000,
+      'cancellation report',
+    );
+    const cancellation = server
+      .events(run.payload.run.id)
+      .find(
+        (event) =>
+          event.type === 'status' && event.meta?.status === 'cancelled',
+      );
+    expect(JSON.stringify(cancellation)).toContain(
+      'configure valid user.name and user.email',
+    );
+    expect(JSON.stringify(cancellation)).toContain('Recovery required');
+    expect(git(['rev-parse', 'HEAD'], repo)).toBe(head);
+    expect(existsSync(path.join(repo, 'pending.txt'))).toBe(true);
+    expect(
+      git(['for-each-ref', '--format=%(refname)', 'refs/runner/'], repo),
+    ).toBe('');
+  } finally {
+    await stopDaemon(daemon);
+    await server.close();
+    removeDir(home);
+    removeDir(workRootOf(home));
+    removeDir(root);
+  }
+}, 120_000);
+
 it.each(['completed', 'failed', 'cancelled'] as const)(
   'resumes unpublished files after a %s run on the same machine',
   async (ending) => {
@@ -183,7 +256,7 @@ it.each(['completed', 'failed', 'cancelled'] as const)(
       prompt: {
         system: '',
         session: 'fresh',
-        turn: `write pending.txt ${ending}\n${tail}`,
+        turn: `bash git config --worktree user.name Test\nbash git config --worktree user.email test@example.com\nwrite pending.txt ${ending}\n${tail}`,
       },
     });
     const daemon = startDaemon(env);
@@ -228,7 +301,7 @@ it.each(['completed', 'failed', 'cancelled'] as const)(
         prompt: {
           system: '',
           session: 'fresh',
-          turn: 'read pending.txt\nsay resumed',
+          turn: 'read pending.txt\nbash git config --worktree user.name Test\nbash git config --worktree user.email test@example.com\nwrite continued.txt resumed\nbash git add .\nbash git -c commit.gpgsign=false commit -m "Continue pending work"\nbash git push origin HEAD:refs/heads/agent/continuation\nsay resumed',
         },
       });
       await waitFor(
@@ -245,6 +318,26 @@ it.each(['completed', 'failed', 'cancelled'] as const)(
           .map((event) => event.output)
           .join(' '),
       ).toContain(ending);
+      const history = git(
+        [
+          'log',
+          'refs/heads/agent/continuation',
+          '--format=%an <%ae>|%cn <%ce>',
+        ],
+        remote.replace('file://', ''),
+      );
+      expect(history.split('\n')).toEqual(
+        Array(3).fill('Test <test@example.com>|Test <test@example.com>'),
+      );
+      const messages = git(
+        ['log', 'refs/heads/agent/continuation', '--format=%B'],
+        remote.replace('file://', ''),
+      );
+      expect(messages).toContain('Update pending.txt');
+      expect(messages).toContain('work in progress');
+      expect(messages).not.toMatch(
+        /runner@nocobase.local|co-authored-by:|signed-off-by:|save local continuation/iu,
+      );
     } finally {
       await stopDaemon(daemon);
       await server.close();

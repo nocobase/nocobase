@@ -21,6 +21,7 @@ import {
 } from './checkout.ts';
 import { taskGit, taskGitDir, taskGitOk } from './task-git.ts';
 import { stopWorkspaceHolders } from './process-tree.ts';
+import { TRAILERS_ENV } from './git-hooks.ts';
 
 const identity = (parts: readonly string[]) =>
   createHash('sha256').update(JSON.stringify(parts)).digest('hex');
@@ -29,10 +30,6 @@ const COMMIT = [
   'core.fsync=objects,reference',
   '-c',
   'core.fsyncMethod=fsync',
-  '-c',
-  'user.name=NocoBase runner',
-  '-c',
-  'user.email=runner@nocobase.local',
   '-c',
   'commit.gpgsign=false',
 ];
@@ -532,7 +529,17 @@ export async function addRunWorktree(options: {
           cache,
         );
         const bootstrap = await git(
-          [...COMMIT, 'commit-tree', tree, '-m', 'Worktree bootstrap'],
+          [
+            ...COMMIT,
+            '-c',
+            'user.name=NocoBase runner',
+            '-c',
+            'user.email=runner@nocobase.local',
+            'commit-tree',
+            tree,
+            '-m',
+            'Worktree bootstrap',
+          ],
           cache,
         );
         await git(
@@ -693,13 +700,54 @@ export async function finalizeRunWorktrees(
       } else if (meta.readOnly !== true) {
         await assertWorktreeIdentity(context, repo.localBranch, true);
         await taskGit(context, ['add', '--all']);
-        if (!(await taskGitOk(context, ['diff', '--cached', '--quiet'])))
-          await taskGit(context, [
-            ...COMMIT,
-            'commit',
-            '-m',
-            'chore(runner): save local continuation',
-          ]);
+        if (!(await taskGitOk(context, ['diff', '--cached', '--quiet']))) {
+          const name = await taskGit(context, [
+            'config',
+            '--get',
+            'user.name',
+          ]).catch(() => '');
+          const email = await taskGit(context, [
+            'config',
+            '--get',
+            'user.email',
+          ]).catch(() => '');
+          if (
+            !name ||
+            !email ||
+            /[<>\r\n\0]/u.test(name) ||
+            /[<>\s\0]/u.test(email)
+          )
+            throw new CheckoutError(
+              'Cannot save local work: configure valid user.name and user.email in this checkout; no continuation commit was created. The original worktree is retained for recovery.',
+            );
+          const files = (
+            await taskGit(context, ['diff', '--cached', '--name-only', '-z'])
+          )
+            .split('\0')
+            .filter(Boolean);
+          const first = (files[0] ?? 'files')
+            .replace(/[\r\n\t]/gu, ' ')
+            .slice(0, 60);
+          const title = `Update ${first}${files.length > 1 ? ` and ${files.length - 1} other ${files.length === 2 ? 'file' : 'files'}` : ''}`;
+          await taskGit(
+            context,
+            [
+              ...COMMIT,
+              'commit',
+              '-m',
+              title,
+              '-m',
+              'Save work in progress when the run is interrupted or ends.',
+            ],
+            {
+              GIT_AUTHOR_NAME: name,
+              GIT_AUTHOR_EMAIL: email,
+              GIT_COMMITTER_NAME: name,
+              GIT_COMMITTER_EMAIL: email,
+              [TRAILERS_ENV]: '',
+            },
+          );
+        }
         const head = await taskGit(context, ['rev-parse', 'HEAD']).catch(
           () => undefined,
         );

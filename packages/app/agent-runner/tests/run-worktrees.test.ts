@@ -48,10 +48,17 @@ describe('per-attempt worktrees', () => {
   let remote: string;
   beforeEach(() => {
     root = tempDir('run-worktrees-');
+    const config = path.join(root, 'gitconfig');
+    writeFileSync(config, '[user]\nname = A\nemail = a@example.com\n');
+    vi.stubEnv('GIT_CONFIG_GLOBAL', config);
+    vi.stubEnv('GIT_CONFIG_NOSYSTEM', '1');
     paths = runnerPaths(path.join(root, 'home'), path.join(root, 'work'));
     remote = makeRemote(root);
   });
-  afterEach(() => removeDir(root));
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    removeDir(root);
+  });
   it('creates isolated unborn worktrees on older Git and resumes the first real root commit', async () => {
     const empty = path.join(root, 'empty.git');
     git(['init', '--bare', '--initial-branch=main', empty], root);
@@ -139,6 +146,72 @@ describe('per-attempt worktrees', () => {
     });
     return a;
   }
+
+  it('saves with the checkout identity despite inherited author and trailer overrides', async () => {
+    const a = await start('identity');
+    git(['config', '--worktree', 'user.name', 'Checkout Author'], a.repo.dir);
+    git(
+      ['config', '--worktree', 'user.email', 'checkout@example.com'],
+      a.repo.dir,
+    );
+    for (const key of ['GIT_AUTHOR_NAME', 'GIT_COMMITTER_NAME'])
+      vi.stubEnv(key, 'Wrong author');
+    for (const key of ['GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_EMAIL'])
+      vi.stubEnv(key, 'wrong@example.com');
+    vi.stubEnv(
+      'NOCOBASE_RUNNER_COMMIT_TRAILERS',
+      'Co-authored-by: Wrong <wrong@example.com>\nSigned-off-by: Wrong <wrong@example.com>',
+    );
+    writeFileSync(path.join(a.repo.dir, 'identity.txt'), 'pending');
+    const [saved] = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(saved.saved).toBe(true);
+    expect(
+      git(
+        ['show', '-s', '--format=%an <%ae>|%cn <%ce>', saved.head!],
+        a.repo.cache,
+      ),
+    ).toBe(
+      'Checkout Author <checkout@example.com>|Checkout Author <checkout@example.com>',
+    );
+    const message = git(
+      ['show', '-s', '--format=%B', saved.head!],
+      a.repo.cache,
+    );
+    expect(message).toContain('Update identity.txt');
+    expect(message).toContain('work in progress');
+    expect(message).not.toMatch(
+      /co-authored-by|signed-off-by|save local continuation/iu,
+    );
+  });
+
+  it.each(['user.name', 'user.email'])(
+    'retains work and reports an unavailable %s without committing',
+    async (key) => {
+      const a = await start('missing-identity');
+      git(['config', '--worktree', key, ''], a.repo.dir);
+      const head = git(['rev-parse', 'HEAD'], a.repo.dir);
+      writeFileSync(path.join(a.repo.dir, 'pending.txt'), 'must survive');
+      const log = vi.fn();
+      const [saved] = await finalizeRunWorktrees(paths, a.workDir, log);
+      expect(saved).toMatchObject({
+        saved: false,
+        reason: expect.stringContaining(
+          'configure valid user.name and user.email',
+        ),
+      });
+      expect(git(['rev-parse', 'HEAD'], a.repo.dir)).toBe(head);
+      expect(readFileSync(path.join(a.repo.dir, 'pending.txt'), 'utf8')).toBe(
+        'must survive',
+      );
+      expect(await readWorkspaceMeta(paths, a.workDir)).toMatchObject({
+        recoveryRequired: true,
+        recoveryReason: saved.reason,
+      });
+      expect(log).toHaveBeenCalledWith(expect.stringContaining(saved.reason!));
+      const b = await start('after-missing-identity');
+      expect(b.repo.warnings?.join('\n')).toContain(saved.reason);
+    },
+  );
 
   it.each(['detached', 'different-branch', 'git-check-failed'] as const)(
     'retains actual unpublished commits and files after a removal marker: %s',
@@ -747,7 +820,7 @@ describe('per-attempt worktrees', () => {
     expect(existsSync(path.join(clean.repo.dir, 'previous.txt'))).toBe(false);
     expect(
       git(['cat-file', '-p', saved[0]!.head!], clean.repo.cache),
-    ).toContain('chore(runner)');
+    ).toContain('Update previous.txt');
     writeFileSync(path.join(clean.repo.dir, 'fresh.txt'), 'fresh');
     await finalizeRunWorktrees(paths, clean.workDir, () => {});
     const next = await start('next');
