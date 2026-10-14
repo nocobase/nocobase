@@ -839,7 +839,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         : { status: pr.statusEtag, runs: pr.runsEtag },
     );
     if (pull.notModified && !ci) {
-      await flow.retrySignals(repo, pr);
+      await flow.deliverSignals(repo, pr);
       return;
     }
     await flow.store(repo, snapshot, {

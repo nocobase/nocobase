@@ -1,13 +1,13 @@
 // @vitest-environment node
-import { afterEach, beforeEach, expect, it } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 import { createAgentWork } from '../../server/agents/work.js';
 import {
   sweepManagerIdle,
-  waitingKind,
   managerIdleMinutes,
+  managerIdleSweepMinutes,
 } from '../../server/agents/manager/idle.js';
-import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
+import { idleFixture } from './idle-fixture.js';
 let h: BridgeHarness;
 beforeEach(async () => {
   h = await createBridgeHarness();
@@ -16,200 +16,129 @@ beforeEach(async () => {
 });
 afterEach(() => h.close());
 
-it('validates configuration and requires explicit nonhuman waiting', () => {
-  expect(managerIdleMinutes(undefined)).toBe(15);
-  expect(managerIdleMinutes(0)).toBe(0);
-  expect(() => managerIdleMinutes(-1)).toThrow();
-  expect(() => managerIdleMinutes('invalid')).toThrow();
-  expect(waitingKind('等待负责人提供环境')).toBeNull();
-  expect(waitingKind('Review now')).toBeNull();
-  expect(waitingKind('Waiting for agent runs and CI checks')).toEqual({
-    agent: true,
-    checks: true,
-  });
-});
-
-it('wakes once per external epoch, survives a fresh sweeper and ignores its own waiting loop', async () => {
-  const viewer = h.viewer('alice');
-  const worker = await h.createAgent({ name: 'Worker' });
-  const issue = await h.projects.issues.create(viewer, {
-    title: 'Idle',
-    statusKey: 'in_progress',
-    executor: { type: 'agent', id: PROJECT_MANAGER_ID },
-    start: false,
-  });
-  await h.projects.comments.create(
-    { ...viewer, actor: { type: 'agent', id: PROJECT_MANAGER_ID } },
-    issue.id,
-    {
-      content: `Next: Waiting for agent run to end\n\n[@Worker](mention://agent/${worker}) Investigate.`,
-    },
-  );
-  // A historical terminated target is evidence of the manager's outstanding wait; do not stage a terminal wake here.
-  await h.database
-    .connection()
-    .repository('agRuns')
-    .updateMany({
-      filter: { subjectId: issue.id },
-      values: { status: 'completed', finishedAt: new Date().toISOString() },
-    });
-  const work = createAgentWork({
-    agents: h.agents,
-    projects: () => h.projects,
-  });
-  const now = new Date(Date.now() + 15 * 60_000 + 1000);
-  await sweepManagerIdle(
-    h.agents,
-    h.projects,
-    work,
-    15,
-    new Date(now.getTime() - 2000),
-  );
-  expect(
-    (
-      await h.agents.runs.list({ subjectId: issue.id, subjectKind: 'issue' })
-    ).filter((r) => r.agentId === PROJECT_MANAGER_ID),
-  ).toHaveLength(0);
-  await Promise.all([
-    sweepManagerIdle(h.agents, h.projects, work, 15, now),
-    sweepManagerIdle(h.agents, h.projects, work, 15, now),
-  ]);
-  const state = await h.database
-    .connection()
-    .repository('studioManagerIdle')
-    .findOne({ filter: { id: issue.id } });
-  expect(state?.wokenEpoch).toBe(state?.epoch);
-  await h.projects.comments.create(
-    { ...viewer, actor: { type: 'agent', id: PROJECT_MANAGER_ID } },
-    issue.id,
-    { content: 'Next: Waiting for agent run to end' },
-  );
-  await h.database
-    .connection()
-    .repository('agRuns')
-    .updateMany({
-      filter: { subjectId: issue.id, agentId: PROJECT_MANAGER_ID },
-      values: { status: 'completed' },
-    });
-  await sweepManagerIdle(
-    h.agents,
-    h.projects,
-    createAgentWork({ agents: h.agents, projects: () => h.projects }),
-    15,
-    new Date(now.getTime() + 60 * 60_000),
-  );
-  const inputs = await h.database
-    .connection()
-    .repository<{ payload: { trigger?: string } }>('agRunInputs')
-    .findMany({});
-  expect(
-    inputs.filter((i) => i.payload.trigger === 'managerIdle'),
-  ).toHaveLength(1);
-  await h.projects.comments.create(viewer, issue.id, {
-    content: '/note New external information.',
-  });
-  await sweepManagerIdle(
-    h.agents,
-    h.projects,
-    work,
-    15,
-    new Date(now.getTime() + 61 * 60_000),
-  );
-  await sweepManagerIdle(
-    h.agents,
-    h.projects,
-    work,
-    15,
-    new Date(now.getTime() + 77 * 60_000),
-  );
-  const again = await h.database
-    .connection()
-    .repository<{ payload: { trigger?: string } }>('agRunInputs')
-    .findMany({});
-  expect(again.filter((i) => i.payload.trigger === 'managerIdle')).toHaveLength(
-    2,
-  );
-});
-
-it.each(['backlog', 'blocked', 'in_review', 'done', 'cancelled'])(
-  'never wakes %s even with an ended delegation',
-  async (statusKey) => {
-    const viewer = h.viewer('alice');
-    const worker = await h.createAgent({ name: 'Worker' });
-    const issue = await h.projects.issues.create(viewer, {
-      title: 'Excluded status',
-      statusKey: 'in_progress',
-      executor: { type: 'agent', id: PROJECT_MANAGER_ID },
-      start: false,
-    });
-    await h.projects.comments.create(
-      { ...viewer, actor: { type: 'agent', id: PROJECT_MANAGER_ID } },
-      issue.id,
-      {
-        content: `Next: Waiting for worker run to end\n\n[@Worker](mention://agent/${worker}) Investigate.`,
-      },
-    );
+const work = () =>
+  createAgentWork({ agents: h.agents, projects: () => h.projects });
+const sweep = (now = new Date(), minutes = 15) =>
+  sweepManagerIdle(h.agents, h.projects, work(), minutes, now);
+async function inputs() {
+  return (
     await h.database
       .connection()
-      .repository('agRuns')
-      .updateMany({
-        filter: { subjectId: issue.id },
-        values: { status: 'completed' },
-      });
+      .repository<{ payload: { trigger?: string } }>('agRunInputs')
+      .findMany({})
+  ).filter((i) => i.payload?.trigger === 'managerIdle');
+}
+
+it('validates the idle timeout and periodic interval', () => {
+  expect(managerIdleMinutes(undefined)).toBe(15);
+  expect(managerIdleMinutes(0)).toBe(0);
+  expect(managerIdleSweepMinutes(undefined)).toBe(5);
+  for (const value of [-1, 'invalid', Infinity])
+    expect(() => managerIdleMinutes(value)).toThrow();
+  expect(() => managerIdleSweepMinutes(0)).toThrow();
+});
+it('uses the exact timeout boundary and existing facts to deduplicate consecutive/concurrent sweeps', async () => {
+  const { managerRunId, finishedAt } = await idleFixture(h);
+  await sweep(new Date(finishedAt.getTime() + 15 * 60_000 - 1));
+  expect(await inputs()).toHaveLength(0);
+  const now = new Date(finishedAt.getTime() + 15 * 60_000);
+  await Promise.all([sweep(now), sweep(now)]);
+  await sweep(now);
+  expect(await inputs()).toHaveLength(1);
+  expect((await inputs())[0]?.payload).toMatchObject({
+    previousManagerRunId: managerRunId,
+  });
+});
+it('defines the next idle period from the new manager completion without an epoch table', async () => {
+  const { issue } = await idleFixture(h);
+  await sweep();
+  const runs = await h.agents.runs.list({
+    subjectKind: 'issue',
+    subjectId: issue.id,
+  });
+  const resumed = runs.find((r) => r.status === 'queued')!;
+  const finishedAt = new Date(Date.now() + 1000);
+  await h.database
+    .connection()
+    .repository('agRuns')
+    .updateMany({
+      filter: { id: resumed.id },
+      values: { status: 'completed', finishedAt },
+    });
+  await sweep(new Date(finishedAt.getTime() + 15 * 60_000 - 1));
+  expect(await inputs()).toHaveLength(1);
+  await sweep(new Date(finishedAt.getTime() + 15 * 60_000));
+  expect(await inputs()).toHaveLength(2);
+});
+it.each(['backlog', 'blocked', 'in_review', 'done', 'cancelled'])(
+  'excludes %s',
+  async (statusKey) => {
+    const { issue } = await idleFixture(h);
     await h.database
       .connection()
       .repository('pmIssues')
       .updateMany({ filter: { id: issue.id }, values: { statusKey } });
-    await sweepManagerIdle(
-      h.agents,
-      h.projects,
-      createAgentWork({ agents: h.agents, projects: () => h.projects }),
-      15,
-      new Date(Date.now() + 60 * 60_000),
-    );
-    expect(
-      await h.database
-        .connection()
-        .repository('studioManagerIdle')
-        .findOne({ filter: { id: issue.id } }),
-    ).toBeUndefined();
+    await sweep();
+    expect(await inputs()).toHaveLength(0);
   },
 );
-
 it.each(['queued', 'dispatched', 'running'])(
-  'excludes any %s worker',
+  'excludes %s work',
   async (status) => {
-    const viewer = h.viewer('alice');
-    const worker = await h.createAgent({ name: 'Worker' });
-    const issue = await h.projects.issues.create(viewer, {
-      title: 'Active worker',
-      statusKey: 'in_progress',
-      executor: { type: 'agent', id: PROJECT_MANAGER_ID },
-      start: false,
-    });
-    await h.projects.comments.create(
-      { ...viewer, actor: { type: 'agent', id: PROJECT_MANAGER_ID } },
-      issue.id,
-      {
-        content: `Next: Waiting for worker run to end\n\n[@Worker](mention://agent/${worker}) Investigate.`,
-      },
-    );
+    const { managerRunId } = await idleFixture(h);
     await h.database
       .connection()
       .repository('agRuns')
-      .updateMany({ filter: { subjectId: issue.id }, values: { status } });
-    await sweepManagerIdle(
-      h.agents,
-      h.projects,
-      createAgentWork({ agents: h.agents, projects: () => h.projects }),
-      15,
-      new Date(Date.now() + 60 * 60_000),
-    );
-    expect(
-      await h.database
-        .connection()
-        .repository('studioManagerIdle')
-        .findOne({ filter: { id: issue.id } }),
-    ).toBeUndefined();
+      .updateMany({ filter: { id: managerRunId }, values: { status } });
+    await sweep();
+    expect(await inputs()).toHaveLength(0);
   },
 );
+it.each(['comment', 'event', 'input'])(
+  'excludes newer %s activity',
+  async (activity) => {
+    const { issue, managerRunId } = await idleFixture(h);
+    const conn = h.database.connection();
+    if (activity === 'comment')
+      await h.projects.comments.create(h.viewer('alice'), issue.id, {
+        content: '/note New facts',
+      });
+    if (activity === 'event')
+      await h.projects.activity.record(conn, {
+        issueId: issue.id,
+        actor: { type: 'system', id: null },
+        action: 'test_event',
+      });
+    if (activity === 'input')
+      await conn.repository('agRunInputs').updateMany({
+        filter: { runId: managerRunId },
+        values: { createdAt: new Date() },
+      });
+    await sweep();
+    expect(await inputs()).toHaveLength(0);
+  },
+);
+it('rechecks a candidate after a concurrent comment and enqueue', async () => {
+  const { issue } = await idleFixture(h);
+  const original = h.projects.tx.run.bind(h.projects.tx);
+  const spy = vi
+    .spyOn(h.projects.tx, 'run')
+    .mockImplementationOnce(async (action, ...args) => {
+      await h.projects.comments.create(h.viewer('alice'), issue.id, {
+        content: 'New work',
+      });
+      return original(action, ...args);
+    });
+  try {
+    await sweep();
+  } finally {
+    spy.mockRestore();
+  }
+  expect(await inputs()).toHaveLength(0);
+});
+
+it('disables the sweep at zero minutes', async () => {
+  await idleFixture(h);
+  await sweep(new Date(), 0);
+  expect(await inputs()).toHaveLength(0);
+});

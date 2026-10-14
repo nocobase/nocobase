@@ -4,7 +4,6 @@ import {
   recentCommentRunCount,
 } from '../agents/comment-guard.js';
 import { readManagerSettings } from '../agents/manager/settings.js';
-import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 /**
  * What a pull request's state does to its issues. Every read of the code host ends here (`store`): a webhook delivery, the poller, a merge check, a link,
@@ -18,13 +17,13 @@ import { isDeepStrictEqual } from 'node:util';
  *   the followers of every linked issue hear it (`pr_merged`, `notices.ts`).
  * - **Closed** without a merge: merge cards settle `closed`.
  * - **Signals**, while it is open: failed required checks and a conflict (`mergeableState = dirty`) wake the agent
- *   executing each linked issue (an issue run input, trigger `prChecksFailed` / `prConflict`), once per effective round and issue, at
+ *   executing each linked issue (an issue run input, trigger `prChecksFailed` / `prConflict`), once per conclusion and issue, at
  *   most `SIGNAL_WAKE_LIMIT` consecutive delivered failures; after that the owner is told instead. Passing checks or a known mergeable
  *   state clear the count. A repository can turn each signal off. Checks wake the agent only once every required check of
  *   the head has finished, and a failed reference check (`RepoRow.referenceChecks`) never does (`checkSummaryOf`). The
  *   input names every failed check and carries why it failed (`GitFlowDeps.explain`, read before the transaction):
  *   annotations and the failing part of each log, or where another CI keeps it.
- *   Required checks that all finished without failure wake it once per effective round and issue (`prChecksPassed`).
+ *   Required checks that all finished without failure wake it once per conclusion and issue (`prChecksPassed`).
  *
  * Writes run in one projects transaction, so the issue moves and the stored state commit together; inbox items go out
  * after the commit.
@@ -119,8 +118,8 @@ export interface GitFlow {
     expectedSha: string,
     ci: NonNullable<StoreOptions['ci']>,
   ): Promise<void>;
-  /** Retry undelivered signals on an unchanged authoritative snapshot, without recording fresh PR activity. */
-  retrySignals(repo: RepoRow, pr: PullRequestRow): Promise<void>;
+  /** Deliver any unconsumed conclusion on an unchanged snapshot, without refreshing PR activity. */
+  deliverSignals(repo: RepoRow, pr: PullRequestRow): Promise<void>;
   /** An issue entered In review, or a pull request was linked while it was there: cards for its ready pull requests. */
   requestMerges(issueId: string, onlyPullRequestId?: string): Promise<void>;
   /** An issue left In review for anything but a merge: its cards are withdrawn. */
@@ -155,8 +154,8 @@ function signalEnabled(repo: RepoRow, signal: Signal): boolean {
 
 type After = (() => Promise<void>)[];
 
-/** Only effective check results define a round; polling times, links and reference checks do not. */
-export function checksFingerprint(
+/** Exact conclusion identity: head and relevant check executions/results, excluding polling noise. */
+export function checkConclusionKey(
   pr: Pick<PullRequestRow, 'headSha' | 'checks' | 'ciState'>,
   references: readonly string[],
 ): string {
@@ -174,9 +173,7 @@ export function checksFingerprint(
       const right = JSON.stringify(b);
       return left < right ? -1 : left > right ? 1 : 0;
     });
-  return createHash('sha256')
-    .update(JSON.stringify([pr.headSha, checks.length ? checks : pr.ciState]))
-    .digest('hex');
+  return JSON.stringify([pr.headSha, checks.length ? checks : pr.ciState]);
 }
 
 type Signal = 'checks' | 'conflict' | 'passed';
@@ -419,24 +416,19 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
       );
   }
 
-  async function hasRetryCandidate(
+  async function hasUndeliveredSignal(
     conn: DatabaseConnection,
     repo: RepoRow,
     pr: PullRequestRow,
   ): Promise<boolean> {
     if (pr.state !== 'open' || !pr.headSha || !deps.agents()) return false;
-    const fingerprint = checksFingerprint(pr, repo.referenceChecks);
-    const round =
-      pr.signals.observed?.fingerprint === fingerprint
-        ? pr.signals.observed.round
-        : (pr.signals.observed?.round ?? 0) + 1;
     const pending = signalReports(repo, pr).filter(
       ([signal, present]) => present === true && signalEnabled(repo, signal),
     );
     if (!pending.length) return false;
     for (const link of await linksOfPullRequest(conn, pr.id)) {
       const signals = pending.filter(([signal]) => {
-        const key = `${signal}@${pr.headSha}${signal === 'conflict' ? '' : `:${round}`}`;
+        const key = `${signal}@${pr.headSha}${signal === 'conflict' ? '' : `:${checkConclusionKey(pr, repo.referenceChecks)}`}`;
         const state = pr.signals[signal];
         return (
           state?.delivered?.[link.issueId] !== key &&
@@ -647,13 +639,9 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
     if (pr.state !== 'open' || !pr.headSha) return;
     // upsert acquired the PR row lock; reread signals after any competing store committed.
     pr = (await findPullRequest(tx.conn, repo.id, pr.number)) ?? pr;
-    const fingerprint = checksFingerprint(pr, repo.referenceChecks);
-    const observed = pr.signals.observed;
-    const round =
-      observed?.fingerprint === fingerprint
-        ? observed.round
-        : (observed?.round ?? 0) + 1;
-    const next = { ...pr.signals, observed: { fingerprint, round } };
+    const next = { ...pr.signals };
+    // Discard the unmerged implementation's observation bookkeeping on the next real update.
+    delete (next as Record<string, unknown>).observed;
     const summary = checkSummaryOf(pr, repo.referenceChecks);
     const reports = signalReports(repo, pr);
     for (const [signal, present] of reports) {
@@ -663,9 +651,11 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
         // Keep failure count through pending reruns; only success resets the failure budget.
         if (signal === 'checks' && summary.ciState === 'success')
           delete next.checks;
+        else if (signal === 'checks' && next.checks)
+          next.checks = { ...next.checks, key: '', delivered: {} };
         continue;
       }
-      const key = `${signal}@${pr.headSha}${signal === 'conflict' ? '' : `:${round}`}`;
+      const key = `${signal}@${pr.headSha}${signal === 'conflict' ? '' : `:${checkConclusionKey(pr, repo.referenceChecks)}`}`;
       const count =
         signal === 'passed'
           ? 1
@@ -736,12 +726,11 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
         snapshot.number,
       );
       if (
-        stored?.signals.observed?.fingerprint ===
-          checksFingerprint(
-            { ...stored, ...options.ci, headSha: snapshot.headSha },
-            repo.referenceChecks,
-          ) &&
-        stored?.signals.checks?.key
+        stored?.signals.checks?.key ===
+        `checks@${snapshot.headSha}:${checkConclusionKey(
+          { ...stored, ...options.ci, headSha: snapshot.headSha },
+          repo.referenceChecks,
+        )}`
       )
         return null;
       if (
@@ -760,6 +749,32 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
 
   return {
     async storeChecks(repo, pr, expectedSha, ci) {
+      const observed = await findPullRequest(
+        deps.projects().tx.read(),
+        repo.id,
+        pr.number,
+      );
+      if (
+        !observed ||
+        observed.state !== 'open' ||
+        observed.headSha !== expectedSha
+      )
+        return;
+      const sameChecks = (row: PullRequestRow) =>
+        isDeepStrictEqual(
+          {
+            ciState: row.ciState,
+            checks: row.checks,
+            statusEtag: row.statusEtag,
+            runsEtag: row.runsEtag,
+          },
+          ci,
+        );
+      if (
+        sameChecks(observed) &&
+        !(await hasUndeliveredSignal(deps.projects().tx.read(), repo, observed))
+      )
+        return;
       const after: After = [];
       const explained = await explainFirst(repo, pr, { ci });
       const stored = await deps.projects().tx.run(async (tx) => {
@@ -774,10 +789,11 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
           current.headSha !== expectedSha
         )
           return null;
-        await updatePullRequest(tx.conn, current.id, {
-          ...ci,
-          snapshotAt: new Date(),
-        });
+        if (!sameChecks(current))
+          await updatePullRequest(tx.conn, current.id, {
+            ...ci,
+            snapshotAt: new Date(),
+          });
         const updated = { ...current, ...ci };
         await signals(tx, repo, updated, after, explained);
         return updated;
@@ -787,8 +803,8 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
       deps.onChanged?.(stored.id);
       await deps.onStored?.(stored);
     },
-    async retrySignals(repo, pr) {
-      // A 304 is the hot path: read current delivery markers before opening any write transaction.
+    async deliverSignals(repo, pr) {
+      // A stable poll only reads delivery markers; no transaction unless a conclusion can be delivered.
       const observed = await findPullRequest(
         deps.projects().tx.read(),
         repo.id,
@@ -797,7 +813,7 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
       if (
         !observed ||
         observed.headSha !== pr.headSha ||
-        !(await hasRetryCandidate(deps.projects().tx.read(), repo, observed))
+        !(await hasUndeliveredSignal(deps.projects().tx.read(), repo, observed))
       )
         return;
       const after: After = [];
@@ -811,13 +827,9 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
           !current ||
           current.state !== 'open' ||
           current.headSha !== observed.headSha ||
-          checksFingerprint(current, repo.referenceChecks) !==
-            checksFingerprint(observed, repo.referenceChecks) ||
-          !isDeepStrictEqual(
-            current.signals.observed,
-            observed.signals.observed,
-          ) ||
-          !(await hasRetryCandidate(tx.conn, repo, current))
+          checkConclusionKey(current, repo.referenceChecks) !==
+            checkConclusionKey(observed, repo.referenceChecks) ||
+          !(await hasUndeliveredSignal(tx.conn, repo, current))
         )
           return;
         await signals(tx, repo, current, after, null);

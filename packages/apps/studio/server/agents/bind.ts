@@ -99,11 +99,7 @@ import { inactiveUsers } from './users.js';
 import { createAgentWork } from './work.js';
 import { commentRunNoticeRule } from './comment-run-limit.js';
 import { delegationTimeout } from './delegated-queue.js';
-import {
-  stageRunReport,
-  reportCommentRuns,
-  drainRunReports,
-} from './run-report.js';
+import { stageRunReport, reportCommentRuns } from './run-report.js';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { bindCommentConsentInbox } from './comment-consent-inbox.js';
 import {
@@ -162,6 +158,7 @@ export interface StudioAgentsDeps {
    */
   readonly queuedExpiryMs?: number;
   readonly managerIdleMinutes?: number;
+  readonly managerIdleSweepMinutes?: number;
   readonly wakeExecutor?: ScheduleExecutor | null;
   /** Follows the work conversations hand to agents (`conversation/delegation.ts`); nothing is followed without. */
   readonly delegations?: Delegations;
@@ -200,13 +197,6 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => Promise<void> {
   const wakeSchedule = scheduleManagerWake(
     async () => {
       if (stopped) return;
-      await drainRunReports(
-        agents,
-        deps.projects(),
-        new Date(),
-        authorizeReport,
-        work,
-      );
       await sweepManagerIdle(
         agents,
         deps.projects(),
@@ -216,6 +206,7 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => Promise<void> {
     },
     deps.wakeExecutor ?? null,
     (error) => onError('Studio could not check manager idle periods.', error),
+    deps.managerIdleSweepMinutes ?? 5,
   );
   void wakeSchedule.catch((error) =>
     onError('Studio could not schedule manager idle checks.', error),

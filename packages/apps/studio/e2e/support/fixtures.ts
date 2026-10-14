@@ -204,12 +204,12 @@ interface Fixtures {
   /** Errors thrown in the page; the test fails if any occurred. */
   pageErrors: string[];
   studioEvidence: void;
+  studio: ServerState;
 }
 
 interface WorkerFixtures {
   /** Global PM settings cannot be isolated by giving issues and runner models unique names. */
   isolatedStudio: boolean;
-  studio: ServerState;
 }
 
 export const test = base.extend<Fixtures, WorkerFixtures>({
@@ -228,7 +228,7 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
           rmSync(owned.directory, { recursive: true, force: true });
       }
     },
-    { scope: 'worker', timeout: 180_000 },
+    { timeout: 180_000 },
   ],
   user: ['alex', { option: true }],
   context: async ({ context, user, studio }, use) => {
@@ -269,8 +269,9 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
 export async function apiAs(
   browser: import('@playwright/test').Browser,
   user: DemoUser | UserCredentials,
+  target = server,
 ): Promise<{ api: Api; close: () => Promise<void> }> {
   const context = await browser.newContext();
-  await signIn(context, user);
+  await signIn(context, user, target);
   return { api: new Api(context.request), close: () => context.close() };
 }

@@ -9,6 +9,8 @@ import {
 } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
 
+test.use({ isolatedStudio: true });
+
 test.describe('issue page', () => {
   let me: { userId: string };
   let issue: Issue;
@@ -64,6 +66,7 @@ test.describe('issue page', () => {
     page,
     api,
     browser,
+    studio,
     context,
   }) => {
     test.setTimeout(120_000);
@@ -73,7 +76,7 @@ test.describe('issue page', () => {
       email: `issue-layout-${suffix}@example.com`,
       password: 'issue-layout-e2e-password',
     };
-    const admin = await apiAs(browser, 'admin');
+    const admin = await apiAs(browser, 'admin', studio);
     try {
       await admin.api.post('users', {
         ...user,
@@ -509,10 +512,11 @@ test.describe('issue page', () => {
     page,
     api,
     browser,
+    studio,
     context,
   }) => {
     test.setTimeout(120_000);
-    const admin = await apiAs(browser, 'admin');
+    const admin = await apiAs(browser, 'admin', studio);
     const suffix = unique();
     const triggerUser = {
       email: `identity-trigger-${suffix}@example.com`,

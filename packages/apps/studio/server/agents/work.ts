@@ -1169,16 +1169,6 @@ export function createAgentWork(deps: {
               },
             });
           }
-          if (
-            attempt.started &&
-            input.signal.trigger === 'managerIdle' &&
-            typeof input.signal.payload.epoch === 'string'
-          ) {
-            await tx.conn.repository('studioManagerIdle').updateMany({
-              filter: { id: issue.id, epoch: input.signal.payload.epoch },
-              values: { wokenEpoch: input.signal.payload.epoch },
-            });
-          }
           continue;
         }
         const comment = comments.find(

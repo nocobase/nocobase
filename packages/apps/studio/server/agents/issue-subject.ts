@@ -128,7 +128,7 @@ const TRIGGER_TASKS: Readonly<Record<string, string>> = {
   stepEnded:
     'A delegated worker reached a terminal state; read its run and dispatch thread before handing work on.',
   managerIdle:
-    'Idle waiting timed out once in this activity period; recheck runs and checks before deciding what next.',
+    'The previous manager run ended without subsequent work or activity; recheck runs and checks before deciding what next.',
   prChecksPassed:
     'The checks of a pull request of this issue passed. Decide whether the change is ready for acceptance.',
   prConflict:

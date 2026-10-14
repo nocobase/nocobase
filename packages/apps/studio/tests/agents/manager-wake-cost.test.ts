@@ -6,6 +6,7 @@ import type { Knex } from 'knex';
 import { expect, it, vi } from 'vitest';
 import { createBridgeHarness } from './bridge-harness.js';
 import { connectedRepo } from '../git/helpers.js';
+import { idleFixture } from './idle-fixture.js';
 import { sweepManagerIdle } from '../../server/agents/manager/idle.js';
 import { createAgentWork } from '../../server/agents/work.js';
 import { createGitFlow } from '../../server/git/flow.js';
@@ -32,7 +33,16 @@ async function measure(
     client.removeListener('query', listener);
   }
   const updates = statements.filter((s) => /^update\b/iu.test(s));
+  const dmlByTable: Record<string, number> = {};
+  for (const statement of statements) {
+    const match =
+      /^(?:update|insert into|delete from)\s+(?:(?:["`][\w]+["`]|[\w]+)\.)?["`]?([\w]+)/iu.exec(
+        statement,
+      );
+    if (match) dmlByTable[match[1]!] = (dmlByTable[match[1]!] ?? 0) + 1;
+  }
   return {
+    dmlByTable,
     selects: statements.filter((s) => /^select\b/iu.test(s)).length,
     businessSelects: statements.filter(
       (s) =>
@@ -58,18 +68,11 @@ async function measure(
 }
 const readOnly = { updates: 0, writes: 0, locks: 0, begins: 0, commits: 0 };
 
-it('keeps idle noncandidates read-only while updating epochs and delivering real candidates', async () => {
+it('measures empty, stable and admitted structured idle sweeps', async () => {
   const h = await createBridgeHarness();
   try {
     await h.addUser('alice');
     await h.createAgent();
-    const viewer = h.viewer('alice');
-    const issue = await h.projects.issues.create(viewer, {
-      title: 'Idle cost',
-      statusKey: 'in_progress',
-      executor: { type: 'agent', id: PROJECT_MANAGER_ID },
-      start: false,
-    });
     const conn = h.database.connection();
     const work = createAgentWork({
       agents: h.agents,
@@ -77,67 +80,21 @@ it('keeps idle noncandidates read-only while updating epochs and delivering real
     });
     const sweep = (now = new Date()) =>
       sweepManagerIdle(h.agents, h.projects, work, 15, now);
-    const noWait = await measure(conn, () => sweep());
-    await h.projects.comments.create(
-      { ...viewer, actor: { type: 'agent', id: PROJECT_MANAGER_ID } },
-      issue.id,
-      { content: 'Next: Waiting for worker run to end' },
+    const empty = await measure(conn, () => sweep());
+    const { finishedAt } = await idleFixture(h);
+    const notDue = await measure(conn, () =>
+      sweep(new Date(finishedAt.getTime() + 15 * 60_000 - 1)),
     );
-    const noEvidence = await measure(conn, () => sweep());
-    const repo = await connectedRepo(h, 'acme/cost');
-    h.github.addPull('acme/cost', {
-      number: 77,
-      head: { ref: 'feature', sha: 'head' },
-    });
-    h.github.setCheck('acme/cost', 'head', {
-      name: 'test',
-      status: 'completed',
-      conclusion: 'success',
-    });
-    await h.git.link(viewer, issue.id, 'https://github.com/acme/cost/pull/77', {
-      type: 'user',
-      id: 'alice',
-    });
-    await h.git.pollRepo(repo);
-    const active = await measure(conn, () => sweep());
-    await conn.repository('agRuns').updateMany({
-      filter: { subjectId: issue.id },
-      values: { status: 'completed' },
-    });
-    await h.projects.comments.create(
-      { ...viewer, actor: { type: 'agent', id: PROJECT_MANAGER_ID } },
-      issue.id,
-      { content: 'Next: Waiting for CI checks' },
-    );
-    const now = new Date();
-    const initialize = await measure(conn, () => sweep(now));
-    const notDue = await measure(conn, () => sweep(now));
-    const deliver = await measure(conn, () =>
-      sweep(new Date(now.getTime() + 16 * 60_000)),
-    );
-    await conn.repository('agRuns').updateMany({
-      filter: { subjectId: issue.id },
-      values: { status: 'completed' },
-    });
-    const woken = await measure(conn, () =>
-      sweep(new Date(now.getTime() + 60 * 60_000)),
-    );
-    process.stdout.write(
-      `PM313 idle costs: ${JSON.stringify({ noWait, noEvidence, active, initialize, notDue, deliver, woken })}\n`,
-    );
-    expect(noWait).toMatchObject(readOnly);
-    expect(noEvidence).toMatchObject(readOnly);
-    expect(active).toMatchObject(readOnly);
-    expect(notDue).toMatchObject(readOnly);
-    expect(woken).toMatchObject(readOnly);
-    expect(initialize.begins).toBeGreaterThan(0);
+    const deliver = await measure(conn, () => sweep());
+    const stable = await measure(conn, () => sweep());
+    for (const cost of [empty, notDue, stable]) {
+      expect(cost).toMatchObject(readOnly);
+      expect(cost.businessSelects).toBe(1);
+    }
     expect(deliver.locks).toBeGreaterThan(0);
-    const inputs = await conn
-      .repository<{ payload: { trigger?: string } }>('agRunInputs')
-      .findMany({});
-    expect(
-      inputs.filter((i) => i.payload.trigger === 'managerIdle'),
-    ).toHaveLength(1);
+    process.stdout.write(
+      `PM313 structured idle costs: ${JSON.stringify({ empty, notDue, deliver, stable })}\n`,
+    );
   } finally {
     await h.close();
   }
@@ -184,13 +141,15 @@ it('keeps settled retries read-only and retries an unavailable manager exactly o
       },
     });
     const pr = (await findPullRequest(conn, repo.id, 77))!;
-    const unavailable = await measure(conn, () => flow.retrySignals(repo, pr));
+    const unavailable = await measure(conn, () =>
+      flow.deliverSignals(repo, pr),
+    );
     await conn.repository('agAgents').updateMany({
       filter: { id: PROJECT_MANAGER_ID },
       values: { status: 'enabled' },
     });
-    const recover = await measure(conn, () => flow.retrySignals(repo, pr));
-    const stable = await measure(conn, () => flow.retrySignals(repo, pr));
+    const recover = await measure(conn, () => flow.deliverSignals(repo, pr));
+    const stable = await measure(conn, () => flow.deliverSignals(repo, pr));
     const poll = await measure(conn, () => h.git.pollRepo(repo));
     process.stdout.write(
       `PM313 signal costs: ${JSON.stringify({ unavailable, recover, stable, poll })}\n`,
@@ -220,7 +179,7 @@ it('keeps settled retries read-only and retries an unavailable manager exactly o
       }),
     );
     expect(unchanged.signalWrites).toBe(0);
-    expect(unchanged.locks).toBe(1);
+    expect(unchanged).toMatchObject(readOnly);
 
     const inputs = await conn
       .repository<{ payload: { trigger?: string } }>('agRunInputs')
@@ -228,72 +187,44 @@ it('keeps settled retries read-only and retries an unavailable manager exactly o
     expect(
       inputs.filter((i) => i.payload.trigger === 'prChecksPassed'),
     ).toHaveLength(1);
+    h.github.setCheck('acme/cost', 'head', {
+      name: 'integration',
+      status: 'completed',
+      conclusion: 'success',
+    });
+    const newConclusionPoll = await measure(conn, () => h.git.pollRepo(repo));
+    const deliveredInputs = await conn
+      .repository<{ payload: { trigger?: string } }>('agRunInputs')
+      .findMany({});
+    expect(
+      deliveredInputs.filter((i) => i.payload.trigger === 'prChecksPassed'),
+    ).toHaveLength(2);
+    process.stdout.write(
+      `PM313 changed conclusion poll costs: ${JSON.stringify(newConclusionPoll)}\n`,
+    );
+    h.github.setCheck('acme/cost', 'head', {
+      name: 'lint',
+      status: 'completed',
+      conclusion: 'success',
+    });
+    const observationOnlyPoll = await measure(conn, () =>
+      h.git.pollRepo({ ...repo, wakeOnChecksPassed: false }),
+    );
+    expect(
+      (
+        await conn
+          .repository<{ payload: { trigger?: string } }>('agRunInputs')
+          .findMany({})
+      ).filter((i) => i.payload.trigger === 'prChecksPassed'),
+    ).toHaveLength(2);
+    process.stdout.write(
+      `PM313 observation-only poll costs: ${JSON.stringify(observationOnlyPoll)}\n`,
+    );
+
     // Whole polling retains its preexisting repository/preview transaction, but adds no signal retry transaction.
     expect(poll.signalWrites).toBe(0);
     expect(poll.updates).toBeLessThan(6);
     expect(poll.begins).toBeLessThan(2);
-  } finally {
-    await h.close();
-  }
-}, 120_000);
-
-it('rechecks active work after idle preselection before writing an epoch or input', async () => {
-  const h = await createBridgeHarness();
-  try {
-    await h.addUser('alice');
-    await h.createAgent();
-    const viewer = h.viewer('alice');
-    const issue = await h.projects.issues.create(viewer, {
-      title: 'Idle barrier',
-      statusKey: 'in_progress',
-      executor: { type: 'agent', id: PROJECT_MANAGER_ID },
-      start: false,
-    });
-    const worker = await h.createAgent({ name: 'Worker' });
-    await h.projects.comments.create(
-      { ...viewer, actor: { type: 'agent', id: PROJECT_MANAGER_ID } },
-      issue.id,
-      {
-        content: `Next: Waiting for worker run to end\n\n[@Worker](mention://agent/${worker}) Investigate.`,
-      },
-    );
-    const conn = h.database.connection();
-    await conn.repository('agRuns').updateMany({
-      filter: { subjectId: issue.id },
-      values: { status: 'completed' },
-    });
-    const run = h.projects.tx.run.bind(h.projects.tx);
-    const barrier = vi
-      .spyOn(h.projects.tx, 'run')
-      .mockImplementationOnce(async (action, ...args) => {
-        // A normal owner comment queues the manager after the optimistic read, before its transaction starts.
-        await h.projects.comments.create(viewer, issue.id, {
-          content: 'Please check this new information.',
-        });
-        return run(action, ...args);
-      });
-    try {
-      await sweepManagerIdle(
-        h.agents,
-        h.projects,
-        createAgentWork({ agents: h.agents, projects: () => h.projects }),
-        15,
-        new Date(Date.now() + 60 * 60_000),
-      );
-    } finally {
-      barrier.mockRestore();
-    }
-    expect(
-      await conn
-        .repository('studioManagerIdle')
-        .findOne({ filter: { id: issue.id } }),
-    ).toBeUndefined();
-    const inputs = await conn
-      .repository<{ payload: { trigger?: string } }>('agRunInputs')
-      .findMany({});
-    expect(
-      inputs.filter((i) => i.payload.trigger === 'managerIdle'),
-    ).toHaveLength(0);
   } finally {
     await h.close();
   }
@@ -367,7 +298,7 @@ it.each(['moved', 'closed', 'round', 'delivered'] as const)(
           return run(action, ...args);
         });
       try {
-        await flow.retrySignals(repo, pr);
+        await flow.deliverSignals(repo, pr);
       } finally {
         barrier.mockRestore();
       }

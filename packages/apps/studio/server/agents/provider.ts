@@ -1,5 +1,5 @@
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
-import { managerIdleMinutes } from './manager/idle.js';
+import { managerIdleMinutes, managerIdleSweepMinutes } from './manager/idle.js';
 /**
  * Joins the agents plugin and the projects plugin in Studio (`bind.ts`), from the application's container, binds the
  * project manager (`manager/`, `studioProjectManagerToken`) and Studio's Reports page service (`../reports`).
@@ -308,6 +308,7 @@ export function connectProjects(
     /** `studio.agents.queuedExpiryHours`: how long an issue's run waits for a runner; 0 waits forever. */
     readonly queuedExpiryHours?: number;
     readonly managerIdleMinutes?: number;
+    readonly managerIdleSweepMinutes?: number;
   } = {},
 ): (() => Promise<void>) | undefined {
   if (!container.has(projectsToken) || !container.has(projectsKindsToken))
@@ -317,6 +318,7 @@ export function connectProjects(
   return bindStudioAgents({
     agents,
     managerIdleMinutes: options.managerIdleMinutes,
+    managerIdleSweepMinutes: options.managerIdleSweepMinutes,
     wakeExecutor: container.has(jobExecutorServiceToken)
       ? container
           .resolve(jobExecutorServiceToken)
@@ -469,6 +471,9 @@ export default class StudioAgentsProvider extends ServiceProvider<Application> {
     const agents = container.resolve(agentsToken);
     const disconnect = connectProjects(container, agents, {
       basePath: this.app.publicBasePath,
+      managerIdleSweepMinutes: managerIdleSweepMinutes(
+        this.app.config.get<unknown>('studio.agents.managerIdleSweepMinutes'),
+      ),
       managerIdleMinutes: managerIdleMinutes(
         this.app.config.get<unknown>('studio.agents.managerIdleMinutes'),
       ),

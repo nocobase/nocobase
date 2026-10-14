@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { expect, it, vi } from 'vitest';
-import { checksFingerprint } from '../../server/git/flow.js';
+import { checkConclusionKey } from '../../server/git/flow.js';
 import type { GitCheck } from '../../shared/git.js';
 
 it('ignores polling and reference noise but detects completed reruns between polls', () => {
@@ -17,9 +17,9 @@ it('ignores polling and reference noise but detects completed reruns between pol
     ciState: 'success' as const,
     checks: [check],
   };
-  const key = checksFingerprint(original, ['preview']);
+  const key = checkConclusionKey(original, ['preview']);
   expect(
-    checksFingerprint(
+    checkConclusionKey(
       {
         ...original,
         checks: [
@@ -31,7 +31,7 @@ it('ignores polling and reference noise but detects completed reruns between pol
     ),
   ).toBe(key);
   expect(
-    checksFingerprint(
+    checkConclusionKey(
       { ...original, checks: [{ ...check, executionId: '2' }] },
       ['preview'],
     ),
@@ -51,14 +51,14 @@ it('keeps the same round when host collation and incoming check order differ', (
     ciState: 'success' as const,
     checks: [check, { ...check, name: 'zeta' }],
   };
-  const expected = checksFingerprint(snapshot, []);
+  const expected = checkConclusionKey(snapshot, []);
   const collation = vi
     .spyOn(String.prototype, 'localeCompare')
     .mockReturnValue(-1);
   try {
-    expect(checksFingerprint(snapshot, [])).toBe(expected);
+    expect(checkConclusionKey(snapshot, [])).toBe(expected);
     expect(
-      checksFingerprint(
+      checkConclusionKey(
         { ...snapshot, checks: [...snapshot.checks].reverse() },
         [],
       ),

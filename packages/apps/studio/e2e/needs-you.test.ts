@@ -3,6 +3,7 @@ import { FakeRunner, type Issue } from './support/runner.ts';
 import type { FollowUpsView } from '../shared/follow-ups.js';
 
 test.use({
+  isolatedStudio: true,
   user: 'admin',
   locale: 'en-US',
   actionTimeout: 15_000,
@@ -14,6 +15,7 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
   api,
   browser,
   context,
+  studio,
 }) => {
   test.setTimeout(300_000);
   // Keep realtime and short UI timers, but disable query and run-discovery polling.
@@ -428,10 +430,27 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     await expect(
       page.getByRole('button', { name: 'Continue', exact: true }),
     ).toHaveCount(0);
+    // Continue enqueues legitimate work for this issue; finish that scenario before claiming another issue.
+    const continued = await runner.start(limited.issue.identifier);
+    const continuedDetail = await api.get<{
+      actorUserId: string;
+      subject: { kind: string; id: string };
+      inputs: unknown[];
+    }>(`agents/runs/${continued.runId}`);
+    expect(continuedDetail.actorUserId).toBe(me.userId);
+    expect(continuedDetail.subject).toEqual({
+      kind: 'issue',
+      id: limited.issue.id,
+    });
+    expect(continuedDetail.inputs).toHaveLength(1);
+    await runner.complete(
+      continued.runId,
+      'Handled the explicitly continued report.',
+    );
     const transfer = await make('Take over the next implementation step');
     await runner.complete(transfer.running.runId, 'Ready.');
     const recipientContext = await browser.newContext({ locale: 'en-US' });
-    await signIn(recipientContext, recipientUser);
+    await signIn(recipientContext, recipientUser, studio);
     const recipient = {
       api: new Api(recipientContext.request),
       close: () => recipientContext.close(),

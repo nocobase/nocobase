@@ -230,10 +230,12 @@ describe('a run an agent’s comment started', () => {
     expect((await h.runner(RUNNER_ROUTES.cancelAck, runId, {})).status).toBe(
       200,
     );
-    await vi.waitFor(async () =>
-      expect(
-        (await commentsOf(issue.id)).filter((c) => c.authorId === worker),
-      ).toHaveLength(1),
+    await vi.waitFor(
+      async () =>
+        expect(
+          (await commentsOf(issue.id)).filter((c) => c.authorId === worker),
+        ).toHaveLength(1),
+      { timeout: 10_000 },
     );
     expect(await reportRun(h.agents, h.projects, runId)).toBe(false);
     expect(
@@ -476,3 +478,98 @@ it('notifies a manual retry as a new run of the original manager step', async ()
     ),
   ).toHaveLength(2);
 });
+
+it('does not treat a manager comment after worker finishedAt as consumption of the terminal input (PM-373)', async () => {
+  const { issue, runId, worker } = await handOff();
+  await h.agents.runs.enqueue({
+    agentId: PROJECT_MANAGER_ID,
+    subject: { kind: 'issue', id: issue.id },
+    actorUserId: 'alice',
+    ownerUserId: 'alice',
+    input: {
+      type: 'signal',
+      actor: { kind: 'system', id: 'system', name: 'Test' },
+      text: 'Snapshot says the worker is still running.',
+    },
+  });
+  const managerRun = await start();
+  const post = vi
+    .spyOn(h.projects.comments, 'post')
+    .mockRejectedValue(
+      new Error('Hold terminal dispatch until the stale manager finishes'),
+    );
+  await complete(runId, 'Worker completed.');
+  await vi.waitFor(
+    async () =>
+      expect(
+        await h.database
+          .connection()
+          .repository('studioRunReports')
+          .findOne({ filter: { id: runId } }),
+      ).toMatchObject({ status: 'pending' }),
+    { timeout: 10000 },
+  );
+  await vi.waitFor(
+    async () => {
+      const row = await h.database
+        .connection()
+        .repository<{ attempts: number }>('studioRunReports')
+        .findOne({ filter: { id: runId } });
+      expect(row?.attempts).toBeGreaterThan(0);
+    },
+    { timeout: 10000 },
+  );
+  const { comment } = await h.projects.comments.create(
+    {
+      ...asAgent(PROJECT_MANAGER_ID),
+      actor: {
+        type: 'agent',
+        id: PROJECT_MANAGER_ID,
+        trace: { runId: managerRun },
+      },
+    },
+    issue.id,
+    {
+      content:
+        'Waiting for the worker to end, according to my earlier snapshot.',
+    },
+  );
+  const workerRun = await h.agents.runs.detail(runId);
+  expect(new Date(comment.createdAt).getTime()).toBeGreaterThanOrEqual(
+    new Date(workerRun.finishedAt!).getTime(),
+  );
+  expect(
+    (await h.agents.runs.detail(managerRun)).inputs.every(
+      (i) =>
+        (i.payload as { trigger?: string } | null)?.trigger !== 'stepEnded',
+    ),
+  ).toBe(true);
+  await complete(managerRun, 'Waiting based on the old snapshot.');
+  post.mockRestore();
+  const { drainRunReports } = await import('../../server/agents/run-report.js');
+  const { createAgentWork } = await import('../../server/agents/work.js');
+  await drainRunReports(
+    h.agents,
+    h.projects,
+    new Date(Date.now() + 60000),
+    undefined,
+    createAgentWork({ agents: h.agents, projects: () => h.projects }),
+  );
+  const runs = await runsOf(issue.id);
+  const terminal = (
+    await Promise.all(runs.map((r) => h.agents.runs.detail(r.id)))
+  )
+    .flatMap((r) => r.inputs)
+    .filter(
+      (i) =>
+        (i.payload as { trigger?: string } | null)?.trigger === 'stepEnded',
+    );
+  expect(terminal).toHaveLength(1);
+  expect(terminal[0]?.handledAt).toBeNull();
+  expect(
+    (await commentsOf(issue.id)).filter((c) => c.authorId === worker),
+  ).toHaveLength(1);
+  process.stdout.write(
+    `PM373 stale snapshot evidence: ${JSON.stringify({ workerRun: runId, workerFinishedAt: workerRun.finishedAt, managerRun, managerStartedAt: (await h.agents.runs.detail(managerRun)).startedAt, staleCommentAt: comment.createdAt, terminal: terminal.map((i) => ({ id: i.id, createdAt: i.createdAt, handledAt: i.handledAt })) })}\n`,
+  );
+}, 120000);

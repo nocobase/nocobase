@@ -25,6 +25,8 @@ Global setup (`e2e/global-setup.ts`, `e2e/support/server.ts`) starts `dist/serve
 
 Its log is `server.log` in that directory. Teardown removes the directory; set `NB_STUDIO_E2E_KEEP=1` to keep it. To run against a server that is already running instead, set `NB_STUDIO_E2E_URL=http://127.0.0.1:<port>/main`: nothing is started or stopped, and the tests change that server's data.
 
+Tests that change global manager settings or exercise manager queue ownership use `test.use({ isolatedStudio: true })`. The fixture starts a separate built Studio, database and queue for each test and stops it after that test; a worker-scoped server still allows pending runs to leak between tests. Pass that test's `studio` to `signIn(newContext, user, studio)` and `apiAs(browser, user, studio)` for secondary accounts. Keep the runner's strict full-claim and empty-queue assertions: an unexpected run is an isolation failure, not work to filter out.
+
 ## Writing tests
 
 Import `test` and `expect` from `e2e/support/fixtures.ts`. Its `page` is already signed in as a demo account (Alex Turner, an admin, by default; `test.use({ user: 'lisa' })` for another), `api` calls the API with the same session for setting up data and checking results, and a test fails if the page throws an uncaught error. `apiAs(browser, user)` gives an API client for another account.

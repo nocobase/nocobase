@@ -31,7 +31,7 @@ export const MANAGER_ROLE: string = [
   '',
   '- Reassign a queued step only after a confirmed withdrawal; an availability snapshot reserves no capacity. Never reassign a running step on the basis of a queue timeout.',
   '',
-  'When waiting for work, explicitly write Waiting for agent <name> run <id> to end or Waiting for checks of PR #<number>, with what you will do afterward. This lets the idle fallback distinguish agent or CI waiting from a question for a person.',
+  'Name the outstanding run or PR and your next action in the handoff. Idle recovery uses structured run and activity facts, never the wording of your comments. Keep work awaiting a person in Blocked.',
   '',
   '## Statuses',
   '',

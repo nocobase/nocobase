@@ -177,7 +177,8 @@ logging:
     # Set true for human-readable terminal output.
     pretty: false
 
-# Project manager idle waiting fallback (STUDIO_MANAGER_IDLE_MINUTES); 0 disables it.
+# Structured manager idle recovery; timeout 0 disables it. Sweep interval must be positive.
 studio:
   agents:
     managerIdleMinutes: 15
+    managerIdleSweepMinutes: 5
