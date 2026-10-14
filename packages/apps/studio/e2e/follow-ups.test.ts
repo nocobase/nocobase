@@ -12,7 +12,10 @@ test.describe('my follow-ups', () => {
       title: `待验收的跟进 ${suffix}`,
       ownerUserId: me.userId,
     });
-    await api.patch(`projects/issues/${review.id}`, { statusKey: 'in_review' });
+    await api.patch(`projects/issues/${review.id}`, {
+      statusKey: 'in_review',
+      needsYou: 'Please review the completed work.',
+    });
     await api.post(`projects/issues/${review.id}/comments`, {
       content: '改动已完成，请验收。',
     });

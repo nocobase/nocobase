@@ -43,7 +43,7 @@ In a writable run, the worktree's initial target may be a same-repository linked
 nb-studio issue search --q "login" --json
 nb-studio issue get PM-12 --json
 nb-studio issue comment add PM-12 --content-file report.md
-nb-studio issue update PM-12 --status in_review
+nb-studio issue update PM-12 --status in_review --needs-you "Review the result and accept it or send it back."
 nb-studio issue attachment download <file-id>
 nb-studio conversation attachment download <file-id>
 nb-studio pr open --issue PM-12 --title "Fix the login redirect"

@@ -123,6 +123,7 @@ export interface DemoIssue {
   readonly parent?: string;
   readonly title: string;
   readonly status: string;
+  readonly needsYou?: string;
   readonly priority: string;
   readonly owner: string;
   readonly executor?: string;
@@ -461,6 +462,8 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     project: 'Studio Platform',
     title: 'Issue list stutters when scrolling past 2,000 issues',
     status: 'in_review',
+    needsYou:
+      'Please review scrolling performance and rows with varying heights.',
     priority: 'urgent',
     owner: 'admin',
     executor: 'leo',
@@ -554,6 +557,8 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     project: 'Studio Platform',
     title: 'Rate-limit the API so scripts cannot overload it',
     status: 'blocked',
+    needsYou:
+      'Please decide the authentication approach so API rate limiting can proceed.',
     priority: 'high',
     owner: 'zach',
     executor: 'zach',
@@ -740,6 +745,8 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     project: 'Website Redesign',
     title: 'Pull customer stories from the CMS',
     status: 'in_review',
+    needsYou:
+      'Please review the CMS integration and its fallback when fetching fails.',
     priority: 'medium',
     owner: 'lisa',
     executor: 'leo',
@@ -806,6 +813,7 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     project: 'Mobile App',
     title: 'Connect the push notification service',
     status: 'blocked',
+    needsYou: 'Please confirm when the backend push service can be scheduled.',
     priority: 'medium',
     owner: 'wendy',
     executor: 'zach',

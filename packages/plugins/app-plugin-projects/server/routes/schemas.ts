@@ -913,20 +913,14 @@ const issueShape = {
   title: z.string(),
   description: z.string().meta({ description: 'Markdown.' }),
   statusKey: z.string(),
-  needsYou: z
-    .string()
-    .nullable()
-    .meta({
-      description:
-        'The decision or input required from the owner; null outside Blocked and In review, or on historical issues.',
-    }),
-  next: z
-    .string()
-    .nullable()
-    .meta({
-      description:
-        'The next step; null when none is recorded or the issue is Done or Cancelled.',
-    }),
+  needsYou: z.string().nullable().meta({
+    description:
+      'The decision or input required from the owner; null outside Blocked and In review, or on historical issues.',
+  }),
+  next: z.string().nullable().meta({
+    description:
+      'The next step; null when none is recorded or the issue is Done or Cancelled.',
+  }),
   priority: z.enum(PRIORITIES),
   ownerUserId: z.string(),
   executor: ExecutorSchema.nullable(),

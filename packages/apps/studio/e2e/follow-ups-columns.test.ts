@@ -62,6 +62,7 @@ test.describe('My follow-ups columns', () => {
       await api.patch(`projects/issues/${created.id}`, {
         revision: created.revision,
         statusKey: 'in_review',
+        needsYou: 'Please review the completed work.',
       });
       issues.push(created);
     }

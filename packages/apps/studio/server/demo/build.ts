@@ -321,6 +321,7 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
       issue = await projects.issues.update(admin, issue.id, {
         revision: issue.revision,
         statusKey: spec.status,
+        needsYou: spec.needsYou,
       });
 
     let previous: {
