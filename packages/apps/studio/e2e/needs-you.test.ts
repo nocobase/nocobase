@@ -69,12 +69,14 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     fallbackAgentId: string | null;
     commentRunLimit: number;
   }>('projectManager');
-  const managerWorking = `${settings.name} working`;
+  const managerName = 'Project manager';
+  expect(settings.name).not.toBe(managerName);
+  const managerWorking = `${managerName} working`;
   const runner = new FakeRunner(api, `needs-you-${unique()}`, true);
   const agent = await runner.agent();
   await api.patch('users/me/preferences', { locale: 'en-US' });
   await api.patch('projectManager', {
-    name: 'Project manager',
+    name: managerName,
     firstChoiceAgentId: agent,
     fallbackAgentId: null,
   });
