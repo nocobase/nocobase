@@ -44,6 +44,22 @@ console.log(result.version);
 
 `values` 中省略的字段不修改；显式 `null` 表示写入空值，是否允许由字段和数据库约束决定。`context` 可提供根级与嵌套 Filter、Values 变量，不用于传递事务，也不是自动写入的字段集合。
 
+## Conditional optimistic updates
+
+For a scalar `updateOne` with a safe integer `ifVersion`, a complete non-null primary or unconditional unique key that cannot be deferred and is required by the filter, and no matching mutation subscriptions, the Repository can update directly without a preceding `SELECT ... FOR UPDATE`. The locating key must remain unchanged. The original filter, including business conditions and policy scope, remains part of the update; the submitted values and version increment are written together:
+
+```sql
+UPDATE projects
+SET name = ?, version = version + 1
+WHERE id = ? AND version = ?;
+```
+
+On success, the Repository reads the selected record in the same transaction. A simple scalar projection requires one UPDATE and one result SELECT, excluding transaction control and metadata queries; relation projections and post-write scope checks can require more reads. The UPDATE still takes the database's normal write lock until the transaction ends, so optimistic concurrency does not promise lock-free execution or eliminate lock waits.
+
+If no row is updated, a read with the original filter distinguishes `VERSION_CONFLICT` from `RECORD_NOT_FOUND` without revealing a row outside the write scope. Empty values are still invalid, unchanged values still increment the version once, and changing a field used by the policy scope still requires the post-write scope check.
+
+Filters without a provably unique key, relational filters, case-insensitive key comparisons, changes to the locating key, non-numeric versions, nested writes, and observed mutations retain the existing read-before-write flow. `upsertOne` and `deleteOne` retain their existing execution paths. These cases preserve cardinality, relation, event, and version-comparison guarantees rather than promising the same SQL budget as a simple conditional update.
+
 ## 普通条件匹配多条时拒绝修改
 
 在空的 projects 中独立执行；此例不依赖上面的 project-1：

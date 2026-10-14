@@ -4,7 +4,65 @@ import type {
   UniqueConstraintDefinition,
 } from '../../collection/types.js';
 import { RepositoryError } from '../errors.js';
-import type { RepositoryRecord, UniqueSelector } from '../types.js';
+import type {
+  FilterAst,
+  FilterNode,
+  RepositoryRecord,
+  UniqueSelector,
+} from '../types.js';
+
+/**
+ * A non-null unique key required by the filter and unchanged by the write.
+ * Only equalities under AND are mandatory; a key inside OR proves nothing.
+ * Relational filters retain the read-before-write path, as do keys compared
+ * with a different collation or updated by this mutation.
+ */
+export function unchangedFilterSelector(
+  collection: CollectionDefinition,
+  filter: FilterAst,
+  values: RepositoryRecord,
+): UniqueSelector | undefined {
+  const scalar = (node: FilterNode): boolean =>
+    node.kind === 'group'
+      ? node.items.every(scalar)
+      : node.kind === 'condition' && node.path.length === 1;
+  if (!scalar(filter.root)) return undefined;
+  const equalities = new Map<string, string | number | boolean>();
+  const visit = (node: FilterNode): void => {
+    if (node.kind === 'group') {
+      if (node.logic === 'and') node.items.forEach(visit);
+    } else if (
+      node.kind === 'condition' &&
+      node.operator === '$eq' &&
+      node.mode !== 'insensitive' &&
+      !node.jsonPath?.length &&
+      (typeof node.value === 'string' ||
+        typeof node.value === 'number' ||
+        typeof node.value === 'boolean')
+    ) {
+      equalities.set(node.path[0], node.value);
+    }
+  };
+  visit(filter.root);
+  const constraint = identityConstraints(collection).find(
+    (candidate) =>
+      !candidate.deferrable &&
+      candidate.fields.every(
+        (field) =>
+          equalities.has(field) &&
+          !Object.hasOwn(values, field) &&
+          field !== collection.optimisticLock?.field,
+      ),
+  );
+  if (!constraint) return undefined;
+  return {
+    kind: 'unique',
+    fields: [...constraint.fields],
+    values: Object.fromEntries(
+      constraint.fields.map((field) => [field, equalities.get(field)]),
+    ),
+  };
+}
 
 export function identityConstraints(
   collection: CollectionDefinition,

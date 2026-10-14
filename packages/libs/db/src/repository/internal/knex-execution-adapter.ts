@@ -41,6 +41,7 @@ import { temporalBinding, temporalProjection } from './temporal-sql.js';
 import {
   createdRecordSelector as deriveCreatedSelector,
   recordSelector as selectorFromRecord,
+  unchangedFilterSelector,
 } from './identity.js';
 import { isNumericMutation } from '../numeric-mutation.js';
 import { compileJsonCondition, jsonOperators } from '../json-filter.js';
@@ -707,7 +708,88 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         (result) => typeof result === 'object',
       );
     }
-    return this.inTransaction((adapter) => adapter.executeUpdateOne(plan));
+    // The recorded and nested paths still need the original row. An
+    // unobserved scalar update can claim a stable identity with one UPDATE.
+    // Keep non-numeric versions on the existing comparison path: SQL would
+    // otherwise coerce e.g. "1" into 1 and accept a previously stale version.
+    const unique =
+      !this.recorder &&
+      !plan.relations?.items.length &&
+      plan.collection.optimisticLock &&
+      typeof plan.ifVersion === 'number' &&
+      Number.isSafeInteger(plan.ifVersion)
+        ? unchangedFilterSelector(plan.collection, plan.filter, plan.values)
+        : undefined;
+    return this.inTransaction((adapter) =>
+      unique
+        ? adapter.executeConditionalUpdateOne(plan, unique)
+        : adapter.executeUpdateOne(plan),
+    );
+  }
+
+  private async executeConditionalUpdateOne(
+    plan: RepositoryUpdateOnePlan,
+    unique: UniqueSelector,
+  ): Promise<RepositoryExecutedMutation | RepositorySingleMutationMiss> {
+    const client = this.getClient();
+    const query = tableQuery(client, plan.collection).update(
+      mapUpdate(client, plan.collection, plan.values),
+    );
+    const graph = await this.prepareFilterGraph(
+      plan.collection,
+      plan.filter.root,
+    );
+    // Keep the whole filter, including policy scope and business predicates.
+    applyFilter(
+      query,
+      plan.collection,
+      plan.filter.root,
+      graph,
+      tableName(plan.collection),
+      client,
+    );
+    applyVersion(query, plan.collection, plan.ifVersion);
+    incrementVersion(query, plan.collection);
+    if (affectedCount(await query) === 0) {
+      // An invisible row must answer exactly like a missing one, even when
+      // the caller supplied a stale version. Never diagnose by key alone.
+      const current = await this.findOne({
+        collection: plan.collection,
+        fields: unique.fields,
+        filter: plan.filter,
+      });
+      return current ? 'conflict' : 'missing';
+    }
+    if (
+      plan.scopeCheck &&
+      (await this.scopeCheckApplies(
+        plan.collection,
+        plan.scopeCheck,
+        plan.values,
+        undefined,
+      ))
+    ) {
+      await this.assertWithinScope(
+        plan.collection,
+        [unique],
+        plan.scopeCheck,
+        'update',
+      );
+    }
+    // The UPDATE holds the row's write lock through this read and commit.
+    const record = await this.findOne({
+      collection: plan.collection,
+      fields: plan.fields,
+      select: plan.select,
+      filter: uniqueFilter(unique),
+    });
+    return record
+      ? {
+          record,
+          createdTargets: [],
+          version: versionOf(plan.collection, record),
+        }
+      : 'missing';
   }
 
   private async executeUpdateOne(
