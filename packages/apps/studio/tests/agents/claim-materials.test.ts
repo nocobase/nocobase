@@ -100,7 +100,9 @@ it.each([
       q.sql.includes('__repository_parent_labels'),
     );
     const claimTransaction = queries.find((q) =>
-      /update .*"ag_runs".*"status"/u.test(q.sql),
+      /^update .*\bag_runs\b.*\bstatus\b/u.test(
+        q.sql.replace(/["`[\]]/gu, ''),
+      ),
     )?.__knexTxId;
     expect(claimTransaction).toBeDefined();
     expect(
