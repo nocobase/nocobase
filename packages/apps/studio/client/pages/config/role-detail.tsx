@@ -1,4 +1,8 @@
-import { usePageBreadcrumb } from '@nocobase/app-client';
+import {
+  useNavigationGuard,
+  usePageBreadcrumb,
+  useUnsavedChangesGuard,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   canUseSetting,
@@ -6,6 +10,7 @@ import {
   PmLoadError,
   PmTag,
   useViewer,
+  UnsavedChangesBoundary,
 } from '@nocobase/app-plugin-projects/client/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CopyIcon } from 'lucide-react';
@@ -57,22 +62,35 @@ function RoleBody({
   const roleError = useRoleError();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const saved = draftOf(role);
+  const [saved, setSaved] = useState(() => draftOf(role));
+  const [savedTitle, setSavedTitle] = useState(() => roleTitle(t, role));
   const [draft, setDraft] = useState<RoleDraft>(saved);
   const [title, setTitle] = useState(() => roleTitle(t, role));
   const readOnly = !canDefine || !role.editable;
   const dirty =
-    !sameDraft(draft, saved) || (!role.builtIn && title !== roleTitle(t, role));
+    !sameDraft(draft, saved) || (!role.builtIn && title !== savedTitle);
+  const unsaved = useUnsavedChangesGuard(!readOnly && dirty);
+  useNavigationGuard(unsaved.confirmDiscard);
 
   const save = useMutation({
-    mutationFn: () =>
+    mutationFn: (submitted: { title: string; draft: RoleDraft }) =>
       api.updateRole(role.key, {
         // Built-in roles keep their translated title; only custom roles are renamed here.
-        ...(role.builtIn ? {} : { title }),
-        ...requestOf(draft),
+        ...(role.builtIn ? {} : { title: submitted.title }),
+        ...requestOf(submitted.draft),
       }),
-    onSuccess: () => {
-      notify.success(t('roles.saved', { name: title.trim() }));
+    onSuccess: (updated, submitted) => {
+      const updatedTitle = roleTitle(t, updated);
+      const updatedDraft = draftOf(updated);
+      setSaved(updatedDraft);
+      setDraft((current) =>
+        sameDraft(current, submitted.draft) ? updatedDraft : current,
+      );
+      setSavedTitle(updatedTitle);
+      setTitle((current) =>
+        current === submitted.title ? updatedTitle : current,
+      );
+      notify.success(t('roles.saved', { name: updatedTitle }));
       void queryClient.invalidateQueries({ queryKey: studioKeys.roles });
     },
     onError: roleError,
@@ -92,7 +110,7 @@ function RoleBody({
   });
 
   return (
-    <>
+    <UnsavedChangesBoundary guard={unsaved}>
       <PageHeader
         title={
           <span className='inline-flex flex-wrap items-center gap-3'>
@@ -123,14 +141,14 @@ function RoleBody({
                     disabled={!dirty || save.isPending}
                     onClick={() => {
                       setDraft(saved);
-                      setTitle(roleTitle(t, role));
+                      setTitle(savedTitle);
                     }}
                   >
                     {t('roles.discard')}
                   </Button>
                   <Button
                     disabled={!dirty || !title.trim() || save.isPending}
-                    onClick={() => save.mutate()}
+                    onClick={() => save.mutate({ title, draft })}
                   >
                     {t('roles.save')}
                   </Button>
@@ -162,7 +180,7 @@ function RoleBody({
         readOnly={readOnly}
         onChange={setDraft}
       />
-    </>
+    </UnsavedChangesBoundary>
   );
 }
 
@@ -227,7 +245,7 @@ export default function RoleDetailPage(): ReactElement {
   else
     body = (
       <RoleBody
-        key={`${role.key}:${JSON.stringify(requestOf(draftOf(role)))}`}
+        key={role.key}
         catalog={catalog.data}
         role={role}
         canDefine={canUseSetting(viewer, 'pm.members', 'define-roles')}
