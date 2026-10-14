@@ -100,9 +100,7 @@ it.each([
       q.sql.includes('__repository_parent_labels'),
     );
     const claimTransaction = queries.find((q) =>
-      /^update .*\bag_runs\b.*\bstatus\b/u.test(
-        q.sql.replace(/["`[\]]/gu, ''),
-      ),
+      /^update .*\bag_runs\b.*\bstatus\b/u.test(q.sql.replace(/["`[\]]/gu, '')),
     )?.__knexTxId;
     expect(claimTransaction).toBeDefined();
     expect(
@@ -111,32 +109,36 @@ it.each([
     expect(
       builds.filter((q) => q.__knexTxId !== claimTransaction).length,
     ).toBeGreaterThanOrEqual(1);
-    console.log(
-      JSON.stringify({
-        manager,
-        multipleModels,
-        total: queries.length,
-        business: queries.filter(
-          (q) =>
-            /^(select|insert|update|delete)/iu.test(q.sql) &&
-            !/pg_catalog|information_schema|__nocobase/u.test(q.sql),
-        ).length,
-        writes: queries.filter((q) => /^(insert|update|delete)/iu.test(q.sql))
-          .length,
-        transactions: queries.filter((q) => q.sql === 'BEGIN;').length,
-        explicitLocks: queries.filter((q) => /for update/iu.test(q.sql)).length,
-        claimBusiness: queries.filter(
-          (q) =>
-            q.__knexTxId === claimTransaction &&
-            /^(select|insert|update|delete)/iu.test(q.sql) &&
-            !/pg_catalog|information_schema|__nocobase/u.test(q.sql),
-        ).length,
-        contextBuilds: builds.length,
-        claimContextBuilds: builds.filter(
-          (q) => q.__knexTxId === claimTransaction,
-        ).length,
-      }),
-    );
+    // Cost classification excludes PostgreSQL catalogs; the assertions above run on every dialect.
+    if (h.database.connection().dialect === 'postgres') {
+      console.log(
+        JSON.stringify({
+          manager,
+          multipleModels,
+          total: queries.length,
+          business: queries.filter(
+            (q) =>
+              /^(select|insert|update|delete)/iu.test(q.sql) &&
+              !/pg_catalog|information_schema|__nocobase/u.test(q.sql),
+          ).length,
+          writes: queries.filter((q) => /^(insert|update|delete)/iu.test(q.sql))
+            .length,
+          transactions: queries.filter((q) => q.sql === 'BEGIN;').length,
+          explicitLocks: queries.filter((q) => /for update/iu.test(q.sql))
+            .length,
+          claimBusiness: queries.filter(
+            (q) =>
+              q.__knexTxId === claimTransaction &&
+              /^(select|insert|update|delete)/iu.test(q.sql) &&
+              !/pg_catalog|information_schema|__nocobase/u.test(q.sql),
+          ).length,
+          contextBuilds: builds.length,
+          claimContextBuilds: builds.filter(
+            (q) => q.__knexTxId === claimTransaction,
+          ).length,
+        }),
+      );
+    }
     expect(
       (
         await h.runner(RUNNER_ROUTES.start, payload.run.id, {
