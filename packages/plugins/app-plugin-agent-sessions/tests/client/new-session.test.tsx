@@ -184,7 +184,8 @@ describe('new-session composer', () => {
     expect(
       screen.getByRole('button', { name: 'Fresh computer' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('textbox')).toBeDisabled();
+    expect(screen.getByRole('textbox')).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
     expect(screen.queryByText('Initial model')).toBeNull();
     expect(requests).toEqual(['agentSessions/computers/fresh/discoverChoices']);
     fireEvent.click(screen.getByRole('button', { name: 'Fresh computer' }));
@@ -232,7 +233,8 @@ describe('new-session composer', () => {
       },
     );
     await screen.findByText('Loading settings…');
-    expect(screen.getByRole('textbox')).toBeDisabled();
+    expect(screen.getByRole('textbox')).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
     await waitFor(() => expect(discovered).toHaveLength(1));
     await act(async () => discovered[0]!.resolve({ data: choices }));
     await screen.findByText('Reasoning: High');
@@ -246,7 +248,8 @@ describe('new-session composer', () => {
       cwd: '/work',
       settings: { model: 'chosen' },
     });
-    expect(screen.getByRole('textbox')).toBeDisabled();
+    expect(screen.getByRole('textbox')).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
     await act(async () =>
       discovered[1]!.resolve({
         data: {

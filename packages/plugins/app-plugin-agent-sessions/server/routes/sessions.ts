@@ -90,6 +90,7 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
           userId(context),
           context.req.valid('param').computerId,
           context.req.valid('json'),
+          context.req.raw.signal,
         ),
       }),
   );

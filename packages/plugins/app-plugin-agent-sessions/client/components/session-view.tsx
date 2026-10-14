@@ -3,7 +3,7 @@
  * choices, and beside it that work in detail, where the session runs and what it has used. A session whose computer is
  * offline, or that is archived, reads as before and takes no new messages.
  */
-import { useToaster } from '@nocobase/app-client';
+import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import {
@@ -264,7 +264,12 @@ function Conversation({
       await prompt.mutateAsync({ content, mentions });
       pinnedRef.current = true;
     } catch (error) {
-      fail(error);
+      if (error instanceof ApiClientError && error.status < 500) fail(error);
+      else
+        void toaster.show({
+          type: 'error',
+          title: t('composer.sendUnconfirmed'),
+        });
       throw error;
     }
   };

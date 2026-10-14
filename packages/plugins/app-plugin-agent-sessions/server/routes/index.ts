@@ -2,12 +2,15 @@ import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   defineApiRoutes,
+  getRequestId,
   defineRootRoutes,
   type AppApiRouteContribution,
   type AppRootRouteContribution,
   type AppRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono, type Context } from 'hono';
+import { performance } from 'node:perf_hooks';
+import { loggingToken } from '@nocobase/app-server/logging';
 
 import { agentSessionsErrorHandler } from '../errors.js';
 import { agentSessionsToken } from '../tokens.js';
@@ -27,6 +30,45 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     router.onError(agentSessionsErrorHandler);
     const bridge = (context: Context): boolean =>
       context.req.path.includes('/agentSessions/bridge/');
+    const logger = container.has(loggingToken)
+      ? container.resolve(loggingToken).getLogger('agent-sessions')
+      : undefined;
+    router.use('/agentSessions/*', async (context: Context, next) => {
+      if (!logger?.isLevelEnabled('debug')) return next();
+      const candidate = getRequestId(context);
+      const requestId = /^[0-9a-f-]{36}$/iu.test(candidate)
+        ? candidate
+        : undefined;
+      const start = performance.now();
+      const utilization = performance.eventLoopUtilization();
+      logger.debug(
+        {
+          phase: 'received',
+          requestId,
+          at: Date.now(),
+          method: context.req.method,
+        },
+        'Agent sessions timing',
+      );
+      try {
+        await next();
+      } finally {
+        logger.debug(
+          {
+            phase: 'response',
+            requestId,
+            at: Date.now(),
+            durationMs: performance.now() - start,
+            method: context.req.method,
+            route: context.req.routePath,
+            status: context.res.status,
+            eventLoopUtilization:
+              performance.eventLoopUtilization(utilization).utilization,
+          },
+          'Agent sessions timing',
+        );
+      }
+    });
     router.use('/agentSessions/*', auth.required({ skip: bridge }));
     router.use('/agentSessions/bridge/*', auth.required({ scopedKeys: true }));
     router.route('/agentSessions/bridge', bridgeRoutes(service));

@@ -70,6 +70,8 @@ const enUS = {
     unknown: 'Unknown',
   },
   newSession: {
+    sendUnconfirmed:
+      'Send was not confirmed. Check recent sessions before trying again; a session may already have been created.',
     settingsOutdated:
       'This computer\'s command line is too old for this application. Update it there, as "My computers" shows.',
     settingsOffline:
@@ -155,6 +157,9 @@ const enUS = {
     recordBody: 'The full record is kept here, and only you can see it.',
   },
   composer: {
+    sendUnconfirmed:
+      'Send was not confirmed. Check the conversation before trying again; it may already have been sent.',
+    sending: 'Sending…',
     expand: 'Expand input',
     collapse: 'Collapse input',
     placeholder: 'Reply, or ask for the next thing…',

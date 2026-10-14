@@ -149,6 +149,11 @@ export interface AgentSessionsServiceOptions {
   /** Runs `task` after `delayMs`, as owners are told of what they did not see (`notices.ts`); a timer by default. */
   readonly schedule?: (task: () => Promise<void>, delayMs: number) => void;
   readonly now?: () => number;
+  /** Optional phase timing; excludes message bodies, credentials and user metadata. */
+  readonly diagnose?: (
+    phase: string,
+    fields: Readonly<Record<string, number | string>>,
+  ) => void;
 }
 
 export interface SessionPage {
@@ -168,6 +173,7 @@ export class AgentSessionsService {
   readonly #database: DatabaseManager;
   readonly #publish: (userId: string, change: AgentSessionsChange) => void;
   readonly #now: () => number;
+  readonly #diagnose: AgentSessionsServiceOptions['diagnose'];
   readonly #waiters = new Map<string, Set<() => void>>();
   readonly #linkKinds = new Map<string, LinkResolver>();
   readonly #tools: SessionTool[] = [];
@@ -189,6 +195,7 @@ export class AgentSessionsService {
     this.#schedule = options.schedule ?? later;
     this.#publish = options.publish ?? (() => undefined);
     this.#now = options.now ?? Date.now;
+    this.#diagnose = options.diagnose;
     this.#tools.push(this.#workTool());
   }
 
@@ -425,7 +432,9 @@ export class AgentSessionsService {
       readonly cwd: string;
       readonly settings: Readonly<Record<string, string>>;
     },
+    signal?: AbortSignal,
   ): Promise<DiscoveredChoices> {
+    signal?.throwIfAborted();
     const computer = await this.#computer(userId, computerId);
     if (!isOnline(computer, this.#now()))
       throw new AgentSessionsError('computerOffline');
@@ -458,6 +467,7 @@ export class AgentSessionsService {
     const reply = await this.#awaitReply(
       `${computer.id}:${requestId}`,
       DISCOVERY_TIMEOUT_MS + 10_000,
+      signal,
     );
     if (!reply.discovery || reply.error)
       throw new AgentSessionsError(
@@ -522,12 +532,22 @@ export class AgentSessionsService {
       : undefined;
     if (keyed && !known) throw new AgentSessionsError('computerNotFound');
     const computerId = known?.id ?? randomUUID();
-    if (known)
+    const restarted = known?.bridgeStartedAt !== request.bridgeStartedAt;
+    const viewChanged =
+      !known ||
+      restarted ||
+      !isOnline(known, this.#now()) ||
+      Object.entries(request.computer).some(
+        ([field, value]) =>
+          JSON.stringify(known[field as keyof typeof known]) !==
+          JSON.stringify(value),
+      );
+    if (known && (viewChanged || !keyed))
       await computers(this.#conn()).updateMany({
         filter: { id: computerId },
         values,
       });
-    else
+    else if (!known)
       await computers(this.#conn()).createOne({
         values: {
           id: computerId,
@@ -538,7 +558,6 @@ export class AgentSessionsService {
         },
       });
 
-    const restarted = known?.bridgeStartedAt !== request.bridgeStartedAt;
     const interrupted = !restarted
       ? []
       : await sessions(this.#conn()).findMany({
@@ -569,8 +588,8 @@ export class AgentSessionsService {
       });
       if (changed) this.#changed(changed);
     }
-    await this.#replies.take(outdatedKey(computerId));
-    this.#publish(userId, { kind: 'computers' });
+    const outdated = await this.#replies.take(outdatedKey(computerId));
+    if (viewChanged || outdated) this.#publish(userId, { kind: 'computers' });
     return { computerId, ...(key ? { key } : {}) };
   }
 
@@ -1017,8 +1036,20 @@ export class AgentSessionsService {
       );
       return result;
     });
+    this.#diagnose?.('promptPersisted', {
+      sessionId,
+      at: Date.now(),
+      seq: changed.lastSeq,
+      promptId,
+    });
     this.#wake(session.computerId);
     this.#changed(changed);
+    this.#diagnose?.('promptConfirmed', {
+      sessionId,
+      at: Date.now(),
+      seq: changed.lastSeq,
+      promptId,
+    });
     return {
       kind: 'prompt',
       at: changed.session.lastActivityAt,
@@ -1173,17 +1204,25 @@ export class AgentSessionsService {
   async #awaitReply(
     key: string,
     timeout: number = REPLY_WAIT_MS,
+    signal?: AbortSignal,
   ): Promise<ReplyRequest> {
-    for (let waited = 0; waited < timeout; waited += REPLY_CHECK_MS) {
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
+      signal?.throwIfAborted();
       const reply = await this.#replies.take<ReplyRequest>(key);
       if (reply) return reply;
       await new Promise<void>((resolve) => {
-        const timer = setTimeout(done, REPLY_CHECK_MS);
+        const timer = setTimeout(
+          done,
+          Math.min(REPLY_CHECK_MS, deadline - Date.now()),
+        );
+        signal?.addEventListener('abort', done, { once: true });
         const waiters = this.#replyWaiters;
         waiters.set(key, done);
         function done(): void {
           clearTimeout(timer);
           waiters.delete(key);
+          signal?.removeEventListener('abort', done);
           resolve();
         }
       });
@@ -1526,6 +1565,11 @@ export class AgentSessionsService {
     readonly session: SessionRecord;
     readonly lastSeq: number;
   }): void {
+    this.#diagnose?.('eventPublishRequested', {
+      sessionId: changed.session.id,
+      at: Date.now(),
+      seq: changed.lastSeq,
+    });
     this.#publish(changed.session.userId, {
       kind: 'session',
       sessionId: changed.session.id,
