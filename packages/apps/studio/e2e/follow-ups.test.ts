@@ -8,13 +8,17 @@ test.describe('my follow-ups', () => {
   }) => {
     const me = await api.get<{ userId: string }>('projects/me');
     const suffix = unique();
+    const needsYou =
+      'Please review the completed work. Confirm the acceptance decision.';
+    const next = 'Apply the owner’s review feedback after acceptance.';
     const review = await api.post<Issue>('projects/issues', {
       title: `待验收的跟进 ${suffix}`,
       ownerUserId: me.userId,
     });
     await api.patch(`projects/issues/${review.id}`, {
       statusKey: 'in_review',
-      needsYou: 'Please review the completed work.',
+      needsYou,
+      next,
     });
     await api.post(`projects/issues/${review.id}/comments`, {
       content: '改动已完成，请验收。',
@@ -37,14 +41,20 @@ test.describe('my follow-ups', () => {
     const mine = page.getByTestId('follow-ups-mine');
     await mine.getByRole('searchbox').fill(suffix);
     const row = mine.locator(`li[data-issue="${review.identifier}"]`);
-    await expect(row).toContainText('验收结果');
+    await expect(row).toContainText(needsYou);
     await row.getByText(review.title).click();
 
     const activity = page.getByTestId('follow-ups-activity');
     await expect(
       activity.getByRole('heading', { name: review.title }),
     ).toBeVisible();
-    await expect(activity.getByTestId('issue-needs-you')).toBeVisible();
+    await expect(activity.getByTestId('issue-needs-you')).toContainText(
+      needsYou,
+    );
+    await expect(activity.getByTestId('issue-summary')).toContainText(next);
+    await expect(activity.getByTestId('issue-summary')).not.toContainText(
+      '改动已完成，请验收。',
+    );
     await expect(activity.getByTestId('issue-feed')).toContainText(
       '改动已完成，请验收。',
     );
@@ -56,9 +66,9 @@ test.describe('my follow-ups', () => {
       .getByRole('button', { name: `关注 ${review.identifier}` })
       .click();
     const rail = page.getByTestId('follow-ups-following');
-    await expect(
-      rail.locator(`[data-issue="${review.identifier}"]`),
-    ).toBeVisible();
+    const followed = rail.locator(`[data-issue="${review.identifier}"]`);
+    await expect(followed).toBeVisible();
+    await expect(followed).toContainText(needsYou);
 
     await page.reload();
     await expect(
@@ -66,5 +76,10 @@ test.describe('my follow-ups', () => {
         .getByTestId('follow-ups-following')
         .locator(`[data-issue="${review.identifier}"]`),
     ).toBeVisible();
+    await expect(
+      page
+        .getByTestId('follow-ups-following')
+        .locator(`[data-issue="${review.identifier}"]`),
+    ).toContainText(needsYou);
   });
 });
