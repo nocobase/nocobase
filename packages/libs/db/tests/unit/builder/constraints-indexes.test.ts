@@ -2,6 +2,23 @@ import { describe, expect, it } from 'vitest';
 import { CollectionBuilder } from '../../../src/collection/builder/builder.js';
 
 describe('CollectionBuilder constraints and indexes', () => {
+  it('inspects planned definitions without exposing mutable builder state', async () => {
+    const builder = new CollectionBuilder();
+    expect(await builder.getCollection('jobs')).toBeUndefined();
+    await builder.createCollection('jobs', (collection) => {
+      collection.string('status');
+      collection.index(['status'], { name: 'jobs_status' });
+    });
+    const definition = await builder.getCollection('jobs');
+    expect(definition?.indexes).toEqual([
+      expect.objectContaining({ name: 'jobs_status', fields: ['status'] }),
+    ]);
+    definition!.indexes = [];
+    expect((await builder.getCollection('jobs'))?.indexes).toHaveLength(1);
+    await builder.dropIndex('jobs', 'jobs_status');
+    expect((await builder.getCollection('jobs'))?.indexes).toHaveLength(0);
+  });
+
   it('keeps constraints and indexes as separate DSL concepts', async () => {
     const builder = new CollectionBuilder();
 
