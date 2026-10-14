@@ -1,6 +1,6 @@
 /**
- * The shared following rail and activity panel retain complete structured progress after personal workspace
- * navigation changes. Workspace selection and permission boundaries are covered by `follow-ups.test.tsx`.
+ * The restored three-column follow-ups page retains complete structured progress in its following rail and
+ * activity panel. Selection and permission boundaries are covered by `follow-ups.test.tsx`.
  */
 import {
   createTestI18nRuntime,

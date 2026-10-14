@@ -67,7 +67,6 @@ export const issueLiveEnUS = {
     full: 'Following {{max}} already',
     fullHint:
       'You follow {{max}} issues already. Stop following one to add another.',
-    saving: 'Saving followed tasks…',
     saveFailed: 'Could not save what you follow.',
   },
   notifications: {
@@ -141,7 +140,6 @@ export const issueLiveZhCN: typeof issueLiveEnUS = {
     unfollow: '取消关注',
     full: '关注已满 {{max}} 个',
     fullHint: '你已经关注了 {{max}} 个任务。先取消关注一个，再关注新的。',
-    saving: '正在保存关注任务…',
     saveFailed: '没能保存关注的任务。',
   },
   notifications: {

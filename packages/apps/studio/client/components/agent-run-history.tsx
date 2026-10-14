@@ -72,6 +72,8 @@ export interface AgentRunHistoryRun {
   readonly finishedAt: string | null;
   /** Why it failed, in the reader's language. */
   readonly failure?: string | null;
+  /** Why the run is waiting for another dispatch, in the reader's language. */
+  readonly retrying?: string | null;
 }
 
 export interface AgentRunHistoryLabels {
@@ -521,6 +523,11 @@ function PinnedRun({
               {run.model}
             </span>
           ) : null}
+          {run.retrying ? (
+            <span className='block text-xs font-normal text-muted-foreground'>
+              {run.retrying}
+            </span>
+          ) : null}
         </span>
         <span
           className='ml-auto shrink-0 font-mono text-xs text-muted-foreground tabular-nums'
@@ -568,7 +575,10 @@ function RunLine({
   const at = run.finishedAt ?? run.startedAt ?? run.createdAt;
   const duration = durationText(run.startedAt, run.finishedAt);
   return (
-    <li data-testid={`run-${run.id}`} title={run.failure ?? undefined}>
+    <li
+      data-testid={`run-${run.id}`}
+      title={run.failure ?? run.retrying ?? undefined}
+    >
       <RunLink
         run={run}
         opener={opener}
@@ -598,6 +608,11 @@ function RunLine({
               {relativeTime(at, locale)}
             </time>
           </span>
+          {run.retrying ? (
+            <span className='block text-xs text-muted-foreground'>
+              {run.retrying}
+            </span>
+          ) : null}
         </span>
       </RunLink>
     </li>
@@ -806,6 +821,7 @@ export function RunActivityRow({
       {run.status === 'failed' && run.failure ? (
         <span className='text-xs text-destructive'>· {run.failure}</span>
       ) : null}
+      {run.retrying ? <span className='text-xs'>· {run.retrying}</span> : null}
       {opener.runHref || opener.onOpenRun ? (
         <RunLink
           run={run}

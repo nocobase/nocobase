@@ -24,7 +24,6 @@ import {
 import {
   useRef,
   useState,
-  useSyncExternalStore,
   type ReactElement,
   type ReactNode,
   type Ref,
@@ -64,8 +63,6 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from 'cn';
-
-import { ComposerSession } from './composer-session.js';
 
 import {
   RichTextEditor,
@@ -1079,8 +1076,6 @@ export interface CommentComposerMode {
 }
 
 export interface CommentComposerProps {
-  /** Optional session owner for drafts that survive view unmounts. */
-  readonly session?: ComposerSession;
   /**
    * Posts the comment in `mode` and answers the posted comment's id: the box clears and the comment, once the timeline
    * draws it, is brought into view just above the composer and kept there while the timeline settles. Answering
@@ -1183,7 +1178,6 @@ export function CommentComposer({
   onSubmit,
   replyingTo,
   onCancelReply,
-  session: externalSession,
   modes,
   onMentionSearch,
   mentionSearchRevision,
@@ -1194,24 +1188,15 @@ export function CommentComposer({
   labels = defaultComposerLabels,
   className,
 }: CommentComposerProps): ReactElement {
-  const [localSession] = useState(() => new ComposerSession());
-  const session = externalSession ?? localSession;
-  useSyncExternalStore(session.subscribe, session.snapshot, session.snapshot);
-  const content = session.read('content', '');
-  const setContent = session.setter('content', '');
-  const mode = session.read<string | null>('mode', modes?.[0]?.value ?? null);
-  const setMode = session.setter<string | null>(
-    'mode',
-    modes?.[0]?.value ?? null,
-  );
-  const pending = session.read('pending', false);
-  const setPending = session.setter('pending', false);
+  const [content, setContent] = useState('');
+  const [mode, setMode] = useState<string | null>(modes?.[0]?.value ?? null);
+  const [pending, setPending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const current = modes?.find((item) => item.value === mode);
 
   const submit = (): void => {
-    if (!content.trim() || session.read('pending', false) || busy) return;
+    if (!content.trim() || pending || busy) return;
     setPending(true);
     const reply = Boolean(replyingTo);
     void onSubmit(content.trim(), mode)
@@ -1243,11 +1228,7 @@ export function CommentComposer({
             >
               <TabsList variant='line' className='h-7'>
                 {modes.map((item) => (
-                  <TabsTrigger
-                    key={item.value}
-                    value={item.value}
-                    disabled={pending}
-                  >
+                  <TabsTrigger key={item.value} value={item.value}>
                     {item.label}
                   </TabsTrigger>
                 ))}
@@ -1264,7 +1245,6 @@ export function CommentComposer({
                   variant='ghost'
                   size='icon-xs'
                   aria-label={labels.cancelReply}
-                  disabled={pending}
                   onClick={onCancelReply}
                 >
                   <XIcon />
@@ -1280,10 +1260,6 @@ export function CommentComposer({
               onPasteCapture: (event) => {
                 const pasted = files(event.clipboardData.files);
                 if (pasted.length === 0) return;
-                if (session.read('pending', false)) {
-                  event.preventDefault();
-                  return;
-                }
                 event.preventDefault();
                 event.stopPropagation();
                 onAttach(pasted);
@@ -1295,10 +1271,6 @@ export function CommentComposer({
               onDropCapture: (event) => {
                 const dropped = files(event.dataTransfer.files);
                 if (dropped.length === 0) return;
-                if (session.read('pending', false)) {
-                  event.preventDefault();
-                  return;
-                }
                 event.preventDefault();
                 event.stopPropagation();
                 onAttach(dropped);
@@ -1321,9 +1293,7 @@ export function CommentComposer({
           contentClassName='max-h-64 overflow-y-auto'
         />
       </div>
-      <fieldset disabled={pending} className='min-w-0'>
-        {attachments}
-      </fieldset>
+      {attachments}
       <div className='flex items-center gap-2'>
         {onAttach ? (
           <>
@@ -1342,11 +1312,9 @@ export function CommentComposer({
               type='file'
               multiple
               hidden
-              disabled={pending}
               data-testid='comment-file-input'
               onChange={(event) => {
-                if (!session.read('pending', false))
-                  onAttach(files(event.target.files));
+                onAttach(files(event.target.files));
                 event.target.value = '';
               }}
             />

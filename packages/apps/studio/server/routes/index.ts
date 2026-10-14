@@ -3,7 +3,6 @@ import type { AppRouteContribution } from '@nocobase/app-server/router';
 
 import { accessRoutes } from '../access/routes.js';
 import { ownerHandoffRoutes } from '../issues/owner-handoff-routes.js';
-import { taskTreeRoutes } from '../issues/task-tree-routes.js';
 import { ciRunRoutes } from '../builds/ci-run-routes.js';
 import { buildsRoutes } from '../builds/routes.js';
 import { studioAgentsRoutes } from '../agents/routes.js';
@@ -23,7 +22,6 @@ import { reportsRoutes } from '../reports/routes.js';
 const routes: readonly AppRouteContribution<Application>[] = [
   accessRoutes,
   ownerHandoffRoutes,
-  taskTreeRoutes,
   inboxRoutes,
   studioAgentsRoutes,
   issueRunsRoutes,

@@ -35,7 +35,7 @@ export function useFollowUps(): UseQueryResult<FollowUpsView> {
 }
 
 /**
- * Follows or stops following one issue (`POST followUps/issues/:issueId/follow|unfollow`), published after a successful save and read back
+ * Follows or stops following one issue (`POST followUps/issues/:issueId/follow|unfollow`), shown at once and read back
  * from the server once saved; the server keeps the limit, so two tabs cannot overwrite each other's list.
  */
 export function useFollowIssue(
@@ -49,11 +49,6 @@ export function useFollowIssue(
   const api = useApiClient();
   const client = useQueryClient();
   return useMutation({
-    mutationKey: ['studio', 'followIssue'],
-    onMutate: async () => {
-      await client.cancelQueries({ queryKey: followUpsKeys.overview });
-      return {};
-    },
     mutationFn: async ({ issueId, follow }) =>
       (
         await api.request<{ data: FollowingView }>({
@@ -61,32 +56,33 @@ export function useFollowIssue(
           path: `followUps/issues/${encodeURIComponent(issueId)}/${follow ? 'follow' : 'unfollow'}`,
         })
       ).data,
-    onSuccess: async ({ issueIds }, { issueId, follow }) => {
+    onMutate: async ({ issueId, follow }) => {
       await client.cancelQueries({ queryKey: followUpsKeys.overview });
-      const first = !client.getQueryData<FollowUpsView>(followUpsKeys.overview)
-        ?.following.length;
-      client.setQueryData<FollowUpsView>(followUpsKeys.overview, (previous) =>
-        previous
-          ? {
-              ...previous,
-              following: [...issueIds],
-              followingStored: true,
-              issues: previous.issues.map((issue) => ({
-                ...issue,
-                followed: issueIds.includes(issue.id),
-              })),
-            }
-          : previous,
+      const previous = client.getQueryData<FollowUpsView>(
+        followUpsKeys.overview,
       );
-      // Consumers select only an acknowledged first follow, never an optimistic one.
-      if (follow)
-        window.dispatchEvent(
-          new CustomEvent('studio:issue-followed', {
-            detail: { issueId, first },
-          }),
-        );
+      if (previous) {
+        const following = follow
+          ? previous.following.includes(issueId)
+            ? previous.following
+            : [...previous.following, issueId]
+          : previous.following.filter((id) => id !== issueId);
+        client.setQueryData<FollowUpsView>(followUpsKeys.overview, {
+          ...previous,
+          following,
+          followingStored: true,
+          issues: previous.issues.map((issue) =>
+            issue.id === issueId ? { ...issue, followed: follow } : issue,
+          ),
+        });
+      }
+      return { previous };
     },
-    onError: (error) => onError(error),
+    onError: (error, _variables, context) => {
+      if (context?.previous)
+        client.setQueryData(followUpsKeys.overview, context.previous);
+      onError(error);
+    },
     onSettled: () =>
       client.invalidateQueries({ queryKey: followUpsKeys.overview }),
   });

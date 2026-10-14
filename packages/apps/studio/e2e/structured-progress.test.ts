@@ -1,15 +1,36 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import type { Page } from '@playwright/test';
 
 import {
   expect,
-  open,
-  test,
+  test as sharedTest,
   unique,
   signIn,
-  server,
+  Api,
+  server as sharedServer,
 } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
+import { startStudio, stopStudio, type ServerState } from './support/server.ts';
+
+// This flow changes manager settings; give it its own server even when other files run concurrently.
+const test = sharedTest.extend<{ studio: ServerState }>({
+  studio: async ({ browser }, use) => {
+    expect(browser.isConnected()).toBe(true);
+    const studio = await startStudio({ isolated: true });
+    try {
+      expect(studio.origin).not.toBe(sharedServer.origin);
+      await use(studio);
+    } finally {
+      await stopStudio(studio);
+      rmSync(studio.directory, { recursive: true, force: true });
+    }
+  },
+  api: async ({ context, studio }, use) => {
+    await signIn(context, 'admin', studio);
+    await use(new Api(context.request, studio));
+  },
+});
 
 test.use({ user: 'admin', locale: 'en-US', actionTimeout: 15_000 });
 
@@ -17,6 +38,7 @@ test('structured requests survive later explanations and locate their latest com
   page,
   api,
   context,
+  studio,
 }) => {
   test.setTimeout(180_000);
   const suffix = unique();
@@ -29,7 +51,11 @@ test('structured requests survive later explanations and locate their latest com
     name: 'Progress test owner',
     roleScopes: { studio: ['admin'] },
   });
-  await signIn(context, owner);
+  await signIn(context, owner, studio);
+  const open = async (target: Page, route: string) => {
+    await target.goto(`${studio.baseURL}${route}`);
+    await target.waitForLoadState('networkidle');
+  };
   await api.patch('users/me/preferences', { locale: 'en-US' });
   const me = await api.get<{ userId: string }>('projects/me');
   const settings = await api.get<{
@@ -238,6 +264,38 @@ test('structured requests survive later explanations and locate their latest com
     await expect(page.getByTestId('follow-ups-following')).toContainText(
       reviewNeeds,
     );
+    const panelSummary = activity.getByTestId('issue-summary');
+    const followTarget = activity.locator(
+      `[data-comment-id="${final.comment.id}"]`,
+    );
+    await page.setViewportSize({ width: 1440, height: 480 });
+    await panelSummary.scrollIntoViewIfNeeded();
+    await expect(followTarget).not.toBeInViewport();
+    const followBefore = await followTarget.boundingBox();
+    await panelSummary
+      .getByRole('link', {
+        name: 'View the project manager’s latest explanation',
+      })
+      .click();
+    await expect(followTarget).toBeInViewport();
+    await expect(followTarget).toHaveClass(/ring-primary/u);
+    const followAfter = await followTarget.boundingBox();
+    expect(followAfter!.y).toBeLessThan(followBefore!.y);
+    records.push({
+      kind: 'follow-ups',
+      url: page.url(),
+      comment: final.comment.id,
+      beforeClickY: followBefore!.y,
+      afterClickY: followAfter!.y,
+      highlighted: true,
+    });
+    if (captures)
+      await page.screenshot({
+        path: path.join(captures, 'pm352-follow-ups-explanation.png'),
+        fullPage: true,
+      });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await panelSummary.scrollIntoViewIfNeeded();
     if (captures) {
       await page.screenshot({
         path: path.join(captures, 'pm352-my-follow-ups.png'),
@@ -248,7 +306,7 @@ test('structured requests survive later explanations and locate their latest com
         JSON.stringify(
           {
             head: process.env.PM352_HEAD,
-            entry: server.baseURL,
+            entry: studio.baseURL,
             records,
             followUps: page.url(),
             deletedCommentLinkRefreshed: true,
