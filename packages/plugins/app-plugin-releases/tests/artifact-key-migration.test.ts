@@ -3,8 +3,12 @@ import path from 'node:path';
 import {
   createDatabaseTest,
   describeMigration,
+  expectCollection as checkCollection,
+  provisionTestDatabases,
+  testDatabaseDialect,
 } from '@nocobase/app-testing/server';
-import { expect } from 'vitest';
+import { createDatabaseManager } from '@nocobase/db';
+import { expect, it } from 'vitest';
 
 const sources = [
   {
@@ -122,6 +126,99 @@ test('upgrades the original key length without changing keys or uniqueness', asy
   ).rejects.toThrow();
   expect((await migrator.latest()).executed).toEqual([]);
   await expect(migrator.rollback()).rejects.toThrow(/irreversible/);
+});
+
+it
+  .skipIf(testDatabaseDialect() === 'mysql')
+  .each([
+    { tablePrefix: 'app_' },
+    { underscored: false },
+    { tablePrefix: 'app_', underscored: false },
+  ])('preserves the legacy unique index with naming %j', async (naming) => {
+  const provisioned = await provisionTestDatabases();
+  const database = createDatabaseManager({
+    default: 'main',
+    connections: {
+      main: { ...provisioned.connectionConfig(), naming },
+    },
+  });
+  try {
+    const connection = database.connection();
+    const migrator = database.createMigrator({ sources });
+    await migrator.upTo(previous);
+    const collection = await connection.builder.getCollection('relReleases');
+    // Dialects expose the unique key as either a constraint or an index.
+    const indexName =
+      collection?.constraints?.find(
+        (item) =>
+          item.type === 'unique' &&
+          item.fields.length === 1 &&
+          item.fields[0] === 'artifactKey',
+      )?.name ??
+      collection?.indexes?.find(
+        (item) =>
+          item.db?.unique === true &&
+          item.fields?.length === 1 &&
+          item.fields[0] === 'artifactKey',
+      )?.name;
+    expect(indexName).toBeDefined();
+    expect(indexName).not.toBe('idx_rel_releases_artifact_key');
+    await connection.builder.dropConstraint('relReleases', indexName!);
+    await connection.builder.alterField('relReleases', 'artifactKey', {
+      type: 'string',
+      length: 1024,
+      nullable: true,
+    });
+    await connection.builder.addConstraint('relReleases', {
+      type: 'unique',
+      fields: ['artifactKey'],
+      mode: 'index',
+    });
+    const records = connection.repository('relReleases');
+    const key = `${'a'.repeat(128)}/${'b'.repeat(36)}.tar.gz`;
+    await records.createOne({ values: release('existing', key) });
+    await records.createOne({ values: release('null-one', null) });
+    await records.createOne({ values: release('null-two', null) });
+
+    expect((await migrator.latest()).executed).toContain(correction);
+    await checkCollection(connection, 'relReleases').toHaveField(
+      'artifactKey',
+      {
+        length: 172,
+        nullable: true,
+      },
+    );
+    await checkCollection(connection, 'relReleases').toHaveIndex(
+      ['artifactKey'],
+      {
+        unique: true,
+      },
+    );
+    const upgraded = await connection.builder.getCollection('relReleases');
+    expect([
+      ...(upgraded?.constraints ?? []),
+      ...(upgraded?.indexes ?? []),
+    ]).toContainEqual(
+      expect.objectContaining({ name: indexName, fields: ['artifactKey'] }),
+    );
+    expect(await records.findOne({ filter: { id: 'existing' } })).toMatchObject(
+      {
+        artifactKey: key,
+      },
+    );
+    expect(await records.count({ filter: { artifactKey: null } })).toBe(2);
+    await records.createOne({ values: release('null-three', null) });
+    await expect(
+      records.createOne({ values: release('duplicate', key) }),
+    ).rejects.toThrow();
+    expect((await migrator.latest()).executed).toEqual([]);
+  } finally {
+    try {
+      await database.destroy();
+    } finally {
+      await provisioned.drop();
+    }
+  }
 });
 
 test('rejects oversized legacy keys before changing schema or data, then allows a corrected retry', async ({

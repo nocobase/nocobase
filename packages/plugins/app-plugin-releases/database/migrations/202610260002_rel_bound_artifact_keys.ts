@@ -31,17 +31,23 @@ const migration: MigrationDefinition = defineMigration({
       return;
     // SQL Server cannot shrink a column while its unique index depends on it.
     // Rebuild that index in the migration transaction, after validating every key.
-    const indexName = 'idx_rel_releases_artifact_key';
-    const rebuildIndex =
-      connection.dialect === 'mssql' &&
-      collection?.indexes?.some((index) => index.name === indexName);
-    if (rebuildIndex) await builder.dropConstraint('relReleases', indexName);
+    // The physical name depends on the connection's naming configuration.
+    const indexName =
+      connection.dialect === 'mssql'
+        ? collection?.indexes?.find(
+            (index) =>
+              index.db?.unique === true &&
+              index.fields?.length === 1 &&
+              index.fields[0] === 'artifactKey',
+          )?.name
+        : undefined;
+    if (indexName) await builder.dropConstraint('relReleases', indexName);
     await builder.alterField('relReleases', 'artifactKey', {
       type: 'string',
       length: 172,
       nullable: true,
     });
-    if (rebuildIndex)
+    if (indexName)
       await builder.addConstraint('relReleases', {
         type: 'unique',
         fields: ['artifactKey'],
