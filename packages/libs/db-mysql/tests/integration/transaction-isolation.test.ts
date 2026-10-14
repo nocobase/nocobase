@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import {
+  CollectionMetadataConflictError,
   createDatabaseManager,
   rawRows,
   type CollectionMetadataStore,
@@ -10,6 +11,77 @@ import { describe, expect, it } from 'vitest';
 import mysql from '../../src/index.js';
 
 describe('MySQL transaction isolation', () => {
+  it.each(['insert', 'update', 'delete'] as const)(
+    'checks the current revision after a concurrent %s outside a repeatable-read snapshot',
+    async (operation) => {
+      const prefix = `revision_${randomUUID().replaceAll('-', '')}`;
+      const tableName = `${prefix}_metadata`;
+      const database = createManager();
+      try {
+        const client = await database.connection().client<Knex>();
+        const root = new DatabaseCollectionMetadataStore({
+          resolveClient: async () => client,
+          tableName,
+        });
+        await root.initialize();
+        if (operation !== 'insert') {
+          await root.put(
+            { version: 1, name: 'orders', title: 'Before' },
+            { expectedRevision: null },
+          );
+        }
+        await client.transaction(
+          async (transaction) => {
+            const child = root.withClient(async () => transaction);
+            const previous = await child.get('orders');
+            if (operation === 'delete') {
+              await root.delete('orders', { expectedRevision: 1 });
+            } else {
+              await root.put(
+                { version: 1, name: 'orders', title: 'Concurrent' },
+                { expectedRevision: previous?.revision ?? null },
+              );
+            }
+            const latest = await root.get('orders');
+            const document = {
+              version: 1,
+              name: 'orders',
+              title: 'After',
+            } as const;
+            // A stale token must report the current row, not the old read view.
+            await expect(
+              child.put(document, {
+                expectedRevision: previous?.revision ?? null,
+              }),
+            ).rejects.toMatchObject(
+              new CollectionMetadataConflictError(
+                'orders',
+                previous?.revision ?? null,
+                latest?.revision ?? null,
+              ),
+            );
+            const saved = await child.put(document, {
+              expectedRevision: latest?.revision ?? null,
+            });
+            expect(saved.revision).toBe(
+              operation === 'insert' ? 2 : operation === 'update' ? 3 : 1,
+            );
+          },
+          { isolationLevel: 'repeatable read' },
+        );
+        expect((await root.get('orders'))?.document.title).toBe('After');
+      } finally {
+        const client = await database.connection().client<Knex>();
+        for (const row of rawRows<Record<string, string>>(
+          await client.raw('show tables like ?', [`${prefix}%`]),
+        )) {
+          await client.schema.dropTable(Object.values(row)[0]!);
+        }
+        await database.destroy();
+      }
+    },
+  );
+
   it('keeps a repeatable-read transaction with own writes out of the shared cache', async () => {
     const prefix = `snapshot_${randomUUID().replaceAll('-', '')}`;
     const tableName = `${prefix}_metadata`;

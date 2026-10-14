@@ -67,6 +67,70 @@ describeIntegrationDatabases(
       },
     );
 
+    it.each([false, true])(
+      'serializes parent and nested savepoint writes when rollback is %s',
+      async (rollback) => {
+        const root = store();
+        await root.initialize();
+        const failure = new Error('Expected savepoint rollback');
+        await context.db.transaction(async (transaction) => {
+          const outer = root.withClient(async () => transaction);
+          const run = transaction.transaction(async (savepoint) => {
+            const middle = root.withClient(async () => savepoint);
+            await savepoint.transaction(async (nested) => {
+              const inner = store().withClient(async () => nested);
+              await inner.initialize();
+              const results = await Promise.allSettled([
+                ...[outer, middle, inner].map((writer) =>
+                  writer.put(
+                    { version: 1, name: 'orders', title: 'First' },
+                    { expectedRevision: null },
+                  ),
+                ),
+                inner.put(
+                  { version: 1, name: 'accounts' },
+                  { expectedRevision: null },
+                ),
+              ]);
+              expect(results[0].status).toBe('fulfilled');
+              for (const result of results.slice(1, 3)) {
+                expect(result.status).toBe('rejected');
+                if (result.status === 'rejected') {
+                  expect(result.reason).toBeInstanceOf(
+                    CollectionMetadataConflictError,
+                  );
+                  expect(result.reason).toMatchObject({
+                    code: 'METADATA_CONFLICT',
+                    expectedRevision: null,
+                    actualRevision: 1,
+                  });
+                }
+              }
+              expect(results[3].status).toBe('fulfilled');
+              await middle.put(
+                { version: 1, name: 'orders', title: 'Updated' },
+                { expectedRevision: 1 },
+              );
+            });
+            if (rollback) throw failure;
+          });
+          if (rollback) await expect(run).rejects.toBe(failure);
+          else await run;
+          expect((await outer.get('orders'))?.document.title).toBe(
+            rollback ? undefined : 'Updated',
+          );
+          await outer.put(
+            { version: 1, name: 'orders', title: 'Recovered' },
+            { expectedRevision: rollback ? null : 2 },
+          );
+        });
+        expect((await root.get('orders'))?.document.title).toBe('Recovered');
+        expect((await root.get('accounts'))?.revision).toBe(
+          rollback ? undefined : 1,
+        );
+      },
+    );
+
     it.each(['insert', 'update', 'delete'] as const)(
       'does not retain an intermediate snapshot after a concurrent %s',
       async (operation) => {

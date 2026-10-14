@@ -45,6 +45,41 @@ afterEach(async () => {
 });
 
 describe('transaction metadata cache', () => {
+  it('preserves metadata conflicts across public parent and savepoint updates', async () => {
+    const manager = database();
+    await createOrders(manager);
+    await manager.connection().collectionMetadata.removeDocument('orders');
+    await manager.transaction(async (transaction) => {
+      await transaction.transaction(async (savepoint) => {
+        const results = await Promise.allSettled([
+          transaction.collectionMetadata.updateCollection('orders', {
+            title: 'Outer',
+          }),
+          savepoint.collectionMetadata.updateCollection('orders', {
+            title: 'Inner',
+          }),
+        ]);
+        expect(
+          results.filter((result) => result.status === 'fulfilled'),
+        ).toHaveLength(1);
+        const failure = results.find((result) => result.status === 'rejected');
+        expect(failure?.reason).toBeInstanceOf(CollectionMetadataConflictError);
+        expect(failure?.reason).toMatchObject({
+          code: 'METADATA_CONFLICT',
+          expectedRevision: null,
+          actualRevision: 1,
+        });
+      });
+      await transaction.collectionMetadata.updateCollection('orders', {
+        title: 'Recovered',
+      });
+    });
+    expect(
+      (await manager.connection().collectionMetadata.get('orders'))?.document
+        .title,
+    ).toBe('Recovered');
+  });
+
   it('preserves metadata conflict errors for concurrent public updates', async () => {
     const manager = database();
     await createOrders(manager);

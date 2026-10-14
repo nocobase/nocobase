@@ -37,7 +37,7 @@ interface NamingSnapshotCache {
 }
 
 // Database row locks do not serialize operations using the same transaction.
-// Share the queue across Store instances bound to that transaction as well.
+// Share the queue across Store instances and every savepoint of that transaction.
 const transactionWrites = new WeakMap<Knex, Promise<void>>();
 
 export const DEFAULT_COLLECTION_METADATA_TABLE =
@@ -299,19 +299,23 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
     if (!(client as Knex.Transaction).isTransaction)
       return client.transaction(execute);
 
-    const previous = transactionWrites.get(client) ?? Promise.resolve();
+    // Savepoints have distinct Knex clients but share their parent's row locks.
+    let transaction = client as Knex.Transaction;
+    while (transaction.parentTransaction)
+      transaction = transaction.parentTransaction;
+    const previous = transactionWrites.get(transaction) ?? Promise.resolve();
     const result = previous.then(() => execute(client));
     // A handled conflict must not reject the next queued metadata write.
     const settled = result.then(
       () => {},
       () => {},
     );
-    transactionWrites.set(client, settled);
+    transactionWrites.set(transaction, settled);
     try {
       return await result;
     } finally {
-      if (transactionWrites.get(client) === settled)
-        transactionWrites.delete(client);
+      if (transactionWrites.get(transaction) === settled)
+        transactionWrites.delete(transaction);
     }
   }
 
@@ -473,9 +477,12 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
     knex: Knex,
     name: string,
   ): Promise<number | null> {
+    // Write preconditions need the current row even if a repeatable-read
+    // transaction has already established an older document snapshot.
     const row = (await this.table(knex)
       .select('revision')
       .where({ name })
+      .forUpdate()
       .first()) as Pick<CollectionMetadataRow, 'revision'> | undefined;
     return row ? parseDatabaseRevision(name, row.revision) : null;
   }
