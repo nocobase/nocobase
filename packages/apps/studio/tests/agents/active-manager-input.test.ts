@@ -253,6 +253,7 @@ describe('manager active dispatch', () => {
           (
             await h.runner(RUNNER_ROUTES.start, resumed.run.id, {
               workDir: '/work/next',
+              adapter: { kind: 'claude' },
               acceptsInput: true,
             })
           ).status,
