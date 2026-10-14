@@ -17,7 +17,6 @@ import {
   type Issue,
   type IssueBoard,
   type IssueDetail,
-  type Issue,
   type IssueListItem,
   type IssueListQuery,
   type IssuePage,
