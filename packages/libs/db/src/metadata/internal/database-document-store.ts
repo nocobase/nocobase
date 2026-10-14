@@ -259,18 +259,26 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
     }
     const client = await this.options.resolveClient();
     const execute = async (knex: Knex): Promise<T> => {
-      // A fresh token avoids revision reuse when a document is deleted and
-      // recreated. The token and documents commit or roll back together.
-      const updated = await this.table(knex, this.versionTableName)
-        .where({ id: 1 })
-        .update({ version: randomUUID() });
-      if (Number(updated) !== 1)
-        throw new Error('Collection Metadata cache version is missing.');
-      return operation(knex);
+      // Lock writers and give concurrent reads in this transaction a temporary
+      // token. Their snapshots must not describe the final committed version.
+      await this.changeVersion(knex);
+      const result = await operation(knex);
+      // A fresh token after the document write prevents a concurrently loaded
+      // intermediate snapshot from being reused after the write completes.
+      await this.changeVersion(knex);
+      return result;
     };
     return (client as Knex.Transaction).isTransaction
       ? execute(client)
       : client.transaction(execute);
+  }
+
+  private async changeVersion(knex: Knex): Promise<void> {
+    const updated = await this.table(knex, this.versionTableName)
+      .where({ id: 1 })
+      .update({ version: randomUUID() });
+    if (Number(updated) !== 1)
+      throw new Error('Collection Metadata cache version is missing.');
   }
 
   private invalidateNamingSnapshots(): void {
