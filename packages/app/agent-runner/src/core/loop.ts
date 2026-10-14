@@ -110,7 +110,8 @@ import {
   type UpdateTarget,
 } from './update.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
-import { ToolCapabilitiesCache } from './tool-capabilities.ts';
+import { ToolCapabilitiesCache, detectTools } from './tool-capabilities.ts';
+export { detectTools } from './tool-capabilities.ts';
 import { reportedModels } from './model-list.ts';
 
 /** The version this runner reports and compares updates with: the host package's (`host.ts`). */
@@ -153,29 +154,6 @@ export async function readDaemonPid(
 ): Promise<DaemonPid | undefined> {
   const pid = await readJson<DaemonPid>(paths.daemonPid).catch(() => undefined);
   return pid !== undefined && isAlive(pid.pid) ? pid : undefined;
-}
-
-export async function detectTools(
-  adapters: Map<AgentTool, AgentAdapter>,
-): Promise<ToolInfo[]> {
-  const tools: ToolInfo[] = [];
-  for (const [kind, adapter] of adapters) {
-    const detected = await adapter
-      .detect()
-      .catch(() => ({ installed: false, authenticated: false }));
-    if (!detected.installed) continue;
-    tools.push({
-      kind,
-      authenticated: detected.authenticated,
-      ...('version' in detected && detected.version !== undefined
-        ? { version: detected.version }
-        : {}),
-      ...('path' in detected && detected.path !== undefined
-        ? { path: detected.path }
-        : {}),
-    });
-  }
-  return tools;
 }
 
 export function runnerFeatures(
@@ -236,6 +214,7 @@ interface AppLink {
    */
   detection?: {
     key: string;
+    controller: AbortController;
     tools: Promise<ToolInfo[]>;
     capabilities: Promise<ToolCapabilitiesCache>;
   };
@@ -428,9 +407,10 @@ export class RunnerDaemon {
       this.options.log(`runner stopping: ${reason}`);
       this.stopping.abort();
       await Promise.allSettled(
-        this.links.map(async (link) =>
-          (await link.detection?.capabilities)?.stop(),
-        ),
+        this.links.map(async (link) => {
+          link.detection?.controller.abort();
+          await (await link.detection?.capabilities)?.stop();
+        }),
       );
       this.slotFreed?.();
       for (const link of this.links)
@@ -501,21 +481,27 @@ export class RunnerDaemon {
       .digest('hex');
     if (link.detection?.key !== key) {
       const previous = link.detection;
-      const adapters =
+      previous?.controller.abort();
+      const controller = new AbortController();
+      const adaptersFor = () =>
         this.options.adaptersFor?.(process.env, passEnv, localVariables) ??
         this.options.adapters;
-      const tools = detectTools(adapters);
+      const tools = detectTools(adaptersFor(), controller.signal);
       link.detection = {
         key,
+        controller,
         tools,
         capabilities: tools.then(
-          (detected) => new ToolCapabilitiesCache(adapters, detected),
+          (detected) => new ToolCapabilitiesCache(adaptersFor, detected),
         ),
       };
       if (previous !== undefined)
         void previous.capabilities.then((cache) => cache.stop());
     }
-    const capabilities = await link.detection.capabilities;
+    const detection = link.detection;
+    const capabilities = await detection.capabilities;
+    if (this.stopping.signal.aborted) return { variables: [], tools: [] };
+    if (link.detection !== detection) return this.environmentOf(link);
     capabilities.refresh();
     return {
       variables: providedNames(process.env, passEnv, localVariables),
