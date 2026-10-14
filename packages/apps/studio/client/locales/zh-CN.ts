@@ -103,7 +103,6 @@ const zhCN: AppResource = {
   runTranscript: {
     usedModel: '使用模型：{{model}}',
     defaultModel: '默认模型',
-    confirmedBy: '确认人：{{person}}',
     actingAs: '运行身份：{{actor}}',
     triggeredBy: '触发人：{{person}}',
     systemTrigger: '由系统触发',

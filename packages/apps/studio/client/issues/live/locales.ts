@@ -3,15 +3,6 @@
  * application's locales.
  */
 export const issueLiveEnUS = {
-  personalRunner: {
-    request: '{{name}} requests to continue on your personal runner',
-    waiting: 'Waiting for the owner to confirm use of their personal runner',
-    rejected: 'The owner rejected the personal runner request',
-    confirm: 'Confirm',
-    reject: 'Reject',
-    runAsMe: 'Run as me',
-    failed: 'Could not update the personal runner request.',
-  },
   summary: {
     label: 'Summary',
     collapse: 'Collapse summary',
@@ -74,15 +65,6 @@ export const issueLiveEnUS = {
 };
 
 export const issueLiveZhCN: typeof issueLiveEnUS = {
-  personalRunner: {
-    request: '{{name}} 请求在你的个人执行机上继续',
-    waiting: '等待负责人确认使用其个人执行机',
-    rejected: '负责人已拒绝个人执行机请求',
-    confirm: '确认',
-    reject: '拒绝',
-    runAsMe: '以我的身份执行',
-    failed: '未能更新个人执行机请求。',
-  },
   summary: {
     label: '摘要',
     collapse: '收起摘要',
