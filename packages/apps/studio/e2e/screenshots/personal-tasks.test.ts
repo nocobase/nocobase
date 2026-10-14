@@ -379,9 +379,13 @@ for (const preset of ['compact', 'default'] as const) {
         await assertDraft(await openComposer());
       }
       await page.setViewportSize({ width: 1600, height: 900 });
-      await row(parent)
-        .getByRole('button', { name: 'Stop following', exact: true })
-        .click();
+      const stopFollowing = row(parent).getByRole('button', {
+        name: 'Following · 1/5',
+        exact: true,
+      });
+      await expect(stopFollowing).toHaveAttribute('aria-pressed', 'true');
+      await expect(stopFollowing).toHaveAttribute('title', 'Stop following');
+      await stopFollowing.click();
       await expect
         .poll(
           async () =>
