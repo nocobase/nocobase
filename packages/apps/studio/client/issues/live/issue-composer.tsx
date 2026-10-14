@@ -3,6 +3,7 @@
  * note mode when some kind can be woken, and the reply the feed started. Nothing renders without `issues/comment`.
  */
 import {
+  type AttachmentUploads,
   canUploadAttachments,
   useAttachmentUploads,
   useHasMentionableKinds,
@@ -14,6 +15,8 @@ import { useMemo, useRef, type FocusEvent, type ReactElement } from 'react';
 
 import { PendingAttachments } from '@/components/attachment-list';
 import { CommentComposer } from '@/components/comment-thread';
+
+import { useIssueDrafts } from '../../follow-ups/draft-state.js';
 
 import { useIssuePageWording } from '../detail/labels.js';
 import { MentionMembersLoadError } from '../detail/mention-members-load-error.js';
@@ -32,8 +35,12 @@ export function IssueComposer({
   const { t } = wording;
   const viewer = useViewer();
   const wakeable = useHasMentionableKinds();
-  const uploads = useAttachmentUploads();
+  const localUploads = useAttachmentUploads();
   const conversation = useIssueConversation();
+  const drafts = useIssueDrafts();
+  const uploads =
+    conversation.draft?.read<AttachmentUploads | null>('issueUploads', null) ??
+    localUploads;
   const { replyTo, setReplyTo, composerOpen, setComposerOpen } = conversation;
   const rootRef = useRef<HTMLDivElement>(null);
   const modes = useMemo(
@@ -55,7 +62,11 @@ export function IssueComposer({
         : undefined,
     [wakeable, t],
   );
-  if (!conversation.mayComment) return null;
+  if (
+    !conversation.mayComment ||
+    (drafts && !conversation.draft?.read('issueUploads', null))
+  )
+    return null;
   if (foldable && !composerOpen)
     return (
       <div className={className} data-testid='issue-composer' data-folded=''>
@@ -108,6 +119,7 @@ export function IssueComposer({
         />
       ) : null}
       <CommentComposer
+        session={conversation.draft ?? undefined}
         editorRef={conversation.editorRef}
         replyingTo={
           replyTo ? (replyTo.authorName ?? appT('common.unknown')) : null

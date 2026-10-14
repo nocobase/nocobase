@@ -9,11 +9,14 @@
 
 /**
  * The realtime topic that says Studio stored something new about a pull request (a webhook delivery, a poll, a merge),
- * so open pages read their pull requests again. Public and without content: each page reads what it may see.
+ * so open pages read their pull requests again. Signed-in connections only, and without content: each page reads what
+ * it may see.
  */
 export const STUDIO_GIT_TOPIC = 'studio:git';
 export interface StudioGitEvent {
   readonly kind: 'studio.git.changed';
+  /** The issues the changed pull requests are linked to; absent, anything may have changed. */
+  readonly issueIds?: readonly string[];
 }
 
 /** The workflow event fired when every counted pull request of an issue is merged. */

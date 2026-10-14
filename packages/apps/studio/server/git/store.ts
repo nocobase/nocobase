@@ -878,6 +878,20 @@ export async function linksOfPullRequest(
   return rows.map((row) => linkOf(row));
 }
 
+/** The issues linked to any of the pull requests. */
+export async function issuesOfPullRequests(
+  conn: DatabaseConnection,
+  pullRequestIds: readonly string[],
+): Promise<string[]> {
+  if (pullRequestIds.length === 0) return [];
+  const rows = await conn.query
+    .selectFrom(LINKS)
+    .select('issueId')
+    .where('pullRequestId', 'in', [...new Set(pullRequestIds)])
+    .execute();
+  return [...new Set(rows.map((row) => String(row.issueId)))];
+}
+
 /** An issue's links with their pull requests, oldest link first. */
 export async function pullRequestsOfIssue(
   conn: DatabaseConnection,

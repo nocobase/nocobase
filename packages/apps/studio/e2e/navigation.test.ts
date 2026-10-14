@@ -38,7 +38,7 @@ test('inbox navigation adapts to languages, themes, icon mode and the mobile dra
         });
         const links = nav.getByRole('link');
         await expect(links.nth(0)).toHaveAccessibleName(
-          locale === 'en-US' ? 'My issues' : '我的任务',
+          locale === 'en-US' ? 'My tasks-α' : '我的任务-α',
         );
         await expect(links.nth(1)).toHaveAccessibleName(
           locale === 'en-US' ? 'My agents' : '我的 Agent',

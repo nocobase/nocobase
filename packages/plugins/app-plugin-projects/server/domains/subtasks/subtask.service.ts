@@ -569,11 +569,27 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
         >;
       },
 
-      async listCounts(conn, issues) {
+      async listCounts(conn, issues, readableIds) {
         const catalogs = catalogsFor(deps.statuses, conn);
         const ids = issues.map((issue) => issue.id);
-        const children = await childCounts(conn, ids);
-        const blocked = await blockedCounts(conn, catalogs, issues);
+        const children = readableIds
+          ? new Map<string, number>()
+          : await childCounts(conn, ids);
+        if (readableIds) {
+          for (const child of await liveChildren(conn, ids)) {
+            if (readableIds.has(child.id) && child.parentIssueId)
+              children.set(
+                child.parentIssueId,
+                (children.get(child.parentIssueId) ?? 0) + 1,
+              );
+          }
+        }
+        const blocked = await blockedCounts(
+          conn,
+          catalogs,
+          issues,
+          readableIds,
+        );
         return new Map(
           ids.map((id) => [
             id,

@@ -179,7 +179,7 @@ export interface StudioGitDeps {
   /** Where pushes and workflow runs a webhook delivers are told (`events.ts`). */
   readonly repoEvents?: RepoEvents;
   /** A pull request's preview label state changed, so open pages read the issue's previews again. */
-  readonly onLabelChanged?: () => void;
+  readonly onLabelChanged?: (pullRequestId: string) => void;
 }
 
 /** Who links: a person, or an agent on a run (named by its id). */

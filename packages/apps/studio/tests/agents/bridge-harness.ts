@@ -117,6 +117,7 @@ import {
 } from '../../server/agents/conversation/delegation.js';
 import { issueRunsRoutes } from '../../server/agents/run-views.js';
 import { projectManagerRoutes } from '../../server/agents/manager/routes.js';
+import { taskTreeRoutes } from '../../server/issues/task-tree-routes.js';
 import { ownerHandoffRoutes } from '../../server/issues/owner-handoff-routes.js';
 import { followUpsRoutes } from '../../server/follow-ups/routes.js';
 import { createProjectManager } from '../../server/agents/manager/service.js';
@@ -355,6 +356,8 @@ export interface BridgeHarness {
   /** Pushes and workflow runs webhooks delivered. */
   readonly gitRepoEvents: RepoEvents;
   readonly github: FakeGitHub;
+  /** The pull requests Studio stored something about, in order (`onChanged`). */
+  readonly gitChanges: string[];
   /** People's preferences, by `<userId>:<key>`. */
   readonly preferences: Map<string, unknown>;
   /** What Studio's inbox port was given: every notice sent, and every decision settled. */
@@ -633,6 +636,7 @@ export async function createBridgeHarness(
   const releaseServices = releases;
   // Before the agents: the template they add names the workflow event this registers.
   const github = createFakeGitHub();
+  const gitChanges: string[] = [];
   const port = {
     sent: [] as InboxSend[],
     settled: [] as { decisionKey: string; outcome: string }[],
@@ -663,6 +667,7 @@ export async function createBridgeHarness(
     events: gitEvents,
     repoEvents: gitRepoEvents,
   } = bindStudioGit({
+    onChanged: (pullRequestId) => gitChanges.push(pullRequestId),
     preferenceOf: (userId, key) =>
       Promise.resolve(preferences.get(`${userId}:${key}`)),
     projects: () => projects,
@@ -1211,6 +1216,10 @@ export async function createBridgeHarness(
     ...(buildsService ? [buildsRoutes] : []),
   ])
     api.route('/', await contribution.createRouter(appLike));
+  api.route(
+    '/',
+    await taskTreeRoutes.createRouter(appLike as unknown as never),
+  );
   api.route('/', await reportsRoutes.createRouter(appLike as unknown as never));
   api.route(
     '/',
@@ -1387,6 +1396,7 @@ export async function createBridgeHarness(
     gitConnections,
     gitRepoEvents,
     github,
+    gitChanges,
     preferences,
     port,
     app,

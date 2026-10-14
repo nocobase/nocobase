@@ -82,7 +82,8 @@ export interface GitFlowDeps {
   readonly inbox: () => StudioInboxPort | undefined;
   readonly onError: (message: string, error: unknown) => void;
   /** After every store has committed: open pages read their pull requests again (`STUDIO_GIT_TOPIC`). */
-  readonly onChanged?: () => void;
+  /** Something about the pull request was stored. */
+  readonly onChanged?: (pullRequestId: string) => void;
   /** After a store has committed, with the stored pull request (`events.ts`). */
   readonly onStored?: (pr: PullRequestRow) => Promise<void>;
   /** Why the checks of a commit failed, read from the host (`StudioGit.explainFailures`); left out, only their names. */
@@ -862,7 +863,7 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
         return stored;
       });
       await runAfter(after);
-      deps.onChanged?.();
+      deps.onChanged?.(pr.id);
       await deps.onStored?.(pr);
       return pr;
     },

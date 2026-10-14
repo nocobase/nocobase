@@ -4,6 +4,7 @@ import {
   ArrowUpDownIcon,
   ArrowUpIcon,
   BotIcon,
+  InfoIcon,
   SignalHighIcon,
   SignalLowIcon,
   SignalMediumIcon,
@@ -15,6 +16,17 @@ import type { MouseEvent, ReactElement, ReactNode } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverTitle,
+} from '@/components/ui/popover';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
@@ -67,6 +79,10 @@ export interface IssueTableSort {
 }
 
 export interface IssueTableLabels {
+  readonly information?: string;
+  readonly sort?: string;
+  readonly ascending?: string;
+  readonly descending?: string;
   readonly identifier: string;
   readonly title: string;
   readonly status: string;
@@ -204,7 +220,11 @@ export function IssuePerson({
   const agent = person.kind === 'agent';
   // Initials beside the name say nothing more, so a person without a picture shows the name alone.
   if (!agent && !person.avatar)
-    return <span className='truncate text-sm'>{person.name}</span>;
+    return (
+      <span className='block truncate text-sm' title={person.name}>
+        {person.name}
+      </span>
+    );
   if (agent)
     return (
       <span className='flex min-w-0 items-center gap-2 text-sm'>
@@ -273,9 +293,19 @@ function SortButton({
 }
 
 export interface IssueTableProps {
+  readonly compact?: boolean;
+  readonly selectedId?: string | null;
   readonly rows: readonly IssueTableRow[];
+  /** Flat ordered table entries; full-width entries supply group, pagination or child-load controls. */
+  readonly entries?: readonly (
+    IssueTableRow | { readonly key: string; readonly content: ReactNode }
+  )[];
+  readonly rowLeading?: (row: IssueTableRow) => ReactNode;
+  readonly rowDescription?: (row: IssueTableRow) => ReactNode;
   /** The order the rows are in, shown on the column headers. */
   readonly sort?: IssueTableSort;
+  /** Display for a valid server sort that is not a sortable table column (for example creation time). */
+  readonly sortDescription?: string;
   /** Makes the identifier, priority and updated headers sortable; the consumer reorders (usually on the server). */
   readonly onSortChange?: (sort: IssueTableSort) => void;
   /** Checkboxes when given, with the ids that are checked. */
@@ -309,7 +339,13 @@ function plainClick(event: MouseEvent): boolean {
 
 export function IssueTable({
   rows,
+  compact = false,
+  selectedId,
+  entries,
+  rowLeading,
+  rowDescription,
   sort,
+  sortDescription,
   onSortChange,
   selectedIds,
   onSelectedIdsChange,
@@ -333,7 +369,13 @@ export function IssueTable({
     month: 'short',
     day: 'numeric',
   });
-  const columns = 7 + (selectable ? 1 : 0) + (rowAction ? 1 : 0);
+  const activeSort =
+    sortDescription ??
+    (sort
+      ? `${labels[sort.column]} · ${sort.direction === 'asc' ? (labels.ascending ?? 'ascending') : (labels.descending ?? 'descending')}`
+      : '');
+  const columns =
+    (compact ? 3 : 7) + (selectable ? 1 : 0) + (rowAction ? 1 : 0);
 
   function toggle(id: string, checked: boolean): void {
     if (!selectable) return;
@@ -346,7 +388,16 @@ export function IssueTable({
   return (
     // `isolate` keeps the sticky header's z-index inside the table, so a page laid over the list (a covering child
     // route) is not painted under it.
-    <Table className={cn('isolate', className)}>
+    <Table
+      className={cn('isolate', compact && 'table-fixed', className)}
+      data-compact={compact || undefined}
+    >
+      {compact ? (
+        <caption className='caption-top p-2 text-left text-xs text-muted-foreground'>
+          {labels.sort ?? 'Sort'}
+          {activeSort ? `: ${activeSort}` : ''}
+        </caption>
+      ) : null}
       <TableHeader className='sticky top-0 z-10 bg-background'>
         <TableRow className='hover:bg-transparent'>
           {selectable ? (
@@ -363,41 +414,93 @@ export function IssueTable({
               />
             </TableHead>
           ) : null}
-          <TableHead className='w-24'>
-            <SortButton
-              column='identifier'
-              title={labels.identifier}
-              sort={sort}
-              onSortChange={onSortChange}
-            />
-          </TableHead>
-          <TableHead className='w-full min-w-48'>{labels.title}</TableHead>
-          <TableHead className='w-32'>{labels.status}</TableHead>
-          <TableHead className='w-28'>
-            <SortButton
-              column='priority'
-              title={labels.priority}
-              sort={sort}
-              onSortChange={onSortChange}
-            />
-          </TableHead>
-          <TableHead className='w-40 max-md:hidden'>{labels.owner}</TableHead>
-          <TableHead className='w-44 max-md:hidden'>
-            {labels.executor}
-          </TableHead>
-          <TableHead className='w-24'>
-            <SortButton
-              column='updated'
-              title={labels.updated}
-              sort={sort}
-              onSortChange={onSortChange}
-            />
-          </TableHead>
-          {rowAction ? <TableHead className='w-24' /> : null}
+          {compact ? (
+            <>
+              <TableHead>{labels.title}</TableHead>
+              <TableHead className='w-24'>{labels.status}</TableHead>
+              <TableHead className='w-10'>
+                <Popover>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <PopoverTrigger
+                          render={
+                            <Button
+                              variant='ghost'
+                              size='icon-sm'
+                              aria-label={`${labels.sort ?? 'Sort'}${activeSort ? `: ${activeSort}` : ''}`}
+                            />
+                          }
+                        >
+                          <ArrowUpDownIcon />
+                        </PopoverTrigger>
+                      }
+                    />
+                    <TooltipContent>{labels.sort ?? 'Sort'}</TooltipContent>
+                  </Tooltip>
+                  <PopoverContent
+                    align='end'
+                    className='motion-reduce:animate-none'
+                  >
+                    <PopoverTitle>{labels.sort ?? 'Sort'}</PopoverTitle>
+                    {(['identifier', 'priority', 'updated'] as const).map(
+                      (column) => (
+                        <SortButton
+                          key={column}
+                          column={column}
+                          title={labels[column]}
+                          sort={sort}
+                          onSortChange={onSortChange}
+                        />
+                      ),
+                    )}
+                  </PopoverContent>
+                </Popover>
+              </TableHead>
+            </>
+          ) : (
+            <>
+              <TableHead className='w-24'>
+                <SortButton
+                  column='identifier'
+                  title={labels.identifier}
+                  sort={sort}
+                  onSortChange={onSortChange}
+                />
+              </TableHead>
+              <TableHead className='w-full min-w-48'>{labels.title}</TableHead>
+              <TableHead className='w-32'>{labels.status}</TableHead>
+              <TableHead className='w-28'>
+                <SortButton
+                  column='priority'
+                  title={labels.priority}
+                  sort={sort}
+                  onSortChange={onSortChange}
+                />
+              </TableHead>
+              <TableHead className='w-40 max-md:hidden'>
+                {labels.owner}
+              </TableHead>
+              <TableHead className='w-44 max-md:hidden'>
+                {labels.executor}
+              </TableHead>
+              <TableHead className='w-24'>
+                <SortButton
+                  column='updated'
+                  title={labels.updated}
+                  sort={sort}
+                  onSortChange={onSortChange}
+                />
+              </TableHead>
+            </>
+          )}
+          {rowAction ? (
+            <TableHead className={compact ? 'w-10' : 'w-24'} />
+          ) : null}
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.length === 0 ? (
+        {(entries ?? rows).length === 0 ? (
           <TableRow className='hover:bg-transparent'>
             <TableCell
               colSpan={columns}
@@ -407,13 +510,47 @@ export function IssueTable({
             </TableCell>
           </TableRow>
         ) : null}
-        {rows.map((row) => {
+        {(entries ?? rows).map((row) => {
+          if ('content' in row)
+            return (
+              <TableRow key={row.key} className='hover:bg-transparent'>
+                <TableCell colSpan={columns}>{row.content}</TableCell>
+              </TableRow>
+            );
           const href = rowHref?.(row);
           const checked = selectedIds?.has(row.id) ?? false;
+          const identifier = (
+            <div className='flex min-w-0 items-center gap-1'>
+              {rowLeading?.(row)}
+              {href ? (
+                <a
+                  href={href}
+                  aria-current={selectedId === row.id ? 'true' : undefined}
+                  className='font-mono text-xs text-muted-foreground hover:text-foreground hover:underline'
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (onRowClick && plainClick(event)) {
+                      event.preventDefault();
+                      onRowClick(row, event);
+                    }
+                  }}
+                >
+                  {row.identifier}
+                </a>
+              ) : (
+                <span className='font-mono text-xs text-muted-foreground'>
+                  {row.identifier}
+                </span>
+              )}
+            </div>
+          );
           return (
             <TableRow
               key={row.id}
-              data-state={checked ? 'selected' : undefined}
+              data-task-id={row.id}
+              data-state={
+                checked || selectedId === row.id ? 'selected' : undefined
+              }
               className={cn(onRowClick && 'cursor-pointer')}
               onClick={(event) => {
                 if (onRowClick && plainClick(event)) onRowClick(row, event);
@@ -431,33 +568,27 @@ export function IssueTable({
                   />
                 </TableCell>
               ) : null}
-              <TableCell>
-                {href ? (
-                  <a
-                    href={href}
-                    className='font-mono text-xs text-muted-foreground hover:text-foreground hover:underline'
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (onRowClick && plainClick(event)) {
-                        event.preventDefault();
-                        onRowClick(row, event);
-                      }
-                    }}
-                  >
-                    {row.identifier}
-                  </a>
-                ) : (
-                  <span className='font-mono text-xs text-muted-foreground'>
-                    {row.identifier}
-                  </span>
-                )}
-              </TableCell>
+              {!compact ? <TableCell>{identifier}</TableCell> : null}
               <TableCell className='max-w-0'>
-                <div className='flex min-w-0 items-center gap-2'>
-                  <span className='truncate font-medium' title={row.title}>
+                {compact ? identifier : null}
+                <div
+                  className={cn(
+                    'flex min-w-0 gap-2',
+                    compact ? 'flex-wrap items-start' : 'items-center',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'font-medium',
+                      compact
+                        ? 'line-clamp-2 whitespace-normal break-words'
+                        : 'truncate',
+                    )}
+                    title={row.title}
+                  >
                     {row.title}
                   </span>
-                  {row.labels.length > 0 ? (
+                  {!compact && row.labels.length > 0 ? (
                     <span className='flex shrink-0 gap-1 max-md:hidden'>
                       {row.labels.slice(0, 3).map((label) => (
                         <Badge
@@ -481,37 +612,125 @@ export function IssueTable({
                     </span>
                   ) : null}
                 </div>
+                {rowDescription?.(row)}
               </TableCell>
               <TableCell>
                 {row.status ? (
-                  <IssueStatusBadge status={row.status} />
+                  <IssueStatusBadge
+                    status={row.status}
+                    {...(compact
+                      ? {
+                          className:
+                            'h-auto min-h-5 max-w-full whitespace-normal break-words',
+                        }
+                      : {})}
+                  />
                 ) : (
                   <span className='text-muted-foreground'>
                     {labels.unassigned}
                   </span>
                 )}
               </TableCell>
-              <TableCell>
-                <IssuePriority
-                  priority={row.priority}
-                  label={labels.priorities[row.priority]}
-                />
-              </TableCell>
-              <TableCell className='max-w-40 max-md:hidden'>
-                <IssuePerson person={row.owner} fallback={labels.unassigned} />
-              </TableCell>
-              <TableCell className='max-w-44 max-md:hidden'>
-                <IssuePerson
-                  person={row.executor}
-                  fallback={labels.unassigned}
-                />
-              </TableCell>
-              <TableCell
-                className='text-sm whitespace-nowrap text-muted-foreground tabular-nums'
-                title={new Date(row.updatedAt).toLocaleString(locale)}
-              >
-                {date.format(new Date(row.updatedAt))}
-              </TableCell>
+              {compact ? (
+                <TableCell onClick={(event) => event.stopPropagation()}>
+                  <Popover>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <PopoverTrigger
+                            render={
+                              <Button
+                                variant='ghost'
+                                size='icon-sm'
+                                aria-label={`${labels.information ?? 'Task information'}: ${row.identifier}`}
+                              />
+                            }
+                          >
+                            <InfoIcon />
+                          </PopoverTrigger>
+                        }
+                      />
+                      <TooltipContent>
+                        {labels.information ?? 'Task information'}
+                      </TooltipContent>
+                    </Tooltip>
+                    <PopoverContent
+                      align='end'
+                      className='max-h-[70dvh] overflow-y-auto motion-reduce:animate-none'
+                    >
+                      <PopoverTitle>{row.identifier}</PopoverTitle>
+                      <p className='whitespace-normal break-words'>
+                        {row.title}
+                      </p>
+                      <dl className='grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2'>
+                        <dt>{labels.priority}</dt>
+                        <dd>
+                          <IssuePriority
+                            priority={row.priority}
+                            label={labels.priorities[row.priority]}
+                          />
+                        </dd>
+                        <dt>{labels.owner}</dt>
+                        <dd>
+                          <IssuePerson
+                            person={row.owner}
+                            fallback={labels.unassigned}
+                          />
+                        </dd>
+                        <dt>{labels.executor}</dt>
+                        <dd>
+                          <IssuePerson
+                            person={row.executor}
+                            fallback={labels.unassigned}
+                          />
+                        </dd>
+                        <dt>{labels.updated}</dt>
+                        <dd>
+                          {new Date(row.updatedAt).toLocaleString(locale)}
+                        </dd>
+                      </dl>
+                      <div className='flex flex-wrap gap-1'>
+                        {row.labels.map((label) => (
+                          <Badge
+                            key={label.id}
+                            variant='secondary'
+                            className={issueColorClass[label.color]}
+                          >
+                            {label.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </TableCell>
+              ) : (
+                <>
+                  <TableCell>
+                    <IssuePriority
+                      priority={row.priority}
+                      label={labels.priorities[row.priority]}
+                    />
+                  </TableCell>
+                  <TableCell className='max-w-40 max-md:hidden'>
+                    <IssuePerson
+                      person={row.owner}
+                      fallback={labels.unassigned}
+                    />
+                  </TableCell>
+                  <TableCell className='max-w-44 max-md:hidden'>
+                    <IssuePerson
+                      person={row.executor}
+                      fallback={labels.unassigned}
+                    />
+                  </TableCell>
+                  <TableCell
+                    className='text-sm whitespace-nowrap text-muted-foreground tabular-nums'
+                    title={new Date(row.updatedAt).toLocaleString(locale)}
+                  >
+                    {date.format(new Date(row.updatedAt))}
+                  </TableCell>
+                </>
+              )}
               {rowAction ? (
                 <TableCell
                   className='text-right'
