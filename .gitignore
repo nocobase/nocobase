@@ -30,3 +30,5 @@ packages/app/app-host/fixtures/app-dist/hub/dist/**
 packages/app/app-host/storage/
 
 packages/templates/app-template-default/workflows
+
+# CI pool forwarding test, do not merge
