@@ -152,10 +152,9 @@ for (const field of ['title', 'permission'] as const) {
               response.request().method() === 'GET',
           );
           // Dispatch the browser connectivity events without aborting the already-persisted PATCH response.
-          await page.evaluate(() => {
-            window.dispatchEvent(new Event('offline'));
-            window.dispatchEvent(new Event('online'));
-          });
+          await page.evaluate(
+            "window.dispatchEvent(new Event('offline')); window.dispatchEvent(new Event('online'));",
+          );
           expect((await refreshed).status()).toBe(200);
           await expect(
             page.getByRole('heading', {
