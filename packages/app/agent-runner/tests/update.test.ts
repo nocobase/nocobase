@@ -38,8 +38,8 @@ import {
 import { CliUnavailableError, resolveCli } from '../src/agent/cli.ts';
 import { RunnerDaemon, runnerVersion } from '../src/core/loop.ts';
 import { servicePlan } from '../src/core/service.ts';
-import { isNewer } from '../src/core/update.ts';
-import { RUNNER_ROUTES } from '../src/protocol/index.ts';
+import { isNewer, updateDecision } from '../src/core/update.ts';
+import { PROTOCOL_VERSION, RUNNER_ROUTES } from '../src/protocol/index.ts';
 import { FakeServer, waitFor } from './fake-server.ts';
 import {
   cliEnv,
@@ -131,6 +131,31 @@ describe('installation layout', () => {
     expect(isNewer('0.1.0', '0.1.0-alpha.3')).toBe(true);
     expect(isNewer('0.1.0-alpha.3', '0.1.0')).toBe(false);
     expect(isNewer('0.1.0', '0.1.0')).toBe(false);
+  });
+
+  it('counts a newer server protocol as behind even when the versions are the same', () => {
+    const running = '0.1.0-beta.7';
+    expect(
+      updateDecision({ running, offered: '0.1.0-beta.8', serverProtocol: 11 }),
+    ).toBe('update');
+    expect(
+      updateDecision({ running, serverProtocol: 10, runnerProtocol: 9 }),
+    ).toBe('protocol');
+    expect(
+      updateDecision({
+        running,
+        offered: running,
+        serverProtocol: 10,
+        runnerProtocol: 9,
+      }),
+    ).toBe('protocol');
+    expect(
+      updateDecision({ running, serverProtocol: 9, runnerProtocol: 9 }),
+    ).toBe('none');
+    expect(updateDecision({ running, runnerProtocol: 9 })).toBe('none');
+    expect(
+      updateDecision({ running, serverProtocol: 8, runnerProtocol: 9 }),
+    ).toBe('none');
   });
 
   it('runs the service from the current launcher under its own label', () => {
@@ -266,6 +291,7 @@ describe('served tarballs', () => {
             },
           ],
           env: [],
+          git: { author: { name: 'Test', email: 'test@example.com' } },
         },
         prompt: {
           system: '',
@@ -376,6 +402,7 @@ describe('served tarballs', () => {
             },
           ],
           env: [],
+          git: { author: { name: 'Test', email: 'test@example.com' } },
         },
         prompt: {
           system: '',
@@ -611,6 +638,43 @@ describe('served tarballs', () => {
     );
     await daemon.stop();
     expect(daemon.updatedTo).toBeUndefined();
+  });
+
+  it('says how to catch up when the application speaks a newer protocol but offers no newer version', async () => {
+    const paths = runnerPaths(home, `${home}-work`);
+    const run = async (protocolVersion: number): Promise<string[]> => {
+      server.protocolVersion = protocolVersion;
+      const logs: string[] = [];
+      const daemon = new RunnerDaemon({
+        paths,
+        settings: await readSettings(paths),
+        connections: [await connection()],
+        adapters: new Map(),
+        timings: {
+          heartbeatIntervalMs: 50,
+          pollTimeoutMs: 200,
+          pollFallbackMs: 200,
+        },
+        log: (message) => logs.push(message),
+      });
+      await daemon.start();
+      const runner = [...server.runners.values()][0]!;
+      const sent = runner.heartbeatsSent;
+      await waitFor(() => runner.heartbeatsSent >= sent + 3);
+      await daemon.stop();
+      expect(daemon.updatedTo).toBeUndefined();
+      return logs.filter((line) => line.includes('runner protocol'));
+    };
+
+    const behind = await run(PROTOCOL_VERSION + 1);
+    // Once, however many heartbeats said so.
+    expect(behind).toHaveLength(1);
+    expect(behind[0]).toContain(
+      `runner protocol ${PROTOCOL_VERSION + 1} and this runner`,
+    );
+    expect(behind[0]).toContain(`speaks ${PROTOCOL_VERSION}`);
+    expect(behind[0]).toContain('nocobase-runner update');
+    expect(await run(PROTOCOL_VERSION)).toEqual([]);
   });
 
   it('keeps a failed update from stopping the runner', async () => {

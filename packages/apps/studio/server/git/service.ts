@@ -178,6 +178,8 @@ export interface StudioGitDeps {
   readonly events?: PullRequestEvents;
   /** Where pushes and workflow runs a webhook delivers are told (`events.ts`). */
   readonly repoEvents?: RepoEvents;
+  /** A pull request's preview label state changed, so open pages read the issue's previews again. */
+  readonly onLabelChanged?: () => void;
 }
 
 /** Who links: a person, or an agent on a run (named by its id). */
@@ -549,7 +551,12 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
   const readAuth = async (repo: RepoRow): Promise<GitAuth> =>
     (await connections.connectionAuth(repo)).auth;
 
-  const previewLabels = createPreviewLabelSync({ conn, platformOf, readAuth });
+  const previewLabels = createPreviewLabelSync({
+    conn,
+    platformOf,
+    readAuth,
+    ...(deps.onLabelChanged ? { onChanged: deps.onLabelChanged } : {}),
+  });
 
   /** Whether Studio keeps every open pull request of the repository, linked or not: one of them has a live preview. */
   const tracks = (repo: RepoRow): Promise<boolean> =>
@@ -564,7 +571,13 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
   }
 
   /** The issue as the viewer may see it, else 404 (`DomainError` from the projects plugin, translated by callers). */
+  /** The issue, 404 unless the viewer sees it; nothing of what its page shows. */
   async function visibleIssue(viewer: Viewer, idOrKey: string) {
+    return projects().issueQueries.visible(viewer, idOrKey);
+  }
+
+  /** The issue as its page shows it (its statuses, for what a merge moves it to). */
+  async function issueDetail(viewer: Viewer, idOrKey: string) {
     return projects().issueQueries.detail(viewer, idOrKey);
   }
 
@@ -943,7 +956,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     pr: PullRequestRow;
     auth: GitAuth;
   }> {
-    const issue = await visibleIssue(viewer, idOrKey);
+    const issue = await issueDetail(viewer, idOrKey);
     if (!(await canMerge(viewer, issue)))
       throw forbidden(
         'Only the issue’s owner or a manager of its project may merge.',
@@ -1484,7 +1497,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
     },
 
     async open(viewer, idOrKey, input, by, actingUserId) {
-      const issue = await visibleIssue(viewer, idOrKey);
+      const issue = await issueDetail(viewer, idOrKey);
       if (!canLink(viewer))
         throw forbidden('You may not change this issue’s pull requests.');
       const title = text(input.title, PR_TITLE_MAX);
@@ -2049,16 +2062,26 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
       const ids = [...new Set(issueIds)].slice(0, MARKS_MAX);
       const all = await pullRequestsOfIssues(conn(), ids);
       const result: Record<string, PullRequestMark> = {};
-      // Whoever sees every issue needs no check per issue.
+      // Whoever sees every issue needs no check; anyone else's are checked in one read.
       const everything = viewer.permissions.scopes['pm.issues/view'] === 'all';
-      for (const [issueId, rows] of all) {
-        if (rows.length === 0) continue;
-        if (!everything)
-          try {
-            await visibleIssue(viewer, issueId);
-          } catch {
-            continue;
-          }
+      const linked = [...all].filter(([, rows]) => rows.length > 0);
+      const seen =
+        everything || linked.length === 0
+          ? null
+          : new Set(
+              (
+                await projects().issueQueries.matching(
+                  viewer,
+                  {},
+                  {
+                    issueIds: linked.map(([issueId]) => issueId),
+                    limit: linked.length,
+                  },
+                )
+              ).issues.map((issue) => issue.id),
+            );
+      for (const [issueId, rows] of linked) {
+        if (seen && !seen.has(issueId)) continue;
         const prs = rows.map(({ pr }) => pr);
         const open = prs.filter((pr) => pr.state === 'open');
         const merged = prs.filter((pr) => pr.state === 'merged').length;

@@ -80,7 +80,28 @@ for (const replies of [false, true]) {
           await api.get<RunDetail>(`agents/runs/${waiting.runId}`)
         ).finishedAt;
       }
+      const pushEvents: { receivedAt: string }[] = [];
+      page.on('websocket', (socket) => {
+        socket.on('framereceived', ({ payload }) => {
+          const frame =
+            typeof payload === 'string' ? payload : payload.toString();
+          if (frame.includes('studio.issue.runs') && frame.includes(issue!.id))
+            pushEvents.push({ receivedAt: new Date().toISOString() });
+        });
+      });
+      await open(page, `/issues/${issue.identifier}`);
+      await expect(
+        page.getByRole('heading', { name: issue.title }),
+      ).toBeVisible();
+      const navigations: string[] = [];
+      page.on('framenavigated', (frame) => {
+        if (frame === page.mainFrame()) navigations.push(frame.url());
+      });
+      const pushCountBeforeComplete = pushEvents.length;
       await worker.complete(workerTurn.runId, 'Done.');
+      await expect
+        .poll(() => pushEvents.length)
+        .toBeGreaterThan(pushCountBeforeComplete);
 
       // Finish the legitimate continuation before asserting that this runner has no more work.
       const endedWorker = await api.get<RunDetail>(
@@ -115,6 +136,24 @@ for (const replies of [false, true]) {
           ? 'The implementation is ready.'
           : `The step ended: completed (run ${workerTurn.runId}).`,
       });
+      // Keep the issue page mounted: terminal results and the next manager run arrive without reloading.
+      await expect(
+        page.getByText(workerReplies[0]!.content, { exact: true }).first(),
+      ).toBeVisible();
+      await expect
+        .poll(() =>
+          page
+            .getByRole('link')
+            .evaluateAll((links) =>
+              links.map((link) => (link as HTMLAnchorElement).href),
+            ),
+        )
+        .toEqual(
+          expect.arrayContaining([
+            expect.stringContaining(`/runs/${continuation.runId}`),
+          ]),
+        );
+      expect(navigations).toEqual([]);
       await open(
         page,
         `/issues/${issue.identifier}/runs/${continuation.runId}`,
@@ -133,6 +172,12 @@ for (const replies of [false, true]) {
           {
             source: 'built Studio with Playwright and controlled runner',
             replies,
+            refresh: {
+              pushEvents,
+              pushCountBeforeComplete,
+              navigations,
+              manualReloads: 0,
+            },
             waitingFinishedAt,
             workerFinishedAt: endedWorker.finishedAt,
             managerStartedAt: detail.startedAt,

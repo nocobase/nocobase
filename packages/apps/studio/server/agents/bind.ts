@@ -105,6 +105,7 @@ import {
   drainRunReports,
 } from './run-report.js';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
+import { bindCommentConsentInbox } from './comment-consent-inbox.js';
 import {
   OWNER_HANDOFF_NOTICE,
   ownerHandoffNoticeRule,
@@ -234,6 +235,13 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => Promise<void> {
     inbox,
   });
   const releases: (() => void)[] = [
+    bindCommentConsentInbox(
+      agents,
+      deps.projects,
+      deps.inboxPort ?? (() => undefined),
+      (error) =>
+        onError('Studio could not update a personal runner request.', error),
+    ),
     deps.projects().events.on('work.announced', async (event) => {
       const port = deps.inboxPort?.();
       if (port && event.kind === OWNER_HANDOFF_NOTICE)
@@ -256,6 +264,16 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => Promise<void> {
         },
         deps.queuedExpiryMs ?? DEFAULT_QUEUED_EXPIRY_HOURS * 3_600_000,
         deps.checkoutPullRequests,
+        async (issueId, userId) => {
+          try {
+            await deps
+              .projects()
+              .issueQueries.detail(await viewerOf(userId), issueId);
+            return true;
+          } catch {
+            return false;
+          }
+        },
       ),
       queuedTimeout: delegationTimeout(agents),
       reports: issueReports(deps.projects, viewerOf),

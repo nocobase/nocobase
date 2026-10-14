@@ -50,10 +50,15 @@ export class FakeRunner {
     private readonly api: Api,
     private readonly name: string,
     private readonly workspaceKey = false,
+    private readonly options: {
+      readonly trust?: 'team' | 'ownerOnly';
+      readonly model?: string;
+    } = {},
   ) {}
 
   /** The model this runner reports: its own, so only it has the agent discovered from it. */
   private get model(): string {
+    if (this.options.model) return this.options.model;
     return `e2e-${this.name.toLowerCase().replace(/[^a-z0-9]+/gu, '-')}`;
   }
 
@@ -73,7 +78,7 @@ export class FakeRunner {
     if (this.runnerKey) return this.runnerKey;
     const token = await this.api.post<{ token: string }>(
       'agents/runners/registrationTokens',
-      { trust: 'team' },
+      { trust: this.options.trust ?? 'team' },
     );
     const registered = await this.runner<{ runnerKey: string }>(
       'POST',

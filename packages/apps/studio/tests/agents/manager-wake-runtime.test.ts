@@ -326,102 +326,12 @@ it('combines an automatic no-reply report with one terminal input', async () => 
   await complete(resumed, 'Automatic report and terminal input received.');
 }, 30_000);
 
-it('retains CI arriving while the manager runs and refuses completion until it is handled', async () => {
-  const issue = await projects.issues.create(viewer, {
-    title: 'CI while manager runs',
-    statusKey: 'in_progress',
-    executor: { type: 'agent', id: PROJECT_MANAGER_ID },
-  });
-  const managerRun = await start(PROJECT_MANAGER_ID);
-  const original = (await agents.runs.detail(managerRun)).inputs.map(
-    (i) => i.id,
-  );
-  const repo = await ensureRepo(
-    projects.tx.read(),
-    'https://api.github.com',
-    'pm313/test',
-  );
-  const snapshot: PullRequestSnapshot = {
-    number: 1,
-    url: 'https://github.com/pm313/test/pull/1',
-    title: 'Controlled CI',
-    state: 'open',
-    draft: false,
-    headRef: 'agent/test',
-    baseRef: 'v3-develop',
-    headSha: 'test-head',
-    authorLogin: 'test',
-    mergeableState: 'clean',
-    mergedAt: null,
-    mergedByLogin: null,
-    mergeCommitSha: null,
-    closedAt: null,
-  };
-  const flow = createGitFlow({
-    projects: () => projects,
-    agents: () => agents,
-    inbox: () => undefined,
-    onError: (_message, error) => {
-      throw error;
-    },
-  });
-  const pr = await flow.store(repo, snapshot);
-  await insertLink(projects.tx.read(), {
-    issueId: issue.id,
-    pullRequestId: pr.id,
-    linkedByType: 'user',
-    linkedById: viewer.userId,
-  });
-  await flow.store(repo, snapshot, {
-    ci: {
-      ciState: 'success',
-      checks: [
-        {
-          kind: 'check',
-          name: 'test',
-          status: 'completed',
-          conclusion: 'success',
-          url: null,
-        },
-      ],
-      statusEtag: null,
-      runsEtag: null,
-    },
-  });
-  const before = await call(`/agents/runners/runs/${managerRun}/complete`, {
-    summary: 'Finished before noticing CI.',
-    handledInputIds: original,
-  });
-  expect(before.status).toBe(400);
-  expect(before.body.error.reason).toBe('RUN_INPUT_PENDING');
-  const inputs = (await agents.runs.detail(managerRun)).inputs;
-  expect(
-    inputs.filter(
-      (i) =>
-        (i.payload as { trigger?: string } | null)?.trigger ===
-        'prChecksPassed',
-    ),
-  ).toHaveLength(1);
-  evidence.push({
-    case: 'ci-during-manager',
-    managerRun,
-    pendingCompletionStatus: before.status,
-    ciInput: inputs
-      .filter(
-        (i) =>
-          (i.payload as { trigger?: string } | null)?.trigger ===
-          'prChecksPassed',
-      )
-      .map((i) => ({ id: i.id, payload: i.payload })),
-  });
-  await complete(managerRun, 'CI input handled.');
-}, 30_000);
-
-it.each(['ci-first', 'complete-first'])(
-  'keeps CI input across overlapping %s commits',
-  async (order) => {
+it.each(['success', 'failure'] as const)(
+  'retains CI %s arriving while the manager runs and refuses completion until it is handled',
+  async (outcome) => {
+    const trigger = outcome === 'success' ? 'prChecksPassed' : 'prChecksFailed';
     const issue = await projects.issues.create(viewer, {
-      title: `Concurrent ${order}`,
+      title: 'CI while manager runs',
       statusKey: 'in_progress',
       executor: { type: 'agent', id: PROJECT_MANAGER_ID },
     });
@@ -432,17 +342,17 @@ it.each(['ci-first', 'complete-first'])(
     const repo = await ensureRepo(
       projects.tx.read(),
       'https://api.github.com',
-      `pm313/${order}`,
+      `pm313/test-${outcome}`,
     );
     const snapshot: PullRequestSnapshot = {
       number: 1,
-      url: `https://github.com/pm313/${order}/pull/1`,
-      title: 'Concurrent CI',
+      url: `https://github.com/pm313/test-${outcome}/pull/1`,
+      title: 'Controlled CI',
       state: 'open',
       draft: false,
       headRef: 'agent/test',
       baseRef: 'v3-develop',
-      headSha: order,
+      headSha: 'test-head',
       authorLogin: 'test',
       mergeableState: 'clean',
       mergedAt: null,
@@ -465,101 +375,196 @@ it.each(['ci-first', 'complete-first'])(
       linkedByType: 'user',
       linkedById: viewer.userId,
     });
-    let enter!: () => void;
-    let release!: () => void;
-    const entered = new Promise<void>((resolve) => {
-      enter = resolve;
+    await flow.store(repo, snapshot, {
+      ci: {
+        ciState: outcome,
+        checks: [
+          {
+            kind: 'check',
+            name: 'test',
+            status: 'completed',
+            conclusion: outcome,
+            url: null,
+          },
+        ],
+        statusEtag: null,
+        runsEtag: null,
+      },
     });
-    const released = new Promise<void>((resolve) => {
-      release = resolve;
+    const before = await call(`/agents/runners/runs/${managerRun}/complete`, {
+      summary: 'Finished before noticing CI.',
+      handledInputIds: original,
     });
-    const signal = () =>
-      flow.store(repo, snapshot, {
-        ci: {
-          ciState: 'success',
-          checks: [
-            {
-              kind: 'check',
-              name: 'test',
-              status: 'completed',
-              conclusion: 'success',
-              url: null,
-            },
-          ],
-          statusEtag: null,
-          runsEtag: null,
-        },
-      });
-    const finish = () =>
-      call(`/agents/runners/runs/${managerRun}/complete`, {
-        summary: 'Concurrent completion.',
-        handledInputIds: original,
-      });
-    if (order === 'ci-first') {
-      const enqueue = agents.runs.enqueue.bind(agents.runs);
-      const spy = vi
-        .spyOn(agents.runs, 'enqueue')
-        .mockImplementation(async (request, tx) => {
-          if (
-            (request.input.payload as { trigger?: string } | null)?.trigger ===
-            'prChecksPassed'
-          ) {
-            enter();
-            await released;
-          }
-          return enqueue(request, tx);
-        });
-      const storing = signal();
-      await entered;
-      const finishing = finish();
-      release();
-      await storing;
-      expect((await finishing).body.error.reason).toBe('RUN_INPUT_PENDING');
-      spy.mockRestore();
-      await complete(managerRun, 'Handled overlapping CI input.');
-    } else {
-      const sink = agents.subjects.get('issue')!.sink!;
-      const originalSink = sink.onRunFinished!.bind(sink);
-      const spy = vi
-        .spyOn(sink, 'onRunFinished')
-        .mockImplementation(async (tx, run) => {
-          if (run.id === managerRun) {
-            enter();
-            await released;
-          }
-          await originalSink(tx, run);
-        });
-      const finishing = finish();
-      await entered;
-      const storing = signal();
-      release();
-      expect((await finishing).status).toBe(200);
-      await storing;
-      spy.mockRestore();
-      const resumed = await start(PROJECT_MANAGER_ID);
-      expect(resumed).not.toBe(managerRun);
-      await complete(resumed, 'Handled CI after prior run completed.');
-    }
-    const runs = await agents.runs.list({
-      subjectKind: 'issue',
-      subjectId: issue.id,
-    });
-    const inputs = (
-      await Promise.all(runs.map((r) => agents.runs.detail(r.id)))
-    )
-      .flatMap((r) => r.inputs)
-      .filter(
-        (i) =>
-          (i.payload as { trigger?: string } | null)?.trigger ===
-          'prChecksPassed',
-      );
-    expect(inputs).toHaveLength(1);
+    expect(before.status).toBe(400);
+    expect(before.body.error.reason).toBe('RUN_INPUT_PENDING');
+    const inputs = (await agents.runs.detail(managerRun)).inputs;
+    expect(
+      inputs.filter(
+        (i) => (i.payload as { trigger?: string } | null)?.trigger === trigger,
+      ),
+    ).toHaveLength(1);
     evidence.push({
-      case: order,
+      case: `ci-${outcome}-during-manager`,
       managerRun,
-      inputIds: inputs.map((i) => i.id),
-      inputCount: inputs.length,
+      pendingCompletionStatus: before.status,
+      ciInput: inputs
+        .filter(
+          (i) =>
+            (i.payload as { trigger?: string } | null)?.trigger === trigger,
+        )
+        .map((i) => ({ id: i.id, payload: i.payload })),
     });
+    await complete(managerRun, 'CI input handled.');
   },
   30_000,
 );
+
+for (const outcome of ['success', 'failure'] as const) {
+  it.each(['ci-first', 'complete-first'])(
+    `keeps CI ${outcome} input across overlapping %s commits`,
+    async (order) => {
+      const trigger =
+        outcome === 'success' ? 'prChecksPassed' : 'prChecksFailed';
+      const issue = await projects.issues.create(viewer, {
+        title: `Concurrent ${order}`,
+        statusKey: 'in_progress',
+        executor: { type: 'agent', id: PROJECT_MANAGER_ID },
+      });
+      const managerRun = await start(PROJECT_MANAGER_ID);
+      const original = (await agents.runs.detail(managerRun)).inputs.map(
+        (i) => i.id,
+      );
+      const repo = await ensureRepo(
+        projects.tx.read(),
+        'https://api.github.com',
+        `pm313/${outcome}-${order}`,
+      );
+      const snapshot: PullRequestSnapshot = {
+        number: 1,
+        url: `https://github.com/pm313/${outcome}-${order}/pull/1`,
+        title: 'Concurrent CI',
+        state: 'open',
+        draft: false,
+        headRef: 'agent/test',
+        baseRef: 'v3-develop',
+        headSha: order,
+        authorLogin: 'test',
+        mergeableState: 'clean',
+        mergedAt: null,
+        mergedByLogin: null,
+        mergeCommitSha: null,
+        closedAt: null,
+      };
+      const flow = createGitFlow({
+        projects: () => projects,
+        agents: () => agents,
+        inbox: () => undefined,
+        onError: (_message, error) => {
+          throw error;
+        },
+      });
+      const pr = await flow.store(repo, snapshot);
+      await insertLink(projects.tx.read(), {
+        issueId: issue.id,
+        pullRequestId: pr.id,
+        linkedByType: 'user',
+        linkedById: viewer.userId,
+      });
+      let enter!: () => void;
+      let release!: () => void;
+      const entered = new Promise<void>((resolve) => {
+        enter = resolve;
+      });
+      const released = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const signal = () =>
+        flow.store(repo, snapshot, {
+          ci: {
+            ciState: outcome,
+            checks: [
+              {
+                kind: 'check',
+                name: 'test',
+                status: 'completed',
+                conclusion: outcome,
+                url: null,
+              },
+            ],
+            statusEtag: null,
+            runsEtag: null,
+          },
+        });
+      const finish = () =>
+        call(`/agents/runners/runs/${managerRun}/complete`, {
+          summary: 'Concurrent completion.',
+          handledInputIds: original,
+        });
+      if (order === 'ci-first') {
+        const enqueue = agents.runs.enqueue.bind(agents.runs);
+        const spy = vi
+          .spyOn(agents.runs, 'enqueue')
+          .mockImplementation(async (request, tx) => {
+            if (
+              (request.input.payload as { trigger?: string } | null)
+                ?.trigger === trigger
+            ) {
+              enter();
+              await released;
+            }
+            return enqueue(request, tx);
+          });
+        const storing = signal();
+        await entered;
+        const finishing = finish();
+        release();
+        await storing;
+        expect((await finishing).body.error.reason).toBe('RUN_INPUT_PENDING');
+        spy.mockRestore();
+        await complete(managerRun, 'Handled overlapping CI input.');
+      } else {
+        const sink = agents.subjects.get('issue')!.sink!;
+        const originalSink = sink.onRunFinished!.bind(sink);
+        const spy = vi
+          .spyOn(sink, 'onRunFinished')
+          .mockImplementation(async (tx, run) => {
+            if (run.id === managerRun) {
+              enter();
+              await released;
+            }
+            await originalSink(tx, run);
+          });
+        const finishing = finish();
+        await entered;
+        const storing = signal();
+        release();
+        expect((await finishing).status).toBe(200);
+        await storing;
+        spy.mockRestore();
+        const resumed = await start(PROJECT_MANAGER_ID);
+        expect(resumed).not.toBe(managerRun);
+        await complete(resumed, 'Handled CI after prior run completed.');
+      }
+      const runs = await agents.runs.list({
+        subjectKind: 'issue',
+        subjectId: issue.id,
+      });
+      const inputs = (
+        await Promise.all(runs.map((r) => agents.runs.detail(r.id)))
+      )
+        .flatMap((r) => r.inputs)
+        .filter(
+          (i) =>
+            (i.payload as { trigger?: string } | null)?.trigger === trigger,
+        );
+      expect(inputs).toHaveLength(1);
+      evidence.push({
+        case: `${outcome}-${order}`,
+        managerRun,
+        inputIds: inputs.map((i) => i.id),
+        inputCount: inputs.length,
+      });
+    },
+    30_000,
+  );
+}
