@@ -103,6 +103,7 @@ function draft(): RoleDraft {
       'user/read': false,
       'pm.members/invite': false,
       'studio.roles/manage': false,
+      'studio.roles/read': false,
     },
     abilities: { ...noAbilities(), 'pm.issues/close': 'related' },
   };
@@ -236,6 +237,7 @@ describe('the role editor', () => {
     fireEvent.click(screen.getByRole('switch', { name: 'manage' }));
     const next = onChange.mock.calls[0]?.[0] as RoleDraft;
     expect(next.settings['studio.roles/manage']).toBe(true);
+    expect(next.settings['studio.roles/read']).toBe(false);
     expect(next.settings['user/read']).toBe(false);
   });
 

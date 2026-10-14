@@ -254,10 +254,10 @@ describe('app client routes', () => {
       { name: 'rel-environment', authorizedAs: 'settings:rel.environments' },
       { name: 'config', authorizedAs: null },
       { name: 'config-general', authorizedAs: 'settings:pm.general' },
-      { name: 'config-members', authorizedAs: 'settings:pm.members' },
+      { name: 'config-members', authorizedAs: null },
       { name: 'config-member-reset-password', authorizedAs: null },
-      { name: 'config-roles', authorizedAs: 'settings:pm.members' },
-      { name: 'config-role', authorizedAs: 'settings:pm.members' },
+      { name: 'config-roles', authorizedAs: 'settings:studio.roles' },
+      { name: 'config-role', authorizedAs: 'settings:studio.roles' },
       { name: 'config-api-keys', authorizedAs: 'settings:studio.apiKeys' },
       {
         name: 'config-knowledge-search',

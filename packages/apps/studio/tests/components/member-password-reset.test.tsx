@@ -23,7 +23,10 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock('@nocobase/app-plugin-authorization/client', () => ({
-  useCan: () => ({ can: state.allowed, isPending: false }),
+  useCan: ({ action }: { action: string }) => ({
+    can: action === 'reset-password' && state.allowed,
+    isPending: false,
+  }),
 }));
 vi.mock('@nocobase/app-plugin-projects/client/kit', async (importOriginal) => ({
   ...(await importOriginal<
@@ -127,9 +130,11 @@ describe('member password reset', () => {
       state.allowed = allowed;
       return render(
         <TestI18nProvider runtime={runtime}>
-          <MemoryRouter>
-            <MemberActions member={member} viewerId={viewerId} />
-          </MemoryRouter>
+          <QueryClientProvider client={new QueryClient()}>
+            <MemoryRouter>
+              <MemberActions member={member} viewerId={viewerId} />
+            </MemoryRouter>
+          </QueryClientProvider>
         </TestI18nProvider>,
       );
     };
@@ -199,12 +204,28 @@ describe('member password reset', () => {
   });
 
   it('reports a missing target instead of leaving the dialog in a loading state', async () => {
-    state.members = [];
+    state.reset.mockRejectedValue(
+      new ApiClientError('not found', {
+        status: 404,
+        method: 'POST',
+        url: '/api/users/member/resetPassword',
+      }),
+    );
     renderDialog();
+    fireEvent.change(await screen.findByLabelText('New password'), {
+      target: { value: 'password123' },
+    });
+    fireEvent.change(screen.getByLabelText('Confirm new password'), {
+      target: { value: 'password123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Reset password' }));
     expect(
       await screen.findByText('This member could not be found.'),
     ).toBeVisible();
-    expect(screen.queryByLabelText('New password')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('New password')).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Reset password' }),
+    ).toBeEnabled();
   });
 
   it('prevents duplicate submission and closing while a reset is pending', async () => {

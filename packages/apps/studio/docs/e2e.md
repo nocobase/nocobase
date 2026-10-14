@@ -13,6 +13,8 @@ pnpm test:screenshots                        # the screenshots
 
 `pnpm test:e2e` takes about a minute on a laptop with three workers, plus about ten seconds to start the server. Pass Playwright's own options after it, such as `pnpm test:e2e inbox` for one file, `-g "API key"` for matching tests, `--headed` to watch, or `--workers=1`.
 
+For a focused development run, `NB_STUDIO_E2E_SOURCE=1` runs the source server through tsx against the built client. Build the client after UI changes; the default still tests the complete built application. `PM358_SCREENSHOT_DIR` saves the account-maintenance flow screenshots when running `user-management.test.ts`.
+
 ## The server they run against
 
 Global setup (`e2e/global-setup.ts`, `e2e/support/server.ts`) starts `dist/server/standalone.js` as a child process of its own and global teardown stops it, with:

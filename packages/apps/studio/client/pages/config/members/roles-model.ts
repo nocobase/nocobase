@@ -225,7 +225,11 @@ export function settingsGroups(catalog: AccessCatalog): readonly {
     title: item.title,
     actions: item.actions,
     keys: item.actions.map((action) => action.key),
-    tiered: item.actions.length === 2 && item.actions[0]?.name === 'read',
+    // Studio role definition actions are independent; manage does not imply read.
+    tiered:
+      item.id !== 'studio.roles' &&
+      item.actions.length === 2 &&
+      item.actions[0]?.name === 'read',
   }));
 }
 

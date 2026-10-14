@@ -1,6 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { convertStudioAccessGrants } from '../../database/main/seeds/202610250020_studio_access_v2.js';
+import {
+  convertStudioAccessGrants,
+  reviewStudioAccessKeys,
+} from '../../database/main/seeds/202610250020_studio_access_v2.js';
 import {
   grantsOf,
   preserveUnmanagedGrants,
@@ -149,4 +152,39 @@ it('blocks legacy settings wildcards instead of silently losing account capabili
         { resource: { type: 'settings', id }, actions: [{ action: '*' }] },
       ]),
     ).toThrow('STUDIO_ACCESS_UNMAPPABLE');
+});
+
+it('proves unchanged release-only delegation and flags ordinary, wildcard and member keys independently', () => {
+  const cases = [
+    ['ordinary', null],
+    ['wildcard', { $v: ['1'], '*': ['admin'] }],
+    ['members', { $v: ['1'], 'studio.members': ['read'] }],
+    ['unknown', { $v: ['2'], 'releases.apps': ['read'] }],
+    [
+      'release-service',
+      {
+        $v: ['1'],
+        'releases.apps': ['read', 'write'],
+        'releases.apps@': ['app-one'],
+      },
+    ],
+  ] as const;
+  const result = reviewStudioAccessKeys(
+    cases.map(([id, permissions]) => ({
+      id,
+      referenceId: 'synthetic-' + id,
+      permissions: JSON.stringify(permissions),
+    })),
+  );
+  expect(result.map((key) => key.status)).toEqual([
+    'review-required',
+    'review-required',
+    'review-required',
+    'review-required',
+    'equivalent-unaffected',
+  ]);
+  expect(JSON.stringify(result)).not.toContain('permissions');
+  expect(result.every((key) => /^[a-f0-9]{64}$/.test(key.scopeHash))).toBe(
+    true,
+  );
 });

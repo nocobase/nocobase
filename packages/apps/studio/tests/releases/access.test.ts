@@ -178,6 +178,13 @@ beforeEach(async () => {
         ],
         [path.join(packageRoot(PROJECTS), 'database/migrations'), PROJECTS],
         [path.join(packageRoot(RELEASES), 'database/migrations'), RELEASES],
+        [
+          path.join(
+            packageRoot('@nocobase/app-plugin-api-keys'),
+            'database/migrations',
+          ),
+          '@nocobase/app-plugin-api-keys',
+        ],
         [path.join(ROOT, 'database/main/migrations'), 'studio'],
       ] as const
     ).map(([directory, packageName]) => ({ directory, packageName })),

@@ -92,7 +92,9 @@ export default function ResetPasswordDialog(): ReactElement {
     <RouteDialog
       title={t('members.resetPassword')}
       description={
-        member ? `${member.name} · ${member.email ?? ''}` : undefined
+        member
+          ? [member.name, member.email].filter(Boolean).join(' · ')
+          : undefined
       }
       className='sm:max-w-md'
       closeTo='/config/members'

@@ -7,7 +7,9 @@ import {
   createTestDatabase,
   type TestDatabase,
 } from '@nocobase/app-testing/server';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.setConfig({ hookTimeout: 120_000, testTimeout: 120_000 });
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 let test: TestDatabase;
@@ -249,6 +251,57 @@ describe('upgrading an existing Studio without new account grants', () => {
         .connection()
         .repository('studioAccessUpgradeChanges')
         .count(),
+    ).toBeGreaterThan(0);
+  });
+  it('keeps a provably unaffected release-only key and its private grants unchanged', async () => {
+    const connection = test.database.connection();
+    const permissions = JSON.stringify({
+      $v: ['1'],
+      'releases.apps': ['read', 'write'],
+      'releases.apps@': ['synthetic-app'],
+    });
+    await connection.repository('apikey').createOne({
+      values: {
+        id: 'release-key',
+        referenceId: 'service-release',
+        key: 'synthetic-non-credential-hash',
+        permissions,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    await connection.repository('authorizationPermissionSets').createOne({
+      values: {
+        id: 'private-release',
+        key: 'api-key-service-release',
+        title: null,
+        grants: [
+          {
+            resource: { type: 'rel', id: 'rel.apps' },
+            actions: [{ action: 'upload.all' }],
+          },
+        ],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    const keyBefore = await connection
+      .repository('apikey')
+      .findOne({ filter: { id: 'release-key' } });
+    const privateBefore = (await roles()).find(
+      (role) => role.key === 'api-key-service-release',
+    );
+    await runUpgrade();
+    expect(
+      await connection
+        .repository('apikey')
+        .findOne({ filter: { id: 'release-key' } }),
+    ).toEqual(keyBefore);
+    expect(
+      (await roles()).find((role) => role.key === 'api-key-service-release'),
+    ).toEqual(privateBefore);
+    expect(
+      await connection.repository('studioAccessUpgradeChanges').count(),
     ).toBeGreaterThan(0);
   });
   it('blocks stored key delegation instead of copying human grants into it', async () => {

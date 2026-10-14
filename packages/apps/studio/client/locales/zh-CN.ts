@@ -821,7 +821,7 @@ const zhCN: AppResource = {
   'roles.actionsFor': '{{name}} 的操作',
   'roles.deleteTitle': '删除角色 {{name}}？',
   'roles.description':
-    '角色决定持有人能进入哪些页面、能改哪些设置，以及每个业务操作对哪些内容有效。',
+    '角色决定持有人能进入哪些页面、能改哪些设置，以及每个业务操作对哪些内容有效。人数按直接分配统计，包含系统管理员和停用用户，因此可能与筛选后的用户列表不同。',
   'roles.discard': '放弃修改',
   'roles.duplicate': '复制为新角色',
   'roles.errors.builtIn': '内置角色不能删除。',

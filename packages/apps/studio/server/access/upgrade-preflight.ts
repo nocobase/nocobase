@@ -1,6 +1,9 @@
 import { createHash } from 'node:crypto';
 import type { DatabaseConnection } from '@nocobase/db';
-import { convertStudioAccessGrants } from '../../database/main/seeds/202610250020_studio_access_v2.js';
+import {
+  convertStudioAccessGrants,
+  reviewStudioAccessKeys,
+} from '../../database/main/seeds/202610250020_studio_access_v2.js';
 import type { StudioAccess } from './service.js';
 
 export interface StudioUpgradePlan {
@@ -15,6 +18,7 @@ export interface StudioUpgradePlan {
   assignmentHash: string;
   defaultRoleHash: string;
   keyReviewRequired: number;
+  keyInventory: ReturnType<typeof reviewStudioAccessKeys>;
   unknownAccountKindCount: number;
 }
 const hash = (value: unknown) =>
@@ -72,8 +76,9 @@ export async function prepareStudioAccessUpgrade(
     .execute();
   const keys = await connection.query
     .selectFrom('apikey')
-    .select('id')
-    .execute();
+    .select(['id', 'referenceId', 'permissions'])
+    .execute<{ id: string; referenceId: string; permissions: unknown }>();
+  const keyInventory = reviewStudioAccessKeys(keys);
   const kinds = await connection.query
     .selectFrom('user')
     .select('kind')
@@ -83,7 +88,10 @@ export async function prepareStudioAccessUpgrade(
     roles,
     assignmentHash: hash(assignments),
     defaultRoleHash: hash(defaults),
-    keyReviewRequired: keys.length,
+    keyReviewRequired: keyInventory.filter(
+      (key) => key.status === 'review-required',
+    ).length,
+    keyInventory,
     unknownAccountKindCount: kinds.filter(
       (user) => user.kind !== 'person' && user.kind !== 'service',
     ).length,

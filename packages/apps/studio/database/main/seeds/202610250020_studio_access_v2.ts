@@ -123,21 +123,83 @@ export function convertStudioAccessGrants(input: readonly Grant[]): Grant[] {
         ['read', 'manage'].includes(action.action)));
   return result.flatMap((grant, index) => {
     const actions = grant.actions.filter(
-      (action) =>
+      (action, actionIndex) =>
         !targetAction(grant, action) ||
-        !result
-          .slice(0, index)
+        (!grant.actions
+          .slice(0, actionIndex)
           .some(
             (prior) =>
-              prior.resource.type === grant.resource.type &&
-              prior.resource.id === grant.resource.id &&
-              prior.actions.some(
-                (entry) =>
-                  targetAction(prior, entry) && entry.action === action.action,
-              ),
-          ),
+              targetAction(grant, prior) && prior.action === action.action,
+          ) &&
+          !result
+            .slice(0, index)
+            .some(
+              (prior) =>
+                prior.resource.type === grant.resource.type &&
+                prior.resource.id === grant.resource.id &&
+                prior.actions.some(
+                  (entry) =>
+                    targetAction(prior, entry) &&
+                    entry.action === action.action,
+                ),
+            )),
     );
     return actions.length ? [{ ...grant, actions }] : [];
+  });
+}
+
+/** Frozen proof for the two unchanged release-only scope groups; every other credential needs review. */
+export function reviewStudioAccessKeys(
+  keys: readonly { id: string; referenceId: string; permissions: unknown }[],
+) {
+  return keys.map((key) => {
+    let permissions: unknown = key.permissions;
+    try {
+      if (typeof permissions === 'string')
+        permissions = JSON.parse(permissions);
+    } catch {
+      permissions = null;
+    }
+    const record =
+      permissions &&
+      typeof permissions === 'object' &&
+      !Array.isArray(permissions)
+        ? (permissions as Record<string, unknown>)
+        : null;
+    const groups = record
+      ? Object.keys(record).filter(
+          (name) => name !== '$v' && !name.endsWith('@'),
+        )
+      : [];
+    const equivalent =
+      record !== null &&
+      JSON.stringify(record.$v) === '["1"]' &&
+      groups.length > 0 &&
+      Object.entries(record).every(([name, value]) => {
+        if (name === '$v') return true;
+        const group = name.replace(/@$/, '');
+        if (!['releases.apps', 'releases.environments'].includes(group))
+          return false;
+        return (
+          Array.isArray(value) &&
+          value.every(
+            (item) =>
+              typeof item === 'string' &&
+              (name.endsWith('@') || ['read', 'write', 'admin'].includes(item)),
+          )
+        );
+      });
+    return {
+      keyId: key.id,
+      subjectId: key.referenceId,
+      scopeHash: hash(JSON.stringify(key.permissions ?? null)),
+      status: equivalent
+        ? ('equivalent-unaffected' as const)
+        : ('review-required' as const),
+      reason: equivalent
+        ? 'Only unchanged release groups; no account or role actions before or after conversion.'
+        : 'Ordinary, wildcard, member-related or unknown delegation needs an individual equivalence inventory.',
+    };
   });
 }
 
@@ -197,8 +259,13 @@ export default defineSeed({
     const keys = await query
       .selectFrom('apikey')
       .select(['id', 'referenceId', 'permissions'])
-      .execute();
-    if (!initial && keys.length)
+      .execute<{ id: string; referenceId: string; permissions: unknown }>();
+    if (
+      !initial &&
+      reviewStudioAccessKeys(keys).some(
+        (key) => key.status === 'review-required',
+      )
+    )
       throw new Error(
         'STUDIO_KEY_REVIEW_REQUIRED: existing key delegation needs an approved equivalence inventory',
       );

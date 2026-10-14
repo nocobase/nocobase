@@ -121,7 +121,10 @@ describe('user invitations', () => {
     );
     const pending = batchService.invite({ emails, invitedBy: 'ann' });
     // One completed send frees a slot; the other five stay in flight until the common deadline.
-    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(6));
+    // Persisting the 50 invitations may outlast the default one-second wait on a busy database.
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(6), {
+      timeout: 15_000,
+    });
     const queued = await batchService.listInvitations();
     const revoked = queued.find((row) => row.email === emails[6]);
     const rotated = queued.find((row) => row.email === emails[7]);

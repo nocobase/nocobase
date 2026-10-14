@@ -8,6 +8,8 @@
  * adds it through the agents API as the model service `mock-llm` (`setUpModelService`), which the application's own
  * model calls use without a real model. Agents answer on runners; the tests stand one in (`runner.ts`).
  *
+ * Set NB_STUDIO_E2E_SOURCE=1 to run the source server with tsx and the built client during development.
+ *
  * Used by `global-setup.ts`, which records what it started in a state file that `global-teardown.ts` and the tests
  * read (`readState`).
  */
@@ -277,7 +279,11 @@ async function startLlm(
 export async function startStudio(
   options: { isolated?: boolean } = {},
 ): Promise<ServerState> {
-  const entry = path.join(STUDIO_ROOT, 'dist/server/standalone.js');
+  const source = process.env.NB_STUDIO_E2E_SOURCE === '1';
+  const entry = path.join(
+    STUDIO_ROOT,
+    source ? 'server/standalone.ts' : 'dist/server/standalone.js',
+  );
   if (!existsSync(entry))
     throw new Error(
       'dist/server/standalone.js is missing: run `pnpm build` before the browser tests.',
@@ -289,22 +295,31 @@ export async function startStudio(
   const configFile = path.join(directory, 'config.yml');
   writeFileSync(configFile, configYaml({ origin, port, directory }));
   const log = openSync(path.join(directory, 'server.log'), 'a');
-  const child = spawn(process.execPath, [entry], {
-    cwd: path.join(STUDIO_ROOT, 'dist'),
-    env: {
-      ...process.env,
-      NODE_ENV: 'production',
-      APP_CONFIG_FILE: configFile,
-      APP_STORAGE_DIR: path.join(directory, 'storage'),
-      APP_BASE_PATH: '/main',
-      APP_SERVER_PORT: String(port),
-      APP_SERVER_HOST: '127.0.0.1',
-      APP_PUBLIC_ORIGIN: origin,
+  const child = spawn(
+    process.execPath,
+    source ? ['--import', 'tsx', entry] : [entry],
+    {
+      cwd: source ? STUDIO_ROOT : path.join(STUDIO_ROOT, 'dist'),
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        ...(source
+          ? {
+              TSX_TSCONFIG_PATH: path.join(STUDIO_ROOT, 'tsconfig.server.json'),
+            }
+          : {}),
+        APP_CONFIG_FILE: configFile,
+        APP_STORAGE_DIR: path.join(directory, 'storage'),
+        APP_BASE_PATH: '/main',
+        APP_SERVER_PORT: String(port),
+        APP_SERVER_HOST: '127.0.0.1',
+        APP_PUBLIC_ORIGIN: origin,
+      },
+      // Its own process group, so teardown stops it and everything it started, and nothing else.
+      detached: true,
+      stdio: ['ignore', log, log],
     },
-    // Its own process group, so teardown stops it and everything it started, and nothing else.
-    detached: true,
-    stdio: ['ignore', log, log],
-  });
+  );
   child.unref();
   if (!child.pid) throw new Error('The Studio e2e server did not start.');
   const baseURL = `${origin}/main`;
@@ -379,16 +394,28 @@ export async function restartOwnedStudio(
     );
   process.kill(-state.pid, 'SIGKILL');
   await sleep(500);
+  const source = process.env.NB_STUDIO_E2E_SOURCE === '1';
   const log = openSync(path.join(state.directory, 'server.log'), 'a');
   const port = new URL(state.origin).port;
   const child = spawn(
     process.execPath,
-    [path.join(STUDIO_ROOT, 'dist/server/standalone.js')],
+    [
+      ...(source ? ['--import', 'tsx'] : []),
+      path.join(
+        STUDIO_ROOT,
+        source ? 'server/standalone.ts' : 'dist/server/standalone.js',
+      ),
+    ],
     {
-      cwd: path.join(STUDIO_ROOT, 'dist'),
+      cwd: source ? STUDIO_ROOT : path.join(STUDIO_ROOT, 'dist'),
       env: {
         ...process.env,
         NODE_ENV: 'production',
+        ...(source
+          ? {
+              TSX_TSCONFIG_PATH: path.join(STUDIO_ROOT, 'tsconfig.server.json'),
+            }
+          : {}),
         APP_CONFIG_FILE: path.join(state.directory, 'config.yml'),
         APP_STORAGE_DIR: path.join(state.directory, 'storage'),
         APP_BASE_PATH: '/main',

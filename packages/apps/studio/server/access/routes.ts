@@ -80,6 +80,25 @@ function requires(key: SettingKey, message: string): MiddlewareHandler<Env> {
   };
 }
 
+/** Recovery accepts a browser sign-in, including when an installation configures a custom key header. */
+const requireUpgradeSession: MiddlewareHandler<Env> = async (context, next) => {
+  const auth = context.get('auth' as never) as {
+    credential?: unknown;
+    session?: { token?: string };
+  };
+  if (
+    auth?.credential ||
+    (auth?.session?.token &&
+      [...context.req.raw.headers.values()].includes(auth.session.token))
+  )
+    throw studioError(
+      'PERMISSION_DENIED',
+      'SIGN_IN_REQUIRED',
+      'Access upgrade inspection and recovery require a signed-in session.',
+    );
+  await next();
+};
+
 export const accessRoutes: AppApiRouteContribution<Application> =
   defineApiRoutes((app) => {
     const { container } = app;
@@ -118,9 +137,9 @@ export const accessRoutes: AppApiRouteContribution<Application> =
     };
     const viewer = (context: Context<Env>) => context.get('studioViewer');
 
-    const readMembers = requires(
+    const readRoles = requires(
       'studio.roles/read',
-      'You may not read the member settings.',
+      'You may not read Studio role definitions.',
     );
     const defineRoles = requires(
       'studio.roles/manage',
@@ -145,7 +164,7 @@ export const accessRoutes: AppApiRouteContribution<Application> =
     );
     settings.get(
       '/catalog',
-      readMembers,
+      readRoles,
       describeRoute({
         tags,
         summary: 'Get what a role can hold',
@@ -166,7 +185,7 @@ export const accessRoutes: AppApiRouteContribution<Application> =
     );
     settings.get(
       '/roles',
-      readMembers,
+      readRoles,
       describeRoute({
         tags,
         summary: 'List the roles',
@@ -211,7 +230,7 @@ export const accessRoutes: AppApiRouteContribution<Application> =
     );
     settings.get(
       '/roles/:roleKey',
-      readMembers,
+      readRoles,
       describeRoute({
         tags,
         summary: 'Get a role',
@@ -620,14 +639,14 @@ export const accessRoutes: AppApiRouteContribution<Application> =
     settings.get(
       '/upgrades/pm358/prepare',
       defineRoles,
-      requireSignInSession() as unknown as MiddlewareHandler,
+      requireUpgradeSession,
       describeRoute({
         tags,
         summary: 'Prepare a credentials-free Studio access upgrade inventory',
         operationId: 'accessPrepareUpgrade',
         ...cliRoute({
           command: 'access upgrade prepare',
-          identities: ['user'],
+          identities: ['person'],
         }),
         responses: {
           200: dataResponse(
@@ -645,6 +664,15 @@ export const accessRoutes: AppApiRouteContribution<Application> =
               assignmentHash: z.string(),
               defaultRoleHash: z.string(),
               keyReviewRequired: z.number().int(),
+              keyInventory: z.array(
+                z.object({
+                  keyId: z.string(),
+                  subjectId: z.string(),
+                  scopeHash: z.string(),
+                  status: z.enum(['equivalent-unaffected', 'review-required']),
+                  reason: z.string(),
+                }),
+              ),
               unknownAccountKindCount: z.number().int(),
             }),
           ),
@@ -662,14 +690,14 @@ export const accessRoutes: AppApiRouteContribution<Application> =
     settings.get(
       '/upgrades/pm358',
       defineRoles,
-      requireSignInSession() as unknown as MiddlewareHandler,
+      requireUpgradeSession,
       describeRoute({
         tags,
         summary: 'Read the Studio access upgrade recovery record',
         operationId: 'accessReadUpgradeChanges',
         ...cliRoute({
           command: 'access upgrade inspect',
-          identities: ['user'],
+          identities: ['person'],
         }),
         responses: {
           200: dataResponse(
@@ -692,14 +720,14 @@ export const accessRoutes: AppApiRouteContribution<Application> =
     settings.post(
       '/upgrades/pm358/restore',
       defineRoles,
-      requireSignInSession() as unknown as MiddlewareHandler,
+      requireUpgradeSession,
       describeRoute({
         tags,
         summary: 'Restore the Studio access grants during maintenance',
         operationId: 'accessRestoreUpgradeChanges',
         ...cliRoute({
           command: 'access upgrade restore',
-          identities: ['user'],
+          identities: ['person'],
           confirm:
             'Restore the recorded role grants? All old writers must remain stopped.',
         }),

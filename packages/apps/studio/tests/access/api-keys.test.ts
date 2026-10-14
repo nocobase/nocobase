@@ -531,7 +531,7 @@ describe('a key’s identity', () => {
     ).not.toContain(id);
     await expect(
       access.roles.assign(root, id, { roles: ['contributor'] }),
-    ).rejects.toMatchObject({ code: 'API_KEY_IDENTITY' });
+    ).rejects.toMatchObject({ code: 'USER_OUT_OF_SCOPE' });
     // The Users plugin's role picker neither offers the key's own set nor gives the identity a role.
     const scope = createStudioUserRoleScope(authz, access, 'root');
     expect((await scope.options()).map((option) => option.value)).not.toContain(

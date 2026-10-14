@@ -3,8 +3,6 @@
 exports[`Studio’s command manifest > offers a person every Studio area, and nothing Studio does not serve 1`] = `
 "access catalog -> GET /api/access/catalog (person)
 access me -> GET /api/access/me (person)
-access member list -> GET /api/access/members (person)
-access member update <user> [--roles!] -> PATCH /api/access/members/{userId} (person)
 access org-key create [--name --description --expires-in-days --scope --file] -> POST /api/organizationKeys (person)
 access org-key delete <key> -> DELETE /api/organizationKeys/{keyId} (person) confirm
 access org-key disable <key> -> POST /api/organizationKeys/{keyId}/disable (person)
@@ -23,6 +21,9 @@ access role list -> GET /api/access/roles (person)
 access role update <role> [--title --pages --settings --abilities --file] -> PATCH /api/access/roles/{roleKey} (person)
 access settings get -> GET /api/access/settings (person)
 access settings set [--default-role!] -> PUT /api/access/settings (person)
+access upgrade inspect -> GET /api/access/upgrades/pm358 (person)
+access upgrade prepare -> GET /api/access/upgrades/pm358/prepare (person)
+access upgrade restore -> POST /api/access/upgrades/pm358/restore (person) confirm
 agent action list -> GET /api/agents/actions (person)
 agent brief <agent> [--scenario] -> GET /api/agents/{agentId}/previewBrief (person)
 agent discovery set [--groups --ignored --input] -> PUT /api/agents/discoveryPreferences (person)

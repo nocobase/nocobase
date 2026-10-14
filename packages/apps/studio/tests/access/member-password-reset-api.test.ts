@@ -83,10 +83,10 @@ async function apiRequest(
   const headers = new Headers(init?.headers);
   headers.set('origin', 'http://localhost');
   const { databaseManagerToken } = await import('@nocobase/db');
-  const client = await server.application.container
+  const connection = server.application.container
     .resolve(databaseManagerToken)
-    .connection()
-    .client<import('knex').Knex>();
+    .connection();
+  const client = await connection.client<import('knex').Knex>();
   const counts = {
     reads: 0,
     writes: 0,
@@ -120,6 +120,7 @@ async function apiRequest(
     appendFileSync(
       joinPath(tmpdir(), 'pm358-http-costs.jsonl'),
       JSON.stringify({
+        dialect: connection.dialect,
         method: init?.method ?? 'GET',
         route,
         status: response.status,
@@ -507,6 +508,33 @@ describe('ordinary user management through the actual HTTP boundary', () => {
         ? ['admin', 'contributor']
         : ['contributor'],
     );
+    expect(
+      (await send(`/users/${target.userId}/enable`, 'POST', {})).status,
+    ).toBe(200);
+    const actorRace = await Promise.all([
+      send(`/users/${manager.userId}/disable`, 'POST', {}),
+      send(
+        `/users/${target.userId}/roleScopes/studio`,
+        'PUT',
+        { value: ['contributor', additionalKey] },
+        managerCookie,
+      ),
+    ]);
+    expect(actorRace[0]!.status).toBe(200);
+    expect([200, 401, 403]).toContain(actorRace[1]!.status);
+    const afterActorRace = await apiRequest(server, '/users', {
+      headers: { cookie },
+    });
+    const result = (
+      (await afterActorRace.json()) as {
+        data: { id: string; roleScopes: { studio: string[] } }[];
+      }
+    ).data.find((user) => user.id === target.userId)!;
+    expect([...result.roleScopes.studio].sort()).toEqual(
+      actorRace[1]!.status === 200
+        ? ['contributor', additionalKey].sort()
+        : [...final.roleScopes.studio].sort(),
+    );
   }, 120_000);
   it('rejects account writes from ordinary and scoped keys, fails closed for unknown legacy permissions and observes revocation in a second instance', async () => {
     const first = await startApp();
@@ -691,7 +719,9 @@ describe('ordinary user management through the actual HTTP boundary', () => {
     const { databaseManagerToken } = await import('@nocobase/db');
     const database = server.application.container.resolve(databaseManagerToken);
     const client = await database.connection().client<import('knex').Knex>();
-    const ledgerBefore = await client('__nocobase_seeds').select('*').orderBy('id');
+    const ledgerBefore = await client('__nocobase_seeds')
+      .select('*')
+      .orderBy('id');
     const offline = await runAppCommand(
       bindTestAppCommand(Prepare, {
         rootDir: path.resolve(import.meta.dirname, '../..'),
@@ -701,10 +731,13 @@ describe('ordinary user management through the actual HTTP boundary', () => {
       ['--json'],
     );
     expect(offline.error).toBeUndefined();
-    expect(offline.json().result?.data).toMatchObject({ version: 'pm358-v1' });
-    expect(
-      await client('__nocobase_seeds').select('*').orderBy('id'),
-    ).toEqual(ledgerBefore);
+    expect(offline.json()).toMatchObject({
+      ok: true,
+      result: { version: 'pm358-v1' },
+    });
+    expect(await client('__nocobase_seeds').select('*').orderBy('id')).toEqual(
+      ledgerBefore,
+    );
 
     for (const route of ['/access/roles/admin', '/users/synthetic']) {
       const response = await apiRequest(server, route, {
@@ -758,13 +791,19 @@ it('keeps Projects invitations role-scope free and admits the configured Studio 
     }),
   });
   expect(accepted.status).toBe(200);
-  const body = (await accepted.json()) as { data: { userId: string } };
+  expect(await accepted.json()).toMatchObject({
+    data: { email: 'default-admission@example.test', existingAccount: false },
+  });
+  const admitted = await connection
+    .repository<{ id: string }>('user')
+    .findOne({ filter: { email: 'default-admission@example.test' } });
+  expect(admitted).not.toBeNull();
   const { authorizationToken } =
     await import('@nocobase/app-plugin-authorization');
   const assignments = await server.application.container
     .resolve(authorizationToken)
     .permissionSets.listAssignments('contributor');
   expect(
-    assignments.filter((entry) => entry.subject.id === body.data.userId),
+    assignments.filter((entry) => entry.subject.id === admitted!.id),
   ).toHaveLength(1);
 });

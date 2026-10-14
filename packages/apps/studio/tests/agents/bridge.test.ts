@@ -1683,10 +1683,12 @@ describe('the agent kind', () => {
       'agents.prices',
       'agents.services',
       'rel.environments',
+      'studio.roles',
       'studio.apiKeys',
       'studio.personalApiKeys',
       'studio.git',
       'studio.knowledgeSearch',
+      'user',
     ]);
     const text = (key: string) => ({ key, ns: '@nocobase/i18n/application' });
     expect(never.find((action) => action.key === 'pm.members')).toEqual({

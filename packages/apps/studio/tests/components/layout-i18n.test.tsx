@@ -14,6 +14,11 @@ import { describe, expect, it, vi } from 'vitest';
 import locales from '../../client/locales/index.js';
 import { AppLayout } from '../../client/layouts/app-layout.js';
 
+// Permission polling is covered by the real browser flow; this fixture tests the shell in isolation.
+vi.mock('../../client/access/permission-refresh.js', () => ({
+  useStudioPermissionRefresh: () => undefined,
+}));
+
 vi.mock('../../client/issues/live/realtime-refresh.js', () => ({
   useStudioIssueRefresh: () => undefined,
 }));

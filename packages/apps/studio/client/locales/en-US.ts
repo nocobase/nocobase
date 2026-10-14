@@ -889,7 +889,7 @@ const enUS = {
   'roles.actionsFor': 'Actions for {{name}}',
   'roles.deleteTitle': 'Delete the role {{name}}?',
   'roles.description':
-    'A role decides which pages its holders open, which settings they may change, and how far each business operation reaches.',
+    'A role decides which pages its holders open, which settings they may change, and how far each business operation reaches. Holder counts include direct assignments to system administrators and disabled users, so they can differ from the filtered user directory.',
   'roles.discard': 'Discard changes',
   'roles.duplicate': 'Duplicate as new role',
   'roles.errors.builtIn': 'Built-in roles cannot be deleted.',

@@ -56,26 +56,26 @@ test.describe('settings', () => {
   test('a member is given the admin role and has it taken away again', async ({
     page,
   }) => {
-    await open(page, '/config/members');
+    await open(page, '/config/members?q=Zach+Lewis');
     const members = page.getByRole('region', { name: '成员' });
     const row = members.getByRole('row', { name: /Zach Lewis/ });
-    await expect(row.getByRole('toolbar')).not.toContainText('管理员');
+    await expect(row).not.toContainText('管理员');
 
     await row.getByRole('combobox', { name: 'Zach Lewis 的角色' }).click();
     await page.getByRole('option', { name: '管理员' }).click();
     await page.keyboard.press('Escape');
-    await expect(row.getByRole('toolbar')).toContainText('管理员');
+    await expect(row).toContainText('管理员');
 
     await page.reload();
     const reloaded = page
       .getByRole('region', { name: '成员' })
       .getByRole('row', { name: /Zach Lewis/ });
-    await expect(reloaded.getByRole('toolbar')).toContainText('管理员');
+    await expect(reloaded).toContainText('管理员');
 
     await reloaded.getByRole('combobox', { name: 'Zach Lewis 的角色' }).click();
     await page.getByRole('option', { name: '管理员' }).click();
     await page.keyboard.press('Escape');
-    await expect(reloaded.getByRole('toolbar')).not.toContainText('管理员');
+    await expect(reloaded).not.toContainText('管理员');
   });
 
   test('a new role is created and opens on its own page', async ({ page }) => {

@@ -66,7 +66,7 @@ export async function restoreStudioAccess(
       for (const change of changes)
         await connection.query
           .updateTable('authorizationPermissionSets')
-          .set({ key: change.roleKey })
+          .set({ id: change.roleId })
           .where('id', '=', change.roleId)
           .execute();
     }

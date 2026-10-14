@@ -330,7 +330,7 @@ nb-studio access role delete <role>
 
 Get a role
 
-Needs `pm.members` `read`.
+Needs `studio.roles` `read`.
 
 ```bash
 nb-studio access role get <role>

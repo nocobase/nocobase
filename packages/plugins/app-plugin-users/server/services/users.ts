@@ -331,7 +331,11 @@ class DefaultUserManagementService implements UserManagementService {
     this.validateRoleScopeValue(scope, value);
     await this.services.database.transaction(async (connection) => {
       if (!(await this.services.users.withConnection(connection).get(userId)))
-        throw new UserManagementError('USER_NOT_FOUND', 'The user does not exist', 404);
+        throw new UserManagementError(
+          'USER_NOT_FOUND',
+          'The user does not exist',
+          404,
+        );
       await this.services.policy?.()?.assertAction('assign-role', context);
       await scope.replace(userId, value, connection, context);
       await this.services

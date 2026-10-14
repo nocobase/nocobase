@@ -491,7 +491,10 @@ export function MemberRolesPanel(): ReactElement {
   );
   return (
     <div className='flex flex-col gap-6'>
-      <section className='flex flex-col gap-4'>
+      <section
+        className='flex flex-col gap-4'
+        aria-labelledby='studio-users-heading'
+      >
         <SettingsPageHeader
           id='studio-users-heading'
           title={t('members.title')}

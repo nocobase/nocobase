@@ -282,6 +282,34 @@ describe('an agent run calling Studio’s API', () => {
     ).toBe(401);
   });
 
+  it('never delegates account administration or Studio role definitions to a run credential', async () => {
+    for (const [method, route, body] of [
+      ['GET', '/users', undefined],
+      ['GET', '/users/options', undefined],
+      ['PATCH', '/users/synthetic-target', { name: 'Denied' }],
+      ['POST', '/users/synthetic-target/disable', {}],
+      ['POST', '/users/synthetic-target/enable', {}],
+      [
+        'POST',
+        '/users/synthetic-target/resetPassword',
+        { password: 'SyntheticPassword123!' },
+      ],
+      [
+        'PUT',
+        '/users/synthetic-target/roleScopes/studio',
+        { value: ['admin'] },
+      ],
+      ['GET', '/access/roles', undefined],
+      ['POST', '/access/roles', { title: 'Denied' }],
+      ['GET', '/access/upgrades/pm358/prepare', undefined],
+      ['POST', '/access/upgrades/pm358/restore', {}],
+    ] as const) {
+      const response = await call(method, route, { runToken: token, body });
+      expect(response.status, route).toBe(403);
+      expect(response.body.error.reason, route).toBe('CREDENTIAL_NOT_ACCEPTED');
+    }
+  });
+
   it('reads its issue’s runs and the agents it may hand work to', async () => {
     const runs = await call('GET', '/issueRuns', { runToken: token });
     expect(runs.status).toBe(200);

@@ -28,7 +28,7 @@ export function useStudioPermissionRefresh(): void {
           authorization.invalidate();
       } catch (error) {
         if (!stopped && error instanceof ApiClientError && error.status === 401)
-          await refreshSession();
+          await refreshSession().catch(() => undefined);
         if (!stopped) authorization.invalidate();
       } finally {
         pending = false;

@@ -11,6 +11,7 @@
  * The seed `202610010040_studio_demo_data` still ships, unchanged: it reads `studio.demoData`, which no longer exists,
  * so it does nothing.
  */
+import { userAdministrationServiceToken } from '@nocobase/app-plugin-authentication';
 import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
 import { knowledgeToken } from '@nocobase/app-plugin-knowledge/server/tokens';
 import {
@@ -66,7 +67,8 @@ export default class StudioDemoProvider extends ServiceProvider<Application> {
     const username = (
       config.get<string>('users.initialAdmin.username') ?? 'nocobase'
     ).toLowerCase();
-    const users = container.resolve(userManagementServiceToken);
+    // Sample-data bootstrap must locate the recovery identity outside the ordinary management directory.
+    const users = container.resolve(userAdministrationServiceToken);
     const admin = (
       await users.list({ search: username, pageSize: 20 })
     ).items.find((user) => user.username?.toLowerCase() === username);

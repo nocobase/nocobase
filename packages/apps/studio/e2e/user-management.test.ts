@@ -1,7 +1,13 @@
 /** Account maintenance and role permissions against a real, disposable Studio. */
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { expect, test, url, horizontalOverflow } from './support/fixtures.ts';
+import {
+  expect,
+  test,
+  url,
+  horizontalOverflow,
+  signIn,
+} from './support/fixtures.ts';
 
 const output = process.env.PM358_SCREENSHOT_DIR;
 test.setTimeout(180_000);
@@ -71,6 +77,7 @@ test('maintains a disabled account, profile, password deep link and role permiss
   await expect(row.getByText('Member', { exact: true })).toBeVisible();
   await row.getByRole('button', { name: 'Member actions' }).click();
   await page.getByRole('menuitem', { name: 'Disable user' }).click();
+  await expect(page.getByRole('alertdialog')).toBeVisible();
   await shot('disable-confirm-en');
   await page
     .getByRole('alertdialog')
@@ -80,9 +87,11 @@ test('maintains a disabled account, profile, password deep link and role permiss
   await page
     .getByRole('combobox', { name: 'Status', exact: true })
     .selectOption('disabled');
+  await expect(row.getByText('Disabled', { exact: true })).toBeVisible();
   await shot('disabled-users-en');
   await row.getByRole('button', { name: 'Member actions' }).click();
   await page.getByRole('menuitem', { name: 'Enable user' }).click();
+  await expect(page.getByRole('alertdialog')).toBeVisible();
   await shot('enable-confirm-en');
   await page
     .getByRole('alertdialog')
@@ -99,10 +108,19 @@ test('maintains a disabled account, profile, password deep link and role permiss
   ).toBeVisible();
   await shot('reset-password-en');
   await page.keyboard.press('Escape');
+  await page.goto(url('/config/roles'));
+  await expect(
+    page.getByText(/Holder counts include direct assignments/),
+  ).toBeVisible();
+  await shot('roles-list-en');
   await page.goto(url('/config/roles/admin'));
   await expect(
-    page.getByText('Reset password', { exact: true }).first(),
+    page.getByText('Reset passwords', { exact: true }).first(),
   ).toBeVisible();
+  await page
+    .getByText('Reset passwords', { exact: true })
+    .first()
+    .scrollIntoViewIfNeeded();
   await shot('role-permissions-en');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(url('/config/members'));
@@ -126,8 +144,60 @@ test('maintains a disabled account, profile, password deep link and role permiss
   ).toBeVisible();
   await expect(page.locator('html')).toHaveClass(/dark/u);
   await shot('users-narrow-dark-en');
+  await api.patch('users/me/preferences', { locale: 'zh-CN' });
   await page.evaluate("localStorage.setItem('nocobase.locale', 'zh-CN')");
   await page.reload();
   await expect(page.getByRole('textbox', { name: '搜索用户' })).toBeVisible();
   await shot('users-zh');
+});
+
+test('observes account permission revocation without a realtime connection', async ({
+  browser,
+  api,
+}) => {
+  const email = `polling-${Date.now()}@example.test`;
+  const user = await api.post<{ id: string }>('users', {
+    name: 'Synthetic polling reviewer',
+    email,
+    password: 'SyntheticPassword123!',
+  });
+  const role = await api.post<{ key: string }>('access/roles', {
+    title: 'Synthetic profile editor',
+    settings: { 'user/read': true, 'user/update': true },
+  });
+  const context = await browser.newContext({ locale: 'en-US' });
+  try {
+    await context.addInitScript(
+      "localStorage.setItem('nocobase.locale', 'en-US')",
+    );
+    await context.routeWebSocket('**/*', (socket) => socket.close());
+    await signIn(context, { email, password: 'SyntheticPassword123!' });
+    // First admission applies the existing default role; explicitly replace it afterwards.
+    const admission = await context.request.get(url('/api/projects/me'));
+    expect(admission.ok()).toBe(true);
+    await api.put(`users/${user.id}/roleScopes/studio`, { value: [role.key] });
+    const page = await context.newPage();
+    await page.goto(url('/config/members?q=Lisa'));
+    const row = page.getByRole('row').filter({ hasText: 'Lisa Nguyen' });
+    await expect(row).toBeVisible();
+    await expect(
+      row.getByRole('button', { name: 'Member actions' }),
+    ).toBeVisible();
+    await api.patch(`access/roles/${role.key}`, {
+      settings: { 'user/read': true, 'user/update': false },
+    });
+    await expect(
+      row.getByRole('button', { name: 'Member actions' }),
+    ).toHaveCount(0, { timeout: 30_000 });
+    await expect(
+      page.getByRole('link', { name: 'Roles', exact: true }),
+    ).toHaveCount(0);
+    if (output)
+      await page.screenshot({
+        path: path.join(output, 'users-read-only-en.png'),
+        fullPage: true,
+      });
+  } finally {
+    await context.close();
+  }
 });

@@ -26,6 +26,7 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest';
 
 import { createApiKeyScopes } from '@nocobase/app-plugin-api-keys/server';
@@ -41,6 +42,8 @@ import {
   type StudioAccess,
 } from '../../server/access/service.js';
 import { registerAccess } from './registry.js';
+
+vi.setConfig({ hookTimeout: 120_000, testTimeout: 120_000 });
 
 const require = createRequire(import.meta.url);
 const packageRoot = (name: string) =>
@@ -959,6 +962,60 @@ describe('Users Studio role scope protected replacements', () => {
     );
     expect(await roles.get('sole', database.connection())).toEqual(['owner']);
   });
+  it('serializes revoking the owner actor with granting owner to another person', async () => {
+    const roles = await scope();
+    await addUser('actor');
+    await addUser('target');
+    await assign('actor', 'owner');
+    const [revoked, granted] = await Promise.allSettled([
+      database.transaction((connection) =>
+        roles.replace('actor', [], connection, context('root')),
+      ),
+      database.transaction((connection) =>
+        roles.replace('target', ['owner'], connection, context('actor')),
+      ),
+    ]);
+    expect(revoked.status).toBe('fulfilled');
+    expect(await roles.get('actor', database.connection())).toEqual([]);
+    if (granted.status === 'rejected') {
+      expect(granted.reason).toMatchObject({ code: 'OWNER_REQUIRED' });
+      expect(await roles.get('target', database.connection())).toEqual([]);
+    } else {
+      expect(await roles.get('target', database.connection())).toEqual([
+        'owner',
+      ]);
+    }
+  });
+
+  it('takes sorted user locks when two actors replace each other simultaneously', async () => {
+    const roles = await scope();
+    for (const id of ['cross-a', 'cross-b']) await addUser(id);
+    await Promise.all([
+      database.transaction((connection) =>
+        roles.replace(
+          'cross-a',
+          ['contributor'],
+          connection,
+          context('cross-b'),
+        ),
+      ),
+      database.transaction((connection) =>
+        roles.replace(
+          'cross-b',
+          ['contributor'],
+          connection,
+          context('cross-a'),
+        ),
+      ),
+    ]);
+    expect(await roles.get('cross-a', database.connection())).toEqual([
+      'contributor',
+    ]);
+    expect(await roles.get('cross-b', database.connection())).toEqual([
+      'contributor',
+    ]);
+  });
+
   it('serializes concurrent owner removal without a partial replacement', async () => {
     const roles = await scope();
     for (const id of ['owner-a', 'owner-b']) {
@@ -1044,6 +1101,24 @@ describe('Studio account upgrade recovery records', () => {
     });
     expect(await authz.permissionSets.get('contributor')).toEqual(old);
   });
+  it('detects a renamed role without restoring its key or grants', async () => {
+    const { restoreStudioAccess } =
+      await import('../../server/access/upgrade-recovery.js');
+    const before = await authz.permissionSets.get('admin');
+    await database
+      .connection()
+      .query.updateTable('authorizationPermissionSets')
+      .set({ key: 'renamed-admin' })
+      .where('key', '=', 'admin')
+      .execute();
+    await expect(restoreStudioAccess(database, authz)).rejects.toMatchObject({
+      code: 'STUDIO_ACCESS_RESTORE_CONFLICT',
+    });
+    expect(await authz.permissionSets.get('admin')).toBeUndefined();
+    expect((await authz.permissionSets.get('renamed-admin'))?.grants).toEqual(
+      before?.grants,
+    );
+  });
   it('does not write role grants or add journal rows when seeding is repeated', async () => {
     const roles = await sets();
     const journal = await database
@@ -1081,6 +1156,7 @@ describe('Studio account upgrade recovery records', () => {
       writes: 0,
       protectionLocks: 0,
       userLocks: 0,
+      lockOrder: [] as string[],
       lockingReads: 0,
       begins: 0,
       commits: 0,
@@ -1093,18 +1169,27 @@ describe('Studio account upgrade recovery records', () => {
           sql,
         ) &&
         /^update/i.test(sql)
-      )
+      ) {
         counts.protectionLocks++;
-      if (/^update.*user.*set.*id/i.test(sql)) counts.userLocks++;
+        counts.lockOrder.push('permission-set');
+      }
+      if (/^update.*user.*set.*id/i.test(sql)) {
+        counts.userLocks++;
+        counts.lockOrder.push('user');
+      }
       if (/for update/i.test(sql)) counts.lockingReads++;
       if (
         /^select [`"]id[`"] from .*authorization_permission_sets.*for update/i.test(
           sql,
         )
-      )
+      ) {
         counts.protectionLocks++;
-      if (/^select [`"]id[`"] from .*user.*for update/i.test(sql))
+        counts.lockOrder.push('permission-set');
+      }
+      if (/^select [`"]id[`"] from .*user.*for update/i.test(sql)) {
         counts.userLocks++;
+        counts.lockOrder.push('user');
+      }
       if (/^begin/i.test(sql)) counts.begins++;
       if (/^commit/i.test(sql)) counts.commits++;
     };
@@ -1121,6 +1206,12 @@ describe('Studio account upgrade recovery records', () => {
     } finally {
       client.off('query', listener);
     }
+    expect(counts.lockOrder).toEqual([
+      'permission-set',
+      'permission-set',
+      'user',
+      'user',
+    ]);
     expect(counts.begins).toBe(1);
     expect(counts.commits).toBe(1);
     writeFileSync(

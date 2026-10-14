@@ -207,26 +207,6 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
     ids: readonly string[],
     connection?: DatabaseConnection,
   ): Promise<readonly string[]> {
-    if (connection && ['mysql', 'postgres'].includes(connection.dialect)) {
-      const query = connection.query
-        .selectFrom('user')
-        .select('id')
-        .where('id', 'in', ids)
-        .where('kind', '=', 'person')
-        .where('disabledAt', 'is', null)
-        .where('deletedAt', 'is', null)
-        .orderBy('id', 'asc');
-      const compiled = query.compile();
-      const client = await connection.client<import('knex').Knex>();
-      const result: unknown = await client.raw(compiled.sql + ' FOR UPDATE', [
-        ...compiled.parameters,
-      ] as never[]);
-      const rows =
-        connection.dialect === 'mysql'
-          ? (result as [Record<string, unknown>[]])[0]
-          : (result as { rows: Record<string, unknown>[] }).rows;
-      return rows.map((row) => String(row.id));
-    }
     const service = this.app.container.resolve(userAdministrationServiceToken);
     const users = connection ? service.withConnection(connection) : service;
     const enabled: string[] = [];
