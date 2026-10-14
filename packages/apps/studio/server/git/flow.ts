@@ -784,7 +784,7 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
       });
       if (!stored) return;
       await runAfter(after);
-      deps.onChanged?.();
+      deps.onChanged?.(stored.id);
       await deps.onStored?.(stored);
     },
     async retrySignals(repo, pr) {

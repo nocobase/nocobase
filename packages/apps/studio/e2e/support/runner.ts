@@ -170,11 +170,28 @@ export class FakeRunner {
         { free: 20 },
         { [HEADERS.runnerKey]: runnerKey },
       );
-      const run = (claimed.runs ?? []).find(
-        (item) => item.subject?.key === identifier,
-      );
+      const runs = claimed.runs ?? [];
+      if (
+        runs.length > 1 ||
+        runs.some((item) => item.subject?.key !== identifier)
+      )
+        throw new Error(
+          `Unexpected claimed runs for ${identifier}: ${JSON.stringify(
+            runs.map((item) => ({
+              id: item.run.id,
+              subject: item.subject?.key,
+            })),
+          )}`,
+        );
+      const [run] = runs;
       const token = run?.cli?.credential?.content?.token;
-      if (run && token) return run;
+      if (run) {
+        if (!token)
+          throw new Error(
+            `No CLI credential was returned for run ${run.run.id}.`,
+          );
+        return run;
+      }
       await new Promise((resolve) => {
         setTimeout(resolve, 250);
       });

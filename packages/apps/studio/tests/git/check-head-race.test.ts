@@ -103,6 +103,7 @@ it.each(['moved', 'closed', 'same'] as const)(
     expect(
       (await findPullRequest(h.projects.tx.read(), repo.id, 77))?.headSha,
     ).toBe(change === 'moved' ? 'new' : 'old');
+    const changesBeforeResponse = h.gitChanges.length;
     release();
     expect((await incoming).status).toBe(200);
     const stored = await findPullRequest(h.projects.tx.read(), repo.id, 77);
@@ -126,6 +127,9 @@ it.each(['moved', 'closed', 'same'] as const)(
           : { headSha: 'old', ciState: 'success', state: 'open' },
     );
     expect(signals).toEqual(change === 'same' ? ['old'] : []);
+    expect(h.gitChanges.slice(changesBeforeResponse)).toEqual(
+      change === 'same' ? [pullRequest.id] : [],
+    );
   },
   120000,
 );

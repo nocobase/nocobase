@@ -5,19 +5,25 @@ import type { IssueProgress } from '../shared/project-manager.ts';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import type { RunDetail } from '@nocobase/app-plugin-agents/shared/runs';
 
-test.use({ user: 'admin', locale: 'en-US', trace: 'off' });
+test.use({
+  user: 'admin',
+  locale: 'en-US',
+  trace: 'off',
+  isolatedStudio: true,
+});
 
 test('comment work shares the decision card and runs only on an authorized identity and runner', async ({
   page,
   api,
   browser,
+  studio,
 }) => {
   test.setTimeout(240_000);
   const requesterContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     locale: 'en-US',
   });
-  await signIn(requesterContext, 'lisa');
+  await signIn(requesterContext, 'lisa', studio);
   const requester = new Api(requesterContext.request);
   const requesterPage = await requesterContext.newPage();
   await requester.patch('users/me/preferences', { locale: 'en-US' });
@@ -244,13 +250,14 @@ test('owner delegation needs no extra consent and Run as me preserves both comme
   page,
   api,
   browser,
+  studio,
 }) => {
   test.setTimeout(240_000);
   const requesterContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     locale: 'en-US',
   });
-  await signIn(requesterContext, 'lisa');
+  await signIn(requesterContext, 'lisa', studio);
   const requester = new Api(requesterContext.request);
   const requesterPage = await requesterContext.newPage();
   await requester.patch('users/me/preferences', { locale: 'en-US' });

@@ -5,12 +5,18 @@ import { expect, open, test, unique } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
 import { STUDIO_ISSUE_RUNS_TOPIC } from '../shared/issue-runs.ts';
 
-test.use({ user: 'admin', locale: 'en-US', trace: 'off' });
+test.use({
+  user: 'admin',
+  locale: 'en-US',
+  trace: 'off',
+  isolatedStudio: true,
+});
 
 for (const replies of [false, true]) {
   test(`owner delegation completes its manager continuation after a worker ${replies ? 'replies' : 'does not reply'}`, async ({
     page,
     api,
+    studio,
   }) => {
     test.setTimeout(180_000);
     await api.patch('users/me/preferences', { locale: 'en-US' });
@@ -184,6 +190,7 @@ for (const replies of [false, true]) {
         body: JSON.stringify(
           {
             source: 'built Studio with Playwright and controlled runner',
+            origin: studio.origin,
             replies,
             refresh: {
               pushEvents,
