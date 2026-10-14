@@ -129,6 +129,14 @@ test.describe('phone', () => {
     // Opening an issue and returning is the restored phone page's navigation.
     await last.locator('button').first().click();
     await page.getByRole('button', { name: '返回列表' }).first().click();
+    await expect(mine.getByRole('searchbox')).toHaveValue(suffix);
+    await expect(rows).toHaveCount(32);
+    await page.mouse.move(page.viewportSize()!.width / 2, tabsBox.y / 2);
+    await expect(async () => {
+      await page.mouse.wheel(0, 650);
+      const lastBox = (await last.boundingBox())!;
+      expect(lastBox.y + lastBox.height).toBeLessThanOrEqual(tabsBox.y + 1);
+    }).toPass();
     await expect(last).toBeInViewport({ ratio: 1 });
     const returnedBox = (await last.boundingBox())!;
     expect(returnedBox.y + returnedBox.height).toBeLessThanOrEqual(
