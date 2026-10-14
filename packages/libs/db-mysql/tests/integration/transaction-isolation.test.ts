@@ -4,7 +4,7 @@ import {
   rawRows,
   type CollectionMetadataStore,
 } from '@nocobase/db';
-import { DatabaseCollectionMetadataStore } from '../../../db/src/metadata/internal/database-document-store.js';
+import { DatabaseCollectionMetadataStore } from '@nocobase/db/testing';
 import type { Knex } from 'knex';
 import { describe, expect, it } from 'vitest';
 import mysql from '../../src/index.js';
