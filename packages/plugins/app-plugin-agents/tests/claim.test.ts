@@ -561,6 +561,8 @@ describe('claiming', () => {
     expect(await h.services.runs.get(runId)).toMatchObject({
       status: 'queued',
       runnerId: null,
+      failureReason: 'setupFailed',
+      failureDetail: expect.any(String),
     });
     await claim(h, runner);
     await claim(h, runner);
