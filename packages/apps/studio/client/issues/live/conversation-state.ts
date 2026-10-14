@@ -12,10 +12,7 @@ import type {
   RichTextMention,
 } from '@/components/rich-text-editor';
 
-import type { ComposerSession } from '../../components/composer-session.js';
-
 export interface IssueConversationState {
-  readonly draft: ComposerSession | null;
   readonly detail: IssueDetail;
   readonly detailKey: QueryKey;
   readonly actions: IssueCommentActions;

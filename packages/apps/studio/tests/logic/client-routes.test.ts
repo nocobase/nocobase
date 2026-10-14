@@ -86,7 +86,7 @@ describe('app client routes', () => {
     ).toEqual([]);
   });
 
-  it('orders the unified personal tasks entry before the existing sections without Home or follow-ups navigation', () => {
+  it('orders My tasks, My agents, Inbox, Dashboard and My follow-ups without a Home entry, followed by the existing sections', () => {
     const menu = (routes: readonly AppClientRegisteredRoute[]) =>
       routes.flatMap((route) =>
         route.navigation ? [route.navigation.title] : [],
@@ -97,6 +97,7 @@ describe('app client routes', () => {
       'navigation.agentSessions',
       'navigation.inbox',
       'navigation.dashboard',
+      'navigation.followUps',
       'navigation.development',
       'navigation.releases',
       'navigation.agentTeam',
@@ -164,8 +165,6 @@ describe('app client routes', () => {
       // The person's own settings; every category's API checks what it serves.
       { name: 'account', authorizedAs: null },
       { name: 'account-category', authorizedAs: null },
-      // The legacy alias keeps its original grant but no longer has a menu order.
-      { name: 'follow-ups', authorizedAs: 'pm-my-issues' },
       { name: 'pm-my-issues', authorizedAs: 'pm-my-issues' },
       { name: 'pm-my-issues-owned', authorizedAs: 'pm-my-issues' },
       // An issue opened from a list is declared under it, behind the list's grant (`issueDetailRoute`).
@@ -199,6 +198,8 @@ describe('app client routes', () => {
       { name: 'inbox', authorizedAs: null },
       // The dashboard, behind the reports grant its figures' API checks too.
       { name: 'dashboard', authorizedAs: 'reports' },
+      // My follow-ups opens with My issues' grant.
+      { name: 'follow-ups', authorizedAs: 'pm-my-issues' },
       { name: 'pm-issues', authorizedAs: 'pm-issues' },
       { name: 'pm-issue-new', authorizedAs: 'pm-issues' },
       { name: 'pm-plan', authorizedAs: 'pm-issues' },
