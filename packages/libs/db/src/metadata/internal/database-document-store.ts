@@ -479,11 +479,12 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
   ): Promise<number | null> {
     // Write preconditions need the current row even if a repeatable-read
     // transaction has already established an older document snapshot.
-    const row = (await this.table(knex)
+    // The primary key bounds the result to one row. A SQL limit would wrap
+    // Oracle's locking SELECT in a subquery, where FOR UPDATE is invalid.
+    const [row] = (await this.table(knex)
       .select('revision')
       .where({ name })
-      .forUpdate()
-      .first()) as Pick<CollectionMetadataRow, 'revision'> | undefined;
+      .forUpdate()) as Pick<CollectionMetadataRow, 'revision'>[];
     return row ? parseDatabaseRevision(name, row.revision) : null;
   }
 

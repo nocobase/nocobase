@@ -30,4 +30,6 @@ All database metadata writers must use the version-aware Store to participate in
 
 The PostgreSQL metadata table naming suite covers ASCII and two-, three-, and four-byte characters in custom table names. It verifies initialization, reopening a Store, subsequent reads and writes, and recognition of the companion table as internal bookkeeping.
 
+Oracle runs the same Store revision, transaction, and naming-cache contracts. Locking revision reads use the metadata name primary key without a SQL row limit, keeping `FOR UPDATE` on the top-level query so Oracle can execute both metadata insertions and updates.
+
 In the isolated SQLite reproduction, ten transactions reading the same Collection five times each previously made ten full metadata reads and parsed 1,370 documents. After this change they make no full metadata reads and parse ten documents, one for the requested Collection in each transaction. They also make one version-row read per transaction's naming index. This measures the eliminated work, not an application-wide CPU, latency, or retained-memory improvement; those depend on the application's schema and workload.
