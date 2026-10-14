@@ -152,19 +152,20 @@ for (const replies of [false, true]) {
       await expect(
         page.getByText(workerReplies[0]!.content, { exact: true }).first(),
       ).toBeVisible();
-      await expect
-        .poll(() =>
-          page
-            .getByRole('link')
-            .evaluateAll((links) =>
-              links.map((link) => (link as unknown as { href: string }).href),
-            ),
-        )
-        .toEqual(
-          expect.arrayContaining([
-            expect.stringContaining(`/runs/${continuation.runId}`),
-          ]),
-        );
+      await expect(
+        page
+          .getByRole('link', {
+            name: new RegExp(`Turn ended.*${workerTurn.runId}$`),
+          })
+          .first(),
+      ).toBeVisible();
+      await expect(
+        page
+          .getByRole('link', {
+            name: new RegExp(`Running.*${continuation.runId}$`),
+          })
+          .first(),
+      ).toBeVisible();
       expect(navigations).toEqual([]);
       await open(
         page,
