@@ -1,7 +1,7 @@
 /**
  * "My follow-ups" in the browser (`/api/followUps`, `server/follow-ups/routes.ts`). The overview's key is under the
- * projects plugin's issues, so every issue change the server announces reads it again; it also reads again every
- * `OVERVIEW_POLL_MS`, as what an issue waits for moves with runs and checks too.
+ * projects plugin's issues; an announced change to an issue it lists, or to its runs, reads it again
+ * (`issues/live/realtime-refresh.ts`), and it reads again every `OVERVIEW_POLL_MS` as a fallback.
  */
 import { useApiClient } from '@nocobase/app-client';
 import {
@@ -16,7 +16,7 @@ import { useCallback } from 'react';
 import type { FollowingView, FollowUpsView } from '../../shared/follow-ups.js';
 import { followUpsKeys } from './model.js';
 
-const OVERVIEW_POLL_MS = 30_000;
+const OVERVIEW_POLL_MS = 60_000;
 
 export function useFollowUps(): UseQueryResult<FollowUpsView> {
   const api = useApiClient();

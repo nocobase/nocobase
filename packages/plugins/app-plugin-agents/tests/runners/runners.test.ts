@@ -33,6 +33,17 @@ describe('runners', () => {
     await h?.close();
   });
 
+  it('advertises the protocol it speaks in every heartbeat answer', async () => {
+    h = await createHarness();
+    const runner = await h.registerRunner();
+    const beat = await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: runner.key,
+      body: heartbeat,
+    });
+    expect(beat.status).toBe(200);
+    expect(beat.body.data.protocolVersion).toBe(PROTOCOL_VERSION);
+  });
+
   it('replaces installation and login status from heartbeats in the stored runner and page query', async () => {
     h = await createHarness();
     const runner = await h.registerRunner();

@@ -159,6 +159,31 @@ export async function commentsOf(
   });
 }
 
+/** One author's newest comments on an issue, newest first: live ones only with `live`, and none after `until`. */
+export async function newestCommentsBy(
+  conn: DatabaseConnection,
+  issueId: string,
+  author: { readonly type: string; readonly id: string },
+  options: {
+    readonly live?: boolean;
+    readonly until?: string;
+    readonly limit: number;
+  },
+): Promise<CommentRecord[]> {
+  return comments(conn).findMany({
+    filter: (f) =>
+      f.and([
+        f.string('issueId').eq(issueId),
+        f.string('authorType').eq(author.type),
+        f.string('authorId').eq(author.id),
+        ...(options.live ? [f.date('deletedAt').empty()] : []),
+        ...(options.until ? [f.date('createdAt').notAfter(options.until)] : []),
+      ]),
+    sort: (sort) => [sort.field('createdAt').desc(), sort.field('id').desc()],
+    limit: options.limit,
+  });
+}
+
 export async function reactionsFor(
   conn: DatabaseConnection,
   commentIds: readonly string[],

@@ -249,7 +249,7 @@ wording helpers. It routes a project's page the same way, as a child of the plug
 visibility (`useProjectMembership`), working directories (`useProjectResources`, `useResourceValidation`), deleting it
 (`useDeleteProject`), and the progress, numbers and permission helpers. The pages are behind the `pm-my-issues`, `pm-issues` and `pm-projects` page grants. They hide
 what the server would refuse (`client/lib/permissions.ts` mirrors its rules); the server still checks every request.
-Open pages refresh when the server announces a change on the `pm:changes` realtime topic.
+Open pages refresh when the server announces a change on the `pm:changes` realtime topic: once for the events of a moment, naming the issues that changed when no change moved an issue between lists (`issueIds`), so a page refreshes only what it shows of them (`announcedIssueIds`, `changedIssueSegments` and `isIssueRead` in `client/kit`).
 
 ## Layout
 

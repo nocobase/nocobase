@@ -54,6 +54,15 @@ export function progressStatusLine(
   progress: IssueProgress,
   now: number = Date.now(),
 ): string {
+  const consent = progress.personalRunnerRequests?.find(
+    (request) => request.canRunAsMe,
+  );
+  if (consent && progress.waiting?.reason !== 'waitingOwner')
+    return t(
+      consent.status === 'rejected'
+        ? 'issueLive.personalRunner.rejected'
+        : 'issueLive.personalRunner.waiting',
+    );
   const agent = progress.agent?.name ?? t('issueProgress.anAgent');
   // Waiting for a runner keeps its account of each choice and runner; the Now line cuts it to two lines.
   if (progress.state === 'queued' && !progress.managerWait)

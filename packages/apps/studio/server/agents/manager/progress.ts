@@ -24,7 +24,7 @@ import {
   validIssueOwner,
 } from '../execution-identity.js';
 import { userName } from '../work.js';
-import { ownerHandoffWaiting } from '../../issues/owner-handoff.js';
+import { readOwnerHandoff } from '../../issues/owner-handoff.js';
 
 /** How much of a running step the line carries. */
 const LINE_LENGTH = 160;
@@ -47,6 +47,9 @@ export function firstLineOf(text: string): string | null {
 
 const HELD = new Set(['dispatched', 'running']);
 
+/** Lookups `issueProgress` shares across the issues of one read; one per read, never kept longer. */
+export type ProgressMemo = Map<string, Promise<unknown>>;
+
 export async function issueProgress(
   deps: {
     readonly agents: Pick<
@@ -58,14 +61,33 @@ export async function issueProgress(
   conn: DatabaseConnection,
   issue: Issue,
   viewer?: { readonly userId: string; readonly seesMachines: boolean },
+  /** Shared by the issues of one read (My follow-ups): what does not depend on the issue is looked up once. */
+  memo?: ProgressMemo,
 ): Promise<IssueProgress> {
-  async function waitingFor(
+  const once = <T>(key: string, read: () => Promise<T>): Promise<T> => {
+    if (!memo) return read();
+    let found = memo.get(key) as Promise<T> | undefined;
+    if (!found) {
+      found = read();
+      memo.set(key, found);
+    }
+    return found;
+  };
+  const nameOf = (userId: string) =>
+    once(`user:${userId}`, () => userName(conn, userId));
+  function waitingFor(
     agentId: string,
     userId: string,
   ): Promise<IssueProgress['waiting']> {
-    const owner = userId
-      ? { id: userId, name: await userName(conn, userId) }
-      : null;
+    return once(`waiting:${agentId}:${userId}`, () =>
+      waitingForNow(agentId, userId),
+    );
+  }
+  async function waitingForNow(
+    agentId: string,
+    userId: string,
+  ): Promise<IssueProgress['waiting']> {
+    const owner = userId ? { id: userId, name: await nameOf(userId) } : null;
     if (!userId || !(await validIssueOwner(conn, userId)))
       return { reason: 'noOwner', owner };
     const agent = await deps.agents.agents.findWorkable(conn, agentId);
@@ -86,14 +108,13 @@ export async function issueProgress(
     return { reason, owner };
   }
   const subject = { kind: ISSUE_SUBJECT, id: issue.id };
-  const comments = await deps.projects.commentQueries.list(conn, issue.id);
-  const managerComments = comments.filter(
-    (comment) =>
-      comment.authorType === AGENT_KIND &&
-      comment.authorId === PROJECT_MANAGER_ID,
+  const manager = { type: AGENT_KIND, id: PROJECT_MANAGER_ID };
+  const [latest] = await deps.projects.commentQueries.newestBy(
+    conn,
+    issue.id,
+    manager,
+    { live: true, limit: 1 },
   );
-  const latest =
-    managerComments.filter((comment) => !comment.deleted).at(-1) ?? null;
   const category = statusCategory(issue.statusKey);
   const managed =
     issue.executor?.type === AGENT_KIND &&
@@ -110,7 +131,7 @@ export async function issueProgress(
         limit: 1,
       })
     : [];
-  const base: IssueProgress = {
+  let base: IssueProgress = {
     state: 'idle',
     agent: null,
     step: null,
@@ -123,7 +144,74 @@ export async function issueProgress(
     handOver: managed && open && managerRuns.length === 0,
   };
 
-  if (await ownerHandoffWaiting(conn, issue))
+  const handoff = await readOwnerHandoff(conn, issue.id);
+  if (viewer?.userId && deps.agents.runs.requests) {
+    const requests = await deps.agents.runs.requests.list({
+      userId: viewer.userId,
+      subject,
+      limit: 50,
+    });
+    const personalRunnerRequests: NonNullable<
+      IssueProgress['personalRunnerRequests']
+    >[number][] = [];
+    for (const request of requests) {
+      if (
+        request.purpose !== 'personalRunner' ||
+        request.runId ||
+        !request.commentRootRunId ||
+        request.responsibleUserId !== issue.ownerUserId ||
+        (request.commentOwnerKey ?? null) !==
+          (handoff?.notificationKey ?? null) ||
+        !['pending', 'rejected'].includes(request.status)
+      )
+        continue;
+      if (request.status === 'pending' && request.commentRunId) {
+        const target = await deps.agents.runs.identityInputs(
+          conn,
+          request.commentRunId,
+        );
+        if (target?.run.status !== 'queued') continue;
+      }
+      const origin = await deps.agents.runs.identityInputs(
+        conn,
+        request.commentRootRunId,
+      );
+      const input =
+        origin?.inputs.find(
+          (input) =>
+            input.type === 'comment' &&
+            (input.payload as Record<string, unknown> | null)
+              ?.commentSourceSnapshot === true,
+        ) ?? origin?.inputs.find((input) => input.type === 'comment');
+      const payload =
+        input?.payload && typeof input.payload === 'object'
+          ? (input.payload as Record<string, unknown>)
+          : {};
+      if (!input || typeof payload.commentId !== 'string') continue;
+      personalRunnerRequests.push({
+        id: request.id,
+        status: request.status as 'pending' | 'rejected',
+        requestedBy: {
+          id: request.requestedByUserId,
+          name: request.requestedByName ?? input.actor.name,
+        },
+        commentId: payload.commentId,
+        commentText: input.text,
+        canDecide:
+          !handoff?.waiting &&
+          request.status === 'pending' &&
+          viewer.userId === issue.ownerUserId,
+        canRunAsMe:
+          !handoff?.waiting && viewer.userId === request.requestedByUserId,
+      });
+    }
+    base = { ...base, personalRunnerRequests };
+  }
+
+  if (
+    handoff !== null &&
+    (handoff.waiting || handoff.ownerUserId !== issue.ownerUserId)
+  )
     return {
       ...base,
       handOver: false,
@@ -131,7 +219,7 @@ export async function issueProgress(
         reason: 'waitingOwner',
         owner: {
           id: issue.ownerUserId,
-          name: await userName(conn, issue.ownerUserId),
+          name: await nameOf(issue.ownerUserId),
         },
       },
     };

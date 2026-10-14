@@ -464,7 +464,7 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
       const run = await agents.runs.get(id).catch(() => null);
       if (!run || run.subject.kind !== ISSUE_SUBJECT) throw notFound();
       const issue = await projects()
-        .issueQueries.detail(context.get('viewer'), run.subject.id)
+        .issueQueries.visible(context.get('viewer'), run.subject.id)
         .catch(() => null);
       if (!issue) throw notFound();
       if (
@@ -543,7 +543,7 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
               ],
             },
           );
-        const issue = await projects().issueQueries.detail(
+        const issue = await projects().issueQueries.visible(
           context.get('viewer'),
           ref,
         );

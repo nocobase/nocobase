@@ -516,6 +516,7 @@ describe('runner end to end', () => {
             },
           ],
           env: [],
+          git: { author: { name: 'Test', email: 'test@example.com' } },
         },
         prompt: {
           system: '',

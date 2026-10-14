@@ -60,6 +60,8 @@ import { StatusPill } from './status.js';
 import { askOf } from './summary-model.js';
 import { IssueCommentRunLimit } from '../detail/comment-run-limit.js';
 import { useOutOfView } from './use-out-of-view.js';
+import { Clamped } from './clamped.js';
+import { PersonalRunnerActions } from '../detail/personal-runner-actions.js';
 
 /** Renaming the issue from its title, with the words for the pencil and the input. */
 export interface SummaryRename {
@@ -497,12 +499,63 @@ function NeedsYouCard({
         <OwnerHandoffActions issueId={issue.id} />
       </section>
     );
+  const consent =
+    progress?.personalRunnerRequests?.filter((request) => request.canDecide) ??
+    [];
+  if (consent.length && !ownerStatus)
+    return (
+      <section aria-label={t('issueLive.summary.needsYou')} className={frame}>
+        {consent.map((request, index) => (
+          <div
+            key={request.id}
+            className='flex flex-col gap-2'
+            data-request-id={request.id}
+          >
+            {index === 0 ? (
+              heading(
+                t('issueLive.personalRunner.request', {
+                  name: request.requestedBy.name,
+                }),
+              )
+            ) : (
+              <IssueMarkdown
+                content={t('issueLive.personalRunner.request', {
+                  name: request.requestedBy.name,
+                })}
+              />
+            )}
+            <Clamped>
+              <IssueMarkdown
+                content={request.commentText}
+                className='text-sm'
+              />
+            </Clamped>
+            <PersonalRunnerActions request={request} />
+          </div>
+        ))}
+      </section>
+    );
   const ownerActions =
-    ownerStatus && (handoffWaitsOn(handoff) || pending) ? (
+    ownerStatus &&
+    (handoffWaitsOn(handoff) || consent.length > 0 || pending) ? (
       <div className='flex flex-wrap items-center gap-2'>
         {handoffWaitsOn(handoff) ? (
           <OwnerHandoffActions issueId={issue.id} />
         ) : null}
+        {consent.map((request) => (
+          <div
+            key={request.id}
+            data-request-id={request.id}
+            className='flex flex-wrap items-center gap-2'
+          >
+            <span className='text-xs text-muted-foreground'>
+              {t('issueLive.personalRunner.request', {
+                name: request.requestedBy.name,
+              })}
+            </span>
+            <PersonalRunnerActions request={request} />
+          </div>
+        ))}
         {pending ? <IssueCommentRunLimit issue={issue} actionsOnly /> : null}
       </div>
     ) : null;

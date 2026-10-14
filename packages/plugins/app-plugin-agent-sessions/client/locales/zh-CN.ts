@@ -63,6 +63,8 @@ const zhCN: AgentSessionsResource = {
     unknown: '未知',
   },
   newSession: {
+    settingsOutdated:
+      '这台电脑上的命令行版本过旧，请按“我的电脑”里的提示在那台电脑上更新。',
     settingsOffline: '此电脑已离线。请重新连接桥接程序以加载设置和发送消息。',
     settingsLoading: '正在加载设置…',
     settingsFailed: '无法加载智能体设置。',
@@ -234,6 +236,12 @@ const zhCN: AgentSessionsResource = {
     truncated: '只显示前 500 个文件夹。',
   },
   computers: {
+    outdated: {
+      title: '请更新这台电脑上的命令行（{{host}}）',
+      body: '应用拒绝了它的连接：它使用桥接协议 {{bridgeProtocol}}，应用需要 {{protocol}}。在这台电脑上运行：',
+      restart:
+        '更新后的命令行会自动重启后台连接；如果几分钟内仍未重新连接，请运行：',
+    },
     offline: '离线',
     title: '我的电脑',
     description:
