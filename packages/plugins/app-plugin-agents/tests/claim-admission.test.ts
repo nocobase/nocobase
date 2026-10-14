@@ -112,10 +112,20 @@ describe('subject admission for a working run', () => {
     const [payload] = await claim(h, runner);
     expect(payload.run.id).toBe(runId);
     const payloadInputs = payload.inputs.map((input) => input.id);
-    await h.request('POST', `/agents/runners/runs/${runId}/start`, {
-      runnerKey: runner.key,
-      body: { workDir: '/tmp/work', acceptsInput: true },
-    });
+    const started = await h.request(
+      'POST',
+      `/agents/runners/runs/${runId}/start`,
+      {
+        runnerKey: runner.key,
+        body: {
+          workDir: '/tmp/work',
+          adapter: { kind: 'claude' },
+          acceptsInput: true,
+        },
+      },
+    );
+    expect(started.status).toBe(200);
+    expect(started.body.data.status).toBe('running');
     const send = (text: string) =>
       h.services.runs.enqueue({
         agentId: agent,
