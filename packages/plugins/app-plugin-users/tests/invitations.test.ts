@@ -98,11 +98,15 @@ describe('user invitations', () => {
   const tokenOf = (email: InvitationEmail) =>
     /\/main\/invite\/([\w-]+)/u.exec(email.text)?.[1] ?? '';
   it('bounds slow batch delivery and omits queued links that were revoked or rotated', async () => {
-    const send = vi.fn((email: InvitationEmail) =>
-      email.to === 'batch-0@example.test'
+    const started = Promise.withResolvers<void>();
+    let submissions = 0;
+    const send = vi.fn((email: InvitationEmail) => {
+      submissions += 1;
+      if (submissions === 6) started.resolve();
+      return email.to === 'batch-0@example.test'
         ? Promise.resolve()
-        : new Promise<void>(() => {}),
-    );
+        : new Promise<void>(() => {});
+    });
     const batchService = createUserManagementService({
       database,
       users: userAdministration(database.connection()),
@@ -121,7 +125,8 @@ describe('user invitations', () => {
     );
     const pending = batchService.invite({ emails, invitedBy: 'ann' });
     // One completed send frees a slot; the other five stay in flight until the common deadline.
-    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(6));
+    await started.promise;
+    expect(send).toHaveBeenCalledTimes(6);
     const queued = await batchService.listInvitations();
     const revoked = queued.find((row) => row.email === emails[6]);
     const rotated = queued.find((row) => row.email === emails[7]);
