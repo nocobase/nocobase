@@ -36,6 +36,20 @@ const test = sharedTest.extend<{ studio: ServerState }>({
 test.use({ user: 'admin', locale: 'en-US', trace: 'off' });
 test.setTimeout(240_000);
 
+async function createRequester(api: Api) {
+  // Preferences persist on the account; never change the demo person used by parallel sign-in tests.
+  const credentials = {
+    email: `consent-requester-${unique()}@example.com`,
+    password: 'consent-e2e-password',
+  };
+  await api.post('users', {
+    ...credentials,
+    name: 'Lisa Nguyen',
+    roleScopes: { studio: ['contributor'] },
+  });
+  return credentials;
+}
+
 test('comment work shares the decision card and runs only on an authorized identity and runner', async ({
   page,
   api,
@@ -50,7 +64,7 @@ test('comment work shares the decision card and runs only on an authorized ident
     viewport: { width: 1440, height: 900 },
     locale: 'en-US',
   });
-  await signIn(requesterContext, 'lisa', studio);
+  await signIn(requesterContext, await createRequester(api), studio);
   const requester = new Api(requesterContext.request, studio);
   const requesterPage = await requesterContext.newPage();
   await requester.patch('users/me/preferences', { locale: 'en-US' });
@@ -320,7 +334,7 @@ test('owner delegation needs no extra consent and Run as me preserves both comme
     viewport: { width: 1440, height: 900 },
     locale: 'en-US',
   });
-  await signIn(requesterContext, 'lisa', studio);
+  await signIn(requesterContext, await createRequester(api), studio);
   const requester = new Api(requesterContext.request, studio);
   const requesterPage = await requesterContext.newPage();
   await requester.patch('users/me/preferences', { locale: 'en-US' });

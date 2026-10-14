@@ -26,10 +26,17 @@ import {
  * with: a product that directory has no package of is named on npm instead, to the runners, install scripts and CLIs
  * that understand that answer.
  */
-const agents: AppConfigFactory<AgentsConfig> = defineAppConfig(
-  ({ paths, env }) => {
+const agents: AppConfigFactory<AgentsConfig> = defineAppConfig({
+  public: ['runs.retentionDays'],
+  validate: (value, context) => {
+    const days = value.runs?.retentionDays;
+    if (typeof days !== 'number' || !Number.isSafeInteger(days) || days < 0)
+      context.error('runs.retentionDays', 'Must be a non-negative integer.');
+  },
+  defaults: ({ paths, env }) => {
     const served = servedPackagesDir(env.NB_STUDIO_RUNNERS_DIST);
     return {
+      runs: { retentionDays: 14 },
       app: { id: 'nb-studio', name: 'NocoBase Studio' },
       dist: {
         ...(served === undefined ? {} : { dir: served }),
@@ -46,6 +53,6 @@ const agents: AppConfigFactory<AgentsConfig> = defineAppConfig(
       },
     };
   },
-);
+});
 
 export default agents;

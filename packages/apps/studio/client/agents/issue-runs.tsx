@@ -6,6 +6,7 @@
  */
 import { useClientApplication } from '@nocobase/app-client';
 import { runTriggerActor } from './run-trigger.js';
+import { hasClearedRunData, isRunPastRetention } from './run-retention.js';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import type { SubjectRun } from '@nocobase/app-plugin-agents/client/runs';
 import {
@@ -558,7 +559,13 @@ export function IssueRunRow({
 }
 
 /** "View brief": the brief the run's latest attempt was given. */
-function BriefButton({ runId }: { readonly runId: string }): ReactElement {
+function BriefButton({
+  runId,
+  cleared = false,
+}: {
+  readonly runId: string;
+  readonly cleared?: boolean;
+}): ReactElement {
   const { t } = useTranslation(AGENTS_NS);
   const [open, setOpen] = useState(false);
   const brief = useRunBrief(runId, open);
@@ -566,7 +573,7 @@ function BriefButton({ runId }: { readonly runId: string }): ReactElement {
   if (brief.isError)
     body = (
       <p className='text-sm text-muted-foreground'>
-        {t('runs.briefUnavailable')}
+        {t(cleared ? 'runs.processDataCleared' : 'runs.briefUnavailable')}
       </p>
     );
   else if (brief.data)
@@ -625,6 +632,15 @@ export function IssueRunTranscript({
   const { run, events, failed, trigger } = useRunWithTranscript(runId);
   const { session } = useAuthentication();
   const app = useClientApplication();
+  const expired = isRunPastRetention(
+    run.data,
+    app.config.public.get('agents.runs.retentionDays', 14),
+  );
+  const brief = useRunBrief(
+    runId,
+    expired && events !== undefined && events.length === 0 && !failed,
+  );
+  const cleared = hasClearedRunData(expired, events, failed, brief.error);
   const preferenceKey = session?.user.id
     ? `studio:run-transcript:${JSON.stringify([app.config.get<string>('app.basePath', '/'), session.user.id])}`
     : undefined;
@@ -660,7 +676,9 @@ export function IssueRunTranscript({
       labels={wording.history}
       actions={
         <>
-          {detail?.dispatchedAt ? <BriefButton runId={runId} /> : null}
+          {detail?.dispatchedAt ? (
+            <BriefButton runId={runId} cleared={cleared} />
+          ) : null}
           {detail?.retriedRunId ? (
             <Link
               className='text-sm text-primary hover:underline'
@@ -781,7 +799,12 @@ export function IssueRunTranscript({
         open={!detail || OPEN.has(detail.status)}
         failed={failed}
         locale={i18n.language}
-        labels={wording.transcript}
+        labels={{
+          ...wording.transcript,
+          empty: cleared
+            ? t('runs.processDataCleared')
+            : wording.transcript.empty,
+        }}
         {...(renderMarkdown ? { renderMarkdown } : {})}
       />
       <StopConfirm
