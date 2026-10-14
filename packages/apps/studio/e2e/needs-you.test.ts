@@ -70,16 +70,10 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     commentRunLimit: number;
   }>('projectManager');
   const managerName = 'Project manager';
-  expect(settings.name).not.toBe(managerName);
   const managerWorking = `${managerName} working`;
   const runner = new FakeRunner(api, `needs-you-${unique()}`, true);
   const agent = await runner.agent();
   await api.patch('users/me/preferences', { locale: 'en-US' });
-  await api.patch('projectManager', {
-    name: managerName,
-    firstChoiceAgentId: agent,
-    fallbackAgentId: null,
-  });
   const created: Issue[] = [];
   const shot = (name: string) =>
     page.screenshot({
@@ -128,6 +122,11 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
       headers,
     );
   try {
+    await api.patch('projectManager', {
+      name: managerName,
+      firstChoiceAgentId: agent,
+      fallbackAgentId: null,
+    });
     const { issue, running, headers } = await make(
       'PM-331: restore the execution disk',
     );
@@ -351,25 +350,17 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
       'First implementation report.',
       codingHeaders,
     );
-    // A new comment has its own authorization chain instead of being injected into the earlier running manager.
-    const earlier = await api.get<{ inputs: { text: string }[] }>(
-      `agents/runs/${limited.running.runId}`,
+    await runner.complete(
+      limited.running.runId,
+      'Received the first implementation report.',
     );
-    expect(
-      earlier.inputs.some(
-        (input) => input.text === 'First implementation report.',
-      ),
-    ).toBe(false);
-    await runner.complete(limited.running.runId, 'Done.');
-    const reportRun = await runner.start(limited.issue.identifier);
     await comment(
       api,
       limited.issue,
       'Second implementation report.',
       codingHeaders,
     );
-    await coder.complete(coding.runId, 'Done.');
-    await runner.complete(reportRun.runId, 'Done.');
+    await coder.complete(coding.runId, 'Posted both implementation reports.');
     await expect
       .poll(() => api.get(`issueCommentRuns/${limited.issue.id}`))
       .not.toBeNull();

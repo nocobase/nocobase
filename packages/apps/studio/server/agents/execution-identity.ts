@@ -16,29 +16,6 @@ export function issueExecutionIdentity(
   return async (conn, work) => {
     if ((await readOwnerHandoff(conn, work.subjectId))?.waiting)
       return { actorUserId: null, reason: 'waitingOwner' };
-    if (work.commentExecution === 'requester' && work.actorUserId) {
-      const agent = await agents.agents.findWorkable(conn, work.agentId);
-      return agent &&
-        agents.agents.mayInvoke(agent, work.actorUserId) &&
-        (await validIssueOwner(conn, work.actorUserId))
-        ? { actorUserId: work.actorUserId }
-        : { actorUserId: null, reason: 'notAllowed' };
-    }
-    if (work.commentExecution !== 'owner' && work.causedByRunId) {
-      const cause = await agents.runs.identityInputs(conn, work.causedByRunId);
-      if (
-        cause?.run.subject.kind === 'issue' &&
-        cause.run.subject.id === work.subjectId &&
-        cause.run.commentExecution === 'requester'
-      ) {
-        const agent = await agents.agents.findWorkable(conn, work.agentId);
-        return agent &&
-          agents.agents.mayInvoke(agent, cause.run.actorUserId) &&
-          (await validIssueOwner(conn, cause.run.actorUserId))
-          ? { actorUserId: cause.run.actorUserId }
-          : { actorUserId: null, reason: 'notAllowed' };
-      }
-    }
     const seen = new Set<string>();
     const comments = await projects().commentQueries.list(conn, work.subjectId);
     const byId = new Map(comments.map((comment) => [comment.id, comment]));
@@ -67,8 +44,6 @@ export function issueExecutionIdentity(
           input.payload && typeof input.payload === 'object'
             ? (input.payload as Record<string, unknown>)
             : {};
-        // A real issue comment, including a direct mention or reply, starts as the current owner.
-        if (typeof payload.commentId === 'string') return true;
         if (payload.ownerIdentity === true) return true;
         if (
           typeof payload.retryOfRunId === 'string' &&

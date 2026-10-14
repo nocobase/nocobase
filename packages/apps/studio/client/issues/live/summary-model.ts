@@ -59,13 +59,6 @@ export function askOf(
     return null;
   if (issue.progress?.waiting?.reason === 'waitingOwner')
     return t('issueLive.ask.takeOver');
-  const consent = issue.progress?.personalRunnerRequests?.find(
-    (request) => request.canDecide,
-  );
-  if (consent)
-    return t('issueLive.personalRunner.request', {
-      name: consent.requestedBy.name,
-    });
   if (issue.statusKey === 'in_review')
     return mark && mark.state === 'open'
       ? t('issueLive.ask.acceptPullRequest', {
@@ -147,17 +140,10 @@ export function coveredBySummary(
     readonly commentId?: string | null;
     readonly continuation?: boolean;
     readonly notificationKey?: string | null;
-    readonly personalRequestIds?: readonly string[];
   },
 ): boolean {
   const notice = entry.notice;
   if (!notice) return false;
-  if (
-    notice.source === 'runners' &&
-    notice.type === 'personal_runner_consent' &&
-    typeof notice.data?.requestId === 'string'
-  )
-    return shown.personalRequestIds?.includes(notice.data.requestId) ?? false;
   if (
     shown.accepting &&
     notice.source === GIT_INBOX_SOURCE &&

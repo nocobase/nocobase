@@ -61,7 +61,6 @@ import { StatusPill } from './status.js';
 import { askOf } from './summary-model.js';
 import { IssueCommentRunLimit } from '../detail/comment-run-limit.js';
 import { useOutOfView } from './use-out-of-view.js';
-import { PersonalRunnerActions } from '../detail/personal-runner-actions.js';
 
 /** Renaming the issue from its title, with the words for the pencil and the input. */
 export interface SummaryRename {
@@ -480,9 +479,6 @@ function NeedsYouCard({
       {!(
         issue.statusKey === BLOCKED_STATUS &&
         !progress?.question &&
-        !progress?.personalRunnerRequests?.some(
-          (request) => request.canDecide,
-        ) &&
         !pending &&
         !handoffWaitsOn(handoff)
       ) ? (
@@ -501,42 +497,6 @@ function NeedsYouCard({
       <section aria-label={t('issueLive.summary.needsYou')} className={frame}>
         {heading(t('issueLive.summary.takeOver'))}
         <OwnerHandoffActions issueId={issue.id} />
-      </section>
-    );
-  const consent =
-    progress?.personalRunnerRequests?.filter((request) => request.canDecide) ??
-    [];
-  if (consent.length)
-    return (
-      <section aria-label={t('issueLive.summary.needsYou')} className={frame}>
-        {consent.map((request, index) => (
-          <div
-            key={request.id}
-            className='flex flex-col gap-2'
-            data-request-id={request.id}
-          >
-            {index === 0 ? (
-              heading(
-                t('issueLive.personalRunner.request', {
-                  name: request.requestedBy.name,
-                }),
-              )
-            ) : (
-              <IssueMarkdown
-                content={t('issueLive.personalRunner.request', {
-                  name: request.requestedBy.name,
-                })}
-              />
-            )}
-            <Clamped>
-              <IssueMarkdown
-                content={request.commentText}
-                className='text-sm'
-              />
-            </Clamped>
-            <PersonalRunnerActions request={request} />
-          </div>
-        ))}
       </section>
     );
   if (issue.statusKey === IN_REVIEW_STATUS && ask) {
