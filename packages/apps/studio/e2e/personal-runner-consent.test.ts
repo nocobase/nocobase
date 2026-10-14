@@ -1,23 +1,57 @@
-/** Real application consent decisions, using isolated demo people and runner protocol clients. */
-import { Api, expect, open, signIn, test, unique } from './support/fixtures.ts';
+/** Consent decisions own their server: concurrent tests may change the shared manager's model choices. */
+import { rmSync } from 'node:fs';
+import type { Page } from '@playwright/test';
+import {
+  Api,
+  expect,
+  signIn,
+  test as sharedTest,
+  unique,
+  server as sharedServer,
+} from './support/fixtures.ts';
+import { startStudio, stopStudio, type ServerState } from './support/server.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
 import type { IssueProgress } from '../shared/project-manager.ts';
 import type { RunDetail } from '@nocobase/app-plugin-agents/shared/runs';
 
+const test = sharedTest.extend<{ studio: ServerState }>({
+  studio: async ({ browser }, use) => {
+    expect(browser.isConnected()).toBe(true);
+    const state = await startStudio({ isolated: true });
+    try {
+      expect(state.origin).not.toBe(sharedServer.origin);
+      expect(state.directory).not.toBe(sharedServer.directory);
+      await use(state);
+    } finally {
+      await stopStudio(state);
+      rmSync(state.directory, { recursive: true, force: true });
+    }
+  },
+  api: async ({ context, studio }, use) => {
+    await signIn(context, 'admin', studio);
+    await use(new Api(context.request, studio));
+  },
+});
+
 test.use({ user: 'admin', locale: 'en-US', trace: 'off' });
+test.setTimeout(240_000);
 
 test('comment work shares the decision card and runs only on an authorized identity and runner', async ({
   page,
   api,
   browser,
+  studio,
 }) => {
-  test.setTimeout(240_000);
+  const open = async (target: Page, route: string) => {
+    await target.goto(`${studio.baseURL}${route}`);
+    await target.waitForLoadState('networkidle');
+  };
   const requesterContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     locale: 'en-US',
   });
-  await signIn(requesterContext, 'lisa');
-  const requester = new Api(requesterContext.request);
+  await signIn(requesterContext, 'lisa', studio);
+  const requester = new Api(requesterContext.request, studio);
   const requesterPage = await requesterContext.newPage();
   await requester.patch('users/me/preferences', { locale: 'en-US' });
   await api.patch('users/me/preferences', { locale: 'en-US' });
@@ -276,14 +310,18 @@ test('owner delegation needs no extra consent and Run as me preserves both comme
   page,
   api,
   browser,
+  studio,
 }) => {
-  test.setTimeout(240_000);
+  const open = async (target: Page, route: string) => {
+    await target.goto(`${studio.baseURL}${route}`);
+    await target.waitForLoadState('networkidle');
+  };
   const requesterContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     locale: 'en-US',
   });
-  await signIn(requesterContext, 'lisa');
-  const requester = new Api(requesterContext.request);
+  await signIn(requesterContext, 'lisa', studio);
+  const requester = new Api(requesterContext.request, studio);
   const requesterPage = await requesterContext.newPage();
   await requester.patch('users/me/preferences', { locale: 'en-US' });
   await api.patch('users/me/preferences', { locale: 'en-US' });
