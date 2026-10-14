@@ -3,6 +3,8 @@ import type { DatabaseConnection } from '@nocobase/db';
 import {
   convertStudioAccessGrants,
   reviewStudioAccessKeys,
+  studioKeyInventoryHash,
+  type KeyUpgradeSources,
 } from '../../database/main/seeds/202610250020_studio_access_v2.js';
 import type { StudioAccess } from './service.js';
 
@@ -18,6 +20,7 @@ export interface StudioUpgradePlan {
   assignmentHash: string;
   defaultRoleHash: string;
   keyReviewRequired: number;
+  keyInventoryHash: string;
   keyInventory: ReturnType<typeof reviewStudioAccessKeys>;
   unknownAccountKindCount: number;
 }
@@ -28,6 +31,8 @@ const hash = (value: unknown) =>
 export async function prepareStudioAccessUpgrade(
   connection: DatabaseConnection,
   access: Pick<StudioAccess, 'isRole'>,
+  rootSet = 'root',
+  defaultSet = 'member',
 ): Promise<StudioUpgradePlan> {
   const sets = await connection
     .repository<{ id: string; key: string; grants: unknown }>(
@@ -68,7 +73,7 @@ export async function prepareStudioAccessUpgrade(
     .selectFrom('authorizationPermissionSetAssignments')
     .select(['id', 'subjectType', 'subjectId', 'permissionSetKey'])
     .orderBy('id', 'asc')
-    .execute();
+    .execute<KeyUpgradeSources['assignments'][number]>();
   const defaults = await connection.query
     .selectFrom('studioSettings')
     .select(['key', 'value'])
@@ -78,11 +83,22 @@ export async function prepareStudioAccessUpgrade(
     .selectFrom('apikey')
     .select(['id', 'referenceId', 'permissions'])
     .execute<{ id: string; referenceId: string; permissions: unknown }>();
-  const keyInventory = reviewStudioAccessKeys(keys);
   const kinds = await connection.query
     .selectFrom('user')
-    .select('kind')
-    .execute();
+    .select(['id', 'kind', 'disabledAt', 'deletedAt'])
+    .execute<{
+      id: string;
+      kind: string;
+      disabledAt: unknown;
+      deletedAt: unknown;
+    }>();
+  const keyInventory = reviewStudioAccessKeys(keys, {
+    sets,
+    assignments,
+    users: kinds,
+    rootSet,
+    defaultSet,
+  });
   return {
     version: 'pm358-v1',
     roles,
@@ -92,6 +108,7 @@ export async function prepareStudioAccessUpgrade(
       (key) => key.status === 'review-required',
     ).length,
     keyInventory,
+    keyInventoryHash: studioKeyInventoryHash(keyInventory),
     unknownAccountKindCount: kinds.filter(
       (user) => user.kind !== 'person' && user.kind !== 'service',
     ).length,

@@ -116,13 +116,23 @@ export async function restoreStudioAccess(
     for (const change of changes) {
       const role = current.get(change.roleKey)!;
       if (digest(JSON.stringify(role.grants)) === change.beforeHash) continue;
-      await api.update(role.key, {
-        key: role.key,
-        ...(role.title === null
-          ? {}
-          : { title: decodeAuthorizationTitle(role.title) }),
-        grants: JSON.parse(change.beforeGrants) as PermissionGrant[],
-      });
+      if (role.key.startsWith('api-key-')) {
+        // Private sets are protected from the generic editor. Recovery restores only locked, hash-checked journal grants.
+        // Maintenance requires all instances to restart before traffic reopens; key scope and identity never change.
+        await connection.repository('authorizationPermissionSets').updateOne({
+          filter: { id: role.id, key: role.key },
+          values: {
+            grants: JSON.parse(change.beforeGrants) as PermissionGrant[],
+          },
+        });
+      } else
+        await api.update(role.key, {
+          key: role.key,
+          ...(role.title === null
+            ? {}
+            : { title: decodeAuthorizationTitle(role.title) }),
+          grants: JSON.parse(change.beforeGrants) as PermissionGrant[],
+        });
       count++;
     }
     return count;

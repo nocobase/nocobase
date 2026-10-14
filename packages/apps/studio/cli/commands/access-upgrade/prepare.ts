@@ -1,7 +1,4 @@
 import { AppCommand } from '@nocobase/app-cli';
-import { databaseManagerToken } from '@nocobase/db';
-import { prepareStudioAccessUpgrade } from '../../../server/access/upgrade-preflight.js';
-import { isApiKeySet } from '../../../server/access/api-keys.js';
 
 /** Offline preflight under the same local administrative boundary as `db apply`. */
 export default class AccessUpgradePrepare extends AppCommand {
@@ -12,6 +9,10 @@ export default class AccessUpgradePrepare extends AppCommand {
 
   override async run() {
     await this.parse(AccessUpgradePrepare);
+    const { databaseManagerToken } = await import('@nocobase/db');
+    const { prepareStudioAccessUpgrade } =
+      await import('../../../server/access/upgrade-preflight.js');
+    const { isApiKeySet } = await import('../../../server/access/api-keys.js');
     return this.withApp(async ({ app }) => {
       app.registerProviders();
       const rootSet =
@@ -26,6 +27,8 @@ export default class AccessUpgradePrepare extends AppCommand {
           isRole: (key) =>
             key !== rootSet && key !== defaultSet && !isApiKeySet(key),
         },
+        rootSet,
+        defaultSet,
       );
       this.log(JSON.stringify(result, null, 2));
       return result;

@@ -42,8 +42,13 @@ import {
   type StudioAccess,
 } from '../../server/access/service.js';
 import { registerAccess } from './registry.js';
+import {
+  accessMigrationFixture,
+  recordAccessFixtureCost,
+} from './migration-fixture.js';
 
-vi.setConfig({ hookTimeout: 120_000, testTimeout: 120_000 });
+const accessMigrations = accessMigrationFixture();
+afterAll(() => accessMigrations.dispose());
 
 const require = createRequire(import.meta.url);
 const packageRoot = (name: string) =>
@@ -118,6 +123,7 @@ beforeAll(async () => {
 afterAll(() => databases.drop());
 
 beforeEach(async () => {
+  const preparationStarted = performance.now();
   next = 0;
   testDatabase = await databases.open({
     migrations: (
@@ -148,7 +154,7 @@ beforeEach(async () => {
           ),
           '@nocobase/app-plugin-api-keys',
         ],
-        [path.join(ROOT, 'database/main/migrations'), 'studio'],
+        [accessMigrations.directory, 'studio'],
       ] as const
     ).map(([directory, packageName]) => ({ directory, packageName })),
   });
@@ -181,6 +187,7 @@ beforeEach(async () => {
       packageName: 'studio',
     },
   ]);
+  recordAccessFixtureCost('access', performance.now() - preparationStarted);
   // `root` is the superuser set by default: the plugin protects it as unrestricted.
   authz = createAppAuthorization({ connection: database.connection() });
   // The settings items and businesses the plugins and Studio register at boot.

@@ -7,9 +7,23 @@ import {
   createTestDatabase,
   type TestDatabase,
 } from '@nocobase/app-testing/server';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-vi.setConfig({ hookTimeout: 120_000, testTimeout: 120_000 });
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  readStudioKeyInventory,
+  studioKeyInventoryHash,
+} from '../../database/main/seeds/202610250020_studio_access_v2.js';
+import { createAppAuthorization } from '@nocobase/app-plugin-authorization';
+import { registerAccess } from './registry.js';
+import {
+  accessMigrationFixture,
+  recordAccessFixtureCost,
+} from './migration-fixture.js';
+const accessMigrations = accessMigrationFixture();
+afterAll(() => accessMigrations.dispose());
+import { createApiKeyScopes } from '@nocobase/app-plugin-api-keys/server';
+import { decodeKeyScope } from '@nocobase/app-plugin-api-keys/shared/scopes';
+import { registerStudioKeyScopes } from '../../server/access/key-scopes.js';
+import { readCatalog } from '../../server/access/catalog.js';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 let test: TestDatabase;
@@ -28,14 +42,14 @@ const migrationSources = [
     packageName: '@nocobase/' + name,
   })),
   {
-    directory: path.join(ROOT, 'database/main/migrations'),
+    directory: accessMigrations.directory,
     packageName: 'studio',
   },
 ];
 const sources = [
   { directory: path.join(ROOT, 'database/main/seeds'), packageName: 'studio' },
 ];
-async function runUpgrade(maintenance = true) {
+async function runUpgrade(maintenance = true, expectedHash?: string) {
   return createSeeder({
     database: test.database,
     connection: 'main',
@@ -43,7 +57,11 @@ async function runUpgrade(maintenance = true) {
     config: {
       get<T>(key: string): T | undefined {
         return (
-          key === 'studio.accessUpgrade.maintenance' ? maintenance : undefined
+          key === 'studio.accessUpgrade.maintenance'
+            ? maintenance
+            : key === 'studio.accessUpgrade.expectedKeyInventoryHash'
+              ? expectedHash
+              : undefined
         ) as T | undefined;
       },
     },
@@ -59,6 +77,7 @@ async function roles() {
 }
 
 beforeEach(async () => {
+  const preparationStarted = performance.now();
   test = await createTestDatabase({
     migrations: [
       'app-plugin-authentication',
@@ -78,7 +97,7 @@ beforeEach(async () => {
       }))
       .concat([
         {
-          directory: path.join(ROOT, 'database/main/migrations'),
+          directory: accessMigrations.directory,
           packageName: 'studio',
         },
       ]),
@@ -106,6 +125,10 @@ beforeEach(async () => {
     path.join(directory, '202610010022_studio_roles.ts'),
   );
   await test.seed([{ directory, packageName: 'studio' }]);
+  recordAccessFixtureCost(
+    'upgrade-path',
+    performance.now() - preparationStarted,
+  );
 });
 afterEach(async () => {
   await test.destroy();
@@ -118,7 +141,7 @@ describe('upgrading an existing Studio without new account grants', () => {
     const before = await roles();
     const admin = before.find((role) => role.key === 'admin')!;
     const advanced = {
-      resource: { type: 'pm', id: 'pm.issues' },
+      resource: { type: 'pm', id: 'pm.projects' },
       actions: [
         {
           action: 'edit.related',
@@ -285,6 +308,16 @@ describe('upgrading an existing Studio without new account grants', () => {
         updatedAt: new Date(),
       },
     });
+    await connection.repository('user').createOne({
+      values: {
+        id: 'service-release',
+        kind: 'service',
+        name: 'Synthetic release subject',
+        email: 'release@example.test',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
     const keyBefore = await connection
       .repository('apikey')
       .findOne({ filter: { id: 'release-key' } });
@@ -303,6 +336,230 @@ describe('upgrading an existing Studio without new account grants', () => {
     expect(
       await connection.repository('studioAccessUpgradeChanges').count(),
     ).toBeGreaterThan(0);
+  });
+  it.each(['ordinary', 'scoped', 'service'] as const)(
+    'applies an exact %s key inventory without changing identity, scope or unrelated grants',
+    async (kind) => {
+      const connection = test.database.connection();
+      const subject = 'equivalent-' + kind;
+      const now = new Date();
+      await connection.repository('user').createOne({
+        values: {
+          id: subject,
+          kind: kind === 'service' ? 'service' : 'person',
+          name: 'Synthetic subject',
+          email: subject + '@example.test',
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+      const scoped =
+        kind === 'scoped'
+          ? {
+              $v: ['1'],
+              'projects.projects': ['read'],
+              'projects.projects@': ['picked-project'],
+            }
+          : kind === 'service'
+            ? { $v: ['1'], 'studio.members': ['read', 'write', 'admin'] }
+            : null;
+      await connection.repository('apikey').createOne({
+        values: {
+          id: subject + '-key',
+          referenceId: subject,
+          permissions: scoped === null ? null : JSON.stringify(scoped),
+          key: 'synthetic-non-credential-hash',
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+      const setKey =
+        kind === 'service' ? 'api-key-' + subject : 'custom-' + subject;
+      const grants =
+        kind === 'service'
+          ? [
+              {
+                resource: { type: 'settings', id: 'pm.members' },
+                actions: [{ action: 'define-roles' }],
+              },
+            ]
+          : [
+              {
+                resource: { type: 'pm', id: 'pm.projects' },
+                actions: [{ action: 'view.related' }],
+              },
+            ];
+      await connection.repository('authorizationPermissionSets').createOne({
+        values: {
+          id: setKey,
+          key: setKey,
+          title: null,
+          grants,
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+      await connection
+        .repository('authorizationPermissionSetAssignments')
+        .createOne({
+          values: {
+            id: subject + '-assignment',
+            subjectType: 'user',
+            subjectId: subject,
+            permissionSetKey: setKey,
+            createdAt: now,
+            updatedAt: now,
+          },
+        });
+      const keyBefore = await connection.query
+        .selectFrom('apikey')
+        .select(['id', 'referenceId', 'permissions', 'createdAt'])
+        .where('id', '=', subject + '-key')
+        .executeTakeFirst();
+      const inventory = await readStudioKeyInventory(connection);
+      expect(inventory[0]?.status).toBe('equivalent-transition');
+      const hash = studioKeyInventoryHash(inventory);
+      await expect(runUpgrade()).rejects.toThrow(
+        'STUDIO_KEY_INVENTORY_CONFLICT',
+      );
+      await expect(runUpgrade(true, 'stale-hash')).rejects.toThrow(
+        'STUDIO_KEY_INVENTORY_CONFLICT',
+      );
+      const identityAssignments = await connection.query
+        .selectFrom('authorizationPermissionSetAssignments')
+        .selectAll()
+        .where('subjectId', '=', subject)
+        .execute();
+      await runUpgrade(true, hash);
+      expect(
+        await connection.query
+          .selectFrom('apikey')
+          .select(['id', 'referenceId', 'permissions', 'createdAt'])
+          .where('id', '=', subject + '-key')
+          .executeTakeFirst(),
+      ).toEqual(keyBefore);
+      expect(
+        await connection.query
+          .selectFrom('authorizationPermissionSetAssignments')
+          .selectAll()
+          .where('subjectId', '=', subject)
+          .execute(),
+      ).toEqual(identityAssignments);
+      const after = await connection
+        .repository<{ grants: unknown }>('authorizationPermissionSets')
+        .findOne({ filter: { key: setKey } });
+      if (kind !== 'service') expect(decode(after!.grants)).toEqual(grants);
+      else
+        expect(decode(after!.grants)).toEqual([
+          {
+            resource: { type: 'settings', id: 'studio.roles' },
+            actions: [{ action: 'manage' }],
+          },
+        ]);
+      const authz = createAppAuthorization({ connection });
+      registerAccess(authz);
+      const scopes = createApiKeyScopes();
+      registerStudioKeyScopes(scopes, {}, () => readCatalog(authz));
+      const scope = decodeKeyScope(scoped);
+      const identity = {
+        principal: { type: 'user', id: subject },
+        subjects: [{ type: 'authenticated', id: '*' }],
+        ...(scope ? { keyScope: scopes.compile(subject + '-key', scope) } : {}),
+      };
+      const evaluator = authz.for(identity);
+      expect(
+        (await authz.permissionSets.getEffective(identity)).map(
+          (set) => set.key,
+        ),
+      ).toContain(setKey);
+      expect(
+        await evaluator.can({
+          resource:
+            kind === 'service'
+              ? { type: 'settings', id: 'studio.roles' }
+              : { type: 'pm', id: 'pm.projects' },
+          action: kind === 'service' ? 'manage' : 'view.related',
+        }),
+      ).toBe(true);
+      expect(
+        await evaluator.can({
+          resource: { type: 'settings', id: 'studio.roles' },
+          action: 'read',
+        }),
+      ).toBe(false);
+      expect(
+        await evaluator.can({
+          resource: { type: 'user', id: '*' },
+          action: 'reset-password',
+        }),
+      ).toBe(false);
+      if (kind === 'service') {
+        const changed = [
+          ...(decode(after!.grants) as object[]),
+          {
+            resource: { type: 'page', id: 'unrelated' },
+            actions: [{ action: 'access' }],
+          },
+        ];
+        await connection
+          .repository('authorizationPermissionSets')
+          .updateOne({ filter: { key: setKey }, values: { grants: changed } });
+        const edited = await roles();
+        const { restoreStudioAccess } =
+          await import('../../server/access/upgrade-recovery.js');
+        await expect(
+          restoreStudioAccess(test.database, authz),
+        ).rejects.toMatchObject({ code: 'STUDIO_ACCESS_RESTORE_CONFLICT' });
+        expect(await roles()).toEqual(edited);
+      }
+      if (scope && kind === 'scoped')
+        expect(
+          scopes.compile(subject + '-key', scope).objects('pm.projects'),
+        ).toEqual(['picked-project']);
+    },
+  );
+  it('refuses changed subject grants even when the scope hash is unchanged', async () => {
+    const connection = test.database.connection();
+    await connection.repository('user').createOne({
+      values: {
+        id: 'person-proof',
+        kind: 'person',
+        name: 'Synthetic person',
+        email: 'proof@example.test',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    await connection.repository('apikey').createOne({
+      values: {
+        id: 'proof-key',
+        referenceId: 'person-proof',
+        permissions: null,
+        key: 'synthetic-non-credential-hash',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    const before = await readStudioKeyInventory(connection);
+    await connection
+      .repository('authorizationPermissionSetAssignments')
+      .createOne({
+        values: {
+          id: 'proof-assignment',
+          subjectType: 'user',
+          subjectId: 'person-proof',
+          permissionSetKey: 'admin',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+    const after = await readStudioKeyInventory(connection);
+    expect(after[0]?.scopeHash).toBe(before[0]?.scopeHash);
+    expect(after[0]?.subjectHash).not.toBe(before[0]?.subjectHash);
+    expect(after[0]?.reason).toContain('legacy read excludes disabled people');
+    await expect(
+      runUpgrade(true, studioKeyInventoryHash(before)),
+    ).rejects.toThrow('STUDIO_KEY_REVIEW_REQUIRED');
   });
   it('blocks stored key delegation instead of copying human grants into it', async () => {
     await test.database

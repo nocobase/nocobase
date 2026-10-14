@@ -38,6 +38,7 @@ test('maintains a disabled account, profile, password deep link and role permiss
       await page.screenshot({
         path: path.join(output, name + '.png'),
         fullPage: true,
+        animations: 'disabled',
       });
     }
   };
@@ -71,6 +72,9 @@ test('maintains a disabled account, profile, password deep link and role permiss
   await dialog.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(dialog).not.toBeVisible();
   await row.getByRole('combobox').click();
+  await expect(
+    page.getByRole('option', { name: 'Member', exact: true }),
+  ).toBeVisible();
   await shot('role-assignment-en');
   await page.getByRole('option', { name: 'Member', exact: true }).click();
   await page.keyboard.press('Escape');
@@ -143,11 +147,26 @@ test('maintains a disabled account, profile, password deep link and role permiss
     page.getByRole('textbox', { name: 'Search users' }),
   ).toBeVisible();
   await expect(page.locator('html')).toHaveClass(/dark/u);
+  await page
+    .getByRole('textbox', { name: 'Search users' })
+    .fill('Synthetic reviewer');
+  await expect(row.getByText('Enabled', { exact: true })).toBeVisible();
   await shot('users-narrow-dark-en');
+  await page.setViewportSize({ width: 1440, height: 900 });
   await api.patch('users/me/preferences', { locale: 'zh-CN' });
   await page.evaluate("localStorage.setItem('nocobase.locale', 'zh-CN')");
   await page.reload();
   await expect(page.getByRole('textbox', { name: '搜索用户' })).toBeVisible();
+  await page
+    .getByRole('textbox', { name: '搜索用户' })
+    .fill('Synthetic reviewer');
+  await expect(
+    row.getByText('Synthetic reviewer updated', { exact: true }),
+  ).toBeVisible();
+  await row
+    .getByText('Synthetic reviewer updated', { exact: true })
+    .scrollIntoViewIfNeeded();
+  await expect(row.getByText('已启用', { exact: true })).toBeVisible();
   await shot('users-zh');
 });
 

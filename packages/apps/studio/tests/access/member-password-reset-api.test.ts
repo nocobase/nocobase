@@ -740,6 +740,305 @@ describe('ordinary user management through the actual HTTP boundary', () => {
       ).status,
     ).toBe(401);
   }, 120_000);
+  it('keeps ordinary, scoped and service key identities through offline equivalence application and recovery', async () => {
+    const server = await startApp();
+    const cookie = await signInAsAdmin(server);
+    const { databaseManagerToken } = await import('@nocobase/db');
+    const database = server.application.container.resolve(databaseManagerToken);
+    const connection = database.connection();
+    const { scopedApiKeysToken } =
+      await import('@nocobase/app-plugin-api-keys/server');
+    const keys = server.application.container.resolve(scopedApiKeysToken);
+    const { authorizationToken } =
+      await import('@nocobase/app-plugin-authorization');
+    const authorization =
+      server.application.container.resolve(authorizationToken);
+    const personal: { id: string; secret: string }[] = [];
+    for (const scope of [
+      null,
+      { groups: { 'projects.projects': { level: 'read' as const } } },
+    ]) {
+      const member = await createMember(server, cookie);
+      const role = 'synthetic-business-' + member.userId;
+      await authorization.permissionSets.create({
+        key: role,
+        grants: [
+          {
+            resource: { type: 'pm', id: 'pm.projects' },
+            actions: [{ action: 'view.all' }],
+          },
+        ],
+      });
+      const replacement = await apiRequest(
+        server,
+        `/users/${member.userId}/roleScopes/studio`,
+        {
+          method: 'PUT',
+          headers: { cookie, 'content-type': 'application/json' },
+          body: JSON.stringify({ value: [role] }),
+        },
+      );
+      expect(replacement.status).toBe(200);
+      expect(
+        (
+          await authorization.permissionSets.getEffective(
+            await keys.identityOf(member.userId),
+          )
+        )
+          .map((set) => set.key)
+          .sort(),
+      ).toEqual([role, 'member'].sort());
+      const created = await keys.create(
+        member.userId,
+        { name: 'Synthetic equivalent key', scope, expiresInDays: 1 },
+        await keys.identityOf(member.userId),
+      );
+      personal.push({ id: created.key.id, secret: created.secret });
+      expect(
+        (
+          await apiRequest(server, '/projects', {
+            headers: { 'x-api-key': created.secret },
+          })
+        ).status,
+      ).toBe(200);
+      // Projects performs first admission once. Replace its default role after that existing chain ran.
+      expect(
+        (
+          await apiRequest(
+            server,
+            `/users/${member.userId}/roleScopes/studio`,
+            {
+              method: 'PUT',
+              headers: { cookie, 'content-type': 'application/json' },
+              body: JSON.stringify({ value: [role] }),
+            },
+          )
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await apiRequest(server, '/users', {
+            headers: { 'x-api-key': created.secret },
+          })
+        ).status,
+      ).toBe(403);
+    }
+    const org = await apiRequest(server, '/organizationKeys', {
+      method: 'POST',
+      headers: { cookie, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Synthetic equivalent role key',
+        scope: { groups: { 'studio.members': { level: 'admin' } } },
+        expiresInDays: 1,
+      }),
+    });
+    expect(org.status).toBe(201);
+    const service = (
+      (await org.json()) as {
+        data: { secret: string; key: { id: string; keyId: string } };
+      }
+    ).data;
+    const privateKey = 'api-key-' + service.key.id;
+    const beforePrivate = [
+      {
+        resource: { type: 'settings', id: 'pm.members' },
+        actions: [{ action: 'define-roles' }],
+      },
+    ];
+    await connection.repository('authorizationPermissionSets').updateOne({
+      filter: { key: privateKey },
+      values: { grants: beforePrivate },
+    });
+    expect(
+      await authorization.for(await keys.identityOf(service.key.id)).can({
+        resource: { type: 'settings', id: 'pm.members' },
+        action: 'define-roles',
+      }),
+    ).toBe(true);
+    const client = await connection.client<import('knex').Knex>();
+    // Synthesize a legacy installation ledger; never modify an external instance.
+    await client('__nocobase_seeds')
+      .whereIn('name', [
+        '202610010021z_studio_account_defaults',
+        '202610250020_studio_access_v2',
+      ])
+      .delete();
+    await connection
+      .repository('studioAccessUpgradeChanges')
+      .deleteMany({ filter: { version: 'pm358-v1' } });
+    const identitiesBefore = await connection.query
+      .selectFrom('apikey')
+      .select(['id', 'referenceId', 'permissions', 'createdAt'])
+      .orderBy('id')
+      .execute();
+    const { prepareStudioAccessUpgrade } =
+      await import('../../server/access/upgrade-preflight.js');
+    const { studioAccessToken } = await import('../../server/access/token.js');
+    const inventory = await prepareStudioAccessUpgrade(
+      connection,
+      server.application.container.resolve(studioAccessToken),
+    );
+    expect(inventory.keyReviewRequired).toBe(0);
+    const file = path.join(
+      configs.at(-1)!.directory,
+      'equivalent-inventory.json',
+    );
+    const { writeFileSync } = await import('node:fs');
+    writeFileSync(file, JSON.stringify({ result: inventory }));
+    const config = configs.at(-1)!;
+    await server.close();
+    servers.splice(servers.indexOf(server), 1);
+    // Recreate only this test's known configuration; no credential file is read or copied.
+    const values = {
+      database: {
+        connections: {
+          main: {
+            ...Object.fromEntries(
+              Object.entries(config.testDatabases.connectionConfig()).filter(
+                ([key, value]) =>
+                  key !== 'databaseDriver' && typeof value !== 'function',
+              ),
+            ),
+            migrations: { autoRun: false },
+            seeds: { autoRun: false },
+          },
+        },
+      },
+      auth: {
+        secret: 'test-auth-secret-at-least-32-characters',
+        trustedOrigins: ['http://localhost'],
+      },
+      studio: { accessUpgrade: { maintenance: true } },
+      releases: { host: { enabled: false } },
+      logging: { level: 'error', file: { enabled: false } },
+    };
+    writeFileSync(config.path, JSON.stringify(values));
+    const { bindTestAppCommand, runAppCommand } =
+      await import('@nocobase/app-testing/cli');
+    const { default: Apply } =
+      await import('../../cli/commands/access-upgrade/apply.js');
+    const boundApply = () =>
+      bindTestAppCommand(Apply, {
+        rootDir: path.resolve(import.meta.dirname, '../..'),
+        config,
+        id: 'app:access-upgrade:apply',
+      });
+    const dry = await runAppCommand(boundApply(), [
+      '--file',
+      file,
+      '--dry-run',
+      '--json',
+    ]);
+    expect(dry.json()).toMatchObject({ ok: true, status: 'success-noop' });
+    const staleFile = path.join(config.directory, 'stale-inventory.json');
+    writeFileSync(staleFile, JSON.stringify({ keyInventoryHash: 'stale' }));
+    const stale = await runAppCommand(boundApply(), [
+      '--file',
+      staleFile,
+      '--json',
+    ]);
+    expect(stale.json()).toMatchObject({
+      ok: false,
+      error: { code: 'STUDIO_KEY_INVENTORY_CONFLICT' },
+    });
+    const applied = await runAppCommand(
+      bindTestAppCommand(Apply, {
+        rootDir: path.resolve(import.meta.dirname, '../..'),
+        config,
+        id: 'app:access-upgrade:apply',
+      }),
+      ['--file', file, '--json'],
+    );
+    expect(applied.json()).toMatchObject({ ok: true });
+    if (connection.dialect === 'mysql')
+      expect(applied.stderr).toContain(
+        '.returning() is not supported by mysql',
+      );
+    values.studio.accessUpgrade.maintenance = false;
+    writeFileSync(config.path, JSON.stringify(values));
+    const after = await startApp(config);
+    const afterDatabase =
+      after.application.container.resolve(databaseManagerToken);
+    expect(
+      await afterDatabase
+        .connection()
+        .query.selectFrom('apikey')
+        .select(['id', 'referenceId', 'permissions', 'createdAt'])
+        .orderBy('id')
+        .execute(),
+    ).toEqual(identitiesBefore);
+    for (const key of personal) {
+      expect(
+        (
+          await apiRequest(after, '/projects', {
+            headers: { 'x-api-key': key.secret },
+          })
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await apiRequest(after, '/users', {
+            headers: { 'x-api-key': key.secret },
+          })
+        ).status,
+      ).toBe(403);
+    }
+    const allowed = await apiRequest(after, '/access/roles', {
+      method: 'POST',
+      headers: {
+        'x-api-key': service.secret,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ title: 'Synthetic role from equivalent key' }),
+    });
+    expect(allowed.status).toBe(201);
+    expect(
+      (
+        await apiRequest(after, '/users', {
+          headers: { 'x-api-key': service.secret },
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await apiRequest(after, '/users/irrelevant/resetPassword', {
+          method: 'POST',
+          headers: {
+            'x-api-key': service.secret,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ password: 'SyntheticPassword123!' }),
+        })
+      ).status,
+    ).toBe(403);
+    await after.close();
+    servers.splice(servers.indexOf(after), 1);
+    values.studio.accessUpgrade.maintenance = true;
+    writeFileSync(config.path, JSON.stringify(values));
+    const recovery = await startApp(config);
+    const recoveryDatabase =
+      recovery.application.container.resolve(databaseManagerToken);
+    const { restoreStudioAccess } =
+      await import('../../server/access/upgrade-recovery.js');
+    expect(
+      await restoreStudioAccess(
+        recoveryDatabase,
+        recovery.application.container.resolve(authorizationToken),
+      ),
+    ).toBe(1);
+    expect(
+      (await recoveryDatabase
+        .connection()
+        .repository<{ grants: unknown }>('authorizationPermissionSets')
+        .findOne({ filter: { key: privateKey } }))!.grants,
+    ).toEqual(beforePrivate);
+    expect(
+      await restoreStudioAccess(
+        recoveryDatabase,
+        recovery.application.container.resolve(authorizationToken),
+      ),
+    ).toBe(0);
+  });
   it('fences role and account writes during maintenance while exposing an authorized read-only preflight', async () => {
     const server = await startApp(undefined, true);
     const cookie = await signInAsAdmin(server);

@@ -664,12 +664,27 @@ export const accessRoutes: AppApiRouteContribution<Application> =
               assignmentHash: z.string(),
               defaultRoleHash: z.string(),
               keyReviewRequired: z.number().int(),
+              keyInventoryHash: z.string(),
               keyInventory: z.array(
                 z.object({
                   keyId: z.string(),
                   subjectId: z.string(),
                   scopeHash: z.string(),
-                  status: z.enum(['equivalent-unaffected', 'review-required']),
+                  subjectHash: z.string(),
+                  targetHash: z.string(),
+                  privateChanges: z.array(
+                    z.object({
+                      roleId: z.string(),
+                      roleKey: z.string(),
+                      beforeGrants: z.string(),
+                      afterGrants: z.string(),
+                    }),
+                  ),
+                  status: z.enum([
+                    'equivalent-unaffected',
+                    'equivalent-transition',
+                    'review-required',
+                  ]),
                   reason: z.string(),
                 }),
               ),
@@ -684,6 +699,10 @@ export const accessRoutes: AppApiRouteContribution<Application> =
           data: await prepareStudioAccessUpgrade(
             container.resolve(databaseManagerToken).connection(),
             access,
+            app.config.get<string>('authorization.permissionSets.rootSet') ??
+              'root',
+            app.config.get<string>('authorization.permissionSets.defaultSet') ??
+              'member',
           ),
         }),
     );

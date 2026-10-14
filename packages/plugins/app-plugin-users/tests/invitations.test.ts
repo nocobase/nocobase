@@ -1,3 +1,5 @@
+import { writeFileSync } from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type {
@@ -98,11 +100,17 @@ describe('user invitations', () => {
   const tokenOf = (email: InvitationEmail) =>
     /\/main\/invite\/([\w-]+)/u.exec(email.text)?.[1] ?? '';
   it('bounds slow batch delivery and omits queued links that were revoked or rotated', async () => {
-    const send = vi.fn((email: InvitationEmail) =>
-      email.to === 'batch-0@example.test'
+    let started!: () => void;
+    const deliveryStarted = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    let sends = 0;
+    const send = vi.fn((email: InvitationEmail) => {
+      if (++sends === 6) started();
+      return email.to === 'batch-0@example.test'
         ? Promise.resolve()
-        : new Promise<void>(() => {}),
-    );
+        : new Promise<void>(() => {});
+    });
     const batchService = createUserManagementService({
       database,
       users: userAdministration(database.connection()),
@@ -119,12 +127,24 @@ describe('user invitations', () => {
       { length: 50 },
       (_, i) => `batch-${i}@example.test`,
     );
+    const preparationStarted = performance.now();
     const pending = batchService.invite({ emails, invitedBy: 'ann' });
-    // One completed send frees a slot; the other five stay in flight until the common deadline.
-    // Persisting the 50 invitations may outlast the default one-second wait on a busy database.
-    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(6), {
-      timeout: 15_000,
-    });
+    // Await actual delivery startup without advancing fake time during the database transaction.
+    // One completed send frees a slot; the other five remain in flight until the common deadline.
+    await deliveryStarted;
+    if (process.env.PM358_FIXTURE_COST_DIR)
+      writeFileSync(
+        path.join(
+          process.env.PM358_FIXTURE_COST_DIR,
+          'invitations-' + testDatabase.dialect + '.json',
+        ),
+        JSON.stringify({
+          emails: emails.length,
+          sends,
+          persistenceAndDeliveryStartupMs:
+            performance.now() - preparationStarted,
+        }),
+      );
     const queued = await batchService.listInvitations();
     const revoked = queued.find((row) => row.email === emails[6]);
     const rotated = queued.find((row) => row.email === emails[7]);

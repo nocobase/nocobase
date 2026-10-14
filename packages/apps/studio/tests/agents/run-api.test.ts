@@ -305,8 +305,14 @@ describe('an agent run calling Studio’s API', () => {
       ['POST', '/access/upgrades/pm358/restore', {}],
     ] as const) {
       const response = await call(method, route, { runToken: token, body });
-      expect(response.status, route).toBe(403);
-      expect(response.body.error.reason, route).toBe('CREDENTIAL_NOT_ACCEPTED');
+      expect({ route, status: response.status }).toEqual({
+        route,
+        status: 403,
+      });
+      expect({ route, reason: response.body.error.reason }).toEqual({
+        route,
+        reason: 'CREDENTIAL_NOT_ACCEPTED',
+      });
     }
   });
 

@@ -176,15 +176,70 @@ it('proves unchanged release-only delegation and flags ordinary, wildcard and me
       permissions: JSON.stringify(permissions),
     })),
   );
-  expect(result.map((key) => key.status)).toEqual([
-    'review-required',
-    'review-required',
-    'review-required',
-    'review-required',
-    'equivalent-unaffected',
-  ]);
+  expect(
+    Object.fromEntries(result.map((key) => [key.keyId, key.status])),
+  ).toEqual({
+    ordinary: 'review-required',
+    wildcard: 'review-required',
+    members: 'review-required',
+    unknown: 'review-required',
+    'release-service': 'equivalent-unaffected',
+  });
   expect(JSON.stringify(result)).not.toContain('permissions');
   expect(result.every((key) => /^[a-f0-9]{64}$/.test(key.scopeHash))).toBe(
     true,
   );
+});
+
+describe('key equivalence proof boundaries', () => {
+  const sources = {
+    rootSet: 'root',
+    defaultSet: 'member',
+    users: [{ id: 'synthetic-person', kind: 'person' }],
+    sets: [
+      { id: 'member', key: 'member', grants: [] },
+      {
+        id: 'custom',
+        key: 'custom',
+        grants: [
+          {
+            resource: { type: 'composite', id: 'dynamic-definition' },
+            actions: [{ action: 'access' }],
+          },
+        ],
+      },
+    ],
+    assignments: [
+      {
+        id: 'assignment',
+        subjectType: 'user',
+        subjectId: 'synthetic-person',
+        permissionSetKey: 'custom',
+      },
+    ],
+  };
+  it('stops a composite grant whose expansion cannot be frozen from stored key data', () => {
+    const [proof] = reviewStudioAccessKeys(
+      [{ id: 'key', referenceId: 'synthetic-person', permissions: null }],
+      sources,
+    );
+    expect(proof?.status).toBe('review-required');
+    expect(proof?.reason).toContain('Composite definitions are not frozen');
+  });
+  it('stops an unsupported level even when the group name is known', () => {
+    const [proof] = reviewStudioAccessKeys(
+      [
+        {
+          id: 'key',
+          referenceId: 'synthetic-person',
+          permissions: { $v: ['1'], 'agents.services': ['read', 'write'] },
+        },
+      ],
+      { ...sources, assignments: [] },
+    );
+    expect(proof?.status).toBe('review-required');
+    expect(proof?.reason).toContain(
+      'Unknown scope group, level or object restriction',
+    );
+  });
 });
