@@ -309,7 +309,8 @@ test('cleans up a failed partial backfill and succeeds on retry without modifyin
   expect(
     await connection.query.selectFrom('mailMessages').selectAll().execute(),
   ).toEqual(before);
-  const result = await migrator.latest();
+  // Later migrations refuse existing messages; stop at the one under test.
+  const result = await migrator.upTo(name);
   expect(result.executed).toEqual([name]);
   expect(
     await connection.query
@@ -317,7 +318,7 @@ test('cleans up a failed partial backfill and succeeds on retry without modifyin
       .selectAll()
       .execute(),
   ).toHaveLength(201);
-  expect((await migrator.latest()).executed).toEqual([]);
+  expect((await migrator.upTo(name)).executed).toEqual([]);
   expect(
     await connection.query.selectFrom('mailMessages').selectAll().execute(),
   ).toEqual(before);
@@ -427,7 +428,7 @@ test('backfill diagnostics disclose only aggregate counts', async ({
     .execute();
   const warning = vi.spyOn(process, 'emitWarning').mockImplementation(() => {});
   try {
-    await migrator.latest();
+    await migrator.upTo(name);
     expect(warning).toHaveBeenCalledWith(
       'Mail participant backfill skipped 1 invalid addresses and 0 malformed values.',
       { code: 'MAIL_PARTICIPANT_BACKFILL_SKIPPED' },

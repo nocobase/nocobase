@@ -2,6 +2,8 @@
 
 Use `@nocobase/lifecycle` when a business record moves through stages that developers define in source: an expense report, a ticket, a contract, an order, a leave request. The record keeps its state in one of its own fields, every change is a transition declared in a definition, and the work a transition owes outside the database — mail, payments, calls to other systems — runs as effects after the transaction commits. There is no separate process instance, so the state is never kept in two places.
 
+Administrators can adjust code-declared business parameters without editing workflow structure. For configurable approval departments, reviewer choices, thresholds, snapshot/live reads and optional configuration editors, read [configurable lifecycle parameters](lifecycle-parameters.md).
+
 ## Choose it or something else
 
 | The requirement                                                                                   | Use                                                            |
@@ -13,6 +15,12 @@ Use `@nocobase/lifecycle` when a business record moves through stages that devel
 | Work that runs once in the background, or on a schedule, with no record state                     | [services and jobs](services-and-jobs.md)                      |
 
 A parent and its children can each have a lifecycle and point at each other by foreign key, such as a document and the tasks it distributes; a child's last transition can move the parent on in the same transaction.
+
+## Ask about the process UI
+
+When developing a lifecycle, ask whether the user wants to display a flowchart or a related process interface, unless they have already stated their preference. For example, ask in the user's language: “Would you like this process to include a flowchart or a process interface showing its current state, available actions and history? If yes, we can render it with the flow diagram components from our UI Library.”
+
+If the user chooses yes, use the UI Library's `@nocobase/lifecycle-diagram` to render the lifecycle definition and record progress; `@nocobase/flow-diagram` is available for generic process graphs. Follow [the diagram integration guidance](#draw-an-interactive-lifecycle-diagram) and [the frontend workflow](frontend/ui-workflow.md) for the surrounding process interface. Respect separate preferences: a user may want state, action buttons and history without a diagram. If they decline both a diagram and a process interface, continue implementing the lifecycle without adding either.
 
 ## Rules that are never broken
 
@@ -376,6 +384,8 @@ return view.available.map((transition) => (
 
 Render the buttons from `view.available`, never from a hard-coded state check, so the page and the server use the same judgement. Translate titles and blocker messages by their stable `name` and `code`, as every user-visible string goes through a translation key. `fire` sends a fresh `requestId` and the version on screen; on `CONFLICT` tell the person the record changed and reload rather than retrying. On `INVALID_INPUT`, mark the fields in `error.problems`. The hook refreshes every 4 seconds by default; `refreshMs` changes it. Follow [the frontend workflow](frontend/ui-workflow.md) for the page itself.
 
+For browser request IDs, prefer the built-in lifecycle client, which already handles environments without `crypto.randomUUID()`. Custom submissions and parameter saves must not call it unconditionally: it requires a secure context and can be unavailable on HTTP test hosts. Use a shared helper that falls back to `crypto.getRandomValues(new Uint8Array(16))`, encoded as hex, or an existing HTTP-compatible ID utility. Generate one key per logical operation and reuse it with the same payload for transport retries; changed input or a new decision needs a new key. Verify submission with `randomUUID` unavailable, not only on localhost or HTTPS.
+
 ## 6. Tests
 
 Unit-test the definition with the test kit — a memory store, a fake clock and in-process effects — so waits, retries and refusals need no database:
@@ -429,10 +439,21 @@ The installed package's README lists its entries; the full guide, design notes a
 
 ## Draw an interactive lifecycle diagram
 
+When building a process page whose configurable business parameters relate to nodes or transitions, prefer an entry on the corresponding diagram element that opens a parameter-editing dialog. Map the clicked state's or transition's stable name through code-declared parameter bindings and open the same editor used by the settings page or embedded form, if present. A bound entry can expose several groups; unbound entries keep their ordinary details. Read [configurable lifecycle parameters](lifecycle-parameters.md#optional-user-interfaces) for the working example, authorization, CAS conflicts and current-versus-historical values.
+
 When a page needs a lifecycle diagram, use the UI Library's `@nocobase/lifecycle-diagram` component (React Flow + ELK) instead of building a canvas or turning Mermaid source into an interactive view. Read `pnpm exec shadcn view @nocobase/lifecycle-diagram-demo`, then install with `yes n | pnpm exec shadcn add @nocobase/lifecycle-diagram` and format the created files. It includes `@nocobase/flow-diagram`, which is also available alone for a generic directed graph. Follow [the UI Library guidance](frontend/references/styling.md#3-use-shadcn) and its [offline catalog](frontend/references/ui-library.md) for discovery and installation.
 
 Import `LifecycleDiagram` from `#components/lifecycle-diagram`. Pass the hook's `description.description`, an `ariaLabel`, `currentState: view.record.status` (use the lifecycle's own state field), and `availableTransitions: view.available.filter((item) => item.allowed).map((item) => item.name)`. Translate labels by stable state/transition names with `stateLabel` and `transitionLabel`; add the shared `flowDiagram` keys to your locale resources. Use `onStateClick` and `onTransitionClick` to open details, including effects, triggers and continuations from the description. Definitions remain in source and clicking the diagram never fires a transition; action buttons still follow `view.available`. Pass `history={view.history.transitions}` for visited paths; the component matches the exact transition, source and destination, including retries. `visitedStates` supplements node highlights only; never infer a traversed edge from the current state or visited endpoints. Pass a translated `endLabel` to display a separate decorative end marker after each explicit final state, without treating every state lacking outgoing transitions as final. Keep `toMermaid()` for documentation and export.
 
 For detailed page diagrams, prefer `direction="DOWN" autoHeight`: the canvas grows with the full layout, including outer routes and labels. A wide graph fitted into a short fixed-height panel makes its labels unreadable. Check the actual lifecycle definition in the target page, rather than judging a simple preview alone.
+
+The label callbacks receive description objects, not name strings. Read `state.name` in `stateLabel` and `transition.name` in `transitionLabel` when building translation keys:
+
+```tsx
+stateLabel={(state) => t(`leaves.states.${state.name}`)}
+transitionLabel={(transition) => t(`leaves.transitions.${transition.name}`)}
+```
+
+Adapt the translation key prefix to the feature.
 
 Preserve the component’s application theme tokens: `--primary` for current, visited and available highlights, subdued neutral strokes for other edges, and card/foreground/border tokens for the canvas and labels. Current nodes have a stronger fill and ring, visited nodes a light fill, with no extra “visited” label. Labels stay on the routes; automatic transitions remain solid and may show `⚙` through `transitionLabel`. Do not introduce a separate palette or hard-coded accent color. Check light/dark themes and a changed application primary color when customizing the rendering.

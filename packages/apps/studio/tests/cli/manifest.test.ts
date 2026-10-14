@@ -207,6 +207,8 @@ describe('Studio’s command manifest', () => {
     const issue = await projects.issues.create(viewer, {
       title: 'Fix login',
       executor: null,
+      statusKey: 'in_progress',
+      start: false,
     });
     await projects.comments.post({ type: 'user', id: me.user.id }, issue.id, {
       content: `[@Coder](mention://agent/${agentId}) fix it`,
@@ -236,6 +238,11 @@ describe('Studio’s command manifest', () => {
   it('offers a person every Studio area, and nothing Studio does not serve', async () => {
     const manifest = await manifestOf({ cookie });
     expect(manifest.identity.kind).toBe('person');
+    expect(
+      manifest.commands
+        .find((command) => command.id === 'issue:update')
+        ?.parameters.map((parameter) => parameter.name),
+    ).toEqual(expect.arrayContaining(['needs-you', 'next']));
     const lines = manifest.commands.map(line);
     expect(lines.join('\n')).toMatchSnapshot();
     for (const command of manifest.commands) {
@@ -247,6 +254,11 @@ describe('Studio’s command manifest', () => {
   it('offers a run what its agent may do, on the routes that take a run token', async () => {
     const manifest = await manifestOf({ [HEADERS.runToken]: token });
     expect(manifest.identity.kind).toBe('run');
+    expect(
+      manifest.commands
+        .find((command) => command.id === 'issue:update')
+        ?.parameters.map((parameter) => parameter.name),
+    ).toEqual(expect.arrayContaining(['needs-you', 'next']));
     expect(manifest.commands.map(line).join('\n')).toMatchSnapshot();
     for (const command of manifest.commands)
       expect(command.identities).toContain('run');

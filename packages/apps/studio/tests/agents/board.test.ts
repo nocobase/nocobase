@@ -84,6 +84,9 @@ describe('the agent board', () => {
       h.projects.issues.update(alice(), issue.id, {
         revision: issue.revision,
         statusKey,
+        ...(statusKey === 'blocked' || statusKey === 'in_review'
+          ? { needsYou: 'Choose how to proceed.' }
+          : {}),
       });
     working = await give('Fix login');
     await h.claimOne();
@@ -244,6 +247,7 @@ describe('the agent board', () => {
     await h.projects.issues.update(alice(), working.id, {
       revision: current.revision,
       statusKey: 'blocked',
+      needsYou: 'Choose how to proceed.',
     });
     expect(rowOf(await board('alice'), working.id)).toMatchObject({
       state: 'waiting',

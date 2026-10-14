@@ -28,6 +28,7 @@ import type { DatabaseConnection } from '@nocobase/db';
 import { z } from 'zod';
 import type { RunEffortReport } from '../../../shared/runs.js';
 
+import { runnersRepo } from '../../runners/runner.store.js';
 import type { Runner } from '../../../shared/runners.js';
 import { later, type Clock } from '../../kernel/clock.js';
 import type { IdSource } from '../../kernel/ids.js';
@@ -452,45 +453,84 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
 
     complete: (runner, runId, request) =>
       tx.run(async (unit) => {
-        const run = await held(unit.conn, runner, runId);
         const handled = new Set(request.handledInputIds);
-        // Input the run may no longer act on does not hold it open: the runner would get none of it.
-        const missing = (
-          await settlePending(unit.conn, run, clock.now().toISOString())
-        ).filter((input) => !handled.has(input.id));
-        if (missing.length > 0)
-          throw new ProtocolError(
-            'RUN_INPUT_PENDING',
-            'The run has input it has not handled; handle it before completing.',
+        // Revision conflicts are bounded; exhaustion rolls back the transaction.
+        for (let attempt = 0; attempt < 4; attempt += 1) {
+          const run = await held(unit.conn, runner, runId);
+          if (run.status !== 'running')
+            throw new ProtocolError(
+              'RUN_NOT_ACTIVE',
+              'Only a running run can complete.',
+            );
+          const missing = (
+            await settlePending(unit.conn, run, clock.now().toISOString())
+          ).filter((input) => !handled.has(input.id));
+          if (missing.length > 0)
+            throw new ProtocolError(
+              'RUN_INPUT_PENDING',
+              'The run has input it has not handled; handle it before completing.',
+              {
+                inputIds: missing.map((input) => input.id),
+                inputs: missing.map(toInput),
+              },
+            );
+          const ended = await finishRun(
+            unit,
+            deps,
+            run,
             {
-              inputIds: missing.map((input) => input.id),
-              inputs: missing.map(toInput),
+              status: 'completed',
+              summary: redactorOf(run.id).text(request.summary),
+              ...(request.sessionId ? { sessionId: request.sessionId } : {}),
+            },
+            true,
+            async () => {
+              await recordOutcome(unit, run, request);
+              await rememberSession(unit, run, request.sessionId, false);
             },
           );
-        await recordOutcome(unit, run, request);
-        await rememberSession(unit, run, request.sessionId, false);
-        const ended = await finishRun(unit, deps, run, {
-          status: 'completed',
-          summary: redactorOf(run.id).text(request.summary),
-          ...(request.sessionId ? { sessionId: request.sessionId } : {}),
-        });
-        if (!ended)
-          throw new ProtocolError('LEASE_LOST', 'The run moved on; stop it.');
-        secrets.forget(runSecretsKey(run.id));
-        return { status: ended.status };
+          if (ended) {
+            secrets.forget(runSecretsKey(run.id));
+            return { status: ended.status };
+          }
+        }
+        throw new ProtocolError(
+          'RUN_INPUT_PENDING',
+          'The run revision changed during completion; collect input and retry.',
+          { inputIds: [], inputs: [] },
+        );
       }),
 
     fail: (runner, runId, reported) =>
       tx.run(async (unit) => {
         const run = await held(unit.conn, runner, runId);
-        const request: FailRequest =
-          reported.detail === undefined
-            ? reported
-            : {
+        const machine =
+          reported.reason === 'runnerDiskFull'
+            ? await runnersRepo(unit.conn).findOne({
+                filter: { id: runner.id },
+              })
+            : undefined;
+        const named =
+          reported.reason === 'runnerDiskFull'
+            ? {
                 ...reported,
-                detail: redactorOf(run.id).text(reported.detail),
+                detail: `Runner ${machine?.name ?? runner.id} is out of disk space${reported.detail ? `: ${reported.detail}` : '.'}`,
+              }
+            : reported;
+        const request: FailRequest =
+          named.detail === undefined
+            ? named
+            : {
+                ...named,
+                detail: redactorOf(run.id).text(named.detail),
               };
-        await recordOutcome(unit, run, request);
+        await recordOutcome(
+          unit,
+          run,
+          request.reason === 'runnerUpgrade'
+            ? { ...request, handledInputIds: [] }
+            : request,
+        );
         if (request.reason === 'modelUnavailable' && run.tool && run.model)
           await deps.onModelUnavailable?.(
             unit,

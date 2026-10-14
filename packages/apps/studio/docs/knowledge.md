@@ -1,5 +1,17 @@
 # Knowledge base
 
+## Browse all knowledge
+
+The Knowledge entry opens a unified directory of projects the viewer can access and a distinct System knowledge section labelled Shared across projects. Each section counts readable live articles and files, excluding folders and inherited duplicates. Readable empty spaces appear before their first document. Trees load when a section expands or a document link selects it; collapse/expand state is local to the current view.
+
+Search covers all authorized project and system spaces on the server, including unopened sections. Results are top ranked sections under the existing recall limits, not an exhaustive document count. Each result shows its project or system context and readable folder ancestors, separately from headings inside the document. Restricted ancestor names and unreadable documents are omitted.
+
+Select a space or folder before creating there; with no selection, the New control asks for a target space. Creation dialogs show that target and the parent selector. A reader with proposal access can propose an article or file; folders require edit access to their actual parent. Existing document editing, history, files, proposal decisions and project Knowledge tabs use the same plugin components. Existing document/query links continue to open directly.
+
+The pending-review badge counts proposals the viewer may decide under existing node/space permissions. Its queue pages through results with Previous/Next controls and retains the review filter and page in the URL; All proposals separately exposes readable and author-visible proposals. Review permissions are applied before paging, with accurate totals and no pre-filter candidate cap. Show archived is off initially and uses the existing archive/restore permissions, with archived document counts labelled separately; archived entries remain read-only until restored and outside search.
+
+Studio provides `GET /api/knowledgeDirectory` (permission-filtered space summaries) and `GET /api/knowledgeDirectory/search?q=&pageSize=` (ranked global sections), both behind the Knowledge page grant and existing space/node permission checks. The project list is determined server-side; clients cannot widen it by supplying space identifiers. The single-space plugin APIs remain supported. No knowledge is copied, moved or stored in a new table to aggregate it.
+
 Studio's knowledge base is one source for people and agents. An agent working on an issue reads it as files mounted beside its working directory and through `nb-studio kb`; an agent in a conversation searches and reads it through `nb-studio kb`, citing the section it used.
 
 The knowledge base itself is the open-source knowledge plugin, `@nocobase/app-plugin-knowledge` (`packages/plugins/app-plugin-knowledge`, its README lists its API): spaces of folders, articles and files, versions, the text extracted from files, sections and search, proposals and their review, snapshots exported as files, the `/api/knowledge` endpoints and the knowledge view. It knows nothing of projects or agents. Studio assembles it (`server/knowledge`, `client/knowledge`, `shared/knowledge.ts`):
@@ -15,8 +27,8 @@ The knowledge base itself is the open-source knowledge plugin, `@nocobase/app-pl
 | Vector search, reranking and contextual retrieval                    | `server/knowledge/vectors.ts`                                                                         |
 | The default chunking and ranking the plugin reads                    | `server/knowledge/tuning.ts`                                                                          |
 | The knowledge search settings (Settings › Knowledge search)          | `server/knowledge/search-settings.ts`, `search-routes.ts`, `client/pages/config/knowledge-search.tsx` |
-| The system knowledge page and a project's Knowledge tab              | `client/pages/knowledge`, `client/pages/projects/detail/knowledge.tsx`                                |
-| The space switcher and the space access sheet's roles                | `client/knowledge/space-switcher.tsx`, `client/knowledge/access.ts`                                   |
+| The unified knowledge page and a project's Knowledge tab             | `client/pages/knowledge`, `client/pages/projects/detail/knowledge.tsx`                                |
+| The directory API and the space access sheet's roles                 | `server/knowledge/directory-routes.ts`, `client/knowledge/access.ts`                                  |
 
 Studio words its spaces in the plugin's view (`client/knowledge/labels.ts`) and refreshes its inbox after a decision there; the view itself is the plugin's.
 

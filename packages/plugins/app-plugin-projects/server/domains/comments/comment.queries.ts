@@ -25,6 +25,8 @@ import type { TxRunner } from '../../kernel/tx.js';
 import { requireVisibleIssue } from '../issues/index.js';
 import {
   commentsOf,
+  newestCommentEachBy,
+  newestCommentsBy,
   reactionsFor,
   repliesOf,
   rootsPage,
@@ -212,6 +214,40 @@ export interface CommentQueries extends CommentReader {
     idOrKey: string,
     options: ThreadPageOptions,
   ): Promise<ThreadPage>;
+  /**
+   * One author's newest comments on an issue, newest first, at most `limit`: only live ones with `live`, and none
+   * written after `until` (RFC 3339). Their text alone, without what showing them needs (names, reactions, files), for
+   * a reader that looks for one comment among many.
+   */
+  newestBy(
+    conn: DatabaseConnection,
+    issueId: string,
+    author: { readonly type: string; readonly id: string },
+    options: {
+      readonly live?: boolean;
+      readonly until?: string;
+      readonly limit: number;
+    },
+  ): Promise<AuthoredComment[]>;
+  /**
+   * `newestBy` for many issues at once, with a limit of one: one author's newest comment on each of `issueIds` (only
+   * live ones with `live`), by issue id; an issue without one is left out.
+   */
+  newestByEach(
+    conn: DatabaseConnection,
+    issueIds: readonly string[],
+    author: { readonly type: string; readonly id: string },
+    options?: { readonly live?: boolean },
+  ): Promise<Map<string, AuthoredComment>>;
+}
+
+/** A comment as `CommentQueries.newestBy` answers it. */
+export interface AuthoredComment {
+  readonly id: string;
+  /** Empty once deleted, as everywhere comments are read. */
+  readonly content: string;
+  readonly createdAt: string;
+  readonly deleted: boolean;
 }
 
 export function createCommentQueries(deps: {
@@ -247,6 +283,36 @@ export function createCommentQueries(deps: {
           MENTION_CANDIDATE_LIMIT.max,
         ),
       });
+    },
+    async newestBy(conn, issueId, author, options) {
+      return (await newestCommentsBy(conn, issueId, author, options)).map(
+        (row) => {
+          const deleted = row.deletedAt !== null;
+          return {
+            id: row.id,
+            content: deleted ? '' : row.content,
+            createdAt: iso(row.createdAt) as string,
+            deleted,
+          };
+        },
+      );
+    },
+    async newestByEach(conn, issueIds, author, options = {}) {
+      const rows = await newestCommentEachBy(conn, issueIds, author, options);
+      return new Map(
+        rows.map((row) => {
+          const deleted = row.deletedAt !== null;
+          return [
+            row.issueId,
+            {
+              id: row.id,
+              content: deleted ? '' : row.content,
+              createdAt: iso(row.createdAt) as string,
+              deleted,
+            },
+          ];
+        }),
+      );
     },
     async list(conn, issueId, options = {}) {
       return mapComments(

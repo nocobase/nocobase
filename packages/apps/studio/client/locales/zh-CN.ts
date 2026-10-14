@@ -1,8 +1,10 @@
 import { accountSettingsZhCN, preferencesZhCN } from '../account/locales.js';
+import { followUpsZhCN } from '../follow-ups/locales.js';
 import type { AppResource } from './en-US.js';
 import { gitZhCN } from '../git/locales.js';
 import { knowledgeZhCN } from '../knowledge/locales.js';
 import { issuesZhCN } from '../issues/locales.js';
+import { issueLiveZhCN } from '../issues/live/locales.js';
 import { projectPageZhCN } from '../projects/locales.js';
 import { ciSetupZhCN } from '../releases/ci-setup/locales.js';
 import { previewsZhCN, deploysZhCN } from '../previews/locales.js';
@@ -12,10 +14,50 @@ import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 import planCardZhCN from '@/extensions/nocobase-plan-card/locales/zh-CN';
 
 const zhCN: AppResource = {
+  'auth.passwordResetSuccess': '密码已重置，请用新密码登录。',
+  'auth.requestNewResetLink': '重新申请重置链接',
+
+  'issueRuns.selection.preferredQueued': '首选排队，改用备选',
+  'issueRuns.selection.preferredUnavailable': '首选无兼容执行机，改用备选',
+  'projectManager.settingsPage.delegationTimeout': '委派排队超时（秒）',
+  'projectManager.settingsPage.delegationTimeoutHint':
+    '默认 600 秒。仅撤回项目经理派出且尚未领取的步骤，再自动回复派活线程；达到评论次数上限时等待人工继续。',
+  'projectManager.settingsPage.delegationTimeoutInvalid':
+    '请输入 1–86400 的整数。',
+  'projectManager.settingsPage.fallbackAfter': '备选等待时间（秒）',
+  'projectManager.settingsPage.fallbackAfterHint':
+    '首选排队 1–3600 秒后，可由空闲备选领取。首选无兼容执行机时立即尝试备选。',
+  'projectManager.settingsPage.fallbackAfterInvalid': '请输入 1–3600 的整数。',
+  'ownerHandoff.title': '负责人接手',
+  'ownerHandoff.accept': '接手',
+  'ownerHandoff.claim': '认领',
+  'ownerHandoff.reject': '拒绝',
+  'ownerHandoff.accepted': '已接手',
+  'ownerHandoff.rejected': '已拒绝接手，agent 运行保持暂停',
+  'ownerHandoff.rejectedWaiting': '已拒绝接手，等待重新转交或负责人自行认领。',
+  'ownerHandoff.stale': '此接手请求已失效，请刷新任务。',
+  'ownerHandoff.failed': '未能处理接手请求，请检查权限并刷新任务。',
+  'ownerHandoff.loadFailed': '未能加载接手请求。',
+  'activity.actions.ownerTransferred': '转交了负责人',
+  'activity.actions.ownerAccepted': '接手了任务',
+  'activity.actions.ownerRejected': '拒绝了接手',
+  'activity.actions.waitingOwner': '跳过 agent 运行：等待新负责人接手',
+  'inbox.types.owner_handoff': '等待接手',
+  'inbox.types.owner_handoff_rejected': '接手已拒绝',
+  'inbox.text.owner_handoff': '接手 {{identifier}}',
+  'inbox.text.owner_handoff_rejected': '{{identifier}} 的接手已拒绝',
+  'inbox.body.owner_handoff':
+    '请选择接手或拒绝，新负责人接手前 agent 运行保持暂停。',
+  'inbox.body.owner_handoff_rejected':
+    '新负责人拒绝了接手，负责人保持不变，agent 运行保持暂停。',
   'issueRuns.model': '模型：{{model}}',
   'issueRuns.configuredModel': '配置模型：{{model}}',
   'issueRuns.modelUnknown': '模型尚未报告',
   'issueRuns.clearFilters': '清除筛选',
+  'issueRuns.attemptFailed': '第 {{attempt}} 次尝试失败',
+  'issueRuns.preparationFailed': '运行准备失败',
+  'issueRuns.retryScheduled': '将于 {{time}} 自动重试',
+  'issueRuns.awaitingDispatch': '等待重新派发',
   'issueRuns.emptyHint': '请在属性中确认执行者和任务状态，以启动 Agent 工作。',
   'issueRuns.loading': '正在加载执行记录…',
   'issueRuns.failed': '执行记录加载失败，请重试。',
@@ -62,6 +104,25 @@ const zhCN: AppResource = {
     keepDraft: '保留面板草稿',
     appendDraft: '追加顶部问题',
   },
+  runTranscript: {
+    usedModel: '使用模型：{{model}}',
+    defaultModel: '默认模型',
+    confirmedBy: '确认人：{{person}}',
+    actingAs: '运行身份：{{actor}}',
+    triggeredBy: '触发人：{{person}}',
+    systemTrigger: '由系统触发',
+    afterSubtasks: '所有子任务完成后',
+    efforts: {
+      off: '关闭',
+      minimal: '最低',
+      low: '低',
+      medium: '中',
+      high: '高',
+      xhigh: '特高',
+      max: '最高',
+      ultra: '极高',
+    },
+  },
   runTranscriptFilters: {
     title: '事件类型',
     agent: 'Agent',
@@ -74,6 +135,9 @@ const zhCN: AppResource = {
     errorsAlwaysVisible: '错误始终显示',
   },
   overrides: {
+    '@nocobase/app-plugin-agent-sessions': {
+      links: { startHint: '交给项目经理安排执行者和流转' },
+    },
     '@nocobase/app-plugin-agents': {
       runWait: {
         reasons: {
@@ -122,7 +186,8 @@ const zhCN: AppResource = {
   'auth.registerDescription': '创建账户以开始使用。',
   'auth.forgotTitle': '忘记密码',
   'auth.forgotDescription': '输入邮箱，如果账户存在，我们将发送重置链接。',
-  'auth.passwordResetUnavailable': '未开启自助找回，请联系管理员重置密码。',
+  'auth.passwordResetUnavailable':
+    '尚未开启自助找回密码，请联系管理员重置密码。',
   'auth.capabilityLoadFailed': '无法检查自助找回是否已开启。',
   'auth.retry': '重试',
   'auth.loading': '加载中',
@@ -206,6 +271,7 @@ const zhCN: AppResource = {
     allConversations: '查看全部',
     untitled: '未命名对话',
     agentSetup: {
+      menu: '在 agent 中使用 Studio',
       open: '用本地 Coding Agent 管理 Studio',
       title: '连接本地 Coding Agent',
       description:
@@ -399,6 +465,7 @@ const zhCN: AppResource = {
   navigation: {
     inbox: '收件箱',
     myIssues: '我的任务',
+    followUps: '我的跟进',
     development: '开发',
     issues: '任务',
     projects: '项目',
@@ -414,6 +481,7 @@ const zhCN: AppResource = {
     usage: '用量',
     config: '设置',
     home: '首页',
+    agentSessions: '我的 Agent',
     dashboard: '仪表盘',
     open: '打开导航',
     close: '关闭导航',
@@ -488,6 +556,9 @@ const zhCN: AppResource = {
   'errors.EXPIRY_REQUIRED': '限定范围的密钥必须设置过期时间。',
   'errors.GIT_DEVICE_FLOW_DISABLED':
     '该 App 不允许用验证码连接：需要管理员在托管平台上的 App 设置中开启 Device Flow。',
+  'errors.GIT_DEVICE_FLOW_REFUSED':
+    '托管平台拒绝了验证码连接：请确认该 App 已开启 Device Flow，且 Client ID 正确。',
+  'errors.GITHUB_REFUSED': 'GitHub 拒绝了这个请求。',
   'errors.INVALID_PERSONAL_TOKEN':
     '托管平台拒绝了该令牌：请确认它有效、未过期且完整粘贴。',
   'errors.GIT_PERSONAL_TOKENS_DISABLED': '此连接已关闭个人令牌。',
@@ -816,6 +887,7 @@ const zhCN: AppResource = {
   'inbox.text.executor_assigned': '{{actor}} 把 {{identifier}} 交给你执行',
   'inbox.text.executor_suggested': '建议由 {{agentName}} 执行 {{identifier}}',
   'inbox.someone': '有人',
+  'inbox.anAgent': '某个 agent',
   'inbox.titles.approval_requested': '状态变更待审批',
   'inbox.outcomes.retried': '已重试',
   'inbox.outcomes.newRun': '已有新的运行',
@@ -956,6 +1028,7 @@ const zhCN: AppResource = {
     toolNetwork: '编码工具网络错误',
     toolProcess: '编码工具崩溃',
     contextOverflow: '上下文超限',
+    delegatedQueueTimeout: '委派排队超时，已撤回',
     queuedExpired: '排队超时',
     modelUnavailable: '模型不可用',
     stepLimit: '工具调用次数过多',
@@ -975,12 +1048,15 @@ const zhCN: AppResource = {
       comment: '评论',
       statusChange: '状态变更',
       ownerChanged: '负责人变更',
+      ownerAccepted: '负责人接手',
       projectChanged: '转项目',
       unblocked: '阻塞解除',
       subtasksFinished: '子任务完成',
       stageEntered: '流程阶段',
       planDecided: '计划已决定',
       prChecksFailed: '检查失败',
+      stepEnded: '执行步骤已结束',
+      managerIdle: '空闲等待复核',
       prChecksPassed: '检查通过',
       started: '开始',
       prConflict: 'PR 冲突',
@@ -1131,7 +1207,7 @@ const zhCN: AppResource = {
     commentRuns: {
       limitReached: 'Agent 评论已暂停唤醒',
       continueHint:
-        'Agent 的评论在 {{windowHours}} 小时内已在这个任务上启动 {{maxRuns}} 次运行，最近一条没有唤醒任何 Agent。继续可唤醒它提到的 Agent 一次，并重新开始计数。',
+        '最近 {{windowHours}} 小时评论触发的运行已达 {{maxRuns}} 次上限',
       continued: '已继续 Agent 评论',
       continueStale: '这条评论已不再等待，请刷新任务。',
       continueFailed: '暂时无法继续，请检查 Agent 和任务阻塞后重试。',
@@ -1197,6 +1273,8 @@ const zhCN: AppResource = {
   preferences: preferencesZhCN,
   knowledge: knowledgeZhCN,
   issuesPage: issuesZhCN,
+  followUps: followUpsZhCN,
+  issueLive: issueLiveZhCN,
   projectPage: projectPageZhCN,
   // A repository's "Deployment" (`client/releases/ci-setup`).
   ciSetup: ciSetupZhCN,
@@ -1222,6 +1300,8 @@ const zhCN: AppResource = {
     settings: '设置',
     loadFailed: '项目经理的设置没有加载出来。',
     settingsPage: {
+      name: '名称',
+      identityDescription: '描述',
       title: '项目经理',
       description: '全局只有一个，所有项目的任务都由它安排。',
       readOnly: '只有能管理 Agent 的人可以修改这些设置。',
@@ -1231,7 +1311,7 @@ const zhCN: AppResource = {
       noFallback: '不用备选',
       choose: '选择 Agent',
       agentsHint:
-        '首选没有执行机能跑时用备选。项目经理不写代码，用它的执行机也不检出仓库。',
+        '首选排队超时后由空闲备选领取；首选无兼容执行机时立即尝试备选。项目经理不写代码，用它的执行机也不检出仓库。',
       noChoices: '还没有启用的 Agent，先在 Agent 页面启用一个。',
       principles: '分配原则',
       restore: '恢复内置',
@@ -1251,7 +1331,53 @@ const zhCN: AppResource = {
   issuePage: {
     arrange: '安排',
   },
+  issueStart: { title: '现在开始？', later: '暂不开始', start: '开始' },
   issueProgress: {
+    firstChoice: '首选',
+    fallback: '备选',
+    managerModelWait: '{{choice}} {{model}}：{{reason}}{{runners}}',
+    waitingForContinuation:
+      '等待人工继续：自动回报已投递，评论运行次数达到上限，待处理输入已保留。',
+    managerWaiting: '项目经理在等执行机：{{entries}}',
+    fallbackIn: '{{seconds}} 秒后可尝试备选',
+    fallbackReady: '等待首选或备选的空闲执行机',
+    runnerLoad:
+      '{{name}}：总槽位 {{used}}/{{limit}}，{{tool}} {{toolUsed}}/{{toolLimit}}，报告总空位 {{totalFree}}、工具空位 {{free}}',
+    workerChoice: '执行模型',
+    workerWaiting: '{{agent}} 在等执行机：{{entries}}',
+    modelWait: {
+      updatePending: '执行机等待升级，暂不接活',
+      pruning: '执行机清理共享缓存，暂不接活',
+      toolNotInstalled: '未安装工具',
+      toolUnavailable: '工具未登录、被禁用或模型不可用',
+      noSharedRunner: '仅他人的个人执行机在线',
+      unknown: '尚不能确认可承接条件',
+
+      ready: '现在可领取',
+      busy: '兼容执行机正忙',
+      incompatible: '执行机不兼容，需升级',
+      offline: '无在线执行机',
+      restricted: '身份、策略或负载要求限制',
+      concurrencyFull: '已达 agent 并发上限',
+      sameWorkActive: '同线程有运行正在执行',
+      delayed: '等待延迟执行或重试退避',
+    },
+    nextLabel: '接下来：',
+    status: {
+      working: '{{agent}} 工作中',
+      queued: '{{agent}} 排队中',
+      minutes: '{{minutes}} 分钟',
+    },
+    waiting: {
+      waitingOwner: '等待 {{owner}} 接手',
+      noOwner: '正在等待有效的任务负责人',
+      notConfigured: '{{agent}} 正在等待：尚未配置首选或备选模型',
+      noRunner: '{{agent}} 正在等待：没有能运行首选或备选模型的在线执行机',
+      ownerHasNoRunner:
+        '{{agent}} 正在等待：负责人 {{owner}} 没有能运行首选或备选模型的在线执行机',
+      notAllowed:
+        '{{agent}} 正在等待：负责人 {{owner}} 无权运行此 Agent，或可用执行机不满足运行要求',
+    },
     title: '现在',
     anAgent: '某个 Agent',
     working: '{{agent}} 正在{{step}}',
@@ -1267,7 +1393,7 @@ const zhCN: AppResource = {
     inReview: '等待验收',
     notStarted: '还没开始。点「开始」后由项目经理安排。',
     finished: '已结束',
-    idle: '现在没有在进行的工作',
+    idle: '现在没有在运行的工作',
     next: '接下来：{{next}}',
     start: '开始',
     handOver: '交给项目经理继续',

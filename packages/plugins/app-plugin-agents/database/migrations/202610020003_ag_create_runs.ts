@@ -84,7 +84,6 @@ const migration: MigrationDefinition = defineMigration({
           ]);
           collection.index(['subjectKind', 'subjectId']);
           collection.index(['runnerId', 'status']);
-          collection.index(['directoryKey', 'status']);
           collection.index(['parentRunId']);
           collection
             .belongsTo('agent', 'agAgents')

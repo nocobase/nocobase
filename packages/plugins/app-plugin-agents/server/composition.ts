@@ -14,6 +14,11 @@
  * `conversation` subject.
  */
 import type { RunApp } from '@nocobase/agent-protocol';
+import { createRunDataPurge } from './core/runs/run-data-purge.js';
+import {
+  createModelSelectionPolicies,
+  type ModelSelectionPolicies,
+} from './core/runs/selection.js';
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
 
 import {
@@ -139,6 +144,7 @@ import {
 } from './core/runs/index.js';
 
 export interface AgentsDeps {
+  readonly runRetentionDays?: () => number;
   readonly database: Pick<DatabaseManager, 'transaction' | 'connection'>;
   readonly idGenerator: { generateString(): string };
   /**
@@ -234,11 +240,13 @@ export interface Agents {
   readonly downloadTokens: DownloadTokenService;
   readonly runs: RunService;
   readonly claims: ClaimService;
+  readonly selectionPolicies: ModelSelectionPolicies;
   readonly reports: RunnerReports;
   /** Repository credentials a runner asks for while it holds a run (`RepoAccessProvider.issue`). */
   readonly gitCredentials: GitCredentialService;
   /** Marks silent runners offline, then takes back and ends the runs and jobs nobody will finish. */
   readonly sweeper: RunnerSweeper;
+  readonly purgeRunData: () => Promise<number>;
   /** Variables of agents, working directories and the scopes the application registers. */
   readonly variables: VariableService;
   /** The skill library and where skills are attached. */
@@ -417,6 +425,9 @@ export function createAgents(deps: AgentsDeps): Agents {
     openRuns: openCounts,
   });
   const runs = createRunService({
+    reconcileCommentConsent: (unit, runId) =>
+      claims.reconcileCommentConsent(unit, runId),
+    diagnose: (conn, run, agent) => claims.diagnose(conn, run, agent),
     ...transitions,
     tx,
     ids,
@@ -436,7 +447,10 @@ export function createAgents(deps: AgentsDeps): Agents {
   const repoAccess = createRepoAccessRegistry();
   // The secrets claims hand out, so what runners report is redacted of them before it is stored.
   const secrets = createSecretMemory();
+  const selectionPolicies = createModelSelectionPolicies();
   const claims = createClaimService({
+    selectionPolicies,
+    runners,
     people,
     sections,
     mounts,
@@ -476,7 +490,13 @@ export function createAgents(deps: AgentsDeps): Agents {
   const sweeper = createRunnerSweeper({
     clock,
     runners,
-    runs: createSweeper({ ...transitions, tx, ids, runners }),
+    runs: createSweeper({
+      ...transitions,
+      tx,
+      ids,
+      runners,
+      reconcileCommentQueue: () => claims.reconcileCommentQueue(),
+    }),
     jobs,
     requests: runs.requests,
   });
@@ -550,6 +570,10 @@ export function createAgents(deps: AgentsDeps): Agents {
   });
 
   return {
+    purgeRunData: createRunDataPurge({
+      tx,
+      retentionDays: deps.runRetentionDays ?? (() => 14),
+    }),
     events,
     tx,
     clock,
@@ -585,6 +609,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     }),
     runs,
     claims,
+    selectionPolicies,
     reports,
     gitCredentials,
     sweeper,

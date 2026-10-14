@@ -59,6 +59,109 @@ describe('conversations', () => {
     return sent.body.data;
   }
 
+  it('resolves historical consultation subjects without rewriting the original message and keeps ownership checks', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ name: 'Project manager' });
+    const id = await newConversation(agentId);
+    await h.services.tx.run((unit) =>
+      h.services.conversations.deliver(unit, id, {
+        notice: {
+          code: 'consultation',
+          callId: 'old-call',
+          agentId,
+          agentName: 'Project manager',
+          runId: null,
+          question: 'Historical question',
+          answer: 'Historical answer',
+          state: 'completed',
+          error: null,
+          usage: null,
+          plans: 0,
+        },
+        input: {
+          type: 'signal',
+          actor: { kind: 'user', id: ALICE, name: 'Alice' },
+          text: 'Historical Project manager message',
+        },
+      }),
+    );
+    for (const name of ['项目经理', '负责人']) {
+      const agent = await h.services.agents.get(agentId);
+      await h.services.agents.ensureSystem({ ...agent, name }, 'owner');
+      const page = await h.services.conversations.messages(ALICE, id, {});
+      expect(page.items.at(-1)?.metadata?.notice).toMatchObject({
+        agentId,
+        agentName: name,
+        identitySnapshot: false,
+        question: 'Historical question',
+      });
+      expect(page.items.at(-1)?.content.content).toContain('Project manager');
+    }
+    expect((await as(BOB).get(`${base}/${id}/messages`)).status).toBe(404);
+    const run = await h.services.runs.enqueue({
+      agentId,
+      subject: { kind: 'sample', id: 'consultation-recovery' },
+      actorUserId: ALICE,
+      input: {
+        type: 'comment',
+        actor: { kind: 'user', id: ALICE, name: 'Alice' },
+        text: 'Old consultation',
+      },
+    });
+    await h.services.tx.run((unit) =>
+      h.services.conversations.deliver(unit, id, {
+        notice: {
+          code: 'consultation',
+          callId: 'run-only',
+          agentId: null,
+          agentName: 'Project manager',
+          runId: run.runId,
+          question: 'Old question',
+          answer: '',
+          state: 'completed',
+          error: null,
+          usage: null,
+          plans: 0,
+        },
+        input: {
+          type: 'signal',
+          actor: { kind: 'user', id: ALICE, name: 'Alice' },
+          text: 'Historical body',
+        },
+      }),
+    );
+    expect(
+      (await h.services.conversations.messages(ALICE, id, {})).items.at(-1)
+        ?.metadata?.notice,
+    ).toMatchObject({ agentId, agentName: '负责人', identitySnapshot: false });
+    await h.services.tx.run((unit) =>
+      h.services.conversations.deliver(unit, id, {
+        notice: {
+          code: 'consultation',
+          callId: 'missing-call',
+          agentId: null,
+          agentName: 'Original request',
+          runId: null,
+          question: 'Question',
+          answer: '',
+          state: 'refused',
+          error: 'Missing subject',
+          usage: null,
+          plans: 0,
+        },
+        input: {
+          type: 'signal',
+          actor: { kind: 'user', id: ALICE, name: 'Alice' },
+          text: 'Old request',
+        },
+      }),
+    );
+    expect(
+      (await h.services.conversations.messages(ALICE, id, {})).items.at(-1)
+        ?.metadata?.notice,
+    ).toMatchObject({ agentName: 'Original request', identitySnapshot: true });
+  });
+
   it('starts a conversation from a source the application registered, with the text as it gives it', async () => {
     h = await createHarness();
     const agentId = await h.createAgent({ name: 'Helper' });

@@ -75,6 +75,24 @@ const pages = {
     description:
       'Each coding tool and model a runner reports is an agent. The project manager hands each step of an issue to the agent whose description fits it.',
     fromRunners: 'Agents from runners',
+    discovery: {
+      selectAll: 'Select all results',
+      selectFirst: 'Select the first {{limit}} results',
+      selectionCount: 'Selected {{count}} / {{limit}} groups',
+      clearSelection: 'Clear selection',
+      new: 'New discoveries ({{count}})',
+      ignored: 'Ignored ({{count}})',
+      search: 'Search models or providers',
+      select: 'Select {{name}}',
+      ignore: 'Ignore',
+      restore: 'Restore',
+      ignoreSelected: 'Ignore selected',
+      restoreSelected: 'Restore selected',
+      enabled: 'Show enabled',
+      disabled: 'Show disabled',
+      provider: 'Provider and runner',
+      saved: 'Discovery preferences saved',
+    },
     filterLabel: 'Show agents',
     filters: {
       all: 'All {{count}}',
@@ -392,6 +410,8 @@ const pages = {
     briefDescription: 'What the agent was told when this run was last claimed.',
     briefOf: 'Attempt {{attempt}}, claimed {{time}}',
     briefUnavailable: 'No full prompt is available for this run.',
+    processDataCleared:
+      'Run process data has been cleared under the retention policy.',
     briefFailed: 'Could not load the full prompt',
     workspaceReset: {
       button: 'Clean working directory',
@@ -462,6 +482,9 @@ const pages = {
     },
   },
   failures: {
+    runnerUpgrade:
+      'Interrupted for an execution machine update; the run will continue.',
+    runnerDiskFull: 'The execution machine ran out of disk space.',
     runnerOffline: 'The runtime went offline.',
     leaseExpired: 'The runtime stopped reporting.',
     startTimeout: 'The runtime did not start the run in time.',
@@ -478,6 +501,7 @@ const pages = {
     toolNetwork: 'The coding tool could not reach its service.',
     toolProcess: 'The coding tool exited unexpectedly.',
     contextOverflow: 'The conversation grew too long for the model.',
+    delegatedQueueTimeout: 'Delegation queue timeout; withdrawn',
     queuedExpired: 'No runtime took the run in time.',
     modelUnavailable: 'The agent’s model is not available.',
     stepLimit: 'The agent called tools too many times without answering.',

@@ -14,6 +14,7 @@ import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
 import type { Runner } from '../../../shared/runners.js';
+import { supportsWorkspaceKey } from '../../../shared/runners.js';
 import type { VariableRef } from '../../../shared/variables.js';
 import { cleanList } from '../../kernel/values.js';
 import type { VariableService, VariableTarget } from '../variables/index.js';
@@ -21,6 +22,8 @@ import { fitsActor } from './claim.js';
 
 /** Work as `actorUserId` would be: who it runs as, and what else its run would need. */
 export interface EligibilityRequest {
+  /** The payload needs the application's separately named workspace. */
+  readonly workspaceKey?: boolean;
   readonly actorUserId: string;
   /** Scopes the work's variables come from besides the agent's, such as its subject's; none by default. */
   readonly scopes?: readonly VariableTarget[];
@@ -84,8 +87,10 @@ export function createClaimEligibility(deps: {
   ): Promise<Runner[]> {
     if (agent.status !== 'enabled') return [];
     // No variable reads when the tool, policy and trust rules already rule every runner out.
-    const possible = candidates.filter((runner) =>
-      fitsActor(runner, agent, request.actorUserId, request.requires ?? []),
+    const possible = candidates.filter(
+      (runner) =>
+        (!request.workspaceKey || supportsWorkspaceKey(runner)) &&
+        fitsActor(runner, agent, request.actorUserId, request.requires ?? []),
     );
     if (possible.length === 0) return [];
     const targets = targetsOf(agent, request);

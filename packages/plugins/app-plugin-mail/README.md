@@ -86,4 +86,12 @@ pnpm --filter @nocobase/app-plugin-mail test
 pnpm --filter @nocobase/app-plugin-mail build
 ```
 
+## IMAP location upgrade
+
+Migration `202610250001_mail_imap_message_locations` supports existing mail data. It preserves legacy `imap:` identities and business UUIDs, decodes their recorded folder, UIDVALIDITY and UID locally, and adds `locator` identity sources and account-scoped locations. Localized remote drafts use their `providerDraftMessageId` mirror, including scheduled drafts. Locations initially retain the recorded read/star state and received time as a valid snapshot; subsequent IMAP reads and mutations still verify the remote generation and UID. The migration does not contact a mail server, discover native identities, merge messages, reset synchronization, or rewrite message content, attachments, notes or draft submissions.
+
+Pure local drafts, non-IMAP accounts and SMTP-accepted RFC Message-ID records without a recorded remote tuple remain unchanged. Such SMTP records do not acquire remote addressing merely by upgrading. Malformed legacy locators, out-of-range or missing tuple values, unrepresentable identities and competing message UUIDs for one account's tuple fail precise preflight before schema changes; the migration never guesses a generation, truncates an identity or drops a conflicting record.
+
+Use the maintenance window described above: stop application writes and all Mail workers, back up the database, run the application's `nocobase db apply`, verify sources, positions and representative existing-message operations, then restart. This is an offline upgrade. Historical migration checksums and existing key/subscription lengths remain unchanged, and this upgrade requires no checksum repair. Rollback refuses when mail business data exists because dropping locations or reverting the expanded header field would be destructive; this rollback restriction does not prevent populated upgrades.
+
 User-facing and application-integration documentation is maintained in the NocoBase documentation site rather than duplicated in this package README.

@@ -163,7 +163,11 @@ export function createPreviewApi(deps: {
   async function read(viewer: Viewer, key: string): Promise<IssuePreviews> {
     const issue = await visible(viewer, key);
     const canEdit = await deps.issues.canEdit(viewer, issue.id);
-    const records = await recordsOf(issue.id);
+    const linked = await pullRequestsOfIssue(conn(), issue.id);
+    const records = await previewsOfPullRequests(
+      conn(),
+      linked.map(({ pr }) => pr.id),
+    );
     const previews: PreviewView[] = [];
     for (const record of records) previews.push(await view(record, canEdit));
     return {
@@ -171,7 +175,7 @@ export function createPreviewApi(deps: {
       identifier: issue.identifier,
       notRequired: await previewNotRequired(conn(), issue.id),
       labels: await Promise.all(
-        (await pullRequestsOfIssue(conn(), issue.id))
+        linked
           .filter(({ pr }) => pr.state === 'open')
           .map(({ pr }) => previewLabelState(conn(), pr.id)),
       ),

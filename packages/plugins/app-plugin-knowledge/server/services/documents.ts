@@ -14,6 +14,7 @@ import {
   type KnowledgeAccess,
   type KnowledgeDoc,
   type KnowledgeSearchHit,
+  type KnowledgeSpaceSummary,
   type KnowledgeTree,
   type KnowledgeVersion,
   type MoveKnowledgeDocRequest,
@@ -87,6 +88,16 @@ import {
 } from './writes.js';
 
 export interface DocumentService {
+  summaries(
+    viewer: KnowledgeReader,
+    refs: readonly SpaceRef[],
+  ): Promise<KnowledgeSpaceSummary[]>;
+  searchMany(
+    viewer: KnowledgeReader,
+    refs: readonly SpaceRef[],
+    query: string,
+    options?: { readonly limit?: number; readonly explain?: boolean },
+  ): Promise<KnowledgeSearchHit[]>;
   tree(
     viewer: KnowledgeReader,
     space: SpaceRef,
@@ -247,6 +258,46 @@ export function createDocumentService(
   }
 
   const service: DocumentService = {
+    async summaries(viewer, refs) {
+      const access = resolverFor(viewer);
+      const conn = context.read();
+      const unique = [
+        ...new Map(refs.map((ref) => [spaceKey(ref), ref])).values(),
+      ];
+      const records = await spacesOf(conn, unique);
+      const result: KnowledgeSpaceSummary[] = [];
+      for (const ref of unique) {
+        const acl = await access.acl(ref);
+        if (!acl.sees) continue;
+        const record = records.get(spaceKey(ref));
+        const docs = record
+          ? readableDocs(
+              await docsOf(conn, [record.id], { archived: true }),
+              acl.gates,
+            )
+          : [];
+        result.push({
+          space: {
+            ...ref,
+            id: record?.id ?? null,
+            title: await context.access.title(ref),
+            inherited: false,
+            access: await access.access(ref),
+          },
+          documents: docs.filter(
+            (doc) => doc.kind !== 'folder' && !doc.archivedAt,
+          ).length,
+          archivedDocuments: docs.filter(
+            (doc) =>
+              doc.kind !== 'folder' &&
+              !!doc.archivedAt &&
+              !viewer.actor &&
+              accessOfLevel(acl.node(doc.id).level).edit,
+          ).length,
+        });
+      }
+      return result;
+    },
     async tree(viewer, ref, options = {}) {
       const access = resolverFor(viewer);
       await access.requireRead(ref);
@@ -688,15 +739,32 @@ export function createDocumentService(
     },
 
     async search(viewer, ref, query, options = {}) {
+      await resolverFor(viewer).requireRead(ref);
+      const hits = await service.searchMany(
+        viewer,
+        chainOf(context.access, ref),
+        query,
+        options,
+      );
+      return hits.map((hit) => ({
+        ...hit,
+        inherited: spaceKey(hit) !== spaceKey(ref),
+      }));
+    },
+
+    async searchMany(viewer, refs, query, options = {}) {
       const access = resolverFor(viewer);
-      const rights = await access.requireRead(ref);
       const recall = await recallOf(context);
+      const chain = [
+        ...new Map(refs.map((ref) => [spaceKey(ref), ref])).values(),
+      ];
+      const rights =
+        chain.length > 0 ? await access.access(chain[0]) : { manage: false };
       const explain =
         options.explain === true &&
         ((rights.manage && !viewer.actor) ||
           ((await context.settings().mayExplain?.(viewer)) ?? false));
       const conn = context.read();
-      const chain = chainOf(context.access, ref);
       const records = await spacesOf(conn, chain);
       const readable: {
         ref: SpaceRef;
@@ -704,14 +772,14 @@ export function createDocumentService(
         inherited: boolean;
         gates: SpaceGates;
       }[] = [];
-      for (const [index, space] of chain.entries()) {
+      for (const space of chain) {
         const record = records.get(spaceKey(space));
         const acl = await access.acl(space);
         if (record && acl.sees && acl.gates)
           readable.push({
             ref: space,
             id: record.id,
-            inherited: index > 0,
+            inherited: false,
             gates: acl.gates,
           });
       }
@@ -783,42 +851,48 @@ export function createDocumentService(
       const weightOf = new Map(
         names.map((name, index) => [name, weights[index] ?? 1]),
       );
-      return fused.slice(0, limit).map(({ chunkId, score, reranked }) => {
-        const chunk = chunks.get(chunkId)!;
-        const doc = docs.get(chunk.docId)!;
-        const space = readable.find((entry) => entry.id === doc.spaceId)!;
-        return {
-          docId: doc.id,
-          kind: doc.kind,
-          slug: doc.slug,
-          title: doc.title,
-          version: num(doc.currentVersion),
-          scope: space.ref.scope,
-          scopeId: space.ref.scopeId,
-          inherited: space.inherited,
-          headingPath: json<string[]>(chunk.headingPath, []),
-          anchor: chunk.anchor,
-          lines: [num(chunk.lineStart), num(chunk.lineEnd)] as const,
-          excerpt: excerptOf(chunk.text, terms),
-          titleMatch: titleHolds(doc.title, terms),
-          updatedAt: isoTime(doc.updatedAt),
-          score,
-          providers: own.get(chunkId) ?? [],
-          reranked,
-          ...(explain
-            ? {
-                explain: {
-                  normalized: normalized(score),
-                  providers: (own.get(chunkId) ?? []).map((rank) => ({
-                    ...rank,
-                    weight: weightOf.get(rank.name) ?? 1,
-                  })),
-                  reranked,
-                },
-              }
-            : {}),
-        };
-      });
+      return Promise.all(
+        fused.slice(0, limit).map(async ({ chunkId, score, reranked }) => {
+          const chunk = chunks.get(chunkId)!;
+          const doc = docs.get(chunk.docId)!;
+          const space = readable.find((entry) => entry.id === doc.spaceId)!;
+          return {
+            docId: doc.id,
+            kind: doc.kind,
+            slug: doc.slug,
+            title: doc.title,
+            version: num(doc.currentVersion),
+            scope: space.ref.scope,
+            scopeId: space.ref.scopeId,
+            inherited: space.inherited,
+            folderPath: (await readableAncestors(access, conn, doc)).map(
+              (parent) => parent.title,
+            ),
+            spaceTitle: await context.access.title(space.ref),
+            headingPath: json<string[]>(chunk.headingPath, []),
+            anchor: chunk.anchor,
+            lines: [num(chunk.lineStart), num(chunk.lineEnd)] as const,
+            excerpt: excerptOf(chunk.text, terms),
+            titleMatch: titleHolds(doc.title, terms),
+            updatedAt: isoTime(doc.updatedAt),
+            score,
+            providers: own.get(chunkId) ?? [],
+            reranked,
+            ...(explain
+              ? {
+                  explain: {
+                    normalized: normalized(score),
+                    providers: (own.get(chunkId) ?? []).map((rank) => ({
+                      ...rank,
+                      weight: weightOf.get(rank.name) ?? 1,
+                    })),
+                    reranked,
+                  },
+                }
+              : {}),
+          };
+        }),
+      );
     },
   };
   return service;

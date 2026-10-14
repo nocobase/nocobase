@@ -44,7 +44,7 @@ import type {
   JobFilter,
   JobVia,
 } from '../../shared/jobs.js';
-import type { Runner } from '../../shared/runners.js';
+import { runnerLowOnDisk, type Runner } from '../../shared/runners.js';
 import { later, type Clock } from '../kernel/clock.js';
 import { invalid, notFound } from '../kernel/errors.js';
 import type { AgentsEventBus } from '../kernel/events.js';
@@ -286,7 +286,12 @@ function repoUrlOf(spec: unknown): string | null {
 
 /** Whether `runner` may take `job`, before any lock is taken. */
 export function jobFits(runner: Runner, job: JobRecord): boolean {
-  if (runner.status !== 'online' || !runner.acceptJobs) return false;
+  if (
+    runner.status !== 'online' ||
+    runnerLowOnDisk(runner) ||
+    !runner.acceptJobs
+  )
+    return false;
   if (!covers(runner.features, requiresOf(job))) return false;
   const runnerIds = job.runnerIds === null ? [] : stringArray(job.runnerIds);
   if (runnerIds.length > 0 && !runnerIds.includes(runner.id)) return false;
@@ -487,7 +492,12 @@ export function createJobService(deps: JobServiceDeps): JobService {
   }
 
   async function claim(runner: Runner, free: number): Promise<JobPayload[]> {
-    if (runner.status !== 'online' || !runner.acceptJobs || free <= 0)
+    if (
+      runner.status !== 'online' ||
+      runnerLowOnDisk(runner) ||
+      !runner.acceptJobs ||
+      free <= 0
+    )
       return [];
     if (!runner.features.some((feature) => feature.startsWith('jobs.')))
       return [];

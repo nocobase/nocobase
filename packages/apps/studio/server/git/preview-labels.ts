@@ -21,6 +21,8 @@ export function createPreviewLabelSync(deps: {
   conn(): DatabaseConnection;
   platformOf(repo: RepoRow): GitPlatform;
   readAuth(repo: RepoRow): Promise<GitAuth>;
+  /** The stored label state changed (`present`, `failed` or `managed`). */
+  onChanged?(pullRequestId: string): void;
 }) {
   const running = new Map<string, Promise<void>>();
   async function reconcile(pullRequestId: string): Promise<void> {
@@ -28,6 +30,17 @@ export function createPreviewLabelSync(deps: {
     const pr = await findPullRequestById(conn, pullRequestId);
     if (!pr || pr.state !== 'open') return;
     let state = await previewLabelSnapshot(conn, pullRequestId);
+    const before = state;
+    const save = async (next: typeof state) => {
+      await savePreviewLabelSnapshot(conn, next);
+      const stored = await previewLabelSnapshot(conn, pullRequestId);
+      if (
+        stored.present !== before.present ||
+        stored.failed !== before.failed ||
+        stored.managed !== before.managed
+      )
+        deps.onChanged?.(pullRequestId);
+    };
     try {
       const repo = await findRepoById(conn, pr.repoId);
       if (!repo) return;
@@ -80,10 +93,10 @@ export function createPreviewLabelSync(deps: {
         }
         state = { ...state, present: false };
       }
-      await savePreviewLabelSnapshot(conn, state);
+      await save(state);
     } catch {
       // Saving the preference / creating the PR succeeded. The poller retries from current preferences.
-      await savePreviewLabelSnapshot(conn, {
+      await save({
         ...state,
         failed: true,
         etag: null,

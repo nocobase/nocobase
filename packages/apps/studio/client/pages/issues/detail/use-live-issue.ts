@@ -1,7 +1,8 @@
 /**
- * One refresh coordinator per open issue page. The agents plugin polls known open runs but cannot discover a new
- * subject run. Until it offers subject announcements, poll even an idle page and briefly speed up after the issue's
- * existing actions invalidate its detail. This also works when the realtime connection still has a stale identity.
+ * One refresh coordinator per open issue page. Changes to the issue and new runs on it are announced
+ * (`issues/live/realtime-refresh.ts`); the agents plugin polls known open runs. An idle page still reads the issue
+ * again slowly as a fallback, for a realtime connection that missed an announcement or still has a stale identity,
+ * and briefly speeds up after the issue's existing actions invalidate its detail.
  */
 import type { SubjectRun } from '@nocobase/app-plugin-agents/client/runs';
 import { pmKeys, usePmApi } from '@nocobase/app-plugin-projects/client/kit';
@@ -16,9 +17,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useIssueRuns } from '../../../agents/use-issue-runs.js';
 
-const IDLE_POLL_MS = 5000;
-const WAKE_POLL_MS = 2000;
-const WAKE_WINDOW_MS = 30_000;
+/** How often an idle page reads the issue and its runs again, as a fallback to the announcements. */
+export const IDLE_POLL_MS = 60_000;
+/** How often, and for how long, after the issue's own actions, so work they start shows up at once. */
+export const WAKE_POLL_MS = 3000;
+export const WAKE_WINDOW_MS = 15_000;
 
 export function useLiveIssue(
   detail: IssueDetail,

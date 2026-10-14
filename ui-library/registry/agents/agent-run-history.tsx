@@ -538,6 +538,7 @@ export function RunStatusBadge({
   const stopping = Boolean(run.stopping) && isRunOpen(run);
   return (
     <Badge
+      data-size='sm'
       variant='secondary'
       className={cn(
         'shrink-0 gap-1.5 font-normal',
@@ -1608,7 +1609,11 @@ function Kind({
   readonly children: ReactNode;
 }): ReactElement {
   return (
-    <Badge variant='secondary' className={cn('font-normal', KIND_TONE[tone])}>
+    <Badge
+      data-size='sm'
+      variant='secondary'
+      className={cn('font-normal', KIND_TONE[tone])}
+    >
       {children}
     </Badge>
   );

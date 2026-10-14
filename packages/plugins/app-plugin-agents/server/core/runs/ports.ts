@@ -120,6 +120,8 @@ export interface SubjectAssembly {
 }
 
 export interface ContextProvider {
+  /** Read external permissions before the claim transaction; assembly receives this result as its third argument. */
+  prepare?(run: Run): Promise<unknown>;
   /**
    * Optional subject policy, checked when queued work is claimed, inside that transaction and before assembly.
    * Return a rejection to cancel this run normally: no payload, token, failure count, or retry is produced. Throwing
@@ -129,6 +131,7 @@ export interface ContextProvider {
   admit?(
     conn: DatabaseConnection,
     claim: ClaimContext,
+    prepared?: unknown,
   ): Promise<{ readonly reason: string; readonly detail?: string } | null>;
 
   /**
@@ -149,6 +152,7 @@ export interface ContextProvider {
   assemble(
     conn: DatabaseConnection,
     claim: ClaimContext,
+    prepared?: unknown,
   ): Promise<SubjectAssembly>;
 }
 
@@ -231,6 +235,34 @@ export interface SubjectReports {
 
 export interface SubjectBinding {
   readonly kind: string;
+  /** Reads current issue visibility outside database transactions for comment-origin work. */
+  readonly commentActorMayRead?: (
+    subjectId: string,
+    userId: string,
+  ) => Promise<boolean>;
+  /** Current owner assignment key, used only for comment-origin personal runner consent. */
+  readonly commentOwnerKey?: (
+    conn: DatabaseConnection,
+    subjectId: string,
+  ) => Promise<string | null>;
+  /** Overrides execution identity for selected work. Undefined preserves the caller's identity; a null actorUserId refuses it.
+   * Read in the enqueue/claim transaction. Claimed runs keep their identity until they finish.
+   */
+  readonly actsAs?: (
+    conn: DatabaseConnection,
+    work: {
+      readonly subjectId: string;
+      readonly agentId: string;
+      readonly causedByRunId?: string;
+      /** Server-managed comment execution mode; absent for independent events. */
+      readonly commentExecution?: Run['commentExecution'];
+      readonly actorUserId?: string;
+      readonly inputs: readonly Pick<RunInput, 'actor' | 'payload'>[];
+    },
+  ) => Promise<
+    | { readonly actorUserId: string | null; readonly reason?: string }
+    | undefined
+  >;
   /**
    * Reads the current responsible inside the request's transaction, before confirming or rejecting. Null means
    * nobody answers for it (including a deleted subject). Applications with mutable responsibility must bind this;
@@ -263,6 +295,15 @@ export interface SubjectBinding {
    * past that the sweeper fails it as `queuedExpired`. Without it (or 0), queued runs wait for a runner however long it takes.
    */
   readonly queuedExpiryMs?: number;
+  /** Per-run queued withdrawal policy, evaluated under the claim's agent lock by the periodic sweep. Reads only. */
+  readonly queuedTimeout?: (
+    conn: DatabaseConnection,
+    run: Run,
+    now: Date,
+  ) => Promise<{
+    readonly reason: import('@nocobase/agent-protocol').FailureReason;
+    readonly detail: string;
+  } | null>;
   /** What the reports may say about the subjects; without it, runs on the kind are reported by id only. */
   readonly reports?: SubjectReports;
   /**

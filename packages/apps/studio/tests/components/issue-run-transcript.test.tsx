@@ -1,4 +1,5 @@
 import agents from '@nocobase/app-plugin-agents/client';
+import type { RunDetail } from '@nocobase/app-plugin-agents/shared/runs';
 import {
   createTestI18nRuntime,
   TestI18nProvider,
@@ -26,10 +27,20 @@ const state = vi.hoisted(() => ({
   basePath: '/main',
   events: [] as RunTranscriptEvent[],
   retriedRunId: null as string | null,
+  retryOfRunId: null as string | null,
+  inputs: [] as RunDetail['inputs'],
+  run: {} as Partial<RunDetail>,
+  retentionDays: 14,
+  briefError: null as unknown,
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
-  useClientApplication: () => ({ config: { get: () => state.basePath } }),
+  useClientApplication: () => ({
+    config: {
+      get: () => state.basePath,
+      public: { get: () => state.retentionDays },
+    },
+  }),
 }));
 vi.mock('@nocobase/app-plugin-authentication/client', async (original) => ({
   ...(await original<
@@ -52,11 +63,18 @@ vi.mock('@nocobase/app-plugin-agents/client/runs', async (original) => ({
   useAgentNames: () => () => 'Coder',
   useRetryRun: () => ({ isPending: false, mutate: vi.fn() }),
   useStopRun: () => ({ isPending: false, mutate: vi.fn() }),
+  useRunBrief: () => ({
+    error: state.briefError,
+    isError: Boolean(state.briefError),
+  }),
   useRunWithTranscript: () => ({
     run: {
       data: {
         id: 'run-1',
         retriedRunId: state.retriedRunId,
+        retryOfRunId: state.retryOfRunId,
+        actorUserId: 'alice',
+        actorName: 'Alice',
         agentId: 'coder',
         status: 'failed',
         createdAt: '2026-10-01T00:00:00.000Z',
@@ -65,9 +83,10 @@ vi.mock('@nocobase/app-plugin-agents/client/runs', async (original) => ({
         cancelRequestedAt: null,
         failureReason: 'toolProcess',
         failureDetail: 'The command failed',
-        inputs: [],
+        inputs: state.inputs,
         maxAttempts: 1,
         summary: 'Run summary',
+        ...state.run,
       },
     },
     events: state.events,
@@ -135,10 +154,201 @@ beforeEach(() => {
   state.basePath = '/main';
   state.events = mixedRunEvents();
   state.retriedRunId = null;
+  state.retryOfRunId = null;
+  state.inputs = [];
+  state.run = {};
+  state.retentionDays = 14;
+  state.briefError = null;
 });
 afterEach(cleanup);
 
 describe('Studio issue run transcript', () => {
+  it('shows retention notices in the transcript and missing brief of an expired terminal run', async () => {
+    state.run = {
+      status: 'completed',
+      finishedAt: '2020-01-01T00:00:00Z',
+      dispatchedAt: '2020-01-01T00:00:00Z',
+    };
+    state.events = [];
+    state.briefError = { status: 404 };
+    await setup();
+    expect(
+      screen.getByText(
+        'Run process data has been cleared under the retention policy.',
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'View full prompt' }));
+    expect(
+      within(screen.getByRole('dialog')).getByText(
+        'Run process data has been cleared under the retention policy.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps existing events visible and does not infer cleanup from hidden groups', async () => {
+    state.run = { status: 'completed', finishedAt: '2020-01-01T00:00:00Z' };
+    state.briefError = { status: 404 };
+    await setup();
+    expect(
+      screen.queryByText(
+        'Run process data has been cleared under the retention policy.',
+      ),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('list', { name: 'Run transcript' }),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the ordinary empty state when retention is disabled or a brief still exists', async () => {
+    state.run = { status: 'completed', finishedAt: '2020-01-01T00:00:00Z' };
+    state.events = [];
+    const view = await setup();
+    expect(
+      screen.getByText('This run recorded no events.'),
+    ).toBeInTheDocument();
+    state.retentionDays = 0;
+    state.briefError = { status: 404 };
+    view.refresh();
+    expect(
+      screen.getByText('This run recorded no events.'),
+    ).toBeInTheDocument();
+  });
+  it('changes a scheduled retry to waiting for dispatch when its time passes', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-10-01T00:00:00.000Z'));
+      state.run = {
+        status: 'queued',
+        attempt: 2,
+        failureReason: 'toolNetwork',
+        availableAt: '2026-10-01T00:00:01.000Z',
+      };
+      await setup();
+      expect(
+        screen.getByText(/Automatic retry scheduled/u),
+      ).toBeInTheDocument();
+      await act(() => vi.advanceTimersByTimeAsync(1001));
+      expect(
+        screen.getByText(/Waiting to be dispatched again/u),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText(/Automatic retry scheduled/u),
+      ).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each(['en-US', 'zh-CN'])(
+    'updates retry failures in the mounted transcript (%s)',
+    async (locale) => {
+      state.events = [
+        {
+          seq: 1,
+          at: '2026-10-01T00:00:00.000Z',
+          type: 'error',
+          content: 'Historical connection failure',
+        },
+      ];
+      state.run = {
+        status: 'queued',
+        attempt: 2,
+        maxAttempts: 2,
+        failureReason: 'toolNetwork',
+        failureDetail: 'First failure',
+        availableAt: '2099-10-01T00:00:00.000Z',
+      };
+      const view = await setup(locale);
+      const waiting = screen.getByText(/First failure/u);
+      expect(waiting).toHaveClass('text-muted-foreground');
+      expect(waiting).toHaveTextContent(
+        locale === 'zh-CN' ? '第 1 次尝试失败' : 'Attempt 1 failed',
+      );
+      expect(waiting).toHaveTextContent(
+        locale === 'zh-CN' ? '自动重试' : 'Automatic retry scheduled',
+      );
+      for (const status of ['dispatched', 'running', 'completed'] as const) {
+        // Old persisted fields must not be shown as a current failure either.
+        state.run.status = status;
+        view.refresh();
+        expect(screen.queryByText(/First failure/u)).not.toBeInTheDocument();
+        expect(
+          screen.getByText('Historical connection failure'),
+        ).toBeInTheDocument();
+      }
+      state.run = {
+        ...state.run,
+        status: 'failed',
+        failureReason: 'toolProcess',
+        failureDetail: 'Latest failure',
+      };
+      view.refresh();
+      expect(screen.getByText(/Latest failure/u)).toHaveClass(
+        'text-destructive',
+      );
+      expect(screen.queryByText(/First failure/u)).not.toBeInTheDocument();
+      state.run.status = 'running';
+      view.unmount();
+      await setup(locale);
+      expect(screen.queryByText(/Latest failure/u)).not.toBeInTheDocument();
+      expect(
+        screen.getByText('Historical connection failure'),
+      ).toBeInTheDocument();
+    },
+  );
+
+  it.each([
+    [1, null],
+    [1, '2020-01-01T00:00:00.000Z'],
+    [2, null],
+  ] as const)(
+    'describes preparation failures without blaming a previous attempt (%s, %s)',
+    async (attempt, availableAt) => {
+      state.run = {
+        status: 'queued',
+        attempt,
+        failureReason: 'setupFailed',
+        failureDetail: 'Preparation error',
+        availableAt,
+      };
+      await setup();
+      const waiting = screen.getByText(/Preparation error/u);
+      expect(waiting).toHaveTextContent('Run preparation failed');
+      expect(waiting).toHaveTextContent('Waiting to be dispatched again');
+      expect(waiting).not.toHaveTextContent('Attempt 0');
+      expect(waiting).not.toHaveTextContent('Attempt 1 failed');
+      expect(waiting).not.toHaveTextContent('scheduled');
+    },
+  );
+
+  it.each(['en-US', 'zh-CN'])(
+    'shows the current retry trigger rather than a copied retry (%s)',
+    async (locale) => {
+      state.retryOfRunId = 'bob-retry';
+      state.inputs = ['Bob', 'Alice'].map((name, index) => ({
+        id: `input-${index}`,
+        runId: 'run-1',
+        type: 'retry',
+        text: 'Retry',
+        actor: { kind: 'user', id: name.toLowerCase(), name },
+        payload: { retryOfRunId: index === 0 ? 'original' : 'bob-retry' },
+        createdAt: '2026-10-01T00:00:00.000Z',
+        handledAt: null,
+        deliveredAt: null,
+      }));
+      await setup(locale);
+      expect(
+        screen.getByText(
+          locale === 'zh-CN' ? /触发人：Alice/u : /Triggered by Alice/u,
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText(
+          locale === 'zh-CN' ? /触发人：Bob/u : /Triggered by Bob/u,
+        ),
+      ).not.toBeInTheDocument();
+    },
+  );
   it.each(['en-US', 'zh-CN'])(
     'links the replacement instead of offering another retry (%s)',
     async (locale) => {

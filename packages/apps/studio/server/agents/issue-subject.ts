@@ -50,6 +50,8 @@ import {
   PROJECT_TITLE,
 } from './catalog/triggers.js';
 import { AGENT_KIND } from './tx.js';
+import { issueExecutionIdentity } from './execution-identity.js';
+import { readOwnerHandoff } from '../issues/owner-handoff.js';
 
 const SUBJECT_NOUN = 'issue';
 
@@ -125,6 +127,10 @@ const TRIGGER_TASKS: Readonly<Record<string, string>> = {
     'An earlier attempt did not finish. Start again from where the issue is now.',
   prChecksFailed:
     'The checks of a pull request of this issue failed. Decide who reads the failure or fixes it.',
+  stepEnded:
+    'A delegated worker reached a terminal state; read its run and dispatch thread before handing work on.',
+  managerIdle:
+    'The previous manager run ended without subsequent work or activity; recheck runs and checks before deciding what next.',
   prChecksPassed:
     'The checks of a pull request of this issue passed. Decide whether the change is ready for acceptance.',
   prConflict:
@@ -169,7 +175,7 @@ export function renderTask(
     ? [
         `- Act: hand the next step over, answer, or move the status, in a comment on ${context.identifier} that starts with its "Next" line. Then end your turn.`,
         moves.length > 0
-          ? `- You may move the issue to: ${moves.join(', ')} (\`nb-studio issue update ${context.identifier} --status <status>\`).`
+          ? `- At this read, the current status is ${context.status.key}; available next transitions are: ${moves.join(', ')} (\`nb-studio issue update ${context.identifier} --status <status>\`). This list is a snapshot of the current state, not a fixed restriction after the status changes. If unsure of the current status, read it with \`nb-studio issue get ${context.identifier}\` before attempting a move. The server authorizes each move; never bypass a refusal.`
           : '- Leave the status as it is.',
       ]
     : [
@@ -268,8 +274,9 @@ function fileLine(file: IssueContextFile): string {
 }
 
 /**
- * The project's working directories as a run's, in order: repositories on the issue's branch (`branches`, by working
- * directory id: its repository's first branch rule; `agent/<key>` without one), directories as they are.
+ * The project's working directories as a run's, in order: repositories on the run's starting branch (`branches`, by
+ * working directory id: the earliest linked same-repository open pull request's head, else the branch rule, `agent/<key>`
+ * by default), directories as they are.
  */
 export function dirsOf(
   context: IssueContext,
@@ -363,12 +370,13 @@ export function dirsOf(
  */
 export function mayInitializeEmptyRepository(
   context: IssueContext,
-  agent: { readonly id: string; readonly actions: readonly string[] },
+  agent: { readonly id: string; readonly actions?: readonly string[] },
+  mayOpenPullRequest = false,
 ): boolean {
   return (
     !isManager(agent.id) &&
     ['in_progress', 'blocked'].includes(context.status.key) &&
-    agent.actions.includes('studio.git/open-pr')
+    mayOpenPullRequest
   );
 }
 
@@ -397,6 +405,8 @@ const MANAGER_ONLY_TRIGGERS: ReadonlySet<string> = new Set([
   'prChecksFailed',
   'prChecksPassed',
   'prConflict',
+  'stepEnded',
+  'managerIdle',
 ]);
 
 /**
@@ -421,11 +431,68 @@ export function issueClaimRejection(
 }
 
 export function createIssueContextProvider(
-  agents: Pick<Agents, 'runs' | 'briefs'>,
+  agents: Pick<Agents, 'runs' | 'briefs' | 'gate'>,
   projects: () => Pick<Projects, 'issueContext' | 'commentQueries'>,
+  checkoutPullRequests?: (
+    issueId: string,
+  ) => Promise<ReadonlyMap<string, string>>,
+  commentActorMayRead?: SubjectBinding['commentActorMayRead'],
 ): ContextProvider {
   return {
-    async admit(conn, claim) {
+    async prepare(run) {
+      const allowed = await agents.gate.allowed({
+        kind: 'run',
+        userId: run.actorUserId,
+        displayName: '',
+      });
+      const heads =
+        run.agentId === PROJECT_MANAGER_ID
+          ? new Map<string, string>()
+          : ((await checkoutPullRequests?.(run.subject.id)) ??
+            new Map<string, string>());
+      const canRead =
+        run.commentRootRunId && commentActorMayRead
+          ? await commentActorMayRead(run.subject.id, run.actorUserId)
+          : true;
+      return { allowed, heads, canRead };
+    },
+    async admit(conn, claim, prepared) {
+      if (
+        claim.runner &&
+        claim.run.commentRootRunId &&
+        (prepared as { canRead?: boolean } | undefined)?.canRead === false
+      )
+        return {
+          reason: 'notAllowed',
+          detail: 'The acting user may no longer read this issue.',
+        };
+      if ((await readOwnerHandoff(conn, claim.run.subject.id))?.waiting)
+        return {
+          reason: 'waitingOwner',
+          detail: 'Waiting for the new issue owner to take over.',
+        };
+      if (
+        claim.runner &&
+        !claim.run.commentRootRunId &&
+        (
+          (await agents.runs.identityInputs(conn, claim.run.id))?.inputs ??
+          claim.inputs
+        ).some(
+          (input) =>
+            input.type === 'comment' &&
+            !(
+              input.actor.kind === 'user' &&
+              input.actor.id === claim.run.ownerUserId &&
+              (input.payload as Record<string, unknown> | null)?.byAgent !==
+                true
+            ),
+        )
+      )
+        return {
+          reason: 'commentRetriggerRequired',
+          detail:
+            'Older queued comment work was withdrawn. Post the comment again to start a new authorized chain.',
+        };
       const context = await projects().issueContext.contextFor(
         conn,
         claim.run.subject.id,
@@ -435,7 +502,7 @@ export function createIssueContextProvider(
         return { reason: 'subjectMissing', detail: 'The issue is gone.' };
       return issueClaimRejection(context, claim.agent);
     },
-    async assemble(conn, claim) {
+    async assemble(conn, claim, prepared) {
       const context = await projects().issueContext.contextFor(
         conn,
         claim.run.subject.id,
@@ -444,6 +511,10 @@ export function createIssueContextProvider(
       if (!context) throw new Error('The issue is gone.');
       const inputs = claim.inputs;
       const manager = isManager(claim.agent.id);
+      const preparation = prepared as
+        | { allowed: ReadonlySet<string>; heads: ReadonlyMap<string, string> }
+        | undefined;
+      const allowed = preparation?.allowed ?? new Set<string>();
       const subject = { noun: SUBJECT_NOUN, key: context.identifier };
       const previousSummary = await agents.runs.lastSummary(
         conn,
@@ -455,6 +526,7 @@ export function createIssueContextProvider(
         claim.run.id,
       );
       const delta = await commentDelta(conn, projects(), {
+        commentRootRunId: claim.run.commentRootRunId,
         agentId: claim.agent.id,
         issueId: context.id,
         runId: claim.run.id,
@@ -466,7 +538,13 @@ export function createIssueContextProvider(
         context.project?.id ?? null,
       );
       const initializeIfEmpty =
-        !manager && mayInitializeEmptyRepository(context, claim.agent);
+        !manager &&
+        !claim.run.parentRunId &&
+        mayInitializeEmptyRepository(
+          context,
+          claim.agent,
+          allowed.has('studio.git/open-pr'),
+        );
       const baselines = context.project
         ? (await initsOfProject(conn, context.project.id)).flatMap((init) => {
             const resource = context.project?.repos.find(
@@ -488,7 +566,7 @@ export function createIssueContextProvider(
           noun: SUBJECT_NOUN,
         },
         guidance: issueGuidance(context.identifier, claim.cli, {
-          attach: claim.agent.actions.includes(ATTACH_ACTION),
+          attach: !claim.run.parentRunId && allowed.has(ATTACH_ACTION),
           manager,
         }),
         inputs,
@@ -505,7 +583,12 @@ export function createIssueContextProvider(
         turn: {
           prompt: agents.briefs.turnPrompt(inputs, { subject }),
           ...(previousSummary ? { previousSummary } : {}),
-          ...deltaNotes(delta, context.identifier, claim.cli),
+          ...deltaNotes(
+            delta,
+            context.identifier,
+            claim.cli,
+            Boolean(claim.run.commentRootRunId),
+          ),
         },
         data: { kind: ISSUE_SUBJECT, issue: context },
         // The project manager checks nothing out, in a work directory of its own.
@@ -522,6 +605,7 @@ export function createIssueContextProvider(
                 conn,
                 context.project?.repos ?? [],
                 context.identifier,
+                { issueId: context.id, heads: preparation?.heads ?? new Map() },
               ),
               initial,
               initializeIfEmpty,
@@ -623,7 +707,7 @@ export function issueSample(agents: Pick<Agents, 'briefs'>): SubjectSample {
           noun: SUBJECT_NOUN,
         },
         guidance: issueGuidance(context.identifier, claim.cli, {
-          attach: claim.agent.actions.includes(ATTACH_ACTION),
+          attach: true,
           manager: isManager(claim.agent.id),
         }),
         task: renderTask(context, claim.inputs, {
@@ -644,13 +728,29 @@ export function issueSample(agents: Pick<Agents, 'briefs'>): SubjectSample {
 }
 
 export function issueBinding(
-  agents: Pick<Agents, 'runs' | 'briefs'>,
+  agents: Pick<Agents, 'runs' | 'briefs' | 'agents' | 'gate'>,
   projects: () => Pick<Projects, 'issueContext' | 'commentQueries'>,
   sink: SubjectBinding['sink'],
   queuedExpiryMs = 0,
+  checkoutPullRequests?: (
+    issueId: string,
+  ) => Promise<ReadonlyMap<string, string>>,
+  commentActorMayRead?: SubjectBinding['commentActorMayRead'],
 ): SubjectBinding {
   return {
     kind: ISSUE_SUBJECT,
+    commentActorMayRead,
+    actsAs: issueExecutionIdentity(agents, projects),
+    responsibleUserId: async (conn, subjectId) =>
+      (await readOwnerHandoff(conn, subjectId))?.waiting
+        ? null
+        : ((
+            await projects().issueContext.contextFor(conn, subjectId, {
+              kind: AGENT_KIND,
+            })
+          )?.owner.id ?? null),
+    commentOwnerKey: async (conn, subjectId) =>
+      (await readOwnerHandoff(conn, subjectId))?.notificationKey ?? null,
     ...(queuedExpiryMs > 0 ? { queuedExpiryMs } : {}),
     title: ISSUE_TITLE,
     groupTitle: PROJECT_TITLE,
@@ -658,7 +758,12 @@ export function issueBinding(
     groupPath: '/projects/{id}',
     triggers: ISSUE_TRIGGER_TITLES,
     preview: issueSample(agents),
-    context: createIssueContextProvider(agents, projects),
+    context: createIssueContextProvider(
+      agents,
+      projects,
+      checkoutPullRequests,
+      commentActorMayRead,
+    ),
     ...(sink ? { sink } : {}),
   };
 }

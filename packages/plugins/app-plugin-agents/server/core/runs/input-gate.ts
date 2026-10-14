@@ -16,6 +16,7 @@ import {
   type RunRecord,
 } from './run.store.js';
 import type { SubjectRegistry } from './ports.js';
+import { jsonObject } from '../../kernel/values.js';
 
 export interface InputGateDeps {
   readonly subjects: SubjectRegistry;
@@ -34,6 +35,12 @@ export async function gateInputs(
   agent: Agent,
   inputs: readonly RunInput[],
 ): Promise<readonly RunInput[]> {
+  if (run.commentRootRunId)
+    inputs = inputs.filter(
+      (input) =>
+        input.type !== 'comment' ||
+        jsonObject(input.payload).commentRootRunId === run.commentRootRunId,
+    );
   const context = deps.subjects.get(run.subjectKind)?.context;
   if (!context || inputs.length === 0) return inputs;
   const claim = {

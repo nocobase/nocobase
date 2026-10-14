@@ -1,18 +1,11 @@
 /**
- * The home page's composer: pick an agent in its toolbar, send, and land on the conversation full screen (`/chat/:id`).
+ * The chat composer's composer: pick an agent in its toolbar, send, and land on the conversation full screen (`/chat/:id`).
  * The picker lists the enabled agents, the team's default (the project manager's first choice) to start with, and an
  * agent no runner can take now is disabled with the reason. A coding agent on a runner answers, and none runs here, so
  * the tests check what was sent rather than an answer. The recent conversations under the composer open full screen
  * too, and a conversation moves from there to the side panel.
  */
-import {
-  apiAs,
-  expect,
-  open,
-  server,
-  test,
-  unique,
-} from './support/fixtures.ts';
+import { apiAs, expect, open, url, test, unique } from './support/fixtures.ts';
 import { FakeRunner } from './support/runner.ts';
 
 interface Conversation {
@@ -22,14 +15,32 @@ interface Conversation {
   readonly agent: { readonly name: string } | null;
 }
 
-// This file reads the person's recent conversations, so it uses an account no other test opens the home page as.
+// This file reads the person's recent conversations, so it uses an account no other test opens the chat composer as.
 test.use({ user: 'leo' });
 
-test.describe('home composer', () => {
+test.describe('chat composer', () => {
+  test('starts a new conversation from the conversation page at /chat', async ({
+    page,
+    api,
+  }) => {
+    const conversation = await api.post<{ id: string }>(
+      'agents/conversations',
+      {},
+    );
+    await open(page, `/chat/${conversation.id}`);
+    await page
+      .getByTestId('chat-page')
+      .getByRole('button', { name: '新对话', exact: true })
+      .click();
+    await expect(page).toHaveURL(url('/chat'));
+    await expect(page.getByTestId('chat-composer')).toBeVisible();
+    await expect(page.getByTestId('chat-floating-button')).toHaveCount(0);
+  });
+
   test('starts with the team default and disables agents no runner can take', async ({
     page,
   }) => {
-    await open(page, '/');
+    await open(page, '/chat');
     const main = page.getByRole('main');
     await expect(
       main.getByRole('heading', { name: '今天要做什么？', level: 1 }),
@@ -68,7 +79,7 @@ test.describe('home composer', () => {
     } finally {
       await admin.close();
     }
-    await open(page, '/');
+    await open(page, '/chat');
     const main = page.getByRole('main');
     const composer = main.getByTestId('chat-composer');
     await composer.getByTestId('chat-agent-picker').click();
@@ -123,7 +134,7 @@ test.describe('home composer', () => {
       title,
     });
 
-    await open(page, '/');
+    await open(page, '/chat');
     const recent = page.getByRole('list', { name: '最近的对话' });
     await recent.getByRole('button', { name: new RegExp(title, 'u') }).click();
     await expect(page).toHaveURL(new RegExp(`/chat/${conversation.id}$`, 'u'));
@@ -134,7 +145,7 @@ test.describe('home composer', () => {
     await view.getByRole('button', { name: '在侧栏中打开' }).click();
     await expect
       .poll(() => new URL(page.url()).pathname.replace(/\/$/u, ''))
-      .toBe(new URL(server.baseURL).pathname);
+      .toBe(new URL(url('/chat')).pathname);
     const panel = page.getByRole('complementary', { name: 'Agent 对话' });
     await expect(panel).toBeVisible();
     await expect(panel.getByTestId('chat-title')).toHaveText(title);

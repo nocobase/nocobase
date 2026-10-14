@@ -15,6 +15,7 @@ export default createReactVitestConfig({
           // together with every client that resolves the authentication tokens and provider.
           /@nocobase\/app-plugin-(?:authentication|api-keys|users)\/(?:dist\/)?client\//u,
           /@nocobase\/app-plugin-authorization\/(?:dist\/)?client\//u,
+          /@nocobase\/app-plugin-(?:lifecycle-example|office-flows-example)\/(?:dist\/)?client\//u,
           /@nocobase\/app-plugin-notification-in-app\/(?:dist\/)?client\//u,
         ],
       },

@@ -88,6 +88,12 @@ async function seed() {
       title: `Work ${issues.length + 1}`,
       projectId,
       executor: null,
+      start: false,
+    });
+    await h.projects.issues.update(alice, issue.id, {
+      revision: issue.revision,
+      statusKey: 'in_progress',
+      start: false,
     });
     await h.projects.comments.post({ type: 'user', id: 'alice' }, issue.id, {
       content: `[@Coder](mention://agent/${coder}) do it`,
@@ -392,6 +398,7 @@ describe('what needs attention', () => {
     await h.projects.issues.update(alice, issues[2].id, {
       revision: third.revision,
       statusKey: 'blocked',
+      needsYou: 'Choose how to proceed.',
     });
     const late = await h.projects.issues.create(alice, {
       title: 'Late',

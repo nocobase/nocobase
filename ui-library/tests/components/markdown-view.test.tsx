@@ -35,4 +35,47 @@ describe('MarkdownView', () => {
       decodeURI(container.querySelector('a')?.getAttribute('href') ?? ''),
     ).toBe('https://example.com/中文');
   });
+
+  it('keeps a valid port in a bare URL before CJK text', () => {
+    const { container } = render(
+      <MarkdownView content='https://example.com:8443/docs中文说明' />,
+    );
+    expect(links(container)).toEqual([
+      ['https://example.com:8443/docs', 'https://example.com:8443/docs'],
+    ]);
+    expect(container).toHaveTextContent(
+      'https://example.com:8443/docs中文说明',
+    );
+  });
+
+  it.each([
+    [
+      'https://localhost:8443/docs中文说明',
+      [['https://localhost:8443/docs', 'https://localhost:8443/docs']],
+      'https://localhost:8443/docs中文说明',
+    ],
+    [
+      'http://localhost:13000/main（开发环境）',
+      [['http://localhost:13000/main', 'http://localhost:13000/main']],
+      'http://localhost:13000/main（开发环境）',
+    ],
+    [
+      'https://localhost/docs中文说明',
+      [['https://localhost/docs', 'https://localhost/docs']],
+      'https://localhost/docs中文说明',
+    ],
+    [
+      'https://中文.example，http://localhost:13000/main中文',
+      [['http://localhost:13000/main', 'http://localhost:13000/main']],
+      'https://中文.example，http://localhost:13000/main中文',
+    ],
+  ])(
+    'links a localhost URL before CJK text in %s',
+    (content, expectedLinks, text) => {
+      const { container } = render(<MarkdownView content={content} />);
+
+      expect(links(container)).toEqual(expectedLinks);
+      expect(container).toHaveTextContent(text);
+    },
+  );
 });

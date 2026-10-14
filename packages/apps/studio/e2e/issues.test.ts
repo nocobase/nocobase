@@ -14,6 +14,15 @@ test.describe('issues', () => {
   test('the board is the default, beside the list and the Agent queue', async ({
     page,
   }) => {
+    const errors: string[] = [];
+    const treeRequests: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') errors.push(message.text());
+    });
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname.includes('/api/taskTrees'))
+        treeRequests.push(request.url());
+    });
     await open(page, '/issues');
     const views = page.getByRole('group', { name: '视图' });
     await expect(views.getByRole('button', { name: '看板' })).toHaveAttribute(
@@ -26,6 +35,10 @@ test.describe('issues', () => {
     ).toBeVisible();
 
     await views.getByRole('button', { name: '列表' }).click();
+    // Other tests add issues to the same list at the same time, so find the demo issue by its words.
+    await page
+      .getByRole('textbox', { name: '搜索任务' })
+      .fill('Drag to reorder issues on the board');
     const table = page.getByRole('table');
     await expect(
       table.getByRole('row', {
@@ -41,6 +54,8 @@ test.describe('issues', () => {
     await expect(
       views.getByRole('button', { name: 'Agent 队列' }),
     ).toHaveAttribute('aria-pressed', 'true');
+    expect(treeRequests).toEqual([]);
+    expect(errors).toEqual([]);
   });
 
   test('my issues default to the board', async ({ page }) => {
@@ -63,6 +78,9 @@ test.describe('issues', () => {
     const working = await api.post<Issue>('projects/issues', {
       title: `Agent 队列：处理中 ${unique()}`,
       ownerUserId: me.userId,
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
     });
     await runner.wake(working);
     await runner.claim(working.identifier);
@@ -70,12 +88,18 @@ test.describe('issues', () => {
     const queued = await api.post<Issue>('projects/issues', {
       title: `Agent 队列：排队中 ${unique()}`,
       ownerUserId: me.userId,
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
     });
     await runner.wake(queued);
     // An issue no agent touches.
     const blocker = await api.post<Issue>('projects/issues', {
       title: `Agent 队列：无关任务 ${unique()}`,
       ownerUserId: me.userId,
+      statusKey: 'in_progress',
+      executor: null,
+      start: false,
     });
 
     await open(page, '/issues?view=agent&mine=1');

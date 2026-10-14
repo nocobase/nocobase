@@ -174,6 +174,11 @@ const IssueRunRowSchema: z.ZodType<IssueRunRow> = z
 
 export interface IssueRunDetail {
   readonly id: string;
+  readonly actorUserId: string;
+  readonly actorName: string;
+  readonly requestedByUserId: string;
+  readonly requestedByName: string;
+  readonly ownerUserId: string | null;
   readonly agentId: string;
   readonly agent: string;
   readonly issue: {
@@ -214,6 +219,23 @@ export interface IssueRunDetail {
 const IssueRunDetailSchema: z.ZodType<IssueRunDetail> = z
   .object({
     id: z.string(),
+    actorUserId: z.string().meta({
+      description: 'Execution identity, fixed when the run is first claimed.',
+    }),
+    actorName: z
+      .string()
+      .meta({ description: 'The name of the execution identity.' }),
+    requestedByUserId: z.string().meta({
+      description:
+        'The user associated with the chain origin; input actors identify the actual triggers, including system events.',
+    }),
+    requestedByName: z.string().meta({
+      description: 'The name of the user associated with the chain origin.',
+    }),
+    ownerUserId: z
+      .string()
+      .nullable()
+      .meta({ description: 'The issue owner snapshot for this run.' }),
     agentId: z.string(),
     agent: z.string(),
     issue: z.object({
@@ -442,7 +464,7 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
       const run = await agents.runs.get(id).catch(() => null);
       if (!run || run.subject.kind !== ISSUE_SUBJECT) throw notFound();
       const issue = await projects()
-        .issueQueries.detail(context.get('viewer'), run.subject.id)
+        .issueQueries.visible(context.get('viewer'), run.subject.id)
         .catch(() => null);
       if (!issue) throw notFound();
       if (
@@ -521,7 +543,7 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
               ],
             },
           );
-        const issue = await projects().issueQueries.detail(
+        const issue = await projects().issueQueries.visible(
           context.get('viewer'),
           ref,
         );
@@ -612,6 +634,11 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
         ];
         const data: IssueRunDetail = {
           id: run.id,
+          actorUserId: run.actorUserId,
+          actorName: detail.actorName ?? run.actorUserId,
+          requestedByUserId: run.requestedByUserId,
+          requestedByName: detail.requestedByName ?? run.requestedByUserId,
+          ownerUserId: run.ownerUserId,
           agentId: run.agentId,
           agent,
           issue: {

@@ -298,6 +298,18 @@ Other points:
 - When loading through a Repository (see "Remote Repository"), the request cannot take a `signal` and cannot be aborted, but still check `controller.signal.aborted` in the callbacks to discard stale results.
 - For the complete list page (search conditions written to the URL, empty and no-results states, the `Spinner` in the toolbar while reloading), see [`table.md`](table.md) and [`example/list-page.md`](example/list-page.md); for loading the latest data before an edit form opens, see [`form.md`](form.md); for the detail drawer, see [`overlay.md`](overlay.md).
 
+## Keeping lists and charts live
+
+When realtime events refresh what a page shows:
+
+- An event that names items refreshes those items: gather the ids of a burst (a few hundred milliseconds), read only those rows, keep one such request in flight, and merge the answer into what the page holds. Read the whole list again only when its membership changed (an item joined or left it, or moved between its groups) or the event names nothing.
+- Do not read a whole list or overview again on every event.
+- Recompute a chart's figures at most every few seconds while it is visible, and not at all while the page is hidden; or update only the figure the event affects.
+- Read nothing for a page that is not shown; read it when it is shown again.
+- A component that needs one small fact reads the small endpoint that answers it, not the list that happens to contain it.
+
+The server side of these reads is in [server routes](../../server-routes.md#lists-and-statistics-a-fixed-number-of-queries).
+
 ## Error handling
 
 ### ApiClientError
