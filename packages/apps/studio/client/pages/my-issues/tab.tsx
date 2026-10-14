@@ -5,12 +5,10 @@
  */
 import {
   myIssueFilters,
-  canCreateIssues,
   type MyIssuesRole,
 } from '@nocobase/app-plugin-projects/client/issues';
 import {
   PmListSkeleton,
-  NewIssueButton,
   useViewer,
 } from '@nocobase/app-plugin-projects/client/kit';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -38,14 +36,11 @@ export function MyIssuesTab({
           hiddenFilters={filters.hiddenFilters}
           viewKey='my-issues'
           views={['board', 'list', 'agent']}
-          defaultView='list'
+          defaultView='board'
           mineToggle={false}
           empty={{
             title: t(`issuesPage.myEmpty.${role}`),
             description: t('issuesPage.emptyDescription'),
-            action: (
-              <NewIssueButton absolute canCreate={canCreateIssues(viewer)} />
-            ),
           }}
         />
       ) : (
