@@ -127,19 +127,19 @@ export function idleCandidates(conn: DatabaseConnection, cutoff: Date) {
       eb.not(
         eb.exists(
           eb
-            .selectFrom('agRunInputs as input')
-            .select('input.id')
+            .selectFrom('agRuns as inputRun')
+            .select('inputRun.id')
+            .where('inputRun.subjectKind', '=', 'issue')
+            .whereRef('inputRun.subjectId', '=', 'issue.id')
             .where((e) =>
               e.exists(
                 e
-                  .selectFrom('agRuns as inputRun')
-                  .select('inputRun.id')
-                  .whereRef('inputRun.id', '=', 'input.runId')
-                  .where('inputRun.subjectKind', '=', 'issue')
-                  .whereRef('inputRun.subjectId', '=', 'issue.id'),
+                  .selectFrom('agRunInputs as input')
+                  .select('input.id')
+                  .whereRef('input.runId', '=', 'inputRun.id')
+                  .whereRef('input.createdAt', '>', 'manager.finishedAt'),
               ),
-            )
-            .whereRef('input.createdAt', '>', 'manager.finishedAt'),
+            ),
         ),
       ),
     );
