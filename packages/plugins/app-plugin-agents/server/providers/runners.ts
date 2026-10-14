@@ -8,6 +8,8 @@
  *
  * Beside it, `SkillBlobsCollect` deletes the stored contents of skills' files no version names, hourly, sparing what
  * was stored or named in the last hour (an upload for a save still to come).
+ * `RunDataPurge` independently removes expired terminal runs' process data hourly. Multiple instances require
+ * shared Redis jobs; memory jobs and the timer fallback are for single-instance deployments.
  */
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
@@ -19,6 +21,7 @@ import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import { RUNNERS_TOPIC, type RunnersChanged } from '../../shared/realtime.js';
 import type { Agents } from '../composition.js';
 import { agentsToken } from '../tokens.js';
+import { RUN_DATA_PURGE_INTERVAL_MS } from '../core/runs/run-data-purge.js';
 
 /** How often the sweeper runs. */
 export const SWEEP_INTERVAL_MS = 30_000;
@@ -97,6 +100,10 @@ export class RunnersProvider extends ServiceProvider<AppPluginApplication> {
       'Skill contents collection',
     );
     const wake = () => services.signal.notify();
+    const purge = this.guarded(
+      () => services.purgeRunData(),
+      'Run process data cleanup',
+    );
     if (container.has(jobExecutorServiceToken)) {
       const executor = container
         .resolve(jobExecutorServiceToken)
@@ -113,6 +120,12 @@ export class RunnersProvider extends ServiceProvider<AppPluginApplication> {
         payload: {},
         execute: collect,
       });
+      await executor.addJob({
+        name: 'RunDataPurge',
+        options: { every: RUN_DATA_PURGE_INTERVAL_MS },
+        payload: {},
+        execute: purge,
+      });
       await executor.setup();
       this.executor = executor;
     } else {
@@ -123,9 +136,15 @@ export class RunnersProvider extends ServiceProvider<AppPluginApplication> {
         SKILL_BLOBS_COLLECT_MS,
       );
       collector.unref();
+      const purger = setInterval(
+        () => void purge(),
+        RUN_DATA_PURGE_INTERVAL_MS,
+      );
+      purger.unref();
       this.releases.push(() => {
         clearInterval(timer);
         clearInterval(collector);
+        clearInterval(purger);
       });
     }
 
