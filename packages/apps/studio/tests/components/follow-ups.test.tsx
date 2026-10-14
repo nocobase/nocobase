@@ -183,6 +183,10 @@ beforeEach(() => {
   mocks.request.mockImplementation(
     (request: { path: string; method?: string; json?: unknown }) => {
       if (request.path === 'followUps') return Promise.resolve({ data: view });
+      if (request.path === 'followUps/following')
+        return Promise.resolve({
+          data: { issueIds: view.following, max: 5 },
+        });
       if (/^followUps\/issues\/[^/]+\/(?:un)?follow$/u.test(request.path))
         return Promise.resolve({ data: { issueIds: view.following } });
       if (request.path === 'git/marks')

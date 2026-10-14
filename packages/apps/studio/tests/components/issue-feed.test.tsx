@@ -348,16 +348,8 @@ describe('the follow star', () => {
   const answer = (initial: string[]) => {
     let following = initial;
     mocks.request.mockImplementation((request: { path: string }) => {
-      if (request.path === 'followUps')
-        return Promise.resolve({
-          data: {
-            following,
-            followingStored: true,
-            counts: { in_review: 0, blocked: 0, in_progress: 0, backlog: 0 },
-            truncated: false,
-            issues: [],
-          },
-        });
+      if (request.path === 'followUps/following')
+        return Promise.resolve({ data: { issueIds: following, max: 5 } });
       const star = /^followUps\/issues\/([^/]+)\/(follow|unfollow)$/u.exec(
         request.path,
       );
@@ -396,6 +388,12 @@ describe('the follow star', () => {
       }),
     );
     await screen.findByRole('button', { name: 'Follow' });
+    // The star reads only what is followed, never the whole overview.
+    expect(
+      mocks.request.mock.calls.some(
+        ([request]) => (request as { path: string }).path === 'followUps',
+      ),
+    ).toBe(false);
   });
 
   it('is held, with the reason, once five others are followed', async () => {

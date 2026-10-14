@@ -11,7 +11,11 @@ import type {
   IssueProgress,
   IssueProgressState,
 } from '../../shared/project-manager.js';
-import { issueProgress } from '../agents/manager/progress.js';
+import {
+  issueProgress,
+  prefetchProgressReads,
+  type ProgressMemo,
+} from '../agents/manager/progress.js';
 
 export interface ProgressDeps {
   readonly agents: Pick<
@@ -40,16 +44,17 @@ export async function progressOf(
   readerId: string,
 ): Promise<Map<string, Record<string, unknown>>> {
   const conn = deps.projects.tx.read();
+  const viewer = { userId: readerId, seesMachines: false };
+  // What every issue's progress reads, read for all of them at once; the rest is worked out as for one issue.
+  const reads = await prefetchProgressReads(deps, conn, issues, viewer);
+  const memo: ProgressMemo = new Map();
   return new Map(
     await Promise.all(
       issues.map(async (issue): Promise<[string, Record<string, unknown>]> => [
         issue.id,
         progressFacts(
           issue,
-          await issueProgress(deps, conn, issue, {
-            userId: readerId,
-            seesMachines: false,
-          }),
+          await issueProgress(deps, conn, issue, viewer, memo, { reads }),
         ),
       ]),
     ),
