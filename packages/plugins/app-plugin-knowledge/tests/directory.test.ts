@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Hono } from 'hono';
 import { createKnowledgeRoutes } from '../server/routes/api.js';
 import { proposalsRepo } from '../server/services/store.js';
+import { groupsRepo } from '../server/services/proposal-groups.js';
+import { openKeyOf } from '../server/services/proposals.js';
 import {
   ADMIN,
   CONTRIBUTOR,
@@ -178,14 +180,25 @@ describe('authorized knowledge aggregation', () => {
     });
     const repo = proposalsRepo(h.knowledge.connection());
     const row = (await repo.findOne({ filter: { id: inaccessible.id } }))!;
-    for (let i = 0; i < 205; i++)
+    for (let i = 0; i < 205; i++) {
+      const id = `directory-review-${i}`;
+      // Separate sources may propose for the same hidden target; each has its own active group.
+      const source = { sourceKind: 'issue', sourceId: id };
+      const groupKey = openKeyOf({ ...row, ...source });
+      await groupsRepo(h.knowledge.connection()).createOne({
+        values: { groupKey, activeProposalId: id, lockToken: id },
+      });
       await repo.createOne({
         values: {
           ...row,
-          id: `directory-review-${i}`,
+          ...source,
+          id,
+          openKey: groupKey,
+          groupKey,
           createdAt: '2030-01-01T00:00:00.000Z',
         },
       });
+    }
     const app = new Hono().route(
       '/knowledge',
       createKnowledgeRoutes(
