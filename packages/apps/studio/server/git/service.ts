@@ -1049,8 +1049,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
   ) {
     const prs = await linkedOpenAtHead(conn(), repo.id, sha);
     if (prs.length === 0) return 'notLinked' as const;
-    // Every check and status of the head together, as polling reads them; what the delivery says when the host cannot
-    // be read (a private repository without a connection).
+    // Read the complete check set, then revalidate the head under the write lock before applying it.
     const ci = await readAuth(repo)
       .then((auth) => readCi(auth, repo, sha, { status: null, runs: null }))
       .catch((): Ci | null => {
@@ -1059,8 +1058,7 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         );
         return null;
       });
-    if (ci)
-      for (const pr of prs) await flow.store(repo, snapshotOfRow(pr), { ci });
+    if (ci) for (const pr of prs) await flow.storeChecks(repo, pr, sha, ci);
     return null;
   }
 

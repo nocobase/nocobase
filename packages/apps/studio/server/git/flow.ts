@@ -110,6 +110,13 @@ export interface GitFlow {
     snapshot: PullRequestSnapshot,
     options?: StoreOptions,
   ): Promise<PullRequestRow>;
+  /** Applies checks only while the locked PR is still open at the head that was read. */
+  storeChecks(
+    repo: RepoRow,
+    pr: PullRequestRow,
+    expectedSha: string,
+    ci: NonNullable<StoreOptions['ci']>,
+  ): Promise<void>;
   /** Retry undelivered signals on an unchanged authoritative snapshot, without recording fresh PR activity. */
   retrySignals(repo: RepoRow, pr: PullRequestRow): Promise<void>;
   /** An issue entered In review, or a pull request was linked while it was there: cards for its ready pull requests. */
@@ -624,7 +631,7 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
    */
   async function explainFirst(
     repo: RepoRow,
-    snapshot: PullRequestSnapshot,
+    snapshot: Pick<PullRequestSnapshot, 'number' | 'state' | 'headSha'>,
     options: StoreOptions,
   ): Promise<FailedCheck[] | null> {
     if (!deps.explain || !repo.wakeOnChecks || !options.ci) return null;
@@ -663,6 +670,34 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
   }
 
   return {
+    async storeChecks(repo, pr, expectedSha, ci) {
+      const after: After = [];
+      const explained = await explainFirst(repo, pr, { ci });
+      const stored = await deps.projects().tx.run(async (tx) => {
+        // Acquire the same write lock used by signal retries before reading the current head.
+        await tx.conn
+          .repository('studioPullRequests')
+          .updateMany({ filter: { id: pr.id }, values: { id: pr.id } });
+        const current = await findPullRequest(tx.conn, repo.id, pr.number);
+        if (
+          !current ||
+          current.state !== 'open' ||
+          current.headSha !== expectedSha
+        )
+          return null;
+        await updatePullRequest(tx.conn, current.id, {
+          ...ci,
+          snapshotAt: new Date(),
+        });
+        const updated = { ...current, ...ci };
+        await signals(tx, repo, updated, after, explained);
+        return updated;
+      });
+      if (!stored) return;
+      await runAfter(after);
+      deps.onChanged?.();
+      await deps.onStored?.(stored);
+    },
     async retrySignals(repo, pr) {
       const after: After = [];
       await deps.projects().tx.run(async (tx) => {
