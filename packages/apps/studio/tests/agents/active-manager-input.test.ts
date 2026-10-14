@@ -28,7 +28,7 @@ const features = [
   'secrets',
 ];
 
-async function setup(tool: 'claude' | 'codex') {
+async function setup(tool: 'claude' | 'codex', ownerStarted = false) {
   await h.createAgent();
   const worker = await h.createAgent({ name: 'Worker', tool });
   const issue = await h.projects.issues.create(h.viewer('alice'), {
@@ -54,7 +54,11 @@ async function setup(tool: 'claude' | 'codex') {
     h.projects.comments.create(manager, issue.id, {
       content: `[@Worker](mention://agent/${worker}) continue the step`,
     });
-  const original = await dispatch();
+  const original = ownerStarted
+    ? await h.projects.comments.create(h.viewer('alice'), issue.id, {
+        content: `[@Worker](mention://agent/${worker}) start the step`,
+      })
+    : await dispatch();
   const payload = await h.claimOne();
   expect(payload.run.id).not.toBe(pm.run.id);
   await h.runner(RUNNER_ROUTES.start, payload.run.id, {
@@ -120,6 +124,105 @@ async function measured<T>(name: string, action: () => Promise<T>): Promise<T> {
 }
 
 describe('manager active dispatch', () => {
+  it.each(['rootless', 'rooted', 'requester-boundary'] as const)(
+    'keeps multi-target dispatch and replay within the %s authorization boundary',
+    async (scenario) => {
+      const { issue, worker, manager, payload } = await setup(
+        'claude',
+        scenario === 'rootless',
+      );
+      const conn = h.database.connection();
+      const original = await h.agents.runs.detail(payload.run.id);
+      expect(original.commentRootRunId).toBe(
+        scenario === 'rootless' ? null : original.id,
+      );
+      if (scenario === 'requester-boundary')
+        await conn.repository('agRuns').updateMany({
+          filter: { id: original.id },
+          values: { commentExecution: 'requester' },
+        });
+      const second = await h.createAgent({ name: 'Second' });
+      const followup = await measured('studio-multi-' + scenario, () =>
+        h.projects.comments.create(manager, issue.id, {
+          content: `[@Worker](mention://agent/${worker}) continue; [@Second](mention://agent/${second}) review`,
+        }),
+      );
+      const open = await h.agents.runs.openOn(
+        conn,
+        { kind: 'issue', id: issue.id },
+        worker,
+      );
+      const boundary = scenario === 'requester-boundary';
+      expect(open).toHaveLength(boundary ? 2 : 1);
+      const selected = boundary
+        ? open.find((run) => run.id !== original.id)!
+        : open[0]!;
+      const secondRuns = await h.agents.runs.openOn(
+        conn,
+        { kind: 'issue', id: issue.id },
+        second,
+      );
+      expect(secondRuns).toHaveLength(1);
+      const next = secondRuns[0]!;
+      expect(next.commentRootRunId).toBe(
+        scenario === 'rootless' ? next.id : selected.commentRootRunId,
+      );
+      expect(next.commentExecution).toBe('owner');
+      if (boundary) {
+        expect(next.commentRootRunId).not.toBe(original.commentRootRunId);
+        expect(selected.commentRootRunId).toBe(selected.id);
+      }
+      const inputCount = async (runId: string) =>
+        (await h.agents.runs.detail(runId)).inputs.filter(
+          (input) =>
+            (input.payload as { commentId?: string }).commentId ===
+            followup.comment.id,
+        ).length;
+      expect(await inputCount(original.id)).toBe(boundary ? 0 : 1);
+      expect(await inputCount(selected.id)).toBe(1);
+      expect(await inputCount(next.id)).toBe(1);
+      await measured('studio-multi-replay-' + scenario, () =>
+        h.projects.tx.run((tx) =>
+          h.projects.kinds.get('agent')!.work!.onCommentCreated!(tx, {
+            issue,
+            comment: followup.comment,
+            parent: null,
+            actor: manager.actor,
+            userId: 'alice',
+            mentions: [worker, second].map((id) => ({ kind: 'agent', id })),
+          }),
+        ),
+      );
+      expect(await inputCount(selected.id)).toBe(1);
+      expect(await inputCount(next.id)).toBe(1);
+      expect(
+        (
+          await h.agents.runs.openOn(
+            conn,
+            { kind: 'issue', id: issue.id },
+            worker,
+          )
+        ).map((run) => run.id),
+      ).toEqual(open.map((run) => run.id));
+      expect(
+        (
+          await h.agents.runs.openOn(
+            conn,
+            { kind: 'issue', id: issue.id },
+            second,
+          )
+        ).map((run) => run.id),
+      ).toEqual([next.id]);
+      const comments = await h.projects.commentQueries.list(conn, issue.id);
+      expect(
+        comments.filter(
+          (comment) =>
+            comment.parentId === followup.comment.id &&
+            comment.authorType === 'system',
+        ),
+      ).toHaveLength(boundary ? 0 : 1);
+    },
+  );
   it.each(['claude', 'codex'] as const)(
     'appends a new %s dispatch root and records one system reply without waking agents',
     async (tool) => {

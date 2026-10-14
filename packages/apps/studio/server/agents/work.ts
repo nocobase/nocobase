@@ -521,7 +521,8 @@ export function createAgentWork(deps: {
               'agRuns',
             )
             .findOne({ filter: { id: commentRootRunId } });
-          commentRootRunId = selected?.commentRootRunId ?? commentRootRunId;
+          // A reused owner-started run has no comment authorization to share.
+          commentRootRunId = selected?.commentRootRunId ?? undefined;
         }
       }
     }
