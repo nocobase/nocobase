@@ -201,3 +201,58 @@ test('observes account permission revocation without a realtime connection', asy
     await context.close();
   }
 });
+
+test('paginates the user directory and recovers from a list request failure', async ({
+  page,
+  context,
+  api,
+}) => {
+  await api.patch('users/me/preferences', { locale: 'en-US' });
+  await context.addInitScript(
+    "localStorage.setItem('nocobase.locale', 'en-US')",
+  );
+  const batch = Date.now();
+  for (let index = 0; index < 21; index++)
+    await api.post('users', {
+      name: `Synthetic paging ${index}`,
+      email: `paging-${batch}-${index}@example.test`,
+      password: 'SyntheticPassword123!',
+    });
+  await page.goto(url('/config/members?q=Synthetic+paging'));
+  await expect(page.getByText('21 users', { exact: true })).toBeVisible();
+  await expect(page.getByRole('row')).toHaveCount(21);
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(page).toHaveURL(/[?&]page=2/u);
+  await expect(page.getByRole('row')).toHaveCount(2);
+  await expect(
+    page.getByRole('button', { name: 'Next', exact: true }),
+  ).toBeDisabled();
+  await page.getByRole('button', { name: 'Previous', exact: true }).click();
+  await expect(page.getByRole('row')).toHaveCount(21);
+  if (output)
+    await page.screenshot({
+      path: path.join(output, 'users-pagination-en.png'),
+      fullPage: true,
+    });
+
+  const failure = '**/api/users?*';
+  await page.route(failure, (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        error: { code: 'UNAVAILABLE', message: 'Synthetic directory failure' },
+      }),
+    }),
+  );
+  await page.reload();
+  await expect(page.getByText('Unable to load members')).toBeVisible();
+  if (output)
+    await page.screenshot({
+      path: path.join(output, 'users-list-error-en.png'),
+      fullPage: true,
+    });
+  await page.unroute(failure);
+  await page.getByRole('button', { name: 'Retry', exact: true }).click();
+  await expect(page.getByRole('row')).toHaveCount(21);
+});
