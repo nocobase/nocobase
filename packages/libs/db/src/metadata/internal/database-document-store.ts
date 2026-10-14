@@ -95,7 +95,14 @@ export class DatabaseCollectionMetadataStore implements CollectionMetadataStore 
       .update(this.tableName)
       .digest('hex')
       .slice(0, 8);
-    this.versionTableName = `${this.tableName.slice(0, 45)}_cache_${hash}`;
+    // PostgreSQL limits identifiers by bytes. Keep whole code points and
+    // reserve space for the suffix without changing existing ASCII names.
+    let prefix = '';
+    for (const character of this.tableName) {
+      if (Buffer.byteLength(prefix + character) > 45) break;
+      prefix += character;
+    }
+    this.versionTableName = `${prefix}_cache_${hash}`;
     registerMetadataNamingSnapshot(this, {
       read: () => this.readNamingSnapshot(),
       invalidate: () => this.invalidateNamingSnapshots(),
