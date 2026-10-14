@@ -140,6 +140,8 @@ const zhCN: AgentSessionsResource = {
     recordBody: '完整记录保存在这里，只有你能看到。',
   },
   composer: {
+    expand: '展开输入',
+    collapse: '收起输入',
     placeholder: '回复，或者说下一件事…',
     busy: 'Agent 正在回复，消息会在这一轮结束后发出。',
     waiting: '先回答上面的请求，或者写消息排在它之后。',

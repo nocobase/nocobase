@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -80,6 +81,33 @@ export function SessionView({
   const transcript = useTranscript(sessionId);
   useMarkSeen(sessionId, transcript.data?.at(-1)?.seq);
   const computers = useComputers();
+  const viewportRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const fit = (): void => {
+      const element = viewportRef.current;
+      if (!element) return;
+      // Mobile keyboards often resize only the visual viewport, leaving the shell's svh unchanged.
+      element.style.height =
+        window.matchMedia('(max-width: 767px)').matches &&
+        viewport.scale === 1 &&
+        viewport.height < window.innerHeight
+          ? `${Math.max(0, viewport.offsetTop + viewport.height - element.getBoundingClientRect().top)}px`
+          : '';
+      element.style.setProperty(
+        '--agent-session-height',
+        `${element.clientHeight}px`,
+      );
+    };
+    fit();
+    viewport.addEventListener('resize', fit);
+    viewport.addEventListener('scroll', fit);
+    return () => {
+      viewport.removeEventListener('resize', fit);
+      viewport.removeEventListener('scroll', fit);
+    };
+  }, [session.data?.id]);
   // Beside the conversation on a wide screen; on a narrower one it opens over it, when asked for.
   const [details, setDetails] = useState(
     () =>
@@ -110,7 +138,7 @@ export function SessionView({
     (candidate) => candidate.id === session.data.computerId,
   );
   return (
-    <div className='flex h-full min-h-0'>
+    <div ref={viewportRef} className='flex h-full min-h-0'>
       <Conversation
         session={session.data}
         computer={computer}
@@ -166,10 +194,65 @@ function Conversation({
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(true);
+  const [collapsed, setCollapsed] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const headerChangeRef = useRef<{ height: number; scrollTop: number } | null>(
+    null,
+  );
+  const compensatedResizeRef = useRef<number | null>(null);
+  const pendingShrinkRef = useRef<number | null>(null);
+  const touchYRef = useRef<number | null>(null);
+  const changeHeader = (next: boolean): void => {
+    if (!next) pendingShrinkRef.current = null;
+    if (next === collapsed || !window.matchMedia('(max-width: 767px)').matches)
+      return;
+    const header = headerRef.current;
+    const scroller = scrollerRef.current;
+    if (!header || !scroller) return;
+    // Capture before reflow: shrinking the header can already clamp scrollTop at the bottom.
+    headerChangeRef.current = {
+      height: header.offsetHeight,
+      scrollTop: scroller.scrollTop,
+    };
+    setCollapsed(next);
+  };
+  // Measure the actual shrink (including a two-line title and wrapping task summary) before paint.
+  useLayoutEffect(() => {
+    const height = headerRef.current?.offsetHeight;
+    const scroller = scrollerRef.current;
+    const before = headerChangeRef.current;
+    if (height === undefined || !scroller || !before) return;
+    const target = before.scrollTop + height - before.height;
+    if (collapsed && target < 0) {
+      // Restore the expanded header before paint; retry only once native scrolling can pay for the full shrink.
+      pendingShrinkRef.current = before.height - height;
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- Restore an unpayable measured shrink before the browser paints.
+      setCollapsed(false);
+      return;
+    }
+    // The container resize caused by this header change already preserves the reading position.
+    if (height !== before.height)
+      compensatedResizeRef.current = scroller.clientHeight;
+    scroller.scrollTop = target;
+    headerChangeRef.current = null;
+    if (collapsed) pendingShrinkRef.current = null;
+  }, [collapsed]);
   useEffect(() => {
     const element = scrollerRef.current;
     if (element && pinnedRef.current) element.scrollTop = element.scrollHeight;
   }, [items]);
+  useEffect(() => {
+    const element = scrollerRef.current;
+    if (!element) return;
+    const observer = new ResizeObserver(() => {
+      const compensatedHeight = compensatedResizeRef.current;
+      compensatedResizeRef.current = null;
+      if (element.clientHeight === compensatedHeight) return;
+      if (pinnedRef.current) element.scrollTop = element.scrollHeight;
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   const send = async (
     content: PromptContent[],
@@ -192,13 +275,19 @@ function Conversation({
       className='flex min-w-0 flex-1 flex-col'
       aria-label={session.title}
     >
-      <Header
-        session={session}
-        computer={computer}
-        details={details}
-        onToggleDetails={onToggleDetails}
-        onStop={() => cancel.mutate(undefined, { onError: fail })}
-      />
+      <div ref={headerRef} className='shrink-0'>
+        <Header
+          session={session}
+          computer={computer}
+          details={details}
+          onToggleDetails={onToggleDetails}
+          onStop={() => cancel.mutate(undefined, { onError: fail })}
+          collapsed={collapsed}
+          onShowDetails={() => {
+            if (!details) onToggleDetails();
+          }}
+        />
+      </div>
       {session.archivedAt !== null ? (
         <Banner
           icon={<ArchiveIcon className='size-4' />}
@@ -224,12 +313,34 @@ function Conversation({
       )}
       <div
         ref={scrollerRef}
-        className='min-h-0 flex-1 overflow-y-auto'
+        className='min-h-0 flex-1 overflow-y-auto overscroll-y-contain'
+        onWheel={(event) => {
+          if (event.deltaY > 0) changeHeader(true);
+          else if (event.currentTarget.scrollTop === 0) changeHeader(false);
+        }}
+        onTouchStart={(event) => {
+          touchYRef.current = event.touches[0]?.clientY ?? null;
+        }}
+        onTouchMove={(event) => {
+          const y = event.touches[0]?.clientY;
+          if (y === undefined || touchYRef.current === null) return;
+          if (touchYRef.current - y > 8) changeHeader(true);
+          else if (
+            y - touchYRef.current > 8 &&
+            event.currentTarget.scrollTop === 0
+          )
+            changeHeader(false);
+        }}
         onScroll={(event) => {
           const element = event.currentTarget;
           pinnedRef.current =
             element.scrollHeight - element.scrollTop - element.clientHeight <
             80;
+          if (
+            pendingShrinkRef.current !== null &&
+            element.scrollTop >= pendingShrinkRef.current
+          )
+            changeHeader(true);
         }}
       >
         <div className='mx-auto max-w-[760px] px-4 pt-5 pb-6 sm:px-6'>
@@ -267,6 +378,7 @@ function Conversation({
       </div>
       <div className='mx-auto w-full max-w-[760px] px-3 pt-2 pb-3 sm:px-6 sm:pb-4'>
         <Composer
+          compact
           hints
           placeholder={
             !writable
@@ -311,12 +423,16 @@ function Header({
   details,
   onToggleDetails,
   onStop,
+  collapsed,
+  onShowDetails,
 }: {
   readonly session: Session;
   readonly computer: Computer | undefined;
   readonly details: boolean;
   readonly onToggleDetails: () => void;
   readonly onStop: () => void;
+  readonly collapsed: boolean;
+  readonly onShowDetails: () => void;
 }): ReactElement {
   const { t } = useTranslation();
   const update = useUpdateSession(session.id);
@@ -331,7 +447,7 @@ function Header({
   };
 
   return (
-    <header className='flex flex-col gap-2 border-b px-4 py-3 sm:px-5'>
+    <header className='flex flex-col gap-2 border-b px-4 py-2 md:py-3 sm:px-5'>
       <div className='flex min-w-0 items-center gap-2.5'>
         <BackLink />
         {renaming ? (
@@ -351,33 +467,39 @@ function Header({
             aria-label={t('session.rename')}
           />
         ) : (
-          <h2 className='min-w-0 truncate text-[15px] font-semibold'>
+          <h2
+            title={session.title}
+            className={cn(
+              'min-w-0 flex-1 text-[15px] font-semibold md:truncate',
+              collapsed ? 'truncate' : 'line-clamp-2 break-words',
+            )}
+          >
             {session.title}
           </h2>
         )}
         {session.waiting ? (
-          <span className='inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-amber-800 dark:text-amber-300'>
+          <span className='max-md:sr-only inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-amber-800 dark:text-amber-300'>
             <span className='size-2 rounded-full bg-amber-400' />
             {t('session.asking')}
           </span>
         ) : (
           session.running && (
-            <span className='text-primary inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium'>
+            <span className='max-md:sr-only text-primary inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium'>
               <span className='bg-primary size-2 animate-pulse rounded-full' />
               {t('session.answering')}
             </span>
           )
         )}
-        <span className='flex-1' />
         {session.running && session.computerOnline && (
           <Button
             variant='outline'
             size='sm'
             className='h-9 text-xs font-normal'
+            aria-label={t('session.stop')}
             onClick={onStop}
           >
             <SquareIcon />
-            {t('session.stop')}
+            <span className='max-md:sr-only'>{t('session.stop')}</span>
           </Button>
         )}
         <Button
@@ -432,7 +554,12 @@ function Header({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className='flex min-w-0 flex-wrap items-center gap-1.5 sm:flex-nowrap'>
+      <div
+        className={cn(
+          'flex min-w-0 flex-nowrap items-center gap-1.5 overflow-x-auto [scrollbar-width:none] md:overflow-visible',
+          collapsed && 'max-md:hidden',
+        )}
+      >
         <MetaChip>
           <AgentBadge
             agentId={session.agentId}
@@ -466,6 +593,22 @@ function Header({
           </code>
         </MetaChip>
       </div>
+      <button
+        type='button'
+        aria-expanded={details}
+        onClick={onShowDetails}
+        className='hover:bg-muted focus-visible:ring-ring flex min-w-0 items-center gap-2 rounded-md px-1 py-1 text-left text-xs focus-visible:ring-2'
+      >
+        <ListChecksIcon className='size-4 shrink-0' aria-hidden />
+        <span className='shrink-0 font-medium'>
+          {t('links.title')} {session.links.length}
+        </span>
+        {session.links.length === 0 ? (
+          <span className='text-muted-foreground'>{t('links.none')}</span>
+        ) : (
+          <Legend session={session} />
+        )}
+      </button>
     </header>
   );
 }
@@ -481,7 +624,7 @@ function MetaChip({
   return (
     <span
       className={cn(
-        'bg-card inline-flex h-7.5 items-center gap-1.5 rounded-full border px-2.5 text-xs whitespace-nowrap',
+        'bg-card inline-flex h-7.5 max-w-full items-center gap-1.5 overflow-hidden rounded-full border px-2.5 text-xs whitespace-nowrap',
         shrink ? 'min-w-0' : 'shrink-0',
       )}
     >
