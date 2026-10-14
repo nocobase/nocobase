@@ -12,6 +12,7 @@ for (const replies of [false, true]) {
     api,
   }) => {
     test.setTimeout(180_000);
+    await api.patch('users/me/preferences', { locale: 'en-US' });
     const owner = await api.get<{ userId: string }>('projects/me');
     const settings = await api.get<{
       name: string;
