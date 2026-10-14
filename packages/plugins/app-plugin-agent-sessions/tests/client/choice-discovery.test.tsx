@@ -151,11 +151,14 @@ describe('choice discovery', () => {
     );
     await waitFor(() => expect(requests).toHaveLength(2));
     await answer(1, { data: choice('other') });
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Send' })).not.toBeDisabled(),
+    );
     await act(async () => {
       client.setQueryData(['agentSessions', 'discoveryConnection'], false);
     });
+    await screen.findByText('Failure');
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
-    expect(screen.getByText('Failure')).toBeInTheDocument();
     await act(async () => {
       void client.invalidateQueries({
         queryKey: ['agentSessions', 'discovery'],
