@@ -13,11 +13,8 @@ on:
           - sqlite
           - postgres
           - mysql
-          - kingbase
-          - oceanbase
           - mssql
           - oracle
-          - dameng
       filter:
         description: Package to test, such as @nocobase/app-plugin-scheduler; leave empty for every package that uses
           @nocobase/db-testing or @nocobase/app-testing
