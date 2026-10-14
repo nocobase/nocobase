@@ -4,6 +4,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import plugin from '../../client/plugin.js';
+import { AgentSessionsConfigContext } from '../../client/config.js';
 import { NewSession } from '../../client/components/new-session.js';
 import type { Computer, DiscoveredChoices } from '../../shared/api.js';
 
@@ -88,6 +89,57 @@ describe('new-session composer', () => {
       'This agent has no configurable settings. Its defaults will be used.',
     );
     expect(screen.getByRole('textbox')).not.toBeDisabled();
+  });
+  it('tells to update the command line on a computer whose bridge was refused as too old', async () => {
+    await renderWithApp(
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <AgentSessionsConfigContext.Provider
+          value={{ cli: 'nb-studio', install: null }}
+        >
+          <NewSession />
+        </AgentSessionsConfigContext.Provider>
+      </QueryClientProvider>,
+      {
+        plugins: [plugin({ routes: false })],
+        namespace: '@nocobase/app-plugin-agent-sessions',
+        fetch: answerApi(({ path }) => {
+          if (path === 'agentSessions/computers')
+            return {
+              data: [
+                {
+                  ...computer,
+                  online: false,
+                  host: 'nb-studio 1.0.0-beta.56',
+                  outdatedBridge: {
+                    host: 'nb-studio 1.0.0-beta.56',
+                    bridgeProtocol: 1,
+                    protocol: 2,
+                    refusedAt: '2026-10-14T08:00:00Z',
+                  },
+                },
+              ],
+              meta: { total: 1 },
+            };
+          return { data: [], meta: {} };
+        }),
+      },
+    );
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'nb-studio 1.0.0-beta.56',
+    );
+    expect(screen.getByRole('alert').textContent).toContain(
+      'bridge protocol 1, and the application needs 2',
+    );
+    expect(screen.getByText('nb-studio update')).toBeInTheDocument();
+    expect(
+      screen.getByText('nb-studio acp service install', {
+        selector: '[role=alert] code',
+      }),
+    ).toBeInTheDocument();
   });
   it('keeps the selected computer when it goes offline and clears its settings before switching', async () => {
     const client = new QueryClient({

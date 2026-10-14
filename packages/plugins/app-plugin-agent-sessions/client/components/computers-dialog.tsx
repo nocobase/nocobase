@@ -123,6 +123,42 @@ export function KeepConnected(): ReactElement {
   );
 }
 
+/**
+ * What a computer whose bridge the application refused as too old needs: its command line updated, and the background
+ * connection started again on the new version.
+ */
+export function OutdatedBridgeNotice({
+  computer,
+}: {
+  readonly computer: Computer;
+}): ReactElement | null {
+  const { t } = useTranslation();
+  const { cli } = useAgentSessionsConfig();
+  const outdated = computer.outdatedBridge;
+  if (!outdated) return null;
+  return (
+    <div
+      role='alert'
+      className='border-destructive/30 bg-destructive/5 flex flex-col gap-1 rounded-md border p-2.5 text-xs'
+    >
+      <span className='font-medium'>
+        {t('computers.outdated.title', { host: outdated.host })}
+      </span>
+      <span className='text-muted-foreground'>
+        {t('computers.outdated.body', {
+          bridgeProtocol: outdated.bridgeProtocol,
+          protocol: outdated.protocol,
+        })}
+      </span>
+      <Command text={`${cli} update`} />
+      <span className='text-muted-foreground mt-1'>
+        {t('computers.outdated.restart')}
+      </span>
+      <Command text={`${cli} acp service install`} />
+    </div>
+  );
+}
+
 function ComputerCard({
   computer,
 }: {
@@ -174,6 +210,7 @@ function ComputerCard({
           {confirming ? t('computers.confirmRemove') : t('computers.remove')}
         </button>
       </div>
+      <OutdatedBridgeNotice computer={computer} />
       <div className='flex flex-wrap gap-1.5'>
         {installedAgents(computer).map((agent) => (
           <span

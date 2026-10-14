@@ -20,8 +20,14 @@ import {
   type UpdateTarget,
 } from '@nocobase/app-cli-client/install';
 
-import { runnerHost } from '../host.ts';
-import { currentTarget, type DistResolution } from '../protocol/index.ts';
+import { runnerCommandLine, runnerHost } from '../host.ts';
+import {
+  currentTarget,
+  PROTOCOL_VERSION,
+  type DistResolution,
+} from '../protocol/index.ts';
+
+import { isNewer } from '@nocobase/app-cli-client/install';
 
 export {
   isNewer,
@@ -58,4 +64,44 @@ export async function applyUpdate(
   options: ApplyUpdateOptions,
 ): Promise<AppliedUpdate> {
   return applyAt({ ...options, bin: runnerHost().bin });
+}
+
+/**
+ * Whether the runner is behind the application, and how: `update` when the application offers a newer version, which
+ * the normal update flow installs; `protocol` when it offers none but speaks a newer protocol than this runner (its
+ * heartbeat answer's `protocolVersion`), so runs that need what this runner lacks are never handed to it although the
+ * versions look the same; `none` otherwise.
+ */
+export function updateDecision(options: {
+  readonly running: string;
+  /** The version the application offers, if any. */
+  readonly offered?: string | undefined;
+  /** The protocol the application speaks, when it says. */
+  readonly serverProtocol?: number | undefined;
+  readonly runnerProtocol?: number;
+}): 'update' | 'protocol' | 'none' {
+  if (
+    options.offered !== undefined &&
+    isNewer(options.offered, options.running)
+  )
+    return 'update';
+  const runnerProtocol = options.runnerProtocol ?? PROTOCOL_VERSION;
+  return options.serverProtocol !== undefined &&
+    options.serverProtocol > runnerProtocol
+    ? 'protocol'
+    : 'none';
+}
+
+/** What to tell the runner's owner when the application speaks a newer protocol but offers no newer runner. */
+export function protocolBehindMessage(
+  serverProtocol: number,
+  runnerProtocol: number = PROTOCOL_VERSION,
+): string {
+  return (
+    `the application speaks runner protocol ${serverProtocol} and this runner (${runnerHost().bin} ` +
+    `${runnerHost().version}) speaks ${runnerProtocol}, so runs that need the newer protocol are not handed to it, ` +
+    'and the application offers no newer version to update to. Run ' +
+    `\`${runnerCommandLine('update')}\` to install what the application serves; when the application runs from ` +
+    'source with the same version, run the runner from that source checkout instead.'
+  );
 }

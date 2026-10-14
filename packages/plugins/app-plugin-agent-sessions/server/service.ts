@@ -34,6 +34,7 @@ import { z } from 'zod';
 import type {
   AgentSessionsChange,
   Computer,
+  OutdatedBridge,
   Reference,
   Session,
   SessionLink,
@@ -125,6 +126,7 @@ export interface ProjectSource {
  */
 export interface ReplyStore {
   set(key: string, value: unknown, ttl?: number): Promise<void>;
+  get<T>(key: string): Promise<T | undefined>;
   take<T>(key: string): Promise<T | undefined>;
 }
 
@@ -309,7 +311,45 @@ export class AgentSessionsService {
       filter: { userId },
       sort: (sort) => [sort.field('name').asc(), sort.field('id').asc()],
     });
-    return rows.map((row) => computerView(row, this.#now()));
+    return Promise.all(
+      rows.map(async (row) => {
+        const outdated = await this.#replies.get<OutdatedBridge>(
+          outdatedKey(row.id),
+        );
+        return {
+          ...computerView(row, this.#now()),
+          ...(outdated ? { outdatedBridge: outdated } : {}),
+        };
+      }),
+    );
+  }
+
+  /**
+   * Remembers for a while that a known computer's bridge was refused for speaking an older protocol, so its owner's
+   * page can say to update it. Kept with the replies, not stored: a bridge refused again renews it, and one that
+   * registers clears it.
+   */
+  async #noteOutdatedBridge(
+    userId: string,
+    request: RegisterRequest,
+  ): Promise<void> {
+    if (!request.computerId) return;
+    const known = await computers(this.#conn()).findOne({
+      filter: { id: request.computerId, userId },
+    });
+    if (!known) return;
+    const outdated: OutdatedBridge = {
+      host: request.computer.host,
+      bridgeProtocol: request.protocol,
+      protocol: BRIDGE_PROTOCOL_VERSION,
+      refusedAt: this.#iso(),
+    };
+    await this.#replies.set(
+      outdatedKey(known.id),
+      outdated,
+      OUTDATED_BRIDGE_MS,
+    );
+    this.#publish(userId, { kind: 'computers' });
   }
 
   async removeComputer(userId: string, computerId: string): Promise<void> {
@@ -447,8 +487,22 @@ export class AgentSessionsService {
     request: RegisterRequest,
     keyed = false,
   ): Promise<RegisterResponse> {
-    if (request.protocol !== BRIDGE_PROTOCOL_VERSION)
-      throw new AgentSessionsError('upgradeRequired');
+    if (request.protocol !== BRIDGE_PROTOCOL_VERSION) {
+      if (request.protocol < BRIDGE_PROTOCOL_VERSION)
+        await this.#noteOutdatedBridge(userId, request);
+      // `metadata` lets a bridge tell whether it is the older side and update itself; the reason stays what bridges
+      // before it branch on.
+      throw new AgentSessionsError(
+        'upgradeRequired',
+        undefined,
+        `This bridge speaks protocol ${request.protocol}; the application speaks ${BRIDGE_PROTOCOL_VERSION}.`,
+        {
+          bridgeProtocol: request.protocol,
+          protocol: BRIDGE_PROTOCOL_VERSION,
+          supportedProtocols: [BRIDGE_PROTOCOL_VERSION],
+        },
+      );
+    }
     const now = this.#iso();
     const key = keyed
       ? undefined
@@ -515,6 +569,7 @@ export class AgentSessionsService {
       });
       if (changed) this.#changed(changed);
     }
+    await this.#replies.take(outdatedKey(computerId));
     this.#publish(userId, { kind: 'computers' });
     return { computerId, ...(key ? { key } : {}) };
   }
@@ -1605,6 +1660,13 @@ function same(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+/** How long a refused bridge is shown as outdated without trying again. */
+const OUTDATED_BRIDGE_MS = 60 * 60_000;
+
+function outdatedKey(computerId: string): string {
+  return `outdated:${computerId}`;
+}
+
 /** Replies kept in this instance's memory, for an application of one instance. */
 function memoryReplies(): ReplyStore {
   const kept = new Map<string, { value: unknown; until: number }>();
@@ -1612,6 +1674,12 @@ function memoryReplies(): ReplyStore {
     set(key, value, ttl = REPLY_WAIT_MS) {
       kept.set(key, { value, until: Date.now() + ttl });
       return Promise.resolve();
+    },
+    get<T>(key: string) {
+      const entry = kept.get(key);
+      return Promise.resolve(
+        entry && entry.until > Date.now() ? (entry.value as T) : undefined,
+      );
     },
     take<T>(key: string) {
       const entry = kept.get(key);

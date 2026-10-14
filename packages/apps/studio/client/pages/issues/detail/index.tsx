@@ -213,6 +213,9 @@ function IssuePage({
     (entry: InboxEntry) =>
       coveredBySummary(entry, {
         accepting:
+          !progress?.personalRunnerRequests?.some(
+            (request) => request.canDecide,
+          ) &&
           !handoffWaitsOn(handoff) &&
           detail.statusKey === IN_REVIEW_STATUS &&
           Boolean(viewer?.userId) &&
@@ -222,12 +225,22 @@ function IssuePage({
         pullRequest: selectedPr,
         blocked: detail.statusKey === 'blocked',
         commentId:
+          !progress?.personalRunnerRequests?.some(
+            (request) => request.canDecide,
+          ) &&
           !handoffWaitsOn(handoff) &&
           !pending &&
           viewer?.userId === detail.ownerUserId
             ? progress?.blockedComment?.id
             : null,
-        continuation: Boolean(pending),
+        continuation:
+          Boolean(pending) &&
+          !progress?.personalRunnerRequests?.some(
+            (request) => request.canDecide,
+          ),
+        personalRequestIds: progress?.personalRunnerRequests
+          ?.filter((request) => request.canDecide)
+          .map((request) => request.id),
       }),
     [
       detail.statusKey,

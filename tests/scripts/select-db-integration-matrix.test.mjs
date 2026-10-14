@@ -14,8 +14,10 @@ import path from 'node:path';
 import test from 'node:test';
 import {
   databases,
+  packageSuites,
   planDbIntegration,
   selectDatabases,
+  selectPackageSuites,
 } from '../../scripts/select-db-integration-matrix.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
@@ -126,6 +128,49 @@ test('unrelated paths and empty changes skip the matrix', () => {
   );
 });
 
+const claimConcurrency = {
+  dialect: 'postgres',
+  filter: '@nocobase/app-plugin-agents',
+  tests: 'tests/claim-concurrency.test.ts',
+};
+
+test('a guarded package path selects its dialect suite, and nothing else does', () => {
+  for (const file of [
+    'packages/plugins/app-plugin-agents/server/core/runs/claim.ts',
+    'packages/plugins/app-plugin-agents/server/core/runs/comment-consent.ts',
+    'packages/plugins/app-plugin-agents/server/core/agents/agent.store.ts',
+    'packages/plugins/app-plugin-agents/tests/claim-concurrency.test.ts',
+  ]) {
+    assert.deepEqual(selectPackageSuites([file]), [claimConcurrency], file);
+    assert.deepEqual(selectDatabases([file]), [], file);
+  }
+  for (const file of [
+    'packages/plugins/app-plugin-agents/server/core/agents/agent.service.ts',
+    'packages/plugins/app-plugin-agents/client/index.ts',
+    'packages/libs/db-postgres/src/index.ts',
+  ])
+    assert.deepEqual(selectPackageSuites([file]), [], file);
+});
+
+test('every package suite names tests that exist', () => {
+  for (const suite of packageSuites) {
+    const directory = path.join(
+      root,
+      'packages',
+      'plugins',
+      suite.filter.replace('@nocobase/', ''),
+    );
+    for (const file of suite.tests)
+      assert.ok(
+        readdirSync(path.dirname(path.join(directory, file))).includes(
+          path.basename(file),
+        ),
+        file,
+      );
+    assert.ok(databases.includes(suite.dialect), suite.dialect);
+  }
+});
+
 test('git selection covers additions, deletion, renames in and out, and unusual filenames', (t) => {
   const repo = createRepository(t);
   repo.write('packages/libs/db-mysql/delete.ts');
@@ -188,10 +233,9 @@ test('missing or unavailable comparison commits conservatively select every data
   const repo = createRepository(t);
   const headSha = repo.commit();
   for (const baseSha of [undefined, '', '0'.repeat(40), 'f'.repeat(40)]) {
-    assert.deepEqual(
-      planDbIntegration({ ...repo, baseSha, headSha }).databases,
-      databases,
-    );
+    const plan = planDbIntegration({ ...repo, baseSha, headSha });
+    assert.deepEqual(plan.databases, databases);
+    assert.deepEqual(plan.suites, [claimConcurrency]);
   }
   assert.deepEqual(
     planDbIntegration({ ...repo, baseSha: headSha }).databases,
@@ -206,8 +250,8 @@ test('the CLI publishes matrix outputs for selected and skipped runs', (t) => {
   const headSha = repo.commit();
   const output = path.join(repo.cwd, 'github-output');
   for (const [base, expected] of [
-    [baseSha, 'databases=["mssql"]\nshould_run=true\n'],
-    [headSha, 'databases=[]\nshould_run=false\n'],
+    [baseSha, 'databases=["mssql"]\nshould_run=true\nsuites=[]\n'],
+    [headSha, 'databases=[]\nshould_run=false\nsuites=[]\n'],
   ]) {
     writeFileSync(output, '');
     execFileSync(process.execPath, [script], {

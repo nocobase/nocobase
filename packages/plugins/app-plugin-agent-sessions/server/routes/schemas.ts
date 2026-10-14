@@ -114,6 +114,18 @@ export const ComputerSchema: z.ZodType<Computer> = z
     }),
     lastSeenAt: z.string(),
     createdAt: z.string(),
+    outdatedBridge: z
+      .object({
+        host: z.string(),
+        bridgeProtocol: z.number().int(),
+        protocol: z.number().int(),
+        refusedAt: z.string(),
+      })
+      .optional()
+      .meta({
+        description:
+          'Present while its bridge was lately refused for speaking an older protocol than the application: its command line needs an update.',
+      }),
   })
   .meta({ ref: 'AgentSessionsComputer' });
 

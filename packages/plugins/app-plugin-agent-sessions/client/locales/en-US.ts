@@ -70,6 +70,8 @@ const enUS = {
     unknown: 'Unknown',
   },
   newSession: {
+    settingsOutdated:
+      'This computer\'s command line is too old for this application. Update it there, as "My computers" shows.',
     settingsOffline:
       'This computer is offline. Reconnect its bridge to load settings and send.',
     settingsLoading: 'Loading settings…',
@@ -247,6 +249,12 @@ const enUS = {
     truncated: 'Only the first 500 folders are shown.',
   },
   computers: {
+    outdated: {
+      title: 'Update the command line on this computer ({{host}})',
+      body: 'The application refused its connection: it speaks bridge protocol {{bridgeProtocol}}, and the application needs {{protocol}}. Run this on the computer:',
+      restart:
+        'An up-to-date command line restarts its background connection by itself; if it does not reconnect within a few minutes, run:',
+    },
     offline: 'Offline',
     title: 'My computers',
     description:

@@ -422,6 +422,8 @@ export function createAgents(deps: AgentsDeps): Agents {
     openRuns: openCounts,
   });
   const runs = createRunService({
+    reconcileCommentConsent: (unit, runId) =>
+      claims.reconcileCommentConsent(unit, runId),
     diagnose: (conn, run, agent) => claims.diagnose(conn, run, agent),
     ...transitions,
     tx,
@@ -485,7 +487,13 @@ export function createAgents(deps: AgentsDeps): Agents {
   const sweeper = createRunnerSweeper({
     clock,
     runners,
-    runs: createSweeper({ ...transitions, tx, ids, runners }),
+    runs: createSweeper({
+      ...transitions,
+      tx,
+      ids,
+      runners,
+      reconcileCommentQueue: () => claims.reconcileCommentQueue(),
+    }),
     jobs,
     requests: runs.requests,
   });

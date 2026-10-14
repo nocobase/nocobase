@@ -33,7 +33,7 @@ export function createIssueAccess(deps: {
 }): IssueAccess {
   async function canView(viewer: Viewer, issueId: string): Promise<boolean> {
     try {
-      await deps.projects().issueQueries.detail(viewer, issueId);
+      await deps.projects().issueQueries.visible(viewer, issueId);
       return true;
     } catch {
       return false;

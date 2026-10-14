@@ -70,13 +70,11 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     fallbackAgentId: string | null;
     commentRunLimit: number;
   }>('projectManager');
+  // The name this test gives the manager below, not the one it found: that is restored when the test ends.
+  const managerName = 'Project manager';
   const runner = new FakeRunner(api, `needs-you-${unique()}`, true);
   const agent = await runner.agent();
   await api.patch('users/me/preferences', { locale: 'en-US' });
-  await api.patch('projectManager', {
-    firstChoiceAgentId: agent,
-    fallbackAgentId: null,
-  });
   const created: Issue[] = [];
   const shot = (name: string) =>
     page.screenshot({
@@ -125,6 +123,37 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
       headers,
     );
   try {
+    const initialManagerName = 'PM-360 initial manager';
+    expect(initialManagerName).not.toBe(managerName);
+    for (const originalName of [managerName, '项目经理']) {
+      await api.patch('projectManager', { name: originalName });
+      const originalSettings = await api.get<{ name: string }>(
+        'projectManager',
+      );
+      try {
+        await api.patch('projectManager', { name: initialManagerName });
+        const initialSettings = await api.get<{ name: string }>(
+          'projectManager',
+        );
+        expect(initialSettings.name).toBe(initialManagerName);
+        await api.patch('projectManager', { name: managerName });
+        const configuredSettings = await api.get<{ name: string }>(
+          'projectManager',
+        );
+        expect(configuredSettings.name).toBe(managerName);
+      } finally {
+        await api.patch('projectManager', { name: originalSettings.name });
+        const restoredSettings = await api.get<{ name: string }>(
+          'projectManager',
+        );
+        expect(restoredSettings.name).toBe(originalSettings.name);
+      }
+    }
+    await api.patch('projectManager', {
+      name: managerName,
+      firstChoiceAgentId: agent,
+      fallbackAgentId: null,
+    });
     const { issue, running, headers } = await make(
       'PM-331: restore the execution disk',
     );
@@ -364,17 +393,25 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
       'First implementation report.',
       codingHeaders,
     );
-    await runner.complete(
-      limited.running.runId,
-      'Received the first implementation report.',
+    // A new comment has its own authorization chain instead of being injected into the earlier running manager.
+    const earlier = await api.get<{ inputs: { text: string }[] }>(
+      `agents/runs/${limited.running.runId}`,
     );
+    expect(
+      earlier.inputs.some(
+        (input) => input.text === 'First implementation report.',
+      ),
+    ).toBe(false);
+    await runner.complete(limited.running.runId, 'Done.');
+    const reportRun = await runner.start(limited.issue.identifier);
     await comment(
       api,
       limited.issue,
       'Second implementation report.',
       codingHeaders,
     );
-    await coder.complete(coding.runId, 'Posted both implementation reports.');
+    await coder.complete(coding.runId, 'Done.');
+    await runner.complete(reportRun.runId, 'Done.');
     await expect
       .poll(() => api.get(`issueCommentRuns/${limited.issue.id}`))
       .not.toBeNull();
@@ -433,6 +470,7 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
     }
   } finally {
     await api.patch('projectManager', {
+      name: settings.name,
       firstChoiceAgentId: settings.firstChoiceAgentId,
       fallbackAgentId: settings.fallbackAgentId,
       commentRunLimit: settings.commentRunLimit,

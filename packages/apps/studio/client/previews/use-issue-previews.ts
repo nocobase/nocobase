@@ -1,4 +1,8 @@
-/** An issue's previews (`preview-entry.tsx`), polled while one moves and slowly otherwise, so a stop shows up. */
+/**
+ * An issue's previews (`preview-entry.tsx`), polled while one moves and slowly otherwise, so a stop shows up. A preview
+ * label the server could not set is retried by its repository poller, which announces the outcome (`useGitRealtime`),
+ * so it is read at the slow pace rather than every few seconds until it succeeds.
+ */
 import { useApiClient } from '@nocobase/app-client';
 import {
   useQuery,
@@ -40,12 +44,6 @@ export function useIssuePreviews(issueId: string): IssuePreviewsState {
     queryFn: () => readPreviews(api, issueId),
     refetchInterval: (state) => {
       const previews = state.state.data?.previews ?? [];
-      if (
-        state.state.data?.labels?.some(
-          (label) => label.failed || label.present === null,
-        )
-      )
-        return POLL_MS;
       if (previews.some(moving)) return POLL_MS;
       if ((state.state.data?.labels?.length ?? 0) > 0) return IDLE_POLL_MS;
       return previews.some((preview) => preview.status !== 'destroyed')

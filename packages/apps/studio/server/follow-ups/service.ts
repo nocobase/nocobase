@@ -27,7 +27,10 @@ import {
   type FollowUpsView,
 } from '../../shared/follow-ups.js';
 import { studioError } from '../http/errors.js';
-import { issueProgress } from '../agents/manager/progress.js';
+import {
+  issueProgress,
+  type ProgressMemo,
+} from '../agents/manager/progress.js';
 
 /** The part of the users plugin's preferences service this reads and writes. */
 export interface FollowUpPreferences {
@@ -130,12 +133,28 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
     since: string,
   ): Promise<number> {
     const after = Date.parse(since);
-    const { data } = await projects.issueQueries.activities(viewer, issueId, {
-      limit: UNREAD_MAX,
-    });
+    // The newest activities, as the issue's timeline reads them; the overview has checked the viewer sees the issue.
+    const data = await projects.tx
+      .read()
+      .repository<{
+        id: string;
+        issueId: string;
+        actorType: string;
+        actorId: string | null;
+        action: string;
+        createdAt: string | Date;
+      }>('pmActivities')
+      .findMany({
+        filter: { issueId },
+        sort: (sort) => [
+          sort.field('createdAt').desc(),
+          sort.field('id').desc(),
+        ],
+        limit: UNREAD_MAX,
+      });
     return data.filter(
       (activity) =>
-        Date.parse(activity.createdAt) > after &&
+        new Date(activity.createdAt).getTime() > after &&
         !QUIET_ACTIONS.has(activity.action) &&
         !(activity.actorType === 'user' && activity.actorId === viewer.userId),
     ).length;
@@ -159,7 +178,7 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
 
   /** The issue's id; 404 when the viewer cannot see it. */
   async function issueIdOf(viewer: Viewer, issueIdOrKey: string) {
-    const issue = await projects.issueQueries.detail(viewer, issueIdOrKey);
+    const issue = await projects.issueQueries.visible(viewer, issueIdOrKey);
     if (issue.deletedAt)
       throw studioError('NOT_FOUND', 'ISSUE_NOT_FOUND', 'Issue not found.');
     return issue.id;
@@ -232,6 +251,7 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
         }),
       ];
       const conn = projects.tx.read();
+      const memo: ProgressMemo = new Map();
       const summaries = await mapLimited(
         issues,
         async (issue): Promise<FollowUpIssue> => {
@@ -250,10 +270,13 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
             owned: isOwned,
             followed: isFollowed,
             progress: wantsProgress
-              ? await issueProgress({ agents, projects }, conn, issue, {
-                  userId: viewer.userId,
-                  seesMachines: false,
-                })
+              ? await issueProgress(
+                  { agents, projects },
+                  conn,
+                  issue,
+                  { userId: viewer.userId, seesMachines: false },
+                  memo,
+                )
               : null,
             unread: seenAt ? await unreadOf(viewer, issue.id, seenAt) : 0,
             seenAt,

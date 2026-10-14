@@ -11,6 +11,7 @@ import path from 'node:path';
 
 import { prepareDirs, RepoAccessFailure } from '../../core/checkout.ts';
 import { GitNetworkError } from '../../core/git-retry.ts';
+import { taskGit } from '../../core/task-git.ts';
 import { acceptedFailure } from '../../protocol/index.ts';
 import {
   PrepareError,
@@ -92,6 +93,27 @@ export const dirsStep: PrepareStep = {
     context.onRelease(() => prepared.release());
     context.dirs = prepared.dirs;
     for (const dir of prepared.dirs) {
+      const author = context.payload.workspace.git?.author;
+      if (
+        author &&
+        dir.repo?.localBranch &&
+        !context.payload.workspace.readOnly
+      ) {
+        // Keep the existing checkout configuration aligned with the identity passed to the tool.
+        // Finalization after a worker exit can then use it without a separate identity record.
+        await taskGit(dir.repo, [
+          'config',
+          '--worktree',
+          'user.name',
+          author.name,
+        ]);
+        await taskGit(dir.repo, [
+          'config',
+          '--worktree',
+          'user.email',
+          author.email,
+        ]);
+      }
       const where =
         dir.kind === 'repo' ? path.relative(workDir, dir.dir) : dir.dir;
       context.event({

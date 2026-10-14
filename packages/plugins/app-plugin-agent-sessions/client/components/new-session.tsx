@@ -51,6 +51,7 @@ import {
   ComputersDialog,
   ConnectSteps,
   KeepConnected,
+  OutdatedBridgeNotice,
 } from './computers-dialog.js';
 import { FolderBrowser } from './folder-browser.js';
 
@@ -151,6 +152,11 @@ export function NewSession(): ReactElement {
                 : t('newSession.offlineHint')}
             </p>
           </div>
+          {all
+            .filter((candidate) => candidate.outdatedBridge)
+            .map((candidate) => (
+              <OutdatedBridgeNotice key={candidate.id} computer={candidate} />
+            ))}
           <div className='rounded-[10px] border p-4 text-[13px]'>
             {all.length === 0 ? <ConnectSteps /> : <KeepConnected />}
           </div>
@@ -296,21 +302,23 @@ export function NewSession(): ReactElement {
                   onChoose={discovery.choose}
                 />
                 <span role='status' className='text-muted-foreground text-xs'>
-                  {!computer?.online
-                    ? t('newSession.settingsOffline')
-                    : discovery.loading
-                      ? t('newSession.settingsLoading')
-                      : discovery.error
-                        ? errorText(
-                            discovery.error,
-                            t('newSession.settingsFailed'),
-                          )
-                        : discovery.result?.status === 'unsupported'
-                          ? t('newSession.settingsUnsupported')
-                          : discovery.result &&
-                              offeredChoices(offered).length === 0
-                            ? t('newSession.settingsEmpty')
-                            : null}
+                  {computer?.outdatedBridge && !computer.online
+                    ? t('newSession.settingsOutdated')
+                    : !computer?.online
+                      ? t('newSession.settingsOffline')
+                      : discovery.loading
+                        ? t('newSession.settingsLoading')
+                        : discovery.error
+                          ? errorText(
+                              discovery.error,
+                              t('newSession.settingsFailed'),
+                            )
+                          : discovery.result?.status === 'unsupported'
+                            ? t('newSession.settingsUnsupported')
+                            : discovery.result &&
+                                offeredChoices(offered).length === 0
+                              ? t('newSession.settingsEmpty')
+                              : null}
                 </span>
                 {discovery.error && (
                   <Button variant='ghost' size='sm' onClick={discovery.retry}>
