@@ -1,3 +1,6 @@
+import { AgentSessionsProvider } from '@nocobase/app-plugin-agent-sessions/client';
+import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
+import { createElement, type PropsWithChildren } from 'react';
 import {
   defineClientReactProviders,
   type AppClientReactProviderDefinition,
@@ -14,8 +17,23 @@ import { ReleaseSystemLabels } from './releases/system-labels.js';
 import { StudioGitContributions } from './git/provider.js';
 import { AppThemeProvider } from './theme/theme-provider.js';
 
+function AgentSessionsApplication({ children }: PropsWithChildren) {
+  const { session } = useAuthentication();
+  return createElement(
+    AgentSessionsProvider,
+    { owner: session?.user.id ?? null },
+    children,
+  );
+}
+
 export const reactProviders: readonly AppClientReactProviderDefinition[] =
   defineClientReactProviders([
+    {
+      name: 'agent-sessions-cache',
+      layer: 'extension',
+      after: ['@nocobase/app-plugin-authentication:authentication'],
+      component: AgentSessionsApplication,
+    },
     {
       component: AppThemeProvider,
       layer: 'root',

@@ -302,7 +302,20 @@ export function useLiveSessions(): void {
       AGENT_SESSIONS_TOPIC,
       ({ payload }) => refresh(payload),
     );
-    const unsubscribeOpen = realtime.onOpen(() => refresh());
+    const connectionKey = ['agentSessions', 'discoveryConnection'];
+    client.setQueryData(connectionKey, realtime.connected);
+    const unsubscribeError = realtime.onError(() => {
+      client.setQueryData(connectionKey, false);
+      void client.cancelQueries({ queryKey: ['agentSessions', 'discovery'] });
+      void client.invalidateQueries({
+        queryKey: ['agentSessions', 'discovery'],
+        refetchType: 'none',
+      });
+    });
+    const unsubscribeOpen = realtime.onOpen(() => {
+      client.setQueryData(connectionKey, true);
+      refresh();
+    });
     const release = (): void => {
       disposed = true;
       for (const slot of slots.values()) clearTimeout(slot.timer);
@@ -313,6 +326,7 @@ export function useLiveSessions(): void {
       });
       unsubscribe();
       unsubscribeOpen();
+      unsubscribeError();
     };
     liveSubscriptions.set(client, { refs: 1, release });
     refresh();

@@ -5,3 +5,5 @@ export {
   agentSessionsRoute,
   type AgentSessionsRouteOptions,
 } from './routes.js';
+
+export { AgentSessionsProvider } from './application-provider.js';

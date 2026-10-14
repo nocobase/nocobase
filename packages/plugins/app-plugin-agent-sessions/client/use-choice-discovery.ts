@@ -1,6 +1,12 @@
-import { useApiClient } from '@nocobase/app-client';
+import {
+  useApiClient,
+  useService,
+  realtimeClientToken,
+} from '@nocobase/app-client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+
+import { useSessionMemory } from './use-session-memory.js';
 
 import { type DiscoveredChoices } from '../shared/api.js';
 
@@ -35,29 +41,31 @@ export function useChoiceDiscovery(
   },
 ): ChoiceDiscovery {
   const api = useApiClient();
+  const realtime = useService(realtimeClientToken);
+  const connection = useQuery<boolean>({
+    queryKey: ['agentSessions', 'discoveryConnection'],
+    queryFn: () => realtime.connected,
+    enabled: false,
+  });
+  const connected = connection.data !== false;
   const client = useQueryClient();
-  const [selection, setSelection] = useState({ key, settings: EMPTY });
+  const [settings, setSettings] = useSessionMemory<
+    Readonly<Record<string, string>>
+  >(`settings:${key}`, EMPTY);
   const [previous, setPrevious] = useState<{
     key: string;
     result: DiscoveredChoices;
   }>();
-  const settings = selection.key === key ? selection.settings : EMPTY;
-  if (selection.key !== key) {
-    setSelection({ key, settings: EMPTY });
-    setPrevious(undefined);
-  }
   const { computerId, agentId, cwd, enabled } = target;
   const query = useQuery({
     queryKey: [...discoveryKey, key, settings],
-    enabled,
+    enabled: enabled && connected,
     staleTime: DISCOVERY_CACHE_MS,
     retry: false,
     refetchOnWindowFocus: true,
-    queryFn: async ({ signal }) => {
+    queryFn: async () => {
       const controller = new AbortController();
-      const abort = (): void => controller.abort();
-      signal.addEventListener('abort', abort, { once: true });
-      if (signal.aborted) abort();
+      // Navigation must not cancel shared discovery; the explicit timeout bounds its lifetime.
       let timer: ReturnType<typeof setTimeout> | undefined;
       try {
         // The explicit race also bounds a transport that fails to settle on abort.
@@ -83,22 +91,21 @@ export function useChoiceDiscovery(
         ]);
       } finally {
         clearTimeout(timer);
-        signal.removeEventListener('abort', abort);
       }
     },
   });
-  if (query.data && previous?.result !== query.data)
+  if (query.data && (previous?.key !== key || previous.result !== query.data))
     setPrevious({ key, result: query.data });
 
   useEffect(() => {
     if (!enabled) {
-      void client.cancelQueries({ queryKey: discoveryKey });
+      void client.cancelQueries({ queryKey: [...discoveryKey, key] });
       void client.invalidateQueries({
-        queryKey: discoveryKey,
+        queryKey: [...discoveryKey, key],
         refetchType: 'none',
       });
     }
-  }, [client, enabled]);
+  }, [client, enabled, key]);
   useEffect(() => {
     if (!enabled || !query.dataUpdatedAt || query.isError) return;
     const timer = setTimeout(
@@ -114,15 +121,26 @@ export function useChoiceDiscovery(
   }, [client, enabled, key, settings, query.dataUpdatedAt, query.isError]);
 
   const fresh =
-    enabled && !query.isFetching && !query.isStale && !query.isError;
+    enabled &&
+    connected &&
+    !query.isFetching &&
+    !query.isStale &&
+    !query.isError;
   const displayed =
     enabled && previous?.key === key ? previous.result : undefined;
   return {
-    loading: enabled && (query.isPending || query.isFetching),
+    loading: enabled && connected && (query.isPending || query.isFetching),
     result: fresh ? query.data : undefined,
     displayed,
     settings,
-    error: enabled && query.isError ? query.error : undefined,
+    error:
+      enabled && !connected
+        ? new Error(
+            'The live connection is unavailable. Reconnect to refresh agent settings.',
+          )
+        : enabled && query.isError
+          ? query.error
+          : undefined,
     isCurrent: () => {
       const state = client.getQueryState<DiscoveredChoices>([
         ...discoveryKey,
@@ -131,6 +149,8 @@ export function useChoiceDiscovery(
       ]);
       return Boolean(
         enabled &&
+        client.getQueryData(['agentSessions', 'discoveryConnection']) !==
+          false &&
         state?.data &&
         state.data === query.data &&
         state.status === 'success' &&
@@ -140,6 +160,10 @@ export function useChoiceDiscovery(
       );
     },
     retry: () => {
+      if (!connected) {
+        realtime.reconnect();
+        return;
+      }
       void query.refetch();
     },
     choose: (id, value) => {
@@ -156,7 +180,7 @@ export function useChoiceDiscovery(
             ),
           )
         : settings;
-      setSelection({ key, settings: { ...kept, [id]: value } });
+      setSettings({ ...kept, [id]: value });
     },
   };
 }

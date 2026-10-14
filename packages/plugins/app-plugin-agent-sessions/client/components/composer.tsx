@@ -29,6 +29,7 @@ import {
 
 import type { PromptContent, Reference } from '../../shared/api.js';
 import { useMentions, type Mention } from '../api.js';
+import { useSessionMemory } from '../use-session-memory.js';
 import { StatusPill } from './status-pill.js';
 
 type Image = Extract<PromptContent, { type: 'image' }>;
@@ -37,6 +38,7 @@ type Pending = Image & { readonly id: string };
 
 export interface ComposerProps {
   readonly placeholder: string;
+  readonly draftKey?: string;
   readonly disabled?: boolean;
   /** Settings may still be loading while the draft remains editable. */
   readonly sendDisabled?: boolean;
@@ -92,6 +94,7 @@ const mentionText = (reference: Reference): string =>
 
 export function Composer({
   placeholder,
+  draftKey,
   disabled,
   sendDisabled,
   busy,
@@ -108,11 +111,17 @@ export function Composer({
   onSend,
 }: ComposerProps): ReactElement {
   const { t } = useTranslation();
-  const [text, setText] = useState('');
+  const [text, setText] = useSessionMemory(draftKey && `text:${draftKey}`, '');
   const [expanded, setExpanded] = useState(false);
   const [caret, setCaret] = useState(0);
-  const [images, setImages] = useState<Pending[]>([]);
-  const [mentioned, setMentioned] = useState<Reference[]>([]);
+  const [images, setImages] = useSessionMemory<Pending[]>(
+    draftKey && `images:${draftKey}`,
+    [],
+  );
+  const [mentioned, setMentioned] = useSessionMemory<Reference[]>(
+    draftKey && `mentions:${draftKey}`,
+    [],
+  );
   const [highlight, setHighlight] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const filesRef = useRef<HTMLInputElement>(null);

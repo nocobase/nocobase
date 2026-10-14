@@ -203,6 +203,7 @@ export function NewSession(): ReactElement {
           )}
           <Composer
             large
+            draftKey='new-session'
             autoFocus
             placeholder={t('newSession.placeholder')}
             sendDisabled={!ready}

@@ -85,9 +85,18 @@ async function setup() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  function Menu(): ReactElement {
+    const [shown, setShown] = useState(true);
+    return (
+      <>
+        <button onClick={() => setShown(!shown)}>Navigate</button>
+        {shown && <Probe />}
+      </>
+    );
+  }
   await renderWithApp(
     <QueryClientProvider client={client}>
-      <Probe />
+      <Menu />
     </QueryClientProvider>,
     {
       namespace: '@nocobase/app-plugin-agent-sessions',
@@ -110,6 +119,89 @@ async function setup() {
 }
 
 describe('choice discovery', () => {
+  it('shares a pending request through navigation and retains the selected model across ten returns', async () => {
+    const { requests, answer } = await setup();
+    fireEvent.click(screen.getByText('Navigate'));
+    fireEvent.click(screen.getByText('Navigate'));
+    expect(requests).toHaveLength(1);
+    await answer(0, { data: choice('First') });
+    await screen.findByText('First');
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
+    fireEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'Other' }),
+    );
+    await waitFor(() => expect(requests).toHaveLength(2));
+    await answer(1, { data: choice('other') });
+    for (let i = 0; i < 10; i++) {
+      fireEvent.click(screen.getByText('Navigate'));
+      fireEvent.click(screen.getByText('Navigate'));
+      await screen.findByText('other');
+      expect(screen.getByRole('button', { name: 'Send' })).not.toBeDisabled();
+    }
+    expect(requests).toHaveLength(2);
+  });
+
+  it('blocks cached settings while realtime is disconnected and revalidates without losing the model', async () => {
+    const { requests, answer, client } = await setup();
+    await answer(0, { data: choice('First') });
+    await screen.findByText('First');
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
+    fireEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'Other' }),
+    );
+    await waitFor(() => expect(requests).toHaveLength(2));
+    await answer(1, { data: choice('other') });
+    await act(async () => {
+      client.setQueryData(['agentSessions', 'discoveryConnection'], false);
+    });
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    expect(screen.getByText('Failure')).toBeInTheDocument();
+    await act(async () => {
+      void client.invalidateQueries({
+        queryKey: ['agentSessions', 'discovery'],
+        refetchType: 'none',
+      });
+      client.setQueryData(['agentSessions', 'discoveryConnection'], true);
+    });
+    await waitFor(() => expect(requests).toHaveLength(3));
+    expect(requests[2]!.call.json).toMatchObject({
+      settings: { model: 'other' },
+    });
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    await answer(2, { data: choice('other') });
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Send' })).not.toBeDisabled(),
+    );
+  });
+
+  it('bounds an unresponsive transport and retries without accepting its late response', async () => {
+    let expire: (() => void) | undefined;
+    const original = globalThis.setTimeout;
+    const timer = vi
+      .spyOn(globalThis, 'setTimeout')
+      .mockImplementation((handler, ms, ...args) => {
+        if (ms === 30_000 && typeof handler === 'function')
+          expire = () => handler(...args);
+        return original(handler, ms, ...args);
+      });
+    try {
+      const { requests, answer } = await setup();
+      await act(async () => {
+        expire?.();
+      });
+      await screen.findByText('Failure');
+      expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+      fireEvent.click(screen.getByText('Retry'));
+      await waitFor(() => expect(requests).toHaveLength(2));
+      await answer(0, { data: choice('Late') });
+      expect(screen.queryByText('Late')).toBeNull();
+      await answer(1, { data: choice('Retried') });
+      await screen.findByText('Retried');
+    } finally {
+      timer.mockRestore();
+    }
+  });
+
   it('checks expiration again at submission even before a stale timer rerenders', async () => {
     const { answer } = await setup();
     await answer(0, { data: choice('First') });
@@ -148,28 +240,27 @@ describe('choice discovery', () => {
     await screen.findByText('Refreshed');
   });
 
-  it('ignores delayed responses across A → B → A and clears settings on computer, agent and folder changes', async () => {
+  it('shares pending discovery across A → B → A and isolates settings on computer, agent and folder changes', async () => {
     const { requests, answer } = await setup();
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
     fireEvent.click(screen.getByText('Computer'));
     await waitFor(() => expect(requests).toHaveLength(2));
     fireEvent.click(screen.getByText('Computer'));
-    await waitFor(() => expect(requests).toHaveLength(3));
-    await answer(0, { data: choice('stale-A') });
+    expect(requests).toHaveLength(2);
     await answer(1, { data: choice('stale-B') });
-    expect(screen.queryByText('stale-A')).toBeNull();
+    expect(screen.queryByText('stale-B')).toBeNull();
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
-    await answer(2, { data: choice('fresh-A') });
+    await answer(0, { data: choice('fresh-A') });
     await screen.findByText('fresh-A');
     fireEvent.click(screen.getByRole('button', { name: 'fresh-A' }));
     fireEvent.click(
       await screen.findByRole('menuitemradio', { name: 'Other' }),
     );
-    await waitFor(() => expect(requests).toHaveLength(4));
-    expect(requests[3]!.call.json).toMatchObject({
+    await waitFor(() => expect(requests).toHaveLength(3));
+    expect(requests[2]!.call.json).toMatchObject({
       settings: { model: 'other' },
     });
-    await answer(3, { data: choice('other') });
+    await answer(2, { data: choice('other') });
     for (const name of ['Agent', 'Folder', 'Computer']) {
       const index = requests.length;
       fireEvent.click(screen.getByText(name));
