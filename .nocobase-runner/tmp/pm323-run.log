@@ -1,9 +1,0 @@
-
- RUN  v4.1.10 /home/zhou/.nocobase-runner-work/nb-studio/PM-323.run-391936777125893-1-bf3c6bfe-60d1-4221-bcd2-e4039228557a/nocobase/packages/plugins/app-plugin-mail
-
-
- Test Files  1 passed (1)
-      Tests  84 passed | 1 skipped (85)
-   Start at  14:44:29
-   Duration  39.17s (transform 1.97s, setup 316ms, import 6.49s, tests 31.13s, environment 1.02s)
-
