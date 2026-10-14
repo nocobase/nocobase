@@ -1151,6 +1151,31 @@ describe('Studio account upgrade recovery records', () => {
     });
     const scope = createStudioUserRoleScope(authz, access, 'root');
     const client = await database.connection().client<import('knex').Knex>();
+    let validating = false;
+    const bind = authz.permissionSets.withTransaction.bind(
+      authz.permissionSets,
+    );
+    const binding = vi
+      .spyOn(authz.permissionSets, 'withTransaction')
+      .mockImplementation((connection) => {
+        const api = bind(connection);
+        const replace = api.replaceSubjectAssignments.bind(api);
+        api.replaceSubjectAssignments = (input) => {
+          const validate = input.beforeReplace!;
+          return replace({
+            ...input,
+            beforeReplace: async () => {
+              validating = true;
+              try {
+                await validate();
+              } finally {
+                validating = false;
+              }
+            },
+          });
+        };
+        return api;
+      });
     const counts = {
       reads: 0,
       writes: 0,
@@ -1160,8 +1185,14 @@ describe('Studio account upgrade recovery records', () => {
       lockingReads: 0,
       begins: 0,
       commits: 0,
+      validation: { reads: 0, writes: 0, lockingReads: 0 },
     };
     const listener = ({ sql }: { sql: string }) => {
+      if (validating) {
+        if (/^select/i.test(sql)) counts.validation.reads++;
+        if (/^(insert|update|delete)/i.test(sql)) counts.validation.writes++;
+        if (/for update/i.test(sql)) counts.validation.lockingReads++;
+      }
       if (/^select/i.test(sql)) counts.reads++;
       if (/^(insert|update|delete)/i.test(sql)) counts.writes++;
       if (
@@ -1205,6 +1236,7 @@ describe('Studio account upgrade recovery records', () => {
       );
     } finally {
       client.off('query', listener);
+      binding.mockRestore();
     }
     expect(counts.lockOrder).toEqual([
       'permission-set',
