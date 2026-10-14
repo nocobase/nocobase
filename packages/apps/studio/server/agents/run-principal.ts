@@ -243,7 +243,13 @@ export function createRunPrincipal(deps: {
       const identity = runOfRequest(context);
       if (!identity?.agent) return undefined;
       const asker = await deps.askerOf(identity);
-      if (!asker) return { type: AGENT_KIND, id: identity.agent.id };
+      if (!asker)
+        return {
+          type: AGENT_KIND,
+          id: identity.agent.id,
+          via: 'agent',
+          trace: { agentId: identity.agent.id, runId: identity.run!.run.id },
+        };
       const actor = askerActor(asker);
       askers.set(actor, asker);
       return actor;

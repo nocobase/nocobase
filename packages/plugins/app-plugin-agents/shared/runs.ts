@@ -148,6 +148,10 @@ export interface Run {
   /** The run was asked to start a new session; absent on older servers. */
   readonly freshSession?: boolean;
   /** The person the run acts as: their permissions bound it, and only their own runners (or team runners) take it. */
+  /** Server-managed authorization for runs caused by one comment, never independent events. */
+  readonly commentRootRunId?: string | null;
+  readonly commentExecution?: 'owner' | 'requester' | null;
+  readonly commentOwnerKey?: string | null;
   readonly actorUserId: string;
   /**
    * Who the chain of work the run belongs to started with: the person whose action woke the agent, or for work a run
@@ -233,6 +237,7 @@ export interface RunChild {
 }
 
 export interface RunDetail extends Run {
+  readonly confirmedByName?: string;
   readonly actorName?: string;
   readonly requestedByName?: string;
   /** The first run that retried this one; absent on older servers. */
@@ -438,6 +443,11 @@ export interface RunRequestInput {
  * runs only once the responsible confirms it, as them, or when the person who asked runs it as themselves.
  */
 export interface RunRequest {
+  /** Personal runner consent releases an existing comment chain instead of creating another run. */
+  readonly purpose?: 'personalRunner' | null;
+  readonly commentRunId?: string | null;
+  readonly commentRootRunId?: string | null;
+  readonly commentOwnerKey?: string | null;
   readonly id: string;
   readonly agentId: string;
   readonly subject: { readonly kind: string; readonly id: string };

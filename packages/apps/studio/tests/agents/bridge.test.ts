@@ -235,7 +235,7 @@ describe('comments reach agents', () => {
     });
   });
 
-  it('appends another person’s comment to the manager working as the owner', async () => {
+  it('isolates another person’s comment from the manager already working as the owner', async () => {
     await h.createAgent();
     const issue = await openIssue(alice());
     await assign(issue);
@@ -244,25 +244,31 @@ describe('comments reach agents', () => {
       content: 'Use the v2 API.',
     });
     const work = await runsOf(issue.id);
-    expect(work).toHaveLength(1);
-    const next = work[0];
+    expect(work).toHaveLength(2);
+    const next = work.find((run) => run.id !== payload.run.id)!;
     expect(next).toMatchObject({
-      id: payload.run.id,
-      status: 'dispatched',
+      status: 'queued',
       actorUserId: 'alice',
+      requestedByUserId: 'bob',
+      commentRootRunId: next.id,
     });
     expect(
       (await h.agents.runs.detail(payload.run.id)).inputs.some(
         (input) => input.text === 'Use the v2 API.',
       ),
-    ).toBe(true);
+    ).toBe(false);
     expect((await h.agents.runs.detail(next.id)).inputs.at(-1)).toMatchObject({
       type: 'comment',
       text: 'Use the v2 API.',
       actor: { id: 'bob' },
     });
-    const workload = await h.agents.runs.workload({ subjectKind: 'issue' });
-    expect(workload.runs.find((run) => run.id === next.id)?.wait).toBeNull();
+    // Compatible team runners can take the new chain after the current work ends, without a personal decision.
+    expect(
+      await h.agents.runs.requests.pendingOn(h.database.connection(), {
+        kind: 'issue',
+        id: issue.id,
+      }),
+    ).toEqual([]);
   });
 
   it('wakes a mentioned agent, and refuses mentioning one that takes no work', async () => {

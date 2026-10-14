@@ -120,6 +120,7 @@ const enUS = {
   runTranscript: {
     usedModel: 'Model: {{model}}',
     defaultModel: 'Default model',
+    confirmedBy: 'Confirmed by {{person}}',
     actingAs: 'Running as {{actor}}',
     triggeredBy: 'Triggered by {{person}}',
     systemTrigger: 'Triggered by the system',
