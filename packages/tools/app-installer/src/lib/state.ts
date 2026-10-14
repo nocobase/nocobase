@@ -48,8 +48,10 @@ export interface HistoryEntry {
   at: string;
   /** `rolled-back` for an upgrade that failed after the switch and was undone. */
   outcome?: 'completed' | 'rolled-back';
-  /** Migration and seed tasks the upgrade applied; a rollback restores the database only when this is above zero. */
+  /** Migration and seed tasks the upgrade applied. */
   migrations?: number;
+  /** Checksums the upgrade may have repaired; also requires database restoration, even without migrations. */
+  checksumRepairs?: number;
   /** Backup directory, relative to the root, taken before the upgrade migrated anything. */
   backup?: string;
   databaseRestored?: boolean;
@@ -78,7 +80,8 @@ export interface PendingOperation {
 
 /** `installer.json`: what the installer knows about the application it manages. */
 export interface InstallerState {
-  schemaVersion: 1;
+  /** Version 2 requires rollback to account for checksum repairs, which older installers would ignore. */
+  schemaVersion: 1 | 2;
   /** The application's `package.json` name, which owns its migration history; every release must carry the same. */
   appName: string;
   /**
@@ -122,7 +125,7 @@ export async function readState(layout: Layout): Promise<InstallerState> {
     throw error;
   }
   const state = JSON.parse(text) as InstallerState;
-  if (state.schemaVersion !== 1) {
+  if (state.schemaVersion !== 1 && state.schemaVersion !== 2) {
     throw new InstallerError(
       'STATE_UNSUPPORTED',
       `installer.json has schemaVersion ${String(state.schemaVersion)}, which this app-installer does not understand.`,
