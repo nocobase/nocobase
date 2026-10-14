@@ -40,3 +40,7 @@ export interface PasswordResetInput {
 export interface PasswordResetRequestActionState extends AuthenticationActionState<PasswordResetRequestInput> {
   readonly isSuccess: boolean;
 }
+
+export interface PasswordResetActionState extends AuthenticationActionState<PasswordResetInput> {
+  readonly isSuccess: boolean;
+}

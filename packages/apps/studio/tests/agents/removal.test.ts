@@ -1,11 +1,13 @@
 // @vitest-environment node
 /**
- * An agent archived or deleted lets go of its work: its queued runs are withdrawn, and Studio clears it as executor of
- * every unfinished issue, recording "Executor X was removed" in the name of the person who removed it.
+ * An agent disabled lets go of its work: its queued runs are withdrawn, and Studio clears it as executor of every
+ * unfinished issue an earlier version gave it, recording "Executor X was removed" in the name of the person who
+ * disabled it. The project manager's issues are left alone.
  */
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 
 let h: BridgeHarness;
@@ -17,43 +19,51 @@ afterEach(() => h.close());
 
 const alice = () => h.viewer('alice');
 
-async function assigned(title: string, agentId: string): Promise<Issue> {
-  return h.projects.issues.create(alice(), {
+/** An issue an earlier version gave to `agentId` directly: only the project manager executes issues now. */
+async function executedBy(
+  title: string,
+  agentId: string,
+  statusKey = 'in_progress',
+): Promise<Issue> {
+  const issue = await h.projects.issues.create(alice(), {
     title,
-    executor: { type: 'agent', id: agentId },
+    executor: null,
   });
+  await h.database
+    .connection()
+    .repository('pmIssues')
+    .updateMany({
+      filter: { id: issue.id },
+      values: { executorType: 'agent', executorId: agentId, statusKey },
+    });
+  return issue;
 }
 
 async function executorOf(issueId: string) {
   return (await h.projects.issueQueries.detail(alice(), issueId)).executor;
 }
 
-describe('removing an agent', () => {
-  it('clears it as executor of unfinished issues, with an activity entry, and withdraws its queued runs', async () => {
-    const agentId = await h.createAgent({ name: 'Builder' });
-    const open = await assigned('Open', agentId);
-    const finished = await assigned('Finished', agentId);
-    await h.database
-      .connection()
-      .repository('pmIssues')
-      .updateMany({
-        filter: { id: finished.id },
-        values: { statusKey: 'done' },
-      });
-    const [queued] = await h.agents.runs.list({
-      subjectKind: 'issue',
-      subjectId: open.id,
-    });
-    expect(queued?.status).toBe('queued');
+async function disable(agentId: string, byUserId: string): Promise<void> {
+  const agent = await h.agents.agents.get(agentId);
+  await h.agents.agents.update(agentId, byUserId, {
+    enabled: false,
+    expectedRevision: agent.revision,
+  });
+}
 
-    await h.agents.agents.archive(agentId, 'bob');
+describe('disabling an agent', () => {
+  it('clears it as executor of unfinished issues, with an activity entry', async () => {
+    const agentId = await h.createAgent({ name: 'Builder' });
+    const open = await executedBy('Open', agentId);
+    const finished = await executedBy('Finished', agentId, 'done');
+
+    await disable(agentId, 'bob');
 
     await vi.waitFor(async () => expect(await executorOf(open.id)).toBeNull());
     expect(await executorOf(finished.id)).toEqual({
       type: 'agent',
       id: agentId,
     });
-    expect((await h.agents.runs.get(queued!.id)).status).toBe('cancelled');
     const activities = await h.projects.issueQueries.activities(
       alice(),
       open.id,
@@ -76,23 +86,32 @@ describe('removing an agent', () => {
     });
   });
 
-  it('lets go again when the agent is deleted, leaving nothing assigned to it', async () => {
+  it('withdraws its queued step and leaves the project manager on its issues', async () => {
+    await h.createAgent({ name: 'Coder' });
     const agentId = await h.createAgent({ name: 'Builder' });
-    const issue = await assigned('Open', agentId);
-    await h.agents.agents.archive(agentId, 'alice');
-    await vi.waitFor(async () => expect(await executorOf(issue.id)).toBeNull());
-    await h.agents.agents.remove(agentId, 'alice');
-    // Deleting finds nothing left to clear and records nothing more.
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    const activities = await h.projects.issueQueries.activities(
-      alice(),
-      issue.id,
-      {},
+    const issue = await h.projects.issues.create(alice(), {
+      title: 'Open',
+      statusKey: 'in_progress',
+      executor: { type: 'agent', id: PROJECT_MANAGER_ID },
+      start: false,
+    });
+    await h.projects.comments.create(alice(), issue.id, {
+      content: `[@Builder](mention://agent/${agentId}) build it`,
+    });
+    const step = (
+      await h.agents.runs.list({ subjectKind: 'issue', subjectId: issue.id })
+    ).find((run) => run.agentId === agentId);
+    expect(step?.status).toBe('queued');
+
+    await disable(agentId, 'alice');
+
+    await vi.waitFor(async () =>
+      expect((await h.agents.runs.get(step!.id)).status).toBe('cancelled'),
     );
-    expect(
-      activities.data.filter(
-        (activity) => activity.details.reason === 'executorRemoved',
-      ),
-    ).toHaveLength(1);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(await executorOf(issue.id)).toEqual({
+      type: 'agent',
+      id: PROJECT_MANAGER_ID,
+    });
   });
 });

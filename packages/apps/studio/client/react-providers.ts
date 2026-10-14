@@ -5,7 +5,6 @@ import {
 
 import { Toaster } from '@/components/ui/toast';
 
-import { AgentWorkflowRules } from './agents/workflow-rules.js';
 import { AgentIntakeWaitFormat } from './agents/intake-wait-format.js';
 import { ReleaseActorNames } from './releases/actor-names.js';
 import { ReleaseDeleteAppImpact } from './releases/delete-app-impact.js';
@@ -60,23 +59,15 @@ export const reactProviders: readonly AppClientReactProviderDefinition[] =
       layer: 'application',
       name: 'release-system-labels',
     },
-    // The agents plugin's status rules (run an agent, suggest an executor) in the projects plugin's workflow editor.
-    {
-      component: AgentWorkflowRules,
-      layer: 'application',
-      name: 'agent-workflow-rules',
-    },
     {
       component: AgentIntakeWaitFormat,
       layer: 'application',
       name: 'agent-intake-wait-format',
     },
-    // Studio's pull requests, added to the slots above: the `studio.merged` event and `prMerged` condition in the
-    // workflow editor.
+    // Studio's pull requests: the `studio.merged` status event's title.
     {
       component: StudioGitContributions,
       layer: 'application',
-      // Inside the agents' providers (listed first, so outer), whose rules it adds to.
       name: 'studio-git',
     },
   ]);

@@ -2,24 +2,31 @@
   {
     "type": "file",
     "name": "index",
-    "label": "概览"
+    "label": "认证概览"
   },
   {
-    "type": "dir",
-    "name": "methods",
-    "label": "认证方式",
-    "collapsed": true
+    "type": "file",
+    "name": "password",
+    "label": "密码认证与账号"
   },
   {
-    "type": "dir",
-    "name": "custom",
-    "label": "自定义",
-    "collapsed": true
+    "type": "file",
+    "name": "api-keys",
+    "label": "API keys"
   },
   {
-    "type": "dir",
-    "name": "advanced",
-    "label": "高级使用",
-    "collapsed": true
+    "type": "file",
+    "name": "sign-in-methods",
+    "label": "增加认证方式"
+  },
+  {
+    "type": "file",
+    "name": "protecting-access",
+    "label": "保护页面和接口"
+  },
+  {
+    "type": "file",
+    "name": "login-pages",
+    "label": "定制登录页面"
   }
 ]

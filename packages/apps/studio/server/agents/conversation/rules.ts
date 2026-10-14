@@ -3,9 +3,6 @@
  * conversation rather than in issue comments and gives work to agents only through a plan (two rules), and how it
  * reads and changes projects and issues for the person, within the direct-write quota (`quota.ts`), proposing an
  * operation plan for anything bigger (sections). Rendered in English; the agent answers in the person's language.
- *
- * The commands are named the same in both dialects (`commandRef`): a runner agent runs `nb-studio` in its terminal, an online
- * agent in its sandboxed shell, where it writes a JSON file under `/tmp` instead of its working directory.
  */
 import { PLAN_ROWS_MAX } from '@nocobase/app-plugin-projects/shared/plans';
 import { PRIORITIES } from '@nocobase/app-plugin-projects/shared/common';
@@ -13,11 +10,10 @@ import { PRIORITIES } from '@nocobase/app-plugin-projects/shared/common';
 import type { ConfirmChanges } from '@nocobase/app-plugin-agents/shared/agents';
 import {
   commandRef,
-  type CommandDialect,
-  type ConsultationRules,
   type ConversationRuleLines,
   type ConversationRules,
 } from '@nocobase/app-plugin-agents/server/tokens';
+import { PROJECT_MANAGER_ID } from '../../../shared/project-manager.js';
 import { INTAKE_SOURCE } from '../catalog/sources.js';
 import { DIRECT_WRITE_LIMIT } from './quota.js';
 
@@ -42,24 +38,21 @@ const PLAN_EXAMPLE = JSON.stringify({
         title: 'Build the login form',
         parentIssueId: 'PM-12',
         blockedBy: [{ ref: 'spec' }],
-        executor: { type: 'agent', id: '<agent id from agent list>' },
+        executor: { type: 'agent', id: PROJECT_MANAGER_ID },
       },
     },
   ],
 });
 
 /** How an agent proposes an operation plan, and the plan's format with an example. */
-function planLines(
-  cli: string,
-  dialect: CommandDialect,
-): { readonly propose: string; readonly format: readonly string[] } {
+function planLines(cli: string): {
+  readonly propose: string;
+  readonly format: readonly string[];
+} {
   return {
-    propose:
-      dialect === 'tools'
-        ? `propose an operation plan: write it as JSON to a file under /tmp and run \`${cli} plan create --file /tmp/plan.json\`.`
-        : `propose an operation plan: write it as JSON to a file in your working directory and run \`${cli} plan create --file plan.json\`.`,
+    propose: `propose an operation plan: write it as JSON to a file in your working directory and run \`${cli} plan create --file plan.json\`.`,
     format: [
-      `- A plan is \`{"title", "description"?, "rows": [{"op", "params", "ref"?}]}\` with 1 to ${PLAN_ROWS_MAX} rows, run in order. Operations: \`issue.create\` {title, description?, projectId?, parentIssueId?, stage?, statusKey?, priority?, ownerUserId?, executor?, labelIds?, startDate?, dueDate?, blockedBy?, start?}; \`issue.update\` {issue, set: {title?, description?, statusKey?, priority?, ownerUserId?, executor?, parentIssueId?, stage?, projectId?, startDate?, dueDate?, labelIds?}, start?}; \`comment.create\` {issue, content, parentId?}; \`dependency\` {action: "add" | "remove", issue, dependsOn, type?: "blockedBy" | "relatedTo"}; \`project.create\` {name, description?, visibility?, priority?, leadUserId?, startDate?, dueDate?, workflowId?}. An issue is named by its id, its identifier (PM-12) or \`{"ref": "<ref of an earlier row>"}\`; a project by its id or a ref. \`executor\` is \`{"type": "user" | "agent", "id"}\` or null; \`priority\` is one of ${PRIORITIES.join(', ')}. Unknown fields are refused.`,
+      `- A plan is \`{"title", "description"?, "rows": [{"op", "params", "ref"?}]}\` with 1 to ${PLAN_ROWS_MAX} rows, run in order. Operations: \`issue.create\` {title, description?, projectId?, parentIssueId?, stage?, statusKey?, priority?, ownerUserId?, executor?, labelIds?, startDate?, dueDate?, blockedBy?, start?}; \`issue.update\` {issue, set: {title?, description?, statusKey?, priority?, ownerUserId?, executor?, parentIssueId?, stage?, projectId?, startDate?, dueDate?, labelIds?}, start?}; \`comment.create\` {issue, content, parentId?}; \`dependency\` {action: "add" | "remove", issue, dependsOn, type?: "blockedBy" | "relatedTo"}; \`project.create\` {name, description?, visibility?, priority?, leadUserId?, startDate?, dueDate?}. An issue is named by its id, its identifier (PM-12) or \`{"ref": "<ref of an earlier row>"}\`; a project by its id or a ref. \`executor\` is \`{"type": "user" | "agent", "id"}\` or null; \`priority\` is one of ${PRIORITIES.join(', ')}. Unknown fields are refused.`,
       `- Example: \`${PLAN_EXAMPLE}\``,
       `- A plan is rehearsed when you create it: if a row would fail, nothing is stored and the command fails (exit code 5) with every row's check in the error's details; fix those rows and create it again.`,
     ],
@@ -69,18 +62,15 @@ function planLines(
 export function projectRules(input: {
   readonly ownerName: string;
   readonly cli: string;
-  /** `cli` when absent. */
-  readonly dialect?: CommandDialect;
   /** The agent's `confirmChanges`: `always` sends every change through a plan. */
   readonly confirmChanges: ConfirmChanges;
   readonly intake: boolean;
 }): string[][] {
   const { ownerName: owner, cli } = input;
-  const dialect = input.dialect ?? 'cli';
-  const cmd = (id: string, flag?: string) => commandRef(dialect, cli, id, flag);
+  const cmd = (id: string, flag?: string) => commandRef(cli, id, flag);
   const refused =
     'refused with exit code 7 (`PLAN_REQUIRED`, the reasons in the error)';
-  const plan = planLines(cli, dialect);
+  const plan = planLines(cli);
   const proposePlan = plan.propose;
   const sections: string[][] = [
     [
@@ -92,8 +82,8 @@ export function projectRules(input: {
       ...plan.format,
       `- When ${owner} executes your plan (or it fails), you are woken with a "Plan decided" input listing each row's result. Report what actually happened, briefly; never redo what the plan did.`,
       `- Once ${owner} executes a plan that gives an issue to an agent, this conversation follows it: when that agent's run ends, it needs input or asks for review, the issue is finished or closed, or a pull request is linked, you are woken with "News about work handed over" and ${owner} sees a card of it. Tell ${owner} briefly what it means and the next step; the same rules apply to anything you change then.`,
-      `- Only through a plan may an agent be given work: never ask another agent to do something yourself (asking an agent you may consult a question is not giving it work). Pick executors from ${cmd('agent:list')} by what each is good at (only runner agents execute issues), and the team's people.`,
-      '- Approvals, deletions, permissions and settings are not yours to change: give the page link instead.',
+      `- Only through a plan may an agent be given work: never ask another agent to do something yourself. An issue for agents is executed by the project manager (\`${PROJECT_MANAGER_ID}\`), which hands the work to the agents in ${cmd('agent:list')} by what each is good at; otherwise pick one of the team's people.`,
+      '- Deletions, permissions and settings are not yours to change: give the page link instead.',
     ],
   ];
   if (input.intake)
@@ -105,37 +95,16 @@ export function projectRules(input: {
   return sections;
 }
 
-/**
- * What a consulted agent is told of Studio (`ConsultationRules`): it changes nothing, but may propose an operation plan,
- * which the person confirms in the conversation that asked.
- */
-export function consultationRules(): ConsultationRules {
-  return (_conn, context): Promise<ConversationRuleLines> => {
-    const owner = context.ownerName;
-    const plan = planLines(context.cli, context.dialect);
-    return Promise.resolve({
-      sections: [
-        [
-          `Proposing a change for ${owner}:`,
-          `- To have something changed, ${plan.propose} ${owner} reviews it on a card in the conversation that asked you and executes it; until then nothing of it is applied. Say in your answer what you proposed.`,
-          ...plan.format,
-          '- Approvals, deletions, permissions and settings are not yours to change: say so in your answer instead.',
-        ],
-      ],
-    });
-  };
-}
-
 /** The rules Studio registers with the conversations. */
 export function conversationRules(): ConversationRules {
-  return async (_conn, context): Promise<ConversationRuleLines> => ({
-    rules: CONVERSATION_RULES,
-    sections: projectRules({
-      ownerName: context.ownerName,
-      cli: context.cli,
-      dialect: context.dialect,
-      confirmChanges: context.agent.confirmChanges,
-      intake: context.conversation.source === INTAKE_SOURCE,
-    }),
-  });
+  return (_conn, context): Promise<ConversationRuleLines> =>
+    Promise.resolve({
+      rules: CONVERSATION_RULES,
+      sections: projectRules({
+        ownerName: context.ownerName,
+        cli: context.cli,
+        confirmChanges: context.agent.confirmChanges,
+        intake: context.conversation.source === INTAKE_SOURCE,
+      }),
+    });
 }

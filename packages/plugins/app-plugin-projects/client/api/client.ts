@@ -6,12 +6,7 @@
 import type { ApiClient } from '@nocobase/app-client';
 
 import type { Page } from '../../shared/common.js';
-import type { ApprovalRequest } from '../../shared/approvals.js';
 import type { Attachment } from '../../shared/attachments.js';
-import type {
-  IssueChecklist,
-  UpdateChecklistItemRequest,
-} from '../../shared/checklists.js';
 import {
   THREAD_PAGE_LIMIT,
   type CommentReaction,
@@ -35,7 +30,6 @@ import {
   type CreateIssueRequest,
   type Issue,
   type IssueBoard,
-  type IssueStarts,
   type IssueDetail,
   type IssueListItem,
   type IssueListQuery,
@@ -67,16 +61,10 @@ import type {
 import type {
   AddDependencyRequest,
   IssueDependency,
+  UpdateDependencyRequest,
 } from '../../shared/subtasks.js';
 import type { UserRef } from '../../shared/common.js';
 import type { SubscriptionState } from '../../shared/subscriptions.js';
-import type {
-  CreateWorkflowRequest,
-  UpdateWorkflowRequest,
-  WorkflowDefinition,
-  WorkflowListItem,
-  WorkflowPreview,
-} from '../../shared/workflows.js';
 
 type Method = 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 type Query = Readonly<Record<string, string | number | boolean | undefined>>;
@@ -197,47 +185,6 @@ export class PmApi {
     return this.send(`projects/labels/${id(labelId)}`, 'DELETE');
   }
 
-  // Workflows
-
-  public workflows(): Promise<WorkflowListItem[]> {
-    return this.get('projects/workflows');
-  }
-
-  public workflow(workflowId: string): Promise<WorkflowListItem> {
-    return this.get(`projects/workflows/${id(workflowId)}`);
-  }
-
-  public createWorkflow(
-    input: CreateWorkflowRequest,
-  ): Promise<WorkflowListItem> {
-    return this.send('projects/workflows', 'POST', input);
-  }
-
-  public updateWorkflow(
-    workflowId: string,
-    input: UpdateWorkflowRequest,
-  ): Promise<WorkflowListItem> {
-    return this.send(`projects/workflows/${id(workflowId)}`, 'PATCH', input);
-  }
-
-  /** What saving `definition` would change in the workflow's rules; nothing is written. */
-  public previewWorkflow(
-    workflowId: string,
-    definition: WorkflowDefinition,
-  ): Promise<WorkflowPreview> {
-    return this.send(`projects/workflows/${id(workflowId)}/preview`, 'POST', {
-      definition,
-    });
-  }
-
-  public setDefaultWorkflow(workflowId: string): Promise<WorkflowListItem> {
-    return this.send(`projects/workflows/${id(workflowId)}/setDefault`, 'POST');
-  }
-
-  public deleteWorkflow(workflowId: string): Promise<void> {
-    return this.send(`projects/workflows/${id(workflowId)}`, 'DELETE');
-  }
-
   // Projects
 
   public projects(): Promise<ProjectListItem[]> {
@@ -308,14 +255,9 @@ export class PmApi {
 
   // Issues
 
-  /** The statuses of a project's workflow; without a project, those of issues without one. */
-  public statuses(projectId?: string | null): Promise<StatusDefinition[]> {
-    return this.get('projects/issues/statuses', projectId ? { projectId } : {});
-  }
-
-  /** The ways a new issue may start in a project's workflow; without a project, in that of issues without one. */
-  public starts(projectId?: string | null): Promise<IssueStarts> {
-    return this.get('projects/issues/starts', projectId ? { projectId } : {});
+  /** The fixed statuses, in order. */
+  public statuses(): Promise<StatusDefinition[]> {
+    return this.get('projects/issues/statuses');
   }
 
   public issuePage(query: IssueListQuery): Promise<Page<IssueListItem>> {
@@ -346,7 +288,7 @@ export class PmApi {
     return this.send('projects/issues', 'POST', input);
   }
 
-  /** The issue after the change; with `pendingApproval`, unchanged because the status change waits for approval. */
+  /** The issue after the change. */
   public updateIssue(
     issueId: string,
     input: UpdateIssueRequest,
@@ -362,29 +304,6 @@ export class PmApi {
     return this.send(`projects/issues/${id(issueId)}/restore`, 'POST');
   }
 
-  // Approvals
-
-  /** The status changes waiting for the caller's approval. */
-  public approvals(): Promise<ApprovalRequest[]> {
-    return this.get('projects/approvals');
-  }
-
-  public decideApproval(
-    requestId: string,
-    decision: 'approve' | 'reject',
-    comment?: string,
-  ): Promise<ApprovalRequest> {
-    return this.send(
-      `projects/approvals/${id(requestId)}/${decision}`,
-      'POST',
-      comment ? { comment } : {},
-    );
-  }
-
-  public withdrawApproval(requestId: string): Promise<ApprovalRequest> {
-    return this.send(`projects/approvals/${id(requestId)}/withdraw`, 'POST');
-  }
-
   /** Makes the issue wait for (`blockedBy`, the default) or link to (`relatedTo`) another; answers the link. */
   public addDependency(
     issueId: string,
@@ -393,6 +312,19 @@ export class PmApi {
     return this.send(
       `projects/issues/${id(issueId)}/dependencies`,
       'POST',
+      input,
+    );
+  }
+
+  /** Converts a relationship atomically, keeping its id and checking the type the caller read. */
+  public updateDependency(
+    issueId: string,
+    dependencyId: string,
+    input: UpdateDependencyRequest,
+  ): Promise<IssueDependency> {
+    return this.send(
+      `projects/issues/${id(issueId)}/dependencies/${id(dependencyId)}`,
+      'PATCH',
       input,
     );
   }
@@ -416,20 +348,6 @@ export class PmApi {
     return this.send(
       `projects/issues/${id(issueId)}/dependencies/${id(dependencyId)}`,
       'DELETE',
-    );
-  }
-
-  /** Checks or unchecks one item of the issue's checklist of `statusKey`; answers that checklist. */
-  public setChecklistItem(
-    issueId: string,
-    statusKey: string,
-    itemKey: string,
-    input: UpdateChecklistItemRequest,
-  ): Promise<IssueChecklist> {
-    return this.send(
-      `projects/issues/${id(issueId)}/checklists/${id(statusKey)}/items/${id(itemKey)}`,
-      'PATCH',
-      input,
     );
   }
 

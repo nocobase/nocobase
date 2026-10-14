@@ -1,17 +1,20 @@
 /**
  * A runner's working directories (`RUNNER_ROUTES.workspaces`): the runner reports each one with the last run that
  * worked in it, and is told which may go. A run tells its subject, and the subject's binding tells whether the work on
- * it is over (`SubjectBinding.workspaces.settled`); a kind without that member never counts as over. Only the runner's
- * own runs are answered for, so a runner cannot learn about, or have removed, what another runner worked on.
+ * it is over (`SubjectBinding.workspaces.settled`); a kind without that member never counts as over. A directory
+ * whose run is unknown, or that names no run, is named by its subject's key (`SubjectBinding.workspaces.resolveKeys`).
+ * Which runner worked in it is not checked: the work on a subject is over for every runner at once, and a directory
+ * of it goes wherever it is, so old directories nobody recorded a run for do not pile up. A subject a run has not
+ * finished on, on any runner, is never over.
  *
  * The report is kept on the runner (`agRunners.workspaceUsage`) for the runtimes pages, with what was decided for each
- * directory and the free space on the disk holding them. Whether a branch was merged is never judged here; the binding decides from the application's own records,
- * so a branch merged with a squash counts once its subject's work is over.
+ * directory and the free space on the disk holding them. Whether a branch was merged or pushed is never judged here:
+ * a directory of a subject whose work is over goes on that alone.
  */
 import {
   TERMINAL_RUN_STATUSES,
   WORKSPACE_REPORT_INTERVAL_MS,
-  WorkspaceCommitEvidenceSchema,
+  type WorkspaceCommitEvidence,
   type WorkspaceDecision,
   type WorkspaceDirectoryReport,
   type WorkspaceReporting,
@@ -26,10 +29,10 @@ import type {
   RunnerWorkspaceUsage,
 } from '../../shared/runners.js';
 import type { SubjectRegistry } from '../core/runs/ports.js';
-import { runsRepo, toExecutions } from '../core/runs/run.store.js';
+import { runsRepo } from '../core/runs/run.store.js';
 import type { Clock } from '../kernel/clock.js';
 import type { TxRunner } from '../kernel/tx.js';
-import { runnersRepo } from './runner.store.js';
+import { runnersRepo, storedWorkspaceUsage } from './runner.store.js';
 
 export interface RunnerWorkspaces {
   /** What a heartbeat answer announces: this application accepts workspace reports. */
@@ -57,10 +60,9 @@ interface RunSubject {
   readonly subjectId: string;
 }
 
-/** Of `runIds`, the ones `runnerId` worked on, with their subjects. */
-async function ownRuns(
+/** Of `runIds`, the ones Studio knows, with their subjects, whichever runner worked on them. */
+async function knownRuns(
   conn: DatabaseConnection,
-  runnerId: string,
   runIds: readonly string[],
 ): Promise<Map<string, RunSubject>> {
   const found = new Map<string, RunSubject>();
@@ -70,13 +72,6 @@ async function ownRuns(
       filter: (f) => f.and([f.or(chunk.map((id) => f.string('id').eq(id)))]),
     });
     for (const record of records) {
-      if (
-        record.runnerId !== runnerId &&
-        !toExecutions(record.executionHistory).some(
-          (execution) => execution.runnerId === runnerId,
-        )
-      )
-        continue;
       found.set(record.id, {
         subjectKind: record.subjectKind,
         subjectId: record.subjectId,
@@ -165,23 +160,25 @@ export function createRunnerWorkspaces(
           ...workspace,
           subjectKey: '',
         }));
-      const runs = await ownRuns(
+      const runs = await knownRuns(
         conn,
-        runner.id,
         reports.flatMap((workspace) =>
           workspace.runId === undefined ? [] : [workspace.runId],
         ),
       );
-      const legacy = new Map<string, RunSubject>();
+      // A directory without a known run, recorded before runs were, or whose run is gone, goes by its subject's key.
+      const byKey = new Map<string, RunSubject>();
       const failures = new Map<string, WorkspaceDecision['reason']>();
+      const resolving = subjects
+        .list()
+        .some((binding) => binding.workspaces?.resolveKeys !== undefined);
       for (const workspace of reports) {
-        if (workspace.runId !== undefined) continue;
-        if (
-          !subjects
-            .list()
-            .some((binding) => binding.workspaces?.resolveKeys !== undefined)
-        ) {
-          failures.set(workspace.workDir, 'bindingUnavailable');
+        if (workspace.runId !== undefined && runs.has(workspace.runId))
+          continue;
+        if (workspace.subjectKey === '') continue;
+        if (!resolving) {
+          if (workspace.runId === undefined)
+            failures.set(workspace.workDir, 'bindingUnavailable');
           continue;
         }
         const candidates: RunSubject[] = [];
@@ -202,31 +199,12 @@ export function createRunnerWorkspaces(
           );
           continue;
         }
-        const candidate = candidates[0];
-        const records = await runsRepo(conn).findMany({
-          filter: {
-            subjectKind: candidate.subjectKind,
-            subjectId: candidate.subjectId,
-          },
-        });
-        if (
-          !records.some(
-            (record) =>
-              record.runnerId === runner.id ||
-              toExecutions(record.executionHistory).some(
-                (execution) => execution.runnerId === runner.id,
-              ),
-          )
-        ) {
-          failures.set(workspace.workDir, 'ownershipUnknown');
-          continue;
-        }
-        legacy.set(workspace.workDir, candidate);
+        byKey.set(workspace.workDir, candidates[0]);
       }
       const settled = await settledSubjects(
         conn,
         subjects,
-        new Map([...runs, ...legacy]),
+        new Map([...runs, ...byKey]),
       );
       const remove: string[] = [];
       const keep: string[] = [];
@@ -234,40 +212,25 @@ export function createRunnerWorkspaces(
       const workspaces: RunnerWorkspace[] = [];
       for (const workspace of reports) {
         const run =
-          workspace.runId === undefined
-            ? legacy.get(workspace.workDir)
-            : runs.get(workspace.runId);
+          (workspace.runId === undefined
+            ? undefined
+            : runs.get(workspace.runId)) ?? byKey.get(workspace.workDir);
         const kind =
           run === undefined ? undefined : settled.get(run.subjectKind);
         const ended =
           run === undefined || kind === undefined
             ? null
             : kind.has(run.subjectId);
-        let reason: WorkspaceDecision['reason'] =
-          ended === true
-            ? 'settled'
-            : ended === false
-              ? 'active'
-              : 'bindingUnavailable';
-        if (run === undefined) {
-          reason = failures.get(workspace.workDir) ?? 'runNotFound';
-          if (
-            workspace.runId !== undefined &&
-            (await runsRepo(conn).findOne({ filter: { id: workspace.runId } }))
-          )
-            reason = 'ownershipUnknown';
-        }
-        const evidence =
-          ended === true && run !== undefined
-            ? ((
-                await subjects
-                  .get(run.subjectKind)
-                  ?.workspaces?.commits?.(conn, [run.subjectId])
-              )?.get(run.subjectId) ?? [])
-            : [];
-        const commits = evidence.filter(
-          (item) => WorkspaceCommitEvidenceSchema.safeParse(item).success,
-        );
+        const reason: WorkspaceDecision['reason'] =
+          run === undefined
+            ? (failures.get(workspace.workDir) ?? 'runNotFound')
+            : ended === true
+              ? 'settled'
+              : ended === false
+                ? 'active'
+                : 'bindingUnavailable';
+        // Ended work is removed on the subject's status alone: runners are no longer told commits to prove pushes by.
+        const commits: WorkspaceCommitEvidence[] = [];
         if (workspace.runId !== undefined) {
           if (ended === true) remove.push(workspace.runId);
           else if (ended === false) keep.push(workspace.runId);
@@ -301,6 +264,10 @@ export function createRunnerWorkspaces(
         workspaces.push({
           ...(workspace.runId === undefined ? {} : { runId: workspace.runId }),
           workDir: workspace.workDir,
+          ...(workspace.subjectKey ? { subjectKey: workspace.subjectKey } : {}),
+          ...(workspace.sizeBytes === undefined
+            ? {}
+            : { sizeBytes: workspace.sizeBytes }),
           unpushed: workspace.unpushed,
           lastUsedAt: workspace.lastUsedAt,
           subjectKind: run?.subjectKind ?? null,
@@ -330,9 +297,21 @@ export function createRunnerWorkspaces(
         workspaces,
       };
       await tx.run(async ({ conn: write, emit }) => {
+        const current = await runnersRepo(write).findOne({
+          filter: { id: runner.id },
+        });
+        const latest = storedWorkspaceUsage(current?.workspaceUsage);
+        // Directory collection can take minutes; never replace the heartbeat's newer disk sample.
+        const merged = latest?.diskMeasuredAt
+          ? {
+              ...usage,
+              disk: latest.disk,
+              diskMeasuredAt: latest.diskMeasuredAt,
+            }
+          : usage;
         await runnersRepo(write).updateMany({
           filter: { id: runner.id },
-          values: { workspaceUsage: usage },
+          values: { workspaceUsage: merged },
         });
         emit({ type: 'runner.changed', runnerId: runner.id });
       });

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="640" viewBox="0 0 1120 640" role="img" aria-labelledby="title desc">
+<title id="title">Subscription renewal</title><desc id="desc">Wait until renewal; retry failed payments</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#64748b"/></marker></defs>
+<rect width="1120" height="640" rx="20" fill="#f8fafc"/>
+<g font-family="Arial, Noto Sans SC, Microsoft YaHei, sans-serif">
+<text x="48" y="54" text-anchor="start" font-size="26" font-weight="700" fill="#0f172a">Subscription renewal</text>
+<text x="48" y="85" text-anchor="start" font-size="16" font-weight="400" fill="#64748b">Wait until renewal; retry failed payments</text>
+<path d="M230 184H360" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M580 184H730" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M840 152V115H470V152" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M840 216V310" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M950 342H1050V184H950" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M730 342H580" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M470 216V478" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="50" y="152" width="180" height="64" rx="12" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+<text x="140.0" y="191" text-anchor="middle" font-size="18" font-weight="600" fill="#0f172a">Initial payment</text>
+<rect x="360" y="152" width="220" height="64" rx="12" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="470.0" y="191" text-anchor="middle" font-size="18" font-weight="600" fill="#0f172a">Active service</text>
+<rect x="730" y="152" width="220" height="64" rx="12" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+<text x="840.0" y="191" text-anchor="middle" font-size="18" font-weight="600" fill="#0f172a">Renewal payment</text>
+<rect x="730" y="310" width="220" height="64" rx="12" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/>
+<text x="840.0" y="349" text-anchor="middle" font-size="18" font-weight="600" fill="#0f172a">Past due / retry</text>
+<rect x="360" y="310" width="220" height="64" rx="12" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="470.0" y="349" text-anchor="middle" font-size="18" font-weight="600" fill="#0f172a">Service suspended</text>
+<rect x="330" y="478" width="280" height="64" rx="12" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+<text x="470.0" y="517" text-anchor="middle" font-size="18" font-weight="600" fill="#0f172a">Cancelled at period end</text>
+<text x="295" y="168" text-anchor="middle" font-size="14" font-weight="400" fill="#334155">Payment succeeds</text>
+<text x="655" y="168" text-anchor="middle" font-size="14" font-weight="400" fill="#334155">When due</text>
+<text x="655" y="105" text-anchor="middle" font-size="14" font-weight="400" fill="#2563eb">Payment succeeds: next period</text>
+<text x="850" y="269" text-anchor="start" font-size="14" font-weight="400" fill="#c2410c">Payment fails</text>
+<text x="1040" y="393" text-anchor="end" font-size="14" font-weight="400" fill="#334155">Retry daily</text>
+<text x="1040" y="417" text-anchor="end" font-size="13" font-weight="400" fill="#334155">Retry after updating payment method</text>
+<text x="655" y="328" text-anchor="middle" font-size="14" font-weight="400" fill="#334155">Three consecutive failures</text>
+<text x="485" y="397" text-anchor="start" font-size="14" font-weight="400" fill="#334155">Request cancellation</text>
+<text x="485" y="422" text-anchor="start" font-size="14" font-weight="400" fill="#334155">Current service period ends</text>
+<text x="48" y="598" text-anchor="start" font-size="13" font-weight="400" fill="#64748b">Diagram: process rules and execution paths</text>
+</g></svg>

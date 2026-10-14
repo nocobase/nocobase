@@ -107,6 +107,8 @@ export interface CommentItem {
   readonly reactions?: readonly CommentReaction[];
   readonly canEdit?: boolean;
   readonly canDelete?: boolean;
+  /** Shown instead of the text, as one line that unfolds it in place, when the text is shown elsewhere. */
+  readonly collapsedLabel?: string;
 }
 
 export interface CommentThreadItem {
@@ -303,7 +305,7 @@ export function TimelineActivity({
   readonly children: ReactNode;
 }): ReactElement {
   return (
-    <div className='flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-sm text-muted-foreground'>
+    <div className='flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-sm text-muted-foreground max-md:py-2'>
       {icon ?? (
         <span
           className='size-1.5 shrink-0 rounded-full bg-muted-foreground/50'
@@ -394,7 +396,8 @@ function TimelineEntries({
   const [anchor, setAnchor] = useState<HTMLDivElement | null>(null);
   if (entries.length <= VIRTUALIZE_AFTER)
     return (
-      <ul className='space-y-3' aria-label={label}>
+      // On a phone the entries are full-width rows with hairlines between them.
+      <ul className='space-y-3 max-md:space-y-0' aria-label={label}>
         {entries.map((entry) => (
           <li key={entry.key}>{renderEntry(entry)}</li>
         ))}
@@ -452,11 +455,15 @@ export interface CommentTimelineProps {
   readonly locale?: string;
   readonly labels?: CommentThreadLabels;
   readonly className?: string;
+  /** In the heading row, before "Load older", such as a filter. */
+  readonly headerActions?: ReactNode;
+  /** The entries run newest first, so "Load older" goes under them. */
+  readonly newestFirst?: boolean;
 }
 
 const DEFAULT_EMOJIS = ['👍', '👎', '😄', '🎉', '😕', '❤️', '🚀', '👀'];
 
-/** The timeline: its heading with "Load older", then every entry oldest first. */
+/** The timeline: its heading, then every entry (oldest first unless `newestFirst`), with "Load older" toward the oldest. */
 export function CommentTimeline({
   entries,
   hasOlder = false,
@@ -464,28 +471,37 @@ export function CommentTimeline({
   onLoadOlder,
   labels = defaultLabels,
   className,
+  headerActions,
+  newestFirst = false,
   ...context
 }: CommentTimelineProps): ReactElement {
+  const loadOlder =
+    hasOlder && onLoadOlder ? (
+      <Button
+        variant='ghost'
+        size='sm'
+        disabled={loadingOlder}
+        onClick={onLoadOlder}
+      >
+        {loadingOlder ? (
+          <Loader2Icon data-icon='inline-start' className='animate-spin' />
+        ) : null}
+        {labels.loadOlder}
+      </Button>
+    ) : null;
   return (
     <section
       className={cn('space-y-4', className)}
       aria-label={labels.title}
       data-slot='comment-timeline'
     >
-      <div className='flex items-center justify-between gap-2'>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
         <h2 className='font-heading text-sm font-semibold'>{labels.title}</h2>
-        {hasOlder && onLoadOlder ? (
-          <Button
-            variant='ghost'
-            size='sm'
-            disabled={loadingOlder}
-            onClick={onLoadOlder}
-          >
-            {loadingOlder ? (
-              <Loader2Icon data-icon='inline-start' className='animate-spin' />
-            ) : null}
-            {labels.loadOlder}
-          </Button>
+        {headerActions || (loadOlder && !newestFirst) ? (
+          <div className='flex flex-wrap items-center gap-2'>
+            {headerActions}
+            {newestFirst ? null : loadOlder}
+          </div>
         ) : null}
       </div>
       {entries.length === 0 ? (
@@ -503,6 +519,9 @@ export function CommentTimeline({
           }
         />
       )}
+      {newestFirst && loadOlder ? (
+        <div className='flex justify-center'>{loadOlder}</div>
+      ) : null}
     </section>
   );
 }
@@ -515,6 +534,8 @@ type Context = Omit<
   | 'onLoadOlder'
   | 'labels'
   | 'className'
+  | 'headerActions'
+  | 'newestFirst'
 > & { readonly labels: CommentThreadLabels };
 
 function snippet(content: string): string {
@@ -555,7 +576,7 @@ export function ThreadCard({
   if (resolved && !expanded)
     return (
       <article
-        className='flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground'
+        className='flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground max-md:-mx-4 max-md:rounded-none max-md:border-x-0 max-md:px-4'
         data-testid='thread-resolved'
       >
         <Button
@@ -583,7 +604,7 @@ export function ThreadCard({
     );
 
   return (
-    <article className='rounded-lg border bg-card text-card-foreground'>
+    <article className='rounded-lg border bg-card text-card-foreground max-md:-mx-4 max-md:rounded-none max-md:border-x-0 max-md:bg-transparent max-md:[li+li>&]:border-t-0'>
       {resolved ? (
         <div className='flex items-center gap-2 border-b bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground'>
           <Button
@@ -648,6 +669,9 @@ function CommentBlock({
 }): ReactElement {
   const { labels, locale } = context;
   const [editing, setEditing] = useState(false);
+  const [unfolded, setUnfolded] = useState(false);
+  const folded =
+    Boolean(comment.collapsedLabel) && !unfolded && !comment.deleted;
   const markdown =
     context.renderMarkdown ??
     ((content: string) => (
@@ -659,7 +683,7 @@ function CommentBlock({
     <div
       data-comment-id={comment.id}
       className={cn(
-        'group space-y-1.5 p-3',
+        'group space-y-1.5 p-3 max-md:space-y-1 max-md:px-4 max-md:py-2.5',
         nested && 'pl-9',
         context.replyingToId === comment.id && 'bg-accent/50',
         context.targetId === comment.id && 'ring-2 ring-primary/40 ring-inset',
@@ -714,7 +738,8 @@ function CommentBlock({
                 onClick={onResolveThread}
               >
                 <CheckCircle2Icon data-icon='inline-start' />
-                {labels.resolve}
+                {/* An icon on a phone, so the header stays on one line. */}
+                <span className='max-md:sr-only'>{labels.resolve}</span>
               </Button>
             ) : null}
             {context.onReply ? (
@@ -726,7 +751,7 @@ function CommentBlock({
                 onClick={() => context.onReply?.(comment)}
               >
                 <ReplyIcon data-icon='inline-start' />
-                {labels.reply}
+                <span className='max-md:sr-only'>{labels.reply}</span>
               </Button>
             ) : null}
             {mayEdit || mayDelete ? (
@@ -756,6 +781,16 @@ function CommentBlock({
           mentionSearchRevision={context.mentionSearchRevision}
           labels={labels}
         />
+      ) : folded ? (
+        <button
+          type='button'
+          aria-expanded={false}
+          className='ml-8 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground'
+          onClick={() => setUnfolded(true)}
+        >
+          <ChevronRightIcon className='size-3.5' aria-hidden='true' />
+          {comment.collapsedLabel}
+        </button>
       ) : (
         <>
           <div className='pl-8'>{markdown(comment.content)}</div>

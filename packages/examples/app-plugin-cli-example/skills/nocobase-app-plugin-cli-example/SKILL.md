@@ -12,7 +12,7 @@ writing commands for another plugin.
 
 A plugin contributes commands by exporting a `./cli` entry. The application lists that entry in `cli/plugins.ts`, and `pnpm nocobase` assembles it into one command tree alongside the built-in commands of `@nocobase/app-cli`, such as `config *`, `db *`, `plugin *` and `build`, and the application's own `app *` commands.
 
-Every command extends `AppCommand` from `@nocobase/app-cli`: it returns its result, throws `CommandError` on failure, and gets `--json` from the base class. By default a command is static tooling that operates on files and packages; one that needs the application creates it with `this.withApp(async ({ app }) => …)`. The `nocobase-plugin-development` Skill's CLI reference has the whole contract.
+Every command extends `AppCommand` from `@nocobase/app-cli`: it returns its result, throws `CommandError` on failure, and gets `--json` from the base class. By default a command is static tooling that operates on files and packages; one that needs the application creates it with `this.withApp(async ({ app }) => …)`. The `nocobase-app-plugin-development` Skill's CLI reference has the whole contract.
 
 ## The three pieces
 

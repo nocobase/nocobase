@@ -105,10 +105,17 @@ export async function rootsPage(
   issueId: string,
   limit: number,
   cursor?: { readonly createdAt: string; readonly id: string },
+  /** Only these roots. */
+  rootIds?: readonly string[],
 ): Promise<CommentRecord[]> {
+  if (rootIds?.length === 0) return [];
   return comments(conn).findMany({
     filter: (f) =>
-      f.and([f.string('issueId').eq(issueId), f.string('parentId').eq(null)]),
+      f.and([
+        f.string('issueId').eq(issueId),
+        f.string('parentId').eq(null),
+        ...(rootIds ? [oneOf(f, 'id', rootIds)] : []),
+      ]),
     ...(cursor ? { cursor } : {}),
     sort: (sort) => [sort.field('createdAt').desc(), sort.field('id').desc()],
     limit: limit + 1,
@@ -149,6 +156,31 @@ export async function commentsOf(
       ]),
     sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
     ...(options.limit ? { limit: options.limit } : {}),
+  });
+}
+
+/** One author's newest comments on an issue, newest first: live ones only with `live`, and none after `until`. */
+export async function newestCommentsBy(
+  conn: DatabaseConnection,
+  issueId: string,
+  author: { readonly type: string; readonly id: string },
+  options: {
+    readonly live?: boolean;
+    readonly until?: string;
+    readonly limit: number;
+  },
+): Promise<CommentRecord[]> {
+  return comments(conn).findMany({
+    filter: (f) =>
+      f.and([
+        f.string('issueId').eq(issueId),
+        f.string('authorType').eq(author.type),
+        f.string('authorId').eq(author.id),
+        ...(options.live ? [f.date('deletedAt').empty()] : []),
+        ...(options.until ? [f.date('createdAt').notAfter(options.until)] : []),
+      ]),
+    sort: (sort) => [sort.field('createdAt').desc(), sort.field('id').desc()],
+    limit: options.limit,
   });
 }
 

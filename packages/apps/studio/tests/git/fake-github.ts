@@ -18,6 +18,7 @@ import type { GitPlatform } from '../../server/git/platform.js';
 import { openSealedBox } from '../../server/git/sealed-box.js';
 
 export interface FakePull {
+  labels?: { name: string }[];
   number: number;
   title: string;
   body?: string | null;
@@ -28,7 +29,7 @@ export interface FakePull {
   /** The squash commit, once merged. */
   merge_commit_sha?: string | null;
   draft: boolean;
-  head: { ref: string; sha: string };
+  head: { ref: string; sha: string; repo?: { full_name: string } | null };
   base: { ref: string };
   user: { login: string };
   mergeable_state: string;
@@ -137,16 +138,22 @@ export interface FakeGitHub {
     readonly clientId: string;
     readonly clientSecret: string;
     readonly installations: Map<string, string>;
-    /** The installation tokens minted, with the repositories each was limited to. */
+    /** The installation tokens minted, with the repositories and permissions each was limited to. */
     readonly minted: {
       token: string;
       installationId: string;
       repositories: string[] | null;
+      permissions: Record<string, string> | null;
     }[];
     /** OAuth codes waiting to be exchanged, with the account they authorize. */
     readonly codes: Map<string, FakeUser>;
     /** Whether the app allows the device flow. */
     deviceFlow: boolean;
+    /**
+     * The HTTP status GitHub refuses the device flow of an app without it with: 200 like its other OAuth refusals, or a
+     * 4xx of its own.
+     */
+    deviceFlowRefusalStatus: number;
     /**
      * Codes GitHub sent back after creating the app from a manifest, each converted once into the app (its slug, the
      * account that owns it, and the webhook secret GitHub made).
@@ -271,6 +278,7 @@ export function createFakeGitHub(
     minted: [] as FakeGitHub['app']['minted'],
     codes: new Map<string, FakeUser>(),
     deviceFlow: true,
+    deviceFlowRefusalStatus: 200,
     manifestCodes: new Map<
       string,
       {
@@ -356,6 +364,7 @@ export function createFakeGitHub(
   function payload(repo: string, pull: FakePull) {
     return {
       ...pull,
+      labels: pull.labels ?? [],
       node_id: nodeIdOf(repo, pull.number),
       html_url: `${origin}/${repo}/pull/${pull.number}`,
       closed_at: pull.state === 'closed' ? pull.merged_at : null,
@@ -488,9 +497,13 @@ export function createFakeGitHub(
       };
       if (url.pathname === '/login/device/code' && method === 'POST') {
         if (body.client_id !== app.clientId) return refuse(401);
+        if (!app.deviceFlow) {
+          record(app.deviceFlowRefusalStatus);
+          return json(app.deviceFlowRefusalStatus, {
+            error: 'device_flow_disabled',
+          });
+        }
         record(200);
-        if (!app.deviceFlow)
-          return json(200, { error: 'device_flow_disabled' });
         const deviceCode = `dc_${++nextToken}`;
         const userCode = `WDJB-${String(nextToken).padStart(4, '0')}`;
         app.devices.set(deviceCode, { userCode, user: null });
@@ -635,6 +648,10 @@ export function createFakeGitHub(
         repositories: Array.isArray(body.repositories)
           ? (body.repositories as string[])
           : null,
+        permissions:
+          body.permissions && typeof body.permissions === 'object'
+            ? (body.permissions as Record<string, string>)
+            : null,
       });
       record(201);
       return json(201, {
@@ -1023,6 +1040,20 @@ export function createFakeGitHub(
       touch(pull);
       record(200);
       return json(200, payload(repo, pull));
+    }
+    const labelsMatch = /^issues\/(\d+)\/labels(?:\/(.+))?$/u.exec(rest);
+    if (labelsMatch?.[1] && (method === 'POST' || method === 'DELETE')) {
+      if (!readable()) return refuse(401);
+      const pull = of(repo).get(Number(labelsMatch[1]));
+      if (!pull) return refuse(404);
+      const labels = new Set((pull.labels ?? []).map((label) => label.name));
+      if (method === 'POST')
+        for (const label of body.labels as string[]) labels.add(label);
+      else labels.delete(decodeURIComponent(labelsMatch[2]!));
+      pull.labels = [...labels].map((name) => ({ name }));
+      touch(pull);
+      record(200);
+      return json(200, pull.labels);
     }
     const commentsMatch = /^issues\/(\d+)\/comments$/u.exec(rest);
     if (commentsMatch?.[1] && method === 'POST') {

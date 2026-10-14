@@ -3,8 +3,8 @@
  * metrics and usage. Usage is the agents plugin's, with Studio's names for its groupings (a project is a
  * run's group, an issue its subject); the acceptance metrics add the agents plugin's run
  * figures (reliability, cost, the days and people runs were for) to the projects plugin's issue figures (adoption,
- * deliveries, review, approval requests), over what the person may see. The dashboard's figures are `dashboard.ts`. The human load counts every decision people
- * take, not only approval requests: plans, deployment requests, merges and failed runs too (`decisions.ts`).
+ * deliveries, review), over what the person may see. The dashboard's figures are `dashboard.ts`. The human load counts
+ * the decisions people take: plans, deployment requests, merges and failed runs (`decisions.ts`).
  */
 import type {
   Agents,
@@ -102,7 +102,7 @@ function divided(amounts: Costs | null, by: number): Costs | null {
 }
 
 export function createStudioReports(deps: {
-  readonly agents: Pick<Agents, 'reporting' | 'agents' | 'clock'>;
+  readonly agents: Pick<Agents, 'reporting' | 'agents' | 'clock' | 'tx'>;
   /** The projects plugin's services; undefined without it (then only runs and cost are measured). */
   readonly projects: () => Pick<Projects, 'reports'> | undefined;
   readonly viewerOf: ViewerOf;
@@ -166,16 +166,10 @@ export function createStudioReports(deps: {
             agentId,
             (byAgentDelivered.get(agentId) ?? 0) + count,
           );
-        for (const [outcome, count] of Object.entries(part.decisionsByOutcome))
-          byOutcome[outcome] = (byOutcome[outcome] ?? 0) + count;
       }
       for (const [outcome, count] of Object.entries(others?.byOutcome ?? {}))
         byOutcome[outcome] = (byOutcome[outcome] ?? 0) + count;
-      const approvalsAsked = sum((part) => part.decisionsCreated);
-      const byKind: Record<string, number> = {
-        ...(parts.length > 0 ? { approvals: approvalsAsked } : {}),
-        ...others?.byKind,
-      };
+      const byKind: Record<string, number> = { ...others?.byKind };
 
       // The runs started in the range and the usage reported in it.
       const figures = await agents.reporting.runFigures(caller, {
@@ -183,7 +177,7 @@ export function createStudioReports(deps: {
         groupId: projectId,
       });
       const names = new Map(
-        (await agents.agents.list({ includeArchived: true })).map((agent) => [
+        (await agents.agents.directory(agents.tx.read())).map((agent) => [
           agent.id,
           agent.name,
         ]),
@@ -200,11 +194,7 @@ export function createStudioReports(deps: {
       const deliveredTotal = sum((part) => part.deliveredTotal);
       const deliveredByAgent = sum((part) => part.deliveredByAgent);
       const reviewExits = sum((part) => part.reviewExits);
-      const approved = sum((part) => part.approvalsApproved);
-      const resolveMs = [
-        ...parts.flatMap((part) => part.decisionResolveMs),
-        ...(others?.resolveMs ?? []),
-      ];
+      const resolveMs = [...(others?.resolveMs ?? [])];
 
       const report: Omit<MetricsReport, 'statuses'> = {
         from: range.from,
@@ -235,10 +225,6 @@ export function createStudioReports(deps: {
           reviewPassRate: ratio(
             sum((part) => part.reviewPassed),
             reviewExits,
-          ),
-          approvalApproveRate: ratio(
-            approved,
-            approved + sum((part) => part.approvalsRejected),
           ),
           reworkRate: ratio(
             sum((part) => part.reworked),
@@ -273,11 +259,10 @@ export function createStudioReports(deps: {
           })),
         },
         humanLoad: {
-          decisionsCreated: approvalsAsked + (others?.created ?? 0),
+          decisionsCreated: others?.created ?? 0,
           decisionsResolved: resolveMs.length,
           decisionResolveP50Ms: percentile(resolveMs, 0.5),
-          openDecisions:
-            sum((part) => part.decisionsOpen) + (others?.open ?? 0),
+          openDecisions: others?.open ?? 0,
           byOutcome,
           byKind,
         },

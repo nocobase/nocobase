@@ -1,11 +1,9 @@
 /**
- * The browser API of the chat (`CHAT_ROUTES` in `shared/conversations`) and of the agent presets, typed with the
- * shared contract. One method per endpoint; answers are unwrapped from `{ data }` (a page of conversations or messages
+ * The browser API of the chat (`CHAT_ROUTES` in `shared/conversations`), typed with the shared contract. One method per endpoint; answers are unwrapped from `{ data }` (a page of conversations or messages
  * is put back together from `{ data, meta }`); failures throw `ApiClientError`.
  */
 import type { ApiClient } from '@nocobase/app-client';
 
-import type { Agent } from '../../shared/agents.js';
 import {
   chatPath,
   type ChatAgent,
@@ -19,7 +17,6 @@ import {
   type ConversationPage,
   type ConversationSummary,
   type ConversationPatch,
-  type CopyAgentRequest,
   type CreateConversationRequest,
   type MessageAttachment,
   type MessageListQuery,
@@ -27,7 +24,6 @@ import {
   type SendMessageRequest,
   type SendMessageResult,
 } from '../../shared/conversations.js';
-import { PRESETS_ROUTE, type AgentPreset } from '../../shared/presets.js';
 
 type Query = Readonly<Record<string, string | number | boolean | undefined>>;
 
@@ -160,10 +156,6 @@ export class ChatApi {
     return (await this.page<ChatAgent>(chatPath('agents'))).data;
   }
 
-  public copyAgent(agentId: string, request: CopyAgentRequest): Promise<Agent> {
-    return this.send(chatPath('copyAgent', agentId), 'POST', request);
-  }
-
   public preferences(): Promise<ChatPreferences> {
     return this.get(chatPath('preferences'));
   }
@@ -180,10 +172,6 @@ export class ChatApi {
 
   public updateSettings(patch: ChatSettingsPatch): Promise<ChatSettings> {
     return this.send(chatPath('settings'), 'PATCH', patch);
-  }
-
-  public async presets(): Promise<AgentPreset[]> {
-    return (await this.page<AgentPreset>(PRESETS_ROUTE)).data;
   }
 
   private page<T>(

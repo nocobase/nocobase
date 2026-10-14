@@ -17,10 +17,8 @@ import type { Catalog } from '../access/catalog.js';
 export const ATTACH_ACTION = 'pm.attachments/upload';
 
 /**
- * Actions an agent is configured with that no role grants as such: a person holds each while they hold its base
- * action (`DERIVED_ACTIONS`), and a run when its agent is configured with it and the run holds the base too. A
- * run-capable route performing one of these names it, so an agent that may edit issues still opens pull requests or
- * takes previews down only when it is given that on its own.
+ * Derived actions that no role grants separately: a person or run holds each while its running identity holds
+ * the base action (`DERIVED_ACTIONS`). Legacy agent action lists remain compatibility data.
  */
 export const OPEN_PR_ACTION = 'studio.git/open-pr';
 export const PREVIEWS_MANAGE_ACTION = 'studio.previews/manage';
@@ -33,7 +31,7 @@ export const DERIVED_ACTIONS: Readonly<Record<string, string>> = {
 
 /**
  * Studio's Reports page an agent may read for the person who woke it (`nb-studio report metrics`, `report usage`), when
- * that person holds the page. Not ticked for a new agent; the project lead and assistant presets have it.
+ * that person holds the page. Built-in compatibility catalogs include this action; authorization checks the page grant.
  */
 export const REPORTS_READ_ACTION = 'studio.reports/read';
 
@@ -107,7 +105,6 @@ export function agentActionOptions(catalog: Catalog): AgentActionOption[] {
             ? { description: i18n(action.description, action.key) }
             : {}),
           ...(policy.defaultOn ? { defaultOn: true } : {}),
-          ...(policy.types ? { types: policy.types } : {}),
         });
       else
         never.push({

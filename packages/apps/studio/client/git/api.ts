@@ -41,6 +41,8 @@ import {
   type PullRequestMergePreflight,
   type UpdateGitRepoRequest,
 } from '../../shared/git.js';
+import { issueProgressKey } from '../issues/detail/progress-text.js';
+import { previewKeys } from '../previews/api.js';
 
 export const gitKeys = {
   all: ['studio', 'git'] as const,
@@ -168,17 +170,20 @@ export class GitApi {
     return body.data;
   }
 
-  /** Squash-merges the head the person confirmed. */
+  /** Squash-merges the head the person confirmed; `force` past failed required checks, with a reason. */
   public async merge(
     issue: string,
     id: string,
     expectedHeadSha: string,
+    force?: { readonly reason: string },
   ): Promise<IssuePullRequest> {
     const body = await this.api.request<{ data: IssuePullRequest }>({
       method: 'POST',
       path: `${prPath(id)}/merge`,
       query: { issueId: issue },
-      json: { expectedHeadSha },
+      json: force
+        ? { expectedHeadSha, force: true, reason: force.reason }
+        : { expectedHeadSha },
     });
     return body.data;
   }
@@ -474,10 +479,10 @@ export function useGitApi(): GitApi {
 
 /**
  * Follows `STUDIO_GIT_TOPIC` while mounted: when the server stores something new about a pull request (a webhook
- * delivery, a poll, a merge), the pull requests are read again at once. An open merge confirmation keeps its own read
- * of GitHub.
+ * delivery, a poll, a merge), the pull requests, the issue's preview labels and what the issue waits for are read
+ * again at once. An open merge confirmation keeps its own read of GitHub.
  */
-export function useGitRealtime(): void {
+export function useGitRealtime(issueId?: string): void {
   const realtime = useService(realtimeClientToken);
   const queryClient = useQueryClient();
   useEffect(
@@ -487,8 +492,17 @@ export function useGitRealtime(): void {
           queryKey: gitKeys.all,
           predicate: (query) => query.queryKey[2] !== 'preflight',
         });
+        if (issueId) {
+          void queryClient.invalidateQueries({
+            queryKey: previewKeys.issue(issueId),
+          });
+          // What the issue waits for follows its pull requests' checks.
+          void queryClient.invalidateQueries({
+            queryKey: issueProgressKey(issueId),
+          });
+        }
       }),
-    [realtime, queryClient],
+    [realtime, queryClient, issueId],
   );
 }
 
@@ -497,7 +511,7 @@ export function useIssuePullRequests(
   revision: number,
 ): UseQueryResult<IssuePullRequests> {
   const api = useGitApi();
-  useGitRealtime();
+  useGitRealtime(issueId);
   return useQuery({
     queryKey: [...gitKeys.issue(issueId), revision],
     queryFn: ({ signal }) => api.list(issueId, signal),

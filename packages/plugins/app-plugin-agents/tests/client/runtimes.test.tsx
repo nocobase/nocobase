@@ -85,7 +85,7 @@ describe('runtimes page', () => {
     return await screen.findByTestId('runner-sheet');
   };
 
-  it('removes low disk warnings only when a new workspace report shows recovered space', async () => {
+  it('updates disk state from a fresh heartbeat while retaining the older directory collection time', async () => {
     runners[0] = {
       ...runners[0]!,
       canSeeMachine: true,
@@ -104,6 +104,9 @@ describe('runtimes page', () => {
       </>,
     );
     await screen.findByText('runtimes.workspaces.previousLow');
+    expect(
+      screen.getByText(/runtimes\.activity\.low_disk/u),
+    ).toBeInTheDocument();
     const sheet = await openSheet();
     expect(
       within(sheet).getByText('runtimes.workspaces.empty'),
@@ -124,7 +127,7 @@ describe('runtimes page', () => {
         ...runners[0]!,
         workspaceUsage: {
           ...runners[0]!.workspaceUsage!,
-          measuredAt: new Date().toISOString(),
+          diskMeasuredAt: new Date().toISOString(),
           disk: { freeBytes: 50, totalBytes: 100, minFreeBytes: 20 },
         },
       },
@@ -141,7 +144,36 @@ describe('runtimes page', () => {
       screen.queryByText('runtimes.workspaces.previousLow'),
     ).not.toBeInTheDocument();
     expect(
+      screen.queryByText(/runtimes\.activity\.low_disk/u),
+    ).not.toBeInTheDocument();
+    expect(
       within(sheet).queryByText('runtimes.workspaces.stale'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows heartbeat disk capacity without claiming an uncollected directory list is empty', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canSeeMachine: true,
+      workspaceUsage: {
+        disk: { freeBytes: 1, totalBytes: 100, minFreeBytes: 20 },
+        count: 0,
+        unpushedCount: 0,
+        measuredAt: null,
+        diskMeasuredAt: new Date().toISOString(),
+        workspaces: [],
+      },
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    expect(
+      within(sheet).getByText('runtimes.workspaces.notReported'),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).getByText('runtimes.workspaces.paused'),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet).queryByText('runtimes.workspaces.empty'),
     ).not.toBeInTheDocument();
   });
 

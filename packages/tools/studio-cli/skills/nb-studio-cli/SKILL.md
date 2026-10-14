@@ -7,6 +7,14 @@ description: Use the `nb-studio` command line to work in NocoBase Studio — iss
 
 `nb-studio` ships no business commands: every command is one Studio API route, offered to whoever calls according to their identity and permissions. So never guess a command from memory: ask `nb-studio` what exists for you.
 
+## Install this Skill on your own machine
+
+After installing the CLI, run `nb-studio skills install` for detected Claude Code and Codex tools, or choose with `nb-studio skills install --tool all` (`claude` and `codex` are also available separately). This local command works offline without a login. Preview with `nb-studio skills install --dry-run --json`; compare installed contents with `nb-studio skills status --json`.
+
+Claude Code's personal copy goes under `<CLAUDE_CONFIG_DIR or ~/.claude>/skills/nb-studio-cli`. Codex's copy goes under `~/.agents/skills/nb-studio-cli`, following the [official user Skill directory](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills). `CODEX_HOME` helps detect Codex and locates legacy copies for status, but does not move the new target. Installation does not create, migrate or delete a legacy copy and preserves neighboring Skills.
+
+`nb-studio update` synchronizes registered copies from the new CLI package; synchronization failures warn while leaving the CLI upgrade successful. Manual unregistered copies prompt an installation reminder. After an npm global upgrade or another external upgrade, run `nb-studio skills install` again. The runner already supplies this Skill to its runs: do not install it inside a run; read-only status remains available.
+
 ## Who you are
 
 - Inside a run's working directory (a `.nb-studio/run.json` at or above it) `nb-studio` acts as the run: it presents the run's token and can do what the agent is given. You never need a key or `nb-studio login` there, and must not pass any credential on the command line.
@@ -28,6 +36,8 @@ description: Use the `nb-studio` command line to work in NocoBase Studio — iss
 - Exit codes: 0 ok, 2 network (retry later), 3 authentication or permission (do not retry), 4 not found, 5 invalid input (fix the line), 6 conflict (read again, then retry), 7 a plan is required (propose it with `nb-studio plan create`).
 
 ## Common work
+
+In a writable run, the worktree's initial target may be a same-repository linked pull request branch. You may switch or create branches and push any branch of that repository with `git push origin HEAD:refs/heads/<branch>`; never force push or rewrite already-pushed history. `nb-studio pr open` without `--head` uses the branch rule (`agent/<KEY>` by default), so after starting on a linked pull request's branch or switching, pass the published branch with `--head <branch>`. Use `nb-studio pr link` and `nb-studio pr unlink` to manage issue associations; inspect each command's `--help` for its current arguments and permissions. Read-only runs still change, commit and push nothing.
 
 ```bash
 nb-studio issue search --q "login" --json
@@ -78,8 +88,8 @@ These have no command. When someone needs one, tell them exactly where to go in 
 | Change a password                               | Avatar › Account settings › Account and security                                                                                      |
 | Language, theme, sounds, default chat agent     | Avatar › Account settings › Preferences                                                                                               |
 
-Everything else Settings shows (General, Labels, Knowledge search, Members, Roles, API keys, Git connections, Workflow templates) and the Agent team pages (Agents, Runtimes, Skills, Models, Usage) also has commands: `nb-studio access …`, `nb-studio label …`, `nb-studio kb settings …`, `nb-studio api-key …`, `nb-studio git connection …`, `nb-studio workflow …`, `nb-studio agent …`, `nb-studio runtime …`, `nb-studio skill …`, `nb-studio model …`, `nb-studio service …`.
+Everything else Settings shows (General, Labels, Knowledge search, Members, Roles, API keys, Git connections) and the Agent team pages (Agents, Runtimes, Skills, Models, Usage) also has commands: `nb-studio access …`, `nb-studio label …`, `nb-studio kb settings …`, `nb-studio api-key …`, `nb-studio git connection …`, `nb-studio agent …`, `nb-studio project-manager …`, `nb-studio runtime …`, `nb-studio skill …`, `nb-studio model …`, `nb-studio service …`.
 
 ## When a person must decide
 
-Merging a pull request, deciding approvals, approving deployment requests, and anything needing an action the agent lacks are a person's. Say what you need and why in a comment on the issue (`nb-studio issue comment add <issue> --content-file <path>`), then end your turn; the answer reaches you as new input.
+Merging a pull request, accepting an issue (moving it to Done), approving deployment requests, and anything needing an action the agent lacks are a person's. Say what you need and why in a comment on the issue (`nb-studio issue comment add <issue> --content-file <path>`), then end your turn; the answer reaches you as new input.

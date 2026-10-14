@@ -1,13 +1,23 @@
 /**
- * Joins the agents plugin and the projects plugin in Studio (`bind.ts`), from the application's container, and binds
- * Studio's Reports page service (`../reports`).
+ * Joins the agents plugin and the projects plugin in Studio (`bind.ts`), from the application's container, binds the
+ * project manager (`manager/`, `studioProjectManagerToken`) and Studio's Reports page service (`../reports`).
  *
  * Boot order: Studio's own providers are registered after every plugin's, so they boot after the plugins have booted,
- * and before any route is served or any plugin's `ready()` runs. Binding at boot therefore adds the `agent` kind, the
- * stage rule types and the "Software development" template before the projects plugin first uses them: its services
- * read the kind registry on each use, and its `ready()` waits for the templates added while the providers booted.
+ * and before any route is served or any plugin's `ready()` runs. Binding at boot therefore adds the `agent` kind before
+ * the projects plugin first uses it: its services read the kind registry on each use. Once everything is ready, the
+ * project manager's agent and the defaults of every agent discovered from runners are written (`ProjectManager.ready`).
  */
 import type { Application } from '@nocobase/app-server/application';
+import {
+  realtimeServiceToken,
+  type DefinedRealtimeTopic,
+} from '@nocobase/app-server/realtime';
+import { PROJECT_MANAGER_IDENTITY_TOPIC } from '../../shared/project-manager.js';
+import {
+  STUDIO_ISSUE_RUNS_TOPIC,
+  type StudioIssueRunsEvent,
+} from '../../shared/issue-runs.js';
+import { announceIssueRuns } from './issue-runs-announcer.js';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import {
   projectsAccessToken,
@@ -18,9 +28,7 @@ import {
   projectsPlanHooksToken,
   projectsPlanSourceToken,
   projectsRequestActorToken,
-  projectsStatusRulesToken,
   projectsToken,
-  projectsWorkflowTemplatesToken,
 } from '@nocobase/app-plugin-projects/server/tokens';
 import type {
   DelegatedWrites,
@@ -40,7 +48,6 @@ import {
   agentsToken,
   type Agents,
 } from '@nocobase/app-plugin-agents/server/tokens';
-import { registerCliSkill } from './cli-skill.js';
 import {
   releasesAccessToken,
   releasesToken,
@@ -72,6 +79,8 @@ import {
 import type { RolesOf } from './conversation/asker.js';
 import type { InboxSource } from './conversation/inbox.js';
 import { runScopeStep, type RunPrincipal } from './run-principal.js';
+import { createProjectManager } from './manager/service.js';
+import { studioProjectManagerToken } from './manager/token.js';
 
 /**
  * The plan hooks as bound in the container: a stand-in that forwards to the bridge while it is connected, so the
@@ -304,16 +313,17 @@ export function connectProjects(
   scopeRuns(container, agents, grantsOf);
   return bindStudioAgents({
     agents,
+    checkoutPullRequests: (issueId) =>
+      container.has(studioGitToken)
+        ? container.resolve(studioGitToken).git().checkoutPullRequests(issueId)
+        : Promise.resolve(new Map()),
     kinds: container.resolve(projectsKindsToken),
     projects: () => container.resolve(projectsToken),
     ...(container.has(projectsNoticeRulesToken)
       ? { noticeRules: container.resolve(projectsNoticeRulesToken) }
       : {}),
-    ...(container.has(projectsStatusRulesToken)
-      ? { statusRules: container.resolve(projectsStatusRulesToken) }
-      : {}),
-    ...(container.has(projectsWorkflowTemplatesToken)
-      ? { templates: container.resolve(projectsWorkflowTemplatesToken) }
+    ...(container.has(studioProjectManagerToken)
+      ? { manager: container.resolve(studioProjectManagerToken) }
       : {}),
     access: () =>
       container.has(projectsAccessToken)
@@ -386,9 +396,19 @@ function queuedExpiryOf(value: unknown): { queuedExpiryHours?: number } {
 export default class StudioAgentsProvider extends ServiceProvider<Application> {
   public readonly name: string = 'studio/agents';
   private release: (() => void) | undefined;
+  private identityTopic?: DefinedRealtimeTopic<Record<string, never>, 'public'>;
 
   public override register(): void {
     const { container } = this.app;
+    container.singleton(studioProjectManagerToken, (resolver) =>
+      createProjectManager({
+        agents: resolver.resolve(agentsToken),
+        defaultLocale: this.app.config.get<string>('i18n.defaultLocale'),
+        identityChanged: () => {
+          this.identityTopic?.publish({});
+        },
+      }),
+    );
     // The work conversations delegate, for the join (`bind.ts`) and the routes (`routes.ts`).
     container.singleton(studioDelegationsToken, (resolver) =>
       createDelegations({
@@ -427,6 +447,13 @@ export default class StudioAgentsProvider extends ServiceProvider<Application> {
   }
 
   public override boot(): Promise<void> {
+    if (!this.identityTopic && this.app.container.has(realtimeServiceToken))
+      this.identityTopic = this.app.container
+        .resolve(realtimeServiceToken)
+        .defineTopic<Record<string, never>, 'public'>(
+          PROJECT_MANAGER_IDENTITY_TOPIC,
+          { audience: 'public' },
+        );
     if (this.release) return Promise.resolve();
     const { container } = this.app;
     if (!container.has(agentsToken)) return Promise.resolve();
@@ -437,15 +464,56 @@ export default class StudioAgentsProvider extends ServiceProvider<Application> {
         this.app.config.get<unknown>('studio.agents.queuedExpiryHours'),
       ),
     });
-    const withdrawSkill = registerCliSkill(agents);
+    // Issue pages learn of runs on their issue from this, rather than by polling for them.
+    let stopAnnouncing: (() => void) | undefined;
+    if (
+      container.has(realtimeServiceToken) &&
+      container.has(databaseManagerToken)
+    ) {
+      const topic = container
+        .resolve(realtimeServiceToken)
+        .defineTopic<StudioIssueRunsEvent, 'public'>(STUDIO_ISSUE_RUNS_TOPIC, {
+          audience: 'public',
+          authenticated: true,
+        });
+      const database = container.resolve(databaseManagerToken);
+      const stop = announceIssueRuns({
+        events: agents.events,
+        conn: () => database.connection(),
+        publish: (event) => topic.publish(event),
+        onError: (error) =>
+          console.error('Studio could not announce issue runs.', error),
+      });
+      stopAnnouncing = () => {
+        stop();
+        topic.close();
+      };
+    }
     this.release = () => {
-      withdrawSkill();
+      stopAnnouncing?.();
       disconnect?.();
     };
     return Promise.resolve();
   }
 
+  /** The project manager's agent and the defaults of every agent discovered from runners, once the database is ready. */
+  public override async ready(): Promise<void> {
+    const { container } = this.app;
+    if (
+      !container.has(agentsToken) ||
+      !container.has(studioProjectManagerToken)
+    )
+      return;
+    try {
+      await container.resolve(studioProjectManagerToken).ready();
+    } catch (error) {
+      console.error('Agents could not set up the project manager.', error);
+    }
+  }
+
   public override async shutdown(): Promise<void> {
+    this.identityTopic?.close();
+    this.identityTopic = undefined;
     const bound = this.release;
     this.release?.();
     this.release = undefined;

@@ -2,8 +2,7 @@
  * Studio's pull requests joined to the projects plugin, the agents plugin and Studio's inbox; neither plugin knows about
  * branches, pull requests or code hosts. Binding:
  *
- * - registers the workflow event `studio.merged` and the entry condition `prMerged` (`workflow.ts`), before the
- *   "Software development" template that names the event is installed;
+ * - registers the status event `studio.merged` (`workflow.ts`): an issue whose pull requests are all merged is done;
  * - creates the connections (`connections.ts`), the flow (`flow.ts`) and the service (`service.ts`);
  * - registers what a run's checkouts get when the agents plugin is there: the commit identity, co-author trailer and
  *   short-lived push credential (`run-git.ts`); the `pr` commands are routes (`routes.ts`);
@@ -16,8 +15,7 @@
 import type {
   NoticeRules,
   Projects,
-  StatusRuleTypes,
-  WorkflowEventTypes,
+  StatusEventTypes,
 } from '@nocobase/app-plugin-projects/server/tokens';
 
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
@@ -41,8 +39,7 @@ import { registerGitWorkflow } from './workflow.js';
 
 export interface StudioGitBindDeps {
   readonly projects: () => Projects;
-  readonly events?: WorkflowEventTypes;
-  readonly statusRules?: StatusRuleTypes;
+  readonly events?: StatusEventTypes;
   /** Where the merged pull request's notice goes (`notices.ts`); without it followers are not told. */
   readonly noticeRules?: NoticeRules;
   readonly agents?: Agents;
@@ -79,10 +76,7 @@ export function bindStudioGit(deps: StudioGitBindDeps): {
   const events = createPullRequestEvents(onError);
   const repoEvents = createRepoEvents(onError);
   const releases: (() => void)[] = [
-    registerGitWorkflow({
-      ...(deps.events ? { events: deps.events } : {}),
-      ...(deps.statusRules ? { statusRules: deps.statusRules } : {}),
-    }),
+    registerGitWorkflow(deps.events ? { events: deps.events } : {}),
   ];
   const flow = createGitFlow({
     projects: deps.projects,
@@ -91,6 +85,7 @@ export function bindStudioGit(deps: StudioGitBindDeps): {
     onError,
     ...(deps.onChanged ? { onChanged: deps.onChanged } : {}),
     onStored: (pr) => events.emit({ type: 'stored', pullRequestId: pr.id }),
+    explain: (repo, sha) => git.explainFailures(repo, sha),
   });
   const connections = createGitConnections({
     conn: () => deps.projects().tx.read(),
@@ -115,6 +110,7 @@ export function bindStudioGit(deps: StudioGitBindDeps): {
     ...(deps.webhookUrl ? { webhookUrl: deps.webhookUrl } : {}),
     ...(deps.pollSeconds ? { pollSeconds: deps.pollSeconds } : {}),
     ...(deps.now ? { now: deps.now } : {}),
+    ...(deps.onChanged ? { onLabelChanged: deps.onChanged } : {}),
   });
   if (deps.noticeRules)
     releases.push(deps.noticeRules.add(prMergedRule(deps.projects)));

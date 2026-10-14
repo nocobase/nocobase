@@ -4,7 +4,7 @@
  * and both issues visible; the "blocks" side is read-only (the link belongs to the issue that waits).
  *
  * Toward the issues domain this implements `IssueRelations` (linking on create, cycle checks, release and join), the
- * extras the issue page and list show, and the checks the `subtasksDone` and `blockersDone` workflow rules make.
+ * extras the issue page and list show.
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -16,6 +16,7 @@ import {
   type DependencyType,
   type IssueDependency,
   type SubtaskSummary,
+  type UpdateDependencyRequest,
 } from '../../../shared/subtasks.js';
 import type { Viewer } from '../../access/viewer.js';
 import type { ActivityRecorder } from '../../kernel/activity.js';
@@ -36,7 +37,6 @@ import {
   type IssueExtras,
   type IssueRelations,
 } from '../issues/index.js';
-import type { RelationChecks } from '../workflows/index.js';
 import {
   blockedCounts,
   blockersOf,
@@ -45,6 +45,7 @@ import {
   type Catalogs,
 } from './subtask.blocking.js';
 import { assertNoCycleThrough } from './subtask.graph.js';
+import { lockIssueGraph } from './subtask.guard.js';
 import {
   onTerminal,
   releaseIfFree,
@@ -57,6 +58,7 @@ import {
   incoming,
   insertDependency,
   outgoing,
+  updateDependency,
   type DependencyRecord,
 } from './subtask.store.js';
 
@@ -65,6 +67,13 @@ export interface SubtaskService {
     viewer: Viewer,
     idOrKey: string,
     input: AddDependencyRequest,
+  ): Promise<IssueDependency>;
+  /** Changes one link in place. An existing target type is refused rather than merging two links. */
+  updateDependency(
+    viewer: Viewer,
+    idOrKey: string,
+    dependencyId: string,
+    input: UpdateDependencyRequest,
   ): Promise<IssueDependency>;
   removeDependency(
     viewer: Viewer,
@@ -90,7 +99,6 @@ export interface SubtaskService {
     issueIds: readonly string[],
   ): Promise<Map<string, Blocker[]>>;
   readonly relations: IssueRelations;
-  readonly checks: RelationChecks;
   readonly extras: Pick<IssueExtras, 'relations' | 'listCounts'>;
 }
 
@@ -207,15 +215,22 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
     await deps.tx.run(async (tx) => {
       const issue = await requireVisible(tx.conn, viewer, idOrKey);
       requireEditor(viewer);
+      // Conversion keeps the link id: protect the type and endpoints used by removal and its release effects.
+      await lockIssueGraph(tx.conn);
       const dependency = await find(tx.conn, issue);
       if (!dependency) throw notFound('Dependency');
-      await deleteDependency(tx.conn, dependency.id);
       const ends = await findIssues(tx.conn, [
         dependency.issueId,
         dependency.dependsOnIssueId,
       ]);
       const waiting = ends.find((end) => end.id === dependency.issueId);
       const other = ends.find((end) => end.id === dependency.dependsOnIssueId);
+      const catalogs = catalogsFor(deps.statuses, tx.conn);
+      const wasBlocked =
+        dependency.type === 'blockedBy' &&
+        waiting &&
+        (await blockersOf(tx.conn, catalogs, waiting)).length > 0;
+      await deleteDependency(tx.conn, dependency.id);
       if (waiting)
         await record(tx, waiting.id, viewer.actor, 'dependency_removed', {
           dependencyId: dependency.id,
@@ -225,15 +240,8 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
         });
       for (const id of [dependency.issueId, dependency.dependsOnIssueId])
         tx.emit({ type: 'issue.changed', issueId: id });
-      if (dependency.type === 'blockedBy' && waiting && other)
-        await releaseIfFree(
-          deps,
-          tx,
-          catalogsFor(deps.statuses, tx.conn),
-          waiting,
-          other,
-          viewer.actor,
-        );
+      if (wasBlocked && waiting && other)
+        await releaseIfFree(deps, tx, catalogs, waiting, other, viewer.actor);
     });
   }
 
@@ -247,6 +255,7 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
       : undefined;
 
   const relations: IssueRelations = {
+    lock: (tx, advance) => lockIssueGraph(tx.conn, advance),
     async created(tx, issue, blockedBy, viewer) {
       const links = new Set<string>();
       for (const ref of blockedBy) {
@@ -270,24 +279,13 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
     removed: (tx, issue, actor) => onTerminal(deps, tx, issue, actor),
   };
 
-  const checks: RelationChecks = {
-    async openChildren(conn, issueId) {
-      const catalogs = catalogsFor(deps.statuses, conn);
-      const open: Issue[] = [];
-      for (const child of await liveChildren(conn, [issueId]))
-        if (!(await catalogs.terminal(child))) open.push(child);
-      return open;
-    },
-    blockers: (conn, issue) =>
-      blockersOf(conn, catalogsFor(deps.statuses, conn), issue),
-  };
-
   return {
     async addDependency(viewer, idOrKey, input) {
       return deps.tx.run(async (tx) => {
         const issue = await requireVisible(tx.conn, viewer, idOrKey);
         requireEditor(viewer);
         const type = dependencyType(input?.type);
+        await lockIssueGraph(tx.conn);
         const other = await target(
           tx.conn,
           viewer,
@@ -303,6 +301,102 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
             await deps.triggers().onBlocked?.(tx, { issue, blockers });
         }
         return dependencyView(catalogs, dependency, other);
+      });
+    },
+
+    async updateDependency(viewer, idOrKey, dependencyId, input) {
+      requireEditor(viewer);
+      return deps.tx.run(async (tx) => {
+        await lockIssueGraph(tx.conn);
+        const issue = await requireVisible(tx.conn, viewer, idOrKey);
+        const before = removable(
+          issue,
+          await findDependency(tx.conn, dependencyId),
+        );
+        if (!before) throw notFound('Dependency');
+        if (input?.type === undefined || input.expectedType === undefined)
+          throw invalid(
+            'INVALID_DEPENDENCY',
+            'type and expectedType are required.',
+          );
+        const type = dependencyType(input.type);
+        if (before.type !== dependencyType(input.expectedType))
+          throw conflict(
+            'DEPENDENCY_CHANGED',
+            'The relationship was changed meanwhile. Reload and retry.',
+          );
+        const other = await target(
+          tx.conn,
+          viewer,
+          issue,
+          before.issueId === issue.id
+            ? before.dependsOnIssueId
+            : before.issueId,
+        );
+        const catalogs = catalogsFor(deps.statuses, tx.conn);
+        if (before.type === type)
+          return dependencyView(catalogs, before, other);
+        // Do not merge two links by deleting one: two opposite conversions could otherwise delete both.
+        if (
+          (await findDependencyBetween(tx.conn, issue.id, other.id, type)) ||
+          (type === 'relatedTo' &&
+            (await findDependencyBetween(tx.conn, other.id, issue.id, type)))
+        )
+          throw conflict(
+            'DEPENDENCY_EXISTS',
+            'The target relationship already exists. Remove the unwanted link explicitly.',
+          );
+        const after = {
+          ...before,
+          issueId: issue.id,
+          dependsOnIssueId: other.id,
+          type,
+        };
+        // A completed prerequisite is still a relationship, but converting it releases no work.
+        const wasBlocked =
+          before.type === 'blockedBy' &&
+          (await blockersOf(tx.conn, catalogs, issue)).length > 0;
+        try {
+          const changed = await tx.conn.transaction((conn) =>
+            updateDependency(conn, before, after),
+          );
+          if (!changed)
+            throw conflict(
+              'DEPENDENCY_CHANGED',
+              'The relationship was changed or removed meanwhile. Reload and retry.',
+            );
+        } catch (error) {
+          if (isUniqueViolation(error))
+            throw conflict(
+              'DEPENDENCY_EXISTS',
+              'The target relationship already exists. Remove the unwanted link explicitly.',
+            );
+          throw error;
+        }
+        if (type === 'blockedBy') await assertNoCycleThrough(tx.conn, issue.id);
+        await record(tx, before.issueId, viewer.actor, 'dependency_removed', {
+          dependencyId,
+          dependsOnIssueId: before.dependsOnIssueId,
+          identifier:
+            before.issueId === issue.id ? other.identifier : issue.identifier,
+          type: before.type,
+        });
+        await record(tx, issue.id, viewer.actor, 'dependency_added', {
+          dependencyId,
+          dependsOnIssueId: other.id,
+          identifier: other.identifier,
+          type,
+        });
+        tx.emit({ type: 'issue.changed', issueId: issue.id });
+        tx.emit({ type: 'issue.changed', issueId: other.id });
+        if (type === 'blockedBy') {
+          const blockers = await blockersOf(tx.conn, catalogs, issue);
+          if (blockers.length > 0)
+            await deps.triggers().onBlocked?.(tx, { issue, blockers });
+        } else if (wasBlocked) {
+          await releaseIfFree(deps, tx, catalogs, issue, other, viewer.actor);
+        }
+        return dependencyView(catalogs, after, other);
       });
     },
 
@@ -373,7 +467,6 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
     },
 
     relations,
-    checks,
 
     extras: {
       async relations(conn, viewer, issue) {
@@ -476,11 +569,27 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
         >;
       },
 
-      async listCounts(conn, issues) {
+      async listCounts(conn, issues, readableIds) {
         const catalogs = catalogsFor(deps.statuses, conn);
         const ids = issues.map((issue) => issue.id);
-        const children = await childCounts(conn, ids);
-        const blocked = await blockedCounts(conn, catalogs, issues);
+        const children = readableIds
+          ? new Map<string, number>()
+          : await childCounts(conn, ids);
+        if (readableIds) {
+          for (const child of await liveChildren(conn, ids)) {
+            if (readableIds.has(child.id) && child.parentIssueId)
+              children.set(
+                child.parentIssueId,
+                (children.get(child.parentIssueId) ?? 0) + 1,
+              );
+          }
+        }
+        const blocked = await blockedCounts(
+          conn,
+          catalogs,
+          issues,
+          readableIds,
+        );
         return new Map(
           ids.map((id) => [
             id,

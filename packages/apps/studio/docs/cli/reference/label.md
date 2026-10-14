@@ -16,9 +16,9 @@ nb-studio label create <name>
 | -------- | ----------- |
 | `name`   |             |
 
-| Flag      | Type    | Description |
-| --------- | ------- | ----------- |
-| `--color` | gray \\ | red \\      | orange \\ | yellow \\ | green \\ | blue \\ | purple |     |
+| Flag      | Type                                                       | Description |
+| --------- | ---------------------------------------------------------- | ----------- |
+| `--color` | gray \| red \| orange \| yellow \| green \| blue \| purple |             |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -84,10 +84,10 @@ nb-studio label update <label>
 | -------- | ----------- |
 | `label`  |             |
 
-| Flag      | Type    | Description |
-| --------- | ------- | ----------- |
-| `--name`  | string  |             |
-| `--color` | gray \\ | red \\      | orange \\ | yellow \\ | green \\ | blue \\ | purple |     |
+| Flag      | Type                                                       | Description |
+| --------- | ---------------------------------------------------------- | ----------- |
+| `--name`  | string                                                     |             |
+| `--color` | gray \| red \| orange \| yellow \| green \| blue \| purple |             |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

@@ -5,8 +5,8 @@
  * checkout's `storage/`.
  *
  * It also starts a local OpenAI-compatible model (`mock-llm.ts`) in a process of its own and, once the demo is built,
- * adds it through the agents API as the model service `mock-llm` and gives it to the built-in project assistant, the
- * team's default (`setUpOnline`), so it answers without a runner and without a real model.
+ * adds it through the agents API as the model service `mock-llm` (`setUpModelService`), which the application's own
+ * model calls use without a real model. Agents answer on runners; the tests stand one in (`runner.ts`).
  *
  * Used by `global-setup.ts`, which records what it started in a state file that `global-teardown.ts` and the tests
  * read (`readState`).
@@ -51,6 +51,8 @@ export interface ServerState {
   readonly directory: string;
   /** Whether this run started the server, rather than reusing one through `NB_STUDIO_E2E_URL`. */
   readonly owned: boolean;
+  /** A server reserved exclusively for a destructive test, never the global server. */
+  readonly isolated?: boolean;
   /** The mock model's process and base URL, when this run started one. */
   readonly llm?: { readonly pid: number; readonly url: string };
 }
@@ -94,7 +96,7 @@ async function freePort(): Promise<number> {
   }
 }
 
-/** The model service the browser tests' online agents use: the mock model (`mock-llm.ts`), named from its title. */
+/** The model service the application's own model calls use in the browser tests: the mock model (`mock-llm.ts`), named from its title. */
 export const MOCK_SERVICE = { name: 'mock-llm', title: 'Mock LLM' } as const;
 
 function configYaml(options: {
@@ -228,11 +230,8 @@ async function call<T>(
   ) as T;
 }
 
-/**
- * Adds the mock model as a model service through the agents API, and gives the built-in project assistant (waiting for a
- * model, since the demo found no model service when it was built) the mock model, making it the team's default.
- */
-async function setUpOnline(
+/** Adds the mock model as a model service through the agents API, for the application's own model calls. */
+async function setUpModelService(
   baseURL: string,
   origin: string,
   llmUrl: string,
@@ -250,18 +249,6 @@ async function setUpOnline(
   });
   if (service.name !== MOCK_SERVICE.name)
     throw new Error(`The mock model service is named ${service.name}.`);
-  // The built-in project assistant waits for a model: the demo found no model service when it was built.
-  const assistant = await api<{ id: string; revision: number }>(
-    'GET',
-    'agents/studio-project-assistant',
-  );
-  const online = await api<{ id: string }>('PATCH', `agents/${assistant.id}`, {
-    modelEntries: [{ modelService: service.name, model: MOCK_MODEL }],
-    expectedRevision: assistant.revision,
-  });
-  await api('PATCH', 'agents/chatSettings', {
-    defaultAgentId: online.id,
-  });
 }
 
 /** Starts the mock model in a process of its own on a free port; its base URL. */
@@ -287,7 +274,9 @@ async function startLlm(
   throw new Error('The mock model did not answer.');
 }
 
-export async function startStudio(): Promise<ServerState> {
+export async function startStudio(
+  options: { isolated?: boolean } = {},
+): Promise<ServerState> {
   const entry = path.join(STUDIO_ROOT, 'dist/server/standalone.js');
   if (!existsSync(entry))
     throw new Error(
@@ -325,9 +314,10 @@ export async function startStudio(): Promise<ServerState> {
     pid: child.pid,
     directory,
     owned: true,
+    isolated: options.isolated === true,
     llm,
   };
-  writeState(state);
+  if (!state.isolated) writeState(state);
   let exited: number | null = null;
   child.once('exit', (code) => {
     exited = code ?? -1;
@@ -343,7 +333,7 @@ export async function startStudio(): Promise<ServerState> {
     await sleep(500);
   }
   await waitForDemo(baseURL, origin, deadline);
-  await setUpOnline(baseURL, origin, llm.url);
+  await setUpModelService(baseURL, origin, llm.url);
   return state;
 }
 
@@ -377,4 +367,50 @@ export async function stopStudio(state: ServerState): Promise<void> {
       // Already gone.
     }
   }
+}
+
+/** Crashes and restarts only this test's owned server against its existing database and configuration. */
+export async function restartOwnedStudio(
+  state: ServerState,
+): Promise<ServerState> {
+  if (!state.owned || !state.isolated)
+    throw new Error(
+      'Crash verification requires a throwaway server owned by this test.',
+    );
+  process.kill(-state.pid, 'SIGKILL');
+  await sleep(500);
+  const log = openSync(path.join(state.directory, 'server.log'), 'a');
+  const port = new URL(state.origin).port;
+  const child = spawn(
+    process.execPath,
+    [path.join(STUDIO_ROOT, 'dist/server/standalone.js')],
+    {
+      cwd: path.join(STUDIO_ROOT, 'dist'),
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        APP_CONFIG_FILE: path.join(state.directory, 'config.yml'),
+        APP_STORAGE_DIR: path.join(state.directory, 'storage'),
+        APP_BASE_PATH: '/main',
+        APP_SERVER_PORT: port,
+        APP_SERVER_HOST: '127.0.0.1',
+        APP_PUBLIC_ORIGIN: state.origin,
+      },
+      detached: true,
+      stdio: ['ignore', log, log],
+    },
+  );
+  child.unref();
+  if (!child.pid) throw new Error('The test server could not restart.');
+  const restarted = { ...state, pid: child.pid };
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    const response = await fetch(`${state.baseURL}/login`).catch(() => null);
+    if (response?.ok) {
+      await waitForDemo(state.baseURL, state.origin, deadline);
+      return restarted;
+    }
+    await sleep(500);
+  }
+  throw new Error('The test server did not recover after a crash.');
 }

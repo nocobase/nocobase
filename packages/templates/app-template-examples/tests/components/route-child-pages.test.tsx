@@ -1,3 +1,4 @@
+import { lifecycleRoutes } from '@nocobase/app-plugin-lifecycle-example/client';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
 import {
   TestI18nProvider,
@@ -41,6 +42,13 @@ const registered = resolveAppClientContributions([
     packageName: '@nocobase/app-template-examples',
     source: 'application',
     routes: applicationRoutes,
+  },
+  {
+    packageName: '@nocobase/app-plugin-lifecycle-example',
+    routes: lifecycleRoutes.map((contribution) => ({
+      ...contribution,
+      routes: contribution.routes.map((group) => ({ ...group, children: [] })),
+    })),
   },
 ]).routes;
 

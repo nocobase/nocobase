@@ -44,6 +44,11 @@ export interface RunRecord {
   readonly subjectKind: string;
   readonly subjectId: string;
   readonly threadScope: string;
+  readonly freshSession?: boolean;
+  /** Server-managed authorization for runs caused by one comment, never independent events. */
+  readonly commentRootRunId?: string | null;
+  readonly commentExecution?: 'owner' | 'requester' | null;
+  readonly commentOwnerKey?: string | null;
   readonly actorUserId: string;
   /** Null only on a run older than the column that no backfill reached; read as the actor then. */
   readonly requestedByUserId?: string | null;
@@ -52,6 +57,7 @@ export interface RunRecord {
   readonly requires: readonly unknown[];
   readonly acceptsInput: boolean;
   readonly availableAt: string | null;
+  readonly queueEnteredAt?: string | null;
   readonly leaseExpiresAt: string | null;
   readonly dispatchedAt: string | null;
   readonly startedAt: string | null;
@@ -247,9 +253,13 @@ export function toRun(record: RunRecord): Run {
     attempt: Number(record.attempt),
     maxAttempts: Number(record.maxAttempts),
     retryOfRunId: record.retryOfRunId,
+    freshSession: Boolean(record.freshSession),
     parentRunId: record.parentRunId ?? null,
     subject: { kind: record.subjectKind, id: record.subjectId },
     threadScope: record.threadScope,
+    commentRootRunId: record.commentRootRunId ?? null,
+    commentExecution: record.commentExecution ?? null,
+    commentOwnerKey: record.commentOwnerKey ?? null,
     actorUserId: record.actorUserId,
     requestedByUserId: record.requestedByUserId ?? record.actorUserId,
     confirmedByUserId: record.confirmedByUserId ?? null,
@@ -257,6 +267,7 @@ export function toRun(record: RunRecord): Run {
     requires: stringArray(record.requires) as RunnerFeature[],
     acceptsInput: Boolean(record.acceptsInput),
     availableAt: record.availableAt,
+    queueEnteredAt: record.queueEnteredAt ?? record.createdAt,
     leaseExpiresAt: record.leaseExpiresAt,
     dispatchedAt: record.dispatchedAt,
     startedAt: record.startedAt,

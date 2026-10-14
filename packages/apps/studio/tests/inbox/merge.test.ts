@@ -145,10 +145,13 @@ describe('merging notices', () => {
     await projects.send({
       ...commented('request', ['bob']),
       kind: 'decision',
-      type: 'approval_requested',
-      approvalRequestId: 'r1',
+      type: 'agent_blocked',
     });
-    await projects.resolve({ approvalRequestId: 'r1', outcome: 'approved' });
+    await inbox.resolve({
+      source: 'projects',
+      decisionKey: 'request',
+      outcome: 'answered',
+    });
     // No Studio metadata: still a notification, even when another recipient has a decision for that notification.
     const unknown = await store.deliver({
       deliveryId: 'external:bob',
@@ -202,8 +205,7 @@ describe('merging notices', () => {
     const decision = (key: string): ProjectNotice => ({
       ...commented(key, ['bob']),
       kind: 'decision',
-      type: 'approval_requested',
-      approvalRequestId: key,
+      type: 'agent_blocked',
     });
     await projects.send(decision('r1'));
     await projects.send(decision('r2'));
@@ -243,9 +245,8 @@ describe('waiting decisions and settling', () => {
   ): ProjectNotice => ({
     ...commented(key, userIds),
     kind: 'decision',
-    type: 'approval_requested',
+    type: 'agent_blocked',
     issue: { id: issueId, identifier: `PM-${issueId}` },
-    approvalRequestId: key,
   });
 
   it('lists every decision still waiting with its item, newest first, or those about one subject', async () => {
@@ -253,7 +254,11 @@ describe('waiting decisions and settling', () => {
     await projects.send(commented('c1', ['bob']));
     await projects.send(decision('r2', '2'));
     await projects.send(decision('r3', '1'));
-    await projects.resolve({ approvalRequestId: 'r3', outcome: 'approved' });
+    await inbox.resolve({
+      source: 'projects',
+      decisionKey: 'r3',
+      outcome: 'answered',
+    });
     const waiting = await inbox.waitingFor('bob');
     expect(waiting.map(({ notice }) => notice.decisionKey)).toEqual([
       'r2',
@@ -288,7 +293,7 @@ describe('waiting decisions and settling', () => {
     await inbox.settle({
       source: 'projects',
       subject: { type: 'issue', id: '1' },
-      types: ['approval_requested'],
+      types: ['agent_blocked'],
       userIds: ['bob'],
       outcome: 'answered',
     });

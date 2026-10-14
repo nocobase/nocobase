@@ -26,6 +26,7 @@ import { secretsServiceToken } from '@nocobase/app-server/secrets';
 import { databaseManagerToken } from '@nocobase/db';
 import { ServiceProvider } from '@nocobase/service-provider';
 
+import { studioProjectManagerToken } from '../agents/manager/token.js';
 import { studioGitToken } from '../git/token.js';
 import { studioPreviewsToken } from '../previews/token.js';
 import { buildDemo } from './build.js';
@@ -91,6 +92,9 @@ export default class StudioDemoProvider extends ServiceProvider<Application> {
       access: container.resolve(projectsAccessToken),
       agents: container.has(agentsToken)
         ? container.resolve(agentsToken)
+        : null,
+      projectManager: container.has(studioProjectManagerToken)
+        ? container.resolve(studioProjectManagerToken)
         : null,
       knowledge: container.has(knowledgeToken)
         ? container.resolve(knowledgeToken)

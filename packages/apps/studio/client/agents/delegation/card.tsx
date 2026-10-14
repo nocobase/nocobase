@@ -4,6 +4,8 @@
  * issue and the pull request, quotes the excerpt, and lets the person stop following the issue, or follow it again.
  */
 import { useTranslation } from '@nocobase/i18n/client';
+import { ApiClientError } from '@nocobase/app-client';
+import { useAgentIdentities } from '@nocobase/app-plugin-agents/client/runs';
 import {
   CircleAlertIcon,
   CircleCheckIcon,
@@ -40,13 +42,36 @@ export function DelegationCard({
   const { t } = useTranslation();
   const id = params.delegationId ?? '';
   const delegation = useDelegation(id);
+  const identities = useAgentIdentities();
+  const agentId = params.agentId ?? delegation.data?.agentId;
+  const currentName = agentId ? identities.nameOf(agentId) : null;
+  const missingDelegation =
+    delegation.error instanceof ApiClientError &&
+    delegation.error.status === 404;
+  const identityParams = {
+    ...params,
+    agentName:
+      currentName ??
+      (identities.loading || delegation.isPending
+        ? '…'
+        : identities.failed || (delegation.isError && !missingDelegation)
+          ? t('inbox.anAgent')
+          : (params.agentName ?? t('inbox.anAgent'))),
+    ...(currentName ||
+    identities.loading ||
+    identities.failed ||
+    delegation.isPending ||
+    delegation.isError
+      ? { agentNameKey: '', agentNameNs: '' }
+      : {}),
+  };
   const follow = useFollowDelegation(id);
   const followed = delegation.data?.followed;
   const identifier = params.identifier ?? '';
   return (
     <article
       className='flex w-full min-w-0 flex-col gap-1.5 rounded-lg border bg-card px-3 py-2.5 text-sm'
-      aria-label={delegationHeadline(t, event, params)}
+      aria-label={delegationHeadline(t, event, identityParams)}
       data-testid='delegation-card'
       data-event={event}
     >
@@ -60,7 +85,7 @@ export function DelegationCard({
       >
         {ICONS[event]}
         <span className='min-w-0 wrap-anywhere'>
-          {delegationHeadline(t, event, params)}
+          {delegationHeadline(t, event, identityParams)}
         </span>
       </p>
       <Link

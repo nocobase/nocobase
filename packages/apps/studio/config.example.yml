@@ -50,6 +50,10 @@ secrets:
       key: replace-with-a-unique-secret
 
 auth:
+  passwordReset:
+    # Set app.publicOrigin (or APP_PUBLIC_ORIGIN) to the public origin before enabling automatic recovery.
+    enabled: true # Requires an enabled SMTP or Resend channel; operators opt in in their deployment configuration.
+    emailChannel: system-email
   emailAndPassword:
     enabled: true
     autoSignIn: false

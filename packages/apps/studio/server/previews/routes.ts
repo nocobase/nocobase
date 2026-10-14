@@ -57,6 +57,7 @@ import {
   IssueIdsQuery,
   IssuePreviewsSchema,
   PreviewDownInput,
+  PreviewPreferenceInput,
   PreviewListItemSchema,
   PreviewListQuery,
   PreviewLogEntrySchema,
@@ -312,7 +313,7 @@ function withoutPassword(previews: IssuePreviews): IssuePreviews {
 
 /**
  * `/previews`: what the issue page and the `preview` commands share. The run-capable routes act as the caller's
- * `Viewer` (`permissions`): a person narrowed by their key's scope, a run by its agent's actions.
+ * `Viewer` (`permissions`): a person narrowed by their key's scope, a run by Studio's command scope.
  */
 function previewRouter(deps: {
   readonly authentication: Pick<Auth, 'required'>;
@@ -412,6 +413,41 @@ function previewRouter(deps: {
           adminPassword === 'true' && caller.kind === 'user'
             ? read
             : withoutPassword(read),
+      });
+    },
+  );
+  routes.post(
+    '/preference',
+    ...personOrRun,
+    describeRoute({
+      tags,
+      summary: 'Set whether an issue needs a preview',
+      operationId: 'previewsSetIssuePreference',
+      description:
+        'Requires editing the issue. Only when all linked issues opt out does Studio add no-preview to an open pull request. Pre-existing manual labels and existing previews are preserved. Label failures are returned in labels and retried by polling. This does not cancel running CI or start a preview immediately.',
+      security: personOrRunSecurity,
+      responses: {
+        200: dataResponse(IssuePreviewsSchema),
+        ...apiErrorResponses,
+        404: issueNotFound,
+      },
+      ...cliRoute({
+        command: 'preview preference set',
+        flags: { issueId: issueFlag },
+        action: 'pm.issues/edit',
+      }),
+    }),
+    apiValidator('json', PreviewPreferenceInput),
+    async (c) => {
+      const { issueId, notRequired } = c.req.valid('json');
+      return c.json({
+        data: withoutPassword(
+          await previews.setPreference(
+            await viewer(c),
+            issueOf(c, issueId),
+            notRequired,
+          ),
+        ),
       });
     },
   );

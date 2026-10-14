@@ -2,8 +2,7 @@
  * For an application's tests of what it builds on this plugin: the services assembled against a database the test
  * opens, this plugin's migrations, the run and runner routes to mount on a test server with the test's own
  * authentication, the run token as a credential of the application's authentication and the plugin's part of the
- * command manifest, and the online executor to run over a scripted model gateway. Not for production code: the plugin's
- * providers and routes assemble and mount these there.
+ * command manifest. Not for production code: the plugin's providers and routes assemble and mount these there.
  */
 import path from 'node:path';
 
@@ -14,18 +13,6 @@ export {
   type CliSurface,
   type CliSurfaceOptions,
 } from './cli/surface.js';
-export {
-  cliCommand,
-  createServerExecutor,
-  onlineTools,
-  type CommandSurface,
-} from './online/index.js';
-export {
-  scriptedModels,
-  scriptedSteps,
-  type ScriptedModels,
-  type Step as ScriptedStep,
-} from './online/scripted.js';
 export { createRunRoutes, type RunEnv } from './routes/run.js';
 export { createRosterRoutes } from './routes/roster.js';
 export {

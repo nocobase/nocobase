@@ -4,6 +4,7 @@
  * in the application's locales (`client/locales/en-US.ts` and `zh-CN.ts` spread these in).
  */
 export const knowledgeEnUS = {
+  shared: 'Shared across projects',
   systemTitle: 'System knowledge',
   switcher: { projects: 'Project knowledge' },
   access: {
@@ -190,14 +191,6 @@ export const knowledgeEnUS = {
         'The best hits handed to the rerank model, when one is set (1–50).',
       invalid: 'Check the ranges above.',
     },
-    whole: {
-      title: 'Put small knowledge bases in the prompt',
-      description:
-        'When everything an online agent may read is estimated below this many tokens, it goes whole into the agent’s prompt (cached by the model service) instead of being searched. 0 turns this off.',
-      approx: 'About {{value}} tokens',
-      off: 'Off',
-      invalid: 'Enter a whole number from 0 to 1,000,000.',
-    },
   },
   doc: { notFound: 'This document no longer exists, or you may not see it.' },
   proposals: {
@@ -223,6 +216,7 @@ export const knowledgeEnUS = {
 };
 
 export const knowledgeZhCN: typeof knowledgeEnUS = {
+  shared: '跨项目共享',
   systemTitle: '系统知识',
   switcher: { projects: '项目知识' },
   access: {
@@ -401,14 +395,6 @@ export const knowledgeZhCN: typeof knowledgeEnUS = {
       rerankCandidatesHint:
         '设置了重排模型时，交给它重新排序的靠前结果数（1–50）。',
       invalid: '请检查上面的取值范围。',
-    },
-    whole: {
-      title: '小知识库直接放进提示词',
-      description:
-        '在线 Agent 可读的全部知识估算低于这个 token 数时，直接整体放入它的提示词（由模型服务缓存），不再检索。0 表示关闭。',
-      approx: '约 {{value}} token',
-      off: '已关闭',
-      invalid: '请输入 0 到 1,000,000 之间的整数。',
     },
   },
   doc: { notFound: '这篇文档已不存在，或者你没有权限查看。' },

@@ -3,12 +3,26 @@
  * and stops or resumes following the issue; other news is left to its line.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ApiClientError } from '@nocobase/app-client';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const request = vi.fn();
+const identities = {
+  loading: false,
+  failed: false,
+  nameOf: (id: string) =>
+    id === 'coder'
+      ? 'Coder'
+      : id === 'studio-project-manager'
+        ? '负责人'
+        : null,
+};
+vi.mock('@nocobase/app-plugin-agents/client/runs', () => ({
+  useAgentIdentities: () => identities,
+}));
 
 vi.mock('@nocobase/app-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@nocobase/app-client')>()),
@@ -53,6 +67,8 @@ function show(node: ReactNode) {
 }
 
 beforeEach(() => {
+  identities.loading = false;
+  identities.failed = false;
   request.mockReset();
   request.mockImplementation(
     (options: { method?: string; json?: { followed: boolean } }) =>
@@ -66,6 +82,66 @@ beforeEach(() => {
 });
 
 describe('the delegation card', () => {
+  it.each([403, 404])(
+    'distinguishes refused lookups from a missing delegation (%s)',
+    async (status) => {
+      request.mockRejectedValue(
+        new ApiClientError('Lookup unavailable', {
+          status,
+          method: 'GET',
+          url: '/delegations/d1',
+        }),
+      );
+      show(
+        renderDelegationNews({
+          code: 'news',
+          type: 'delegation',
+          title: 'Old title',
+          params: {
+            delegationId: 'd1',
+            event: 'finished',
+            agentName: 'Project manager',
+            agentNameKey: 'studioAgents.projectManager.name',
+            agentNameNs: 'studio',
+            identifier: 'PM-12',
+          },
+        }),
+      );
+      const agent = status === 404 ? 'Project manager' : 'inbox.anAgent';
+      await waitFor(() =>
+        expect(screen.getByTestId('delegation-card')).toHaveAttribute(
+          'aria-label',
+          `studioAgents.delegation.events.finished(identifier=PM-12,agent=${agent},status=)`,
+        ),
+      );
+    },
+  );
+  it('uses the current database identity for an old milestone and its accessible label', () => {
+    show(
+      renderDelegationNews({
+        code: 'news',
+        type: 'delegation',
+        title: 'Old title',
+        params: {
+          delegationId: 'd1',
+          event: 'finished',
+          agentId: 'studio-project-manager',
+          agentName: 'Project manager',
+          agentNameKey: 'studioAgents.projectManager.name',
+          agentNameNs: 'studio',
+          identifier: 'PM-12',
+          excerpt: 'Historical Project manager text',
+        },
+      }),
+    );
+    expect(screen.getByTestId('delegation-card')).toHaveAttribute(
+      'aria-label',
+      'studioAgents.delegation.events.finished(identifier=PM-12,agent=负责人,status=)',
+    );
+    expect(
+      screen.getByText('Historical Project manager text'),
+    ).toBeInTheDocument();
+  });
   it('shows the milestone with its links, and stops and resumes following', async () => {
     show(
       renderDelegationNews({

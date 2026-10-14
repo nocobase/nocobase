@@ -74,6 +74,8 @@ export interface ApplicationOptions<
 > {
   readonly config: TConfig;
   readonly mode?: 'standalone' | 'embedded';
+  /** The application's resolved NODE_ENV, not the hosting process's environment. */
+  readonly nodeEnv?: string;
   readonly paths: AppPaths;
   readonly websocket?: ApplicationWebSocketFactory;
   readonly runtimeLogging?: AppRuntimeLogging;
@@ -119,6 +121,7 @@ export class Application<
   public readonly consoleLogStream: 'stdout' | 'stderr' | undefined;
   public readonly config: TConfig;
   public readonly mode: 'standalone' | 'embedded';
+  public readonly nodeEnv: string | undefined;
   public readonly paths: AppPaths;
   public readonly container: ServiceContainer;
   public readonly fetch: ApplicationFetchHandler = async (
@@ -167,6 +170,7 @@ export class Application<
     this.consoleLogStream = options.consoleLogStream;
     this.config = options.config;
     this.mode = options.mode ?? 'embedded';
+    this.nodeEnv = options.nodeEnv;
     this.paths = options.paths;
     this.container = new ServiceContainer();
     this.usesDefaultWebSocket = options.websocket === undefined;

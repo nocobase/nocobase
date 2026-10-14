@@ -171,6 +171,7 @@ describe('the shared pnpm store', () => {
 
   it('is what the agent is told to install with, instead of a store of its own', () => {
     const notes = workspaceNotes({
+      tmpDir: '/tmp/n-12345678/1234567890abcdef',
       workDir: '/w/task-a',
       cwd: '/w/task-a',
       dirs: [],
@@ -183,6 +184,7 @@ describe('the shared pnpm store', () => {
     expect(notes).toContain('`pnpm patch`');
     expect(
       workspaceNotes({
+        tmpDir: '/tmp/n-12345678/1234567890abcdef',
         workDir: '/w/task-a',
         cwd: '/w/task-a',
         dirs: [],
