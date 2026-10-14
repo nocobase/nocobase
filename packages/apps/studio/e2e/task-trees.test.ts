@@ -70,10 +70,12 @@ test('separate pages default to table, preserve view choices, and expose grouped
   await api.patch(`projects/issues/${child.id}`, {
     revision: child.revision,
     statusKey: 'blocked',
+    needsYou: 'Decide how to unblock the grouped child task.',
   });
   await api.patch(`projects/issues/${review.id}`, {
     revision: review.revision,
     statusKey: 'in_review',
+    needsYou: 'Review the completed task and approve it or send feedback.',
   });
   const screenshots = async (name: string) => {
     await page.screenshot({
@@ -512,6 +514,7 @@ test('shows initial loading and retains a coherent table after refresh failure',
   await api.patch(`projects/issues/${issue.id}`, {
     revision: issue.revision,
     statusKey: 'in_review',
+    needsYou: 'Review the completed task and approve it or send feedback.',
   });
   await expect(
     page.getByText(

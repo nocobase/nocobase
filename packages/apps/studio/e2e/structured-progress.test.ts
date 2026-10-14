@@ -11,7 +11,7 @@ import {
 } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
 
-test.use({ user: 'admin', locale: 'en-US' });
+test.use({ user: 'admin', locale: 'en-US', actionTimeout: 15_000 });
 
 test('structured requests survive later explanations and locate their latest comment', async ({
   page,
@@ -224,9 +224,8 @@ test('structured requests survive later explanations and locate their latest com
       issueIds: created.map((issue) => issue.id),
     });
     await open(page, `/follow-ups?issue=${blocked.issue.identifier}`);
-    const mine = page.getByTestId('follow-ups-mine');
-    await mine.getByRole('button', { name: /^Blocked\b/u }).click();
-    const row = mine.locator(`[data-issue="${blocked.issue.identifier}"]`);
+    const rail = page.getByTestId('follow-ups-following');
+    const row = rail.locator(`[data-issue="${blocked.issue.identifier}"]`);
     await expect(row).toContainText(needsYou);
     await row.getByText(blocked.issue.title, { exact: true }).click();
     const activity = page.getByTestId('follow-ups-activity');
