@@ -26,7 +26,7 @@ nb-studio follow-up follow <issue>
 
 Get my follow-ups
 
-The issues the caller owns that are in review, blocked, in progress or in backlog, and the issues they follow (at most five, explicitly chosen; empty until the caller follows an issue), each with what it waits for now and, for a followed one, how many comments and changes others made since the caller last looked at it. Needs `pm.issues` view.
+The issues the caller owns that are in review, blocked, in progress or in backlog, and the issues they follow (at most five; by default their blocked and in-review issues, newest first), each with what it waits for now and, for a followed one, how many comments and changes others made since the caller last looked at it. Needs `pm.issues` view.
 
 ```bash
 nb-studio follow-up list

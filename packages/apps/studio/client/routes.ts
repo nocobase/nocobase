@@ -24,6 +24,7 @@ import {
   FolderKanban,
   InboxIcon,
   LayoutDashboard,
+  ListChecks,
   ListTodo,
   MessagesSquare,
   MonitorCog,
@@ -87,7 +88,7 @@ function issueDetailRoute(owner?: string): AppClientRouteDefinition {
 }
 
 /**
- * The sidebar: My tasks (0), My agents (0.5), Inbox (1), Dashboard (2), then
+ * The sidebar: My tasks (0), My agents (0.5), Inbox (1), Dashboard (2), My follow-ups (3), then
  * Development (4: issues, projects, knowledge), Releases (4.5: Apps, environments), Agent team (5) and Settings (7).
  * The layout adds the inbox's live count to its route navigation. A section is a route without a page of its own;
  * the layout draws it as a label over its entries (`layouts/components/navigation-menu.tsx`). The projects and
@@ -223,11 +224,17 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     path: '/inbox',
   },
   {
-    // Legacy links redirect to the personal task workspace behind the same page grant.
+    // The issues the viewer follows and owns, each with what it waits for now and its live activity
+    // (`pages/follow-ups`), after Dashboard. It shows issues as My issues does, behind the same page grant.
     name: 'follow-ups',
     path: '/follow-ups',
     auth: 'required',
     authz: { resource: { type: 'page', id: 'pm-my-issues' }, action: 'access' },
+    navigation: {
+      title: 'navigation.followUps',
+      icon: ListChecks,
+      order: 3,
+    },
     breadcrumb: { title: 'navigation.followUps' },
     componentLoader: () => import('./pages/follow-ups/index.js'),
   },
