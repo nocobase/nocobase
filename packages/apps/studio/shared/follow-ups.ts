@@ -6,6 +6,7 @@
  * | Method | Route                                      | Body                    | `data`            |
  * | ------ | ------------------------------------------ | ----------------------- | ----------------- |
  * | GET    | `followUps`                                |                         | `FollowUpsView`   |
+ * | GET    | `followUps/issues?issueIds=a,b`            |                         | `FollowUpIssue[]` |
  * | PUT    | `followUps/following`                      | `{ issueIds }`          | `FollowingView`   |
  * | POST   | `followUps/issues/:issueId/follow`         |                         | `FollowingView`   |
  * | POST   | `followUps/issues/:issueId/unfollow`       |                         | `FollowingView`   |

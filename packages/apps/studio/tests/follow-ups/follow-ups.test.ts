@@ -66,7 +66,7 @@ const follow = (issueIds: readonly string[], user = 'alice') =>
   h.request('PUT', '/followUps/following', { user, body: { issueIds } });
 
 describe('the overview', () => {
-  it('reports why queued work on a followed issue is waiting', async () => {
+  it('lists queued work on a followed issue, and leaves why it waits to the issue’s own progress', async () => {
     await h.createAgent();
     const task = await create('alice', {
       statusKey: 'in_progress',
@@ -86,19 +86,27 @@ describe('the overview', () => {
     expect((await follow([task.id])).status).toBe(200);
 
     const data = await overview();
-    expect(
-      data.issues.find((item: { id: string }) => item.id === task.id),
-    ).toMatchObject({
+    const row = data.issues.find((item: { id: string }) => item.id === task.id);
+    expect(row).toMatchObject({
       followed: true,
       progress: {
         state: 'queued',
         agent: { id: PROJECT_MANAGER_ID },
-        waiting: { reason: 'noRunner', owner: { id: 'alice' } },
+        waiting: null,
       },
+    });
+    expect(row.progress.managerWait).toBeUndefined();
+    const own = await h.request('GET', `/issueProgress/${task.id}`, {
+      user: 'alice',
+    });
+    expect(own.body.data).toMatchObject({
+      state: 'queued',
+      agent: { id: PROJECT_MANAGER_ID },
+      waiting: { reason: 'noRunner', owner: { id: 'alice' } },
     });
   });
 
-  it('includes shared queue diagnostics and only the viewer machine details', async () => {
+  it('leaves queue diagnostics to the issue’s own progress, with only the viewer machine details', async () => {
     h.roles.set('alice', 'admin');
     const worker = await h.createAgent({
       name: 'Worker',
@@ -134,7 +142,12 @@ describe('the overview', () => {
     const item = data.issues.find(
       (issue: { id: string }) => issue.id === queued.id,
     );
-    expect(item.progress).toMatchObject({
+    expect(item.progress).toMatchObject({ state: 'queued', waiting: null });
+    expect(item.progress.managerWait).toBeUndefined();
+    const own = await h.request('GET', `/issueProgress/${queued.id}`, {
+      user: 'alice',
+    });
+    expect(own.body.data).toMatchObject({
       state: 'queued',
       managerWait: {
         entries: [{ reason: 'busy', runners: ['alice-machine'] }],
@@ -234,6 +247,69 @@ describe('the overview', () => {
     expect((await h.request('GET', '/followUps', { user: 'bob' })).status).toBe(
       403,
     );
+  });
+});
+
+describe('the rows of named issues', () => {
+  const rows = (issueIds: readonly string[], user = 'alice') =>
+    h.request('GET', `/followUps/issues?issueIds=${issueIds.join(',')}`, {
+      user,
+    });
+
+  it('answers the overview’s rows of the named issues it lists, and leaves the others out', async () => {
+    const review = await create('alice', { title: 'Ready' });
+    await move(review, 'in_review');
+    const backlog = await create('alice', { title: 'Later' });
+    const done = await create('alice', { title: 'Shipped' });
+    await move(done, 'done');
+    const theirs = await create('bob', { title: 'Theirs' });
+    const followedTheirs = await create('bob', { title: 'Followed' });
+    expect((await follow([review.id, followedTheirs.id])).status).toBe(200);
+
+    const listed = new Map<string, unknown>(
+      (await overview()).issues.map((issue: { id: string }) => [
+        issue.id,
+        issue,
+      ]),
+    );
+    const answer = await rows([
+      review.id,
+      backlog.id,
+      done.id,
+      theirs.id,
+      followedTheirs.id,
+      'nope',
+    ]);
+    expect(answer.status).toBe(200);
+    expect(answer.body.meta).toEqual({ total: 3 });
+    expect(
+      new Map(
+        answer.body.data.map((issue: { id: string }) => [issue.id, issue]),
+      ),
+    ).toEqual(
+      new Map(
+        [review.id, backlog.id, followedTheirs.id].map((id) => [
+          id,
+          listed.get(id),
+        ]),
+      ),
+    );
+    expect((await rows([theirs.id])).body).toEqual({
+      data: [],
+      meta: { total: 0 },
+    });
+  });
+
+  it('refuses someone signed out or who may not view issues, and too many issues', async () => {
+    expect(
+      (await h.request('GET', '/followUps/issues?issueIds=a')).status,
+    ).toBe(401);
+    h.roles.set('bob', 'none');
+    expect((await rows(['a'], 'bob')).status).toBe(403);
+    const tooMany = await rows(
+      Array.from({ length: 101 }, (_, index) => `issue-${index}`),
+    );
+    expect(tooMany.status).toBe(400);
   });
 });
 
@@ -404,6 +480,9 @@ describe('the routes in the API document', () => {
     const unfollow =
       document.paths?.['/api/followUps/issues/{issueId}/unfollow']?.post;
     expect(follow?.operationId).toBe('followUpsFollowIssue');
+    expect(document.paths?.['/api/followUps/issues']?.get?.operationId).toBe(
+      'followUpsListIssues',
+    );
     expect(unfollow?.operationId).toBe('followUpsUnfollowIssue');
     expect(
       (follow as { 'x-cli'?: { command?: string } })['x-cli']?.command,

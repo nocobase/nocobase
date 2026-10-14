@@ -4,6 +4,7 @@
  * `pm.issues` view; a scoped API key and a run are refused, as for the person's other preferences.
  *
  * - `GET /followUps`: the overview.
+ * - `GET /followUps/issues?issueIds=…`: the overview's rows of the named issues, for the page to refresh only them.
  * - `PUT /followUps/following`: replaces the followed issues.
  * - `POST /followUps/issues/{issueId}/follow` and `/unfollow`: adds or takes off one issue, the follow star's own.
  * - `POST /followUps/issues/{issueId}/markSeen`: the caller looked at the issue now.
@@ -26,6 +27,7 @@ import {
   defineApiRoutes,
   describeRoute,
   emptyResponse,
+  listResponse,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono, type Context } from 'hono';
@@ -36,8 +38,12 @@ import { createAskerLookup } from '../agents/conversation/acting.js';
 import { callerOfRequest } from '../agents/run-principal.js';
 import { studioError, studioErrorHandler } from '../http/errors.js';
 import {
+  FOLLOW_UP_ROWS_MAX,
   FollowingInputSchema,
   FollowingViewSchema,
+  FollowUpIssueSchema,
+  FollowUpRowsMeta,
+  FollowUpRowsQuery,
   FollowUpsViewSchema,
 } from './schemas.js';
 import { FOLLOW_UPS_MAX } from '../../shared/follow-ups.js';
@@ -117,6 +123,30 @@ export const followUpsRoutes: AppApiRouteContribution<Application> =
         context.json({
           data: await followUps.overview(await viewerOf(context)),
         }),
+    );
+
+    routes.get(
+      '/issues',
+      describeRoute({
+        tags,
+        summary: 'List my follow-ups rows of some issues',
+        operationId: 'followUpsListIssues',
+        // The page refreshes the rows a change names with it; `follow-up list` reads the whole overview.
+        ...cliRoute(false),
+        description: `The rows \`GET /followUps\` answers for the named issues, as it would answer them now: those the caller owns in review, blocked, in progress or in backlog, and those they follow; any other issue, or one they cannot see, is left out. \`issueIds\` is a comma-separated list of at most ${FOLLOW_UP_ROWS_MAX} issue IDs. Needs \`pm.issues\` view.`,
+        responses: {
+          200: listResponse(FollowUpIssueSchema, FollowUpRowsMeta),
+          ...apiErrorResponses,
+        },
+      }),
+      apiValidator('query', FollowUpRowsQuery),
+      async (context) => {
+        const data = await followUps.rows(
+          await viewerOf(context),
+          context.req.valid('query').issueIds,
+        );
+        return context.json({ data, meta: { total: data.length } });
+      },
     );
 
     routes.put(

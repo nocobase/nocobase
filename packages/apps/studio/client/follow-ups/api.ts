@@ -1,9 +1,9 @@
 /**
- * "My follow-ups" in the browser (`/api/followUps`, `server/follow-ups/routes.ts`). The overview's key is under the
- * projects plugin's issues; an announced change to an issue it lists, or to its runs, reads it again
- * (`issues/live/realtime-refresh.ts`), and it reads again every `OVERVIEW_POLL_MS` as a fallback.
+ * "My follow-ups" in the browser (`/api/followUps`, `server/follow-ups/routes.ts`). An announced change to issues, or
+ * to their runs, reads the rows of those issues again and merges them in (`issues/live/realtime-refresh.ts`); anything
+ * else, and every `OVERVIEW_POLL_MS` as a fallback, reads the whole overview again.
  */
-import { useApiClient } from '@nocobase/app-client';
+import { useApiClient, type ApiClient } from '@nocobase/app-client';
 import {
   useMutation,
   useQuery,
@@ -13,10 +13,37 @@ import {
 } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
-import type { FollowingView, FollowUpsView } from '../../shared/follow-ups.js';
-import { followUpsKeys } from './model.js';
+import type {
+  FollowingView,
+  FollowUpIssue,
+  FollowUpsView,
+} from '../../shared/follow-ups.js';
+import { followUpsKeys, mergeFollowUpRows } from './model.js';
 
 const OVERVIEW_POLL_MS = 60_000;
+
+/** The most issues one rows read names (`FOLLOW_UP_ROWS_MAX` on the server). */
+const ROWS_MAX = 100;
+
+/** Reads the overview's rows of `issueIds` (`GET followUps/issues`): those it lists now, the others left out. */
+export async function readFollowUpRows(
+  api: Pick<ApiClient, 'request'>,
+  issueIds: readonly string[],
+): Promise<FollowUpIssue[]> {
+  const rows: FollowUpIssue[] = [];
+  for (let start = 0; start < issueIds.length; start += ROWS_MAX)
+    rows.push(
+      ...(
+        await api.request<{ data: FollowUpIssue[] }>({
+          path: 'followUps/issues',
+          query: {
+            issueIds: issueIds.slice(start, start + ROWS_MAX).join(','),
+          },
+        })
+      ).data,
+    );
+  return rows;
+}
 
 export function useFollowUps(): UseQueryResult<FollowUpsView> {
   const api = useApiClient();
@@ -88,7 +115,7 @@ export function useFollowIssue(
   });
 }
 
-/** Records that the viewer looked at an issue now, then reads the unread counts again. */
+/** Records that the viewer looked at an issue now, then reads that issue's row again. */
 export function useMarkSeen(): (issueId: string) => void {
   const api = useApiClient();
   const client = useQueryClient();
@@ -100,9 +127,25 @@ export function useMarkSeen(): (issueId: string) => void {
           path: `followUps/issues/${encodeURIComponent(issueId)}/markSeen`,
         })
         .then(
-          () => client.invalidateQueries({ queryKey: followUpsKeys.overview }),
+          async () => {
+            const rows = await readFollowUpRows(api, [issueId]);
+            const view = client.getQueryData<FollowUpsView>(
+              followUpsKeys.overview,
+            );
+            const merged = view
+              ? mergeFollowUpRows(view, new Set([issueId]), rows)
+              : null;
+            if (merged) client.setQueryData(followUpsKeys.overview, merged);
+            else
+              await client.invalidateQueries({
+                queryKey: followUpsKeys.overview,
+              });
+          },
           // Only the unread count is lost; the next look records it again.
           () => undefined,
+        )
+        .catch(() =>
+          client.invalidateQueries({ queryKey: followUpsKeys.overview }),
         );
     },
     [api, client],

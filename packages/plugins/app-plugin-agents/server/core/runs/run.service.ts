@@ -71,6 +71,7 @@ import {
   isTerminal,
   lastSummary,
   openRunsOn,
+  openRunsOnEach,
   pendingInputs,
   reposRepo,
   runsOfKey,
@@ -294,6 +295,12 @@ export interface RunService {
     conn: DatabaseConnection,
     subject: { readonly kind: string; readonly id: string },
     agentId?: string,
+  ): Promise<Run[]>;
+  /** The runs that have not ended on each of `subjectIds` of `subjectKind`, oldest first; read on `conn`. */
+  openOnEach(
+    conn: DatabaseConnection,
+    subjectKind: string,
+    subjectIds: readonly string[],
   ): Promise<Run[]>;
   /** The run's input not yet reported as handled, oldest first; read on `conn`. */
   pendingInputs(conn: DatabaseConnection, runId: string): Promise<RunInput[]>;
@@ -1771,6 +1778,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
     },
 
     openOn: openRunsOn,
+    openOnEach: openRunsOnEach,
     pendingInputs: async (conn, runId) =>
       (await pendingInputs(conn, runId)).map(toInput),
     inputsSince: inputsOnSince,
