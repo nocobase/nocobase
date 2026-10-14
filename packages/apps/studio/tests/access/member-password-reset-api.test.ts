@@ -213,6 +213,20 @@ describe('resetting a member’s password through the real application', () => {
     });
     expect(beforeReset.status).toBe(200);
 
+    const { scopedApiKeysToken } =
+      await import('@nocobase/app-plugin-api-keys/server');
+    const keys = server.application.container.resolve(scopedApiKeysToken);
+    const personalKey = await keys.create(
+      userId,
+      { name: 'Synthetic retained key', expiresInDays: 1, scope: null },
+      await keys.identityOf(userId),
+    );
+    const keyRequest = () =>
+      apiRequest(server, '/users/me/preferences', {
+        headers: { 'x-api-key': personalKey.secret },
+      });
+    expect((await keyRequest()).status).toBe(200);
+
     const reset = await apiRequest(server, `/users/${userId}/resetPassword`, {
       method: 'POST',
       headers: { cookie: adminCookie, 'content-type': 'application/json' },
@@ -242,6 +256,27 @@ describe('resetting a member’s password through the real application', () => {
       user: { id: string };
     };
     expect(signedInUser.user.id).toBe(userId);
+    expect((await keyRequest()).status).toBe(200);
+    expect((await keys.get(userId, personalKey.key.id)).id).toBe(
+      personalKey.key.id,
+    );
+    const disabled = await apiRequest(server, `/users/${userId}/disable`, {
+      method: 'POST',
+      headers: { cookie: adminCookie },
+    });
+    expect(disabled.status).toBe(200);
+    const inactive = await keyRequest();
+    expect(inactive.status).toBeGreaterThanOrEqual(400);
+    expect(inactive.status).toBeLessThan(500);
+    const enabled = await apiRequest(server, `/users/${userId}/enable`, {
+      method: 'POST',
+      headers: { cookie: adminCookie },
+    });
+    expect(enabled.status).toBe(200);
+    expect((await keyRequest()).status).toBe(200);
+    expect((await keys.get(userId, personalKey.key.id)).id).toBe(
+      personalKey.key.id,
+    );
   });
 
   it('refuses a caller without the reset-password permission', async () => {
