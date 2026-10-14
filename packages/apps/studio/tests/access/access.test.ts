@@ -113,6 +113,7 @@ beforeAll(async () => {
 afterAll(() => databases.drop());
 
 beforeEach(async () => {
+  next = 0;
   testDatabase = await databases.open({
     migrations: (
       [
@@ -484,6 +485,60 @@ describe('the default role for new members', () => {
 });
 
 describe('the role service', () => {
+  it('copies nonempty grants into an independent role without copying assignments or changing the source', async () => {
+    const root = await viewer('root');
+    const source = await access.roles.create(root, {
+      title: 'x'.repeat(100),
+      pages: ['pm-issues'],
+      settings: { 'pm.labels/read': true },
+      abilities: { 'pm.issues/view': 'all', 'pm.issues/edit': 'related' },
+    });
+    await addUser('alice');
+    await assign('alice', source.key);
+    await access.roles.updateSettings(root, { defaultRole: source.key });
+    const before = await access.roles.get(root, source.key);
+    const copy = await access.roles.create(root, {
+      title: 'x'.repeat(93) + ' (copy)',
+      pages: source.pages,
+      settings: source.settings,
+      abilities: source.abilities,
+    });
+    expect(copy.key).not.toBe(source.key);
+    expect(copy.holderIds).toEqual([]);
+    for (const field of ['pages', 'settings', 'abilities'] as const)
+      expect(copy[field]).toEqual(source[field]);
+    await access.roles.update(root, copy.key, {
+      pages: [],
+      settings: {},
+      abilities: {},
+    });
+    expect(await access.roles.get(root, source.key)).toEqual(before);
+    expect((await access.roles.settings(root)).defaultRole).toBe(source.key);
+    expect((await access.roles.me(await viewer('alice'))).roles).toContain(
+      source.key,
+    );
+    expect((await access.roles.me(await viewer('alice'))).roles).not.toContain(
+      copy.key,
+    );
+  });
+
+  it('still refuses overlong titles and callers without role management permission', async () => {
+    const before = await sets();
+    await expect(
+      access.roles.create(await viewer('root'), {
+        title: 'x'.repeat(101),
+      }),
+    ).rejects.toMatchObject({ status: 400, code: 'INVALID_TITLE' });
+    await addUser('alice');
+    await assign('alice', 'contributor');
+    await expect(
+      access.roles.create(await viewer('alice'), {
+        title: 'QA copy',
+      }),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(await sets()).toEqual(before);
+  });
+
   it('creates a role from pages, settings and abilities and reads it back', async () => {
     const created = await access.roles.create(await viewer('root'), {
       title: 'Tester',
