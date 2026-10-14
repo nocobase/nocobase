@@ -263,7 +263,7 @@ function SkillFacts({
   );
 }
 
-/** The agents the skill is attached to, and how many places of each scope take it by default. */
+/** How many places of each supported scope take the skill by default. */
 function SkillAttachments({
   skill,
 }: {

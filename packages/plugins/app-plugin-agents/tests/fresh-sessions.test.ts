@@ -71,8 +71,12 @@ describe('fresh run sessions', () => {
     await enqueue(agent);
     const [initial] = await claim(h, runner);
     await finish(runner, initial, 'before-global');
-    const skill = await h.services.skills.create('owner', { content: skillMd('team-default', 'First rules.') });
-    await h.services.skills.attach({ scope: 'global', scopeId: 'default' }, [skill.id]);
+    const skill = await h.services.skills.create('owner', {
+      content: skillMd('team-default', 'First rules.'),
+    });
+    await h.services.skills.attach({ scope: 'global', scopeId: 'default' }, [
+      skill.id,
+    ]);
     await enqueue(agent);
     const [added] = await claim(h, runner);
     expect(added.prompt.session).toBe('fresh');
@@ -82,7 +86,11 @@ describe('fresh run sessions', () => {
     const [stable] = await claim(h, runner);
     expect(stable.prompt.session).toBe('resume');
     await finish(runner, stable, 'with-global');
-    await h.services.skills.save(skill.id, 'owner', { content: skillMd('team-default', 'Updated rules.'), files: [], expectedRevision: 1 });
+    await h.services.skills.save(skill.id, 'owner', {
+      content: skillMd('team-default', 'Updated rules.'),
+      files: [],
+      expectedRevision: 1,
+    });
     await enqueue(agent);
     const [updated] = await claim(h, runner);
     expect(updated.prompt.session).toBe('fresh');

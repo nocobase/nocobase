@@ -169,7 +169,9 @@ describe('skill storage', () => {
     ).toBe(404);
 
     const agentId = await h.createAgent();
-    await h.services.skills.attach({ scope: 'global', scopeId: 'default' }, [id]);
+    await h.services.skills.attach({ scope: 'global', scopeId: 'default' }, [
+      id,
+    ]);
     await h.enqueue(agentId, '1');
     const runner = await h.registerRunner();
     const [payload] = await claim(h, runner);

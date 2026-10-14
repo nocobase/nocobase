@@ -1275,7 +1275,7 @@ export function createAdminRoutes(
         },
       }),
       description:
-        "The skills every run gets: global default, then application scopes, then working directories; later scopes override the same slug. Global reads require agents.agents read or manage.",
+        'The skills every run gets: global default, then application scopes, then working directories; later scopes override the same slug. Global reads require agents.agents read or manage.',
       responses: {
         200: dataResponse(SkillAttachmentsSchema),
         404: noScope,
@@ -1314,6 +1314,8 @@ export function createAdminRoutes(
           skillIds: { name: 'skills' },
         },
         examples: [
+          'skill attachment set global default --skills <skill>,<skill>',
+          'skill attachment set global default --file empty-skills.json',
           'skill attachment set workdir <workdir> --skills <skill>,<skill>',
         ],
       }),

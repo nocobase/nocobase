@@ -1,5 +1,5 @@
 import { writeFileSync } from 'node:fs';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, describe, expect, it } from 'vitest';
 import { claim, createHarness, skillMd, type Harness } from './harness.js';
 import { replaceAttachments } from '../server/core/skills/skill.store.js';
 
@@ -20,17 +20,17 @@ afterEach(async () => {
 // Opt-in complete-claim measurements, identical fixtures on the base and implementation.
 const measure = process.env.PM387_COST_REPORT ? describe : describe.skip;
 measure('complete claim skill cost', () => {
-  it('records successful, empty and filtered multi-candidate claims without SQL parameters', async () => {
-    const report: Record<string, unknown>[] = [];
-    for (const scenario of [
-      'empty',
-      'one',
-      'many',
-      'duplicate',
-      'no-candidate',
-      'multi-candidate',
-    ]) {
-      for (let sample = 0; sample < 3; sample += 1) {
+  const report: Record<string, unknown>[] = [];
+  for (const scenario of [
+    'empty',
+    'one',
+    'many',
+    'duplicate',
+    'no-candidate',
+    'multi-candidate',
+  ]) {
+    for (let sample = 0; sample < 3; sample += 1) {
+      it(`${scenario} sample ${sample}`, async () => {
         h = await createHarness();
         const runner = await h.registerRunner();
         h.scopes = [{ scope: 'project', scopeId: 'p' }];
@@ -127,8 +127,10 @@ measure('complete claim skill cost', () => {
         });
         await h.close();
         h = undefined as unknown as Harness;
-      }
+      });
     }
+  }
+  afterAll(() => {
     writeFileSync(
       process.env.PM387_COST_REPORT!,
       JSON.stringify(report, null, 2),

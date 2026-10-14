@@ -192,7 +192,9 @@ describe('claiming', () => {
       content: skillMd('pr-etiquette', 'How we write pull requests.'),
     });
     const agentId = await h.createAgent();
-    await h.services.skills.attach({ scope: 'global', scopeId: 'default' }, [skill.id]);
+    await h.services.skills.attach({ scope: 'global', scopeId: 'default' }, [
+      skill.id,
+    ]);
     const runId = await h.enqueue(agentId, '1');
     const old = await h.registerRunner({ features: ['input', 'checkout'] });
     expect(await claim(h, old)).toEqual([]);

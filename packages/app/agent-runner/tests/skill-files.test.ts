@@ -1,6 +1,12 @@
 // A skill's binary files arrive base64-encoded and are written as bytes; executable ones keep the executable bit, in
 // the cache and in the run's skills folder.
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -61,12 +67,29 @@ describe('skill files', () => {
     const builtIn = path.join(home, 'cli-skills');
     mkdirSync(builtIn);
     writeFileSync(path.join(builtIn, 'SKILL.md'), 'CLI rules.');
-    const cleared = await placeSkills({ paths: runnerPaths(home), appKey: 'app', workDir: home, skills: [], client, builtIn: [{ slug: 'cli-rules', dir: builtIn }] });
+    const cleared = await placeSkills({
+      paths: runnerPaths(home),
+      appKey: 'app',
+      workDir: home,
+      skills: [],
+      client,
+      builtIn: [{ slug: 'cli-rules', dir: builtIn }],
+    });
     expect(existsSync(path.join(cleared.placement!.dir, 'brand'))).toBe(false);
-    expect(readFileSync(path.join(cleared.placement!.dir, 'cli-rules', 'SKILL.md'), 'utf8')).toBe('CLI rules.');
-    const empty = await placeSkills({ paths: runnerPaths(home), appKey: 'app', workDir: home, skills: [], client });
+    expect(
+      readFileSync(
+        path.join(cleared.placement!.dir, 'cli-rules', 'SKILL.md'),
+        'utf8',
+      ),
+    ).toBe('CLI rules.');
+    const empty = await placeSkills({
+      paths: runnerPaths(home),
+      appKey: 'app',
+      workDir: home,
+      skills: [],
+      client,
+    });
     expect(empty.placement).toBeUndefined();
     expect(existsSync(placed.placement!.root)).toBe(false);
-
   });
 });

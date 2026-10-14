@@ -76,7 +76,13 @@ export default class StudioProjectInitsProvider extends ServiceProvider<Applicat
     if (this.releases.length > 0 || !container.has(studioProjectInitsToken))
       return Promise.resolve();
     const inits = container.resolve(studioProjectInitsToken);
-    if (container.has(agentsToken)) this.releases.push(bindProjectDefaultSkills(container.resolve(projectsToken), container.resolve(agentsToken).skills));
+    if (container.has(agentsToken))
+      this.releases.push(
+        bindProjectDefaultSkills(
+          container.resolve(projectsToken),
+          container.resolve(agentsToken).skills,
+        ),
+      );
     if (container.has(studioGitToken))
       this.releases.push(
         container
