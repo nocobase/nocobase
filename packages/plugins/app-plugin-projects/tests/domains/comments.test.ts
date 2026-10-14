@@ -344,6 +344,62 @@ describe('editing and deleting', () => {
   });
 });
 
+describe('one author’s newest comments', () => {
+  it('reads the newest one on each issue at once, as one issue at a time reads it', async () => {
+    const issues = [await anIssue(), await anIssue(), await anIssue()];
+    const [first, second, third] = issues as [Issue, Issue, Issue];
+    for (const content of ['One', 'Two', 'Three'])
+      await h.services.comments.create(bob(), first.id, { content });
+    await h.services.comments.create(alice(), first.id, { content: 'Mine' });
+    await h.services.comments.create(bob(), second.id, { content: 'Kept' });
+    const gone = await h.services.comments.create(bob(), second.id, {
+      content: 'Gone',
+    });
+    await h.services.comments.remove(bob(), gone.comment.id);
+    await h.services.comments.create(alice(), third.id, { content: 'Only' });
+
+    const conn = h.services.tx.read();
+    const author = { type: 'user', id: 'bob' };
+    for (const live of [true, false]) {
+      const each = await h.services.commentQueries.newestByEach(
+        conn,
+        issues.map((issue) => issue.id),
+        author,
+        { live },
+      );
+      const one = new Map(
+        (
+          await Promise.all(
+            issues.map(async (issue) => {
+              const [newest] = await h.services.commentQueries.newestBy(
+                conn,
+                issue.id,
+                author,
+                { live, limit: 1 },
+              );
+              return newest ? ([[issue.id, newest]] as const) : [];
+            }),
+          )
+        ).flat(),
+      );
+      expect(each).toEqual(one);
+    }
+    const live = await h.services.commentQueries.newestByEach(
+      conn,
+      [first.id, second.id, third.id],
+      author,
+      { live: true },
+    );
+    expect([...live.values()].map((comment) => comment.content)).toEqual(
+      expect.arrayContaining(['Three', 'Kept']),
+    );
+    expect(live.has(third.id)).toBe(false);
+    expect(
+      await h.services.commentQueries.newestByEach(conn, [], author),
+    ).toEqual(new Map());
+  });
+});
+
 describe('reactions and threads', () => {
   it('adds and removes reactions from the fixed set', async () => {
     const issue = await anIssue();

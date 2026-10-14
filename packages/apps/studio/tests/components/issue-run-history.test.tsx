@@ -38,7 +38,9 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
-  useClientApplication: () => ({ config: { get: () => '/main' } }),
+  useClientApplication: () => ({
+    config: { get: () => '/main', public: { get: () => 14 } },
+  }),
 }));
 vi.mock('@nocobase/app-plugin-authentication/client', async (original) => ({
   ...(await original<
