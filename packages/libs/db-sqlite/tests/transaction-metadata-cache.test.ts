@@ -9,14 +9,17 @@ import sqlite from '../src/index.js';
 const databases: DatabaseManager[] = [];
 const directories: string[] = [];
 
-function database(filename: string = ':memory:'): DatabaseManager {
+function database(
+  filename: string = ':memory:',
+  poolSize: number = 1,
+): DatabaseManager {
   const manager = createDatabaseManager({
     drivers: { sqlite },
     connections: {
       main: {
         dialect: 'sqlite',
         filename,
-        pool: { min: 1, max: 1, acquireTimeoutMillis: 500 },
+        pool: { min: 1, max: poolSize, acquireTimeoutMillis: 500 },
       },
     },
   });
@@ -92,6 +95,79 @@ describe('transaction metadata cache', () => {
     });
   });
 
+  it('still inspects physical schema changes when the naming metadata is unchanged', async () => {
+    const manager = database();
+    await createOrders(manager);
+    const root = manager.connection();
+    await root.collections.get('orders');
+    const client = await root.client<Knex>();
+    await client.schema.table('orders', (table) => table.string('note'));
+    await root.transaction(async (transaction) => {
+      expect(
+        (await transaction.collections.get('orders'))?.fields,
+      ).toContainEqual(expect.objectContaining({ name: 'note' }));
+    });
+  });
+
+  it('refreshes raw metadata edits when the public registry is invalidated', async () => {
+    const manager = database();
+    await createOrders(manager);
+    const root = manager.connection();
+    await root.collections.list();
+    const client = await root.client<Knex>();
+    await client('__nocobase_collection_metadata')
+      .where({ name: 'orders' })
+      .update({
+        document: JSON.stringify({
+          version: 1,
+          name: 'orders',
+          title: 'Raw title',
+        }),
+      });
+    root.collections.invalidate();
+    await root.transaction(async (transaction) => {
+      expect((await transaction.collections.list()).items).toEqual([
+        expect.objectContaining({ name: 'orders', title: 'Raw title' }),
+      ]);
+    });
+  });
+
+  it('keeps a transaction snapshot when the same root loads a newer committed index', async () => {
+    const directory = await mkdtemp(
+      path.join(os.tmpdir(), 'metadata-snapshot-'),
+    );
+    directories.push(directory);
+    const manager = database(path.join(directory, 'database.sqlite'), 2);
+    await createOrders(manager);
+    const root = manager.connection();
+    const client = await root.client<Knex>();
+    await client.raw('pragma journal_mode = WAL');
+    await root.collectionMetadata.updateCollection('orders', {
+      title: 'Before',
+    });
+    await root.collections.list();
+
+    await root.transaction(async (transaction) => {
+      expect((await transaction.collections.list()).items[0]?.title).toBe(
+        'Before',
+      );
+      await root.collectionMetadata.updateCollection('orders', {
+        title: 'After',
+      });
+      expect((await root.collections.list()).items[0]?.title).toBe('After');
+      await transaction.transaction(async (savepoint) => {
+        expect((await savepoint.collections.list()).items[0]?.title).toBe(
+          'Before',
+        );
+      });
+    });
+    await root.transaction(async (transaction) => {
+      expect((await transaction.collections.list()).items[0]?.title).toBe(
+        'After',
+      );
+    });
+  });
+
   it('keeps metadata edits in the transaction until the outermost commit', async () => {
     const manager = database();
     await createOrders(manager);
@@ -159,5 +235,47 @@ describe('transaction metadata cache', () => {
       title: 'Recreated',
     });
     expect(await title()).toBe('Recreated');
+  });
+
+  it('does not reuse an uncommitted index when COMMIT itself fails', async () => {
+    const manager = database();
+    await createOrders(manager);
+    const root = manager.connection();
+    const client = await root.client<Knex>();
+    await client.raw('pragma foreign_keys = on');
+    await client.raw('create table parents (id integer primary key)');
+    await client.raw(
+      'create table children (id integer primary key, parent_id integer references parents (id) deferrable initially deferred)',
+    );
+    await root.collectionMetadata.updateCollection('orders', {
+      title: 'Before',
+    });
+    await root.collections.list();
+
+    await expect(
+      root.transaction(async (transaction) => {
+        await transaction.collectionMetadata.updateCollection('orders', {
+          title: 'Uncommitted',
+        });
+        expect(
+          (await transaction.collections.list()).items.find(
+            (item) => item.name === 'orders',
+          )?.title,
+        ).toBe('Uncommitted');
+        const trx = await transaction.client<Knex>();
+        await trx('children').insert({ id: 1, parent_id: 404 });
+      }),
+    ).rejects.toThrow();
+
+    await root.transaction(async (transaction) => {
+      expect(
+        (await transaction.collections.list()).items.find(
+          (item) => item.name === 'orders',
+        )?.title,
+      ).toBe('Before');
+    });
+    expect((await root.collectionMetadata.get('orders'))?.document.title).toBe(
+      'Before',
+    );
   });
 });

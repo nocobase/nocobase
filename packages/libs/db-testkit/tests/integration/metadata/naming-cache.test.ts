@@ -12,6 +12,37 @@ describeIntegrationDatabases('Collection metadata naming cache', (context) => {
     });
   }
 
+  it('initializes caching for an existing metadata table without rewriting its documents', async () => {
+    const root = store();
+    await context.db.schema.createTable(root.tableName, (table) => {
+      table.string('name', 191).primary();
+      table.text('document').notNullable();
+      table.bigInteger('revision').notNullable();
+      table.dateTime('created_at').notNullable();
+      table.dateTime('updated_at').notNullable();
+    });
+    await context.db(root.tableName).insert({
+      name: 'orders',
+      document: JSON.stringify({
+        version: 1,
+        name: 'orders',
+        title: 'Existing',
+      }),
+      revision: 7,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+    const index = await CollectionNamingIndex.create(root);
+    expect(index.metadata('orders')).toMatchObject({
+      title: 'Existing',
+      revision: 7,
+    });
+    expect(await root.get('orders')).toEqual({
+      document: { version: 1, name: 'orders', title: 'Existing' },
+      revision: 7,
+    });
+  });
+
   it('shares validated indexes across transaction clients and separates naming options', async () => {
     const root = store();
     await root.put(
@@ -152,5 +183,61 @@ describeIntegrationDatabases('Collection metadata naming cache', (context) => {
     expect(
       (await CollectionNamingIndex.create(root)).metadata('orders')?.title,
     ).toBe('Repaired');
+  });
+
+  it('retries a snapshot if metadata changes while its pages are loading', async () => {
+    const root = store();
+    const other = store();
+    await root.put(
+      { version: 1, name: 'orders', title: 'Before' },
+      { expectedRevision: null },
+    );
+    const list = root.list.bind(root);
+    const spy = vi
+      .spyOn(root, 'list')
+      .mockImplementationOnce(async (options) => {
+        const page = await list(options);
+        await other.put(
+          { version: 1, name: 'orders', title: 'After' },
+          { expectedRevision: 1 },
+        );
+        return page;
+      });
+    expect(
+      (await CollectionNamingIndex.create(root)).metadata('orders')?.title,
+    ).toBe('After');
+    expect(spy).toHaveBeenCalledTimes(2);
+    spy.mockRestore();
+  });
+
+  it('does not republish an explicitly invalidated in-flight snapshot', async () => {
+    const root = store();
+    await root.put(
+      { version: 1, name: 'orders', title: 'Before' },
+      { expectedRevision: null },
+    );
+    const list = root.list.bind(root);
+    const spy = vi
+      .spyOn(root, 'list')
+      .mockImplementationOnce(async (options) => {
+        const page = await list(options);
+        await context
+          .db(root.tableName)
+          .where({ name: 'orders' })
+          .update({
+            document: JSON.stringify({
+              version: 1,
+              name: 'orders',
+              title: 'After',
+            }),
+          });
+        invalidateMetadataNamingSnapshot(root);
+        return page;
+      });
+    expect(
+      (await CollectionNamingIndex.create(root)).metadata('orders')?.title,
+    ).toBe('After');
+    expect(spy).toHaveBeenCalledTimes(2);
+    spy.mockRestore();
   });
 });
