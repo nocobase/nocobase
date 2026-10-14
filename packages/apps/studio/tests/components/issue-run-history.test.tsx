@@ -165,6 +165,44 @@ beforeEach(() => {
 });
 
 describe('issue execution history', () => {
+  it.each([
+    'queued',
+    'dispatched',
+    'running',
+    'completed',
+    'failed',
+    'cancelled',
+  ])(
+    'shows failures in the list and activity row according to %s',
+    async (status) => {
+      mocks.runs.mockResolvedValue([
+        {
+          ...run('run', status),
+          attempt: 2,
+          failureReason: 'toolNetwork',
+          failureDetail: 'Previous connection failure',
+          availableAt: null,
+        },
+      ]);
+      await show({ consumers: true });
+      const list = await screen.findByTestId('run-run');
+      const row = await screen.findByTestId('run-row-run');
+      for (const entry of [list, row]) {
+        if (status === 'queued') {
+          expect(entry).toHaveTextContent('Attempt 1 failed');
+          expect(entry).toHaveTextContent('Waiting to be dispatched again');
+          expect(entry).toHaveTextContent('Previous connection failure');
+          expect(entry.querySelector('.text-destructive')).toBeNull();
+        } else if (status === 'failed' || status === 'cancelled') {
+          expect(entry).toHaveTextContent('Previous connection failure');
+          expect(entry.querySelector('.text-destructive')).not.toBeNull();
+        } else {
+          expect(entry).not.toHaveTextContent('Previous connection failure');
+        }
+      }
+    },
+  );
+
   it.each(['en-US', 'zh-CN'] as const)(
     'shows the persisted fallback reason in %s',
     async (locale) => {

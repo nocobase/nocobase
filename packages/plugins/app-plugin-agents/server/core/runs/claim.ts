@@ -127,6 +127,7 @@ import {
   inputsRepo,
   sessionsRepo,
   toInput,
+  toExecutions,
   toRun,
   type RunRecord,
 } from './run.store.js';
@@ -968,7 +969,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     const sessionNote = resume ? assembly.turn.resumed : assembly.turn.fresh;
     const turn = [
       brief.turn,
-      ...(run.failureReason === 'runnerUpgrade'
+      ...(toExecutions(run.executionHistory).find(
+        (execution) => execution.attempt === Number(run.attempt) - 1,
+      )?.failureReason === 'runnerUpgrade'
         ? [
             'The previous attempt was interrupted by a runner upgrade. Continue from the current state.',
           ]
@@ -1455,6 +1458,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             ]),
           values: {
             status: 'dispatched',
+            failureReason: null,
+            failureDetail: null,
             runnerId: runner.id,
             // Brief providers observe this reservation inside the claim transaction.
             // Replace a previous attempt's tool before computing the roster.
@@ -1648,6 +1653,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         filter: { id: runId },
         values: {
           claimFailures: failures,
+          failureReason: 'setupFailed',
           failureDetail: error.message.slice(0, 10_000),
         },
       });

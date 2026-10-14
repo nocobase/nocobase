@@ -350,19 +350,150 @@ describe('run lifecycle', () => {
       status: 'queued',
       attempt: 2,
       runnerId: null,
+      failureReason: 'toolRateLimit',
+      failureDetail: 'Slow down.',
     });
     // Not before the back-off.
     expect(await claim(h, runner)).toEqual([]);
     h.clock.advance(30_000);
     const [again] = await claim(h, runner);
     expect(again.run).toMatchObject({ id: runId, attempt: 2, firstSeq: 2 });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'dispatched',
+      failureReason: null,
+      failureDetail: null,
+    });
 
     await post(runner, runId, 'start', start);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'running',
+      failureReason: null,
+      failureDetail: null,
+    });
+    await h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({
+        filter: { id: runId },
+        values: { failureReason: 'toolRateLimit', failureDetail: 'Old detail' },
+      });
     const final = await post(runner, runId, 'fail', { reason: 'toolNetwork' });
     expect(final.body.data).toEqual({ status: 'failed' });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      failureReason: 'toolNetwork',
+      failureDetail: null,
+    });
     expect(h.finished.map((run) => [run.status, run.failureReason])).toEqual([
       ['failed', 'toolNetwork'],
     ]);
+  });
+
+  it('clears retry failures on recovery and success, preserving historical errors', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 2 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    const [first] = await claim(h, runner);
+    await post(runner, runId, 'start', start);
+    await post(runner, runId, 'events', {
+      events: [
+        {
+          seq: 1,
+          at: h.clock.now().toISOString(),
+          type: 'error',
+          content: 'First connection failure',
+        },
+      ],
+    });
+    await post(runner, runId, 'fail', {
+      reason: 'toolNetwork',
+      detail: 'First connection failure',
+    });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'queued',
+      failureReason: 'toolNetwork',
+      failureDetail: 'First connection failure',
+    });
+    h.clock.advance(30_000);
+    await claim(h, runner);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'dispatched',
+      failureReason: null,
+      failureDetail: null,
+    });
+    await post(runner, runId, 'start', start);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'running',
+      failureReason: null,
+      failureDetail: null,
+    });
+    // An already-running legacy record must also be cleared on completion.
+    await h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({
+        filter: { id: runId },
+        values: {
+          failureReason: 'toolNetwork',
+          failureDetail: 'Legacy failure',
+        },
+      });
+    expect(
+      (
+        await post(runner, runId, 'complete', {
+          summary: 'Recovered successfully',
+          handledInputIds: first.inputs.map(
+            (input: { id: string }) => input.id,
+          ),
+        })
+      ).status,
+    ).toBe(200);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'completed',
+      failureReason: null,
+      failureDetail: null,
+      executions: [
+        expect.objectContaining({ attempt: 1, failureReason: 'toolNetwork' }),
+        expect.objectContaining({ attempt: 2 }),
+      ],
+    });
+    expect((await h.services.runs.events(runId, 0, 100)).events).toContainEqual(
+      expect.objectContaining({
+        type: 'error',
+        content: 'First connection failure',
+      }),
+    );
+  });
+
+  it('uses the latest failure details and clears them when a queued retry is cancelled', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 3 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    await claim(h, runner);
+    await post(runner, runId, 'start', start);
+    await post(runner, runId, 'fail', {
+      reason: 'toolNetwork',
+      detail: 'First failure',
+    });
+    h.clock.advance(30_000);
+    await claim(h, runner);
+    await post(runner, runId, 'start', start);
+    await post(runner, runId, 'fail', {
+      reason: 'toolRateLimit',
+      detail: 'Latest failure',
+    });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'queued',
+      failureReason: 'toolRateLimit',
+      failureDetail: 'Latest failure',
+    });
+    await h.services.runs.cancel(runId, 'owner');
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'cancelled',
+      failureReason: 'cancelled',
+      failureDetail: null,
+    });
   });
 
   it('ends disk-full failures with the machine name without automatic retry or an extra attempt', async () => {
