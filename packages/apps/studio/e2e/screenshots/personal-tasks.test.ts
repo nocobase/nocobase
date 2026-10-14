@@ -135,10 +135,10 @@ for (const preset of ['compact', 'default'] as const) {
         page.getByRole('row').filter({
           has: page.getByRole('link', { name: issue.identifier, exact: true }),
         });
-      const activity = page.getByRole('region', {
-        name: 'Activity',
-        exact: true,
-      });
+      // The nested comment timeline shares this English name; select the panel with its composer.
+      const activity = page
+        .getByRole('region', { name: 'Activity', exact: true })
+        .filter({ has: page.getByTestId('issue-composer') });
       const following = page.getByTestId('follow-ups-following');
       const table = page.getByRole('table');
       const openComposer = async () => {
@@ -180,6 +180,7 @@ for (const preset of ['compact', 'default'] as const) {
         `/my-issues/owned?view=list&q=${encodeURIComponent(tag)}`,
       );
       await expect(table).toBeVisible();
+      await expect(row(parent)).toBeVisible();
       await expect(following).toHaveCount(0);
       await capture('desktop-zero-following');
       const disclosure = page.getByRole('button', {
