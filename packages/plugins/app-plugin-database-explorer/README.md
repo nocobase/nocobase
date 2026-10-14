@@ -58,9 +58,9 @@ That exclusion is enforced as an allow-list rather than a redaction pass, in `se
 
 The Explorer issues no write of its own: there is no write endpoint, no migration, and no schema operation in its code. One qualifier is needed to make that honest rather than merely reassuring.
 
-Reading a collection initializes the collection registry, and on a managed connection the registry's metadata store creates `__nocobase_collection_metadata` when it is missing. So the guarantee is: **no collection is created, altered or dropped, no row of any table changes, and the only object the Explorer can bring into existence is that one bookkeeping table.** In practice a managed connection already has it, because migrations ran first; the table appears only when the very first NocoBase activity against a database is an Explorer read. An external connection cannot reach this path at all, since it is served by a directory-backed metadata store that only reads files.
+Reading a collection initializes the collection registry. On a managed connection, the metadata store creates `__nocobase_collection_metadata` and its companion cache-version table when missing, and initializes the version row. **Business collections, their rows, and existing metadata documents remain unchanged.** This initialization can happen on a first Explorer read, including after an upgrade adds bookkeeping. External connections use a directory-backed metadata store and do not create these tables.
 
-`tests/read-only.test.ts` states that boundary rather than asserting the comfortable version. It builds a database with raw SQL so the registry has genuinely never run, reads it, and asserts the one table added is the bookkeeping one and the foreign table is untouched. It then snapshots `sqlite_master` and the rows of every table, bookkeeping included, across each read and asserts both are unchanged.
+`tests/read-only.test.ts` verifies this boundary against a database created with raw SQL: the first read adds only the two metadata bookkeeping tables and leaves the business table untouched. Once initialization is complete, subsequent reads preserve the physical schema and every row, including the bookkeeping rows.
 
 ## Pagination
 
