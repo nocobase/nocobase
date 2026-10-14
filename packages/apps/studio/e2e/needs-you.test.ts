@@ -1,11 +1,38 @@
-import type { Page } from '@playwright/test';
+import type { Page, WebSocket } from '@playwright/test';
+import { PM_REALTIME_TOPIC } from '@nocobase/app-plugin-projects/shared/realtime';
 import { expect, url, test, unique, signIn, Api } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
 import type { FollowUpsView } from '../shared/follow-ups.js';
 
-// Live workspace requests need not become idle; each destination below asserts its actual rendered content.
+// Live projections require an acknowledged subscription, not global HTTP idleness or a polling fallback.
 async function open(target: Page, path: string): Promise<void> {
-  await target.goto(url(path));
+  const topics = new Set<string>();
+  const observe = (socket: WebSocket): void => {
+    socket.on('framereceived', ({ payload }) => {
+      try {
+        const message = JSON.parse(payload.toString()) as {
+          type?: string;
+          topic?: string;
+        };
+        if (message.type === 'subscribed' && message.topic)
+          topics.add(message.topic);
+      } catch {
+        // Non-JSON transport frames cannot acknowledge a subscription.
+      }
+    });
+  };
+  target.on('websocket', observe);
+  try {
+    await target.goto(url(path));
+    await expect
+      .poll(() => topics.has(PM_REALTIME_TOPIC), {
+        message:
+          'The issue change subscription must be acknowledged before live mutations',
+      })
+      .toBe(true);
+  } finally {
+    target.off('websocket', observe);
+  }
 }
 
 test.use({
