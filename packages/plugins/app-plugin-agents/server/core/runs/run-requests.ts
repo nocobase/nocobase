@@ -48,6 +48,11 @@ export const RUN_REQUEST_TTL_MS: number = 7 * 24 * 60 * 60 * 1000;
 const EXPIRE_BATCH = 100;
 
 export interface RunRequestRecord {
+  readonly commentRunId?: string | null;
+  /** Personal runner consent releases an existing comment chain instead of creating another run. */
+  readonly purpose?: 'personalRunner' | null;
+  readonly commentRootRunId?: string | null;
+  readonly commentOwnerKey?: string | null;
   readonly id: string;
   readonly agentId: string;
   readonly subjectKind: string;
@@ -86,6 +91,10 @@ export function runRequestsRepo(
 
 export function toRunRequest(record: RunRequestRecord): RunRequest {
   return {
+    purpose: record.purpose ?? null,
+    commentRunId: record.commentRunId ?? null,
+    commentRootRunId: record.commentRootRunId ?? null,
+    commentOwnerKey: record.commentOwnerKey ?? null,
     id: record.id,
     agentId: record.agentId,
     subject: { kind: record.subjectKind, id: record.subjectId },
@@ -121,6 +130,11 @@ export function toRunRequest(record: RunRequestRecord): RunRequest {
 
 /** What a new request holds: the work as `enqueue` was asked for it. */
 export interface NewRunRequest {
+  readonly commentRunId?: string | null;
+  /** Personal runner consent releases an existing comment chain instead of creating another run. */
+  readonly purpose?: 'personalRunner' | null;
+  readonly commentRootRunId?: string | null;
+  readonly commentOwnerKey?: string | null;
   readonly agentId: string;
   readonly subject: { readonly kind: string; readonly id: string };
   readonly threadScope: string;
@@ -171,6 +185,10 @@ export async function insertRunRequest(
   const duplicate = pending.find(
     (record) =>
       Date.parse(record.expiresAt) > now.getTime() &&
+      (record.purpose ?? null) === (request.purpose ?? null) &&
+      (record.commentRootRunId ?? null) ===
+        (request.commentRootRunId ?? null) &&
+      (record.commentOwnerKey ?? null) === (request.commentOwnerKey ?? null) &&
       record.ownerUserId === request.ownerUserId &&
       Number(record.priority) === request.priority &&
       Boolean(record.freshSession) === (request.freshSession === true) &&
@@ -197,6 +215,10 @@ export async function insertRunRequest(
   await runRequestsRepo(unit.conn).createOne({
     values: {
       id,
+      purpose: request.purpose ?? null,
+      commentRunId: request.commentRunId ?? null,
+      commentRootRunId: request.commentRootRunId ?? null,
+      commentOwnerKey: request.commentOwnerKey ?? null,
       agentId: request.agentId,
       subjectKind: request.subject.kind,
       subjectId: request.subject.id,
@@ -329,6 +351,7 @@ export interface RunRequestService {
    */
   reassign(
     request: {
+      readonly purpose?: 'personalRunner';
       readonly subject: { readonly kind: string; readonly id: string };
       readonly agentId?: string;
       readonly toUserId: string | null;
@@ -342,6 +365,31 @@ export interface RunRequestService {
 }
 
 export interface RunRequestDeps {
+  readonly prepareCommentActor?: (
+    record: RunRequestRecord,
+    byUserId: string,
+  ) => Promise<void>;
+  /** Locks and validates the original comment chain before any personal consent decision. */
+  readonly lockCommentRequest?: (
+    unit: Tx,
+    record: RunRequestRecord,
+  ) => Promise<void>;
+  readonly releaseCommentRequest?: (
+    unit: Tx,
+    record: RunRequestRecord,
+    byUserId: string,
+  ) => Promise<RequestedRun>;
+  /** Switches every unfinished target and input of the locked comment chain atomically. */
+  readonly runCommentAsRequester?: (
+    unit: Tx,
+    record: RunRequestRecord,
+    byUserId: string,
+  ) => Promise<RequestedRun>;
+  readonly cancelCommentRequest?: (
+    unit: Tx,
+    record: RunRequestRecord,
+    byUserId: string,
+  ) => Promise<void>;
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -593,9 +641,17 @@ export function createRunRequestService(
       return records.map(toRunRequest);
     },
 
-    confirm: (requestId, byUserId) =>
-      tx.run(async (unit) => {
+    confirm: async (requestId, byUserId) => {
+      const candidate = await require(tx.read(), requestId);
+      if (
+        candidate.purpose === 'personalRunner' &&
+        candidate.responsibleUserId === byUserId
+      )
+        await deps.prepareCommentActor?.(candidate, byUserId);
+      return tx.run(async (unit) => {
         const record = await require(unit.conn, requestId);
+        if (record.purpose === 'personalRunner')
+          await deps.lockCommentRequest!(unit, record);
         if (record.responsibleUserId !== byUserId)
           throw forbidden(
             'Only the person who answers for the subject may confirm this request.',
@@ -613,20 +669,26 @@ export function createRunRequestService(
           settledById: byUserId,
           settledAt: clock.now().toISOString(),
         });
-        const run = await deps.direct(unit, {
-          ...workOf(record, agent),
-          actorUserId: record.responsibleUserId,
-          requestedByUserId: record.requestedByUserId,
-          confirmedByUserId: byUserId,
-        });
+        const run =
+          record.purpose === 'personalRunner'
+            ? await deps.releaseCommentRequest!(unit, record, byUserId)
+            : await deps.direct(unit, {
+                ...workOf(record, agent),
+                actorUserId: record.responsibleUserId,
+                requestedByUserId: record.requestedByUserId,
+                confirmedByUserId: byUserId,
+              });
         const request = toRunRequest(await setRun(unit, record.id, run.runId));
         unit.emit({ type: 'runRequest.confirmed', request });
         return { request, run };
-      }),
+      });
+    },
 
     reject: (requestId, byUserId, note) =>
       tx.run(async (unit) => {
         const record = await require(unit.conn, requestId);
+        if (record.purpose === 'personalRunner')
+          await deps.lockCommentRequest!(unit, record);
         if (record.responsibleUserId !== byUserId)
           throw forbidden(
             'Only the person who answers for the subject may reject this request.',
@@ -641,6 +703,8 @@ export function createRunRequestService(
             note: note ?? null,
           }),
         );
+        if (record.purpose === 'personalRunner')
+          await deps.cancelCommentRequest!(unit, record, byUserId);
         unit.emit({ type: 'runRequest.rejected', request });
         return request;
       }),
@@ -648,6 +712,8 @@ export function createRunRequestService(
     withdraw: (requestId, byUserId) =>
       tx.run(async (unit) => {
         const record = await require(unit.conn, requestId);
+        if (record.purpose === 'personalRunner')
+          await deps.lockCommentRequest!(unit, record);
         if (record.requestedByUserId !== byUserId)
           throw forbidden(
             'Only the person who asked may withdraw this request.',
@@ -660,13 +726,23 @@ export function createRunRequestService(
             settledAt: clock.now().toISOString(),
           }),
         );
+        if (record.purpose === 'personalRunner')
+          await deps.cancelCommentRequest!(unit, record, byUserId);
         unit.emit({ type: 'runRequest.withdrawn', request });
         return request;
       }),
 
-    runAsRequester: (requestId, byUserId) =>
-      tx.run(async (unit) => {
+    runAsRequester: async (requestId, byUserId) => {
+      const candidate = await require(tx.read(), requestId);
+      if (
+        candidate.purpose === 'personalRunner' &&
+        candidate.requestedByUserId === byUserId
+      )
+        await deps.prepareCommentActor?.(candidate, byUserId);
+      return tx.run(async (unit) => {
         const record = await require(unit.conn, requestId);
+        if (record.purpose === 'personalRunner')
+          await deps.lockCommentRequest!(unit, record);
         if (record.requestedByUserId !== byUserId)
           throw forbidden(
             'Only the person who asked may run this request as themselves.',
@@ -676,7 +752,12 @@ export function createRunRequestService(
           record.status === 'expired' ||
           (record.status === 'pending' && isDue(record));
         if (
-          !(record.status === 'pending' || record.status === 'expired') ||
+          !(
+            record.status === 'pending' ||
+            record.status === 'expired' ||
+            (record.purpose === 'personalRunner' &&
+              record.status === 'rejected')
+          ) ||
           record.runId
         )
           throw settled(record);
@@ -703,12 +784,15 @@ export function createRunRequestService(
           if (result.updatedCount !== 1)
             throw conflict('The request changed; read it again.');
         }
-        const run = await deps.direct(unit, {
-          ...work,
-          actorUserId: byUserId,
-          requestedByUserId: byUserId,
-          confirmedByUserId: null,
-        });
+        const run =
+          record.purpose === 'personalRunner'
+            ? await deps.runCommentAsRequester!(unit, record, byUserId)
+            : await deps.direct(unit, {
+                ...work,
+                actorUserId: byUserId,
+                requestedByUserId: byUserId,
+                confirmedByUserId: null,
+              });
         const request = toRunRequest(await setRun(unit, record.id, run.runId));
         if (record.status === 'pending')
           unit.emit({
@@ -716,7 +800,8 @@ export function createRunRequestService(
             request,
           });
         return { request, run };
-      }),
+      });
+    },
 
     reassign: (request, outer) =>
       tx.run(async (unit) => {
@@ -726,6 +811,9 @@ export function createRunRequestService(
               f.string('subjectKind').eq(request.subject.kind),
               f.string('subjectId').eq(request.subject.id),
               f.string('status').eq('pending'),
+              ...(request.purpose
+                ? [f.string('purpose').eq(request.purpose)]
+                : []),
               ...(request.agentId
                 ? [f.string('agentId').eq(request.agentId)]
                 : []),
@@ -740,6 +828,18 @@ export function createRunRequestService(
         const queued: RequestedRun[] = [];
         const expired: RunRequest[] = [];
         for (const record of pending) {
+          if (record.purpose === 'personalRunner') {
+            const done = toRunRequest(
+              await settle(unit, record, {
+                status: 'superseded',
+                settledById: request.byUserId,
+                settledAt: clock.now().toISOString(),
+              }),
+            );
+            superseded.push(done);
+            unit.emit({ type: 'runRequest.superseded', request: done });
+            continue;
+          }
           // Its time ran out before the sweeper noticed: it expires now, as confirming would find, rather than being
           // handed on with a fresh expiry or queued.
           if (isDue(record)) {

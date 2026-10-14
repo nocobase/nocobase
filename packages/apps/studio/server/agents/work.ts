@@ -97,6 +97,10 @@ import { announceOwnerHandoff } from '../issues/owner-handoff-notices.js';
 import { issueExecutionIdentity } from './execution-identity.js';
 
 interface Wake {
+  readonly comment?: {
+    readonly rootRunId?: string;
+    readonly ownerKey: string | null;
+  };
   readonly agentId: string;
   readonly issue: Issue;
   readonly actorUserId: string;
@@ -216,6 +220,7 @@ export function createAgentWork(deps: {
         subjectId: request.issue.id,
         agentId: request.agentId,
         causedByRunId: request.causedByRunId,
+        ...(request.comment ? { commentExecution: 'owner' as const } : {}),
         inputs: [request.input],
       },
     );
@@ -264,6 +269,7 @@ export function createAgentWork(deps: {
         actorUserId: request.actorUserId,
         requestedByUserId: request.actorUserId,
         causedByRunId: request.causedByRunId,
+        comment: request.comment,
         ownerUserId: request.issue.ownerUserId,
         priority: runPriorityOf(request.issue.priority),
         freshSession: request.freshSession,
@@ -413,7 +419,27 @@ export function createAgentWork(deps: {
   ): Promise<RunAttempt[]> {
     if (statusCategory(issue.statusKey) === 'unstarted') return [];
     const attempts: RunAttempt[] = [];
-    for (const { agentId, triggerType } of held.targets)
+    const cause =
+      typeof extra.causedByRunId === 'string'
+        ? await runs.identityInputs(tx.conn, extra.causedByRunId)
+        : null;
+    const inheritedComment =
+      extra.byAgent === true &&
+      cause?.run.subject.kind === 'issue' &&
+      cause.run.subject.id === issue.id &&
+      Boolean(cause.run.commentRootRunId);
+    const personComment =
+      !inheritedComment &&
+      !(
+        extra.byAgent !== true &&
+        held.actor.kind === 'user' &&
+        held.actor.id === issue.ownerUserId
+      );
+    const ownerKey = personComment
+      ? ((await readOwnerHandoff(tx.conn, issue.id))?.notificationKey ?? null)
+      : null;
+    let commentRootRunId: string | undefined;
+    for (const { agentId, triggerType } of held.targets) {
       attempts.push(
         // The project manager works only while the issue is open.
         agentId === PROJECT_MANAGER_ID && dormant(issue)
@@ -421,6 +447,16 @@ export function createAgentWork(deps: {
           : await wake(tx, {
               agentId,
               issue,
+              ...(personComment
+                ? {
+                    comment: {
+                      ownerKey,
+                      ...(commentRootRunId
+                        ? { rootRunId: commentRootRunId }
+                        : {}),
+                    },
+                  }
+                : {}),
               actorUserId: userId,
               causedByRunId:
                 typeof extra.causedByRunId === 'string'
@@ -439,6 +475,9 @@ export function createAgentWork(deps: {
               },
             }),
       );
+      if (personComment && !commentRootRunId)
+        commentRootRunId = attempts.at(-1)?.runId ?? undefined;
+    }
     return attempts;
   }
 
@@ -1008,6 +1047,7 @@ export function createAgentWork(deps: {
       if (!byAgent)
         return wakeComment(tx, issue, held, authorId, {
           causedByRunId: change.actor.trace?.runId,
+          byAgent: change.actor.via === 'agent',
         });
       if (await commentLimited(tx, issue, held))
         return held.targets.map((target) =>
@@ -1023,10 +1063,28 @@ export function createAgentWork(deps: {
     // A person's continuation is not counted, as a person's stage move is not.
     async resumeComment(tx, issue, held, userId, continuedFrom) {
       const attempts: RunAttempt[] = [];
-      for (const input of held.pendingWakes ?? [held])
-        attempts.push(
-          ...(await wakeComment(tx, issue, input, userId, { continuedFrom })),
+      const comments = await deps
+        .projects()
+        .commentQueries.list(tx.conn, issue.id);
+      for (const input of held.pendingWakes ?? [held]) {
+        const comment = comments.find(
+          (comment) => comment.id === input.commentId,
         );
+        const source = comment?.source?.runId;
+        attempts.push(
+          ...(await wakeComment(
+            tx,
+            issue,
+            input,
+            input.actor.kind === 'user' ? input.actor.id : userId,
+            {
+              continuedFrom,
+              byAgent: input.actor.kind === 'agent' || comment?.via === 'agent',
+              ...(source ? { causedByRunId: source } : {}),
+            },
+          )),
+        );
+      }
       return attempts;
     },
 
@@ -1083,6 +1141,15 @@ export function createAgentWork(deps: {
       for (const run of await runs.openOn(tx.conn, subject))
         if (run.status !== 'queued')
           await runs.cancel(run.id, who.userId, agentsTx(tx));
+      await runs.requests.reassign(
+        {
+          subject,
+          purpose: 'personalRunner',
+          toUserId: null,
+          byUserId: actor?.type === 'user' ? actor.id : null,
+        },
+        agentsTx(tx),
+      );
       if (!handoff.waiting) {
         await deps.projects().activity.record(tx.conn, {
           issueId: issue.id,
