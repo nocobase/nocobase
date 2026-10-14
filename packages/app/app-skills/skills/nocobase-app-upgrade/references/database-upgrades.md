@@ -28,7 +28,7 @@ This preview is read-only and checks both executed migrations and seeds. If it p
 
 Match every proposed change to its owning package, migration or seed name, and the documented source change. `db repair` updates all mismatching executed migration and seed checksums in the selected connections; it has no per-migration allowlist. An unexplained entry means investigate before repairing that connection, even when other entries are expected. Do not weaken the checksum policy, edit migration sources or history by hand, or use `db reset` or `db redo` to bypass the failure.
 
-Once every proposed checksum change is explained and the operation is within the authorized upgrade scope, acknowledge it with the same target sources and connection selection:
+Before writing any repair, stop the application and other writers and take a restorable backup that includes the original migration and seed history. Keep that backup paired with the previous runtime. Once every proposed checksum change is explained and the operation is within the authorized upgrade scope, acknowledge it with the same target sources and connection selection:
 
 ```bash
 pnpm nocobase db repair --json
@@ -36,9 +36,11 @@ pnpm nocobase db repair --json
 
 The CLI confirms before writing; non-interactive execution requires `--force`. Use that flag only for the reviewed repair already authorized by the user. Repair changes recorded checksums only: it does not rerun migrations, change schema or business data, or make a failed migration count as successful. An upstream fix that changes an old schema still needs its forward migration after repair. This procedure does not authorize editing merged migrations yourself.
 
+For an app-installer installation, do not run actual repair as preparation for a subsequent ordinary `upgrade`: the installer takes its SQLite backup after stopping the application, so that backup would already contain the repaired history. On failure it can restore checksums that the previous runtime rejects under `onChecksumMismatch: error`, even without a schema change. Establish a supported maintenance procedure that backs up before repair and restores that same backup before starting the old runtime on failure. Merely keeping an extra pre-repair backup does not make the installer's automatic rollback select it. If the selected installer cannot coordinate these steps, complete only the read-only checks until that procedure is available.
+
 ## Apply and verify
 
-After completing the independent checksum check, any required repair, and the documented data preparation, review the pending tasks again with the apply preview and execute `pnpm nocobase db apply --json` for a source application within the authorized upgrade scope. For a deployment, use its migration step or the installer's upgrade operation instead. Check the command result and relevant application behavior, including reads and writes affected by the migration; a running process alone is insufficient. Keep the reviewed checksum changes, migration results, and recovery path in the upgrade report.
+For a source application, after completing the independent checksum check, any required repair, and the documented data preparation, review the pending tasks again with the apply preview and execute `pnpm nocobase db apply --json` within the authorized upgrade scope. For a deployment, keep backup, repair, migration, and recovery inside the established maintenance procedure; use the ordinary installer upgrade directly when no repair is needed. Check the command result and relevant application behavior, including reads and writes affected by the migration; a running process alone is insufficient. Keep the reviewed checksum changes, migration results, and recovery path in the upgrade report.
 
 If a migration rejects existing data, preserve it and resolve the reported records under a data migration plan before retrying. For example, shortening a stored archive key without moving the corresponding archive breaks downloads. Do not silently truncate data to make a constraint pass.
 

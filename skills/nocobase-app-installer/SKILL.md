@@ -103,6 +103,8 @@ Before upgrading an existing database, read the target application's and registe
 
 When the checksum preview proposes changes, explain every migration or seed checksum difference before any actual repair; when it proposes none, skip repair. The installer applies migrations but does not automatically acknowledge changed historical checksums. Repair only updates history checksums; it does not change schema, fix partial tables, or replace a forward migration. Do not suppress drift by changing migration policy or repeatedly retrying the same archive.
 
+Do not run actual repair before an ordinary installer upgrade. Its SQLite backup is taken after stopping the application and would already contain the new checksums, which the previous runtime can reject under `onChecksumMismatch: error` if the upgrade rolls back. A repair procedure must stop writers, back up the original history, perform the reviewed repair and migrations, and restore that same pre-repair backup before restarting the old runtime on failure. An extra manual backup alone does not change which backup automatic rollback restores. When the selected installer cannot coordinate that sequence, finish only the read-only checks and establish the supported maintenance procedure first.
+
 Both stop the application, so the user decides:
 
 1. An upgrade takes a new archive: `upgrade --dir <root> --archive <file> --json`. It must be the same application built for the same base path, and not an older version; the same version built again is a new release and deploys normally.
