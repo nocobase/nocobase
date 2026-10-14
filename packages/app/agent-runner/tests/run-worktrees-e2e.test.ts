@@ -43,6 +43,7 @@ it('starts an unmarked writer alongside another, cancels, resumes one head and r
       },
     ],
     env: [],
+    git: { author: { name: 'Test', email: 'test@example.com' } },
   };
   const subject = { key: 'PM-300', url: 'http://app.test/PM-300' };
   const a = server.enqueue({
@@ -381,6 +382,7 @@ it('preserves a switched branch and stash across real worker completion and a se
       },
     ],
     env: [],
+    git: { author: { name: 'Test', email: 'test@example.com' } },
   };
   const subject = { key: 'PM-SWITCH', url: 'http://app.test/PM-SWITCH' };
   const run = server.enqueue({
@@ -478,6 +480,7 @@ it('keeps a failed directory and includes its path in the existing failure detai
         },
       ],
       env: [],
+      git: { author: { name: 'Test', email: 'test@example.com' } },
     },
     prompt: {
       system: '',

@@ -266,6 +266,7 @@ describe('served tarballs', () => {
             },
           ],
           env: [],
+          git: { author: { name: 'Test', email: 'test@example.com' } },
         },
         prompt: {
           system: '',
@@ -376,6 +377,7 @@ describe('served tarballs', () => {
             },
           ],
           env: [],
+          git: { author: { name: 'Test', email: 'test@example.com' } },
         },
         prompt: {
           system: '',
