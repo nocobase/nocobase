@@ -3,11 +3,18 @@
  * `/unfollow`). It says how many of
  * the allowed issues are followed; once that many are, an unfollowed issue's star is held, with the reason as its hint.
  */
+import { ApiClientError } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
+import { useIsMutating } from '@tanstack/react-query';
 import { StarIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip';
 import { cn } from 'cn';
 
 import { FOLLOW_UPS_MAX } from '../../../shared/follow-ups.js';
@@ -27,9 +34,11 @@ function followState(
 export function FollowToggle({
   issueId,
   className,
+  compact = false,
 }: {
   readonly issueId: string;
   readonly className?: string;
+  readonly compact?: boolean;
 }): ReactElement {
   const { t } = useTranslation();
   const notify = useNotify();
@@ -40,10 +49,30 @@ export function FollowToggle({
   const following = overview.data?.following ?? [];
   const { followed, full } = followState(following, issueId);
   const loading = !overview.data;
-  const held = full || loading;
-  return (
+  const denied =
+    overview.error instanceof ApiClientError &&
+    [401, 403].includes(overview.error.status);
+  const saving = useIsMutating({ mutationKey: ['studio', 'followIssue'] }) > 0;
+  const held = denied || full || loading || saving;
+  const hint = denied
+    ? t(
+        overview.error instanceof ApiClientError &&
+          overview.error.status === 401
+          ? 'personalTasks.sessionExpired'
+          : 'common.forbidden',
+      )
+    : saving
+      ? t('issueLive.follow.saving')
+      : loading
+        ? t(overview.isError ? 'followUps.loadFailed' : 'personalTasks.loading')
+        : full
+          ? t('issueLive.follow.fullHint', { max: FOLLOW_UPS_MAX })
+          : followed
+            ? t('issueLive.follow.unfollow')
+            : t('issueLive.follow.follow');
+  const button = (
     <Button
-      size='sm'
+      size={compact ? 'icon-sm' : 'sm'}
       variant='outline'
       aria-pressed={followed}
       aria-disabled={held || undefined}
@@ -51,26 +80,20 @@ export function FollowToggle({
         'aria-disabled:cursor-not-allowed aria-disabled:opacity-60',
         className,
       )}
-      title={
-        full
-          ? t('issueLive.follow.fullHint', { max: FOLLOW_UPS_MAX })
-          : followed
-            ? t('issueLive.follow.unfollow')
-            : undefined
-      }
+      aria-busy={saving || undefined}
+      title={hint}
       data-testid='follow-toggle'
-      onClick={
-        held
-          ? undefined
-          : () => followIssue.mutate({ issueId, follow: !followed })
-      }
+      onClick={(event) => {
+        event.stopPropagation();
+        if (!held) followIssue.mutate({ issueId, follow: !followed });
+      }}
     >
       <StarIcon
         data-icon='inline-start'
         className={cn(followed && 'fill-amber-400 text-amber-500')}
       />
       {/* On a phone the star alone, with the count when followed. */}
-      <span className='max-md:sr-only'>
+      <span className={compact ? 'sr-only' : 'max-md:sr-only'}>
         {followed
           ? t('issueLive.follow.following', {
               count: following.length,
@@ -81,10 +104,21 @@ export function FollowToggle({
             : t('issueLive.follow.follow')}
       </span>
       {followed ? (
-        <span aria-hidden className='tabular-nums md:hidden'>
+        <span
+          aria-hidden
+          className={cn('tabular-nums md:hidden', compact && 'hidden')}
+        >
           {following.length}/{FOLLOW_UPS_MAX}
         </span>
       ) : null}
     </Button>
+  );
+  return compact ? (
+    <Tooltip>
+      <TooltipTrigger render={button} />
+      <TooltipContent>{hint}</TooltipContent>
+    </Tooltip>
+  ) : (
+    button
   );
 }

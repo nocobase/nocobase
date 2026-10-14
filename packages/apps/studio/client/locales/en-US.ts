@@ -499,7 +499,7 @@ const enUS = {
   },
   navigation: {
     inbox: 'Inbox',
-    myIssues: 'My issues',
+    myIssues: 'My tasks-α',
     followUps: 'My follow-ups',
     development: 'Development',
     issues: 'Issues',
@@ -1387,6 +1387,15 @@ const enUS = {
   preferences: preferencesEnUS,
   knowledge: knowledgeEnUS,
   issuesPage: issuesEnUS,
+  personalTasks: {
+    sessionExpired: 'Your session has expired. Sign in again.',
+    signInAgain: 'Sign in again',
+    draftUnavailable:
+      'This task is no longer accessible. Your unsent draft is kept for this session; sending is unavailable.',
+    loading: 'Loading followed tasks…',
+    sections: 'Personal task sections',
+    returnDraft: 'Return to unsent draft · {{key}}',
+  },
   followUps: followUpsEnUS,
   issueLive: issueLiveEnUS,
   projectPage: projectPageEnUS,

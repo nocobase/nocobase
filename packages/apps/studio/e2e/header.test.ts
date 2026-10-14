@@ -158,13 +158,14 @@ test.describe('sidebar inbox', () => {
       page,
     }) => {
       await open(page, '/my-issues');
+      await expect(page.getByRole('banner')).toBeHidden();
       await page
-        .getByRole('banner')
+        .getByTestId('phone-bar')
         .getByRole('button', { name: /导航/ })
         .click();
       const nav = page.getByRole('navigation', { name: '应用导航' });
       const links = nav.getByRole('link');
-      await expect(links.nth(0)).toHaveAccessibleName('我的任务');
+      await expect(links.nth(0)).toHaveAccessibleName('我的任务-α');
       await expect(links.nth(1)).toHaveAccessibleName('我的 Agent');
       await expect(links.nth(2)).toHaveAccessibleName(/^收件箱/);
       await expect(links.nth(3)).toHaveAccessibleName('仪表盘');
@@ -227,7 +228,7 @@ test.describe('default landing navigation', () => {
     await expect(page).toHaveURL(url('/inbox'));
     const nav = page.getByRole('navigation', { name: '应用导航' });
     const links = nav.getByRole('link');
-    await expect(links.nth(0)).toHaveAccessibleName('我的任务');
+    await expect(links.nth(0)).toHaveAccessibleName('我的任务-α');
     await expect(links.nth(1)).toHaveAccessibleName('我的 Agent');
     await expect(links.nth(2)).toHaveAccessibleName(/^收件箱/);
     await expect(links.nth(3)).toHaveAccessibleName('仪表盘');
@@ -279,7 +280,7 @@ test.describe('default landing navigation', () => {
       .click();
     const nav = page.getByRole('navigation', { name: '应用导航' });
     const links = nav.getByRole('link');
-    await expect(links.nth(0)).toHaveAccessibleName('我的任务');
+    await expect(links.nth(0)).toHaveAccessibleName('我的任务-α');
     await expect(links.nth(1)).toHaveAccessibleName('我的 Agent');
     await expect(links.nth(2)).toHaveAccessibleName(/^收件箱/);
     await expect(links.nth(3)).toHaveAccessibleName('仪表盘');

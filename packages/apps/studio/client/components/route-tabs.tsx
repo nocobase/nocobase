@@ -51,10 +51,13 @@ export function RouteTabs({
   tabs,
   label,
   keepSearch = true,
+  keepHash = false,
 }: {
   readonly tabs: readonly RouteTab[];
   readonly label: string;
   readonly keepSearch?: boolean;
+  /** Preserve a meaningful content anchor while switching personal task scopes. */
+  readonly keepHash?: boolean;
 }): ReactElement {
   const location = useLocation();
   const base = useResolvedPath('.').pathname;
@@ -76,6 +79,7 @@ export function RouteTabs({
             to={{
               pathname: tab.path,
               search: keepSearch ? location.search : undefined,
+              hash: keepHash ? location.hash : undefined,
             }}
           >
             {tab.label}
