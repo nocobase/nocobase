@@ -4,6 +4,7 @@
  * work sent back with a back-off) is `runners.ts`.
  */
 import type { RunApp } from '@nocobase/agent-protocol';
+import { runRetentionDays } from '../core/runs/run-data-purge.js';
 import { serverFileRepositoryManagerToken } from '@nocobase/app-plugin-file/server';
 import { driveManagerToken } from '@nocobase/app-server/drive';
 import { idGeneratorToken } from '@nocobase/app-server/id-generator';
@@ -38,6 +39,8 @@ import { agentsToken } from '../tokens.js';
 
 /** `agents` in the application's configuration. */
 export interface AgentsConfig {
+  /** Completed runs' events and prompt snapshots: 14 days by default, 0 disables cleanup. */
+  readonly runs?: { readonly retentionDays?: number };
   /**
    * The CLI agents talk to the application with, and where runners get it: `name` (the application's id from `app` when
    * left out), and `package`, the tarball this application serves (`{ kind: 'served' }`, from `dist` below) by default,
@@ -77,9 +80,16 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
   private stoppingVectors: Promise<void> | undefined;
 
   public override register(): void {
+    runRetentionDays(
+      this.app.config.get<AgentsConfig>('agents')?.runs?.retentionDays,
+    );
     this.app.container.singleton(agentsToken, (resolver) => {
       const config = this.app.config.get<AgentsConfig>('agents');
       return createAgents({
+        runRetentionDays: () =>
+          runRetentionDays(
+            this.app.config.get<AgentsConfig>('agents')?.runs?.retentionDays,
+          ),
         database: resolver.resolve(databaseManagerToken),
         idGenerator: resolver.resolve(idGeneratorToken),
         app: this.runApp(config),

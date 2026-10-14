@@ -16,15 +16,16 @@ Templates ship their tests into generated applications. Keep them runnable from 
 
 ## What to test, by change
 
-| You changed      | Test at least                                                                                                                     |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| A server route   | Anonymous → `401`, authenticated but unpermitted → `403`, permitted → expected payload; the route is declared in the API document |
-| A public webhook | Missing signature, invalid signature, valid signature, duplicate delivery                                                         |
-| A migration      | `up` produces the expected schema; `down` reverses it; against a real database                                                    |
-| A seed           | First run, run against existing data, repeat run                                                                                  |
-| A service        | Its domain behavior, with its dependencies supplied directly                                                                      |
-| A job            | `execute()` with a realistic payload; a second run is harmless; failures behave as intended                                       |
-| Frontend code    | See [frontend tests](frontend/references/testing.md): pages, components, route declarations, copy                                 |
+| You changed           | Test at least                                                                                                                           |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| A server route        | Anonymous → `401`, authenticated but unpermitted → `403`, permitted → expected payload; the route is declared in the API document       |
+| A list or stats route | Its query count does not grow with the number of rows or groups: count the reads for a few rows and for many, and assert they are equal |
+| A public webhook      | Missing signature, invalid signature, valid signature, duplicate delivery                                                               |
+| A migration           | `up` produces the expected schema; `down` reverses it; against a real database                                                          |
+| A seed                | First run, run against existing data, repeat run                                                                                        |
+| A service             | Its domain behavior, with its dependencies supplied directly                                                                            |
+| A job                 | `execute()` with a realistic payload; a second run is harmless; failures behave as intended                                             |
+| Frontend code         | See [frontend tests](frontend/references/testing.md): pages, components, route declarations, copy                                       |
 
 ## Testing a route
 

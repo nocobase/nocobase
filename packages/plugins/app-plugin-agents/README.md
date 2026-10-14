@@ -239,3 +239,13 @@ A subject assembly may return `inputs` to select the effective claim inputs. Use
 ### Scoped work summaries
 
 `agents.runs.workingOn(subjectKind, subjectIds)` returns each subject/agent pair with a `dispatched` or `running` run once, as `{ subjectId, agentId, working: true }`. Empty scopes return nothing. Reads are restricted to the supplied kind and IDs, without the workload board's global limit; queued and terminal runs are excluded. This service exposes no run details and does not enforce viewer permissions or approval rules: the consuming application must filter visible subjects first and apply its own waiting rules.
+
+## Run process data retention
+
+Set `agents.runs.retentionDays` in the application's `config.yml` to a non-negative integer (default `14`); `0` disables cleanup. Invalid values fail configuration validation. The independent `RunDataPurge` job runs hourly and deletes only events and prompt snapshots belonging to completed, failed or cancelled runs whose `finishedAt` is strictly earlier than the fixed cutoff for that round. Run records, summaries, inputs, usage, repositories, chat messages, comments and deliveries remain available.
+
+Each batch selects up to 200 runs with events or briefs, ordered by finish time and ID, then deletes both child tables in one transaction using their existing run ID indexes. Batches pause for 100 ms; a round handles at most 2,000 runs and stops starting batches after five minutes. There are no run locks, run updates, new fields, indexes or migrations. Cleanup is idempotent. Deletion makes database space reusable; it does not immediately shrink database files.
+
+Multi-instance deployments must set `jobs.default: redis` with a shared Redis connection and namespace so the existing jobs scheduler claims each firing on one instance. Memory jobs and the in-process timer fallback when no jobs service is installed serve single-instance deployments. No additional distributed lock or exactly-once ledger is introduced.
+
+Studio publishes `agents.runs.retentionDays` through its existing public configuration. The process view displays a retention notice only for an expired terminal run with a complete empty transcript and no brief. This uses the current retention rule, rather than a historical cleanup marker; changing or disabling the policy changes the inferred notice. Run, event and brief API contracts are unchanged.
