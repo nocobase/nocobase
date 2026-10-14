@@ -1,5 +1,5 @@
 // The real daemon and isolated workers, with a deterministic tool and local Git remote.
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, writeFileSync } from 'node:fs';
 import { runTempName, runTempRoot } from '../src/core/run-temp.ts';
 import { runnerPaths } from '../src/lib/home.ts';
 import path from 'node:path';
@@ -43,6 +43,7 @@ it('starts an unmarked writer alongside another, cancels, resumes one head and r
       },
     ],
     env: [],
+    git: { author: { name: 'Test', email: 'test@example.com' } },
   };
   const subject = { key: 'PM-300', url: 'http://app.test/PM-300' };
   const a = server.enqueue({
@@ -142,6 +143,80 @@ it('starts an unmarked writer alongside another, cancels, resumes one head and r
   }
 }, 150_000);
 
+it('reports missing identity in the cancellation result and retains uncommitted work', async () => {
+  const server = new FakeServer();
+  await server.listen();
+  const root = tempDir('missing-save-identity-');
+  const home = path.join(root, 'home');
+  const env = cliEnv(home);
+  const remote = makeRemote(root);
+  await registerRunner(server.url, env, [
+    '--cli',
+    `appcli=${writeFakeCli(root)}`,
+  ]);
+  const run = server.enqueue({
+    subject: { key: 'identity', url: 'http://app.test/identity' },
+    workspace: {
+      dirs: [
+        {
+          kind: 'repo',
+          url: remote,
+          path: 'repo',
+          branch: 'agent/identity',
+          defaultBranch: 'main',
+        },
+      ],
+      env: [],
+      git: { author: { name: 'Test', email: 'test@example.com' } },
+    },
+    prompt: {
+      system: '',
+      session: 'fresh',
+      turn: 'bash git config --worktree user.email ""\nwrite pending.txt retained\nhang',
+    },
+  });
+  const daemon = startDaemon(env);
+  try {
+    await waitFor(
+      () =>
+        existsSync(
+          path.join(String(run.start?.workDir), 'repo', 'pending.txt'),
+        ),
+      30_000,
+      'pending work',
+    );
+    const repo = path.join(String(run.start?.workDir), 'repo');
+    const head = git(['rev-parse', 'HEAD'], repo);
+    server.cancel(run.payload.run.id);
+    await waitFor(
+      () => run.status === 'cancelled',
+      30_000,
+      'cancellation report',
+    );
+    const cancellation = server
+      .events(run.payload.run.id)
+      .find(
+        (event) =>
+          event.type === 'status' && event.meta?.status === 'cancelled',
+      );
+    expect(JSON.stringify(cancellation)).toContain(
+      'configure valid user.name and user.email',
+    );
+    expect(JSON.stringify(cancellation)).toContain('Recovery required');
+    expect(git(['rev-parse', 'HEAD'], repo)).toBe(head);
+    expect(existsSync(path.join(repo, 'pending.txt'))).toBe(true);
+    expect(
+      git(['for-each-ref', '--format=%(refname)', 'refs/runner/'], repo),
+    ).toBe('');
+  } finally {
+    await stopDaemon(daemon);
+    await server.close();
+    removeDir(home);
+    removeDir(workRootOf(home));
+    removeDir(root);
+  }
+}, 120_000);
+
 it.each(['completed', 'failed', 'cancelled'] as const)(
   'resumes unpublished files after a %s run on the same machine',
   async (ending) => {
@@ -149,7 +224,15 @@ it.each(['completed', 'failed', 'cancelled'] as const)(
     await server.listen();
     const root = tempDir('ending-continuation-');
     const home = path.join(root, 'home');
-    const env = cliEnv(home);
+    const config = path.join(root, 'host.gitconfig');
+    writeFileSync(
+      config,
+      '[user]\nname = Host User\nemail = host@example.com\n',
+    );
+    const env = cliEnv(home, {
+      GIT_CONFIG_GLOBAL: config,
+      GIT_CONFIG_NOSYSTEM: '1',
+    });
     const remote = makeRemote(root);
     await registerRunner(server.url, env, [
       '--cli',
@@ -166,6 +249,7 @@ it.each(['completed', 'failed', 'cancelled'] as const)(
         },
       ],
       env: [],
+      git: { author: { name: 'Test', email: 'test@example.com' } },
     };
     const subject = {
       key: 'continuation',
@@ -228,7 +312,7 @@ it.each(['completed', 'failed', 'cancelled'] as const)(
         prompt: {
           system: '',
           session: 'fresh',
-          turn: 'read pending.txt\nsay resumed',
+          turn: 'read pending.txt\nwrite continued.txt resumed\nbash git add .\nbash git -c commit.gpgsign=false commit -m "Continue pending work"\nbash git push origin HEAD:refs/heads/agent/continuation\nsay resumed',
         },
       });
       await waitFor(
@@ -245,6 +329,26 @@ it.each(['completed', 'failed', 'cancelled'] as const)(
           .map((event) => event.output)
           .join(' '),
       ).toContain(ending);
+      const history = git(
+        [
+          'log',
+          'refs/heads/agent/continuation',
+          '--format=%an <%ae>|%cn <%ce>',
+        ],
+        remote.replace('file://', ''),
+      );
+      expect(history.split('\n')).toEqual(
+        Array(3).fill('Test <test@example.com>|Test <test@example.com>'),
+      );
+      const messages = git(
+        ['log', 'refs/heads/agent/continuation', '--format=%B'],
+        remote.replace('file://', ''),
+      );
+      expect(messages).toContain('Update pending.txt');
+      expect(messages).toContain('work in progress');
+      expect(messages).not.toMatch(
+        /runner@nocobase.local|co-authored-by:|signed-off-by:|save local continuation/iu,
+      );
     } finally {
       await stopDaemon(daemon);
       await server.close();
@@ -278,6 +382,7 @@ it('preserves a switched branch and stash across real worker completion and a se
       },
     ],
     env: [],
+    git: { author: { name: 'Test', email: 'test@example.com' } },
   };
   const subject = { key: 'PM-SWITCH', url: 'http://app.test/PM-SWITCH' };
   const run = server.enqueue({
@@ -375,6 +480,7 @@ it('keeps a failed directory and includes its path in the existing failure detai
         },
       ],
       env: [],
+      git: { author: { name: 'Test', email: 'test@example.com' } },
     },
     prompt: {
       system: '',

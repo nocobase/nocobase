@@ -75,11 +75,6 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
   const runner = new FakeRunner(api, `needs-you-${unique()}`, true);
   const agent = await runner.agent();
   await api.patch('users/me/preferences', { locale: 'en-US' });
-  await api.patch('projectManager', {
-    name: managerName,
-    firstChoiceAgentId: agent,
-    fallbackAgentId: null,
-  });
   const created: Issue[] = [];
   const shot = (name: string) =>
     page.screenshot({
@@ -128,6 +123,37 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
       headers,
     );
   try {
+    const initialManagerName = 'PM-360 initial manager';
+    expect(initialManagerName).not.toBe(managerName);
+    for (const originalName of [managerName, '项目经理']) {
+      await api.patch('projectManager', { name: originalName });
+      const originalSettings = await api.get<{ name: string }>(
+        'projectManager',
+      );
+      try {
+        await api.patch('projectManager', { name: initialManagerName });
+        const initialSettings = await api.get<{ name: string }>(
+          'projectManager',
+        );
+        expect(initialSettings.name).toBe(initialManagerName);
+        await api.patch('projectManager', { name: managerName });
+        const configuredSettings = await api.get<{ name: string }>(
+          'projectManager',
+        );
+        expect(configuredSettings.name).toBe(managerName);
+      } finally {
+        await api.patch('projectManager', { name: originalSettings.name });
+        const restoredSettings = await api.get<{ name: string }>(
+          'projectManager',
+        );
+        expect(restoredSettings.name).toBe(originalSettings.name);
+      }
+    }
+    await api.patch('projectManager', {
+      name: managerName,
+      firstChoiceAgentId: agent,
+      fallbackAgentId: null,
+    });
     const { issue, running, headers } = await make(
       'PM-331: restore the execution disk',
     );
