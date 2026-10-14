@@ -76,10 +76,11 @@ nb-studio run events <run>
 | -------- | ----------- |
 | `run`    | The run id. |
 
-| Flag      | Type    | Description                                                                  |
-| --------- | ------- | ---------------------------------------------------------------------------- |
-| `--after` | integer | Only events after this sequence number, oldest first; the newest without it. |
-| `--limit` | integer | At most this many events (200). (default 50)                                 |
+| Flag      | Type                                                                                                     | Description                                                                          |
+| --------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `--type`  | text \| thinking \| toolUse \| toolResult \| permission \| input \| checkout \| status \| error \| usage | Only these event types; repeat to include more. All types when omitted. (repeatable) |
+| `--after` | integer                                                                                                  | Only events after this sequence number, oldest first; the newest without it.         |
+| `--limit` | integer                                                                                                  | At most this many events (200). (default 50)                                         |
 
 **Output:** A list (table columns: `seq`, `at`, `type`, `tool`, `text`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -92,6 +93,7 @@ nb-studio run events <run>
 ```bash
 nb-studio run events <run>
 nb-studio run events <run> --after 120
+nb-studio run events <run> --type text --type input
 ```
 
 ## run get
@@ -130,14 +132,14 @@ Newest first, a page at a time. The caller sees the runs they started or own, an
 nb-studio run list
 ```
 
-| Flag             | Type      | Description   |
-| ---------------- | --------- | ------------- |
-| `--subject-kind` | string    |               |
-| `--subject`      | string    |               |
-| `--agent`        | string    |               |
-| `--status`       | queued \\ | dispatched \\ | running \\ | completed \\ | failed \\ | cancelled |     |
-| `--limit`        | integer   | (default 50)  |
-| `--page-token`   | string    |               |
+| Flag             | Type                                                                | Description  |
+| ---------------- | ------------------------------------------------------------------- | ------------ |
+| `--subject-kind` | string                                                              |              |
+| `--subject`      | string                                                              |              |
+| `--agent`        | string                                                              |              |
+| `--status`       | queued \| dispatched \| running \| completed \| failed \| cancelled |              |
+| `--limit`        | integer                                                             | (default 50) |
+| `--page-token`   | string                                                              |              |
 
 **Output:** A list (table columns: `id`, `agentId`, `subject.kind`, `subject.id`, `status`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -156,7 +158,7 @@ nb-studio run list --agent <agent>
 
 Confirm a run request
 
-Runs the work as the request's responsible, who must still be able to wake the agent. When the subject binds a current responsible resolver, it is rechecked; otherwise the application must reassign requests when responsibility changes. Administrators and agent managers cannot confirm for them. The original input joins only a run acting as the caller.
+Runs the work as the request's responsible, who must still be able to wake the agent. Personal runner requests release the existing comment chain instead of creating another run. When the subject binds a current responsible resolver, it is rechecked; otherwise the application must reassign requests when responsibility changes. Administrators and agent managers cannot confirm for them. The original input joins only a run acting as the caller.
 
 ```bash
 nb-studio run request confirm <request>
@@ -206,15 +208,15 @@ The run requests the caller answers for or asked, newest first, a page at a time
 nb-studio run request list
 ```
 
-| Flag             | Type           | Description  |
-| ---------------- | -------------- | ------------ |
-| `--role`         | responsible \\ | requester    | `responsible`: the requests the caller answers for (to confirm); `requester`: the ones the caller asked. Both when left out. |
-| `--status`       | pending \\     | confirmed \\ | rejected \\                                                                                                                  | withdrawn \\ | expired \\ | superseded |     |
-| `--subject-kind` | string         |              |
-| `--subject`      | string         |              |
-| `--agent`        | string         |              |
-| `--limit`        | integer        | (default 50) |
-| `--page-token`   | string         |              |
+| Flag             | Type                                                                   | Description                                                                                                                  |
+| ---------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `--role`         | responsible \| requester                                               | `responsible`: the requests the caller answers for (to confirm); `requester`: the ones the caller asked. Both when left out. |
+| `--status`       | pending \| confirmed \| rejected \| withdrawn \| expired \| superseded |                                                                                                                              |
+| `--subject-kind` | string                                                                 |                                                                                                                              |
+| `--subject`      | string                                                                 |                                                                                                                              |
+| `--agent`        | string                                                                 |                                                                                                                              |
+| `--limit`        | integer                                                                | (default 50)                                                                                                                 |
+| `--page-token`   | string                                                                 |                                                                                                                              |
 
 **Output:** A list (table columns: `id`, `agentName`, `subject.kind`, `subject.id`, `requestedByName`, `responsibleName`, `status`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -233,7 +235,7 @@ nb-studio run request list --role requester
 
 Reject a run request
 
-Declines the work; only the request's responsible may. The subject's current responsible resolver is rechecked when bound; otherwise the application must reassign requests on responsibility changes. The person who asked may run it as themselves by asking again.
+Declines the work; only the request's responsible may. A personal runner rejection cancels unfinished work of that comment chain and the original requester may still use Run as me. The subject's current responsible resolver is rechecked when bound; otherwise the application must reassign requests on responsibility changes.
 
 ```bash
 nb-studio run request reject <request>
@@ -257,7 +259,7 @@ nb-studio run request reject <request>
 
 Run a run request as the caller
 
-The person who asked runs the work as themselves now, without waiting for confirmation: on their own runner or a team runner, never on the runners of the person who answers for the subject. A pending request is withdrawn; an expired one that went nowhere may be run this way once. Refused with `NO_RUNNER_AVAILABLE` when no runner the caller may use can run the agent now, so the work never waits unseen.
+The person who asked runs the work as themselves now, without waiting for confirmation: on their own runner or a team runner, never on the runners of the person who answers for the subject. A pending request is withdrawn; an expired one that went nowhere may be run this way once. Rejected personal runner requests also allow one execution as the original requester, preserving the rejection. Refused with `NO_RUNNER_AVAILABLE` when no runner the caller may use can run the agent now, so the work never waits unseen.
 
 ```bash
 nb-studio run request run-as-me <request>
@@ -297,7 +299,7 @@ nb-studio run request withdraw <request>
 
 Retry a run
 
-Queues a new run with the same input. Whoever started or owns it, or a manager of agents, may.
+Queues a new run with the same input once. Whoever started or owns it, or a manager of agents, may. Repeating a retry returns RUN_ALREADY_RETRIED (FAILED_PRECONDITION) with the replacement run id.
 
 ```bash
 nb-studio run retry <run>

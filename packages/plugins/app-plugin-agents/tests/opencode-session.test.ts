@@ -106,7 +106,7 @@ describe('the OpenCode session header', () => {
   });
 
   it('sends a conversation’s session id to an OpenCode base URL, and a new one to each call outside any', async () => {
-    const services = h.services.online.services;
+    const services = h.services.models.services;
     await services.create(service());
     const gateway = createModelGateway(services, { maxRetries: 0 });
     mock.answer({ text: ['ok'] });
@@ -149,7 +149,7 @@ describe('the OpenCode session header', () => {
   });
 
   it('satisfies OpenCode by itself, and shows the provider’s reason verbatim when it cannot', async () => {
-    const services = h.services.online.services;
+    const services = h.services.models.services;
     mock.requireHeader('x-opencode-session');
     await services.create(service());
     // A plain base URL gets no header: the provider's own words reach the caller unchanged.

@@ -5,11 +5,11 @@
  * issue moves on.
  */
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
-import type { WorkflowDefinition } from '@nocobase/app-plugin-projects/shared/workflows';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { AGENT_BLOCKED } from '../../server/agents/blocked.js';
 import { RUN_FAILED_FINAL } from '../../server/agents/notices.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 
 let h: BridgeHarness;
@@ -27,28 +27,6 @@ afterEach(() => h.close());
 const alice = () => h.viewer('alice');
 const bob = () => h.viewer('bob');
 
-/** Lets agents move issues to Blocked, as the "Software development" template does. */
-async function letAgentsBlock(): Promise<void> {
-  h.roles.set('alice', 'admin');
-  const created = await h.projects.workflows.create(alice(), {
-    name: 'Standard',
-    copyFrom: null,
-  });
-  const workflow = await h.projects.workflows.setDefault(alice(), created.id);
-  const definition: WorkflowDefinition = {
-    states: workflow.definition.states,
-    transitions: [
-      ...workflow.definition.transitions,
-      { from: '*', to: 'blocked', actors: ['agent'] },
-    ],
-  };
-  await h.projects.workflows.update(alice(), workflow.id, {
-    revision: workflow.revision,
-    definition,
-  });
-  h.roles.delete('alice');
-}
-
 async function update(
   issue: Issue,
   patch: Record<string, unknown>,
@@ -57,25 +35,21 @@ async function update(
   const current = await h.projects.issueQueries.detail(viewer, issue.id);
   return h.projects.issues.update(viewer, issue.id, {
     revision: current.revision,
+    ...(patch.statusKey === 'blocked' || patch.statusKey === 'in_review'
+      ? { needsYou: 'Choose how to proceed.' }
+      : {}),
     ...patch,
   });
 }
 
-/** An issue of alice's that an agent works on, blocked by it after asking a question. */
-async function blockedIssue(nameText?: {
-  key: string;
-  ns: string;
-}): Promise<{ issue: Issue; agentId: string }> {
-  await letAgentsBlock();
-  const agentId = await h.createAgent();
-  // As a built-in agent is seeded.
-  if (nameText)
-    await h.database
-      .connection()
-      .repository('agAgents')
-      .updateMany({ filter: { id: agentId }, values: { nameText } });
-  const issue = await h.projects.issues.create(alice(), { title: 'Migrate' });
-  await update(issue, { executor: { type: 'agent', id: agentId } });
+/** An issue of alice's the project manager works on, blocked by it after asking a question. */
+async function blockedIssue(): Promise<{ issue: Issue; agentId: string }> {
+  await h.createAgent();
+  const issue = await h.projects.issues.create(alice(), {
+    title: 'Migrate',
+    statusKey: 'in_progress',
+    executor: { type: 'agent', id: PROJECT_MANAGER_ID },
+  });
   const payload = await h.claimOne();
   const token = payload.cli.credential.content.token as string;
   const asked = await h.request(
@@ -90,10 +64,16 @@ async function blockedIssue(nameText?: {
   const moved = await h.request(
     'PATCH',
     `/projects/issues/${issue.identifier}`,
-    { runToken: token, body: { statusKey: 'blocked' } },
+    {
+      runToken: token,
+      body: {
+        statusKey: 'blocked',
+        needsYou: 'Which database should the migration target?',
+      },
+    },
   );
   expect(moved.status).toBe(200);
-  return { issue, agentId };
+  return { issue, agentId: PROJECT_MANAGER_ID };
 }
 
 const blockedCleared = (issueId: string) =>
@@ -113,11 +93,11 @@ describe('an agent that reports itself blocked', () => {
       kind: 'decision',
       userIds: ['alice'],
       issue: { id: issue.id },
-      actor: { type: 'agent', id: agentId, name: 'Coder' },
+      actor: { type: 'agent', id: agentId, name: 'Project manager' },
       params: {
         identifier: issue.identifier,
         agentId,
-        from: 'todo',
+        from: 'in_progress',
         question: 'Which database should the migration target?',
       },
     });
@@ -131,25 +111,36 @@ describe('an agent that reports itself blocked', () => {
     ).toBe(false);
   });
 
-  it("carries a built-in agent's name key, so the card words it in the reader's language", async () => {
-    const { agentId } = await blockedIssue({
-      key: 'studioAgents.presets.coder.name',
-      ns: 'studio',
-    });
-    await expect
-      .poll(() => planned.filter((notice) => notice.type === AGENT_BLOCKED))
-      .toHaveLength(1);
-    expect(
-      planned.find((notice) => notice.type === AGENT_BLOCKED),
-    ).toMatchObject({
-      params: {
-        agentId,
-        actorName: 'Coder',
-        agentNameKey: 'studioAgents.presets.coder.name',
-        agentNameNs: 'studio',
-      },
-    });
-  });
+  it.each(['en-US', 'zh-CN'])(
+    'uses the saved manager identity for a %s reader',
+    async (locale) => {
+      await h.manager.update('root', { name: '负责人' });
+      const { agentId, issue } = await blockedIssue();
+      await expect
+        .poll(() => planned.filter((notice) => notice.type === AGENT_BLOCKED))
+        .toHaveLength(1);
+      const notice = planned.find((notice) => notice.type === AGENT_BLOCKED);
+      expect(notice).toMatchObject({
+        params: { agentId, actorName: '负责人' },
+      });
+      expect(
+        (notice?.params as Record<string, unknown>).agentNameKey,
+      ).toBeUndefined();
+      expect(
+        (notice?.params as Record<string, unknown>).agentNameNs,
+      ).toBeUndefined();
+      const response = await h.request(
+        'GET',
+        `/projects/issues/${issue.identifier}`,
+        {
+          user: 'alice',
+          headers: { 'Accept-Language': locale },
+        },
+      );
+      expect(response.status).toBe(200);
+      expect(response.body.data.executorName).toBe('负责人');
+    },
+  );
 
   it('settles for whoever answers it with a comment, but not for a note', async () => {
     const { issue } = await blockedIssue();
@@ -170,7 +161,7 @@ describe('an agent that reports itself blocked', () => {
 
   it('settles once the issue is unblocked or given to someone else', async () => {
     const { issue } = await blockedIssue();
-    await update(issue, { statusKey: 'todo' });
+    await update(issue, { statusKey: 'in_progress' });
     await expect
       .poll(() => blockedCleared(issue.id).map((ref) => ref.outcome))
       .toEqual(['unblocked']);

@@ -174,3 +174,84 @@ describeMigration('202610090001_lifecycle_example_create_durable_flows', {
       await expectCollection(name).not.toExist();
   },
 });
+
+describeMigration('202610110001_lifecycle_example_create_invoices', {
+  sources: migrations,
+  up: async ({ connection, expectCollection }) => {
+    const name = 'lifecycleExampleInvoices';
+    await expectCollection(name).toExist();
+    await expectCollection(name).toHaveIndex(['status', 'statusChangedAt']);
+    await expectCollection(name).toHaveIndex(['orderRef'], { unique: true });
+    const values = {
+      orderRef: '1024',
+      customerId: 'customer-li',
+      title: 'Example company',
+      taxNumber: '91310000MA1K000001',
+      amountCents: 39900,
+      status: 'draft',
+      statusChangedAt: '2026-10-11T00:00:00Z',
+      createdAt: '2026-10-11T00:00:00Z',
+    };
+    await connection.repository(name).createOne({ values });
+    await expect(
+      connection.repository(name).createOne({ values }),
+    ).rejects.toThrow();
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('lifecycleExampleInvoices').not.toExist();
+  },
+});
+
+describeMigration('202610130001_lifecycle_example_parameter_configuration', {
+  sources: migrations,
+  up: async ({ connection, expectCollection }) => {
+    for (const suffix of [
+      'Heads',
+      'Versions',
+      'Selections',
+      'Requests',
+      'Snapshots',
+      'Usages',
+    ])
+      await expectCollection('lifecycleExampleParameter' + suffix).toExist();
+    await expectCollection('lifecycleExampleParameterHeads').toHaveIndex(
+      ['scope', 'groupKey'],
+      { unique: true },
+    );
+    await expectCollection('lifecycleExampleParameterSelections').toHaveField(
+      'referenceId',
+      { nullable: false },
+    );
+    await expectCollection('lifecycleExampleParameterUsages').toHaveIndex([
+      'recordKey',
+      'at',
+      'id',
+    ]);
+    await expectCollection('lifecycleExampleExpenses').toHaveField(
+      'parameterContract',
+      { nullable: true },
+    );
+    expect(
+      await connection.repository('lifecycleExampleDepartments').count(),
+    ).toBe(2);
+    expect(
+      await connection
+        .repository('lifecycleExamplePeople')
+        .findOne({ filter: { id: 'disabled' } }),
+    ).toMatchObject({ active: false });
+  },
+  down: async ({ expectCollection }) => {
+    for (const suffix of [
+      'Heads',
+      'Versions',
+      'Selections',
+      'Requests',
+      'Snapshots',
+      'Usages',
+    ])
+      await expectCollection(
+        'lifecycleExampleParameter' + suffix,
+      ).not.toExist();
+    await expectCollection('lifecycleExampleExpenses').toExist();
+  },
+});

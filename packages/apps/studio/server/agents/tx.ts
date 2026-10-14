@@ -34,3 +34,32 @@ export function relayAnnouncements(
     if (event.kind === AGENT_KIND) bus.emit(event.payload as AgentsEvent);
   });
 }
+
+/** Runs start and finish outside project transactions; announce their committed changes through the existing issue event. */
+export function refreshRunIssues(
+  projects: Pick<Projects, 'tx'>,
+  agents: Pick<
+    import('@nocobase/app-plugin-agents/server/tokens').Agents,
+    'events' | 'runs'
+  >,
+  onError: (error: unknown) => void,
+): () => void {
+  const refresh = (event: { readonly runId: string }) => {
+    void agents.runs
+      .detail(event.runId)
+      .then((run) => {
+        if (run.subject.kind !== 'issue') return;
+        return projects.tx.run(async (tx) => {
+          tx.emit({ type: 'issue.changed', issueId: run.subject.id });
+        });
+      })
+      .catch(onError);
+  };
+  const stops = [
+    agents.events.on('run.changed', refresh),
+    agents.events.on('run.queued', refresh),
+  ];
+  return () => {
+    for (const stop of stops) stop();
+  };
+}

@@ -138,7 +138,6 @@ describe('ChatPanel', () => {
         'About an hour: the templates are done, the tests remain.',
       ),
     ).toBeVisible();
-    expect(within(panel).getByTestId('chat-model')).toBeVisible();
   });
 
   it('keeps the message list positioned, so absolutely placed content stays inside it', async () => {
@@ -274,71 +273,31 @@ describe('ChatPanel', () => {
     );
   });
 
-  it('offers the online agent’s models before the first message and starts on the chosen one', async () => {
-    renderPanel(null);
-    const picker = await screen.findByTestId('chat-model');
-    // The model after its service's title, not the bare id; the title shows only where the composer is wide.
-    expect(picker).toHaveTextContent('OpenAI · gpt-5-mini');
-    expect(picker).toHaveAccessibleName('Model: OpenAI · gpt-5-mini');
-    expect(within(picker).getByTestId('chat-model-service')).toHaveClass(
-      'hidden',
-      '@md:inline',
-    );
-    expect(picker).toHaveClass('max-w-40', '@md:max-w-64');
-    expect(screen.getByTestId('chat-composer')).toHaveClass('@container');
-    // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
-    await userEvent.click(picker);
-    const option = await screen.findByRole('option', {
-      name: /claude-sonnet/u,
-    });
-    // The menu groups the models by their service.
-    expect(screen.getByText('Anthropic')).toBeVisible();
-    expect(screen.getByRole('option', { name: /gpt-5-mini/u })).toBeVisible();
-    fireEvent.pointerDown(option, { pointerType: 'mouse' });
-    fireEvent.pointerUp(option, { pointerType: 'mouse' });
-    fireEvent.mouseUp(option);
-    fireEvent.click(option);
-    await waitFor(() =>
-      expect(screen.getByTestId('chat-model')).toHaveTextContent(
-        'Anthropic · claude-sonnet',
-      ),
-    );
-    const box = screen.getByLabelText('Message to the agent');
-    fireEvent.change(box, { target: { value: 'Which model?' } });
-    fireEvent.click(screen.getByTestId('chat-send'));
-    expect(
-      await screen.findByRole('heading', { name: 'Which model?' }),
-    ).toBeVisible();
-    // The conversation it created answers with that model, and keeps offering the switch.
-    expect(screen.getByTestId('chat-model')).toHaveTextContent('claude-sonnet');
-  });
-
   it('chooses the agent of a new conversation in the composer, then shows it read-only', async () => {
     renderPanel(null);
     const composer = await screen.findByTestId('chat-composer');
     const picker = await within(composer).findByTestId('chat-agent-picker');
     expect(picker).toHaveTextContent('Assistant');
-    // Fitted to the composer: the availability is in its name, the type tag only where the composer is wide.
+    // Fitted to the composer: the availability is in its name.
     expect(picker).toHaveAccessibleName(
       'Agent: Assistant, Online; choose another',
-    );
-    expect(within(picker).getByText('Online').closest('[title]')).toHaveClass(
-      'hidden',
-      '@md:inline-flex',
     );
     // Before the first message the header names no agent: the composer chooses it.
     expect(screen.queryByTestId('chat-agent')).toBeNull();
     await userEvent.click(picker);
-    // Every agent, grouped by type.
-    expect(await screen.findByText('Runner agents')).toBeVisible();
+    // Every enabled agent; one that cannot answer now says why and cannot be picked.
+    const release = await screen.findByRole('menuitem', {
+      name: /Release manager/u,
+    });
+    expect(release).toHaveTextContent('No runner online, cannot be chosen');
+    expect(release).toHaveTextContent('Personal runners only');
+    expect(release).toHaveAttribute('aria-disabled', 'true');
     fireEvent.click(screen.getByRole('menuitem', { name: /Coding agent/u }));
     await waitFor(() =>
       expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent(
         'Coding agent',
       ),
     );
-    // A runner agent has no model to choose.
-    expect(screen.queryByTestId('chat-model')).toBeNull();
     const box = screen.getByLabelText('Message to the agent');
     fireEvent.change(box, { target: { value: 'Fix the build' } });
     fireEvent.click(screen.getByTestId('chat-send'));
@@ -444,7 +403,7 @@ describe('launchers', () => {
 });
 
 describe('ChatConversationPage', () => {
-  it('shows one conversation with its title, agent and mode', async () => {
+  it('shows one conversation with its title and agent', async () => {
     render(
       <Shell path='/chat/flaky-test'>
         <Routes>
@@ -470,7 +429,7 @@ describe('ChatConversationPage', () => {
     expect(within(page).getByTestId('chat-page-agent')).toHaveTextContent(
       'Coding agent',
     );
-    expect(within(page).getByTestId('chat-mode')).toHaveTextContent('Runner');
+    expect(within(page).queryByTestId('chat-mode')).toBeNull();
   });
 
   it('lists the conversations in a dialog for a page', async () => {

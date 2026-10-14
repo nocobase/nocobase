@@ -301,11 +301,7 @@ describe('run requests', () => {
 
   it('checks again on confirming that the responsible may still wake the agent', async () => {
     await setUp();
-    const restricted = await h.createAgent({
-      name: 'Private',
-      access: 'users',
-      userIds: [ALICE, BOB],
-    });
+    const restricted = await h.createAgent({ name: 'Private' });
     const asked = await h.services.runs.enqueue({
       agentId: restricted,
       subject: { kind: 'sample', id: '1' },
@@ -314,17 +310,13 @@ describe('run requests', () => {
       input: comment(BOB, 'Please.'),
     });
     expect(asked.outcome).toBe('pending');
-    const agent = await h.services.agents.get(restricted);
-    await h.services.agents.update(restricted, 'owner', {
-      expectedRevision: agent.revision,
-      userIds: ['owner'],
-    });
+    await h.disableAgent(restricted);
     await expect(
       h.services.runs.requests.confirm(
         asked.outcome === 'pending' ? asked.requestId : '',
         ALICE,
       ),
-    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    ).rejects.toMatchObject({ code: 'AGENT_NOT_ENABLED' });
     expect(await runsOn()).toEqual([]);
   });
 
@@ -432,17 +424,17 @@ describe('run requests', () => {
     'expires and notifies when reassignment to %s cannot run the work, preserving runAsMe',
     async (toUserId) => {
       await setUp();
-      const restricted = await h.createAgent({
-        access: 'users',
-        userIds: [ALICE, BOB],
-      });
+      const restricted = await h.createAgent();
       const asked = await bobAsks('Keep this work.', { agentId: restricted });
       const id = asked.outcome === 'pending' ? asked.requestId : '';
+      // Dave could take it over only while the agent may be given work.
+      if (toUserId) await h.disableAgent(restricted);
       const handed = await h.services.runs.requests.reassign({
         subject: { kind: 'sample', id: '1' },
         toUserId,
         byUserId: ALICE,
       });
+      if (toUserId) await h.enableAgent(restricted);
       expect(handed).toMatchObject({ superseded: [], created: [], queued: [] });
       expect(handed.expired.map((request) => request.id)).toEqual([id]);
       expect(events.map((event) => event.type)).toEqual([
@@ -463,19 +455,6 @@ describe('run requests', () => {
       ).rejects.toMatchObject({ code: 'RUN_REQUEST_SETTLED' });
     },
   );
-
-  it('requires the requester’s own permission before creating an auto request', async () => {
-    await setUp();
-    const restricted = await h.createAgent({
-      access: 'users',
-      userIds: [ALICE],
-    });
-    await expect(
-      bobAsks('Unwanted.', { agentId: restricted }),
-    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
-    expect(await h.services.runs.requests.list({ userId: ALICE })).toEqual([]);
-    expect(events).toEqual([]);
-  });
 
   it('reuses an identical pending snapshot without renewing expiry, while retaining distinct work', async () => {
     await setUp();
@@ -867,6 +846,63 @@ describe('run requests', () => {
       ).body.data.input.text,
     ).toBe('One.');
     expect((await h.request('GET', '/agents/runRequests')).status).toBe(401);
+  });
+
+  it('lists requests on several subjects in some statuses at once, and the open runs on each', async () => {
+    await setUp();
+    const first = await bobAsks('One.');
+    await bobAsks('Two.', { subject: { kind: 'sample', id: '2' } });
+    await bobAsks('Three.', { subject: { kind: 'sample', id: '3' } });
+    const firstId = first.outcome === 'pending' ? first.requestId : '';
+    await h.services.runs.requests.reject(firstId, ALICE);
+    const texts = async (statuses: readonly ('pending' | 'rejected')[]) =>
+      (
+        await h.services.runs.requests.list({
+          userId: ALICE,
+          subject: { kind: 'sample' },
+          subjectIds: ['1', '2'],
+          statuses,
+        })
+      )
+        .map((request) => request.input.text)
+        .sort();
+    expect(await texts(['pending', 'rejected'])).toEqual(['One.', 'Two.']);
+    expect(await texts(['pending'])).toEqual(['Two.']);
+    expect(await texts([])).toEqual([]);
+    expect(
+      await h.services.runs.requests.list({
+        userId: ALICE,
+        subject: { kind: 'sample' },
+        subjectIds: [],
+      }),
+    ).toEqual([]);
+
+    // Alice's own work runs at once.
+    const own = (id: string) =>
+      h.services.runs.enqueue({
+        agentId,
+        subject: { kind: 'sample', id },
+        responsibleUserId: ALICE,
+        input: comment(ALICE, `Work on ${id}.`),
+      });
+    await own('1');
+    await own('3');
+    const conn = h.database.connection();
+    const open = await h.services.runs.openOnEach(conn, 'sample', [
+      '1',
+      '2',
+      '3',
+    ]);
+    expect(open.map((run) => run.subject.id).sort()).toEqual(['1', '3']);
+    for (const id of ['1', '2', '3'])
+      expect(
+        open.filter((run) => run.subject.id === id).map((run) => run.id),
+      ).toEqual(
+        (await h.services.runs.openOn(conn, { kind: 'sample', id })).map(
+          (run) => run.id,
+        ),
+      );
+    expect(await h.services.runs.openOnEach(conn, 'sample', [])).toEqual([]);
   });
 
   it('carries the source of a chain of work along the runs it causes', async () => {

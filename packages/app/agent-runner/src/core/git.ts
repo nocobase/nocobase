@@ -14,7 +14,7 @@ export interface GitAuth {
   readonly token: string;
 }
 
-/** Pass an Authorization header through the environment, never the command line or a configuration file. */
+/** Pass an Authorization header through the environment and clear host helpers, preventing credential fallback. */
 export function gitAuthEnv(
   auth: GitAuth | undefined,
   scope?: string,
@@ -24,17 +24,26 @@ export function gitAuthEnv(
     `${auth.username ?? 'x-access-token'}:${auth.token}`,
   ).toString('base64');
   return {
-    GIT_CONFIG_COUNT: '1',
+    GIT_CONFIG_COUNT: '2',
     GIT_CONFIG_KEY_0:
       scope === undefined ? 'http.extraHeader' : `http.${scope}.extraHeader`,
     GIT_CONFIG_VALUE_0: `Authorization: Basic ${basic}`,
+    GIT_CONFIG_KEY_1: 'credential.helper',
+    GIT_CONFIG_VALUE_1: '',
   };
+}
+
+export interface GitInvocationOptions {
+  readonly signal?: AbortSignal;
+  /** Quiesce descendant writers before the enclosing cache lock is released after an abort. */
+  readonly onAbort?: () => Promise<void>;
 }
 
 export async function git(
   args: string[],
   cwd?: string,
   env: Record<string, string> = {},
+  options: GitInvocationOptions = {},
 ): Promise<string> {
   try {
     const { stdout } = await run('git', args, {
@@ -46,10 +55,12 @@ export async function git(
         ...env,
       },
       maxBuffer: 16 * 1024 * 1024,
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
     });
     return stdout.trim();
   } catch (error) {
-    const stderr = (error as { stderr?: string }).stderr?.trim();
+    if (options.signal?.aborted === true) await options.onAbort?.();
+    const stderr = (error as { stderr?: string }).stderr;
     throw new CheckoutError(
       `git ${args.join(' ')} failed${stderr ? `: ${stderr}` : ''}`,
     );

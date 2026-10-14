@@ -16,8 +16,10 @@
 import {
   FailureReasonSchema,
   RunStatusSchema,
+  RUN_EVENT_TYPES,
   type FailureReason,
   type RunEvent,
+  type RunEventType,
   type RunStatus,
 } from '@nocobase/agent-protocol';
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
@@ -172,6 +174,11 @@ const IssueRunRowSchema: z.ZodType<IssueRunRow> = z
 
 export interface IssueRunDetail {
   readonly id: string;
+  readonly actorUserId: string;
+  readonly actorName: string;
+  readonly requestedByUserId: string;
+  readonly requestedByName: string;
+  readonly ownerUserId: string | null;
   readonly agentId: string;
   readonly agent: string;
   readonly issue: {
@@ -184,6 +191,8 @@ export interface IssueRunDetail {
   readonly attempt: number;
   readonly maxAttempts: number;
   readonly retryOfRunId: string | null;
+  readonly retriedRunId: string | null;
+  readonly freshSession?: boolean;
   readonly createdAt: string;
   readonly startedAt: string | null;
   readonly finishedAt: string | null;
@@ -210,6 +219,23 @@ export interface IssueRunDetail {
 const IssueRunDetailSchema: z.ZodType<IssueRunDetail> = z
   .object({
     id: z.string(),
+    actorUserId: z.string().meta({
+      description: 'Execution identity, fixed when the run is first claimed.',
+    }),
+    actorName: z
+      .string()
+      .meta({ description: 'The name of the execution identity.' }),
+    requestedByUserId: z.string().meta({
+      description:
+        'The user associated with the chain origin; input actors identify the actual triggers, including system events.',
+    }),
+    requestedByName: z.string().meta({
+      description: 'The name of the user associated with the chain origin.',
+    }),
+    ownerUserId: z
+      .string()
+      .nullable()
+      .meta({ description: 'The issue owner snapshot for this run.' }),
     agentId: z.string(),
     agent: z.string(),
     issue: z.object({
@@ -222,6 +248,8 @@ const IssueRunDetailSchema: z.ZodType<IssueRunDetail> = z
     attempt: z.number().int(),
     maxAttempts: z.number().int(),
     retryOfRunId: z.string().nullable(),
+    retriedRunId: z.string().nullable(),
+    freshSession: z.boolean().optional(),
     createdAt: z.string(),
     startedAt: z.string().nullable(),
     finishedAt: z.string().nullable(),
@@ -326,6 +354,18 @@ const IssueRunsQuery = z.object({
 const RunParams = z.object({ runId: z.string().min(1) });
 
 const RunEventsQuery = z.object({
+  type: z
+    .preprocess(
+      (value) => (typeof value === 'string' ? [value] : value),
+      z.array(z.enum(RUN_EVENT_TYPES)).min(1).max(100),
+    )
+    .optional()
+    .meta({
+      type: 'array',
+      items: { type: 'string', enum: [...RUN_EVENT_TYPES] },
+      description:
+        'Only these event types; repeat to include more. All types when omitted.',
+    }),
   after: z.coerce.number().int().min(0).optional().meta({
     description:
       'Only events after this sequence number, oldest first; the newest without it.',
@@ -410,7 +450,7 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
 
     async function agentNames(): Promise<Map<string, string>> {
       return new Map(
-        (await agents.agents.list({ includeArchived: true })).map((agent) => [
+        (await agents.agents.directory(agents.tx.read())).map((agent) => [
           agent.id,
           agent.name,
         ]),
@@ -424,7 +464,7 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
       const run = await agents.runs.get(id).catch(() => null);
       if (!run || run.subject.kind !== ISSUE_SUBJECT) throw notFound();
       const issue = await projects()
-        .issueQueries.detail(context.get('viewer'), run.subject.id)
+        .issueQueries.visible(context.get('viewer'), run.subject.id)
         .catch(() => null);
       if (!issue) throw notFound();
       if (
@@ -435,15 +475,16 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
       return { run, issue };
     }
 
-    /** The newest `limit` events, reading the transcript page by page. */
+    /** The newest `limit` matching events, applying the service filter before each page limit. */
     async function newestEvents(
       runId: string,
       limit: number,
+      types?: readonly RunEventType[],
     ): Promise<{ events: RunEvent[]; lastSeq: number }> {
       let kept: RunEvent[] = [];
       let after = 0;
       for (let page = 0; page < EVENT_PAGES_MAX; page += 1) {
-        const read = await agents.runs.events(runId, after, EVENT_PAGE);
+        const read = await agents.runs.events(runId, after, EVENT_PAGE, types);
         kept = [...kept, ...read.events].slice(-limit);
         if (read.events.length < EVENT_PAGE) break;
         after = read.lastSeq;
@@ -502,7 +543,7 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
               ],
             },
           );
-        const issue = await projects().issueQueries.detail(
+        const issue = await projects().issueQueries.visible(
           context.get('viewer'),
           ref,
         );
@@ -593,6 +634,11 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
         ];
         const data: IssueRunDetail = {
           id: run.id,
+          actorUserId: run.actorUserId,
+          actorName: detail.actorName ?? run.actorUserId,
+          requestedByUserId: run.requestedByUserId,
+          requestedByName: detail.requestedByName ?? run.requestedByUserId,
+          ownerUserId: run.ownerUserId,
           agentId: run.agentId,
           agent,
           issue: {
@@ -605,6 +651,8 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
           attempt: run.attempt,
           maxAttempts: run.maxAttempts,
           retryOfRunId: run.retryOfRunId,
+          retriedRunId: detail.retriedRunId ?? null,
+          freshSession: run.freshSession === true,
           createdAt: run.createdAt,
           startedAt: run.startedAt,
           finishedAt: run.finishedAt,
@@ -654,7 +702,11 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
           flags: { ...runFlags, pageSize: { name: 'limit' } },
           columns: ['seq', 'at', 'type', 'tool', 'text'],
           action: VIEW_ACTION,
-          examples: ['run events <run>', 'run events <run> --after 120'],
+          examples: [
+            'run events <run>',
+            'run events <run> --after 120',
+            'run events <run> --type text --type input',
+          ],
         }),
       }),
       apiValidator('param', RunParams),
@@ -664,11 +716,11 @@ export const issueRunsRoutes: AppApiRouteContribution<Application> =
           context,
           context.req.valid('param').runId,
         );
-        const { after, pageSize } = context.req.valid('query');
+        const { after, pageSize, type } = context.req.valid('query');
         const read =
           after === undefined
-            ? await newestEvents(run.id, pageSize)
-            : await agents.runs.events(run.id, after, pageSize);
+            ? await newestEvents(run.id, pageSize, type)
+            : await agents.runs.events(run.id, after, pageSize, type);
         const data: IssueRunEventRow[] = read.events.map((event) => ({
           seq: event.seq,
           at: event.at,

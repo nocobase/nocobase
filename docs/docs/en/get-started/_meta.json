@@ -6,6 +6,11 @@
   },
   {
     "type": "file",
+    "name": "nocobase-2-vs-3",
+    "label": "NocoBase 2 vs 3"
+  },
+  {
+    "type": "file",
     "name": "overview",
     "label": "Overview"
   },

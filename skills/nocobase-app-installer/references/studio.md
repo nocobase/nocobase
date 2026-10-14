@@ -20,7 +20,7 @@ Resolve the requested package version or dist-tag in the intended registry. `lat
 Use the parent Skill's prerequisites and destination checks. This example assumes a same-machine reverse proxy serving `https://studio.example.com`, and `STUDIO_ADMIN_PASSWORD` already populated securely:
 
 ```bash
-npx --yes --registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" @nocobase/app-installer install /srv/nocobase/studio \
+npx --yes --registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" @nocobase/app-installer@beta install /srv/nocobase/studio \
   --app studio \
   --host 127.0.0.1 --port 13000 \
   --origin https://studio.example.com --base-path /main \
@@ -37,8 +37,8 @@ Read the JSON result and follow the parent's failure handling. On success, repor
 Read `source.kind` first. For an npm application installation, `upgrade` resolves the recorded package's `latest` tag, `--to <version or tag>` selects a release for that invocation, and `--rebuild` builds the installed version again. An initial `--app studio@beta` does not pin upgrades to beta; use `upgrade --to beta`. For an archive installation, obtain a compatible new archive and pass `--archive` instead. Installing a newer app-installer package alone does not upgrade Studio.
 
 ```bash
-npx --yes --registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" @nocobase/app-installer status --dir /srv/nocobase/studio --json
-npx --yes --registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" @nocobase/app-installer upgrade --dir /srv/nocobase/studio --json
+npx --yes --registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" @nocobase/app-installer@beta status --dir /srv/nocobase/studio --json
+npx --yes --registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" @nocobase/app-installer@beta upgrade --dir /srv/nocobase/studio --json
 ```
 
 Handle confirmation, backups and failures through the parent Skill. Once the interruption and backup plan are authorized, repeat the upgrade with `--yes`. Preserve the installation's configuration, origin, base path, pm2 identity and storage; do not reinstall into another empty directory and describe that as an upgrade. Initial administrator settings seed an empty database and do not reset an existing account.

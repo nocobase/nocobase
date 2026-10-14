@@ -13,7 +13,6 @@ import { SYSTEM_CALLER } from '@nocobase/app-plugin-releases/server';
 import { allPermissions } from '@nocobase/app-plugin-releases/shared/access';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { SOFTWARE_TEMPLATE } from '../../server/agents/catalog/workflow-templates.js';
 import {
   createCiSetup,
   type CiKeys,
@@ -100,7 +99,6 @@ beforeEach(async () => {
   for (const id of ['alice', 'bob', 'root']) await h.addUser(id);
   h.roles.set('alice', 'admin');
   h.roles.set('root', 'owner');
-  await h.projects.workflows.installTemplate(SOFTWARE_TEMPLATE);
   h.github.app.installations.set('acme', '77');
   connection = await h.gitConnections.create('alice', {
     kind: 'app',

@@ -140,7 +140,6 @@ describe('the catalog', () => {
     expect(catalog.settings.map(({ id }) => id)).toEqual([
       'pm.general',
       'pm.labels',
-      'pm.workflows',
       'pm.members',
       'agents.agents',
       'agents.runners',
@@ -279,7 +278,7 @@ describe('Studio’s annotations', () => {
     ]);
     expect(
       options.find(({ key }) => key === 'pm.attachments/upload'),
-    ).toMatchObject({ group: 'pm.issues', types: ['runner'] });
+    ).toMatchObject({ group: 'pm.issues' });
     expect(
       options
         .filter((option) => option.grantable === false)

@@ -51,7 +51,7 @@ describe('Resend Provider', () => {
         html: undefined,
         replyTo: 'support@example.com',
       },
-      { idempotencyKey: 'delivery-1' },
+      { idempotencyKey: 'delivery-1', signal: expect.any(AbortSignal) },
     );
   });
 
@@ -73,7 +73,7 @@ describe('Resend Provider', () => {
       error: {
         code: 'rate_limit_exceeded',
         category: 'rate_limit',
-        message: 'Too many requests',
+        message: 'Resend request failed.',
       },
     });
   });
@@ -89,7 +89,7 @@ describe('Resend Provider', () => {
       error: {
         code: 'ETIMEDOUT',
         category: 'timeout',
-        message: 'Request timed out',
+        message: 'Resend request failed.',
       },
     });
   });
@@ -111,7 +111,7 @@ describe('Resend Provider', () => {
       error: {
         code: 'application_error',
         category: 'network',
-        message: 'The connection closed unexpectedly',
+        message: 'Resend request failed.',
       },
     });
   });

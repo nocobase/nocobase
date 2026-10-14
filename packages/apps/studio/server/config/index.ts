@@ -24,6 +24,7 @@ import users from './users.js';
 import releases from './releases.js';
 import apiKeys from './api-keys.js';
 import agents from './agents.js';
+import studio from './studio.js';
 
 const defaultConfigs: AppConfigFactory<{
   auth: ReturnType<typeof auth>;
@@ -48,6 +49,7 @@ const defaultConfigs: AppConfigFactory<{
   releases: ReturnType<typeof releases>;
   apiKeys: ReturnType<typeof apiKeys>;
   agents: ReturnType<typeof agents>;
+  studio: ReturnType<typeof studio>;
 }> = defaultAppConfigs({
   auth,
   authorization,
@@ -71,6 +73,7 @@ const defaultConfigs: AppConfigFactory<{
   releases,
   apiKeys,
   agents,
+  studio,
 });
 
 export default defaultConfigs;

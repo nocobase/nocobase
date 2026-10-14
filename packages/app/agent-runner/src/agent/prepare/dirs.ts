@@ -9,11 +9,13 @@
 // the last error.
 import path from 'node:path';
 
-import { prepareDirs } from '../../core/checkout.ts';
+import { prepareDirs, RepoAccessFailure } from '../../core/checkout.ts';
 import { GitNetworkError } from '../../core/git-retry.ts';
+import { taskGit } from '../../core/task-git.ts';
 import { acceptedFailure } from '../../protocol/index.ts';
 import {
   PrepareError,
+  workspaceKey,
   type PrepareContext,
   type PrepareStep,
 } from './types.ts';
@@ -25,15 +27,16 @@ async function prepare(
   let retries = 0;
   try {
     return await prepareDirs({
+      perRun: true,
+      clean: context.payload.workspace.clean === true,
+      readOnly: context.payload.workspace.readOnly === true,
       paths: context.paths,
       appKey: context.registration.key,
-      subjectKey: context.payload.subject.key,
+      subjectKey: workspaceKey(context.payload),
       runId: context.payload.run.id,
       workDir,
       dirs: context.payload.workspace.dirs,
-      ...(context.payload.workspace.git?.credentials
-        ? { credentials: context.payload.workspace.git.credentials }
-        : {}),
+      ...(context.gitAuth === undefined ? {} : { auth: context.gitAuth }),
       log: context.log,
       retry: {
         ...context.gitRetry,
@@ -58,6 +61,12 @@ async function prepare(
       },
     });
   } catch (error) {
+    // A repository whose credential the application could not issue says why, so the run is retried or not.
+    if (error instanceof RepoAccessFailure && error.kind !== 'leaseLost')
+      throw new PrepareError(
+        error.kind === 'denied' ? 'repoAccessDenied' : 'repoAccessUnavailable',
+        error.message,
+      );
     if (error instanceof GitNetworkError)
       throw new PrepareError(
         acceptedFailure('prepareNetwork', context.payload.run.acceptedFailures),
@@ -84,6 +93,27 @@ export const dirsStep: PrepareStep = {
     context.onRelease(() => prepared.release());
     context.dirs = prepared.dirs;
     for (const dir of prepared.dirs) {
+      const author = context.payload.workspace.git?.author;
+      if (
+        author &&
+        dir.repo?.localBranch &&
+        !context.payload.workspace.readOnly
+      ) {
+        // Keep the existing checkout configuration aligned with the identity passed to the tool.
+        // Finalization after a worker exit can then use it without a separate identity record.
+        await taskGit(dir.repo, [
+          'config',
+          '--worktree',
+          'user.name',
+          author.name,
+        ]);
+        await taskGit(dir.repo, [
+          'config',
+          '--worktree',
+          'user.email',
+          author.email,
+        ]);
+      }
       const where =
         dir.kind === 'repo' ? path.relative(workDir, dir.dir) : dir.dir;
       context.event({
@@ -102,6 +132,12 @@ export const dirsStep: PrepareStep = {
             : {
                 url: dir.repo.url,
                 branch: dir.repo.branch,
+                ...(dir.repo.localBranch === undefined
+                  ? {}
+                  : {
+                      localBranch: dir.repo.localBranch,
+                      targetBranch: dir.repo.branch,
+                    }),
                 ...(dir.repo.initializing ? { initializing: true } : {}),
               }),
         },

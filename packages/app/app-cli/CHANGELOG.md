@@ -1,5 +1,30 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.21
+
+### Patch Changes
+
+- e6dd56e: Generated applications now commit `.agents/rules/`, the application's own agent guidance, while the rest of `.agents/` stays ignored: `create-app` writes `/.agents/*` followed by `!/.agents/rules/` instead of `/.agents/`, and replaces a legacy `/.agents/` or `.agents/` line in a template's `.gitignore` rather than appending beside it, since git cannot re-include a path inside an excluded directory. The skills sync documentation now states that only `.agents/skills/` and its ownership file are generated state. An existing application that wants to commit `.agents/rules/` replaces `/.agents/` in its own `.gitignore` with those two lines.
+
+## 1.0.0-beta.20
+
+### Patch Changes
+
+- d54dd59: Keep development restart input open when a background or Agent-run process receives stdin EOF, so configuration and dependency changes can still restart the server. Preserve the supervisor worker input across background starts and dotenv restarts.
+
+## 1.0.0-beta.19
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-server@2.0.0-beta.4
+  - @nocobase/cli-envelope@0.1.0-beta.1
+  - @nocobase/db@1.0.0-beta.19
+  - @nocobase/dev-config@0.1.0-beta.22
+  - @nocobase/logging@0.1.0-beta.7
+  - @nocobase/secrets@0.1.0-beta.1
+
 ## 1.0.0-beta.18
 
 ### Minor Changes

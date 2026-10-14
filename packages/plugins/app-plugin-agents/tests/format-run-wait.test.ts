@@ -44,7 +44,7 @@ describe('formatRunWait', () => {
       'Concurrency full (2/2)',
     );
     expect(words('toolUnavailable', { tool: 'codex' })).toBe(
-      'No runtime has codex signed in',
+      'Tool not signed in, disabled, or requested model unavailable (codex)',
     );
     expect(words('missingFeatures', { features: ['secrets', 'mounts'] })).toBe(
       'No runtime supports secrets, mounts',

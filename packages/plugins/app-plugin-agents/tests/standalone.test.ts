@@ -129,16 +129,7 @@ it('runs a conversation on a runner with nothing but authentication, authorizati
     };
   };
 
-  // An administrator creates an agent; nobody offers business actions, subjects or scopes beyond this plugin's.
-  const agent = await call('POST', '/agents', {
-    user: 'admin',
-    body: {
-      name: 'Echo',
-      modelEntries: [{ tool: 'claude' }],
-      access: 'everyone',
-    },
-  });
-  expect(agent.status).toBe(201);
+  // Nobody offers business actions, subjects or scopes beyond this plugin's.
   expect(
     (await call('GET', '/agents/actions', { user: 'admin' })).body,
   ).toEqual({ data: [], meta: { total: 0 } });
@@ -149,12 +140,12 @@ it('runs a conversation on a runner with nothing but authentication, authorizati
     vocabulary.body.data.subjects.map(
       (subject: { kind: string }) => subject.kind,
     ),
-  ).toEqual(['consultation', 'conversation']);
+  ).toEqual(['conversation']);
   expect(
     vocabulary.body.data.scopes.map((scope: { key: string }) => scope.key),
   ).toEqual(['workdir']);
 
-  // A runner connects with the echo tool.
+  // A runner connects with the echo tool signed in to one model, which becomes an agent to enable.
   const token = await agents.runners.createRegistrationToken('admin', {
     trust: 'team',
   });
@@ -167,7 +158,14 @@ it('runs a conversation on a runner with nothing but authentication, authorizati
     version: '0.0.1',
     protocolVersion: PROTOCOL_VERSION,
     features: ['input', 'skills', 'secrets'],
-    tools: [{ kind: 'claude', authenticated: true, version: 'echo' }],
+    tools: [
+      {
+        kind: 'claude',
+        authenticated: true,
+        version: 'echo',
+        models: [{ id: 'claude-sonnet-5' }],
+      },
+    ],
     slots: 1,
   };
   const registered = await call('POST', '/agents/runners/register', {
@@ -175,6 +173,20 @@ it('runs a conversation on a runner with nothing but authentication, authorizati
   });
   expect(registered.status).toBe(200);
   const runnerKey = registered.body.data.runnerKey as string;
+  const listed = await call('GET', '/agents', { user: 'admin' });
+  expect(listed.body.data).toEqual([
+    expect.objectContaining({
+      name: 'Claude · Sonnet 5',
+      status: 'pending',
+      tool: 'claude',
+      model: 'claude-sonnet-5',
+    }),
+  ]);
+  const agent = await call('PATCH', `/agents/${listed.body.data[0].id}`, {
+    user: 'admin',
+    body: { description: 'Answers', enabled: true, expectedRevision: 1 },
+  });
+  expect(agent.status).toBe(200);
 
   // A person chats with the agent.
   const conversation = await call('POST', '/agents/conversations', {

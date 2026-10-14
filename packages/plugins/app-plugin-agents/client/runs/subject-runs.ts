@@ -36,9 +36,11 @@ function useRefresh(
 ): void {
   useEffect(() => {
     if (refreshSignal === undefined) return;
-    void client.invalidateQueries({
-      queryKey: agentsKeys.runs(subjectKind, subjectId),
-    });
+    // Reuse an in-flight request: repeated discovery signals must not discard slow responses forever.
+    void client.invalidateQueries(
+      { queryKey: agentsKeys.runs(subjectKind, subjectId) },
+      { cancelRefetch: false },
+    );
   }, [refreshSignal, client, subjectKind, subjectId]);
 }
 
@@ -69,20 +71,31 @@ export function useSubjectRuns(
 }
 
 /** The agents' names in the viewer's language, for people who may read agents; anyone else sees runs without one. */
-export function useAgentNames(): (agentId: string) => string | null {
+export function useAgentIdentities(enabled = true): {
+  readonly loading: boolean;
+  readonly failed: boolean;
+  readonly nameOf: (agentId: string) => string | null;
+} {
   const api = useAgentsApi();
   const agents = useQuery(
     {
-      queryKey: agentsKeys.agents,
-      queryFn: () => api.agents(true),
+      queryKey: agentsKeys.agentNames,
+      queryFn: () => api.agentNames(),
+      enabled,
       retry: false,
       staleTime: 60_000,
     },
     agentsQueryClient(),
   );
   const text = useAgentText();
-  return (agentId) => {
+  const nameOf = (agentId: string) => {
+    if (agents.isError || agents.isPending) return null;
     const agent = agents.data?.find((item) => item.id === agentId);
     return agent ? text.name(agent) : null;
   };
+  return { loading: agents.isPending, failed: agents.isError, nameOf };
+}
+
+export function useAgentNames(): (agentId: string) => string | null {
+  return useAgentIdentities().nameOf;
 }

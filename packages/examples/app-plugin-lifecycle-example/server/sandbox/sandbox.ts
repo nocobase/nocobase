@@ -42,6 +42,15 @@ export interface VendorJob {
   readonly error: string | null;
 }
 
+export interface ProviderInvoice {
+  readonly providerRequestId: string;
+  readonly invoiceId: string;
+  readonly status: 'processing' | 'issued' | 'failed';
+  readonly invoiceNumber: string | null;
+  readonly pdfUrl: string | null;
+  readonly error: string | null;
+}
+
 export interface StockLevel {
   readonly sku: string;
   readonly available: number;
@@ -297,6 +306,87 @@ export class Sandbox {
         return this.job(jobId);
     }
     throw new Error('The job kept changing.');
+  }
+
+  // The invoicing platform. No network calls: every request stays in the sandbox.
+
+  public async submitInvoice(input: {
+    readonly idempotencyKey: string;
+    readonly invoiceId: string;
+    readonly title: string;
+    readonly taxNumber: string;
+    readonly amountCents: number;
+  }): Promise<{ readonly providerRequestId: string }> {
+    const providerRequestId = idFrom('inv', input.idempotencyKey);
+    const object = await this.objects.insert(
+      'invoice',
+      providerRequestId,
+      'processing',
+      { ...input },
+    );
+    // Retry a failed request under its original key, never issue a second invoice.
+    if (object.status === 'failed') {
+      if (
+        !(await this.objects.update(object, {
+          status: 'processing',
+          data: { ...object.data, error: null },
+        }))
+      )
+        throw new Error('The invoice request kept changing.');
+    }
+    return { providerRequestId };
+  }
+
+  public async notifyInvoice(
+    invoiceId: string,
+    customerId: string,
+    invoiceNumber: string,
+  ): Promise<{ readonly delivered: boolean }> {
+    await this.objects.insert(
+      'invoiceNotification',
+      `invoice-notification:${invoiceId}`,
+      'sent',
+      { customerId, invoiceNumber },
+    );
+    return { delivered: true };
+  }
+
+  public async invoice(providerRequestId: string): Promise<ProviderInvoice> {
+    const object = await this.required('invoice', providerRequestId);
+    return {
+      providerRequestId,
+      invoiceId: string(object.data.invoiceId),
+      status: object.status as ProviderInvoice['status'],
+      invoiceNumber: string(object.data.invoiceNumber) || null,
+      pdfUrl: string(object.data.pdfUrl) || null,
+      error: string(object.data.error) || null,
+    };
+  }
+
+  public async completeInvoice(
+    providerRequestId: string,
+    outcome: 'issued' | 'failed',
+  ): Promise<ProviderInvoice> {
+    for (let attempt = 0; attempt < UPDATE_ATTEMPTS; attempt += 1) {
+      const object = await this.required('invoice', providerRequestId);
+      if (object.status !== 'processing')
+        return this.invoice(providerRequestId);
+      const data =
+        outcome === 'issued'
+          ? {
+              ...object.data,
+              invoiceNumber: `DEMO-${providerRequestId.slice(4).toUpperCase()}`,
+              pdfUrl: `/api/lifecycleExample/invoices/${string(object.data.invoiceId)}/pdf`,
+              error: null,
+            }
+          : {
+              ...object.data,
+              error: 'The invoicing platform rejected the request (simulated).',
+            };
+      if (await this.objects.update(object, { status: outcome, data }))
+        return this.invoice(providerRequestId);
+    }
+    throw new Error('The invoice request kept changing.');
   }
 
   // The carrier.

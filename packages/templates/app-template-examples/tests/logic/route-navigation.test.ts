@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildRouteNavigation,
   selectedNavigationId,
+  routeKey,
 } from '../../client/routing/route-navigation.js';
 
 const page = (name: string, path: string): AppClientRegisteredRoute => ({
@@ -63,4 +64,64 @@ describe('route navigation', () => {
       'test:/orders:orders',
     );
   });
+});
+
+it('combines workflow plugin pages into two flat sections without changing page identity or permissions', () => {
+  const lifecycle = '@nocobase/app-plugin-lifecycle-example';
+  const office = '@nocobase/app-plugin-office-flows-example';
+  const owned = (name: string, owner: string) => ({
+    ...page(name, `/${name}`),
+    packageName: owner,
+  });
+  const ticket = owned('ticket', lifecycle);
+  const parameters = owned('lifecycleExampleParameters', lifecycle);
+  const incoming = owned('incoming', office);
+  const configuration = owned('officeFlowsConfiguration', office);
+  const request = owned('officeTask', office);
+  const management = owned('workflows', '@nocobase/app-template-examples');
+  const group = (
+    name: string,
+    owner: string,
+    children: AppClientRegisteredRoute[],
+  ) => ({
+    ...owned(name, owner),
+    path: '/',
+    componentLoader: undefined,
+    children,
+  });
+  const routes = [
+    page('home', '/'),
+    group('lifecycle', lifecycle, [ticket, parameters, management]),
+    group('office', office, [
+      incoming,
+      configuration,
+      group('nested', office, [request]),
+    ]),
+  ];
+  const items = buildRouteNavigation(routes, new Set([routeKey(incoming)]));
+  expect(items.map((item) => item.route.name)).toEqual([
+    'home',
+    'workflowNavigation',
+  ]);
+  const sections = items[1].children;
+  expect(sections.map((item) => item.route.name)).toEqual([
+    'workflowBusiness',
+    'workflowManagement',
+  ]);
+  expect(sections.every((item) => item.section)).toBe(true);
+  expect(sections[0].children.map((item) => item.route)).toEqual([
+    ticket,
+    request,
+  ]);
+  expect(sections[1].children.map((item) => item.route)).toEqual([
+    parameters,
+    management,
+    configuration,
+  ]);
+  expect(
+    sections
+      .flatMap((item) => item.children)
+      .every((item) => item.children.length === 0),
+  ).toBe(true);
+  expect(selectedNavigationId(routes, ticket.path)).toBe(routeKey(ticket));
 });

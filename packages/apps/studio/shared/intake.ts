@@ -9,28 +9,19 @@
 import type { ChatAvailability } from '@nocobase/app-plugin-agents/shared/conversations';
 
 export type IntakeUnavailableReason =
-  | 'INTAKE_NO_AGENT'
-  | 'INTAKE_MODEL_MISSING'
-  | 'INTAKE_MODEL_UNAVAILABLE'
-  | 'INTAKE_NO_RUNNER'
-  | 'INTAKE_AGENT_UNAVAILABLE';
+  'INTAKE_NO_AGENT' | 'INTAKE_NO_RUNNER' | 'INTAKE_AGENT_UNAVAILABLE';
 
 /** Refusal before a handoff, also checked after submission for availability races. */
 export function intakeUnavailableReason(
-  agent:
-    | {
-        readonly models: readonly unknown[];
-        readonly availability: ChatAvailability;
-      }
-    | undefined,
+  agent: { readonly availability: ChatAvailability } | undefined,
 ): IntakeUnavailableReason | null {
   if (!agent) return 'INTAKE_NO_AGENT';
   if (agent.availability.online) return null;
-  if (agent.availability.reason === 'modelUnavailable')
-    return agent.models.length === 0
-      ? 'INTAKE_MODEL_MISSING'
-      : 'INTAKE_MODEL_UNAVAILABLE';
-  if (agent.availability.reason === 'noRunner') return 'INTAKE_NO_RUNNER';
+  if (
+    agent.availability.reason === 'noRunner' ||
+    agent.availability.reason === 'othersPersonal'
+  )
+    return 'INTAKE_NO_RUNNER';
   return 'INTAKE_AGENT_UNAVAILABLE';
 }
 

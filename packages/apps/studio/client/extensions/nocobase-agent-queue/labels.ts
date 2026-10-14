@@ -67,7 +67,6 @@ export interface AgentQueueLabels {
   };
   readonly idle: {
     readonly backlog: string;
-    readonly noAutoRun: string;
     readonly neverRan: string;
     /** `{time}`, how long ago it ended. */
     readonly lastRun: Readonly<
@@ -130,8 +129,6 @@ export const defaultAgentQueueLabels: AgentQueueLabels = {
   wait: {
     kinds: {
       failedRun: 'Failed run',
-      approval: 'Approval',
-      proposal: 'Proposal',
       question: 'Question',
       review: 'Review',
     },
@@ -142,7 +139,6 @@ export const defaultAgentQueueLabels: AgentQueueLabels = {
   },
   idle: {
     backlog: 'In backlog; it does not start on its own',
-    noAutoRun: 'This status does not wake the agent',
     neverRan: 'Not run yet',
     lastRun: {
       completed: 'Last run completed · {time}',

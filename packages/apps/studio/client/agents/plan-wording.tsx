@@ -8,6 +8,7 @@ import {
   type PlanWorder,
 } from '@nocobase/app-plugin-projects/client/kit';
 import { useTranslation } from '@nocobase/i18n/client';
+import { useAgentIdentities } from '@nocobase/app-plugin-agents/client/runs';
 import {
   useContext,
   useEffect,
@@ -21,6 +22,7 @@ import { useStatusLabel } from '../inbox/contributions/projects-wording.js';
 
 /** `source.data` of a suggested executor's plan (`studio/server/agents/stage.ts`). */
 interface SuggestionData {
+  readonly agentId?: unknown;
   readonly rule?: unknown;
   readonly statusKey?: unknown;
   readonly statusName?: unknown;
@@ -42,6 +44,7 @@ export function StudioPlanWording({
   readonly children?: ReactNode;
 }): ReactElement {
   const { t } = useTranslation();
+  const { nameOf, loading, failed } = useAgentIdentities();
   // Other plans are worded further out, when another provider does.
   const outer = useContext(PlanWordingContext);
   // A new function on every render: kept in a ref, so the wording changes only with the language.
@@ -57,10 +60,33 @@ export function StudioPlanWording({
       const stored = text(data.agentName);
       const nameKey = text(data.agentNameKey);
       const nameNs = text(data.agentNameNs);
-      const agent =
-        stored && nameKey && nameNs
+      const targets = plan.rows.flatMap((row) => {
+        if (row.op !== 'issue.update' && row.op !== 'issue.create') return [];
+        const params = row.params as {
+          executor?: { type?: string; id?: string };
+          set?: { executor?: { type?: string; id?: string } };
+        } | null;
+        const executor =
+          row.op === 'issue.update' ? params?.set?.executor : params?.executor;
+        return executor?.type === 'agent' && executor.id ? [executor.id] : [];
+      });
+      const agentId =
+        text(data.agentId) ?? (new Set(targets).size === 1 ? targets[0] : null);
+      const current = agentId ? nameOf(agentId) : null;
+      const snapshot =
+        stored &&
+        nameKey &&
+        nameNs &&
+        nameKey !== 'studioAgents.projectManager.name'
           ? t(nameKey, { ns: nameNs, defaultValue: stored })
           : stored;
+      const agent =
+        current ??
+        (agentId && loading
+          ? '…'
+          : !agentId || failed
+            ? t('inbox.anAgent')
+            : snapshot);
       const identifier = text(data.identifier);
       const statusKey = text(data.statusKey);
       if (data.rule !== 'suggestExecutor' || !agent || !identifier) return null;
@@ -83,7 +109,7 @@ export function StudioPlanWording({
         ),
       };
     },
-    [t, outer],
+    [t, outer, nameOf, loading, failed],
   );
   return (
     <PlanWordingContext.Provider value={worder}>

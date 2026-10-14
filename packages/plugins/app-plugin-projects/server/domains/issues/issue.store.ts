@@ -25,6 +25,8 @@ export interface IssueRecord {
   readonly title: string;
   readonly description: string;
   readonly statusKey: string;
+  readonly needsYou: string | null;
+  readonly next: string | null;
   readonly priority: Priority;
   /** `PRIORITIES` index of `priority`, kept by the writes below. */
   readonly priorityRank: number;
@@ -91,6 +93,8 @@ const FIELDS = [
   'title',
   'description',
   'statusKey',
+  'needsYou',
+  'next',
   'priority',
   'ownerUserId',
   'executorType',

@@ -1,16 +1,17 @@
 // @vitest-environment node
 /**
- * What may start an agent's work on an issue: an issue that waits for unfinished issues starts nothing and gives up
- * its queued work, an issue in backlog starts when it leaves backlog, and the runs of more urgent issues are claimed
- * first. Each rule leaves a record on the issue's activity.
+ * What starts the project manager's work on an issue it executes (`server/agents/work.ts`): being given an open issue,
+ * a person starting it from backlog, a person's move while it works, a release; an issue that waits for unfinished
+ * issues starts nothing and gives up its queued work, an issue in backlog or finished starts nothing, and the runs of
+ * more urgent issues are claimed first. Each rule leaves a record on the issue's activity.
  */
 import { collectRunAttempts } from '@nocobase/app-plugin-projects/server/tokens';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
-import type { WorkflowListItem } from '@nocobase/app-plugin-projects/shared/workflows';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { DEFAULT_QUEUED_EXPIRY_HOURS } from '../../server/agents/bind.js';
 import { ISSUE_RUN_PRIORITY } from '../../server/agents/work.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
 
 let h: BridgeHarness;
@@ -22,15 +23,6 @@ afterEach(() => h.close());
 
 const alice = () => h.viewer('alice');
 
-async function asAdmin<T>(run: () => Promise<T>): Promise<T> {
-  h.roles.set('alice', 'admin');
-  try {
-    return await run();
-  } finally {
-    h.roles.delete('alice');
-  }
-}
-
 async function update(
   issue: Issue,
   patch: Record<string, unknown>,
@@ -38,12 +30,34 @@ async function update(
   const current = await h.projects.issueQueries.detail(alice(), issue.id);
   return h.projects.issues.update(alice(), issue.id, {
     revision: current.revision,
+    ...(patch.statusKey === 'blocked' || patch.statusKey === 'in_review'
+      ? { needsYou: 'Choose how to proceed.' }
+      : {}),
     ...patch,
   });
 }
 
-const assign = (issue: Issue, agentId: string) =>
-  update(issue, { executor: { type: 'agent', id: agentId } });
+const MANAGER = { type: 'agent', id: PROJECT_MANAGER_ID } as const;
+
+/** Gives the issue to the project manager. */
+const manage = (issue: Issue) => update(issue, { executor: MANAGER });
+
+/** An issue a person executes, so no agent works on it. */
+const personal = (title: string, statusKey = 'in_progress') =>
+  h.projects.issues.create(alice(), {
+    title,
+    statusKey,
+    executor: { type: 'user', id: 'alice' },
+  });
+
+/** An open issue the project manager executes; its work starts unless `start` is false. */
+const managed = (title: string, extra: Record<string, unknown> = {}) =>
+  h.projects.issues.create(alice(), {
+    title,
+    statusKey: 'in_progress',
+    executor: MANAGER,
+    ...extra,
+  });
 
 const moveTo = (issue: Issue, statusKey: string) =>
   update(issue, { statusKey });
@@ -68,15 +82,15 @@ async function triggersOf(runId: string) {
 }
 
 describe('an issue that waits for unfinished issues', () => {
-  it('starts no work for the agent given it, and records what it waits for', async () => {
-    const agentId = await h.createAgent();
-    const first = await h.projects.issues.create(alice(), { title: 'First' });
-    const issue = await h.projects.issues.create(alice(), { title: 'Then' });
+  it('starts no work for the project manager given it, and records what it waits for', async () => {
+    await h.createAgent();
+    const first = await personal('First');
+    const issue = await personal('Then');
     await block(issue, first);
-    const { attempts } = await collectRunAttempts(() => assign(issue, agentId));
+    const { attempts } = await collectRunAttempts(() => manage(issue));
     expect(attempts).toEqual([
       expect.objectContaining({
-        principalId: agentId,
+        principalId: PROJECT_MANAGER_ID,
         triggerType: 'assigned',
         started: false,
         skipped: 'blocked',
@@ -89,7 +103,7 @@ describe('an issue that waits for unfinished issues', () => {
       ),
     ).toMatchObject({
       actorType: 'agent',
-      actorId: agentId,
+      actorId: PROJECT_MANAGER_ID,
       details: {
         reason: 'blocked',
         trigger: 'assigned',
@@ -100,8 +114,8 @@ describe('an issue that waits for unfinished issues', () => {
 
   it('does not wake a mentioned agent either', async () => {
     const agentId = await h.createAgent();
-    const first = await h.projects.issues.create(alice(), { title: 'First' });
-    const issue = await h.projects.issues.create(alice(), { title: 'Then' });
+    const first = await personal('First');
+    const issue = await personal('Then');
     await block(issue, first);
     const { value, attempts } = await collectRunAttempts(() =>
       h.projects.comments.create(alice(), issue.id, {
@@ -116,14 +130,11 @@ describe('an issue that waits for unfinished issues', () => {
   });
 
   it('gives up its queued work when a blocker is added, and leaves work a runner holds', async () => {
-    const agentId = await h.createAgent();
-    const other = await h.createAgent({ name: 'Reviewer' });
-    const held = await h.projects.issues.create(alice(), { title: 'Held' });
-    await assign(held, agentId);
+    await h.createAgent();
+    const held = await managed('Held');
     await h.claimOne();
-    const issue = await h.projects.issues.create(alice(), { title: 'Queued' });
-    await assign(issue, other);
-    const first = await h.projects.issues.create(alice(), { title: 'First' });
+    const issue = await managed('Queued');
+    const first = await personal('First');
 
     await block(held, first);
     await block(issue, first);
@@ -141,7 +152,7 @@ describe('an issue that waits for unfinished issues', () => {
       ),
     ).toMatchObject({
       actorType: 'agent',
-      actorId: other,
+      actorId: PROJECT_MANAGER_ID,
       details: {
         reason: 'blocked',
         runId: withdrawn!.id,
@@ -155,12 +166,11 @@ describe('an issue that waits for unfinished issues', () => {
     ).toBe(false);
   });
 
-  it('wakes its agent again once the last blocker is finished', async () => {
-    const agentId = await h.createAgent();
-    const one = await h.projects.issues.create(alice(), { title: 'One' });
-    const two = await h.projects.issues.create(alice(), { title: 'Two' });
-    const issue = await h.projects.issues.create(alice(), { title: 'Then' });
-    await assign(issue, agentId);
+  it('wakes the project manager again once the last blocker is finished', async () => {
+    await h.createAgent();
+    const one = await personal('One');
+    const two = await personal('Two');
+    const issue = await managed('Then');
     await block(issue, one);
     await block(issue, two);
     expect((await runsOf(issue.id))[0]).toMatchObject({ status: 'cancelled' });
@@ -171,7 +181,7 @@ describe('an issue that waits for unfinished issues', () => {
     const { attempts } = await collectRunAttempts(() => moveTo(two, 'done'));
     expect(attempts).toEqual([
       expect.objectContaining({
-        principalId: agentId,
+        principalId: PROJECT_MANAGER_ID,
         triggerType: 'unblocked',
         started: true,
       }),
@@ -183,13 +193,13 @@ describe('an issue that waits for unfinished issues', () => {
     expect(await triggersOf(queued!.id)).toEqual(['unblocked']);
   });
 
-  it('does not wake its agent when released while in backlog', async () => {
-    const agentId = await h.createAgent();
-    const first = await h.projects.issues.create(alice(), { title: 'First' });
+  it('does not wake the project manager when released while in backlog', async () => {
+    await h.createAgent();
+    const first = await personal('First');
     const issue = await h.projects.issues.create(alice(), {
       title: 'Someday',
       statusKey: 'backlog',
-      executor: { type: 'agent', id: agentId },
+      executor: MANAGER,
     });
     await block(issue, first);
     const { attempts } = await collectRunAttempts(() => moveTo(first, 'done'));
@@ -204,13 +214,13 @@ describe('an issue that waits for unfinished issues', () => {
 });
 
 describe('an issue in backlog', () => {
-  it('starts no work when an agent is given it, and starts it when the issue leaves backlog', async () => {
-    const agentId = await h.createAgent();
+  it('starts no work when the project manager is given it, and starts it when a person starts the issue', async () => {
+    await h.createAgent();
     const { value: issue, attempts } = await collectRunAttempts(() =>
       h.projects.issues.create(alice(), {
         title: 'Someday',
         statusKey: 'backlog',
-        executor: { type: 'agent', id: agentId },
+        executor: MANAGER,
       }),
     );
     expect(attempts).toEqual([
@@ -223,82 +233,175 @@ describe('an issue in backlog', () => {
       ),
     ).toMatchObject({
       actorType: 'agent',
-      actorId: agentId,
+      actorId: PROJECT_MANAGER_ID,
       details: { reason: 'dormant', trigger: 'assigned', status: 'backlog' },
     });
 
-    const moved = await collectRunAttempts(() => moveTo(issue, 'todo'));
+    const moved = await collectRunAttempts(() => moveTo(issue, 'in_progress'));
     expect(moved.attempts).toEqual([
-      expect.objectContaining({ triggerType: 'statusChange', started: true }),
+      expect.objectContaining({ triggerType: 'started', started: true }),
     ]);
     const [run] = await runsOf(issue.id);
-    expect(run).toMatchObject({ status: 'queued', actorUserId: 'alice' });
+    expect(run).toMatchObject({
+      status: 'queued',
+      agentId: PROJECT_MANAGER_ID,
+      actorUserId: 'alice',
+    });
     expect((await h.agents.runs.detail(run!.id)).inputs[0]).toMatchObject({
       type: 'statusChange',
-      payload: { trigger: 'statusChange', from: 'backlog', to: 'todo' },
+      payload: { trigger: 'started', from: 'backlog', to: 'in_progress' },
     });
   });
 
   it('starts nothing when the person moves it out asking not to start now', async () => {
-    const agentId = await h.createAgent();
+    await h.createAgent();
     const issue = await h.projects.issues.create(alice(), {
       title: 'Someday',
       statusKey: 'backlog',
-      executor: { type: 'agent', id: agentId },
+      executor: MANAGER,
     });
     const { attempts } = await collectRunAttempts(() =>
-      update(issue, { statusKey: 'todo', start: false }),
+      update(issue, { statusKey: 'in_progress', start: false }),
     );
     expect(attempts).toEqual([
-      expect.objectContaining({
-        triggerType: 'statusChange',
-        skipped: 'deferred',
-      }),
+      expect.objectContaining({ triggerType: 'started', skipped: 'deferred' }),
     ]);
     expect(await runsOf(issue.id)).toEqual([]);
   });
 
   it('starts nothing when it leaves backlog for a finished status, or while it is held', async () => {
-    const agentId = await h.createAgent();
+    await h.createAgent();
     const closed = await h.projects.issues.create(alice(), {
       title: 'Dropped',
       statusKey: 'backlog',
-      executor: { type: 'agent', id: agentId },
+      executor: MANAGER,
     });
     await moveTo(closed, 'cancelled');
     expect(await runsOf(closed.id)).toEqual([]);
 
-    const first = await h.projects.issues.create(alice(), { title: 'First' });
+    const first = await personal('First');
     const held = await h.projects.issues.create(alice(), {
       title: 'Held',
       statusKey: 'backlog',
-      executor: { type: 'agent', id: agentId },
+      executor: MANAGER,
     });
     await block(held, first);
-    const { attempts } = await collectRunAttempts(() => moveTo(held, 'todo'));
+    const { attempts } = await collectRunAttempts(() =>
+      moveTo(held, 'in_progress'),
+    );
     expect(attempts).toEqual([
-      expect.objectContaining({
-        triggerType: 'statusChange',
-        skipped: 'blocked',
-      }),
+      expect.objectContaining({ triggerType: 'started', skipped: 'blocked' }),
     ]);
     expect(await runsOf(held.id)).toEqual([]);
+  });
+
+  it('gives the project manager a new issue only once it is open', async () => {
+    await h.createAgent();
+    // New issues go to the project manager, in backlog, unless their creator says otherwise.
+    const { value: issue, attempts } = await collectRunAttempts(() =>
+      h.projects.issues.create(alice(), { title: 'Later' }),
+    );
+    expect(issue).toMatchObject({ statusKey: 'backlog', executor: MANAGER });
+    expect(attempts).toEqual([
+      expect.objectContaining({ triggerType: 'assigned', skipped: 'dormant' }),
+    ]);
+    const now = await managed('Now');
+    expect(await runsOf(now.id)).toEqual([
+      expect.objectContaining({
+        agentId: PROJECT_MANAGER_ID,
+        status: 'queued',
+      }),
+    ]);
+    expect(await triggersOf((await runsOf(now.id))[0]!.id)).toEqual([
+      'assigned',
+    ]);
+  });
+});
+
+describe("a person's move of an open issue", () => {
+  it('tells a run that has not ended, and starts nothing when none is open', async () => {
+    await h.createAgent();
+    const issue = await managed('Ship');
+    const [run] = await runsOf(issue.id);
+    const told = await collectRunAttempts(() => moveTo(issue, 'blocked'));
+    expect(told.attempts).toEqual([
+      expect.objectContaining({
+        triggerType: 'statusChange',
+        started: true,
+        runId: run!.id,
+      }),
+    ]);
+    expect(await triggersOf(run!.id)).toEqual(['assigned', 'statusChange']);
+
+    const quiet = await managed('Quiet', { start: false });
+    expect(await runsOf(quiet.id)).toEqual([]);
+    const moved = await collectRunAttempts(() => moveTo(quiet, 'in_review'));
+    expect(moved.attempts).toEqual([]);
+    expect(await runsOf(quiet.id)).toEqual([]);
+    // Back into In progress, the work starts again.
+    const resumed = await collectRunAttempts(() =>
+      moveTo(quiet, 'in_progress'),
+    );
+    expect(resumed.attempts).toEqual([
+      expect.objectContaining({ triggerType: 'statusChange', started: true }),
+    ]);
+  });
+
+  it('withdraws queued work when the issue is finished', async () => {
+    await h.createAgent();
+    const issue = await managed('Drop');
+    await moveTo(issue, 'cancelled');
+    expect(await runsOf(issue.id)).toEqual([
+      expect.objectContaining({ status: 'cancelled' }),
+    ]);
+  });
+
+  it('wakes nothing when the project manager moves the issue itself', async () => {
+    await h.createAgent();
+    const issue = await managed('Ask');
+    const payload = await h.claimOne();
+    const moved = await h.request(
+      'PATCH',
+      `/projects/issues/${issue.identifier}`,
+      {
+        runToken: payload.cli.credential.content.token as string,
+        body: {
+          statusKey: 'blocked',
+          needsYou: 'Which database should the migration target?',
+        },
+      },
+    );
+    expect(moved.status).toBe(200);
+    const runs = await runsOf(issue.id);
+    expect(runs).toHaveLength(1);
+    expect(await triggersOf(runs[0]!.id)).toEqual(['assigned']);
+  });
+});
+
+describe('sub-issues that all finish', () => {
+  it('wake the project manager of their parent', async () => {
+    await h.createAgent();
+    const parent = await managed('Parent', { start: false });
+    const child = await personal('Child');
+    await update(child, { parentIssueId: parent.id });
+    const { attempts } = await collectRunAttempts(() => moveTo(child, 'done'));
+    expect(attempts).toEqual([
+      expect.objectContaining({
+        principalId: PROJECT_MANAGER_ID,
+        triggerType: 'subtasksFinished',
+        started: true,
+      }),
+    ]);
+    const [run] = await runsOf(parent.id);
+    expect(await triggersOf(run!.id)).toEqual(['subtasksFinished']);
   });
 });
 
 describe('the claim order of issue runs', () => {
   it('gives a run its issue’s priority, so a runner takes urgent issues first', async () => {
-    const agentId = await h.createAgent();
-    const later = await h.projects.issues.create(alice(), {
-      title: 'Later',
-      priority: 'low',
-      executor: { type: 'agent', id: agentId },
-    });
-    const urgent = await h.projects.issues.create(alice(), {
-      title: 'Urgent',
-      priority: 'urgent',
-      executor: { type: 'agent', id: agentId },
-    });
+    await h.createAgent();
+    const later = await managed('Later', { priority: 'low' });
+    const urgent = await managed('Urgent', { priority: 'urgent' });
     expect((await runsOf(later.id))[0]?.priority).toBe(ISSUE_RUN_PRIORITY.low);
     expect((await runsOf(urgent.id))[0]?.priority).toBe(
       ISSUE_RUN_PRIORITY.urgent,
@@ -317,11 +420,8 @@ describe('an issue run no runner takes', () => {
     expect(h.agents.subjects.get('issue')?.queuedExpiryMs).toBe(
       DEFAULT_QUEUED_EXPIRY_HOURS * 3_600_000,
     );
-    const agentId = await h.createAgent();
-    const issue = await h.projects.issues.create(alice(), {
-      title: 'Nobody home',
-      executor: { type: 'agent', id: agentId },
-    });
+    await h.createAgent();
+    const issue = await managed('Nobody home');
     const [run] = await runsOf(issue.id);
     await h.agents.sweeper.sweep();
     expect((await h.agents.runs.get(run!.id)).status).toBe('queued');
@@ -345,89 +445,5 @@ describe('an issue run no runner takes', () => {
       issue: { id: issue.id },
       params: { runId: run!.id, failureReason: 'queuedExpired' },
     });
-  });
-});
-
-describe('a workflow stage that runs agents', () => {
-  async function runAgentIn(statusKey: string): Promise<WorkflowListItem> {
-    return asAdmin(async () => {
-      const created = await h.projects.workflows.create(alice(), {
-        name: 'Staged',
-        copyFrom: null,
-      });
-      const workflow = await h.projects.workflows.setDefault(
-        alice(),
-        created.id,
-      );
-      return h.projects.workflows.update(alice(), workflow.id, {
-        revision: workflow.revision,
-        definition: {
-          ...workflow.definition,
-          states: workflow.definition.states.map((state) =>
-            state.key === statusKey
-              ? {
-                  ...state,
-                  rules: [
-                    {
-                      type: 'runAgent',
-                      config: { instruction: 'Build {{issue.identifier}}.' },
-                    },
-                  ],
-                }
-              : state,
-          ),
-        },
-      });
-    });
-  }
-
-  it('skips its run while the issue is held, and gives the instruction when the issue is released', async () => {
-    await runAgentIn('in_progress');
-    const agentId = await h.createAgent();
-    const first = await h.projects.issues.create(alice(), { title: 'First' });
-    const issue = await h.projects.issues.create(alice(), {
-      title: 'Then',
-      executor: { type: 'agent', id: agentId },
-      start: false,
-    });
-    await block(issue, first);
-    await moveTo(issue, 'in_progress');
-    expect(await runsOf(issue.id)).toEqual([]);
-    expect(
-      (await activities(issue.id)).find(
-        (entry) => entry.action === 'stage_action_skipped',
-      )?.details,
-    ).toMatchObject({
-      rule: 'runAgent',
-      reason: 'blocked',
-      blockers: [{ identifier: first.identifier }],
-    });
-
-    await moveTo(first, 'done');
-    const [run] = await runsOf(issue.id);
-    expect((await h.agents.runs.detail(run!.id)).inputs[0]).toMatchObject({
-      payload: {
-        trigger: 'unblocked',
-        status: 'in_progress',
-        instruction: `Build ${issue.identifier}.`,
-      },
-    });
-    const claimed = await h.claimOne();
-    expect(claimed.prompt.system as string).toContain(
-      `> Build ${issue.identifier}.`,
-    );
-  });
-
-  it('gives its run the issue’s priority', async () => {
-    await runAgentIn('in_progress');
-    const agentId = await h.createAgent();
-    const issue = await h.projects.issues.create(alice(), {
-      title: 'Hot',
-      priority: 'high',
-      executor: { type: 'agent', id: agentId },
-      start: false,
-    });
-    await moveTo(issue, 'in_progress');
-    expect((await runsOf(issue.id))[0]?.priority).toBe(ISSUE_RUN_PRIORITY.high);
   });
 });

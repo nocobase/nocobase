@@ -128,7 +128,7 @@ export const knowledgeSearchRoutes: AppApiRouteContribution<Application> =
       if (!container.has(agentsToken)) return [];
       const catalog = await container
         .resolve(agentsToken)
-        .online.gateway.catalog(kind);
+        .models.gateway.catalog(kind);
       return catalog.services.flatMap((service) =>
         service.models.map((model) => ({
           modelService: service.name,
@@ -140,9 +140,13 @@ export const knowledgeSearchRoutes: AppApiRouteContribution<Application> =
     }
 
     async function config(canManage: boolean): Promise<KnowledgeSearchConfig> {
+      const index = await search.index();
       return {
         settings: await search.settings.get(),
-        index: await search.index(),
+        index: {
+          ...index,
+          store: index.store ? { type: index.store.type } : null,
+        },
         spaces: container.has(knowledgeToken) ? await spaces() : [],
         models: {
           embedding: await modelsOf('embedding'),
@@ -161,7 +165,7 @@ export const knowledgeSearchRoutes: AppApiRouteContribution<Application> =
           'MODEL_SERVICES_UNAVAILABLE',
           'There are no model services.',
         );
-      const gateway = container.resolve(agentsToken).online.gateway;
+      const gateway = container.resolve(agentsToken).models.gateway;
       const named: [KnowledgeModelRef | null, ModelKind, string][] = [
         [settings.embedding, 'embedding', 'embedding'],
         [settings.rerank, 'rerank', 'rerank'],

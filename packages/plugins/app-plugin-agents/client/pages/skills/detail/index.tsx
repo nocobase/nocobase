@@ -15,7 +15,6 @@ import {
   Trash2Icon,
 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
-import { AgentAvatar } from '../../../components/agent-avatar.js';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import type { SkillDetail } from '../../../../shared/skills.js';
@@ -264,7 +263,7 @@ function SkillFacts({
   );
 }
 
-/** The agents the skill is attached to, and how many places of each scope take it by default. */
+/** How many places of each supported scope take the skill by default. */
 function SkillAttachments({
   skill,
 }: {
@@ -273,42 +272,11 @@ function SkillAttachments({
   const { t } = useTranslation();
   const text = useText();
   const vocabulary = useVocabulary();
-  const agents = skill.attachments.filter((item) => item.scope === 'agent');
   const defaults = new Map<string, number>();
   for (const item of skill.attachments)
-    if (item.scope !== 'agent')
-      defaults.set(item.scope, (defaults.get(item.scope) ?? 0) + 1);
+    defaults.set(item.scope, (defaults.get(item.scope) ?? 0) + 1);
   return (
-    <AgSection
-      id='ag-skill-attachments'
-      title={
-        <>
-          {t('skills.mountedAgents')}
-          <span className='ml-2 text-xs font-normal text-muted-foreground tabular-nums'>
-            {agents.length}
-          </span>
-        </>
-      }
-    >
-      {agents.length === 0 ? (
-        <p className='text-sm text-muted-foreground'>{t('skills.noAgents')}</p>
-      ) : (
-        <ul className='space-y-1'>
-          {agents.map((agent) => (
-            <li key={agent.scopeId}>
-              <Link
-                to={`/agents/${encodeURIComponent(agent.scopeId)}`}
-                className='flex items-center gap-2 rounded-md p-1 hover:bg-accent'
-              >
-                <AgentAvatar name={agent.name} size='sm' />
-                <span className='truncate text-sm font-medium'>
-                  {agent.name ?? agent.scopeId}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+    <AgSection id='ag-skill-attachments' title={t('skills.attachments')}>
       {defaults.size > 0 ? (
         <p className='text-sm text-muted-foreground'>
           {t('skills.defaults', {

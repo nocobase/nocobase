@@ -1,7 +1,7 @@
 import type { APIRequestContext, Page } from '@playwright/test';
 
 import {
-  atHome,
+  atInbox,
   expect,
   open,
   server,
@@ -39,18 +39,18 @@ test.describe('settings', () => {
     await expect(
       page.getByRole('heading', { name: '常规', level: 1 }),
     ).toBeVisible();
-    for (const name of ['成员', '角色', 'API 密钥', '流程模板', '标签']) {
+    for (const name of ['成员', '角色', 'API 密钥', '标签']) {
       const section = await settingsSection(page, name);
       await expect(
         section.getByRole('heading', { name, level: 1 }),
       ).toBeVisible();
     }
-    // Opened directly, the settings' Back leads home.
+    // Opened directly, the settings' Back leads to the default inbox.
     await page
       .getByRole('navigation', { name: '设置导航' })
       .getByRole('link', { name: '返回' })
       .click();
-    await expect(page).toHaveURL(atHome());
+    await expect(page).toHaveURL(atInbox());
   });
 
   test('a member is given the admin role and has it taken away again', async ({
@@ -100,62 +100,6 @@ test.describe('settings', () => {
         .getByRole('region', { name: '角色' })
         .getByRole('button', { name: `${name} 的操作` }),
     ).toBeVisible();
-  });
-
-  test('a workflow template gets a rule added through the rules dialog', async ({
-    page,
-    api,
-  }) => {
-    const name = `评审流程 ${unique()}`;
-    await open(page, '/config/workflows');
-    await page.getByRole('button', { name: '新建流程模板' }).click();
-    const create = page.getByRole('dialog', {
-      name: '新建流程模板',
-      exact: true,
-    });
-    await create.getByRole('textbox', { name: '名称' }).fill(name);
-    await expect(create.getByRole('combobox', { name: '基于' })).toContainText(
-      '软件开发',
-    );
-    await create.getByRole('button', { name: '创建' }).click();
-    await expect(page).toHaveURL(/\/config\/workflows\/\d+/);
-    const workflowId = new URL(page.url()).pathname.split('/').pop() ?? '';
-
-    const transition = page.getByRole('button', {
-      name: '从 进行中 到 已完成',
-    });
-    await page.getByRole('button', { name: '编辑', exact: true }).click();
-    // Copied from Software development: a person moves it to Done, with no approval.
-    await expect(transition).toHaveText('人');
-
-    await page.getByRole('button', { name: '进入“受阻”时' }).click();
-    const rules = page.getByRole('dialog', { name: '进入“受阻”时' });
-    await rules.getByRole('button', { name: '添加规则' }).click();
-    await page.getByRole('menuitem', { name: /^通知负责人/ }).click();
-    await expect(
-      rules.getByRole('button', { name: /^通知负责人/ }),
-    ).toBeVisible();
-    await rules.getByRole('button', { name: '完成' }).click();
-    await expect(rules).toBeHidden();
-
-    await page.getByRole('button', { name: '保存' }).click();
-    await expect
-      .poll(async () => {
-        const workflow = await api.get<{
-          definition: { states: { key: string; rules?: { type: string }[] }[] };
-        }>(`projects/workflows/${workflowId}`);
-        const blocked = workflow.definition.states.find(
-          (state) => state.key === 'blocked',
-        );
-        return (blocked?.rules ?? []).map((rule) => rule.type);
-      })
-      .toContain('notifyOwner');
-    await expect(
-      page
-        .getByRole('region', { name: '进入状态时' })
-        .getByRole('listitem')
-        .filter({ hasText: '受阻' }),
-    ).toContainText('通知负责人');
   });
 
   test('a label is created, recoloured, renamed and deleted', async ({
@@ -247,20 +191,22 @@ test.describe('settings', () => {
       expect(await page.content()).not.toContain(secret);
 
       // Right after the reload the list may still re-render from its refetch and close a menu opened too early, so
-      // open it again until the item shows.
+      // retry opening and selecting together until the confirmation shows.
       const rotate = page.getByRole('menuitem', { name: /轮换/ });
+      const confirm = page.getByRole('alertdialog', {
+        name: `轮换密钥 ${name}？`,
+      });
       await expect(async () => {
+        if (await confirm.isVisible()) return;
         if (!(await rotate.isVisible()))
           await page
             .getByRole('region', { name: 'API 密钥' })
             .getByRole('button', { name: `${name} 的操作` })
-            .click();
+            .click({ timeout: 2000 });
         await expect(rotate).toBeVisible({ timeout: 2000 });
+        await rotate.click({ timeout: 2000 });
+        await expect(confirm).toBeVisible({ timeout: 2000 });
       }).toPass({ timeout: 20_000 });
-      await rotate.click();
-      const confirm = page.getByRole('alertdialog', {
-        name: `轮换密钥 ${name}？`,
-      });
       await expect(confirm).toContainText('当前的立即失效');
       await confirm.getByRole('button', { name: '轮换' }).click();
 

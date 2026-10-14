@@ -1,10 +1,10 @@
 /**
- * Studio's demo data (its sample data, `app.sampleData`): a small team, its labels, a review
- * checklist added to the installed Software development workflow, three projects on the default workflow, issues in
- * every status with sub-issues, dependencies and comments, skills and agents, and a knowledge base (system and project
- * documents, with one change an agent proposed waiting for its decider), and runtimes that registered once and are
- * offline since. No repositories, and no runner that takes work: nothing here reaches outside the application. Dates
- * are days from the day the demo is built.
+ * Studio's demo data (its sample data, `app.sampleData`): a small team, its labels, three projects, issues in every
+ * status with sub-issues, dependencies and comments, skills, runtimes that registered once (reporting their coding
+ * tools and models) and are offline since, the agents those reports discovered, enabled with what each is good at, the
+ * project manager's choice among them, and a knowledge base (system and project documents, with one change an agent
+ * proposed waiting for its decider). No repositories, and no runner that takes work: nothing here reaches outside the
+ * application. Dates are days from the day the demo is built.
  *
  * In text, `@{key}` mentions that user; `admin` is the initial administrator. Issues are listed so that every parent
  * and blocker comes before the issues that point at it.
@@ -21,12 +21,6 @@ export interface DemoUser {
 export interface DemoLabel {
   readonly name: string;
   readonly color: string;
-}
-
-export interface DemoChecklistItem {
-  readonly key: string;
-  readonly label: string;
-  readonly required: boolean;
 }
 
 export interface DemoProject {
@@ -51,15 +45,24 @@ export interface DemoSkill {
   readonly content: string;
 }
 
+/** An agent a runtime's report discovers (a coding tool and model), enabled with what it is good at. */
 export interface DemoAgent {
-  readonly name: string;
-  /** Its coding tools and models, in order: a runtime takes its work with the first one it has signed in. */
-  readonly tools: readonly { readonly tool: string; readonly model?: string }[];
+  /** How the rest of the demo names it. */
+  readonly key: string;
+  readonly tool: DemoTool;
+  /** A model a demo runtime reports for the tool. */
+  readonly model: string;
+  /** What it is good at: the project manager hands it work by this. */
   readonly description: string;
-  readonly instructions: string;
-  readonly skills: readonly string[];
-  readonly actions: readonly string[];
 }
+
+/** Which discovered agents the project manager runs with. */
+export interface DemoProjectManager {
+  readonly firstChoice: string;
+  readonly fallback: string;
+}
+
+export type DemoTool = 'claude' | 'codex' | 'opencode' | 'pi';
 
 export interface DemoRuntime {
   readonly name: string;
@@ -69,13 +72,14 @@ export interface DemoRuntime {
   readonly hostname: string;
   readonly os: string;
   readonly arch: string;
-  /** The coding tools it has signed in. */
-  readonly tools: readonly ('claude' | 'codex' | 'opencode' | 'pi')[];
+  /** The coding tools it has signed in, with the models it reports for each. */
+  readonly tools: readonly {
+    readonly kind: DemoTool;
+    readonly models: readonly string[];
+  }[];
   readonly slots: number;
   /** How many runs of each coding tool it holds at once; a tool left out is bounded by `slots` only. */
-  readonly toolSlots?: Readonly<
-    Partial<Record<'claude' | 'codex' | 'opencode' | 'pi', number>>
-  >;
+  readonly toolSlots?: Readonly<Partial<Record<DemoTool, number>>>;
   readonly acceptJobs?: boolean;
 }
 
@@ -95,7 +99,7 @@ export interface DemoKnowledgeDoc {
 }
 
 export interface DemoKnowledgeProposal {
-  /** The demo agent that proposes, and the person it works for. */
+  /** The demo agent that proposes (its key), and the person it works for. */
   readonly agent: string;
   readonly for: string;
   /** The demo issue it came from. */
@@ -118,16 +122,17 @@ export interface DemoIssue {
   readonly parent?: string;
   readonly title: string;
   readonly status: string;
+  readonly needsYou?: string;
   readonly priority: string;
   readonly owner: string;
   readonly executor?: string;
-  readonly executorAgent?: string;
+  /** Executed by the project manager, not started: no demo runtime is online. */
+  readonly projectManager?: boolean;
   readonly labels: readonly string[];
   readonly start?: number;
   readonly due?: number;
   readonly blockedBy?: readonly string[];
   readonly description: string;
-  readonly checklistChecked?: readonly string[];
   readonly comments?: readonly DemoComment[];
 }
 
@@ -183,21 +188,6 @@ export const DEMO_LABELS: readonly DemoLabel[] = [
   { name: 'Security', color: 'green' },
 ];
 
-/** The checklist the demo adds to In review of the Software development workflow. */
-export const DEMO_REVIEW_CHECKLIST: readonly DemoChecklistItem[] = [
-  {
-    key: 'code_review',
-    label: 'Code reviewed by at least one teammate',
-    required: true,
-  },
-  { key: 'tests_pass', label: 'Unit and E2E tests all pass', required: true },
-  {
-    key: 'changelog',
-    label: 'CHANGELOG and related docs updated',
-    required: false,
-  },
-];
-
 export const DEMO_PROJECTS: readonly DemoProject[] = [
   {
     name: 'Studio Platform',
@@ -223,6 +213,7 @@ export const DEMO_PROJECTS: readonly DemoProject[] = [
     members: ['admin', 'lisa', 'wendy', 'chloe'],
     start: -20,
     due: 25,
+    skills: ['frontend-components', 'commit-messages'],
   },
   {
     name: 'Mobile App',
@@ -297,47 +288,41 @@ The body explains why the change was made and what it affects, rather than repea
   },
 ];
 
+/** The agents the runtimes' reports discover that the demo enables; the others stay pending. */
 export const DEMO_AGENTS: readonly DemoAgent[] = [
   {
-    name: 'Frontend Developer',
-    tools: [{ tool: 'claude' }, { tool: 'codex' }],
+    key: 'opus',
+    tool: 'claude',
+    model: 'claude-opus-5-5',
     description:
-      'Builds frontend pages and components; knows React, Tailwind and i18n.',
-    instructions:
-      "You are the team's frontend developer. When you pick up an issue:\n1. Read its description and comments, and ask in a comment when something is unclear;\n2. Make the change on a branch of its own, following the frontend component conventions;\n3. Run lint and the tests, and write commit messages that follow the commit message guidelines;\n4. When you are done, summarize the change on the issue and move it to In review.",
-    skills: ['frontend-components', 'commit-messages'],
-    actions: [
-      'pm.projects/view',
-      'pm.issues/view',
-      'pm.issues/create',
-      'pm.issues/edit',
-      'pm.issues/comment',
-      'kb.knowledge/read',
-      'kb.knowledge/propose',
-    ],
+      'Designs, architecture, hard investigations and reviews of important changes.',
   },
   {
-    name: 'Code Reviewer',
-    tools: [{ tool: 'codex' }, { tool: 'claude', model: 'opus' }],
+    key: 'sonnet',
+    tool: 'claude',
+    model: 'claude-sonnet-5',
     description:
-      'Reviews submitted changes and gives structured review feedback.',
-    instructions:
-      'You review code. Read the branch or pull request linked to the issue, check it point by point against the code review guidelines, and comment your verdict on the issue (Approve / Approve with changes / Needs another review), listing everything that must change.',
-    skills: ['code-review'],
-    actions: [
-      'pm.projects/view',
-      'pm.issues/view',
-      'pm.issues/comment',
-      'kb.knowledge/read',
-      'kb.knowledge/propose',
-    ],
+      'Frontend pages and components (React, Tailwind, i18n), well-scoped fixes and tests.',
+  },
+  {
+    key: 'gpt',
+    tool: 'codex',
+    model: 'gpt-6.1-sol',
+    description:
+      'Larger implementations, changes across packages and refactoring.',
   },
 ];
 
+/** The project manager runs with Opus, and with GPT-6.1 Sol where no runtime has Claude Code. */
+export const DEMO_PROJECT_MANAGER: DemoProjectManager = {
+  firstChoice: 'opus',
+  fallback: 'gpt',
+};
+
 /**
- * Runtimes as the Runtimes page lists them: registered through a registration token like a real runner, then never
- * heard from again, so the sweeper marks them offline and they take no work. Their slots and limits per coding tool
- * are what a person would set there.
+ * Runtimes as the Runtimes page lists them: registered through a registration token like a real runner, reporting the
+ * models of each coding tool (which discovers the agents), then never heard from again, so the sweeper marks them
+ * offline and they take no work. Their slots and limits per coding tool are what a person would set there.
  */
 export const DEMO_RUNTIMES: readonly DemoRuntime[] = [
   {
@@ -347,7 +332,11 @@ export const DEMO_RUNTIMES: readonly DemoRuntime[] = [
     hostname: 'build-01',
     os: 'linux',
     arch: 'x64',
-    tools: ['claude', 'codex', 'opencode'],
+    tools: [
+      { kind: 'claude', models: ['claude-opus-5-5', 'claude-sonnet-5'] },
+      { kind: 'codex', models: ['gpt-6.1-sol'] },
+      { kind: 'opencode', models: [] },
+    ],
     slots: 4,
     toolSlots: { claude: 2, codex: 1 },
     acceptJobs: true,
@@ -359,7 +348,10 @@ export const DEMO_RUNTIMES: readonly DemoRuntime[] = [
     hostname: 'alex-mbp',
     os: 'darwin',
     arch: 'arm64',
-    tools: ['claude', 'codex'],
+    tools: [
+      { kind: 'claude', models: ['claude-opus-5-5', 'claude-sonnet-5'] },
+      { kind: 'codex', models: ['gpt-6.1-sol'] },
+    ],
     slots: 2,
     toolSlots: { claude: 1 },
   },
@@ -370,7 +362,10 @@ export const DEMO_RUNTIMES: readonly DemoRuntime[] = [
     hostname: 'lisa-ws',
     os: 'win32',
     arch: 'x64',
-    tools: ['claude'],
+    // Haiku is discovered here and left pending, for someone to enable.
+    tools: [
+      { kind: 'claude', models: ['claude-sonnet-5', 'claude-haiku-4-5'] },
+    ],
     slots: 1,
   },
 ];
@@ -389,7 +384,7 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     start: -12,
     due: 3,
     description:
-      "## Background\nToday the only way to change an issue's status from the board is through its page, which takes too many steps.\n\n## Requirements\n- Cards can be dragged up and down in their column to change their order\n- Dropping a card in another column changes its status, following the workflow's transition rules\n- On mobile, a long press starts a drag\n\n## Acceptance criteria\n- [ ] A placeholder shows where the card will land while dragging\n- [ ] When a transition is refused, the card goes back where it was and the reason is shown",
+      "## Background\nToday the only way to change an issue's status from the board is through its page, which takes too many steps.\n\n## Requirements\n- Cards can be dragged up and down in their column to change their order\n- Dropping a card in another column changes its status\n- On mobile, a long press starts a drag\n\n## Acceptance criteria\n- [ ] A placeholder shows where the card will land while dragging\n- [ ] When a transition is refused, the card goes back where it was and the reason is shown",
     comments: [
       {
         by: 'alex',
@@ -402,7 +397,7 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
       },
       {
         by: 'chloe',
-        text: 'Testing needs to cover this: dropping on Done should be refused while there are open sub-issues. @{admin} is that rule already set up in the workflow?',
+        text: 'Testing needs to cover this: dropping on Done should be refused while there are open sub-issues. @{admin} is that rule already in place?',
       },
     ],
   },
@@ -449,7 +444,7 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     project: 'Studio Platform',
     parent: 'board',
     title: 'Board drag and drop: long press on mobile',
-    status: 'todo',
+    status: 'backlog',
     priority: 'low',
     owner: 'lisa',
     executor: 'lisa',
@@ -464,6 +459,8 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     project: 'Studio Platform',
     title: 'Issue list stutters when scrolling past 2,000 issues',
     status: 'in_review',
+    needsYou:
+      'Please review scrolling performance and rows with varying heights.',
     priority: 'urgent',
     owner: 'admin',
     executor: 'leo',
@@ -472,7 +469,6 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     due: -1,
     description:
       '**Steps to reproduce**\n1. Open a project with more than 2,000 issues\n2. Scroll the list quickly\n\n**What happens**: the frame rate drops below 20fps, and Chrome Performance shows a lot of layout work.\n\n**First look**: every row renders its full label components and avatars, and the list is not virtualized.',
-    checklistChecked: ['code_review'],
     comments: [
       {
         by: 'leo',
@@ -493,7 +489,7 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     key: 'runner-auth',
     project: 'Studio Platform',
     title: 'Unclear error when a runner registration token has expired',
-    status: 'todo',
+    status: 'backlog',
     priority: 'medium',
     owner: 'zach',
     executor: 'zach',
@@ -544,10 +540,10 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     key: 'agent-logs',
     project: 'Studio Platform',
     title: 'Filter agent run logs by event type',
-    status: 'todo',
+    status: 'backlog',
     priority: 'medium',
     owner: 'admin',
-    executorAgent: 'Frontend Developer',
+    projectManager: true,
     labels: ['Frontend'],
     due: 6,
     description:
@@ -558,6 +554,8 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     project: 'Studio Platform',
     title: 'Rate-limit the API so scripts cannot overload it',
     status: 'blocked',
+    needsYou:
+      'Please decide the authentication approach so API rate limiting can proceed.',
     priority: 'high',
     owner: 'zach',
     executor: 'zach',
@@ -685,7 +683,7 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     key: 'pricing',
     project: 'Website Redesign',
     title: 'Add a monthly/yearly toggle to the pricing page',
-    status: 'todo',
+    status: 'backlog',
     priority: 'medium',
     owner: 'lisa',
     executor: 'wendy',
@@ -710,7 +708,7 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     key: 'dark-mode',
     project: 'Website Redesign',
     title: 'Code blocks lack contrast in dark mode',
-    status: 'todo',
+    status: 'backlog',
     priority: 'low',
     owner: 'chloe',
     executor: 'wendy',
@@ -729,7 +727,7 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     key: 'lighthouse',
     project: 'Website Redesign',
     title: 'Pre-launch performance check (Lighthouse ≥ 90)',
-    status: 'todo',
+    status: 'backlog',
     priority: 'high',
     owner: 'chloe',
     executor: 'chloe',
@@ -744,6 +742,8 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     project: 'Website Redesign',
     title: 'Pull customer stories from the CMS',
     status: 'in_review',
+    needsYou:
+      'Please review the CMS integration and its fallback when fetching fails.',
     priority: 'medium',
     owner: 'lisa',
     executor: 'leo',
@@ -810,6 +810,7 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     project: 'Mobile App',
     title: 'Connect the push notification service',
     status: 'blocked',
+    needsYou: 'Please confirm when the backend push service can be scheduled.',
     priority: 'medium',
     owner: 'wendy',
     executor: 'zach',
@@ -857,7 +858,7 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
   {
     key: 'weekly',
     title: "Prepare this week's sprint retrospective",
-    status: 'todo',
+    status: 'backlog',
     priority: 'high',
     owner: 'admin',
     executor: 'admin',
@@ -882,7 +883,7 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
   {
     key: 'security-audit',
     title: 'Quarterly security audit: dependency vulnerability scan',
-    status: 'todo',
+    status: 'backlog',
     priority: 'urgent',
     owner: 'admin',
     executor: 'alex',
@@ -973,7 +974,7 @@ Click "New issue" in the top right corner, then fill in the title, the owner and
 
 ## The board
 
-Drag a card on the board to change its status. When the workflow refuses the move, the card goes back where it was and the reason is shown.
+Drag a card on the board to change its status. When a move is refused, the card goes back where it was and the reason is shown.
 `,
   },
   {
@@ -1060,7 +1061,7 @@ Inside a transaction, read and write through the transaction's own connection; r
 
 /** A change an agent proposed from its work on an issue, waiting for the project's lead. */
 export const DEMO_KNOWLEDGE_PROPOSAL: DemoKnowledgeProposal = {
-  agent: 'Frontend Developer',
+  agent: 'sonnet',
   for: 'lisa',
   issue: 'board',
   doc: 'dev-environment',

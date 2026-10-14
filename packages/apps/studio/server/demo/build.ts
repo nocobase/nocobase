@@ -1,29 +1,22 @@
 /**
  * Builds Studio's demo data (`data.ts`) through the plugins' own services, as people using Studio would: accounts through
- * user management, labels, the review checklist, projects, issues and comments through the projects plugin, skills,
- * agents and runtimes through the agents plugin, knowledge through the knowledge plugin. The work items therefore carry
- * identifiers, activity and inbox notices like any other.
+ * user management, labels, projects, issues and comments through the projects plugin, skills, runtimes and agents
+ * through the agents plugin, the project manager's choice through Studio's project manager, knowledge through the
+ * knowledge plugin. The work items therefore carry identifiers, activity and inbox notices like any other.
  *
- * The demo adds no workflow of its own: it adds its review checklist to In review of the installed Software development
- * workflow (`addReviewChecklist`, which leaves a workflow that has the items alone), and its projects use the default
- * workflow.
+ * Its runtimes register once, reporting their coding tools and models, which discovers an agent for each (pending);
+ * the demo then enables some with what they are good at, attaches skills to projects, and makes two of them the project manager's
+ * first choice and fallback. The runtimes go offline, so issues the project manager executes are not started.
  *
- * Its past — issues finished over the last two months and the agents' runs on them — is written directly, dated back
- * (`history.ts`), so the dashboard has figures from the start.
- *
- * The administrator creates the structure; each comment is written by its author. Issues are created in a status a
- * workflow accepts on creation and then moved, so entering a status runs its rules (the review checklist). Its runtimes
- * register once and go offline, so agents get no runner and issues an agent executes are not started. The demo adds no
- * chat agent of its own: Studio's built-in project assistant becomes the team's default chat agent on the models a
- * model service offers (it answers on the server, without a runner); without one it keeps waiting for a model and the
- * demo logs how to give it one.
+ * Issues are created in a status a new issue may start in (`START_STATUSES`) and then moved. Its past — issues finished
+ * over the last two months and the agents' runs on them — is written directly, dated back (`history.ts`), so the
+ * dashboard has figures from the start. The administrator creates the structure; each comment is written by its author.
  */
-import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
 import {
-  PROTOCOL_VERSION,
-  RUNNER_FEATURES,
-  type AgentTool,
-} from '@nocobase/agent-protocol';
+  runnerAgentId,
+  type Agents,
+} from '@nocobase/app-plugin-agents/server/tokens';
+import { PROTOCOL_VERSION, RUNNER_FEATURES } from '@nocobase/agent-protocol';
 import { composeSkillMarkdown } from '@nocobase/app-plugin-agents/shared/skills';
 import type { Knowledge } from '@nocobase/app-plugin-knowledge/server/tokens';
 import type {
@@ -31,17 +24,19 @@ import type {
   ProjectsAccess,
   Viewer,
 } from '@nocobase/app-plugin-projects/server/tokens';
-import type {
-  ChecklistItemDefinition,
-  WorkflowStatusRule,
-} from '@nocobase/app-plugin-projects/shared/workflows';
 import type { Priority } from '@nocobase/app-plugin-projects/shared/common';
 import type { Executor } from '@nocobase/app-plugin-projects/shared/issues';
 import type { ProjectStatus } from '@nocobase/app-plugin-projects/shared/projects';
+import {
+  BACKLOG_STATUS,
+  IN_PROGRESS_STATUS,
+  START_STATUSES,
+} from '@nocobase/app-plugin-projects/shared/statuses';
 import type { UserManagementService } from '@nocobase/app-plugin-users/server/tokens';
 import type { DatabaseConnection } from '@nocobase/db';
 
-import { SOFTWARE_TEMPLATE_KEY } from '../agents/catalog/workflow-templates.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
+import type { ProjectManager } from '../agents/manager/service.js';
 import { AGENT_KIND } from '../agents/tx.js';
 import {
   DEMO_AGENTS,
@@ -50,8 +45,8 @@ import {
   DEMO_KNOWLEDGE_PROPOSAL,
   DEMO_LABELS,
   DEMO_PASSWORD,
+  DEMO_PROJECT_MANAGER,
   DEMO_PROJECTS,
-  DEMO_REVIEW_CHECKLIST,
   DEMO_RUNTIMES,
   DEMO_SKILLS,
   DEMO_USERS,
@@ -63,8 +58,10 @@ export interface DemoDependencies {
   readonly users: UserManagementService;
   readonly projects: Projects;
   readonly access: Pick<ProjectsAccess, 'permissionsOfUser'>;
-  /** The agents plugin; without it no skills or agents are created. */
+  /** The agents plugin; without it no skills, runtimes or agents are created. */
   readonly agents: Agents | null;
+  /** Studio's project manager; without it its first choice and fallback are left unchosen. */
+  readonly projectManager?: Pick<ProjectManager, 'update'> | null;
   /** The knowledge plugin's knowledge base; without it no documents are created. */
   readonly knowledge?: Knowledge | null;
   /** The initial administrator, who builds the structure. */
@@ -78,115 +75,12 @@ export interface DemoDependencies {
 /** What was created, by kind. */
 export type DemoSummary = Record<string, number>;
 
-/** Issues created directly in a status no workflow accepts on creation start here and are then moved. */
-const CREATE_STATUS: Readonly<Record<string, string>> = {
-  done: 'todo',
-  cancelled: 'todo',
-  in_review: 'in_progress',
-};
-
-/** The status the demo's review checklist is on. */
-const REVIEW_STATUS = 'in_review';
-
-/** Studio's built-in online agent (`database/main/seeds/202610010030_studio_builtin_agents.ts`). */
-const BUILT_IN_ASSISTANT = 'studio-project-assistant';
-
-/**
- * The demo's chat agent is Studio's built-in project assistant: while it still has no model, it gets the first ones the
- * installation's model services offer (the first its default) and is made the team's default chat agent (which the
- * installation already made it, unless someone chose another). Without a model service it keeps waiting for one, and
- * the demo says how to give it one.
- */
-async function configureAssistant(
-  agents: Agents,
-  adminId: string,
-  warn: (message: string, error: unknown) => void,
-  created: (what: string) => void,
-): Promise<void> {
-  const assistant = await agents.agents
-    .get(BUILT_IN_ASSISTANT)
-    .catch(() => null);
-  if (!assistant || assistant.archivedAt || assistant.modelEntries.length > 0)
-    return;
-  const catalog = await agents.online.gateway.catalog();
-  const models = catalog.services
-    .flatMap((service) =>
-      service.models.map((option) => ({
-        modelService: service.name,
-        model: option.value,
-      })),
-    )
-    .slice(0, 3);
-  if (models.length === 0) {
-    warn(
-      `The built-in ${assistant.name} has no model: set up a model service with a model in Agent team › Models, then give it one on its page to chat with it`,
-      null,
-    );
-    return;
-  }
-  await agents.agents.update(assistant.id, adminId, {
-    modelEntries: models,
-    expectedRevision: assistant.revision,
-  });
-  await agents.chat.updateSettings(adminId, {
-    defaultAgentId: assistant.id,
-  });
-  created('onlineAgents');
-}
-
-/**
- * Adds the demo's review checklist to In review of the Software development workflow (or of the default workflow
- * without it), through the workflow service as an administrator would. Items it has already are left as they are, so
- * running it again changes nothing. False when there is no such workflow.
- */
-export async function addReviewChecklist(
-  projects: Pick<Projects, 'workflows'>,
-  admin: Viewer,
-): Promise<boolean> {
-  const rows = await projects.workflows.list(admin);
-  const target =
-    rows.find((row) => row.builtInKey === SOFTWARE_TEMPLATE_KEY) ??
-    rows.find((row) => row.isDefault);
-  if (!target) return false;
-  const status = target.definition.states.find(
-    (state) => state.key === REVIEW_STATUS,
-  );
-  if (!status) return false;
-  const rules = status.rules ?? [];
-  const existing = rules.find((rule) => rule.type === 'checklist');
-  const config =
-    existing && 'config' in existing
-      ? (existing.config as {
-          readonly items?: readonly ChecklistItemDefinition[];
-        })
-      : undefined;
-  const items = config?.items ?? [];
-  const missing = DEMO_REVIEW_CHECKLIST.filter(
-    (item) => !items.some((have) => have.key === item.key),
-  );
-  if (missing.length === 0) return true;
-  const checklist: WorkflowStatusRule = {
-    type: 'checklist',
-    config: { items: [...items, ...missing] },
-  };
-  await projects.workflows.update(admin, target.id, {
-    revision: target.revision,
-    definition: {
-      ...target.definition,
-      states: target.definition.states.map((state) =>
-        state.key === REVIEW_STATUS
-          ? {
-              ...state,
-              rules: [
-                checklist,
-                ...rules.filter((rule) => rule.type !== 'checklist'),
-              ],
-            }
-          : state,
-      ),
-    },
-  });
-  return true;
+/** The status an issue is created in before it is moved to its own: one a new issue may start in. */
+export function createStatusOf(status: string): string {
+  if (START_STATUSES.includes(status)) return status;
+  return status === 'blocked' || status === 'in_review'
+    ? IN_PROGRESS_STATUS
+    : BACKLOG_STATUS;
 }
 
 export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
@@ -269,15 +163,7 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
     created('labels');
   }
 
-  // The review checklist, on the installed Software development workflow every demo project uses.
-  const reviewChecklist = await addReviewChecklist(projects, admin);
-  if (!reviewChecklist)
-    warn(
-      'The demo review checklist was not added: there is no Software development or default workflow',
-      null,
-    );
-
-  // Skills and agents.
+  // Skills, runtimes and the agents their reports discover.
   const skills = new Map<string, string>();
   const agents = new Map<string, string>();
   if (deps.agents) {
@@ -291,27 +177,11 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
       skills.set(skill.name, row.id);
       created('skills');
     }
-    for (const agent of DEMO_AGENTS) {
-      const row = await deps.agents.agents.create(deps.adminId, {
-        name: agent.name,
-        modelEntries: agent.tools.map((entry) => ({
-          tool: entry.tool as AgentTool,
-          model: entry.model ?? null,
-        })),
-        description: agent.description,
-        instructions: agent.instructions,
-        skillIds: agent.skills.flatMap((name) => skills.get(name) ?? []),
-        actions: agent.actions,
-        access: 'everyone',
-        maxConcurrentRuns: 2,
-      });
-      agents.set(agent.name, row.id);
-      created('agents');
-    }
-    await configureAssistant(deps.agents, deps.adminId, warn, created);
 
-    // Runtimes: each registers once through a registration token its owner creates, as a runner does, and is never
-    // heard from again; the sweeper marks it offline, so it shows on the Runtimes page and takes no work.
+    // Runtimes: each registers once through a registration token its owner creates, as a runner does, reporting the
+    // models of its coding tools, and is never heard from again: it is marked offline at once, as the sweeper would
+    // later, so it shows on the Runtimes page and takes no work. Its report discovers an agent for each tool and model,
+    // pending.
     for (const runtime of DEMO_RUNTIMES) {
       const ownerId = userIds.get(runtime.owner);
       if (!ownerId) throw new Error(`Unknown demo user ${runtime.owner}`);
@@ -329,7 +199,17 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
         version: '0.1.0',
         protocolVersion: PROTOCOL_VERSION,
         features: [...RUNNER_FEATURES],
-        tools: runtime.tools.map((kind) => ({ kind, authenticated: true })),
+        tools: runtime.tools.map((tool) => ({
+          kind: tool.kind,
+          authenticated: true,
+          ...(tool.models.length > 0
+            ? {
+                models: tool.models.map((id) => ({ id })),
+                modelsSource: 'detected' as const,
+                modelsDetectionStatus: 'detected' as const,
+              }
+            : {}),
+        })),
       });
       if (runtime.acceptJobs)
         await deps.agents.runners.update(registered.runnerId, {
@@ -337,6 +217,36 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
         });
       created('runtimes');
     }
+    if (DEMO_RUNTIMES.length > 0)
+      await deps.agents.runners.markOffline(new Date(Date.now() + 1));
+
+    // The discovered agents the demo enables, with what each is good at, as an administrator would.
+    for (const spec of DEMO_AGENTS)
+      try {
+        const id = runnerAgentId(spec.tool, spec.model);
+        const agent = await deps.agents.agents.get(id);
+        await deps.agents.agents.update(id, deps.adminId, {
+          description: spec.description,
+          enabled: true,
+          expectedRevision: agent.revision,
+        });
+        agents.set(spec.key, id);
+        created('agents');
+      } catch (error) {
+        warn(`Demo agent ${spec.tool} ${spec.model} was not enabled`, error);
+      }
+
+    // The project manager runs with two of them.
+    const firstChoice = agents.get(DEMO_PROJECT_MANAGER.firstChoice);
+    if (deps.projectManager && firstChoice)
+      try {
+        await deps.projectManager.update(deps.adminId, {
+          firstChoiceAgentId: firstChoice,
+          fallbackAgentId: agents.get(DEMO_PROJECT_MANAGER.fallback) ?? null,
+        });
+      } catch (error) {
+        warn('The project manager’s agents were not chosen', error);
+      }
   }
 
   // Projects, their members and skills.
@@ -351,7 +261,6 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
       leadUserId: userIds.get(project.lead) ?? null,
       startDate: day(project.start),
       dueDate: day(project.due),
-      workflowId: null,
     });
     projectIds.set(project.name, row.id);
     created('projects');
@@ -372,12 +281,12 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
       );
   }
 
-  // Issues, then their comments and checklists.
+  // Issues, then their comments.
   const issueIds = new Map<string, string>();
   async function createIssue(spec: DemoIssue): Promise<void> {
-    const executor: Executor | null = spec.executorAgent
-      ? agents.has(spec.executorAgent)
-        ? { type: 'agent', id: agents.get(spec.executorAgent)! }
+    const executor: Executor | null = spec.projectManager
+      ? deps.agents
+        ? { type: AGENT_KIND, id: PROJECT_MANAGER_ID }
         : null
       : spec.executor
         ? { type: 'user', id: userIds.get(spec.executor)! }
@@ -385,11 +294,11 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
     let issue = await projects.issues.create(admin, {
       title: spec.title,
       description: withMentions(spec.description),
-      statusKey: CREATE_STATUS[spec.status] ?? spec.status,
+      statusKey: createStatusOf(spec.status),
       priority: spec.priority as Priority,
       ownerUserId: userIds.get(spec.owner),
       executor,
-      // An agent executor waits: no demo runtime is online.
+      // The project manager waits: no demo runtime is online.
       start: false,
       projectId: spec.project ? (projectIds.get(spec.project) ?? null) : null,
       parentIssueId: spec.parent ? (issueIds.get(spec.parent) ?? null) : null,
@@ -406,6 +315,7 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
       issue = await projects.issues.update(admin, issue.id, {
         revision: issue.revision,
         statusKey: spec.status,
+        needsYou: spec.needsYou,
       });
 
     let previous: {
@@ -425,14 +335,6 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
       );
       previous = row;
       created('comments');
-    }
-    for (const itemKey of reviewChecklist
-      ? (spec.checklistChecked ?? [])
-      : []) {
-      await projects.checklists.set(admin, issue.id, spec.status, itemKey, {
-        checked: true,
-      });
-      created('checklist checks');
     }
   }
   for (const spec of DEMO_ISSUES)

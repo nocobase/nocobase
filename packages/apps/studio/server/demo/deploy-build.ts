@@ -4,10 +4,11 @@
  * services and stores where it can, and never calls a code host or runs an App:
  *
  * - **Real**: the demo connection (`GitConnections.createDemo`, a token connection marked `demo`, whose host Studio
- *   never calls), the projects, working directories, issues and the agent's CI issue (projects plugin), the preview
- *   CI choices (`studioRepoCi`), the repository and environment variables, the Apps and their releases (release
- *   management; a release is an image that names a registry nobody asks, so no archive is stored), the previews as CI
- *   makes them (`app ensure`'s label, then `PreviewPort.claim`) and the deployment request waiting for approval.
+ *   never calls), the projects, working directories, issues and the CI issue the project manager executes (projects
+ *   plugin), the preview CI choices (`studioRepoCi`), the repository and environment variables, the Apps and their
+ *   releases (release management; a release is an image that names a registry nobody asks, so no archive is stored),
+ *   the previews as CI makes them (`app ensure`'s label, then `PreviewPort.claim`) and the deployment request waiting
+ *   for approval.
  * - **Display-only**: pull requests, builds, deployments and deployment marks are written as the services would record
  *   them, since recording them for real means asking GitHub or running the App. The deployments are `succeeded` but
  *   their Apps stay stopped; a deployment of these releases is refused, as an image does not run on the local App Host,
@@ -39,6 +40,7 @@ import type { DatabaseConnection, DatabaseManager, Row } from '@nocobase/db';
 import { APPROVER_ADMINS, APPROVER_LEAD } from '../../shared/releases.js';
 import { ciWorkflowPathOf } from '../../shared/ci-modes.js';
 import { RELEASE_LABELS } from '../../shared/previews.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { AGENT_KIND } from '../agents/tx.js';
 import {
   DEFAULT_CI_TARGET,
@@ -60,7 +62,7 @@ import { updatePreview } from '../previews/store.js';
 import { recordCiChoice, updateRepoCi } from '../releases/ci.js';
 import { recordRepositoryApp } from '../releases/links.js';
 import { PREVIEW_ENVIRONMENT_ID } from '../releases/provider.js';
-import type { DemoSummary } from './build.js';
+import { createStatusOf, type DemoSummary } from './build.js';
 import {
   DEMO_CI_PULL_REQUEST,
   DEMO_CI_TASK_TITLE,
@@ -104,12 +106,6 @@ export interface DeployDemoDependencies {
 
 /** Release management's purpose for a deployment's first administrator (`@nocobase/app-plugin-releases`). */
 const INITIAL_ADMIN_PURPOSE = '@nocobase/app-plugin-releases/initial-admin';
-
-/** Issues created directly in a status no workflow accepts on creation start here and are then moved. */
-const CREATE_STATUS: Readonly<Record<string, string>> = {
-  done: 'todo',
-  in_review: 'in_progress',
-};
 
 const digestOf = (seed: string): string =>
   `sha256:${createHash('sha256').update(seed).digest('hex')}`;
@@ -191,7 +187,6 @@ export async function buildDeployDemo(
       status: 'in_progress',
       priority: 'high',
       leadUserId: userIds.get(spec.lead) ?? null,
-      workflowId: null,
     });
     projectIds.set(spec.name, row.id);
     created('projects');
@@ -264,7 +259,7 @@ export async function buildDeployDemo(
     projectId: string,
     spec: Pick<
       DemoDeployIssue,
-      'title' | 'description' | 'status' | 'priority' | 'owner'
+      'title' | 'description' | 'status' | 'needsYou' | 'priority' | 'owner'
     > & { readonly executor: Executor | null },
   ): Promise<{ id: string; identifier: string }> {
     const existing = await conn()
@@ -281,11 +276,11 @@ export async function buildDeployDemo(
     let issue = await projects.issues.create(admin, {
       title: spec.title,
       description: spec.description,
-      statusKey: CREATE_STATUS[spec.status] ?? spec.status,
+      statusKey: createStatusOf(spec.status),
       priority: spec.priority as Priority,
       ownerUserId: userIds.get(spec.owner),
       executor: spec.executor,
-      // An agent executor waits: no demo runtime is online.
+      // The project manager waits: no demo runtime is online.
       start: false,
       projectId,
     });
@@ -293,6 +288,7 @@ export async function buildDeployDemo(
       issue = await projects.issues.update(admin, issue.id, {
         revision: issue.revision,
         statusKey: spec.status,
+        needsYou: spec.needsYou,
       });
     created('issues');
     return { id: issue.id, identifier: issue.identifier };
@@ -388,13 +384,10 @@ export async function buildDeployDemo(
       );
       return;
     }
-    // `task`: an agent's issue connects it.
+    // `task`: an issue the project manager executes connects it.
     const agentId = deps.agents
-      ? ((await deps.agents.agents.list()).find(
-          (agent) => agent.name === 'Frontend Developer',
-        )?.id ??
-        (await deps.agents.agents.list())[0]?.id ??
-        null)
+      ? ((await deps.agents.agents.get(PROJECT_MANAGER_ID).catch(() => null))
+          ?.id ?? null)
       : null;
     const app = spec.apps[0];
     const files = [

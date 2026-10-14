@@ -48,6 +48,100 @@ describe('run lifecycle', () => {
       body,
     });
 
+  it.each(['complete', 'fail', 'cancelAck'])(
+    'remembers a replacement session after %s and resumes it on the next claim',
+    async (action) => {
+      h = await createHarness();
+      const agentId = await h.createAgent();
+      const runner = await h.registerRunner();
+      await h.enqueue(agentId);
+      const [first] = await claim(h, runner);
+      await post(runner, first.run.id, 'start', start);
+      expect(
+        (
+          await post(runner, first.run.id, 'complete', {
+            summary: 'done',
+            handledInputIds: first.inputs.map((i: { id: string }) => i.id),
+            sessionId: 'old-session',
+          })
+        ).status,
+      ).toBe(200);
+      await h.enqueue(agentId);
+      const [second] = await claim(h, runner);
+      expect(second.prompt.resumeSessionId).toBe('old-session');
+      await post(runner, second.run.id, 'start', start);
+      if (action === 'cancelAck')
+        await h.services.runs.cancel(second.run.id, 'owner');
+      expect(
+        (
+          await post(runner, second.run.id, action, {
+            summary: 'done',
+            reason: 'unknown',
+            handledInputIds: second.inputs.map((i: { id: string }) => i.id),
+            sessionId: 'replacement-session',
+          })
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await h.database
+            .connection()
+            .repository<{ sessionId: string }>('agRuns')
+            .findOne({ filter: { id: second.run.id } })
+        )?.sessionId,
+      ).toBe('replacement-session');
+      await h.enqueue(agentId);
+      const [third] = await claim(h, runner);
+      expect(third.prompt).toMatchObject({
+        session: 'resume',
+        resumeSessionId: 'replacement-session',
+      });
+      const rows = await h.database
+        .connection()
+        .repository<{ sessionId: string }>('agSessions')
+        .findMany({ filter: { agentId } });
+      expect(rows).toHaveLength(1);
+      expect(rows[0].sessionId).toBe('replacement-session');
+    },
+  );
+
+  it('preserves the previous session when cancellation has no confirmed session and rejects a lost lease', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner();
+    await h.enqueue(agentId);
+    const [first] = await claim(h, runner);
+    await post(runner, first.run.id, 'start', start);
+    await post(runner, first.run.id, 'complete', {
+      summary: 'done',
+      handledInputIds: first.inputs.map((i: { id: string }) => i.id),
+      sessionId: 'old-session',
+    });
+    await h.enqueue(agentId);
+    const [second] = await claim(h, runner);
+    await post(runner, second.run.id, 'start', start);
+    await h.services.runs.cancel(second.run.id, 'owner');
+    expect((await post(runner, second.run.id, 'cancelAck')).status).toBe(200);
+    await h.enqueue(agentId);
+    const [third] = await claim(h, runner);
+    expect(third.prompt.resumeSessionId).toBe('old-session');
+    await post(runner, third.run.id, 'start', start);
+    h.clock.advance(46_000);
+    await h.sweep();
+    const lost = await post(runner, third.run.id, 'cancelAck', {
+      sessionId: 'unconfirmed',
+    });
+    expect(lost.body.error.reason).toBe('LEASE_LOST');
+    expect(
+      (
+        await h.database
+          .connection()
+          .repository<{ sessionId: string }>('agSessions')
+          .findOne({ filter: { agentId } })
+      )?.sessionId,
+    ).toBe('old-session');
+  });
+
   it('runs from start to completion, recording events once', async () => {
     h = await createHarness();
     const { runner, runId, inputIds } = await claimed();
@@ -256,19 +350,170 @@ describe('run lifecycle', () => {
       status: 'queued',
       attempt: 2,
       runnerId: null,
+      failureReason: 'toolRateLimit',
+      failureDetail: 'Slow down.',
     });
     // Not before the back-off.
     expect(await claim(h, runner)).toEqual([]);
     h.clock.advance(30_000);
     const [again] = await claim(h, runner);
     expect(again.run).toMatchObject({ id: runId, attempt: 2, firstSeq: 2 });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'dispatched',
+      failureReason: null,
+      failureDetail: null,
+    });
 
     await post(runner, runId, 'start', start);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'running',
+      failureReason: null,
+      failureDetail: null,
+    });
+    await h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({
+        filter: { id: runId },
+        values: { failureReason: 'toolRateLimit', failureDetail: 'Old detail' },
+      });
     const final = await post(runner, runId, 'fail', { reason: 'toolNetwork' });
     expect(final.body.data).toEqual({ status: 'failed' });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      failureReason: 'toolNetwork',
+      failureDetail: null,
+    });
     expect(h.finished.map((run) => [run.status, run.failureReason])).toEqual([
       ['failed', 'toolNetwork'],
     ]);
+  });
+
+  it('clears retry failures on recovery and success, preserving historical errors', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 2 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    const [first] = await claim(h, runner);
+    await post(runner, runId, 'start', start);
+    await post(runner, runId, 'events', {
+      events: [
+        {
+          seq: 1,
+          at: h.clock.now().toISOString(),
+          type: 'error',
+          content: 'First connection failure',
+        },
+      ],
+    });
+    await post(runner, runId, 'fail', {
+      reason: 'toolNetwork',
+      detail: 'First connection failure',
+    });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'queued',
+      failureReason: 'toolNetwork',
+      failureDetail: 'First connection failure',
+    });
+    h.clock.advance(30_000);
+    await claim(h, runner);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'dispatched',
+      failureReason: null,
+      failureDetail: null,
+    });
+    await post(runner, runId, 'start', start);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'running',
+      failureReason: null,
+      failureDetail: null,
+    });
+    // An already-running legacy record must also be cleared on completion.
+    await h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({
+        filter: { id: runId },
+        values: {
+          failureReason: 'toolNetwork',
+          failureDetail: 'Legacy failure',
+        },
+      });
+    expect(
+      (
+        await post(runner, runId, 'complete', {
+          summary: 'Recovered successfully',
+          handledInputIds: first.inputs.map(
+            (input: { id: string }) => input.id,
+          ),
+        })
+      ).status,
+    ).toBe(200);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'completed',
+      failureReason: null,
+      failureDetail: null,
+      executions: [
+        expect.objectContaining({ attempt: 1, failureReason: 'toolNetwork' }),
+        expect.objectContaining({ attempt: 2 }),
+      ],
+    });
+    expect((await h.services.runs.events(runId, 0, 100)).events).toContainEqual(
+      expect.objectContaining({
+        type: 'error',
+        content: 'First connection failure',
+      }),
+    );
+  });
+
+  it('uses the latest failure details and clears them when a queued retry is cancelled', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 3 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    await claim(h, runner);
+    await post(runner, runId, 'start', start);
+    await post(runner, runId, 'fail', {
+      reason: 'toolNetwork',
+      detail: 'First failure',
+    });
+    h.clock.advance(30_000);
+    await claim(h, runner);
+    await post(runner, runId, 'start', start);
+    await post(runner, runId, 'fail', {
+      reason: 'toolRateLimit',
+      detail: 'Latest failure',
+    });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'queued',
+      failureReason: 'toolRateLimit',
+      failureDetail: 'Latest failure',
+    });
+    await h.services.runs.cancel(runId, 'owner');
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'cancelled',
+      failureReason: 'cancelled',
+      failureDetail: null,
+    });
+  });
+
+  it('ends disk-full failures with the machine name without automatic retry or an extra attempt', async () => {
+    h = await createHarness();
+    const { runner, runId } = await claimed();
+    await post(runner, runId, 'start', start);
+    const failed = await post(runner, runId, 'fail', {
+      reason: 'runnerDiskFull',
+      detail: 'ENOSPC: write',
+    });
+    expect(failed.body.data).toEqual({ status: 'failed' });
+    const storedRunner = await h.services.runners.get(runner.runnerId);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'failed',
+      failureReason: 'runnerDiskFull',
+      attempt: 1,
+      failureDetail: `Runner ${storedRunner.name} is out of disk space: ENOSPC: write`,
+    });
+    expect(h.finished).toHaveLength(1);
+    expect(await claim(h, runner)).toEqual([]);
   });
 
   it('queues a run again when preparing it failed on the network, but not when the checkout failed', async () => {
@@ -298,6 +543,136 @@ describe('run lifecycle', () => {
     expect(h.finished.map((run) => [run.status, run.failureReason])).toEqual([
       ['failed', 'checkoutFailed'],
     ]);
+  });
+
+  it('requeues upgrades immediately without consuming attempts or notifying the subject, retaining task inputs', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 1 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    const [first] = await claim(h, runner);
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const current = attempt === 1 ? first : (await claim(h, runner))[0];
+      expect(current.run).toMatchObject({ id: runId, attempt });
+      expect(current.inputs).toEqual(first.inputs);
+      if (attempt > 1)
+        expect(current.prompt.turn).toContain(
+          'interrupted by a runner upgrade',
+        );
+      await post(runner, runId, 'start', start);
+      expect(
+        (
+          await post(runner, runId, 'fail', {
+            reason: 'runnerUpgrade',
+            handledInputIds: current.inputs.map((input) => input.id),
+            sessionId: 'upgrade-session',
+          })
+        ).body.data,
+      ).toMatchObject({ status: 'queued' });
+      expect(h.finished).toEqual([]);
+    }
+    const [again] = await claim(h, runner);
+    expect(again.run.attempt).toBe(4);
+    expect(again.prompt.resumeSessionId).toBe('upgrade-session');
+    expect(
+      (await post(runner, runId, 'fail', { reason: 'toolNetwork' })).body.data,
+    ).toEqual({ status: 'failed' });
+    expect(h.finished).toHaveLength(1);
+  });
+
+  it('requeues live workspace contention with a delay and releases its runner slot', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 3 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    const [first] = await claim(h, runner);
+    expect(first.run.acceptedFailures).toContain('workspaceBusy');
+    expect(
+      (
+        await post(runner, runId, 'fail', {
+          reason: 'workspaceBusy',
+          detail: 'Another live process holds this workspace.',
+        })
+      ).body.data,
+    ).toMatchObject({ status: 'queued' });
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'queued',
+      runnerId: null,
+      attempt: 2,
+    });
+    expect(await claim(h, runner)).toEqual([]);
+    h.clock.advance(30_000);
+    const [again] = await claim(h, runner);
+    expect(again.run.id).toBe(runId);
+  });
+
+  it('waits for a held workspace without using up the attempts, then runs', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 1 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    for (let wait = 1; wait <= 4; wait += 1) {
+      const [claimedRun] = await claim(h, runner);
+      expect(claimedRun.run.id).toBe(runId);
+      expect(
+        (
+          await post(runner, runId, 'fail', {
+            reason: 'workspaceBusy',
+            detail: 'Another live process holds this workspace.',
+          })
+        ).body.data,
+      ).toMatchObject({ status: 'queued' });
+      h.clock.advance(2 * 60_000);
+    }
+    const [running] = await claim(h, runner);
+    expect(running.run.id).toBe(runId);
+    await post(runner, runId, 'start', start);
+    const done = await post(runner, runId, 'complete', {
+      summary: 'Done.',
+      handledInputIds: running.inputs.map((input: { id: string }) => input.id),
+    });
+    expect(done.status).toBe(200);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'completed',
+    });
+  });
+
+  it('still counts real failures after workspace waits', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 1 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    await claim(h, runner);
+    await post(runner, runId, 'fail', { reason: 'workspaceBusy' });
+    h.clock.advance(60_000);
+    await claim(h, runner);
+    const failed = await post(runner, runId, 'fail', { reason: 'toolNetwork' });
+    expect(failed.body.data).toEqual({ status: 'failed' });
+  });
+
+  it('fails a run whose workspace stays held past the wait limit', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ maxAttempts: 3 });
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner();
+    let status: unknown = 'queued';
+    let tries = 0;
+    while (status === 'queued') {
+      tries += 1;
+      const [claimedRun] = await claim(h, runner);
+      expect(claimedRun.run.id).toBe(runId);
+      status = (
+        (await post(runner, runId, 'fail', { reason: 'workspaceBusy' })).body
+          .data as { status: string }
+      ).status;
+      h.clock.advance(30 * 60_000);
+    }
+    expect(status).toBe('failed');
+    expect(tries).toBeGreaterThan(3);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'failed',
+      failureReason: 'workspaceBusy',
+    });
   });
 
   it('fails a non-retryable failure at once', async () => {
@@ -407,6 +782,7 @@ describe('run lifecycle', () => {
         .status,
     ).toBe(401);
 
+    await post(runner, runId, 'start', start);
     await post(runner, runId, 'complete', {
       summary: '',
       handledInputIds: inputIds,
@@ -566,7 +942,7 @@ describe('run lifecycle', () => {
     h = await createHarness();
     const agentId = await h.createAgent();
     const runId = await h.enqueue(agentId);
-    await h.services.agents.archive(agentId, 'owner');
+    await h.disableAgent(agentId);
     await h.sweep();
     expect((await h.services.runs.get(runId)).status).toBe('cancelled');
   });

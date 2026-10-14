@@ -24,7 +24,7 @@ For manual creation, run the command from the application directory’s parent. 
 
 ```bash
 # Allow newly published versions and create the application
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta my-app --template-tag=beta
 ```
 
 `my-app` is the target directory name and becomes the application's default name. The name must start with a lowercase English letter or digit and contain only lowercase English letters, digits, dots (`.`), hyphens (`-`), or underscores (`_`). Chinese characters, spaces, and uppercase letters are not allowed. Suggested names include `my-app`, `crm-demo`, and `order-system`. The target can be absent or an existing empty directory.

@@ -42,7 +42,9 @@ const TABLE = 'studioInboxNotices';
 /** At most this many ids per `notices` lookup: one page of the inbox. */
 export const MAX_NOTICE_IDS = 100;
 
-interface NoticeRow {
+export interface NoticeRow {
+  readonly actorType: string | null;
+  readonly actorId: string | null;
   readonly notificationId: string;
   readonly source: string;
   readonly kind: string;
@@ -58,6 +60,8 @@ interface NoticeRow {
 }
 
 const COLUMNS = [
+  'actorType',
+  'actorId',
   'notificationId',
   'source',
   'kind',
@@ -97,8 +101,14 @@ export interface StudioInbox extends StudioInboxPort {
   /**
    * The decisions of `source` and `type` that still wait, one per decision key with everyone it waits on, oldest
    * first, at most `OPEN_DECISIONS_MAX`; for a board that shows who is waited on, not for any one person's inbox.
+   * With `afterKey` (empty for the first page), reads in decision-key order for reconciliation, optionally scoped to a subject.
    */
-  openDecisions(source: string, type: string): Promise<OpenDecision[]>;
+  openDecisions(
+    source: string,
+    type: string,
+    afterKey?: string,
+    subject?: { readonly type: string; readonly id: string },
+  ): Promise<OpenDecision[]>;
 }
 
 /** A decision that still waits (`StudioInbox.openDecisions`). */
@@ -115,6 +125,12 @@ export interface OpenDecision {
 export const OPEN_DECISIONS_MAX = 500;
 
 export interface StudioInboxDependencies {
+  /** Read-only identity projection of notices already scoped to their recipient. */
+  readonly identities?: (
+    userId: string,
+    rows: readonly NoticeRow[],
+    notices: InboxNotice[],
+  ) => Promise<InboxNotice[]>;
   readonly database: Pick<DatabaseManager, 'connection'>;
   /** The notification service, or null when the application has none (nothing is sent then). */
   readonly notifications: () => NotificationService | null;
@@ -130,7 +146,7 @@ export interface StudioInboxDependencies {
 const iso = (value: string | Date | null): string | null =>
   value === null ? null : new Date(value).toISOString();
 
-function dataOf(value: NoticeRow['data']): InboxData | null {
+function dataOf(value: unknown): InboxData | null {
   if (value === null) return null;
   const parsed: unknown = typeof value === 'string' ? JSON.parse(value) : value;
   return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
@@ -159,6 +175,12 @@ function noticeOf(row: NoticeRow): InboxNotice {
 export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
   const now = deps.now ?? (() => new Date());
   const table = () => deps.database.connection().query;
+  const views = (userId: string, rows: readonly NoticeRow[]) => {
+    const notices = rows.map(noticeOf);
+    return deps.identities
+      ? deps.identities(userId, rows, notices)
+      : Promise.resolve(notices);
+  };
 
   /**
    * How many notices `userId`'s new item of `group` stands for: one more than their previous item's, whose in-app item
@@ -248,10 +270,11 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
     source: string,
     decisionKey: string,
     outcome: string,
+    data?: InboxData,
   ): Promise<void> {
     const waiting = await table()
       .selectFrom(TABLE)
-      .select('userId')
+      .select(['userId', 'data'])
       .where('source', '=', source)
       .where('decisionKey', '=', decisionKey)
       .where('kind', '=', 'decision')
@@ -260,7 +283,13 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
     if (waiting.length === 0) return;
     await table()
       .updateTable(TABLE)
-      .set({ resolvedAt: now(), outcome })
+      .set({
+        resolvedAt: now(),
+        outcome,
+        ...(data
+          ? { data: JSON.stringify({ ...dataOf(waiting[0].data), ...data }) }
+          : {}),
+      })
       .where('source', '=', source)
       .where('decisionKey', '=', decisionKey)
       .where('kind', '=', 'decision')
@@ -297,7 +326,7 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
 
     async resolve(ref) {
       checkDecisionRef(ref);
-      await settle(ref.source, ref.decisionKey, ref.outcome);
+      await settle(ref.source, ref.decisionKey, ref.outcome, ref.data);
     },
 
     async withdraw(ref) {
@@ -326,6 +355,7 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
       await table()
         .updateTable(TABLE)
         .set({ resolvedAt: now(), outcome: ref.outcome })
+        .where('resolvedAt', 'is', null)
         .where(
           'id',
           'in',
@@ -357,9 +387,10 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
         userId,
         rows.map((row) => row.notificationId),
       );
-      return rows.flatMap((row) => {
+      const notices = await views(userId, rows);
+      return rows.flatMap((row, index) => {
         const item = items.get(row.notificationId);
-        return item ? [{ item, notice: noticeOf(row) }] : [];
+        return item ? [{ item, notice: notices[index] }] : [];
       });
     },
 
@@ -372,7 +403,7 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
         .where('userId', '=', userId)
         .where('notificationId', 'in', ids)
         .execute();
-      return rows.map(noticeOf);
+      return views(userId, rows);
     },
 
     async waiting(ref) {
@@ -400,11 +431,11 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
         .where('resolvedAt', 'is', null)
         .orderBy('createdAt', 'desc')
         .executeTakeFirst();
-      return row ? noticeOf(row) : null;
+      return row ? (await views(userId, [row]))[0] : null;
     },
 
-    async openDecisions(source, type) {
-      const rows = await table()
+    async openDecisions(source, type, afterKey, subject) {
+      let select = table()
         .selectFrom(TABLE)
         .select([
           'decisionKey',
@@ -418,8 +449,15 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
         .where('source', '=', source)
         .where('type', '=', type)
         .where('kind', '=', 'decision')
-        .where('resolvedAt', 'is', null)
-        .orderBy('createdAt', 'asc')
+        .where('resolvedAt', 'is', null);
+      if (afterKey !== undefined)
+        select = select.where('decisionKey', '>', afterKey);
+      if (subject)
+        select = select
+          .where('subjectType', '=', subject.type)
+          .where('subjectId', '=', subject.id);
+      const rows = await select
+        .orderBy(afterKey === undefined ? 'createdAt' : 'decisionKey', 'asc')
         .limit(OPEN_DECISIONS_MAX * 4)
         .execute();
       const byKey = new Map<string, OpenDecision & { userIds: string[] }>();
@@ -442,7 +480,7 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
                   label: (row.subjectLabel as string | null) ?? null,
                 }
               : null,
-          data: dataOf(row.data as NoticeRow['data']),
+          data: dataOf(row.data),
           userIds: [String(row.userId)],
           createdAt: iso(row.createdAt as string | Date) ?? '',
         });
