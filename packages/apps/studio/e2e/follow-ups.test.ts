@@ -1,6 +1,8 @@
 import { expect, open, test, unique, signIn } from './support/fixtures.ts';
 import type { Issue } from './support/runner.ts';
 
+test.use({ user: 'admin' });
+
 test.describe('my follow-ups', () => {
   test('lists what the viewer owns, shows an issue’s activity and keeps what they follow', async ({
     page,

@@ -7,6 +7,8 @@ import type { Locator, Page } from '@playwright/test';
 import { expect, open, test, unique, signIn } from './support/fixtures.ts';
 import type { Issue } from './support/runner.ts';
 
+test.use({ user: 'admin' });
+
 /** What the test reads from a scrolling element, without the DOM library. */
 interface ScrollArea {
   readonly scrollHeight: number;
