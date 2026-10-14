@@ -9,39 +9,6 @@ import type { KanbanLabels } from '../components/kanban.js';
 import type { AgentQueueLabels } from '../extensions/nocobase-agent-queue/labels.js';
 
 export const issuesEnUS = {
-  tree: {
-    groups: {
-      input: 'Needs input',
-      review: 'Review / acceptance',
-      decision: 'Other decisions',
-      routine: 'Routine work',
-    },
-    reasons: {
-      question: 'needs input',
-      review: 'needs review / acceptance',
-      failedRun: 'needs a failed-run decision',
-      ownerHandoff: 'needs an owner handoff decision',
-    },
-    counts: '{{tasks}} tasks · {{trees}} trees',
-    actions: '{{count}} need action',
-    waiting: '{{count}} waiting for you',
-    waitingForYou: 'Waiting for you',
-    needsAction: 'Needs human action',
-    context: 'Context · outside filter',
-    progress: '{{finished}} / {{total}} subtasks finished',
-    progressScope: 'Finished / visible direct subtasks, including cancellation',
-    explanation: '{{identifier}} {{reason}}',
-    collapseGroup: 'Collapse {{group}}',
-    expandGroup: 'Expand {{group}}',
-    collapseTask: 'Collapse subtasks of {{identifier}}',
-    expandTask: 'Expand subtasks of {{identifier}}',
-    moreGroup: 'Load more in {{group}}',
-    moreChildren: 'Load more subtasks of {{identifier}}',
-    childError: 'Could not load subtasks',
-    loadingChildren: 'Loading subtasks…',
-    refreshError: 'Could not refresh tasks. Showing the last complete result.',
-    refreshing: 'Refreshing tasks…',
-  },
   relationships: {
     add: 'Add a relationship',
     type: 'Relationship type',
@@ -225,39 +192,6 @@ export const issuesEnUS = {
 export type IssuesWording = typeof issuesEnUS;
 
 export const issuesZhCN: IssuesWording = {
-  tree: {
-    groups: {
-      input: '需要输入',
-      review: '待评审 / 验收',
-      decision: '其他待决策',
-      routine: '常规工作',
-    },
-    reasons: {
-      question: '需要输入',
-      review: '待评审 / 验收',
-      failedRun: '等待失败运行决策',
-      ownerHandoff: '等待负责人交接决策',
-    },
-    counts: '{{tasks}} 个任务 · {{trees}} 棵任务树',
-    actions: '{{count}} 个需要处理',
-    waiting: '{{count}} 个等你处理',
-    waitingForYou: '等你处理',
-    needsAction: '需要人工处理',
-    context: '上下文 · 不匹配筛选',
-    progress: '{{finished}} / {{total}} 个子任务已结束',
-    progressScope: '已结束 / 可见的直接子任务，包含已取消',
-    explanation: '{{identifier}} {{reason}}',
-    collapseGroup: '收起{{group}}',
-    expandGroup: '展开{{group}}',
-    collapseTask: '收起{{identifier}}的子任务',
-    expandTask: '展开{{identifier}}的子任务',
-    moreGroup: '加载{{group}}的更多任务',
-    moreChildren: '加载{{identifier}}的更多子任务',
-    childError: '无法加载子任务',
-    loadingChildren: '正在加载子任务…',
-    refreshError: '无法刷新任务，显示上次完整结果。',
-    refreshing: '正在刷新任务…',
-  },
   relationships: {
     add: '添加关联',
     type: '关联类型',
