@@ -8,7 +8,6 @@ import type { DatabaseConnection } from '@nocobase/db';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { AGENT_KIND } from './tx.js';
 import { readOwnerHandoff } from '../issues/owner-handoff.js';
-import { findIssue } from '../previews/sources.js';
 
 export function issueExecutionIdentity(
   agents: Pick<Agents, 'runs' | 'agents'>,
@@ -18,23 +17,8 @@ export function issueExecutionIdentity(
     if ((await readOwnerHandoff(conn, work.subjectId))?.waiting)
       return { actorUserId: null, reason: 'waitingOwner' };
     const seen = new Set<string>();
-    // The issue's comments, read only when a step's source has to be followed through them.
-    let byId:
-      | Map<
-          string,
-          Awaited<
-            ReturnType<ReturnType<typeof projects>['commentQueries']['list']>
-          >[number]
-        >
-      | undefined;
-    const comment = async (id: string) => {
-      byId ??= new Map(
-        (await projects().commentQueries.list(conn, work.subjectId)).map(
-          (item) => [item.id, item],
-        ),
-      );
-      return byId.get(id);
-    };
+    const comments = await projects().commentQueries.list(conn, work.subjectId);
+    const byId = new Map(comments.map((comment) => [comment.id, comment]));
     async function inChain(
       agentId: string,
       inputs: typeof work.inputs,
@@ -73,42 +57,45 @@ export function issueExecutionIdentity(
           return true;
         // Old queued steps predate the explicit marker. Follow their recorded comment source,
         // or the hand-over thread when old comments did not record a run.
-        let source =
+        let comment =
           typeof payload.commentId === 'string'
-            ? await comment(payload.commentId)
+            ? byId.get(payload.commentId)
             : undefined;
         if (
-          source?.source?.runId &&
-          (await inChain(agentId, [], source.source.runId))
+          comment?.source?.runId &&
+          (await inChain(agentId, [], comment.source.runId))
         )
           return true;
         if (input.actor.kind !== 'agent') continue;
         if (input.actor.id === PROJECT_MANAGER_ID) return true;
         const visited = new Set<string>();
-        while (source && !visited.has(source.id)) {
-          visited.add(source.id);
+        while (comment && !visited.has(comment.id)) {
+          visited.add(comment.id);
           if (
-            source.authorType === AGENT_KIND &&
-            source.authorId === PROJECT_MANAGER_ID
+            comment.authorType === AGENT_KIND &&
+            comment.authorId === PROJECT_MANAGER_ID
           )
             return true;
           if (
-            source.source?.runId &&
-            (await inChain(agentId, [], source.source.runId))
+            comment.source?.runId &&
+            (await inChain(agentId, [], comment.source.runId))
           )
             return true;
-          source = source.parentId ? await comment(source.parentId) : undefined;
+          comment = comment.parentId ? byId.get(comment.parentId) : undefined;
         }
       }
       return false;
     }
     if (!(await inChain(work.agentId, work.inputs, work.causedByRunId)))
       return undefined;
-    // The issue's row alone: its owner is all this needs of it.
-    const issue = await findIssue(conn, work.subjectId);
+    const issue = await projects().issueContext.contextFor(
+      conn,
+      work.subjectId,
+      { kind: AGENT_KIND },
+    );
     // Missing subjects are rejected by claim admission with its precise reason.
-    if (!issue || issue.deleted) return undefined;
-    const ownerId = issue.ownerUserId;
+    if (!issue) return undefined;
+    const ownerId = issue?.owner.id;
     if (!ownerId) return { actorUserId: null, reason: 'noOwner' };
     if (!(await validIssueOwner(conn, ownerId)))
       return { actorUserId: null, reason: 'noOwner' };

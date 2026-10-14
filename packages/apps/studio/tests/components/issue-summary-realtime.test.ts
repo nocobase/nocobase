@@ -249,7 +249,7 @@ describe('live issue summaries', () => {
       expect(count(['studio', 'issueProgress', 'issue-9', 'r1'])).toBe(1);
       expect(count(['pm', 'issues', 'followUps'])).toBe(2);
       expect(count(pmKeys.issue('PM-331'))).toBe(2);
-      // A run on an issue refreshes what depends on its runs, not the issue itself.
+      // A run on an issue refreshes what is shown of that issue.
       listeners.get(STUDIO_ISSUE_RUNS_TOPIC)?.({
         type: 'event',
         topic: STUDIO_ISSUE_RUNS_TOPIC,
@@ -259,7 +259,8 @@ describe('live issue summaries', () => {
       await waitFor(() =>
         expect(count(['studio', 'issueProgress', 'issue-9', 'r1'])).toBe(2),
       );
-      expect(count(pmKeys.issue('PM-9'))).toBe(1);
+      expect(count(pmKeys.issue('PM-9'))).toBe(2);
+      expect(count(pmKeys.issue('PM-331'))).toBe(2);
       expect(count(['pm', 'issues', 'followUps'])).toBe(2);
     } finally {
       stop();

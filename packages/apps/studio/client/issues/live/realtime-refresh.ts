@@ -1,7 +1,7 @@
 /**
  * Refresh Studio's issue projections along with the projects plugin's live issue cache. An announcement naming issues
- * (`PmChangeEvent.issueIds`) refreshes only what is shown of those issues, and My follow-ups only when it lists one of
- * them; anything else refreshes every projection.
+ * (`PmChangeEvent.issueIds`, or the runs on them, `StudioIssueRunsEvent`) refreshes only what is shown of those issues,
+ * and My follow-ups only when it lists one of them; anything else refreshes every projection.
  */
 import {
   realtimeClientToken,
@@ -76,29 +76,6 @@ export function refreshIssues(
   });
 }
 
-/** Refreshes what depends on the runs of the named issues: their runs, what they wait for, My follow-ups. */
-export function refreshIssueRuns(
-  client: Pick<QueryClient, 'invalidateQueries'>,
-  issueIds: ReadonlySet<string>,
-): void {
-  for (const queryKey of [
-    ['studio', 'issue-runs'],
-    ['studio', 'issueProgress'],
-    ['studio', 'commentRunLimit'],
-  ])
-    void client.invalidateQueries({
-      queryKey,
-      predicate: (query) =>
-        typeof query.queryKey[2] === 'string' &&
-        issueIds.has(query.queryKey[2]),
-    });
-  void client.invalidateQueries({
-    queryKey: FOLLOW_UPS,
-    predicate: (query) =>
-      followUpsShow(query.state.data as FollowUpsView | undefined, issueIds),
-  });
-}
-
 export function subscribeIssueRefresh(
   realtime: Pick<RealtimeClient, 'onOpen' | 'subscribe'>,
   client: Pick<QueryClient, 'invalidateQueries' | 'getQueryCache'>,
@@ -131,7 +108,7 @@ export function subscribeIssueRefresh(
       STUDIO_ISSUE_RUNS_TOPIC,
       (event) => {
         const ids = event?.payload?.issueIds;
-        if (Array.isArray(ids)) refreshIssueRuns(client, new Set(ids));
+        if (Array.isArray(ids)) refreshIssues(client, new Set(ids));
       },
     ),
   ];

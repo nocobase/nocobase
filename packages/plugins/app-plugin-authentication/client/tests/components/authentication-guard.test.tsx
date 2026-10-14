@@ -10,8 +10,13 @@ import {
 } from '../../auth-provider.js';
 
 const useService = vi.hoisted(() => vi.fn());
+const services = vi.hoisted(() => ({
+  has: vi.fn(() => false),
+  resolveIfCreated: vi.fn(),
+}));
 vi.mock('@nocobase/app-client', () => ({
   useService,
+  useClientApplication: () => ({ services }),
   realtimeClientToken: 'realtime',
 }));
 
@@ -72,7 +77,9 @@ describe('AuthenticationGuard', () => {
     const reconnect = vi.fn();
     let session: unknown = null;
     const getSession = vi.fn(async () => ({ data: session }));
-    useService.mockReturnValue({ getSession, reconnect });
+    useService.mockReturnValue({ getSession });
+    services.has.mockReturnValue(true);
+    services.resolveIfCreated.mockReturnValue({ reconnect });
     const captured: { refresh?: () => Promise<void> } = {};
     function Capture() {
       const { refresh } = useAuthentication();
@@ -95,6 +102,11 @@ describe('AuthenticationGuard', () => {
     session = { user: { id: 'user' }, session: { id: 'session' } };
     await act(async () => refresh());
     expect(reconnect).toHaveBeenCalledOnce();
+    await act(async () => refresh());
+    expect(reconnect).toHaveBeenCalledOnce();
+    // Without realtime, or before anything connected, there is nothing to connect again.
+    services.has.mockReturnValue(false);
+    session = null;
     await act(async () => refresh());
     expect(reconnect).toHaveBeenCalledOnce();
   });
