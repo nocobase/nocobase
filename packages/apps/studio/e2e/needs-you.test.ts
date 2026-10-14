@@ -1,5 +1,12 @@
-import { expect, open, test, unique, signIn, Api } from './support/fixtures.ts';
+import type { Page } from '@playwright/test';
+import { expect, url, test, unique, signIn, Api } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
+import type { FollowUpsView } from '../shared/follow-ups.js';
+
+// Live workspace requests need not become idle; each destination below asserts its actual rendered content.
+async function open(target: Page, path: string): Promise<void> {
+  await target.goto(url(path));
+}
 
 test.use({
   user: 'admin',
@@ -71,7 +78,6 @@ test('structured owner request, latest explanation, matching follow-ups and live
   }>('projectManager');
   // The name this test gives the manager below, not the one it found: that is restored when the test ends.
   const managerName = 'Project manager';
-  const managerWorking = `${managerName} working`;
   const runner = new FakeRunner(api, `needs-you-${unique()}`, true);
   const agent = await runner.agent();
   await api.patch('users/me/preferences', { locale: 'en-US' });
@@ -242,12 +248,23 @@ test('structured owner request, latest explanation, matching follow-ups and live
           );
       })
       .toBe(true);
-    await open(page, '/follow-ups');
+    await open(page, '/follow-ups?view=list');
     const rail = page.getByTestId('follow-ups-following');
-    const mine = page.getByTestId('follow-ups-mine');
-    await mine.getByRole('button', { name: /^Blocked\b/u }).click();
-    await mine.getByRole('button', { name: /^In progress\b/u }).click();
-    const ownedRow = mine.locator(`[data-issue="${issue.identifier}"]`);
+    const table = page.getByRole('table');
+    const status = page.getByRole('combobox', { name: 'Status', exact: true });
+    await status.click();
+    await expect(
+      page.getByRole('option', { name: 'Blocked', exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', { name: 'In progress', exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole('option', { name: 'All statuses', exact: true })
+      .click();
+    const ownedRow = table.getByRole('row').filter({
+      has: page.getByRole('link', { name: issue.identifier, exact: true }),
+    });
     const panel = page.getByTestId('follow-ups-activity');
     const standalone = await page.context().newPage();
     await open(standalone, `/issues/${issue.identifier}`);
@@ -258,8 +275,38 @@ test('structured owner request, latest explanation, matching follow-ups and live
     await expect(rail).toContainText(
       'Needs you: Restore the execution machine.',
     );
-    await expect(mine).toContainText('Verify the recovered disk capacity.');
     await expect(rail).toContainText('Verify the recovered disk capacity.');
+    await expect(ownedRow.getByText('Blocked', { exact: true })).toBeVisible();
+    // The shared table exposes permission-safe attention, not a duplicate of the private question text.
+    await expect(ownedRow).toContainText('Waiting for you');
+    const panelSummary = panel.getByTestId('issue-summary');
+    await panelSummary
+      .getByRole('link', {
+        name: 'View the project manager’s latest explanation',
+      })
+      .click();
+    await expect(page).toHaveURL(
+      new RegExp(`comment=${explanation.comment.id}`),
+    );
+    const focusedExplanation = panel.locator(
+      `[data-comment-id="${explanation.comment.id}"]`,
+    );
+    await expect(focusedExplanation).toBeInViewport();
+    await expect(focusedExplanation).toHaveClass(/ring-2/u);
+    await test.info().attach('follow-ups-explanation-location.json', {
+      body: JSON.stringify({
+        entryURL: page.url(),
+        issue: issue.identifier,
+        commentId: explanation.comment.id,
+        highlighted: true,
+      }),
+      contentType: 'application/json',
+    });
+    await shot('blocked-follow-ups-explanation');
+    await panelSummary.scrollIntoViewIfNeeded();
+    await expect(panelSummary).toContainText(
+      'Restore the execution machine. Verify the recovered disk capacity.',
+    );
     await shot('blocked-follow-ups');
     // Changes arrive through the live channel before either overview or progress polling interval.
     await api.patch(`projects/issues/${issue.id}`, {
@@ -307,17 +354,22 @@ test('structured owner request, latest explanation, matching follow-ups and live
       fullPage: true,
     });
     const resumedRun = await runner.start(issue.identifier);
-    await expect(rail).toContainText(managerWorking, {
+    const work = await api.get<FollowUpsView>('followUps');
+    const agentName = work.issues.find((item) => item.id === issue.id)?.progress
+      ?.agent?.name;
+    if (!agentName)
+      throw new Error('The resumed run has no displayed agent name');
+    const working = `${agentName} working`;
+    await expect(rail).toContainText(working, {
       timeout: 8000,
     });
-    await expect(panel.getByTestId('issue-summary')).toContainText(
-      managerWorking,
-      { timeout: 3000 },
-    );
-    await expect(ownedRow).toContainText(managerWorking, {
+    await expect(panel.getByTestId('issue-summary')).toContainText(working, {
       timeout: 3000,
     });
-    await expect(standaloneSummary).toContainText(managerWorking, {
+    await expect(
+      ownedRow.getByRole('status', { name: /is working on this issue$/u }),
+    ).toBeVisible({ timeout: 3000 });
+    await expect(standaloneSummary).toContainText(working, {
       timeout: 3000,
     });
     await expect(
@@ -327,17 +379,17 @@ test('structured owner request, latest explanation, matching follow-ups and live
     ).toBeVisible();
     await shot('running-follow-ups-fixed');
     await runner.complete(resumedRun.runId, 'The execution disk is ready.');
-    await expect(rail).not.toContainText(managerWorking, {
+    await expect(rail).not.toContainText(working, {
       timeout: 8000,
     });
     await expect(panel.getByTestId('issue-summary')).not.toContainText(
-      managerWorking,
+      working,
       { timeout: 3000 },
     );
-    await expect(ownedRow).not.toContainText(managerWorking, {
-      timeout: 3000,
-    });
-    await expect(standaloneSummary).not.toContainText(managerWorking, {
+    await expect(
+      ownedRow.getByRole('status', { name: /is working on this issue$/u }),
+    ).toHaveCount(0, { timeout: 3000 });
+    await expect(standaloneSummary).not.toContainText(working, {
       timeout: 3000,
     });
     await standalone.close();

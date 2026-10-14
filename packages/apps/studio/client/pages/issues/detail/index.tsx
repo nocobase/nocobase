@@ -44,7 +44,7 @@ import {
   type ReactNode,
 } from 'react';
 import { ArrowLeftIcon } from 'lucide-react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useLocation } from 'react-router';
 
 import { RouteChildPage } from '@/components/route-child-page';
 import { Button } from '@/components/ui/button';
@@ -115,35 +115,62 @@ export default function IssueDetailPage(): ReactElement {
 
 function IssueLoader({ issueId }: { readonly issueId: string }): ReactElement {
   const { t } = useIssuePageWording();
+  const { t: appT } = useTranslation();
   const parent = useIssueParent();
+  const { hash } = useLocation();
   const detail = useIssueDetail(issueId);
-  if (detail.isError && !detail.data) {
-    const missing =
-      detail.error instanceof ApiClientError &&
-      [403, 404].includes(detail.error.status);
+  const missing =
+    detail.error instanceof ApiClientError &&
+    [403, 404].includes(detail.error.status);
+  const expired =
+    detail.error instanceof ApiClientError && detail.error.status === 401;
+  // Scoped workspace detail links must also hide cached content after access is revoked.
+  if (detail.isError && (!detail.data || missing || expired)) {
     return (
       <div className='p-6 md:p-8'>
         <PmLoadError
-          title={t('issue.loadFailed')}
+          title={
+            expired
+              ? appT('personalTasks.sessionExpired')
+              : t('issue.loadFailed')
+          }
           error={detail.error}
-          {...(missing
+          {...(expired
             ? {
                 action: (
                   <Button
-                    variant='outline'
                     size='sm'
+                    variant='outline'
                     nativeButton={false}
-                    render={
-                      <Link
-                        to={{ pathname: parent.path, search: parent.search }}
-                      />
-                    }
+                    role='link'
+                    render={<Link to='/login' />}
                   >
-                    {t('issue.backToList')}
+                    {appT('personalTasks.signInAgain')}
                   </Button>
                 ),
               }
-            : { onRetry: () => void detail.refetch() })}
+            : missing
+              ? {
+                  action: (
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      nativeButton={false}
+                      render={
+                        <Link
+                          to={{
+                            pathname: parent.path,
+                            search: parent.search,
+                            hash,
+                          }}
+                        />
+                      }
+                    >
+                      {t('issue.backToList')}
+                    </Button>
+                  ),
+                }
+              : { onRetry: () => void detail.refetch() })}
         />
       </div>
     );
@@ -162,6 +189,7 @@ function IssuePage({
   const { t } = useTranslation();
   const wording = useIssuePageWording();
   const parent = useIssueParent();
+  const { hash } = useLocation();
   const detailKey = useMemo(() => pmKeys.issue(issueId), [issueId]);
   const update = useIssueUpdate(detail, detailKey);
   const pageActions = useIssuePageActions(detail);
@@ -244,7 +272,9 @@ function IssuePage({
               variant='ghost'
               nativeButton={false}
               render={
-                <Link to={{ pathname: parent.path, search: parent.search }} />
+                <Link
+                  to={{ pathname: parent.path, search: parent.search, hash }}
+                />
               }
             >
               <ArrowLeftIcon data-icon='inline-start' />

@@ -145,7 +145,7 @@ describe('the overview', () => {
     });
   });
 
-  it('lists the caller’s open issues by status, following their blocked and in-review ones by default', async () => {
+  it('lists open owned issues without implicitly following any', async () => {
     const backlog = await create('alice', { title: 'Later' });
     const blocked = await create('alice', { title: 'Asks' });
     await move(blocked, 'blocked');
@@ -165,7 +165,7 @@ describe('the overview', () => {
     expect(data.truncated).toBe(false);
     expect(data.followingStored).toBe(false);
     // Newest activity first.
-    expect(data.following).toEqual([review.id, blocked.id]);
+    expect(data.following).toEqual([]);
     const byId = new Map<string, any>(
       data.issues.map((issue: any) => [issue.id, issue]),
     );
@@ -175,7 +175,7 @@ describe('the overview', () => {
     expect(byId.get(review.id)).toMatchObject({
       identifier: review.identifier,
       owned: true,
-      followed: true,
+      followed: false,
       unread: 0,
       seenAt: null,
       progress: { state: 'inReview' },
@@ -185,7 +185,7 @@ describe('the overview', () => {
       followed: false,
       progress: null,
     });
-    // Nothing was stored for a default.
+    // Reading does not create a preference.
     expect(h.preferences.has(`alice:${FOLLOWING_PREFERENCE}`)).toBe(false);
   });
 
@@ -204,7 +204,7 @@ describe('the overview', () => {
         before.issues.find((item: any) => item.id === issue.id),
       ).toMatchObject({
         statusKey: 'blocked',
-        followed: true,
+        followed: manual,
         progress: {
           state: 'needsDecision',
           needsYou: 'Choose how to continue.',
@@ -345,12 +345,12 @@ describe('following one issue', () => {
     expect((await overview()).following).toEqual([second.id]);
   });
 
-  it('starts from the default list, and makes it the caller’s own once they change it', async () => {
+  it('saves only the first explicit follow even with owned review issues', async () => {
     const review = await create('alice', { title: 'Ready' });
     await move(review, 'in_review');
     const other = await create('alice', { title: 'Other' });
     expect((await star('follow', other.id)).body.data).toEqual({
-      issueIds: [review.id, other.id],
+      issueIds: [other.id],
     });
     expect((await overview()).followingStored).toBe(true);
   });

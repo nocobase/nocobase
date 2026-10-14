@@ -19,7 +19,11 @@ import {
   type IssueView,
   type UrlSearch,
 } from '@nocobase/app-plugin-projects/client/issues';
-import { pmKeys, usePmApi } from '@nocobase/app-plugin-projects/client/kit';
+import {
+  pmKeys,
+  usePmApi,
+  useViewer,
+} from '@nocobase/app-plugin-projects/client/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -51,6 +55,8 @@ export interface IssuesPageOptions {
 
 export interface IssuesPage {
   readonly view: IssueView;
+  /** Semantic query identity excludes workspace selection and partition URL parameters. */
+  readonly queryIdentity: string;
   readonly setView: (view: IssueView) => void;
   /** The URL's filters with the page's fixed ones on top. */
   readonly filters: IssueFilters;
@@ -77,6 +83,7 @@ export function useIssuesPage({
 }: IssuesPageOptions): IssuesPage {
   const { t } = useTranslation();
   const api = usePmApi();
+  const viewer = useViewer();
   const {
     params,
     text,
@@ -173,6 +180,13 @@ export function useIssuesPage({
 
   return {
     view,
+    queryIdentity: JSON.stringify([
+      viewKey,
+      view,
+      Object.entries(filters).sort(([a], [b]) => a.localeCompare(b)),
+      viewer?.userId,
+      viewer?.permissions,
+    ]),
     setView: (next) => {
       storeIssueView(viewKey, next);
       setStored(next);
