@@ -6,7 +6,7 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
-import { useSessionMemory } from './use-session-memory.js';
+import { useSessionMemory, sessionMemoryKey } from './use-session-memory.js';
 
 import { type DiscoveredChoices } from '../shared/api.js';
 
@@ -149,6 +149,8 @@ export function useChoiceDiscovery(
       ]);
       return Boolean(
         enabled &&
+        // Cache writes precede React Query's batched render notifications.
+        client.getQueryData(sessionMemoryKey(`settings:${key}`)) === settings &&
         client.getQueryData(['agentSessions', 'discoveryConnection']) !==
           false &&
         state?.data &&

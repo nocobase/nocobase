@@ -60,6 +60,14 @@ function Probe(): ReactElement {
       >
         Send
       </button>
+      <button
+        onClick={() => {
+          discovery.choose('model', 'other');
+          setSent(discovery.isCurrent() ? 'Sent' : 'Blocked');
+        }}
+      >
+        Choose and send
+      </button>
       <span>{sent}</span>
       <output>
         {online
@@ -119,6 +127,18 @@ async function setup() {
 }
 
 describe('choice discovery', () => {
+  it('blocks a submit immediately after selection before the cache render notification', async () => {
+    const { answer } = await setup();
+    await answer(0, { data: choice('First') });
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Send', exact: true }),
+      ).not.toBeDisabled(),
+    );
+    fireEvent.click(screen.getByText('Choose and send'));
+    await screen.findByText('Blocked');
+    expect(screen.queryByText('Sent')).not.toBeInTheDocument();
+  });
   it('shares a pending request through navigation and retains the selected model across ten returns', async () => {
     const { requests, answer } = await setup();
     fireEvent.click(screen.getByText('Navigate'));
