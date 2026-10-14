@@ -30,10 +30,17 @@ const state = vi.hoisted(() => ({
   retryOfRunId: null as string | null,
   inputs: [] as RunDetail['inputs'],
   run: {} as Partial<RunDetail>,
+  retentionDays: 14,
+  briefError: null as unknown,
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
-  useClientApplication: () => ({ config: { get: () => state.basePath } }),
+  useClientApplication: () => ({
+    config: {
+      get: () => state.basePath,
+      public: { get: () => state.retentionDays },
+    },
+  }),
 }));
 vi.mock('@nocobase/app-plugin-authentication/client', async (original) => ({
   ...(await original<
@@ -56,6 +63,10 @@ vi.mock('@nocobase/app-plugin-agents/client/runs', async (original) => ({
   useAgentNames: () => () => 'Coder',
   useRetryRun: () => ({ isPending: false, mutate: vi.fn() }),
   useStopRun: () => ({ isPending: false, mutate: vi.fn() }),
+  useRunBrief: () => ({
+    error: state.briefError,
+    isError: Boolean(state.briefError),
+  }),
   useRunWithTranscript: () => ({
     run: {
       data: {
@@ -146,10 +157,62 @@ beforeEach(() => {
   state.retryOfRunId = null;
   state.inputs = [];
   state.run = {};
+  state.retentionDays = 14;
+  state.briefError = null;
 });
 afterEach(cleanup);
 
 describe('Studio issue run transcript', () => {
+  it('shows retention notices in the transcript and missing brief of an expired terminal run', async () => {
+    state.run = {
+      status: 'completed',
+      finishedAt: '2020-01-01T00:00:00Z',
+      dispatchedAt: '2020-01-01T00:00:00Z',
+    };
+    state.events = [];
+    state.briefError = { status: 404 };
+    await setup();
+    expect(
+      screen.getByText(
+        'Run process data has been cleared under the retention policy.',
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'View full prompt' }));
+    expect(
+      within(screen.getByRole('dialog')).getByText(
+        'Run process data has been cleared under the retention policy.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps existing events visible and does not infer cleanup from hidden groups', async () => {
+    state.run = { status: 'completed', finishedAt: '2020-01-01T00:00:00Z' };
+    state.briefError = { status: 404 };
+    await setup();
+    expect(
+      screen.queryByText(
+        'Run process data has been cleared under the retention policy.',
+      ),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('list', { name: 'Run transcript' }),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the ordinary empty state when retention is disabled or a brief still exists', async () => {
+    state.run = { status: 'completed', finishedAt: '2020-01-01T00:00:00Z' };
+    state.events = [];
+    const view = await setup();
+    expect(
+      screen.getByText('This run recorded no events.'),
+    ).toBeInTheDocument();
+    state.retentionDays = 0;
+    state.briefError = { status: 404 };
+    view.refresh();
+    expect(
+      screen.getByText('This run recorded no events.'),
+    ).toBeInTheDocument();
+  });
   it('changes a scheduled retry to waiting for dispatch when its time passes', async () => {
     vi.useFakeTimers();
     try {
