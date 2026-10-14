@@ -14,6 +14,10 @@ import { describe, expect, it, vi } from 'vitest';
 import locales from '../../client/locales/index.js';
 import { AppLayout } from '../../client/layouts/app-layout.js';
 
+vi.mock('../../client/issues/live/realtime-refresh.js', () => ({
+  useStudioIssueRefresh: () => undefined,
+}));
+
 // The agents' chat needs services these tests do not provide; the agent-chat block is tested in the UI Library.
 vi.mock(
   '@nocobase/app-plugin-agents/client/chat',

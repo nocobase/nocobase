@@ -6,6 +6,11 @@
   },
   {
     "type": "file",
+    "name": "nocobase-2-vs-3",
+    "label": "NocoBase 2 与 3 的区别"
+  },
+  {
+    "type": "file",
     "name": "overview",
     "label": "概览"
   },

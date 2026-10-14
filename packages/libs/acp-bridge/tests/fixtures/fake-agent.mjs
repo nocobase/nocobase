@@ -5,7 +5,7 @@
 // `hang` waits until the turn is cancelled, `mcp` says which MCP servers the session was given, and anything else is
 // answered "Hello world" in two pieces. `session/load` replays one exchange first.
 import { Readable, Writable } from 'node:stream';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, existsSync, writeFileSync } from 'node:fs';
 
 import * as acp from '@agentclientprotocol/sdk';
 
@@ -18,6 +18,24 @@ const trace = (method, params = {}) => {
       JSON.stringify({ method, params, pid: process.pid }) + '\n',
     );
 };
+if (process.env.FAKE_START_DELAY_MS) {
+  Atomics.wait(
+    new Int32Array(new SharedArrayBuffer(4)),
+    0,
+    0,
+    Number(process.env.FAKE_START_DELAY_MS),
+  );
+}
+if (process.env.FAKE_HANG_INITIALIZE) {
+  process.on('SIGTERM', () => {});
+  writeFileSync(process.env.FAKE_PID_FILE, String(process.pid));
+}
+const authStage = process.env.FAKE_AUTH_STAGE;
+const signedIn =
+  !process.env.FAKE_AUTH_MARKER || existsSync(process.env.FAKE_AUTH_MARKER);
+function checkAuth(stage) {
+  if (authStage === stage && !signedIn) throw acp.RequestError.authRequired();
+}
 
 function options(current, model = 'first', effort = 'low') {
   if (variant === 'empty') return [];
@@ -97,12 +115,22 @@ const say = (client, sessionId, text, messageId) =>
 
 acp
   .agent({ name: 'fake-agent' })
-  .onRequest('initialize', () => ({
-    protocolVersion: acp.PROTOCOL_VERSION,
-    agentCapabilities: { loadSession: true, mcpCapabilities: { http: true } },
-    agentInfo: { name: 'fake-agent', title: 'Fake', version: '1.2.3' },
-  }))
+  .onRequest('initialize', async () => {
+    if (process.env.FAKE_HANG_INITIALIZE) await new Promise(() => {});
+    return {
+      protocolVersion: acp.PROTOCOL_VERSION,
+      agentCapabilities: {
+        loadSession: true,
+        mcpCapabilities: { http: true },
+        ...(authStage === 'resume'
+          ? { sessionCapabilities: { resume: {} } }
+          : {}),
+      },
+      agentInfo: { name: 'fake-agent', title: 'Fake', version: '1.2.3' },
+    };
+  })
   .onRequest('session/new', async ({ params, client }) => {
+    checkAuth('new');
     trace('new', params);
     if (variant === 'auth')
       throw new acp.RequestError(-32000, 'Authentication required');
@@ -135,6 +163,7 @@ acp
     return { sessionId, configOptions: options('ask') };
   })
   .onRequest('session/load', async ({ params, client }) => {
+    checkAuth('load');
     open(params.sessionId, params);
     await client.notify(acp.methods.client.session.update, {
       sessionId: params.sessionId,
@@ -144,6 +173,11 @@ acp
       },
     });
     await say(client, params.sessionId, 'earlier answer', 'old');
+    return { configOptions: options('ask') };
+  })
+  .onRequest('session/resume', ({ params }) => {
+    checkAuth('resume');
+    open(params.sessionId, params);
     return { configOptions: options('ask') };
   })
   .onRequest('session/set_config_option', ({ params }) => {
@@ -172,6 +206,7 @@ acp
   })
   .onRequest('session/prompt', async ({ params, client }) => {
     trace('prompt', params);
+    checkAuth('prompt');
     const session = sessions.get(params.sessionId);
     const text =
       params.prompt.find((block) => block.type === 'text')?.text ?? '';

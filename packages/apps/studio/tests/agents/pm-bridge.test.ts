@@ -291,7 +291,8 @@ describe('a conversation run acts as the person who asked', () => {
     expect(posted.body.data.comment).toMatchObject({
       authorType: 'agent',
       authorId: agentId,
-      via: null,
+      via: 'agent',
+      source: { agentId, runId: payload.run.id },
     });
   });
 

@@ -1,3 +1,4 @@
+import { usePendingCommentRun } from '../detail/use-pending-comment-run.js';
 /**
  * What an issue is at now, on the issue page (pinned above its feed) and on "My follow-ups": a title row (key, status,
  * title, the page's `actions`, and "Collapse summary" when `collapsible`), then its pull request with checks and
@@ -58,7 +59,9 @@ import { useOptionalIssueConversation } from './conversation-state.js';
 import { deliveryCommentOf } from './feed-rows.js';
 import { StatusPill } from './status.js';
 import { askOf } from './summary-model.js';
+import { IssueCommentRunLimit } from '../detail/comment-run-limit.js';
 import { useOutOfView } from './use-out-of-view.js';
+import { PersonalRunnerActions } from '../detail/personal-runner-actions.js';
 
 /** Renaming the issue from its title, with the words for the pencil and the input. */
 export interface SummaryRename {
@@ -216,6 +219,7 @@ export function IssueSummary({
               issue={issue}
               update={update}
               ask={ask}
+              progress={progress ?? null}
               checks={checks}
               conflict={Boolean(mark?.conflict)}
               pullRequests={pullRequests}
@@ -414,8 +418,20 @@ function NeedsYou({
       open &&
       pullRequests?.canMerge ? (
         <MergeButtons issue={issue} pullRequest={open} mergeOnly />
-      ) : issue.statusKey === BLOCKED_STATUS && conversation?.mayComment ? (
-        <Button size='sm' onClick={() => conversation.openComposer()}>
+      ) : issue.statusKey === BLOCKED_STATUS &&
+        progress?.blockedComment &&
+        progress.state !== 'waitingForContinuation' &&
+        conversation?.mayComment ? (
+        <Button
+          size='sm'
+          onClick={() => {
+            conversation.setReplyTo({
+              id: progress.blockedComment!.id,
+              authorName: t('projectManager.title'),
+            });
+            conversation.openComposer();
+          }}
+        >
           <MessageSquareIcon data-icon='inline-start' />
           {t('issueLive.summary.answer')}
         </Button>
@@ -433,6 +449,7 @@ function NeedsYouCard({
   issue,
   update,
   ask,
+  progress,
   checks,
   conflict,
   pullRequests,
@@ -441,6 +458,7 @@ function NeedsYouCard({
   readonly issue: IssueDetail;
   readonly update: IssueUpdate;
   readonly ask: string | null;
+  readonly progress: IssueProgress | null;
   readonly checks: string | null;
   readonly conflict: boolean;
   readonly pullRequests: IssuePullRequests | undefined;
@@ -450,6 +468,7 @@ function NeedsYouCard({
   const viewer = useViewer();
   const conversation = useOptionalIssueConversation();
   const handoff = useOwnerHandoffView(issue.id).data;
+  const pending = usePendingCommentRun(issue).data;
   // On a phone a full-width tinted band rather than a card.
   const frame =
     'flex flex-col gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm max-md:-mx-4 max-md:rounded-none max-md:border-x-0 max-md:px-4';
@@ -458,13 +477,68 @@ function NeedsYouCard({
       className='flex flex-wrap items-baseline gap-x-2 gap-y-1'
       data-testid='issue-needs-you'
     >
-      <strong className='font-semibold'>
-        {t('issueLive.summary.needsYou')}
-      </strong>
-      <span className='min-w-0 font-medium wrap-break-word'>{text}</span>
+      {!(
+        issue.statusKey === BLOCKED_STATUS &&
+        !progress?.question &&
+        !progress?.personalRunnerRequests?.some(
+          (request) => request.canDecide,
+        ) &&
+        !pending &&
+        !handoffWaitsOn(handoff)
+      ) ? (
+        <strong className='font-semibold'>
+          {t('issueLive.summary.needsYou')}
+        </strong>
+      ) : null}
+      <span className='min-w-0 font-medium wrap-break-word'>
+        <IssueMarkdown content={text} />
+      </span>
       {extra}
     </div>
   );
+  if (handoffWaitsOn(handoff))
+    return (
+      <section aria-label={t('issueLive.summary.needsYou')} className={frame}>
+        {heading(t('issueLive.summary.takeOver'))}
+        <OwnerHandoffActions issueId={issue.id} />
+      </section>
+    );
+  const consent =
+    progress?.personalRunnerRequests?.filter((request) => request.canDecide) ??
+    [];
+  if (consent.length)
+    return (
+      <section aria-label={t('issueLive.summary.needsYou')} className={frame}>
+        {consent.map((request, index) => (
+          <div
+            key={request.id}
+            className='flex flex-col gap-2'
+            data-request-id={request.id}
+          >
+            {index === 0 ? (
+              heading(
+                t('issueLive.personalRunner.request', {
+                  name: request.requestedBy.name,
+                }),
+              )
+            ) : (
+              <IssueMarkdown
+                content={t('issueLive.personalRunner.request', {
+                  name: request.requestedBy.name,
+                })}
+              />
+            )}
+            <Clamped>
+              <IssueMarkdown
+                content={request.commentText}
+                className='text-sm'
+              />
+            </Clamped>
+            <PersonalRunnerActions request={request} />
+          </div>
+        ))}
+      </section>
+    );
   if (issue.statusKey === IN_REVIEW_STATUS && ask) {
     const open = pullRequests?.data.find((pr) => pr.state === 'open') ?? null;
     const shown = open ?? pullRequests?.data[0] ?? null;
@@ -546,20 +620,36 @@ function NeedsYouCard({
       </section>
     );
   }
-  if (handoffWaitsOn(handoff))
-    return (
-      <section aria-label={t('issueLive.summary.needsYou')} className={frame}>
-        {heading(t('issueLive.summary.takeOver'))}
-        <OwnerHandoffActions issueId={issue.id} />
-      </section>
-    );
+  if (pending) return <IssueCommentRunLimit issue={issue} />;
   if (ask)
     return (
       <section aria-label={t('issueLive.summary.needsYou')} className={frame}>
-        {heading(ask)}
+        {heading(
+          issue.statusKey === BLOCKED_STATUS
+            ? (progress?.question ?? ask)
+            : ask,
+        )}
+        {issue.statusKey === BLOCKED_STATUS && progress?.blockedComment ? (
+          <Clamped>
+            <IssueMarkdown
+              content={progress.blockedComment.content}
+              className='text-sm'
+            />
+          </Clamped>
+        ) : null}
         {conversation?.mayComment ? (
           <div>
-            <Button size='sm' onClick={() => conversation.openComposer()}>
+            <Button
+              size='sm'
+              onClick={() => {
+                if (progress?.blockedComment)
+                  conversation.setReplyTo({
+                    id: progress.blockedComment.id,
+                    authorName: t('projectManager.title'),
+                  });
+                conversation.openComposer();
+              }}
+            >
               <MessageSquareIcon data-icon='inline-start' />
               {t('issueLive.summary.answer')}
             </Button>

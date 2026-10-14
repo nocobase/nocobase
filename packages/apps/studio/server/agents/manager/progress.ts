@@ -2,7 +2,7 @@
  * What an issue waits for now (`IssueProgress`, `shared/project-manager.ts`), worked out from what the system knows
  * rather than from what anybody wrote: an agent's run on it (working, or queued), else a linked open pull request whose
  * checks have not finished, else its status. The project manager's latest "Next" line (`texts.ts`) goes with it, and on
- * a blocked issue the question its latest comment asks. `handOver` says the project manager executes the open issue
+ * a blocked issue the Needs you line and explanation from the comment at its status transition. `handOver` says the project manager executes the open issue
  * but never worked on it (an issue an earlier version gave to an agent, say): someone may hand it over to go on.
  */
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
@@ -26,7 +26,10 @@ import {
   validIssueOwner,
 } from '../execution-identity.js';
 import { userName } from '../work.js';
-import { ownerHandoffWaiting } from '../../issues/owner-handoff.js';
+import {
+  ownerHandoffWaiting,
+  readOwnerHandoff,
+} from '../../issues/owner-handoff.js';
 
 /** How much of a step or a question the line carries. */
 const LINE_LENGTH = 160;
@@ -98,11 +101,11 @@ export async function issueProgress(
   const comments = await deps.projects.commentQueries.list(conn, issue.id);
   const managerComments = comments.filter(
     (comment) =>
-      !comment.deleted &&
       comment.authorType === AGENT_KIND &&
       comment.authorId === PROJECT_MANAGER_ID,
   );
-  const latest = managerComments.at(-1) ?? null;
+  const latest =
+    managerComments.filter((comment) => !comment.deleted).at(-1) ?? null;
   const next = latest ? nextLineOf(latest.content) : null;
   const category = statusCategory(issue.statusKey);
   const managed =
@@ -120,7 +123,7 @@ export async function issueProgress(
         limit: 1,
       })
     : [];
-  const base: IssueProgress = {
+  let base: IssueProgress = {
     state: 'idle',
     agent: null,
     step: null,
@@ -131,6 +134,116 @@ export async function issueProgress(
     next,
     handOver: managed && open && managerRuns.length === 0,
   };
+
+  if (viewer?.userId && deps.agents.runs.requests) {
+    const handoff = await readOwnerHandoff(conn, issue.id);
+    const requests = await deps.agents.runs.requests.list({
+      userId: viewer.userId,
+      subject,
+      limit: 50,
+    });
+    const personalRunnerRequests: NonNullable<
+      IssueProgress['personalRunnerRequests']
+    >[number][] = [];
+    for (const request of requests) {
+      if (
+        request.purpose !== 'personalRunner' ||
+        request.runId ||
+        !request.commentRootRunId ||
+        request.responsibleUserId !== issue.ownerUserId ||
+        (request.commentOwnerKey ?? null) !==
+          (handoff?.notificationKey ?? null) ||
+        !['pending', 'rejected'].includes(request.status)
+      )
+        continue;
+      if (request.status === 'pending' && request.commentRunId) {
+        const target = await deps.agents.runs.identityInputs(
+          conn,
+          request.commentRunId,
+        );
+        if (target?.run.status !== 'queued') continue;
+      }
+      const origin = await deps.agents.runs.identityInputs(
+        conn,
+        request.commentRootRunId,
+      );
+      const input =
+        origin?.inputs.find(
+          (input) =>
+            input.type === 'comment' &&
+            (input.payload as Record<string, unknown> | null)
+              ?.commentSourceSnapshot === true,
+        ) ?? origin?.inputs.find((input) => input.type === 'comment');
+      const payload =
+        input?.payload && typeof input.payload === 'object'
+          ? (input.payload as Record<string, unknown>)
+          : {};
+      if (!input || typeof payload.commentId !== 'string') continue;
+      personalRunnerRequests.push({
+        id: request.id,
+        status: request.status as 'pending' | 'rejected',
+        requestedBy: {
+          id: request.requestedByUserId,
+          name: request.requestedByName ?? input.actor.name,
+        },
+        commentId: payload.commentId,
+        commentText: input.text,
+        canDecide:
+          !handoff?.waiting &&
+          request.status === 'pending' &&
+          viewer.userId === issue.ownerUserId,
+        canRunAsMe:
+          !handoff?.waiting && viewer.userId === request.requestedByUserId,
+      });
+    }
+    base = { ...base, personalRunnerRequests };
+  }
+
+  if (issue.statusKey === 'blocked') {
+    const transition = await conn
+      .repository<{
+        id: string;
+        issueId: string;
+        action: string;
+        createdAt: string;
+        details: { to?: string };
+      }>('pmActivities')
+      .findOne({
+        filter: { issueId: issue.id, action: 'status_changed' },
+        sort: (sort) => [
+          sort.field('createdAt').desc(),
+          sort.field('id').desc(),
+        ],
+      });
+    const source =
+      transition?.details?.to === 'blocked'
+        ? [...managerComments]
+            .reverse()
+            .find(
+              (comment) =>
+                Date.parse(comment.createdAt) <
+                  Date.parse(transition.createdAt) ||
+                (Date.parse(comment.createdAt) ===
+                  Date.parse(transition.createdAt) &&
+                  comment.id < transition.id),
+            )
+        : null;
+    if (source && !source.deleted) {
+      base = {
+        ...base,
+        blockedComment: { id: source.id, content: source.content },
+        question:
+          source.content
+            .split('\n')
+            .map((line) =>
+              /^(?:需要你\s*[：:]|Needs you\s*:)(.*)$/iu
+                .exec(line.trim())?.[1]
+                ?.trim(),
+            )
+            .find(Boolean) ?? null,
+      };
+    }
+  }
 
   if (await ownerHandoffWaiting(conn, issue))
     return {
@@ -255,7 +368,6 @@ export async function issueProgress(
     return {
       ...base,
       state: 'needsDecision',
-      question: latest ? firstLineOf(withoutNextLine(latest.content)) : null,
     };
   if (issue.statusKey === 'in_review') return { ...base, state: 'inReview' };
   return base;

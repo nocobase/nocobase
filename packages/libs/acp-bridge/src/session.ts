@@ -174,6 +174,12 @@ export class BridgeSession {
       }
     } catch (cause) {
       error = this.#explain(cause);
+      if (isAuthRequired(cause)) {
+        // A process may retain the login state it read at start. Continue this session in a fresh process next time.
+        const failed = this.#process;
+        this.#process = undefined;
+        await failed?.stop();
+      }
     } finally {
       this.#resolvePermissions('cancelled');
       this.#turn = undefined;

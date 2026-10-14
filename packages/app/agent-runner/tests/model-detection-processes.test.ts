@@ -87,9 +87,10 @@ describe.skipIf(process.platform === 'win32')(
                   });
                 },
               });
-        const cache = new ToolCapabilitiesCache(new Map([[kind, adapter]]), [
-          { kind, authenticated: true },
-        ]);
+        const cache = new ToolCapabilitiesCache(
+          () => new Map([[kind, adapter]]),
+          [{ kind, authenticated: true }],
+        );
         vi.stubEnv('OPENAI_API_KEY', 'daemon-only-test-value');
         try {
           await adapter.detect();

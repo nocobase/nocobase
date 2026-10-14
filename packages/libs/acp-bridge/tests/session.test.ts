@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -237,6 +237,42 @@ describe('BridgeSession', () => {
     });
     expect(lines.at(-1).method).toBe('prompt');
   });
+  it.each(['new', 'load', 'resume', 'prompt'])(
+    'retries after %s requires authentication, without replaying the failed message',
+    async (stage) => {
+      const marker = path.join(root, 'signed-in-marker');
+      const agent = {
+        ...FAKE,
+        spec: {
+          ...FAKE.spec,
+          env: { FAKE_AUTH_STAGE: stage, FAKE_AUTH_MARKER: marker },
+        },
+      };
+      const { session, events, target } = start(
+        stage === 'load' || stage === 'resume'
+          ? { acpSessionId: 's-earlier' }
+          : {},
+        agent,
+      );
+      prompt(session, target, 'p1', 'hi');
+      expect(await until(events, ended('p1'))).toMatchObject({
+        stopReason: null,
+        error: expect.any(String),
+      });
+      await writeFile(marker, 'ready');
+      prompt(session, target, 'p2', 'hi');
+      expect(await until(events, ended('p2'))).toMatchObject({
+        stopReason: 'end_turn',
+        error: null,
+      });
+      expect(texts(events).join('')).toBe('Hello (full) world');
+      expect(events.filter(ended('p1'))).toHaveLength(1);
+      expect(session.state?.acpSessionId).toBe(
+        stage === 'load' || stage === 'resume' ? 's-earlier' : 's-1',
+      );
+    },
+  );
+
   it('opens a session in the first full-access mode the agent offers and reports a turn', async () => {
     const { session, events, target } = start();
     prompt(session, target, 'p1', 'hi');

@@ -120,6 +120,7 @@ const enUS = {
   runTranscript: {
     usedModel: 'Model: {{model}}',
     defaultModel: 'Default model',
+    confirmedBy: 'Confirmed by {{person}}',
     actingAs: 'Running as {{actor}}',
     triggeredBy: 'Triggered by {{person}}',
     systemTrigger: 'Triggered by the system',
@@ -1314,7 +1315,7 @@ const enUS = {
     commentRuns: {
       limitReached: 'Agent comments paused',
       continueHint:
-        'Agents’ comments started {{maxRuns}} runs on this issue in {{windowHours}} hours, so the last one woke nobody. Continue to wake the agents it names once and restart the count.',
+        'Comment-triggered runs reached the limit of {{maxRuns}} in the last {{windowHours}} hours.',
       continued: 'Agent comment continued',
       continueStale: 'This comment no longer waits. Refresh the issue.',
       continueFailed:

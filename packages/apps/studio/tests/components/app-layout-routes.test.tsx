@@ -7,6 +7,10 @@ import { expect, it, vi } from 'vitest';
 
 import { AppLayout } from '../../client/layouts/app-layout.js';
 
+vi.mock('../../client/issues/live/realtime-refresh.js', () => ({
+  useStudioIssueRefresh: () => undefined,
+}));
+
 vi.mock('../../client/inbox/navigation.js', () => ({
   useInboxNavigation: () => ({ badge: null, label: 'Inbox', hint: 'Inbox' }),
 }));

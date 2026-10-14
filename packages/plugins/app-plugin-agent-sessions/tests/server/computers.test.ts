@@ -42,6 +42,38 @@ function setup(database: DatabaseManager) {
 }
 
 describe('a computer’s key', () => {
+  test('replaces probe results on registration and exposes the current version and availability to the computer page', async ({
+    database,
+  }) => {
+    const { service, request } = setup(database);
+    const { computerId } = await service.register('u1', request());
+    for (const agent of [
+      { id: 'opencode', name: 'OpenCode', version: '2.0.28' },
+      {
+        id: 'opencode',
+        name: 'OpenCode',
+        version: null,
+        problem: 'failed' as const,
+      },
+      { id: 'opencode', name: 'OpenCode', version: '2.0.29' },
+    ]) {
+      await service.register(
+        'u1',
+        request({ computerId }, { agents: [agent] }),
+        true,
+      );
+      const stored = await computers(database.connection()).findOne({
+        filter: { id: computerId },
+      });
+      expect(stored?.agents).toEqual([agent]);
+      const listed = await service.listComputers('u1');
+      expect(
+        listed.find((computer) => computer.id === computerId)?.agents,
+      ).toEqual([agent]);
+      expect(JSON.stringify(listed)).not.toContain('authenticated');
+    }
+  });
+
   test('is given to its owner signed in, and kept only as a hash', async ({
     database,
   }) => {

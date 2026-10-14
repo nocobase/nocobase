@@ -664,6 +664,14 @@ describe('[UI][SRV] mail workspace, composer, drafts, and management', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Compose' })).toBeEnabled(),
     );
+    // Compose can be enabled before the initial message-list effect has settled.
+    await waitFor(() => {
+      expect(mail.listMessages).toHaveBeenCalled();
+      expect(screen.getByRole('region', { name: 'Mail' })).toHaveAttribute(
+        'aria-busy',
+        'false',
+      );
+    });
     const navigation = screen.getByRole('button', {
       name: 'Mailboxes and folders',
     });

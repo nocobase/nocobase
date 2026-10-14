@@ -91,13 +91,14 @@ import {
 import { releaseRemovedAgents } from './removal.js';
 import { managerRoster } from './manager/roster.js';
 import type { ProjectManager } from './manager/service.js';
-import { relayAnnouncements } from './tx.js';
+import { relayAnnouncements, refreshRunIssues } from './tx.js';
 import { inactiveUsers } from './users.js';
 import { createAgentWork } from './work.js';
 import { commentRunNoticeRule } from './comment-run-limit.js';
 import { delegationTimeout } from './delegated-queue.js';
 import { stageRunReport, reportCommentRuns } from './run-report.js';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
+import { bindCommentConsentInbox } from './comment-consent-inbox.js';
 import {
   OWNER_HANDOFF_NOTICE,
   ownerHandoffNoticeRule,
@@ -186,6 +187,13 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
     inbox,
   });
   const releases: (() => void)[] = [
+    bindCommentConsentInbox(
+      agents,
+      deps.projects,
+      deps.inboxPort ?? (() => undefined),
+      (error) =>
+        onError('Studio could not update a personal runner request.', error),
+    ),
     deps.projects().events.on('work.announced', async (event) => {
       const port = deps.inboxPort?.();
       if (port && event.kind === OWNER_HANDOFF_NOTICE)
@@ -208,6 +216,16 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
         },
         deps.queuedExpiryMs ?? DEFAULT_QUEUED_EXPIRY_HOURS * 3_600_000,
         deps.checkoutPullRequests,
+        async (issueId, userId) => {
+          try {
+            await deps
+              .projects()
+              .issueQueries.detail(await viewerOf(userId), issueId);
+            return true;
+          } catch {
+            return false;
+          }
+        },
       ),
       queuedTimeout: delegationTimeout(agents),
       reports: issueReports(deps.projects, viewerOf),
@@ -256,6 +274,9 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
       agents.conversations.contextKinds.register(kind, resolvers[kind]),
     ),
     relayAnnouncements(deps.projects(), agents.events),
+    refreshRunIssues(deps.projects(), agents, (error) =>
+      onError('Agents could not refresh issue progress.', error),
+    ),
     // People: names from the user kind, the members to pick from, and who can no longer act (a runner they own stops).
     agents.people.provide({
       names: (conn, ids) => deps.kinds.names(conn, 'user', ids),
