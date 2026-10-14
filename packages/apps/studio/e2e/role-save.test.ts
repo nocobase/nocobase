@@ -24,10 +24,11 @@ test.beforeEach(async ({ page }) => {
 async function withRole(
   page: Page,
   run: (role: Role, api: Api) => Promise<void>,
+  title = 'PM-367 temporary role',
 ): Promise<void> {
   const api = new Api(page.request);
   const role = await api.post<Role>('access/roles', {
-    title: 'PM-367 temporary role',
+    title,
     pages: [],
     settings: {},
     abilities: {},
@@ -36,7 +37,7 @@ async function withRole(
     await page.goto(url(`/config/roles/${role.key}`));
     await expect(
       page.getByRole('textbox', { name: 'Name', exact: true }),
-    ).toHaveValue('PM-367 temporary role');
+    ).toHaveValue(title);
     await run(role, api);
   } finally {
     await api.delete(`access/roles/${role.key}`);
@@ -98,6 +99,120 @@ test('normalizes the saved title, saves ordinary titles again and preserves perm
     }
   });
 });
+
+for (const field of ['title', 'permission'] as const) {
+  test(`preserves reverted ${field} edits when reconnect GET arrives before PATCH response`, async ({
+    page,
+  }) => {
+    let lastRefresh = Date.now();
+    page.on('response', (response) => {
+      if (response.url().endsWith('/api/access/roles'))
+        lastRefresh = Date.now();
+    });
+    await withRole(
+      page,
+      async (role, api) => {
+        let release!: () => void;
+        let reached!: () => void;
+        const held = new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        const persisted = new Promise<void>((resolve) => {
+          reached = resolve;
+        });
+        await page.route('**/api/access/roles/*', async (route) => {
+          if (route.request().method() !== 'PATCH') return route.continue();
+          const response = await route.fetch();
+          expect(response.status()).toBe(200);
+          console.log(`${field}: PATCH persisted; response held`);
+          reached();
+          await held;
+          await route.fulfill({ response });
+        });
+        const input = page.getByRole('textbox', { name: 'Name', exact: true });
+        const permission = page.getByRole('switch', {
+          name: 'My issues',
+          exact: true,
+        });
+        await input.fill('Submitted');
+        if (field === 'permission') await permission.click();
+        await page.getByRole('button', { name: 'Save', exact: true }).click();
+        try {
+          await persisted;
+          if (field === 'title') await input.fill('Original');
+          else await permission.click();
+          console.log(`${field}: post-submit edit reverted to original`);
+          // Reconnect refetches only stale queries. Wait for the real application's ten-second stale time.
+          await expect
+            .poll(() => Date.now() - lastRefresh, { timeout: 15000 })
+            .toBeGreaterThan(10050);
+          const refreshed = page.waitForResponse(
+            (response) =>
+              response.url().endsWith('/api/access/roles') &&
+              response.request().method() === 'GET',
+          );
+          // Dispatch the browser connectivity events without aborting the already-persisted PATCH response.
+          await page.evaluate(() => {
+            window.dispatchEvent(new Event('offline'));
+            window.dispatchEvent(new Event('online'));
+          });
+          expect((await refreshed).status()).toBe(200);
+          await expect(
+            page.getByRole('heading', {
+              name: 'Submitted Custom',
+              exact: true,
+            }),
+          ).toBeVisible();
+          console.log(
+            `${field}: GET returned Submitted and rendered before PATCH response`,
+          );
+          if (field === 'title') await expect(input).toHaveValue('Original');
+          else await expect(permission).not.toBeChecked();
+        } finally {
+          release();
+        }
+        await expect(
+          page.getByRole('button', { name: 'Save', exact: true }),
+        ).toBeEnabled();
+        if (field === 'title') await expect(input).toHaveValue('Original');
+        else await expect(permission).not.toBeChecked();
+        console.log(
+          `${field}: PATCH response delivered; later edit and dirty state retained`,
+        );
+        if (process.env.PM367_SCREENSHOT_DIR) {
+          await page
+            .getByRole('button', { name: 'Business operations', exact: true })
+            .click();
+          await page.screenshot({
+            path: path.join(
+              process.env.PM367_SCREENSHOT_DIR,
+              `reverted-${field}.png`,
+            ),
+          });
+        }
+        await page.unrouteAll({ behavior: 'wait' });
+        await page
+          .getByRole('button', { name: 'Discard changes', exact: true })
+          .click();
+        await clean(page, 'Submitted');
+        if (field === 'permission') await expect(permission).toBeChecked();
+        if (field === 'title') await input.fill('Original');
+        else await permission.click();
+        await save(page);
+        await clean(page, field === 'title' ? 'Original' : 'Submitted');
+        const saved = (await api.get<Role[]>('access/roles')).find(
+          (item) => item.key === role.key,
+        )!;
+        expect(saved.title).toBe(field === 'title' ? 'Original' : 'Submitted');
+        expect(saved.pages).not.toContain('pm-my-issues');
+        console.log(
+          `${field}: discard restored saved baseline; reverted edit saved again successfully`,
+        );
+      },
+      'Original',
+    );
+  });
+}
 
 test('saves title and page permission together', async ({ page }) => {
   await withRole(page, async (role, api) => {

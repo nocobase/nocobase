@@ -62,13 +62,6 @@ function RoleBody({
   const [draft, setDraft] = useState<RoleDraft>(saved);
   const [title, setTitle] = useState(() => roleTitle(t, role));
   const [previousRole, setPreviousRole] = useState(role);
-  if (previousRole !== role) {
-    setPreviousRole(role);
-    // Refresh untouched fields without replacing edits made while a request was in flight.
-    if (sameDraft(draft, saved)) setDraft(draftOf(role));
-    if (title === roleTitle(t, baseline)) setTitle(roleTitle(t, role));
-    setBaseline(role);
-  }
   const readOnly = !canDefine || !role.editable;
   const dirty =
     !sameDraft(draft, saved) ||
@@ -97,6 +90,15 @@ function RoleBody({
     },
     onError: roleError,
   });
+  if (previousRole !== role) {
+    setPreviousRole(role);
+    // A pending write may already be visible to GET. Its response coordinates the editable values instead.
+    if (!save.isPending) {
+      if (sameDraft(draft, saved)) setDraft(draftOf(role));
+      if (title === roleTitle(t, baseline)) setTitle(roleTitle(t, role));
+    }
+    setBaseline(role);
+  }
   const duplicate = useMutation({
     mutationFn: () =>
       api.createRole({
