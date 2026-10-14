@@ -412,7 +412,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       let promptId: string | undefined;
       let firstToken = false;
       const timing = (phase: string): void => {
-        log(JSON.stringify({phase, at:Date.now(), sessionId, promptId}));
+        log(JSON.stringify({ phase, at: Date.now(), sessionId, promptId }));
       };
       session = new BridgeSession(command.session, {
         client: options.client,
@@ -423,14 +423,23 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
         emit: (event) => {
           if (diagnostics) {
             if (event.kind === 'turnStarted') {
-              promptId = event.promptId; firstToken = false; timing('agentPromptStarted');
-            } else if (event.kind === 'update' && event.update.sessionUpdate === 'agent_message_chunk' && promptId && !firstToken) {
-              firstToken = true; timing('agentFirstToken');
+              promptId = event.promptId;
+              firstToken = false;
+              timing('agentPromptStarted');
+            } else if (
+              event.kind === 'update' &&
+              event.update.sessionUpdate === 'agent_message_chunk' &&
+              promptId &&
+              !firstToken
+            ) {
+              firstToken = true;
+              timing('agentFirstToken');
             } else if (event.kind === 'turnEnded') {
-              timing('agentTurnEnded'); promptId = undefined;
+              timing('agentTurnEnded');
+              promptId = undefined;
             }
           }
-          reporter.add(sessionId,event);
+          reporter.add(sessionId, event);
         },
         stateChanged: () => reporter.touch(sessionId),
       });

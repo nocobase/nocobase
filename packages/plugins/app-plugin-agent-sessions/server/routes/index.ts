@@ -36,11 +36,18 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     router.use('/agentSessions/*', async (context: Context, next) => {
       if (!logger?.isLevelEnabled('debug')) return next();
       const candidate = getRequestId(context);
-      const requestId = /^[0-9a-f-]{36}$/iu.test(candidate) ? candidate : undefined;
+      const requestId = /^[0-9a-f-]{36}$/iu.test(candidate)
+        ? candidate
+        : undefined;
       const start = performance.now();
       const utilization = performance.eventLoopUtilization();
       logger.debug(
-        { phase: 'received', requestId, at: Date.now(), method: context.req.method },
+        {
+          phase: 'received',
+          requestId,
+          at: Date.now(),
+          method: context.req.method,
+        },
         'Agent sessions timing',
       );
       try {
@@ -48,13 +55,14 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       } finally {
         logger.debug(
           {
-            phase: 'response',
+            phase: 'handlerSettled',
             requestId,
             at: Date.now(),
             durationMs: performance.now() - start,
             method: context.req.method,
             route: context.req.routePath,
-            status: context.res.status,
+            aborted: context.req.raw.signal.aborted,
+            status: context.finalized ? context.res.status : undefined,
             eventLoopUtilization:
               performance.eventLoopUtilization(utilization).utilization,
           },
