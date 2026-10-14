@@ -1,5 +1,13 @@
 /** Real application consent decisions, using isolated demo people and runner protocol clients. */
-import { Api, expect, open, signIn, test, unique } from './support/fixtures.ts';
+import {
+  Api,
+  apiAs,
+  expect,
+  open,
+  signIn,
+  test,
+  unique,
+} from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
 import type { IssueProgress } from '../shared/project-manager.ts';
 import type { RunDetail } from '@nocobase/app-plugin-agents/shared/runs';
@@ -20,17 +28,22 @@ test.beforeEach(async ({ api, context }) => {
   await signIn(context, owner);
 });
 
-async function createRequester(api: Api) {
+async function createRequester(browser: import('@playwright/test').Browser) {
   // Preferences persist on the account; never change the demo person used by parallel sign-in tests.
   const credentials = {
     email: `consent-requester-${unique()}@example.com`,
     password: 'consent-e2e-password',
   };
-  await api.post('users', {
-    ...credentials,
-    name: 'Lisa Nguyen',
-    roleScopes: { studio: ['contributor'] },
-  });
+  const admin = await apiAs(browser, 'admin');
+  try {
+    await admin.api.post('users', {
+      ...credentials,
+      name: 'Lisa Nguyen',
+      roleScopes: { studio: ['contributor'] },
+    });
+  } finally {
+    await admin.close();
+  }
   return credentials;
 }
 
@@ -44,7 +57,7 @@ test('comment work shares the decision card and runs only on an authorized ident
     viewport: { width: 1440, height: 900 },
     locale: 'en-US',
   });
-  await signIn(requesterContext, await createRequester(api));
+  await signIn(requesterContext, await createRequester(browser));
   const requester = new Api(requesterContext.request);
   const requesterPage = await requesterContext.newPage();
   await requester.patch('users/me/preferences', { locale: 'en-US' });
@@ -298,7 +311,7 @@ test('owner delegation needs no extra consent and Run as me preserves both comme
     viewport: { width: 1440, height: 900 },
     locale: 'en-US',
   });
-  await signIn(requesterContext, await createRequester(api));
+  await signIn(requesterContext, await createRequester(browser));
   const requester = new Api(requesterContext.request);
   const requesterPage = await requesterContext.newPage();
   await requester.patch('users/me/preferences', { locale: 'en-US' });
