@@ -32,6 +32,14 @@ Sessions work only in the directories given as `roots`, the home directory by de
 
 A permission request waits for the person up to 30 minutes and is then declined. Stopping a turn drops the messages waiting behind it and cancels the permission requests it left open.
 
+## Agent status refresh
+
+Startup and the existing one-minute scan share one in-flight inspection. Each scan resolves every agent again and initializes each installed agent in its own temporary probe process, so upgrades at the same path, path changes, new installations and earlier probe failures are discovered without restarting the bridge. Registration is attempted every round, including after a previous registration failure. Probes never touch active session processes. Initialize has a 30-second background budget, stopping a probe allows three seconds before killing its process group, and registration has a 15-second request budget. Actual sessions retain the 120-second initialization default for first-time npx startup.
+
+With healthy networking and a responsive local filesystem, the report takes at most one minute until the next scan, filesystem resolution time, up to 33 seconds for parallel probes and up to 15 seconds for registration: approximately 108 seconds plus resolution and server processing time. The existing computer page queries every 30 seconds and can also refresh through its change notifications. These are scheduling and request budgets, not a visibility guarantee during outages, computer suspension or a suspended browser. A round still in progress is not overlapped; the next one-minute tick retries.
+
+ACP initialization reports version and ACP availability only; it does not establish that the user is signed in and never produces an authenticated field. A failed session open can be tried again after login. An explicit authentication-required error from a prompt closes only that session's failed process; the next message continues the retained session through resume or load. The failed message is not replayed automatically, and other errors do not trigger this cleanup.
+
 ## The protocol
 
 `@nocobase/acp-bridge/protocol` has no Node dependency, so the application's server and browser read it too. It holds the routes (`BRIDGE_ROUTES`), the computer key's header (`BRIDGE_HEADERS`), the timings (`POLL_WAIT_MS`, `COMPUTER_OFFLINE_MS`), and every message as an interface with a zod schema of the same name and a `Schema` suffix:

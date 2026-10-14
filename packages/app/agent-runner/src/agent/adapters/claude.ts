@@ -67,7 +67,11 @@ export interface ExecResult {
   stdout: string;
 }
 
-export type ExecFn = (file: string, args: string[]) => Promise<ExecResult>;
+export type ExecFn = (
+  file: string,
+  args: string[],
+  options?: { signal?: AbortSignal },
+) => Promise<ExecResult>;
 
 export interface ClaudeAdapterOptions {
   minVersion?: string;
@@ -232,18 +236,20 @@ export class ClaudeAdapter implements AgentAdapter {
     return ['steer'];
   }
 
-  async detect(): Promise<ToolDetection> {
-    return (await this.inspect()).detection;
+  async detect(signal?: AbortSignal): Promise<ToolDetection> {
+    return (await this.inspect(signal)).detection;
   }
 
   /** The `claude` `start()` runs; undefined when there is none recent enough. */
-  async resolveExecutable(): Promise<ResolvedExecutable | undefined> {
-    return (await this.inspect()).executable;
+  async resolveExecutable(
+    signal?: AbortSignal,
+  ): Promise<ResolvedExecutable | undefined> {
+    return (await this.inspect(signal)).executable;
   }
 
   /** Asks Claude Code for its models (`supportedModels()`) without sending a prompt. */
   async detectModels(signal: AbortSignal): Promise<ToolCapabilities> {
-    const executable = await this.resolveExecutable();
+    const executable = await this.resolveExecutable(signal);
     if (!executable) return { modelsDetectionStatus: 'unsupported' };
     return withDetectionEnvironment(
       signal,
@@ -311,15 +317,15 @@ export class ClaudeAdapter implements AgentAdapter {
     );
   }
 
-  private inspect(): Promise<{
+  private inspect(signal?: AbortSignal): Promise<{
     detection: ToolDetection;
     executable: ResolvedExecutable | undefined;
   }> {
-    this.detection ??= this.runDetection();
+    this.detection ??= this.runDetection(signal);
     return this.detection;
   }
 
-  private async runDetection(): Promise<{
+  private async runDetection(signal?: AbortSignal): Promise<{
     detection: ToolDetection;
     executable: ResolvedExecutable | undefined;
   }> {
@@ -330,9 +336,9 @@ export class ClaudeAdapter implements AgentAdapter {
         detection: { installed: false, authenticated: false },
         executable: undefined,
       };
-    const v = await exec(found, ['--version']);
+    const v = await exec(found, ['--version'], { signal });
     const version = v.code === 0 ? parseVersion(v.stdout) : undefined;
-    const auth = await exec(found, ['auth', 'status', '--json']);
+    const auth = await exec(found, ['auth', 'status', '--json'], { signal });
     let authenticated: boolean;
     try {
       authenticated = Boolean(
