@@ -9,6 +9,7 @@ import {
   type ApiClient,
 } from '@nocobase/app-client';
 import {
+  replaceEqualDeep,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -110,6 +111,12 @@ export function useSession(sessionId: string): UseQueryResult<Session> {
   });
 }
 
+// Read progress belongs to committed GET data, never to optimistic prompt confirmations.
+const transcriptReadPositions = new WeakMap<
+  readonly TranscriptEvent[],
+  number
+>();
+
 /**
  * The whole transcript, kept up to date: each change reads on from the last event held, which may have grown since (a
  * streamed message continues in place).
@@ -121,15 +128,25 @@ export function useTranscript(
   const client = useQueryClient();
   return useQuery({
     queryKey: keys.transcript(sessionId),
+    // Transfer progress when the result commits, even if structural sharing retains the old array identity.
+    structuralSharing: (held, fetched) => {
+      const shared = replaceEqualDeep(held, fetched);
+      if (Array.isArray(fetched) && Array.isArray(shared))
+        transcriptReadPositions.set(
+          shared,
+          transcriptReadPositions.get(fetched) ?? 0,
+        );
+      return shared;
+    },
     refetchInterval: 15_000,
     refetchOnWindowFocus: true,
     queryFn: async ({ signal }) => {
       const held =
         client.getQueryData<TranscriptEvent[]>(keys.transcript(sessionId)) ??
         [];
-      const kept = held.slice(0, -1);
-      let after = kept.at(-1)?.seq ?? 0;
-      const events = [...kept];
+      const readFrom = transcriptReadPositions.get(held) ?? 0;
+      let after = readFrom;
+      const events: TranscriptEvent[] = [];
       for (;;) {
         const page = await api.request<ListAnswer<TranscriptEvent>>({
           path: path('sessions', sessionId, 'events'),
@@ -138,13 +155,18 @@ export function useTranscript(
         });
         events.push(...page.data);
         after = page.data.at(-1)?.seq ?? after;
-        if (!page.meta.hasMore)
-          return mergeTranscript(
+        if (!page.meta.hasMore) {
+          signal.throwIfAborted();
+          const merged = mergeTranscript(
             client.getQueryData<TranscriptEvent[]>(
               keys.transcript(sessionId),
             ) ?? [],
             events,
           );
+          // Only the server-read prefix is safe; its final event may still grow in place.
+          transcriptReadPositions.set(merged, events.at(-2)?.seq ?? readFrom);
+          return merged;
+        }
       }
     },
   });
@@ -350,7 +372,11 @@ export function mergeTranscript(
 ): TranscriptEvent[] {
   const events = new Map(held.map((event) => [event.seq, event]));
   for (const event of fetched) events.set(event.seq, event);
-  return [...events.values()].sort((left, right) => left.seq - right.seq);
+  const merged = [...events.values()].sort(
+    (left, right) => left.seq - right.seq,
+  );
+  transcriptReadPositions.set(merged, transcriptReadPositions.get(held) ?? 0);
+  return merged;
 }
 
 type Mutation<Input, Output = void> = UseMutationResult<Output, Error, Input>;
