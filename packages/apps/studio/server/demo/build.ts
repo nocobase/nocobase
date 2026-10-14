@@ -5,7 +5,7 @@
  * knowledge plugin. The work items therefore carry identifiers, activity and inbox notices like any other.
  *
  * Its runtimes register once, reporting their coding tools and models, which discovers an agent for each (pending);
- * the demo then enables some with what they are good at and their skills, and makes two of them the project manager's
+ * the demo then enables some with what they are good at, attaches skills to projects, and makes two of them the project manager's
  * first choice and fallback. The runtimes go offline, so issues the project manager executes are not started.
  *
  * Issues are created in a status a new issue may start in (`START_STATUSES`) and then moved. Its past — issues finished
@@ -220,7 +220,7 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
     if (DEMO_RUNTIMES.length > 0)
       await deps.agents.runners.markOffline(new Date(Date.now() + 1));
 
-    // The discovered agents the demo enables, with what each is good at and its skills, as an administrator would.
+    // The discovered agents the demo enables, with what each is good at, as an administrator would.
     for (const spec of DEMO_AGENTS)
       try {
         const id = runnerAgentId(spec.tool, spec.model);
@@ -230,12 +230,6 @@ export async function buildDemo(deps: DemoDependencies): Promise<DemoSummary> {
           enabled: true,
           expectedRevision: agent.revision,
         });
-        const attached = spec.skills.flatMap((name) => skills.get(name) ?? []);
-        if (attached.length > 0)
-          await deps.agents.skills.attach(
-            { scope: 'agent', scopeId: id },
-            attached,
-          );
         agents.set(spec.key, id);
         created('agents');
       } catch (error) {

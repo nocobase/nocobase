@@ -54,7 +54,6 @@ export interface DemoAgent {
   readonly model: string;
   /** What it is good at: the project manager hands it work by this. */
   readonly description: string;
-  readonly skills: readonly string[];
 }
 
 /** Which discovered agents the project manager runs with. */
@@ -213,6 +212,7 @@ export const DEMO_PROJECTS: readonly DemoProject[] = [
     members: ['admin', 'lisa', 'wendy', 'chloe'],
     start: -20,
     due: 25,
+    skills: ['frontend-components', 'commit-messages'],
   },
   {
     name: 'Mobile App',
@@ -295,7 +295,6 @@ export const DEMO_AGENTS: readonly DemoAgent[] = [
     model: 'claude-opus-5-5',
     description:
       'Designs, architecture, hard investigations and reviews of important changes.',
-    skills: ['code-review'],
   },
   {
     key: 'sonnet',
@@ -303,7 +302,6 @@ export const DEMO_AGENTS: readonly DemoAgent[] = [
     model: 'claude-sonnet-5',
     description:
       'Frontend pages and components (React, Tailwind, i18n), well-scoped fixes and tests.',
-    skills: ['frontend-components', 'commit-messages'],
   },
   {
     key: 'gpt',
@@ -311,7 +309,6 @@ export const DEMO_AGENTS: readonly DemoAgent[] = [
     model: 'gpt-6.1-sol',
     description:
       'Larger implementations, changes across packages and refactoring.',
-    skills: ['commit-messages'],
   },
 ];
 
