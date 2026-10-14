@@ -122,6 +122,32 @@ test('one decision card, fixed blocked source, matching follow-ups and live resu
       headers,
     );
   try {
+    const initialManagerName = 'PM-360 initial manager';
+    expect(initialManagerName).not.toBe(managerName);
+    for (const originalName of [managerName, '项目经理']) {
+      await api.patch('projectManager', { name: originalName });
+      const originalSettings = await api.get<{ name: string }>(
+        'projectManager',
+      );
+      try {
+        await api.patch('projectManager', { name: initialManagerName });
+        const initialSettings = await api.get<{ name: string }>(
+          'projectManager',
+        );
+        expect(initialSettings.name).toBe(initialManagerName);
+        await api.patch('projectManager', { name: managerName });
+        const configuredSettings = await api.get<{ name: string }>(
+          'projectManager',
+        );
+        expect(configuredSettings.name).toBe(managerName);
+      } finally {
+        await api.patch('projectManager', { name: originalSettings.name });
+        const restoredSettings = await api.get<{ name: string }>(
+          'projectManager',
+        );
+        expect(restoredSettings.name).toBe(originalSettings.name);
+      }
+    }
     await api.patch('projectManager', {
       name: managerName,
       firstChoiceAgentId: agent,
