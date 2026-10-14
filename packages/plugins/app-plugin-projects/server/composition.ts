@@ -306,8 +306,7 @@ export function createProjects(deps: ProjectsDeps): Projects {
       subscribers: (conn, issue) => subscriptions.subscribers(conn, issue.id),
       relations: (conn, viewer, issue) =>
         subtasks.extras.relations(conn, viewer, issue),
-      listCounts: (conn, issues, readableIds) =>
-        subtasks.extras.listCounts(conn, issues, readableIds),
+      listCounts: (conn, issues) => subtasks.extras.listCounts(conn, issues),
     }),
   });
   const intakeFiles = createIntakeFileStore({
