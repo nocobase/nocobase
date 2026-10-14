@@ -229,6 +229,16 @@ test('comment work shares the decision card and runs only on an authorized ident
     });
     await expect(card.getByText(original)).toBeVisible();
 
+    // Returning to In progress legitimately queues the owner's main run; settle it before confirming the independent comment run.
+    const resumed = await laptop.start(personalIssue.identifier);
+    expect(
+      (await api.get<RunDetail>(`agents/runs/${resumed.runId}`)).actorUserId,
+    ).toBe(owner.userId);
+    await laptop.complete(
+      resumed.runId,
+      'The owner resumed work after the structured decisions.',
+    );
+
     await open(requesterPage, `/issues/${personalIssue.identifier}`);
     await expect(
       requesterPage.getByText(
@@ -272,16 +282,6 @@ test('comment work shares the decision card and runs only on an authorized ident
     await laptop.complete(
       personalRun.runId,
       'The owner confirmed this isolated comment chain.',
-    );
-
-    // Returning to In progress legitimately queues the owner's main run; settle it before checking denied comment work.
-    const resumed = await laptop.start(personalIssue.identifier);
-    expect(
-      (await api.get<RunDetail>(`agents/runs/${resumed.runId}`)).actorUserId,
-    ).toBe(owner.userId);
-    await laptop.complete(
-      resumed.runId,
-      'The owner resumed work after the structured decisions.',
     );
 
     const rejectedIssue = await make(
