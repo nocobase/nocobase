@@ -1,3 +1,4 @@
+import { projectDefaultSkillsRoutes } from '../projects-init/default-skills-routes.js';
 import type { Application } from '@nocobase/app-server/application';
 import type { AppRouteContribution } from '@nocobase/app-server/router';
 
@@ -37,6 +38,7 @@ const routes: readonly AppRouteContribution<Application>[] = [
   gitOAuthRoutes,
   previewsRoutes,
   projectInitsRoutes,
+  projectDefaultSkillsRoutes,
   buildsRoutes,
   knowledgeSearchRoutes,
   knowledgeDirectoryRoutes,

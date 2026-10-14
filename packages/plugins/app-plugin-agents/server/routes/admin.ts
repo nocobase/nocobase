@@ -294,8 +294,15 @@ export function createAdminRoutes(
     const allowed = services.scopes
       .keys()
       .filter((key) => withAgent || key !== 'agent');
-    if (!allowed.includes(scope) || !scopeId) throw notFound('Scope');
     const who = caller(context);
+    if (!withAgent && scope === 'global') {
+      if (scopeId !== 'default') throw notFound('Scope');
+      const manage = await who.can('agents.agents', 'manage');
+      if (!manage && !(await who.can('agents.agents', 'read')))
+        throw notFound('Scope');
+      return { scope, scopeId, manage };
+    }
+    if (!allowed.includes(scope) || !scopeId) throw notFound('Scope');
     if (scope === 'agent') {
       await services.agents.get(scopeId);
       const manage = await who.can('agents.agents', 'manage');
@@ -786,7 +793,7 @@ export function createAdminRoutes(
       operationId: 'agentsListSkills',
       ...cliRoute({
         command: 'skill list',
-        columns: ['id', 'name', 'version', 'agentCount', 'updatedAt'],
+        columns: ['id', 'name', 'version', 'updatedAt'],
       }),
       description: 'The skill library. Needs `agents.agents` read.',
       responses: { 200: listResponse(SkillSchema), ...apiErrorResponses },
@@ -1258,17 +1265,17 @@ export function createAdminRoutes(
           scopeKind: {
             name: 'kind',
             description:
-              'The scope kind: `agent`, `workdir`, or one the application registers.',
+              'The scope kind: `global`, `workdir`, or one the application registers.',
           },
           scopeId: {
             name: 'scope',
             description:
-              'The scope: an agent id, a working directory id, or the id the application gives.',
+              'The scope: `default` for global, a working directory id, or the id the application gives.',
           },
         },
       }),
       description:
-        "The skills every run working in the scope gets (a working directory, or a scope the application registers; an agent's own skills are its `skillIds`).",
+        "The skills every run gets: global default, then application scopes, then working directories; later scopes override the same slug. Global reads require agents.agents read or manage.",
       responses: {
         200: dataResponse(SkillAttachmentsSchema),
         404: noScope,
@@ -1297,12 +1304,12 @@ export function createAdminRoutes(
           scopeKind: {
             name: 'kind',
             description:
-              'The scope kind: `agent`, `workdir`, or one the application registers.',
+              'The scope kind: `global`, `workdir`, or one the application registers.',
           },
           scopeId: {
             name: 'scope',
             description:
-              'The scope: an agent id, a working directory id, or the id the application gives.',
+              'The scope: `default` for global, a working directory id, or the id the application gives.',
           },
           skillIds: { name: 'skills' },
         },
@@ -1311,7 +1318,7 @@ export function createAdminRoutes(
         ],
       }),
       description:
-        'Makes `skillIds` the skills attached to the scope. Needs the right to change the scope.',
+        'Makes `skillIds` the skills attached to the scope. Global accepts only default and requires agents.agents manage; other scopes need the right to change that scope. An empty skillIds array clears attachments. Agent attachments are refused.',
       responses: {
         200: dataResponse(SkillAttachmentsSchema),
         400: apiErrorResponse(

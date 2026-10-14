@@ -1,3 +1,4 @@
+import './project.events.js';
 /**
  * Projects: a group of issues with a lead, members, repositories and a visibility. The creator becomes a member and,
  * unless someone else is named, the lead; the lead is always a member. Deleting a project keeps its issues, detached.
@@ -219,6 +220,7 @@ export function createProjectService(deps: ProjectDeps): ProjectService {
           await addMember(tx.conn, deps.ids.next(), id, viewer.userId);
         if (leadUserId && leadUserId !== viewer.userId)
           await addMember(tx.conn, deps.ids.next(), id, leadUserId);
+        tx.emit({ type: 'project.created', projectId: id });
       });
       return detail(deps, deps.tx.read(), id);
     },

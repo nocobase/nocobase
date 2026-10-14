@@ -61,7 +61,11 @@ export function createScopeKinds(): ScopeKindRegistry {
   const kinds = new Map<string, ScopeKind>();
   return {
     register(kind) {
-      if (kind.key === 'agent' || !SCOPE_KEY_PATTERN.test(kind.key))
+      if (
+        kind.key === 'agent' ||
+        kind.key === 'global' ||
+        !SCOPE_KEY_PATTERN.test(kind.key)
+      )
         throw new Error(
           `Not a scope key an application may register: ${kind.key}`,
         );
