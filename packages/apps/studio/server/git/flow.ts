@@ -134,7 +134,11 @@ export function checksFingerprint(
       c.status,
       c.conclusion,
     ])
-    .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+    .sort((a, b) => {
+      const left = JSON.stringify(a);
+      const right = JSON.stringify(b);
+      return left < right ? -1 : left > right ? 1 : 0;
+    });
   return createHash('sha256')
     .update(JSON.stringify([pr.headSha, checks.length ? checks : pr.ciState]))
     .digest('hex');
