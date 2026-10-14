@@ -12,7 +12,12 @@
  */
 import { ApiClientError } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { ArrowLeftIcon, PlusIcon } from 'lucide-react';
 import {
   useEffect,
@@ -55,7 +60,6 @@ import {
   useKnowledgeApi,
   useKnowledgeProposals,
   useKnowledgeRefresh,
-  useKnowledgeSearch,
   useKnowledgeTree,
 } from '../api.js';
 import type { KnowledgeAccessDetails } from '../lib/access.js';
@@ -84,6 +88,20 @@ import { KnowledgeSearchDialog } from './search-dialog.js';
 import { ChunkingDialog } from './chunking-dialog.js';
 import { SearchTestDialog } from './search-test.js';
 import { SpaceHome } from './space-home.js';
+import {
+  directoryKey,
+  useDirectory,
+  type KnowledgeDirectorySource,
+} from '../hooks/use-directory.js';
+import { useKnowledgeDoc } from '../api.js';
+import { DropdownMenuContent, DropdownMenuItem } from './ui/dropdown-menu.js';
+import { Alert, AlertDescription } from './ui/alert.js';
+import {
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+} from './ui/empty.js';
 
 /** How the application words its spaces; the plugin's own wording without it. */
 export interface KnowledgeViewLabels {
@@ -96,6 +114,8 @@ export interface KnowledgeViewLabels {
 }
 
 export interface KnowledgeViewProps {
+  /** The application supplies its authorized directory and global search; single-space mode remains the default. */
+  readonly directory?: KnowledgeDirectorySource;
   /** The space shown, with the spaces it inherits. */
   readonly space: SpaceRef;
   readonly labels?: KnowledgeViewLabels;
@@ -107,12 +127,14 @@ export interface KnowledgeViewProps {
   /** After a proposal is decided here: the application may refresh what it shows of it (an inbox). */
   readonly onProposalDecided?: () => void;
   /** Who may do what in the space, as the application keeps its roles; the space's access shows only the viewer's without. */
-  readonly accessDetails?: KnowledgeAccessDetails;
+  readonly accessDetails?:
+    KnowledgeAccessDetails | ((space: SpaceRef) => KnowledgeAccessDetails);
   /** The view's size: it fills it, each pane scrolling on its own. */
   readonly className?: string;
 }
 
 type Dialog =
+  | { readonly kind: 'proposeFile'; readonly parentId: string | null }
   | {
       readonly kind: 'new';
       readonly entry: NewEntryKind;
@@ -123,23 +145,38 @@ type Dialog =
       readonly doc: KnowledgeDocSummary;
     }
   | {
-      readonly kind:
-        'proposeFile' | 'searchTest' | 'search' | 'spaceAccess' | 'chunking';
+      readonly kind: 'searchTest' | 'search' | 'spaceAccess' | 'chunking';
     };
 
 function SearchResults({
   space,
   q,
   onOpen,
+  directory,
   inheritedLabel,
 }: {
   readonly inheritedLabel: string | undefined;
   readonly space: SpaceRef;
   readonly q: string;
   readonly onOpen: (docId: string) => void;
+  readonly directory?: KnowledgeDirectorySource;
 }): ReactElement {
   const { t } = useTranslation(ACCESS_NAMESPACE);
-  const hits = useKnowledgeSearch(space, q);
+  const api = useKnowledgeApi();
+  const hits = useQuery({
+    queryKey: directory
+      ? ['knowledge', 'directory-search', q]
+      : knowledgeKeys.search(space, q),
+    queryFn: ({ signal }) =>
+      directory ? directory.search(q, signal) : api.search(space, q, signal),
+    retry: false,
+  });
+  if (hits.isError)
+    return (
+      <Alert variant='destructive'>
+        <AlertDescription>{t('knowledge.loadFailed')}</AlertDescription>
+      </Alert>
+    );
   if (hits.isPending) return <Skeleton className='h-24 w-full' />;
   const list = hits.data ?? [];
   return (
@@ -147,6 +184,11 @@ function SearchResults({
       <h2 className='font-heading text-lg font-semibold'>
         {t('knowledge.search.resultsFor', { q })}
       </h2>
+      {directory ? (
+        <p className='text-sm text-muted-foreground'>
+          {t('knowledge.directory.topResults')}
+        </p>
+      ) : null}
       {list.length === 0 ? (
         <div className='space-y-1 text-sm text-muted-foreground'>
           <p>{t('knowledge.search.empty', { q })}</p>
@@ -176,6 +218,14 @@ function SearchResults({
                   ) : null}
                 </span>
                 <span className='block text-sm text-muted-foreground wrap-anywhere'>
+                  {directory
+                    ? [
+                        hit.spaceTitle ?? t('knowledge.directory.system'),
+                        ...(hit.folderPath ?? []),
+                      ].join(' / ')
+                    : null}
+                </span>
+                <span className='block text-sm text-muted-foreground wrap-anywhere'>
                   {hit.excerpt}
                 </span>
               </button>
@@ -194,6 +244,7 @@ export function KnowledgeView({
   onProposalDecided,
   accessDetails,
   className,
+  directory,
 }: KnowledgeViewProps): ReactElement {
   const { t } = useTranslation(ACCESS_NAMESPACE);
   useKnowledgeRefresh();
@@ -204,20 +255,104 @@ export function KnowledgeView({
   const queryClient = useQueryClient();
   const [archived, setArchived] = useState(false);
   const [dialog, setDialog] = useState<Dialog | null>(null);
-  const tree = useKnowledgeTree(space, archived);
-  const proposals = useKnowledgeProposals(null);
-  const listed = useKnowledgeProposals(null, view.proposals ?? 'pending');
+  const [target, setTarget] = useState<SpaceRef | null>(null);
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const linked = useKnowledgeDoc(directory ? view.doc : null);
+  const active = directory
+    ? dialog && target
+      ? target
+      : linked.data
+        ? { scope: linked.data.scope, scopeId: linked.data.scopeId }
+        : target
+    : space;
+  const catalog = useDirectory(directory, expanded, active, archived);
+  const selectionKey =
+    directory && view.doc && linked.data
+      ? `${view.doc}:${directoryKey(linked.data)}`
+      : null;
+  const [seenSelection, setSeenSelection] = useState<string | null>(null);
+  if (selectionKey !== seenSelection) {
+    setSeenSelection(selectionKey);
+    if (selectionKey && linked.data)
+      setExpanded(new Set([...expanded, directoryKey(linked.data)]));
+  }
+  const tree = useKnowledgeTree(space, archived, !directory);
+  const proposals = useKnowledgeProposals(
+    directory ? active : null,
+    'pending',
+    true,
+    !directory ||
+      (!!active && !(view.doc || view.proposal || view.proposals || view.q)),
+  );
+  const reviewTotal = useQuery({
+    queryKey: ['knowledge', 'review-total'],
+    queryFn: ({ signal }) => api.reviewTotal(signal),
+    enabled: !!directory,
+    retry: false,
+  });
+  const listed = useKnowledgeProposals(
+    null,
+    view.proposals ?? 'pending',
+    false,
+    !directory && !!view.proposals,
+  );
+  const paged = useQuery({
+    queryKey: [
+      ...knowledgeKeys.proposals(null, view.proposals ?? 'pending'),
+      'page',
+      view.proposalPage,
+      view.review,
+      view.about,
+    ],
+    queryFn: ({ signal }) =>
+      api.proposalPage(
+        view.proposalPage,
+        view.proposals ?? 'pending',
+        view.review && view.proposals === 'pending',
+        view.about,
+        signal,
+      ),
+    enabled: !!directory && !!view.proposals,
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const spaces = tree.data?.spaces ?? [];
-  const own = spaces.find((entry) => !entry.space.inherited);
+  const spaces = directory
+    ? catalog.entries.map(({ space, docs }) => ({ space, docs }))
+    : (tree.data?.spaces ?? []);
+  const own = directory
+    ? spaces.find(
+        (entry) => active && directoryKey(entry.space) === directoryKey(active),
+      )
+    : spaces.find((entry) => !entry.space.inherited);
   const allDocs = spaces.flatMap((entry) => entry.docs);
-  const selectedDoc = allDocs.find((doc) => doc.id === view.doc);
+  const selectedDoc = allDocs.find((doc) => doc.id === view.doc) ?? linked.data;
   const selectedSpace = selectedDoc
-    ? spaces.find((entry) => entry.docs.includes(selectedDoc))?.space
+    ? spaces.find(
+        (entry) => directoryKey(entry.space) === directoryKey(selectedDoc),
+      )?.space
     : undefined;
+  const paneDocs = directory
+    ? selectedDoc
+      ? (catalog.entries
+          .find(
+            (entry) => directoryKey(entry.space) === directoryKey(selectedDoc),
+          )
+          ?.tree.data?.spaces.flatMap((entry) => entry.docs) ??
+        allDocs.filter(
+          (doc) => directoryKey(doc) === directoryKey(selectedDoc),
+        ))
+      : []
+    : allDocs;
   const spaceLabel = (item: KnowledgeSpace) =>
-    labels.spaceTitle?.(item) ?? item.title ?? t('knowledge.spaces.default');
+    directory && item.scope === directory.sharedScope
+      ? t('knowledge.directory.system')
+      : (labels.spaceTitle?.(item) ??
+        item.title ??
+        t('knowledge.spaces.default'));
   const inheritedHint =
     labels.inheritedHint ?? t('knowledge.spaces.inheritedHint');
   const access = own?.space.access ?? {
@@ -232,14 +367,19 @@ export function KnowledgeView({
   );
   const inView = (item: { readonly scope: string; readonly scopeId: string }) =>
     viewSpaces.has(`${item.scope}:${item.scopeId}`);
-  const pending = (proposals.data ?? []).filter(inView);
+  // Global review and author-visible lists follow the proposal service's node permissions, independently of project metadata visibility.
+  const pending = directory
+    ? (proposals.data ?? [])
+    : (proposals.data ?? []).filter(inView);
   const ownRef = own
     ? { scope: own.space.scope, scopeId: own.space.scopeId }
     : null;
   // Someone may edit an entry without editing the space: the server decides each upload.
   const upload = useUpload(ownRef);
-  const picker = useFilePicker(t('knowledge.files.upload'), (files, parentId) =>
-    upload.upload(files, parentId),
+  const picker = useFilePicker(
+    t('knowledge.files.upload'),
+    (files, parentId, chosenSpace) =>
+      upload.upload(files, parentId, chosenSpace ?? ownRef ?? undefined),
   );
 
   const open = (docId: string) => view.show({ doc: docId });
@@ -254,6 +394,7 @@ export function KnowledgeView({
     view.doc,
     view.proposal,
     view.proposals,
+    view.proposalPage,
     view.q,
     view.mode,
     showingLines,
@@ -288,31 +429,29 @@ export function KnowledgeView({
     onError: (error) => notify.error(error),
   });
 
-  const actions: EntryActions | null = own
-    ? {
-        access,
-        newEntry: (entry, parentId) =>
-          setDialog({ kind: 'new', entry, parentId }),
-        upload: picker.open,
-        proposeFile: () => setDialog({ kind: 'proposeFile' }),
-        rename: (doc) => setDialog({ kind: 'rename', doc }),
-        move: (doc) => setDialog({ kind: 'move', doc }),
-        archive: (doc) => setDialog({ kind: 'archive', doc }),
-        restore: (doc) => act.mutate({ id: doc.id, action: 'restore' }),
-        permissions: (doc) => setDialog({ kind: 'permissions', doc }),
-        spaceAccess: () => setDialog({ kind: 'spaceAccess' }),
-        searchTest: () => setDialog({ kind: 'searchTest' }),
-        chunking: () => setDialog({ kind: 'chunking' }),
-      }
-    : null;
+  const actions: EntryActions | null = own ? forSpace(own.space) : null;
 
-  if (tree.isError)
+  const loadError = directory ? catalog.summaries.error : tree.error;
+  if ((!directory && tree.isError) || (directory && catalog.summaries.isError))
     return (
-      <p className='text-sm text-muted-foreground'>
-        {tree.error instanceof ApiClientError && tree.error.status === 404
-          ? t('knowledge.doc.notFound')
-          : t('knowledge.loadFailed')}
-      </p>
+      <Alert variant='destructive'>
+        <AlertDescription>
+          {loadError instanceof ApiClientError &&
+          [403, 404].includes(loadError.status)
+            ? t('knowledge.directory.noAccess')
+            : t('knowledge.loadFailed')}
+        </AlertDescription>
+        {!(loadError instanceof ApiClientError && loadError.status < 500) ? (
+          <Button
+            variant='outline'
+            onClick={() =>
+              void (directory ? catalog.summaries.refetch() : tree.refetch())
+            }
+          >
+            {t('knowledge.directory.retry')}
+          </Button>
+        ) : null}
+      </Alert>
     );
 
   const heading =
@@ -323,8 +462,16 @@ export function KnowledgeView({
             {own ? spaceLabel(own.space) : t('knowledge.title')}
           </h1>
         ));
+  const creationParent =
+    selectedDoc?.kind === 'folder' &&
+    !selectedDoc.archivedAt &&
+    own &&
+    directoryKey(selectedDoc) === directoryKey(own.space)
+      ? selectedDoc
+      : null;
+  const creationAccess = creationParent?.access ?? access;
   const newMenu =
-    actions && canAdd(access) ? (
+    actions && canAdd(creationAccess) ? (
       <DropdownMenu>
         <Tooltip>
           <TooltipTrigger
@@ -340,58 +487,277 @@ export function KnowledgeView({
           </TooltipTrigger>
           <TooltipContent>{t('knowledge.new.label')}</TooltipContent>
         </Tooltip>
-        <NewEntryMenuContent actions={actions} />
+        <NewEntryMenuContent
+          actions={{ ...actions, access: creationAccess }}
+          parentId={creationParent?.id ?? null}
+        />
+      </DropdownMenu>
+    ) : directory && spaces.some((entry) => canAdd(entry.space.access)) ? (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              size='icon'
+              aria-label={t('knowledge.directory.chooseTarget')}
+            />
+          }
+        >
+          <PlusIcon />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className='w-auto min-w-40' align='end'>
+          {spaces
+            .filter((entry) => canAdd(entry.space.access))
+            .map((entry) => (
+              <DropdownMenuItem
+                key={directoryKey(entry.space)}
+                onClick={() => {
+                  setTarget(entry.space);
+                  view.show({});
+                  setExpanded(
+                    (current) =>
+                      new Set([...current, directoryKey(entry.space)]),
+                  );
+                }}
+              >
+                {spaceLabel(entry.space)}
+              </DropdownMenuItem>
+            ))}
+        </DropdownMenuContent>
       </DropdownMenu>
     ) : null;
 
+  function forSpace(item: KnowledgeSpace): EntryActions {
+    const choose = () => setTarget(item);
+    return {
+      access: item.access,
+      newEntry: (entry, parentId) => {
+        choose();
+        setDialog({ kind: 'new', entry, parentId });
+      },
+      upload: (parentId) => {
+        choose();
+        picker.open(parentId, item);
+      },
+      proposeFile: (parentId = null) => {
+        choose();
+        setDialog({ kind: 'proposeFile', parentId });
+      },
+      rename: (doc) => {
+        choose();
+        setDialog({ kind: 'rename', doc });
+      },
+      move: (doc) => {
+        choose();
+        setDialog({ kind: 'move', doc });
+      },
+      archive: (doc) => {
+        choose();
+        setDialog({ kind: 'archive', doc });
+      },
+      restore: (doc) => act.mutate({ id: doc.id, action: 'restore' }),
+      permissions: (doc) => {
+        choose();
+        setDialog({ kind: 'permissions', doc });
+      },
+      spaceAccess: () => {
+        choose();
+        setDialog({ kind: 'spaceAccess' });
+      },
+      searchTest: () => {
+        choose();
+        setDialog({ kind: 'searchTest' });
+      },
+      chunking: () => {
+        choose();
+        setDialog({ kind: 'chunking' });
+      },
+    };
+  }
+
   const sidebar = (
     <KnowledgeSidebar
-      spaces={spaces}
-      loading={tree.isPending}
+      spaces={
+        directory
+          ? catalog.entries.map((entry) => ({
+              ...entry,
+              expanded: expanded.has(directoryKey(entry.space)),
+              onExpanded: (open: boolean) =>
+                setExpanded((current) => {
+                  const next = new Set(current);
+                  if (open) next.add(directoryKey(entry.space));
+                  else next.delete(directoryKey(entry.space));
+                  return next;
+                }),
+              loading: entry.tree.isPending,
+              error: entry.tree.isError,
+              onRetry:
+                entry.tree.error instanceof ApiClientError &&
+                entry.tree.error.status < 500
+                  ? undefined
+                  : () => void entry.tree.refetch(),
+              actions: forSpace(entry.space),
+              onDropFiles: (files: File[], parentId: string | null) =>
+                upload.upload(files, parentId, entry.space),
+              archivedDocuments: archived ? entry.archivedDocuments : 0,
+              hint:
+                entry.space.scope === directory.sharedScope
+                  ? directory.sharedLabel
+                  : undefined,
+              onSelectSpace: () => {
+                setTarget(entry.space);
+                view.show({});
+              },
+            }))
+          : spaces
+      }
+      loading={directory ? catalog.summaries.isPending : tree.isPending}
       spaceLabel={spaceLabel}
       inheritedHint={inheritedHint}
       selected={view.doc}
       onSelect={open}
-      pending={pending.length}
-      reviewing={!!view.proposals || !!view.proposal}
-      onReview={() => view.show({ proposals: 'pending' })}
+      pending={directory ? (reviewTotal.data ?? 0) : pending.length}
+      reviewing={
+        directory
+          ? view.review && (!!view.proposals || !!view.proposal)
+          : !!view.proposals || !!view.proposal
+      }
+      proposalsActive={
+        !!directory && !view.review && (!!view.proposals || !!view.proposal)
+      }
+      onReview={() =>
+        view.show({
+          proposals: 'pending',
+          ...(directory ? { review: 'true' } : {}),
+        })
+      }
+      onProposals={() => view.show({ proposals: 'pending' })}
       onSearch={() => setDialog({ kind: 'search' })}
       onDropFiles={
-        own ? (files, parentId) => upload.upload(files, parentId) : null
+        !directory && own
+          ? (files, parentId) => upload.upload(files, parentId)
+          : null
       }
       archived={archived}
-      onArchived={access.edit ? setArchived : null}
+      onArchived={directory || access.edit ? setArchived : null}
       searchShortcut={searchShortcutLabel()}
       heading={heading}
       toolbar={newMenu}
+      directoryControls={
+        directory ? (
+          <>
+            <p className='px-2 text-xs text-muted-foreground'>
+              {own
+                ? t('knowledge.directory.target', {
+                    title: spaceLabel(own.space),
+                  })
+                : t('knowledge.directory.chooseTarget')}
+            </p>
+            <div className='flex flex-wrap gap-2'>
+              <Button
+                variant='ghost'
+                size='sm'
+                disabled={catalog.summaries.isPending || spaces.length === 0}
+                onClick={() =>
+                  setExpanded(
+                    new Set(spaces.map((entry) => directoryKey(entry.space))),
+                  )
+                }
+              >
+                {t('knowledge.directory.expandAll')}
+              </Button>
+              <Button
+                variant='ghost'
+                size='sm'
+                onClick={() => {
+                  setExpanded(new Set());
+                }}
+              >
+                {t('knowledge.directory.collapseAll')}
+              </Button>
+            </div>
+          </>
+        ) : undefined
+      }
     />
   );
 
   const content = view.proposal ? (
     <ProposalDetail
       id={view.proposal}
-      onBack={() => view.show({ proposals: 'pending' })}
+      onBack={() =>
+        view.show({
+          proposals: 'pending',
+          ...(view.review ? { review: 'true' } : {}),
+          ...(directory && view.proposalPage > 1
+            ? { proposalPage: String(view.proposalPage) }
+            : {}),
+        })
+      }
       onDecided={() => {
-        view.show({ proposals: 'pending' });
+        view.show({
+          proposals: 'pending',
+          ...(view.review ? { review: 'true' } : {}),
+        });
         onProposalDecided?.();
       }}
       onOpenDoc={open}
     />
+  ) : view.proposals && directory && paged.isError ? (
+    <Alert variant='destructive'>
+      <AlertDescription>{t('knowledge.loadFailed')}</AlertDescription>
+      {!(paged.error instanceof ApiClientError && paged.error.status < 500) ? (
+        <Button variant='outline' onClick={() => void paged.refetch()}>
+          {t('knowledge.directory.retry')}
+        </Button>
+      ) : null}
+    </Alert>
   ) : view.proposals ? (
     <ProposalList
+      contextLabel={
+        directory
+          ? (proposal) => {
+              const entry = spaces.find(
+                (item) => directoryKey(item.space) === directoryKey(proposal),
+              );
+              return entry ? spaceLabel(entry.space) : '';
+            }
+          : undefined
+      }
       status={view.proposals}
-      onStatus={(status) => view.set({ proposals: status })}
-      proposals={(listed.data ?? []).filter(
-        (item) => inView(item) && (!view.about || item.docId === view.about),
+      onStatus={(status) => view.set({ proposals: status, proposalPage: null })}
+      proposals={(directory
+        ? (paged.data?.data ?? [])
+        : (listed.data ?? [])
+      ).filter(
+        (item) =>
+          (directory || inView(item)) &&
+          (!view.about || item.docId === view.about),
       )}
-      loading={listed.isPending}
+      loading={directory ? paged.isPending : listed.isPending}
+      pagination={
+        directory && paged.data
+          ? {
+              ...paged.data.meta,
+              busy: paged.isFetching,
+              onPage: (page) => view.set({ proposalPage: String(page) }),
+            }
+          : undefined
+      }
       about={
         view.about
           ? (allDocs.find((doc) => doc.id === view.about)?.title ?? null)
           : null
       }
-      onClearAbout={() => view.set({ about: null })}
-      onOpen={(id) => view.show({ proposal: id })}
+      onClearAbout={() => view.set({ about: null, proposalPage: null })}
+      onOpen={(id) =>
+        view.show({
+          proposal: id,
+          ...(view.review ? { review: 'true' } : {}),
+          ...(directory && view.proposalPage > 1
+            ? { proposalPage: String(view.proposalPage) }
+            : {}),
+        })
+      }
     />
   ) : view.doc ? (
     <DocPane
@@ -402,13 +768,23 @@ export function KnowledgeView({
       spaceLabel={
         selectedSpace
           ? spaceLabel(selectedSpace)
-          : own
-            ? spaceLabel(own.space)
-            : t('knowledge.title')
+          : linked.data
+            ? (spaces.find(
+                (entry) =>
+                  directoryKey(entry.space) === directoryKey(linked.data),
+              )?.space.title ??
+              t(
+                linked.data.scope === directory?.sharedScope
+                  ? 'knowledge.directory.system'
+                  : 'knowledge.title',
+              ))
+            : own
+              ? spaceLabel(own.space)
+              : t('knowledge.title')
       }
       mode={view.mode}
       version={view.version}
-      docs={allDocs}
+      docs={paneDocs}
       onMode={(mode) => view.set({ mode: mode === 'read' ? null : mode })}
       onVersion={(version) =>
         view.set({ version: version ? String(version) : null })
@@ -431,16 +807,41 @@ export function KnowledgeView({
       q={view.q}
       onOpen={open}
       inheritedLabel={labels.inheritedHit}
+      directory={directory}
     />
-  ) : tree.isPending ? (
+  ) : (directory ? catalog.summaries.isPending : tree.isPending) ? (
     <Skeleton className='h-40 w-full' />
+  ) : directory && spaces.length === 0 ? (
+    <Empty className='min-h-48 border border-dashed'>
+      <EmptyHeader>
+        <EmptyTitle>{t('knowledge.directory.empty')}</EmptyTitle>
+        <EmptyDescription>
+          {t('knowledge.directory.emptyAccessHint')}
+        </EmptyDescription>
+      </EmptyHeader>
+    </Empty>
+  ) : directory && !own ? (
+    <div className='flex flex-col gap-2'>
+      <h2 className='font-heading text-lg font-semibold'>
+        {t('knowledge.directory.title')}
+      </h2>
+      <p className='text-sm text-muted-foreground'>
+        {t('knowledge.directory.welcome')}
+      </p>
+    </div>
   ) : (
     <SpaceHome
       space={ownRef}
       spaceLabel={own ? spaceLabel(own.space) : t('knowledge.title')}
-      docs={allDocs}
+      docs={directory ? (own?.docs ?? []) : allDocs}
       ownDocs={own?.docs ?? []}
-      pending={pending}
+      pending={
+        directory && own
+          ? pending.filter(
+              (proposal) => directoryKey(proposal) === directoryKey(own.space),
+            )
+          : pending
+      }
       actions={actions}
       onOpen={open}
       onProposal={(id) => view.show({ proposal: id })}
@@ -449,7 +850,10 @@ export function KnowledgeView({
   );
 
   const contentPane = (
-    <div ref={contentRef} className='@container h-full overflow-y-auto'>
+    <div
+      ref={contentRef}
+      className='@container h-full overflow-y-auto overscroll-y-contain'
+    >
       <div className='min-h-full p-4 md:p-6'>
         {!wide ? (
           <Button variant='ghost' className='mb-3 -ml-2' onClick={home}>
@@ -497,6 +901,7 @@ export function KnowledgeView({
           onOpenChange={(next) => !next && setDialog(null)}
           space={space}
           inheritedLabel={labels.inheritedHit}
+          directory={directory}
           onOpen={open}
           onAll={(q) => view.show({ q })}
         />
@@ -505,7 +910,7 @@ export function KnowledgeView({
         <SearchTestDialog
           open
           onOpenChange={(next) => !next && setDialog(null)}
-          space={space}
+          space={target ?? space}
           onOpen={(docId, lines) =>
             view.show({
               doc: docId,
@@ -519,6 +924,9 @@ export function KnowledgeView({
           open
           onOpenChange={(next) => !next && setDialog(null)}
           space={{ scope: own.space.scope, scopeId: own.space.scopeId }}
+          spaceLabel={spaceLabel(own.space)}
+          access={own.space.access}
+          onProposed={() => view.show({ proposals: 'pending' })}
           docs={own.docs}
           parentId={dialog.parentId}
           kind={dialog.entry}
@@ -537,7 +945,7 @@ export function KnowledgeView({
           open
           onOpenChange={(next) => !next && setDialog(null)}
           doc={dialog.doc}
-          docs={allDocs}
+          docs={directory ? (own?.docs ?? []) : allDocs}
         />
       ) : null}
       {dialog?.kind === 'permissions' && ownRef && own ? (
@@ -564,7 +972,11 @@ export function KnowledgeView({
           onOpenChange={(next) => !next && setDialog(null)}
           access={access}
           spaceLabel={spaceLabel(own.space)}
-          details={accessDetails}
+          details={
+            typeof accessDetails === 'function'
+              ? accessDetails(own.space)
+              : accessDetails
+          }
         />
       ) : null}
       {dialog?.kind === 'chunking' && ownRef && own ? (
@@ -579,7 +991,17 @@ export function KnowledgeView({
         <ProposeFileDialog
           open
           onOpenChange={(next) => !next && setDialog(null)}
-          target={{ kind: 'create', space: ownRef }}
+          target={{
+            kind: 'create',
+            space: ownRef,
+            parentId: dialog.parentId,
+            label: [
+              own ? spaceLabel(own.space) : '',
+              own?.docs.find((doc) => doc.id === dialog.parentId)?.title,
+            ]
+              .filter(Boolean)
+              .join(' / '),
+          }}
         />
       ) : null}
       <AlertDialog

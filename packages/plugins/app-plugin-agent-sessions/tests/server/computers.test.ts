@@ -1,3 +1,4 @@
+import { BRIDGE_PROTOCOL_VERSION } from '@nocobase/acp-bridge/protocol';
 import { createHash } from 'node:crypto';
 
 import type {
@@ -20,7 +21,7 @@ function setup(database: DatabaseManager) {
     overrides: Partial<RegisterRequest> = {},
     computer: Partial<RegisterRequest['computer']> = {},
   ): RegisterRequest => ({
-    protocol: 1,
+    protocol: BRIDGE_PROTOCOL_VERSION,
     computerId: null,
     bridgeStartedAt: 'bridge-1',
     ...overrides,

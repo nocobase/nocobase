@@ -25,11 +25,11 @@ export interface AgentClientHandlers {
 }
 
 export interface AgentProcessOptions {
+  readonly signal?: AbortSignal | undefined;
   readonly cwd: string;
   readonly env: NodeJS.ProcessEnv;
   readonly client: acp.Implementation;
   readonly handlers: AgentClientHandlers;
-  readonly signal?: AbortSignal;
   readonly initializeTimeoutMs?: number;
 }
 
@@ -43,17 +43,20 @@ export class AgentProcess {
   readonly #child: ChildProcess;
   readonly #connection: acp.ClientConnection;
   readonly #stderr: { text: string };
+  readonly #removeAbort: () => void;
 
   private constructor(
     child: ChildProcess,
     connection: acp.ClientConnection,
     stderr: { text: string },
     initialize: acp.InitializeResponse,
+    removeAbort: () => void,
   ) {
     this.#child = child;
     this.#connection = connection;
     this.#stderr = stderr;
     this.initialize = initialize;
+    this.#removeAbort = removeAbort;
   }
 
   /** Starts the agent and runs ACP `initialize`; throws with what the agent printed when it does not answer. */
@@ -85,8 +88,16 @@ export class AgentProcess {
         options.handlers.permission(context.params, context.signal),
       )
       .connect(stream);
+    const abort = (): void => {
+      connection.close();
+      void stopProcess(child);
+    };
+    options.signal?.addEventListener('abort', abort, { once: true });
+    const removeAbort = (): void =>
+      options.signal?.removeEventListener('abort', abort);
     try {
       await spawned;
+      options.signal?.throwIfAborted();
       // Writing to an agent that has exited fails with EPIPE; the exit itself is what the session reports.
       child.on('error', ignore);
       child.stdin.on('error', ignore);
@@ -124,8 +135,15 @@ export class AgentProcess {
             .finally(cleanup);
         },
       ).finally(() => cleanup());
-      return new AgentProcess(child, connection, stderr, initialize);
+      return new AgentProcess(
+        child,
+        connection,
+        stderr,
+        initialize,
+        removeAbort,
+      );
     } catch (error) {
+      removeAbort();
       connection.close();
       await stopProcess(child);
       throw new Error(withOutput(errorMessage(error), stderr.text), {
@@ -159,6 +177,7 @@ export class AgentProcess {
   }
 
   async stop(): Promise<void> {
+    this.#removeAbort();
     this.#connection.close();
     await stopProcess(this.#child);
   }
