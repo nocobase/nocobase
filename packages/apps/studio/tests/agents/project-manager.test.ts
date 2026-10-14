@@ -58,6 +58,9 @@ async function update(
   const current = await h.projects.issueQueries.detail(alice(), issue.id);
   return h.projects.issues.update(viewer as never, issue.id, {
     revision: current.revision,
+    ...(patch.statusKey === 'blocked' || patch.statusKey === 'in_review'
+      ? { needsYou: 'Choose how to proceed.' }
+      : {}),
     ...patch,
   });
 }
@@ -457,6 +460,12 @@ describe('the project manager’s settings', () => {
       .instructions;
     expect(instructions).toContain('You are the project manager of the issue');
     expect(instructions).toContain('Give every step to the Coder.');
+    expect(instructions).toContain(
+      'Every explicit blocked or in_review status submission from your authenticated manager run MUST include a nonblank needsYou in the same request',
+    );
+    expect(instructions).toContain(
+      'This requirement applies regardless of custom allocation principles.',
+    );
     expect(instructions).not.toContain('## When to ask for a short approach');
 
     expect((await patch(null)).body.data.principles).toBeNull();
@@ -618,7 +627,8 @@ describe('what an issue waits for', () => {
       since: null,
       runner: null,
       pullRequest: null,
-      question: null,
+      needsYou: null,
+      explanationCommentId: null,
       next: null,
       handOver: false,
     });
@@ -640,8 +650,13 @@ describe('what an issue waits for', () => {
       runner: 'runner',
     });
 
+    await update(
+      issue,
+      { next: 'once the Coder reports, ask for a review.' },
+      asAgent(PROJECT_MANAGER_ID),
+    );
     await h.projects.comments.create(asAgent(PROJECT_MANAGER_ID), issue.id, {
-      content: `Next: once the Coder reports, ask for a review.\n\n[@Coder](mention://agent/${coder}) Implement the export of the list.\n\nReply with the pull request.`,
+      content: `[@Coder](mention://agent/${coder}) Implement the export of the list.\n\nReply with the pull request.`,
     });
     expect(await progress(issue.id)).toMatchObject({
       state: 'working',
@@ -656,7 +671,7 @@ describe('what an issue waits for', () => {
       runner: 'runner',
       next: 'once the Coder reports, ask for a review.',
     });
-    // The step is the hand-over's first line after the project manager's "Next" line.
+    // The step is the hand-over's first line; structured next is independent of this comment.
     expect(working.step).toBe('Implement the export of the list.');
     expect(working.since).toEqual(expect.any(String));
   });
@@ -700,73 +715,74 @@ describe('what an issue waits for', () => {
     });
   });
 
-  it('needs a decision on a blocked issue: the project manager’s question, and its "Next" line', async () => {
-    const issue = await create({ statusKey: 'in_progress', start: false });
-    await h.projects.comments.create(asAgent(PROJECT_MANAGER_ID), issue.id, {
-      content:
-        'Next: once you choose, hand the change to the Coder.\nNeeds you: Should the export include **deleted** issues?\n\nPlease confirm the scope.',
-    });
-    await update(issue, { statusKey: 'blocked' }, asAgent(PROJECT_MANAGER_ID));
-    expect(await progress(issue.id)).toMatchObject({
-      state: 'needsDecision',
-      question: 'Should the export include **deleted** issues?',
-      next: 'once you choose, hand the change to the Coder.',
-    });
-  });
+  it.each(['blocked', 'in_review'])(
+    'keeps structured progress through status-before-comment flow for %s',
+    async (statusKey) => {
+      const issue = await create({ statusKey: 'in_progress', start: false });
+      const { comment: old } = await h.projects.comments.create(
+        asAgent(PROJECT_MANAGER_ID),
+        issue.id,
+        { content: 'Next: obsolete step.\nNeeds you: obsolete question.' },
+      );
+      const needsYou = 'Choose **this** source.\nProvide its URL.';
+      await update(
+        issue,
+        { statusKey, needsYou, next: 'Implement the chosen source.' },
+        asAgent(PROJECT_MANAGER_ID),
+      );
+      expect(await progress(issue.id)).toMatchObject({
+        needsYou,
+        next: 'Implement the chosen source.',
+        explanationCommentId: old.id,
+      });
+      const { comment: latest } = await h.projects.comments.create(
+        asAgent(PROJECT_MANAGER_ID),
+        issue.id,
+        { content: 'A detailed explanation with no progress labels.' },
+      );
+      expect(await progress(issue.id)).toMatchObject({
+        needsYou,
+        next: 'Implement the chosen source.',
+        explanationCommentId: latest.id,
+      });
+      await h.projects.comments.remove(asAgent(PROJECT_MANAGER_ID), latest.id);
+      expect(await progress(issue.id)).toMatchObject({
+        needsYou,
+        explanationCommentId: old.id,
+      });
+      await update(issue, { statusKey: 'in_progress' });
+      expect(await progress(issue.id)).toMatchObject({
+        needsYou: null,
+        next: 'Implement the chosen source.',
+      });
+    },
+  );
 
-  it('keeps the blocked source through later dispatch reports, clears it on resume, and reads only the latest Next', async () => {
-    const issue = await create({ statusKey: 'in_progress', start: false });
-    const { comment: source } = await h.projects.comments.create(
-      asAgent(PROJECT_MANAGER_ID),
-      issue.id,
-      {
-        content:
-          'Next: wait for the disk to recover.\n需要你：Restore the execution machine.\n\nThe disk is full. Run `df -h`.',
-      },
-    );
-    await update(issue, { statusKey: 'blocked' }, asAgent(PROJECT_MANAGER_ID));
-    await h.projects.comments.create(asAgent(PROJECT_MANAGER_ID), issue.id, {
-      content: 'The report was received. No question here.',
-    });
-    expect(await progress(issue.id)).toMatchObject({
-      question: 'Restore the execution machine.',
-      blockedComment: { id: source.id },
-      next: null,
-    });
-    await update(issue, { statusKey: 'in_progress' });
-    expect(await progress(issue.id)).toMatchObject({
-      question: null,
-      next: null,
-    });
-    expect((await progress(issue.id)).blockedComment).toBeUndefined();
-    const { comment: second } = await h.projects.comments.create(
-      asAgent(PROJECT_MANAGER_ID),
-      issue.id,
-      { content: 'Next: wait for a decision.\n\nThe checkout failed.' },
-    );
-    await update(issue, { statusKey: 'blocked' }, asAgent(PROJECT_MANAGER_ID));
-    expect(await progress(issue.id)).toMatchObject({
-      question: null,
-      blockedComment: { id: second.id, content: second.content },
-    });
-  });
-
-  it('is in review, idle, and reads a "Next" line written in Chinese', async () => {
-    const issue = await create({ statusKey: 'in_progress', start: false });
-    expect((await progress(issue.id)).state).toBe('idle');
-    await h.projects.comments.create(asAgent(PROJECT_MANAGER_ID), issue.id, {
-      content: '接下来：等你验收。\n\n改动已就绪。',
-    });
-    await update(
-      issue,
-      { statusKey: 'in_review' },
-      asAgent(PROJECT_MANAGER_ID),
-    );
-    expect(await progress(issue.id)).toMatchObject({
-      state: 'inReview',
-      next: '等你验收。',
-    });
-  });
+  it.each(['blocked', 'in_review'])(
+    'reads historical null fields without parsing comments for %s',
+    async (statusKey) => {
+      const issue = await create({ statusKey: 'in_progress', start: false });
+      await h.database
+        .connection()
+        .repository('pmIssues')
+        .updateOne({ filter: { id: issue.id }, values: { statusKey } });
+      expect(await progress(issue.id)).toMatchObject({
+        needsYou: null,
+        next: null,
+        explanationCommentId: null,
+      });
+      const { comment } = await h.projects.comments.create(
+        asAgent(PROJECT_MANAGER_ID),
+        issue.id,
+        { content: '接下来：过时的下一步。\n需要你：旧的问题。' },
+      );
+      expect(await progress(issue.id)).toMatchObject({
+        needsYou: null,
+        next: null,
+        explanationCommentId: comment.id,
+      });
+    },
+  );
 
   it('refuses a caller who may not view issues', async () => {
     const issue = await create();

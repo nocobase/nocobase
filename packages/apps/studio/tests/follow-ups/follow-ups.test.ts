@@ -53,6 +53,9 @@ async function move(issue: Issue, statusKey: string): Promise<void> {
   await h.projects.issues.update(h.viewer('alice'), issue.id, {
     revision: current.revision,
     statusKey,
+    ...(statusKey === 'blocked' || statusKey === 'in_review'
+      ? { needsYou: 'Choose how to continue.' }
+      : {}),
   });
 }
 
@@ -215,7 +218,10 @@ describe('the overview', () => {
       ).toMatchObject({
         statusKey: 'blocked',
         followed: true,
-        progress: { state: 'needsDecision' },
+        progress: {
+          state: 'needsDecision',
+          needsYou: 'Choose how to continue.',
+        },
       });
       const current = await h.projects.issueQueries.detail(
         h.viewer('alice'),

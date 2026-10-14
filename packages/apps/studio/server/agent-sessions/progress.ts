@@ -76,7 +76,7 @@ export function progressFacts(
     pullRequest: progress.pullRequest
       ? (progress.pullRequest.url ?? `#${progress.pullRequest.number}`)
       : undefined,
-    question: progress.question,
+    needsYou: progress.needsYou,
     next: progress.next,
     waitingFor: progress.waiting
       ? {

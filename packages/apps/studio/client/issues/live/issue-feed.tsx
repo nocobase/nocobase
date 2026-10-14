@@ -50,7 +50,6 @@ import { Clamped } from './clamped.js';
 import { useIssueConversation } from './conversation-state.js';
 import { buildFeed, type FeedEvent } from './feed.js';
 import {
-  deliveryCommentOf,
   groupFeedRows,
   newestFirst,
   type FeedMode,
@@ -129,9 +128,6 @@ export function IssueFeed({
     [timeline.entries, mode],
   );
 
-  // The comment the summary shows as the delivery notes reads as one line here.
-  const delivery = deliveryCommentOf(detail);
-  const deliveryId = delivery?.comment.id ?? null;
   const comments = new Map<string, IssueComment>();
   const meaningTags = (event: FeedEvent | undefined): CommentTag[] => {
     if (event?.kind === 'handOver')
@@ -215,15 +211,6 @@ export function IssueFeed({
       })),
       canEdit: canEditComment(viewer, comment),
       canDelete: canDeleteComment(viewer, comment, detail),
-      ...(comment.id === deliveryId
-        ? {
-            collapsedLabel: appT(
-              delivery?.report
-                ? 'issueLive.feed.deliveryShownAbove'
-                : 'issueLive.feed.latestShownAbove',
-            ),
-          }
-        : {}),
     };
   };
 

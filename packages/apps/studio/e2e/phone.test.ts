@@ -57,6 +57,7 @@ test.describe('phone', () => {
     await api.patch(`projects/issues/${review.id}`, {
       revision: review.revision,
       statusKey: 'in_review',
+      needsYou: 'Please review the completed work.',
     });
     await api.put('followUps/following', { issueIds: [review.id] });
     await open(page, '/follow-ups');
@@ -96,6 +97,7 @@ test.describe('phone', () => {
       await api.patch(`projects/issues/${issue.id}`, {
         revision: issue.revision,
         statusKey: 'in_review',
+        needsYou: 'Please review the completed work.',
       });
       created.push(issue);
     }

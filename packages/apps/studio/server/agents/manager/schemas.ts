@@ -178,16 +178,15 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
     pullRequest: z
       .object({ number: z.number().int(), url: z.string().nullable() })
       .nullable(),
-    question: z.string().nullable().meta({
-      description:
-        'The Needs you line from the manager comment at the transition to Blocked.',
+    needsYou: z.string().nullable().meta({
+      description: 'The structured decision or input required from the owner.',
     }),
-    blockedComment: z
-      .object({ id: z.string(), content: z.string() })
-      .nullable()
-      .optional(),
+    explanationCommentId: z.string().nullable().meta({
+      description:
+        'The latest undeleted project manager comment, independent of the status transition.',
+    }),
     next: z.string().nullable().meta({
-      description: 'The project manager’s latest "Next" line.',
+      description: 'The structured next step.',
     }),
     handOver: z.boolean().meta({
       description:

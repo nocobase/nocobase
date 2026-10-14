@@ -290,7 +290,7 @@ describe('the issue feed', () => {
     expect((await screen.findByRole('dialog')).textContent).toBe('shot.png');
   });
 
-  it('folds the comment the summary shows as delivery notes to one line', async () => {
+  it('keeps the delivery explanation visible in the conversation', async () => {
     const delivery = comment(
       'd1',
       5,
@@ -314,12 +314,6 @@ describe('the issue feed', () => {
       </IssueConversation>,
     );
     const feed = await screen.findByTestId('issue-feed');
-    expect(feed.textContent).not.toContain('the export keeps the filters');
-    fireEvent.click(
-      within(feed).getByRole('button', {
-        name: 'Delivery notes — shown above',
-      }),
-    );
     expect(feed.textContent).toContain('the export keeps the filters');
   });
 

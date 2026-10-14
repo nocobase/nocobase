@@ -214,6 +214,19 @@ describe('the demo data', () => {
     expect(
       new Set(issues.map((issue) => issue.statusKey)).size,
     ).toBeGreaterThanOrEqual(STATUS_KEYS.length);
+    for (const spec of DEMO_ISSUES) {
+      const issue = issues.find((each) => each.title === spec.title)!;
+      expect(issue).toMatchObject({
+        statusKey: spec.status,
+        needsYou: spec.needsYou ?? null,
+      });
+      const comments = await h.projects.commentQueries.list(
+        h.database.connection(),
+        issue.id,
+        {},
+      );
+      expect(comments).toHaveLength(spec.comments?.length ?? 0);
+    }
     const managed = DEMO_ISSUES.filter((spec) => spec.projectManager);
     expect(managed.length).toBeGreaterThan(0);
     for (const spec of managed) {

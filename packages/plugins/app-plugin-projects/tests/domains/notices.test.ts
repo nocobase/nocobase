@@ -79,6 +79,9 @@ async function moveTo(
   return h.services.issues.update(viewer, issue.id, {
     revision: current.revision,
     statusKey: to,
+    ...(to === 'blocked' || to === 'in_review'
+      ? { needsYou: 'Choose how to proceed.' }
+      : {}),
   });
 }
 
