@@ -1,9 +1,16 @@
 /** The real intake form, storage, first-message association and manual source recovery. */
 import { mkdirSync } from 'node:fs';
-import { apiAs, expect, open, test, unique, url } from './support/fixtures.ts';
+import {
+  apiAs,
+  expect,
+  open,
+  signIn,
+  test,
+  unique,
+  url,
+} from './support/fixtures.ts';
 import { FakeRunner } from './support/runner.ts';
 
-test.use({ user: 'wendy' });
 const png = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
   'base64',
@@ -13,9 +20,22 @@ test('multiple images and text reach the first message and remain editable after
   page,
   api,
   browser,
+  context,
 }) => {
   const admin = await apiAs(browser, 'admin');
-  const runner = new FakeRunner(admin.api, `image-intake-${unique()}`);
+  // Language and chat defaults persist on the account, so parallel intake tests need separate users.
+  const suffix = unique();
+  const user = {
+    email: `image-intake-${suffix}@example.com`,
+    password: 'image-intake-e2e-password',
+  };
+  await admin.api.post('users', {
+    ...user,
+    name: `Image intake ${suffix}`,
+    roleScopes: { studio: ['contributor'] },
+  });
+  await signIn(context, user);
+  const runner = new FakeRunner(admin.api, `image-intake-${suffix}`);
   const agentId = await runner.agent();
   const preference = await api.get<{ defaultAgentId: string | null }>(
     'agents/chatPreferences',
