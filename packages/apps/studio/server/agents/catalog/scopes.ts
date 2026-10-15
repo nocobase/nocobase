@@ -21,6 +21,31 @@ export function studioScopes(deps: {
   readonly projects: () => Pick<Projects, 'projects'>;
   readonly permissions: Pick<PermissionSource, 'viewerOf'>;
 }): ScopeKind[] {
+  const describe =
+    (target: 'project' | 'workdir') =>
+    async (ids: readonly string[], userId: string) => {
+      const viewer = await deps.permissions.viewerOf({
+        kind: 'user',
+        userId,
+        displayName: userId,
+      });
+      const names = await deps
+        .projects()
+        .projects.targetNames(viewer, target, ids);
+      return new Map(
+        [...names].map(([id, item]) => [
+          id,
+          {
+            name: item.name,
+            ...(target === 'project'
+              ? {
+                  href: `/projects/${encodeURIComponent(item.projectId)}/settings`,
+                }
+              : {}),
+          },
+        ]),
+      );
+    };
   async function accessTo(
     userId: string,
     target: { projectId: string } | { resourceId: string },
@@ -39,12 +64,14 @@ export function studioScopes(deps: {
       title: text('studioAgents.scopes.project'),
       description: text('studioAgents.scopes.projectDescription'),
       access: (scopeId, userId) => accessTo(userId, { projectId: scopeId }),
+      describe: describe('project'),
     },
     {
       key: 'workdir',
       title: text('studioAgents.scopes.workdir'),
       description: text('studioAgents.scopes.workdirDescription'),
       access: (scopeId, userId) => accessTo(userId, { resourceId: scopeId }),
+      describe: describe('workdir'),
     },
   ];
 }

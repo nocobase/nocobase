@@ -10,7 +10,14 @@ import {
   renameEntry,
   treeOf,
 } from '../../client/pages/skills/workbench/model.js';
-import { callsTo, clientMocks, FakeApiError, resetApi } from './fake-client.js';
+import {
+  api,
+  callsTo,
+  clientMocks,
+  FakeApiError,
+  granted,
+  resetApi,
+} from './fake-client.js';
 import { skill, skillDetail } from './fixtures.js';
 import { renderPage, renderRoute } from './render.js';
 
@@ -110,7 +117,14 @@ describe('skill pages', () => {
       ],
       attachments: [
         { scope: 'global', scopeId: 'default', name: null },
-        { scope: 'project', scopeId: 'p1', name: null },
+        {
+          scope: 'project',
+          scopeId: 'p1',
+          name: 'Visible project',
+          href: '/projects/p1/settings',
+        },
+        { scope: 'workdir', scopeId: 'w1', name: 'Backend directory' },
+        { scope: 'project', scopeId: 'hidden', name: null },
       ],
     });
     resetApi(
@@ -126,6 +140,9 @@ describe('skill pages', () => {
           }),
         ],
         'agents/skills/s1': () => current,
+        'agents/skillAttachments/global/default': () => ({
+          skillIds: ['other'],
+        }),
         'agents/skills/s1/versions': () => [
           {
             version: 2,
@@ -190,6 +207,11 @@ describe('skill pages', () => {
   it('shows a skill as a tree of files beside the one selected', async () => {
     renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
     expect(await screen.findByText('Pull requests')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Visible project' }),
+    ).toHaveAttribute('href', '/projects/p1/settings');
+    expect(screen.getByText('Backend directory')).toBeInTheDocument();
+    expect(screen.getByText('skills.unavailableTarget')).toBeInTheDocument();
     expect(screen.queryByText(/name: pr-etiquette/u)).toBeNull();
     expect(screen.queryByText('Coder')).not.toBeInTheDocument();
     expect(screen.queryByText('skills.mountedAgents')).not.toBeInTheDocument();
@@ -215,6 +237,59 @@ describe('skill pages', () => {
     expect(
       screen.getByRole('button', { name: 'skills.tree.download' }),
     ).toBeInTheDocument();
+  });
+
+  it('saves global membership immediately, preserves other skills and restores the switch on failure', async () => {
+    let ids = ['other'];
+    let fail = false;
+    api.routes['agents/skillAttachments/global/default'] = () => ({
+      skillIds: ids,
+    });
+    api.routes['PUT agents/skillAttachments/global/default'] = (request) => {
+      if (fail) throw new FakeApiError(403);
+      ids = [...(request.json as { skillIds: string[] }).skillIds];
+      return { skillIds: ids };
+    };
+    const page = renderRoute(
+      <SkillDetailPage />,
+      '/skills/:skillId',
+      '/skills/s1',
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'skills.edit' }));
+    const toggle = await screen.findByRole('switch', {
+      name: 'skills.globalMount',
+    });
+    await waitFor(() => expect(toggle).toBeEnabled());
+    fireEvent.click(toggle);
+    await waitFor(() => expect(toggle).toBeChecked());
+    expect(ids).toEqual(['other', 's1']);
+    expect(callsTo('agents/skills/s1', 'PATCH')).toHaveLength(0);
+    page.unmount();
+    renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
+    fireEvent.click(await screen.findByRole('button', { name: 'skills.edit' }));
+    const reloaded = await screen.findByRole('switch', {
+      name: 'skills.globalMount',
+    });
+    await waitFor(() => expect(reloaded).toBeChecked());
+    fail = true;
+    fireEvent.click(reloaded);
+    await waitFor(() => expect(reloaded).toBeEnabled());
+    expect(reloaded).toBeChecked();
+    expect(ids).toEqual(['other', 's1']);
+    fail = false;
+    fireEvent.click(reloaded);
+    await waitFor(() => expect(reloaded).not.toBeChecked());
+    expect(ids).toEqual(['other']);
+  });
+
+  it('does not grant global settings to someone allowed to edit only their own skill', async () => {
+    granted.delete('agents.agents/manage');
+    granted.add('agents.agents/edit');
+    renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
+    fireEvent.click(await screen.findByRole('button', { name: 'skills.edit' }));
+    expect(screen.getByTestId('skill-editor')).toBeInTheDocument();
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    expect(callsTo('agents/skillAttachments/global/default')).toHaveLength(0);
   });
 
   it('checks the front matter as it is typed, adds files from the tree and saves a new version', async () => {

@@ -263,7 +263,7 @@ function SkillFacts({
   );
 }
 
-/** How many places of each supported scope take the skill by default. */
+/** Every target, with application-provided names and links respecting visibility. */
 function SkillAttachments({
   skill,
 }: {
@@ -272,23 +272,38 @@ function SkillAttachments({
   const { t } = useTranslation();
   const text = useText();
   const vocabulary = useVocabulary();
-  const defaults = new Map<string, number>();
-  for (const item of skill.attachments)
-    defaults.set(item.scope, (defaults.get(item.scope) ?? 0) + 1);
   return (
     <AgSection id='ag-skill-attachments' title={t('skills.attachments')}>
-      {defaults.size > 0 ? (
+      {skill.attachments.length > 0 ? (
+        <ul className='flex flex-col gap-2 text-sm'>
+          {skill.attachments.map((item) => (
+            <li
+              key={`${item.scope}:${item.scopeId}`}
+              className='flex flex-wrap gap-2'
+            >
+              <span className='text-muted-foreground'>
+                {item.scope === 'global'
+                  ? t('skills.globalMount')
+                  : text(scopeOf(vocabulary, item.scope)?.title, item.scope)}
+              </span>
+              {item.scope === 'global' ? null : item.href && item.name ? (
+                <Link
+                  className='text-primary underline underline-offset-4'
+                  to={item.href}
+                >
+                  {item.name}
+                </Link>
+              ) : (
+                <span>{item.name ?? t('skills.unavailableTarget')}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
         <p className='text-sm text-muted-foreground'>
-          {t('skills.defaults', {
-            places: [...defaults]
-              .map(
-                ([scope, count]) =>
-                  `${text(scopeOf(vocabulary, scope)?.title, scope)} × ${count}`,
-              )
-              .join(t('skills.defaultsSeparator')),
-          })}
+          {t('skills.noAttachments')}
         </p>
-      ) : null}
+      )}
     </AgSection>
   );
 }

@@ -33,6 +33,13 @@ export interface ScopeKind {
   readonly description?: I18nText;
   /** What `userId` may do with the scope `scopeId`; null when it does not exist. */
   access(scopeId: string, userId: string): Promise<ScopeAccess | null>;
+  /** Display only: return names and internal links only for targets the user may see. */
+  describe?(
+    scopeIds: readonly string[],
+    userId: string,
+  ): Promise<
+    ReadonlyMap<string, { readonly name: string; readonly href?: string }>
+  >;
 }
 
 export interface ScopeKindRegistry {

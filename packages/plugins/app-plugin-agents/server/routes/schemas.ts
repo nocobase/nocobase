@@ -763,6 +763,7 @@ const skillDetailObject = skillObject.extend({
       scope: z.string(),
       scopeId: z.string(),
       name: z.string().nullable(),
+      href: z.string().optional(),
     }),
   ),
 });
