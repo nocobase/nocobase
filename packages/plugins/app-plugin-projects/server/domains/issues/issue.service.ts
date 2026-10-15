@@ -20,6 +20,12 @@ import {
 import type { IdSource } from '../../kernel/ids.js';
 import { mentions, newMentions } from '../../kernel/mentions.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
+import {
+  readAttachmentIds,
+  requireUploader,
+  uploaderOf,
+  type AttachmentLinks,
+} from '../attachments/index.js';
 import type { SettingsService } from '../settings/index.js';
 import { updateProject } from '../projects/index.js';
 import {
@@ -33,6 +39,7 @@ import type { EventActor, IssueChangeSet } from './issue.events.js';
 import {
   resolveCreate,
   resolveUpdate,
+  progressValues,
   type FieldDeps,
 } from './issue.fields.js';
 import {
@@ -164,6 +171,7 @@ export interface IssueDeps extends FieldDeps {
   readonly settings: Pick<SettingsService, 'allocateIssueNumber'>;
   readonly triggers: () => IssueTriggers;
   readonly relations: () => IssueRelations;
+  readonly attachments: () => AttachmentLinks;
 }
 
 function eventActor(actor: Actor): EventActor {
@@ -230,6 +238,8 @@ export function createIssueService(deps: IssueDeps): IssueService {
   const service: IssueService = {
     async create(viewer, input) {
       requireCreator(viewer);
+      const attachmentIds = readAttachmentIds(input.attachmentIds);
+      if (attachmentIds.length) requireUploader(viewer);
       return deps.tx.run(async (tx) => {
         const values = await resolveCreate(
           { ...deps, conn: tx.conn, viewer },
@@ -253,6 +263,8 @@ export function createIssueService(deps: IssueDeps): IssueService {
           title: values.title,
           description: values.description,
           statusKey: values.statusKey,
+          needsYou: null,
+          next: null,
           priority: values.priority,
           ownerUserId: values.ownerUserId,
           executorType: values.executor?.type ?? null,
@@ -274,7 +286,19 @@ export function createIssueService(deps: IssueDeps): IssueService {
             id,
             values.labelIds,
           );
-        await record(tx, id, viewer.actor, 'issue_created', { identifier });
+        if (attachmentIds.length)
+          await deps
+            .attachments()
+            .attach(
+              tx,
+              uploaderOf(viewer.actor, viewer.userId),
+              { issueId: id, commentId: null },
+              attachmentIds,
+            );
+        await record(tx, id, viewer.actor, 'issue_created', {
+          identifier,
+          ...(attachmentIds.length ? { attachmentIds } : {}),
+        });
         // Every issue created in the project from now on waits for this one until it is finished.
         if (values.projectSetup && values.projectId)
           await updateProject(tx.conn, values.projectId, { setupIssueId: id });
@@ -351,7 +375,12 @@ export function createIssueService(deps: IssueDeps): IssueService {
             : { added: [], removed: [] };
           if (labels.added.length > 0 || labels.removed.length > 0)
             activities.push({ action: 'labels_changed', details: labels });
-          if (activities.length === 0 && !ownerClaimed) return;
+          if (
+            activities.length === 0 &&
+            Object.keys(values).length === 0 &&
+            !ownerClaimed
+          )
+            return;
           const now = new Date().toISOString();
           await updateIssue(
             tx.conn,
@@ -415,6 +444,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
         };
       const recorded = cause.actor ?? SYSTEM_ACTOR;
       try {
+        const progress = progressValues(issue, { statusKey: to });
         await moveIssue(deps, tx, {
           issue,
           catalog,
@@ -426,6 +456,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
             const now = new Date().toISOString();
             await updateIssue(tx.conn, issue.id, {
               statusKey: to,
+              ...progress,
               updatedAt: now,
               lastActivityAt: now,
             });

@@ -1,5 +1,51 @@
 # @nocobase/app-server
 
+## 2.0.0-beta.7
+
+### Minor Changes
+
+- 1cd749c: Expose issue handoff viewing, acceptance, and rejection through generated CLI commands. Add a single declarative GET binding that supplies a request body field before a command executes, preserving handoff permissions and stale notification checks.
+- bdb0581: A public realtime topic can be defined with `authenticated: true` (`defineTopic` and `registerTopic` of `@nocobase/app-server/realtime`): subscribing without a signed-in principal is then refused with `AUTHENTICATION_REQUIRED`, as for a user topic, and publishing skips connections without one. The projects plugin's `pm:changes`, the agents plugin's `agents:runners` and Studio's `studio:issues:runs`, whose announcements name records by id, now reach signed-in connections only. The authentication plugin opens the realtime connection again when the signed-in person changes, so a page signed in without a reload receives these topics and user topics.
+
+### Patch Changes
+
+- 69e212c: Move KingbaseES, Dameng and OceanBase driver ownership to NocoBase Pro while preserving optional peer dependencies, automatic loading and CLI configuration support. Install the selected driver through the Pro registry in the application's production dependencies and rebuild deployments; explicit driver registration remains optional. Test fixtures resolve external dialect provisioners from the consuming project.
+- Updated dependencies [69e212c]
+- Updated dependencies [943a9a8]
+- Updated dependencies [943a9a8]
+- Updated dependencies [9b946f4]
+  - @nocobase/db@1.0.0-beta.20
+  - @nocobase/db-mssql@0.1.0-beta.4
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.4
+  - @nocobase/db-postgres@0.1.0-beta.4
+  - @nocobase/db-sqlite@0.1.0-beta.5
+
+## 2.0.0-beta.6
+
+### Minor Changes
+
+- 9e99702: Add a lightweight SMTP/Resend mailer and host email service using the existing notification channel configuration. Built-in notification email Providers delegate to the shared transport implementation while retaining their registration and submission-result contracts. Email diagnostics now use fixed messages that cannot expose provider bodies or credentials.
+
+  Add explicitly enabled automatic password recovery through the host mailer, with bounded background submission, account-independent rate limiting, account-state checks. Existing custom senders remain available when no password reset switch is declared; explicit disablement or disabling password sign-in closes all reset endpoints. Only automatic recovery defaults to revoking existing sessions, and explicit session configuration wins.
+
+  Register the host mailer in both templates and Studio, add bilingual reset success and retry feedback, and show opt-in recovery in Studio's example configuration. Operators must explicitly enable recovery and configure an enabled SMTP/Resend channel in their deployment; existing deployments are not modified.
+
+  Automatic credential links require an explicitly configured public origin (`app.publicOrigin` / `APP_PUBLIC_ORIGIN`), or a direct Better Auth consumer's restricted host configuration, so a client-controlled Host cannot choose the reset-link destination. Custom sender configuration remains compatible.
+
+  Reject malformed SMTP authentication settings when validating email channel availability.
+
+  Keep default SMTP password and Resend API key environment mappings optional and secret in deployment manifests. Applications may explicitly require selected credentials, while enabled email channels still validate their configuration.
+
+  Space recovery links on reset error pages in both templates and Studio, allowing them to wrap on narrow screens.
+
+  Request-logging middleware remains unchanged. Default email links first reach a token-bearing API path, which request path/message logs may record. Default output sanitizes token query values in Referer strings, while raw/custom outputs may still retain them; deployment and request-log protection need separate follow-up before exposing this flow.
+
+### Patch Changes
+
+- Updated dependencies [9e99702]
+  - @nocobase/mailer@0.1.0-beta.0
+
 ## 2.0.0-beta.5
 
 ### Patch Changes

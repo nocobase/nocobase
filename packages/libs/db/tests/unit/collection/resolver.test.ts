@@ -13,6 +13,220 @@ import type {
 } from '../../../src/schema/inspector/types.js';
 
 describe('CollectionResolver', () => {
+  it.each([false, true])(
+    'preserves every shared backing-index restriction (legacy reference=%s)',
+    (legacy) => {
+      const references = [
+        { kind: 'unique' as const, name: 'unique_key' },
+        { kind: 'primaryKey' as const, name: 'primary_key' },
+      ];
+      const result = resolveCollection({
+        physical: physicalCollection({
+          columns: [column('id', 1), column('tenant', 2)],
+          primaryKey: { name: 'primary_key', columns: ['tenant', 'id'] },
+          uniqueConstraints: [
+            { name: 'unique_key', columns: ['id', 'tenant'] },
+          ],
+          indexes: [
+            {
+              name: 'shared_index',
+              keys: [
+                { columnName: 'id', columnEquality: false },
+                { columnName: 'tenant' },
+              ],
+              unique: true,
+              valid: false,
+              ...(legacy ? { backsConstraint: references[0] } : {}),
+              backsConstraints: references,
+            },
+          ],
+        }),
+        context: emptyContext(),
+      });
+      expect(result.collection.constraints).toEqual([
+        {
+          type: 'primary',
+          name: 'primary_key',
+          fields: ['tenant', 'id'],
+          db: { columnEquality: false, valid: false },
+        },
+        {
+          type: 'unique',
+          name: 'unique_key',
+          fields: ['id', 'tenant'],
+          db: { columnEquality: false, valid: false },
+        },
+      ]);
+      expect(result.collection.indexes).toEqual([]);
+    },
+  );
+
+  describe.each(['primaryKey', 'unique'] as const)(
+    '%s backing index identity',
+    (kind) => {
+      it.each([
+        { referenceName: 'constraint_key', keys: ['id', 'tenant'] },
+        { referenceName: 'constraint_key', keys: ['id', 'tenant', 'extra'] },
+        { referenceName: undefined, keys: ['id', 'tenant'] },
+      ])(
+        'preserves safety metadata with $keys and name=$referenceName',
+        ({ referenceName, keys }) => {
+          const constraint = {
+            name: 'constraint_key',
+            columns: ['tenant', 'id'],
+          };
+          const result = resolveCollection({
+            physical: physicalCollection({
+              columns: [
+                column('tenant', 1),
+                column('id', 2),
+                column('extra', 3),
+              ],
+              ...(kind === 'primaryKey'
+                ? { primaryKey: constraint }
+                : { uniqueConstraints: [constraint] }),
+              indexes: [
+                {
+                  name: 'backing_index',
+                  keys: keys.map((columnName) => ({
+                    columnName,
+                    columnEquality: false,
+                  })),
+                  unique: keys.length === 2,
+                  valid: false,
+                  backsConstraint: { kind, name: referenceName },
+                },
+              ],
+            }),
+            context: emptyContext(),
+          });
+          expect(result.collection.constraints).toContainEqual(
+            expect.objectContaining({
+              type: kind === 'primaryKey' ? 'primary' : 'unique',
+              name: constraint.name,
+              fields: ['tenant', 'id'],
+              db: { columnEquality: false, valid: false },
+            }),
+          );
+        },
+      );
+    },
+  );
+
+  it('keeps safety metadata on the named constraint when two constraints use the same columns', () => {
+    const result = resolveCollection({
+      physical: physicalCollection({
+        columns: [column('id', 1)],
+        uniqueConstraints: [
+          { name: 'safe_key', columns: ['id'] },
+          { name: 'unsafe_key', columns: ['id'] },
+        ],
+        indexes: [
+          {
+            name: 'safe_index',
+            keys: [{ columnName: 'id' }],
+            unique: true,
+            backsConstraint: { kind: 'unique', name: 'safe_key' },
+          },
+          {
+            name: 'unsafe_index',
+            keys: [{ columnName: 'id', columnEquality: false }],
+            unique: true,
+            valid: false,
+            backsConstraint: { kind: 'unique', name: 'unsafe_key' },
+          },
+        ],
+      }),
+      context: emptyContext(),
+    });
+    expect(result.collection.constraints).toEqual([
+      { type: 'unique', name: 'safe_key', fields: ['id'] },
+      {
+        type: 'unique',
+        name: 'unsafe_key',
+        fields: ['id'],
+        db: { columnEquality: false, valid: false },
+      },
+    ]);
+  });
+
+  it.each(['primaryKey', 'unique'] as const)(
+    'preserves invalid %s backing indexes',
+    (kind) => {
+      const result = resolveCollection({
+        physical: physicalCollection({
+          columns: [column('id', 1)],
+          ...(kind === 'primaryKey'
+            ? { primaryKey: { columns: ['id'] } }
+            : { uniqueConstraints: [{ columns: ['id'] }] }),
+          indexes: [
+            {
+              name: 'key',
+              keys: [{ columnName: 'id' }],
+              unique: true,
+              valid: false,
+              backsConstraint: { kind },
+            },
+          ],
+        }),
+        context: emptyContext(),
+      });
+      expect(result.collection.constraints).toContainEqual(
+        expect.objectContaining({
+          type: kind === 'primaryKey' ? 'primary' : 'unique',
+          fields: ['id'],
+          db: { valid: false },
+        }),
+      );
+    },
+  );
+
+  it.each([true, false])(
+    'only promotes valid=%s indexes whose predicate is implied by non-null keys',
+    (valid) => {
+      const result = resolveCollection({
+        physical: physicalCollection({
+          columns: [column('id', 1)],
+          indexes: [
+            {
+              name: 'key',
+              keys: [{ columnName: 'id' }],
+              unique: true,
+              valid,
+              partial: true,
+              predicate: 'id IS NOT NULL',
+              predicateSatisfiedByNonNullKeys: true,
+            },
+          ],
+        }),
+        context: emptyContext(),
+      });
+      expect(result.collection.constraints).toHaveLength(valid ? 1 : 0);
+    },
+  );
+
+  it.each([false, 'immediate', 'deferred'] as const)(
+    'preserves %s primary key deferrability',
+    (deferrable) => {
+      const result = resolveCollection({
+        physical: physicalCollection({
+          columns: [column('id', 1)],
+          primaryKey: {
+            columns: ['id'],
+            deferrable: deferrable !== false,
+            initiallyDeferred: deferrable === 'deferred',
+          },
+        }),
+        context: emptyContext(),
+      });
+      expect(result.collection.constraints).toContainEqual({
+        type: 'primary',
+        fields: ['id'],
+        deferrable,
+      });
+    },
+  );
+
   it.each([
     ['integer', true, true],
     [undefined, true, false],
@@ -148,6 +362,34 @@ describe('CollectionResolver', () => {
       mode: 'index',
     });
   });
+
+  it.each([{ predicate: 'active = 1' }, { partial: true }, { valid: false }])(
+    'does not promote a restricted unique index: %j',
+    (facts) => {
+      const result = resolveCollection({
+        physical: physicalCollection({
+          tableName: 'users',
+          columns: [column('id', 1), column('email', 2)],
+          primaryKey: { columns: ['id'] },
+          indexes: [
+            {
+              name: 'users_email_unique',
+              keys: [{ columnName: 'email' }],
+              unique: true,
+              ...facts,
+            },
+          ],
+        }),
+        context: emptyContext(),
+      });
+      expect(result.collection.constraints).toEqual([
+        { type: 'primary', fields: ['id'] },
+      ]);
+      expect(result.collection.indexes).toMatchObject([
+        { name: 'users_email_unique', db: { unique: true, ...facts } },
+      ]);
+    },
+  );
 
   it('merges valid optimistic lock metadata into a resolved table Collection', () => {
     const result = resolveCollection({

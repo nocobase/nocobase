@@ -21,7 +21,8 @@ import type {
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
 
 import type { StudioInboxPort } from '../inbox/port.js';
-import { IN_REVIEW } from './cards.js';
+import { findPullRequestById } from './store.js';
+import { IN_REVIEW, settleMergeCards } from './cards.js';
 import {
   createPullRequestEvents,
   createRepoEvents,
@@ -59,7 +60,7 @@ export interface StudioGitBindDeps {
   readonly now?: () => Date;
   readonly onError?: (message: string, error: unknown) => void;
   /** Something about a pull request was stored (`GitFlowDeps.onChanged`). */
-  readonly onChanged?: () => void;
+  readonly onChanged?: (pullRequestId: string) => void;
 }
 
 export function bindStudioGit(deps: StudioGitBindDeps): {
@@ -110,6 +111,7 @@ export function bindStudioGit(deps: StudioGitBindDeps): {
     ...(deps.webhookUrl ? { webhookUrl: deps.webhookUrl } : {}),
     ...(deps.pollSeconds ? { pollSeconds: deps.pollSeconds } : {}),
     ...(deps.now ? { now: deps.now } : {}),
+    ...(deps.onChanged ? { onLabelChanged: deps.onChanged } : {}),
   });
   if (deps.noticeRules)
     releases.push(deps.noticeRules.add(prMergedRule(deps.projects)));
@@ -133,7 +135,9 @@ export function bindStudioGit(deps: StudioGitBindDeps): {
       const work =
         status.to === IN_REVIEW
           ? flow.requestMerges(event.issueId)
-          : status.from === IN_REVIEW
+          : status.from === IN_REVIEW ||
+              status.to === 'done' ||
+              status.to === 'cancelled'
             ? flow.withdrawMerges(event.issueId)
             : null;
       work?.catch((error: unknown) =>
@@ -142,6 +146,26 @@ export function bindStudioGit(deps: StudioGitBindDeps): {
           error,
         ),
       );
+    }),
+  );
+  releases.push(
+    events.on(async (event) => {
+      if (event.type !== 'unlinked') return;
+      const port = deps.inbox();
+      if (port) {
+        const pr = await findPullRequestById(
+          deps.projects().tx.read(),
+          event.pullRequestId,
+        );
+        await settleMergeCards(
+          port,
+          event.pullRequestId,
+          [event.issueId],
+          pr?.state === 'merged' || pr?.state === 'closed'
+            ? pr.state
+            : 'withdrawn',
+        );
+      }
     }),
   );
   return {

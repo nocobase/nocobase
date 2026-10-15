@@ -29,6 +29,56 @@ describe('runs as their actors', () => {
       (run) => run.id === runId,
     )?.wait?.reason;
 
+  it('reads the current input author on an old completed run while keeping stored snapshots', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent({ name: 'Project manager' });
+    const queued = await h.services.runs.enqueue({
+      agentId,
+      subject: { kind: 'sample', id: 'old' },
+      actorUserId: 'owner',
+      input: {
+        type: 'comment',
+        actor: { kind: 'agent', id: agentId, name: 'Project manager' },
+        text: 'Historical body mentioning Project manager.',
+      },
+    });
+    const runner = await h.registerRunner();
+    const [payload] = await claim(h, runner);
+    expect(payload.inputs[0].actor.name).toBe('Project manager');
+    await h.database
+      .connection()
+      .query.updateTable('agRuns')
+      .set({ status: 'completed' })
+      .where('id', '=', queued.runId)
+      .execute();
+    for (const name of ['项目经理', 'Team lead', '负责人']) {
+      const agent = await h.services.agents.get(agentId);
+      await h.services.agents.ensureSystem({ ...agent, name }, 'owner');
+      const detail = await h.services.runs.detail(queued.runId);
+      expect(detail.inputs[0].actor.name).toBe(name);
+      expect(detail.inputs[0].text).toBe(
+        'Historical body mentioning Project manager.',
+      );
+      const stored = await h.database
+        .connection()
+        .query.selectFrom('agRunInputs')
+        .select('actorName')
+        .where('runId', '=', queued.runId)
+        .executeTakeFirstOrThrow();
+      expect(stored.actorName).toBe('Project manager');
+    }
+    await h.database
+      .connection()
+      .query.updateTable('agRunInputs')
+      .set({ actorId: 'missing-agent' })
+      .where('runId', '=', queued.runId)
+      .execute();
+    expect(
+      (await h.services.runs.detail(queued.runId)).inputs[0].actor.name,
+    ).toBe('Project manager');
+    expect(payload.inputs[0].actor.name).toBe('Project manager');
+  });
+
   it("keeps the owner's work out of a run another person's comment queued", async () => {
     h = await createHarness();
     const agentId = await h.createAgent();

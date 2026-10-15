@@ -10,7 +10,11 @@ import path from 'node:path';
 
 import { Flags, type Command } from '@oclif/core';
 
-import { BridgeStopped, runBridge } from '@nocobase/acp-bridge';
+import {
+  BridgeStopped,
+  BridgeUpgradeRequired,
+  runBridge,
+} from '@nocobase/acp-bridge';
 import { EXIT_CODES } from '@nocobase/agent-protocol';
 
 import {
@@ -25,8 +29,19 @@ import {
 import type { AppCliConfig } from './config.ts';
 import { currentSession, type Session } from './dynamic/session.ts';
 import { detectInstallation } from './install.ts';
+import { readUserConfig } from './lib/credentials.ts';
+import {
+  hasStudioSkill,
+  prepareSessionSkill,
+  skillsEnvironment,
+} from './skills.ts';
 import { AppCommand, UsageError } from './lib/command.ts';
 import { globalFlags } from './lib/globals.ts';
+import {
+  updateCli,
+  updateEnvironment,
+  type CliUpdateResult,
+} from './update.ts';
 
 export function acpCommands(app: AppCliConfig): Record<string, Command.Class> {
   const placeFlags = {
@@ -122,14 +137,43 @@ export function acpCommands(app: AppCliConfig): Record<string, Command.Class> {
       async run(): Promise<void> {
         const { flags } = await this.parse(AcpStart);
         const session = await signedIn();
+        const profile = session.profile;
+        if (!profile)
+          throw new UsageError(
+            `Agent sessions require a signed-in profile. Run \`${app.bin} login\` first.`,
+            EXIT_CODES.auth,
+          );
         const stateFile = stateFileOf(this.paths.home, session);
         const release = await holdLock(`${stateFile}.lock`, app.bin);
         const stop = new AbortController();
         const onSignal = (): void => stop.abort();
         process.once('SIGINT', onSignal);
         process.once('SIGTERM', onSignal);
+        const log = (message: string): void =>
+          this.log(flags.service ? `${timestamp()} ${message}` : message);
         try {
           await runBridge({
+            prepareSession: async (agentId, sessionId) => {
+              if (!hasStudioSkill(app) || !app.envPrefix)
+                throw new Error(
+                  'This CLI does not ship the nb-studio-cli Skill required by agent sessions. Update the CLI.',
+                );
+              const user = await readUserConfig({
+                paths: this.paths,
+                config: app,
+                profile,
+                profileOnly: true,
+              });
+              if (!user || user.server !== session.server)
+                throw new Error(
+                  'The bridge-selected profile is no longer available for this server. Sign in and restart the bridge.',
+                );
+              await prepareSessionSkill(skillsEnvironment(app), agentId);
+              return {
+                [`${app.envPrefix}_PROFILE`]: profile,
+                [`${app.envPrefix}_AGENT_SESSION`]: sessionId,
+              };
+            },
             server: session.server,
             headers: session.headers,
             client: { name: app.bin, version: this.config.version },
@@ -144,11 +188,30 @@ export function acpCommands(app: AppCliConfig): Record<string, Command.Class> {
               : {}),
             reconnect: !flags.service,
             signal: stop.signal,
-            log: (message) =>
-              this.log(flags.service ? `${timestamp()} ${message}` : message),
+            log,
           });
           this.log('Disconnected.');
         } catch (error) {
+          if (error instanceof BridgeUpgradeRequired) {
+            log(error.message);
+            const environment = updateEnvironment(app);
+            const outcome = await updateRefusedBridge({
+              bin: app.bin,
+              refusal: error,
+              update:
+                environment && (() => updateCli(session, environment, { log })),
+            });
+            // Never 0: the service manager starts the bridge again, on the new version or to try again.
+            if (outcome.updated)
+              throw new UsageError(
+                flags.service
+                  ? `Updated ${app.bin} to ${outcome.version}; the service starts the bridge again on it.`
+                  : `Updated ${app.bin} to ${outcome.version}; run \`${app.bin} acp start\` again.`,
+                EXIT_CODES.general,
+              );
+            if (flags.service) await pause(UPGRADE_RETRY_MS, stop.signal);
+            throw new UsageError(outcome.reason, EXIT_CODES.general);
+          }
           if (!(error instanceof BridgeStopped)) throw error;
           // The service stops for good, exiting 0, rather than being started again to be refused again.
           if (flags.service) {
@@ -279,6 +342,68 @@ export function acpCommands(app: AppCliConfig): Record<string, Command.Class> {
       }
     },
   };
+}
+
+/**
+ * How long the service waits, after the application refused its bridge and no update helped, before exiting for its
+ * service manager to start it again: it tries again then, without asking every few seconds.
+ */
+export const UPGRADE_RETRY_MS: number = 5 * 60_000;
+
+/** What updating a refused bridge came to: the version it now is, or why it is not updated. */
+export type BridgeUpdateOutcome =
+  | { readonly updated: true; readonly version: string }
+  | { readonly updated: false; readonly reason: string };
+
+/**
+ * After the application refused the bridge's protocol: updates the CLI as `<bin> update` does (`update`; undefined
+ * when this CLI does not update itself) when the bridge is the older side, and says why not otherwise.
+ */
+export async function updateRefusedBridge(options: {
+  readonly bin: string;
+  readonly refusal: BridgeUpgradeRequired;
+  readonly update: (() => Promise<CliUpdateResult>) | undefined;
+}): Promise<BridgeUpdateOutcome> {
+  const { bin, refusal, update } = options;
+  const needs =
+    refusal.protocol === undefined
+      ? ''
+      : `, the application ${refusal.protocol}`;
+  if (!refusal.bridgeIsOlder)
+    return {
+      updated: false,
+      reason: `This ${bin} speaks bridge protocol ${refusal.bridgeProtocol}, newer than the application (${refusal.protocol}): the application has to be updated.`,
+    };
+  if (update === undefined)
+    return {
+      updated: false,
+      reason: `This ${bin} does not update itself; update it the way it was installed (bridge protocol ${refusal.bridgeProtocol}${needs}).`,
+    };
+  try {
+    const result = await update();
+    if (result.updated) return { updated: true, version: result.latest };
+    return {
+      updated: false,
+      reason: `${bin} ${result.current} is the newest the application serves, and it speaks bridge protocol ${refusal.bridgeProtocol}${needs}. Install the ${bin} the application expects.`,
+    };
+  } catch (error) {
+    return {
+      updated: false,
+      reason: `Could not update ${bin}: ${error instanceof Error ? error.message : String(error)} Run \`${bin} update\`.`,
+    };
+  }
+}
+
+function pause(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(done, ms);
+    function done(): void {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', done);
+      resolve();
+    }
+    signal.addEventListener('abort', done, { once: true });
+  });
 }
 
 /** Where the bridge remembers this computer and its key, for the profile and server. */

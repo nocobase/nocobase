@@ -44,6 +44,51 @@ async function runOn(actions: readonly string[]) {
 }
 
 describe('the pull request routes', () => {
+  it('unlinks through run identity and write-scoped keys, rejects read scope and revoked identity', async () => {
+    const { issue, token } = await runOn(['pm.issues/view']);
+    h.github.addPull(REPO, { number: 21 });
+    const linked = await h.git.link(h.viewer('alice'), issue.id, PR_URL(21), {
+      type: 'user',
+      id: 'alice',
+    });
+    const endpoint = `/git/pullRequests/${linked.pullRequest.id}?issueId=${issue.id}`;
+    expect(
+      (
+        await h.request('DELETE', endpoint, {
+          user: 'alice',
+          headers: { 'x-test-key-scope': READ_ISSUES },
+        })
+      ).status,
+    ).toBe(403);
+    h.roles.set('alice', 'none');
+    expect(
+      (await h.request('DELETE', endpoint, { runToken: token })).status,
+    ).toBe(403);
+    h.roles.set('alice', 'member');
+    expect(
+      (await h.request('DELETE', endpoint, { runToken: token })).status,
+    ).toBe(204);
+    await h.git.link(h.viewer('alice'), issue.id, PR_URL(21), {
+      type: 'user',
+      id: 'alice',
+    });
+    expect(
+      (
+        await h.request('DELETE', endpoint, {
+          user: 'alice',
+          headers: {
+            'x-test-key-scope': JSON.stringify({
+              'projects.issues': { level: 'write' },
+            }),
+          },
+        })
+      ).status,
+    ).toBe(204);
+    expect((await h.git.list(h.viewer('alice'), issue.id)).data).toHaveLength(
+      0,
+    );
+    expect(h.github.pull(REPO, 21).state).toBe('open');
+  });
   it('list the run’s own issue’s pull requests when it names none', async () => {
     const { issue, token } = await runOn(['pm.issues/view']);
     h.github.addPull(REPO, { number: 3, head: { ref: 'fix', sha: 'c1' } });

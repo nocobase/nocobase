@@ -414,6 +414,10 @@ const issueFields = {
 
 export const CreateIssueBody: z.ZodType<CreateIssueRequest> = z.strictObject({
   title: z.string(),
+  attachmentIds: z.array(id).optional().meta({
+    description:
+      "The caller's unattached uploads; requires attachment upload permission. Bound before work starts.",
+  }),
   ...issueFields,
   blockedBy: z.array(id).optional(),
   projectSetup: z.boolean().optional(),
@@ -425,6 +429,14 @@ export type UpdateIssueInput = Omit<UpdateIssueRequest, 'revision'> & {
 };
 
 export const UpdateIssueBody: z.ZodType<UpdateIssueInput> = z.strictObject({
+  needsYou: z.string().nullable().optional().meta({
+    description:
+      'Optional decision or input for the owner. Omit to retain; null or whitespace clears it. Cleared outside blocked or in_review. Studio requires nonblank input only for authenticated project-manager direct status updates.',
+  }),
+  next: z.string().nullable().optional().meta({
+    description:
+      'The next step. Omit to retain; null or whitespace clears it. Terminal statuses clear it.',
+  }),
   revision: z.number().int().optional().meta({
     description:
       'The revision the change is based on; left out, the change applies to the issue as it is now.',
@@ -905,6 +917,14 @@ const issueShape = {
   title: z.string(),
   description: z.string().meta({ description: 'Markdown.' }),
   statusKey: z.string(),
+  needsYou: z.string().nullable().meta({
+    description:
+      'The decision or input required from the owner; null outside Blocked and In review, or on historical issues.',
+  }),
+  next: z.string().nullable().meta({
+    description:
+      'The next step; null when none is recorded or the issue is Done or Cancelled.',
+  }),
   priority: z.enum(PRIORITIES),
   ownerUserId: z.string(),
   executor: ExecutorSchema.nullable(),
@@ -960,6 +980,7 @@ export const IssueDependencySchema: z.ZodType<IssueDependency> = z
   .meta({ ref: 'ProjectsIssueDependency' });
 
 export const IssueDetailSchema: z.ZodType<IssueDetail> = z.object({
+  progress: z.record(z.string(), z.unknown()).nullable().optional(),
   ...issueListItemShape,
   parent: z
     .object({ id: z.string(), identifier: z.string(), title: z.string() })
@@ -1129,7 +1150,12 @@ const PlanRowInputSchema: z.ZodType<PlanRowInput> = z
       ref: z.string().optional(),
       params: z.object({
         issue: issueTarget,
-        set: z.object({ title: z.string().optional(), ...issueFieldChanges }),
+        set: z.object({
+          title: z.string().optional(),
+          ...issueFieldChanges,
+          needsYou: z.string().nullable().optional(),
+          next: z.string().nullable().optional(),
+        }),
         start: z.boolean().optional(),
       }),
     }),
@@ -1435,3 +1461,9 @@ export const singleFileBody: OpenAPIV3_1.RequestBodyObject = {
     },
   },
 };
+
+/** Context supplied by the session bridge, never an authentication credential. */
+export const IssueSessionHeader: z.ZodType<{ 'x-nb-agent-session'?: string }> =
+  z.object({
+    'x-nb-agent-session': z.string().min(1).max(200).optional(),
+  });

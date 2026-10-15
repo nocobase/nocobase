@@ -3,6 +3,7 @@ import { followUpsEnUS } from '../follow-ups/locales.js';
 import type { LocaleResource } from '@nocobase/i18n';
 import { gitEnUS } from '../git/locales.js';
 import { knowledgeEnUS } from '../knowledge/locales.js';
+import { taskGroupsEnUS } from '../issues/groups/locales.js';
 import { issuesEnUS } from '../issues/locales.js';
 import { issueLiveEnUS } from '../issues/live/locales.js';
 import { projectPageEnUS } from '../projects/locales.js';
@@ -62,6 +63,10 @@ const enUS = {
   'issueRuns.configuredModel': 'Configured model: {{model}}',
   'issueRuns.modelUnknown': 'Model not reported',
   'issueRuns.clearFilters': 'Clear filters',
+  'issueRuns.attemptFailed': 'Attempt {{attempt}} failed',
+  'issueRuns.preparationFailed': 'Run preparation failed',
+  'issueRuns.retryScheduled': 'Automatic retry scheduled for {{time}}',
+  'issueRuns.awaitingDispatch': 'Waiting to be dispatched again',
   'issueRuns.emptyHint':
     'Check the executor and status in Properties to start agent work.',
   'issueRuns.loading': 'Loading execution log…',
@@ -120,6 +125,7 @@ const enUS = {
   runTranscript: {
     usedModel: 'Model: {{model}}',
     defaultModel: 'Default model',
+    confirmedBy: 'Confirmed by {{person}}',
     actingAs: 'Running as {{actor}}',
     triggeredBy: 'Triggered by {{person}}',
     systemTrigger: 'Triggered by the system',
@@ -303,7 +309,15 @@ const enUS = {
         '1. `nb-studio` needs Node.js 24 or newer with npm: check with `node --version`, and if it is missing or older, ask me before installing it. Then run `{{install}}` to install `nb-studio`.\n' +
         '2. Run `nb-studio login --server {{server}}`, share the sign-in URL and code it displays, and wait for me to confirm the sign-in in my browser.\n' +
         '3. Once signed in, run `nb-studio whoami` to check the identity and permissions, then run `nb-studio docs` to learn the available commands.\n' +
-        '4. Use `nb-studio` for my subsequent requests instead of calling the HTTP API directly.',
+        '4. Run `nb-studio skills install` to install the CLI skill for your coding agent.\n' +
+        '5. Use `nb-studio` for my subsequent requests instead of calling the HTTP API directly.',
+      computerTitle: 'Connect your computer',
+      computerDescription:
+        'Send these instructions to a coding agent on the computer you want to connect, such as Claude Code or Codex.',
+      computerPrompt:
+        '6. Run `nb-studio acp service install` to keep this computer online. For a temporary connection, use `nb-studio acp start` instead.\n' +
+        '7. The entire user home directory is allowed by default. You can change the allowed folders in My computers.\n' +
+        '8. Ask me to confirm in Studio that this computer is online.',
       promptLabel: 'Setup instructions for your Coding Agent',
       preparing: 'Generating setup instructions',
       identity:
@@ -311,7 +325,7 @@ const enUS = {
       expiry:
         'The installation link in these instructions is valid for 30 minutes. Generate new instructions if it expires.',
       runtime:
-        'To let Studio assign tasks to run on your computer, go to Agent team › Runtimes › Add runtime to install and register a Runner.',
+        'A local coding agent uses the CLI to manage Studio. My Agent connects your computer for interactive sessions. A Runner executes tasks dispatched by Studio; register one under Agent team › Runtimes › Add runtime.',
       regenerate: 'Regenerate instructions',
       copy: 'Copy setup instructions',
       copied: 'Setup instructions copied',
@@ -957,6 +971,7 @@ const enUS = {
   'inbox.text.executor_suggested':
     '{{agentName}} is suggested to execute {{identifier}}',
   'inbox.someone': 'Someone',
+  'inbox.anAgent': 'An agent',
   'inbox.titles.approval_requested': 'Status change waiting for approval',
   'inbox.outcomes.retried': 'Retried',
   'inbox.outcomes.newRun': 'A new run has started',
@@ -1122,6 +1137,9 @@ const enUS = {
   },
   /** What Studio contributes to the agents plugin's pages and the projects plugin's workflow editor. */
   studioAgents: {
+    newProjectSkill: 'Attach to new projects automatically',
+    newProjectSkillDescription:
+      'Saves immediately. Only projects created afterwards receive this skill; existing projects keep their attachments.',
     principalKinds: { agent: 'Agent' },
     templateMessages: {
       inReview:
@@ -1143,6 +1161,8 @@ const enUS = {
       stageEntered: 'Workflow stage',
       planDecided: 'Plan decided',
       prChecksFailed: 'Checks failed',
+      stepEnded: 'Worker step ended',
+      managerIdle: 'Idle waiting recheck',
       prChecksPassed: 'Checks passed',
       started: 'Started',
       prConflict: 'Pull request conflict',
@@ -1313,7 +1333,7 @@ const enUS = {
     commentRuns: {
       limitReached: 'Agent comments paused',
       continueHint:
-        'Agents’ comments started {{maxRuns}} runs on this issue in {{windowHours}} hours, so the last one woke nobody. Continue to wake the agents it names once and restart the count.',
+        'Comment-triggered runs reached the limit of {{maxRuns}} in the last {{windowHours}} hours.',
       continued: 'Agent comment continued',
       continueStale: 'This comment no longer waits. Refresh the issue.',
       continueFailed:
@@ -1385,6 +1405,7 @@ const enUS = {
   preferences: preferencesEnUS,
   knowledge: knowledgeEnUS,
   issuesPage: issuesEnUS,
+  taskGroups: taskGroupsEnUS,
   followUps: followUpsEnUS,
   issueLive: issueLiveEnUS,
   projectPage: projectPageEnUS,
@@ -1412,6 +1433,8 @@ const enUS = {
     settings: 'Settings',
     loadFailed: 'Could not load the project manager.',
     settingsPage: {
+      name: 'Name',
+      identityDescription: 'Description',
       title: 'Project manager',
       description:
         'There is one for all projects: it arranges the work of every issue.',
@@ -1458,6 +1481,8 @@ const enUS = {
     workerChoice: 'Model',
     workerWaiting: '{{agent}} waiting for a runner: {{entries}}',
     modelWait: {
+      updatePending: 'runner waiting for update; new work is paused',
+      pruning: 'runner cleaning shared store; new work is paused',
       toolNotInstalled: 'tool not installed',
       toolUnavailable: 'tool not signed in, disabled, or model unavailable',
       noSharedRunner: 'only other people’s personal runners are online',

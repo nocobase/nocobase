@@ -62,7 +62,8 @@ const progress = (overrides: Partial<IssueProgress> = {}): IssueProgress => ({
   since: null,
   runner: null,
   pullRequest: null,
-  question: null,
+  needsYou: null,
+  explanationCommentId: null,
   next: null,
   handOver: false,
   ...overrides,
@@ -134,6 +135,54 @@ async function translator(language: 'en-US' | 'zh-CN') {
   return runtime;
 }
 
+it.each(['en-US', 'zh-CN'] as const)(
+  'describes a draining runner in the Now line in %s',
+  async (language) => {
+    const t = (await translator(language)).getFixedT('studio', language);
+    const text = progressSentence(
+      t,
+      progress({
+        state: 'queued',
+        waiting: {
+          reason: 'ownerHasNoRunner',
+          owner: { id: 'alice', name: 'Alice' },
+        },
+        managerWait: {
+          queueEnteredAt: new Date(NOW).toISOString(),
+          fallbackAfterSeconds: 120,
+          sampledAt: new Date(NOW).toISOString(),
+          entries: [
+            {
+              tool: 'codex',
+              model: 'sol',
+              reason: 'updatePending',
+              compatibleCount: 1,
+              runners: ['lima'],
+              runnerLoads: [
+                {
+                  name: 'lima',
+                  ownerUserId: 'alice',
+                  reason: 'updatePending',
+                  used: 0,
+                  limit: 2,
+                  reportedTotalFree: 0,
+                },
+              ],
+            },
+          ],
+        },
+      }),
+      NOW,
+    );
+    expect(text).toContain(
+      language === 'en-US'
+        ? 'runner waiting for update'
+        : '执行机等待升级，暂不接活',
+    );
+    expect(text).toContain('lima');
+  },
+);
+
 async function mount(
   statusKey: string,
   answer: IssueProgress,
@@ -192,7 +241,7 @@ describe('what an issue waits for', () => {
       '等待 PR #10777 的检查结果',
     ],
     [
-      progress({ state: 'needsDecision', question: 'Keep the old API?' }),
+      progress({ state: 'needsDecision', needsYou: 'Keep the old API?' }),
       'The project manager asks: Keep the old API?',
       '项目经理在等你决定：Keep the old API?',
     ],
@@ -270,7 +319,7 @@ describe('what an issue waits for', () => {
     expect(
       progressStatusLine(
         en,
-        progress({ state: 'needsDecision', question: 'Retry after `429`?' }),
+        progress({ state: 'needsDecision', needsYou: 'Retry after `429`?' }),
         NOW,
       ),
     ).toBe('Waiting for your decision');
@@ -296,7 +345,10 @@ describe('what an issue waits for', () => {
     expect(screen.getByTestId('issue-progress').textContent).toContain(
       'Next: Hand it to Opus for review once the checks pass',
     );
-    expect(mocks.request).toHaveBeenCalledWith({ path: 'issueProgress/i1' });
+    expect(mocks.request).toHaveBeenCalledWith({
+      path: 'issueProgress/i1',
+      signal: expect.any(AbortSignal),
+    });
     expect(screen.queryByRole('button')).toBeNull();
   });
 

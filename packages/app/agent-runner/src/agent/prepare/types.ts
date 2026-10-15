@@ -10,6 +10,7 @@ import type { SkillsPlacement } from '../adapters/types.ts';
 import type { AppRegistration } from '../../lib/config.ts';
 import type { RunnerPaths } from '../../lib/home.ts';
 import type { ApiClient } from '../../lib/http.ts';
+import { isDiskFull } from '../../lib/disk-full.ts';
 import type {
   PreparedDir,
   RepoAuthSource,
@@ -85,6 +86,7 @@ export function stepFailure(
   error: unknown,
   accepted: readonly string[] | undefined,
 ): FailureReason {
+  if (isDiskFull(error)) return 'runnerDiskFull';
   if (error instanceof PrepareError) return error.reason;
   if (error instanceof WorkspaceBusyError)
     return acceptedFailure('workspaceBusy', accepted);

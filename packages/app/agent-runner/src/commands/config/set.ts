@@ -29,7 +29,7 @@ const UNITS: Readonly<Record<string, number>> = {
   d: 24 * 60 * 60_000,
 };
 
-/** `12h`, `30m`, `2d`, or `off` (0): how long a working directory stays unused before its artifacts go. */
+/** `2h`, `30m`, `2d`, or `off` (0): how long a working directory stays unused before its artifacts go. */
 export function parseArtifactTtl(value: string): number {
   const text = value.trim().toLowerCase();
   if (text === 'off' || text === '0') return 0;
@@ -37,7 +37,7 @@ export function parseArtifactTtl(value: string): number {
   const amount = match ? Number(match[1]) : Number.NaN;
   if (!match || !Number.isSafeInteger(amount) || amount <= 0)
     throw new UsageError(
-      `artifact-ttl is a duration such as 12h, 30m or 2d, or off; not ${value}.`,
+      `artifact-ttl is a duration such as 2h, 30m or 2d, or off; not ${value}.`,
     );
   return amount * UNITS[match[2]];
 }
@@ -67,14 +67,14 @@ export default class ConfigSet extends RunnerCommand {
   static override summary: string = 'Change a runner setting.';
   static override description: string =
     '`min-free-disk` is how much of the disk holding the working directories to keep free: a size (20G, 512M), a ' +
-    `share of the disk (10%), or off; ${formatFreeSpace(DEFAULT_MIN_FREE_DISK)} by default. The runner removes only ` +
-    'directories whose work is over on its own; below the threshold it warns which are left for `gc` to remove. A ' +
-    'running runner reads it at its next collection.\n\n' +
+    `share of the disk (10%), or off; ${formatFreeSpace(DEFAULT_MIN_FREE_DISK)} by default. Below it, the runner cleans ` +
+    'idle artifacts, then clean pushed workspaces, then disposable read-only copies. If space remains low, new work pauses ' +
+    'until a heartbeat detects recovery. A running runner reads changes on heartbeat, claim and collection.\n\n' +
     '`agent-tools` is which Node.js and pnpm agents get: `runner` (the default), the runner’s own, first on their ' +
     'PATH, so a run does not depend on what the machine has installed; or `system`, whatever the machine has on its ' +
     'PATH. Runs started afterwards use it.\n\n' +
     '`artifact-ttl` is how long a working directory stays unused before its regenerable build artifacts are removed ' +
-    '(12h by default; 30m, 2d, or off); the checkout itself stays. `artifact-patterns` names those directories, ' +
+    '(2h by default; 30m, 2d, or off); the checkout itself stays. `artifact-patterns` names those directories, ' +
     'comma-separated (node_modules,.next,.turbo by default, or default); every directory with such a name inside the ' +
     'checkout goes, without following symbolic links. A running runner reads them at its next collection.';
   static override examples: string[] = [

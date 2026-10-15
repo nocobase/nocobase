@@ -7,6 +7,7 @@ import type {
   LinkResolver,
   LinkView,
 } from '@nocobase/app-plugin-agent-sessions/server';
+import type { SessionLinkIcon } from '@nocobase/app-plugin-agent-sessions/shared/api';
 import type {
   Projects,
   Viewer,
@@ -18,6 +19,7 @@ import {
   statusCategory,
 } from '@nocobase/app-plugin-projects/shared/statuses';
 
+import type { WaitReason } from '../../shared/task-groups.js';
 import { progressOf, type ProgressDeps } from './progress.js';
 
 export interface IssueLinkDeps {
@@ -29,10 +31,56 @@ export interface IssueLinkDeps {
   readonly statusNames: (
     locale: string | undefined,
   ) => Promise<(statusKey: string) => string>;
+  /** Words what an issue waits on the reader for (`WaitReason`) in `locale`, such as "Waiting for you to accept". */
+  readonly waitNames?: (
+    locale: string | undefined,
+  ) => Promise<(reason: WaitReason) => string>;
 }
 
 /** The statuses whose next step is the owner's: deciding (Blocked) or accepting (In review). */
 const OWNER_STEPS = new Set(['blocked', 'in_review']);
+
+/** The shape each fixed status is drawn with, as the task lists draw it. */
+const STATUS_ICON: Readonly<Record<string, SessionLinkIcon>> = {
+  backlog: 'backlog',
+  in_progress: 'started',
+  blocked: 'blocked',
+  in_review: 'review',
+  done: 'done',
+  cancelled: 'closed',
+};
+
+/** The icon of a status, by its key or else its category. */
+export function statusIcon(statusKey: string): SessionLinkIcon {
+  const icon = STATUS_ICON[statusKey];
+  if (icon) return icon;
+  const category = statusCategory(statusKey);
+  return category === 'started'
+    ? 'started'
+    : category === 'closed'
+      ? 'closed'
+      : category === 'done'
+        ? 'done'
+        : 'backlog';
+}
+
+/**
+ * What the issue waits on the reader for, by its status alone: accepting it in review, or answering it while it is
+ * blocked by nothing but a question. The task lists' "Waiting for you" says more (`server/issues/task-waits.ts`).
+ */
+export function linkWait(
+  issue: {
+    readonly statusKey: string;
+    readonly ownerUserId: string;
+    readonly blockedCount?: number;
+  },
+  readerId: string,
+): WaitReason | null {
+  if (issue.ownerUserId !== readerId) return null;
+  if (issue.statusKey === 'in_review') return 'accept';
+  if (issue.statusKey === 'blocked' && !issue.blockedCount) return 'answer';
+  return null;
+}
 
 /** An issue as a session shows it to `readerId`, its status named by `statusName`. */
 function issueView(
@@ -41,11 +89,14 @@ function issueView(
     readonly title: string;
     readonly statusKey: string;
     readonly ownerUserId: string;
+    readonly blockedCount?: number;
     readonly project?: { readonly name: string } | null;
   },
   readerId: string,
   statusName: (statusKey: string) => string,
+  waitName: ((reason: WaitReason) => string) | undefined,
 ): LinkView {
+  const wait = linkWait(issue, readerId);
   return {
     key: issue.identifier,
     title: issue.title,
@@ -63,6 +114,8 @@ function issueView(
                   statusCategory(issue.statusKey) === 'closed'
                 ? 'done'
                 : 'idle',
+      icon: statusIcon(issue.statusKey),
+      needsYou: wait && waitName ? waitName(wait) : null,
     },
     href: `/issues/${encodeURIComponent(issue.identifier)}`,
     startable: issue.statusKey === BACKLOG_STATUS,
@@ -72,9 +125,10 @@ function issueView(
 export function issueLinks(deps: IssueLinkDeps): LinkResolver {
   return {
     async resolve(refIds, reader) {
-      const [viewer, statusName] = await Promise.all([
+      const [viewer, statusName, waitName] = await Promise.all([
         deps.viewerOf(reader.userId),
         deps.statusNames(reader.locale),
+        deps.waitNames?.(reader.locale),
       ]);
       const { issues } = await deps.projects.issueQueries.matching(
         viewer,
@@ -84,14 +138,15 @@ export function issueLinks(deps: IssueLinkDeps): LinkResolver {
       return new Map(
         issues.map((issue): [string, LinkView] => [
           issue.id,
-          issueView(issue, reader.userId, statusName),
+          issueView(issue, reader.userId, statusName, waitName),
         ]),
       );
     },
     async search(query, reader, { projectId, limit }) {
-      const [viewer, statusName] = await Promise.all([
+      const [viewer, statusName, waitName] = await Promise.all([
         deps.viewerOf(reader.userId),
         deps.statusNames(reader.locale),
+        deps.waitNames?.(reader.locale),
       ]);
       const page = (inProject: string | null) =>
         deps.projects.issueQueries.page(viewer, {
@@ -111,7 +166,7 @@ export function issueLinks(deps: IssueLinkDeps): LinkResolver {
           : first;
       return found.slice(0, limit).map((issue) => ({
         refId: issue.id,
-        ...issueView(issue, reader.userId, statusName),
+        ...issueView(issue, reader.userId, statusName, waitName),
       }));
     },
     async progress(refIds, reader) {

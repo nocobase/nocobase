@@ -160,14 +160,18 @@ const where = () => screen.getByTestId('where').textContent;
 
 describe('plan links', () => {
   it('opens a plan over the issue page with its search, and finds that page again', () => {
-    const location = issuePlanLocation('/issues/PM-12', 'p 1', '?comment=c1');
+    const location = issuePlanLocation(
+      '/issues/PM-12',
+      'p 1',
+      '?view=list&owner=alice&comment=c1',
+    );
     expect(location).toEqual({
       pathname: '/issues/PM-12/plans/p%201',
-      search: '?comment=c1',
+      search: '?view=list&owner=alice',
     });
     expect(issueBeneathPlan(location)).toEqual({
       pathname: '/issues/PM-12',
-      search: '?comment=c1',
+      search: '?view=list&owner=alice',
     });
     expect(
       issueBeneathPlan({ pathname: '/issues/plans/p1', search: '' }),
@@ -183,16 +187,16 @@ describe('plan links', () => {
 
 describe('the plan page', () => {
   it('over an issue: trails through the list to the issue, which returns to the issue page as it was left', () => {
-    renderAt('/issues/PM-12/plans/p1?comment=c1');
+    renderAt('/issues/PM-12/plans/p1?view=list&owner=alice&comment=c1');
     expect(levels()).toEqual(['nav.issues', 'PM-12', 'Assign the executor']);
     fireEvent.click(within(trail()).getByRole('link', { name: 'PM-12' }));
-    expect(where()).toBe('/issues/PM-12?comment=c1');
+    expect(where()).toBe('/issues/PM-12?view=list&owner=alice');
   });
 
   it('over an issue: lists that issue first, linking back to the page beneath', () => {
     renderAt('/issues/PM-12/plans/p1?comment=c1');
     fireEvent.click(screen.getByTestId('card-issue'));
-    expect(where()).toBe('/issues/PM-12?comment=c1');
+    expect(where()).toBe('/issues/PM-12');
   });
 
   it('over an issue opened from My issues: trails through that list and returns to the issue under it', () => {

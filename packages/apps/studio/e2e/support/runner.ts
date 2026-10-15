@@ -5,7 +5,7 @@
  * is one no other runner takes. A person's mention wakes that agent on an issue (`wake`); the fake runner claims the run
  * and calls the endpoints behind the `nb-studio` CLI with that run's token, as an agent would.
  */
-import type { RunEvent } from '@nocobase/agent-protocol';
+import type { FailureReason, RunEvent } from '@nocobase/agent-protocol';
 
 import type { Api } from './fixtures.ts';
 
@@ -50,10 +50,15 @@ export class FakeRunner {
     private readonly api: Api,
     private readonly name: string,
     private readonly workspaceKey = false,
+    private readonly options: {
+      readonly trust?: 'team' | 'ownerOnly';
+      readonly model?: string;
+    } = {},
   ) {}
 
   /** The model this runner reports: its own, so only it has the agent discovered from it. */
   private get model(): string {
+    if (this.options.model) return this.options.model;
     return `e2e-${this.name.toLowerCase().replace(/[^a-z0-9]+/gu, '-')}`;
   }
 
@@ -73,7 +78,7 @@ export class FakeRunner {
     if (this.runnerKey) return this.runnerKey;
     const token = await this.api.post<{ token: string }>(
       'agents/runners/registrationTokens',
-      { trust: 'team' },
+      { trust: this.options.trust ?? 'team' },
     );
     const registered = await this.runner<{ runnerKey: string }>(
       'POST',
@@ -144,6 +149,18 @@ export class FakeRunner {
     return claimed.cli!.credential!.content!.token!;
   }
 
+  /** A single claim poll; returns every claimed run so unexpected work cannot be silently discarded. */
+  async probe(): Promise<readonly string[]> {
+    const runnerKey = await this.register();
+    const claimed = await this.runner<{ runs?: ClaimedRun[] }>(
+      'POST',
+      'agents/runners/claim',
+      { free: 20 },
+      { [HEADERS.runnerKey]: runnerKey },
+    );
+    return (claimed.runs ?? []).map((run) => run.run.id);
+  }
+
   private async claimRun(identifier: string): Promise<ClaimedRun> {
     const runnerKey = await this.register();
     for (let attempt = 0; attempt < 40; attempt += 1) {
@@ -153,11 +170,28 @@ export class FakeRunner {
         { free: 20 },
         { [HEADERS.runnerKey]: runnerKey },
       );
-      const run = (claimed.runs ?? []).find(
-        (item) => item.subject?.key === identifier,
-      );
+      const runs = claimed.runs ?? [];
+      if (
+        runs.length > 1 ||
+        runs.some((item) => item.subject?.key !== identifier)
+      )
+        throw new Error(
+          `Unexpected claimed runs for ${identifier}: ${JSON.stringify(
+            runs.map((item) => ({
+              id: item.run.id,
+              subject: item.subject?.key,
+            })),
+          )}`,
+        );
+      const [run] = runs;
       const token = run?.cli?.credential?.content?.token;
-      if (run && token) return run;
+      if (run) {
+        if (!token)
+          throw new Error(
+            `No CLI credential was returned for run ${run.run.id}.`,
+          );
+        return run;
+      }
       await new Promise((resolve) => {
         setTimeout(resolve, 250);
       });
@@ -199,13 +233,10 @@ export class FakeRunner {
       firstSeq: run.firstSeq,
       append: (events: readonly RunEvent[]) =>
         this.runner('POST', `${route}/events`, { events }, headers),
-      fail: () =>
-        this.runner(
-          'POST',
-          `${route}/fail`,
-          { reason: 'toolProcess', detail: 'The test command failed' },
-          headers,
-        ),
+      fail: (
+        reason: FailureReason = 'toolProcess',
+        detail = 'The test command failed',
+      ) => this.runner('POST', `${route}/fail`, { reason, detail }, headers),
     };
   }
 

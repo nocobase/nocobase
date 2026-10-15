@@ -78,6 +78,11 @@ import { prepareCodexHome } from './codex-home.ts';
 import { SKILLS_PLUGIN_NAME } from './skills.ts';
 import { buildAgentEnv, environmentSecrets, providedVariables } from './env.ts';
 import {
+  allocateRunTemp,
+  removeRunTemp,
+  type RunTemp,
+} from '../core/run-temp.ts';
+import {
   GitCredentialBroker,
   installCredentialHelper,
   serveGitCredentials,
@@ -85,8 +90,9 @@ import {
 } from './git-credentials.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { EventSpool } from '../core/events.ts';
+import { isDiskFull } from '../lib/disk-full.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
-import { ensurePnpmStore, pnpmImportMethod } from '../core/pnpm-store.ts';
+import { ensurePnpmStore } from '../core/pnpm-store.ts';
 import { writeRunnerTools } from './runner-tools.ts';
 import {
   agentCwd,
@@ -121,6 +127,7 @@ export type WorkerOutcome =
   'completed' | 'failed' | 'cancelled' | 'leaseLost' | 'stopped';
 
 type Ending =
+  | { kind: 'upgrade' }
   | { kind: 'cancel' }
   | { kind: 'lost'; code: string }
   | { kind: 'shutdown' }
@@ -144,6 +151,7 @@ export function systemPrompt(
 /** What the runner tells the agent about its working directories. */
 export function workspaceNotes(options: {
   workDir: string;
+  tmpDir: string;
   cwd: string;
   dirs: readonly PreparedDir[];
   cli: string;
@@ -157,18 +165,19 @@ export function workspaceNotes(options: {
   /** The run only reads (`workspace.readOnly`): nothing it commits is pushed. */
   readOnly?: boolean;
 }): string {
-  const { workDir, cwd, dirs } = options;
+  const { workDir, cwd, dirs, tmpDir } = options;
   const lines = [
     dirs.length === 0
       ? `Your working directory is ${workDir}, an empty directory kept for this task; you start in it.`
-      : `You start in ${cwd}. The runner keeps this task's own files in ${workDir}; your TMPDIR is inside it.`,
+      : `You start in ${cwd}. The runner keeps this task's own files in ${workDir}.`,
   ];
   lines.push(
+    `TMPDIR, TMP and TEMP point to ${tmpDir}, which you and your child processes may write.`,
     'Repository attempts use new code directories. Claude, Pi and OpenCode start fresh when the directory changes; legacy sessions are not migrated. Codex state is kept outside the disposable worktree.',
   );
   if (dirs.length > 0) {
     lines.push(
-      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}). When this run ends, repository changes are saved to local continuation refs without pushing, then its worktrees are removed. If saving fails, the original worktree is kept for recovery. Temporary files outside repositories are removed.`,
+      `Keep drafts and temporary tools outside repositories, in the task's temporary directory (${tmpDir}). When this run ends, repository changes are saved to local continuation refs without pushing, then its worktrees are removed. If saving fails, the original worktree is kept for recovery. Temporary files outside repositories are removed.`,
     );
     lines.push('Working directories (the first is the primary one):');
     for (const dir of dirs) {
@@ -178,7 +187,7 @@ export function workspaceNotes(options: {
           ? `- ${dir.dir}${name}: a directory used in place, not a checkout; there is no branch to push, so leave version control to the people who own it.`
           : options.readOnly === true
             ? `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (a read-only copy: change, commit and push nothing).`
-            : `- ${dir.dir}${name}: ${dir.repo.url}, target branch ${dir.repo.branch} from ${dir.repo.defaultBranch}, local branch ${dir.repo.localBranch ?? dir.repo.branch}. Push only with git push origin HEAD:refs/heads/${dir.repo.branch}; never force push.`,
+            : `- ${dir.dir}${name}: ${dir.repo.url}, starting target branch ${dir.repo.branch} from ${dir.repo.defaultBranch}, local branch ${dir.repo.localBranch ?? dir.repo.branch}. You may switch or create branches and push any branch of this repository with git push origin HEAD:refs/heads/<branch> (initial target: git push origin HEAD:refs/heads/${dir.repo.branch}). Never rewrite already-pushed history or force push. Use ${options.cli} pr open --head <branch>, pr link and pr unlink to manage pull requests; check their --help for arguments.`,
       );
     }
     for (const dir of dirs)
@@ -194,12 +203,13 @@ export function workspaceNotes(options: {
         );
     }
     lines.push(
-      `Keep every file you write inside these directories or the task's temporary directory (${path.join(workDir, '.nocobase-runner', 'tmp')}).`,
+      `Keep every file you write inside these directories or the task's temporary directory (${tmpDir}).`,
     );
   }
   if (options.pnpmStoreDir !== undefined)
     lines.push(
-      `pnpm is set up to use this machine's shared store, ${options.pnpmStoreDir}, which you may write: install with a plain \`pnpm install\`, without \`--store-dir\` or \`--package-import-method\`, so dependencies are cloned or copied from it, never hard-linked, instead of downloaded again. Never change the store's files; use \`pnpm patch\` to change a dependency.`,
+      `pnpm is set up to use this machine's shared store, ${options.pnpmStoreDir}, which you may write: install with a plain \`pnpm install\`, without \`--store-dir\`, so dependencies come from it instead of being downloaded again. Never change the store's files.`,
+      'Dependencies under `node_modules` are hard links into that store, shared by every run on this machine: never edit them in place. To change a dependency for debugging, use `pnpm patch <pkg>` (edit the extracted copy, then `pnpm patch-commit` or discard it), or copy the file elsewhere.',
     );
   if (options.skillsDir !== undefined)
     lines.push(
@@ -317,7 +327,14 @@ function failureReason(result: AdapterResult): {
   const parsed = FailureReasonSchema.safeParse(error?.reason);
   const detail =
     typeof error?.message === 'string' ? error.message : 'The tool failed.';
-  return { reason: parsed.success ? parsed.data : 'toolProcess', detail };
+  return {
+    reason: isDiskFull(result.error)
+      ? 'runnerDiskFull'
+      : parsed.success
+        ? parsed.data
+        : 'toolProcess',
+    detail,
+  };
 }
 
 export class RunWorker {
@@ -350,6 +367,7 @@ export class RunWorker {
   private prepared: PrepareContext | undefined;
   private readonly releases: (() => Promise<void>)[] = [];
   private credentialsFile: string | undefined;
+  private runTemp: RunTemp | undefined;
 
   constructor(
     payload: RunPayload,
@@ -568,18 +586,30 @@ export class RunWorker {
         `run ${this.runId}: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
       );
       if (this.ending?.kind === 'lost') return 'leaseLost';
-      return this.finishFailed(
-        'unknown',
+      return await this.finishFailed(
+        isDiskFull(error) ? 'runnerDiskFull' : 'unknown',
         error instanceof Error ? error.message : String(error),
       );
     } finally {
       await this.stopTool();
       // A failed stop/save retains the original directory. No separate recovery protocol is maintained.
-      await this.saveLocal(true).catch((error: unknown) =>
+      await this.saveLocal(!this.retainWorkspace).catch((error: unknown) =>
         log(
           `Directory retained: ${this.prepared?.workspace?.workDir ?? this.record.workDir}: ${String(error)}`,
         ),
       );
+      if (this.runTemp !== undefined) {
+        try {
+          if (this.writerStopFailure === undefined)
+            await removeRunTemp(this.runTemp.dir);
+        } catch (error) {
+          log(
+            `Run temporary directory retained: ${this.runTemp.dir}: ${String(error)}`,
+          );
+        } finally {
+          await this.runTemp.lock.release();
+        }
+      }
       this.lease.stop();
       this.broker?.close();
       await this.credentialServer?.close().catch(() => undefined);
@@ -701,8 +731,12 @@ export class RunWorker {
       return this.finishEnding();
     }
 
-    const tmpDir = path.join(runnerDir, 'tmp');
-    await mkdir(tmpDir, { recursive: true, mode: 0o700 });
+    try {
+      this.runTemp = await allocateRunTemp(deps.paths, workDir);
+    } catch (error) {
+      return this.finishFailed('setupFailed', String(error));
+    }
+    const tmpDir = this.runTemp.dir;
     const sessionDir = sessionWorkDir(
       deps.paths,
       registration.key,
@@ -736,7 +770,6 @@ export class RunWorker {
         ? []
         : await writeRunnerTools(binDir);
     const pnpmStoreDir = await ensurePnpmStore(deps.paths);
-    const importMethod = await pnpmImportMethod(deps.paths);
     const cwd = agentCwd(context);
     if (this.broker !== undefined && this.broker.urls.length > 0) {
       this.credentialServer = await serveGitCredentials(
@@ -761,7 +794,6 @@ export class RunWorker {
       tmpDir,
       ...(codexHome === undefined ? {} : { codexHome }),
       pnpmStoreDir,
-      pnpmImportMethod: importMethod,
       pinPnpm: runnerTools.includes('pnpm'),
       hooksDir: deps.paths.hooksDir,
       ...(credentialHelper === undefined ? {} : { credentialHelper }),
@@ -806,6 +838,7 @@ export class RunWorker {
       payload.prompt.system,
       workspaceNotes({
         workDir,
+        tmpDir,
         cwd,
         dirs: context.dirs,
         cli: payload.cli.name,
@@ -993,7 +1026,12 @@ export class RunWorker {
 
   private writerStopFailure?: string;
 
-  private async saveLocal(remove = false): Promise<string> {
+  private retainWorkspace = false;
+
+  private async saveLocal(
+    remove = false,
+    bestEffortEvents = false,
+  ): Promise<string> {
     await this.stopTool();
     if (this.writerStopFailure === undefined) {
       try {
@@ -1035,12 +1073,23 @@ export class RunWorker {
           : `Recovery required: ${result.path}: ${result.reason}`,
       )
       .join('\n');
-    if (message !== '')
-      this.spool.push({
-        type: 'status',
-        content: message,
-        meta: { phase: 'localSave' },
-      });
+    if (message !== '') {
+      try {
+        this.spool.push({
+          type: 'status',
+          content: message,
+          meta: { phase: 'localSave' },
+        });
+      } catch (error) {
+        if (!bestEffortEvents) throw error;
+        const failure = this.redactor.text(String(error));
+        this.deps.log(
+          `run ${this.runId}: local save event could not be recorded: ${failure}`,
+        );
+        return `${message}
+Local save event could not be recorded: ${failure}`;
+      }
+    }
     return message;
   }
 
@@ -1114,12 +1163,32 @@ export class RunWorker {
   private async finishFailed(
     reason: FailureReason,
     unredacted: string,
+    remove = false,
   ): Promise<WorkerOutcome> {
     const detail = this.redactor.text(unredacted);
     await this.updateRecord({ phase: 'reporting' }).catch(() => undefined);
     const repos = await this.repoReports(false).catch(() => []);
-    const saved = await this.saveLocal();
-    await this.drainEvents();
+    let saved: string;
+    if (reason === 'runnerDiskFull') {
+      this.spool.stop();
+      try {
+        saved = await this.saveLocal(false, true);
+      } catch (error) {
+        this.retainWorkspace = true;
+        saved = `Local preservation did not finish; workspace retained for recovery: ${this.redactor.text(String(error))}`;
+        this.deps.log(`run ${this.runId}: ${saved}`);
+      }
+      // A full disk may also prevent writing the event acknowledgement. The final failure still must reach the server.
+      await this.drainEvents().catch((error: unknown) =>
+        this.deps.log(
+          `run ${this.runId}: event drain failed while reporting disk exhaustion: ${this.redactor.text(error instanceof Error ? error.message : String(error))}`,
+        ),
+      );
+    } else {
+      saved = await this.saveLocal(remove);
+      await this.drainEvents();
+    }
+
     try {
       await this.report(routePath(RUNNER_ROUTES.fail, { runId: this.runId }), {
         reason,
@@ -1175,6 +1244,14 @@ export class RunWorker {
         }
         this.deps.log(`run ${this.runId}: cancelled`);
         return 'cancelled';
+      }
+      case 'upgrade': {
+        await this.finishFailed(
+          'runnerUpgrade',
+          'The runner interrupted this attempt to install an update.',
+          true,
+        );
+        return 'stopped';
       }
       case 'shutdown':
         await this.finishFailed(

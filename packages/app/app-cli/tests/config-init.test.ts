@@ -126,6 +126,65 @@ describe('runConfigInit', () => {
     ]);
   });
 
+  it.each([
+    ['kingbase', 54321],
+    ['dameng', 5236],
+    ['oceanbase', 2881],
+  ] as const)(
+    'configures an installed %s driver without explicit registration',
+    async (dialect, port) => {
+      const { rootDir } = await createApplication({ drivers: [dialect] });
+      const result = await runConfigInit({ rootDir, dialect, environment: {} });
+      const config = parse(await readFile(result.configFile, 'utf8'));
+      expect(config.database.connections.main).toMatchObject({
+        dialect,
+        port,
+        schemaManagement: 'managed',
+      });
+      expect(config.database.drivers).toBeUndefined();
+      if (dialect === 'kingbase')
+        expect(config.database.connections.main.schema).toBe('public');
+      if (dialect === 'dameng') {
+        expect(config.database.connections.main.schema).toBeTruthy();
+        expect(config.database.connections.main.database).toBeUndefined();
+      }
+    },
+  );
+
+  it.each(['dameng', 'kingbase', 'oceanbase'] as const)(
+    'announces commercial requirements for %s with flags, automatic and interactive selection',
+    async (dialect) => {
+      for (const mode of ['flag', 'automatic', 'interactive']) {
+        const { rootDir } = await createApplication({
+          drivers: mode === 'interactive' ? ['sqlite', dialect] : [dialect],
+        });
+        const notices: string[] = [];
+        await runConfigInit({
+          rootDir,
+          dialect: mode === 'flag' ? dialect : undefined,
+          selectDialect:
+            mode === 'interactive' ? async () => dialect : undefined,
+          environment: {},
+          onNotice: (notice) => notices.push(notice),
+        });
+        expect(notices).toHaveLength(1);
+        expect(notices[0]).toContain(
+          `@nocobase/db-${dialect} is a NocoBase Pro commercial package`,
+        );
+        expect(notices[0]).toContain('commercial license');
+        expect(notices[0]).toContain('private package registry');
+        expect(notices[0]).not.toContain('nocobase3-pro');
+      }
+      const { rootDir } = await createApplication({ drivers: ['sqlite'] });
+      await expect(
+        runConfigInit({ rootDir, dialect, environment: {} }),
+      ).rejects.toMatchObject({
+        reason: 'driver-missing',
+        message: expect.stringContaining('commercial license'),
+      });
+    },
+  );
+
   it('applies the selected dialect and leaves the other connections alone', async () => {
     const { rootDir } = await createApplication({
       drivers: ['sqlite', 'postgres'],
@@ -661,6 +720,31 @@ describe('config init --json', () => {
     expect(output.json().result).not.toHaveProperty('status');
     expect(existsSync(path.join(rootDir, 'config.yml'))).toBe(true);
   });
+
+  it.each(['dameng', 'kingbase', 'oceanbase'])(
+    'includes the %s commercial notice in JSON success and missing-driver output',
+    async (dialect) => {
+      for (const installed of [true, false]) {
+        const { rootDir } = await createApplication({
+          drivers: installed ? [dialect] : ['sqlite'],
+        });
+        const output = await run(rootDir, ['--dialect', dialect]);
+        expect(output.json()).toMatchObject({
+          ok: installed,
+          warnings: [
+            expect.stringContaining(
+              `@nocobase/db-${dialect} is a NocoBase Pro commercial package`,
+            ),
+          ],
+        });
+        if (!installed)
+          expect(output.json().error).toMatchObject({
+            code: 'DRIVER_MISSING',
+            message: expect.stringContaining('private package registry'),
+          });
+      }
+    },
+  );
 
   it('reports an application already configured as success-noop', async () => {
     const { rootDir } = await createApplication({ drivers: ['sqlite'] });

@@ -202,7 +202,7 @@ describe('updating from npm', () => {
       true,
     );
     expect(logs.join('\n')).toContain(
-      `updating to ${RUNNER_PRODUCT} 99.0.0 (${PACKAGE} from npm) once no run is left`,
+      `updating to ${RUNNER_PRODUCT} 99.0.0 (${PACKAGE} from npm); interrupting agent runs and preserving local work`,
     );
   });
 

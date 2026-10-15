@@ -9,11 +9,152 @@ import { boundedModels } from '../src/agent/adapters/models.ts';
 import {
   ToolCapabilitiesCache,
   MODEL_REFRESH_INTERVAL_MS,
+  detectTools,
 } from '../src/core/tool-capabilities.ts';
+import type { ToolDetection } from '../src/agent/adapters/types.ts';
 
 afterEach(() => vi.useRealTimers());
 
 describe('capability refresh', () => {
+  it('uses a fresh instance each round, discovers missing tools and replaces version, path, authentication and models together', async () => {
+    vi.useFakeTimers();
+    let current: ToolDetection = { installed: false, authenticated: false };
+    const instances: object[] = [];
+    const factory = () => {
+      let cached: Promise<ToolDetection> | undefined;
+      const adapter = {
+        ...createEchoAdapter({ kind: 'opencode' }),
+        detect: () => (cached ??= Promise.resolve({ ...current })),
+        detectModels: async () => ({
+          modelsDetectionStatus: 'detected' as const,
+          models: [{ id: (await adapter.detect()).version! }],
+        }),
+      };
+      instances.push(adapter);
+      return new Map([['opencode' as const, adapter]]);
+    };
+    const cache = new ToolCapabilitiesCache(factory, []);
+    const round = async () => {
+      cache.refresh();
+      await vi.advanceTimersByTimeAsync(0);
+    };
+    await round();
+    expect(cache.tools).toEqual([]);
+    for (const next of [
+      { installed: false, authenticated: false, version: '1.9.0' },
+      {
+        installed: true,
+        authenticated: false,
+        version: '2.0.28',
+        path: '/first/opencode',
+      },
+      {
+        installed: true,
+        authenticated: true,
+        version: '2.0.29',
+        path: '/first/opencode',
+      },
+      {
+        installed: true,
+        authenticated: false,
+        version: '2.0.30',
+        path: '/second/opencode',
+      },
+      { installed: false, authenticated: false },
+    ]) {
+      current = next;
+      await vi.advanceTimersByTimeAsync(MODEL_REFRESH_INTERVAL_MS);
+      await round();
+      if (next.installed)
+        expect(cache.tools).toEqual([
+          expect.objectContaining({
+            kind: 'opencode',
+            version: next.version,
+            path: next.path,
+            authenticated: next.authenticated,
+            models: [{ id: next.version }],
+          }),
+        ]);
+      else expect(cache.tools).toEqual([]);
+    }
+    expect(new Set(instances).size).toBe(6);
+    await cache.stop();
+  });
+
+  it('removes failed basic detection, cancels timeouts, ignores late results and recovers next round', async () => {
+    vi.useFakeTimers();
+    let finish!: (result: ToolDetection) => void;
+    let signal!: AbortSignal;
+    let healthy = false;
+    const factory = vi.fn(
+      () =>
+        new Map([
+          [
+            'pi' as const,
+            {
+              ...createEchoAdapter({ kind: 'pi' }),
+              detect: (input?: AbortSignal) => {
+                signal = input!;
+                return healthy
+                  ? Promise.resolve({
+                      installed: true,
+                      version: 'new',
+                      authenticated: true,
+                    })
+                  : new Promise<ToolDetection>((resolve) => {
+                      finish = resolve;
+                    });
+              },
+            },
+          ],
+        ]),
+    );
+    const cache = new ToolCapabilitiesCache(
+      factory,
+      [{ kind: 'pi', version: 'old', authenticated: true }],
+      Date.now,
+      50,
+    );
+    cache.refresh();
+    cache.refresh();
+    expect(factory).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(51);
+    expect(signal.aborted).toBe(true);
+    expect(cache.tools).toEqual([]);
+    finish({ installed: true, version: 'late', authenticated: true });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(cache.tools).toEqual([]);
+    healthy = true;
+    await vi.advanceTimersByTimeAsync(MODEL_REFRESH_INTERVAL_MS);
+    cache.refresh();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(cache.tools[0]?.version).toBe('new');
+    await cache.stop();
+  });
+
+  it('bounds initial inspection and cancels it on environment replacement', async () => {
+    const stop = new AbortController();
+    let input!: AbortSignal;
+    const tools = detectTools(
+      new Map([
+        [
+          'pi',
+          {
+            ...createEchoAdapter(),
+            detect: (signal) => {
+              input = signal!;
+              return new Promise(() => {});
+            },
+          },
+        ],
+      ]),
+      stop.signal,
+    );
+    stop.abort();
+    expect(await tools).toEqual([]);
+    expect(input.aborted).toBe(true);
+  });
+
   it('refreshes after the interval, without waiting or duplicating in-flight detection', async () => {
     vi.useFakeTimers();
     const adapter = createEchoAdapter({ kind: 'pi' });
@@ -31,11 +172,12 @@ describe('capability refresh', () => {
         }),
     );
     const cache = new ToolCapabilitiesCache(
-      new Map([['pi', { ...adapter, detectModels }]]),
+      () => new Map([['pi', { ...adapter, detectModels }]]),
       [{ kind: 'pi', authenticated: true }],
     );
     expect(cache.refresh()).toBeUndefined();
     cache.refresh();
+    await vi.advanceTimersByTimeAsync(0);
     expect(detectModels).toHaveBeenCalledTimes(1);
     expect(cache.tools[0]?.models).toBeUndefined();
     resolve({
@@ -51,6 +193,7 @@ describe('capability refresh', () => {
     expect(detectModels).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(MODEL_REFRESH_INTERVAL_MS);
     cache.refresh();
+    await vi.advanceTimersByTimeAsync(0);
     expect(detectModels).toHaveBeenCalledTimes(2);
     resolve({ modelsDetectionStatus: 'detected', models: [] });
     await vi.advanceTimersByTimeAsync(0);
@@ -84,7 +227,7 @@ describe('capability refresh', () => {
       ['claude', createEchoAdapter({ kind: 'claude' })],
     ]);
     const cache = new ToolCapabilitiesCache(
-      adapters,
+      () => adapters,
       [
         { kind: 'pi', authenticated: true, models: [{ id: 'stale' }] },
         { kind: 'codex', authenticated: true },
@@ -119,21 +262,23 @@ describe('capability refresh', () => {
     const adapter = createEchoAdapter({ kind: 'pi' });
     let signal!: AbortSignal;
     const cache = new ToolCapabilitiesCache(
-      new Map([
-        [
-          'pi',
-          {
-            ...adapter,
-            detectModels: (input: AbortSignal) => {
-              signal = input;
-              return new Promise(() => {});
+      () =>
+        new Map([
+          [
+            'pi',
+            {
+              ...adapter,
+              detectModels: (input: AbortSignal) => {
+                signal = input;
+                return new Promise(() => {});
+              },
             },
-          },
-        ],
-      ]),
+          ],
+        ]),
       [{ kind: 'pi', authenticated: true }],
     );
     cache.refresh();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     cache.stop();
     expect(signal.aborted).toBe(true);
     await Promise.resolve();

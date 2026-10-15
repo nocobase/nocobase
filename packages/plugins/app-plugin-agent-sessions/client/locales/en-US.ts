@@ -16,6 +16,7 @@ const enUS = {
     sessionNotFound: 'This session does not exist, or it is not yours.',
   },
   list: {
+    expand: 'Show sessions',
     label: 'Sessions',
     title: 'My agents',
     archived: 'Archived',
@@ -67,12 +68,27 @@ const enUS = {
     left: '{{keys}} left in {{status}}',
     separator: ', ',
     comma: ', ',
+    waiting: 'Needs you {{count}}',
     unknown: 'Unknown',
   },
   newSession: {
+    sendUnconfirmed:
+      'Send was not confirmed. Use Retry original submission to recover its confirmation.',
+    settingsOutdated:
+      'This computer\'s command line is too old for this application. Update it there, as "My computers" shows.',
+    settingsOffline:
+      'This computer is offline. Reconnect its bridge to load settings and send.',
+    settingsLoading: 'Loading settings…',
+    settingsFailed: 'Could not load agent settings.',
+    settingsRetry: 'Retry settings',
+    settingsReset: 'Use agent defaults',
+    settingsUnsupported:
+      'This agent does not expose settings. Its defaults will be used.',
+    settingsEmpty:
+      'This agent has no configurable settings. Its defaults will be used.',
     title: 'New session',
     subtitle:
-      'Talk with an agent on your own computer. The conversation is kept here.',
+      'Discuss and clarify requirements with an agent on your own computer, record tasks, and follow progress here. Studio’s project manager coordinates agents to develop tasks after you start them.',
     pickComputer: 'Choose a computer',
     noAgent: 'No agent available',
     folder: 'Directory on the computer',
@@ -82,7 +98,7 @@ const enUS = {
       'Agents run with full access in the directory you choose, as in your own terminal.',
     noComputer: 'Connect your computer first',
     noComputerHint:
-      'Sessions run on your own computer: the agent works there signed in with your own account, in the folders you allow, and the conversations are kept here. Connect it once and it is online whenever the computer is on.',
+      'Sessions run on your own computer: the agent works there signed in with your own account, in the folders you allow, and the conversations are kept here. Connect it once and it is online whenever the computer is on. My Agent helps discuss and clarify requirements, record tasks, and follow progress; after you start them, Studio’s project manager coordinates agents to develop them.',
     allOffline: 'Your computers are offline',
     offlineHint:
       'Run this on the computer to keep it connected from every login.',
@@ -114,6 +130,7 @@ const enUS = {
     noProject: 'No project',
   },
   session: {
+    info: 'Session info',
     archived: 'This session is archived. Restore it to continue.',
     offline: '{{computer}} is offline',
     offlineBody:
@@ -144,6 +161,15 @@ const enUS = {
     recordBody: 'The full record is kept here, and only you can see it.',
   },
   composer: {
+    unconfirmed:
+      'Delivery is unconfirmed. Retry the original submission, or edit as a new message (the original may already have arrived).',
+    retrySubmission: 'Retry original submission',
+    editAsNew: 'Edit as new message',
+    sendUnconfirmed:
+      'Send was not confirmed. Use Retry original submission to recover its confirmation.',
+    sending: 'Sending…',
+    expand: 'Expand input',
+    collapse: 'Collapse input',
     placeholder: 'Reply, or ask for the next thing…',
     busy: 'The agent is answering. Your message goes once it is done.',
     waiting: 'Answer the request above, or write a message to send after it.',
@@ -164,6 +190,13 @@ const enUS = {
   },
   choices: { more: 'More options' },
   transcript: {
+    image: {
+      open: 'Open image preview',
+      preview: 'Image preview',
+      zoomIn: 'Zoom in',
+      zoomOut: 'Zoom out',
+      fit: 'Fit to screen',
+    },
     thought: 'Thinking',
     plan: 'Plan {{done}}/{{total}}',
     prompt: {
@@ -229,6 +262,13 @@ const enUS = {
     truncated: 'Only the first 500 folders are shown.',
   },
   computers: {
+    outdated: {
+      title: 'Update the command line on this computer ({{host}})',
+      body: 'The application refused its connection: it speaks bridge protocol {{bridgeProtocol}}, and the application needs {{protocol}}. Run this on the computer:',
+      restart:
+        'An up-to-date command line restarts its background connection by itself; if it does not reconnect within a few minutes, run:',
+    },
+    offline: 'Offline',
     title: 'My computers',
     description:
       'These computers run only your own sessions, and the agents work as you. Machines that run the team’s background work are managed separately.',
@@ -258,7 +298,6 @@ const enUS = {
       agent: 'Install a coding agent and sign in to it',
       agentHint:
         'Codex, Claude Code, Gemini CLI, GitHub Copilot, Cursor, Qwen Code, Kimi CLI and more: sign in with its own command. Use the strongest model you can.',
-      install: 'Install the command line',
       login: 'Sign in with your account',
       start: 'Keep this computer connected',
       startHint:

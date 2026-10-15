@@ -52,7 +52,7 @@ function useNoSidebarShortcut(): void {
 
 /**
  * The shell's sidebar state: the shadcn provider, with the desktop icon mode kept in the shared sidebar preference
- * (`use-sidebar-preference.ts`) so every layout on this origin opens it the same way. It has no keyboard shortcut.
+ * (`use-sidebar-preference.ts`) so every layout of this application opens it the same way. It has no keyboard shortcut.
  */
 export function AppSidebarProvider({
   children,
@@ -223,9 +223,19 @@ export function AppSidebarFooter(): ReactElement {
         <div className='truncate text-sm font-medium text-sidebar-foreground'>
           {appName}
         </div>
-        <div className='mt-0.5 text-xs whitespace-nowrap text-sidebar-foreground/70'>
-          {appVersion}
-        </div>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span
+                className='mt-0.5 block min-w-0 max-w-full truncate rounded-sm text-xs text-sidebar-foreground/70 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring'
+                tabIndex={0}
+              />
+            }
+          >
+            {appVersion}
+          </TooltipTrigger>
+          <TooltipContent>{appVersion}</TooltipContent>
+        </Tooltip>
       </div>
     </SidebarFooter>
   );

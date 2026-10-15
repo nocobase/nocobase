@@ -10,7 +10,10 @@
 import { z } from 'zod';
 
 /** Raised on every incompatible change; the server answers a bridge speaking another version with `upgradeRequired`. */
-export const BRIDGE_PROTOCOL_VERSION: number = 1;
+export const BRIDGE_PROTOCOL_VERSION: number = 3;
+
+/** Includes agent initialization and opening a prompt-free session. */
+export const DISCOVERY_TIMEOUT_MS: number = 150_000;
 
 /** The bridge's routes, relative to the application's address. */
 export const BRIDGE_ROUTES: {
@@ -135,15 +138,6 @@ export interface SessionTarget {
   readonly acpSessionId: string | null;
   /** The choices the person made (`SessionChoice` id to value), applied again whenever the session reopens. */
   readonly settings: Readonly<Record<string, string>>;
-  /**
-   * The application's tools for the agent, an MCP server over HTTP at `path` of the address the bridge talks to, when
-   * the application offers any; the agent sends `token` as its bearer credential.
-   */
-  readonly tools: {
-    readonly name: string;
-    readonly path: string;
-    readonly token: string;
-  } | null;
 }
 
 const SessionTargetSchema: z.ZodType<SessionTarget> = z.object({
@@ -152,13 +146,6 @@ const SessionTargetSchema: z.ZodType<SessionTarget> = z.object({
   cwd: z.string().min(1).max(1000),
   acpSessionId: id.nullable(),
   settings: z.record(id, id),
-  tools: z
-    .object({
-      name: z.string().regex(/^[a-z][a-z0-9_-]{0,63}$/u),
-      path: z.string().regex(/^\/[\w/.-]{0,500}$/u),
-      token: z.string().min(1).max(500),
-    })
-    .nullable(),
 });
 
 /** A part of what a person sends, as ACP content blocks. */
@@ -193,8 +180,15 @@ export type PromptPart =
       readonly file?: string;
     };
 
-/** What the application asks of the bridge. Each command applies to one session and names it in full. */
+/** What the application asks of the bridge: session commands name their target in full; discovery and folders use correlated replies. */
 export type BridgeCommand =
+  | {
+      readonly type: 'discoverChoices';
+      readonly requestId: string;
+      readonly agentId: string;
+      readonly cwd: string;
+      readonly settings: Readonly<Record<string, string>>;
+    }
   | {
       readonly type: 'prompt';
       readonly session: SessionTarget;
@@ -226,6 +220,13 @@ export type BridgeCommand =
 
 export const BridgeCommandSchema: z.ZodType<BridgeCommand> =
   z.discriminatedUnion('type', [
+    z.object({
+      type: z.literal('discoverChoices'),
+      requestId: id,
+      agentId: z.string().min(1).max(40),
+      cwd: z.string().min(1).max(1000),
+      settings: z.record(id, id),
+    }),
     z.object({
       type: z.literal('prompt'),
       session: SessionTargetSchema,
@@ -448,6 +449,17 @@ const SessionChoiceSchema: z.ZodType<SessionChoice> = z.object({
     .max(200),
 });
 
+/** Empty available choices and an unsupported configuration surface are distinct. */
+export interface DiscoveredChoices {
+  readonly status: 'available' | 'unsupported';
+  readonly choices: readonly SessionChoice[];
+}
+
+export const DiscoveredChoicesSchema: z.ZodType<DiscoveredChoices> = z.object({
+  status: z.enum(['available', 'unsupported']),
+  choices: z.array(SessionChoiceSchema).max(20),
+});
+
 /** What a session is now: the agent's own id for it, and what it offers. */
 export interface SessionState {
   readonly acpSessionId: string;
@@ -543,6 +555,7 @@ export interface ReplyRequest {
   readonly computerId: string;
   readonly requestId: string;
   readonly listing: FolderListing | null;
+  readonly discovery?: DiscoveredChoices | null | undefined;
   readonly error: string | null;
 }
 
@@ -550,6 +563,7 @@ export const ReplyRequestSchema: z.ZodType<ReplyRequest> = z.object({
   computerId: id,
   requestId: id,
   listing: FolderListingSchema.nullable(),
+  discovery: DiscoveredChoicesSchema.nullable().optional(),
   error: z.string().max(2000).nullable(),
 });
 

@@ -25,10 +25,12 @@ export interface AgentClientHandlers {
 }
 
 export interface AgentProcessOptions {
+  readonly signal?: AbortSignal | undefined;
   readonly cwd: string;
   readonly env: NodeJS.ProcessEnv;
   readonly client: acp.Implementation;
   readonly handlers: AgentClientHandlers;
+  readonly initializeTimeoutMs?: number;
 }
 
 /** Long enough for an adapter that npx fetches on first use. */
@@ -41,17 +43,20 @@ export class AgentProcess {
   readonly #child: ChildProcess;
   readonly #connection: acp.ClientConnection;
   readonly #stderr: { text: string };
+  readonly #removeAbort: () => void;
 
   private constructor(
     child: ChildProcess,
     connection: acp.ClientConnection,
     stderr: { text: string },
     initialize: acp.InitializeResponse,
+    removeAbort: () => void,
   ) {
     this.#child = child;
     this.#connection = connection;
     this.#stderr = stderr;
     this.initialize = initialize;
+    this.#removeAbort = removeAbort;
   }
 
   /** Starts the agent and runs ACP `initialize`; throws with what the agent printed when it does not answer. */
@@ -59,6 +64,7 @@ export class AgentProcess {
     agent: ResolvedAgent,
     options: AgentProcessOptions,
   ): Promise<AgentProcess> {
+    options.signal?.throwIfAborted();
     const child = startProgram(agent, options);
     const stderr = { text: '' };
     child.stderr.setEncoding('utf8');
@@ -82,11 +88,21 @@ export class AgentProcess {
         options.handlers.permission(context.params, context.signal),
       )
       .connect(stream);
+    const abort = (): void => {
+      connection.close();
+      void stopProcess(child);
+    };
+    options.signal?.addEventListener('abort', abort, { once: true });
+    const removeAbort = (): void =>
+      options.signal?.removeEventListener('abort', abort);
     try {
       await spawned;
+      options.signal?.throwIfAborted();
       // Writing to an agent that has exited fails with EPIPE; the exit itself is what the session reports.
       child.on('error', ignore);
       child.stdin.on('error', ignore);
+      const timeoutMs = options.initializeTimeoutMs ?? INITIALIZE_TIMEOUT_MS;
+      let cleanup = () => {};
       const initialize = await new Promise<acp.InitializeResponse>(
         (resolve, reject) => {
           const onExit = () =>
@@ -95,11 +111,19 @@ export class AgentProcess {
             () =>
               reject(
                 new Error(
-                  `The agent did not answer within ${INITIALIZE_TIMEOUT_MS / 1000} seconds.`,
+                  `The agent did not answer within ${timeoutMs / 1000} seconds.`,
                 ),
               ),
-            INITIALIZE_TIMEOUT_MS,
+            timeoutMs,
           );
+          const onAbort = () => reject(new Error('Agent detection cancelled.'));
+          cleanup = () => {
+            clearTimeout(timer);
+            child.off('exit', onExit);
+            options.signal?.removeEventListener('abort', onAbort);
+          };
+          options.signal?.addEventListener('abort', onAbort, { once: true });
+          if (options.signal?.aborted) onAbort();
           child.once('exit', onExit);
           connection.agent
             .request(acp.methods.agent.initialize, {
@@ -108,14 +132,18 @@ export class AgentProcess {
               clientInfo: options.client,
             })
             .then(resolve, reject)
-            .finally(() => {
-              clearTimeout(timer);
-              child.off('exit', onExit);
-            });
+            .finally(cleanup);
         },
+      ).finally(() => cleanup());
+      return new AgentProcess(
+        child,
+        connection,
+        stderr,
+        initialize,
+        removeAbort,
       );
-      return new AgentProcess(child, connection, stderr, initialize);
     } catch (error) {
+      removeAbort();
       connection.close();
       await stopProcess(child);
       throw new Error(withOutput(errorMessage(error), stderr.text), {
@@ -149,6 +177,7 @@ export class AgentProcess {
   }
 
   async stop(): Promise<void> {
+    this.#removeAbort();
     this.#connection.close();
     await stopProcess(this.#child);
   }
@@ -217,25 +246,39 @@ function quoteForCmd(value: string): string {
 }
 
 async function stopProcess(child: ChildProcess): Promise<void> {
-  if (
-    child.exitCode !== null ||
-    child.signalCode !== null ||
-    child.pid === undefined
-  )
-    return;
-  const exited = once(child, 'exit');
+  if (child.pid === undefined) return;
+  const exited =
+    child.exitCode !== null || child.signalCode !== null
+      ? Promise.resolve()
+      : once(child, 'exit');
   if (windows) {
+    if (child.exitCode !== null || child.signalCode !== null) return;
     endTree(child.pid);
     await exited;
     return;
   }
   signalGroup(child.pid, 'SIGTERM');
-  const timer = setTimeout(
-    () => signalGroup(child.pid!, 'SIGKILL'),
-    STOP_GRACE_MS,
-  );
+  let timer: NodeJS.Timeout | undefined;
+  const forced = new Promise<void>((resolve) => {
+    timer = setTimeout(() => {
+      signalGroup(child.pid!, 'SIGKILL');
+      resolve();
+    }, STOP_GRACE_MS);
+  });
   await exited;
+  // A launcher can exit while its descendants still hold this isolated group.
+  // Keep the force deadline even when the direct child exited before stop was called.
+  if (groupExists(child.pid)) await forced;
   clearTimeout(timer);
+}
+
+function groupExists(pid: number): boolean {
+  try {
+    process.kill(-pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Ends the process `pid` and every process it started, on Windows. */

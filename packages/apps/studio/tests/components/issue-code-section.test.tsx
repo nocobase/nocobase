@@ -29,7 +29,10 @@ const request = vi.fn();
 vi.mock('@nocobase/app-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@nocobase/app-client')>()),
   useApiClient: () => ({ request }),
-  useService: () => ({ subscribe: () => () => undefined }),
+  useService: () => ({
+    subscribe: () => () => undefined,
+    onOpen: () => () => undefined,
+  }),
 }));
 vi.mock('@nocobase/i18n/client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@nocobase/i18n/client')>()),

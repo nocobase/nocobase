@@ -20,6 +20,8 @@ import {
   ComputerParams,
   ComputerSchema,
   CreateSessionInput,
+  DiscoverChoicesInput,
+  DiscoverySchema,
   FolderListingSchema,
   ListEventsQuery,
   ListFoldersQuery,
@@ -33,6 +35,7 @@ import {
   SeenInput,
   SessionParams,
   SessionSchema,
+  SessionWorkSchema,
   TranscriptEventSchema,
   UpdateSessionInput,
 } from './schemas.js';
@@ -43,7 +46,10 @@ const tags = ['AgentSessions'];
 const pageOnly = cliRoute(false);
 const own =
   "Every signed-in person has their own computers and sessions and reaches only those; anyone else's answers 404.";
-const errors = { 401: apiErrorResponse(401), 500: apiErrorResponse(500) };
+const errors = {
+  401: apiErrorResponse(401),
+  500: apiErrorResponse(500),
+};
 const computerNotFound = apiErrorResponse(
   404,
   'No computer with this id is yours (`AGENT_SESSIONS_COMPUTER_NOT_FOUND`).',
@@ -60,6 +66,67 @@ const notWritable = apiErrorResponse(
 /** The signed-in person's computers and sessions, under `/agentSessions`. */
 export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
   const router = new Hono<AuthEnv>();
+
+  router.get(
+    '/sessions/:sessionId/work',
+    describeRoute({
+      tags,
+      summary: 'Get the work tied to a session',
+      operationId: 'agentSessionsGetSessionWork',
+      ...cliRoute({
+        command: 'session work',
+        flags: {
+          sessionId: { name: 'session', env: ['NB_STUDIO_AGENT_SESSION'] },
+        },
+      }),
+      description: `Lists visible linked work and its progress. ${own}`,
+      responses: {
+        200: dataResponse(z.array(SessionWorkSchema)),
+        ...errors,
+        404: sessionNotFound,
+      },
+    }),
+    apiValidator('param', SessionParams),
+    async (context) =>
+      context.json({
+        data: await service.sessionWork(
+          viewerOf(context),
+          context.req.valid('param').sessionId,
+        ),
+      }),
+  );
+
+  router.post(
+    '/computers/:computerId/discoverChoices',
+    describeRoute({
+      tags,
+      ...pageOnly,
+      summary: 'Discover agent settings before a session',
+      operationId: 'agentSessionsDiscoverChoices',
+      description: `Initializes the installed agent and opens a disposable ACP session without prompts or MCP servers. Waits up to 160 seconds. The agent may retain an empty local session. ${own}`,
+      responses: {
+        200: dataResponse(DiscoverySchema),
+        ...errors,
+        404: computerNotFound,
+        400: apiErrorResponse(
+          400,
+          'The computer is offline, discovery failed, or the agent or directory is unavailable.',
+        ),
+        504: apiErrorResponse(504, 'The computer did not answer in time.'),
+      },
+    }),
+    apiValidator('param', ComputerParams),
+    apiValidator('json', DiscoverChoicesInput),
+    async (context) =>
+      context.json({
+        data: await service.discoverChoices(
+          userId(context),
+          context.req.valid('param').computerId,
+          context.req.valid('json'),
+          context.req.raw.signal,
+        ),
+      }),
+  );
 
   router.get(
     '/computers',
@@ -267,6 +334,10 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
           'The session, its first message sent.',
         ),
         ...errors,
+        409: apiErrorResponse(
+          409,
+          'The submission ID belongs to another request.',
+        ),
         400: apiErrorResponse(
           400,
           'The computer is offline (`AGENT_SESSIONS_COMPUTER_OFFLINE`) or not yours (`AGENT_SESSIONS_COMPUTER_NOT_FOUND`), cannot run the agent (`AGENT_SESSIONS_AGENT_UNAVAILABLE`), or does not allow the directory (`AGENT_SESSIONS_DIRECTORY_NOT_ALLOWED`).',
@@ -428,6 +499,10 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
           'The message as it entered the transcript.',
         ),
         ...errors,
+        409: apiErrorResponse(
+          409,
+          'The submission ID belongs to another request.',
+        ),
         400: notWritable,
         404: sessionNotFound,
       },
@@ -441,6 +516,7 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
           context.req.valid('param').sessionId,
           context.req.valid('json').content,
           context.req.valid('json').mentions,
+          context.req.valid('json').submissionId,
         ),
       }),
   );

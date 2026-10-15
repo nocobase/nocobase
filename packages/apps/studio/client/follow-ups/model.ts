@@ -11,9 +11,47 @@ import {
 } from '../../shared/follow-ups.js';
 
 export const followUpsKeys = {
-  /** Under the projects plugin's issues, so its realtime refresh reads it again with every issue change. */
+  /** Under the projects plugin's issues, so reading the issues again after an edit reads it again too. */
   overview: ['pm', 'issues', 'followUps'] as const,
+  /** What the viewer follows: the follow star's read, under the overview's key. */
+  following: ['pm', 'issues', 'followUps', 'following'] as const,
 };
+
+/**
+ * `view` with the rows of `issueIds` replaced by `rows` (`GET /api/followUps/issues`, which leaves out an issue the
+ * overview does not list); null when the overview has to be read whole: an issue joined or left the list, or changed
+ * status, ownership or being followed, which move the counts and the default followed issues. A row the overview did
+ * not read because a status has more owned issues than it reads (`truncated`) does not join.
+ */
+export function mergeFollowUpRows(
+  view: FollowUpsView,
+  issueIds: ReadonlySet<string>,
+  rows: readonly FollowUpIssue[],
+): FollowUpsView | null {
+  const read = new Map(rows.map((row) => [row.id, row]));
+  const shown = new Map(view.issues.map((issue) => [issue.id, issue]));
+  for (const id of issueIds) {
+    const before = shown.get(id);
+    const after = read.get(id);
+    if (!before) {
+      if (after && !(view.truncated && !after.followed)) return null;
+      continue;
+    }
+    if (
+      !after ||
+      after.statusKey !== before.statusKey ||
+      after.owned !== before.owned ||
+      after.followed !== before.followed
+    )
+      return null;
+  }
+  return {
+    ...view,
+    issues: view.issues.map((issue) =>
+      issueIds.has(issue.id) ? (read.get(issue.id) ?? issue) : issue,
+    ),
+  };
+}
 
 /** The statuses selected when the page opens. */
 export const DEFAULT_FILTER: readonly FollowUpStatus[] = ['in_review'];

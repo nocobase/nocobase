@@ -74,7 +74,9 @@ import {
   IssueSubtasksSection,
 } from '../../../issues/detail/issue-main.js';
 import { useIssueMainState } from '../../../issues/detail/main-state.js';
-import { IssueCommentRunLimit } from '../../../issues/detail/comment-run-limit.js';
+import { useIssueProgress } from '../../../issues/detail/use-issue-progress.js';
+import { usePendingCommentRun } from '../../../issues/detail/use-pending-comment-run.js';
+import { useIssuePullRequests } from '../../../git/api.js';
 import { IssuePlansSection } from '../../../issues/detail/issue-plans.js';
 import { IssueParentOutlet } from '../../../issues/detail/issue-parent-outlet.js';
 import { useIssueParent } from '../../../issues/detail/issue-parent.js';
@@ -163,29 +165,54 @@ function IssuePage({
   const detailKey = useMemo(() => pmKeys.issue(issueId), [issueId]);
   const update = useIssueUpdate(detail, detailKey);
   const pageActions = useIssuePageActions(detail);
-  const [runRefresh, setRunRefresh] = useState(0);
-  const runs = useLiveIssue(detail, issueId, detailKey, runRefresh);
+  const runs = useLiveIssue(detail, issueId, detailKey, 0);
   // The "Now" line reads again whenever the issue or one of its runs changes.
   const progressRefresh = [
     detail.revision,
     detail.statusKey,
     ...runs.map((run) => `${run.id}:${run.status}`),
   ].join('|');
+  const progress = useIssueProgress(detail.id, progressRefresh).data;
   const main = useIssueMainState(pageActions);
   const narrow = useMediaQuery('(max-width: 767px)');
   const viewer = useViewer();
   // The decisions the summary's "Needs you" card shows are left out of "Waiting for you".
   const handoff = useOwnerHandoffView(detail.id).data;
+  const pending = usePendingCommentRun(detail).data;
+  const prs = useIssuePullRequests(detail.id, detail.revision).data;
+  const selectedPr = prs?.data.find((pr) => pr.state === 'open') ?? null;
   const covered = useCallback(
     (entry: InboxEntry) =>
       coveredBySummary(entry, {
         accepting:
+          !progress?.personalRunnerRequests?.some(
+            (request) => request.canDecide,
+          ) &&
+          !handoffWaitsOn(handoff) &&
           detail.statusKey === IN_REVIEW_STATUS &&
           Boolean(viewer?.userId) &&
           viewer?.userId === detail.ownerUserId,
         handoff: handoffWaitsOn(handoff),
+        notificationKey: handoff?.handoff?.notificationKey,
+        pullRequest: selectedPr,
+        blocked: detail.statusKey === 'blocked',
+        ownerRequest:
+          detail.statusKey === 'blocked' &&
+          viewer?.userId === detail.ownerUserId,
+        continuation: Boolean(pending),
+        personalRequestIds: progress?.personalRunnerRequests
+          ?.filter((request) => request.canDecide)
+          .map((request) => request.id),
       }),
-    [detail.statusKey, detail.ownerUserId, viewer?.userId, handoff],
+    [
+      detail.statusKey,
+      detail.ownerUserId,
+      viewer?.userId,
+      handoff,
+      selectedPr,
+      pending,
+      progress,
+    ],
   );
   const [linkingPullRequest, setLinkingPullRequest] = useState(false);
   const linking = {
@@ -257,10 +284,6 @@ function IssuePage({
               pageActions={pageActions}
               actions={<AskAgent placement='issue' entry={entry} />}
               meta={<IssueMarks issue={detail} placement='detail' />}
-            />
-            <IssueCommentRunLimit
-              issue={detail}
-              onContinued={() => setRunRefresh((value) => value + 1)}
             />
             <IssueWaitingSection issue={detail} covered={covered} />
             <IssueDescriptionSection detail={detail} update={update} />

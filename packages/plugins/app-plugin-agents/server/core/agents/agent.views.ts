@@ -122,6 +122,7 @@ export async function availableAgents(
       tool: agent.tool,
       model: agent.model,
       online: load?.online ?? false,
+      runners: load?.runners ?? { team: 0, personal: 0, mine: 0, names: [] },
       personalOnly: load?.personalOnly ?? false,
       busy: load?.busy ?? 0,
     };

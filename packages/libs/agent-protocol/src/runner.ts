@@ -27,6 +27,8 @@ import {
 } from './dist.js';
 import { RunnerPolicySchema, type RunnerPolicy } from './policy.js';
 import {
+  WorkspaceDiskSchema,
+  type WorkspaceDisk,
   WorkspaceReportingSchema,
   type WorkspaceReporting,
 } from './workspaces.js';
@@ -316,6 +318,8 @@ export const ActiveRunSchema: z.ZodType<ActiveRun> = z.object({
 
 /** What a runner reports every `heartbeatIntervalMs`: what it offers now, and the runs and jobs it holds. */
 export interface HeartbeatRequest {
+  /** Disk sampled for this heartbeat; null when measurement failed. */
+  readonly disk?: WorkspaceDisk | null;
   readonly version: string;
   /** As in `RegisterRequest`: the product the runner runs as. */
   readonly product?: string;
@@ -331,6 +335,7 @@ export interface HeartbeatRequest {
    * limits per tool.
    */
   readonly load: {
+    readonly draining?: 'updatePending' | 'pruning';
     readonly slots: number;
     readonly free: number;
     readonly tools?: Readonly<Partial<Record<AgentTool, ToolLoad>>>;
@@ -342,6 +347,7 @@ export interface HeartbeatRequest {
 }
 
 export const HeartbeatRequestSchema: z.ZodType<HeartbeatRequest> = z.object({
+  disk: WorkspaceDiskSchema.nullable().optional(),
   version: z.string().max(64),
   product: z.string().regex(DIST_PRODUCT_PATTERN).optional(),
   features: z.array(RunnerFeatureSchema),
@@ -349,6 +355,7 @@ export const HeartbeatRequestSchema: z.ZodType<HeartbeatRequest> = z.object({
   active: z.array(ActiveRunSchema),
   jobs: z.array(ActiveJobSchema).optional(),
   load: z.object({
+    draining: z.enum(['updatePending', 'pruning']).optional(),
     slots: z.number().int().nonnegative(),
     free: z.number().int().nonnegative(),
     tools: z.partialRecord(AgentToolSchema, ToolLoadSchema).optional(),
@@ -432,6 +439,11 @@ export interface HeartbeatResponse {
   };
   /** The application accepts reports of the runner's working directories (`workspaces.ts`); absent when it does not. */
   readonly workspaces?: WorkspaceReporting;
+  /**
+   * The protocol the server speaks (`PROTOCOL_VERSION`), added within version 11: a runner speaking an older one is
+   * served but not handed runs that need what it lacks, so it updates or tells its owner. Absent from older servers.
+   */
+  readonly protocolVersion?: number;
 }
 
 export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
@@ -461,6 +473,7 @@ export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
     })
     .optional(),
   workspaces: WorkspaceReportingSchema.optional(),
+  protocolVersion: z.number().int().optional(),
 });
 
 export interface ClaimRequest {

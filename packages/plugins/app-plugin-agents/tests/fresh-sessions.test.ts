@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { EnqueueRequest } from '../server/core/runs/index.js';
 import {
   claim,
+  skillMd,
   createHarness,
   type Harness,
   type RegisteredRunner,
@@ -62,6 +63,45 @@ describe('fresh run sessions', () => {
       ).status,
     ).toBe(200);
   }
+
+  it('refreshes the session fingerprint when global skills are added, updated or removed', async () => {
+    h = await createHarness();
+    const agent = await h.createAgent();
+    const runner = await h.registerRunner();
+    await enqueue(agent);
+    const [initial] = await claim(h, runner);
+    await finish(runner, initial, 'before-global');
+    const skill = await h.services.skills.create('owner', {
+      content: skillMd('team-default', 'First rules.'),
+    });
+    await h.services.skills.attach({ scope: 'global', scopeId: 'default' }, [
+      skill.id,
+    ]);
+    await enqueue(agent);
+    const [added] = await claim(h, runner);
+    expect(added.prompt.session).toBe('fresh');
+    expect(added.skills).toHaveLength(1);
+    await finish(runner, added, 'with-global');
+    await enqueue(agent);
+    const [stable] = await claim(h, runner);
+    expect(stable.prompt.session).toBe('resume');
+    await finish(runner, stable, 'with-global');
+    await h.services.skills.save(skill.id, 'owner', {
+      content: skillMd('team-default', 'Updated rules.'),
+      files: [],
+      expectedRevision: 1,
+    });
+    await enqueue(agent);
+    const [updated] = await claim(h, runner);
+    expect(updated.prompt.session).toBe('fresh');
+    expect(updated.skills[0].hash).not.toBe(added.skills[0].hash);
+    await finish(runner, updated, 'updated-global');
+    await h.services.skills.attach({ scope: 'global', scopeId: 'default' }, []);
+    await enqueue(agent);
+    const [removed] = await claim(h, runner);
+    expect(removed.prompt.session).toBe('fresh');
+    expect(removed.skills).toEqual([]);
+  });
 
   it('replaces only the requested agent session and resumes the new session on a comment', async () => {
     h = await createHarness();

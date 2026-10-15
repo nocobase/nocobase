@@ -6,13 +6,12 @@ A session belongs to the person who started it: only they see it, send it messag
 
 ## How it fits together
 
-| Part               | Where                                                                              | What it does                                                                                                                         |
-| ------------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| The bridge         | `@nocobase/acp-bridge`, started by `<cli> acp start` of `@nocobase/app-cli-client` | Registers the computer and the agents it found, long-polls for commands, runs each session's agent over ACP and reports what happens |
-| The service        | `server/service.ts`, the `agentSessionsToken` singleton                            | Keeps computers, sessions, transcripts, the commands waiting for each computer and the records tied to sessions                      |
-| The API            | `/api/agentSessions/...`                                                           | The pages' routes, and the bridge's under `/api/agentSessions/bridge`                                                                |
-| The tools endpoint | `/mcp/agent-sessions`                                                              | The application's tools for the agents, as an MCP server over HTTP                                                                   |
-| The pages          | `client/`, the route `/agent-sessions`                                             | The session list, a new session, a session's conversation, and the person's computers                                                |
+| Part        | Where                                                                              | What it does                                                                                                                         |
+| ----------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| The bridge  | `@nocobase/acp-bridge`, started by `<cli> acp start` of `@nocobase/app-cli-client` | Registers the computer and the agents it found, long-polls for commands, runs each session's agent over ACP and reports what happens |
+| The service | `server/service.ts`, the `agentSessionsToken` singleton                            | Keeps computers, sessions, transcripts, the commands waiting for each computer and the records tied to sessions                      |
+| The API     | `/api/agentSessions/...`                                                           | The pages' routes, and the bridge's under `/api/agentSessions/bridge`                                                                |
+| The pages   | `client/`, the route `/agent-sessions`                                             | The session list, a new session, a session's conversation, and the person's computers                                                |
 
 A poll waits up to 25 seconds for a command and is woken at once by one queued on the same server instance, and within a second by one queued on another, since commands wait in the database. A command that asks for an answer, such as listing a computer's folders, waits up to 10 seconds for the bridge's reply, which reaches it through the application's cache (`cachingToken`): an application of several instances needs a shared cache, such as Redis, for it. A computer that has not polled for a minute is offline. Reports are idempotent: each carries a batch number and the time the bridge started, so a report sent again after a lost answer is stored once. Streamed text arrives in fewer, larger updates, and the server grows a message's last event in place rather than storing every piece. The owner's pages hear of every change on the realtime topic `agent-sessions` and read it through the API.
 
@@ -41,12 +40,12 @@ agentSessions({ routes: false }),
 
 // client/routes.ts
 {
-  ...agentSessionsRoute({ cli: 'acme', install: 'npm install -g @acme/cli' }),
+  ...agentSessionsRoute({ cli: 'acme', connectPrompt: ComputerSetup }),
   navigation: { title: 'navigation.agentSessions', icon: MessagesSquare },
 },
 ```
 
-`cli` is the command people connect a computer with, and is required; `install` is how they install it. The page's "My computers" dialog shows both. An application that does not place the page itself registers `agentSessions({ cli, install })` instead, and the plugin adds the route with its own menu entry.
+`cli` is the command people connect a computer with, and is required. The optional `connectPrompt` component supplies the application’s setup trigger and dialog in both the empty state and "My computers". Without it, the plugin shows its default command checklist. An application that does not place the page itself registers `agentSessions({ cli, connectPrompt })` instead, and the plugin adds the route with its own menu entry. The previous `install` option is replaced by `connectPrompt`; applications own installation instructions and credentials. An offline computer still shows only the background service command.
 
 ### Tying records to sessions
 
@@ -77,43 +76,35 @@ sessions.registerProjects({
 
 With `search`, a person mentions records in a message by typing `#`: the composer offers those matching what follows, the session's project's first, and inserts `#ST-58`. A mentioned record is tied to the session as already decided, so the session shows it without asking to start it, and the agent is told what each mention is beneath the message; the transcript keeps the message as written, its mentions linking to the record.
 
+A record's `status` carries its `label` and a `tone` (`idle`, `active`, `attention`, `done`), which older data has alone. Give it an `icon` too (`backlog`, `started`, `blocked`, `review`, `done`, `closed`) and, when it waits for the viewer, `needsYou` ("Needs your acceptance"): the page then draws the status as that shape, orders the session's bar by it and counts what waits for the viewer.
+
+To open a kind's records beside the conversation instead of at their `href`, give `agentSessionsRoute` a panel for that kind, a component taking `LinkPanelProps` (the record, its place among the session's records of that kind, previous, next and close, and `variant`: `side` beside the conversation or `sheet` on a phone):
+
+```ts
+agentSessionsRoute({ cli: 'acme', linkPanels: { issue: IssuePanel } }),
+```
+
+The open record is in the address as `?<kind>=<refId>`; J and K move among the session's records of that kind and Esc closes it. Below 1600 pixels wide the session list folds to a rail while a record is open.
+
 ### What the agent knows of the session's work
 
-The records tied to a session, created in it or mentioned in its messages, are what the person means by "the tasks", and the agent is told so. A message carries the list beneath it whenever it changed since the agent was last told, each record with its standing in the person's language and what is new or changed marked, so that an agent coming back to a session a day later learns what happened meanwhile; a message after which nothing changed carries nothing. Every session's agent also has the tool `list_session_work`, which lists that work with how each is going as the kind's `progress` tells it, and the MCP `initialize` answer lists the work when the agent's session opens. `agentSessions.toldWork` keeps what the agent was last told, and `locale` the language its owner last wrote in.
+The records tied to a session, created in it or mentioned in its messages, are what the person means by "the tasks", and the agent is told so. A message carries the list beneath it whenever it changed since the agent was last told, each record with its standing in the person's language and what is new or changed marked, so that an agent coming back to a session a day later learns what happened meanwhile; a message after which nothing changed carries nothing. The `session work` CLI command lists that work with progress from the kind's existing batch resolver. `agentSessions.toldWork` keeps what the agent was last told, and `locale` the interface language supplied with the owner's latest message. Application instructions can be a string or a `(viewer) => string` resolver and are resent when their generated content changes.
 
-With `registerProjects`, a new session may work for one of the application's projects (`GET /api/agentSessions/projects`). The session shows its project, the list groups and filters by it, and its tools learn it (`SessionToolContext.projectId`); the MCP `initialize` answer tells the agent to file work there unless the person names another project.
+With `registerProjects`, a new session may work for one of the application's projects (`GET /api/agentSessions/projects`). The session shows its project, the list groups and filters by it, and the CLI creation context supplies it as the default project.
 
 ### How the agents work
 
-`registerInstructions(text)` tells the agents in sessions how the application wants them to work, in English, such as what they do themselves and what they record for others to run. The agent reads it beneath a session's first message, and beneath the next message again whenever the text changed (`agentSessions.toldInstructions` keeps a hash of what it was told), and in the MCP `initialize` answer when its session opens. The transcript keeps the messages as written.
+`registerInstructions(text)` tells the agents in sessions how the application wants them to work, in English, such as what they do themselves and what they record for others to run. The agent reads it beneath a session's first message, and beneath the next message again whenever the text changed (`agentSessions.toldInstructions` keeps a hash of what it was told). The transcript keeps the messages as written.
 
 ### Telling the owner
 
 What happens in a session while its owner is not looking can reach them elsewhere, such as in an inbox: register `registerNotices({ send, settle })` on `agentSessionsToken`. The owner is told when the agent waits for their permission, or when a turn ends, answered or failed (as when the agent could not start), unless they saw it on the session's page within 20 seconds: the page records how far its owner has seen the transcript while it is visible (`POST /api/agentSessions/sessions/{sessionId}/seen`, `agentSessions.seenSeq`). A turn they stopped tells nothing, and neither do the records a session ties to it, which the application tells of itself. Each notice (`SessionNotice`) names the session, its title and agent, and what the agent asks to do or why the turn failed; its `key` is the same when sent twice. The service settles what it told when the owner sees the session (`seen`), answers the request (`answered`) or archives the session (`archived`).
 
-### Giving the agents tools
+### Using the CLI and shared Skill
 
-The agents reach the application's tools as an MCP server over HTTP. Register them once, under the server name the agents see:
+Sessions use the CLI with the bridge-selected person's existing login profile and the session id in environment variables. The session id is context, never a credential. There is no built-in MCP endpoint or session token. Before starting or restoring a session, the CLI ensures its bundled Skill is installed for the selected agent; unsupported tools or installation errors stop that opening with an explicit message. No files are written to the user's repository.
 
-```ts
-sessions.registerTools('acme', [
-  defineSessionTool({
-    name: 'create_issues',
-    description: 'Creates issues in a project.',
-    input: z.object({
-      projectId: z.string(),
-      titles: z.array(z.string()).min(1),
-    }),
-    run: async ({ projectId, titles }, { userId, link }) => {
-      const created = await issues.create(userId, projectId, titles);
-      for (const issue of created) await link('issue', issue.id);
-      return created;
-    },
-  }),
-]);
-```
-
-A tool runs as the session's owner, with the session's project when it has one, and answers JSON; what it throws reaches the agent as a tool error it can correct. The bridge hands the agent the endpoint and a token for its session when the session opens, provided the agent supports MCP over HTTP (Codex and OpenCode do). A token is `<sessionId>.<HMAC>`, signed with a key the application's secrets derive for `agent-sessions/tools`, and reaches only its session while the session is not archived; without the secrets service sessions get no tools.
+`creationContext(userId, sessionId)` checks ownership and rejects archived sessions before an application creates a record. After its normal permission-checked creation, the application calls the existing `link()` service. `sessionWork(viewer, sessionId)` checks ownership and returns only work its link resolver makes visible, with batch progress. The CLI exposes it as `session work <session>`.
 
 ## The agents
 
@@ -139,7 +130,15 @@ The bridge offers the agents installed on the computer, each run as its own prog
 | Amp            | `amp-acp`                                                                                         | The bridge allows what it asks                                      |
 | Mistral Vibe   | `vibe-acp`                                                                                        | The bridge allows what it asks                                      |
 
-On Windows the bridge finds each program with one of PATHEXT's extensions, runs npm's `.cmd` launchers through `cmd.exe` without a window, and stops an agent with its whole process tree; the application reads each computer's paths with its own system's rules. Each session opens with full access so that a person's first message is simply carried out, as it would be in their terminal: in the agent's full-access mode when it offers one, the person still free to choose another, or else with every permission it asks for allowed by the bridge. A new session offers the choices and the slash commands the agent offered in its latest session on that computer (the computer's `choices` and `commands`, such as Codex's model, reasoning effort and fast mode), starting from the same model and in the bridge's mode, and the person can change them before the first message and at any time in the conversation; the session keeps them when it reopens. An agent that asks permission anyway waits for the owner up to 30 minutes and is then declined. A session continues the agent's own conversation (`session/resume`, else `session/load`) whenever its agent process starts again. A person signs the agent in on their computer with its own command line (`codex login`, `claude`, `opencode auth login` and so on); a session whose agent is not signed in says what to run.
+On Windows the bridge finds each program with one of PATHEXT's extensions, runs npm's `.cmd` launchers through `cmd.exe` without a window, and stops an agent with its whole process tree; the application reads each computer's paths with its own system's rules. Each session opens with full access so that a person's first message is simply carried out, as it would be in their terminal: in the agent's full-access mode when it offers one, the person still free to choose another, or else with every permission it asks for allowed by the bridge. New sessions discover the installed agent's actual choices for the selected computer and directory before sending. The existing composer shows model, reasoning level and other settings, including labeled fixed values; slash commands still come from the last session. A person can change settings before the first message and during the conversation, and the session keeps them when it reopens. An agent that asks permission anyway waits for the owner up to 30 minutes and is then declined. A session continues the agent's own conversation (`session/resume`, else `session/load`) whenever its agent process starts again. A person signs the agent in on their computer with its own command line (`codex login`, `claude`, `opencode auth login` and so on); a session whose agent is not signed in says what to run.
+
+### Settings before the first message
+
+`POST /api/agentSessions/computers/{computerId}/discoverChoices` accepts `agentId`, an absolute `cwd` within the owner's allowed folders, and `settings` overrides. It uses the existing correlated command/reply transport and waits up to 160 seconds, including agent initialization. The disposable ACP session receives no prompt or MCP servers, grants no requested tool permissions, creates no Studio session or work, and always stops its agent process. The agent may retain an empty session in its own history. Choices come from ACP configuration options, or session modes when configuration options are absent; no model list is hardcoded.
+
+Discovery is local to the effective computer, agent and directory. Changing these selections or observed online/agent availability clears settings; late responses, including A → B → A, are ignored. Changing a setting repeats discovery to refresh dependent choices; a model change resets dependent overrides. Loading and failure prevent sending, with Retry for failure; offline keeps the selected computer visible and asks to reconnect. An empty configurable surface and an unsupported surface each explain that agent defaults will be used. Send captures the target and discovered settings together and locks selectors while creating the session.
+
+The newly opened ACP session validates and applies explicit settings before its first prompt. Unknown, removed or rejected choices fail visibly without sending a prompt, including on retry; server creation does not trust historical computer choices. Existing-session choice changes, resume and streamed configuration updates continue through the existing path. Bridge protocol version 2 uses the existing upgrade-required response; there is no fallback to old bridges, persistent discovery cache, preparation lease, migration or retained probe process.
 
 ## Transcripts
 
@@ -168,3 +167,13 @@ pnpm --filter @nocobase/app-plugin-agent-sessions typecheck
 pnpm --filter @nocobase/app-plugin-agent-sessions test
 pnpm --filter @nocobase/app-plugin-agent-sessions build
 ```
+
+## Retaining new-session state across navigation
+
+An application can mount `AgentSessionsProvider` from `@nocobase/app-plugin-agent-sessions/client` inside its authentication provider and above its routes, with `owner` set to the authenticated user ID (or `null` when signed out). The routed pages then use that owner’s cache and a single live subscription across navigation. Changing owner destroys the previous cache; do not reuse an owner identifier across users. Studio supplies its owner-aware component through `agentSessions({ routes: false, cacheProvider: { name: 'owner-cache', after: ['@nocobase/app-plugin-authentication:authentication'], component: OwnerCache } })`. The plugin registers it in the extension layer after authentication; application-owned provider definitions cannot use that layer.
+
+Discovery results remain valid for at most five minutes for the computer, agent metadata, directory, exposed roots/home/host and selected settings. Computer notifications and realtime reconnect invalidate discovery without clearing the selection or draft; expired or refreshing results cannot authorize sending. External agent configuration changes without an observable notification are bounded by that lifetime and can be refreshed with Retry. Same-key in-flight requests survive navigation, share one result and retain their thirty-second timeout; abandoning client waiting does not cancel queued bridge work. New-session drafts, attachments and selections live only in the owner’s memory cache, with a thirty-minute inactive eviction period, and disappear on reload, sign-out or account changes.
+
+Both session creation and prompt submission accept an optional UUID `submissionId`. The browser always supplies it and retains the exact input with that ID until confirmation. After an uncertain result, **Retry original submission** sends the captured input with the same ID; **Edit as new message** explicitly releases it for a new submission, warning that the original may have arrived. Retry can recover confirmation while the computer is offline or the session is archived. No automatic retry or page-persistent recovery is performed; reload and account changes discard pending input. Legacy requests without an ID keep their previous behavior and have no duplicate protection.
+
+The prompt event's existing primary key stores the submission ID; session creation uses that ID for both the session and its first prompt event. An internal digest of the normalized operation, target and ordered input detects conflicting reuse, which returns `409 AGENT_SESSIONS_SUBMISSION_CONFLICT` without exposing another owner's data. Internal digest metadata is removed from transcript responses and never sent to the bridge. The session, first event, links, image metadata and command commit together; notifications follow commit. Concurrent conflicts roll back before reading the original confirmation. Credentials last as long as the prompt event: permanent data removal or manual database restoration is outside this guarantee. No new collection, index or migration is required.

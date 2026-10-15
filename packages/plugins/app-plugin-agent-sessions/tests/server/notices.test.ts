@@ -1,3 +1,4 @@
+import { BRIDGE_PROTOCOL_VERSION } from '@nocobase/acp-bridge/protocol';
 import type { BridgeEvent } from '@nocobase/acp-bridge/protocol';
 import type { DatabaseManager } from '@nocobase/db';
 import { describe, expect, vi } from 'vitest';
@@ -39,7 +40,7 @@ function setup(database: DatabaseManager) {
   let batch = 0;
   async function started() {
     const { computerId } = await service.register('u1', {
-      protocol: 1,
+      protocol: BRIDGE_PROTOCOL_VERSION,
       computerId: null,
       bridgeStartedAt: 'bridge-1',
       computer: {
@@ -235,7 +236,7 @@ describe('AgentSessionsService notices', () => {
     const schedule = vi.fn();
     const service = new AgentSessionsService({ database, schedule });
     const { computerId } = await service.register('u1', {
-      protocol: 1,
+      protocol: BRIDGE_PROTOCOL_VERSION,
       computerId: null,
       bridgeStartedAt: 'bridge-1',
       computer: {

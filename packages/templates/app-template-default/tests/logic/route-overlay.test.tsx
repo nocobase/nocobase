@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -155,6 +156,47 @@ describe('route overlays', () => {
     expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
       'Original',
     );
+  });
+});
+
+describe('route overlay presentation', () => {
+  it('composes the dialog primitives so it follows the dialog styles', async () => {
+    setup();
+    const dialog = await screen.findByRole('dialog', { name: 'Edit' });
+    expect(dialog).toHaveAttribute('data-slot', 'route-overlay-content');
+    expect(dialog).toHaveAttribute('data-presentation', 'dialog');
+    const header = dialog.querySelector(
+      ':scope > [data-slot="route-overlay-header"] > [data-slot="dialog-header"]',
+    );
+    expect(
+      header?.querySelector('[data-slot="dialog-title"]'),
+    ).toHaveTextContent('Edit');
+    expect(
+      dialog.querySelector(':scope > [data-slot="route-overlay-body"]'),
+    ).toContainElement(screen.getByRole('textbox', { name: 'Name' }));
+    const footer = dialog.querySelector(
+      ':scope > [data-slot="route-overlay-footer"] > [data-slot="dialog-footer"]',
+    );
+    expect(footer).toContainElement(
+      screen.getByRole('button', { name: 'Cancel' }),
+    );
+    // The footer sits at the panel's edges, so the margins it uses inside `DialogContent` are reset.
+    expect(footer).toHaveClass('mx-0', 'mb-0');
+    expect(footer).not.toHaveClass('-mx-6', '-mb-6');
+    expect(
+      dialog.querySelector(':scope > [data-slot="dialog-close"]'),
+    ).toHaveAccessibleName('Close');
+  });
+
+  it('presents a drawer with the same regions', async () => {
+    setup(undefined, undefined, true);
+    const drawer = await screen.findByRole('dialog', { name: 'Details' });
+    expect(drawer).toHaveAttribute('data-presentation', 'drawer');
+    expect(
+      drawer.querySelector(
+        ':scope > [data-slot="route-overlay-footer"] > [data-slot="dialog-footer"]',
+      ),
+    ).toContainElement(within(drawer).getByRole('button', { name: 'Cancel' }));
   });
 });
 

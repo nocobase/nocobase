@@ -8,6 +8,8 @@ import type {
 
 export const ProjectManagerViewSchema: z.ZodType<ProjectManagerView> = z
   .object({
+    name: z.string(),
+    description: z.string().nullable(),
     firstChoiceAgentId: z.string().nullable().meta({
       description:
         'The agent whose tool and model the project manager runs with; null until someone chooses.',
@@ -41,6 +43,23 @@ export const ProjectManagerViewSchema: z.ZodType<ProjectManagerView> = z
 
 export const IssueProgressSchema: z.ZodType<IssueProgress> = z
   .object({
+    personalRunnerRequests: z
+      .array(
+        z.object({
+          id: z.string(),
+          status: z.enum(['pending', 'rejected']),
+          requestedBy: z.object({ id: z.string(), name: z.string() }),
+          commentId: z.string(),
+          commentText: z.string(),
+          canDecide: z.boolean(),
+          canRunAsMe: z.boolean(),
+        }),
+      )
+      .optional()
+      .meta({
+        description:
+          'Personal runner consent requests visible to the issue owner or their original requester.',
+      }),
     waiting: z
       .object({
         reason: z.enum([
@@ -77,6 +96,8 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
             model: z.string().nullable(),
             reason: z.enum([
               'ready',
+              'updatePending',
+              'pruning',
               'busy',
               'incompatible',
               'offline',
@@ -94,6 +115,8 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
               .array(
                 z.enum([
                   'ready',
+                  'updatePending',
+                  'pruning',
                   'busy',
                   'incompatible',
                   'offline',
@@ -116,6 +139,8 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
                   reason: z
                     .enum([
                       'ready',
+                      'updatePending',
+                      'pruning',
                       'busy',
                       'incompatible',
                       'offline',
@@ -153,11 +178,15 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
     pullRequest: z
       .object({ number: z.number().int(), url: z.string().nullable() })
       .nullable(),
-    question: z.string().nullable().meta({
-      description: 'On a blocked issue: what the project manager asked.',
+    needsYou: z.string().nullable().meta({
+      description: 'The structured decision or input required from the owner.',
+    }),
+    explanationCommentId: z.string().nullable().meta({
+      description:
+        'The latest undeleted project manager comment, independent of the status transition.',
     }),
     next: z.string().nullable().meta({
-      description: 'The project manager’s latest "Next" line.',
+      description: 'The structured next step.',
     }),
     handOver: z.boolean().meta({
       description:

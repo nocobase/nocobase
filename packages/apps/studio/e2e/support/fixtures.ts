@@ -15,8 +15,15 @@ import {
   type BrowserContext,
   type Page,
 } from '@playwright/test';
+import { rmSync } from 'node:fs';
 
-import { ADMIN, readState } from './server.ts';
+import {
+  ADMIN,
+  readState,
+  startStudio,
+  stopStudio,
+  type ServerState,
+} from './server.ts';
 
 export { expect };
 
@@ -49,17 +56,28 @@ interface UserCredentials {
 }
 
 export const server = readState();
+const contextServers = new WeakMap<BrowserContext, ServerState>();
+const requestServers = new WeakMap<APIRequestContext, ServerState>();
 
 /** The address of a page under Studio's mount, such as `url('/issues')`. */
-export const url = (path: string): string =>
-  `${server.baseURL}${path.startsWith('/') ? path : `/${path}`}`;
+export const url = (path: string, target = server): string =>
+  `${target.baseURL}${path.startsWith('/') ? path : `/${path}`}`;
 
-/** Matches Studio's default inbox page and the given query. */
-export const atInbox =
+/**
+ * Matches Studio's home, My tasks (`/my-issues/owned`), and the given query; the task its split view selects by itself
+ * (`issue`) is left out.
+ */
+export const atHome =
   (search = '') =>
-  (address: URL): boolean =>
-    address.pathname === new URL(url('/inbox')).pathname &&
-    address.search === search;
+  (address: URL): boolean => {
+    const params = new URLSearchParams(address.search);
+    params.delete('issue');
+    const rest = params.toString();
+    return (
+      address.pathname === new URL(url('/my-issues/owned')).pathname &&
+      (rest ? `?${rest}` : '') === search
+    );
+  };
 
 /**
  * Better Auth and the API refuse a write without the application's own Origin. Each call takes a connection of its
@@ -71,7 +89,7 @@ const CONNECTION_HEADERS = { origin: server.origin, connection: 'close' };
 export class Api {
   constructor(
     private readonly request: APIRequestContext,
-    private readonly target = server,
+    private readonly target = requestServers.get(request) ?? server,
   ) {}
 
   private async send<T>(
@@ -137,7 +155,7 @@ export class Api {
 export async function signIn(
   context: BrowserContext,
   user: DemoUser | UserCredentials,
-  target = server,
+  target = contextServers.get(context) ?? server,
 ): Promise<void> {
   const { email, password } = typeof user === 'string' ? USERS[user] : user;
   const response = await context.request.post(
@@ -151,11 +169,13 @@ export async function signIn(
     throw new Error(
       `Signing in as ${email} failed: ${response.status()} ${await response.text()}`,
     );
+  contextServers.set(context, target);
+  requestServers.set(context.request, target);
 }
 
 /** Opens a page and waits until the application has rendered its first screen. */
 export async function open(page: Page, path: string): Promise<void> {
-  await page.goto(url(path));
+  await page.goto(url(path, contextServers.get(page.context()) ?? server));
   await page.waitForLoadState('networkidle');
 }
 
@@ -192,12 +212,36 @@ interface Fixtures {
   api: Api;
   /** Errors thrown in the page; the test fails if any occurred. */
   pageErrors: string[];
+  studioEvidence: void;
+  studio: ServerState;
 }
 
-export const test = base.extend<Fixtures>({
+interface WorkerFixtures {
+  /** Global PM settings cannot be isolated by giving issues and runner models unique names. */
+  isolatedStudio: boolean;
+}
+
+export const test = base.extend<Fixtures, WorkerFixtures>({
+  isolatedStudio: [false, { scope: 'worker', option: true }],
+  studio: [
+    async ({ isolatedStudio }, use) => {
+      if (!isolatedStudio) return use(server);
+      const owned = await startStudio({ isolated: true });
+      try {
+        expect(owned.origin).not.toBe(server.origin);
+        expect(owned.directory).not.toBe(server.directory);
+        await use(owned);
+      } finally {
+        await stopStudio(owned);
+        if (!process.env.NB_STUDIO_E2E_KEEP)
+          rmSync(owned.directory, { recursive: true, force: true });
+      }
+    },
+    { timeout: 180_000 },
+  ],
   user: ['alex', { option: true }],
-  context: async ({ context, user }, use) => {
-    await signIn(context, user);
+  context: async ({ context, user, studio }, use) => {
+    await signIn(context, user, studio);
     await use(context);
   },
   api: async ({ context }, use) => {
@@ -212,14 +256,31 @@ export const test = base.extend<Fixtures>({
     },
     { auto: true },
   ],
+  studioEvidence: [
+    async ({ studio, isolatedStudio }, use, info) => {
+      if (isolatedStudio)
+        await info.attach('studio-isolation.json', {
+          body: JSON.stringify({
+            workerIndex: info.workerIndex,
+            origin: studio.origin,
+            sharedOrigin: server.origin,
+            isolated: studio.isolated,
+          }),
+          contentType: 'application/json',
+        });
+      await use();
+    },
+    { auto: true },
+  ],
 });
 
 /** An API client signed in as another account, in a context of its own. */
 export async function apiAs(
   browser: import('@playwright/test').Browser,
   user: DemoUser | UserCredentials,
+  target = server,
 ): Promise<{ api: Api; close: () => Promise<void> }> {
   const context = await browser.newContext();
-  await signIn(context, user);
+  await signIn(context, user, target);
   return { api: new Api(context.request), close: () => context.close() };
 }

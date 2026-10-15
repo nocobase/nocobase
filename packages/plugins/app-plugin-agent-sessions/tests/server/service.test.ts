@@ -1,3 +1,8 @@
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { BridgeSession } from '@nocobase/acp-bridge';
+import { BRIDGE_PROTOCOL_VERSION } from '@nocobase/acp-bridge/protocol';
 import type {
   BridgeEvent,
   RegisterRequest,
@@ -12,8 +17,6 @@ import {
   AgentSessionsService,
   type LinkResolver,
 } from '../../server/service.js';
-import { createToolTokens, defineSessionTool } from '../../server/tools.js';
-import { z } from 'zod';
 import { test } from '../helpers/database.js';
 
 const T0 = Date.parse('2026-10-13T08:00:00.000Z');
@@ -30,30 +33,38 @@ function setup(database: DatabaseManager) {
     now: () => clock.now,
     publish: (userId, change) => changes.push([userId, change]),
   });
-  const register = (userId = 'u1', overrides: Partial<RegisterRequest> = {}) =>
-    service.register(userId, {
-      protocol: 1,
-      computerId: null,
-      bridgeStartedAt: 'bridge-1',
-      computer: {
-        name: 'Laptop',
-        platform: 'darwin',
-        arch: 'arm64',
-        host: 'nb-studio 1.0.0',
-        home: '/home/zhou',
-        roots: ['/home/zhou'],
-        agents: [
-          { id: 'codex', name: 'Codex', version: '2.2.2' },
-          {
-            id: 'opencode',
-            name: 'OpenCode',
-            version: null,
-            problem: 'notInstalled',
-          },
-        ],
+  const register = (
+    userId = 'u1',
+    overrides: Partial<RegisterRequest> = {},
+    keyed = false,
+  ) =>
+    service.register(
+      userId,
+      {
+        protocol: BRIDGE_PROTOCOL_VERSION,
+        computerId: null,
+        bridgeStartedAt: 'bridge-1',
+        computer: {
+          name: 'Laptop',
+          platform: 'darwin',
+          arch: 'arm64',
+          host: 'nb-studio 1.0.0',
+          home: '/home/zhou',
+          roots: ['/home/zhou'],
+          agents: [
+            { id: 'codex', name: 'Codex', version: '2.2.2' },
+            {
+              id: 'opencode',
+              name: 'OpenCode',
+              version: null,
+              problem: 'notInstalled',
+            },
+          ],
+        },
+        ...overrides,
       },
-      ...overrides,
-    });
+      keyed,
+    );
   let batch = 0;
   const report = (
     computerId: string,
@@ -99,6 +110,325 @@ const chunk = (value: string): BridgeEvent => ({
 });
 
 describe('AgentSessionsService', () => {
+  for (const connection of ['connected', 'reopened', 'invalid']) {
+    test(`persists acknowledged dependent choices through ${connection} model changes and reopening`, async ({
+      database,
+    }) => {
+      const { service, register, report, take } = setup(database);
+      const root = await mkdtemp(path.join(os.tmpdir(), 'session-settings-'));
+      const log = path.join(root, 'trace.jsonl');
+      const { computerId } = await register('u1', {
+        computer: {
+          name: 'Test',
+          platform: process.platform,
+          arch: process.arch,
+          host: 'Test',
+          home: root,
+          roots: [root],
+          agents: [{ id: 'fake', name: 'Fake', version: null }],
+        },
+      });
+      const created = await service.createSession(owner, {
+        computerId,
+        agentId: 'fake',
+        cwd: root,
+        settings: {
+          model: connection === 'invalid' ? 'second' : 'first',
+          effort: 'low',
+          mode: 'full',
+        },
+        content: text('first'),
+      });
+      let bridge: BridgeSession | undefined;
+      let reports = Promise.resolve();
+      const events: BridgeEvent[] = [];
+      const run = async () => {
+        for (const command of await take(computerId)) {
+          if (!('session' in command))
+            throw new Error('Expected session command');
+          bridge ??= new BridgeSession(command.session, {
+            client: { name: 'test', version: '0' },
+            server: 'https://example.invalid',
+            env: { ...process.env, FAKE_VARIANT: 'dependent', FAKE_LOG: log },
+            roots: [root],
+            resolve: async () => ({
+              spec: {
+                id: 'fake',
+                name: 'Fake',
+                launchers: [],
+                modes: ['full'],
+                signIn: 'fake login',
+              },
+              command: process.execPath,
+              args: [
+                path.resolve(
+                  import.meta.dirname,
+                  '../../../../libs/acp-bridge/tests/fixtures/fake-agent.mjs',
+                ),
+              ],
+            }),
+            emit: (event) => {
+              events.push(event);
+              enqueue([event]);
+            },
+            stateChanged: () => enqueue([]),
+          });
+          bridge.handle(command);
+        }
+      };
+      const enqueue = (added: BridgeEvent[]) => {
+        const state = bridge?.state ?? null;
+        reports = reports.then(async () => {
+          await report(computerId, created.id, added, { state });
+        });
+      };
+      const completed = async (count: number) => {
+        await vi.waitFor(
+          () =>
+            expect(
+              events.filter((event) => event.kind === 'turnEnded'),
+            ).toHaveLength(count),
+          { timeout: 10000 },
+        );
+        await reports;
+      };
+      try {
+        await run();
+        await completed(1);
+        if (connection === 'invalid') {
+          expect(
+            events.filter((event) => event.kind === 'turnEnded'),
+          ).toMatchObject([
+            { error: expect.stringContaining('no longer supports') },
+          ]);
+          const saved = await service.getSession(owner, created.id);
+          expect(saved.settings).toEqual({
+            model: 'second',
+            effort: 'low',
+            mode: 'full',
+          });
+          expect(saved.state).toBeNull();
+          expect(
+            (await readFile(log, 'utf8'))
+              .split('\n')
+              .filter((line) => line && JSON.parse(line).method === 'prompt'),
+          ).toEqual([]);
+          return;
+        }
+        if (connection === 'reopened') {
+          await bridge?.close();
+          bridge = undefined;
+        }
+        await service.choose(owner, created.id, {
+          choiceId: 'model',
+          value: 'second',
+        });
+        // Desired changes are not saved before the agent acknowledges the full resulting configuration.
+        expect((await service.getSession(owner, created.id)).settings).toEqual({
+          model: 'first',
+          effort: 'low',
+          mode: 'full',
+        });
+        await run();
+        await vi.waitFor(
+          async () => {
+            await reports;
+            expect(
+              (await service.getSession(owner, created.id)).settings,
+            ).toEqual({ model: 'second', effort: 'high', mode: 'full' });
+          },
+          { timeout: 10000 },
+        );
+        await bridge?.close();
+        bridge = undefined;
+        await service.prompt(owner, created.id, text('continue'));
+        await run();
+        await completed(2);
+        expect(
+          events.filter((event) => event.kind === 'turnEnded'),
+        ).toMatchObject([{ error: null }, { error: null }]);
+        const trace = (await readFile(log, 'utf8'))
+          .trim()
+          .split('\n')
+          .map(
+            (line) =>
+              JSON.parse(line) as {
+                method: string;
+                pid: number;
+                params: { configId?: string; value?: string };
+              },
+          );
+        const prompts = trace.filter((entry) => entry.method === 'prompt');
+        expect(prompts).toHaveLength(2);
+        const reopening = trace.filter(
+          (entry) => entry.pid === prompts[1]!.pid,
+        );
+        expect(reopening).toContainEqual(
+          expect.objectContaining({
+            method: 'set',
+            params: expect.objectContaining({
+              configId: 'model',
+              value: 'second',
+            }),
+          }),
+        );
+        expect(
+          reopening.findIndex(
+            (entry) =>
+              entry.method === 'set' &&
+              entry.params.configId === 'model' &&
+              entry.params.value === 'second',
+          ),
+        ).toBeLessThan(
+          reopening.findIndex((entry) => entry.method === 'prompt'),
+        );
+        expect((await service.getSession(owner, created.id)).settings).toEqual({
+          model: 'second',
+          effort: 'high',
+          mode: 'full',
+        });
+      } finally {
+        await bridge?.close();
+        await reports;
+        await rm(root, { recursive: true, force: true });
+      }
+    });
+  }
+
+  test('publishes registration changes and recovery, but not an unchanged scan', async ({
+    database,
+  }) => {
+    const { service, register, clock, changes } = setup(database);
+    const { computerId } = await register();
+    changes.length = 0;
+    await register('u1', { computerId }, true);
+    expect(changes).toEqual([]);
+    await register('u1', { computerId, bridgeStartedAt: 'bridge-2' });
+    expect(
+      changes.filter(([, change]) => change.kind === 'computers'),
+    ).toHaveLength(1);
+    changes.length = 0;
+    clock.now += 120_000;
+    await register('u1', { computerId, bridgeStartedAt: 'bridge-2' });
+    expect(
+      changes.filter(([, change]) => change.kind === 'computers'),
+    ).toHaveLength(1);
+    expect((await service.listComputers('u1'))[0]?.online).toBe(true);
+  });
+
+  test('stops waiting after discovery cancellation without assuming the queued command was cancelled', async ({
+    database,
+  }) => {
+    const { service, register, take } = setup(database);
+    const { computerId } = await register();
+    const stop = new AbortController();
+    const pending = service.discoverChoices(
+      'u1',
+      computerId,
+      { agentId: 'codex', cwd: '/home/zhou', settings: {} },
+      stop.signal,
+    );
+    const rejected = pending.catch((error: unknown) => error);
+    let queued:
+      import('@nocobase/acp-bridge/protocol').BridgeCommand | undefined;
+    await vi.waitFor(async () => {
+      [queued] = await take(computerId);
+      expect(queued?.type).toBe('discoverChoices');
+    });
+    stop.abort();
+    expect(await rejected).toMatchObject({ name: 'AbortError' });
+    expect(queued?.type).toBe('discoverChoices');
+  });
+
+  test('discovers a fresh computer without a Studio session and carries settings to the first prompt', async ({
+    database,
+  }) => {
+    const { service, register, take } = setup(database);
+    const { computerId } = await register();
+    const input = {
+      agentId: 'codex',
+      cwd: '/home/zhou/code/../code',
+      settings: { model: 'actual' },
+    };
+    const pending = service.discoverChoices('u1', computerId, input);
+    let command:
+      import('@nocobase/acp-bridge/protocol').BridgeCommand | undefined;
+    await vi.waitFor(async () => {
+      [command] = await take(computerId);
+      expect(command?.type).toBe('discoverChoices');
+    });
+    if (command?.type !== 'discoverChoices')
+      throw new Error('Missing discovery command');
+    expect(command).toMatchObject({
+      cwd: '/home/zhou/code',
+      settings: input.settings,
+    });
+    const discovery = {
+      status: 'available' as const,
+      choices: [
+        {
+          id: 'model',
+          category: 'model',
+          name: 'Model',
+          currentValue: 'actual',
+          options: [{ value: 'actual', name: 'Actual' }],
+        },
+      ],
+    };
+    await service.reply('u1', {
+      computerId,
+      requestId: command.requestId,
+      listing: null,
+      error: null,
+      discovery,
+    });
+    expect(await pending).toEqual(discovery);
+    expect(
+      (await service.listSessions(owner, { archived: false, pageSize: 50 }))
+        .sessions,
+    ).toEqual([]);
+    expect((await service.listComputers('u1'))[0]?.choices).toEqual({});
+    const session = await service.createSession(owner, {
+      computerId,
+      ...input,
+      content: text('first'),
+    });
+    expect(await take(computerId)).toMatchObject([
+      {
+        type: 'prompt',
+        session: { id: session.id, settings: { model: 'actual' } },
+      },
+    ]);
+  });
+
+  test('checks discovery ownership, installation, offline state and allowed directories before queueing', async ({
+    database,
+  }) => {
+    const { service, register, take, clock } = setup(database);
+    const { computerId } = await register();
+    const input = { agentId: 'codex', cwd: '/home/zhou/code', settings: {} };
+    await expect(
+      service.discoverChoices('u2', computerId, input),
+    ).rejects.toMatchObject({ key: 'computerNotFound' });
+    await expect(
+      service.discoverChoices('u1', computerId, {
+        ...input,
+        agentId: 'opencode',
+      }),
+    ).rejects.toMatchObject({ key: 'agentUnavailable' });
+    await service.updateComputer('u1', computerId, {
+      folders: ['/home/zhou/code'],
+    });
+    for (const cwd of ['/etc', '/home/zhou/other', 'code'])
+      await expect(
+        service.discoverChoices('u1', computerId, { ...input, cwd }),
+      ).rejects.toMatchObject({ key: 'directoryNotAllowed' });
+    clock.now += 61_000;
+    await expect(
+      service.discoverChoices('u1', computerId, input),
+    ).rejects.toMatchObject({ key: 'computerOffline' });
+    expect(await take(computerId)).toEqual([]);
+  });
   test('registers a computer once per bridge, and anew for someone else', async ({
     database,
   }) => {
@@ -140,7 +470,6 @@ describe('AgentSessionsService', () => {
         cwd: '/home/zhou/code',
         acpSessionId: null,
         settings: {},
-        tools: null,
       },
     });
     await expect(take(computerId)).resolves.toEqual([]);
@@ -386,14 +715,17 @@ describe('AgentSessionsService', () => {
         value: 'read-only',
       }),
     ).resolves.toMatchObject({
-      settings: { mode: 'read-only' },
+      settings: { mode: 'agent-full-access' },
     });
     await expect(take(computerId)).resolves.toMatchObject([
       {
         type: 'choose',
         choiceId: 'mode',
         value: 'read-only',
-        session: { acpSessionId: 'acp-1', settings: { mode: 'read-only' } },
+        session: {
+          acpSessionId: 'acp-1',
+          settings: { mode: 'agent-full-access' },
+        },
       },
     ]);
   });
@@ -437,12 +769,6 @@ describe('AgentSessionsService', () => {
       cwd: '/home/zhou',
       content: text('next'),
     };
-    await expect(
-      service.createSession(owner, {
-        ...input,
-        settings: { effort: 'max' },
-      }),
-    ).rejects.toMatchObject({ key: 'choiceNotFound', field: 'settings' });
     const next = await service.createSession(owner, {
       ...input,
       settings: { effort: 'high' },
@@ -706,27 +1032,18 @@ describe('AgentSessionsService', () => {
     ).rejects.toMatchObject({ key: 'directoryNotAllowed' });
   });
 
-  test('works for one of the application’s projects, which its tools default to', async ({
+  test('works for one of the application’s projects, which CLI creation defaults to', async ({
     database,
   }) => {
     const service = new AgentSessionsService({
       database,
       now: () => T0,
-      toolTokens: createToolTokens(() => [{ value: 'key' }]),
     });
     service.registerProjects({
       list: () => Promise.resolve([{ id: 'p1', name: 'Studio' }]),
     });
-    service.registerTools('studio', [
-      defineSessionTool({
-        name: 'noop',
-        description: 'Does nothing.',
-        input: z.object({}),
-        run: () => Promise.resolve(null),
-      }),
-    ]);
     const { computerId } = await service.register('u1', {
-      protocol: 1,
+      protocol: BRIDGE_PROTOCOL_VERSION,
       computerId: null,
       computer: {
         name: 'Laptop',
@@ -755,17 +1072,24 @@ describe('AgentSessionsService', () => {
     const [command] = (
       await service.poll('u1', { computerId, wait: false }, signal)
     ).commands;
-    const token =
-      command?.type === 'prompt' ? command.session.tools?.token : undefined;
-    const caller = await service.toolHost.caller(token ?? '');
-    expect(caller).toEqual({
-      userId: 'u1',
-      sessionId: session.id,
+    expect(command?.type === 'prompt' && command.session).not.toHaveProperty(
+      'tools',
+    );
+    await expect(service.creationContext('u1', session.id)).resolves.toEqual({
       projectId: 'p1',
     });
-    await expect(service.toolHost.instructions(caller!)).resolves.toContain(
-      '"Studio" (id p1)',
-    );
+    await expect(
+      service.creationContext('u2', session.id),
+    ).rejects.toMatchObject({ key: 'sessionNotFound' });
+    await expect(
+      service.creationContext('u1', 'missing'),
+    ).rejects.toMatchObject({ key: 'sessionNotFound' });
+    await service.updateSession({ userId: 'u1' }, session.id, {
+      archived: true,
+    });
+    await expect(
+      service.creationContext('u1', session.id),
+    ).rejects.toMatchObject({ key: 'sessionArchived' });
   });
 
   test('ties what a message mentions to the session and tells the agent what it is', async ({
@@ -905,14 +1229,64 @@ describe('AgentSessionsService', () => {
       'and now?',
       'How to work in this session:\nMake small fixes yourself.',
     ]);
-    await expect(
-      service.toolHost.instructions({
-        userId: 'u1',
-        sessionId: session.id,
-        projectId: null,
-      }),
-    ).resolves.toBe('How to work in this session:\nMake small fixes yourself.');
   });
+
+  for (const locale of ['zh-CN', 'en-US']) {
+    test(`resolves instructions from the current interface locale (${locale}), also after restoring a session`, async ({
+      database,
+    }) => {
+      const { service, register, take } = setup(database);
+      const instructions = (viewer: { readonly locale?: string | undefined }) =>
+        `Create tasks in ${viewer.locale}.`;
+      service.registerInstructions(instructions);
+      const { computerId } = await register();
+      const viewer = { userId: owner.userId, locale };
+      const session = await service.createSession(viewer, {
+        computerId,
+        agentId: 'codex',
+        cwd: '/home/zhou/code',
+        // The message language deliberately differs from the interface language.
+        content: text(locale === 'zh-CN' ? 'Create a task' : '创建任务'),
+      });
+      const told = async () => {
+        const commands = await take(computerId);
+        return commands.flatMap((command) =>
+          command.type === 'prompt'
+            ? command.content.flatMap((part) =>
+                part.type === 'text' ? [part.text] : [],
+              )
+            : [],
+        );
+      };
+      await expect(told()).resolves.toContain(
+        `How to work in this session:\nCreate tasks in ${locale}.`,
+      );
+      const restored = new AgentSessionsService({ database, now: () => T0 });
+      restored.registerInstructions(instructions);
+      await restored.prompt(viewer, session.id, text('Continue'));
+      await expect(told()).resolves.toEqual(['Continue']);
+      const switched = locale === 'zh-CN' ? 'en-US' : 'zh-CN';
+      await restored.prompt(
+        { ...viewer, locale: switched },
+        session.id,
+        text('Create another'),
+      );
+      await expect(told()).resolves.toEqual([
+        'Create another',
+        `How to work in this session:\nCreate tasks in ${switched}.`,
+      ]);
+      // Context is sent to the agent without rewriting the person's transcript.
+      const events = await restored.listEvents(viewer.userId, session.id, {
+        after: 0,
+        limit: 100,
+      });
+      expect(
+        events.filter((event) => event.kind === 'prompt').at(-1),
+      ).toMatchObject({
+        content: text('Create another'),
+      });
+    });
+  }
 
   test('gives every session’s agent its work and how it is going', async ({
     database,
@@ -920,7 +1294,6 @@ describe('AgentSessionsService', () => {
     const service = new AgentSessionsService({
       database,
       now: () => T0,
-      toolTokens: createToolTokens(() => [{ value: 'key' }]),
     });
     service.registerLinkKind('issue', {
       resolve: (refIds, viewer) =>
@@ -948,7 +1321,7 @@ describe('AgentSessionsService', () => {
         ),
     });
     const { computerId } = await service.register('u1', {
-      protocol: 1,
+      protocol: BRIDGE_PROTOCOL_VERSION,
       computerId: null,
       computer: {
         name: 'Laptop',
@@ -965,14 +1338,15 @@ describe('AgentSessionsService', () => {
     );
     await service.link(session.id, 'issue', 'ST-1');
 
-    const caller = { userId: 'u1', sessionId: session.id, projectId: null };
-    const tool = service.toolHost
-      .tools()
-      .find((candidate) => candidate.name === 'list_session_work');
     await expect(
-      tool?.run({}, { ...caller, link: () => Promise.resolve() }),
+      service.sessionWork({ userId: 'u2' }, session.id),
+    ).rejects.toMatchObject({ key: 'sessionNotFound' });
+    await expect(
+      service.sessionWork({ userId: 'u1' }, session.id),
     ).resolves.toEqual([
       {
+        kind: 'issue',
+        refId: 'ST-1',
         key: 'ST-1',
         title: 'Issue ST-1',
         status: 'Backlog in zh-CN',
@@ -980,8 +1354,5 @@ describe('AgentSessionsService', () => {
         progress: { waitsFor: 'the owner' },
       },
     ]);
-    await expect(service.toolHost.instructions(caller)).resolves.toMatch(
-      /- #ST-1 Issue ST-1: Backlog in zh-CN\nCall `list_session_work`/u,
-    );
   });
 });

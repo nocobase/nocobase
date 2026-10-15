@@ -13,15 +13,23 @@ export type OfficialDialect =
   | 'kingbase'
   | 'oceanbase';
 
+// Commercial drivers are optional peers supplied by the application, not OSS build dependencies.
+function loadCommercialDriver(
+  dialect: 'dameng' | 'kingbase' | 'oceanbase',
+): Promise<{ default?: DatabaseDriverRegistration }> {
+  const packageName = `@nocobase/db-${dialect}`;
+  return import(packageName);
+}
+
 const officialDriverLoaders = {
   sqlite: () => import('@nocobase/db-sqlite'),
   mysql: () => import('@nocobase/db-mysql'),
   postgres: () => import('@nocobase/db-postgres'),
   mssql: () => import('@nocobase/db-mssql'),
   oracle: () => import('@nocobase/db-oracle'),
-  dameng: () => import('@nocobase/db-dameng'),
-  kingbase: () => import('@nocobase/db-kingbase'),
-  oceanbase: () => import('@nocobase/db-oceanbase'),
+  dameng: () => loadCommercialDriver('dameng'),
+  kingbase: () => loadCommercialDriver('kingbase'),
+  oceanbase: () => loadCommercialDriver('oceanbase'),
   // Keyed by the exported union rather than by `string`, so a dialect added to one and not the other fails to compile
   // instead of producing a list the runtime cannot load from.
 } satisfies Record<
@@ -73,6 +81,14 @@ export class MissingDatabaseDriversError extends Error {
     super(
       `${subject} Add ${packages.length === 1 ? 'it' : 'them'} to the application's dependencies with "pnpm add ${packages.join(' ')}"; a deployment needs to be built again afterwards.`,
     );
+    if (
+      missing.some(({ dialect }) =>
+        ['dameng', 'kingbase', 'oceanbase'].includes(dialect),
+      )
+    ) {
+      this.message +=
+        ' Commercial drivers require access to the NocoBase Pro registry.';
+    }
     this.name = 'MissingDatabaseDriversError';
     this.missing = missing;
   }

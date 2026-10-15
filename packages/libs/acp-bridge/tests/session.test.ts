@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -9,6 +9,7 @@ import type {
   BridgeEvent,
   PromptContent,
   SessionTarget,
+  SessionState,
 } from '../src/protocol.js';
 import { BridgeSession } from '../src/session.js';
 
@@ -40,32 +41,40 @@ afterEach(async () => {
 function start(
   target: Partial<SessionTarget> = {},
   agent: ResolvedAgent = FAKE,
+  env: NodeJS.ProcessEnv = process.env,
+  discoverySignal?: AbortSignal,
+  prepareSession?: (
+    agentId: string,
+    sessionId: string,
+  ) => Promise<NodeJS.ProcessEnv>,
 ): {
   session: BridgeSession;
   events: BridgeEvent[];
   target: SessionTarget;
+  states: (SessionState | null)[];
 } {
   const events: BridgeEvent[] = [];
+  const states: (SessionState | null)[] = [];
   const full: SessionTarget = {
     id: 'session-1',
     agentId: 'fake',
     cwd: root,
     acpSessionId: null,
     settings: {},
-    tools: null,
     ...target,
   };
   const session = new BridgeSession(full, {
     client: { name: 'test', version: '0.0.0' },
-    server: 'https://studio.example.com/app/',
-    env: process.env,
+    env,
+    discoverySignal,
+    prepareSession,
     roots: [root],
     resolve: () => Promise.resolve(agent),
     emit: (event) => events.push(event),
-    stateChanged: () => undefined,
+    stateChanged: () => states.push(session.state),
   });
   sessions.push(session);
-  return { session, events, target: full };
+  return { session, events, target: full, states };
 }
 
 function prompt(
@@ -103,6 +112,170 @@ function texts(events: readonly BridgeEvent[]): string[] {
 }
 
 describe('BridgeSession', () => {
+  it.each(['permission', 'modes', 'fixed', 'empty', 'unsupported'])(
+    'discovers %s without prompts, MCP servers or granted permissions',
+    async (variant) => {
+      const log = path.join(root, 'trace.jsonl');
+      const { session, events } = start(
+        {},
+        { ...FAKE, spec: { ...FAKE.spec, allowAll: true } },
+        { ...process.env, FAKE_VARIANT: variant, FAKE_LOG: log },
+        AbortSignal.timeout(5000),
+      );
+      const discovered = await session.discover();
+      expect(discovered.status).toBe(
+        variant === 'unsupported' ? 'unsupported' : 'available',
+      );
+      expect(discovered.choices.length).toBe(
+        ['empty', 'unsupported'].includes(variant) ? 0 : 1,
+      );
+      if (variant === 'fixed')
+        expect(discovered.choices[0]?.options).toHaveLength(1);
+      if (variant === 'modes')
+        expect(discovered.choices[0]?.currentValue).toBe('full');
+      expect(events).toEqual([]);
+      await session.close();
+      const lines = (await readFile(log, 'utf8'))
+        .trim()
+        .split('\n')
+        .map((line) => JSON.parse(line));
+      expect(
+        lines.find((line) => line.method === 'new').params.mcpServers,
+      ).toEqual([]);
+      expect(lines.some((line) => line.method === 'prompt')).toBe(false);
+      if (variant === 'permission')
+        expect(
+          lines.find((line) => line.method === 'permission').params.outcome
+            .outcome,
+        ).toBe('cancelled');
+      expect(() => process.kill(lines[0].pid, 0)).toThrow();
+    },
+  );
+
+  it.each(['auth', 'hang'])(
+    'cleans up failed %s discovery',
+    async (variant) => {
+      const { session } = start(
+        {},
+        FAKE,
+        { ...process.env, FAKE_VARIANT: variant },
+        AbortSignal.timeout(variant === 'auth' ? 5000 : 500),
+      );
+      await expect(session.discover()).rejects.toThrow(
+        variant === 'auth' ? 'not signed in' : undefined,
+      );
+      await session.close();
+      expect(session.state).toBeNull();
+    },
+  );
+
+  it.each([
+    { settings: { unknown: 'value' }, variant: '' },
+    { settings: { mode: 'missing' }, variant: '' },
+    { settings: { mode: 'full' }, variant: 'reject' },
+    { settings: { mode: 'full' }, variant: 'ignore' },
+  ])(
+    'sends zero prompts when explicit settings cannot apply: %j',
+    async ({ settings, variant }) => {
+      const log = path.join(root, 'trace.jsonl');
+      const { session, target, events, states } = start({ settings }, FAKE, {
+        ...process.env,
+        FAKE_VARIANT: variant,
+        FAKE_LOG: log,
+      });
+      prompt(session, target, 'p1', 'first');
+      expect(await until(events, ended('p1'))).toMatchObject({
+        kind: 'turnEnded',
+        error: expect.any(String),
+      });
+      prompt(session, target, 'p2', 'retry');
+      expect(await until(events, ended('p2'))).toMatchObject({
+        kind: 'turnEnded',
+        error: expect.any(String),
+      });
+      expect(await readFile(log, 'utf8')).not.toContain('"method":"prompt"');
+      expect(states.every((state) => state === null)).toBe(true);
+    },
+  );
+
+  it('applies explicit settings before the first prompt', async () => {
+    const log = path.join(root, 'trace.jsonl');
+    const { session, target, events } = start(
+      { settings: { mode: 'full' } },
+      FAKE,
+      { ...process.env, FAKE_LOG: log },
+    );
+    prompt(session, target, 'p1', 'first');
+    await until(events, ended('p1'));
+    const methods = (await readFile(log, 'utf8'))
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line).method);
+    expect(methods).toEqual(['new', 'set', 'prompt']);
+  });
+
+  it('applies the model first and uses its updated dependent choices before prompting', async () => {
+    const log = path.join(root, 'trace.jsonl');
+    const { session, target, events } = start(
+      { settings: { effort: 'max', model: 'second' } },
+      FAKE,
+      { ...process.env, FAKE_VARIANT: 'dependent', FAKE_LOG: log },
+    );
+    prompt(session, target, 'p1', 'first');
+    expect(await until(events, ended('p1'))).toMatchObject({ error: null });
+    expect(session.state?.choices).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'model', currentValue: 'second' }),
+        expect.objectContaining({ id: 'effort', currentValue: 'max' }),
+      ]),
+    );
+    const lines = (await readFile(log, 'utf8'))
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line));
+    const sets = lines.filter((line) => line.method === 'set');
+    expect(sets[0].params).toMatchObject({
+      configId: 'model',
+      value: 'second',
+    });
+    expect(lines.at(-1).method).toBe('prompt');
+  });
+  it.each(['new', 'load', 'resume', 'prompt'])(
+    'retries after %s requires authentication, without replaying the failed message',
+    async (stage) => {
+      const marker = path.join(root, 'signed-in-marker');
+      const agent = {
+        ...FAKE,
+        spec: {
+          ...FAKE.spec,
+          env: { FAKE_AUTH_STAGE: stage, FAKE_AUTH_MARKER: marker },
+        },
+      };
+      const { session, events, target } = start(
+        stage === 'load' || stage === 'resume'
+          ? { acpSessionId: 's-earlier' }
+          : {},
+        agent,
+      );
+      prompt(session, target, 'p1', 'hi');
+      expect(await until(events, ended('p1'))).toMatchObject({
+        stopReason: null,
+        error: expect.any(String),
+      });
+      await writeFile(marker, 'ready');
+      prompt(session, target, 'p2', 'hi');
+      expect(await until(events, ended('p2'))).toMatchObject({
+        stopReason: 'end_turn',
+        error: null,
+      });
+      expect(texts(events).join('')).toBe('Hello (full) world');
+      expect(events.filter(ended('p1'))).toHaveLength(1);
+      expect(session.state?.acpSessionId).toBe(
+        stage === 'load' || stage === 'resume' ? 's-earlier' : 's-1',
+      );
+    },
+  );
+
   it('opens a session in the first full-access mode the agent offers and reports a turn', async () => {
     const { session, events, target } = start();
     prompt(session, target, 'p1', 'hi');
@@ -224,20 +397,50 @@ describe('BridgeSession', () => {
     expect(session.state?.acpSessionId).toBe('s-earlier');
   });
 
-  it('gives the agent the application’s tools under the address the bridge talks to', async () => {
-    const { session, events, target } = start({
-      tools: { name: 'studio', path: '/mcp/agent-sessions', token: 't0k' },
+  it('prepares the shared Skill before new and restored sessions, and stops on a preparation failure', async () => {
+    const calls: string[] = [];
+    const prepare = async (agentId: string, sessionId: string) => {
+      calls.push(`${agentId}:${sessionId}`);
+      return { NB_STUDIO_PROFILE: 'owner', NB_STUDIO_AGENT_SESSION: sessionId };
+    };
+    for (const acpSessionId of [null, 's-earlier']) {
+      const { session, events, target } = start(
+        { acpSessionId },
+        FAKE,
+        process.env,
+        undefined,
+        prepare,
+      );
+      prompt(session, target, 'p1', 'session-env');
+      await until(events, ended('p1'));
+      expect(JSON.parse(texts(events)[0]!)).toEqual({
+        profile: 'owner',
+        sessionId: 'session-1',
+        mcpServers: [],
+      });
+    }
+    expect(calls).toEqual(['fake:session-1', 'fake:session-1']);
+    const { session, events, target } = start(
+      {},
+      FAKE,
+      process.env,
+      undefined,
+      async () => {
+        throw new Error('Install the shared Skill first.');
+      },
+    );
+    prompt(session, target, 'p2', 'hi');
+    await expect(until(events, ended('p2'))).resolves.toMatchObject({
+      error: 'Install the shared Skill first.',
     });
+    expect(texts(events)).toEqual([]);
+  });
+
+  it('opens a session with no MCP servers', async () => {
+    const { session, events, target } = start();
     prompt(session, target, 'p1', 'mcp');
     await until(events, ended('p1'));
-    expect(JSON.parse(texts(events)[0]!)).toEqual([
-      {
-        type: 'http',
-        name: 'studio',
-        url: 'https://studio.example.com/app/mcp/agent-sessions',
-        headers: [{ name: 'authorization', value: 'Bearer t0k' }],
-      },
-    ]);
+    expect(JSON.parse(texts(events)[0]!)).toEqual([]);
   });
 
   it('refuses a directory outside the computer’s roots', async () => {

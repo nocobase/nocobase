@@ -86,8 +86,8 @@ import {
   type RunnerRecentRun,
   type RunnerPatch,
   type RunnerSummary,
+  type RunnerListItem,
   type RunnerWorkspace,
-  type RunnerWorkspaceUsage,
 } from '../../shared/runners.js';
 import {
   RUN_REQUEST_STATUSES,
@@ -471,7 +471,6 @@ const agentObject = z.object({
   instructions: z.string().nullable(),
   actions: z.array(z.string()),
   confirmChanges: z.enum(CONFIRM_CHANGES),
-  skillIds: z.array(z.string()),
   maxConcurrentRuns: z.number().int(),
   maxAttempts: z.number().int(),
   toolPolicy: toolPolicyOverrides.nullable(),
@@ -735,7 +734,6 @@ const skillObject = z.object({
   scripts: z
     .array(z.string())
     .meta({ description: 'The paths of those scripts.' }),
-  agentCount: z.number().int(),
   createdById: z.string().nullable(),
   createdAt: dateTime,
   updatedAt: dateTime,
@@ -765,6 +763,7 @@ const skillDetailObject = skillObject.extend({
       scope: z.string(),
       scopeId: z.string(),
       name: z.string().nullable(),
+      href: z.string().optional(),
     }),
   ),
 });
@@ -919,6 +918,11 @@ const runObject = z.object({
     description:
       'The person the run acts as: their permissions bound it, and only their runners (or team runners) take it.',
   }),
+  commentRootRunId: z.string().nullable().optional().meta({
+    description: 'Root of this comment run chain; null for independent events.',
+  }),
+  commentExecution: z.enum(['owner', 'requester']).nullable().optional(),
+  commentOwnerKey: z.string().nullable().optional(),
   requestedByUserId: z.string().meta({
     description:
       'Who the chain of work the run belongs to started with; the actor when they started it themselves.',
@@ -948,6 +952,10 @@ const runObject = z.object({
 export const RunSchema: z.ZodType<Run> = runObject.meta({ ref: 'AgentsRun' });
 
 export const RunDetailSchema: z.ZodType<RunDetail> = runObject.extend({
+  confirmedByName: z.string().optional().meta({
+    description:
+      'The person who confirmed personal runner access for this comment chain.',
+  }),
   actorName: z
     .string()
     .optional()
@@ -1300,6 +1308,7 @@ const notice = z.discriminatedUnion('code', [
   }),
   z.object({
     code: z.literal('consultation'),
+    identitySnapshot: z.boolean().optional(),
     callId: z.string(),
     runId: z.string().nullable(),
     agentId: z.string().nullable(),
@@ -1437,6 +1446,8 @@ export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({
 
 // A runner's working directories, as it last reported them.
 const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
+  subjectKey: z.string().optional(),
+  sizeBytes: z.number().int().nonnegative().optional(),
   decision: WorkspaceDecisionSchema.optional(),
   cleanup: WorkspaceCleanupResultSchema.optional(),
   runId: z
@@ -1457,7 +1468,7 @@ const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
   }),
 });
 
-const RunnerWorkspaceUsageSchema: z.ZodType<RunnerWorkspaceUsage> = z
+const RunnerWorkspaceUsageSchema = z
   .object({
     disk: z
       .object({
@@ -1476,7 +1487,8 @@ const RunnerWorkspaceUsageSchema: z.ZodType<RunnerWorkspaceUsage> = z
     intervalMs: z.number().int().positive().optional(),
     count: z.number().int(),
     unpushedCount: z.number().int(),
-    measuredAt: dateTime,
+    measuredAt: dateTime.nullable(),
+    diskMeasuredAt: dateTime.optional(),
     workspaces: z.array(RunnerWorkspaceSchema).meta({
       description:
         "This application's, most recently used first; empty for a caller who may not see the runner's machine.",
@@ -1509,6 +1521,10 @@ const runnerObject = z.object({
     description:
       'How many runs of each coding tool it may hold at once, beside `slots`; null, or a tool left out, for no limit of its own.',
   }),
+  draining: z.enum(['updatePending', 'pruning']).optional().meta({
+    description:
+      'Why the runner temporarily accepts no new work, regardless of available slots.',
+  }),
   globalFree: z.number().nonnegative().optional().meta({
     description:
       'Free slots reported in the latest heartbeat across all applications; absent before a heartbeat.',
@@ -1536,7 +1552,7 @@ export const RunnerSchema: z.ZodType<Runner> = runnerObject.meta({
   ref: 'AgentsRunner',
 });
 
-export const RunnerSummarySchema: z.ZodType<RunnerSummary> = runnerObject
+const runnerSummaryObject = runnerObject
   .extend({
     hostname: z.string().nullable().meta({
       description:
@@ -1568,6 +1584,18 @@ export const RunnerSummarySchema: z.ZodType<RunnerSummary> = runnerObject
     }),
   })
   .meta({ ref: 'AgentsRunnerSummary' });
+
+export const RunnerSummarySchema: z.ZodType<RunnerSummary> =
+  runnerSummaryObject;
+export const RunnerListItemSchema: z.ZodType<RunnerListItem> =
+  runnerSummaryObject
+    .extend({
+      workspaceUsage: RunnerWorkspaceUsageSchema.omit({ workspaces: true })
+        .meta({ ref: 'AgentsRunnerWorkspaceTotals' })
+        .nullable()
+        .optional(),
+    })
+    .meta({ ref: 'AgentsRunnerListItem' });
 
 export const RunnerRecentRunSchema: z.ZodType<RunnerRecentRun> = z
   .object({
@@ -1656,6 +1684,13 @@ export const RunRequestRejectInput: z.ZodType<{ note?: string | undefined }> =
   });
 
 const runRequestObject = z.object({
+  purpose: z.literal('personalRunner').nullable().optional().meta({
+    description:
+      'Personal runner consent releases existing comment work rather than creating a second run.',
+  }),
+  commentRootRunId: z.string().nullable().optional(),
+  commentRunId: z.string().nullable().optional(),
+  commentOwnerKey: z.string().nullable().optional(),
   freshSession: z.boolean().optional(),
   id: z.string(),
   agentId: z.string(),

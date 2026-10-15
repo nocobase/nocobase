@@ -20,6 +20,8 @@ import {
   gitOk,
 } from './checkout.ts';
 import { taskGit, taskGitDir, taskGitOk } from './task-git.ts';
+import { stopWorkspaceHolders } from './process-tree.ts';
+import { TRAILERS_ENV } from './git-hooks.ts';
 
 const identity = (parts: readonly string[]) =>
   createHash('sha256').update(JSON.stringify(parts)).digest('hex');
@@ -28,10 +30,6 @@ const COMMIT = [
   'core.fsync=objects,reference',
   '-c',
   'core.fsyncMethod=fsync',
-  '-c',
-  'user.name=NocoBase runner',
-  '-c',
-  'user.email=runner@nocobase.local',
   '-c',
   'commit.gpgsign=false',
 ];
@@ -45,17 +43,19 @@ export function continuationKey(
   return identity([app, subject, repo, target]);
 }
 
+/** Read-only attempts remain recognizable without metadata, for diagnostics and disposable-copy cleanup. */
 export function runWorkDir(
   paths: RunnerPaths,
   app: string,
   subject: string,
   run: string,
   attempt: number,
+  readOnly = false,
 ): string {
   return subjectWorkDir(
     paths,
     app,
-    `${subject}.run-${safeName(run)}-${attempt}-${randomUUID()}`,
+    `${subject}.${readOnly ? 'readonly' : 'run'}-${safeName(run)}-${attempt}-${randomUUID()}`,
   );
 }
 
@@ -188,6 +188,216 @@ async function ref(cache: string, name: string): Promise<string | undefined> {
   return git(['rev-parse', '--verify', `${name}^{commit}`], cache);
 }
 
+async function assertWorktreeIdentity(
+  context: { dir: string; cache: string; url: string },
+  localBranch: string,
+  allowBranchChange = false,
+): Promise<void> {
+  const gitDir = await taskGitDir(context);
+  await taskGit(context, ['status', '--porcelain']);
+  if (
+    (await taskGit(context, ['diff', '--name-only', '--diff-filter=U'])) !==
+      '' ||
+    [
+      'MERGE_HEAD',
+      'rebase-merge',
+      'rebase-apply',
+      'CHERRY_PICK_HEAD',
+      'REVERT_HEAD',
+    ].some((name) => existsSync(path.join(gitDir, name)))
+  )
+    throw new CheckoutError(
+      'Unresolved Git operation; keep the original worktree for recovery',
+    );
+  // Retain any initialized submodule, including its unpublished objects. A parent gitlink cannot save them.
+  if ((await taskGit(context, ['submodule', 'status', '--recursive'])) !== '')
+    throw new CheckoutError(
+      'Initialized submodules require recovery in the original worktree; their objects are not saved by a parent commit',
+    );
+  if (
+    !allowBranchChange &&
+    (await taskGit(context, ['symbolic-ref', '--short', 'HEAD'])) !==
+      localBranch
+  )
+    throw new CheckoutError(
+      'The agent changed the local branch; keep the worktree for recovery',
+    );
+}
+
+/** Called under the cache lock after removing the worktree. Only this attempt's published alias is disposable. */
+export async function deletePublishedRunBranch(
+  cache: string,
+  branch: string | undefined,
+  expected: string,
+): Promise<void> {
+  if (branch !== expected || !branch.startsWith('runner-run-')) return;
+  const name = `refs/heads/${branch}`;
+  const head = await ref(cache, name);
+  if (head === undefined) return;
+  if (
+    (await git(['worktree', 'list', '--porcelain'], cache))
+      .split('\n')
+      .includes(`branch ${name}`)
+  )
+    return;
+  // Continuation refs are local preservation, not evidence of a push. No origin refs means retain the branch.
+  if (
+    (await git(
+      ['rev-list', '--count', head, '--not', '--remotes=origin'],
+      cache,
+    )) === '0'
+  )
+    await git(['update-ref', '-d', name, head], cache);
+}
+
+/** The runner's removal marker plus local pushed evidence; never infer safety from a broken checkout alone. */
+export async function canRetryWorkspaceRemoval(
+  paths: RunnerPaths,
+  workDir: string,
+  meta: WorkspaceMeta,
+): Promise<boolean> {
+  if (
+    !isInside(paths.workRoot, workDir) ||
+    meta.runWorktrees !== true ||
+    meta.repos.length === 0 ||
+    (meta.recoveryRequired === true &&
+      (!/git worktree remove [^\n]* failed/u.test(meta.recoveryReason ?? '') ||
+        meta.repos.some((repo) => !repo.pushedSha)))
+  )
+    return false;
+  for (const repo of meta.repos) {
+    if (
+      repo.removing !== true ||
+      repo.localBranch !== runBranch(workDir, repo.path) ||
+      repo.continuation !==
+        continuationKey(
+          meta.appKey ?? '',
+          meta.subjectKey,
+          repo.url,
+          repo.branch,
+        )
+    )
+      return false;
+    try {
+      if (meta.readOnly !== true) {
+        if (
+          repo.pushedSha === undefined ||
+          !(await gitOk(
+            ['cat-file', '-e', `${repo.pushedSha}^{commit}`],
+            repo.cache,
+          ))
+        )
+          return false;
+        const head = await ref(repo.cache, `refs/heads/${repo.localBranch}`);
+        if (
+          head !== undefined &&
+          !(await gitOk(
+            ['merge-base', '--is-ancestor', head, repo.pushedSha],
+            repo.cache,
+          ))
+        )
+          return false;
+        // Saving and pushing preceded the removal marker. A partial removal is not new work.
+      }
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** Finish only already-authorized removal, under the actual attempt lock. False means retained or pending. */
+export async function retryWorkspaceRemoval(
+  paths: RunnerPaths,
+  workDir: string,
+  log: (message: string) => void,
+  lockHeld = false,
+): Promise<boolean> {
+  if (!isInside(paths.workRoot, workDir)) return false;
+  const lock = lockHeld
+    ? undefined
+    : await acquireLock(`${workDir}.lock`, { timeoutMs: 0 }).catch(
+        () => undefined,
+      );
+  if (!lockHeld && lock === undefined) return false;
+  try {
+    const meta = await readWorkspaceMeta(paths, workDir);
+    if (
+      meta === undefined ||
+      !meta.repos.some((repo) => repo.removing === true)
+    )
+      return false;
+    if (!(await canRetryWorkspaceRemoval(paths, workDir, meta))) {
+      if (meta.recoveryRequired === true) return false;
+      const reason =
+        'Removal candidate is not verified clean and pushed; retain it for recovery.';
+      await writeWorkspaceMeta(paths, workDir, {
+        ...meta,
+        recoveryRequired: true,
+        recoveryReason: reason,
+      });
+      log(`worktree recovery required: ${workDir}: ${reason}`);
+      return false;
+    }
+    try {
+      await stopWorkspaceHolders(workDir);
+      if (!(await canRetryWorkspaceRemoval(paths, workDir, meta))) {
+        await writeWorkspaceMeta(paths, workDir, {
+          ...meta,
+          recoveryRequired: true,
+          recoveryReason:
+            'Work changed while stopping processes; retain it for recovery.',
+        });
+        return false;
+      }
+      for (const repo of meta.repos) {
+        const cacheLock = await lockCache(repo.cache);
+        try {
+          await rm(path.join(workDir, repo.path), {
+            recursive: true,
+            force: true,
+          });
+          await git(['worktree', 'prune'], repo.cache);
+          await deletePublishedRunBranch(
+            repo.cache,
+            repo.localBranch,
+            runBranch(workDir, repo.path),
+          );
+        } finally {
+          await cacheLock.release();
+        }
+      }
+      await rm(workDir, { recursive: true, force: true });
+      if (meta.appKey !== undefined)
+        await updateContinuationState(
+          paths,
+          meta.appKey,
+          meta.subjectKey,
+          (state) => ({
+            ...state,
+            activeWorkDirs: (state.activeWorkDirs ?? []).filter(
+              (dir) => dir !== workDir,
+            ),
+          }),
+        );
+      await rm(workspaceRecordPath(paths, workDir), { force: true });
+      log(`workspace: finished deferred removal of ${workDir}`);
+      return true;
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      await writeWorkspaceMeta(paths, workDir, {
+        ...meta,
+        recoveryRequired: false,
+        recoveryReason: reason,
+      });
+      log(`workspace: removal deferred for ${workDir}: ${reason}`);
+      return false;
+    }
+  } finally {
+    await lock?.release();
+  }
+}
+
 /** Create and register before any subsequent preparation can fail or be cancelled. */
 export async function addRunWorktree(options: {
   paths: RunnerPaths;
@@ -211,10 +421,13 @@ export async function addRunWorktree(options: {
   const warnings: string[] = [];
   const state = await readContinuationState(paths, appKey, subjectKey);
   for (const previous of state?.activeWorkDirs ?? []) {
+    await retryWorkspaceRemoval(paths, previous, () => {});
     const record = await readWorkspaceMeta(paths, previous);
     if (record?.recoveryRequired === true)
       warnings.push(
-        `Recovery work remains in ${previous}${record.recoveryReason ? `: ${record.recoveryReason}` : ''}. Resolve or recover it before continuing; this run's checkout cannot represent its unresolved index or uncommitted files.`,
+        options.readOnly
+          ? `Recovery work remains in ${previous}; this run's checkout does not contain its pending changes. You may continue this read-only run.`
+          : `Recovery work remains in ${previous}${record.recoveryReason ? `: ${record.recoveryReason}` : ''}. Resolve or recover it before continuing; this run's checkout cannot represent its unresolved index or uncommitted files.`,
       );
   }
   await mkdir(path.dirname(dir), { recursive: true });
@@ -301,7 +514,17 @@ export async function addRunWorktree(options: {
           cache,
         );
         const bootstrap = await git(
-          [...COMMIT, 'commit-tree', tree, '-m', 'Worktree bootstrap'],
+          [
+            ...COMMIT,
+            '-c',
+            'user.name=NocoBase runner',
+            '-c',
+            'user.email=runner@nocobase.local',
+            'commit-tree',
+            tree,
+            '-m',
+            'Worktree bootstrap',
+          ],
           cache,
         );
         await git(
@@ -415,13 +638,23 @@ export async function finalizeRunWorktrees(
     return [];
   }
   if (meta.readOnly === true && options.remove === false) return [];
+  if (
+    options.remove !== false &&
+    (await canRetryWorkspaceRemoval(paths, workDir, meta))
+  ) {
+    await retryWorkspaceRemoval(paths, workDir, log, true);
+    return meta.repos.map((repo) => ({
+      path: path.join(workDir, repo.path),
+      saved: true,
+    }));
+  }
   const results: SaveResult[] = [];
   for (const repo of meta.repos) {
     const dir = path.join(workDir, repo.path);
     if (!existsSync(dir)) continue;
     const context = { dir, cache: repo.cache, url: repo.url };
     try {
-      const gitDir = await taskGitDir(context);
+      await taskGitDir(context);
       if (
         !isInside(workDir, dir) ||
         repo.localBranch !== runBranch(workDir, repo.path) ||
@@ -438,70 +671,121 @@ export async function finalizeRunWorktrees(
         );
       // Metadata validation runs before checking/committing; never execute checkout-provided hooks or filters.
       // Saved before an interrupted removal: committing now would record its half-deleted files.
-      if (repo.removing === true) results.push({ path: dir, saved: true });
-      else if (meta.readOnly !== true) {
-        await taskGit(context, ['status', '--porcelain']);
+      if (repo.removing === true) {
         if (
-          (await taskGit(context, [
-            'diff',
-            '--name-only',
-            '--diff-filter=U',
-          ])) !== '' ||
-          [
-            'MERGE_HEAD',
-            'rebase-merge',
-            'rebase-apply',
-            'CHERRY_PICK_HEAD',
-            'REVERT_HEAD',
-          ].some((name) => existsSync(path.join(gitDir, name)))
+          !(await canRetryWorkspaceRemoval(paths, workDir, {
+            ...meta,
+            repos: [repo],
+          }))
         )
           throw new CheckoutError(
-            'Unresolved Git operation; keep the original worktree for recovery',
+            'Removal evidence no longer matches the checkout; keep the worktree for recovery',
           );
-        // Retain any initialized submodule, including its unpublished objects. A parent gitlink cannot save them.
-        if (
-          (await taskGit(context, ['submodule', 'status', '--recursive'])) !==
-          ''
-        )
-          throw new CheckoutError(
-            'Initialized submodules require recovery in the original worktree; their objects are not saved by a parent commit',
-          );
-        if (
-          (await taskGit(context, ['symbolic-ref', '--short', 'HEAD'])) !==
-          repo.localBranch
-        )
-          throw new CheckoutError(
-            'The agent changed the local branch; keep the worktree for recovery',
-          );
+        results.push({ path: dir, saved: true });
+      } else if (meta.readOnly !== true) {
+        await assertWorktreeIdentity(context, repo.localBranch, true);
         await taskGit(context, ['add', '--all']);
-        if (!(await taskGitOk(context, ['diff', '--cached', '--quiet'])))
-          await taskGit(context, [
-            ...COMMIT,
-            'commit',
-            '-m',
-            'chore(runner): save local continuation',
-          ]);
+        if (!(await taskGitOk(context, ['diff', '--cached', '--quiet']))) {
+          const name = await taskGit(context, [
+            'config',
+            '--get',
+            'user.name',
+          ]).catch(() => '');
+          const email = await taskGit(context, [
+            'config',
+            '--get',
+            'user.email',
+          ]).catch(() => '');
+          if (
+            !name ||
+            !email ||
+            /[<>\r\n\0]/u.test(name) ||
+            /[<>\s\0]/u.test(email)
+          )
+            throw new CheckoutError(
+              'Cannot save local work: configure valid user.name and user.email in this checkout; no continuation commit was created. The original worktree is retained for recovery.',
+            );
+          const files = (
+            await taskGit(context, ['diff', '--cached', '--name-only', '-z'])
+          )
+            .split('\0')
+            .filter(Boolean);
+          const first = (files[0] ?? 'files')
+            .replace(/[\r\n\t]/gu, ' ')
+            .slice(0, 60);
+          const title = `Update ${first}${files.length > 1 ? ` and ${files.length - 1} other ${files.length === 2 ? 'file' : 'files'}` : ''}`;
+          await taskGit(
+            context,
+            [
+              ...COMMIT,
+              'commit',
+              '-m',
+              title,
+              '-m',
+              'Save work in progress when the run is interrupted or ends.',
+            ],
+            {
+              GIT_AUTHOR_NAME: name,
+              GIT_AUTHOR_EMAIL: email,
+              GIT_COMMITTER_NAME: name,
+              GIT_COMMITTER_EMAIL: email,
+              [TRAILERS_ENV]: '',
+            },
+          );
+        }
         const head = await taskGit(context, ['rev-parse', 'HEAD']).catch(
           () => undefined,
         );
         if (head !== undefined) {
+          const currentBranch = await taskGit(context, [
+            'symbolic-ref',
+            '--quiet',
+            '--short',
+            'HEAD',
+          ]).catch(() => undefined);
           const resume = `refs/runner/resume/${repo.continuation}`;
           const lock = await lockCache(repo.cache);
           try {
             const previous = await ref(repo.cache, resume);
             if (
-              previous === undefined ||
-              (await gitOk(
-                ['merge-base', '--is-ancestor', previous, head],
+              currentBranch !== undefined &&
+              currentBranch !== repo.localBranch
+            ) {
+              // Its own branch ref preserves the head; it is not a continuation of the initial target.
+              log(`Run ended on branch ${currentBranch} at ${head}`);
+            } else if (
+              currentBranch === undefined &&
+              // The run's own alias is not evidence: its commits continue this target.
+              (await git(
+                [
+                  'rev-list',
+                  '--count',
+                  head,
+                  '--not',
+                  `--exclude=${repo.localBranch}`,
+                  '--branches',
+                  '--remotes',
+                ],
                 repo.cache,
-              ))
+              )) === '0'
+            ) {
+              log(
+                `Run ended on a detached HEAD already reachable from a branch: ${head}`,
+              );
+            } else if (
+              currentBranch === repo.localBranch &&
+              (previous === undefined ||
+                (await gitOk(
+                  ['merge-base', '--is-ancestor', previous, head],
+                  repo.cache,
+                )))
             ) {
               await git(['update-ref', resume, head], repo.cache);
             } else {
               const saved = `refs/runner/saved/${repo.continuation}/${randomUUID()}`;
               await git(['update-ref', saved, head], repo.cache);
               log(
-                `Divergent local commit saved for manual integration: ${saved} ${head}`,
+                `Local commit saved for manual integration: ${saved} ${head}`,
               );
             }
           } finally {
@@ -529,9 +813,10 @@ export async function finalizeRunWorktrees(
         if (meta.readOnly === true && existsSync(path.join(dir, '.gitmodules')))
           await rm(dir, { recursive: true, force: true });
         await git(['worktree', 'remove', '--force', dir], repo.cache);
-        await git(
-          ['update-ref', '-d', `refs/heads/${repo.localBranch}`],
+        await deletePublishedRunBranch(
           repo.cache,
+          repo.localBranch,
+          runBranch(workDir, repo.path),
         );
         await git(['worktree', 'prune'], repo.cache);
       } finally {
@@ -543,36 +828,61 @@ export async function finalizeRunWorktrees(
       const index = results.findIndex((result) => result.path === dir);
       if (index >= 0) results.splice(index, 1);
       results.push({ path: dir, saved: false, reason });
-      log(`worktree recovery required: ${dir}: ${reason}`);
+      log(`worktree finalization failed: ${dir}: ${reason}`);
     }
   }
   if (results.every((result) => result.saved) && options.remove !== false) {
-    await rm(workDir, { recursive: true, force: true });
-    await rm(workspaceRecordPath(paths, workDir), { force: true });
-    log(`workspace: removed ${workDir}`);
-    if (meta.appKey !== undefined)
-      await updateContinuationState(
-        paths,
-        meta.appKey,
-        meta.subjectKey,
-        (state) => ({
-          ...state,
-          activeWorkDirs: (state.activeWorkDirs ?? []).filter(
-            (dir) => dir !== workDir,
-          ),
-        }),
-      );
-  } else if (results.some((result) => !result.saved)) {
+    try {
+      await rm(workDir, { recursive: true, force: true });
+      log(`workspace: removed ${workDir}`);
+      if (meta.appKey !== undefined)
+        await updateContinuationState(
+          paths,
+          meta.appKey,
+          meta.subjectKey,
+          (state) => ({
+            ...state,
+            activeWorkDirs: (state.activeWorkDirs ?? []).filter(
+              (dir) => dir !== workDir,
+            ),
+          }),
+        );
+      await rm(workspaceRecordPath(paths, workDir), { force: true });
+    } catch (error) {
+      results.push({
+        path: workDir,
+        saved: false,
+        reason: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  if (results.some((result) => !result.saved)) {
+    const current = (await readWorkspaceMeta(paths, workDir)) ?? meta;
+    const deletionOnly = await canRetryWorkspaceRemoval(
+      paths,
+      workDir,
+      current,
+    );
     await writeWorkspaceMeta(paths, workDir, {
       // Fresh: keeps the `removing` marks written above.
-      ...((await readWorkspaceMeta(paths, workDir)) ?? meta),
-      recoveryRequired: true,
+      ...current,
+      recoveryRequired: !deletionOnly,
       recoveryReason: results
         .filter((result) => !result.saved)
         .map((result) => result.reason)
         .join('; '),
       endedAt: new Date().toISOString(),
     });
+    if (deletionOnly) {
+      log(
+        `workspace: removal deferred for ${workDir}: ${results
+          .filter((result) => !result.saved)
+          .map((result) => result.reason)
+          .join('; ')}`,
+      );
+      for (const [index, result] of results.entries())
+        if (!result.saved) results[index] = { ...result, saved: true };
+    }
   }
   return results;
 }

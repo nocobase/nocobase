@@ -1,13 +1,14 @@
 /**
  * A new session: which of the viewer's computers, which agent there, which folder and, when the application has
- * projects, which project it works for; the agent's choices; then the first message. The choices start from what the
- * agent offered in its latest session on that computer, with the mode the bridge opens sessions in. Folders are chosen
+ * projects, which project it works for; the agent's choices; then the first message. Choices are discovered from the
+ * installed agent in the selected directory before sending, with the mode the bridge opens sessions in. Folders are chosen
  * by browsing the computer, never typed. The computer, agent, folder and project last used are remembered in this
  * browser. Without a connected computer it says how to connect one.
  */
-import { useToaster } from '@nocobase/app-client';
+import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
+import { useIsMutating, useQueryClient } from '@tanstack/react-query';
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -16,7 +17,13 @@ import {
   FolderSearchIcon,
   LaptopIcon,
 } from 'lucide-react';
-import { useState, type ReactElement, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { useNavigate } from 'react-router';
 
 import { Button } from './ui/button.js';
@@ -39,6 +46,7 @@ import {
 } from '../api.js';
 import { installedAgents, otherAgentNames } from '../lib/agents.js';
 import { offeredChoices } from '../lib/choices.js';
+import { useChoiceDiscovery } from '../use-choice-discovery.js';
 import { errorText } from '../lib/errors.js';
 import { shortTime, systemName } from '../lib/format.js';
 import { displayPath, isWithin, wholeHome } from '../lib/paths.js';
@@ -46,10 +54,13 @@ import { AgentBadge } from './agent-badge.js';
 import { BackLink } from './back-link.js';
 import { ChoiceMenus } from './choice-menus.js';
 import { Composer } from './composer.js';
+import { useSubmission } from '../use-submission.js';
+import { SubmissionNotice } from './submission-notice.js';
 import {
   ComputersDialog,
   ConnectSteps,
   KeepConnected,
+  OutdatedBridgeNotice,
 } from './computers-dialog.js';
 import { FolderBrowser } from './folder-browser.js';
 
@@ -63,7 +74,14 @@ interface Choice {
   readonly projectId?: string | undefined;
 }
 
-export function NewSession(): ReactElement {
+export function NewSession({
+  onStart,
+  deferDiscovery = false,
+}: {
+  readonly onStart?: () => void;
+  /** Ordinary entry may still open history; do not initialize an unused agent. */
+  readonly deferDiscovery?: boolean;
+}): ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const toaster = useToaster();
@@ -71,14 +89,34 @@ export function NewSession(): ReactElement {
   const projects = useProjects();
   const recent = useSessions(false);
   const create = useCreateSession();
+  const client = useQueryClient();
+  const creating =
+    useIsMutating({ mutationKey: ['agentSessions', 'createSession'] }) > 0;
+  const mountedRef = useRef(true);
+  const submission = useSubmission<
+    Omit<Parameters<typeof create.mutateAsync>[0], 'submissionId'>
+  >('new-session', 'new-session', async (input) => {
+    const session = await create.mutateAsync(input);
+    if (mountedRef.current) void navigate(`/agent-sessions/${session.id}`);
+  });
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   const [computersOpen, setComputersOpen] = useState(false);
   const [choice, setChoice] = useState<Choice>(remembered);
-  const [picked, setPicked] = useState<Readonly<Record<string, string>>>({});
+  const sendingRef = useRef(false);
 
   const all = computers.data ?? [];
   const online = all.filter((computer) => computer.online);
   const computer =
-    online.find((candidate) => candidate.id === choice.computerId) ?? online[0];
+    all.find((candidate) => candidate.id === choice.computerId) ??
+    online[0] ??
+    all[0];
+  if (computer && choice.computerId !== computer.id)
+    setChoice({ ...choice, computerId: computer.id });
   const installed = computer ? installedAgents(computer) : [];
   const agents = installed.filter((agent) => !agent.problem);
   const agent =
@@ -99,14 +137,65 @@ export function NewSession(): ReactElement {
   const project = projects.data?.find(
     (candidate) => candidate.id === choice.projectId,
   );
-  const offered = computer && agent ? computer.choices[agent.id] : undefined;
-  const values = { ...initialValues(offered, agent), ...picked };
+  const discovery = useChoiceDiscovery(
+    JSON.stringify([
+      computer?.id,
+      agent,
+      cwd,
+      computer?.folders,
+      computer?.roots,
+      computer?.home,
+      computer?.host,
+    ]),
+    {
+      computerId: computer?.id ?? '',
+      agentId: agent?.id ?? '',
+      cwd,
+      enabled: Boolean(computer?.online && agent && cwd),
+      deferred: deferDiscovery,
+    },
+  );
+  const offered = discovery.displayed?.choices;
+  const values = Object.fromEntries(
+    (offered ?? []).map((offer) => [
+      offer.id,
+      discovery.settings[offer.id] ?? offer.currentValue,
+    ]),
+  );
+  const ready = Boolean(computer?.online && agent && cwd && discovery.result);
+
+  const begin = (): void => {
+    if (sendingRef.current || creating) return;
+
+    // Keep the current folder when late history offers a different recent folder.
+    if (
+      computer &&
+      agent &&
+      cwd &&
+      (choice.computerId !== computer.id ||
+        choice.agentId !== agent.id ||
+        choice.cwd !== cwd)
+    )
+      setChoice({
+        ...choice,
+        computerId: computer.id,
+        agentId: agent.id,
+        cwd,
+      });
+    onStart?.();
+  };
 
   const pick = (next: Choice): void => {
-    const merged = { ...choice, ...next };
+    if (sendingRef.current || creating) return;
+    onStart?.();
+    const merged = {
+      ...choice,
+      computerId: computer?.id,
+      agentId: agent?.id,
+      cwd,
+      ...next,
+    };
     setChoice(merged);
-    if (next.computerId !== undefined || next.agentId !== undefined)
-      setPicked({});
     try {
       localStorage.setItem(REMEMBERED, JSON.stringify(merged));
     } catch {
@@ -114,10 +203,17 @@ export function NewSession(): ReactElement {
     }
   };
 
-  if (computers.data && online.length === 0) {
+  // A remembered or fallback computer can still be selected while every bridge is offline.
+  if (computers.data && (!computer || online.length === 0)) {
     return (
       <div className='h-full overflow-y-auto'>
         <div className='mx-auto flex max-w-[560px] flex-col gap-4 px-4 py-10 sm:pt-24'>
+          <SubmissionNotice
+            pending={submission.pending}
+            sending={creating}
+            retry={submission.retry}
+            edit={submission.edit}
+          />
           <div className='flex flex-col items-center gap-2 text-center'>
             <LaptopIcon className='text-muted-foreground size-8' />
             <h2 className='text-[17px] font-semibold'>
@@ -131,8 +227,17 @@ export function NewSession(): ReactElement {
                 : t('newSession.offlineHint')}
             </p>
           </div>
+          {all
+            .filter((candidate) => candidate.outdatedBridge)
+            .map((candidate) => (
+              <OutdatedBridgeNotice key={candidate.id} computer={candidate} />
+            ))}
           <div className='rounded-[10px] border p-4 text-[13px]'>
-            {all.length === 0 ? <ConnectSteps /> : <KeepConnected />}
+            {all.length === 0 ? (
+              <ConnectSteps />
+            ) : (
+              <KeepConnected temporary={false} />
+            )}
           </div>
           {all.length > 0 && (
             <Button
@@ -153,7 +258,13 @@ export function NewSession(): ReactElement {
   }
 
   return (
-    <div className='flex h-full min-h-0'>
+    <div
+      className='flex h-full min-h-0'
+      onFocusCapture={(event) => {
+        if (event.target.closest('button, [role="button"], [role="combobox"]'))
+          begin();
+      }}
+    >
       <div className='min-w-0 flex-1 overflow-y-auto'>
         <div className='mx-auto flex max-w-[720px] flex-col gap-4 px-4 pt-3 pb-10 sm:px-6 sm:pt-24'>
           <BackLink />
@@ -165,23 +276,45 @@ export function NewSession(): ReactElement {
               {t('newSession.subtitle')}
             </p>
           </div>
+          {computer?.outdatedBridge && (
+            <OutdatedBridgeNotice computer={computer} />
+          )}
+          <SubmissionNotice
+            pending={submission.pending}
+            sending={creating}
+            retry={submission.retry}
+            edit={submission.edit}
+          />
           <Composer
+            disabled={submission.pending}
             large
+            draftKey='new-session'
+            onEdit={begin}
             autoFocus
             placeholder={t('newSession.placeholder')}
-            disabled={!computer || !agent || !cwd}
-            sending={create.isPending}
+            sendDisabled={!ready}
+            sending={creating}
             commands={computer && agent ? computer.commands[agent.id] : []}
             mentions={{ projectId: project?.id ?? null }}
             header={
-              <>
+              <div className='contents' inert={creating}>
                 <Picker
+                  title={computer?.name ?? t('newSession.pickComputer')}
                   label={
                     <>
                       <LaptopIcon className='size-4' />
-                      {computer?.name ?? t('newSession.pickComputer')}
+                      <span className='min-w-0 truncate'>
+                        {computer?.name ?? t('newSession.pickComputer')}
+                      </span>
                       {computer && (
-                        <span className='size-2 rounded-full bg-emerald-500' />
+                        <span
+                          className={cn(
+                            'size-2 shrink-0 rounded-full',
+                            computer.online
+                              ? 'bg-emerald-500'
+                              : 'bg-muted-foreground',
+                          )}
+                        />
                       )}
                     </>
                   }
@@ -213,11 +346,12 @@ export function NewSession(): ReactElement {
                   </DropdownMenuItem>
                 </Picker>
                 <Picker
+                  title={agent?.name ?? t('newSession.noAgent')}
                   label={
                     agent ? (
                       <>
                         <AgentBadge agentId={agent.id} name={agent.name} />
-                        {agent.name}
+                        <span className='min-w-0 truncate'>{agent.name}</span>
                       </>
                     ) : (
                       t('newSession.noAgent')
@@ -258,21 +392,83 @@ export function NewSession(): ReactElement {
                     onManage={() => setComputersOpen(true)}
                   />
                 )}
-              </>
+              </div>
             }
             toolbar={
-              <ChoiceMenus
-                choices={offered}
-                values={values}
-                onChoose={(choiceId, value) =>
-                  setPicked((current) => ({ ...current, [choiceId]: value }))
-                }
-              />
+              <>
+                <ChoiceMenus
+                  choices={offered}
+                  values={values}
+                  disabled={creating || !computer?.online}
+                  loading={discovery.loading}
+                  onChoose={(id, value) => {
+                    pick({});
+                    discovery.choose(id, value);
+                  }}
+                />
+                <span role='status' className='text-muted-foreground text-xs'>
+                  {computer?.outdatedBridge && !computer.online
+                    ? t('newSession.settingsOutdated')
+                    : !computer?.online
+                      ? t('newSession.settingsOffline')
+                      : discovery.loading
+                        ? t('newSession.settingsLoading')
+                        : discovery.error
+                          ? errorText(
+                              discovery.error,
+                              t('newSession.settingsFailed'),
+                            )
+                          : discovery.result?.status === 'unsupported'
+                            ? t('newSession.settingsUnsupported')
+                            : discovery.result &&
+                                offeredChoices(offered).length === 0
+                              ? t('newSession.settingsEmpty')
+                              : null}
+                </span>
+                {discovery.error && (
+                  <>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={() => {
+                        pick({});
+                        discovery.retry();
+                      }}
+                    >
+                      {t('newSession.settingsRetry')}
+                    </Button>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={() => {
+                        pick({});
+                        discovery.reset();
+                      }}
+                    >
+                      {t('newSession.settingsReset')}
+                    </Button>
+                  </>
+                )}
+              </>
             }
             onSend={async (content, _interrupt, mentions) => {
-              if (!computer || !agent) return;
+              onStart?.();
+              if (
+                !computer ||
+                !agent ||
+                !ready ||
+                !discovery.isCurrent() ||
+                sendingRef.current ||
+                client.isMutating({
+                  mutationKey: ['agentSessions', 'createSession'],
+                }) > 0
+              ) {
+                discovery.retry();
+                throw new Error(t('newSession.settingsLoading'));
+              }
+              sendingRef.current = true;
               try {
-                const session = await create.mutateAsync({
+                await submission.send({
                   computerId: computer.id,
                   agentId: agent.id,
                   cwd,
@@ -286,13 +482,17 @@ export function NewSession(): ReactElement {
                   projectId: project?.id ?? null,
                   mentions,
                 });
-                void navigate(`/agent-sessions/${session.id}`);
               } catch (error) {
                 toaster.show({
                   type: 'error',
-                  title: errorText(error, t('errors.generic')),
+                  title:
+                    error instanceof ApiClientError && error.status < 500
+                      ? errorText(error, t('errors.generic'))
+                      : t('newSession.sendUnconfirmed'),
                 });
                 throw error;
+              } finally {
+                sendingRef.current = false;
               }
             }}
           />
@@ -313,24 +513,6 @@ export function NewSession(): ReactElement {
       <ComputersDialog open={computersOpen} onOpenChange={setComputersOpen} />
     </div>
   );
-}
-
-/** The values a new session opens with: what the agent last offered here, in the full-access mode the bridge opens it in. */
-function initialValues(
-  offered: Computer['choices'][string] | undefined,
-  agent: AgentInfo | undefined,
-): Record<string, string> {
-  const values: Record<string, string> = {};
-  for (const choice of offeredChoices(offered)) {
-    const opening =
-      choice.category === 'mode'
-        ? agent?.modes?.find((mode) =>
-            choice.options.some((option) => option.value === mode),
-          )
-        : undefined;
-    values[choice.id] = opening ?? choice.currentValue;
-  }
-  return values;
 }
 
 /** Where the session works: a folder used before on this computer, or another one found by browsing it. */
@@ -354,6 +536,7 @@ function FolderPicker({
     <>
       <Picker
         shrink
+        title={value || t('newSession.folder')}
         label={
           <>
             <FolderIcon className='size-4 shrink-0' />
@@ -375,7 +558,7 @@ function FolderPicker({
                 key={folder}
                 checked={folder === value}
                 title={
-                  <code className='text-xs'>
+                  <code className='text-xs' title={folder}>
                     {displayPath(folder, computer.home)}
                   </code>
                 }
@@ -434,10 +617,16 @@ function ProjectPicker({
   const { t } = useTranslation();
   return (
     <Picker
+      title={value?.name ?? t('newSession.noProject')}
       label={
         <>
           <FolderKanbanIcon className='size-4' />
-          <span className={cn(!value && 'text-muted-foreground')}>
+          <span
+            className={cn(
+              'min-w-0 truncate',
+              !value && 'text-muted-foreground',
+            )}
+          >
             {value?.name ?? t('newSession.noProject')}
           </span>
         </>
@@ -464,10 +653,12 @@ function ProjectPicker({
 }
 
 function Picker({
+  title,
   label,
   shrink,
   children,
 }: {
+  readonly title: string;
   readonly label: ReactNode;
   /** Takes the room the row has left, its label cut short; on a row of its own when that is too little. */
   readonly shrink?: boolean;
@@ -476,9 +667,10 @@ function Picker({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
+        title={title}
         className={cn(
-          'bg-muted hover:border-foreground/20 aria-expanded:border-foreground/20 inline-flex h-9 items-center gap-2 rounded-full border px-3 text-xs whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
-          shrink ? 'max-w-full min-w-40 flex-1' : 'shrink-0',
+          'bg-muted hover:border-foreground/20 aria-expanded:border-foreground/20 inline-flex h-9 max-w-full min-w-0 items-center gap-2 rounded-full border px-3 text-xs whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring/50 [&>svg]:shrink-0',
+          shrink && 'flex-1 basis-40',
         )}
       >
         {label}
@@ -509,6 +701,7 @@ function PickItem({
       disabled={disabled}
       onClick={onPick}
       className='items-start'
+      title={typeof title === 'string' ? title : undefined}
     >
       <CheckIcon
         className={cn(
@@ -517,9 +710,11 @@ function PickItem({
         )}
       />
       <span className='flex min-w-0 flex-col'>
-        <span className='truncate'>{title}</span>
+        <span className='break-words'>{title}</span>
         {detail && (
-          <span className='text-muted-foreground text-xs'>{detail}</span>
+          <span className='text-muted-foreground text-xs break-words'>
+            {detail}
+          </span>
         )}
       </span>
     </DropdownMenuItem>
@@ -575,21 +770,26 @@ function ComputerDetails({
       aria-label={t('newSession.thisComputer')}
     >
       <section className='flex flex-col gap-3 border-b px-5 py-4'>
-        <h3 className='flex items-center gap-2 text-xs font-semibold'>
+        <h3 className='flex items-center gap-2 text-xs font-semibold whitespace-nowrap'>
           <LaptopIcon className='size-4' />
           {t('newSession.thisComputer')}
           <span className='text-muted-foreground ml-auto inline-flex items-center gap-1.5 font-normal'>
-            <span className='size-2 rounded-full bg-emerald-500' />
-            {t('computers.online')}
+            <span
+              className={cn(
+                'size-2 rounded-full',
+                computer.online ? 'bg-emerald-500' : 'bg-muted-foreground',
+              )}
+            />
+            {t(computer.online ? 'computers.online' : 'computers.offline')}
           </span>
         </h3>
-        <dl className='grid grid-cols-[4rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-xs'>
+        <dl className='grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-2 text-xs [&>dt]:whitespace-nowrap [&>dd]:min-w-0 [&>dd]:break-words'>
           <dt className='text-muted-foreground'>{t('computers.name')}</dt>
           <dd className='break-words'>{computer.name}</dd>
           <dt className='text-muted-foreground'>{t('computers.system')}</dt>
           <dd>{systemName(computer)}</dd>
           <dt className='text-muted-foreground'>{t('computers.cli')}</dt>
-          <dd>
+          <dd className='break-all'>
             <code>{computer.host}</code>
           </dd>
           <dt className='text-muted-foreground'>{t('computers.folders')}</dt>
@@ -621,17 +821,19 @@ function ComputerDetails({
             >
               <AgentBadge agentId={agent.id} name={agent.name} large />
               <span className='min-w-0 flex-1'>
-                <span className='block'>{agent.name}</span>
-                <span className='text-muted-foreground block text-[11px]'>
+                <span className='block truncate' title={agent.name}>
+                  {agent.name}
+                </span>
+                <span className='text-muted-foreground block text-[11px] break-all'>
                   {agent.version ?? '—'}
                 </span>
               </span>
               {agent.problem ? (
-                <span className='text-muted-foreground text-[11px]'>
+                <span className='text-muted-foreground shrink-0 text-[11px] whitespace-nowrap'>
                   {t(`computers.problems.${agent.problem}`)}
                 </span>
               ) : (
-                <span className='inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400'>
+                <span className='inline-flex shrink-0 items-center gap-1 text-[11px] whitespace-nowrap text-emerald-700 dark:text-emerald-400'>
                   <CheckIcon className='size-3.5' />
                   {t('computers.ready')}
                 </span>
@@ -653,11 +855,12 @@ function ComputerDetails({
         <Button
           variant='outline'
           size='sm'
-          className='font-normal'
+          className='max-w-full min-w-0 font-normal'
+          title={t('newSession.manageComputers')}
           onClick={onManage}
         >
           <LaptopIcon />
-          {t('newSession.manageComputers')}
+          <span className='truncate'>{t('newSession.manageComputers')}</span>
         </Button>
       </section>
     </aside>

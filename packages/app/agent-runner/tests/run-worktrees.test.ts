@@ -1,5 +1,11 @@
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { spawn, spawnSync } from 'node:child_process';
+import { waitFor } from './fake-server.ts';
+import { workspaceHolders } from '../src/core/process-tree.ts';
+import * as fsPromises from 'node:fs/promises';
+import * as checkoutModule from '../src/core/checkout.ts';
+import { collectWorkspaces } from '../src/core/workspaces.ts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
 import {
@@ -9,6 +15,7 @@ import {
   acquireLock,
   markDirsPrepared,
   reportRepos,
+  markWorkspaceEnded,
   writeWorkspaceMeta,
 } from '../src/core/checkout.ts';
 import {
@@ -16,8 +23,14 @@ import {
   runWorkDir,
   clearContinuations,
   continuationWorkDir,
+  retryWorkspaceRemoval,
 } from '../src/core/run-worktrees.ts';
 import { git, makeRemote, removeDir, tempDir } from './helpers.ts';
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>();
+  return { ...actual, rm: vi.fn(actual.rm) };
+});
 
 const COMMIT = [
   '-c',
@@ -34,10 +47,17 @@ describe('per-attempt worktrees', () => {
   let remote: string;
   beforeEach(() => {
     root = tempDir('run-worktrees-');
+    const config = path.join(root, 'gitconfig');
+    writeFileSync(config, '[user]\nname = A\nemail = a@example.com\n');
+    vi.stubEnv('GIT_CONFIG_GLOBAL', config);
+    vi.stubEnv('GIT_CONFIG_NOSYSTEM', '1');
     paths = runnerPaths(path.join(root, 'home'), path.join(root, 'work'));
     remote = makeRemote(root);
   });
-  afterEach(() => removeDir(root));
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    removeDir(root);
+  });
   it('creates isolated unborn worktrees on older Git and resumes the first real root commit', async () => {
     const empty = path.join(root, 'empty.git');
     git(['init', '--bare', '--initial-branch=main', empty], root);
@@ -110,6 +130,360 @@ describe('per-attempt worktrees', () => {
     });
     return { workDir, repo: prepared.dirs[0]!.repo!, prepared };
   }
+  async function pushedRemoval(id: string) {
+    const a = await start(id);
+    git(['push', a.repo.url, 'HEAD:refs/heads/agent/PM-300'], a.repo.dir);
+    await markWorkspaceEnded(
+      paths,
+      a.workDir,
+      await reportRepos([a.repo], { push: true }),
+    );
+    const meta = (await readWorkspaceMeta(paths, a.workDir))!;
+    await writeWorkspaceMeta(paths, a.workDir, {
+      ...meta,
+      repos: meta.repos.map((repo) => ({ ...repo, removing: true })),
+    });
+    return a;
+  }
+
+  it('saves with the checkout identity despite inherited author and trailer overrides', async () => {
+    const a = await start('identity');
+    git(['config', '--worktree', 'user.name', 'Checkout Author'], a.repo.dir);
+    git(
+      ['config', '--worktree', 'user.email', 'checkout@example.com'],
+      a.repo.dir,
+    );
+    for (const key of ['GIT_AUTHOR_NAME', 'GIT_COMMITTER_NAME'])
+      vi.stubEnv(key, 'Wrong author');
+    for (const key of ['GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_EMAIL'])
+      vi.stubEnv(key, 'wrong@example.com');
+    vi.stubEnv(
+      'NOCOBASE_RUNNER_COMMIT_TRAILERS',
+      'Co-authored-by: Wrong <wrong@example.com>\nSigned-off-by: Wrong <wrong@example.com>',
+    );
+    writeFileSync(path.join(a.repo.dir, 'identity.txt'), 'pending');
+    const [saved] = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(saved.saved).toBe(true);
+    expect(
+      git(
+        ['show', '-s', '--format=%an <%ae>|%cn <%ce>', saved.head!],
+        a.repo.cache,
+      ),
+    ).toBe(
+      'Checkout Author <checkout@example.com>|Checkout Author <checkout@example.com>',
+    );
+    const message = git(
+      ['show', '-s', '--format=%B', saved.head!],
+      a.repo.cache,
+    );
+    expect(message).toContain('Update identity.txt');
+    expect(message).toContain('work in progress');
+    expect(message).not.toMatch(
+      /co-authored-by|signed-off-by|save local continuation/iu,
+    );
+  });
+
+  it.each(['user.name', 'user.email'])(
+    'retains work and reports an unavailable %s without committing',
+    async (key) => {
+      const a = await start('missing-identity');
+      git(['config', '--worktree', key, ''], a.repo.dir);
+      const head = git(['rev-parse', 'HEAD'], a.repo.dir);
+      writeFileSync(path.join(a.repo.dir, 'pending.txt'), 'must survive');
+      const log = vi.fn();
+      const [saved] = await finalizeRunWorktrees(paths, a.workDir, log);
+      expect(saved).toMatchObject({
+        saved: false,
+        reason: expect.stringContaining(
+          'configure valid user.name and user.email',
+        ),
+      });
+      expect(git(['rev-parse', 'HEAD'], a.repo.dir)).toBe(head);
+      expect(readFileSync(path.join(a.repo.dir, 'pending.txt'), 'utf8')).toBe(
+        'must survive',
+      );
+      expect(await readWorkspaceMeta(paths, a.workDir)).toMatchObject({
+        recoveryRequired: true,
+        recoveryReason: saved.reason,
+      });
+      expect(log).toHaveBeenCalledWith(expect.stringContaining(saved.reason!));
+      const b = await start('after-missing-identity');
+      expect(b.repo.warnings?.join('\n')).toContain(saved.reason);
+    },
+  );
+
+  it.each(['startup', 'gc'] as const)(
+    'cleans legacy removal failures through %s, with preview and idempotency',
+    async (entry) => {
+      const a = await pushedRemoval('legacy');
+      rmSync(path.join(a.repo.dir, 'README.md'));
+      const meta = (await readWorkspaceMeta(paths, a.workDir))!;
+      await writeWorkspaceMeta(paths, a.workDir, {
+        ...meta,
+        recoveryRequired: true,
+        recoveryReason: `git worktree remove --force ${a.repo.dir} failed: permission denied\n`,
+      });
+      const before = await readWorkspaceMeta(paths, a.workDir);
+      const { scanWorkspaces, planRemovals, removePlanned } =
+        await import('../src/core/workspaces.ts');
+      const entries = await scanWorkspaces(paths, {});
+      const plan = planRemovals(entries, {});
+      expect(plan.remove.map((item) => item.entry.workDir)).toContain(
+        a.workDir,
+      );
+      expect(await readWorkspaceMeta(paths, a.workDir)).toEqual(before);
+      expect(existsSync(a.workDir)).toBe(true);
+      if (entry === 'startup') await start('next');
+      else
+        expect(
+          await removePlanned(
+            paths,
+            plan.remove.find((item) => item.entry.workDir === a.workDir)!.entry,
+          ),
+        ).toBeUndefined();
+      expect(existsSync(a.workDir)).toBe(false);
+      expect(await readWorkspaceMeta(paths, a.workDir)).toBeUndefined();
+      expect(
+        (
+          await readWorkspaceMeta(
+            paths,
+            continuationWorkDir(paths, 'app', 'PM-300'),
+          )
+        )?.activeWorkDirs,
+      ).not.toContain(a.workDir);
+      expect(await retryWorkspaceRemoval(paths, a.workDir, () => {})).toBe(
+        false,
+      );
+      expect(
+        (await collectWorkspaces({ paths })).removed.map(
+          (item) => item.workDir,
+        ),
+      ).not.toContain(a.workDir);
+    },
+  );
+
+  it.each([
+    'save failed',
+    'Removal candidate is not verified clean and pushed; retain it for recovery.',
+    'missing push',
+    'missing marker',
+  ])('keeps other legacy recovery records unchanged: %s', async (reason) => {
+    const a = await pushedRemoval('protected');
+    const meta = (await readWorkspaceMeta(paths, a.workDir))!;
+    await writeWorkspaceMeta(paths, a.workDir, {
+      ...meta,
+      recoveryRequired: true,
+      recoveryReason: reason.startsWith('missing')
+        ? 'git worktree remove --force checkout failed'
+        : reason,
+      repos: meta.repos.map((repo) => ({
+        ...repo,
+        ...(reason === 'missing push' ? { pushedSha: undefined } : {}),
+        ...(reason === 'missing marker' ? { removing: false } : {}),
+      })),
+    });
+    const before = await readWorkspaceMeta(paths, a.workDir);
+    const next = await start('reader', true);
+    expect(next.repo.warnings?.join(' ')).toContain(
+      'You may continue this read-only run',
+    );
+    expect(next.repo.warnings?.join(' ')).toContain(
+      'does not contain its pending changes',
+    );
+    expect(next.repo.warnings?.join(' ')).not.toContain('before continuing');
+    expect(await readWorkspaceMeta(paths, a.workDir)).toEqual(before);
+    const writer = await start('writer');
+    expect(writer.repo.warnings?.join(' ')).toContain(
+      'Resolve or recover it before continuing',
+    );
+    await collectWorkspaces({ paths });
+    expect(existsSync(a.workDir)).toBe(true);
+    expect((await readWorkspaceMeta(paths, a.workDir))?.recoveryReason).toBe(
+      before?.recoveryReason,
+    );
+  });
+
+  it('automatically finishes a pushed removing checkout whose Git metadata survived', async () => {
+    const a = await pushedRemoval('git-survived');
+    expect(await retryWorkspaceRemoval(paths, a.workDir, () => {})).toBe(true);
+    expect(existsSync(a.workDir)).toBe(false);
+  });
+
+  it('preserves the complete Git removal stderr in its error message', async () => {
+    const a = await start('stderr');
+    const args = [
+      'worktree',
+      'remove',
+      '--force',
+      path.join(a.workDir, 'missing'),
+    ];
+    const { stderr } = spawnSync('git', args, {
+      cwd: a.repo.cache,
+      encoding: 'utf8',
+    });
+    expect(stderr).toContain('fatal:');
+    expect(stderr.endsWith('\n')).toBe(true);
+    await expect(checkoutModule.git(args, a.repo.cache)).rejects.toThrow(
+      `git ${args.join(' ')} failed: ${stderr}`,
+    );
+  });
+
+  async function interruptedRemoval(id: string) {
+    const a = await start(id);
+    git(['push', a.repo.url, 'HEAD:refs/heads/agent/PM-300'], a.repo.dir);
+    await markWorkspaceEnded(
+      paths,
+      a.workDir,
+      await reportRepos([a.repo], { push: true }),
+    );
+    const reason = `git worktree remove --force ${a.repo.dir} failed: EACCES: injected interrupted removal\n`;
+    const log = vi.fn();
+    const original = checkoutModule.git;
+    const spy = vi
+      .spyOn(checkoutModule, 'git')
+      .mockImplementation(async (args, ...rest) => {
+        if (args[0] === 'worktree' && args[1] === 'remove') {
+          rmSync(path.join(a.repo.dir, 'README.md'));
+          throw new Error(reason);
+        }
+        return original(args, ...rest);
+      });
+    try {
+      const result = await finalizeRunWorktrees(paths, a.workDir, log);
+      expect(log).toHaveBeenCalledWith(
+        `worktree finalization failed: ${a.repo.dir}: ${reason}`,
+      );
+      expect(result.every((entry) => entry.saved)).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(existsSync(path.join(a.repo.dir, '.git'))).toBe(true);
+    expect(
+      (await readWorkspaceMeta(paths, a.workDir))?.recoveryRequired,
+    ).not.toBe(true);
+    expect(await readWorkspaceMeta(paths, a.workDir)).toMatchObject({
+      recoveryReason: reason,
+      repos: [expect.objectContaining({ removing: true })],
+    });
+    return a;
+  }
+
+  it.skipIf(process.platform !== 'linux')(
+    'GC finishes a pushed partially deleted checkout and does not block the next run',
+    async () => {
+      const a = await interruptedRemoval('remove-fails');
+      // An actual attempt lock still wins over the removal marker.
+      const lock = await acquireLock(`${a.workDir}.lock`, { timeoutMs: 0 });
+      expect(await retryWorkspaceRemoval(paths, a.workDir, () => {})).toBe(
+        false,
+      );
+      expect(existsSync(a.workDir)).toBe(true);
+      await lock.release();
+      const holder = spawn(
+        process.execPath,
+        ['-e', 'setInterval(() => {}, 1000)'],
+        { cwd: a.repo.dir, detached: true, stdio: 'ignore' },
+      );
+      const unrelated = spawn(
+        process.execPath,
+        ['-e', 'setInterval(() => {}, 1000)'],
+        { cwd: root, detached: true, stdio: 'ignore' },
+      );
+      try {
+        await waitFor(async () =>
+          (await workspaceHolders(a.workDir)).includes(holder.pid!),
+        );
+        const collected = await collectWorkspaces({ paths });
+        await waitFor(
+          () => holder.exitCode !== null || holder.signalCode !== null,
+        );
+        expect(unrelated.exitCode).toBeNull();
+        expect(unrelated.signalCode).toBeNull();
+        expect(collected.removed.map((entry) => entry.workDir)).toContain(
+          a.workDir,
+        );
+        expect(existsSync(a.workDir)).toBe(false);
+        expect(
+          git(['worktree', 'list', '--porcelain'], a.repo.cache),
+        ).not.toContain(a.repo.dir);
+        const b = await start('after-removal');
+        expect(b.repo.warnings?.join(' ')).not.toContain(
+          'Recovery work remains',
+        );
+        await finalizeRunWorktrees(paths, b.workDir, () => {});
+      } finally {
+        holder.kill('SIGKILL');
+        unrelated.kill('SIGKILL');
+      }
+    },
+  );
+
+  it('records retry failures without demanding recovery, and the next run retries cleanup', async () => {
+    const a = await interruptedRemoval('retry-fails');
+    const original = (
+      await vi.importActual<typeof fsPromises>('node:fs/promises')
+    ).rm;
+    const spy = vi
+      .spyOn(fsPromises, 'rm')
+      .mockImplementation(async (...args) => {
+        if (String(args[0]) === a.repo.dir)
+          throw new Error('EACCES: cleanup retry');
+        return original(...args);
+      });
+    try {
+      expect(await retryWorkspaceRemoval(paths, a.workDir, () => {})).toBe(
+        false,
+      );
+      expect(
+        (await readWorkspaceMeta(paths, a.workDir))?.recoveryRequired,
+      ).not.toBe(true);
+      expect(await readWorkspaceMeta(paths, a.workDir)).toMatchObject({
+        recoveryReason: 'EACCES: cleanup retry',
+      });
+    } finally {
+      spy.mockRestore();
+    }
+    const b = await start('retry-on-next-run');
+    expect(existsSync(a.workDir)).toBe(false);
+    expect(b.repo.warnings?.join(' ')).not.toContain('Recovery work remains');
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+
+  it.each(['dirty', 'unpushed'] as const)(
+    'protects %s work after a save failure even with a removal marker',
+    async (kind) => {
+      const a = await start(`protected-${kind}`);
+      git(['push', a.repo.url, 'HEAD:refs/heads/agent/PM-300'], a.repo.dir);
+      await markWorkspaceEnded(
+        paths,
+        a.workDir,
+        await reportRepos([a.repo], { push: true }),
+      );
+      writeFileSync(path.join(a.repo.dir, 'new-work.txt'), 'keep');
+      if (kind === 'unpushed') {
+        git(['add', 'new-work.txt'], a.repo.dir);
+        git([...COMMIT, 'commit', '-m', 'unpublished'], a.repo.dir);
+      }
+      const meta = (await readWorkspaceMeta(paths, a.workDir))!;
+      await writeWorkspaceMeta(paths, a.workDir, {
+        ...meta,
+        recoveryRequired: true,
+        recoveryReason: 'Saving failed; retain the original worktree.',
+        repos: meta.repos.map((repo) => ({ ...repo, removing: true })),
+      });
+      expect(await retryWorkspaceRemoval(paths, a.workDir, () => {})).toBe(
+        false,
+      );
+      await collectWorkspaces({ paths });
+      expect(readFileSync(path.join(a.repo.dir, 'new-work.txt'), 'utf8')).toBe(
+        'keep',
+      );
+      expect(
+        (await readWorkspaceMeta(paths, a.workDir))?.recoveryRequired,
+      ).toBe(true);
+    },
+  );
+
   it('starts two unmarked writers and keeps divergent heads visible without merging', async () => {
     const [a, b] = await Promise.all([start('a'), start('b')]);
     expect(a.workDir).not.toBe(b.workDir);
@@ -175,6 +549,116 @@ describe('per-attempt worktrees', () => {
       true,
     );
   });
+  it('preserves agent branches, stash and current uncommitted work after removal and in the next run', async () => {
+    const a = await start('branch-owner');
+    git(['checkout', '-b', 'fix/agent-work'], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'committed.txt'), 'agent branch');
+    git(['add', '.'], a.repo.dir);
+    git([...COMMIT, 'commit', '-m', 'agent commit'], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'stashed.txt'), 'shared stash');
+    git([...COMMIT, 'stash', 'push', '--include-untracked'], a.repo.dir);
+    const stash = git(['rev-parse', 'refs/stash'], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'pending.txt'), 'save current head');
+    const reports = await reportRepos([a.repo], { push: true });
+    expect(reports[0].pushed).toBe(false);
+    expect(
+      git(
+        ['for-each-ref', '--format=%(refname)', 'refs/heads/agent/'],
+        path.join(root, 'origin-repo.git'),
+      ),
+    ).toBe('');
+    const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(saved[0].saved).toBe(true);
+    expect(existsSync(a.workDir)).toBe(false);
+    expect(git(['rev-parse', 'refs/heads/fix/agent-work'], a.repo.cache)).toBe(
+      saved[0].head,
+    );
+    expect(git(['rev-parse', 'refs/stash'], a.repo.cache)).toBe(stash);
+    const b = await start('next-branch-owner');
+    expect(existsSync(path.join(b.repo.dir, 'pending.txt'))).toBe(false);
+    git(['checkout', 'fix/agent-work'], b.repo.dir);
+    expect(readFileSync(path.join(b.repo.dir, 'committed.txt'), 'utf8')).toBe(
+      'agent branch',
+    );
+    expect(readFileSync(path.join(b.repo.dir, 'pending.txt'), 'utf8')).toBe(
+      'save current head',
+    );
+    git([...COMMIT, 'stash', 'apply'], b.repo.dir);
+    expect(readFileSync(path.join(b.repo.dir, 'stashed.txt'), 'utf8')).toBe(
+      'shared stash',
+    );
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+    expect(git(['rev-parse', 'refs/stash'], b.repo.cache)).toBe(stash);
+  });
+
+  it('retains unpublished runner aliases even after saving continuation refs', async () => {
+    const a = await start('unpublished-alias');
+    writeFileSync(path.join(a.repo.dir, 'local.txt'), 'local');
+    const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(existsSync(a.workDir)).toBe(false);
+    expect(
+      git(['rev-parse', `refs/heads/${a.repo.localBranch}`], a.repo.cache),
+    ).toBe(saved[0].head);
+  });
+
+  it('cleans a published runner alias but preserves an agent branch at the same commit', async () => {
+    const a = await start('published-alias');
+    git(['branch', 'fix/keep-published'], a.repo.dir);
+    git(['branch', 'runner-run-agent-owned'], a.repo.dir);
+    git(['push', a.repo.url, 'HEAD:refs/heads/agent/PM-300'], a.repo.dir);
+    await reportRepos([a.repo], { push: false });
+    const head = git(['rev-parse', 'HEAD'], a.repo.dir);
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(
+      git(
+        [
+          'for-each-ref',
+          '--format=%(refname)',
+          `refs/heads/${a.repo.localBranch}`,
+        ],
+        a.repo.cache,
+      ),
+    ).toBe('');
+    expect(
+      git(['rev-parse', 'refs/heads/fix/keep-published'], a.repo.cache),
+    ).toBe(head);
+    expect(
+      git(['rev-parse', 'refs/heads/runner-run-agent-owned'], a.repo.cache),
+    ).toBe(head);
+  });
+
+  it('preserves a switched-away runner alias with unpublished commits', async () => {
+    const a = await start('switched-away');
+    writeFileSync(path.join(a.repo.dir, 'alias.txt'), 'unpublished alias');
+    git(['add', '.'], a.repo.dir);
+    git([...COMMIT, 'commit', '-m', 'alias work'], a.repo.dir);
+    const head = git(['rev-parse', 'HEAD'], a.repo.dir);
+    git(
+      ['checkout', '-b', 'fix/separate', 'refs/remotes/origin/main'],
+      a.repo.dir,
+    );
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(
+      git(['rev-parse', `refs/heads/${a.repo.localBranch}`], a.repo.cache),
+    ).toBe(head);
+    expect(git(['show', `${head}:alias.txt`], a.repo.cache)).toBe(
+      'unpublished alias',
+    );
+  });
+
+  it('retains a published alias while another worktree has it checked out', async () => {
+    const a = await start('active-alias');
+    git(['checkout', '-b', 'fix/elsewhere'], a.repo.dir);
+    const job = path.join(root, 'other-worktree');
+    git(['worktree', 'add', job, a.repo.localBranch!], a.repo.cache);
+    const head = git(['rev-parse', 'HEAD'], job);
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(
+      git(['rev-parse', `refs/heads/${a.repo.localBranch}`], a.repo.cache),
+    ).toBe(head);
+    expect(git(['status', '--porcelain'], job)).toBe('');
+    git(['worktree', 'remove', job], a.repo.cache);
+  });
   it('discards read-only changes without updating continuation refs or deleting another run', async () => {
     const a = await start('a');
     const b = await start('b', true);
@@ -211,7 +695,7 @@ describe('per-attempt worktrees', () => {
     await finalizeRunWorktrees(paths, b.workDir, () => {});
   });
 
-  it('finishes an interrupted removal without committing its half-deleted files', async () => {
+  it('retains half-deleted files without pushed evidence and does not commit their deletion', async () => {
     const a = await start('a');
     writeFileSync(path.join(a.repo.dir, 'kept.txt'), 'kept');
     const [saved] = await finalizeRunWorktrees(paths, a.workDir, () => {}, {
@@ -225,25 +709,82 @@ describe('per-attempt worktrees', () => {
     });
     rmSync(path.join(a.repo.dir, 'kept.txt'));
     const [finished] = await finalizeRunWorktrees(paths, a.workDir, () => {});
-    expect(finished?.saved).toBe(true);
-    expect(existsSync(a.workDir)).toBe(false);
+    expect(finished?.saved).toBe(false);
+    expect(existsSync(a.workDir)).toBe(true);
+    expect((await readWorkspaceMeta(paths, a.workDir))?.recoveryRequired).toBe(
+      true,
+    );
     expect(
       git(['rev-parse', `refs/runner/resume/${repo.continuation}`], repo.cache),
     ).toBe(saved?.head);
   });
 
-  it('preserves the worktree when the local branch changes, and tells a subsequent run where recovery remains', async () => {
+  it('keeps a switched branch on its own ref without a saved head for the initial target', async () => {
     const a = await start('a');
     git(['checkout', '-b', 'unexpected'], a.repo.dir);
     writeFileSync(path.join(a.repo.dir, 'recovery.txt'), 'retain');
     expect(
       (await finalizeRunWorktrees(paths, a.workDir, () => {}))[0]?.saved,
-    ).toBe(false);
+    ).toBe(true);
+    expect(existsSync(a.workDir)).toBe(false);
     const b = await start('b');
-    expect(b.repo.warnings?.join(' ')).toContain(a.workDir);
-    expect(readFileSync(path.join(a.repo.dir, 'recovery.txt'), 'utf8')).toBe(
-      'retain',
+    expect(b.repo.warnings?.join(' ')).not.toContain(
+      'Additional saved commits',
     );
+    expect(
+      git(['show', 'refs/heads/unexpected:recovery.txt'], b.repo.cache),
+    ).toBe('retain');
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+
+  it('adds no manual-integration note to the initial target for a pushed switched branch', async () => {
+    const a = await start('a');
+    git(['checkout', '-b', 'feature/other'], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'other.txt'), 'other');
+    git(['add', 'other.txt'], a.repo.dir);
+    git(['commit', '-m', 'other'], a.repo.dir);
+    git(['push', a.repo.url, 'HEAD:refs/heads/feature/other'], a.repo.dir);
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+    const b = await start('b');
+    expect(b.repo.warnings?.join(' ')).not.toContain(
+      'Additional saved commits',
+    );
+    expect(existsSync(path.join(b.repo.dir, 'other.txt'))).toBe(false);
+    expect(
+      git(
+        ['for-each-ref', '--format=%(refname)', 'refs/runner/saved/'],
+        b.repo.cache,
+      ),
+    ).toBe('');
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+
+  it('reports a switched branch without a failure and never pushes it to the initial target', async () => {
+    const a = await start('a');
+    git(['checkout', '-b', 'fix/reported'], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'reported.txt'), 'reported');
+    git(['add', 'reported.txt'], a.repo.dir);
+    git(['commit', '-m', 'reported'], a.repo.dir);
+    const [report] = await reportRepos([a.repo], { push: true });
+    expect(report?.failure).toBeUndefined();
+    expect(report?.pushed).toBe(false);
+    expect(
+      git(['ls-remote', a.repo.url, 'refs/heads/agent/PM-300'], a.repo.dir),
+    ).toBe('');
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+  });
+
+  it('saves a detached HEAD whose commits no branch or remote reaches', async () => {
+    const a = await start('a');
+    git(['checkout', '--detach'], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'detached.txt'), 'detached');
+    git(['add', 'detached.txt'], a.repo.dir);
+    git(['commit', '-m', 'detached'], a.repo.dir);
+    const head = git(['rev-parse', 'HEAD'], a.repo.dir);
+    await finalizeRunWorktrees(paths, a.workDir, () => {});
+    const b = await start('b');
+    expect(b.repo.warnings?.join(' ')).toContain('Additional saved commits');
+    expect(b.repo.warnings?.join(' ')).toContain(head);
     await finalizeRunWorktrees(paths, b.workDir, () => {});
   });
 
@@ -324,7 +865,7 @@ describe('per-attempt worktrees', () => {
     expect(existsSync(path.join(clean.repo.dir, 'previous.txt'))).toBe(false);
     expect(
       git(['cat-file', '-p', saved[0]!.head!], clean.repo.cache),
-    ).toContain('chore(runner)');
+    ).toContain('Update previous.txt');
     writeFileSync(path.join(clean.repo.dir, 'fresh.txt'), 'fresh');
     await finalizeRunWorktrees(paths, clean.workDir, () => {});
     const next = await start('next');

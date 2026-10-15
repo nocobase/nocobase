@@ -29,6 +29,7 @@ import { Fragment, useState, type ReactElement } from 'react';
 import { Link } from 'react-router';
 
 import { MarkdownView } from './markdown-view.js';
+import { ConversationImage } from './conversation-image.js';
 import { Button } from './ui/button.js';
 import { Checkbox } from './ui/checkbox.js';
 import {
@@ -47,6 +48,8 @@ import {
   type ToolKind,
   type TranscriptItem,
 } from '../transcript.js';
+import { useLinkOpen } from '../config.js';
+import { plainClick } from '../lib/clicks.js';
 import { LinkName } from './link-name.js';
 import { StatusPill } from './status-pill.js';
 
@@ -122,15 +125,13 @@ function Item({
           {item.images.length > 0 && (
             <div className='flex flex-wrap justify-end gap-2'>
               {item.images.map((image) => (
-                <img
+                <ConversationImage
                   key={image.id}
                   src={
                     image.file
                       ? resolveAppUrl(imagePath(session.id, image.file))
                       : `data:${image.mimeType};base64,${image.data}`
                   }
-                  alt=''
-                  className='max-h-40 rounded-lg border'
                 />
               ))}
             </div>
@@ -344,6 +345,7 @@ function MentionedText({
   readonly text: string;
   readonly links: readonly SessionLink[];
 }): ReactElement {
+  const open = useLinkOpen();
   const byKey = new Map(
     links.flatMap((link) => (link.key && link.href ? [[link.key, link]] : [])),
   );
@@ -370,6 +372,9 @@ function MentionedText({
             to={link.href}
             title={link.title}
             className='text-primary font-medium hover:underline'
+            onClick={(event) => {
+              if (plainClick(event) && open?.(link)) event.preventDefault();
+            }}
           >
             {part}
           </Link>

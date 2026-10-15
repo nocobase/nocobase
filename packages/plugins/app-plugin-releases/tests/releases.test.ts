@@ -88,6 +88,46 @@ describe('releases', () => {
     ).toHaveLength(1);
   });
 
+  it('uploads, promotes and reads archives with the longest supported artifact keys', async () => {
+    const sourceId = 's'.repeat(128);
+    const targetId = 't'.repeat(128);
+    const admin = await createApp(sourceId);
+    await createApp(targetId);
+    const artifact = await createArtifact(harness.rootDir, '1.0.0');
+    const source = await harness.services.releases.uploadRelease(
+      admin,
+      sourceId,
+      {
+        stream: streamOf(artifact.bytes),
+      },
+    );
+    const promoted = await harness.services.releases.promoteRelease(
+      admin,
+      sourceId,
+      source.id,
+      targetId,
+    );
+    for (const [appId, releaseId] of [
+      [sourceId, source.id],
+      [targetId, promoted.id],
+    ]) {
+      const row = await harness.database
+        .connection()
+        .query.selectFrom('relReleases')
+        .select('artifactKey')
+        .where('id', '=', releaseId)
+        .executeTakeFirstOrThrow();
+      expect(String(row.artifactKey)).toHaveLength(172);
+      const deployment = await harness.services.releases.deploy(admin, appId, {
+        releaseId,
+      });
+      // The fake driver reads the stored archive and verifies its checksum.
+      expect(
+        await harness.services.releases.waitForDeployment(deployment.id),
+      ).toMatchObject({ status: 'succeeded' });
+    }
+  });
+
   it('replays an idempotency key and refuses it for another archive', async () => {
     const admin = await createApp();
     const one = await createArtifact(harness.rootDir, '1.0.0');

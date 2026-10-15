@@ -3,6 +3,7 @@ import { followUpsZhCN } from '../follow-ups/locales.js';
 import type { AppResource } from './en-US.js';
 import { gitZhCN } from '../git/locales.js';
 import { knowledgeZhCN } from '../knowledge/locales.js';
+import { taskGroupsZhCN } from '../issues/groups/locales.js';
 import { issuesZhCN } from '../issues/locales.js';
 import { issueLiveZhCN } from '../issues/live/locales.js';
 import { projectPageZhCN } from '../projects/locales.js';
@@ -54,6 +55,10 @@ const zhCN: AppResource = {
   'issueRuns.configuredModel': '配置模型：{{model}}',
   'issueRuns.modelUnknown': '模型尚未报告',
   'issueRuns.clearFilters': '清除筛选',
+  'issueRuns.attemptFailed': '第 {{attempt}} 次尝试失败',
+  'issueRuns.preparationFailed': '运行准备失败',
+  'issueRuns.retryScheduled': '将于 {{time}} 自动重试',
+  'issueRuns.awaitingDispatch': '等待重新派发',
   'issueRuns.emptyHint': '请在属性中确认执行者和任务状态，以启动 Agent 工作。',
   'issueRuns.loading': '正在加载执行记录…',
   'issueRuns.failed': '执行记录加载失败，请重试。',
@@ -103,6 +108,7 @@ const zhCN: AppResource = {
   runTranscript: {
     usedModel: '使用模型：{{model}}',
     defaultModel: '默认模型',
+    confirmedBy: '确认人：{{person}}',
     actingAs: '运行身份：{{actor}}',
     triggeredBy: '触发人：{{person}}',
     systemTrigger: '由系统触发',
@@ -276,14 +282,22 @@ const zhCN: AppResource = {
         '1. `nb-studio` 需要 Node.js 24 或更高版本及 npm：先用 `node --version` 检查，缺少或版本过低时先征得我同意再安装；然后运行 `{{install}}` 安装 `nb-studio`；\n' +
         '2. 运行 `nb-studio login --server {{server}}`，把它显示的登录地址和验证码告诉我，等待我在浏览器中确认登录；\n' +
         '3. 登录成功后运行 `nb-studio whoami` 确认身份和权限，再运行 `nb-studio docs` 了解可用命令；\n' +
-        '4. 之后按我的要求通过 `nb-studio` 操作，不要直接调用 HTTP 接口。',
+        '4. 运行 `nb-studio skills install`，为编程 Agent 安装 CLI skill；\n' +
+        '5. 之后按我的要求通过 `nb-studio` 操作，不要直接调用 HTTP 接口。',
+      computerTitle: '连接你的电脑',
+      computerDescription:
+        '将下面的配置指令发给要连接的电脑上的编程 Agent（如 Claude Code、Codex）。',
+      computerPrompt:
+        '6. 运行 `nb-studio acp service install` 让这台电脑保持在线；临时连接可改用 `nb-studio acp start`；\n' +
+        '7. 默认允许访问整个用户目录，可以在「我的电脑」中修改允许的目录；\n' +
+        '8. 请我在 Studio 中确认这台电脑已在线。',
       promptLabel: '发送给 Coding Agent 的配置指令',
       preparing: '正在生成配置指令',
       identity:
         'Coding Agent 将通过 CLI 以你的身份操作，操作范围受你的 Studio 权限限制。登录需要你在浏览器中确认。',
       expiry: '配置指令中的安装链接 30 分钟内有效，过期后请重新生成。',
       runtime:
-        '要让 Studio 将任务派发到你的电脑执行，请前往「Agent 团队 › 运行环境 › 添加运行环境」安装并注册 Runner。',
+        '本地编程 Agent 通过 CLI 管理 Studio；「我的 Agent」连接你的电脑进行交互会话；Runner 执行 Studio 派发的任务，可在「Agent 团队 › 运行环境 › 添加运行环境」注册。',
       regenerate: '重新生成配置指令',
       copy: '复制配置指令',
       copied: '已复制配置指令',
@@ -882,6 +896,7 @@ const zhCN: AppResource = {
   'inbox.text.executor_assigned': '{{actor}} 把 {{identifier}} 交给你执行',
   'inbox.text.executor_suggested': '建议由 {{agentName}} 执行 {{identifier}}',
   'inbox.someone': '有人',
+  'inbox.anAgent': '某个 agent',
   'inbox.titles.approval_requested': '状态变更待审批',
   'inbox.outcomes.retried': '已重试',
   'inbox.outcomes.newRun': '已有新的运行',
@@ -1029,6 +1044,9 @@ const zhCN: AppResource = {
     unknown: '未知',
   },
   studioAgents: {
+    newProjectSkill: '新项目自动挂载',
+    newProjectSkillDescription:
+      '立即保存，仅影响之后创建的项目；已有项目的挂载不变。',
     principalKinds: { agent: 'Agent' },
     templateMessages: {
       inReview:
@@ -1049,6 +1067,8 @@ const zhCN: AppResource = {
       stageEntered: '流程阶段',
       planDecided: '计划已决定',
       prChecksFailed: '检查失败',
+      stepEnded: '执行步骤已结束',
+      managerIdle: '空闲等待复核',
       prChecksPassed: '检查通过',
       started: '开始',
       prConflict: 'PR 冲突',
@@ -1199,7 +1219,7 @@ const zhCN: AppResource = {
     commentRuns: {
       limitReached: 'Agent 评论已暂停唤醒',
       continueHint:
-        'Agent 的评论在 {{windowHours}} 小时内已在这个任务上启动 {{maxRuns}} 次运行，最近一条没有唤醒任何 Agent。继续可唤醒它提到的 Agent 一次，并重新开始计数。',
+        '最近 {{windowHours}} 小时评论触发的运行已达 {{maxRuns}} 次上限',
       continued: '已继续 Agent 评论',
       continueStale: '这条评论已不再等待，请刷新任务。',
       continueFailed: '暂时无法继续，请检查 Agent 和任务阻塞后重试。',
@@ -1265,6 +1285,7 @@ const zhCN: AppResource = {
   preferences: preferencesZhCN,
   knowledge: knowledgeZhCN,
   issuesPage: issuesZhCN,
+  taskGroups: taskGroupsZhCN,
   followUps: followUpsZhCN,
   issueLive: issueLiveZhCN,
   projectPage: projectPageZhCN,
@@ -1292,6 +1313,8 @@ const zhCN: AppResource = {
     settings: '设置',
     loadFailed: '项目经理的设置没有加载出来。',
     settingsPage: {
+      name: '名称',
+      identityDescription: '描述',
       title: '项目经理',
       description: '全局只有一个，所有项目的任务都由它安排。',
       readOnly: '只有能管理 Agent 的人可以修改这些设置。',
@@ -1336,6 +1359,8 @@ const zhCN: AppResource = {
     workerChoice: '执行模型',
     workerWaiting: '{{agent}} 在等执行机：{{entries}}',
     modelWait: {
+      updatePending: '执行机等待升级，暂不接活',
+      pruning: '执行机清理共享缓存，暂不接活',
       toolNotInstalled: '未安装工具',
       toolUnavailable: '工具未登录、被禁用或模型不可用',
       noSharedRunner: '仅他人的个人执行机在线',

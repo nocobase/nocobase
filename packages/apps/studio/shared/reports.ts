@@ -5,9 +5,13 @@
  *
  * | Method | Path                | Query                         | Answer                         |
  * | ------ | ------------------- | ----------------------------- | ------------------------------ |
- * | GET    | `reports/dashboard` | `days` (7, 30 or 90)          | `{ data: DashboardReport }`    |
+ * | GET    | `reports/delivery`  | `days` (7, 30 or 90)          | `{ data: DashboardDelivery }`  |
+ * | GET    | `reports/agents`    | `days` (7, 30 or 90)          | `{ data: DashboardAgents }`    |
+ * | GET    | `reports/projects`  | `days` (7, 30 or 90)          | `{ data: DashboardProjects }`  |
  * | GET    | `reports/attention` |                               | `{ data: DashboardAttention }` |
  * | GET    | `reports/metrics`   | `from`, `to`, `projectId`     | `{ data: MetricsReport }`      |
+ *
+ * Each dashboard panel reads its own route, so the panels load, fail and refresh on their own.
  *
  * All need the reports grant (page `reports`); they count every run with `agents.agents` read, otherwise the runs
  * the caller started or owns, and only runs and issues the caller may see. The usage page is the agents plugin's.
@@ -18,7 +22,9 @@ import type {
 } from '@nocobase/app-plugin-agents/shared/reports';
 
 export const REPORT_ROUTES = {
-  dashboard: 'reports/dashboard',
+  delivery: 'reports/delivery',
+  agents: 'reports/agents',
+  projects: 'reports/projects',
   attention: 'reports/attention',
   metrics: 'reports/metrics',
 } as const;
@@ -33,7 +39,7 @@ export type DashboardPeriod = (typeof DASHBOARD_PERIODS)[number];
  * time it did, if it did more than once); it was started when it first entered a `started`-category status, or when it
  * was created in one.
  */
-export interface DashboardFigures {
+export interface DeliveryFigures {
   /** Throughput: the issues completed in the period. */
   readonly completed: number;
   /** Median cycle time: started → completed of the issues completed in the period that were started; null without. */
@@ -42,6 +48,10 @@ export interface DashboardFigures {
   readonly agentShare: number | null;
   /** The cost of the agents' usage reported in the period over the issues completed in it; null without either. */
   readonly costPerIssue: Costs | null;
+}
+
+/** How the agents' runs went over one period (`GET reports/agents`). */
+export interface AgentFigures {
   /** Runs queued in the period. */
   readonly runs: number;
   /** Of the runs queued in the period that ended completed or failed, the share that completed. */
@@ -63,17 +73,13 @@ export interface DashboardFigures {
   readonly queueWaitP50Ms: number | null;
 }
 
-/** One day of the dashboard's period. */
-export interface DashboardDay {
+/** Every figure the dashboard shows, of either panel. */
+export type DashboardFigures = DeliveryFigures & AgentFigures;
+
+/** One day of the dashboard's period: the runs queued that day, by how they ended so far. */
+export interface DashboardRunDay {
   /** `YYYY-MM-DD` (UTC). */
   readonly day: string;
-  readonly completed: number;
-  readonly completedByAgents: number;
-  /** Median cycle time of the issues completed that day; null without a started one. */
-  readonly cycleTimeP50Ms: number | null;
-  /** The cost of the usage reported that day, in the report's currency. */
-  readonly cost: number;
-  /** The runs queued that day, by how they ended so far. */
   readonly runsCompleted: number;
   readonly runsFailed: number;
   readonly runsCancelled: number;
@@ -117,22 +123,35 @@ export interface DashboardProject {
   readonly blocked: number;
 }
 
-/** `GET reports/dashboard`: the last `days` days up to today (UTC), against the `days` before them. */
-export interface DashboardReport {
+/** A dashboard panel's period: the last `days` days up to today (UTC), against the `days` before them. */
+export interface DashboardPeriodReport {
   readonly days: DashboardPeriod;
   readonly from: string;
   readonly to: string;
   /** False without issue figures (no projects plugin): the issue figures stay empty. */
   readonly subjects: boolean;
+}
+
+/** `GET reports/delivery`: the headline figures over the period and the one before, with their sparklines. */
+export interface DashboardDelivery extends DashboardPeriodReport {
   /** The currency of the costs (the first in use; US dollars without any). */
   readonly currency: string;
-  readonly current: DashboardFigures;
-  readonly previous: DashboardFigures;
-  /** Every day of the period, oldest first. */
-  readonly daily: readonly DashboardDay[];
+  readonly current: DeliveryFigures;
+  readonly previous: DeliveryFigures;
   /** The period in stretches of `BUCKET_DAYS`, oldest first. */
   readonly buckets: readonly DashboardBucket[];
-  /** Every project the viewer may see but cancelled ones, those with work completed in the period first. */
+}
+
+/** `GET reports/agents`: how the agents performed over the period and the one before, and the runs day by day. */
+export interface DashboardAgents extends DashboardPeriodReport {
+  readonly current: AgentFigures;
+  readonly previous: AgentFigures;
+  /** Every day of the period, oldest first. */
+  readonly daily: readonly DashboardRunDay[];
+}
+
+/** `GET reports/projects`: every project the viewer may see but cancelled ones, those with work completed first. */
+export interface DashboardProjects extends DashboardPeriodReport {
   readonly projects: readonly DashboardProject[];
 }
 

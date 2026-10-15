@@ -15,6 +15,7 @@ const zhCN: AgentSessionsResource = {
     sessionNotFound: '这个会话不存在，或者不属于你。',
   },
   list: {
+    expand: '展开会话列表',
     label: '会话',
     title: '我的 Agent',
     archived: '已归档',
@@ -60,11 +61,23 @@ const zhCN: AgentSessionsResource = {
     left: '{{keys}} 留在{{status}}',
     separator: '、',
     comma: '，',
+    waiting: '等你 {{count}}',
     unknown: '未知',
   },
   newSession: {
+    sendUnconfirmed: '发送尚未确认。请使用“重试原提交”恢复发送确认。',
+    settingsOutdated:
+      '这台电脑上的命令行版本过旧，请按“我的电脑”里的提示在那台电脑上更新。',
+    settingsOffline: '此电脑已离线。请重新连接桥接程序以加载设置和发送消息。',
+    settingsLoading: '正在加载设置…',
+    settingsFailed: '无法加载智能体设置。',
+    settingsReset: '使用 Agent 默认设置',
+    settingsRetry: '重试设置',
+    settingsUnsupported: '此智能体不提供设置，将使用默认值。',
+    settingsEmpty: '此智能体没有可配置的设置，将使用默认值。',
     title: '新会话',
-    subtitle: '和你自己电脑上的 Agent 对话，记录保存在这里。',
+    subtitle:
+      '在自己的电脑上与 Agent 讨论并澄清需求、记录任务、跟进进展。开始任务后，Studio 项目经理会协调 Agent 进行开发。',
     pickComputer: '选择电脑',
     noAgent: '没有可用的 Agent',
     folder: '电脑上的目录',
@@ -73,7 +86,7 @@ const zhCN: AgentSessionsResource = {
       'Agent 在你选的目录里以完全访问的权限工作，和在你自己的终端里一样。',
     noComputer: '先连接你的电脑',
     noComputerHint:
-      '会话在你自己的电脑上运行：Agent 用你在那台电脑上登录的账号，在你允许的目录里工作，对话记录保存在这里。连接一次，之后电脑开机就会自动在线。',
+      '会话在你自己的电脑上运行：Agent 用你在那台电脑上登录的账号，在你允许的目录里工作，对话记录保存在这里。连接一次，之后电脑开机就会自动在线。我的 Agent 帮你讨论和澄清需求、记录任务并跟进进展；开始这些任务后，Studio 项目经理才会协调 Agent 进行开发。',
     allOffline: '你的电脑都不在线',
     offlineHint: '在电脑上运行下面的命令，之后开机就会自动连接。',
     noAgentTitle: '这台电脑上还没有可用的 Agent',
@@ -103,6 +116,7 @@ const zhCN: AgentSessionsResource = {
     noProject: '不关联项目',
   },
   session: {
+    info: '会话信息',
     archived: '这个会话已归档，恢复后才能继续。',
     offline: '{{computer}}离线',
     offlineBody:
@@ -133,6 +147,14 @@ const zhCN: AgentSessionsResource = {
     recordBody: '完整记录保存在这里，只有你能看到。',
   },
   composer: {
+    unconfirmed:
+      '发送结果尚未确认。可重试原提交，或编辑为新消息（原消息可能已送达）。',
+    retrySubmission: '重试原提交',
+    editAsNew: '编辑为新消息',
+    sendUnconfirmed: '发送尚未确认。请使用“重试原提交”恢复发送确认。',
+    sending: '正在发送…',
+    expand: '展开输入',
+    collapse: '收起输入',
     placeholder: '回复，或者说下一件事…',
     busy: 'Agent 正在回复，消息会在这一轮结束后发出。',
     waiting: '先回答上面的请求，或者写消息排在它之后。',
@@ -153,6 +175,13 @@ const zhCN: AgentSessionsResource = {
   },
   choices: { more: '更多选项' },
   transcript: {
+    image: {
+      open: '打开图片预览',
+      preview: '图片预览',
+      zoomIn: '放大',
+      zoomOut: '缩小',
+      fit: '适应屏幕',
+    },
     thought: '思考',
     plan: '计划 {{done}}/{{total}}',
     prompt: {
@@ -218,6 +247,13 @@ const zhCN: AgentSessionsResource = {
     truncated: '只显示前 500 个文件夹。',
   },
   computers: {
+    outdated: {
+      title: '请更新这台电脑上的命令行（{{host}}）',
+      body: '应用拒绝了它的连接：它使用桥接协议 {{bridgeProtocol}}，应用需要 {{protocol}}。在这台电脑上运行：',
+      restart:
+        '更新后的命令行会自动重启后台连接；如果几分钟内仍未重新连接，请运行：',
+    },
+    offline: '离线',
     title: '我的电脑',
     description:
       '这里的电脑只运行你自己的会话，Agent 以你的身份工作。给团队跑后台任务的机器在别处管理。',
@@ -247,7 +283,6 @@ const zhCN: AgentSessionsResource = {
       agent: '装好一个编程 Agent 并登录',
       agentHint:
         'Codex、Claude Code、Gemini CLI、GitHub Copilot、Cursor、Qwen Code、Kimi CLI 等都可以，用它自己的命令登录。建议使用你能用的最强模型。',
-      install: '安装命令行',
       login: '用你的账号登录',
       start: '让这台电脑保持在线',
       startHint: '在后台运行，以后开机自动连接；断网或休眠后会自己重连。',

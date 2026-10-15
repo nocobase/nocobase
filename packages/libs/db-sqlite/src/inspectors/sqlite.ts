@@ -71,12 +71,12 @@ interface SqliteIndexListRow {
   readonly partial: 0 | 1;
 }
 
-interface SqliteIndexInfoRow {
-  readonly seqno: number;
-  readonly cid: number;
-  readonly name: string | null;
-  readonly desc: 0 | 1;
-  readonly key: 0 | 1;
+interface SqliteIndexRow extends SqliteIndexListRow {
+  readonly sql: string | null;
+  readonly key_seqno: number | null;
+  readonly key_name: string | null;
+  readonly key_desc: 0 | 1 | null;
+  readonly key_coll: string | null;
 }
 
 interface SqliteForeignKeyRow {
@@ -148,7 +148,10 @@ export class SqliteSchemaInspector extends BaseSchemaInspector {
       });
     }
 
-    const indexResult = await this.readIndexes(knex, row.name);
+    // PRAGMA exposes index collations but not column collations. Without a
+    // COLLATE clause columns use BINARY; otherwise compatibility is unknown.
+    const binaryColumns = Boolean(row.sql && !/\bcollate\b/i.test(row.sql));
+    const indexResult = await this.readIndexes(knex, row.name, binaryColumns);
     warnings.push(...indexResult.warnings);
     const foreignKeys = await this.readForeignKeys(knex, row.name);
     const checkConstraints =
@@ -279,39 +282,58 @@ export class SqliteSchemaInspector extends BaseSchemaInspector {
   private async readIndexes(
     knex: Knex,
     tableName: string,
+    binaryColumns: boolean,
   ): Promise<{
     indexes: PhysicalIndexSchema[];
     uniqueConstraints: PhysicalUniqueConstraintSchema[];
     status: 'complete' | 'partial';
     warnings: SchemaInspectionWarning[];
   }> {
-    const list = rawRows<SqliteIndexListRow>(
-      await knex.raw('select * from pragma_index_list(?)', [tableName]),
-    ).sort((left, right) => left.seq - right.seq);
+    // PRAGMA table-valued functions can be joined: inspect every index and
+    // its SQL together instead of issuing two extra queries per index.
+    const rows = rawRows<SqliteIndexRow>(
+      await knex.raw(
+        `
+        select il.*, s.sql, xi.seqno as key_seqno,
+          xi.name as key_name, xi.desc as key_desc, xi.coll as key_coll
+        from pragma_index_list(?) as il
+        left join sqlite_schema as s on s.type = 'index' and s.name = il.name
+        left join pragma_index_xinfo(il.name) as xi on xi.key = 1
+        order by il.seq, xi.seqno
+      `,
+        [tableName],
+      ),
+    );
+    const groups = new Map<
+      string,
+      { index: SqliteIndexRow; keys: SqliteIndexRow[] }
+    >();
+    for (const row of rows) {
+      let group = groups.get(row.name);
+      if (!group) {
+        group = { index: row, keys: [] };
+        groups.set(row.name, group);
+      }
+      if (row.key_seqno !== null) group.keys.push(row);
+    }
     const indexes: PhysicalIndexSchema[] = [];
     const uniqueConstraints: PhysicalUniqueConstraintSchema[] = [];
     const warnings: SchemaInspectionWarning[] = [];
     let status: 'complete' | 'partial' = 'complete';
 
-    for (const index of list) {
-      const info = rawRows<SqliteIndexInfoRow>(
-        await knex.raw('select * from pragma_index_xinfo(?)', [index.name]),
-      )
-        .filter((key) => key.key === 1)
-        .sort((left, right) => left.seqno - right.seqno);
-      const schemaRow = await knex<SqliteSchemaRow>('sqlite_schema')
-        .select('sql')
-        .where({ type: 'index', name: index.name })
-        .first();
-      const parsed = parseSqliteIndexSql(schemaRow?.sql ?? null);
+    for (const { index, keys: info } of groups.values()) {
+      const parsed = parseSqliteIndexSql(index.sql);
       const keys: PhysicalIndexKey[] = info.map((key) => {
-        if (key.name) {
+        if (key.key_name) {
           return {
-            columnName: key.name,
-            order: key.desc === 1 ? 'desc' : 'asc',
+            columnName: key.key_name,
+            order: key.key_desc === 1 ? 'desc' : 'asc',
+            ...(binaryColumns && key.key_coll === 'BINARY'
+              ? {}
+              : { columnEquality: false }),
           };
         }
-        const expression = parsed.keys[key.seqno];
+        const expression = parsed.keys[key.key_seqno!];
         if (!expression) {
           status = 'partial';
           warnings.push({
@@ -323,7 +345,7 @@ export class SqliteSchemaInspector extends BaseSchemaInspector {
         }
         return {
           expression,
-          order: key.desc === 1 ? 'desc' : 'asc',
+          order: key.key_desc === 1 ? 'desc' : 'asc',
         };
       });
       const constraintKind =
@@ -337,6 +359,7 @@ export class SqliteSchemaInspector extends BaseSchemaInspector {
         keys,
         unique: index.unique === 1,
         backsConstraint: constraintKind ? { kind: constraintKind } : undefined,
+        ...(index.partial === 1 ? { partial: true } : {}),
         predicate: index.partial === 1 ? parsed.predicate : undefined,
       });
       if (index.partial === 1 && !parsed.predicate) {
@@ -347,9 +370,9 @@ export class SqliteSchemaInspector extends BaseSchemaInspector {
           aspect: 'indexes',
         });
       }
-      if (index.origin === 'u' && info.every((key) => key.name !== null)) {
+      if (index.origin === 'u' && info.every((key) => key.key_name !== null)) {
         uniqueConstraints.push({
-          columns: info.map((key) => key.name as string),
+          columns: info.map((key) => key.key_name as string),
         });
       }
     }

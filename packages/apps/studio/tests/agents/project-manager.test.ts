@@ -5,6 +5,7 @@
  * statuses it may move an issue between, and the comment run limit with its continuation (`/issueCommentRuns`).
  */
 import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
+import identitySeed from '../../database/main/seeds/202610250010_studio_project_manager_identity.js';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -57,6 +58,9 @@ async function update(
   const current = await h.projects.issueQueries.detail(alice(), issue.id);
   return h.projects.issues.update(viewer as never, issue.id, {
     revision: current.revision,
+    ...(patch.statusKey === 'blocked' || patch.statusKey === 'in_review'
+      ? { needsYou: 'Choose how to proceed.' }
+      : {}),
     ...patch,
   });
 }
@@ -95,6 +99,153 @@ const progress = async (issueId: string) => {
 };
 
 describe('the project manager’s settings', () => {
+  it('shows current identities on old comments, activities, executors and completed runs after Chinese upgrade and two renames', async () => {
+    const issue = await create();
+    const comment = await h.projects.comments.create(
+      asAgent(PROJECT_MANAGER_ID),
+      issue.id,
+      { content: 'Historical Project manager body' },
+    );
+    const queued = await h.agents.runs.enqueue({
+      agentId: PROJECT_MANAGER_ID,
+      subject: { kind: 'issue', id: issue.id },
+      actorUserId: 'alice',
+      input: {
+        type: 'comment',
+        actor: {
+          kind: 'agent',
+          id: PROJECT_MANAGER_ID,
+          name: 'Project manager',
+        },
+        text: 'Historical Project manager input',
+      },
+    });
+    const conn = h.database.connection();
+    await conn.query
+      .updateTable('agRuns')
+      .set({ status: 'completed' })
+      .where('id', '=', queued.runId)
+      .execute();
+    await conn.query
+      .updateTable('studioSettings')
+      .set({
+        value: JSON.stringify({
+          firstChoiceAgentId: coder,
+          unknown: 'preserved',
+        }),
+      })
+      .where('key', '=', 'projectManager')
+      .execute();
+    await identitySeed.run({
+      query: conn.query,
+      repository: (name: string) => conn.repository(name),
+      config: { get: () => 'zh-CN' },
+    } as never);
+    await h.manager.sync();
+    for (const name of ['项目经理', 'Team lead', '负责人']) {
+      if (name !== '项目经理') await h.manager.update('root', { name });
+      const comments = await h.request(
+        'GET',
+        `/projects/issues/${issue.id}/comments`,
+        { user: 'alice' },
+      );
+      expect(comments.body.data[0].root).toMatchObject({
+        authorName: name,
+        content: 'Historical Project manager body',
+      });
+      expect(
+        (await h.projects.issueQueries.detail(alice(), issue.id)).executorName,
+      ).toBe(name);
+      const activities = (
+        await h.projects.issueQueries.activities(alice(), issue.id, {})
+      ).data.filter((activity) => activity.actorId === PROJECT_MANAGER_ID);
+      expect(activities.length).toBeGreaterThan(0);
+      expect(activities.every((activity) => activity.actorName === name)).toBe(
+        true,
+      );
+      const run = await h.request('GET', `/issueRuns/${queued.runId}`, {
+        user: 'root',
+      });
+      expect(run.status).toBe(200);
+      expect(run.body.data.inputs[0].actor).toBe(name);
+      expect(
+        (await h.agents.runs.detail(queued.runId)).inputs[0].actor.name,
+      ).toBe(name);
+    }
+    expect(comment.comment.content).toBe('Historical Project manager body');
+    const stored = await conn.query
+      .selectFrom('agRunInputs')
+      .select('actorName')
+      .where('runId', '=', queued.runId)
+      .executeTakeFirstOrThrow();
+    expect(stored.actorName).toBe('Project manager');
+    const settings = await conn
+      .repository('studioSettings')
+      .findOne({ filter: { key: 'projectManager' } });
+    const raw =
+      typeof settings?.value === 'string'
+        ? (JSON.parse(settings.value) as Record<string, unknown>)
+        : settings?.value;
+    expect(raw).toMatchObject({ unknown: 'preserved' });
+  });
+  it('keeps renamed identities and cleared descriptions through repeated saves and startup', async () => {
+    await h.manager.update('root', {
+      fallbackAfterSeconds: 137,
+      delegationQueueTimeoutSeconds: 731,
+    });
+    for (const name of ['Team lead', '项目负责人']) {
+      const result = await h.request('PATCH', '/projectManager', {
+        user: 'root',
+        body: { name: ` ${name} `, description: '' },
+      });
+      expect(result.status).toBe(200);
+      expect(result.body.data).toMatchObject({ name, description: null });
+      await h.manager.ready();
+      await h.request('PATCH', '/projectManager', {
+        user: 'root',
+        body: { commentRunLimit: 10 },
+      });
+      expect(await h.agents.agents.get(PROJECT_MANAGER_ID)).toMatchObject({
+        name,
+        description: null,
+        nameText: null,
+      });
+      expect((await h.agents.agents.get(coder)).name).toBe('Coder');
+      expect(await h.manager.settings()).toMatchObject({
+        fallbackAfterSeconds: 137,
+        delegationQueueTimeoutSeconds: 731,
+      });
+    }
+    for (const description of [null, '', '   ']) {
+      expect(
+        (
+          await h.request('PATCH', '/projectManager', {
+            user: 'root',
+            body: { description },
+          })
+        ).body.data.description,
+      ).toBeNull();
+      await h.manager.ready();
+      expect((await h.manager.settings()).description).toBeNull();
+    }
+    for (const name of [null, '', '  ', 'a'.repeat(201)])
+      expect(
+        (
+          await h.request('PATCH', '/projectManager', {
+            user: 'root',
+            body: { name },
+          })
+        ).status,
+      ).toBe(400);
+    expect(
+      (
+        await h.request('PATCH', '/projectManager', {
+          user: 'root',
+          body: { description: 'a'.repeat(10_001) },
+        })
+      ).status,
+    ).toBe(400);
+  });
   it('keeps six enabled configurations and settings through repeated startup synchronization', async () => {
     const ids: string[] = [];
     const models = [
@@ -139,7 +290,6 @@ describe('the project manager’s settings', () => {
             modelEntries: agent.modelEntries,
             status: agent.status,
             instructions: agent.instructions,
-            skillIds: agent.skillIds,
             toolPolicy: agent.toolPolicy,
             history: await h.agents.agents.history(id),
           };
@@ -310,6 +460,12 @@ describe('the project manager’s settings', () => {
       .instructions;
     expect(instructions).toContain('You are the project manager of the issue');
     expect(instructions).toContain('Give every step to the Coder.');
+    expect(instructions).toContain(
+      'Every explicit blocked or in_review status submission from your authenticated manager run MUST include a nonblank needsYou in the same request',
+    );
+    expect(instructions).toContain(
+      'This requirement applies regardless of custom allocation principles.',
+    );
     expect(instructions).not.toContain('## When to ask for a short approach');
 
     expect((await patch(null)).body.data.principles).toBeNull();
@@ -465,12 +621,14 @@ describe('what an issue waits for', () => {
     const issue = await create();
     expect(await progress(issue.id)).toEqual({
       state: 'notStarted',
+      personalRunnerRequests: [],
       agent: null,
       step: null,
       since: null,
       runner: null,
       pullRequest: null,
-      question: null,
+      needsYou: null,
+      explanationCommentId: null,
       next: null,
       handOver: false,
     });
@@ -492,8 +650,13 @@ describe('what an issue waits for', () => {
       runner: 'runner',
     });
 
+    await update(
+      issue,
+      { next: 'once the Coder reports, ask for a review.' },
+      asAgent(PROJECT_MANAGER_ID),
+    );
     await h.projects.comments.create(asAgent(PROJECT_MANAGER_ID), issue.id, {
-      content: `Next: once the Coder reports, ask for a review.\n\n[@Coder](mention://agent/${coder}) Implement the export of the list.\n\nReply with the pull request.`,
+      content: `[@Coder](mention://agent/${coder}) Implement the export of the list.\n\nReply with the pull request.`,
     });
     expect(await progress(issue.id)).toMatchObject({
       state: 'working',
@@ -508,7 +671,7 @@ describe('what an issue waits for', () => {
       runner: 'runner',
       next: 'once the Coder reports, ask for a review.',
     });
-    // The step is the hand-over's first line after the project manager's "Next" line.
+    // The step is the hand-over's first line; structured next is independent of this comment.
     expect(working.step).toBe('Implement the export of the list.');
     expect(working.since).toEqual(expect.any(String));
   });
@@ -552,36 +715,74 @@ describe('what an issue waits for', () => {
     });
   });
 
-  it('needs a decision on a blocked issue: the project manager’s question, and its "Next" line', async () => {
-    const issue = await create({ statusKey: 'in_progress', start: false });
-    await h.projects.comments.create(asAgent(PROJECT_MANAGER_ID), issue.id, {
-      content:
-        'Next: once you choose, hand the change to the Coder.\n\nShould the export include **deleted** issues?',
-    });
-    await update(issue, { statusKey: 'blocked' }, asAgent(PROJECT_MANAGER_ID));
-    expect(await progress(issue.id)).toMatchObject({
-      state: 'needsDecision',
-      question: 'Should the export include **deleted** issues?',
-      next: 'once you choose, hand the change to the Coder.',
-    });
-  });
+  it.each(['blocked', 'in_review'])(
+    'keeps structured progress through status-before-comment flow for %s',
+    async (statusKey) => {
+      const issue = await create({ statusKey: 'in_progress', start: false });
+      const { comment: old } = await h.projects.comments.create(
+        asAgent(PROJECT_MANAGER_ID),
+        issue.id,
+        { content: 'Next: obsolete step.\nNeeds you: obsolete question.' },
+      );
+      const needsYou = 'Choose **this** source.\nProvide its URL.';
+      await update(
+        issue,
+        { statusKey, needsYou, next: 'Implement the chosen source.' },
+        asAgent(PROJECT_MANAGER_ID),
+      );
+      expect(await progress(issue.id)).toMatchObject({
+        needsYou,
+        next: 'Implement the chosen source.',
+        explanationCommentId: old.id,
+      });
+      const { comment: latest } = await h.projects.comments.create(
+        asAgent(PROJECT_MANAGER_ID),
+        issue.id,
+        { content: 'A detailed explanation with no progress labels.' },
+      );
+      expect(await progress(issue.id)).toMatchObject({
+        needsYou,
+        next: 'Implement the chosen source.',
+        explanationCommentId: latest.id,
+      });
+      await h.projects.comments.remove(asAgent(PROJECT_MANAGER_ID), latest.id);
+      expect(await progress(issue.id)).toMatchObject({
+        needsYou,
+        explanationCommentId: old.id,
+      });
+      await update(issue, { statusKey: 'in_progress' });
+      expect(await progress(issue.id)).toMatchObject({
+        needsYou: null,
+        next: 'Implement the chosen source.',
+      });
+    },
+  );
 
-  it('is in review, idle, and reads a "Next" line written in Chinese', async () => {
-    const issue = await create({ statusKey: 'in_progress', start: false });
-    expect((await progress(issue.id)).state).toBe('idle');
-    await h.projects.comments.create(asAgent(PROJECT_MANAGER_ID), issue.id, {
-      content: '接下来：等你验收。\n\n改动已就绪。',
-    });
-    await update(
-      issue,
-      { statusKey: 'in_review' },
-      asAgent(PROJECT_MANAGER_ID),
-    );
-    expect(await progress(issue.id)).toMatchObject({
-      state: 'inReview',
-      next: '等你验收。',
-    });
-  });
+  it.each(['blocked', 'in_review'])(
+    'reads historical null fields without parsing comments for %s',
+    async (statusKey) => {
+      const issue = await create({ statusKey: 'in_progress', start: false });
+      await h.database
+        .connection()
+        .repository('pmIssues')
+        .updateOne({ filter: { id: issue.id }, values: { statusKey } });
+      expect(await progress(issue.id)).toMatchObject({
+        needsYou: null,
+        next: null,
+        explanationCommentId: null,
+      });
+      const { comment } = await h.projects.comments.create(
+        asAgent(PROJECT_MANAGER_ID),
+        issue.id,
+        { content: '接下来：过时的下一步。\n需要你：旧的问题。' },
+      );
+      expect(await progress(issue.id)).toMatchObject({
+        needsYou: null,
+        next: null,
+        explanationCommentId: comment.id,
+      });
+    },
+  );
 
   it('refuses a caller who may not view issues', async () => {
     const issue = await create();

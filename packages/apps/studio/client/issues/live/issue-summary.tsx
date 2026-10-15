@@ -1,9 +1,11 @@
+import { Link, useSearchParams } from 'react-router';
+import { usePendingCommentRun } from '../detail/use-pending-comment-run.js';
 /**
  * What an issue is at now, on the issue page (pinned above its feed) and on "My follow-ups": a title row (key, status,
  * title, the page's `actions`, and "Collapse summary" when `collapsible`), then its pull request with checks and
  * conflicts, the "Now" line with "Start" and the hand-over (`../detail/issue-progress.tsx`), what the viewer has to do
- * when it waits for them, and in review the delivery: the agent comment that tells what was delivered, cut short, with
- * Merge, View changes and Send back (to In progress).
+ * when it waits for them: the complete structured request, its latest explanation link, and
+ * Reply, Merge, View changes and Send back (to In progress).
  */
 import {
   canEditIssues,
@@ -53,12 +55,13 @@ import { useIssuePreviews } from '../../previews/use-issue-previews.js';
 import { progressSentence } from '../detail/progress-text.js';
 import { useIssueProgress } from '../detail/use-issue-progress.js';
 import { IssueMarkdown } from '../markdown.js';
-import { Clamped } from './clamped.js';
 import { useOptionalIssueConversation } from './conversation-state.js';
-import { deliveryCommentOf } from './feed-rows.js';
 import { StatusPill } from './status.js';
 import { askOf } from './summary-model.js';
+import { IssueCommentRunLimit } from '../detail/comment-run-limit.js';
 import { useOutOfView } from './use-out-of-view.js';
+import { Clamped } from './clamped.js';
+import { PersonalRunnerActions } from '../detail/personal-runner-actions.js';
 
 /** Renaming the issue from its title, with the words for the pencil and the input. */
 export interface SummaryRename {
@@ -80,6 +83,8 @@ export function IssueSummary({
   headingLevel = 2,
   rename,
   runsBase,
+  statusControl,
+  meta = true,
   className,
 }: {
   readonly issue: IssueDetail;
@@ -102,6 +107,10 @@ export function IssueSummary({
   readonly rename?: SummaryRename;
   /** Where the live run's record opens from, such as `/issues/PM-12`; the issue's own path by default. */
   readonly runsBase?: string;
+  /** Takes the status badge's place, such as a menu that changes the status (the split view). */
+  readonly statusControl?: ReactNode;
+  /** The key, status and actions row under the title; off where the frame shows them, as the split view's top row does. */
+  readonly meta?: boolean;
   /** The summary's frame. */
   readonly className?: string;
 }): ReactElement {
@@ -191,12 +200,21 @@ export function IssueSummary({
               {...(rename ? { rename } : {})}
             />
             {/* Key and status, then the actions as icon buttons on a phone, all on one row. */}
-            <div className='flex min-w-0 flex-wrap items-center gap-2'>
+            <div
+              className={cn(
+                'flex min-w-0 flex-wrap items-center gap-2',
+                !meta && 'hidden',
+              )}
+            >
               <span className='flex items-center gap-2'>
-                <span className='font-mono text-sm text-muted-foreground'>
-                  {issue.identifier}
-                </span>
-                <StatusPill statusKey={issue.statusKey} />
+                {statusControl ?? (
+                  <>
+                    <span className='font-mono text-sm text-muted-foreground'>
+                      {issue.identifier}
+                    </span>
+                    <StatusPill statusKey={issue.statusKey} />
+                  </>
+                )}
               </span>
               <span className='ml-auto flex flex-wrap items-center gap-1.5 max-md:[&_[data-slot=button]]:h-8 max-md:[&_[data-slot=button]]:px-2'>
                 {actions}
@@ -216,6 +234,7 @@ export function IssueSummary({
               issue={issue}
               update={update}
               ask={ask}
+              progress={progress ?? null}
               checks={checks}
               conflict={Boolean(mark?.conflict)}
               pullRequests={pullRequests}
@@ -388,7 +407,11 @@ function NeedsYou({
 }): ReactElement | null {
   const { t } = useTranslation();
   const conversation = useOptionalIssueConversation();
-  if (progress?.waiting?.reason === 'waitingOwner')
+  if (
+    progress?.waiting?.reason === 'waitingOwner' &&
+    issue.statusKey !== BLOCKED_STATUS &&
+    issue.statusKey !== IN_REVIEW_STATUS
+  )
     return (
       <span
         className='flex min-w-0 flex-wrap items-center gap-2 text-sm'
@@ -414,8 +437,20 @@ function NeedsYou({
       open &&
       pullRequests?.canMerge ? (
         <MergeButtons issue={issue} pullRequest={open} mergeOnly />
-      ) : issue.statusKey === BLOCKED_STATUS && conversation?.mayComment ? (
-        <Button size='sm' onClick={() => conversation.openComposer()}>
+      ) : issue.statusKey === BLOCKED_STATUS &&
+        progress?.explanationCommentId &&
+        progress.state !== 'waitingForContinuation' &&
+        conversation?.mayComment ? (
+        <Button
+          size='sm'
+          onClick={() => {
+            conversation.setReplyTo({
+              id: progress.explanationCommentId!,
+              authorName: t('projectManager.title'),
+            });
+            conversation.openComposer();
+          }}
+        >
           <MessageSquareIcon data-icon='inline-start' />
           {t('issueLive.summary.answer')}
         </Button>
@@ -425,14 +460,15 @@ function NeedsYou({
 }
 
 /**
- * What waits for the viewer, as one card: accepting the work in review (the pull request, its checks, the manager's
- * delivery report and the decisions on it), an owner handoff to take over, or a question to answer. Without any, the
+ * What waits for the viewer, as one card: the structured owner request with review or reply controls,
+ * an owner handoff to take over, or a continuation decision. Without any, the
  * `fallback` (the pull request's line).
  */
 function NeedsYouCard({
   issue,
   update,
   ask,
+  progress,
   checks,
   conflict,
   pullRequests,
@@ -441,6 +477,7 @@ function NeedsYouCard({
   readonly issue: IssueDetail;
   readonly update: IssueUpdate;
   readonly ask: string | null;
+  readonly progress: IssueProgress | null;
   readonly checks: string | null;
   readonly conflict: boolean;
   readonly pullRequests: IssuePullRequests | undefined;
@@ -450,6 +487,9 @@ function NeedsYouCard({
   const viewer = useViewer();
   const conversation = useOptionalIssueConversation();
   const handoff = useOwnerHandoffView(issue.id).data;
+  const pending = usePendingCommentRun(issue).data;
+  const ownerStatus =
+    issue.statusKey === BLOCKED_STATUS || issue.statusKey === IN_REVIEW_STATUS;
   // On a phone a full-width tinted band rather than a card.
   const frame =
     'flex flex-col gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm max-md:-mx-4 max-md:rounded-none max-md:border-x-0 max-md:px-4';
@@ -461,14 +501,82 @@ function NeedsYouCard({
       <strong className='font-semibold'>
         {t('issueLive.summary.needsYou')}
       </strong>
-      <span className='min-w-0 font-medium wrap-break-word'>{text}</span>
+      <span className='min-w-0 font-medium wrap-break-word'>
+        <IssueMarkdown content={text} />
+      </span>
       {extra}
     </div>
   );
+  if (handoffWaitsOn(handoff) && !ownerStatus)
+    return (
+      <section aria-label={t('issueLive.summary.needsYou')} className={frame}>
+        {heading(t('issueLive.summary.takeOver'))}
+        <OwnerHandoffActions issueId={issue.id} />
+      </section>
+    );
+  const consent =
+    progress?.personalRunnerRequests?.filter((request) => request.canDecide) ??
+    [];
+  if (consent.length && !ownerStatus)
+    return (
+      <section aria-label={t('issueLive.summary.needsYou')} className={frame}>
+        {consent.map((request, index) => (
+          <div
+            key={request.id}
+            className='flex flex-col gap-2'
+            data-request-id={request.id}
+          >
+            {index === 0 ? (
+              heading(
+                t('issueLive.personalRunner.request', {
+                  name: request.requestedBy.name,
+                }),
+              )
+            ) : (
+              <IssueMarkdown
+                content={t('issueLive.personalRunner.request', {
+                  name: request.requestedBy.name,
+                })}
+              />
+            )}
+            <Clamped>
+              <IssueMarkdown
+                content={request.commentText}
+                className='text-sm'
+              />
+            </Clamped>
+            <PersonalRunnerActions request={request} />
+          </div>
+        ))}
+      </section>
+    );
+  const ownerActions =
+    ownerStatus &&
+    (handoffWaitsOn(handoff) || consent.length > 0 || pending) ? (
+      <div className='flex flex-wrap items-center gap-2'>
+        {handoffWaitsOn(handoff) ? (
+          <OwnerHandoffActions issueId={issue.id} />
+        ) : null}
+        {consent.map((request) => (
+          <div
+            key={request.id}
+            data-request-id={request.id}
+            className='flex flex-wrap items-center gap-2'
+          >
+            <span className='text-xs text-muted-foreground'>
+              {t('issueLive.personalRunner.request', {
+                name: request.requestedBy.name,
+              })}
+            </span>
+            <PersonalRunnerActions request={request} />
+          </div>
+        ))}
+        {pending ? <IssueCommentRunLimit issue={issue} actionsOnly /> : null}
+      </div>
+    ) : null;
   if (issue.statusKey === IN_REVIEW_STATUS && ask) {
     const open = pullRequests?.data.find((pr) => pr.state === 'open') ?? null;
     const shown = open ?? pullRequests?.data[0] ?? null;
-    const delivery = deliveryCommentOf(issue);
     const state = [checks, conflict ? t('issueLive.summary.conflict') : null]
       .filter(Boolean)
       .join(' · ');
@@ -479,38 +587,13 @@ function NeedsYouCard({
         className={frame}
       >
         {heading(
-          open
-            ? t('issueLive.summary.acceptPullRequest', {
-                label: `PR #${open.number}`,
-                title: open.title,
-              })
-            : ask,
+          ask,
           state ? (
             <span className='text-xs text-muted-foreground'>{state}</span>
           ) : null,
         )}
-        <div className='flex flex-col gap-1 rounded-md bg-background/70 px-3 py-2 max-md:rounded-none max-md:border-t max-md:border-amber-500/30 max-md:bg-transparent max-md:px-0 max-md:pt-2.5 max-md:pb-0'>
-          <h3 className='text-xs font-medium text-muted-foreground'>
-            {delivery?.report
-              ? t('issueLive.summary.delivery')
-              : t('issueLive.summary.latestAgentComment')}
-            {delivery?.comment.authorName
-              ? ` · ${delivery.comment.authorName}`
-              : null}
-          </h3>
-          {delivery ? (
-            <Clamped>
-              <IssueMarkdown
-                content={delivery.comment.content}
-                className='text-sm'
-              />
-            </Clamped>
-          ) : (
-            <p className='text-muted-foreground'>
-              {t('issueLive.summary.deliveryNone')}
-            </p>
-          )}
-        </div>
+        <ExplanationLink commentId={progress?.explanationCommentId} />
+        {ownerActions}
         <div className='flex flex-wrap items-center gap-2 max-md:flex-nowrap max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:[&_[data-slot=button]]:h-8 max-md:[&_[data-slot=button]]:shrink-0'>
           {open && pullRequests?.canMerge ? (
             <MergeButtons issue={issue} pullRequest={open} />
@@ -546,20 +629,30 @@ function NeedsYouCard({
       </section>
     );
   }
-  if (handoffWaitsOn(handoff))
-    return (
-      <section aria-label={t('issueLive.summary.needsYou')} className={frame}>
-        {heading(t('issueLive.summary.takeOver'))}
-        <OwnerHandoffActions issueId={issue.id} />
-      </section>
-    );
+  if (pending && !ownerStatus) return <IssueCommentRunLimit issue={issue} />;
   if (ask)
     return (
       <section aria-label={t('issueLive.summary.needsYou')} className={frame}>
-        {heading(ask)}
+        {heading(
+          issue.statusKey === BLOCKED_STATUS
+            ? (progress?.needsYou ?? ask)
+            : ask,
+        )}
+        <ExplanationLink commentId={progress?.explanationCommentId} />
+        {ownerActions}
         {conversation?.mayComment ? (
           <div>
-            <Button size='sm' onClick={() => conversation.openComposer()}>
+            <Button
+              size='sm'
+              onClick={() => {
+                if (progress?.explanationCommentId)
+                  conversation.setReplyTo({
+                    id: progress.explanationCommentId,
+                    authorName: t('projectManager.title'),
+                  });
+                conversation.openComposer();
+              }}
+            >
               <MessageSquareIcon data-icon='inline-start' />
               {t('issueLive.summary.answer')}
             </Button>
@@ -630,5 +723,25 @@ function PullRequestLine({
         </a>
       ) : null}
     </p>
+  );
+}
+
+function ExplanationLink({
+  commentId,
+}: {
+  readonly commentId: string | null | undefined;
+}): ReactElement | null {
+  const { t } = useTranslation();
+  const [params] = useSearchParams();
+  if (!commentId) return null;
+  const next = new URLSearchParams(params);
+  next.set('comment', commentId);
+  return (
+    <Link
+      className='self-start text-sm font-medium text-primary underline-offset-4 hover:underline'
+      to={{ search: next.toString() }}
+    >
+      {t('issueLive.summary.explanation')}
+    </Link>
   );
 }

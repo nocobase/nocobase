@@ -4,6 +4,7 @@
  * in the application's locales (`client/locales/en-US.ts` and `zh-CN.ts` spread these in).
  */
 export const knowledgeEnUS = {
+  shared: 'Shared across projects',
   systemTitle: 'System knowledge',
   switcher: { projects: 'Project knowledge' },
   access: {
@@ -45,6 +46,7 @@ export const knowledgeEnUS = {
   },
   search: { inherited: 'System' },
   searchSettings: {
+    loadFailed: 'Could not load the knowledge search settings.',
     none: 'None',
     save: 'Save',
     saved: 'Knowledge search settings saved',
@@ -215,6 +217,7 @@ export const knowledgeEnUS = {
 };
 
 export const knowledgeZhCN: typeof knowledgeEnUS = {
+  shared: '跨项目共享',
   systemTitle: '系统知识',
   switcher: { projects: '项目知识' },
   access: {
@@ -254,6 +257,7 @@ export const knowledgeZhCN: typeof knowledgeEnUS = {
   },
   search: { inherited: '系统' },
   searchSettings: {
+    loadFailed: '无法读取知识检索设置。',
     none: '无',
     save: '保存',
     saved: '知识检索设置已保存',

@@ -55,23 +55,54 @@ export async function managerDelegation(
   conn: DatabaseConnection,
   run: Run,
 ): Promise<{ readonly commentId: string } | null> {
-  if (run.subject.kind !== 'issue' || run.agentId === PROJECT_MANAGER_ID)
-    return null;
-  const input = await managerDispatchInput(conn, run.id);
-  if (
-    !input ||
-    input.actorKind !== 'agent' ||
-    input.actorId !== PROJECT_MANAGER_ID
-  )
-    return null;
-  const payload = jsonObject(input.payload);
-  const source = jsonObject(payload.managerDelegation);
-  return payload.trigger === 'mention' &&
-    source.delegatedBy === PROJECT_MANAGER_ID &&
-    source.actorUserId === run.actorUserId &&
-    typeof source.commentId === 'string'
-    ? { commentId: source.commentId }
-    : null;
+  type SourceRun = Pick<
+    Run,
+    'id' | 'subject' | 'agentId' | 'actorUserId' | 'retryOfRunId'
+  >;
+  let current: SourceRun = run;
+  const seen = new Set<string>();
+  while (!seen.has(current.id)) {
+    seen.add(current.id);
+    if (
+      current.subject.kind !== 'issue' ||
+      current.agentId === PROJECT_MANAGER_ID
+    )
+      return null;
+    const input = await managerDispatchInput(conn, current.id);
+    if (input) {
+      const payload = jsonObject(input.payload);
+      const source = jsonObject(payload.managerDelegation);
+      if (
+        source.actorUserId === current.actorUserId &&
+        typeof source.commentId === 'string'
+      )
+        return { commentId: source.commentId };
+    }
+    if (!current.retryOfRunId) return null;
+    // A retry's server-owned lineage can inherit the original dispatch, while copied inputs retain their old IDs.
+    const previous = await conn
+      .repository<{
+        id: string;
+        subjectKind: string;
+        subjectId: string;
+        agentId: string;
+        actorUserId: string;
+        retryOfRunId: string | null;
+      }>('agRuns')
+      .findOne({ filter: { id: current.retryOfRunId } });
+    if (
+      !previous ||
+      previous.subjectKind !== current.subject.kind ||
+      previous.subjectId !== current.subject.id ||
+      previous.agentId !== current.agentId
+    )
+      return null;
+    current = {
+      ...previous,
+      subject: { kind: previous.subjectKind, id: previous.subjectId },
+    };
+  }
+  return null;
 }
 const REASONS: Readonly<Record<string, string>> = {
   ready: 'waiting for the next claim poll',

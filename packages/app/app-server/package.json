@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-server",
-  "version": "2.0.0-beta.5",
+  "version": "2.0.0-beta.7",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -247,9 +247,6 @@
     "prettier": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "@nocobase/db-dameng": "workspace:*",
-    "@nocobase/db-kingbase": "workspace:*",
-    "@nocobase/db-oceanbase": "workspace:*",
     "swagger-ui-dist": "^5.33.1"
   },
   "peerDependencies": {
@@ -264,9 +261,9 @@
     "@nocobase/db-postgres": "workspace:^",
     "@nocobase/db-mssql": "workspace:^",
     "@nocobase/db-oracle": "workspace:^",
-    "@nocobase/db-dameng": "workspace:^",
-    "@nocobase/db-kingbase": "workspace:^",
-    "@nocobase/db-oceanbase": "workspace:^"
+    "@nocobase/db-dameng": "^0.1.0-beta.4",
+    "@nocobase/db-kingbase": "^0.1.0-beta.4",
+    "@nocobase/db-oceanbase": "^0.1.0-beta.4"
   },
   "peerDependenciesMeta": {
     "@nocobase/db-sqlite": {

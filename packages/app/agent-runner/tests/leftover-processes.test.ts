@@ -80,7 +80,8 @@ function findFile(dir: string, name: string): string | undefined {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isFile() && entry.name === name) return full;
-    if (entry.isDirectory()) {
+    // Runtime locks are transient coordination directories, not locations of the fixture file.
+    if (entry.isDirectory() && !entry.name.endsWith('.lock')) {
       const found = findFile(full, name);
       if (found !== undefined) return found;
     }

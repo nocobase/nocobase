@@ -5,6 +5,7 @@ import {
   coalesce,
   MAX_EVENT_TEXT,
   ReportRequestSchema,
+  ReplyRequestSchema,
   type BridgeEvent,
 } from '../src/protocol.js';
 
@@ -26,10 +27,27 @@ describe('the wire protocol', () => {
     cwd: '/home/zhou/code',
     acpSessionId: null,
     settings: { mode: 'agent-full-access' },
-    tools: { name: 'studio', path: '/mcp/agent-sessions', token: 'abc.def' },
   };
 
   it('takes the commands it defines', () => {
+    expect(
+      BridgeCommandSchema.parse({
+        type: 'discoverChoices',
+        requestId: 'request',
+        agentId: 'codex',
+        cwd: '/work',
+        settings: { model: 'actual' },
+      }),
+    ).toMatchObject({ type: 'discoverChoices' });
+    expect(
+      ReplyRequestSchema.parse({
+        computerId: 'computer',
+        requestId: 'request',
+        listing: null,
+        discovery: { status: 'unsupported', choices: [] },
+        error: null,
+      }),
+    ).toMatchObject({ discovery: { status: 'unsupported' } });
     expect(
       BridgeCommandSchema.parse({
         type: 'prompt',
@@ -46,19 +64,6 @@ describe('the wire protocol', () => {
         value: 'x',
       }).success,
     ).toBe(true);
-  });
-
-  it('refuses a tools path that is not a path of the application', () => {
-    const tools = {
-      ...session.tools,
-      path: 'https://elsewhere.example.com/mcp',
-    };
-    expect(
-      BridgeCommandSchema.safeParse({
-        type: 'cancel',
-        session: { ...session, tools },
-      }).success,
-    ).toBe(false);
   });
 
   it('refuses an update without its ACP kind', () => {

@@ -44,11 +44,9 @@ pnpm --filter @nocobase/db-postgres test:integration
 pnpm --filter @nocobase/db-mysql test:integration
 pnpm --filter @nocobase/db-oracle test:integration
 pnpm --filter @nocobase/db-mssql test:integration
-pnpm --filter @nocobase/db-dameng test:integration
 ```
 
-Oracle、SQL Server 和 Dameng 镜像较大，启动时间更长。SQL Server 和
-Dameng 的入口会在数据库健康后自动运行各自的初始化 service。
+Run the commercial dialect suites from `nocobase/nocobase3-pro`, for example `pnpm --filter @nocobase/db-dameng test:integration`. Oracle, SQL Server and Dameng images are large and take longer to start. SQL Server and Dameng run an initialization service after the database is healthy.
 
 每次运行使用随机 Compose project 名和随机 host port，互不共享容器、网络和
 volume，但它们共享同一个 Docker daemon。集成测试必须一个一个跑：并发运行会争抢
@@ -57,7 +55,7 @@ CPU、内存和磁盘 I/O，把 service health check 拖过 start period，得�
 
 ## 全矩阵测试
 
-CI 的 `db-integration` matrix 每个方言一个 runner，在每个 PR 上跑完八个，本地通常不需要重跑一遍。确实需要时，八个方言依次串行执行，不要并发。
+The OSS CI matrix selects from SQLite, PostgreSQL, MySQL, Oracle and SQL Server according to changed paths. KingbaseES, Dameng and OceanBase suites run in `nocobase/nocobase3-pro`. Run local suites sequentially.
 
 ## 指定数据库
 
@@ -148,6 +146,6 @@ Query 真实测试覆盖：
 
 ## 维护注意事项
 
-- 修改 Builder 编译或 adapter 行为后，依次覆盖 `sqlite`、`postgres`、`mysql`、`kingbase`；其余方言由 CI matrix 覆盖。
+- 修改 Builder 编译或 adapter 行为后，依次覆盖 `sqlite`、`postgres`、`mysql`；其余方言由 CI matrix 覆盖。
 - SQLite 通过不代表 PostgreSQL、MySQL、Oracle、SQL Server 或 Dameng 一定通过。
 - 方言问题应优先通过真实集成测试验证。

@@ -1,17 +1,43 @@
 import {
   AgentInfoSchema,
+  DiscoveredChoicesSchema,
+  type DiscoveredChoices,
   PromptContentSchema,
   type PromptContent,
 } from '@nocobase/acp-bridge/protocol';
 import { z } from 'zod';
 
-import type {
-  Computer,
-  FolderListing,
-  Reference,
-  Session,
-  SessionLink,
-  SessionProject,
+export const DiscoverySchema: z.ZodType<DiscoveredChoices> =
+  DiscoveredChoicesSchema.meta({ ref: 'AgentSessionsDiscoveredChoices' });
+export const DiscoverChoicesInput: z.ZodType<{
+  agentId: string;
+  cwd: string;
+  settings: Record<string, string>;
+}> = z.strictObject({
+  agentId: z.string().min(1).max(40).meta({
+    description: 'The installed agent to initialize without a prompt.',
+  }),
+  cwd: z
+    .string()
+    .min(1)
+    .max(1000)
+    .meta({ description: 'The absolute working directory on this computer.' }),
+  settings: z
+    .record(z.string().min(1).max(200), z.string().min(1).max(200))
+    .default({})
+    .meta({
+      description: 'Selected overrides, applied to discover dependent choices.',
+    }),
+});
+
+import {
+  SESSION_LINK_ICONS,
+  type Computer,
+  type FolderListing,
+  type Reference,
+  type Session,
+  type SessionLink,
+  type SessionProject,
 } from '../../shared/api.js';
 
 export const ComputerParams: z.ZodType<{ computerId: string }> = z.object({
@@ -70,7 +96,7 @@ export const ComputerSchema: z.ZodType<Computer> = z
     agents: z.array(AgentInfoSchema),
     choices: z.record(z.string(), z.array(ChoiceSchema)).meta({
       description:
-        'What each agent offered in its latest session there, by agent id: the choices a new session starts from.',
+        'Historical choices from each agent’s latest session, by agent id. New sessions discover their own settings.',
     }),
     commands: z.record(z.string(), z.array(CommandSchema)).meta({
       description:
@@ -89,8 +115,35 @@ export const ComputerSchema: z.ZodType<Computer> = z
     }),
     lastSeenAt: z.string(),
     createdAt: z.string(),
+    outdatedBridge: z
+      .object({
+        host: z.string(),
+        bridgeProtocol: z.number().int(),
+        protocol: z.number().int(),
+        refusedAt: z.string(),
+      })
+      .optional()
+      .meta({
+        description:
+          'Present while its bridge was lately refused for speaking an older protocol than the application: its command line needs an update.',
+      }),
   })
   .meta({ ref: 'AgentSessionsComputer' });
+
+const LinkStatusSchema = z
+  .object({
+    label: z.string(),
+    tone: z.enum(['idle', 'active', 'attention', 'done']),
+    icon: z.enum(SESSION_LINK_ICONS).optional().meta({
+      description:
+        "The status's shape and colour; links without one are drawn by `tone`.",
+    }),
+    needsYou: z.string().nullable().optional().meta({
+      description:
+        'What it waits on the viewer for, such as "Waiting for you to accept".',
+    }),
+  })
+  .nullable();
 
 const LinkSchema: z.ZodType<SessionLink> = z.object({
   kind: z.string(),
@@ -98,12 +151,7 @@ const LinkSchema: z.ZodType<SessionLink> = z.object({
   key: z.string().nullable(),
   title: z.string(),
   group: z.string().nullable(),
-  status: z
-    .object({
-      label: z.string(),
-      tone: z.enum(['idle', 'active', 'attention', 'done']),
-    })
-    .nullable(),
+  status: LinkStatusSchema,
   href: z.string().nullable(),
   startable: z.boolean(),
   decidedAt: z.string().nullable(),
@@ -206,6 +254,7 @@ export const ListEventsQuery: z.ZodType<{ after: number; pageSize: number }> =
   });
 
 export const CreateSessionInput: z.ZodType<{
+  submissionId?: string | undefined;
   computerId: string;
   agentId: string;
   cwd: string;
@@ -214,6 +263,10 @@ export const CreateSessionInput: z.ZodType<{
   projectId?: string | null | undefined;
   mentions?: { kind: string; refId: string }[] | undefined;
 }> = z.strictObject({
+  submissionId: z.uuid().optional().meta({
+    description:
+      'A client UUID retained with immutable input for safe explicit retries.',
+  }),
   computerId: z.string().min(1),
   agentId: z.string().min(1),
   cwd: z
@@ -227,7 +280,7 @@ export const CreateSessionInput: z.ZodType<{
     .optional()
     .meta({
       description:
-        "Choices to open the session with, by choice id, from what the agent offered on the computer (the computer's `choices`).",
+        'Explicit settings by choice id, validated and applied by the newly opened agent session before its first prompt.',
     }),
   projectId: z.string().min(1).nullable().optional().meta({
     description:
@@ -250,9 +303,14 @@ export const UpdateSessionInput: z.ZodType<{
 });
 
 export const PromptInput: z.ZodType<{
+  submissionId?: string | undefined;
   content: PromptContent[];
   mentions?: { kind: string; refId: string }[] | undefined;
 }> = z.strictObject({
+  submissionId: z.uuid().optional().meta({
+    description:
+      'A client UUID retained with immutable input for safe explicit retries.',
+  }),
   content,
   mentions,
 });
@@ -309,12 +367,7 @@ export const ReferenceSchema: z.ZodType<Reference> = z
     key: z.string().nullable(),
     title: z.string(),
     group: z.string().nullable(),
-    status: z
-      .object({
-        label: z.string(),
-        tone: z.enum(['idle', 'active', 'attention', 'done']),
-      })
-      .nullable(),
+    status: LinkStatusSchema,
   })
   .meta({ ref: 'AgentSessionsReference' });
 
@@ -358,3 +411,16 @@ export const UpdateComputerInput: z.ZodType<{ folders: string[] | null }> =
         'The directories sessions may work in, each under what the bridge allows; null for all it allows.',
     }),
   });
+
+/** Work visible to the session owner; progress is supplied by the application's link resolver. */
+export const SessionWorkSchema: z.ZodType<
+  import('../work.js').WorkItem & { readonly progress: unknown }
+> = z.object({
+  kind: z.string(),
+  refId: z.string(),
+  key: z.string().nullable(),
+  title: z.string(),
+  status: z.string().nullable(),
+  group: z.string().nullable(),
+  progress: z.unknown().nullable(),
+});

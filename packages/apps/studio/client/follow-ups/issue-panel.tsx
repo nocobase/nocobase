@@ -27,8 +27,8 @@ import { IssueFeed } from '../issues/live/issue-feed.js';
 import { IssueSummary } from '../issues/live/issue-summary.js';
 import { PhoneBar } from '../layouts/components/phone-bar.js';
 
-/** The issue is read again this often besides the realtime refresh. */
-const POLL_MS = 15_000;
+/** The issue is read again this often besides the realtime refresh, as a fallback. */
+const POLL_MS = 60_000;
 
 export function IssuePanel({
   issueId,
@@ -149,7 +149,7 @@ function LiveIssue({
         className='border-b px-5 py-4 max-md:px-4 max-md:py-3'
         actions={
           <>
-            <FollowToggle issueId={issue.id} />
+            <FollowToggle issueId={issue.id} defaults />
             <Button
               size='sm'
               variant='outline'

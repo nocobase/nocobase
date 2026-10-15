@@ -51,6 +51,9 @@ async function openIssue(
     : h.projects.issues.update(viewer, issue.id, {
         revision: issue.revision,
         statusKey: target,
+        ...(target === 'blocked' || target === 'in_review'
+          ? { needsYou: 'Choose how to proceed.' }
+          : {}),
       });
 }
 
@@ -235,7 +238,7 @@ describe('comments reach agents', () => {
     });
   });
 
-  it('appends another person’s comment to the manager working as the owner', async () => {
+  it('isolates another person’s comment from the manager already working as the owner', async () => {
     await h.createAgent();
     const issue = await openIssue(alice());
     await assign(issue);
@@ -244,25 +247,31 @@ describe('comments reach agents', () => {
       content: 'Use the v2 API.',
     });
     const work = await runsOf(issue.id);
-    expect(work).toHaveLength(1);
-    const next = work[0];
+    expect(work).toHaveLength(2);
+    const next = work.find((run) => run.id !== payload.run.id)!;
     expect(next).toMatchObject({
-      id: payload.run.id,
-      status: 'dispatched',
+      status: 'queued',
       actorUserId: 'alice',
+      requestedByUserId: 'bob',
+      commentRootRunId: next.id,
     });
     expect(
       (await h.agents.runs.detail(payload.run.id)).inputs.some(
         (input) => input.text === 'Use the v2 API.',
       ),
-    ).toBe(true);
+    ).toBe(false);
     expect((await h.agents.runs.detail(next.id)).inputs.at(-1)).toMatchObject({
       type: 'comment',
       text: 'Use the v2 API.',
       actor: { id: 'bob' },
     });
-    const workload = await h.agents.runs.workload({ subjectKind: 'issue' });
-    expect(workload.runs.find((run) => run.id === next.id)?.wait).toBeNull();
+    // Compatible team runners can take the new chain after the current work ends, without a personal decision.
+    expect(
+      await h.agents.runs.requests.pendingOn(h.database.connection(), {
+        kind: 'issue',
+        id: issue.id,
+      }),
+    ).toEqual([]);
   });
 
   it('wakes a mentioned agent, and refuses mentioning one that takes no work', async () => {
@@ -971,7 +980,13 @@ describe('the API as a run', () => {
     const refused = await h.request(
       'PATCH',
       `/projects/issues/${issue.identifier}`,
-      { runToken: token, body: { statusKey: 'in_review' } },
+      {
+        runToken: token,
+        body: {
+          statusKey: 'in_review',
+          needsYou: 'Accept the result or send it back.',
+        },
+      },
     );
     expect(refused.status).toBe(400);
     expect(refused.body.error.reason).toBe('TRANSITION_NOT_ALLOWED');
@@ -979,12 +994,122 @@ describe('the API as a run', () => {
     expect(detail.statusKey).toBe('in_progress');
   });
 
+  it('requires owner input only for authenticated manager direct status requests before any write', async () => {
+    const { issue, token } = await managerRun();
+    const patch = (body: Record<string, unknown>) =>
+      h.request('PATCH', `/projects/issues/${issue.id}`, {
+        runToken: token,
+        body,
+      });
+    for (const statusKey of ['blocked', 'in_review']) {
+      const before = await h.projects.issueQueries.detail(alice(), issue.id);
+      const activities = await h.database
+        .connection()
+        .repository('pmActivities')
+        .count();
+      for (const needsYou of [undefined, null, '', ' \n ']) {
+        const result = await patch({
+          statusKey,
+          needsYou,
+          next: 'Do not save',
+        });
+        expect(result.status).toBe(400);
+        expect(JSON.stringify(result.body)).toContain('NEEDS_YOU_REQUIRED');
+      }
+      expect(
+        await h.projects.issueQueries.detail(alice(), issue.id),
+      ).toMatchObject({
+        revision: before.revision,
+        statusKey: before.statusKey,
+        needsYou: before.needsYou,
+        next: before.next,
+      });
+      expect(
+        await h.database.connection().repository('pmActivities').count(),
+      ).toBe(activities);
+      const result = await patch({
+        statusKey,
+        needsYou: '  Decide on the source.\nProvide its URL.  ',
+      });
+      expect(result.status).toBe(200);
+      expect(result.body.data.issue.needsYou).toBe(
+        '  Decide on the source.\nProvide its URL.  ',
+      );
+      expect((await patch({ statusKey })).status).toBe(400);
+      expect(
+        (await patch({ next: 'Continue after the decision.' })).status,
+      ).toBe(200);
+    }
+    expect((await patch({ statusKey: 'blocked' })).status).toBe(400);
+    expect(
+      (await patch({ statusKey: 'blocked', needsYou: 'x'.repeat(2001) }))
+        .status,
+    ).toBe(400);
+    const malformed = await h.request('PATCH', `/projects/issues/${issue.id}`, {
+      runToken: token,
+      raw: '{',
+      headers: { 'content-type': 'application/json' },
+    });
+    expect(malformed.status).toBe(400);
+    expect(JSON.stringify(malformed.body)).toContain('Malformed JSON');
+    const invalid = await h.request('PATCH', `/projects/issues/${issue.id}`, {
+      runToken: 'invalid-run-token',
+      body: { statusKey: 'blocked', needsYou: 'Choose.' },
+    });
+    expect(invalid.status).toBe(401);
+  });
+
+  it('keeps human progress optional and preserves other agents existing status permissions', async () => {
+    const { issue, token } = await claimedRun({ name: 'Project manager' });
+    for (const statusKey of ['blocked', 'in_review']) {
+      const result = await h.request('PATCH', `/projects/issues/${issue.id}`, {
+        user: 'alice',
+        headers: { 'x-agent-id': PM },
+        body: { statusKey },
+      });
+      expect(result.status).toBe(200);
+      expect(result.body.data.issue.needsYou).toBeNull();
+    }
+    await h.request('PATCH', `/projects/issues/${issue.id}`, {
+      user: 'alice',
+      body: { statusKey: 'in_progress' },
+    });
+    // Studio already restricts status moves by non-manager agents; optional progress does not widen their rights.
+    for (const statusKey of ['blocked', 'in_review']) {
+      for (const extra of [{}, { needsYou: 'Choose.' }]) {
+        const result = await h.request(
+          'PATCH',
+          `/projects/issues/${issue.id}`,
+          {
+            runToken: token,
+            headers: { 'x-agent-id': PM, 'x-agent-role': 'project-manager' },
+            body: { statusKey, ...extra },
+          },
+        );
+        expect(result.status).toBe(400);
+        expect(result.body.error.reason).toBe('TRANSITION_NOT_ALLOWED');
+      }
+    }
+    const edited = await h.request('PATCH', `/projects/issues/${issue.id}`, {
+      runToken: token,
+      body: { next: 'Continue the implementation.' },
+    });
+    expect(edited.status).toBe(200);
+    expect(edited.body.data.issue.needsYou).toBeNull();
+  });
+
   it('lets the project manager move the status between the open statuses, never finishing the issue', async () => {
     const { issue, token, runId } = await managerRun();
     const moved = await h.request(
       'PATCH',
       `/projects/issues/${issue.identifier}`,
-      { runToken: token, body: { statusKey: 'in_review' } },
+      {
+        runToken: token,
+        body: {
+          statusKey: 'in_review',
+          needsYou: 'Accept the result or send it back.',
+        },
+      },
     );
     expect(moved.status).toBe(200);
     expect(moved.body.data.issue.statusKey).toBe('in_review');
@@ -1003,7 +1128,13 @@ describe('the API as a run', () => {
     const blocked = await h.request(
       'PATCH',
       `/projects/issues/${issue.identifier}`,
-      { runToken: token, body: { statusKey: 'blocked' } },
+      {
+        runToken: token,
+        body: {
+          statusKey: 'blocked',
+          needsYou: 'Which database should the migration target?',
+        },
+      },
     );
     expect(blocked.status).toBe(200);
     const restoredBlocked = await h.request(
@@ -1165,6 +1296,41 @@ describe('the API as a run', () => {
 });
 
 describe('claims and endings', () => {
+  it('includes creation attachments in the first run and lets that run download the image', async () => {
+    const png = new File(
+      [
+        Buffer.from(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=',
+          'base64',
+        ),
+      ],
+      'pasted.png',
+      { type: 'image/png' },
+    );
+    const file = await h.projects.attachments.upload(alice(), png);
+    const { issue, token, payload } = await managerRun({
+      attachmentIds: [file.id],
+      description: `![Pasted image](${file.contentUrl})`,
+    });
+    expect(payload.prompt.system).toContain(file.id);
+    expect(payload.prompt.system).toContain('pasted.png');
+    const files = await h.request(
+      'GET',
+      `/projects/issues/${issue.identifier}/attachments`,
+      { runToken: token },
+    );
+    expect(files.status).toBe(200);
+    expect(files.body.data).toMatchObject([{ id: file.id, issueId: issue.id }]);
+    const downloaded = await h.request(
+      'GET',
+      `/projects/attachments/${file.id}/content?download=true`,
+      { runToken: token },
+    );
+    expect(downloaded.status).toBe(200);
+    expect(downloaded.headers.get('content-type')).toContain('image/png');
+    expect(downloaded.body).toContain('PNG');
+  });
+
   it('hands the runner the issue as brief, prompt, context and working directories', async () => {
     h.roles.set('alice', 'admin');
     const project = await h.projects.projects.create(alice(), { name: 'Web' });

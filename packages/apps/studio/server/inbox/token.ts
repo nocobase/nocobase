@@ -13,3 +13,7 @@ export const studioInboxToken: ServiceToken<StudioInbox> =
 /** Studio's inbox as a person and their agents read it (`inbox list`), bound by `StudioInboxProvider`. */
 export const studioInboxSourceToken: ServiceToken<InboxSource> =
   createServiceToken<InboxSource>('studio/inbox-source');
+
+export const decisionReconcilerToken = createServiceToken<
+  import('./reconcile.js').DecisionReconciler
+>('studio/inbox/reconciler');
