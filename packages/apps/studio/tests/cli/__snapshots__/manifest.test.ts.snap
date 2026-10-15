@@ -175,6 +175,9 @@ issue dependency add <issue> <dependsOn> [--type] -> POST /api/projects/issues/{
 issue dependency remove <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/removeDependency (person,run) pm.issues/edit
 issue executor list -> GET /api/projects/executors (person)
 issue get <issue> -> GET /api/projects/issues/{issueId} (person,run) pm.issues/view
+issue handoff accept <issue> -> POST /api/issueOwnerHandoffs/{issueId}/accept (person) pm.issues/edit
+issue handoff get <issue> -> GET /api/issueOwnerHandoffs/{issueId} (person) pm.issues/view
+issue handoff reject <issue> -> POST /api/issueOwnerHandoffs/{issueId}/reject (person) pm.issues/edit
 issue progress <issue> -> GET /api/issueProgress/{issueId} (person)
 issue restore <issue> -> POST /api/projects/issues/{issueId}/restore (person,run) pm.issues/delete
 issue runs [issue] [--limit --page-token] -> GET /api/issueRuns (person,run) pm.issues/view
@@ -182,7 +185,7 @@ issue search [--status --project --owner --executor --label --parent --q --delet
 issue status list -> GET /api/projects/issues/statuses (person)
 issue subscribe <issue> -> POST /api/projects/issues/{issueId}/subscribe (person) pm.issues/view
 issue unsubscribe <issue> -> POST /api/projects/issues/{issueId}/unsubscribe (person) pm.issues/view
-issue update <issue> [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --file] -> PATCH /api/projects/issues/{issueId} (person,run) pm.issues/edit
+issue update <issue> [--needs-you --next --title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --file] -> PATCH /api/projects/issues/{issueId} (person,run) pm.issues/edit
 kb chunking get [--scope! --owner] -> GET /api/knowledge/chunking (person)
 kb chunking set [--scope --owner --override --file] -> PUT /api/knowledge/chunking (person)
 kb doc access get <doc> -> GET /api/knowledge/docs/{docId}/access (person)
@@ -396,7 +399,7 @@ issue get <issue> -> GET /api/projects/issues/{issueId} (person,run) pm.issues/v
 issue restore <issue> -> POST /api/projects/issues/{issueId}/restore (person,run) pm.issues/delete
 issue runs [issue] [--limit --page-token] -> GET /api/issueRuns (person,run) pm.issues/view
 issue search [--status --project --owner --executor --label --parent --q --deleted --order-by --limit --page-token] -> GET /api/projects/issues (person,run) pm.issues/view
-issue update <issue> [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --file] -> PATCH /api/projects/issues/{issueId} (person,run) pm.issues/edit
+issue update <issue> [--needs-you --next --title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --file] -> PATCH /api/projects/issues/{issueId} (person,run) pm.issues/edit
 kb download <doc> [--version --project] -> GET /api/kb/docs/{doc}/file (person,run) kb.knowledge/read
 kb list [--q --parent --project] -> GET /api/kb/docs (person,run) kb.knowledge/read
 kb propose [--doc --title --slug --parent --space --content --summary --reason! --project --verify --changed] -> POST /api/kb/proposals (person,run) kb.knowledge/propose

@@ -98,11 +98,11 @@ Apply the agreed outcome to the manifest and composition roots together, then ve
 
 ## Migrations
 
-A release can ship a migration under `database/`. Copy it in like any added file, then `pnpm nocobase db apply`.
+A release can ship a migration under `database/`, and updated plugins can supply migrations without any application file changing. Copy new application migrations in like other added files, then follow [database upgrades](database-upgrades.md) before applying them or starting the application against retained data.
 
 Never edit a migration that arrives this way, and never edit one already run — a correction goes in a new migration. The user's own migrations and seeds stay byte for byte where they are; an upgrade never rewrites them.
 
-Template cleanup does not authorize deleting previously executed application migrations or seeds, even when they originally came from the template. Preserve their original package owner, paths, contents, and history; do not reset checksums, drop tables, or repoint history to another template. For directory or connection changes, follow [existing application migration rules](../../nocobase-app-development/references/migrations.md#existing-applications) and verify the original sources remain available in the deployment.
+Template cleanup does not authorize deleting previously executed application migrations or seeds, even when they originally came from the template. Preserve their original package owner, paths, contents, and history; do not reset checksums to hide unexplained drift, drop tables, or repoint history to another template. A documented upstream correction requires the separate checksum review in [database upgrades](database-upgrades.md#review-checksum-drift). For directory or connection changes, follow [existing application migration rules](../../nocobase-app-development/references/migrations.md#existing-applications) and verify the original sources remain available in the deployment.
 
 Unregistering a plugin leaves its records and migration history intact. Do not roll back a retired plugin's migrations after removing its sources; an intentional rollback requires restoring the original plugin version first.
 

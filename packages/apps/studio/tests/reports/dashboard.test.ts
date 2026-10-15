@@ -398,6 +398,7 @@ describe('what needs attention', () => {
     await h.projects.issues.update(alice, issues[2].id, {
       revision: third.revision,
       statusKey: 'blocked',
+      needsYou: 'Choose how to proceed.',
     });
     const late = await h.projects.issues.create(alice, {
       title: 'Late',

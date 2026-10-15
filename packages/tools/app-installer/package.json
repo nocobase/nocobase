@@ -35,6 +35,8 @@
     "yaml": "catalog:"
   },
   "devDependencies": {
+    "@nocobase/db": "workspace:^",
+    "@nocobase/db-sqlite": "workspace:^",
     "@nocobase/dev-config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",

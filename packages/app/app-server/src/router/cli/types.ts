@@ -117,6 +117,14 @@ export interface CliRouteOptions {
   readonly bodyFile?: string;
   /** Files uploaded first, by flag name. */
   readonly uploads?: Readonly<Record<string, CliUploadOptions>>;
+  /** One GET operation whose response supplies a required body field before sending. */
+  readonly readBinding?: {
+    readonly operation: string;
+    /** Read-route path parameter to this command's path parameter. */
+    readonly params: Readonly<Record<string, string>>;
+    readonly responseField: string;
+    readonly bodyField: string;
+  };
   /** A file streamed to the upload ticket the route answers. */
   readonly ticketUpload?: CliTicketUploadOptions;
   /** Changed files of a directory, sent with the request. */
@@ -232,6 +240,14 @@ export interface CliCommand {
   /** The request path below the server's origin, the application's base path included, with `{name}` placeholders. */
   readonly path: string;
   readonly parameters: readonly CliParameter[];
+  /** Read once before sending; the response field fills a body field, without a user flag. */
+  readonly readBinding?: {
+    readonly path: string;
+    /** Read-route path parameter to this command's path parameter. */
+    readonly params: Readonly<Record<string, string>>;
+    readonly responseField: string;
+    readonly bodyField: string;
+  };
   /** How the body travels; none for a request without one. */
   readonly body?: {
     readonly media: 'application/json' | 'multipart/form-data';

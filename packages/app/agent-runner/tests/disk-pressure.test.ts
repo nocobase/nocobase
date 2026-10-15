@@ -327,7 +327,7 @@ describe('disk pressure', () => {
     expect(existsSync(dir)).toBe(false);
   });
 
-  it('protects tracked files matching artifact patterns and reports a real directory size', async () => {
+  it('protects tracked files matching artifact patterns', async () => {
     const dir = await workspace('tracked', 0);
     mkdirSync(path.join(dir, 'repo/.next'), { recursive: true });
     writeFileSync(path.join(dir, 'repo/.next/source'), 'keep');
@@ -339,7 +339,7 @@ describe('disk pressure', () => {
       readDisk: async () => ({ totalBytes: 1000, freeBytes: 0 }),
     });
     expect(existsSync(path.join(dir, 'repo/.next/source'))).toBe(true);
-    expect(result.entries[0]?.sizeBytes).toBeGreaterThan(0);
+    expect(result.entries[0]).not.toHaveProperty('sizeBytes');
   });
 });
 

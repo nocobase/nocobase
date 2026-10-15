@@ -174,8 +174,8 @@ function sentence(
           })
         : t('issueProgress.checksPendingNoPr');
     case 'needsDecision':
-      return progress.question
-        ? t('issueProgress.needsDecision', { question: progress.question })
+      return progress.needsYou
+        ? t('issueProgress.needsDecision', { question: progress.needsYou })
         : t('issueProgress.needsDecisionNoQuestion');
     default:
       return t(`issueProgress.${progress.state}`);

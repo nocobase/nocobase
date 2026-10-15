@@ -1,3 +1,4 @@
+import { projectDefaultSkillsRoutes } from '../../server/projects-init/default-skills-routes.js';
 /**
  * Studio's join of the agents and projects plugins over one real database (SQLite in memory): the authentication,
  * authorization, projects, agents and Studio migrations, the projects plugin's services and the agents plugin's,
@@ -1208,6 +1209,7 @@ export async function createBridgeHarness(
   };
   // The API routes the CLI's commands are: the projects plugin's, and release management's when assembled.
   const api = new Hono();
+  api.route('/', await projectDefaultSkillsRoutes.createRouter(appLike));
   for (const contribution of [
     ...(projectsPlugin.routes ?? []),
     ...(releaseServices ? (releasesPlugin.routes ?? []) : []),
@@ -1536,7 +1538,7 @@ export async function createBridgeHarness(
         : answer;
     },
     async close() {
-      unbindAgents();
+      await unbindAgents();
       await delegations.settled();
       await releases?.releases.shutdown();
       await testDatabase.destroy();

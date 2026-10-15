@@ -1,8 +1,7 @@
 /**
  * What an issue waits for now (`IssueProgress`, `shared/project-manager.ts`), worked out from what the system knows
  * rather than from what anybody wrote: an agent's run on it (working, or queued), else a linked open pull request whose
- * checks have not finished, else its status. The project manager's latest "Next" line (`texts.ts`) goes with it, and on
- * a blocked issue the Needs you line and explanation from the comment at its status transition. `handOver` says the project manager executes the open issue
+ * checks have not finished, else its status. Structured needsYou and next fields go with it, with a link to the latest manager explanation. `handOver` says the project manager executes the open issue
  * but never worked on it (an issue an earlier version gave to an agent, say): someone may hand it over to go on.
  */
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
@@ -32,7 +31,6 @@ import {
   commentGuardId,
   type CommentGuard,
 } from '../comment-guard.js';
-import { nextLineOf } from './texts.js';
 import {
   issueExecutionIdentity,
   validIssueOwner,
@@ -44,7 +42,7 @@ import {
   type OwnerHandoff,
 } from '../../issues/owner-handoff.js';
 
-/** How much of a step or a question the line carries. */
+/** How much of a running step the line carries. */
 const LINE_LENGTH = 160;
 
 /** The first line of a text that says something, without mention links and Markdown marks, cut to `LINE_LENGTH`. */
@@ -63,20 +61,7 @@ export function firstLineOf(text: string): string | null {
   return null;
 }
 
-/** A comment's text without its "Next" line. */
-function withoutNextLine(content: string): string {
-  return nextLineOf(content) === null
-    ? content
-    : content.trimStart().split('\n').slice(1).join('\n');
-}
-
 const HELD = new Set(['dispatched', 'running']);
-
-/**
- * How many of the project manager's newest comments up to an issue's blocking are searched for the one before it:
- * more than share its time.
- */
-const BLOCKED_SOURCE_LOOKBACK = 20;
 
 /** Lookups `issueProgress` shares across the issues of one read; one per read, never kept longer. */
 export type ProgressMemo = Map<string, Promise<unknown>>;
@@ -110,13 +95,6 @@ export interface ProgressReads {
   handoff(issueId: string): Promise<OwnerHandoff | null>;
   /** The viewer's run requests on the issue (the ones they answer for or asked), newest first; null when none are kept. */
   requests(issueId: string): Promise<readonly RunRequestItem[] | null>;
-  /** The newest `status_changed` activity on the issue. */
-  transition(issueId: string): Promise<StatusTransition | null>;
-  /** The project manager's last comment before `transition`, deleted ones counted. */
-  commentBefore(
-    issueId: string,
-    transition: StatusTransition,
-  ): Promise<AuthoredComment | null>;
   /** The runs on the issue that have not ended, oldest first. */
   openRuns(issueId: string): Promise<readonly Run[]>;
   /** The text of the run's first input that has any, oldest first. */
@@ -125,34 +103,8 @@ export interface ProgressReads {
   pullRequests(issueId: string): Promise<readonly PullRequestRow[]>;
 }
 
-interface StatusTransition {
-  readonly id: string;
-  readonly createdAt: string;
-  readonly details: { readonly to?: string } | null;
-}
-
-interface ActivityRow {
-  readonly id: string;
-  readonly issueId: string;
-  readonly action: string;
-  readonly createdAt: string | Date;
-  readonly details: { to?: string } | null;
-}
-
 const MANAGER = { type: AGENT_KIND, id: PROJECT_MANAGER_ID } as const;
 const REQUESTS_PER_ISSUE = 50;
-
-/** Whether `comment` came before `transition`, as the issue's timeline orders them. */
-function before(
-  comment: { readonly id: string; readonly createdAt: string },
-  transition: StatusTransition,
-): boolean {
-  return (
-    Date.parse(comment.createdAt) < Date.parse(transition.createdAt) ||
-    (Date.parse(comment.createdAt) === Date.parse(transition.createdAt) &&
-      comment.id < transition.id)
-  );
-}
 
 /** A run's inputs, oldest first, as its detail lists them; none when it is gone. */
 async function inputsOf(
@@ -207,32 +159,6 @@ export function progressReads(
         subject: subject(issueId),
         limit: REQUESTS_PER_ISSUE,
       });
-    },
-    async transition(issueId) {
-      const row = await conn.repository<ActivityRow>('pmActivities').findOne({
-        filter: { issueId, action: 'status_changed' },
-        sort: (sort) => [
-          sort.field('createdAt').desc(),
-          sort.field('id').desc(),
-        ],
-      });
-      return row
-        ? {
-            id: row.id,
-            createdAt: new Date(row.createdAt).toISOString(),
-            details: row.details,
-          }
-        : null;
-    },
-    async commentBefore(issueId, transition) {
-      return (
-        (
-          await deps.projects.commentQueries.newestBy(conn, issueId, MANAGER, {
-            until: transition.createdAt,
-            limit: BLOCKED_SOURCE_LOOKBACK,
-          })
-        ).find((comment) => before(comment, transition)) ?? null
-      );
     },
     openRuns: (issueId) => deps.agents.runs.openOn(conn, subject(issueId)),
     async runText(runId) {
@@ -291,9 +217,6 @@ export async function prefetchProgressReads(
         issue.executor.id === PROJECT_MANAGER_ID,
     )
     .map((issue) => issue.id);
-  const blocked = issues
-    .filter((issue) => issue.statusKey === 'blocked')
-    .map((issue) => issue.id);
   const requestService = viewer?.userId ? deps.agents.runs.requests : undefined;
 
   async function readRequests(): Promise<Map<string, RunRequestItem[]>> {
@@ -318,74 +241,40 @@ export async function prefetchProgressReads(
     return groupBy(all, (request) => request.subject.id);
   }
 
-  const [
-    managerComments,
-    ran,
-    handoffs,
-    requests,
-    transitions,
-    open,
-    guards,
-    pullRequests,
-  ] = await Promise.all([
-    deps.projects.commentQueries.newestByEach(conn, ids, MANAGER, {
-      live: true,
-    }),
-    managedOpen.length === 0
-      ? Promise.resolve(new Set<string>())
-      : conn.query
-          .selectFrom('agRuns')
-          .select(['subjectId'])
-          .distinct()
-          .where('agentId', '=', PROJECT_MANAGER_ID)
-          .where('subjectKind', '=', ISSUE_SUBJECT)
-          .where('subjectId', 'in', managedOpen)
-          .execute<{ subjectId: string }>()
-          .then((rows) => new Set(rows.map((row) => row.subjectId))),
-    conn
-      .repository<OwnerHandoff>(OWNER_HANDOFFS)
-      .findMany({
-        filter: (f) => f.or(ids.map((id) => f.string('issueId').eq(id))),
-      })
-      .then((rows) => new Map(rows.map((row) => [row.issueId, row]))),
-    readRequests(),
-    blocked.length === 0
-      ? Promise.resolve(new Map<string, StatusTransition>())
-      : conn
-          .repository<ActivityRow>('pmActivities')
-          .findMany({
-            filter: (f) =>
-              f.and([
-                f.or(blocked.map((id) => f.string('issueId').eq(id))),
-                f.string('action').eq('status_changed'),
-              ]),
-            sort: (sort) => [
-              sort.field('createdAt').desc(),
-              sort.field('id').desc(),
-            ],
-          })
-          .then((rows) => {
-            const newest = new Map<string, StatusTransition>();
-            for (const row of rows)
-              if (!newest.has(row.issueId))
-                newest.set(row.issueId, {
-                  id: row.id,
-                  createdAt: new Date(row.createdAt).toISOString(),
-                  details: row.details,
-                });
-            return newest;
-          }),
-    deps.agents.runs
-      .openOnEach(conn, ISSUE_SUBJECT, ids)
-      .then((runs) => groupBy(runs, (run) => run.subject.id)),
-    commentGuards(conn)
-      .findMany({
-        filter: (f) =>
-          f.or(ids.map((id) => f.string('id').eq(commentGuardId(id)))),
-      })
-      .then((rows) => new Map(rows.map((row) => [row.issueId, row]))),
-    pullRequestsOfIssues(conn, ids),
-  ]);
+  const [managerComments, ran, handoffs, requests, open, guards, pullRequests] =
+    await Promise.all([
+      deps.projects.commentQueries.newestByEach(conn, ids, MANAGER, {
+        live: true,
+      }),
+      managedOpen.length === 0
+        ? Promise.resolve(new Set<string>())
+        : conn.query
+            .selectFrom('agRuns')
+            .select(['subjectId'])
+            .distinct()
+            .where('agentId', '=', PROJECT_MANAGER_ID)
+            .where('subjectKind', '=', ISSUE_SUBJECT)
+            .where('subjectId', 'in', managedOpen)
+            .execute<{ subjectId: string }>()
+            .then((rows) => new Set(rows.map((row) => row.subjectId))),
+      conn
+        .repository<OwnerHandoff>(OWNER_HANDOFFS)
+        .findMany({
+          filter: (f) => f.or(ids.map((id) => f.string('issueId').eq(id))),
+        })
+        .then((rows) => new Map(rows.map((row) => [row.issueId, row]))),
+      readRequests(),
+      deps.agents.runs
+        .openOnEach(conn, ISSUE_SUBJECT, ids)
+        .then((runs) => groupBy(runs, (run) => run.subject.id)),
+      commentGuards(conn)
+        .findMany({
+          filter: (f) =>
+            f.or(ids.map((id) => f.string('id').eq(commentGuardId(id)))),
+        })
+        .then((rows) => new Map(rows.map((row) => [row.issueId, row]))),
+      pullRequestsOfIssues(conn, ids),
+    ]);
 
   const runIds = [...open.values()].flat().map((run) => run.id);
   const runTexts = new Map<string, string>();
@@ -400,80 +289,6 @@ export async function prefetchProgressReads(
       if (!runTexts.has(input.runId) && input.text.trim() !== '')
         runTexts.set(input.runId, input.text);
   const openRunIds = new Set(runIds);
-
-  // The project manager's comments before each blocked issue's blocking, a lookback's worth per issue, in one read.
-  const blockedBy = [...transitions].filter(
-    ([, transition]) => transition.details?.to === 'blocked',
-  );
-  const sources = new Map<string, AuthoredComment>();
-  if (blockedBy.length > 0) {
-    const latest = blockedBy
-      .map(([, transition]) => transition.createdAt)
-      .sort()
-      .at(-1)!;
-    const rows = await conn
-      .repository<{
-        id: string;
-        issueId: string;
-        createdAt: string | Date;
-        deletedAt: string | Date | null;
-      }>('pmComments')
-      .findMany({
-        filter: (f) =>
-          f.and([
-            f.or(blockedBy.map(([id]) => f.string('issueId').eq(id))),
-            f.string('authorType').eq(MANAGER.type),
-            f.string('authorId').eq(MANAGER.id),
-            f.date('createdAt').notAfter(latest),
-          ]),
-        select: (select) =>
-          select.fields('id', 'issueId', 'createdAt', 'deletedAt'),
-        sort: (sort) => [
-          sort.field('createdAt').desc(),
-          sort.field('id').desc(),
-        ],
-      });
-    const byIssue = groupBy(rows, (row) => row.issueId);
-    const found = new Map<
-      string,
-      { id: string; deleted: boolean; createdAt: string }
-    >();
-    for (const [issueId, transition] of blockedBy) {
-      const until = Date.parse(transition.createdAt);
-      const source = (byIssue.get(issueId) ?? [])
-        .map((row) => ({
-          id: row.id,
-          createdAt: new Date(row.createdAt).toISOString(),
-          deleted: row.deletedAt !== null && row.deletedAt !== undefined,
-        }))
-        .filter((row) => Date.parse(row.createdAt) <= until)
-        .slice(0, BLOCKED_SOURCE_LOOKBACK)
-        .find((row) => before(row, transition));
-      if (source) found.set(issueId, source);
-    }
-    const live = [...found.values()].filter((row) => !row.deleted);
-    const contents =
-      live.length === 0
-        ? new Map<string, string>()
-        : new Map(
-            (
-              await conn
-                .repository<{ id: string; content: string }>('pmComments')
-                .findMany({
-                  filter: (f) =>
-                    f.or(live.map((row) => f.string('id').eq(row.id))),
-                  select: (select) => select.fields('id', 'content'),
-                })
-            ).map((row) => [row.id, row.content]),
-          );
-    for (const [issueId, row] of found)
-      sources.set(issueId, {
-        id: row.id,
-        createdAt: row.createdAt,
-        deleted: row.deleted,
-        content: row.deleted ? '' : (contents.get(row.id) ?? ''),
-      });
-  }
 
   return {
     managerComment: async (issueId) =>
@@ -494,14 +309,6 @@ export async function prefetchProgressReads(
         : known.has(issueId)
           ? (requests.get(issueId) ?? [])
           : single.requests(issueId),
-    transition: async (issueId) =>
-      blocked.includes(issueId)
-        ? (transitions.get(issueId) ?? null)
-        : single.transition(issueId),
-    commentBefore: async (issueId, transition) =>
-      transitions.get(issueId) === transition
-        ? (sources.get(issueId) ?? null)
-        : single.commentBefore(issueId, transition),
     openRuns: async (issueId) =>
       known.has(issueId) ? (open.get(issueId) ?? []) : single.openRuns(issueId),
     runText: async (runId) =>
@@ -586,7 +393,6 @@ export async function issueProgress(
     return { reason, owner };
   }
   const latest = await reads.managerComment(issue.id);
-  const next = latest ? nextLineOf(latest.content) : null;
   const category = statusCategory(issue.statusKey);
   const managed =
     issue.executor?.type === AGENT_KIND &&
@@ -603,8 +409,9 @@ export async function issueProgress(
     since: null,
     runner: null,
     pullRequest: null,
-    question: null,
-    next,
+    needsYou: issue.needsYou,
+    explanationCommentId: latest?.id ?? null,
+    next: issue.next,
     handOver: managed && open && !managerRan,
   };
 
@@ -668,30 +475,6 @@ export async function issueProgress(
     base = { ...base, personalRunnerRequests };
   }
 
-  if (issue.statusKey === 'blocked') {
-    const transition = await reads.transition(issue.id);
-    // The project manager's last comment before the issue was blocked; deleted ones count, and then say nothing.
-    const source =
-      transition?.details?.to === 'blocked'
-        ? await reads.commentBefore(issue.id, transition)
-        : null;
-    if (source && !source.deleted) {
-      base = {
-        ...base,
-        blockedComment: { id: source.id, content: source.content },
-        question:
-          source.content
-            .split('\n')
-            .map((line) =>
-              /^(?:需要你\s*[：:]|Needs you\s*:)(.*)$/iu
-                .exec(line.trim())?.[1]
-                ?.trim(),
-            )
-            .find(Boolean) ?? null,
-      };
-    }
-  }
-
   if (
     handoff !== null &&
     (handoff.waiting || handoff.ownerUserId !== issue.ownerUserId)
@@ -731,7 +514,7 @@ export async function issueProgress(
       run.agentId === PROJECT_MANAGER_ID
         ? null
         : text
-          ? firstLineOf(withoutNextLine(text))
+          ? firstLineOf(text)
           : null;
     if (options.list)
       return {

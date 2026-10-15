@@ -269,10 +269,12 @@ export function createIssueRoutes(deps: {
           projectId: { name: 'project' },
           labelIds: { name: 'label' },
           description: { contentFile: true },
+          needsYou: { name: 'needs-you', contentFile: true },
+          next: { contentFile: true },
         },
         action: 'pm.issues/edit',
         examples: [
-          'issue update PM-12 --status in_review',
+          'issue update PM-12 --status in_review --needs-you "Review the change and accept it or send it back."',
           'issue update PM-12 --file change.json',
         ],
       }),

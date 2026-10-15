@@ -148,7 +148,7 @@ function FollowingCard({
       {line ? (
         <span
           className={cn(
-            'line-clamp-2 text-xs leading-snug max-md:line-clamp-1 max-md:text-[13px]',
+            'text-xs leading-snug whitespace-pre-wrap wrap-break-word max-md:text-[13px]',
             line.needsViewer
               ? 'text-amber-700 dark:text-amber-300'
               : 'text-muted-foreground',

@@ -40,7 +40,11 @@ describe('claim query cost', () => {
             })
           ).id,
         );
-      const agentId = await h.createAgent({ skillIds });
+      await h.services.skills.attach(
+        { scope: 'global', scopeId: 'default' },
+        skillIds,
+      );
+      const agentId = await h.createAgent();
       await h.services.variables.set(
         { scope: 'team', scopeId: 'team' },
         'SHARED',
@@ -118,11 +122,11 @@ describe('claim query cost', () => {
           queries.filter((sql) => /^\s*(?:begin|commit|rollback)\b/iu.test(sql))
             .length,
       );
-      // PostgreSQL baseline at aae3508a4a: SELECT 45/63/143 for 1/10/50 candidates.
-      // Writes were INSERT 4, UPDATE 5, DELETE 1 on the same fixture.
+      // Run skills use the current global/project defaults and one metadata join.
+      // Writes remain INSERT 4, UPDATE 5, DELETE 1 on the same fixture.
       expect(counts.select).toBeLessThanOrEqual(25);
       expect(counts).toEqual({
-        select: 19 + 2 * skillCount,
+        select: 17,
         insert: 4,
         update: 5,
         delete: 1,
@@ -134,12 +138,8 @@ describe('claim query cost', () => {
             new RegExp('["`]' + table + '["`]', 'u').test(sql),
         );
       expect(selectsFrom('ag_agents')).toHaveLength(1);
-      const candidateIndex = business.indexOf(selectsFrom('ag_agents')[0]);
-      expect(business[candidateIndex + 1]).toMatch(
-        /^select .*ag_skill_attachments/iu,
-      );
-      // One candidate batch and one assembly's agent/team attachment reads.
-      expect(selectsFrom('ag_skill_attachments')).toHaveLength(3);
+      // Candidate agents have no skill attachments. Run scopes load skills once.
+      expect(selectsFrom('ag_skill_attachments')).toHaveLength(1);
       expect(selectsFrom('ag_secrets')).toHaveLength(1);
       expect(selectsFrom('ag_runner_variables')).toHaveLength(1);
       for (const target of [
@@ -210,7 +210,11 @@ describe('claim query cost', () => {
     const first = await makeSkill('first');
     const second = await makeSkill('second');
     const third = await makeSkill('third');
-    const agentId = await h.createAgent({ skillIds: [second.id, first.id] });
+    const agentId = await h.createAgent();
+    await h.services.skills.attach({ scope: 'global', scopeId: 'default' }, [
+      second.id,
+      first.id,
+    ]);
     h.scopes = [{ scope: 'team', scopeId: 'team' }];
     await h.services.skills.attach({ scope: 'team', scopeId: 'team' }, [
       first.id,

@@ -1,3 +1,4 @@
+import { GLOBAL_SKILL_TARGET } from '../../../shared/skills.js';
 /**
  * Claiming: handing queued runs to a runner that fits them, within each agent's concurrency limit, one run per
  * (agent, subject, thread) at a time, through the runners' one long-poll (`routes/runners/runner.ts`), which hands
@@ -366,14 +367,16 @@ export function variableTargets(
   ];
 }
 
-/** Where a run's skills come from, the agent's first so its own win a shared slug. */
+/** Team defaults, application scopes and directories, from lowest to highest priority. */
 export function skillTargets(
-  agent: Pick<Agent, 'id'>,
+  _agent: Pick<Agent, 'id'>,
   assembly: Pick<SubjectAssembly, 'scopes' | 'dirs'>,
 ): SkillTarget[] {
   return [
-    { scope: 'agent', scopeId: agent.id },
-    ...assembly.scopes,
+    GLOBAL_SKILL_TARGET,
+    ...assembly.scopes.filter(
+      (target) => target.scope !== 'agent' && target.scope !== 'global',
+    ),
     ...assembly.dirs.flatMap((dir) =>
       dir.scopeId ? [{ scope: 'workdir', scopeId: dir.scopeId }] : [],
     ),

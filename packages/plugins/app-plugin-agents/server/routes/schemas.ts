@@ -471,7 +471,6 @@ const agentObject = z.object({
   instructions: z.string().nullable(),
   actions: z.array(z.string()),
   confirmChanges: z.enum(CONFIRM_CHANGES),
-  skillIds: z.array(z.string()),
   maxConcurrentRuns: z.number().int(),
   maxAttempts: z.number().int(),
   toolPolicy: toolPolicyOverrides.nullable(),
@@ -735,7 +734,6 @@ const skillObject = z.object({
   scripts: z
     .array(z.string())
     .meta({ description: 'The paths of those scripts.' }),
-  agentCount: z.number().int(),
   createdById: z.string().nullable(),
   createdAt: dateTime,
   updatedAt: dateTime,
