@@ -185,7 +185,11 @@ export function RepositoryPicker({
                     >
                       <span className='truncate'>{repo.fullName}</span>
                       {repo.private ? (
-                        <Badge variant='outline' className='gap-1'>
+                        <Badge
+                          data-size='sm'
+                          variant='outline'
+                          className='gap-1'
+                        >
                           <LockIcon className='size-3' aria-hidden />
                           {t('studioGit.picker.private')}
                         </Badge>

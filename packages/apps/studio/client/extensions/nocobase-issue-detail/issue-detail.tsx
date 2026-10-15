@@ -903,6 +903,7 @@ export function IssueSubtasks({
                     marks={
                       issue.waiting ? (
                         <Badge
+                          data-size='sm'
                           variant='secondary'
                           className='gap-1 bg-amber-500/10 font-normal text-amber-700 dark:text-amber-300'
                         >

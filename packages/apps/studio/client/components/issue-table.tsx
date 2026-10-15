@@ -161,6 +161,7 @@ export function IssueStatusBadge({
     );
   return (
     <Badge
+      data-size='sm'
       variant='secondary'
       className={cn(issueColorClass[status.color], className)}
     >
@@ -508,6 +509,7 @@ export function IssueTable({
                     <span className='flex shrink-0 gap-1 max-md:hidden'>
                       {row.labels.slice(0, 3).map((label) => (
                         <Badge
+                          data-size='sm'
                           key={label.id}
                           variant='secondary'
                           className={issueColorClass[label.color]}

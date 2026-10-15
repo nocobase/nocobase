@@ -84,7 +84,11 @@ export function UnreleasedChanges({
               </Link>
               <span className='min-w-0 truncate'>{issue.title}</span>
               {issue.staging ? (
-                <Badge variant='secondary' className='ml-auto shrink-0'>
+                <Badge
+                  data-size='sm'
+                  variant='secondary'
+                  className='ml-auto shrink-0'
+                >
                   {words.staging}
                 </Badge>
               ) : null}

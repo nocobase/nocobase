@@ -258,6 +258,7 @@ function Tag({
 }): ReactElement {
   return (
     <Badge
+      data-size='sm'
       variant='secondary'
       className={cn('gap-1 font-normal [&_svg]:size-3', TAG_TONE[tone])}
     >
