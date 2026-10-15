@@ -177,6 +177,28 @@ for (const phone of [false, true]) {
     await open(page, `/agent-sessions/${session.id}?issue=${run.issue.id}`);
     await expect(detail).toBeVisible();
     const address = page.url();
+    // Exercise the activity entry and the live "Now" line as well as the run history tab.
+    await detail.getByRole('tab', { name: /^Activity/ }).click();
+    await detail.getByRole('button', { name: 'All', exact: true }).click();
+    await detail
+      .getByRole('link', { name: /View transcript/ })
+      .first()
+      .click();
+    await expect(page.getByTestId('run-transcript')).toBeVisible();
+    expect(page.url()).toBe(address);
+    await page
+      .getByRole('dialog')
+      .last()
+      .getByRole('button', { name: 'Close', exact: true })
+      .click();
+    await detail.getByTestId('run-live').click();
+    await expect(page.getByTestId('run-transcript')).toBeVisible();
+    expect(page.url()).toBe(address);
+    await page
+      .getByRole('dialog')
+      .last()
+      .getByRole('button', { name: 'Close', exact: true })
+      .click();
     await detail.getByRole('tab', { name: /^Runs/ }).click();
     await detail
       .getByRole('link', { name: /View transcript/ })

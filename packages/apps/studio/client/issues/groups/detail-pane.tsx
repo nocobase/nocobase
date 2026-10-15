@@ -91,7 +91,7 @@ import { IssueSectionInTabContext } from '@/extensions/nocobase-issue-detail/sec
 import { cn } from 'cn';
 
 import { EmbeddedRuns } from '../../agents/embedded-runs.js';
-import { IssueRunPanel } from '../../agents/issue-runs.js';
+import { IssueRunPanel, IssueRunRow } from '../../agents/issue-runs.js';
 import { chatItemOf } from '../../agents/chat-items.js';
 import { useIssuePullRequests } from '../../git/api.js';
 import { useMarkSeen } from '../../follow-ups/api.js';
@@ -342,7 +342,13 @@ function LiveTask({
                     ))}
                   </TabsList>
                   <TabsContent value='feed'>
-                    <IssueFeed titleHidden />
+                    <IssueFeed
+                      titleHidden
+                      runs={runs}
+                      renderRun={(runId) => (
+                        <IssueRunRow issue={detail} runId={runId} />
+                      )}
+                    />
                   </TabsContent>
                   <TabsContent value='desc' className='flex flex-col gap-6'>
                     <IssueDescriptionSection detail={detail} update={update} />
