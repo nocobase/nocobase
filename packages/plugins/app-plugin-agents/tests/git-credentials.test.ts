@@ -172,8 +172,12 @@ describe('repository credentials on demand', () => {
       password: 'synthetic-issued-1-cached',
       expiresAt: '2026-10-01T01:00:00.000Z',
     });
+    await h.request('POST', `/agents/runners/runs/${runId}/start`, {
+      runnerKey: runner.key,
+      body: start,
+    });
     // Past the first credential's lifetime.
-    // Long after the claim: the run is still held, so the application is asked again.
+    // A started run keeps renewing its lease, so the application is asked again.
     for (let minute = 0; minute < 90; minute += 0.5) {
       h.clock.advance(30_000);
       await h.request('POST', `/agents/runners/runs/${runId}/lease`, {
