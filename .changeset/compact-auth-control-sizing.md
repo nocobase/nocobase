@@ -2,4 +2,4 @@
 "@nocobase/app-template-default": patch
 ---
 
-Use the standard theme-aware control sizes on the login page so inputs, password fields, and the submit button respect compact theme density.
+Use theme-aware medium control heights and tighter heading and field spacing on the login page so the form stays comfortable while respecting compact theme density.

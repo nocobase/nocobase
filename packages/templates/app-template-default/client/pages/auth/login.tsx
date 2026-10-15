@@ -21,6 +21,7 @@ export default function LoginPage(): ReactElement {
 
   return (
     <AuthPage
+      className='auth-login-page'
       description={t('auth.loginDescription')}
       title={t('auth.welcome')}
     >
