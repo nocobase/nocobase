@@ -57,6 +57,8 @@ Import `test` and `expect` from `e2e/support/fixtures.ts`. Its `page` is already
 
 `pnpm test:screenshots` runs `e2e/screenshots/screenshots.test.ts` against a server of its own and saves the key pages, as the initial administrator, in four combinations: zh-CN and en-US, each light and dark. They go to `output/screenshots/<locale>-<mode>/<page>.png` (gitignored), with `<page>.phone.png` for the pages also taken at 390 px. `NB_STUDIO_SCREENSHOT_PAGES=inbox,issue` takes a subset, `NB_STUDIO_SCREENSHOT_THEMES=en-US-dark` a subset of the combinations, and `NB_STUDIO_SCREENSHOT_DIR` another directory. They are for looking at, not compared against a baseline.
 
+Playwright's failure artifacts for the flows stay in `test-results/`; the screenshot project's artifacts use `output/screenshot-results/` so running it afterwards preserves the flow traces and failure screenshots. CI should upload both directories when collecting failure evidence.
+
 ## In CI
 
 CI builds Studio and runs both suites on pull requests that change Studio or the packages it depends on. The screenshots and the traces are uploaded as artifacts only when the job fails. It needs no secrets: the server and the model are local, the demo data has no repositories and no runner that takes work (its runtimes registered once and are offline), and nothing reaches GitHub or a model provider.

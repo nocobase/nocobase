@@ -1,4 +1,11 @@
-import { expect, open, test, unique, type Api } from './support/fixtures.ts';
+import {
+  expect,
+  open,
+  test,
+  unique,
+  url,
+  type Api,
+} from './support/fixtures.ts';
 
 interface Project {
   id: string;
@@ -108,13 +115,15 @@ test.describe('knowledge', () => {
   }) => {
     const project = await studioProject(api);
     const before = await api.get<
-      { id: string; docId: string; status: string }[]
-    >('knowledge/proposals');
-    const pending = before.find((item) => item.status === 'pending');
-    test.skip(
-      !pending,
-      'The demo proposal was already decided on this server.',
+      { id: string; docId: string; docTitle: string }[]
+    >(`knowledge/proposals?scope=project&scopeId=${project.id}&status=pending`);
+    const matching = before.filter(
+      (item) => item.docTitle === 'Development environment',
     );
+    expect(matching, 'exactly one pending development proposal').toHaveLength(
+      1,
+    );
+    const pending = matching[0]!;
 
     await open(page, `/projects/${project.id}/knowledge`);
     const panel = page.getByRole('tabpanel', { name: '知识库' });
@@ -122,6 +131,9 @@ test.describe('knowledge', () => {
     await panel
       .getByRole('button', { name: '修改 Development environment' })
       .click();
+    await expect(page).toHaveURL(
+      (address) => address.searchParams.get('proposal') === pending.id,
+    );
     const proposal = panel.getByRole('article');
     await proposal.getByRole('tab', { name: '改动' }).click();
     await expect(
@@ -130,13 +142,31 @@ test.describe('knowledge', () => {
     await proposal
       .getByRole('textbox', { name: '意见（可选）' })
       .fill('谢谢补充。');
+    const accepted = page.waitForResponse(
+      (response) =>
+        response.url() ===
+          url(`/api/knowledge/proposals/${pending.id}/accept`) &&
+        response.request().method() === 'POST',
+    );
     await proposal.getByRole('button', { name: '接受' }).click();
+    expect((await accepted).status()).toBe(200);
 
+    await expect(page).toHaveURL(
+      (address) =>
+        address.searchParams.get('proposals') === 'pending' &&
+        !address.searchParams.has('proposal'),
+    );
     await expect(
       panel.getByRole('button', { name: '修改 Development environment' }),
     ).toBeHidden();
-    const doc = await api.get<Doc>(`knowledge/docs/${pending?.docId}`);
-    expect(doc.version).toBe(2);
-    expect(doc.content).toContain('playwright install chromium');
+    await expect
+      .poll(async () => {
+        const doc = await api.get<Doc>(`knowledge/docs/${pending.docId}`);
+        return { version: doc.version, content: doc.content };
+      })
+      .toEqual({
+        version: 2,
+        content: expect.stringContaining('playwright install chromium'),
+      });
   });
 });
