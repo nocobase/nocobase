@@ -254,7 +254,10 @@ export function InviteResults({
 }): ReactElement {
   const { t } = useTranslation();
   return (
-    <ul className='space-y-3' aria-label={t('invitations.resultsLabel')}>
+    <ul
+      className='min-w-0 space-y-3'
+      aria-label={t('invitations.resultsLabel')}
+    >
       {results.map((result) => (
         <li key={result.email} className='space-y-2'>
           <div className='flex items-center justify-between gap-3'>
@@ -298,12 +301,12 @@ function CopyLink({ url }: { readonly url: string }): ReactElement {
     }
   }
   return (
-    <div className='flex gap-2'>
+    <div className='flex min-w-0 gap-2'>
       <Input
         value={url}
         readOnly
         aria-label={t('invitations.link')}
-        className='font-mono text-xs'
+        className='min-w-0 flex-1 font-mono text-xs'
       />
       <Button
         type='button'

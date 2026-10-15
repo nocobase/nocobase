@@ -1,5 +1,7 @@
 import { expect, open, test, unique } from './support/fixtures.ts';
 
+test.use({ viewport: { width: 375, height: 812 } });
+
 test('invitation creation and resend explain missing email configuration and keep a copyable link', async ({
   page,
   context,
@@ -19,6 +21,9 @@ test('invitation creation and resend explain missing email configuration and kee
   const original = await dialog
     .getByLabel('邀请链接', { exact: true })
     .inputValue();
+  await expect(
+    dialog.getByRole('button', { name: '复制邀请链接', exact: true }),
+  ).toBeInViewport({ ratio: 1 });
   await dialog
     .getByRole('button', { name: '复制邀请链接', exact: true })
     .click();
@@ -39,6 +44,9 @@ test('invitation creation and resend explain missing email configuration and kee
     .getByLabel('邀请链接', { exact: true })
     .inputValue();
   expect(renewed).not.toBe(original);
+  await expect(
+    dialog.getByRole('button', { name: '复制邀请链接', exact: true }),
+  ).toBeInViewport({ ratio: 1 });
   await dialog
     .getByRole('button', { name: '复制邀请链接', exact: true })
     .click();
