@@ -6,6 +6,7 @@ import {
 import { Toaster } from '@/components/ui/toast';
 
 import { AgentIntakeWaitFormat } from './agents/intake-wait-format.js';
+import { StudioSkillSettings } from './agents/skill-settings.js';
 import { ReleaseActorNames } from './releases/actor-names.js';
 import { ReleaseDeleteAppImpact } from './releases/delete-app-impact.js';
 import { ReleaseAppOrigin } from './releases/app-origin.js';
@@ -63,6 +64,11 @@ export const reactProviders: readonly AppClientReactProviderDefinition[] =
       component: AgentIntakeWaitFormat,
       layer: 'application',
       name: 'agent-intake-wait-format',
+    },
+    {
+      component: StudioSkillSettings,
+      layer: 'application',
+      name: 'skill-settings',
     },
     // Studio's pull requests: the `studio.merged` status event's title.
     {

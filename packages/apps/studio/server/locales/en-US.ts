@@ -15,6 +15,14 @@ const enUS = {
   // browser words them from the client locales (`studioAgents.templateMessages`).
   // The title of the issue an agent connects a repository's CI in, stored in the installation's language
   // (`server/builds/ci-provider.ts`).
+  // What an issue waits on the reader for, beside its status where a session lists it (`server/agent-sessions/links.ts`).
+  taskWaits: {
+    accept: 'Needs your acceptance',
+    answer: 'Needs your reply',
+    plan: 'Needs plan approval',
+    takeOver: 'Needs you to take over',
+    failed: 'Run failed',
+  },
   ci: {
     taskTitle: 'Set up deployment: {{repo}}',
   },

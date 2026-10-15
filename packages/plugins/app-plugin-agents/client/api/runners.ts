@@ -12,6 +12,7 @@ import type {
   RunnerPatch,
   RunnerRecentRun,
   RunnerSummary,
+  RunnerListItem,
 } from '../../shared/runners.js';
 
 type Method = 'POST' | 'PATCH' | 'PUT' | 'DELETE';
@@ -30,7 +31,7 @@ export class RunnersApi {
 
   // Runners
 
-  public runners(): Promise<RunnerSummary[]> {
+  public runners(): Promise<RunnerListItem[]> {
     return this.list('');
   }
 

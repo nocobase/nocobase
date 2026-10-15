@@ -33,7 +33,7 @@ import { AppBrand } from './app-brand.js';
 
 /**
  * The shell's sidebar state: shadcn's provider, with the desktop icon mode kept in the shared sidebar preference
- * (`use-sidebar-preference.ts`) so every layout on this origin opens it the same way. Whether the phone's sheet is
+ * (`use-sidebar-preference.ts`) so every layout of this application opens it the same way. Whether the phone's sheet is
  * open stays local to the layout.
  */
 export function AppSidebarProvider({

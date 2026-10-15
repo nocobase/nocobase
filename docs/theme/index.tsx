@@ -38,7 +38,6 @@ import {
 } from './components/CapabilityOverview';
 import { ArchitecturePitch } from './components/ArchitecturePitch';
 import { FullHome } from './components/FullHome';
-import { DocsHome } from './components/DocsHome';
 import { HomeHero } from './components/HomeHero';
 import { DocsAssistant } from './components/DocsAssistant/DocsAssistant';
 import { decodeTargetBlankHref } from '../shared/blankTargetLink';
@@ -159,7 +158,7 @@ export function HomeLayout(props: HomeLayoutProps) {
   } = usePage();
 
   if (frontmatter.pageName === 'home') {
-    return <DocsHome groups={frontmatter.features ?? []} />;
+    return <FullHome />;
   }
 
   return (
