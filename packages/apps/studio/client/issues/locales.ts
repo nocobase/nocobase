@@ -25,8 +25,6 @@ export const issuesEnUS = {
     'Every issue you may see. Agents take the ones they execute; the Agent view shows their queue.',
   myTitle: 'My issues',
   myDescription: 'The issues you own or execute.',
-  myTabsLabel: 'My issues',
-  myTabs: { owned: 'I own', executing: 'I execute' },
   views: {
     label: 'View',
     split: 'Split',
@@ -78,10 +76,7 @@ export const issuesEnUS = {
   emptyTitle: 'No issues yet',
   emptyDescription:
     'Create an issue, or describe the work and let AI draft it.',
-  myEmpty: {
-    owned: 'You own no issues',
-    executing: 'You execute no issues',
-  },
+  myEmpty: 'You have no tasks',
   shown: '{{count}} shown',
   loadMore: 'Load more',
   boardLabel: 'Issue board',
@@ -111,6 +106,12 @@ export const issuesEnUS = {
     dropped: 'Dropped {item} into {column}',
     cancelled: 'Cancelled moving {item}',
   } satisfies KanbanLabels,
+  /** An unfolded queued issue's exact reason on the Agent queue (`agent-view.tsx`). */
+  agentWait: {
+    loading: 'Checking why it waits…',
+    failed: 'Could not check why it waits.',
+    gone: 'No longer queued.',
+  },
   agentQueue: {
     summary: {
       running: 'Running',
@@ -152,6 +153,8 @@ export const issuesEnUS = {
       blockedBy: 'Blocked by {issues}',
       blockedCount: 'Blocked by {count} issues',
       waited: 'Queued {duration}',
+      showWhy: 'Why it waits',
+      hideWhy: 'Hide why it waits',
     },
     wait: {
       kinds: {
@@ -209,8 +212,6 @@ export const issuesZhCN: IssuesWording = {
     '你有权查看的全部任务。Agent 会领取由它执行的任务，Agent 视图展示它们的队列。',
   myTitle: '我的任务',
   myDescription: '你负责或执行的任务。',
-  myTabsLabel: '我的任务',
-  myTabs: { owned: '我负责的', executing: '我执行的' },
   views: {
     label: '视图',
     split: '分栏',
@@ -260,10 +261,7 @@ export const issuesZhCN: IssuesWording = {
   noResults: '没有符合筛选条件的任务。',
   emptyTitle: '还没有任务',
   emptyDescription: '新建一个任务，或描述要做的事，让 AI 起草。',
-  myEmpty: {
-    owned: '你还没有负责的任务',
-    executing: '你还没有执行的任务',
-  },
+  myEmpty: '你还没有任务',
   shown: '已显示 {{count}} 个',
   loadMore: '加载更多',
   boardLabel: '任务看板',
@@ -292,6 +290,11 @@ export const issuesZhCN: IssuesWording = {
     movedOver: '{item} 移到了 {column} 上方',
     dropped: '{item} 已放入 {column}',
     cancelled: '已取消移动 {item}',
+  },
+  agentWait: {
+    loading: '正在检查等待原因…',
+    failed: '无法检查等待原因。',
+    gone: '已不在排队。',
   },
   agentQueue: {
     summary: {
@@ -334,6 +337,8 @@ export const issuesZhCN: IssuesWording = {
       blockedBy: '被 {issues} 阻塞',
       blockedCount: '被 {count} 个任务阻塞',
       waited: '已排队 {duration}',
+      showWhy: '等待原因',
+      hideWhy: '收起等待原因',
     },
     wait: {
       kinds: {

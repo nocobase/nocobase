@@ -2,6 +2,8 @@
  * The split list as the person sees it, worked out from a grouped read (`TaskGroups`): the task they just handled
  * keeps its place until they move on, the order J and K step through, and the next task waiting for them.
  */
+import type { IssueListItem } from '@nocobase/app-plugin-projects/shared/issues';
+
 import type {
   TaskGroupId,
   TaskGroupItem,
@@ -13,6 +15,8 @@ export interface ListGroup {
   readonly count: number;
   readonly items: readonly TaskGroupItem[];
   readonly nextCursor: string | null;
+  /** Preserve the pagination control above a retained row without changing the server cursor. */
+  readonly showMore?: boolean;
 }
 
 /** Where a task was shown: its group and its place in it. */
@@ -20,6 +24,13 @@ export interface Placement {
   readonly id: string;
   readonly group: TaskGroupId;
   readonly index: number;
+  readonly followed: boolean;
+  /** The selected row, retained when cancellation or pagination omits it from the next read. */
+  readonly item: TaskGroupItem;
+  readonly layout: readonly {
+    readonly group: TaskGroupId;
+    readonly showMore: boolean;
+  }[];
 }
 
 export function listGroups(pages: readonly TaskGroupPage[]): ListGroup[] {
@@ -37,35 +48,55 @@ export function placementOf(
 ): Placement | null {
   for (const group of groups) {
     const index = group.items.findIndex((item) => item.issue.id === id);
-    if (index >= 0) return { id, group: group.group, index };
+    if (index >= 0)
+      return {
+        id,
+        group: group.group,
+        index,
+        followed: group.items[index].followed,
+        item: group.items[index],
+        layout: groups.map((g) => ({
+          group: g.group,
+          showMore: g.showMore ?? Boolean(g.nextCursor),
+        })),
+      };
   }
   return null;
 }
 
 /**
  * The groups with the task at `sticky` kept where it was shown, so the list does not jump under the person's eyes
- * once they handle it; it moves to its new group when they select another task. A task the read no longer lists stays
- * out. Counts stay the server's.
+ * once they handle it; it moves to its new group when they select another task. A missing row uses its snapshot and
+ * the detail cache's newest issue, without loading another group page. Counts stay the server's.
  */
 export function keepPlacement(
   groups: readonly ListGroup[],
   sticky: Placement | null,
+  latestIssue?: IssueListItem,
 ): ListGroup[] {
   if (!sticky) return [...groups];
   const now = placementOf(groups, sticky.id);
-  // Following or unfollowing moves it at once: the person asked for exactly that.
+  const issue =
+    latestIssue?.id === sticky.id &&
+    latestIssue.revision >= sticky.item.issue.revision
+      ? latestIssue
+      : sticky.item.issue;
+  if (!now && issue.deletedAt) return [...groups];
+  const closed = issue.statusKey === 'done' || issue.statusKey === 'cancelled';
+  const item = findItem(groups, sticky.id) ?? {
+    ...sticky.item,
+    issue,
+    waits: closed ? [] : sticky.item.waits,
+    waitingSince: closed ? null : sticky.item.waitingSince,
+  };
+  // Only an actual follow preference change moves it immediately; status updates keep its placement.
   if (
-    !now ||
-    now.group === sticky.group ||
-    now.group === 'follow' ||
-    sticky.group === 'follow'
+    item.followed !== sticky.followed ||
+    (now?.group === sticky.group && now.index === sticky.index)
   )
     return [...groups];
-  const item = groups
-    .find((group) => group.group === now.group)!
-    .items.find((entry) => entry.issue.id === sticky.id)!;
   const result = groups.map((group) =>
-    group.group === now.group
+    group.group === now?.group
       ? {
           ...group,
           items: group.items.filter((entry) => entry.issue.id !== sticky.id),
@@ -76,15 +107,45 @@ export function keepPlacement(
   if (target) {
     const items = [...target.items];
     items.splice(Math.min(sticky.index, items.length), 0, item);
-    return result.map((group) =>
-      group.group === sticky.group ? { ...group, items } : group,
+    return keepLayout(
+      result.map((group) =>
+        group.group === sticky.group ? { ...group, items } : group,
+      ),
+      sticky,
     );
   }
   // Its group has nothing else left: show it again in its old place in the group order.
-  return [
-    ...result,
-    { group: sticky.group, count: 0, items: [item], nextCursor: null },
-  ].sort((a, b) => GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group));
+  return keepLayout(
+    [
+      ...result,
+      { group: sticky.group, count: 0, items: [item], nextCursor: null },
+    ].sort(
+      (a, b) => GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group),
+    ),
+    sticky,
+  );
+}
+
+/** A new empty destination header or pagination button must not push the retained row down. */
+function keepLayout(
+  groups: readonly ListGroup[],
+  sticky: Placement,
+): ListGroup[] {
+  const previous = new Map(sticky.layout.map((entry) => [entry.group, entry]));
+  return groups
+    .filter(
+      (group) =>
+        group.group === 'follow' ||
+        GROUP_ORDER.indexOf(group.group) >= GROUP_ORDER.indexOf(sticky.group) ||
+        group.items.length > 0 ||
+        previous.has(group.group),
+    )
+    .map((group) =>
+      GROUP_ORDER.indexOf(group.group) < GROUP_ORDER.indexOf(sticky.group) &&
+      previous.has(group.group)
+        ? { ...group, showMore: previous.get(group.group)!.showMore }
+        : group,
+    );
 }
 
 const GROUP_ORDER: readonly TaskGroupId[] = [

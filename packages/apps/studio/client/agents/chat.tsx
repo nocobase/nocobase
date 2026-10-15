@@ -44,6 +44,7 @@ import {
   createContext,
   useContext,
   useMemo,
+  useEffect,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -54,6 +55,14 @@ import type { ConversationMessage } from '@nocobase/app-plugin-agents/shared/con
 import { PlanCard } from '@/extensions/nocobase-plan-card/plan-card';
 
 import { conversationPath } from './conversation-path.js';
+import {
+  IntakeRecoveryProvider,
+  useIntakeRecovery,
+} from './intake-recovery.js';
+import {
+  useIntakeDraft,
+  emptyIntakeDraft,
+} from '@nocobase/app-plugin-projects/client/kit';
 import { Organize } from './intake-agent.js';
 import { renderDelegationNews } from './delegation/news.js';
 import { studioNewsText } from './news.js';
@@ -76,6 +85,8 @@ function useConversationPlans(
 ): readonly ChatTimelineItem[] {
   const pmClient = useContext(PmQueryClientContext);
   const api = usePlanApi();
+  const recovery = useIntakeRecovery();
+  const [, setDraft] = useIntakeDraft();
   const plans = useQuery(
     {
       queryKey: ['pm', 'plans', 'conversation', conversationId, revision],
@@ -90,7 +101,16 @@ function useConversationPlans(
     },
     pmClient ?? undefined,
   );
-  return useMemo(
+  const completed =
+    !plans.isPlaceholderData &&
+    (plans.data?.data.some((plan) => plan.status === 'executed') ?? false);
+  useEffect(() => {
+    if (completed && recovery?.handoff?.conversationId === conversationId) {
+      setDraft(emptyIntakeDraft());
+      recovery.setHandoff(null);
+    }
+  }, [completed, conversationId, recovery, setDraft]);
+  const items = useMemo(
     () =>
       (plans.data?.data ?? []).map((plan): ChatTimelineItem => {
         const card = <PlanCard planId={plan.id} plan={plan} />;
@@ -106,6 +126,7 @@ function useConversationPlans(
       }),
     [plans.data, pmClient],
   );
+  return items;
 }
 
 /** The reference cards under an agent's reply, under the projects plugin's cache like the plan cards. */
@@ -140,7 +161,7 @@ const intakeAgentSlot: IntakeAgentSlotFill = { Organize };
 // An issue's page at its own address and under the other lists that open it (`issueDetailRoute` in `routes.ts`).
 const ISSUE_PATHS = [
   '/issues/:issueId/*',
-  '/my-issues/:tab/:issueId/*',
+  '/my-issues/:issueId/*',
   '/projects/:projectId/issues/:issueId/*',
 ];
 const PROJECT_PATHS = ['/projects/:projectId/*'];
@@ -220,7 +241,7 @@ export function StudioChat({
             <StudioPlanWording>
               <IntakeAgentSlotContext.Provider value={intakeAgentSlot}>
                 <StudioChatStateProvider key={session?.user.id ?? 'signed-out'}>
-                  {children}
+                  <IntakeRecoveryProvider>{children}</IntakeRecoveryProvider>
                 </StudioChatStateProvider>
               </IntakeAgentSlotContext.Provider>
             </StudioPlanWording>

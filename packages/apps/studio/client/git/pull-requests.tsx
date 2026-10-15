@@ -872,7 +872,7 @@ export function PullRequestMarkBadge({
   readonly issue: Pick<Issue, 'id' | 'revision'>;
 }): ReactElement | null {
   const { t } = useTranslation();
-  const { data } = usePullRequestMark(issue.id, issue.revision);
+  const { data } = usePullRequestMark(issue.id);
   if (!data) return null;
   return <MarkBadge mark={data} title={t} />;
 }

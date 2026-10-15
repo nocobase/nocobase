@@ -58,12 +58,14 @@ import {
   sendMergeCard,
   sendSignalStopped,
   settleMergeCards,
+  settleIssueMergeCards,
   type CardIssue,
 } from './cards.js';
 import type { FailedCheck, PullRequestSnapshot } from './platform.js';
 import { GIT_NOTICE, type MergedAnnouncement } from './notices.js';
 import {
   findPullRequest,
+  findPullRequestById,
   linksOfPullRequest,
   pullRequestsOfIssue,
   updatePullRequest,
@@ -886,18 +888,60 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
       const conn = deps.projects().tx.read();
       const issue = await cardIssue(conn, issueId);
       if (!issue || issue.statusKey !== IN_REVIEW) return;
-      for (const { pr } of await pullRequestsOfIssue(conn, issueId))
-        if (!onlyPullRequestId || pr.id === onlyPullRequestId)
-          await sendMergeCard(port, issue, pr);
+      const links = (await pullRequestsOfIssue(conn, issueId)).filter(
+        ({ pr }) =>
+          pr.state === 'open' &&
+          !pr.draft &&
+          (!onlyPullRequestId || pr.id === onlyPullRequestId),
+      );
+      if (!links.length) return;
+      for (const { pr, link } of links)
+        await sendMergeCard(port, issue, pr, link.id);
+      // Delivery may finish after a concurrent issue transition committed.
+      const latest = await conn.query
+        .selectFrom('pmIssues')
+        .select('statusKey')
+        .where('id', '=', issueId)
+        .executeTakeFirst();
+      if (!latest || latest.statusKey !== IN_REVIEW)
+        await settleIssueMergeCards(conn, port, issueId);
+      else {
+        const current = new Map(
+          (await pullRequestsOfIssue(conn, issueId)).map(({ pr }) => [
+            pr.id,
+            pr,
+          ]),
+        );
+        for (const { pr } of links) {
+          const stored =
+            current.get(pr.id) ?? (await findPullRequestById(conn, pr.id));
+          if (
+            !current.has(pr.id) ||
+            !stored ||
+            stored.state !== 'open' ||
+            stored.draft
+          )
+            await settleMergeCards(
+              port,
+              pr.id,
+              [issueId],
+              stored?.state === 'merged' || stored?.state === 'closed'
+                ? stored.state
+                : 'withdrawn',
+            );
+        }
+      }
     },
 
     async withdrawMerges(issueId) {
       const port = deps.inbox();
       if (!port) return;
       const conn = deps.projects().tx.read();
+      // Merged and closed pull requests settled their cards when stored; the sweep below only resolves leftovers.
       for (const { pr } of await pullRequestsOfIssue(conn, issueId))
         if (pr.state === 'open')
           await settleMergeCards(port, pr.id, [issueId], 'withdrawn');
+      await settleIssueMergeCards(conn, port, issueId);
     },
   };
 }

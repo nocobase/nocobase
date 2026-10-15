@@ -78,9 +78,13 @@ export interface FollowUps {
   markSeen(viewer: Viewer, issueId: string): Promise<void>;
   /**
    * What the viewer follows, in order, and how much happened on each since they last looked; without the overview's
-   * progress, for the issue lists' follow group.
+   * progress, for the issue lists' follow group. `visibleIds`, the issues the caller has already read as visible to
+   * the viewer, saves reading them again.
    */
-  followState(viewer: Viewer): Promise<FollowState>;
+  followState(
+    viewer: Viewer,
+    visibleIds?: ReadonlySet<string>,
+  ): Promise<FollowState>;
 }
 
 export interface FollowState {
@@ -145,38 +149,54 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
     return parseSeen(await preferences.get(userId, SEEN_PREFERENCE));
   }
 
-  /** Comments and changes on the issue by anyone but the viewer after `since` (a comment is recorded as one). */
-  async function unreadOf(
+  /**
+   * Per issue, the comments and changes by anyone but the viewer after the time given for it (a comment is recorded as
+   * one), at most `UNREAD_MAX`: one grouped count for all of them. The caller has checked the viewer sees the issues.
+   */
+  async function unreadCounts(
     viewer: Viewer,
-    issueId: string,
-    since: string,
-  ): Promise<number> {
-    const after = Date.parse(since);
-    // The newest activities, as the issue's timeline reads them; the overview has checked the viewer sees the issue.
-    const data = await projects.tx
+    since: ReadonlyMap<string, string>,
+  ): Promise<Map<string, number>> {
+    const counts = new Map<string, number>();
+    if (since.size === 0) return counts;
+    const groups = await projects.tx
       .read()
       .repository<{
-        id: string;
         issueId: string;
         actorType: string;
         actorId: string | null;
         action: string;
         createdAt: string | Date;
       }>('pmActivities')
-      .findMany({
-        filter: { issueId },
-        sort: (sort) => [
-          sort.field('createdAt').desc(),
-          sort.field('id').desc(),
-        ],
-        limit: UNREAD_MAX,
+      .groupBy({
+        by: ['issueId'],
+        aggregate: (aggregate) => ({ count: aggregate.count() }),
+        filter: (f) =>
+          f.and([
+            f.or(
+              [...since].map(([issueId, at]) =>
+                f.and([
+                  f.string('issueId').eq(issueId),
+                  f.date('createdAt').after(new Date(at).toISOString()),
+                ]),
+              ),
+            ),
+            ...[...QUIET_ACTIONS].map((action) =>
+              f.string('action').ne(action),
+            ),
+            f.or([
+              f.string('actorType').ne('user'),
+              f.string('actorId').eq(null),
+              f.string('actorId').ne(viewer.userId),
+            ]),
+          ]),
       });
-    return data.filter(
-      (activity) =>
-        new Date(activity.createdAt).getTime() > after &&
-        !QUIET_ACTIONS.has(activity.action) &&
-        !(activity.actorType === 'user' && activity.actorId === viewer.userId),
-    ).length;
+    for (const group of groups)
+      counts.set(
+        String(group.issueId),
+        Math.min(Number(group.count), UNREAD_MAX),
+      );
+    return counts;
   }
 
   /** Until the viewer chooses, what they follow: their blocked and in-review issues, newest first. */
@@ -274,6 +294,15 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
       issues.filter(wantsProgress),
       progressViewer,
     );
+    const unread = await unreadCounts(
+      viewer,
+      new Map(
+        issues.flatMap((issue) => {
+          const at = followed.has(issue.id) ? seen[issue.id] : undefined;
+          return at ? [[issue.id, at] as const] : [];
+        }),
+      ),
+    );
     return mapLimited(issues, async (issue): Promise<FollowUpIssue> => {
       const isFollowed = followed.has(issue.id);
       const seenAt = isFollowed ? (seen[issue.id] ?? null) : null;
@@ -297,7 +326,7 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
               { reads, list: true },
             )
           : null,
-        unread: seenAt ? await unreadOf(viewer, issue.id, seenAt) : 0,
+        unread: seenAt ? (unread.get(issue.id) ?? 0) : 0,
         seenAt,
       };
     });
@@ -467,15 +496,28 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
       );
     },
 
-    async followState(viewer) {
-      const ids = await chosenFollowing(viewer);
+    async followState(viewer, visibleIds) {
+      const stored =
+        parseFollowing(
+          await preferences.get(viewer.userId, FOLLOWING_PREFERENCE),
+        ) ?? [];
+      const ids = visibleIds
+        ? stored.filter((id) => visibleIds.has(id))
+        : await chosenFollowing(viewer);
       const seen = await readSeen(viewer.userId);
-      const unread = new Map<string, number>();
-      for (const id of ids) {
-        const at = seen[id];
-        unread.set(id, at ? await unreadOf(viewer, id, at) : 0);
-      }
-      return { ids, unread };
+      const counts = await unreadCounts(
+        viewer,
+        new Map(
+          ids.flatMap((id) => {
+            const at = seen[id];
+            return at ? [[id, at] as const] : [];
+          }),
+        ),
+      );
+      return {
+        ids,
+        unread: new Map(ids.map((id) => [id, counts.get(id) ?? 0])),
+      };
     },
 
     async markSeen(viewer, issueId) {

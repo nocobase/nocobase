@@ -241,7 +241,9 @@ export class FakeRunner {
   }
 
   /** Starts real server-side work without launching a coding tool. */
-  async start(identifier: string): Promise<{ runId: string; token: string }> {
+  async start(
+    identifier: string,
+  ): Promise<{ runId: string; token: string; firstSeq: number }> {
     const claimed = await this.claimRun(identifier);
     await this.runner(
       'POST',
@@ -251,8 +253,21 @@ export class FakeRunner {
     );
     return {
       runId: claimed.run.id,
+      firstSeq: claimed.run.firstSeq,
       token: claimed.cli!.credential!.content!.token!,
     };
+  }
+
+  /** Reports the tool's actual reply as the conversation's assistant message. */
+  async reply(runId: string, seq: number, content: string): Promise<void> {
+    await this.runner(
+      'POST',
+      `agents/runners/runs/${runId}/events`,
+      {
+        events: [{ seq, type: 'text', at: new Date().toISOString(), content }],
+      },
+      { [HEADERS.runnerKey]: await this.register() },
+    );
   }
 
   /** Handles all delivered input and ends the run through the runner protocol. */

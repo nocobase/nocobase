@@ -407,13 +407,34 @@ export function createTaskGroupModel(input: TaskGroupModelInput) {
     group === 'follow' ? followIds.length : (groups.get(group)?.count ?? 0);
   const followWaiting = followIds.filter((id) => input.waits.has(id)).length;
 
+  // What the lists hold, without what each task says about itself: unchanged while no task joins, leaves or moves
+  // between groups, so a client can refresh single rows instead of reading the whole query again.
+  const membership = createHash('sha256')
+    .update(
+      JSON.stringify([
+        input.queryIdentity,
+        input.mode,
+        followIds,
+        groupIds.map((group) => [
+          group,
+          countOf(group),
+          [...(ordered.get(group) ?? [])].sort(compareId),
+        ]),
+      ]),
+    )
+    .digest('base64url');
+
   return {
     generation,
+    membership,
     groups: groupIds.map((group) => ({ group, count: countOf(group) })),
-    /** The tasks waiting for the viewer the tabs count: the wait group and the followed ones. */
+    /** The tasks waiting for the viewer the menu counts: the wait group and the followed ones. */
     waiting: countOf('wait') + followWaiting,
     following: followIds,
     rootOf: (id: string): string | undefined => rootIds.get(id),
+    /** The node of any task the viewer may see, as the lists would show it; null for any other id. */
+    nodeOf: (id: string): TaskGroupNode | null =>
+      issues.has(id) ? node(id, expands.get(id) ?? []) : null,
     group(
       group: TaskGroupId,
       limit = 50,

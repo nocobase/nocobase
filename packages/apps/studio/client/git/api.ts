@@ -572,14 +572,14 @@ export function useGitRealtime(): void {
   }, [realtime, queryClient]);
 }
 
+/** The issue's pull requests; git announcements read them again (`useGitRealtime`), so the key is the issue alone. */
 export function useIssuePullRequests(
   issueId: string,
-  revision: number,
 ): UseQueryResult<IssuePullRequests> {
   const api = useGitApi();
   useGitRealtime();
   return useQuery({
-    queryKey: [...gitKeys.issue(issueId), revision],
+    queryKey: gitKeys.issue(issueId),
     queryFn: ({ signal }) => api.list(issueId, signal),
     staleTime: 15_000,
   });
@@ -632,11 +632,10 @@ function loadMark(
 
 export function usePullRequestMark(
   issueId: string,
-  revision: number,
 ): UseQueryResult<PullRequestMark | null> {
   const api = useApiClient();
   return useQuery({
-    queryKey: [...gitKeys.mark(issueId), revision],
+    queryKey: gitKeys.mark(issueId),
     queryFn: () => loadMark(api, issueId),
     staleTime: 30_000,
   });

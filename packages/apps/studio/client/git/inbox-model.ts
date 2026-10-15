@@ -21,7 +21,7 @@ export const labelOf = (entry: InboxEntry) =>
 
 export function useGitModel(entry: InboxEntry): GitModel {
   return {
-    pullRequests: useIssuePullRequests(field(entry, 'issueId') ?? '', 0),
+    pullRequests: useIssuePullRequests(field(entry, 'issueId') ?? ''),
   };
 }
 

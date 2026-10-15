@@ -19,6 +19,7 @@ import type {
   FollowUpIssue,
   FollowUpsView,
 } from '../../shared/follow-ups.js';
+import type { TaskGroups } from '../../shared/task-groups.js';
 import { taskGroupKeys } from '../issues/groups/api.js';
 import { followUpsKeys, mergeFollowUpRows } from './model.js';
 
@@ -64,13 +65,15 @@ export function useFollowUps(): UseQueryResult<FollowUpsView> {
 }
 
 /**
- * What the viewer follows and how many they may (`GET followUps/following`), the follow star's read; under the
- * overview's key, so whatever reads the overview again reads it too.
+ * What the viewer follows and how many they may (`GET followUps/following`), the follow star's read. It changes only
+ * when they follow or unfollow, or an issue they follow leaves their sight, so it is read again then and for an
+ * announcement naming no issues. `enabled: false` where the page has it already (the task lists' `following`).
  */
-export function useFollowing(): UseQueryResult<FollowingState> {
+export function useFollowing(enabled = true): UseQueryResult<FollowingState> {
   const api = useApiClient();
   return useQuery({
     queryKey: followUpsKeys.following,
+    enabled,
     queryFn: async ({ signal }) =>
       (
         await api.request<{ data: FollowingState }>({
@@ -150,22 +153,41 @@ export function useFollowIssue(
         client.setQueryData(followUpsKeys.following, context.previousFollowing);
       onError(error);
     },
-    // The overview's key holds the star's, so both are read again.
     onSettled: () =>
       Promise.all([
-        client.invalidateQueries({ queryKey: followUpsKeys.overview }),
+        client.invalidateQueries({
+          queryKey: followUpsKeys.overview,
+          exact: true,
+        }),
+        client.invalidateQueries({
+          queryKey: followUpsKeys.following,
+          exact: true,
+        }),
         // The issue lists' follow group (`../issues/groups/api.ts`).
         client.invalidateQueries({ queryKey: taskGroupKeys.all }),
       ]),
   });
 }
 
-/** Records that the viewer looked at an issue now, then reads that issue's row again. */
+/**
+ * Records that the viewer looked at an issue now, then, while My follow-ups shows, reads that issue's row again; an
+ * overview no page shows is only marked stale.
+ */
 export function useMarkSeen(): (issueId: string) => void {
   const api = useApiClient();
   const client = useQueryClient();
   return useCallback(
     (issueId: string) => {
+      const overview = () =>
+        client.getQueryCache().find<FollowUpsView>({
+          queryKey: followUpsKeys.overview,
+          exact: true,
+        });
+      const readWhole = () =>
+        client.invalidateQueries({
+          queryKey: followUpsKeys.overview,
+          exact: true,
+        });
       api
         .request({
           method: 'POST',
@@ -173,25 +195,47 @@ export function useMarkSeen(): (issueId: string) => void {
         })
         .then(
           async () => {
+            // The task lists' follow group counts it read now, without reading anything.
+            for (const list of client
+              .getQueryCache()
+              .findAll({ queryKey: taskGroupKeys.lists }))
+              client.setQueryData<TaskGroups>(list.queryKey, (groups) =>
+                groups
+                  ? {
+                      ...groups,
+                      groups: groups.groups.map((group) => ({
+                        ...group,
+                        data: group.data.map((item) =>
+                          item.issue.id === issueId && item.unread > 0
+                            ? { ...item, unread: 0 }
+                            : item,
+                        ),
+                      })),
+                    }
+                  : groups,
+              );
+            const query = overview();
+            if (!query?.state.data) return;
+            if (query.getObserversCount() === 0) {
+              await client.invalidateQueries({
+                queryKey: followUpsKeys.overview,
+                exact: true,
+                refetchType: 'none',
+              });
+              return;
+            }
             const rows = await readFollowUpRows(api, [issueId]);
-            const view = client.getQueryData<FollowUpsView>(
-              followUpsKeys.overview,
-            );
+            const view = overview()?.state.data;
             const merged = view
               ? mergeFollowUpRows(view, new Set([issueId]), rows)
               : null;
             if (merged) client.setQueryData(followUpsKeys.overview, merged);
-            else
-              await client.invalidateQueries({
-                queryKey: followUpsKeys.overview,
-              });
+            else await readWhole();
           },
           // Only the unread count is lost; the next look records it again.
           () => undefined,
         )
-        .catch(() =>
-          client.invalidateQueries({ queryKey: followUpsKeys.overview }),
-        );
+        .catch(() => readWhole());
     },
     [api, client],
   );

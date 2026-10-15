@@ -66,24 +66,28 @@ describe('page entries as chat chips', () => {
 });
 
 describe('what "Let an agent organize" sends', () => {
-  it('keeps the text first and cuts the files to the budget', () => {
-    const fitted = fitIntake(
-      'abc',
-      [
-        { name: 'a.md', text: 'x'.repeat(100) },
-        { name: 'b.md', text: 'y'.repeat(100) },
-      ],
-      3 + 100 + 4 + 20 + 30,
-    );
-    expect(fitted.text).toBe('abc');
-    expect(fitted.files).toEqual([
+  it('keeps all content when it fits and rejects any content loss', () => {
+    const files = [
       { name: 'a.md', text: 'x'.repeat(100) },
-      { name: 'b.md', text: 'y'.repeat(6) },
-    ]);
-    expect(fitIntake('z'.repeat(50), [{ name: 'a', text: 'x' }], 40)).toEqual({
-      text: 'z'.repeat(40),
-      files: [],
-    });
+      { name: 'b.md', text: 'y'.repeat(100) },
+    ];
+    expect(fitIntake('abc', files, 251)).toEqual({ text: 'abc', files });
+    const fitted = fitIntake('abc', files, 3 + 100 + 4 + 20 + 30);
+    expect(fitted).toBeNull();
+    expect(
+      fitIntake('z'.repeat(50), [{ name: 'a', text: 'x' }], 40),
+    ).toBeNull();
+    expect(fitIntake('abc', files, 250)).toBeNull();
+    expect(
+      fitIntake(
+        'abc',
+        Array.from({ length: 11 }, () => ({ name: 'a', text: 'x' })),
+      ),
+    ).toBeNull();
+    expect(
+      fitIntake('abc', [{ name: 'a', text: 'x'.repeat(50_001) }], 100_000),
+    ).toBeNull();
+    expect(fitIntake('abc', [])).toEqual({ text: 'abc', files: [] });
   });
 
   it('titles the conversation by the first line, without Markdown markers', () => {

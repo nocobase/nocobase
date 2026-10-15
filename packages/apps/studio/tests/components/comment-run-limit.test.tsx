@@ -30,6 +30,7 @@ vi.mock('@nocobase/app-client', async (original) => ({
   useToaster: () => ({ show: mocks.show }),
 }));
 vi.mock('@nocobase/app-plugin-projects/client/kit', () => ({
+  pmKeys: { issue: (id: string) => ['pm', 'issue', id] },
   useViewer: () => mocks.viewer,
 }));
 vi.mock('@nocobase/app-plugin-projects/client/issues', () => ({

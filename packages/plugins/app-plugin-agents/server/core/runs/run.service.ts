@@ -30,6 +30,7 @@ import type {
   RunEventPage,
   RunExecution,
   RunUsageTotal,
+  RunWait,
   Workload,
   WorkloadQuery,
   SubjectAgentWork,
@@ -84,7 +85,11 @@ import {
   type RunRecord,
 } from './run.store.js';
 import type { SubjectRegistry } from './ports.js';
-import { readWorkload, type WorkloadRunners } from './workload.js';
+import {
+  readQueueWait,
+  readWorkload,
+  type WorkloadRunners,
+} from './workload.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
 import { gateInputs, gatePending } from './input-gate.js';
 import { findBrief, requestReset } from './workspace.store.js';
@@ -279,6 +284,12 @@ export interface RunService {
    * Whoever calls decides what of it a person may see.
    */
   workload(query: WorkloadQuery): Promise<Workload>;
+  /**
+   * Exactly why one queued run waits, as its row in `workload` would say after the claim's read-only diagnosis of its
+   * candidate runners; null when the run does not exist or is not queued. Whoever calls decides what of it a person may
+   * see.
+   */
+  queueWait(runId: string): Promise<RunWait | null>;
   events(
     runId: string,
     afterSeq: number,
@@ -1848,7 +1859,17 @@ export function createRunService(deps: RunServiceDeps): RunService {
     },
 
     workload(query) {
-      return readWorkload(tx.read(), clock, deps.runners, query, deps.diagnose);
+      return readWorkload(tx.read(), clock, deps.runners, query);
+    },
+
+    queueWait(runId) {
+      return readQueueWait(
+        tx.read(),
+        clock,
+        deps.runners,
+        runId,
+        deps.diagnose,
+      );
     },
 
     async events(runId, afterSeq, limit, types) {

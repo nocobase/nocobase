@@ -42,8 +42,10 @@ describe('the workload', () => {
     });
     const diagnostic = await h.services.claims.selectionWait(run);
     expect(diagnostic?.entries[0]?.reason).toBe('incompatible');
-    const wait = (await byId(h)).get(run)?.wait;
+    const wait = await h.services.runs.queueWait(run);
     expect(wait?.reason).toBe('incompatible');
+    // The list explains it by the claim's rules alone, without the diagnosis.
+    expect((await byId(h)).get(run)?.wait?.reason).toBe('noSharedRunner');
     expect(JSON.stringify(wait)).not.toContain('private-secret-name');
     expect(JSON.stringify(diagnostic)).not.toContain('private-secret-name');
   });

@@ -7,6 +7,7 @@
  * | `POST /intakeDrafts` `{ drafts }`              | an intake run hands its drafts back (`intake/`)               |
  * | `POST /failedRuns/:runId/decide` `{ action }`  | answers a failed run's inbox card (`failed-runs.ts`)          |
  * | `GET /agentBoard`                              | the Agent queue's data (`board.ts`), with the issue list's filters (`q`, `projectId`, `labelId`, `ownerUserId`, `executorId`) |
+ * | `GET /agentBoard/issues/:issueId/agents/:agentId/wait` | exactly why the agent's queued run on the issue waits |
  * | `POST /agentBoard/issues/:issueId/start`       | "Start" on an idle issue                                      |
  * | `GET /delegations?conversationId=`             | the issues a conversation handed to agents (`conversation/delegation.ts`) |
  * | `GET`, `PATCH /delegations/:delegationId` `{ followed }` | one of them; stops or resumes following it          |
@@ -60,7 +61,11 @@ import {
   OrganizeRequestSchema,
 } from './conversation/intake.js';
 import { INTAKE_PROPOSE_ACTION } from './commands/permissions.js';
-import { readAgentBoard, startAgentBoardIssue } from './board.js';
+import {
+  readAgentBoard,
+  readAgentBoardWait,
+  startAgentBoardIssue,
+} from './board.js';
 import { readIssueAgentWork } from './issue-agent-work.js';
 import { callerOfRequest, runSubjectOf } from './run-principal.js';
 import { INTAKE_SUBJECT } from './intake/subject.js';
@@ -71,6 +76,8 @@ import { studioDelegationsToken } from './conversation/delegation-token.js';
 import {
   AgentBoardQuery,
   AgentBoardSchema,
+  AgentBoardWaitParams,
+  AgentBoardWaitSchema,
   AgentBoardStartResultSchema,
   IssueAgentWorkInput,
   IssueAgentWorkSchema,
@@ -149,7 +156,7 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
           200: dataResponse(IntakeStartedSchema),
           400: apiErrorResponse(
             400,
-            'When the text and files together are longer than a message may be (`INTAKE_TOO_LONG`).',
+            'When the text and files exceed the message limit (`INTAKE_TOO_LONG`), or selected images cannot be prepared (`INTAKE_IMAGE_FAILED`).',
           ),
           403: apiErrorResponse(403, 'When the caller may not wake the agent.'),
           409: apiErrorResponse(
@@ -203,9 +210,28 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
             intakeFailureMessages[reason ?? 'INTAKE_NO_AGENT'],
             { httpStatus: 409 },
           );
+        const attachmentIds: string[] = [];
+        if (request.imageFileIds?.length) {
+          try {
+            const images = await container
+              .resolve(projectsToken)
+              .intake.images(userId, request.imageFileIds);
+            for (const image of images)
+              attachmentIds.push(
+                (await agents.chatAttachments.upload(userId, image)).id,
+              );
+          } catch {
+            throw studioError(
+              'INVALID_ARGUMENT',
+              'INTAKE_IMAGE_FAILED',
+              'Could not prepare all images. Use your own PNG or JPEG uploads and retry; your requirements are kept.',
+            );
+          }
+        }
         return context.json({
           data: await agents.conversations.start(userId, {
             source: INTAKE_SOURCE,
+            attachmentIds,
             text,
             title: request.title ?? intakeTitle(request.text),
             agentId: agent.id,
@@ -466,6 +492,48 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
               context.req.valid('json').issueIds,
             ),
           }),
+      );
+      board.get(
+        '/issues/:issueId/agents/:agentId/wait',
+        describeRoute({
+          tags,
+          summary: 'Get why an agent’s queued run on an issue waits',
+          operationId: 'agentBoardGetWait',
+          description:
+            'The exact reason a queued row of the Agent queue shows in short: the claim’s diagnosis of the run’s candidate runners. Needs a caller who sees the issue; the preparation detail only for one who could open the run. 404 `QUEUED_RUN_NOT_FOUND` when the agent has no queued run on the issue.',
+          ...cliRoute({
+            command: 'board wait',
+            flags: {
+              issueId: { name: 'issue' },
+              agentId: { name: 'agent' },
+            },
+            examples: ['board wait PM-12 coder'],
+          }),
+          responses: {
+            200: dataResponse(AgentBoardWaitSchema),
+            404: apiErrorResponse(404),
+            ...apiErrorResponses,
+          },
+        }),
+        apiValidator('param', AgentBoardWaitParams),
+        async (context) => {
+          const authz = context.get('authz' as never) as AuthorizationContext;
+          const { issueId, agentId } = context.req.valid('param');
+          return context.json({
+            data: await readAgentBoardWait(
+              { projects: () => container.resolve(projectsToken), agents },
+              {
+                viewer: await viewerFrom(context),
+                readsAllRuns: await authz.can({
+                  resource: { type: 'settings', id: 'agents.agents' },
+                  action: 'read',
+                }),
+              },
+              issueId,
+              agentId,
+            ),
+          });
+        },
       );
       const work = createAgentWork({
         agents,

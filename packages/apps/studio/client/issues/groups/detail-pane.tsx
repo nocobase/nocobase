@@ -90,7 +90,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { IssueSectionInTabContext } from '@/extensions/nocobase-issue-detail/section-context';
 import { cn } from 'cn';
 
-import { IssueRunPanel } from '../../agents/issue-runs.js';
+import { EmbeddedRuns } from '../../agents/embedded-runs.js';
+import { IssueRunPanel, IssueRunRow } from '../../agents/issue-runs.js';
 import { chatItemOf } from '../../agents/chat-items.js';
 import { useIssuePullRequests } from '../../git/api.js';
 import { useMarkSeen } from '../../follow-ups/api.js';
@@ -140,6 +141,8 @@ export interface TaskDetailPaneProps {
   readonly onGoto?: (issueId: string) => void;
   /** At the bottom instead of the comment box, such as the phone's action bar. */
   readonly footer?: (detail: IssueDetail, update: IssueUpdate) => ReactNode;
+  /** What the viewer follows, as the list beside the pane read it; the follow star reads it itself without. */
+  readonly following?: readonly string[] | undefined;
   readonly className?: string;
 }
 
@@ -209,13 +212,8 @@ function LiveTask({
   const pageActions = useIssuePageActions(detail);
   const runs = useLiveIssue(detail, issueId, detailKey, 0);
   const main = useIssueMainState(pageActions);
-  const prs = useIssuePullRequests(detail.id, detail.revision).data;
+  const prs = useIssuePullRequests(detail.id).data;
   const markSeen = useMarkSeen();
-  const progressRefresh = [
-    detail.revision,
-    detail.statusKey,
-    ...runs.map((run) => `${run.id}:${run.status}`),
-  ].join('|');
   const entry = useMemo(
     () =>
       ({
@@ -261,132 +259,139 @@ function LiveTask({
   const phone = variant === 'phone';
   return (
     <IssueBaseContext.Provider value={props.issuePath}>
-      <IssueConversation detail={detail} detailKey={detailKey}>
-        <PaneFrame className={props.className}>
-          <PaneTop
-            {...props}
-            detail={detail}
-            pageActions={pageActions}
-            update={update}
-          />
-          <div
-            className='@container/detail min-h-0 flex-1 overflow-y-auto overscroll-y-contain'
-            data-testid='task-detail-scroll'
-          >
-            <div
-              className={cn(
-                'mx-auto flex w-full max-w-4xl flex-col gap-4 px-6 pt-5 pb-6',
-                phone && 'px-4 pt-3',
-              )}
-            >
-              {detail.parent ? (
-                <ParentLink detail={detail} onGoto={props.onGoto} />
-              ) : null}
-              <IssueSummary
-                issue={detail}
-                update={update}
-                refresh={progressRefresh}
-                runsBase={props.issuePath}
-                // The key and the status menu are in the top row.
-                meta={false}
-                headingLevel={2}
-                {...(canEditIssues(viewer)
-                  ? {
-                      rename: {
-                        onRename: async (title: string) => {
-                          await update.mutateAsync({ title });
-                        },
-                        editLabel: wording.detail.editTitle,
-                        inputLabel: wording.detail.titleLabel,
-                      },
-                    }
-                  : {})}
-              />
-              <PropertyChips
-                detail={detail}
-                update={update}
-                pageActions={pageActions}
-                phone={phone}
-              />
-              <Tabs
-                value={shown}
-                onValueChange={(value) => onTabChange(value as DetailTab)}
-                className='gap-4'
-              >
-                <TabsList
-                  variant='line'
-                  aria-label={t('taskGroups.detail.tabs.label')}
-                  // Only a phone's strip scrolls sideways (and never up and down); beside a list the tabs fit.
-                  className={cn(
-                    'w-full justify-start gap-1 border-b bg-card',
-                    phone &&
-                      'sticky top-0 z-10 overflow-x-auto overflow-y-hidden pb-1',
-                  )}
-                >
-                  {tabs.map((item) => (
-                    <TabsTrigger
-                      key={item.key}
-                      value={item.key}
-                      className='flex-none px-2'
-                      data-testid={`task-tab-${item.key}`}
-                    >
-                      {t(`taskGroups.detail.tabs.${item.key}`)}
-                      {item.count ? (
-                        <span className='text-xs font-normal text-muted-foreground tabular-nums'>
-                          {item.count}
-                        </span>
-                      ) : null}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                <TabsContent value='feed'>
-                  <IssueFeed titleHidden />
-                </TabsContent>
-                <TabsContent value='desc' className='flex flex-col gap-6'>
-                  <IssueDescriptionSection detail={detail} update={update} />
-                  <IssueAddSection detail={detail} state={main} />
-                  <IssueFilesSection
-                    detail={detail}
-                    pageActions={pageActions}
-                    state={main}
-                  />
-                  <IssueDependenciesSection
-                    detail={detail}
-                    pageActions={pageActions}
-                    state={main}
-                  />
-                  <IssuePlansSection issue={detail} />
-                </TabsContent>
-                {/* A section under the tab of its name does not repeat its heading or frame. */}
-                <IssueSectionInTabContext.Provider value>
-                  <TabsContent value='subs'>
-                    <IssueSubtasksSection detail={detail} />
-                  </TabsContent>
-                  <TabsContent value='code'>
-                    <CodeTab detail={detail} />
-                  </TabsContent>
-                </IssueSectionInTabContext.Provider>
-                <TabsContent
-                  value='runs'
-                  className='[&_[data-slot=agent-run-history]>div:first-child>h2]:sr-only [&_[data-slot=card]]:border-0 [&_[data-slot=card]]:bg-transparent [&_[data-slot=card]]:py-0 [&_[data-slot=card]]:shadow-none [&_[data-slot=card]]:ring-0 [&_[data-slot=card-content]]:px-0'
-                >
-                  <IssueRunPanel issue={detail} />
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
-          {props.footer ? (
-            props.footer(detail, update)
-          ) : (
-            // One line naming the task until opened, the same beside a list and beside a conversation.
-            <FoldedComposer
-              identifier={detail.identifier}
-              issueId={detail.id}
-              agentHint={variant === 'agent'}
+      <EmbeddedRuns>
+        <IssueConversation detail={detail} detailKey={detailKey}>
+          <PaneFrame className={props.className}>
+            <PaneTop
+              {...props}
+              detail={detail}
+              pageActions={pageActions}
+              update={update}
             />
-          )}
-        </PaneFrame>
-      </IssueConversation>
+            <div
+              className='@container/detail min-h-0 flex-1 overflow-y-auto overscroll-y-contain'
+              data-testid='task-detail-scroll'
+            >
+              <div
+                className={cn(
+                  'mx-auto flex w-full max-w-4xl flex-col gap-4 px-6 pt-5 pb-6',
+                  phone && 'px-4 pt-3',
+                )}
+              >
+                {detail.parent ? (
+                  <ParentLink detail={detail} onGoto={props.onGoto} />
+                ) : null}
+                <IssueSummary
+                  issue={detail}
+                  update={update}
+                  runsBase={props.issuePath}
+                  // The key and the status menu are in the top row.
+                  meta={false}
+                  headingLevel={2}
+                  {...(canEditIssues(viewer)
+                    ? {
+                        rename: {
+                          onRename: async (title: string) => {
+                            await update.mutateAsync({ title });
+                          },
+                          editLabel: wording.detail.editTitle,
+                          inputLabel: wording.detail.titleLabel,
+                        },
+                      }
+                    : {})}
+                />
+                <PropertyChips
+                  detail={detail}
+                  update={update}
+                  pageActions={pageActions}
+                  phone={phone}
+                />
+                <Tabs
+                  value={shown}
+                  onValueChange={(value) => onTabChange(value as DetailTab)}
+                  className='gap-4'
+                >
+                  <TabsList
+                    variant='line'
+                    aria-label={t('taskGroups.detail.tabs.label')}
+                    // Only a phone's strip scrolls sideways (and never up and down); beside a list the tabs fit.
+                    className={cn(
+                      'w-full justify-start gap-1 border-b bg-card',
+                      phone &&
+                        'sticky top-0 z-10 overflow-x-auto overflow-y-hidden pb-1',
+                    )}
+                  >
+                    {tabs.map((item) => (
+                      <TabsTrigger
+                        key={item.key}
+                        value={item.key}
+                        className='flex-none px-2'
+                        data-testid={`task-tab-${item.key}`}
+                      >
+                        {t(`taskGroups.detail.tabs.${item.key}`)}
+                        {item.count ? (
+                          <span className='text-xs font-normal text-muted-foreground tabular-nums'>
+                            {item.count}
+                          </span>
+                        ) : null}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                  <TabsContent value='feed'>
+                    <IssueFeed
+                      titleHidden
+                      runs={runs}
+                      renderRun={(runId) => (
+                        <IssueRunRow issue={detail} runId={runId} />
+                      )}
+                    />
+                  </TabsContent>
+                  <TabsContent value='desc' className='flex flex-col gap-6'>
+                    <IssueDescriptionSection detail={detail} update={update} />
+                    <IssueAddSection detail={detail} state={main} />
+                    <IssueFilesSection
+                      detail={detail}
+                      pageActions={pageActions}
+                      state={main}
+                    />
+                    <IssueDependenciesSection
+                      detail={detail}
+                      pageActions={pageActions}
+                      state={main}
+                    />
+                    <IssuePlansSection issue={detail} />
+                  </TabsContent>
+                  {/* A section under the tab of its name does not repeat its heading or frame. */}
+                  <IssueSectionInTabContext.Provider value>
+                    <TabsContent value='subs'>
+                      <IssueSubtasksSection detail={detail} />
+                    </TabsContent>
+                    <TabsContent value='code'>
+                      <CodeTab detail={detail} />
+                    </TabsContent>
+                  </IssueSectionInTabContext.Provider>
+                  <TabsContent
+                    value='runs'
+                    className='[&_[data-slot=agent-run-history]>div:first-child>h2]:sr-only [&_[data-slot=card]]:border-0 [&_[data-slot=card]]:bg-transparent [&_[data-slot=card]]:py-0 [&_[data-slot=card]]:shadow-none [&_[data-slot=card]]:ring-0 [&_[data-slot=card-content]]:px-0'
+                  >
+                    <IssueRunPanel issue={detail} />
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </div>
+            {props.footer ? (
+              props.footer(detail, update)
+            ) : (
+              // One line naming the task until opened, the same beside a list and beside a conversation.
+              <FoldedComposer
+                identifier={detail.identifier}
+                issueId={detail.id}
+                agentHint={variant === 'agent'}
+              />
+            )}
+          </PaneFrame>
+        </IssueConversation>
+      </EmbeddedRuns>
     </IssueBaseContext.Provider>
   );
 }
@@ -704,6 +709,7 @@ function PaneTop({
   onClose,
   leading,
   update,
+  following,
 }: TaskDetailPaneProps & {
   readonly detail: IssueDetail | null;
   readonly pageActions?: IssuePageActions;
@@ -773,6 +779,7 @@ function PaneTop({
         {detail ? (
           <FollowToggle
             issueId={detail.id}
+            following={following}
             // Borderless and quiet beside the title; a narrow panel shows the star alone.
             className={cn(
               'border-transparent bg-transparent font-normal text-muted-foreground shadow-none hover:text-foreground',

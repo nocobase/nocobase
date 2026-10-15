@@ -26,6 +26,7 @@ import {
   ISSUE_AGENT_WORK_POLL_MS,
   useIssueAgentWork,
 } from '../../client/issues/use-agent-work.js';
+import { STUDIO_ISSUE_RUNS_TOPIC } from '../../shared/issue-runs.js';
 
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
@@ -287,13 +288,13 @@ describe('issue work marks and refresh', () => {
       });
       document.dispatchEvent(new Event('visibilitychange'));
     });
-    await advance(301);
+    await advance(1_001);
     expect(mocks.request.mock.calls.length).toBeGreaterThan(before);
     mocks.request.mockClear();
     await act(async () => {
       for (const callback of mocks.callbacks) callback();
     });
-    await advance(301);
+    await advance(1_001);
     expect(mocks.request).toHaveBeenCalledTimes(1);
     // An announcement naming only issues this view does not show refreshes nothing.
     mocks.request.mockClear();
@@ -307,8 +308,23 @@ describe('issue work marks and refresh', () => {
         },
       });
     });
-    await advance(301);
+    await advance(1_001);
     expect(mocks.request).not.toHaveBeenCalled();
+    // The runs on issues: only an announcement naming a shown issue reads again, a burst once.
+    expect(mocks.topics).not.toContain('agents:runners');
+    const onRuns =
+      mocks.callbacks[mocks.topics.indexOf(STUDIO_ISSUE_RUNS_TOPIC)]!;
+    await act(async () => {
+      onRuns({ payload: { kind: 'studio.issue.runs', issueIds: ['other'] } });
+    });
+    await advance(1_001);
+    expect(mocks.request).not.toHaveBeenCalled();
+    await act(async () => {
+      onRuns({ payload: { kind: 'studio.issue.runs', issueIds: ['i1'] } });
+      onRuns({ payload: { kind: 'studio.issue.runs', issueIds: ['i1'] } });
+    });
+    await advance(1_001);
+    expect(mocks.request).toHaveBeenCalledTimes(1);
     view.unmount();
     expect(mocks.stop).toHaveBeenCalledTimes(3);
     mocks.request.mockClear();

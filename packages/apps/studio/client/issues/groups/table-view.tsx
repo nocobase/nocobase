@@ -136,7 +136,7 @@ export function GroupedTableView({
     const count = childPages[id] ?? 1;
     parents.push({ id, pages: count });
     const cached = client.getQueryData<TaskChildrenPage>(
-      childrenKey(filters, follow, data?.generation, id, count),
+      childrenKey(filters, follow, id, count),
     );
     for (const child of cached?.data ?? [])
       if (child.hasChildren && isOpen(child.issue.id))

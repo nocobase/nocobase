@@ -1,6 +1,7 @@
 /** Personal runner decisions use Studio's inbox and open the issue's single decision card. */
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
 import type { Projects } from '@nocobase/app-plugin-projects/server/tokens';
+import { createDecisionReconciler } from '../inbox/reconcile.js';
 import { agentsTx } from './tx.js';
 import type { StudioInboxPort } from '../inbox/port.js';
 
@@ -76,6 +77,11 @@ export function bindCommentConsentInbox(
           },
           data: { requestId: request.id },
         });
+        await createDecisionReconciler(
+          () => projects().tx.read(),
+          () => inbox,
+          onError,
+        ).issue(request.subject.id);
         const latest = await agents.runs.requests.get(request.id);
         if (latest.status !== 'pending')
           await inbox.resolve({

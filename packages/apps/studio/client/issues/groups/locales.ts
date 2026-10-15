@@ -35,7 +35,6 @@ export const taskGroupsEnUS = {
   row: {
     inParent: 'In {{identifier}}',
     ownedBy: 'Owned by {{name}}',
-    working: '{{name}} working',
     subtasks: 'Sub-tasks {{finished}}/{{total}}',
     waitingOn: 'Waiting for {{count}} tasks',
     youExecute: 'You execute it',
@@ -117,9 +116,6 @@ export const taskGroupsEnUS = {
     childrenFailed: 'Could not load sub-tasks',
     progress: '{{finished}} of {{total}} sub-tasks finished',
   },
-  tabs: {
-    waiting: 'Waiting {{count}}',
-  },
   navigation: {
     waiting: '{{title}}, {{count}} waiting for you',
   },
@@ -173,7 +169,6 @@ export const taskGroupsZhCN: TaskGroupsWording = {
   row: {
     inParent: '属于 {{identifier}}',
     ownedBy: '{{name}}负责',
-    working: '{{name}} 工作中',
     subtasks: '子任务 {{finished}}/{{total}}',
     waitingOn: '在等 {{count}} 个任务',
     youExecute: '你来执行',
@@ -253,9 +248,6 @@ export const taskGroupsZhCN: TaskGroupsWording = {
     loadingChildren: '正在加载子任务…',
     childrenFailed: '子任务加载失败',
     progress: '{{total}} 个子任务完成了 {{finished}} 个',
-  },
-  tabs: {
-    waiting: '等你 {{count}}',
   },
   navigation: {
     waiting: '{{title}}，{{count}} 项等你处理',

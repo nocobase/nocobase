@@ -13,7 +13,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Outlet, Route, Routes } from 'react-router';
+import { MemoryRouter, Outlet, Route, Routes, useLocation } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import agentEn from '../../../../plugins/app-plugin-agents/client/locales/en-US.js';
 import agentZh from '../../../../plugins/app-plugin-agents/client/locales/zh-CN.js';
@@ -24,8 +24,10 @@ import {
   IssueLiveRun,
   IssueRunRow,
   IssueRunTranscript,
+  IssueLiveRunLink,
 } from '../../client/agents/issue-runs.js';
 import { useIssueRunsState } from '../../client/agents/use-issue-runs.js';
+import { EmbeddedRuns } from '../../client/agents/embedded-runs.js';
 import { RouteDialog } from '../../client/components/route-dialog.js';
 import { runReturnFocus } from '../../client/agents/run-focus.js';
 
@@ -34,6 +36,7 @@ const mocks = vi.hoisted(() => ({
   stop: vi.fn(),
   reset: vi.fn(),
   retry: vi.fn(),
+  transcript: vi.fn(),
   detail: null as Record<string, unknown> | null,
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
@@ -55,12 +58,15 @@ vi.mock('@nocobase/app-plugin-agents/client/runs', () => ({
   useWorkspaceReset: () => ({ mutate: mocks.reset, isPending: false }),
   useRetryRun: () => ({ mutate: mocks.retry, isPending: false }),
   useRunBrief: () => ({}),
-  useRunWithTranscript: () => ({
-    run: { data: mocks.detail },
-    events: [],
-    failed: false,
-    trigger: null,
-  }),
+  useRunWithTranscript: (runId: string) => {
+    mocks.transcript(runId);
+    return {
+      run: { data: mocks.detail },
+      events: [],
+      failed: false,
+      trigger: null,
+    };
+  },
 }));
 vi.mock('@nocobase/app-plugin-agents/client/kit', () => ({
   AgentAvatar: () => null,
@@ -96,6 +102,7 @@ async function show(
     detail?: IssueDetail;
     consumers?: boolean;
     transcript?: boolean;
+    embedded?: boolean;
   } = {},
 ) {
   const locale = options.locale ?? 'en-US';
@@ -113,9 +120,15 @@ async function show(
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
   const detail = options.detail ?? issue;
+  function Address() {
+    return (
+      <output aria-label='Current address'>{useLocation().pathname}</output>
+    );
+  }
   function Page() {
     return (
       <>
+        <Address />
         <IssueRunPanel issue={detail} />
         {options.consumers ? (
           <>
@@ -130,8 +143,23 @@ async function show(
   const view = render(
     <TestI18nProvider runtime={runtime} namespace='studio'>
       <QueryClientProvider client={client}>
-        <MemoryRouter initialEntries={['/issues/example']}>
+        <MemoryRouter
+          initialEntries={[
+            options.embedded ? '/my-agent/session' : '/issues/example',
+          ]}
+        >
           <Routes>
+            <Route
+              path='/my-agent/session'
+              element={
+                <EmbeddedRuns>
+                  <Page />
+                  <IssueLiveRunLink issue={detail} base='/issues/example'>
+                    Live run
+                  </IssueLiveRunLink>
+                </EmbeddedRuns>
+              }
+            />
             <Route path='/issues/example' element={<Page />}>
               <Route
                 path='runs/:id'
@@ -570,5 +598,57 @@ describe('issue execution history', () => {
     const call = mocks.reset.mock.calls[0]!;
     await act(() => call[1].onSuccess());
     await waitFor(() => expect(mocks.runs).toHaveBeenCalledTimes(2));
+  });
+});
+
+describe('embedded task runs', () => {
+  it('opens history, activity and live entries over the current page and restores focus', async () => {
+    mocks.runs.mockResolvedValue([run('run', 'running')]);
+    await show({ embedded: true, consumers: true });
+    const user = userEvent.setup();
+    const links = await screen.findAllByRole('link');
+    expect(links.length).toBeGreaterThanOrEqual(4);
+    for (const link of links) {
+      await user.click(link);
+      expect(await screen.findByTestId('run-transcript')).toBeVisible();
+      expect(screen.getByLabelText('Current address')).toHaveTextContent(
+        '/my-agent/session',
+      );
+      await user.click(screen.getByRole('button', { name: 'Close' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(link.isConnected).toBe(true);
+      await waitFor(() => expect(link).toHaveFocus());
+    }
+  });
+
+  it('switches to a retry in the same dialog, including View retry', async () => {
+    await show({ embedded: true });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('link'));
+    await user.click(await screen.findByRole('button', { name: 'Retry' }));
+    mocks.detail = {
+      ...mocks.detail,
+      id: 'next-run',
+      retriedRunId: 'another-run',
+    };
+    await act(() =>
+      mocks.retry.mock.calls[0]![1].onSuccess({ id: 'next-run' }),
+    );
+    await waitFor(() =>
+      expect(mocks.transcript).toHaveBeenLastCalledWith('next-run'),
+    );
+    expect(screen.getByLabelText('Current address')).toHaveTextContent(
+      '/my-agent/session',
+    );
+    await user.click(
+      await screen.findByRole('link', { name: 'Retried → New run' }),
+    );
+    await waitFor(() =>
+      expect(mocks.transcript).toHaveBeenLastCalledWith('another-run'),
+    );
+    expect(screen.getByLabelText('Current address')).toHaveTextContent(
+      '/my-agent/session',
+    );
+    expect(screen.getByRole('dialog')).toBeVisible();
   });
 });

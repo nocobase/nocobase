@@ -310,6 +310,10 @@ function sortOf(value: string | undefined): {
 }
 
 const issueFilters = {
+  involvesUserId: text.meta({
+    description:
+      'Owned by this user or executed by them as a person, each issue once.',
+  }),
   statusKey: text,
   projectId: text,
   ownerUserId: text,
@@ -323,6 +327,7 @@ const issueFilters = {
 };
 
 type IssueFilterInput = {
+  involvesUserId?: string | undefined;
   statusKey?: string | undefined;
   projectId?: string | undefined;
   ownerUserId?: string | undefined;

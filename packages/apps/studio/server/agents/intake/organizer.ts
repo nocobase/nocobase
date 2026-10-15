@@ -125,18 +125,20 @@ export function createIntakeOrganizer(agents: IntakeAgents): IntakeOrganizer {
       if (TERMINAL_RUN_STATUSES.includes(run.status))
         return { ended: endedWhy(run.status, run.failureDetail) };
       const agent = await agents.agents.find(agents.tx.read(), run.agentId);
-      const open = (
-        await agents.runs.workload({ subjectKind: INTAKE_SUBJECT })
-      ).runs.find((item) => item.id === run.id);
-      if (run.status === 'queued')
+      if (run.status === 'queued') {
+        const wait = await agents.runs.queueWait(run.id);
         return {
           phase: 'queued',
           by: agent?.name ?? null,
-          waitReason: open?.wait?.reason ?? null,
-          ...(open?.wait?.params ? { waitParams: open.wait.params } : {}),
+          waitReason: wait?.reason ?? null,
+          ...(wait?.params ? { waitParams: wait.params } : {}),
           activity: null,
           since: run.createdAt,
         };
+      }
+      const open = (
+        await agents.runs.workload({ subjectKind: INTAKE_SUBJECT })
+      ).runs.find((item) => item.id === run.id);
       return {
         phase: 'working',
         by: agent?.name ?? null,

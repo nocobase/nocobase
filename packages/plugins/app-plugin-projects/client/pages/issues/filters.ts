@@ -13,6 +13,7 @@ export type IssueFilters = Pick<
   | 'labelId'
   | 'ownerUserId'
   | 'executorId'
+  | 'involvesUserId'
   | 'sort'
   | 'direction'
   | 'deleted'
@@ -39,6 +40,7 @@ export const ISSUE_FILTER_PARAMS: Readonly<Record<IssueFilterKey, string>> = {
   labelId: 'label',
   ownerUserId: 'owner',
   executorId: 'executor',
+  involvesUserId: 'involves',
 };
 
 export function readIssueView(params: URLSearchParams): IssueView {
@@ -100,6 +102,7 @@ export function readIssueFilters(
     labelId: value('labelId'),
     ownerUserId: value('ownerUserId'),
     executorId: value('executorId'),
+    involvesUserId: value('involvesUserId'),
     ...(view === 'list' && sort ? { sort } : {}),
     ...(view === 'list' && params.get('direction') === 'asc'
       ? { direction: 'asc' as const }

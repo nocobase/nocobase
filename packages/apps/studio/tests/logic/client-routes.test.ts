@@ -165,30 +165,45 @@ describe('app client routes', () => {
       { name: 'account', authorizedAs: null },
       { name: 'account-category', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
+      { name: 'pm-my-issues-legacy-owned', authorizedAs: 'pm-my-issues' },
+      {
+        name: 'pm-my-issues-legacy-owned-issue-detail',
+        authorizedAs: 'pm-my-issues',
+      },
+      {
+        name: 'pm-my-issues-legacy-owned-subtask-new',
+        authorizedAs: 'pm-my-issues',
+      },
+      {
+        name: 'pm-my-issues-legacy-owned-issue-plan',
+        authorizedAs: 'pm-my-issues',
+      },
+      {
+        name: 'pm-my-issues-legacy-owned-issue-run',
+        authorizedAs: 'pm-my-issues',
+      },
+      { name: 'pm-my-issues-legacy-executing', authorizedAs: 'pm-my-issues' },
+      {
+        name: 'pm-my-issues-legacy-executing-issue-detail',
+        authorizedAs: 'pm-my-issues',
+      },
+      {
+        name: 'pm-my-issues-legacy-executing-subtask-new',
+        authorizedAs: 'pm-my-issues',
+      },
+      {
+        name: 'pm-my-issues-legacy-executing-issue-plan',
+        authorizedAs: 'pm-my-issues',
+      },
+      {
+        name: 'pm-my-issues-legacy-executing-issue-run',
+        authorizedAs: 'pm-my-issues',
+      },
       { name: 'pm-my-issues', authorizedAs: 'pm-my-issues' },
-      { name: 'pm-my-issues-owned', authorizedAs: 'pm-my-issues' },
-      // An issue opened from a list is declared under it, behind the list's grant (`issueDetailRoute`).
-      { name: 'pm-my-issues-owned-issue-detail', authorizedAs: 'pm-my-issues' },
-      { name: 'pm-my-issues-owned-subtask-new', authorizedAs: 'pm-my-issues' },
-      { name: 'pm-my-issues-owned-issue-plan', authorizedAs: 'pm-my-issues' },
-      { name: 'pm-my-issues-owned-issue-run', authorizedAs: 'pm-my-issues' },
-      { name: 'pm-my-issues-executing', authorizedAs: 'pm-my-issues' },
-      {
-        name: 'pm-my-issues-executing-issue-detail',
-        authorizedAs: 'pm-my-issues',
-      },
-      {
-        name: 'pm-my-issues-executing-subtask-new',
-        authorizedAs: 'pm-my-issues',
-      },
-      {
-        name: 'pm-my-issues-executing-issue-plan',
-        authorizedAs: 'pm-my-issues',
-      },
-      {
-        name: 'pm-my-issues-executing-issue-run',
-        authorizedAs: 'pm-my-issues',
-      },
+      { name: 'pm-my-issues-issue-detail', authorizedAs: 'pm-my-issues' },
+      { name: 'pm-my-issues-subtask-new', authorizedAs: 'pm-my-issues' },
+      { name: 'pm-my-issues-issue-plan', authorizedAs: 'pm-my-issues' },
+      { name: 'pm-my-issues-issue-run', authorizedAs: 'pm-my-issues' },
       // Legacy `/pm` links open the chat panel; the inbox needs no page grant.
       { name: 'chat-pm', authorizedAs: null },
       { name: 'chat-pm-conversation', authorizedAs: null },
