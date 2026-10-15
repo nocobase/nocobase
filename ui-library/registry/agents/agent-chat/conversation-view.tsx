@@ -14,6 +14,8 @@ import {
   useConversation,
   useConversationActions,
   useConversationMessages,
+  useChatStream,
+  useChatController,
   useSendMessage,
   type ChatTimelineItem,
 } from '@nocobase/app-plugin-agents/client/chat';
@@ -185,8 +187,14 @@ function ConversationBody({
   const actions = useConversationActions();
   const agents = useChatAgents(panel.open);
   const run = conversation?.run ?? null;
-  const running = run !== null;
-  const messages = useConversationMessages(conversationId, running);
+  const running = conversation?.execution?.status === 'running';
+  const chatController = useChatController();
+  const stream = useChatStream(conversation?.execution ? conversationId : null);
+  const messages = useConversationMessages(
+    conversationId,
+    running,
+    Boolean(conversation?.execution),
+  );
   const useTimelineItems = extensions.useTimelineItems ?? noTimelineItems;
   const revision = messages.lastSeq * 10 + (running ? 1 : 0);
   const timeline: readonly ChatTimelineItem[] = useTimelineItems(
@@ -418,10 +426,33 @@ function ConversationBody({
           )}
         </div>
       </div>
+      {stream?.phase === 'interrupted' ? (
+        <div role='alert' className='px-3 py-2 text-sm text-muted-foreground'>
+          {t('chat.connectionUnknown')}{' '}
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => {
+              messages.fetchNewer();
+              if (conversationId) void chatController.refresh(conversationId);
+            }}
+          >
+            {t('chat.refreshHistory')}
+          </Button>
+        </div>
+      ) : null}
       <TurnAnnouncer running={running} />
       <div className={page ? cn(PAGE_COLUMN, 'pt-2 pb-4') : undefined}>
         <Composer
           variant={variant}
+          disabled={
+            running ||
+            Boolean(
+              conversation &&
+              (!conversation.execution ||
+                conversation.execution.requiresEffectReview),
+            )
+          }
           running={running}
           stopping={actions.stop.isPending}
           onStop={() => {
@@ -449,12 +480,7 @@ function ConversationBody({
           }
           notice={
             conversation ? (
-              <AgentNotice
-                conversation={conversation}
-                busy={actions.fallback.isPending || actions.restore.isPending}
-                onFallback={() => actions.fallback.mutate(conversation.id)}
-                onRestore={() => actions.restore.mutate(conversation.id)}
-              />
+              <AgentNotice conversation={conversation} />
             ) : target === null && agents.isSuccess ? (
               (agents.data?.length ?? 0) > 0 ? (
                 <p

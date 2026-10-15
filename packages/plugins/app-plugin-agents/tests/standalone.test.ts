@@ -188,19 +188,15 @@ it('runs a conversation on a runner with nothing but authentication, authorizati
   });
   expect(agent.status).toBe(200);
 
-  // A person chats with the agent.
-  const conversation = await call('POST', '/agents/conversations', {
-    user: 'alice',
-    body: { agentId: agent.body.data.id },
+  // Historical Runner conversations remain a domain capability, outside the OnlineAgent HTTP cutover.
+  const conversation = await agents.conversations.create('alice', {
+    agentId: agent.body.data.id,
   });
-  expect(conversation.status).toBe(201);
-  const id = conversation.body.data.id as string;
-  const sent = await call('POST', `/agents/conversations/${id}/messages`, {
-    user: 'alice',
-    body: { content: 'ping' },
+  const id = conversation.id;
+  const sent = await agents.conversations.send('alice', id, {
+    content: 'ping',
   });
-  expect(sent.status).toBe(201);
-  expect(sent.body.data.run).toMatchObject({ outcome: 'created' });
+  expect(sent.run).toMatchObject({ outcome: 'created' });
 
   // The runner claims the run and answers it as the echo adapter does: the message, as text.
   const claimed = await call('POST', '/agents/runners/claim', {

@@ -846,7 +846,12 @@ export const useConversation: typeof Chat.useConversation = (
   const { conversations } = useStore();
   return query(
     conversationId
-      ? conversations.find((item) => item.id === conversationId)
+      ? (() => {
+          const item = conversations.find((item) => item.id === conversationId);
+          return item
+            ? { ...item, execution: { status: item.run ? 'running' : 'idle' } }
+            : undefined;
+        })()
       : undefined,
   );
 };
@@ -996,8 +1001,6 @@ export const useConversationActions: typeof Chat.useConversationActions =
     stop: mutation<string>((id) =>
       patchConversation(id, (item) => ({ ...item, run: null })),
     ),
-    fallback: mutation<string>(noop),
-    restore: mutation<string>(noop),
     markRead: (id: string) => {
       if (store.conversations.find((item) => item.id === id)?.read === false)
         patchConversation(id, (item) => ({ ...item, read: true }));
@@ -1014,3 +1017,10 @@ const SOURCES: readonly Chat.ConversationSourceOption[] = [
 
 export const useConversationSources: typeof Chat.useConversationSources = () =>
   SOURCES;
+
+/** The preview has no network stream; production chat uses the plugin controller. */
+export const useChatStream: typeof Chat.useChatStream = () => undefined;
+export const useChatController: typeof Chat.useChatController = () =>
+  ({ refresh: async () => {} }) as unknown as ReturnType<
+    typeof Chat.useChatController
+  >;

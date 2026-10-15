@@ -16,6 +16,10 @@ import {
   type OpenAPIV3_1,
 } from '@nocobase/app-server/router';
 import type { Context, Hono, MiddlewareHandler } from 'hono';
+import { streamSSE } from 'hono/streaming';
+import type { UserModelMessage } from 'ai';
+import { cleanTitle } from '../core/conversations/titles.js';
+import { jsonSafe } from '../online-agent/codec.js';
 import { bodyLimit } from 'hono/body-limit';
 import { z } from 'zod';
 
@@ -28,7 +32,6 @@ import {
   type ConversationPatch,
   type CreateConversationRequest,
   type MessageAttachment,
-  type StartConversationRequest,
 } from '../../shared/conversations.js';
 import type { Agents } from '../composition.js';
 import {
@@ -73,6 +76,33 @@ const conversationConflict = (when: string) =>
 
 const MessagePosition = z.object({ before: z.number().int().min(1) });
 
+const ConfigInput = z.strictObject({
+  scope: z.array(z.string()).optional(),
+  model: z.array(z.string()).optional(),
+  thinking: z.string().optional(),
+  tool: z.array(z.string()).optional(),
+  systemPromptTemplate: z.string().optional(),
+  context: z
+    .strictObject({
+      variable: z.json().optional(),
+      systemPrompt: z.string().optional(),
+    })
+    .optional(),
+});
+const ConfigOutput = z.object({
+  selectedModel: z.object({ modelService: z.string(), model: z.string() }),
+  scope: z.array(z.string()),
+  model: z.array(z.string()),
+  thinking: z.string().optional(),
+  tool: z.array(z.string()),
+  toolVersions: z.record(z.string(), z.string()),
+  systemPrompt: z.string(),
+  variable: z.json().optional(),
+});
+const SelectedModel = z.strictObject({
+  modelService: z.string().min(1),
+  model: z.string().min(1),
+});
 const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
   agentId: z
     .string()
@@ -90,6 +120,8 @@ const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
     .regex(CONVERSATION_SOURCE_PATTERN)
     .optional()
     .describe('The source context associated with this conversation.'),
+  config: ConfigInput.optional(),
+  selectedModel: SelectedModel.optional(),
 });
 
 const PatchSchema: z.ZodType<ConversationPatch> = z.strictObject({
@@ -185,22 +217,6 @@ const noAttachment = apiErrorResponse(
   'The file does not exist, or the caller may not read it (`NOT_FOUND`).',
 );
 
-const StartSchema: z.ZodType<StartConversationRequest> = z.strictObject({
-  attachmentIds: SendSchema.shape.attachmentIds,
-  source: z.string().regex(CONVERSATION_SOURCE_PATTERN),
-  text: z
-    .string()
-    .min(1)
-    .max(MESSAGE_CONTENT_MAX * 2),
-  agentId: z.string().min(1).max(64).optional(),
-  title: z
-    .string()
-    .max(CONVERSATION_TITLE_MAX * 2)
-    .optional(),
-  context: PageContextSchema.optional(),
-  clientId: z.string().min(1).max(100).optional(),
-});
-
 /**
  * `guard` authenticates the request and sets `caller`; the route contribution passes the real one, tests a fake.
  * `personOrRun` also takes a run token (setting `caller.run`), for reading a conversation's files; `guard` by default.
@@ -213,6 +229,12 @@ export function createChatRoutes(
   const router = domainRouter<AdminEnv>();
   const { conversations, chat } = services;
   const me = (context: Context<AdminEnv>) => context.get('caller').userId;
+  const trusted = (context: Context<AdminEnv>) => {
+    const value = context.get('caller').onlineContext;
+    if (!value) throw forbidden('Trusted entry credentials are required.');
+    return value;
+  };
+
   const conversationParam = apiValidator('param', ConversationParams);
   const conversationId = (context: Context<AdminEnv>): string =>
     context.req.param('conversationId') ?? '';
@@ -269,7 +291,7 @@ export function createChatRoutes(
         flags: { agentId: { name: 'agent' } },
       }),
       description:
-        "With the given enabled agent, or the caller's default chat agent when none is named.",
+        'Creates an OnlineAgent session without sending input. Configuration defaults are resolved once; original model columns remain authoritative.',
       responses: {
         201: dataResponse(ConversationDetailSchema, 'Created.'),
         400: conversationConflict('No chat agent is available'),
@@ -284,40 +306,38 @@ export function createChatRoutes(
     async (context) =>
       context.json(
         {
-          data: await conversations.create(
-            me(context),
-            context.req.valid('json'),
-          ),
+          data: await (async () => {
+            const request = context.req.valid('json');
+            if (request.agentId && request.agentId !== 'online')
+              throw invalid(
+                'Runner profiles cannot configure OnlineAgent. Select an OnlineAgent configuration.',
+              );
+            if (
+              request.source &&
+              request.source !== 'panel' &&
+              !conversations.sources.has(request.source)
+            )
+              throw invalid('Unknown conversation source.');
+            const agent = await services.onlineAgent.realtime(
+              trusted(context),
+              {
+                ...request.config,
+                selectedModel: request.selectedModel,
+                source: request.source ?? 'panel',
+                title:
+                  request.title === undefined
+                    ? undefined
+                    : cleanTitle(request.title).text.slice(
+                        0,
+                        CONVERSATION_TITLE_MAX,
+                      ),
+              },
+            );
+            return conversations.get(me(context), agent.sessionId);
+          })(),
         },
         201,
       ),
-  );
-  router.post(
-    '/conversations/start',
-    guard,
-    describeRoute({
-      tags,
-      summary: 'Start a conversation with its first message',
-      operationId: 'agentsStartConversation',
-      // UI-only: the pages' buttons, with page context; `conversation create` and `conversation message send` do it from the command line.
-      ...cliRoute(false),
-      description:
-        "A new conversation from a place the application registered (`source`), with its first message, which wakes the agent. What the application's buttons call.",
-      responses: {
-        200: dataResponse(SendMessageResultSchema),
-        400: conversationConflict('No chat agent is available'),
-        404: apiErrorResponse(
-          404,
-          'The agent does not exist (`AGENT_NOT_FOUND`).',
-        ),
-        ...apiErrorResponses,
-      },
-    }),
-    apiValidator('json', StartSchema),
-    async (context) =>
-      context.json({
-        data: await conversations.start(me(context), context.req.valid('json')),
-      }),
   );
   router.get(
     '/conversations/:conversationId',
@@ -459,7 +479,7 @@ export function createChatRoutes(
         ],
       }),
       description:
-        "Adds the caller's message and hands it to the conversation's agent: a new run, or the open one. The answer arrives as messages later; `run` says what happened to the agent. `attachmentIds` sends the caller's uploads with it; any other id answers 400 and nothing is sent.",
+        'The only input endpoint, for both first and later messages. Atomically binds attachments then starts the shared OnlineAgent execution. Busy input is refused. clientId correlates display only. A network timeout means outcome unknown; never automatically resend. Receive public output from events or read saved messages.',
       responses: {
         201: dataResponse(SendMessageResultSchema, 'Created.'),
         404: noConversation,
@@ -471,17 +491,75 @@ export function createChatRoutes(
     async (context) =>
       context.json(
         {
-          data: await conversations.send(
-            me(context),
-            context.req.valid('param').conversationId,
-            context.req.valid('json'),
-          ),
+          data: await (async () => {
+            const id = context.req.valid('param').conversationId;
+            const request = context.req.valid('json');
+            if ([...request.content].length > MESSAGE_CONTENT_MAX)
+              throw invalid('The message is too long.');
+            if (!request.content.trim() && !request.attachmentIds?.length)
+              throw invalid('A message or attachment is required.');
+            const workContext = request.context
+              ? await conversations.contextKinds.resolve(
+                  services.tx.read(),
+                  me(context),
+                  request.context,
+                )
+              : undefined;
+            const actor = trusted(context);
+            const agent = await services.onlineAgent.realtime(
+              {
+                ...actor,
+                ...(workContext ? { business: jsonSafe(workContext) } : {}),
+              },
+              { sessionId: id },
+            );
+            const parts: Exclude<UserModelMessage['content'], string> = [
+              { type: 'text', text: request.content },
+            ];
+            for (const fileId of request.attachmentIds ?? []) {
+              const file = await services.chatAttachments.content(
+                { userId: me(context) },
+                fileId,
+              );
+              const bytes = new Uint8Array(
+                await new Response(file.body).arrayBuffer(),
+              );
+              parts.push(
+                file.attachment.previewable
+                  ? {
+                      type: 'image',
+                      image: bytes,
+                      mediaType: file.attachment.mimeType,
+                    }
+                  : {
+                      type: 'file',
+                      data: bytes,
+                      filename: file.attachment.filename,
+                      mediaType: file.attachment.mimeType,
+                    },
+              );
+            }
+            const seq = await agent.send([{ role: 'user', content: parts }], {
+              attachmentIds: [[...(request.attachmentIds ?? [])]],
+              clientId: request.clientId,
+              workContext,
+            });
+            const page = await conversations.messages(me(context), id, {
+              after: seq - 1,
+              limit: 1,
+            });
+            return {
+              message: page.items[0],
+              conversation: await conversations.get(me(context), id),
+              run: null,
+            };
+          })(),
         },
         201,
       ),
   );
   const acts: Record<
-    'markRead' | 'stop' | 'fallback' | 'restore',
+    'markRead' | 'stop',
     {
       readonly act: (userId: string, id: string) => Promise<unknown>;
       readonly operationId: string;
@@ -501,7 +579,9 @@ export function createChatRoutes(
       description: "Marks the conversation's messages read for the caller.",
     },
     stop: {
-      act: (userId, id) => conversations.stop(userId, id),
+      act: async () => {
+        throw invalid('Use the authenticated OnlineAgent stop handler.');
+      },
       operationId: 'agentsStopConversation',
       cli: {
         command: 'conversation stop',
@@ -510,32 +590,6 @@ export function createChatRoutes(
       },
       summary: "Stop a conversation's agent",
       description: 'Cancels the run answering in the conversation, if any.',
-    },
-    fallback: {
-      act: (userId, id) => conversations.fallback(userId, id),
-      operationId: 'agentsFallbackConversation',
-      cli: {
-        command: 'conversation fallback',
-        args: ['conversationId'],
-        flags: { conversationId: { name: 'conversation' } },
-      },
-      summary: 'Switch a conversation to the default agent',
-      description:
-        'Continues the conversation with the default chat agent while its own agent cannot answer.',
-      conflict: 'The conversation cannot fall back',
-    },
-    restore: {
-      act: (userId, id) => conversations.restore(userId, id),
-      operationId: 'agentsRestoreConversation',
-      cli: {
-        command: 'conversation restore',
-        args: ['conversationId'],
-        flags: { conversationId: { name: 'conversation' } },
-      },
-      summary: 'Switch a conversation back to its agent',
-      description:
-        'Gives the conversation back to the agent it fell back from.',
-      conflict: 'The conversation has nothing to switch back to',
     },
   };
   for (const [verb, item] of Object.entries(acts))
@@ -560,10 +614,121 @@ export function createChatRoutes(
       conversationParam,
       async (context) =>
         context.json({
-          data: await item.act(me(context), conversationId(context)),
+          data:
+            verb === 'stop'
+              ? await (async () => {
+                  const id = conversationId(context);
+                  const agent = await services.onlineAgent.realtime(
+                    trusted(context),
+                    { sessionId: id },
+                  );
+                  await agent.abort();
+                  return conversations.get(me(context), id);
+                })()
+              : await item.act(me(context), conversationId(context)),
         }),
     );
 
+  router.get(
+    '/conversations/:conversationId/events',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Receive the current OnlineAgent stream once',
+      operationId: 'agentsConversationEvents',
+      ...cliRoute(false),
+      description:
+        'SSE with cached first output then live public parts. No reconnect or replay after closure. A completed session returns 204; read saved messages.',
+      responses: {
+        200: {
+          description: 'Public SSE events: part or saved.',
+          content: { 'text/event-stream': { schema: { type: 'string' } } },
+        },
+        204: { description: 'No current stream; read saved history.' },
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    async (context) => {
+      const agent = await services.onlineAgent.realtime(trusted(context), {
+        sessionId: conversationId(context),
+      });
+      context.header('Cache-Control', 'private, no-store');
+      const events = await agent.receive();
+      if (!events) return context.body(null, 204);
+      return streamSSE(context, async (stream) => {
+        const reader = events.getReader();
+        stream.onAbort(() => {
+          void reader.cancel();
+        });
+        try {
+          while (true) {
+            const next = await reader.read();
+            if (next.done) break;
+            await stream.writeSSE({
+              event: next.value.type,
+              data: JSON.stringify(next.value),
+            });
+          }
+        } finally {
+          await reader.cancel();
+        }
+      });
+    },
+  );
+  router.get(
+    '/conversations/:conversationId/config',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Read the saved OnlineAgent configuration',
+      operationId: 'agentsGetConversationConfig',
+      ...cliRoute(false),
+      responses: {
+        200: dataResponse(ConfigOutput),
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    async (context) => {
+      const config = await services.onlineAgent.configuration(
+        trusted(context),
+        conversationId(context),
+      );
+      return context.json({ data: config });
+    },
+  );
+  router.patch(
+    '/conversations/:conversationId/config',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Update idle OnlineAgent configuration',
+      operationId: 'agentsUpdateConversationConfig',
+      ...cliRoute(false),
+      description:
+        'Explicit overrides only; running configuration is frozen. The selected model and snapshot update atomically.',
+      responses: { 200: dataResponse(ConfigOutput), ...apiErrorResponses },
+    }),
+    conversationParam,
+    apiValidator(
+      'json',
+      z.strictObject({
+        config: ConfigInput,
+        selectedModel: SelectedModel.optional(),
+      }),
+    ),
+    async (context) => {
+      const input = context.req.valid('json');
+      const config = await services.onlineAgent.configure(
+        trusted(context),
+        conversationId(context),
+        input.config,
+        input.selectedModel,
+      );
+      return context.json({ data: config });
+    },
+  );
   router.get(
     '/chatAgents',
     guard,
@@ -580,7 +745,21 @@ export function createChatRoutes(
       },
     }),
     async (context) => {
-      const data = await conversations.chatAgents(me(context));
+      const data = [
+        {
+          id: 'online',
+          name: 'Online agent',
+          description:
+            'Chat with the configured model and registered business tools.',
+          nameText: null,
+          descriptionText: null,
+          avatar: null,
+          isSystemDefault: true,
+          isMyDefault: false,
+          availability: { online: true, reason: null, onlineRunners: 0 },
+          personalOnly: false,
+        },
+      ];
       return context.json({ data, meta: { total: data.length } });
     },
   );

@@ -58,7 +58,7 @@ export {
   type ConversationMessages,
   type SendInput,
 } from './chat/use-chat.js';
-export type { ChatApi } from './chat/api.js';
+export { ChatApi } from './chat/api.js';
 export {
   useConversationSources,
   useLiveRunEvents,
@@ -159,3 +159,14 @@ export {
   useConsultationIdentity,
   type ConsultationIdentity,
 } from './chat/consultation-identity.js';
+
+export {
+  ChatSubmissions,
+  type ChatSubmission,
+  type SubmissionInput,
+} from './chat/submissions.js';
+export {
+  ChatController,
+  useChatController,
+  useChatStream,
+} from './chat/controller.js';

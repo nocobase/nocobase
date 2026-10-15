@@ -25,15 +25,13 @@ import {
   useEffect,
   useMemo,
   useReducer,
-  useRef,
-  useState,
+  useSyncExternalStore,
   type Dispatch,
 } from 'react';
 
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import {
   CONVERSATIONS_TOPIC,
-  MESSAGE_PAGE_DEFAULT,
   type ChatAgent,
   type ConversationChanged,
   type ConversationDetail,
@@ -47,15 +45,16 @@ import {
 import { useRealtimeTopic } from '../hooks/use-realtime-topic.js';
 import { errorText } from '../hooks/use-notify.js';
 import { agentsQueryClient } from '../query.js';
+import {
+  useChatController,
+  useChatStream,
+  useChatStreamState,
+} from './controller.js';
 import { ChatApi } from './api.js';
 import { chatKeys } from './keys.js';
 import {
   EMPTY_MESSAGES,
-  fetchCursor,
-  lastLoadedSeq,
-  streamingSeq,
   messagesReducer,
-  newClientId,
   type MessagesAction,
   type MessagesState,
 } from './message-model.js';
@@ -106,6 +105,7 @@ export function useConversation(
   conversationId: string | null,
 ): UseQueryResult<ConversationDetail> {
   const api = useChatApi();
+  const stream = useChatStreamState(conversationId);
   return useQuery(
     {
       queryKey: chatKeys.conversation(conversationId ?? ''),
@@ -114,7 +114,11 @@ export function useConversation(
       placeholderData: noPlaceholder,
       retry: notRetriedOnClientErrors,
       refetchInterval: (query) =>
-        query.state.data?.run ? CHAT_POLL_MS : false,
+        query.state.data?.run ||
+        (query.state.data?.execution?.status === 'running' &&
+          stream?.phase !== 'interrupted')
+          ? CHAT_POLL_MS
+          : false,
     },
     agentsQueryClient(),
   );
@@ -176,147 +180,90 @@ export interface ConversationMessages extends MessagesState {
   readonly dispatch: Dispatch<MessagesAction>;
 }
 
-interface Loader {
-  inflight: boolean;
-  again: boolean;
-  loadingOlder: boolean;
-}
-
-/**
- * A conversation's messages: the newest page first, older pages on demand, newer ones when the topic announces them
- * (or the poll finds them while `polling`). A null conversation is a new one: only optimistic messages, kept when
- * its first message creates it (`conversationId` going from null to an id).
- */
+/** Canonical pages and the initial stream live in one controller, independent of mounted views. */
 export function useConversationMessages(
   conversationId: string | null,
-  polling: boolean,
+  _polling: boolean,
+  online = false,
 ): ConversationMessages {
-  const api = useChatApi();
-  const [state, dispatch] = useReducer(messagesReducer, EMPTY_MESSAGES);
-  const [loadingOlder, setLoadingOlder] = useState(false);
-  const [error, setError] = useState<unknown>(undefined);
-  const stateRef = useRef(state);
+  const controller = useChatController();
+  const stream = useChatStream(online ? conversationId : null);
+  useSyncExternalStore(
+    controller.subscribe,
+    controller.snapshot,
+    controller.snapshot,
+  );
+  const [draft, draftDispatch] = useReducer(messagesReducer, EMPTY_MESSAGES);
   useEffect(() => {
-    stateRef.current = state;
-  });
-  const idRef = useRef(conversationId);
-  const loaderRef = useRef<Loader>({
-    inflight: false,
-    again: false,
-    loadingOlder: false,
-  });
-
-  const fetchNewer = useCallback((): void => {
-    const id = idRef.current;
-    if (!id) return;
-    const loader = loaderRef.current;
-    if (loader.inflight) {
-      loader.again = true;
-      return;
-    }
-    loader.inflight = true;
-    const run = async (): Promise<void> => {
-      try {
-        let full = false;
-        do {
-          loader.again = false;
-          const after = fetchCursor(stateRef.current);
-          const page = await api.messages(
-            id,
-            stateRef.current.loaded ? { after } : {},
-          );
-          if (idRef.current !== id) return;
-          // From before a reply still being written, a full page may hold nothing new: do not ask again.
-          full =
-            stateRef.current.loaded &&
-            after === lastLoadedSeq(stateRef.current) &&
-            page.items.length >= MESSAGE_PAGE_DEFAULT;
-          dispatch({ type: 'page', page });
-          stateRef.current = messagesReducer(stateRef.current, {
-            type: 'page',
-            page,
-          });
-          setError(undefined);
-        } while (loader.again || full);
-      } catch (failure: unknown) {
-        if (idRef.current === id) setError(failure);
-      } finally {
-        loader.inflight = false;
-      }
-    };
-    void run();
-  }, [api]);
-
-  // A new id: start over, unless it is the conversation a new one's first message just created.
-  const previousRef = useRef(conversationId);
-  useEffect(() => {
-    const previous = previousRef.current;
-    previousRef.current = conversationId;
-    idRef.current = conversationId;
-    if (previous !== conversationId && previous !== null) {
-      loaderRef.current = {
-        inflight: false,
-        again: false,
-        loadingOlder: false,
-      };
-      stateRef.current = EMPTY_MESSAGES;
-      dispatch({ type: 'reset' });
-      setError(undefined);
-    }
-    if (conversationId) fetchNewer();
-  }, [conversationId, fetchNewer]);
-
+    if (conversationId) void controller.loadHistory(conversationId);
+  }, [controller, conversationId]);
+  const fetchNewer = useCallback(() => {
+    if (conversationId)
+      void controller.loadHistory(conversationId, false, true);
+  }, [controller, conversationId]);
   useRealtimeTopic(conversationId ? CONVERSATIONS_TOPIC : null, (payload) => {
-    if (payload === undefined) {
-      fetchNewer();
-      return;
-    }
     if (
       isChatPayload(payload) &&
       payload.kind === 'conversation.messages' &&
-      payload.conversationId === idRef.current &&
-      (payload.lastSeq > lastLoadedSeq(stateRef.current) ||
-        streamingSeq(stateRef.current) !== null)
+      payload.conversationId === conversationId &&
+      (payload.lastSeq >
+        (controller.history(conversationId).state.items.at(-1)?.seq ?? 0) ||
+        controller
+          .history(conversationId)
+          .state.items.some((item) => item.metadata.streaming))
     )
       fetchNewer();
   });
-
-  const streaming = streamingSeq(state) !== null;
-  useEffect(() => {
-    if (!(polling || streaming) || !conversationId) return undefined;
-    const timer = window.setInterval(
-      fetchNewer,
-      streaming ? CHAT_STREAM_POLL_MS : CHAT_POLL_MS,
-    );
-    return () => window.clearInterval(timer);
-  }, [polling, streaming, conversationId, fetchNewer]);
-
-  const loadOlder = useCallback((): void => {
-    const id = idRef.current;
-    const loader = loaderRef.current;
-    const pageToken = stateRef.current.olderToken;
-    if (!id || !pageToken || loader.loadingOlder) return;
-    loader.loadingOlder = true;
-    setLoadingOlder(true);
-    void api
-      .messages(id, { pageToken })
-      .then((page) => {
-        if (idRef.current === id) dispatch({ type: 'page', page, older: true });
-      })
-      .catch((failure: unknown) => setError(failure))
-      .finally(() => {
-        loader.loadingOlder = false;
-        setLoadingOlder(false);
-      });
-  }, [api]);
-
+  const loaded = conversationId
+    ? controller.history(conversationId)
+    : { state: draft, loadingOlder: false, error: undefined };
+  const state = loaded.state;
+  const pending = conversationId
+    ? controller.submissions
+        .snapshot()
+        .filter(
+          (record) =>
+            record.conversationId === conversationId &&
+            !record.message &&
+            !['rejected', 'confirmed'].includes(record.status),
+        )
+        .map((record) => ({
+          clientId: record.clientId,
+          content: record.content,
+          context: record.context,
+          attachments: record.attachments,
+          createdAt: record.createdAt,
+          status:
+            record.status === 'notSubmitted'
+              ? ('failed' as const)
+              : record.status === 'unknown' ||
+                  record.status === 'creationUnknown'
+                ? ('unknown' as const)
+                : ('sending' as const),
+        }))
+    : state.pending;
   return {
     ...state,
-    loadingOlder,
-    error,
-    loadOlder,
+    pending,
+    items:
+      stream && (stream.lastSeq === undefined || state.lastSeq < stream.lastSeq)
+        ? [
+            ...state.items,
+            ...stream.items.filter(
+              (item) => !state.items.some((saved) => saved.seq === item.seq),
+            ),
+          ].sort((a, b) => a.seq - b.seq)
+        : state.items,
+    loadingOlder: loaded.loadingOlder,
+    error: loaded.error,
     fetchNewer,
-    dispatch,
+    loadOlder: () => {
+      if (conversationId) void controller.loadHistory(conversationId, true);
+    },
+    dispatch: (action) => {
+      if (conversationId) controller.dispatch(conversationId, action);
+      else draftDispatch(action);
+    },
   };
 }
 
@@ -346,75 +293,81 @@ export function useSendMessage({
   readonly dispatch: Dispatch<MessagesAction>;
   readonly onCreated: (conversation: ConversationDetail) => void;
 }): (input: SendInput) => Promise<SendMessageResult | null> {
-  const api = useChatApi();
-  const queryClient = agentsQueryClient();
-  const toaster = useToaster();
-  const { t } = useTranslation(ACCESS_NAMESPACE);
-  const createdRef = useRef<string | null>(null);
+  const controller = useChatController();
   return useCallback(
     async (input: SendInput) => {
-      const clientId = input.clientId ?? newClientId();
-      if (input.clientId) dispatch({ type: 'discard', clientId });
-      dispatch({
-        type: 'sending',
-        message: {
-          clientId,
+      const editorKey = `registry:${source}:${conversationId ?? 'new'}`;
+      if (input.clientId) {
+        if (!controller.submissions.editRejected(input.clientId)) return null;
+        dispatch({ type: 'discard', clientId: input.clientId });
+      }
+      return new Promise<SendMessageResult | null>((resolve) => {
+        const off = controller.submissions.onUpdated(
+          (detail, record, created) => {
+            if (record.editorKey !== editorKey) return;
+            if (created) onCreated(detail);
+            if (record.message) {
+              dispatch({ type: 'confirmed', message: record.message });
+              off();
+              stop();
+              resolve({
+                message: record.message,
+                conversation: detail,
+                run: null,
+              });
+            }
+          },
+        );
+        const stop = controller.submissions.subscribe(() => {
+          const record = controller.submissions
+            .snapshot()
+            .slice()
+            .reverse()
+            .find((record) => record.editorKey === editorKey);
+          if (
+            record &&
+            ['unknown', 'creationUnknown', 'notSubmitted'].includes(
+              record.status,
+            )
+          ) {
+            dispatch({
+              type: record.status === 'notSubmitted' ? 'failed' : 'unknown',
+              clientId: record.clientId,
+            });
+            off();
+            stop();
+            resolve(null);
+          }
+        });
+        const submitted = controller.submissions.submit({
           content: input.content,
           context: input.context,
-          ...(input.attachments?.length
-            ? { attachments: input.attachments }
-            : {}),
-          createdAt: new Date().toISOString(),
-          status: 'sending',
-        },
-      });
-      try {
-        let id = conversationId ?? createdRef.current;
-        if (!id) {
-          const created = await api.createConversation({
-            ...(agentId ? { agentId } : {}),
-            source,
-          });
-          id = created.id;
-          createdRef.current = id;
-          queryClient.setQueryData(chatKeys.conversation(id), created);
-          onCreated(created);
+          attachments: input.attachments ?? [],
+          conversationId,
+          editorKey,
+          create: { ...(agentId ? { agentId } : {}), source },
+        });
+        if (!submitted) {
+          off();
+          stop();
+          resolve(null);
+          return;
         }
-        const result = await api.sendMessage(id, {
-          content: input.content,
-          clientId,
-          ...(input.context ? { context: input.context } : {}),
-          ...(input.attachments?.length
-            ? { attachmentIds: input.attachments.map((file) => file.id) }
-            : {}),
+        const record = controller.submissions.snapshot().at(-1)!;
+        dispatch({
+          type: 'sending',
+          message: {
+            clientId: record.clientId,
+            content: record.content,
+            context: record.context,
+            attachments: record.attachments,
+            createdAt: record.createdAt,
+            status: 'sending',
+          },
         });
-        dispatch({ type: 'confirmed', message: result.message });
-        queryClient.setQueryData(
-          chatKeys.conversation(id),
-          result.conversation,
-        );
-        void queryClient.invalidateQueries({ queryKey: chatKeys.lists });
-        return result;
-      } catch (error: unknown) {
-        dispatch({ type: 'failed', clientId });
-        toaster.show({
-          type: 'error',
-          title: errorText(t, error, t('chat.sendFailed')),
-        });
-        return null;
-      }
+      });
     },
-    [
-      api,
-      conversationId,
-      agentId,
-      source,
-      dispatch,
-      onCreated,
-      queryClient,
-      toaster,
-      t,
-    ],
+    [controller, conversationId, agentId, source, dispatch, onCreated],
   );
 }
 
@@ -450,8 +403,6 @@ export interface ConversationActions {
     { readonly id: string; readonly archived: boolean }
   >;
   readonly stop: UseMutationResult<ConversationDetail, unknown, string>;
-  readonly fallback: UseMutationResult<ConversationDetail, unknown, string>;
-  readonly restore: UseMutationResult<ConversationDetail, unknown, string>;
   readonly markRead: (id: string) => void;
 }
 
@@ -527,38 +478,6 @@ export function useConversationActions(): ConversationActions {
     queryClient,
   );
 
-  const fallback = useMutation(
-    {
-      mutationFn: (id: string) => api.fallback(id),
-      onSuccess: (detail) => {
-        remember(detail);
-        toaster.show({
-          type: 'success',
-          title: t('chat.offline.fallbackDone'),
-          description: t('chat.offline.newSession'),
-        });
-      },
-      onError: failed,
-    },
-    queryClient,
-  );
-
-  const restore = useMutation(
-    {
-      mutationFn: (id: string) => api.restore(id),
-      onSuccess: (detail) => {
-        remember(detail);
-        toaster.show({
-          type: 'success',
-          title: t('chat.offline.restoreDone'),
-          description: t('chat.offline.newSession'),
-        });
-      },
-      onError: failed,
-    },
-    queryClient,
-  );
-
   const markRead = useCallback(
     (id: string) => {
       void api
@@ -569,5 +488,5 @@ export function useConversationActions(): ConversationActions {
     [api, remember],
   );
 
-  return { rename, archive, stop, fallback, restore, markRead };
+  return { rename, archive, stop, markRead };
 }

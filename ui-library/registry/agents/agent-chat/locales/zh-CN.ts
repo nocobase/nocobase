@@ -2,6 +2,11 @@ import type { AgentChatLocale } from './en-US.js';
 
 const agentChatZhCN: AgentChatLocale = {
   chat: {
+    executionFailed: '执行失败或执行效果待核对，请先查看已保存历史。',
+    historicalReadOnly: '历史会话仅供查看，请新建聊天以继续。',
+    connectionUnknown:
+      '连接已中断，结果待确认。请刷新已保存历史后决定是否再次发送。',
+    refreshHistory: '刷新历史',
     title: 'Agent 对话',
     ask: '问 Agent',
     close: '关闭',
@@ -107,7 +112,7 @@ const agentChatZhCN: AgentChatLocale = {
       label: '发给 Agent 的消息',
       placeholder: '提问，或者描述要安排的工作…',
       hint: 'Enter 发送，Shift+Enter 换行',
-      runningHint: '现在发的消息会交给正在进行的工作一起处理',
+      runningHint: '正在执行，可以显式停止本次执行。',
       tooLong: '最多 {{max}} 个字。',
       send: '发送',
       stop: '停止',

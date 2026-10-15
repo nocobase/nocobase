@@ -214,6 +214,8 @@ export function PendingItem({
               <AlertCircleIcon className='size-3.5' aria-hidden='true' />
               {t('chat.pending.failed')}
             </span>
+          ) : message.status === 'unknown' ? (
+            t('chat.connectionUnknown')
           ) : (
             t('chat.pending.sending')
           )}

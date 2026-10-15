@@ -26,7 +26,7 @@ export interface PendingMessage {
   readonly attachments?: readonly MessageAttachment[];
   readonly createdAt: string;
   /** `failed`: not saved; the person may send it again. */
-  readonly status: 'sending' | 'failed';
+  readonly status: 'sending' | 'failed' | 'unknown';
 }
 
 export interface MessagesState {
@@ -61,6 +61,7 @@ export type MessagesAction =
   /** The server confirmed a message (the answer of a send). */
   | { readonly type: 'confirmed'; readonly message: ConversationMessage }
   | { readonly type: 'sending'; readonly message: PendingMessage }
+  | { readonly type: 'unknown'; readonly clientId: string }
   | { readonly type: 'failed'; readonly clientId: string }
   | { readonly type: 'discard'; readonly clientId: string }
   | { readonly type: 'reset' };
@@ -122,12 +123,16 @@ export function messagesReducer(
     }
     case 'sending':
       return { ...state, pending: [...state.pending, action.message] };
+    case 'unknown':
     case 'failed':
       return {
         ...state,
         pending: state.pending.map((message) =>
           message.clientId === action.clientId
-            ? { ...message, status: 'failed' }
+            ? {
+                ...message,
+                status: action.type === 'unknown' ? 'unknown' : 'failed',
+              }
             : message,
         ),
       };

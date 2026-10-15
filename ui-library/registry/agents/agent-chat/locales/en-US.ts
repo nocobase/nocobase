@@ -1,6 +1,10 @@
 /** Every key the agent chat looks up, so each locale is checked against the same list. */
 export interface AgentChatLocale {
   readonly chat: {
+    readonly connectionUnknown: string;
+    readonly historicalReadOnly: string;
+    readonly executionFailed: string;
+    readonly refreshHistory: string;
     readonly title: string;
     readonly ask: string;
     readonly close: string;
@@ -203,6 +207,13 @@ export interface AgentChatLocale {
 
 const agentChatEnUS: AgentChatLocale = {
   chat: {
+    executionFailed:
+      'Execution failed or its effects need review. Check saved history before continuing.',
+    historicalReadOnly:
+      'This historical conversation is read-only. Start a new chat to continue.',
+    connectionUnknown:
+      'Connection interrupted. The result is unknown. Refresh saved history before deciding to send again.',
+    refreshHistory: 'Refresh history',
     title: 'Agent chat',
     ask: 'Ask agent',
     close: 'Close',
@@ -314,7 +325,7 @@ const agentChatEnUS: AgentChatLocale = {
       label: 'Message to the agent',
       placeholder: 'Ask, or describe the work to organize…',
       hint: 'Enter to send, Shift+Enter for a new line',
-      runningHint: 'Messages you send now join the work in progress',
+      runningHint: 'Working. You can stop this execution.',
       tooLong: 'At most {{max}} characters.',
       send: 'Send',
       stop: 'Stop',

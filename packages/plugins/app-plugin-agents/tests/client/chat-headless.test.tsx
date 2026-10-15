@@ -25,6 +25,7 @@ vi.mock('@nocobase/app-plugin-authorization/client', () =>
 const chat = await import('../../client/chat.js');
 const { agentsQueryClient } = await import('../../client/query.js');
 const { CHAT_PANEL_STORAGE_KEY } = chat;
+const { ChatClientProvider } = await import('../../client/chat/controller.js');
 
 const AT = '2026-10-01T08:00:00.000Z';
 
@@ -120,14 +121,20 @@ describe('headless chat hooks', () => {
     );
 
     const dispatch = vi.fn();
-    const { result: send } = renderHook(() =>
-      chat.useSendMessage({
-        conversationId: 'c1',
-        agentId: 'pm',
-        source: 'panel',
-        dispatch,
-        onCreated: () => undefined,
-      }),
+    const { result: send } = renderHook(
+      () =>
+        chat.useSendMessage({
+          conversationId: 'c1',
+          agentId: 'pm',
+          source: 'panel',
+          dispatch,
+          onCreated: () => undefined,
+        }),
+      {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <ChatClientProvider>{children}</ChatClientProvider>
+        ),
+      },
     );
     await act(async () => {
       await send.current({

@@ -30,6 +30,7 @@ import {
 import { useComposerLabels } from './chat-i18n.js';
 
 export interface ComposerProps {
+  readonly disabled?: boolean;
   /** A run is open: the agent is working or waiting for a runner. */
   readonly running: boolean;
   readonly stopping: boolean;
@@ -53,6 +54,7 @@ export interface ComposerProps {
 }
 
 export function Composer({
+  disabled,
   running,
   stopping,
   notice,
@@ -94,6 +96,7 @@ export function Composer({
   return (
     <AgentComposer
       variant={variant}
+      disabled={disabled}
       running={running}
       stopping={stopping}
       notice={notice}

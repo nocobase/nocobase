@@ -74,15 +74,28 @@ export interface SessionManager {
     kind: Session['kind'],
     config: Config,
     model: ModelRef,
+    info?: { source?: string; title?: string },
   ): Promise<string>;
   load(userId: string, id: string): Promise<Session>;
+  configure(
+    userId: string,
+    id: string,
+    config: Config,
+    model: ModelRef,
+  ): Promise<void>;
   history(userId: string, id: string): Promise<ModelMessage[]>;
   accept(
     userId: string,
     id: string,
     config: Config,
     model: ModelRef,
-    items: { id: string; message: ModelMessage; attachments?: string[] }[],
+    items: {
+      id: string;
+      message: ModelMessage;
+      attachments?: string[];
+      clientId?: string;
+      workContext?: import('../../shared/conversations.js').ResolvedPageContext;
+    }[],
   ): Promise<number>;
   save(
     userId: string,
@@ -159,6 +172,8 @@ export function createSessionManager(deps: {
       excludedFromHistory?: boolean;
       partial?: string;
       attachments?: string[];
+      clientId?: string;
+      workContext?: import('../../shared/conversations.js').ResolvedPageContext;
     }[],
     outcome: Outcome,
   ) => {
@@ -187,8 +202,8 @@ export function createSessionManager(deps: {
           searchText: payload.content,
           toolCalls: null,
           attachments: files.length ? asJson(files) : null,
-          workContext: null,
-          metadata: asJson({}),
+          workContext: item.workContext ? asJson(item.workContext) : null,
+          metadata: asJson(item.clientId ? { clientId: item.clientId } : {}),
           runId: null,
           runEventSeq: null,
           createdAt: now,
@@ -215,6 +230,7 @@ export function createSessionManager(deps: {
       kind: Session['kind'],
       config: Config,
       model: ModelRef,
+      info?: { source?: string; title?: string },
     ) {
       const id = deps.ids.next();
       const now = deps.now();
@@ -228,10 +244,10 @@ export function createSessionManager(deps: {
             modelService: model.modelService,
             model: model.model,
             fallbackFromAgentId: null,
-            title: null,
-            titleSource: 'auto',
+            title: info?.title ?? null,
+            titleSource: info?.title ? 'user' : 'auto',
             category: 'chat',
-            source: 'chat',
+            source: info?.source ?? 'chat',
             read: true,
             thread: 0,
             lastSeq: 0,
@@ -254,6 +270,27 @@ export function createSessionManager(deps: {
     async load(userId: string, id: string) {
       return session(await owned(deps.tx.read(), userId, id));
     },
+    async configure(userId, id, config, model) {
+      await write(userId, id, 'configure', async (conn, row) => {
+        const value = metadata(row);
+        if (
+          value.call?.state === 'running' ||
+          value.call?.closing ||
+          value.call?.requiresEffectReview
+        )
+          throw conflict('This conversation is busy.');
+        await saveMetadata(
+          conn,
+          row,
+          { ...value, config },
+          {
+            modelService: model.modelService,
+            model: model.model,
+            updatedAt: deps.now(),
+          },
+        );
+      });
+    },
     async history(userId: string, id: string): Promise<ModelMessage[]> {
       await owned(deps.tx.read(), userId, id);
       const rows = await messagesRepo(deps.tx.read()).findMany({
@@ -270,7 +307,13 @@ export function createSessionManager(deps: {
       id: string,
       config: Config,
       model: ModelRef,
-      items: { id: string; message: ModelMessage; attachments?: string[] }[],
+      items: {
+        id: string;
+        message: ModelMessage;
+        attachments?: string[];
+        clientId?: string;
+        workContext?: import('../../shared/conversations.js').ResolvedPageContext;
+      }[],
     ) {
       return write(userId, id, 'accept', async (conn, row) => {
         const value = metadata(row);
@@ -293,6 +336,15 @@ export function createSessionManager(deps: {
             modelService: model.modelService,
             model: model.model,
             lastSeq,
+            ...(row.title
+              ? {}
+              : {
+                  title:
+                    items
+                      .map((item) => content(item.message).content)
+                      .join(' ')
+                      .slice(0, 30) || null,
+                }),
             lastMessageAt: deps.now(),
             updatedAt: deps.now(),
           },

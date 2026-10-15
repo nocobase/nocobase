@@ -2,11 +2,12 @@
  * The browser API of the chat (`CHAT_ROUTES` in `shared/conversations`), typed with the shared contract. One method per endpoint; answers are unwrapped from `{ data }` (a page of conversations or messages
  * is put back together from `{ data, meta }`); failures throw `ApiClientError`.
  */
-import type { ApiClient } from '@nocobase/app-client';
+import { ApiClientError, type ApiClient } from '@nocobase/app-client';
 
 import {
   chatPath,
   type ChatAgent,
+  type OnlineChatConfigSnapshot,
   type ChatPreferences,
   type ChatPreferencesPatch,
   type ChatSettings,
@@ -45,6 +46,31 @@ export class ChatApi {
 
   public constructor(api: ApiClient) {
     this.api = api;
+  }
+
+  public configuration(id: string): Promise<OnlineChatConfigSnapshot> {
+    return this.get(chatPath('config', id));
+  }
+  public configure(
+    id: string,
+    config: NonNullable<CreateConversationRequest['config']>,
+    selectedModel?: CreateConversationRequest['selectedModel'],
+  ): Promise<OnlineChatConfigSnapshot> {
+    return this.send(chatPath('config', id), 'PATCH', {
+      config,
+      selectedModel,
+    });
+  }
+  public async events(
+    id: string,
+    signal: AbortSignal,
+  ): Promise<ReadableStream<Uint8Array> | null> {
+    try {
+      return await this.api.stream({ path: chatPath('events', id), signal });
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 204) return null;
+      throw error;
+    }
   }
 
   public async conversations(
@@ -142,14 +168,6 @@ export class ChatApi {
 
   public stop(id: string): Promise<ConversationDetail> {
     return this.send(chatPath('stop', id), 'POST');
-  }
-
-  public fallback(id: string): Promise<ConversationDetail> {
-    return this.send(chatPath('fallback', id), 'POST');
-  }
-
-  public restore(id: string): Promise<ConversationDetail> {
-    return this.send(chatPath('restore', id), 'POST');
   }
 
   public async agents(): Promise<ChatAgent[]> {

@@ -15,6 +15,7 @@ vi.mock('@nocobase/i18n/client', () => clientMocks.i18n());
 vi.mock('@nocobase/app-plugin-authorization/client', () =>
   clientMocks.authorization(),
 );
+const { ChatClientProvider } = await import('../../client/chat/controller.js');
 const { agentsQueryClient } = await import('../../client/query.js');
 const { useConsultationIdentity } =
   await import('../../client/chat/consultation-identity.js');
@@ -49,7 +50,11 @@ const message: ConversationMessage = {
   createdAt: '2026-10-01T00:00:00Z',
 };
 function Wrapper({ children }: PropsWithChildren) {
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={client}>
+      <ChatClientProvider>{children}</ChatClientProvider>
+    </QueryClientProvider>
+  );
 }
 beforeEach(() => {
   client.clear();

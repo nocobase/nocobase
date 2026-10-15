@@ -1354,6 +1354,13 @@ const availability = z.object({
 });
 
 const conversationSummaryObject = z.object({
+  execution: z
+    .object({
+      status: z.enum(['running', 'idle']),
+      outcome: z.enum(['completed', 'cancelled', 'failed']).optional(),
+      requiresEffectReview: z.boolean().optional(),
+    })
+    .optional(),
   id: z.string(),
   title: z.string().nullable(),
   titleSource: z.enum(TITLE_SOURCES),

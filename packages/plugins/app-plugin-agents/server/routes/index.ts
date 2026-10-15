@@ -66,6 +66,11 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       const run = runIdentityOf(auth)?.run?.run;
       context.set('caller', {
         userId: auth.user.id,
+        onlineContext: {
+          user: { id: auth.user.id },
+          authorization: authz,
+          credentials: auth,
+        },
         ...(authz.identity.keyScope
           ? { keyScope: authz.identity.keyScope }
           : {}),

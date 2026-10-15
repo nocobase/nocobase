@@ -254,6 +254,24 @@ function refOf(record: ConversationRecord): ConversationRef {
   };
 }
 
+function onlineExecution(
+  record: ConversationRecord,
+): ConversationSummary['execution'] {
+  const value = jsonObject(jsonObject(record.metadata).onlineAgent);
+  if (value.version !== 1) return undefined;
+  const call = jsonObject(value.call);
+  const outcome = call.outcome;
+  return {
+    status: call.state === 'running' || call.closing ? 'running' : 'idle',
+    ...(outcome === 'completed' ||
+    outcome === 'cancelled' ||
+    outcome === 'failed'
+      ? { outcome }
+      : {}),
+    ...(call.requiresEffectReview ? { requiresEffectReview: true } : {}),
+  };
+}
+
 export function createConversationService(
   deps: ConversationServiceDeps,
 ): ConversationService {
@@ -277,8 +295,6 @@ export function createConversationService(
   ): Promise<ConversationRecord> {
     const record = await findConversation(conn, id);
     if (!record || record.userId !== userId) throw notFound('Conversation');
-    if (jsonObject(record.metadata).onlineAgent)
-      throw invalid('Use the OnlineAgent service for this conversation.');
     return record;
   }
 
@@ -287,10 +303,11 @@ export function createConversationService(
     unit: Tx,
     userId: string,
     id: string,
+    allowOnline = false,
   ): Promise<ConversationRecord> {
     const record = (await lockConversation(unit.conn, id, now()))!;
     if (!record || record.userId !== userId) throw notFound('Conversation');
-    if (jsonObject(record.metadata).onlineAgent)
+    if (!allowOnline && jsonObject(record.metadata).onlineAgent)
       throw invalid('Use the OnlineAgent service for this conversation.');
     return record;
   }
@@ -332,10 +349,19 @@ export function createConversationService(
       category: record.category,
       source: record.source,
       mode: record.mode,
-      agent: agentRef(
-        legacyAgentId(record),
-        record.agentId ? (agents.get(record.agentId) ?? null) : null,
-      ),
+      execution: onlineExecution(record),
+      agent: jsonObject(record.metadata).onlineAgent
+        ? {
+            id: 'online',
+            name: 'Online agent',
+            nameText: null,
+            avatar: null,
+            archived: false,
+          }
+        : agentRef(
+            legacyAgentId(record),
+            record.agentId ? (agents.get(record.agentId) ?? null) : null,
+          ),
       fallbackFrom: record.fallbackFromAgentId
         ? agentRef(
             record.fallbackFromAgentId,
@@ -422,6 +448,13 @@ export function createConversationService(
     record: ConversationRecord,
   ): Promise<ConversationDetail> {
     const [summary] = await summaries(conn, [record]);
+    if (jsonObject(record.metadata).onlineAgent)
+      return {
+        ...summary,
+        availability: { online: true, reason: null, onlineRunners: 0 },
+        canFallback: false,
+        canRestore: false,
+      };
     const agent = record.agentId ? await findAgent(conn, record.agentId) : null;
     const fallbackFrom = record.fallbackFromAgentId
       ? await findAgent(conn, record.fallbackFromAgentId)
@@ -1040,7 +1073,7 @@ export function createConversationService(
         filter: (f) =>
           f.and([
             f.string('userId').eq(userId),
-            f.string('agentId').notEmpty(),
+
             ...(query.archived === 'all'
               ? []
               : [
@@ -1048,7 +1081,13 @@ export function createConversationService(
                     ? f.date('archivedAt').notEmpty()
                     : f.date('archivedAt').empty(),
                 ]),
-            ...(query.agentId ? [f.string('agentId').eq(query.agentId)] : []),
+            ...(query.agentId
+              ? [
+                  query.agentId === 'online'
+                    ? f.string('agentId').empty()
+                    : f.string('agentId').eq(query.agentId),
+                ]
+              : []),
             ...(query.source ? [f.string('source').eq(query.source)] : []),
             ...(q
               ? [
@@ -1139,7 +1178,7 @@ export function createConversationService(
 
     async update(userId, id, patch) {
       await tx.run(async (unit) => {
-        const record = await lockOwned(unit, userId, id);
+        const record = await lockOwned(unit, userId, id, true);
         const values: Record<string, unknown> = {};
         if (patch.title !== undefined) {
           values.title = titleFor(patch.title, CONVERSATION_TITLE_MAX);
@@ -1288,7 +1327,7 @@ export function createConversationService(
 
     async markRead(userId, id) {
       await tx.run(async (unit) => {
-        const record = await lockOwned(unit, userId, id);
+        const record = await lockOwned(unit, userId, id, true);
         if (record.read) return;
         await conversationsRepo(unit.conn).updateMany({
           filter: { id },

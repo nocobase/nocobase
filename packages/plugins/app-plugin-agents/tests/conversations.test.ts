@@ -1,3 +1,4 @@
+import { legacyConversationRequest } from './legacy-conversation-domain.js';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
@@ -18,18 +19,19 @@ const start = {
   acceptsInput: true,
 };
 
-describe('conversations', () => {
+describe('historical Runner conversation domain', () => {
   let h: Harness;
   afterEach(async () => {
     await h?.close();
   });
 
   const as = (user: string, can: readonly string[] = []) => ({
-    get: (path: string) => h.request('GET', path, { user, can }),
+    get: (path: string) =>
+      legacyConversationRequest(h, 'GET', path, { user, can }),
     post: (path: string, body: unknown = {}) =>
-      h.request('POST', path, { user, can, body }),
+      legacyConversationRequest(h, 'POST', path, { user, can, body }),
     patch: (path: string, body: unknown) =>
-      h.request('PATCH', path, { user, can, body }),
+      legacyConversationRequest(h, 'PATCH', path, { user, can, body }),
     put: (path: string, body: unknown) =>
       h.request('PUT', path, { user, can, body }),
   });

@@ -301,3 +301,24 @@ describe('AgentComposer', () => {
     });
   });
 });
+
+it('keeps a draft and exposes Stop while an OnlineAgent execution blocks sending', async () => {
+  const onStop = vi.fn();
+  const onSend = vi.fn(() => true);
+  render(
+    <AgentComposer
+      running
+      disabled
+      onSend={onSend}
+      onStop={onStop}
+      draft={{ nonce: 1, text: 'Keep my draft' }}
+    />,
+  );
+  await waitFor(() =>
+    expect(screen.getByRole('textbox')).toHaveValue('Keep my draft'),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
+  expect(onStop).toHaveBeenCalledTimes(1);
+  expect(onSend).not.toHaveBeenCalled();
+  expect(screen.getByRole('textbox')).toHaveValue('Keep my draft');
+});
