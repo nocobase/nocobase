@@ -7,6 +7,9 @@ const PORTS: Readonly<Record<Exclude<OfficialDialect, 'sqlite'>, number>> = {
   mysql: 3306,
   mssql: 1433,
   oracle: 1521,
+  dameng: 5236,
+  kingbase: 54321,
+  oceanbase: 2881,
 };
 
 /**
@@ -57,12 +60,15 @@ export function configureDatabase(
           port: PORTS[dialect],
           ...(dialect === 'oracle'
             ? { serviceName: 'FREEPDB1' }
-            : { database: name }),
+            : dialect === 'dameng'
+              ? {}
+              : { database: name }),
           username: name,
           password: '',
         };
-  if (dialect === 'postgres')
+  if (dialect === 'postgres' || dialect === 'kingbase')
     Object.assign(connection, { schema: 'public', ssl: false });
+  if (dialect === 'dameng') connection.schema = name;
   if (dialect === 'mssql')
     Object.assign(connection, { encrypt: true, trustServerCertificate: false });
   Object.assign(connection, { debug: false, schemaManagement: 'managed' });

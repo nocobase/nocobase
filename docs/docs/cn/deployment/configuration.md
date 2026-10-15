@@ -27,7 +27,7 @@ description: 生产环境的配置文件、数据库、密钥、初始管理员�
 
 ## 数据库
 
-主数据库配置在 `database.connections.main` 下。`pnpm nocobase config init --dialect` 支持 `sqlite`、`postgres`、`mysql`、`mssql` 和 `oracle`。SQLite 以外的驱动需要在构建前加入项目，包名为 `@nocobase/db-<方言>`；部署包和镜像仅包含构建时已安装的驱动。
+主数据库配置在 `database.connections.main` 下。`pnpm nocobase config init --dialect` 支持 `sqlite`、`postgres`、`mysql`、`mssql`、`oracle`、`dameng`、`kingbase` 和 `oceanbase`。SQLite 以外的驱动需要在构建前加入项目，包名为 `@nocobase/db-<方言>`；部署包和镜像仅包含构建时已安装的驱动。
 
 ```yaml
 database:
@@ -129,4 +129,4 @@ server {
 
 `proxy_pass` 不追加路径，以保留应用的 `/crm` 前缀；`Upgrade` 和 `Connection` 用于支持 WebSocket。同一域名下部署多个应用时，每个应用使用一个 `location /crm/`，转发至各自的端口。执行 `nginx -t` 检查配置后再重新加载。
 
-KingbaseES, Dameng and OceanBase are Pro drivers. Install them through the Pro registry and explicitly register the selected driver in `database.drivers` before configuring the connection; `config init --dialect` only offers the OSS dialects.
+KingbaseES, Dameng and OceanBase drivers are maintained in `nocobase/nocobase3-pro` and distributed through the Pro registry. Install the selected package in the application’s production dependencies, then configure its dialect and connection settings. Automatic loading and `config init --dialect` remain supported; explicit registration in `database.drivers` is optional and takes precedence.

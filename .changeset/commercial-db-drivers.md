@@ -7,4 +7,4 @@
 "@nocobase/db": patch
 ---
 
-Move KingbaseES, Dameng and OceanBase driver ownership to NocoBase Pro. Applications using these drivers must install them through the Pro registry, explicitly register their default exports in database.drivers, and rebuild deployments. The OSS runtime and config initializer now load only OSS dialects. Test fixtures resolve external dialect provisioners from the consuming project without requiring Pro dependencies in OSS.
+Move KingbaseES, Dameng and OceanBase driver ownership to NocoBase Pro while preserving optional peer dependencies, automatic loading and CLI configuration support. Install the selected driver through the Pro registry in the application's production dependencies and rebuild deployments; explicit driver registration remains optional. Test fixtures resolve external dialect provisioners from the consuming project.

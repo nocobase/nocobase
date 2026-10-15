@@ -335,6 +335,8 @@ overrides:
   langchain>zod: 3.25.76
   openai>zod: 3.25.76
 
+pnpmfileChecksum: sha256-0JdvRfpZDHbDvG6vvKsL0AZCa2llweCqo/UZBOCGJGw=
+
 importers:
 
   .:

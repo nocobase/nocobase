@@ -54,7 +54,10 @@
     "@nocobase/db-oracle": "workspace:^",
     "@nocobase/db-postgres": "workspace:^",
     "@nocobase/db-sqlite": "workspace:^",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@nocobase/db-dameng": "^0.1.0-beta.4",
+    "@nocobase/db-kingbase": "^0.1.0-beta.4",
+    "@nocobase/db-oceanbase": "^0.1.0-beta.4"
   },
   "peerDependenciesMeta": {
     "@nocobase/db-mssql": {
@@ -70,6 +73,15 @@
       "optional": true
     },
     "vitest": {
+      "optional": true
+    },
+    "@nocobase/db-dameng": {
+      "optional": true
+    },
+    "@nocobase/db-kingbase": {
+      "optional": true
+    },
+    "@nocobase/db-oceanbase": {
       "optional": true
     }
   },

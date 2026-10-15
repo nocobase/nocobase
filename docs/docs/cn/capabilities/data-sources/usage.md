@@ -58,4 +58,4 @@ description: '选择应用主数据库，并连接已有的外部业务数据库
 
 :::
 
-KingbaseES, Dameng and OceanBase require drivers from `nocobase/nocobase3-pro`. Install the selected package through the Pro registry and register its default export in `database.drivers`; the OSS runtime does not automatically load it.
+KingbaseES, Dameng and OceanBase drivers are maintained in `nocobase/nocobase3-pro` and distributed through the Pro registry. Install the selected package in the application’s production dependencies, then configure its dialect and connection settings. Automatic loading and `config init --dialect` remain supported; explicit registration in `database.drivers` is optional and takes precedence.

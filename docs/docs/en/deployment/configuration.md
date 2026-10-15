@@ -27,7 +27,7 @@ The archive and the Docker image both contain the application CLI: it is invoked
 
 ## Database
 
-The main database is configured under `database.connections.main`. `pnpm nocobase config init --dialect` supports `sqlite`, `postgres`, `mysql`, `mssql` and `oracle`. Every driver except SQLite must be added to the project before building, as `@nocobase/db-<dialect>`; the archive and the image contain only the drivers installed at build time.
+The main database is configured under `database.connections.main`. `pnpm nocobase config init --dialect` supports `sqlite`, `postgres`, `mysql`, `mssql`, `oracle`, `dameng`, `kingbase` and `oceanbase`. Every driver except SQLite must be added to the project before building, as `@nocobase/db-<dialect>`; the archive and the image contain only the drivers installed at build time.
 
 ```yaml
 database:
@@ -129,4 +129,4 @@ server {
 
 `proxy_pass` appends no path, so the application's `/crm` prefix is preserved; `Upgrade` and `Connection` support WebSocket. When several applications share one domain, each uses one `location /crm/` forwarding to its own port. Run `nginx -t` to check the configuration before reloading.
 
-KingbaseES, Dameng and OceanBase are Pro drivers. Install them through the Pro registry and explicitly register the selected driver in `database.drivers` before configuring the connection; `config init --dialect` only offers the OSS dialects.
+KingbaseES, Dameng and OceanBase drivers are maintained in `nocobase/nocobase3-pro` and distributed through the Pro registry. Install the selected package in the application’s production dependencies, then configure its dialect and connection settings. Automatic loading and `config init --dialect` remain supported; explicit registration in `database.drivers` is optional and takes precedence.

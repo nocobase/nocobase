@@ -74,7 +74,10 @@
     "@testing-library/react": "catalog:",
     "react": "catalog:",
     "react-router": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@nocobase/db-dameng": "^0.1.0-beta.4",
+    "@nocobase/db-kingbase": "^0.1.0-beta.4",
+    "@nocobase/db-oceanbase": "^0.1.0-beta.4"
   },
   "peerDependenciesMeta": {
     "@nocobase/app-cli": {
@@ -117,6 +120,15 @@
       "optional": true
     },
     "vitest": {
+      "optional": true
+    },
+    "@nocobase/db-dameng": {
+      "optional": true
+    },
+    "@nocobase/db-kingbase": {
+      "optional": true
+    },
+    "@nocobase/db-oceanbase": {
       "optional": true
     }
   },
