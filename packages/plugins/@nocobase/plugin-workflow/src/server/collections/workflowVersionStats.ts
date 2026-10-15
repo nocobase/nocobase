@@ -7,8 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionOptions } from '@nocobase/database';
+import { CollectionOptions, Model } from '@nocobase/database';
 
 import options from '../../common/collections/workflowVersionStats';
 
-export default options as CollectionOptions;
+export default {
+  ...options,
+  fields: options.fields.map((field) =>
+    field.name === 'executed'
+      ? {
+          ...field,
+          get(this: Model): number | string {
+            const value: number | string = this.getDataValue('executed');
+            if (typeof value === 'string') {
+              const number = Number(value);
+              // Normalize string counts while preserving precision for large bigint values.
+              if (Number.isSafeInteger(number)) {
+                return number;
+              }
+            }
+            return value;
+          },
+        }
+      : field,
+  ),
+} as CollectionOptions;
