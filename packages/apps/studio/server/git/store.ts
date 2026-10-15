@@ -506,8 +506,8 @@ export async function openPullRequestsOf(
 }
 
 /**
- * Inserts or refreshes a pull request from a snapshot; answers it with the row it replaced. A row a person marked
- * merged stays merged whatever GitHub says until GitHub says merged too.
+ * Inserts or refreshes a pull request from a snapshot; answers it with the row it replaced. Confirmed merges survive
+ * late or incomplete snapshots, whether confirmed by GitHub or a person.
  */
 export async function upsertPullRequest(
   conn: DatabaseConnection,
@@ -517,9 +517,7 @@ export async function upsertPullRequest(
 ): Promise<{ pr: PullRequestRow; previous: PullRequestRow | null }> {
   const previous = await findPullRequest(conn, repoId, snapshot.number);
   const keepMerged =
-    previous?.state === 'merged' &&
-    previous.mergedManually &&
-    snapshot.state !== 'merged';
+    previous?.state === 'merged' && snapshot.state !== 'merged';
   const headMoved =
     !!previous && !!snapshot.headSha && previous.headSha !== snapshot.headSha;
   const now = new Date();
@@ -536,14 +534,23 @@ export async function upsertPullRequest(
       ? {}
       : {
           state: snapshot.state,
-          mergedAt: snapshot.mergedAt ? new Date(snapshot.mergedAt) : null,
-          mergedByLogin: snapshot.mergedByLogin,
+          mergedAt: snapshot.mergedAt
+            ? new Date(snapshot.mergedAt)
+            : previous?.mergedAt
+              ? new Date(previous.mergedAt)
+              : null,
+          mergedByLogin:
+            snapshot.mergedByLogin ?? previous?.mergedByLogin ?? null,
           // A read without it (a 304 refill, Studio's own fallback) keeps the one already known.
           mergeCommitSha:
             snapshot.state === 'merged'
               ? (snapshot.mergeCommitSha ?? previous?.mergeCommitSha ?? null)
               : null,
-          closedAt: snapshot.closedAt ? new Date(snapshot.closedAt) : null,
+          closedAt: snapshot.closedAt
+            ? new Date(snapshot.closedAt)
+            : snapshot.state === 'merged' && previous?.closedAt
+              ? new Date(previous.closedAt)
+              : null,
         }),
     // The CI of the old head no longer applies.
     ...(headMoved
