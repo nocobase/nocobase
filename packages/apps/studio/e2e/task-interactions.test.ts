@@ -122,7 +122,9 @@ for (const phone of [false, true]) {
     await expect(
       list.getByRole('status', { name: /is working on this issue/ }),
     ).toBeVisible();
-    await expect(list.getByRole('status', { name: /is working on this issue/ })).toHaveText('Agent working');
+    await expect(
+      list.getByRole('status', { name: /is working on this issue/ }),
+    ).toHaveText('Agent working');
     await page.screenshot({
       path: screenshot(phone ? 'phone-list' : 'merged-list-and-working-mark'),
       fullPage: true,
