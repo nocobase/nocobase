@@ -39,7 +39,7 @@ function ready(file: string): { value: Promise<number>; close: () => void } {
   };
 }
 
-it.each(['timeout', 'stop'])(
+it.each(['timeout', 'stop', 'probe-timeout'])(
   'cancels background initialize on %s after a slow fixture is ready and reaps it',
   async (mode) => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'probe-cleanup-'));
@@ -64,7 +64,7 @@ it.each(['timeout', 'stop'])(
         },
         client: { name: 'test', version: '0.0.0' },
         signal: controller.signal,
-        initializeTimeoutMs: 500,
+        initializeTimeoutMs: mode === 'probe-timeout' ? 300_000 : 500,
         handlers: {
           update: () => {},
           permission: async () => ({ outcome: { outcome: 'cancelled' } }),
@@ -76,13 +76,17 @@ it.each(['timeout', 'stop'])(
       const pid = await handshake.value;
       handshake.close();
       expect(() => process.kill(pid, 0)).not.toThrow();
-      if (mode === 'stop') controller.abort();
+      if (mode === 'probe-timeout') {
+        await vi.advanceTimersByTimeAsync(35_000);
+        expect(() => process.kill(pid, 0)).not.toThrow();
+        await vi.advanceTimersByTimeAsync(265_000);
+      } else if (mode === 'stop') controller.abort();
       else await vi.advanceTimersByTimeAsync(500);
       await vi.advanceTimersByTimeAsync(3_000);
       const error = await failed;
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toContain(
-        mode === 'timeout' ? 'did not answer within' : 'cancelled',
+        mode === 'stop' ? 'cancelled' : 'did not answer within',
       );
       expect(() => process.kill(pid, 0)).toThrow();
     } finally {
