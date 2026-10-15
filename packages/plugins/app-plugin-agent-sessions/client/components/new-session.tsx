@@ -54,6 +54,8 @@ import { AgentBadge } from './agent-badge.js';
 import { BackLink } from './back-link.js';
 import { ChoiceMenus } from './choice-menus.js';
 import { Composer } from './composer.js';
+import { useSubmission } from '../use-submission.js';
+import { SubmissionNotice } from './submission-notice.js';
 import {
   ComputersDialog,
   ConnectSteps,
@@ -91,6 +93,12 @@ export function NewSession({
   const creating =
     useIsMutating({ mutationKey: ['agentSessions', 'createSession'] }) > 0;
   const mountedRef = useRef(true);
+  const submission = useSubmission<
+    Omit<Parameters<typeof create.mutateAsync>[0], 'submissionId'>
+  >('new-session', 'new-session', async (input) => {
+    const session = await create.mutateAsync(input);
+    if (mountedRef.current) void navigate(`/agent-sessions/${session.id}`);
+  });
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -199,6 +207,12 @@ export function NewSession({
     return (
       <div className='h-full overflow-y-auto'>
         <div className='mx-auto flex max-w-[560px] flex-col gap-4 px-4 py-10 sm:pt-24'>
+          <SubmissionNotice
+            pending={submission.pending}
+            sending={creating}
+            retry={submission.retry}
+            edit={submission.edit}
+          />
           <div className='flex flex-col items-center gap-2 text-center'>
             <LaptopIcon className='text-muted-foreground size-8' />
             <h2 className='text-[17px] font-semibold'>
@@ -260,7 +274,14 @@ export function NewSession({
           {computer?.outdatedBridge && (
             <OutdatedBridgeNotice computer={computer} />
           )}
+          <SubmissionNotice
+            pending={submission.pending}
+            sending={creating}
+            retry={submission.retry}
+            edit={submission.edit}
+          />
           <Composer
+            disabled={submission.pending}
             large
             draftKey='new-session'
             onEdit={begin}
@@ -438,7 +459,7 @@ export function NewSession({
               }
               sendingRef.current = true;
               try {
-                const session = await create.mutateAsync({
+                await submission.send({
                   computerId: computer.id,
                   agentId: agent.id,
                   cwd,
@@ -452,8 +473,6 @@ export function NewSession({
                   projectId: project?.id ?? null,
                   mentions,
                 });
-                if (mountedRef.current)
-                  void navigate(`/agent-sessions/${session.id}`);
               } catch (error) {
                 toaster.show({
                   type: 'error',

@@ -74,6 +74,8 @@ import { AgentBadge } from './agent-badge.js';
 import { BackLink } from './back-link.js';
 import { ChoiceMenus } from './choice-menus.js';
 import { Composer } from './composer.js';
+import { useSubmission } from '../use-submission.js';
+import { SubmissionNotice } from './submission-notice.js';
 import { useLinkPanel } from './link-panel.js';
 import { LinkBar } from './link-bar.js';
 import { LinkName } from './link-name.js';
@@ -207,6 +209,12 @@ function Conversation({
   const { t, i18n } = useTranslation();
   const toaster = useToaster();
   const prompt = usePrompt(session.id);
+  const submission = useSubmission<{
+    content: PromptContent[];
+    mentions: Mention[];
+  }>(`session:${session.id}`, `session:${session.id}`, (input) =>
+    prompt.mutateAsync(input),
+  );
   const sending =
     useIsMutating({ mutationKey: ['agentSessions', 'prompt', session.id] }) > 0;
   const cancel = useCancel(session.id);
@@ -289,7 +297,7 @@ function Conversation({
   ): Promise<void> => {
     try {
       if (interrupt && session.running) await cancel.mutateAsync();
-      await prompt.mutateAsync({ content, mentions });
+      await submission.send({ content, mentions });
       pinnedRef.current = true;
     } catch (error) {
       if (error instanceof ApiClientError && error.status < 500) fail(error);
@@ -408,6 +416,12 @@ function Conversation({
         </div>
       </div>
       <div className='mx-auto w-full max-w-[760px] px-3 pt-2 pb-3 sm:px-6 sm:pb-4'>
+        <SubmissionNotice
+          pending={submission.pending}
+          sending={sending}
+          retry={submission.retry}
+          edit={submission.edit}
+        />
         <Composer
           compact
           hints
@@ -422,7 +436,7 @@ function Conversation({
                   ? t('composer.busy')
                   : t('composer.placeholder')
           }
-          disabled={!writable}
+          disabled={!writable || submission.pending}
           busy={session.running}
           sending={sending}
           draftKey={`session:${session.id}`}

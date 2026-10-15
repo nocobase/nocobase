@@ -2,6 +2,8 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
   errors: {
+    submissionConflict:
+      'This submission ID is already used for another request.',
     authenticationRequired: 'Sign in to use agent sessions.',
     computerNotFound: 'No computer with this id is connected to your account.',
     sessionNotFound: 'No session with this id is yours.',

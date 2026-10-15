@@ -73,7 +73,7 @@ const enUS = {
   },
   newSession: {
     sendUnconfirmed:
-      'Send was not confirmed. Check recent sessions before trying again; a session may already have been created.',
+      'Send was not confirmed. Use Retry original submission to recover its confirmation.',
     settingsOutdated:
       'This computer\'s command line is too old for this application. Update it there, as "My computers" shows.',
     settingsOffline:
@@ -161,8 +161,12 @@ const enUS = {
     recordBody: 'The full record is kept here, and only you can see it.',
   },
   composer: {
+    unconfirmed:
+      'Delivery is unconfirmed. Retry the original submission, or edit as a new message (the original may already have arrived).',
+    retrySubmission: 'Retry original submission',
+    editAsNew: 'Edit as new message',
     sendUnconfirmed:
-      'Send was not confirmed. Check the conversation before trying again; it may already have been sent.',
+      'Send was not confirmed. Use Retry original submission to recover its confirmation.',
     sending: 'Sending…',
     expand: 'Expand input',
     collapse: 'Collapse input',

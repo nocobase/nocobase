@@ -55,6 +55,8 @@ import {
   computers,
   computerView,
   enqueue,
+  events,
+  eventView,
   isOnline,
   images,
   links,
@@ -748,6 +750,7 @@ export class AgentSessionsService {
   async createSession(
     viewer: Viewer,
     input: {
+      readonly submissionId?: string | undefined;
       readonly computerId: string;
       readonly agentId: string;
       readonly cwd: string;
@@ -761,6 +764,23 @@ export class AgentSessionsService {
     },
   ): Promise<Session> {
     const { userId } = viewer;
+    const submission = input.submissionId
+      ? {
+          id: input.submissionId,
+          digest: submissionDigest({
+            operation: 'create',
+            computerId: input.computerId,
+            agentId: input.agentId,
+            cwd: input.cwd,
+            content: input.content,
+            settings: input.settings ?? {},
+            projectId: input.projectId ?? null,
+            mentions: input.mentions ?? [],
+          }),
+        }
+      : undefined;
+    const previous = await this.#submission(viewer, submission);
+    if (previous) return this.getSession(viewer, previous.sessionId);
     const computer = await this.#computer(
       userId,
       input.computerId,
@@ -786,37 +806,65 @@ export class AgentSessionsService {
     const mentioned = await this.#mentioned(viewer, input.mentions ?? []);
     const settings = input.settings ?? {};
     const now = this.#iso();
-    const sessionId = randomUUID();
-    await sessions(this.#conn()).createOne({
-      values: {
-        id: sessionId,
-        userId,
-        computerId: computer.id,
-        agentId: agent.id,
-        projectId,
-        cwd: pathsOf(computer).resolve(input.cwd),
-        title: null,
-        firstMessage: redactor.text(firstLine(input.content)),
-        acpSessionId: null,
-        state: null,
-        settings,
-        toldWork: null,
-        toldInstructions: null,
-        seenSeq: 0,
-        noticedSeq: null,
-        locale: viewer.locale ?? null,
-        running: false,
-        pendingPermissions: 0,
-        lastSeq: 0,
-        reportedBatch: 0,
-        bridgeStartedAt: null,
-        archivedAt: null,
-        lastActivityAt: now,
-        createdAt: now,
-        updatedAt: now,
-      },
-    });
-    await this.#send(viewer, sessionId, input.content, mentioned);
+    const sessionId = submission?.id ?? randomUUID();
+    try {
+      await this.#transaction(async (conn, at) => {
+        await sessions(conn).createOne({
+          values: {
+            id: sessionId,
+            userId,
+            computerId: computer.id,
+            agentId: agent.id,
+            projectId,
+            cwd: pathsOf(computer).resolve(input.cwd),
+            title: null,
+            firstMessage: redactor.text(firstLine(input.content)),
+            acpSessionId: null,
+            state: null,
+            settings,
+            toldWork: null,
+            toldInstructions: null,
+            seenSeq: 0,
+            noticedSeq: null,
+            locale: viewer.locale ?? null,
+            running: false,
+            pendingPermissions: 0,
+            lastSeq: 0,
+            reportedBatch: 0,
+            bridgeStartedAt: null,
+            archivedAt: null,
+            lastActivityAt: now,
+            createdAt: now,
+            updatedAt: now,
+          },
+        });
+        const session = (await sessions(conn).findOne({
+          filter: { id: sessionId },
+        }))!;
+        const work = mentioned.map((item) => ({
+          kind: item.kind,
+          refId: item.refId,
+          key: item.key,
+          title: item.title,
+          status: item.status?.label ?? null,
+          group: item.group,
+        }));
+        await this.#sendInTransaction(
+          conn,
+          at,
+          viewer,
+          session,
+          input.content,
+          mentioned,
+          work,
+          submission,
+        );
+      });
+    } catch (error) {
+      const winner = await this.#submission(viewer, submission);
+      if (!winner) throw error;
+      return this.getSession(viewer, winner.sessionId);
+    }
     return this.getSession(viewer, sessionId);
   }
 
@@ -916,13 +964,28 @@ export class AgentSessionsService {
     sessionId: string,
     content: readonly PromptContent[],
     mentions: readonly Mention[] = [],
+    submissionId?: string,
   ): Promise<TranscriptEvent> {
+    const submission = submissionId
+      ? {
+          id: submissionId,
+          digest: submissionDigest({
+            operation: 'prompt',
+            sessionId,
+            content,
+            mentions,
+          }),
+        }
+      : undefined;
+    const previous = await this.#submission(viewer, submission, sessionId);
+    if (previous) return previous.event;
     await this.#writable(viewer.userId, sessionId);
     return this.#send(
       viewer,
       sessionId,
       content,
       await this.#mentioned(viewer, mentions),
+      submission,
     );
   }
 
@@ -959,21 +1022,78 @@ export class AgentSessionsService {
     return found.flat().slice(0, MENTION_LIMIT);
   }
 
+  async #submission(
+    viewer: Viewer,
+    submission: { readonly id: string; readonly digest: string } | undefined,
+    sessionId?: string,
+  ): Promise<{ sessionId: string; event: TranscriptEvent } | undefined> {
+    if (!submission) return undefined;
+    const event = await events(this.#conn()).findOne({
+      filter: { id: submission.id },
+    });
+    if (!event) return undefined;
+    const session = await sessions(this.#conn()).findOne({
+      filter: { id: event.sessionId },
+    });
+    if (
+      !session ||
+      session.userId !== viewer.userId ||
+      (sessionId && session.id !== sessionId) ||
+      event.kind !== 'prompt' ||
+      event.data._submission !== submission.digest
+    )
+      throw new AgentSessionsError('submissionConflict');
+    return { sessionId: session.id, event: eventView(event) };
+  }
+
   async #send(
     viewer: Viewer,
     sessionId: string,
     content: readonly PromptContent[],
     mentioned: readonly (Mention & LinkView)[],
+    submission?: { readonly id: string; readonly digest: string },
   ): Promise<TranscriptEvent> {
     const session = await this.#session(viewer.userId, sessionId);
-    const promptId = randomUUID();
     const work = await this.#work(viewer, sessionId, mentioned);
-    const note = workNote(work, session.toldWork);
+    try {
+      return await this.#transaction((conn, now) =>
+        this.#sendInTransaction(
+          conn,
+          now,
+          viewer,
+          session,
+          content,
+          mentioned,
+          work,
+          submission,
+        ),
+      );
+    } catch (error) {
+      const winner = await this.#submission(viewer, submission, sessionId);
+      if (winner) return winner.event;
+      throw error;
+    }
+  }
+
+  async #sendInTransaction(
+    conn: DatabaseConnection,
+    now: string,
+    viewer: Viewer,
+    session: SessionRecord,
+    content: readonly PromptContent[],
+    mentioned: readonly (Mention & LinkView)[],
+    work: readonly WorkItem[],
+    submission?: { readonly id: string; readonly digest: string },
+  ): Promise<TranscriptEvent> {
+    const sessionId = session.id;
+    const promptId = randomUUID();
+    const locked = (await lockSession(conn, sessionId, now))!;
+    const note = workNote(work, locked.toldWork);
     const currentInstructions = this.#instructionsFor(viewer);
     const toldInstructions =
       currentInstructions && instructionsHash(currentInstructions);
     const instructions =
-      toldInstructions !== session.toldInstructions
+      toldInstructions !== locked.toldInstructions
         ? currentInstructions
         : undefined;
     // The agent reads the application's instructions until it was told them, what the message mentions, and the
@@ -991,70 +1111,105 @@ export class AgentSessionsService {
         : []),
       ...(note ? [{ type: 'text' as const, text: note }] : []),
     ];
-    const kept = this.#images
-      ? await this.#images.keep(
-          { id: sessionId, userId: session.userId },
-          content,
-        )
-      : content;
-    const changed = await this.#transaction(async (conn, now) => {
-      const locked = (await lockSession(conn, sessionId, now))!;
-      const result = await this.#append(
-        conn,
-        locked,
-        [{ kind: 'prompt', at: now, promptId, content: kept }],
-        now,
+    const storesImages = Boolean(
+      this.#images && content.some((part) => part.type === 'image'),
+    );
+    // Reserve the unique event before any image upload. A concurrent loser rolls back without external effects.
+    // Image bytes enter only the file service (or the final fallback event), never the temporary receipt.
+    const result = await this.#append(
+      conn,
+      locked,
+      [
         {
-          ...(note ? { toldWork: workSnapshot(work) } : {}),
-          ...(instructions ? { toldInstructions } : {}),
-          ...(viewer.locale ? { locale: viewer.locale } : {}),
-        },
-      );
-      for (const item of mentioned) {
-        const filter = { sessionId, kind: item.kind, refId: item.refId };
-        if (await links(conn).findOne({ filter })) continue;
-        await links(conn).createOne({
-          values: {
-            id: randomUUID(),
-            ...filter,
-            seq: result.lastSeq,
-            decidedAt: now,
-            createdAt: now,
-          },
-        });
-      }
-      await enqueue(
-        conn,
-        session.computerId,
-        {
-          type: 'prompt',
-          session: this.#target(locked),
+          kind: 'prompt',
+          at: now,
           promptId,
-          content: told,
+          content: storesImages ? [] : content,
         },
-        now,
-      );
-      return result;
-    });
-    this.#diagnose?.('promptPersisted', {
-      sessionId,
-      at: Date.now(),
-      seq: changed.lastSeq,
-      promptId,
-    });
-    this.#wake(session.computerId);
-    this.#changed(changed);
-    this.#diagnose?.('promptConfirmed', {
-      sessionId,
-      at: Date.now(),
-      seq: changed.lastSeq,
-      promptId,
+      ],
+      now,
+      {
+        ...(note ? { toldWork: workSnapshot(work) } : {}),
+        ...(instructions ? { toldInstructions } : {}),
+        ...(viewer.locale ? { locale: viewer.locale } : {}),
+      },
+      submission,
+    );
+    const kept =
+      this.#images && storesImages
+        ? await this.#images.keep(
+            { id: sessionId, userId: session.userId },
+            content,
+            conn,
+          )
+        : content;
+    if (storesImages) {
+      await events(conn).updateMany({
+        filter: { sessionId, seq: result.lastSeq },
+        values: {
+          data: {
+            at: now,
+            promptId,
+            content: kept.map((part) =>
+              part.type === 'text'
+                ? { ...part, text: redactor.text(part.text) }
+                : part,
+            ),
+            ...(submission ? { _submission: submission.digest } : {}),
+          },
+        },
+      });
+    }
+    for (const item of mentioned) {
+      const filter = { sessionId, kind: item.kind, refId: item.refId };
+      if (await links(conn).findOne({ filter })) continue;
+      await links(conn).createOne({
+        values: {
+          id: randomUUID(),
+          ...filter,
+          seq: result.lastSeq,
+          decidedAt: now,
+          createdAt: now,
+        },
+      });
+    }
+    await enqueue(
+      conn,
+      session.computerId,
+      {
+        type: 'prompt',
+        session: this.#target(locked),
+        promptId,
+        content: told,
+      },
+      now,
+    );
+    const changed = result;
+    conn.afterCommit(() => {
+      this.#diagnose?.('promptPersisted', {
+        sessionId,
+        at: Date.now(),
+        seq: changed.lastSeq,
+        promptId,
+      });
+      this.#wake(session.computerId);
+      this.#changed(changed);
+      this.#diagnose?.('promptConfirmed', {
+        sessionId,
+        at: Date.now(),
+        seq: changed.lastSeq,
+        promptId,
+      });
     });
     return {
       kind: 'prompt',
       at: changed.session.lastActivityAt,
       promptId,
-      content,
+      content: kept.map((part) =>
+        part.type === 'text'
+          ? { ...part, text: redactor.text(part.text) }
+          : part,
+      ),
       seq: changed.lastSeq,
     };
   }
@@ -1467,8 +1622,9 @@ export class AgentSessionsService {
     added: readonly SessionEvent[],
     now: string,
     values: Partial<SessionRecord>,
+    submission?: { readonly id: string; readonly digest: string },
   ): Promise<{ readonly session: SessionRecord; readonly lastSeq: number }> {
-    const lastSeq = await appendEvents(conn, session, added, now);
+    const lastSeq = await appendEvents(conn, session, added, now, submission);
     const written = {
       ...values,
       lastSeq,
@@ -1757,4 +1913,21 @@ function later(task: () => Promise<void>, delayMs: number): void {
       ),
     );
   }, delayMs).unref();
+}
+
+/** Stable object keys, ordered content/mentions, and a digest rather than a second persisted copy of the input. */
+function submissionDigest(input: unknown): string {
+  const canonical = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(canonical);
+    if (value && typeof value === 'object')
+      return Object.fromEntries(
+        Object.entries(value)
+          .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+          .map(([key, item]) => [key, canonical(item)]),
+      );
+    return value;
+  };
+  return createHash('sha256')
+    .update(JSON.stringify(canonical(input)))
+    .digest('hex');
 }

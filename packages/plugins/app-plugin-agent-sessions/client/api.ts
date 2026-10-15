@@ -405,6 +405,7 @@ function useSessionWrite<Input>(
 
 export function useCreateSession(): Mutation<
   {
+    submissionId: string;
     computerId: string;
     agentId: string;
     cwd: string;
@@ -444,7 +445,7 @@ export function useCreateSession(): Mutation<
 export function usePrompt(
   sessionId: string,
 ): Mutation<
-  { content: PromptContent[]; mentions: Mention[] },
+  { content: PromptContent[]; mentions: Mention[]; submissionId: string },
   TranscriptEvent
 > {
   const api = useApiClient();

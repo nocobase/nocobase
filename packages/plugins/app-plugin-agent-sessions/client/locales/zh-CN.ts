@@ -65,7 +65,7 @@ const zhCN: AgentSessionsResource = {
     unknown: '未知',
   },
   newSession: {
-    sendUnconfirmed: '发送尚未确认。请先检查最近的会话再重试；会话可能已创建。',
+    sendUnconfirmed: '发送尚未确认。请使用“重试原提交”恢复发送确认。',
     settingsOutdated:
       '这台电脑上的命令行版本过旧，请按“我的电脑”里的提示在那台电脑上更新。',
     settingsOffline: '此电脑已离线。请重新连接桥接程序以加载设置和发送消息。',
@@ -147,7 +147,11 @@ const zhCN: AgentSessionsResource = {
     recordBody: '完整记录保存在这里，只有你能看到。',
   },
   composer: {
-    sendUnconfirmed: '发送尚未确认。请先检查对话再尝试发送；消息可能已发送。',
+    unconfirmed:
+      '发送结果尚未确认。可重试原提交，或编辑为新消息（原消息可能已送达）。',
+    retrySubmission: '重试原提交',
+    editAsNew: '编辑为新消息',
+    sendUnconfirmed: '发送尚未确认。请使用“重试原提交”恢复发送确认。',
     sending: '正在发送…',
     expand: '展开输入',
     collapse: '收起输入',
