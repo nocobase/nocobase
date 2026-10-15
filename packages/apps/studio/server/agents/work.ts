@@ -1170,7 +1170,7 @@ export function createAgentWork(deps: {
       if (!byAgent)
         return wakeComment(tx, issue, held, authorId, {
           causedByRunId: change.actor.trace?.runId,
-          byAgent: change.actor.via === 'agent',
+          byAgent,
         });
       if (await commentLimited(tx, issue, held))
         return held.targets.map((target) =>

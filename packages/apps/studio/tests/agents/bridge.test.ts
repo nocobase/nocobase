@@ -858,7 +858,24 @@ describe("an agent's comment", () => {
         started: true,
       }),
     ]);
-    expect(await pendingCommentRun(h.projects, alice(), issue.id)).toBeNull();
+    // A human resets the window without discarding earlier limited comments.
+    expect(
+      await pendingCommentRun(h.projects, alice(), issue.id),
+    ).toMatchObject({ maxRuns: 1, windowHours: 24 });
+    const afterReset = await collectRunAttempts(() =>
+      h.projects.comments.post(
+        { type: 'user', id: 'alice', via: 'agent', trace: { agentId: worker } },
+        issue.id,
+        { content: mention(PM) },
+      ),
+    );
+    expect(afterReset.attempts).toEqual([
+      expect.objectContaining({
+        principalId: PM,
+        triggerType: 'comment',
+        started: true,
+      }),
+    ]);
   });
 
   it('lets a person who may edit the issue continue the held comment once', async () => {
