@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useNotify } from '../../access/notify.js';
 import type { PersonalRunnerRequest } from '../../../shared/project-manager.js';
+import { followUpsKeys } from '../../follow-ups/model.js';
 
 export function PersonalRunnerActions({
   request,
@@ -31,7 +32,7 @@ export function PersonalRunnerActions({
         [
           ['studio', 'issueProgress'],
           ['pm', 'issue'],
-          ['pm', 'issues', 'followUps'],
+          followUpsKeys.overview,
         ].map((queryKey) => client.invalidateQueries({ queryKey })),
       );
     },

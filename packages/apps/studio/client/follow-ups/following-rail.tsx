@@ -102,10 +102,7 @@ function FollowingCard({
   readonly onSelect: () => void;
 }): ReactElement {
   const { t, i18n } = useTranslation();
-  const mark = usePullRequestMark(
-    issue.id,
-    Date.parse(issue.lastActivityAt),
-  ).data;
+  const mark = usePullRequestMark(issue.id).data;
   const line = nowLine(t, issue, mark);
   const showUnread = issue.unread > 0 && !selected;
   return (

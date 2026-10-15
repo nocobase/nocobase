@@ -18,7 +18,8 @@ import type { FollowUpIssue, FollowUpsView } from '../../shared/follow-ups.js';
 import { STUDIO_INBOX_TOPIC } from '../../shared/inbox.js';
 import { STUDIO_ISSUE_RUNS_TOPIC } from '../../shared/issue-runs.js';
 
-const KEY = ['pm', 'issues', 'followUps'];
+const KEY = ['studio', 'followUps'];
+const FOLLOWING = ['studio', 'following'];
 
 const row = (
   id: string,
@@ -174,25 +175,46 @@ describe('refreshing My follow-ups', () => {
     expect(page.overview).toHaveBeenCalledTimes(3);
   });
 
-  it('reads the follow star’s state again for a named issue where only the star shows', async () => {
+  it('reads the follow star’s state again only for an announcement naming nothing', async () => {
     const client = new QueryClient();
     clients.push(client);
     const read = vi.fn(async () => ({ issueIds: ['a'], max: 5 }));
     const observer = new QueryObserver(client, {
-      queryKey: [...KEY, 'following'],
+      queryKey: FOLLOWING,
       queryFn: read,
       staleTime: Infinity,
       retry: false,
     });
     stops.push(observer.subscribe(() => {}));
     await waitFor(() => expect(read).toHaveBeenCalledOnce());
+    const listeners = new Map<string, RealtimeListener<unknown>>();
     const readRows = vi.fn(async () => []);
-    const refresh = followUpsRefresh(client, readRows, 5);
-    stops.push(refresh.stop);
-    refresh.issues(new Set(['a']));
-    refresh.issues(new Set(['b']));
+    stops.push(
+      subscribeIssueRefresh(
+        {
+          onOpen: () => () => {},
+          subscribe: (topic, listener) => {
+            listeners.set(topic, listener as RealtimeListener<unknown>);
+            return () => listeners.delete(topic);
+          },
+        },
+        client,
+        readRows,
+      ),
+    );
+    const emit = (payload: unknown) =>
+      listeners.get(PM_REALTIME_TOPIC)?.({
+        type: 'event',
+        topic: PM_REALTIME_TOPIC,
+        payload,
+        publishedAt: '2026-10-15T08:00:00Z',
+      });
+    emit({ kind: 'pm.changed', domain: 'issues', issueIds: ['a'] });
+    emit({ kind: 'pm.changed', domain: 'issues', issueIds: ['b'] });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(read).toHaveBeenCalledOnce();
+    emit({ kind: 'pm.changed', domain: 'issues' });
     await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
-    expect(readRows).not.toHaveBeenCalled();
   });
 
   it('reads nothing while no page shows the overview', async () => {

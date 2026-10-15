@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentBoard, AgentBoardQuery } from '../../shared/agent-board.js';
 import {
   readAgentBoard,
+  readAgentBoardWait,
   startAgentBoardIssue,
 } from '../../server/agents/board.js';
 import { createAgentWork } from '../../server/agents/work.js';
@@ -352,6 +353,55 @@ describe('the agent board', () => {
     const hidden = rowOf(await board('carol'), queued.id)?.queue;
     expect(hidden?.detail).toBeNull();
     expect(hidden?.params).toEqual({ tool: 'claude' });
+  });
+
+  it('reads one queued row’s exact wait on its own, with the row’s visibility', async () => {
+    const path = (issueId: string, agent: string) =>
+      `/agentBoard/issues/${issueId}/agents/${agent}/wait`;
+    const answer = await h.request('GET', path(queued.id, agentId), {
+      user: 'alice',
+    });
+    expect(answer.status).toBe(200);
+    expect(answer.body.data).toMatchObject({
+      reason: expect.any(String),
+      agentPosition: 1,
+    });
+
+    const queueWait = vi.spyOn(h.agents.runs, 'queueWait').mockResolvedValue({
+      ...answer.body.data,
+      reason: 'setupRetrying',
+      detail: 'Private setup details',
+      params: { detail: 'Private setup details', tool: 'claude' },
+    });
+    const wait = (userId: string) =>
+      readAgentBoardWait(
+        { projects: () => h.projects, agents: h.agents },
+        { viewer: h.viewer(userId), readsAllRuns: false },
+        queued.id,
+        agentId,
+      );
+    expect(await wait('alice')).toMatchObject({
+      detail: 'Private setup details',
+      params: { detail: 'Private setup details', tool: 'claude' },
+    });
+    const hidden = await wait('carol');
+    expect(hidden.detail).toBeNull();
+    expect(hidden.params).toEqual({ tool: 'claude' });
+    queueWait.mockRestore();
+
+    // An agent with nothing queued there.
+    const none = await h.request('GET', path(queued.id, coderId), {
+      user: 'alice',
+    });
+    expect(none.status).toBe(404);
+    expect(none.body.error.reason).toBe('QUEUED_RUN_NOT_FOUND');
+    // Someone who may not see issues learns nothing of it.
+    h.roles.set('bob', 'none');
+    const refused = await h.request('GET', path(queued.id, agentId), {
+      user: 'bob',
+    });
+    expect([403, 404]).toContain(refused.status);
+    expect(refused.body.data).toBeUndefined();
   });
 
   it('marks the issues the viewer owns, created or follows, and lists agents with nothing to do', async () => {

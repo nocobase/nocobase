@@ -141,7 +141,6 @@ function LiveIssue({
       <IssueSummary
         issue={issue}
         update={update}
-        refresh={`${issue.revision}|${issue.statusKey}`}
         progressFallback={summary?.progress ?? null}
         collapsible
         defaultCollapsed={narrow}

@@ -3,8 +3,11 @@
  *
  * - `GET /taskGroups`: the groups of the query's tasks, a page of each; `group` with `cursor` and `generation` continues
  *   one group.
- * - `GET /taskGroups/children`: a page of one task's children in the table, `parentId` and `generation` required.
- * - `GET /taskGroups/summary`: My tasks' merged counts.
+ * - `GET /taskGroups/children`: the first page of the children of each task in `parentIds` in the table, read together;
+ *   with one parent, `cursor` continues its children. `generation` required.
+ * - `GET /taskGroups/rows`: single tasks as the query lists them now, with the lists' membership, so a page refreshes
+ *   only the rows a change named.
+ * - `GET /taskGroups/summary`: My tasks' merged counts, reused for a few seconds per viewer.
  *
  * Each needs a signed-in person, or an API key, with the projects plugin's issue view permission; a key restricted to
  * some projects reads only their tasks. A continuation whose data changed answers `409 TASK_GROUPS_CHANGED`.
@@ -21,6 +24,7 @@ import {
 import { IssueListItemSchema } from '@nocobase/app-plugin-projects/server';
 import { userPreferencesServiceToken } from '@nocobase/app-plugin-users/server/tokens';
 import type { Application } from '@nocobase/app-server/application';
+import { cachingToken } from '@nocobase/app-server/caching';
 import {
   apiErrorResponse,
   apiErrorResponses,
@@ -35,10 +39,13 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 
 import {
+  TASK_CHILDREN_PARENTS_MAX,
   TASK_GROUP_IDS,
+  TASK_GROUP_ROWS_MAX,
   WAIT_REASONS,
-  type TaskChildrenPage,
+  type TaskChildrenPages,
   type TaskGroupItem,
+  type TaskGroupRows,
   type TaskGroups,
   type TaskGroupSummary,
 } from '../../shared/task-groups.js';
@@ -95,6 +102,10 @@ const Item = z.object({
 
 const Groups = z.object({
   generation: z.string(),
+  membership: z.string().meta({
+    description:
+      'Which tasks each group holds; unchanged by edits that move no task between groups.',
+  }),
   mode: z.enum(['split', 'table']),
   groups: z.array(
     z.object({
@@ -110,9 +121,37 @@ const Groups = z.object({
 
 const Children = z.object({
   generation: z.string(),
+  parents: z.array(
+    z.object({
+      parentId: z.string(),
+      data: z.array(Item),
+      nextCursor: z.string().nullable(),
+    }),
+  ),
+}) satisfies z.ZodType<TaskChildrenPages>;
+
+const Rows = z.object({
+  membership: z.string().meta({
+    description:
+      "As the groups' membership: when it differs from the one shown, read the groups again.",
+  }),
   data: z.array(Item),
-  nextCursor: z.string().nullable(),
-}) satisfies z.ZodType<TaskChildrenPage>;
+}) satisfies z.ZodType<TaskGroupRows>;
+
+/** A comma-separated list of ids, each once, at most `max`. */
+const idList = (max: number) =>
+  z
+    .string()
+    .min(1)
+    .transform((value) => [
+      ...new Set(
+        value
+          .split(',')
+          .map((id) => id.trim())
+          .filter(Boolean),
+      ),
+    ])
+    .pipe(z.array(z.string().min(1).max(64)).min(1).max(max));
 
 const TaskCount = z.object({ open: z.number(), waiting: z.number() });
 const Summary = z.object({
@@ -159,6 +198,11 @@ export const taskGroupRoutes: AppApiRouteContribution<Application> =
     const projects = container.resolve(projectsToken);
     const service = createTaskGroups({
       projects,
+      cache: container.has(cachingToken)
+        ? container
+            .resolve(cachingToken)
+            .getCache({ namespace: 'studio:task-group-summary' })
+        : undefined,
       inbox: container.has(studioInboxToken)
         ? container.resolve(studioInboxToken)
         : undefined,
@@ -197,7 +241,9 @@ export const taskGroupRoutes: AppApiRouteContribution<Application> =
       describeRoute({
         tags,
         operationId: 'studioReadTaskGroupChildren',
-        summary: "Read a page of a task's children in the grouped table",
+        summary: 'Read the children of tasks in the grouped table',
+        description:
+          "The first page of each named parent's children, read together; with one parent, `cursor` continues its children.",
         ...cliRoute(false),
         security: [{ cookieAuth: [] }, { apiKeyAuth: [] }],
         responses: {
@@ -208,15 +254,64 @@ export const taskGroupRoutes: AppApiRouteContribution<Application> =
       }),
       apiValidator(
         'query',
-        Query.omit({ group: true, mode: true }).extend({
-          parentId: z.string().min(1),
-          generation: z.string().min(1),
-        }),
+        Query.omit({ group: true, mode: true })
+          .extend({
+            parentIds: idList(TASK_CHILDREN_PARENTS_MAX).meta({
+              description: `Comma-separated task ids, at most ${TASK_CHILDREN_PARENTS_MAX}.`,
+            }),
+            generation: z.string().min(1),
+          })
+          .refine((input) => !input.cursor || input.parentIds.length === 1, {
+            message: 'A continuation names one parent.',
+            path: ['cursor'],
+          }),
       ),
       async (context) => {
         try {
           return context.json({
             data: await service.children(
+              context.get('taskViewer'),
+              context.req.valid('query'),
+            ),
+          });
+        } catch (error) {
+          return changed(error);
+        }
+      },
+    );
+    router.get(
+      '/rows',
+      describeRoute({
+        tags,
+        operationId: 'studioReadTaskGroupRows',
+        summary: 'Read single tasks as an issue list groups them now',
+        description:
+          "The named tasks the caller may see, each as the query lists it, with the lists' membership; any other id is left out.",
+        ...cliRoute(false),
+        security: [{ cookieAuth: [] }, { apiKeyAuth: [] }],
+        responses: {
+          200: dataResponse(Rows),
+          409: apiErrorResponse(409, 'The tasks changed; read them again.'),
+          ...apiErrorResponses,
+        },
+      }),
+      apiValidator(
+        'query',
+        Query.omit({
+          group: true,
+          cursor: true,
+          generation: true,
+          limit: true,
+        }).extend({
+          ids: idList(TASK_GROUP_ROWS_MAX).meta({
+            description: `Comma-separated task ids, at most ${TASK_GROUP_ROWS_MAX}.`,
+          }),
+        }),
+      ),
+      async (context) => {
+        try {
+          return context.json({
+            data: await service.rows(
               context.get('taskViewer'),
               context.req.valid('query'),
             ),

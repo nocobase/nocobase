@@ -28,6 +28,7 @@ export function FollowToggle({
   issueId,
   defaults = false,
   className,
+  ...props
 }: {
   readonly issueId: string;
   /**
@@ -35,19 +36,23 @@ export function FollowToggle({
    * that page shows it; elsewhere only what they chose is followed.
    */
   readonly defaults?: boolean;
+  /** What the viewer chose to follow, where the page has read it already (the task lists'); read here otherwise. */
+  readonly following?: readonly string[] | undefined;
   readonly className?: string;
 }): ReactElement {
   const { t } = useTranslation();
   const notify = useNotify();
-  const read = useFollowing();
+  const known = defaults ? undefined : props.following;
+  const read = useFollowing(known === undefined);
   const followIssue = useFollowIssue((error) =>
     notify.error(error, t('issueLive.follow.saveFailed')),
   );
   const following =
-    read.data && (defaults || read.data.stored) ? read.data.issueIds : [];
+    known ??
+    (read.data && (defaults || read.data.stored) ? read.data.issueIds : []);
   const max = read.data?.max ?? FOLLOW_UPS_MAX;
   const { followed, full } = followState(following, issueId, max);
-  const loading = !read.data;
+  const loading = known === undefined && !read.data;
   const held = full || loading;
   return (
     <Button

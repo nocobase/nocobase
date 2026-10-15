@@ -47,6 +47,7 @@ import type { Agent } from '@nocobase/app-plugin-agents/shared/agents';
 import type {
   AgentLoad,
   Run,
+  RunWait,
   WorkloadRun,
 } from '@nocobase/app-plugin-agents/shared/runs';
 
@@ -71,6 +72,7 @@ import { INBOX_DECISIONS_PATH } from '../../shared/inbox.js';
 import { RUN_FAILED_FINAL } from './notices.js';
 import type { AgentWork } from './work.js';
 import { AGENT_KIND } from './tx.js';
+import { studioError } from '../http/errors.js';
 
 /** The most issues the view shows. */
 export const AGENT_BOARD_ISSUES = 300;
@@ -100,13 +102,33 @@ const issuePath = (identifier: string): string =>
   `/issues/${encodeURIComponent(identifier)}`;
 
 /** Whether the viewer could open the run through the agents plugin's API. */
-function seesRun(run: WorkloadRun, caller: AgentBoardCaller): boolean {
+function seesRun(
+  run: Pick<Run, 'actorUserId' | 'ownerUserId'>,
+  caller: AgentBoardCaller,
+): boolean {
   const { userId } = caller.viewer;
   return (
     caller.readsAllRuns ||
     run.actorUserId === userId ||
     run.ownerUserId === userId
   );
+}
+
+/** A queued run's wait as the viewer may see it: its private preparation detail only when they could open the run. */
+function shownWait(wait: RunWait, visible: boolean): RunWait {
+  if (visible) return wait;
+  return {
+    ...wait,
+    detail: null,
+    // Structured wait parameters must preserve the same run-detail visibility.
+    ...(wait.params
+      ? {
+          params: Object.fromEntries(
+            Object.entries(wait.params).filter(([name]) => name !== 'detail'),
+          ),
+        }
+      : {}),
+  };
 }
 
 function runOf(run: WorkloadRun, visible: boolean): AgentBoardRun {
@@ -302,22 +324,7 @@ export async function readAgentBoard(
       agentId: run.agentId,
       state: run.status === 'queued' ? 'queued' : 'working',
       run: runOf(run, visible),
-      queue: run.wait
-        ? {
-            ...run.wait,
-            detail: visible ? run.wait.detail : null,
-            // Structured wait parameters must preserve the same run-detail visibility.
-            ...(!visible && run.wait.params
-              ? {
-                  params: Object.fromEntries(
-                    Object.entries(run.wait.params).filter(
-                      ([name]) => name !== 'detail',
-                    ),
-                  ),
-                }
-              : {}),
-          }
-        : null,
+      queue: run.wait ? shownWait(run.wait, visible) : null,
       blockedBy: null,
       waiting: null,
       idle: null,
@@ -497,6 +504,46 @@ export async function readAgentBoard(
     truncated: matches.truncated || workload.truncated,
     generatedAt: (deps.now?.() ?? new Date()).toISOString(),
   };
+}
+
+/**
+ * Exactly why an agent's queued run on an issue waits, as a queued row on the board says it in short
+ * (`RunService.queueWait`): the claim's diagnosis of the run's candidate runners, which the board leaves to this read.
+ * The issue must be one the viewer may see (404 otherwise, as for an issue that does not exist); of two queued runs of
+ * the agent there, the first in line, as its row shows. 404 `QUEUED_RUN_NOT_FOUND` when the agent has none. The
+ * preparation detail shows only to those who could open the run, as on the row.
+ */
+export async function readAgentBoardWait(
+  deps: {
+    readonly projects: () => Pick<Projects, 'issueQueries'>;
+    readonly agents: Pick<Agents, 'runs'>;
+  },
+  caller: AgentBoardCaller,
+  issueId: string,
+  agentId: string,
+): Promise<RunWait> {
+  const issue = await deps
+    .projects()
+    .issueQueries.visible(caller.viewer, issueId);
+  if (issue.deletedAt)
+    throw studioError('NOT_FOUND', 'ISSUE_NOT_FOUND', 'Issue not found.');
+  const queued = await deps.agents.runs.list({
+    subjectKind: ISSUE_SUBJECT,
+    subjectId: issue.id,
+    agentId,
+    status: 'queued',
+    limit: 20,
+  });
+  // Newest first: the first in line is the oldest.
+  const run = queued.at(-1);
+  const wait = run ? await deps.agents.runs.queueWait(run.id) : null;
+  if (!run || !wait)
+    throw studioError(
+      'NOT_FOUND',
+      'QUEUED_RUN_NOT_FOUND',
+      'The agent has no queued run on this issue.',
+    );
+  return shownWait(wait, seesRun(run, caller));
 }
 
 /**

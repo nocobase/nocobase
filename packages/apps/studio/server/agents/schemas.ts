@@ -92,6 +92,30 @@ export const FailedRunResultSchema: z.ZodType<FailedRunResult> = z.object({
     .meta({ description: 'For `retry`: the new run.' }),
 });
 
+/** Why a queued run waits (`RunWait`), on a board row in short and in full from its own read. */
+export const AgentBoardWaitSchema = z
+  .object({
+    reason: z.string(),
+    params: z
+      .record(
+        z.string(),
+        z.union([z.string(), z.number(), z.array(z.string())]),
+      )
+      .optional(),
+    position: z.number().int().nullable(),
+    agentPosition: z.number().int(),
+    until: dateTime().nullable(),
+    tool: z.string().nullable(),
+    missing: z.array(z.string()),
+    detail: z.string().nullable(),
+  })
+  .meta({ ref: 'StudioAgentBoardWait' });
+
+export const AgentBoardWaitParams = z.object({
+  issueId: z.string().min(1),
+  agentId: z.string().min(1),
+});
+
 export const AgentBoardStartResultSchema: z.ZodType<AgentBoardStartResult> =
   z.object({
     started: z.boolean(),
@@ -133,24 +157,10 @@ const AgentBoardEntrySchema = z
         priority: z.number(),
       })
       .nullable(),
-    queue: z
-      .object({
-        reason: z.string(),
-        params: z
-          .record(
-            z.string(),
-            z.union([z.string(), z.number(), z.array(z.string())]),
-          )
-          .optional(),
-        position: z.number().int().nullable(),
-        agentPosition: z.number().int(),
-        until: dateTime().nullable(),
-        tool: z.string().nullable(),
-        missing: z.array(z.string()),
-        detail: z.string().nullable(),
-      })
-      .nullable()
-      .meta({ description: 'For `queued` with a run: why it waits.' }),
+    queue: AgentBoardWaitSchema.nullable().meta({
+      description:
+        'For `queued` with a run: why it waits, by the claim’s rules alone; the exact reason is `GET /agentBoard/issues/{issueId}/agents/{agentId}/wait`.',
+    }),
     blockedBy: z
       .array(
         z.object({

@@ -309,6 +309,7 @@ export function createProjects(deps: ProjectsDeps): Projects {
         subtasks.extras.relations(conn, viewer, issue),
       listCounts: (conn, issues, readableIds) =>
         subtasks.extras.listCounts(conn, issues, readableIds),
+      blockedIds: (conn, issues) => subtasks.extras.blockedIds(conn, issues),
     }),
   });
   const intakeFiles = createIntakeFileStore({

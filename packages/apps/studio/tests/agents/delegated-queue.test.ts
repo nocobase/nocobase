@@ -205,12 +205,7 @@ describe('manager delegated queue timeout', () => {
       })
       .where('id', '=', owned!.id)
       .execute();
-    const wait = (
-      await h.agents.runs.workload({
-        subjectKind: 'issue',
-        subjectId: issue.id,
-      })
-    ).runs.find((row) => row.id === run.id)!.wait;
+    const wait = await h.agents.runs.queueWait(run.id);
     expect(wait?.reason).toBe('incompatible');
     const progress = await issueProgress(
       { agents: h.agents, projects: h.projects },

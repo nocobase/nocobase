@@ -41,17 +41,12 @@ describe('intake with AI as an agent run', () => {
       mode: 'split',
       text: 'Ship it',
     });
-    const workload = await h.agents.runs.workload({ subjectKind: 'intake' });
-    vi.spyOn(h.agents.runs, 'workload').mockResolvedValue({
-      ...workload,
-      runs: workload.runs.map((run) => ({
-        ...run,
-        wait: {
-          ...run.wait!,
-          reason: 'secretsNotAllowed',
-          params: { variables: ['NPM_TOKEN'] },
-        },
-      })),
+    const run = (await h.agents.runs.workload({ subjectKind: 'intake' }))
+      .runs[0]!;
+    vi.spyOn(h.agents.runs, 'queueWait').mockResolvedValue({
+      ...run.wait!,
+      reason: 'secretsNotAllowed',
+      params: { variables: ['NPM_TOKEN'] },
     });
     expect(
       (await h.projects.intakeAi.get(alice(), job.id)).progress,

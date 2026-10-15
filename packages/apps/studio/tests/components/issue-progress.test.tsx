@@ -48,6 +48,7 @@ vi.mock('../../client/issues/markdown.js', () => ({
   IssueMarkdown: ({ content }: { content: string }) => <span>{content}</span>,
 }));
 vi.mock('@nocobase/app-plugin-projects/client/kit', () => ({
+  pmKeys: { issue: (id: string) => ['pm', 'issue', id] },
   useViewer: () => ({ userId: mocks.userId }),
 }));
 vi.mock('@nocobase/app-plugin-projects/client/issues', () => ({
@@ -203,7 +204,6 @@ async function mount(
       <QueryClientProvider client={client}>
         <IssueProgressLine
           issue={issue(statusKey)}
-          refresh='1'
           starting={false}
           onStart={onStart}
         />

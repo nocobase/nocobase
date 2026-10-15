@@ -14,6 +14,9 @@
  *
  * Every response carries a `generation` bound to the query and the data it was assembled from; a continuation (`cursor`,
  * children) names it, and `409 TASK_GROUPS_CHANGED` means the data changed in between: read the whole query again.
+ * It also carries a `membership`, which changes only when a task joins or leaves a group: `GET /api/taskGroups/rows`
+ * answers single rows with the membership of that moment, so a change to a few tasks refreshes only their rows unless
+ * the membership moved.
  */
 import type {
   IssueListItem,
@@ -93,6 +96,8 @@ export interface TaskGroupPage {
 
 export interface TaskGroups {
   readonly generation: string;
+  /** Which tasks each group holds, and the counts; unchanged by edits that move no task between groups. */
+  readonly membership: string;
   readonly mode: TaskGroupMode;
   /** The groups in order; a status group with nothing in it is left out, `follow` never. */
   readonly groups: readonly TaskGroupPage[];
@@ -106,6 +111,30 @@ export interface TaskChildrenPage {
   readonly generation: string;
   readonly data: readonly TaskGroupItem[];
   readonly nextCursor: string | null;
+}
+
+/** The most parents one children read names. */
+export const TASK_CHILDREN_PARENTS_MAX = 50;
+
+/** The first page (or, for one parent, the page `cursor` continues) of each parent's children, in the order asked. */
+export interface TaskChildrenPages {
+  readonly generation: string;
+  readonly parents: readonly {
+    readonly parentId: string;
+    readonly data: readonly TaskGroupItem[];
+    readonly nextCursor: string | null;
+  }[];
+}
+
+/** The most tasks one rows read names. */
+export const TASK_GROUP_ROWS_MAX = 100;
+
+/** Rows of single tasks as the query lists them now (`GET /api/taskGroups/rows`). */
+export interface TaskGroupRows {
+  /** As `TaskGroups.membership`: when it differs from the one shown, read the whole query again. */
+  readonly membership: string;
+  /** The asked tasks the viewer may see, each as the lists show it; any other id is left out. */
+  readonly data: readonly TaskGroupItem[];
 }
 
 export interface TaskGroupQuery extends Omit<
