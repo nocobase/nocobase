@@ -47,7 +47,7 @@ test('a long intake confirmation keeps its actions visible while the list scroll
     await expect(cancel).toBeInViewport({ ratio: 1 });
     await expect(execute).toBeInViewport({ ratio: 1 });
     const list = confirmation.getByRole('list');
-    const scroll = await list.evaluate<number>(
+    const scroll = await list.evaluate<number, void>(
       '(element) => { element.scrollTop = element.scrollHeight; return element.scrollTop; }',
     );
     expect(scroll).toBeGreaterThan(0);
