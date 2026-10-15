@@ -17,6 +17,7 @@ import {
   PR_SIGNAL_STOPPED,
   SIGNAL_WAKE_LIMIT,
 } from '../../shared/git.js';
+import type { DatabaseConnection } from '@nocobase/db';
 import type { StudioInboxPort } from '../inbox/port.js';
 import type { PullRequestRow } from './store.js';
 
@@ -117,5 +118,63 @@ export async function sendSignalStopped(
       signal,
       limit: SIGNAL_WAKE_LIMIT,
     },
+  });
+}
+
+/** Settle by issue, including unlinked and historical PR identities, after their committed results. */
+export async function settleIssueMergeCards(
+  conn: DatabaseConnection,
+  port: StudioInboxPort,
+  issueId: string,
+): Promise<void> {
+  const rows = await conn.query
+    .selectFrom('studioInboxNotices')
+    .select(['decisionKey', 'data'])
+    .where('source', '=', GIT_INBOX_SOURCE)
+    .where('subjectType', '=', 'issue')
+    .where('subjectId', '=', issueId)
+    .where('kind', '=', 'decision')
+    .where('type', '=', PR_MERGE_REQUESTED)
+    .where('resolvedAt', 'is', null)
+    .execute();
+  if (!rows.length) return;
+  const refs = rows.map((row) => {
+    const data = (
+      typeof row.data === 'string' ? JSON.parse(row.data) : row.data
+    ) as Record<string, unknown> | null;
+    return { key: String(row.decisionKey), id: data?.pullRequestId };
+  });
+  const ids = [
+    ...new Set(
+      refs.flatMap((ref) => (typeof ref.id === 'string' ? [ref.id] : [])),
+    ),
+  ];
+  const prs = ids.length
+    ? await conn.query
+        .selectFrom('studioPullRequests')
+        .select(['id', 'state'])
+        .where('id', 'in', ids)
+        .execute()
+    : [];
+  const states = new Map(prs.map((pr) => [String(pr.id), pr.state]));
+  const withdrawn: string[] = [];
+  for (const ref of new Map(refs.map((ref) => [ref.key, ref])).values()) {
+    const state = typeof ref.id === 'string' ? states.get(ref.id) : undefined;
+    if (state === 'merged' || state === 'closed')
+      await port.resolve({
+        source: GIT_INBOX_SOURCE,
+        decisionKey: ref.key,
+        outcome: state,
+      });
+    else withdrawn.push(ref.key);
+  }
+  // A late delivery of another PR must be classified by its own committed state.
+  await port.settle({
+    source: GIT_INBOX_SOURCE,
+    subject: { type: 'issue', id: issueId },
+    types: [PR_MERGE_REQUESTED],
+    kind: 'decision',
+    decisionKeys: withdrawn,
+    outcome: 'withdrawn',
   });
 }
