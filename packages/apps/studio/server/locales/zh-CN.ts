@@ -1,6 +1,17 @@
 import type { AppServerResource } from './en-US.js';
 
 const zhCN: AppServerResource = {
+  'keyScopes.members.title': '成员与角色',
+  'keyScopes.members.description':
+    '只读：查看成员和角色。读写：还可邀请成员、分配角色。管理：还可定义角色。',
+  'keyScopes.reports.title': '报表',
+  'keyScopes.reports.description': '查看团队仪表盘、指标和 Agent 运行用量。',
+  'keyScopes.knowledge.title': '知识库',
+  'keyScopes.knowledge.description':
+    '阅读知识库；提议修改；编辑知识并打开系统知识页面。',
+  'keyScopes.presets.readOnly.title': '只读',
+  'keyScopes.presets.readOnly.description': '可读取你能读取的全部内容。',
+
   knowledge: {
     manual: {
       updated: '手册：已更新 <slug>, <slug>',

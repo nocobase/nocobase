@@ -3,6 +3,18 @@ import type { LocaleResource } from '@nocobase/i18n';
 // The application's own server-side wording; most strings the server produces belong to a plugin's namespace. Use
 // `overrides` to reword a plugin's.
 const enUS = {
+  'keyScopes.members.title': 'Members and roles',
+  'keyScopes.members.description':
+    'Read: see the members and roles. Read and write: also invite and give roles. Admin: also define roles.',
+  'keyScopes.reports.title': 'Reports',
+  'keyScopes.reports.description':
+    'Read the team dashboard, the metrics and the usage of agent runs.',
+  'keyScopes.knowledge.title': 'Knowledge',
+  'keyScopes.knowledge.description':
+    'Read the knowledge base; propose changes; edit it and open the system knowledge page.',
+  'keyScopes.presets.readOnly.title': 'Read only',
+  'keyScopes.presets.readOnly.description': 'Read everything you can read.',
+
   // The last line of a delivery comment about the user manual, which the agent's brief asks for in the
   // installation's language (`server/knowledge/brief.ts`); `<slug>` stays for the agent to fill in.
   knowledge: {

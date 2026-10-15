@@ -8,7 +8,10 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { createApiKeyScopes } from '@nocobase/app-plugin-api-keys/server';
+import {
+  createApiKeyScopes,
+  ScopedApiKeys,
+} from '@nocobase/app-plugin-api-keys/server';
 import * as agents from '@nocobase/app-plugin-agents/shared/access';
 import { createAppAuthorization } from '@nocobase/app-plugin-authorization';
 import * as knowledge from '@nocobase/app-plugin-knowledge/shared/access';
@@ -28,7 +31,10 @@ import { STUDIO_NAMESPACE, type CatalogText } from '../../shared/access.ts';
 import { PAGES } from '../../shared/pages.ts';
 import { ACTION_POLICIES } from '../../server/access/action-policy.ts';
 import { readCatalog, type Catalog } from '../../server/access/catalog.ts';
-import { translateCatalog } from '../../server/access/localize.ts';
+import {
+  translateCatalog,
+  translateKeyScopeOptions,
+} from '../../server/access/localize.ts';
 import { registerStudioKeyScopes } from '../../server/access/key-scopes.ts';
 import { agentActionOptions } from '../../server/agents/capabilities.ts';
 import { registerAccess } from './registry.ts';
@@ -117,23 +123,36 @@ describe('the catalog', () => {
     ['en-US', 'Knowledge', 'System and projects I can see'],
     ['zh-CN', '知识', '系统和我能查看的项目的'],
   ] as const)(
-    'returns the complete real catalog as readable text for %s callers',
+    'returns the complete real catalog and key scope options as readable text for %s callers',
     async (locale, knowledgeTitle, relatedLabel) => {
-      const [knowledgeServerEnUS, knowledgeServerZhCN] = await Promise.all([
-        pluginFile(knowledge.ACCESS_NAMESPACE, 'server/locales/en-US.ts'),
-        pluginFile(knowledge.ACCESS_NAMESPACE, 'server/locales/zh-CN.ts'),
+      const serverLocales = new Map<string, readonly unknown[]>([
+        [STUDIO_NAMESPACE, [studioEnUS, studioZhCN]],
+        ...(await Promise.all(
+          [projects, releases, agents, knowledge].map(
+            async (plugin) =>
+              [
+                plugin.ACCESS_NAMESPACE,
+                await Promise.all([
+                  pluginFile(
+                    plugin.ACCESS_NAMESPACE,
+                    'server/locales/en-US.ts',
+                  ),
+                  pluginFile(
+                    plugin.ACCESS_NAMESPACE,
+                    'server/locales/zh-CN.ts',
+                  ),
+                ]),
+              ] as const,
+          ),
+        )),
       ]);
       const namespaces = Object.fromEntries(
-        [...locales.entries()]
+        [...serverLocales.entries()]
           .filter(([namespace]) => namespace !== STUDIO_NAMESPACE)
           .map(([namespace, resources]) => [
             namespace,
             localeModule(resources[0], resources[1]),
           ]),
-      );
-      namespaces[knowledge.ACCESS_NAMESPACE] = localeModule(
-        knowledgeServerEnUS,
-        knowledgeServerZhCN,
       );
       const runtime = await createTestI18nRuntime({
         application: {
@@ -144,6 +163,72 @@ describe('the catalog', () => {
         locale,
       });
       const t = runtime.getFixedT(STUDIO_NAMESPACE, locale);
+      // Use the registered groups and the real options service, including every plugin preset.
+      const scopes = createApiKeyScopes();
+      registerStudioKeyScopes(scopes, {}, () => catalog);
+      const keys = new ScopedApiKeys({
+        scopes,
+        connection: () => testDatabase.connection,
+        auth: {
+          pluginApi: () => {
+            throw new Error(
+              'Scope options must not call authentication endpoints',
+            );
+          },
+        },
+      });
+      const options = await keys.scopeOptions('scope-options-reader');
+      const localizedOptions = translateKeyScopeOptions(t, options);
+      const checkText = (
+        original: CatalogText | null,
+        translated: CatalogText | null,
+      ) => {
+        if (original === null || typeof original === 'string') {
+          expect(translated).toBe(original);
+        } else {
+          const resource = serverLocales.get(original.ns)?.[
+            locale === 'en-US' ? 0 : 1
+          ];
+          const expected = lookup(resource, original.key.split('.'));
+          expect(
+            expected,
+            `${locale} ${original.ns}:${original.key}`,
+          ).toBeTypeOf('string');
+          expect(translated).toBe(expected);
+          expect(translated).not.toBe(original.key);
+        }
+      };
+      expect(localizedOptions.groups).toHaveLength(options.groups.length);
+      for (const [index, group] of options.groups.entries()) {
+        const translated = localizedOptions.groups[index]!;
+        checkText(group.title, translated.title);
+        checkText(group.description, translated.description);
+        if (group.objects)
+          checkText(group.objects.title, translated.objects!.title);
+        expect(translated).toEqual({
+          ...group,
+          title: translated.title,
+          description: translated.description,
+          objects: group.objects
+            ? { ...group.objects, title: translated.objects!.title }
+            : null,
+        });
+      }
+      expect(localizedOptions.presets).toHaveLength(options.presets.length);
+      for (const [index, preset] of options.presets.entries()) {
+        const translated = localizedOptions.presets[index]!;
+        checkText(preset.title, translated.title);
+        checkText(preset.description, translated.description);
+        expect(translated).toEqual({
+          ...preset,
+          title: translated.title,
+          description: translated.description,
+        });
+      }
+      expect(localizedOptions.maxScopedKeyDays).toBe(options.maxScopedKeyDays);
+      expect(localizedOptions.defaultExpiresInDays).toBe(
+        options.defaultExpiresInDays,
+      );
       const localized = translateCatalog(t, {
         businesses: catalog.businesses,
         settings: catalog.settings,
