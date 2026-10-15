@@ -2,7 +2,8 @@
  * One refresh coordinator per open issue page. Changes to the issue and new runs on it are announced
  * (`issues/live/realtime-refresh.ts`); the agents plugin polls known open runs. An idle page still reads the issue
  * again slowly as a fallback, for a realtime connection that missed an announcement or still has a stale identity,
- * and briefly speeds up after the issue's existing actions invalidate its detail.
+ * and briefly speeds up only after the viewer did something here that starts an agent's work: wrote a comment, handed
+ * the issue to an agent, or asked for work (`issues/live/wake.ts`). Announcements alone never speed it up.
  */
 import type { SubjectRun } from '@nocobase/app-plugin-agents/client/runs';
 import { pmKeys, usePmApi } from '@nocobase/app-plugin-projects/client/kit';
@@ -16,6 +17,32 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useIssueRuns } from '../../../agents/use-issue-runs.js';
+import { onIssueWake } from '../../../issues/live/wake.js';
+
+/** Comments on the issue, replies included, as the detail holds them. */
+function commentCount(detail: IssueDetail | undefined): number {
+  return (detail?.threads ?? []).reduce(
+    (sum, thread) => sum + 1 + (thread.replies?.length ?? 0),
+    0,
+  );
+}
+
+/**
+ * Whether a change this page wrote into the detail starts an agent's work: a comment the viewer just wrote, or the
+ * issue handed to an agent.
+ */
+export function startsWork(
+  before: IssueDetail | undefined,
+  after: IssueDetail | undefined,
+): boolean {
+  if (!before || !after) return false;
+  if (commentCount(after) > commentCount(before)) return true;
+  return (
+    after.executor?.type === 'agent' &&
+    (before.executor?.type !== after.executor.type ||
+      before.executor?.id !== after.executor.id)
+  );
+}
 
 /** How often an idle page reads the issue and its runs again, as a fallback to the announcements. */
 export const IDLE_POLL_MS = 60_000;
@@ -67,25 +94,36 @@ export function useLiveIssue(
       );
     };
     schedule();
-    // Comments, properties, approvals and design decisions already invalidate this exact detail query.
-    // Listen here instead of making each presenter know about the agents plugin's separate query cache.
-    const unsubscribe = client.getQueryCache().subscribe((event) => {
-      if (
-        event.type !== 'updated' ||
-        event.action.type !== 'invalidate' ||
-        event.query.queryHash !== detailHash
-      )
-        return;
+    const wake = (): void => {
       wakeUntilRef.current = Date.now() + WAKE_WINDOW_MS;
       setRefreshSignal((signal) => signal + 1);
       clearTimeout(timer);
       schedule();
+    };
+    const stopWake = onIssueWake(detail.id, wake);
+    // What this page writes into the detail itself (`setQueryData`): a comment or a handover wakes it, an
+    // announcement's refetch does not.
+    let seen = client.getQueryCache().get(detailHash)?.state.data as
+      IssueDetail | undefined;
+    const unsubscribe = client.getQueryCache().subscribe((event) => {
+      if (event.type !== 'updated' || event.query.queryHash !== detailHash)
+        return;
+      const next = event.query.state.data as IssueDetail | undefined;
+      const before = seen;
+      seen = next;
+      if (
+        event.action.type === 'success' &&
+        event.action.manual === true &&
+        startsWork(before, next)
+      )
+        wake();
     });
     return () => {
       clearTimeout(timer);
       unsubscribe();
+      stopWake();
     };
-  }, [client, detailHash, refreshThreads]);
+  }, [client, detailHash, refreshThreads, detail.id]);
 
   const runIds = runs.map((run) => run.id).join(',');
   useEffect(() => {

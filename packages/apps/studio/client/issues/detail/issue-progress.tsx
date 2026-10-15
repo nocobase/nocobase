@@ -6,7 +6,7 @@
  */
 import { useApiClient } from '@nocobase/app-client';
 import { canEditIssues } from '@nocobase/app-plugin-projects/client/issues';
-import { useViewer } from '@nocobase/app-plugin-projects/client/kit';
+import { pmKeys, useViewer } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { BACKLOG_STATUS } from '@nocobase/app-plugin-projects/shared/statuses';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -23,12 +23,12 @@ import { useNotify } from '../../access/notify.js';
 import { Clamped } from '../live/clamped.js';
 import { issueProgressKey, progressStatusLine } from './progress-text.js';
 import { IssueMarkdown } from '../markdown.js';
+import { wakeIssue } from '../live/wake.js';
 import { useIssueProgress } from './use-issue-progress.js';
 import { PersonalRunnerActions } from './personal-runner-actions.js';
 
 export function IssueProgressLine({
   issue,
-  refresh,
   starting,
   onStart,
   runsBase,
@@ -36,8 +36,6 @@ export function IssueProgressLine({
   readonly issue: IssueDetail;
   /** Where the live run's record opens from, such as `/issues/PM-12`; the issue's own path by default. */
   readonly runsBase?: string;
-  /** Changes whenever the issue or its runs do, to read the line again. */
-  readonly refresh: string;
   readonly starting: boolean;
   /** Moves a backlog issue to In progress. */
   readonly onStart: () => void;
@@ -48,21 +46,24 @@ export function IssueProgressLine({
   const notify = useNotify();
   const queryClient = useQueryClient();
   const canEdit = canEditIssues(viewer) && viewer?.userId === issue.ownerUserId;
-  const progress = useIssueProgress(issue.id, refresh);
+  const progress = useIssueProgress(issue.id);
   const handOver = useMutation({
     mutationFn: () =>
       api.request({
         method: 'POST',
         path: `projectManager/issues/${encodeURIComponent(issue.id)}/start`,
       }),
-    onSuccess: () => notify.success(t('issueProgress.handedOver')),
+    onSuccess: () => {
+      notify.success(t('issueProgress.handedOver'));
+      wakeIssue(issue.id);
+    },
     onError: (error) => notify.error(error, t('issueProgress.handOverFailed')),
     onSettled: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: issueProgressKey(issue.id),
         }),
-        queryClient.invalidateQueries({ queryKey: ['pm', 'issue'] }),
+        queryClient.invalidateQueries({ queryKey: pmKeys.issue(issue.id) }),
       ]);
     },
   });

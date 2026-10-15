@@ -53,7 +53,7 @@ export interface CodeLinking {
 
 /** What the section reads, shared with the add bar's button (React Query answers both from one request). */
 function useIssueCode(issue: IssueDetail) {
-  const pullRequests = useIssuePullRequests(issue.id, issue.revision);
+  const pullRequests = useIssuePullRequests(issue.id);
   const { query: previewsQuery, replace } = useIssuePreviews(issue.id);
   const marks = useDeployMarks(issue.id);
   const linked = pullRequests.data;

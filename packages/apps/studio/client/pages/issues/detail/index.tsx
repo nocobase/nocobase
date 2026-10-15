@@ -166,20 +166,14 @@ function IssuePage({
   const update = useIssueUpdate(detail, detailKey);
   const pageActions = useIssuePageActions(detail);
   const runs = useLiveIssue(detail, issueId, detailKey, 0);
-  // The "Now" line reads again whenever the issue or one of its runs changes.
-  const progressRefresh = [
-    detail.revision,
-    detail.statusKey,
-    ...runs.map((run) => `${run.id}:${run.status}`),
-  ].join('|');
-  const progress = useIssueProgress(detail.id, progressRefresh).data;
+  const progress = useIssueProgress(detail.id).data;
   const main = useIssueMainState(pageActions);
   const narrow = useMediaQuery('(max-width: 767px)');
   const viewer = useViewer();
   // The decisions the summary's "Needs you" card shows are left out of "Waiting for you".
   const handoff = useOwnerHandoffView(detail.id).data;
   const pending = usePendingCommentRun(detail).data;
-  const prs = useIssuePullRequests(detail.id, detail.revision).data;
+  const prs = useIssuePullRequests(detail.id).data;
   const selectedPr = prs?.data.find((pr) => pr.state === 'open') ?? null;
   const covered = useCallback(
     (entry: InboxEntry) =>
@@ -255,7 +249,6 @@ function IssuePage({
           <IssueSummary
             issue={detail}
             update={update}
-            refresh={progressRefresh}
             actions={<FollowToggle issueId={detail.id} />}
             collapsible
             defaultCollapsed={narrow}

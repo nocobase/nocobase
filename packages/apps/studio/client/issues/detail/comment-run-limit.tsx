@@ -5,7 +5,7 @@
  */
 import { ApiClientError, useApiClient } from '@nocobase/app-client';
 import { canEditIssues } from '@nocobase/app-plugin-projects/client/issues';
-import { useViewer } from '@nocobase/app-plugin-projects/client/kit';
+import { pmKeys, useViewer } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -16,6 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useNotify } from '../../access/notify.js';
+import { wakeIssue } from '../live/wake.js';
 
 import { usePendingCommentRun } from './use-pending-comment-run.js';
 
@@ -36,7 +37,7 @@ export function IssueCommentRunLimit({
   const queryClient = useQueryClient();
   const continuingRef = useRef(false);
   const allowed = canEditIssues(viewer) && viewer?.userId === issue.ownerUserId;
-  const key = ['studio', 'commentRunLimit', issue.id, issue.revision];
+  const key = ['studio', 'commentRunLimit', issue.id];
   const path = `issueCommentRuns/${encodeURIComponent(issue.id)}`;
   const pending = usePendingCommentRun(issue);
   const continuation = useMutation({
@@ -48,6 +49,7 @@ export function IssueCommentRunLimit({
       }),
     onSuccess: () => {
       queryClient.setQueryData(key, null);
+      wakeIssue(issue.id);
       notify.success(t('studioAgents.commentRuns.continued'));
       onContinued?.();
     },
@@ -67,10 +69,9 @@ export function IssueCommentRunLimit({
         queryClient.invalidateQueries({
           queryKey: ['studio', 'commentRunLimit', issue.id],
         }),
-        queryClient.invalidateQueries({ queryKey: ['pm', 'issue'] }),
-        queryClient.invalidateQueries({ queryKey: ['pm', 'issues'] }),
+        queryClient.invalidateQueries({ queryKey: pmKeys.issue(issue.id) }),
         queryClient.invalidateQueries({
-          queryKey: ['studio', 'issueProgress'],
+          queryKey: ['studio', 'issueProgress', issue.id],
         }),
       ]);
     },

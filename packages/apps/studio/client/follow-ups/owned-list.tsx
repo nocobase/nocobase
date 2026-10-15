@@ -175,10 +175,7 @@ function OwnedRow({
   readonly onToggleFollow: () => void;
 }): ReactElement {
   const { t, i18n } = useTranslation();
-  const mark = usePullRequestMark(
-    issue.id,
-    Date.parse(issue.lastActivityAt),
-  ).data;
+  const mark = usePullRequestMark(issue.id).data;
   const line = nowLine(t, issue, mark);
   const blocked = !followed && full;
   return (

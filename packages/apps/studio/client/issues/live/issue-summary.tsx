@@ -73,7 +73,6 @@ export interface SummaryRename {
 export function IssueSummary({
   issue,
   update,
-  refresh,
   progressFallback,
   actions,
   collapsible = false,
@@ -89,8 +88,6 @@ export function IssueSummary({
 }: {
   readonly issue: IssueDetail;
   readonly update: IssueUpdate;
-  /** Changes whenever the issue or its runs do, to read the "Now" line again. */
-  readonly refresh: string;
   /** What "Now" says until the server answers, such as an overview's copy. */
   readonly progressFallback?: IssueProgress | null;
   /** On the second row, such as the follow star. */
@@ -120,9 +117,9 @@ export function IssueSummary({
   const ref = useRef<HTMLElement>(null);
   const away = useOutOfView(ref);
   const [folded, setFolded] = useState<boolean | null>(null);
-  const mark = usePullRequestMark(issue.id, issue.revision).data;
-  const pullRequests = useIssuePullRequests(issue.id, issue.revision).data;
-  const progress = useIssueProgress(issue.id, refresh, progressFallback).data;
+  const mark = usePullRequestMark(issue.id).data;
+  const pullRequests = useIssuePullRequests(issue.id).data;
+  const progress = useIssueProgress(issue.id, progressFallback).data;
   const owned = Boolean(viewer?.userId) && issue.ownerUserId === viewer?.userId;
   const ask = askOf(
     t,
@@ -225,7 +222,6 @@ export function IssueSummary({
             </div>
             <IssueProgressLine
               issue={issue}
-              refresh={refresh}
               starting={update.isPending}
               onStart={() => update.mutate({ statusKey: IN_PROGRESS_STATUS })}
               {...(runsBase ? { runsBase } : {})}
