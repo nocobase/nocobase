@@ -342,6 +342,32 @@ export async function findRunRecord(
   return runsRepo(conn).findOne({ filter: { id } });
 }
 
+export type RunStatusRecord = Pick<
+  RunRecord,
+  'id' | 'status' | 'runnerId' | 'cancelRequestedAt' | 'leaseExpiresAt'
+> & { readonly pendingInputId: string | null };
+
+/** One row for a poll, including whether unhandled input needs to be read. */
+export async function findRunStatus(
+  conn: DatabaseConnection,
+  id: string,
+): Promise<RunStatusRecord | undefined> {
+  return conn.query
+    .selectFrom('agRuns')
+    .select(['id', 'status', 'runnerId', 'cancelRequestedAt', 'leaseExpiresAt'])
+    .select((eb) => [
+      eb
+        .selectFrom('agRunInputs')
+        .select('id')
+        .whereRef('agRunInputs.runId', '=', 'agRuns.id')
+        .where('handledAt', 'is', null)
+        .limit(1)
+        .as('pendingInputId'),
+    ])
+    .where('id', '=', id)
+    .executeTakeFirst<RunStatusRecord>();
+}
+
 /** The run's input not yet reported as handled, oldest first. */
 export async function pendingInputs(
   conn: DatabaseConnection,
