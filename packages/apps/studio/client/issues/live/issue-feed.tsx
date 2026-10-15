@@ -100,11 +100,13 @@ export function IssueFeed({
     () => urlTargetId,
   );
   const [seenUrlTargetId, setSeenUrlTargetId] = useState(urlTargetId);
+  const [highlightRequest, setHighlightRequest] = useState(0);
   if (urlTargetId !== seenUrlTargetId) {
     setSeenUrlTargetId(urlTargetId);
     if (urlTargetId) {
       setTargetId(urlTargetId);
       setHighlightedId(urlTargetId);
+      setHighlightRequest((request) => request + 1);
     }
   }
   const timeline = useIssueTimeline(
@@ -154,7 +156,7 @@ export function IssueFeed({
       COMMENT_HIGHLIGHT_FADE_MS,
     );
     return () => window.clearTimeout(timer);
-  }, [targetFound]);
+  }, [targetFound, highlightRequest]);
   useEffect(() => {
     if (!highlightedId) return;
     const cancel = () => setHighlightedId(null);

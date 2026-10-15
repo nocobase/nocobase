@@ -432,6 +432,95 @@ describe('a `?comment=` link', () => {
     }
   });
 
+  it('restarts the fade timer when the same comment is located again', async () => {
+    vi.useFakeTimers();
+    try {
+      await mount(
+        <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+          <Link to='/issues/i1?comment=c1'>Locate the same comment</Link>
+          <IssueFeed />
+        </IssueConversation>,
+        ['/issues/i1?comment=c1'],
+      );
+      const feed = screen.getByTestId('issue-feed');
+      const target = within(feed)
+        .getByText('Root note')
+        .closest('[data-comment-id="c1"]') as HTMLElement;
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(COMMENT_HIGHLIGHT_FADE_MS);
+      });
+      expect(target.className).not.toContain('ring-2');
+
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('link', { name: 'Locate the same comment' }),
+        );
+      });
+      expect(target.className).toContain('ring-2');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(COMMENT_HIGHLIGHT_FADE_MS);
+      });
+      expect(target.className).not.toContain('ring-2');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('starts a fresh fade timer when locating a different loaded comment', async () => {
+    vi.useFakeTimers();
+    try {
+      mocks.entries = [
+        thread(
+          comment(
+            'c1',
+            1,
+            { type: 'user', id: 'bob', name: 'Bob' },
+            'Root note',
+          ),
+        ),
+        thread(
+          comment(
+            'c2',
+            2,
+            { type: 'user', id: 'bob', name: 'Bob' },
+            'Another note',
+          ),
+        ),
+      ];
+      await mount(
+        <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+          <Link to='/issues/i1?comment=c2'>Locate another comment</Link>
+          <IssueFeed />
+        </IssueConversation>,
+        ['/issues/i1?comment=c1'],
+      );
+      const feed = screen.getByTestId('issue-feed');
+      const firstTarget = within(feed)
+        .getByText('Root note')
+        .closest('[data-comment-id="c1"]') as HTMLElement;
+      const nextTarget = within(feed)
+        .getByText('Another note')
+        .closest('[data-comment-id="c2"]') as HTMLElement;
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(COMMENT_HIGHLIGHT_FADE_MS);
+      });
+      expect(firstTarget.className).not.toContain('ring-2');
+
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('link', { name: 'Locate another comment' }),
+        );
+      });
+      expect(nextTarget.className).toContain('ring-2');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(COMMENT_HIGHLIGHT_FADE_MS);
+      });
+      expect(nextTarget.className).not.toContain('ring-2');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('cancels the highlight on the next click anywhere', async () => {
     await mount(
       <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
