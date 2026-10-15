@@ -917,7 +917,7 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
       let id = conversationId;
       const agent = AGENTS.find((candidate) => candidate.id === agentId);
       if (!id) {
-        if (!agent) return Promise.resolve(null);
+        if (!agent) return false;
         id = `new-${Date.now().toString(36)}`;
         const created = conversation(id, agent.id, input.content.slice(0, 30), {
           source,
@@ -941,7 +941,7 @@ export const useSendMessage: typeof Chat.useSendMessage = ({
       );
       const detail = store.conversations.find((item) => item.id === target);
       if (detail) answer(target, detail.agent.id);
-      return Promise.resolve(null);
+      return true;
     },
     [conversationId, agentId, source, onCreated],
   );
@@ -1021,6 +1021,11 @@ export const useConversationSources: typeof Chat.useConversationSources = () =>
 /** The preview has no network stream; production chat uses the plugin controller. */
 export const useChatStream: typeof Chat.useChatStream = () => undefined;
 export const useChatController: typeof Chat.useChatController = () =>
-  ({ refresh: async () => {} }) as unknown as ReturnType<
-    typeof Chat.useChatController
-  >;
+  ({
+    refresh: async () => {},
+    submissions: {
+      blocked: () => false,
+      snapshot: () => [],
+      releaseUnknown: () => false,
+    },
+  }) as unknown as ReturnType<typeof Chat.useChatController>;

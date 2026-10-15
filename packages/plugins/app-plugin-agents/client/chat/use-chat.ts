@@ -40,7 +40,6 @@ import {
   type ConversationSource,
   type MessageAttachment,
   type PageContext,
-  type SendMessageResult,
 } from '../../shared/conversations.js';
 import { useRealtimeTopic } from '../hooks/use-realtime-topic.js';
 import { errorText } from '../hooks/use-notify.js';
@@ -261,6 +260,8 @@ export function useConversationMessages(
       if (conversationId) void controller.loadHistory(conversationId, true);
     },
     dispatch: (action) => {
+      if (action.type === 'discard')
+        controller.submissions.editRejected(action.clientId);
       if (conversationId) controller.dispatch(conversationId, action);
       else draftDispatch(action);
     },
@@ -277,7 +278,7 @@ export interface SendInput {
 }
 
 /**
- * Sends a message, showing it at once and replacing it with the server's copy (matched by `clientId`). A new
+ * Returns synchronous client acceptance (not server confirmation), showing it at once and replacing it with the server's copy (matched by `clientId`). A new
  * conversation (`conversationId` null) is created first, with `agentId` and `source`.
  */
 export function useSendMessage({
@@ -292,80 +293,70 @@ export function useSendMessage({
   readonly source: ConversationSource;
   readonly dispatch: Dispatch<MessagesAction>;
   readonly onCreated: (conversation: ConversationDetail) => void;
-}): (input: SendInput) => Promise<SendMessageResult | null> {
+}): (input: SendInput) => boolean {
   const controller = useChatController();
   return useCallback(
-    async (input: SendInput) => {
+    (input: SendInput) => {
       const editorKey = `registry:${source}:${conversationId ?? 'new'}`;
       if (input.clientId) {
-        if (!controller.submissions.editRejected(input.clientId)) return null;
+        if (!controller.submissions.editRejected(input.clientId)) return false;
         dispatch({ type: 'discard', clientId: input.clientId });
       }
-      return new Promise<SendMessageResult | null>((resolve) => {
-        const off = controller.submissions.onUpdated(
-          (detail, record, created) => {
-            if (record.editorKey !== editorKey) return;
-            if (created) onCreated(detail);
-            if (record.message) {
-              dispatch({ type: 'confirmed', message: record.message });
-              off();
-              stop();
-              resolve({
-                message: record.message,
-                conversation: detail,
-                run: null,
-              });
-            }
-          },
-        );
-        const stop = controller.submissions.subscribe(() => {
-          const record = controller.submissions
-            .snapshot()
-            .slice()
-            .reverse()
-            .find((record) => record.editorKey === editorKey);
-          if (
-            record &&
-            ['unknown', 'creationUnknown', 'notSubmitted'].includes(
-              record.status,
-            )
-          ) {
-            dispatch({
-              type: record.status === 'notSubmitted' ? 'failed' : 'unknown',
-              clientId: record.clientId,
-            });
+      const off = controller.submissions.onUpdated(
+        (detail, record, created) => {
+          if (record.editorKey !== editorKey) return;
+          if (created) onCreated(detail);
+          if (record.message) {
+            dispatch({ type: 'confirmed', message: record.message });
             off();
             stop();
-            resolve(null);
           }
-        });
-        const submitted = controller.submissions.submit({
-          content: input.content,
-          context: input.context,
-          attachments: input.attachments ?? [],
-          conversationId,
-          editorKey,
-          create: { ...(agentId ? { agentId } : {}), source },
-        });
-        if (!submitted) {
+        },
+      );
+      const stop = controller.submissions.subscribe(() => {
+        const record = controller.submissions
+          .snapshot()
+          .slice()
+          .reverse()
+          .find((record) => record.editorKey === editorKey);
+        if (
+          record &&
+          ['unknown', 'creationUnknown', 'notSubmitted'].includes(record.status)
+        ) {
+          dispatch({
+            type: record.status === 'notSubmitted' ? 'failed' : 'unknown',
+            clientId: record.clientId,
+          });
           off();
           stop();
-          resolve(null);
-          return;
         }
-        const record = controller.submissions.snapshot().at(-1)!;
-        dispatch({
-          type: 'sending',
-          message: {
-            clientId: record.clientId,
-            content: record.content,
-            context: record.context,
-            attachments: record.attachments,
-            createdAt: record.createdAt,
-            status: 'sending',
-          },
-        });
       });
+      const submitted = controller.submissions.submit({
+        content: input.content,
+        context: input.context,
+        attachments: input.attachments ?? [],
+        conversationId,
+        editorKey,
+        create: { ...(agentId ? { agentId } : {}), source },
+      });
+      if (!submitted) {
+        off();
+        stop();
+        return false;
+      }
+      const record = controller.submissions.snapshot().at(-1)!;
+      dispatch({
+        type: 'sending',
+        message: {
+          clientId: record.clientId,
+          content: record.content,
+          context: record.context,
+          attachments: record.attachments,
+          createdAt: record.createdAt,
+          status: 'sending',
+        },
+      });
+      return true;
     },
     [controller, conversationId, agentId, source, dispatch, onCreated],
   );

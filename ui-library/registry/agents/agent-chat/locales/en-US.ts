@@ -4,6 +4,7 @@ export interface AgentChatLocale {
     readonly connectionUnknown: string;
     readonly historicalReadOnly: string;
     readonly executionFailed: string;
+    readonly allowAnother: string;
     readonly refreshHistory: string;
     readonly title: string;
     readonly ask: string;
@@ -213,6 +214,7 @@ const agentChatEnUS: AgentChatLocale = {
       'This historical conversation is read-only. Start a new chat to continue.',
     connectionUnknown:
       'Connection interrupted. The result is unknown. Refresh saved history before deciding to send again.',
+    allowAnother: 'Allow another send (may duplicate)',
     refreshHistory: 'Refresh history',
     title: 'Agent chat',
     ask: 'Ask agent',

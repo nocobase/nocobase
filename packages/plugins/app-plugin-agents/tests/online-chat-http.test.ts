@@ -298,3 +298,59 @@ it('uses the original API for authenticated SDK tools, cached first receive, saf
       }) + '\n',
     );
 });
+
+it.each(['static', 'provider'])(
+  'atomically selects the resolved Scope model through HTTP (%s)',
+  async (kind) => {
+    const f = await fixture();
+    const scope = { model: ['alternate/other'] };
+    const provider = vi.fn(() => scope);
+    service.configurer.registerOnlineAgentScope(
+      'alternate',
+      kind === 'static' ? scope : provider,
+    );
+    const { data: created } = await (
+      await f.request('/conversations', 'POST', {})
+    ).json();
+    const changed = await f.request(
+      `/conversations/${created.id}/config`,
+      'PATCH',
+      { config: { scope: ['alternate'] } },
+    );
+    expect(changed.status).toBe(200);
+    expect((await changed.json()).data).toMatchObject({
+      model: ['alternate/other'],
+      selectedModel: { modelService: 'alternate', model: 'other' },
+    });
+    const row = await h.database
+      .connection()
+      .repository('agConversations')
+      .findOne({ filter: { id: created.id } });
+    expect(row).toMatchObject({ modelService: 'alternate', model: 'other' });
+    expect(row?.metadata.onlineAgent.config.model).toEqual(['alternate/other']);
+    expect(
+      (
+        await f.request(`/conversations/${created.id}/config`, 'PATCH', {
+          config: { model: [] },
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (await (await f.request(`/conversations/${created.id}/config`)).json())
+        .data.selectedModel,
+    ).toEqual({ modelService: 'alternate', model: 'other' });
+    expect(provider).toHaveBeenCalledTimes(kind === 'provider' ? 1 : 0);
+    expect(f.measurements.map((measurement) => measurement.phase)).toEqual([
+      'configure',
+    ]);
+    if (process.env.PM438_CONFIG_SQL_REPORT)
+      await appendFile(
+        process.env.PM438_CONFIG_SQL_REPORT,
+        JSON.stringify({
+          scenario: `configure-${kind}`,
+          sql: f.sql,
+          measurements: f.measurements,
+        }) + '\n',
+      );
+  },
+);

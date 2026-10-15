@@ -6,6 +6,7 @@ const agentChatZhCN: AgentChatLocale = {
     historicalReadOnly: '历史会话仅供查看，请新建聊天以继续。',
     connectionUnknown:
       '连接已中断，结果待确认。请刷新已保存历史后决定是否再次发送。',
+    allowAnother: '允许再次发送（可能重复）',
     refreshHistory: '刷新历史',
     title: 'Agent 对话',
     ask: '问 Agent',

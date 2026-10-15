@@ -45,6 +45,8 @@ export interface ChatSubmission extends SubmissionInput {
     | 'confirmed'
     | 'notSubmitted'
     | 'rejected';
+  /** The user explicitly permits another input without asserting the old write failed. */
+  released?: boolean;
   operation: number;
   message?: ConversationMessage;
   error?: unknown;
@@ -105,6 +107,7 @@ export class ChatSubmissions {
     return this.records.some(
       (record) =>
         (id ? record.conversationId === id : record.editorKey === key) &&
+        !record.released &&
         !['confirmed', 'rejected'].includes(record.status),
     );
   }
@@ -266,6 +269,14 @@ export class ChatSubmissions {
     record.status = id ? 'sending' : 'creating';
     this.publish();
     void this.run(record);
+    return true;
+  }
+  public releaseUnknown(clientId: string): boolean {
+    const record = this.records.find((item) => item.clientId === clientId);
+    if (record?.status !== 'unknown' || record.released) return false;
+    record.released = true;
+    record.operation += 1;
+    this.publish();
     return true;
   }
   public editRejected(clientId: string): ChatSubmission | null {

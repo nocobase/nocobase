@@ -296,7 +296,10 @@ export class OnlineAgentService {
       );
       const model =
         selectedModel ??
-        (options.model ? this.firstModel(config.model) : session.model);
+        (options.model !== undefined ||
+        JSON.stringify(config.model) !== JSON.stringify(session.config.model)
+          ? this.firstModel(config.model)
+          : session.model);
       this.validateModel(config.model, model);
       await this.deps.model(model, id);
       await this.deps.sessions.configure(context.user.id, id, config, model);

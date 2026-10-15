@@ -393,6 +393,27 @@ function ConversationBody({
                   <PendingItem
                     key={message.clientId}
                     message={message}
+                    onContinue={
+                      chatController.submissions
+                        .snapshot()
+                        .some(
+                          (record) =>
+                            record.clientId === message.clientId &&
+                            record.status === 'unknown' &&
+                            !record.released,
+                        )
+                        ? () => {
+                            chatController.submissions.releaseUnknown(
+                              message.clientId,
+                            );
+                            focusComposer();
+                          }
+                        : undefined
+                    }
+                    onCheck={() => {
+                      if (conversationId)
+                        void chatController.refresh(conversationId);
+                    }}
                     onDiscard={() =>
                       messages.dispatch({
                         type: 'discard',
@@ -447,6 +468,10 @@ function ConversationBody({
           variant={variant}
           disabled={
             running ||
+            chatController.submissions.blocked(
+              conversationId,
+              `registry:${source}:${conversationId ?? 'new'}`,
+            ) ||
             Boolean(
               conversation &&
               (!conversation.execution ||
@@ -459,10 +484,9 @@ function ConversationBody({
             if (conversationId) actions.stop.mutate(conversationId);
           }}
           onSend={(content, context, attachments) => {
-            void send({ content, context, attachments }).then(() =>
-              focusComposer(),
-            );
-            return true;
+            const accepted = send({ content, context, attachments });
+            if (accepted) focusComposer();
+            return accepted;
           }}
           registerAddFiles={registerAddFiles}
           toolbar={

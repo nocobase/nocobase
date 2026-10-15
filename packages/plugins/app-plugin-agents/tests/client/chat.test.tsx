@@ -494,12 +494,18 @@ describe('conversation hooks', () => {
     );
     const { result } = renderHook(() => useChat('c1'), { wrapper });
     await waitFor(() => expect(result.current.messages.items).toHaveLength(2));
-    let sending: Promise<unknown> | undefined;
+    let sending: boolean | undefined;
     act(() => {
       sending = result.current.send({
         content: 'Also check PM-3',
         context: CONTEXT,
       });
+    });
+    expect(sending).toBe(true);
+    act(() => {
+      expect(
+        result.current.send({ content: 'Local refusal', context: CONTEXT }),
+      ).toBe(false);
     });
     expect(result.current.messages.pending).toMatchObject([
       { content: 'Also check PM-3', status: 'sending' },
@@ -536,6 +542,9 @@ describe('conversation hooks', () => {
     await act(async () => {
       await result.current.send({ content: 'Hello?', context: CONTEXT });
     });
+    await waitFor(() =>
+      expect(result.current.messages.pending[0]?.status).toBe('unknown'),
+    );
     const failed = result.current.messages.pending[0];
     expect(failed?.status).toBe('unknown');
     await act(async () => {
