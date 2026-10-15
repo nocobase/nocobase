@@ -2,8 +2,9 @@ import type skillsEnUS from './skills.en-US.js';
 
 const skillsZhCN: typeof skillsEnUS = {
   skills: {
+    attachments: '挂载范围',
     title: '技能',
-    description: '可复用的说明与配套文件，挂到 Agent 上后每次运行都可使用。',
+    description: '可复用的说明与配套文件，可挂为全局、项目或工作目录默认技能。',
     new: '新建技能',
     newTitle: '新建技能',
     newDescription:

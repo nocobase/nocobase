@@ -1136,7 +1136,7 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
         tags,
         summary: 'Open a pull request for an issue',
         operationId: 'gitOpenPullRequest',
-        description: `For whoever may edit the issue; push the branch first. Opens the pull request on the code host and links it to the issue at once: on the repository of the issue’s project (its first linked one unless \`repo\` names another), from the run’s branch (the repository’s first branch rule, \`agent/PM-12\` by default) unless \`head\` names another, as the person who asked for the work (the caller, or whoever woke the agent) when they authorized the app, else as the repository’s connection. The issue’s preview preference is applied to the no-preview label. A label failure keeps the PR linked, returns previewLabelSyncFailed and retries automatically; do not open a second PR. Once every linked pull request is merged, the issue moves on. ${ISSUE_DEFAULT}`,
+        description: `For whoever may edit the issue; push the branch first. Opens the pull request on the code host and links it to the issue at once: on the repository of the issue’s project (its first linked one unless \`repo\` names another), from the branch the repository’s branch rule names (\`agent/PM-12\` by default) unless \`head\` names another — not the branch a run started on or switched to, so pass \`head\` after starting on a linked pull request’s branch or switching branches — as the person who asked for the work (the caller, or whoever woke the agent) when they authorized the app, else as the repository’s connection. The issue’s preview preference is applied to the no-preview label. A label failure keeps the PR linked, returns previewLabelSyncFailed and retries automatically; do not open a second PR. Once every linked pull request is merged, the issue moves on. ${ISSUE_DEFAULT}`,
         security: personOrRunSecurity,
         responses: {
           201: dataResponse(IssuePullRequestSchema, 'Opened and linked.'),
@@ -1433,8 +1433,9 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
     );
     routes.delete(
       '/pullRequests/:pullRequestId',
-      person,
+      ...personOrRun,
       describeRoute({
+        security: personOrRunSecurity,
         tags,
         summary: 'Unlink a pull request from an issue',
         operationId: 'gitUnlinkPullRequest',
@@ -1445,7 +1446,8 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
           confirm: 'Unlink this pull request from the issue?',
           action: 'pm.issues/edit',
         }),
-        description: 'For whoever may edit the issue.',
+        description:
+          'For whoever may edit the issue, including scoped keys and runs within their identity permissions.',
         responses: {
           204: emptyResponse(),
           ...apiErrorResponses,
@@ -1457,7 +1459,11 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
       async (context) => {
         const { pullRequestId } = context.req.valid('param');
         const { issueId } = context.req.valid('query');
-        await git().unlink(await viewer(context), issueId, pullRequestId);
+        await git().unlink(
+          await callerViewer(context),
+          issueOf(context, issueId),
+          pullRequestId,
+        );
         return context.body(null, 204);
       },
     );

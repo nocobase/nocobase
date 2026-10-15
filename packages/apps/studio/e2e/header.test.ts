@@ -165,8 +165,9 @@ test.describe('sidebar inbox', () => {
       const nav = page.getByRole('navigation', { name: '应用导航' });
       const links = nav.getByRole('link');
       await expect(links.nth(0)).toHaveAccessibleName('我的任务');
-      await expect(links.nth(1)).toHaveAccessibleName(/^收件箱/);
-      await expect(links.nth(2)).toHaveAccessibleName('仪表盘');
+      await expect(links.nth(1)).toHaveAccessibleName('我的 Agent');
+      await expect(links.nth(2)).toHaveAccessibleName(/^收件箱/);
+      await expect(links.nth(3)).toHaveAccessibleName('仪表盘');
       await expect(
         nav.getByRole('link', { name: '首页', exact: true }),
       ).toHaveCount(0);
@@ -227,8 +228,9 @@ test.describe('default landing navigation', () => {
     const nav = page.getByRole('navigation', { name: '应用导航' });
     const links = nav.getByRole('link');
     await expect(links.nth(0)).toHaveAccessibleName('我的任务');
-    await expect(links.nth(1)).toHaveAccessibleName(/^收件箱/);
-    await expect(links.nth(2)).toHaveAccessibleName('仪表盘');
+    await expect(links.nth(1)).toHaveAccessibleName('我的 Agent');
+    await expect(links.nth(2)).toHaveAccessibleName(/^收件箱/);
+    await expect(links.nth(3)).toHaveAccessibleName('仪表盘');
     await expect(
       nav.getByRole('link', { name: '首页', exact: true }),
     ).toHaveCount(0);
@@ -278,8 +280,9 @@ test.describe('default landing navigation', () => {
     const nav = page.getByRole('navigation', { name: '应用导航' });
     const links = nav.getByRole('link');
     await expect(links.nth(0)).toHaveAccessibleName('我的任务');
-    await expect(links.nth(1)).toHaveAccessibleName(/^收件箱/);
-    await expect(links.nth(2)).toHaveAccessibleName('仪表盘');
+    await expect(links.nth(1)).toHaveAccessibleName('我的 Agent');
+    await expect(links.nth(2)).toHaveAccessibleName(/^收件箱/);
+    await expect(links.nth(3)).toHaveAccessibleName('仪表盘');
     await expect(
       nav.getByRole('link', { name: '首页', exact: true }),
     ).toHaveCount(0);
@@ -294,5 +297,26 @@ test.describe('default landing navigation', () => {
       }),
     ).toBeVisible();
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+  });
+});
+
+test.describe('header actions', () => {
+  test('the chat shortcut opens and closes the panel, and the account menu offers the agent setup', async ({
+    page,
+  }) => {
+    await open(page, '/inbox');
+    const banner = page.getByRole('banner');
+    await page.keyboard.press('Control+j');
+    await expect(page.getByTestId('chat-panel')).toBeVisible();
+    await page.keyboard.press('Control+j');
+    await expect(page.getByTestId('chat-panel')).toBeHidden();
+
+    await banner.getByRole('button', { name: '打开账户菜单' }).click();
+    await page.getByTestId('user-menu-agent-setup').click();
+    const dialog = page.getByRole('dialog', { name: '连接本地 Coding Agent' });
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByLabel('发送给 Coding Agent 的配置指令'),
+    ).toContainText('nb-studio login --server');
   });
 });

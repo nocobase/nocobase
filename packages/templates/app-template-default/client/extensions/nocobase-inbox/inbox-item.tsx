@@ -1,8 +1,4 @@
-import {
-  CheckCircle2Icon,
-  ChevronRightIcon,
-  MoreHorizontalIcon,
-} from 'lucide-react';
+import { CheckCircle2Icon, MoreHorizontalIcon } from 'lucide-react';
 import { createElement, type KeyboardEvent, type ReactElement } from 'react';
 
 import { Button } from '#components/ui/button';
@@ -99,11 +95,12 @@ export function InboxItemCard(props: InboxItemCardProps): ReactElement {
 }
 
 /**
- * One compact card of the inbox list. Clicking anywhere on it shows it in the detail pane (and marks it read), as its
- * chevron says; Enter on a focused card opens its route. The card reads: what it is about (an issue's identifier), type, ×N and time, then its title,
- * then one sentence, as its contributor words them. A decision that still waits carries an amber bar, an unread card a
- * dot and a bold title, a settled decision is dimmed with a check, and an item that arrived after the list loaded
- * slides in. The menu button and a right-click offer read / unread and delete.
+ * One compact card of the inbox list. Clicking anywhere on it shows it in the detail pane (and marks it read); Enter on
+ * a focused card opens its route. The card reads: its title, ×N and time, then one line of particulars: whether it was
+ * handled, its type, what it is about (an issue's identifier) and one sentence, as its contributor words them. A
+ * decision that still waits carries an amber bar, an unread card a fainter bar and a bold title, a settled decision is
+ * dimmed with a check, and an item that arrived after the list loaded slides in. The menu button, in the time's place
+ * while the card is hovered, and a right-click offer read / unread and delete.
  */
 function ItemCard({
   entry,
@@ -158,8 +155,10 @@ function ItemCard({
         data-inbox-item={item.id}
         data-selected={selected ? 'true' : undefined}
         className={cn(
-          'group relative flex items-start gap-3 rounded-lg border border-transparent p-3 pr-2 transition-[background-color,border-color,opacity] duration-200',
-          selected ? 'border-border bg-card shadow-xs' : 'hover:bg-accent/60',
+          // Pulled out by its padding and border, so its words start where the tabs' labels do and its bar sits in the
+          // list's gutter.
+          'group relative -mx-[calc(--spacing(3)+1px)] flex items-start gap-3 rounded-lg border border-transparent p-3 transition-[background-color,border-color,opacity] duration-200',
+          selected ? 'bg-hover' : 'hover:bg-hover',
           settled && 'opacity-55',
           fresh &&
             'animate-in duration-200 fade-in slide-in-from-top-1 motion-reduce:animate-none',
@@ -168,73 +167,69 @@ function ItemCard({
         <span
           aria-hidden='true'
           className={cn(
-            'absolute top-3 bottom-3 left-0 w-0.5 rounded-full',
+            'absolute top-3 bottom-3 -left-px w-0.5 rounded-full',
             selected
               ? 'bg-primary'
               : waiting
                 ? 'bg-amber-500'
-                : 'bg-transparent',
+                : unread
+                  ? 'bg-primary/70'
+                  : 'bg-transparent',
           )}
         />
-        <span className='mt-0.5 flex shrink-0'>
-          <InboxTypeIcon entry={entry} renderer={renderer} />
-        </span>
         <Button
           variant='ghost'
           type='button'
           aria-current={selected ? 'true' : undefined}
           // Stretched over the whole card, so a click anywhere on it selects the item.
-          className="block h-auto min-w-0 flex-1 cursor-pointer space-y-1 rounded-none border-0 bg-transparent p-0 text-left font-normal whitespace-normal hover:bg-transparent active:translate-y-0 after:absolute after:inset-0 after:rounded-lg after:content-[''] focus-visible:outline-none"
+          className="grid h-auto min-w-0 flex-1 cursor-pointer grid-cols-[minmax(0,1fr)] gap-1 rounded-none border-0 bg-transparent p-0 text-left font-normal whitespace-normal hover:bg-transparent active:translate-y-0 after:absolute after:inset-0 after:rounded-lg after:content-[''] focus-visible:outline-none"
           onClick={() => onSelect(entry)}
           onKeyDown={onKeyDown}
         >
-          <span className='flex items-center gap-1.5 text-xs text-muted-foreground'>
-            {notice?.subject?.label ? (
-              <span className='shrink-0 font-mono'>{notice.subject.label}</span>
-            ) : null}
-            <span className='truncate'>{wording.label(entry)}</span>
+          {/* The title, bold while unread, with the time at the right; the menu button takes the time's place while
+              the card is hovered or its menu open. */}
+          <span className='flex min-w-0 items-baseline gap-1.5'>
+            <span
+              className={cn(
+                'min-w-0 truncate text-sm group-has-focus-visible:underline',
+                unread ? 'font-semibold' : 'font-medium',
+              )}
+            >
+              {title}
+              {unread ? (
+                <span className='sr-only'>
+                  {t('inbox.unread', { defaultValue: 'Unread' })}
+                </span>
+              ) : null}
+            </span>
             {notice && notice.count > 1 ? (
-              <span className='shrink-0 tabular-nums'>
+              <span className='shrink-0 text-xs text-muted-foreground tabular-nums'>
                 {t('inbox.count', {
                   count: notice.count,
                   defaultValue: '×{{count}}',
                 })}
               </span>
             ) : null}
-            {settled ? (
-              <span className='shrink-0'>
-                {t('inbox.resolved', { defaultValue: 'Handled' })}
-              </span>
-            ) : null}
             {/* The latest notice's time: a merged item (×N) is sent anew, replacing the previous one. */}
             <time
-              className='ml-auto shrink-0 tabular-nums'
+              className='ml-auto shrink-0 text-xs text-muted-foreground tabular-nums group-has-focus-visible:invisible group-hover:invisible group-has-data-popup-open:invisible'
               dateTime={item.createdAt}
               title={new Date(item.createdAt).toLocaleString(language)}
             >
               {relativeTime(item.createdAt, language)}
             </time>
           </span>
-          <span
-            className={cn(
-              'flex items-center gap-1.5 text-sm group-focus-within:underline',
-              unread ? 'font-semibold' : 'font-normal',
-            )}
-          >
-            {unread ? (
-              <span className='size-1.5 shrink-0 rounded-full bg-primary'>
-                <span className='sr-only'>
-                  {t('inbox.unread', { defaultValue: 'Unread' })}
-                </span>
-              </span>
+          {/* Then one line of particulars: whether it was handled, its kind and what it is about, and its sentence. */}
+          <span className='line-clamp-1 text-xs text-muted-foreground wrap-anywhere'>
+            {settled
+              ? `${t('inbox.resolved', { defaultValue: 'Handled' })} · `
+              : null}
+            {wording.label(entry)}
+            {notice?.subject?.label ? (
+              <span className='font-mono'> {notice.subject.label}</span>
             ) : null}
-            <span className='truncate'>{title}</span>
+            {sentence ? ` · ${sentence}` : null}
           </span>
-          {sentence ? (
-            <span className='line-clamp-1 text-sm text-muted-foreground wrap-anywhere'>
-              {sentence}
-            </span>
-          ) : null}
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -243,7 +238,7 @@ function ItemCard({
                 variant='ghost'
                 size='icon-xs'
                 disabled={busy}
-                className='relative opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-popup-open:opacity-100'
+                className='absolute top-2 right-2 opacity-0 group-hover:opacity-100 group-has-focus-visible:opacity-100 focus-visible:opacity-100 data-popup-open:opacity-100'
                 aria-label={t('inbox.actionsFor', {
                   title,
                   defaultValue: 'Actions for {{title}}',
@@ -257,15 +252,6 @@ function ItemCard({
             <DropdownMenuGroup>{menuItems(DropdownMenuItem)}</DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <ChevronRightIcon
-          aria-hidden='true'
-          className={cn(
-            'size-4 shrink-0 self-center transition-colors',
-            selected
-              ? 'text-foreground'
-              : 'text-muted-foreground group-hover:text-foreground',
-          )}
-        />
       </ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuGroup>{menuItems(ContextMenuItem)}</ContextMenuGroup>

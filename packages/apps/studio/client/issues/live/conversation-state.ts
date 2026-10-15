@@ -18,8 +18,10 @@ export interface IssueConversationState {
   readonly actions: IssueCommentActions;
   readonly mayComment: boolean;
   readonly editorRef: RefObject<RichTextHandle | null>;
-  readonly replyTo: IssueComment | null;
-  readonly setReplyTo: (comment: IssueComment | null) => void;
+  readonly replyTo: Pick<IssueComment, 'id' | 'authorName'> | null;
+  readonly setReplyTo: (
+    comment: Pick<IssueComment, 'id' | 'authorName'> | null,
+  ) => void;
   readonly searchMentions: (
     query: string,
   ) => Promise<readonly RichTextMention[]>;
@@ -28,6 +30,11 @@ export interface IssueConversationState {
   readonly memberSearchFailed: boolean;
   readonly retryingMembers: boolean;
   readonly retryMembers: () => void;
+  /** Whether a composer that starts folded (on a phone) is open. */
+  readonly composerOpen: boolean;
+  readonly setComposerOpen: (open: boolean) => void;
+  /** Opens the composer and puts the cursor in it, as Reply and Answer do. */
+  readonly openComposer: () => void;
 }
 
 export const ConversationContext = createContext<IssueConversationState | null>(

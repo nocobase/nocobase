@@ -837,7 +837,6 @@ export function createProposalService(
           sort.field('createdAt').desc(),
           sort.field('id').desc(),
         ],
-        limit: 200,
       });
       const spaces = new Map(
         (

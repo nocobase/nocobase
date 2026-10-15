@@ -1,5 +1,34 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.8
+
+### Minor Changes
+
+- 6fc0af2: Require the issue owner to start or continue Studio project manager work, and ignore agent wakeups from comments on unstarted issues. Run the manager and its delegated steps as the current owner while preserving trigger audit information. Withdraw all queued agent work and request cancellation of held runs on owner transfers, without automatically restarting them. Correct legacy queued identities before claim and expose waiting reasons.
+
+  Expose the existing transactional `Projects.activity` recorder for application issue events and deliver owner transfers to all work kinds before ordinary triggers, including executor clearing. Restore Studio wording for models, efforts, the start dialog and historical sub-issue activity.
+
+  Preserve delegated execution identity throughout repeated retries, including handled inputs, and show the initiator of the current retry instead of copied retry history.
+
+- ddfe1b1: Replace workflows with six fixed issue statuses: Backlog, In progress, Blocked, In review, Done and Cancelled. Workflows, workflow templates, status rules, approval requests and checklists are removed, together with their routes, CLI commands, settings (`pm.workflows`) and client pieces (`WorkflowSelect`, the start dialog, status rule editors). A new issue starts in Backlog unless it is created in In progress ("Start now"); moving an issue to Blocked or In review notifies its owner. Other plugins register status events with `projectsStatusEventsToken` (`{ key, from, to }`) and fire them with `projects.statusEvents.fire`, replacing `workflowEvents`; a principal kind may now say which moves it makes (`moves`, `mayMove`) and which executor it defaults to (`defaultExecutor`). `PATCH /api/projects/issues/{issueId}` answers `{ data: { issue } }`. The migration `202610240010_pm_fixed_statuses` maps every issue to the fixed statuses by key and category (todo and other started statuses to In progress, ui_review to In review, done to Done, closed to Cancelled) and drops the workflow, approval and checklist tables and `pmProjects.workflowId`; it cannot be rolled back to the workflows it removed.
+
+### Patch Changes
+
+- 0e28a3c: Describe `issue subscribe` and `issue unsubscribe` (`POST /api/projects/issues/{issueId}/subscribe|unsubscribe`) as subscribing to and unsubscribing from an issue's notifications, so the API document and the command line no longer call them following, which Studio's "My follow-ups" means.
+- cb009d7: Pause agent work after an owner transfer until the new owner accepts. Add owner acceptance and rejection in issue pages and inbox decisions, with transfer activities and localized waiting reasons.
+- fad531f: Initialize the project manager's name and description once in the installation's default language and allow administrators to edit them, including clearing the description. Restarts and unrelated settings saves preserve the identity. Later changes to the installation language do not rename an initialized manager.
+
+  An upgrade seed preserves valid explicit settings, custom legacy agent values, empty descriptions, and unknown settings. Legacy agent values identical to the former built-in English defaults cannot be distinguished from manual writes and are initialized in the upgrade language when no valid explicit setting exists. A damaged `studioSettings.projectManager.value` stops initialization with a repair instruction instead of overwriting it.
+
+  Resolve historical run inputs, notifications, delegation cards, plans, and consultation identity labels from stable agent IDs without rewriting historical text or execution snapshots. Legacy limit notices and plans whose identity cannot be recovered use neutral labels, and unresolved consultations mark the originally requested subject. Refresh identity caches when the manager is renamed.
+
+  Mount application query effects inside the projects plugin's cache using its optional `queryEffects` composition point. Keep completed consultation labels current after renames and distinguish loading, inaccessible agents, and historical request snapshots.
+
+- Updated dependencies [9e99702]
+  - @nocobase/app-server@2.0.0-beta.6
+  - @nocobase/app-plugin-authentication@2.0.0-beta.8
+  - @nocobase/app-plugin-file@1.0.0-beta.23
+
 ## 0.1.0-beta.7
 
 ### Minor Changes

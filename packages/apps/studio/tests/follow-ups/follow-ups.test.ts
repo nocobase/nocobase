@@ -21,8 +21,6 @@ import type { MiddlewareHandler } from 'hono';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { followUpsRoutes } from '../../server/follow-ups/routes.js';
-import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
-
 import {
   FOLLOWING_PREFERENCE,
   SEEN_MAX,
@@ -31,6 +29,7 @@ import {
   parseSeen,
   pruneSeen,
 } from '../../shared/follow-ups.js';
+import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import {
   createBridgeHarness,
   type BridgeHarness,
@@ -54,6 +53,9 @@ async function move(issue: Issue, statusKey: string): Promise<void> {
   await h.projects.issues.update(h.viewer('alice'), issue.id, {
     revision: current.revision,
     statusKey,
+    ...(statusKey === 'blocked' || statusKey === 'in_review'
+      ? { needsYou: 'Choose how to continue.' }
+      : {}),
   });
 }
 
@@ -96,13 +98,62 @@ describe('the overview', () => {
           state: 'queued',
           agent: { id: agentId },
           step: 'Check the queued step',
-          waiting: { reason: 'noRunner', owner: { id: 'alice' } },
+          waiting: null,
         },
       },
     );
+    const own = await h.request('GET', `/issueProgress/${issue.id}`, {
+      user: 'alice',
+    });
+    expect(own.body.data).toMatchObject({
+      state: 'queued',
+      agent: { id: agentId },
+      step: 'Check the queued step',
+      waiting: { reason: 'noRunner', owner: { id: 'alice' } },
+    });
   });
 
-  it('includes shared queue diagnostics and only the viewer machine details', async () => {
+  it('lists queued work on a followed issue, and leaves why it waits to the issue’s own progress', async () => {
+    await h.createAgent();
+    const task = await create('alice', {
+      statusKey: 'in_progress',
+      start: false,
+    });
+    await h.agents.runs.enqueue({
+      agentId: PROJECT_MANAGER_ID,
+      subject: { kind: 'issue', id: task.id },
+      actorUserId: 'alice',
+      input: {
+        type: 'signal',
+        actor: { kind: 'system', id: 'system', name: 'Studio' },
+        text: 'PR checks passed',
+        payload: { trigger: 'prChecksPassed' },
+      },
+    });
+    expect((await follow([task.id])).status).toBe(200);
+
+    const data = await overview();
+    const row = data.issues.find((item: { id: string }) => item.id === task.id);
+    expect(row).toMatchObject({
+      followed: true,
+      progress: {
+        state: 'queued',
+        agent: { id: PROJECT_MANAGER_ID },
+        waiting: null,
+      },
+    });
+    expect(row.progress.managerWait).toBeUndefined();
+    const own = await h.request('GET', `/issueProgress/${task.id}`, {
+      user: 'alice',
+    });
+    expect(own.body.data).toMatchObject({
+      state: 'queued',
+      agent: { id: PROJECT_MANAGER_ID },
+      waiting: { reason: 'noRunner', owner: { id: 'alice' } },
+    });
+  });
+
+  it('leaves queue diagnostics to the issue’s own progress, with only the viewer machine details', async () => {
     h.roles.set('alice', 'admin');
     const worker = await h.createAgent({
       name: 'Worker',
@@ -138,7 +189,12 @@ describe('the overview', () => {
     const item = data.issues.find(
       (issue: { id: string }) => issue.id === queued.id,
     );
-    expect(item.progress).toMatchObject({
+    expect(item.progress).toMatchObject({ state: 'queued', waiting: null });
+    expect(item.progress.managerWait).toBeUndefined();
+    const own = await h.request('GET', `/issueProgress/${queued.id}`, {
+      user: 'alice',
+    });
+    expect(own.body.data).toMatchObject({
       state: 'queued',
       managerWait: {
         entries: [{ reason: 'busy', runners: ['alice-machine'] }],
@@ -206,7 +262,10 @@ describe('the overview', () => {
       ).toMatchObject({
         statusKey: 'blocked',
         followed: true,
-        progress: { state: 'needsDecision' },
+        progress: {
+          state: 'needsDecision',
+          needsYou: 'Choose how to continue.',
+        },
       });
       const current = await h.projects.issueQueries.detail(
         h.viewer('alice'),
@@ -238,6 +297,69 @@ describe('the overview', () => {
     expect((await h.request('GET', '/followUps', { user: 'bob' })).status).toBe(
       403,
     );
+  });
+});
+
+describe('the rows of named issues', () => {
+  const rows = (issueIds: readonly string[], user = 'alice') =>
+    h.request('GET', `/followUps/issues?issueIds=${issueIds.join(',')}`, {
+      user,
+    });
+
+  it('answers the overview’s rows of the named issues it lists, and leaves the others out', async () => {
+    const review = await create('alice', { title: 'Ready' });
+    await move(review, 'in_review');
+    const backlog = await create('alice', { title: 'Later' });
+    const done = await create('alice', { title: 'Shipped' });
+    await move(done, 'done');
+    const theirs = await create('bob', { title: 'Theirs' });
+    const followedTheirs = await create('bob', { title: 'Followed' });
+    expect((await follow([review.id, followedTheirs.id])).status).toBe(200);
+
+    const listed = new Map<string, unknown>(
+      (await overview()).issues.map((issue: { id: string }) => [
+        issue.id,
+        issue,
+      ]),
+    );
+    const answer = await rows([
+      review.id,
+      backlog.id,
+      done.id,
+      theirs.id,
+      followedTheirs.id,
+      'nope',
+    ]);
+    expect(answer.status).toBe(200);
+    expect(answer.body.meta).toEqual({ total: 3 });
+    expect(
+      new Map(
+        answer.body.data.map((issue: { id: string }) => [issue.id, issue]),
+      ),
+    ).toEqual(
+      new Map(
+        [review.id, backlog.id, followedTheirs.id].map((id) => [
+          id,
+          listed.get(id),
+        ]),
+      ),
+    );
+    expect((await rows([theirs.id])).body).toEqual({
+      data: [],
+      meta: { total: 0 },
+    });
+  });
+
+  it('refuses someone signed out or who may not view issues, and too many issues', async () => {
+    expect(
+      (await h.request('GET', '/followUps/issues?issueIds=a')).status,
+    ).toBe(401);
+    h.roles.set('bob', 'none');
+    expect((await rows(['a'], 'bob')).status).toBe(403);
+    const tooMany = await rows(
+      Array.from({ length: 101 }, (_, index) => `issue-${index}`),
+    );
+    expect(tooMany.status).toBe(400);
   });
 });
 
@@ -284,6 +406,23 @@ describe('following', () => {
     expect(
       data.issues.find((issue: any) => issue.id === theirs.id).unread,
     ).toBe(0);
+  });
+
+  it('answers what the caller follows and how many they may, without the overview', async () => {
+    const review = await create('alice', { title: 'Ready' });
+    await move(review, 'in_review');
+    const read = () =>
+      h.request('GET', '/followUps/following', { user: 'alice' });
+    // By default, their in-review and blocked issues.
+    expect((await read()).body.data).toEqual({ issueIds: [review.id], max: 5 });
+    const theirs = await create('bob', { title: 'Theirs' });
+    expect((await follow([theirs.id])).status).toBe(200);
+    expect((await read()).body.data).toEqual({ issueIds: [theirs.id], max: 5 });
+    expect((await h.request('GET', '/followUps/following')).status).toBe(401);
+    h.roles.set('bob', 'none');
+    expect(
+      (await h.request('GET', '/followUps/following', { user: 'bob' })).status,
+    ).toBe(403);
   });
 
   it('refuses more than five issues or one the caller cannot find', async () => {
@@ -408,6 +547,12 @@ describe('the routes in the API document', () => {
     const unfollow =
       document.paths?.['/api/followUps/issues/{issueId}/unfollow']?.post;
     expect(follow?.operationId).toBe('followUpsFollowIssue');
+    expect(document.paths?.['/api/followUps/issues']?.get?.operationId).toBe(
+      'followUpsListIssues',
+    );
+    expect(document.paths?.['/api/followUps/following']?.get?.operationId).toBe(
+      'followUpsGetFollowing',
+    );
     expect(unfollow?.operationId).toBe('followUpsUnfollowIssue');
     expect(
       (follow as { 'x-cli'?: { command?: string } })['x-cli']?.command,

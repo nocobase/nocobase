@@ -50,6 +50,8 @@ nb-studio project-manager update
 
 | Flag                                 | Type    | Description                                                                                                                                           |
 | ------------------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--name`                             | string  | The persisted project manager name, 1–200 characters after trimming; independent of the viewer’s language.                                            |
+| `--description`                      | string  | The persisted description, at most 10,000 characters; null, an empty string or whitespace clears it. (or --description-file <path>)                   |
 | `--delegation-queue-timeout-seconds` | integer | Seconds a manager-delegated step may remain queued before withdrawal and an automatic reply (default 600); changes apply on the next sweep.           |
 | `--fallback-after-seconds`           | integer | Seconds the first choice may wait in the runnable queue before an idle fallback can claim it (default 120).                                           |
 | `--first-choice`                     | string  | The enabled agent whose tool and model the project manager runs with.                                                                                 |

@@ -11,7 +11,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import presetLabels from '../../database/main/seeds/202610010060_studio_preset_labels.js';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 import { buildDemo } from '../../server/demo/build.js';
-import { DEMO_AGENTS, DEMO_ISSUES } from '../../server/demo/data.js';
+import {
+  DEMO_AGENTS,
+  DEMO_ISSUES,
+  DEMO_PROJECTS,
+} from '../../server/demo/data.js';
 import { DEMO_HISTORY } from '../../server/demo/history.js';
 import { createPermissionSource } from '../../server/agents/commands/permissions.js';
 import { createStudioReports } from '../../server/reports/service.js';
@@ -78,7 +82,7 @@ const idOf = (key: string): string => {
 };
 
 describe('the demo data', () => {
-  it('enables the agents its runtimes discovered, with what they are good at and their skills', async () => {
+  it('enables the agents its runtimes discovered, with what they are good at', async () => {
     await build();
     const discovered = (await h.agents.agents.list()).filter(
       (agent) => agent.source === 'runner',
@@ -101,12 +105,33 @@ describe('the demo data', () => {
       expect(await h.agents.agents.get(idOf(spec.key))).toMatchObject({
         description: spec.description,
       });
-      const skills = await h.agents.skills.attached({
-        scope: 'agent',
-        scopeId: idOf(spec.key),
-      });
-      expect(skills).toHaveLength(spec.skills.length);
     }
+  });
+
+  it('attaches demo skills to projects and leaves agent attachments empty', async () => {
+    await build();
+    const projects = await h.projects.projects.list(admin());
+    const library = await h.agents.skills.list();
+    for (const spec of DEMO_PROJECTS) {
+      const project = projects.find((each) => each.name === spec.name)!;
+      const skills = await h.agents.skills.attached({
+        scope: 'project',
+        scopeId: project.id,
+      });
+      expect(
+        skills
+          .map((id) => library.find((skill) => skill.id === id)!.slug)
+          .sort(),
+      ).toEqual([...(spec.skills ?? [])].sort());
+    }
+    expect(
+      await h.database
+        .connection()
+        .query.selectFrom('agSkillAttachments')
+        .select('id')
+        .where('scope', '=', 'agent')
+        .execute(),
+    ).toEqual([]);
   });
 
   it('makes two of them the project manager’s first choice and fallback', async () => {
@@ -189,6 +214,19 @@ describe('the demo data', () => {
     expect(
       new Set(issues.map((issue) => issue.statusKey)).size,
     ).toBeGreaterThanOrEqual(STATUS_KEYS.length);
+    for (const spec of DEMO_ISSUES) {
+      const issue = issues.find((each) => each.title === spec.title)!;
+      expect(issue).toMatchObject({
+        statusKey: spec.status,
+        needsYou: spec.needsYou ?? null,
+      });
+      const comments = await h.projects.commentQueries.list(
+        h.database.connection(),
+        issue.id,
+        {},
+      );
+      expect(comments).toHaveLength(spec.comments?.length ?? 0);
+    }
     const managed = DEMO_ISSUES.filter((spec) => spec.projectManager);
     expect(managed.length).toBeGreaterThan(0);
     for (const spec of managed) {

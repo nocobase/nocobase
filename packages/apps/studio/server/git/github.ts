@@ -108,7 +108,11 @@ export interface GitHubPullRequestPayload {
   /** The merge (or squash) commit once merged; before that, GitHub's test merge commit, which Studio ignores. */
   readonly merge_commit_sha?: string | null;
   readonly closed_at?: string | null;
-  readonly head?: { readonly ref?: string; readonly sha?: string };
+  readonly head?: {
+    readonly ref?: string;
+    readonly sha?: string;
+    readonly repo?: { readonly full_name?: string } | null;
+  };
   readonly base?: { readonly ref?: string };
   readonly user?: { readonly login?: string };
   readonly mergeable_state?: string | null;
@@ -152,6 +156,9 @@ export function snapshotFromPayload(
     state,
     draft: payload.draft === true,
     headRef: (payload.head?.ref ?? '').slice(0, 255),
+    ...(payload.head?.repo?.full_name
+      ? { headRepo: payload.head.repo.full_name }
+      : {}),
     baseRef: (payload.base?.ref ?? '').slice(0, 255),
     headSha: (payload.head?.sha ?? '').slice(0, 64),
     authorLogin: (payload.user?.login ?? '').slice(0, 255),
@@ -199,6 +206,7 @@ function readOf(
 // --- Checks ----------------------------------------------------------------------------------------------------------
 
 interface StatusFields {
+  readonly id?: unknown;
   readonly context?: unknown;
   readonly state?: unknown;
   readonly target_url?: unknown;
@@ -276,6 +284,9 @@ export function checkOfStatus(status: StatusFields): GitCheck {
   const state = typeof status.state === 'string' ? status.state : '';
   return {
     kind: 'status',
+    ...(typeof status.id === 'number' || typeof status.id === 'string'
+      ? { executionId: String(status.id) }
+      : {}),
     name: (typeof status.context === 'string'
       ? status.context
       : 'status'
@@ -305,6 +316,9 @@ export function checkOfRun(run: CheckRunFields): GitCheck {
         : null;
   return {
     kind: 'check',
+    ...(typeof run.id === 'number' || typeof run.id === 'string'
+      ? { executionId: String(run.id) }
+      : {}),
     name: (typeof run.name === 'string' ? run.name : 'check').slice(0, 255),
     status,
     conclusion:

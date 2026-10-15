@@ -1,20 +1,9 @@
 /**
  * How the issue pages' feed (`issue-feed.tsx`) lays out the issue's timeline: newest first, a thread where its latest
  * comment is; conversation (comments, status moves, pull requests, owner handoffs) apart from system records (runs and every other
- * change), which "Conversation only" folds into one row per stretch. Also which comment speaks for a delivery.
+ * change), which "Conversation only" folds into one row per stretch.
  */
-import type {
-  CommentThread,
-  TimelineEntry,
-} from '@nocobase/app-plugin-projects/client/issues';
-import type {
-  Activity,
-  IssueDetail,
-} from '@nocobase/app-plugin-projects/shared/issues';
-import { IN_REVIEW_STATUS } from '@nocobase/app-plugin-projects/shared/statuses';
-
-import { PROJECT_MANAGER_ID } from '../../../shared/project-manager.js';
-
+import type { TimelineEntry } from '@nocobase/app-plugin-projects/client/issues';
 import { isOwnerHandoffActivity } from '../detail/activity-labels.js';
 import { activityFeedKind } from './feed.js';
 
@@ -92,46 +81,4 @@ export function groupFeedRows(
   }
   close();
   return rows;
-}
-
-/**
- * The comment that tells what was delivered: the latest agent comment (other than the project manager's) written by
- * the latest move to In review, else the latest agent comment at all.
- */
-export function deliveryComment(
-  threads: readonly CommentThread[],
-  activities: readonly Pick<Activity, 'action' | 'details' | 'createdAt'>[],
-  managerId: string,
-): CommentThread['root'] | null {
-  const comments = threads
-    .flatMap((thread) => [thread.root, ...thread.replies])
-    .filter(
-      (comment) =>
-        !comment.deleted &&
-        comment.authorType === 'agent' &&
-        comment.content.trim() !== '',
-    )
-    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
-  const movedAt = activities
-    .filter(
-      (activity) =>
-        activity.action === 'status_changed' &&
-        activity.details.to === 'in_review',
-    )
-    .map((activity) => Date.parse(activity.createdAt))
-    .sort((a, b) => b - a)[0];
-  const byWorker = comments.filter((comment) => comment.authorId !== managerId);
-  const before = (list: typeof comments) =>
-    movedAt === undefined
-      ? list[0]
-      : list.find((comment) => Date.parse(comment.createdAt) <= movedAt);
-  return before(byWorker) ?? byWorker[0] ?? comments[0] ?? null;
-}
-
-/** In review, the comment the summary shows as the delivery notes; null otherwise. */
-export function deliveryCommentOf(
-  issue: Pick<IssueDetail, 'statusKey' | 'threads' | 'activities'>,
-): CommentThread['root'] | null {
-  if (issue.statusKey !== IN_REVIEW_STATUS) return null;
-  return deliveryComment(issue.threads, issue.activities, PROJECT_MANAGER_ID);
 }

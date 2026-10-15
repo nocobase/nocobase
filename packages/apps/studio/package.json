@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/studio",
   "displayName": "NocoBase Studio",
-  "version": "1.0.0-beta.56",
+  "version": "1.0.0-beta.57",
   "description": "NocoBase Studio: an AI application workspace of projects and issues worked on by agents, knowledge, builds, releases and deployments.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -180,6 +180,7 @@
     "@nocobase/agent-protocol": "workspace:^",
     "@nocobase/app-cli": "workspace:^",
     "@nocobase/app-host-docker": "workspace:^",
+    "@nocobase/app-plugin-agent-sessions": "workspace:^",
     "@nocobase/app-plugin-agents": "workspace:^",
     "@nocobase/app-plugin-api-keys": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",

@@ -151,7 +151,7 @@ export const OpenPullRequestInput = z.strictObject({
     .meta({ description: '`owner/name`, when the project has several.' }),
   head: z.string().optional().meta({
     description:
-      'The branch with the change; the repository’s first branch rule for the issue by default.',
+      'The branch with the change; the repository’s branch rule for the issue by default. Pass it after starting on a linked pull request’s branch or switching branches.',
   }),
   base: z.string().optional().meta({
     description:
@@ -503,6 +503,7 @@ export const IssuePullRequestSchema: z.ZodType<IssuePullRequest> = z
     checks: z.array(
       z.object({
         kind: z.enum(['check', 'status']),
+        executionId: z.string().optional(),
         name: z.string(),
         status: z.enum(['queued', 'in_progress', 'completed']),
         conclusion: z.string().nullable(),

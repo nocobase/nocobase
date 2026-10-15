@@ -14,6 +14,10 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  'auth.passwordResetSuccess':
+    'Your password has been reset. Sign in with your new password.',
+  'auth.requestNewResetLink': 'Request a new reset link',
+
   'issueRuns.selection.preferredQueued': 'First choice queued, using fallback',
   'issueRuns.selection.preferredUnavailable':
     'First choice unavailable, using fallback',
@@ -58,6 +62,10 @@ const enUS = {
   'issueRuns.configuredModel': 'Configured model: {{model}}',
   'issueRuns.modelUnknown': 'Model not reported',
   'issueRuns.clearFilters': 'Clear filters',
+  'issueRuns.attemptFailed': 'Attempt {{attempt}} failed',
+  'issueRuns.preparationFailed': 'Run preparation failed',
+  'issueRuns.retryScheduled': 'Automatic retry scheduled for {{time}}',
+  'issueRuns.awaitingDispatch': 'Waiting to be dispatched again',
   'issueRuns.emptyHint':
     'Check the executor and status in Properties to start agent work.',
   'issueRuns.loading': 'Loading execution log…',
@@ -116,6 +124,7 @@ const enUS = {
   runTranscript: {
     usedModel: 'Model: {{model}}',
     defaultModel: 'Default model',
+    confirmedBy: 'Confirmed by {{person}}',
     actingAs: 'Running as {{actor}}',
     triggeredBy: 'Triggered by {{person}}',
     systemTrigger: 'Triggered by the system',
@@ -143,6 +152,11 @@ const enUS = {
     errorsAlwaysVisible: 'Errors are always shown',
   },
   overrides: {
+    '@nocobase/app-plugin-agent-sessions': {
+      links: {
+        startHint: 'The project manager assigns agents and moves them along.',
+      },
+    },
     '@nocobase/app-plugin-agents': {
       runWait: {
         reasons: {
@@ -284,6 +298,7 @@ const enUS = {
     allConversations: 'View all',
     untitled: 'Untitled conversation',
     agentSetup: {
+      menu: 'Use Studio in your agent',
       open: 'Manage Studio with a local Coding Agent',
       title: 'Connect a local Coding Agent',
       description:
@@ -505,6 +520,7 @@ const enUS = {
     usage: 'Usage',
     config: 'Settings',
     home: 'Home',
+    agentSessions: 'My agents',
     dashboard: 'Dashboard',
     open: 'Open navigation',
     close: 'Close navigation',
@@ -946,6 +962,7 @@ const enUS = {
   'inbox.text.executor_suggested':
     '{{agentName}} is suggested to execute {{identifier}}',
   'inbox.someone': 'Someone',
+  'inbox.anAgent': 'An agent',
   'inbox.titles.approval_requested': 'Status change waiting for approval',
   'inbox.outcomes.retried': 'Retried',
   'inbox.outcomes.newRun': 'A new run has started',
@@ -1132,6 +1149,8 @@ const enUS = {
       stageEntered: 'Workflow stage',
       planDecided: 'Plan decided',
       prChecksFailed: 'Checks failed',
+      stepEnded: 'Worker step ended',
+      managerIdle: 'Idle waiting recheck',
       prChecksPassed: 'Checks passed',
       started: 'Started',
       prConflict: 'Pull request conflict',
@@ -1302,7 +1321,7 @@ const enUS = {
     commentRuns: {
       limitReached: 'Agent comments paused',
       continueHint:
-        'Agents’ comments started {{maxRuns}} runs on this issue in {{windowHours}} hours, so the last one woke nobody. Continue to wake the agents it names once and restart the count.',
+        'Comment-triggered runs reached the limit of {{maxRuns}} in the last {{windowHours}} hours.',
       continued: 'Agent comment continued',
       continueStale: 'This comment no longer waits. Refresh the issue.',
       continueFailed:
@@ -1401,6 +1420,8 @@ const enUS = {
     settings: 'Settings',
     loadFailed: 'Could not load the project manager.',
     settingsPage: {
+      name: 'Name',
+      identityDescription: 'Description',
       title: 'Project manager',
       description:
         'There is one for all projects: it arranges the work of every issue.',
@@ -1447,6 +1468,8 @@ const enUS = {
     workerChoice: 'Model',
     workerWaiting: '{{agent}} waiting for a runner: {{entries}}',
     modelWait: {
+      updatePending: 'runner waiting for update; new work is paused',
+      pruning: 'runner cleaning shared store; new work is paused',
       toolNotInstalled: 'tool not installed',
       toolUnavailable: 'tool not signed in, disabled, or model unavailable',
       noSharedRunner: 'only other people’s personal runners are online',
@@ -1461,6 +1484,12 @@ const enUS = {
       concurrencyFull: 'agent concurrency limit reached',
       sameWorkActive: 'another run in this thread is active',
       delayed: 'scheduled delay or retry backoff',
+    },
+    nextLabel: 'Next:',
+    status: {
+      working: '{{agent}} working',
+      queued: '{{agent}} queued',
+      minutes: '{{minutes}} min',
     },
     waiting: {
       waitingOwner: 'Waiting for {{owner}} to take over',
@@ -1490,7 +1519,7 @@ const enUS = {
     notStarted:
       'Not started. Start it and the project manager arranges the work.',
     finished: 'Finished',
-    idle: 'Nothing is going on now',
+    idle: 'Nothing is running',
     next: 'Next: {{next}}',
     start: 'Start',
     handOver: 'Hand over to the project manager',

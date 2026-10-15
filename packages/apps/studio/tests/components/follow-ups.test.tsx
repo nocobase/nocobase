@@ -58,6 +58,18 @@ vi.mock('../../client/issues/live/conversation.js', () => ({
 vi.mock('../../client/issues/live/issue-feed.js', () => ({
   IssueFeed: () => <div data-testid='issue-feed' />,
 }));
+// The live run's link reads the agents plugin's runs; here it is the text alone.
+vi.mock('../../client/agents/issue-runs.js', () => ({
+  IssueLiveRunLink: ({ children }: { children: ReactNode }) => (
+    <span>{children}</span>
+  ),
+}));
+// The phone bar's navigation and chat buttons need the shell's providers.
+vi.mock('../../client/layouts/components/phone-bar.js', () => ({
+  PhoneBar: ({ children }: { children?: ReactNode }) => (
+    <div data-testid='phone-bar'>{children}</div>
+  ),
+}));
 vi.mock('../../client/issues/live/issue-composer.js', () => ({
   IssueComposer: () => <div data-testid='issue-composer' />,
 }));
@@ -81,7 +93,8 @@ const progress = (overrides: Partial<IssueProgress> = {}): IssueProgress => ({
   since: null,
   runner: null,
   pullRequest: null,
-  question: null,
+  needsYou: null,
+  explanationCommentId: null,
   next: null,
   handOver: false,
   ...overrides,
@@ -121,7 +134,10 @@ beforeEach(() => {
         statusKey: 'in_review',
         followed: true,
         unread: 2,
-        progress: progress({ state: 'inReview' }),
+        progress: progress({
+          state: 'inReview',
+          needsYou: 'Review the release page. Confirm acceptance.',
+        }),
       }),
       issue({
         id: 'b1',
@@ -131,7 +147,7 @@ beforeEach(() => {
         lastActivityAt: at(3),
         progress: progress({
           state: 'needsDecision',
-          question: 'Push again?',
+          needsYou: 'Push again?',
         }),
       }),
       issue({
@@ -167,6 +183,10 @@ beforeEach(() => {
   mocks.request.mockImplementation(
     (request: { path: string; method?: string; json?: unknown }) => {
       if (request.path === 'followUps') return Promise.resolve({ data: view });
+      if (request.path === 'followUps/following')
+        return Promise.resolve({
+          data: { issueIds: view.following, max: 5 },
+        });
       if (/^followUps\/issues\/[^/]+\/(?:un)?follow$/u.test(request.path))
         return Promise.resolve({ data: { issueIds: view.following } });
       if (request.path === 'git/marks')
@@ -195,7 +215,11 @@ beforeEach(() => {
         });
       if (request.path.startsWith('issueProgress/'))
         return Promise.resolve({
-          data: progress({ state: 'inReview', next: 'merge once accepted' }),
+          data: progress({
+            state: 'inReview',
+            needsYou: 'Review the release page. Confirm acceptance.',
+            next: 'merge once accepted',
+          }),
         });
       return Promise.resolve(undefined);
     },
@@ -257,7 +281,9 @@ describe('My follow-ups', () => {
     const rail = await mount();
     const first = card(rail, 'WEB-5');
     await waitFor(() =>
-      expect(first.textContent).toContain('Needs you: Accept: PR #12'),
+      expect(first.textContent).toContain(
+        'Needs you: Review the release page. Confirm acceptance.',
+      ),
     );
     // The open issue's count is not shown; the other one's is.
     expect(first.getAttribute('aria-current')).toBe('true');
@@ -266,7 +292,9 @@ describe('My follow-ups', () => {
     expect(within(other).getByTestId('follow-ups-unread').textContent).toBe(
       '3',
     );
-    expect(other.textContent).toContain('Sol is working on fixing the review');
+    // A short line from the progress, not the step the manager wrote.
+    expect(other.textContent).toContain('Sol working');
+    expect(other.textContent).not.toContain('fixing the review');
 
     const panel = await screen.findByTestId('follow-ups-activity');
     await waitFor(() =>
@@ -279,14 +307,17 @@ describe('My follow-ups', () => {
       expect(panel.textContent).toContain('Checks passed · Has conflicts'),
     );
     expect(within(panel).getByTestId('issue-needs-you').textContent).toContain(
-      'Accept: PR #12',
+      'Review the release page. Confirm acceptance.',
     );
-    expect(within(panel).getByTestId('follow-toggle').textContent).toBe(
+    expect(within(panel).getByTestId('follow-toggle').textContent).toContain(
       'Following · 2/5',
     );
-    // In review: what was delivered and Send back; the feed and the reply box under it.
+    // In review: the structured owner request and Send back; explanation prose stays in the feed.
     const delivery = within(panel).getByTestId('issue-delivery');
-    expect(delivery.textContent).toContain('Implement the change');
+    expect(delivery.textContent).toContain(
+      'Review the release page. Confirm acceptance.',
+    );
+    expect(delivery.textContent).not.toContain('Implement the change');
     fireEvent.click(
       within(delivery).getByRole('button', { name: 'Send back' }),
     );
@@ -333,7 +364,7 @@ describe('My follow-ups', () => {
       within(mine).getByRole('button', { name: /status:in_progress/ }),
     );
     expect(keys()).toEqual(['WEB-5', 'WEB-4', 'WEB-3']);
-    expect(mine.textContent).toContain('Answer: Push again?');
+    expect(mine.textContent).toContain('Push again?');
     fireEvent.change(within(mine).getByRole('searchbox'), {
       target: { value: 'web-3' },
     });
@@ -390,7 +421,7 @@ describe('My follow-ups', () => {
     ).toBe(false);
   });
 
-  it('on a phone shows the lists first, then the chosen issue alone with a way back', async () => {
+  it('on a phone shows one list per tab, then the chosen issue alone with a way back', async () => {
     const matchMedia = window.matchMedia;
     window.matchMedia = ((query: string) => ({
       matches: !query.includes('min-width'),
@@ -399,20 +430,39 @@ describe('My follow-ups', () => {
       removeEventListener: () => undefined,
     })) as unknown as typeof window.matchMedia;
     try {
-      const rail = await mount();
+      await mount();
       expect(screen.queryByTestId('follow-ups-activity')).toBeNull();
+      const tabs = screen.getByTestId('follow-ups-tabs');
+      const following = within(tabs).getByRole('button', {
+        name: /^Following/u,
+      });
+      const mine = within(tabs).getByRole('button', {
+        name: /^Issues I own/u,
+      });
+      // What needs a look: two followed issues with news or an ask; one owned issue in review.
+      expect(following.getAttribute('aria-current')).toBe('page');
+      expect(following.textContent).toBe('Following2');
+      expect(mine.textContent).toBe('Issues I own1');
+      expect(screen.queryByTestId('follow-ups-mine')).toBeNull();
+
+      fireEvent.click(mine);
+      await screen.findByTestId('follow-ups-mine');
+      expect(screen.queryByTestId('follow-ups-following')).toBeNull();
+      fireEvent.click(following);
+      const rail = await screen.findByTestId('follow-ups-following');
+
       fireEvent.click(card(rail, 'WEB-9'));
       const panel = await screen.findByTestId('follow-ups-activity');
-      // A phone starts with the summary's bar.
+      // A phone starts with the summary's bar, and the tabs give way to the issue.
       expect(
         (await within(panel).findByTestId('issue-summary')).hasAttribute(
           'data-collapsed',
         ),
       ).toBe(true);
+      expect(screen.queryByTestId('follow-ups-tabs')).toBeNull();
       expect(screen.queryByTestId('follow-ups-following')).toBeNull();
-      expect(screen.queryByTestId('follow-ups-mine')).toBeNull();
       fireEvent.click(
-        within(panel).getByRole('button', { name: 'Back to the list' }),
+        within(panel).getAllByRole('button', { name: 'Back to the list' })[0]!,
       );
       await screen.findByTestId('follow-ups-following');
       expect(screen.queryByTestId('follow-ups-activity')).toBeNull();

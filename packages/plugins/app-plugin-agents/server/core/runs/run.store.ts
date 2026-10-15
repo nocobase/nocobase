@@ -26,6 +26,7 @@ import {
 } from '../../kernel/values.js';
 
 export interface RunRecord {
+  readonly revision: number;
   readonly id: string;
   readonly agentId: string;
   readonly agentType: string;
@@ -45,6 +46,10 @@ export interface RunRecord {
   readonly subjectId: string;
   readonly threadScope: string;
   readonly freshSession?: boolean;
+  /** Server-managed authorization for runs caused by one comment, never independent events. */
+  readonly commentRootRunId?: string | null;
+  readonly commentExecution?: 'owner' | 'requester' | null;
+  readonly commentOwnerKey?: string | null;
   readonly actorUserId: string;
   /** Null only on a run older than the column that no backfill reached; read as the actor then. */
   readonly requestedByUserId?: string | null;
@@ -253,6 +258,9 @@ export function toRun(record: RunRecord): Run {
     parentRunId: record.parentRunId ?? null,
     subject: { kind: record.subjectKind, id: record.subjectId },
     threadScope: record.threadScope,
+    commentRootRunId: record.commentRootRunId ?? null,
+    commentExecution: record.commentExecution ?? null,
+    commentOwnerKey: record.commentOwnerKey ?? null,
     actorUserId: record.actorUserId,
     requestedByUserId: record.requestedByUserId ?? record.actorUserId,
     confirmedByUserId: record.confirmedByUserId ?? null,

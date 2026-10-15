@@ -29,10 +29,14 @@ export interface ReviewerReference {
   readonly name: string;
   readonly active?: boolean;
 }
-export interface ReviewerOptions {
-  readonly departments: readonly ReviewerReference[];
-  readonly roles: readonly ReviewerReference[];
-  readonly people: readonly ReviewerReference[];
+export type ReviewerReferenceType = 'department' | 'role' | 'user';
+export interface ReviewerReferencePage {
+  readonly data: readonly ReviewerReference[];
+  readonly meta: {
+    readonly page: number;
+    readonly pageSize: number;
+    readonly total: number;
+  };
 }
 export interface ParameterHistoryView {
   readonly snapshot: ParameterSnapshot | null;

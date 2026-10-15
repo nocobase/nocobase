@@ -1,7 +1,10 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
 import { WORKSPACE_REPORT_INTERVAL_MS } from '@nocobase/agent-protocol';
-import type { RunnerSummary } from '../../../shared/runners.js';
+import {
+  runnerLowOnDisk,
+  type RunnerSummary,
+} from '../../../shared/runners.js';
 import { AgSection } from '../../components/ag-section.js';
 import { AgTag } from '../../components/ag-tag.js';
 import {
@@ -21,18 +24,16 @@ function workspaceDiskState(
   now: number = Date.now(),
 ): { low: boolean; stale: boolean } {
   const usage = runner.workspaceUsage;
-  const disk = usage?.disk;
-  const measured = Date.parse(usage?.measuredAt ?? '');
+  const measured = Date.parse(usage?.diskMeasuredAt ?? usage?.measuredAt ?? '');
   return {
-    low:
-      disk !== undefined &&
-      disk !== null &&
-      disk.minFreeBytes !== null &&
-      disk.freeBytes < disk.minFreeBytes,
+    low: runnerLowOnDisk(runner),
     stale:
       runner.status !== 'online' ||
       !Number.isFinite(measured) ||
-      now - measured > (usage?.intervalMs ?? WORKSPACE_REPORT_INTERVAL_MS),
+      now - measured >
+        (usage?.diskMeasuredAt
+          ? 60_000
+          : (usage?.intervalMs ?? WORKSPACE_REPORT_INTERVAL_MS)),
   };
 }
 
@@ -89,9 +90,10 @@ export function WorkspaceDiagnostics({
           )}
           <p>
             {t('runtimes.workspaces.reportedAt', {
-              time: format.dateTime(usage.measuredAt),
+              time: format.dateTime(usage.diskMeasuredAt ?? usage.measuredAt),
             })}
           </p>
+          {low && !stale ? <p>{t('runtimes.workspaces.paused')}</p> : null}
           {stale ? <p>{t('runtimes.workspaces.stale')}</p> : null}
         </>
       )}
@@ -112,7 +114,7 @@ export function WorkspaceDiagnostics({
           id='workspace-diagnostics'
           title={t('runtimes.workspaces.title')}
         >
-          {!usage ? (
+          {!usage || !usage.measuredAt ? (
             <p className='text-sm text-muted-foreground'>
               {t('runtimes.workspaces.notReported')}
             </p>
@@ -127,7 +129,10 @@ export function WorkspaceDiagnostics({
                 className='min-w-0 rounded-lg border p-2'
               >
                 <CollapsibleTrigger className='w-full text-left text-sm whitespace-normal [overflow-wrap:anywhere] focus-visible:outline-2'>
-                  {workspace.subjectId ?? workspace.workDir.split('/').pop()} ·{' '}
+                  {workspace.subjectKey?.split('.readonly-')[0] ??
+                    workspace.subjectId ??
+                    workspace.workDir.split('/').pop()}{' '}
+                  ·{' '}
                   {t(
                     workspace.settled === true
                       ? 'runtimes.workspaces.ended'
@@ -138,6 +143,29 @@ export function WorkspaceDiagnostics({
                 </CollapsibleTrigger>
                 <CollapsibleContent className='space-y-2 pt-2 text-sm text-muted-foreground [overflow-wrap:anywhere]'>
                   <p>{workspace.workDir}</p>
+                  <p>
+                    {t(
+                      workspace.workDir.includes('.readonly-')
+                        ? 'runtimes.workspaces.readOnly'
+                        : 'runtimes.workspaces.working',
+                    )}
+                  </p>
+                  {workspace.sizeBytes === undefined ? null : (
+                    <p>
+                      {t('runtimes.workspaces.size', {
+                        value: bytes(workspace.sizeBytes),
+                      })}
+                    </p>
+                  )}
+                  <p>
+                    {t(
+                      workspace.workDir.includes('.readonly-')
+                        ? 'runtimes.workspaces.notApplicable'
+                        : workspace.unpushed
+                          ? 'runtimes.workspaces.unpushed'
+                          : 'runtimes.workspaces.pushed',
+                    )}
+                  </p>
                   <p>
                     {workspace.decision
                       ? t(

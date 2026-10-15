@@ -40,8 +40,11 @@ test('inbox navigation adapts to languages, themes, icon mode and the mobile dra
         await expect(links.nth(0)).toHaveAccessibleName(
           locale === 'en-US' ? 'My issues' : '我的任务',
         );
-        await expect(links.nth(1)).toHaveAccessibleName(name);
-        await expect(links.nth(2)).toHaveAccessibleName(
+        await expect(links.nth(1)).toHaveAccessibleName(
+          locale === 'en-US' ? 'My agents' : '我的 Agent',
+        );
+        await expect(links.nth(2)).toHaveAccessibleName(name);
+        await expect(links.nth(3)).toHaveAccessibleName(
           locale === 'en-US' ? 'Dashboard' : '仪表盘',
         );
         await expect(

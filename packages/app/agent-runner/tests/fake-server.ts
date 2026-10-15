@@ -154,6 +154,7 @@ export class FakeServer {
   ]);
   /** While set, `events` answers 503. */
   eventsDown = false;
+  onCancelAck?: (run: FakeRun) => void;
   eventsFailures = 0;
   /** Skill bundles by slug, served at `RUNNER_ROUTES.skill`. */
   readonly skillBundles = new Map<string, SkillBundle>();
@@ -186,6 +187,8 @@ export class FakeServer {
   readonly mountFetches = new Map<string, number>();
   /** Sent with every heartbeat answer while set. */
   upgrade: UpgradeNotice | undefined;
+  /** The protocol heartbeat answers say the server speaks while set; left out otherwise, as an older server does. */
+  protocolVersion: number | undefined;
   /** Sent with every heartbeat answer while set, to a runner whose heartbeat declares the `npm` feature. */
   npmUpgrade: NpmUpgradeNotice | undefined;
   /**
@@ -559,6 +562,9 @@ export class FakeServer {
       return ok(c, {
         ok: true,
         serverTime: new Date().toISOString(),
+        ...(this.protocolVersion === undefined
+          ? {}
+          : { protocolVersion: this.protocolVersion }),
         ...(this.upgrade === undefined ? {} : { upgrade: this.upgrade }),
         ...(this.npmUpgrade === undefined ||
         !heartbeat.features.includes(NPM_UPGRADE_FEATURE)
@@ -883,6 +889,7 @@ export class FakeServer {
       const body = (await c.req.json()) as CancelAckRequest;
       const run = owned(c);
       if (run instanceof Response) return run;
+      this.onCancelAck?.(run);
       run.cancelAck = body;
       run.status = 'cancelled';
       run.reports.push({ kind: 'cancelAck', body, status: 200 });

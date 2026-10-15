@@ -1,8 +1,13 @@
 import { I18nProvider, I18nRuntime } from '@nocobase/i18n/client';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { revealScrollbarsWhileScrolling } from '../../packages/templates/app-template-default/client/lib/scrollbar';
 import './styles.css';
 import { App } from './app';
+
+// An application starts on the Compact preset and shows its scrollbars only while they are needed; so does the preview.
+document.documentElement.dataset.theme = 'compact';
+revealScrollbarsWhileScrolling();
 
 // Registry items translate through @nocobase/i18n, so the preview mounts a runtime the way an application does. It
 // registers no resources, which leaves every string at its English default.

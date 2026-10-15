@@ -99,7 +99,11 @@ export interface ExecResult {
   stdout: string;
 }
 
-export type ExecFn = (file: string, args: string[]) => Promise<ExecResult>;
+export type ExecFn = (
+  file: string,
+  args: string[],
+  options?: { signal?: AbortSignal },
+) => Promise<ExecResult>;
 
 export interface CodexAdapterOptions {
   minVersion?: string;
@@ -185,13 +189,13 @@ export class CodexAdapter implements AgentAdapter {
     return ['steer'];
   }
 
-  detect(): Promise<ToolDetection> {
-    this.detection ??= this.runDetection();
+  detect(signal?: AbortSignal): Promise<ToolDetection> {
+    this.detection ??= this.runDetection(signal);
     return this.detection;
   }
 
   async detectModels(signal: AbortSignal): Promise<ToolCapabilities> {
-    const detection = await this.detect();
+    const detection = await this.detect(signal);
     if (!detection.path) return { modelsDetectionStatus: 'unsupported' };
     const binary = detection.path;
     return withDetectionEnvironment(
@@ -286,7 +290,7 @@ export class CodexAdapter implements AgentAdapter {
     );
   }
 
-  private async runDetection(): Promise<ToolDetection> {
+  private async runDetection(signal?: AbortSignal): Promise<ToolDetection> {
     const { exec, minVersion, searchPath, env } = this.options;
     const found = await findOnPath('codex', searchPath);
     if (!found) {
@@ -295,10 +299,10 @@ export class CodexAdapter implements AgentAdapter {
         authenticated: Boolean(env.OPENAI_API_KEY || env.CODEX_API_KEY),
       };
     }
-    const v = await exec(found, ['--version']);
+    const v = await exec(found, ['--version'], { signal });
     const version = v.code === 0 ? parseVersion(v.stdout) : undefined;
     // Exit status 0 means logged in (ChatGPT or API key).
-    const auth = await exec(found, ['login', 'status']);
+    const auth = await exec(found, ['login', 'status'], { signal });
     const installed = Boolean(
       version && compareVersions(version, minVersion) >= 0,
     );

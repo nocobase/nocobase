@@ -36,6 +36,7 @@ import {
   CapabilityOverview,
   isCapabilityOverview,
 } from './components/CapabilityOverview';
+import { ArchitecturePitch } from './components/ArchitecturePitch';
 import { FullHome } from './components/FullHome';
 import { DocsHome } from './components/DocsHome';
 import { HomeHero } from './components/HomeHero';
@@ -232,6 +233,8 @@ export const Layout = () => {
     .join(' ');
 
   if (pageFrontmatter.pageName === 'home') return <FullHome />;
+  if (pageFrontmatter.pageName === 'version-comparison')
+    return <ArchitecturePitch />;
   if (isCapabilityOverview(routePath))
     return <CapabilityOverview key={routePath} routePath={routePath} />;
 

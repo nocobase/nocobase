@@ -11,12 +11,10 @@ import type { Activity } from '@nocobase/app-plugin-projects/shared/issues';
 import { describe, expect, it } from 'vitest';
 
 import {
-  deliveryComment,
   groupFeedRows,
   isSystemEntry,
   newestFirst,
 } from '../../client/issues/live/feed-rows.js';
-import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 
 const at = (minute: number) =>
   new Date(Date.UTC(2026, 9, 12, 13, minute)).toISOString();
@@ -163,37 +161,5 @@ describe('the feed layout', () => {
     expect(groupFeedRows(entries, 'all').map((row) => row.key)).toEqual(
       keys(entries),
     );
-  });
-
-  it('takes the delivery from the agent comment written by the move to In review', () => {
-    const agent = { type: 'agent', id: 'sol' };
-    const manager = { type: 'agent', id: PROJECT_MANAGER_ID };
-    const threads = [
-      { root: comment('a1', 1, agent, 'first try'), replies: [] },
-      {
-        root: comment('a2', 4, agent, 'Done: the export keeps the filters.'),
-        replies: [comment('m1', 6, manager, 'Please review.')],
-      },
-      { root: comment('a3', 9, agent, 'later note'), replies: [] },
-    ] as CommentThread[];
-    const moved = [
-      {
-        action: 'status_changed',
-        details: { to: 'in_review' },
-        createdAt: at(5),
-      },
-    ];
-    expect(deliveryComment(threads, moved, PROJECT_MANAGER_ID)?.id).toBe('a2');
-    expect(deliveryComment(threads, [], PROJECT_MANAGER_ID)?.id).toBe('a3');
-    expect(
-      deliveryComment(
-        [
-          { root: comment('m2', 1, manager, 'hi'), replies: [] },
-        ] as CommentThread[],
-        [],
-        PROJECT_MANAGER_ID,
-      )?.id,
-    ).toBe('m2');
-    expect(deliveryComment([], [], PROJECT_MANAGER_ID)).toBeNull();
   });
 });

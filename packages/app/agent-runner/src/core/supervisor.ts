@@ -1,3 +1,5 @@
+import { cleanupRunTemp } from './run-temp.ts';
+import { finalizeRunWorktrees } from './run-worktrees.ts';
 // Runs each claimed run in its own worker process and keeps a record of it on disk.
 //
 // A worker is spawned detached, so it leads a new process group. Stopping a run signals the whole group: SIGTERM, then
@@ -41,6 +43,8 @@ import {
   listProcesses,
   newProcessTag,
   PROCESS_TAG_ENV,
+  workspaceHolders,
+  taggedProcesses,
 } from './process-tree.ts';
 
 export interface RunRecord {
@@ -65,6 +69,8 @@ export interface RunRecord {
   credentialsFile?: string;
   /** `spawned`, the name of the preparation step under way (prepare/index.ts), `running` or `reporting`. */
   phase: 'spawned' | 'running' | 'reporting' | (string & {});
+  /** Set while the worker saves and removes its worktrees: shutdown waits rather than kill it halfway. */
+  finalizing?: boolean;
   log: string;
 }
 
@@ -224,6 +230,7 @@ export interface SupervisedRun {
   child: ChildProcess;
   exited: Promise<void>;
   cancelSeenAt?: number;
+  upgradeInterrupted?: boolean;
   /** The process groups seen below the worker, besides its own: stopped when it exits. */
   groups: Set<number>;
 }
@@ -383,8 +390,9 @@ export class Supervisor {
           })
           .finally(async () => {
             const cancelled = this.runs.get(runId)?.cancelSeenAt !== undefined;
+            const upgrade = this.runs.get(runId)?.upgradeInterrupted === true;
+            await this.afterExit(runId, cancelled, upgrade);
             this.runs.delete(runId);
-            await this.afterExit(runId, cancelled);
             this.options.onExit?.(runId);
             resolve();
           });
@@ -413,7 +421,11 @@ export class Supervisor {
    * A worker that exits without having reported its run is handled like an orphan; one killed after a cancel has its
    * cancel acknowledged instead.
    */
-  private async afterExit(runId: string, cancelled: boolean): Promise<void> {
+  private async afterExit(
+    runId: string,
+    cancelled: boolean,
+    upgrade: boolean,
+  ): Promise<void> {
     const record = await readJson<RunRecord>(
       recordPath(this.options.paths, runId),
     ).catch(() => undefined);
@@ -421,10 +433,16 @@ export class Supervisor {
     const noun = record.kind === 'job' ? 'job' : 'run';
     await recoverRun(record, {
       ...this.options,
-      reason: cancelled ? 'cancelled' : 'leaseExpired',
-      detail: cancelled
-        ? `The ${noun} worker did not stop after the cancel and was killed.`
-        : `The ${noun} worker exited without reporting the ${noun}.`,
+      reason: upgrade
+        ? 'runnerUpgrade'
+        : cancelled
+          ? 'cancelled'
+          : 'leaseExpired',
+      detail: upgrade
+        ? 'The runner interrupted this attempt to install an update; the supervisor stopped the worker and preserved local work.'
+        : cancelled
+          ? `The ${noun} worker did not stop after the cancel and was killed.`
+          : `The ${noun} worker exited without reporting the ${noun}.`,
     });
   }
 
@@ -432,12 +450,26 @@ export class Supervisor {
    * The server asked to cancel: wake the worker so it notices now, and kill its group if it has not stopped on its own
    * after the grace period.
    */
-  async enforceCancel(runId: string): Promise<void> {
+  async enforceCancel(runId: string, upgrade: boolean = false): Promise<void> {
     const run = this.runs.get(runId);
     if (run === undefined || run.cancelSeenAt !== undefined) return;
+    // The upgrade signal must not reach a worker before it installs its handlers.
+    if (upgrade) {
+      while (
+        this.runs.has(runId) &&
+        (
+          await readJson<RunRecord>(
+            recordPath(this.options.paths, runId),
+          ).catch(() => undefined)
+        )?.phase === 'spawned'
+      )
+        await delay(20);
+      if (!this.runs.has(runId) || run.cancelSeenAt !== undefined) return;
+    }
     run.cancelSeenAt = Date.now();
+    run.upgradeInterrupted = upgrade;
     try {
-      process.kill(run.pid, 'SIGUSR2');
+      process.kill(run.pid, upgrade ? 'SIGUSR1' : 'SIGUSR2');
     } catch {
       return;
     }
@@ -447,9 +479,49 @@ export class Supervisor {
       delay(grace).then(() => false),
     ]);
     if (stopped) return;
+    if (
+      (
+        await readJson<RunRecord>(recordPath(this.options.paths, runId)).catch(
+          () => undefined,
+        )
+      )?.finalizing
+    ) {
+      await run.exited;
+      return;
+    }
     this.options.log(
       `run ${runId}: worker did not stop within ${grace} ms of the cancel; killing its process group`,
     );
+    if (upgrade) {
+      signalGroup(run.pid, 'SIGTERM');
+      const deadline = Date.now() + (this.options.timings.killGraceMs ?? 5_000);
+      while (groupAlive(run.pid) && Date.now() < deadline) {
+        if (
+          (
+            await readJson<RunRecord>(
+              recordPath(this.options.paths, runId),
+            ).catch(() => undefined)
+          )?.finalizing
+        ) {
+          await run.exited;
+          return;
+        }
+        await delay(100);
+      }
+      if (
+        (
+          await readJson<RunRecord>(
+            recordPath(this.options.paths, runId),
+          ).catch(() => undefined)
+        )?.finalizing
+      ) {
+        await run.exited;
+        return;
+      }
+      await killGroup(run.pid, 0);
+      await run.exited;
+      return;
+    }
     await killGroup(run.pid, this.options.timings.killGraceMs ?? 5_000);
     await run.exited;
   }
@@ -482,14 +554,29 @@ export class Supervisor {
           delay(timeoutMs).then(() => false),
         ]);
         if (!stopped) {
-          if (run.readOnly === true) {
+          const finalizing = async (): Promise<boolean> =>
+            run.readOnly === true ||
+            (
+              await readJson<RunRecord>(
+                recordPath(this.options.paths, run.runId),
+              ).catch(() => undefined)
+            )?.finalizing === true;
+          const waitForCleanup = async (): Promise<void> => {
             this.options.log(
-              `run ${run.runId}: waiting for read-only worker cleanup before shutdown`,
+              `run ${run.runId}: waiting for worktree cleanup before shutdown`,
             );
             await run.exited;
-            return;
+          };
+          if (await finalizing()) return waitForCleanup();
+          signalGroup(run.pid, 'SIGTERM');
+          const deadline =
+            Date.now() + (this.options.timings.killGraceMs ?? 5_000);
+          while (groupAlive(run.pid) && Date.now() < deadline) {
+            if (await finalizing()) return waitForCleanup();
+            await delay(100);
           }
-          await killGroup(run.pid, this.options.timings.killGraceMs ?? 5_000);
+          if (await finalizing()) return waitForCleanup();
+          await killGroup(run.pid, 0);
           await run.exited;
         }
       }),
@@ -510,7 +597,7 @@ export interface RecoverOptions {
   timings: Timings;
   log: (message: string) => void;
   /** `cancelled` acknowledges the cancel instead of failing the run. */
-  reason: 'leaseExpired' | 'runnerOffline' | 'cancelled';
+  reason: 'leaseExpired' | 'runnerOffline' | 'cancelled' | 'runnerUpgrade';
   detail: string;
 }
 
@@ -540,6 +627,42 @@ export async function recoverRun(
   if (record.commandPgid !== undefined && groupAlive(record.commandPgid)) {
     log(`${runId}: killing the job's command group ${record.commandPgid}`);
     await killGroup(record.commandPgid, 0);
+  }
+  let detail = options.detail;
+  if (record.kind !== 'job' && record.workDir !== undefined) {
+    const holders = await workspaceHolders(record.workDir);
+    const tags =
+      record.processTag === undefined
+        ? []
+        : await taggedProcesses([record.processTag]);
+    const liveGroup = (await listProcesses()).some(
+      (p) => p.pgid === record.pid,
+    );
+    const stopped = holders.length + tags.length === 0 && !liveGroup;
+    const results = await finalizeRunWorktrees(
+      paths,
+      record.workDir,
+      log,
+      holders.length + tags.length > 0 || liveGroup
+        ? {
+            unsafeReason:
+              'Processes still hold the attempt directory after stopping.',
+          }
+        : {},
+    );
+    if (stopped) {
+      try {
+        await cleanupRunTemp(paths, record.workDir);
+      } catch (error) {
+        // Temporary cleanup must not prevent credential removal, reporting or worker exit completion.
+        const reason = `Run temporary directory retained for ${record.workDir}: ${String(error)}`;
+        log(reason);
+        detail += `\n${reason}`;
+      }
+    }
+    const failed = results.filter((result) => !result.saved);
+    if (failed.length > 0)
+      detail += `\nDirectory retained: ${record.workDir}: ${failed.map((r) => r.reason).join('; ')}`;
   }
   if (record.credentialsFile !== undefined)
     await deleteRunCredentials(record.credentialsFile);
@@ -589,8 +712,8 @@ export async function recoverRun(
   });
   spool.push(
     job
-      ? { type: 'log', stream: 'runner', content: options.detail }
-      : { type: 'status', content: options.detail, meta: { orphaned: true } },
+      ? { type: 'log', stream: 'runner', content: detail }
+      : { type: 'status', content: detail, meta: { orphaned: true } },
   );
   const delivered = await spool.drain(
     options.timings.reportTimeoutMs ?? 30_000,
@@ -601,7 +724,7 @@ export async function recoverRun(
     else
       await client.request('POST', routes.fail, {
         reason: options.reason,
-        detail: options.detail,
+        detail,
       });
     log(`run ${runId}: reported as failed (${options.reason})`);
   } catch (error) {

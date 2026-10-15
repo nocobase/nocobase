@@ -39,6 +39,7 @@ import type {
   RegistrationTokenInput,
   Runner,
   RunnerPatch,
+  RunnerWorkspaceDisk,
   UnavailableModel,
 } from '../../shared/runners.js';
 import { later, type Clock } from '../kernel/clock.js';
@@ -180,6 +181,34 @@ export function upgradeRequiredOf(protocolVersion: number): UpgradeRequired {
 /** The status a connected runner speaking `protocolVersion` has. */
 function liveStatus(protocolVersion: number): 'online' | 'upgrade_required' {
   return isProtocolSupported(protocolVersion) ? 'online' : 'upgrade_required';
+}
+
+/** Free space has to move this much before a heartbeat's disk sample is announced. */
+const DISK_NOTICE_BYTES = 1024 ** 3;
+
+/**
+ * Whether a heartbeat's disk sample is worth announcing (`runner.changed`): one appears or goes, its size or threshold
+ * changes, free space crosses the threshold, or it moves by `DISK_NOTICE_BYTES`. Every heartbeat samples the disk, and
+ * each announcement wakes every waiting claim and refreshes every open runtimes page.
+ */
+export function diskMoved(
+  previous: RunnerWorkspaceDisk | null,
+  next: {
+    readonly freeBytes: number;
+    readonly totalBytes: number;
+    readonly minFreeBytes?: number | null;
+  } | null,
+): boolean {
+  if (!previous || !next) return previous !== next;
+  const threshold = next.minFreeBytes ?? null;
+  const low = (disk: { freeBytes: number }, min: number | null): boolean =>
+    min !== null && disk.freeBytes < min;
+  return (
+    previous.totalBytes !== next.totalBytes ||
+    previous.minFreeBytes !== threshold ||
+    low(previous, previous.minFreeBytes) !== low(next, threshold) ||
+    Math.abs(previous.freeBytes - next.freeBytes) >= DISK_NOTICE_BYTES
+  );
 }
 
 export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
@@ -452,7 +481,10 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         );
         const marks = runner.unavailableModels ?? [];
         const kept = keptMarks(marks, tools);
+        const workspaceUsage = (await require(conn, runner.id)).workspaceUsage;
         const changed =
+          (request.disk !== undefined &&
+            diskMoved(workspaceUsage?.disk ?? null, request.disk)) ||
           kept.length !== marks.length ||
           runner.version !== request.version ||
           runner.product !== (request.product ?? null) ||
@@ -479,7 +511,30 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
               ...storedToolLoad(request.load.tools ?? null),
               free: request.load.free,
               slots: request.load.slots,
+              ...(request.load.draining
+                ? { draining: request.load.draining }
+                : {}),
             }),
+            ...(request.disk === undefined
+              ? {}
+              : {
+                  workspaceUsage: asJson({
+                    ...(workspaceUsage ?? {
+                      measuredAt: null,
+                      count: 0,
+                      unpushedCount: 0,
+                      workspaces: [],
+                    }),
+                    disk:
+                      request.disk === null
+                        ? null
+                        : {
+                            ...request.disk,
+                            minFreeBytes: request.disk.minFreeBytes ?? null,
+                          },
+                    diskMeasuredAt: now,
+                  }),
+                }),
             lastSeenAt: now,
             updatedAt: changed ? now : runner.updatedAt,
           },

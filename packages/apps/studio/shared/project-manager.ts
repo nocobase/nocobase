@@ -14,6 +14,8 @@
 
 /** The project manager's agent id. */
 export const PROJECT_MANAGER_ID = 'studio-project-manager';
+/** Invalidation only, with no identity or settings values in its payload. */
+export const PROJECT_MANAGER_IDENTITY_TOPIC = 'studio:manager:identity';
 export const DEFAULT_FALLBACK_AFTER_SECONDS = 120;
 export const FALLBACK_AFTER_SECONDS_MAX = 3600;
 export const DEFAULT_DELEGATION_QUEUE_TIMEOUT_SECONDS = 600;
@@ -28,6 +30,8 @@ export const COMMENT_RUN_WINDOW_HOURS = 24;
 export const PRINCIPLES_MAX = 20_000;
 
 export interface ProjectManagerSettings {
+  readonly name: string;
+  readonly description: string | null;
   /** The agent whose tool and model the project manager runs with; null until someone chooses. */
   readonly firstChoiceAgentId: string | null;
   /** Used after the queue delay or when no compatible runner can take the first choice; null for none. */
@@ -66,13 +70,13 @@ export interface ProjectManagerView extends ProjectManagerSettings {
  * - `working`: an agent's run is on it (`agent`, `step` it was handed, since `since`, on `runner`).
  * - `queued`: an agent's run waits for a runner (`agent`, `step`).
  * - `checksPending`: no run is on it and a linked open pull request's checks have not finished (`pullRequest`).
- * - `needsDecision`: the issue is blocked; `question` is what the project manager asked the person.
+ * - `needsDecision`: the issue is blocked; `needsYou` is its structured request to the owner.
  * - `inReview`: it waits for a person to accept it.
  * - `notStarted`: in backlog.
  * - `finished`: done or cancelled.
  * - `idle`: nothing of the above.
  *
- * `next` is the project manager's latest "Next" line, when it wrote one. `handOver` says the project manager never
+ * `next` is the issue's structured next step. `handOver` says the project manager never
  * worked on the issue though it is its executor and the issue is open: someone may hand it over to go on.
  */
 export type IssueProgressState =
@@ -87,6 +91,8 @@ export type IssueProgressState =
   | 'idle';
 
 export interface IssueProgress {
+  /** Current requests visible to the owner or original commenter, served by the existing progress API. */
+  readonly personalRunnerRequests?: readonly PersonalRunnerRequest[];
   readonly managerWait?: {
     readonly queueEnteredAt: string;
     readonly fallbackAfterSeconds: number;
@@ -130,7 +136,19 @@ export interface IssueProgress {
     readonly number: number;
     readonly url: string | null;
   } | null;
-  readonly question: string | null;
+  readonly needsYou: string | null;
+  /** Latest undeleted project manager explanation; not bound to a status transition. */
+  readonly explanationCommentId: string | null;
   readonly next: string | null;
   readonly handOver: boolean;
+}
+
+export interface PersonalRunnerRequest {
+  readonly id: string;
+  readonly status: 'pending' | 'rejected';
+  readonly requestedBy: { readonly id: string; readonly name: string };
+  readonly commentId: string;
+  readonly commentText: string;
+  readonly canDecide: boolean;
+  readonly canRunAsMe: boolean;
 }

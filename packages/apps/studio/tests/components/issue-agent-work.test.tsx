@@ -1,3 +1,4 @@
+import { PM_REALTIME_TOPIC } from '@nocobase/app-plugin-projects/shared/realtime';
 import {
   TestI18nProvider,
   createTestI18nRuntime,
@@ -29,7 +30,8 @@ import {
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
   stop: vi.fn(),
-  callbacks: [] as (() => void)[],
+  callbacks: [] as ((event?: { payload: unknown }) => void)[],
+  topics: [] as string[],
 }));
 const api = { request: mocks.request };
 vi.mock('../../client/git/pull-requests.js', () => ({
@@ -39,7 +41,11 @@ vi.mock('../../client/deploys/marks.js', () => ({
   DeployMarkTags: () => null,
 }));
 const realtime = {
-  subscribe: (_topic: string, callback: () => void) => {
+  subscribe: (
+    topic: string,
+    callback: (event?: { payload: unknown }) => void,
+  ) => {
+    mocks.topics.push(topic);
     mocks.callbacks.push(callback);
     return mocks.stop;
   },
@@ -113,6 +119,7 @@ beforeEach(() => {
   mocks.request.mockReset().mockResolvedValue({ data: [] });
   mocks.stop.mockClear();
   mocks.callbacks.length = 0;
+  mocks.topics.length = 0;
   Object.defineProperty(document, 'visibilityState', {
     configurable: true,
     value: 'visible',
@@ -288,6 +295,20 @@ describe('issue work marks and refresh', () => {
     });
     await advance(301);
     expect(mocks.request).toHaveBeenCalledTimes(1);
+    // An announcement naming only issues this view does not show refreshes nothing.
+    mocks.request.mockClear();
+    const onIssues = mocks.callbacks[mocks.topics.indexOf(PM_REALTIME_TOPIC)];
+    await act(async () => {
+      onIssues({
+        payload: {
+          kind: 'pm.changed',
+          domain: 'issues',
+          issueIds: ['elsewhere'],
+        },
+      });
+    });
+    await advance(301);
+    expect(mocks.request).not.toHaveBeenCalled();
     view.unmount();
     expect(mocks.stop).toHaveBeenCalledTimes(3);
     mocks.request.mockClear();

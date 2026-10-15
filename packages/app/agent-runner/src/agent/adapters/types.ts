@@ -153,7 +153,7 @@ export interface AdapterHandle {
 
 export interface AgentAdapter {
   kind: ToolKind;
-  detect(): Promise<ToolDetection>;
+  detect(signal?: AbortSignal): Promise<ToolDetection>;
   /** Fresh capability discovery, independent of cached installation detection. No method means unsupported. */
   detectModels?(signal: AbortSignal): Promise<ToolCapabilities>;
   features(): RunnerFeature[];

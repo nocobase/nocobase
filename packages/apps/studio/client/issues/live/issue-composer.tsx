@@ -5,12 +5,12 @@
 import {
   canUploadAttachments,
   useAttachmentUploads,
-  useAuthorLabel,
   useHasMentionableKinds,
 } from '@nocobase/app-plugin-projects/client/issues';
 import { useViewer } from '@nocobase/app-plugin-projects/client/kit';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useMemo, type ReactElement } from 'react';
+import { SendIcon } from 'lucide-react';
+import { useMemo, useRef, type FocusEvent, type ReactElement } from 'react';
 
 import { PendingAttachments } from '@/components/attachment-list';
 import { CommentComposer } from '@/components/comment-thread';
@@ -20,19 +20,22 @@ import { MentionMembersLoadError } from '../detail/mention-members-load-error.js
 import { useIssueConversation } from './conversation-state.js';
 
 export function IssueComposer({
+  foldable = false,
   className,
 }: {
+  /** Starts as a slim bar that opens the composer when tapped, and folds again once sent or left empty; for a phone. */
+  readonly foldable?: boolean;
   readonly className?: string;
 }): ReactElement | null {
   const { i18n, t: appT } = useTranslation();
   const wording = useIssuePageWording();
   const { t } = wording;
   const viewer = useViewer();
-  const authorLabel = useAuthorLabel();
   const wakeable = useHasMentionableKinds();
   const uploads = useAttachmentUploads();
   const conversation = useIssueConversation();
-  const { replyTo, setReplyTo } = conversation;
+  const { replyTo, setReplyTo, composerOpen, setComposerOpen } = conversation;
+  const rootRef = useRef<HTMLDivElement>(null);
   const modes = useMemo(
     () =>
       wakeable
@@ -53,8 +56,48 @@ export function IssueComposer({
     [wakeable, t],
   );
   if (!conversation.mayComment) return null;
+  if (foldable && !composerOpen)
+    return (
+      <div className={className} data-testid='issue-composer' data-folded=''>
+        <button
+          type='button'
+          className='flex h-11 w-full items-center gap-2 rounded-full border bg-background pr-1.5 pl-4 text-left text-sm text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+          onClick={conversation.openComposer}
+        >
+          <span className='min-w-0 flex-1 truncate'>
+            {wording.composer.placeholder}
+          </span>
+          <span
+            aria-hidden
+            className='inline-flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground'
+          >
+            <SendIcon className='size-4' />
+          </span>
+        </button>
+      </div>
+    );
   return (
-    <div className={className} data-testid='issue-composer'>
+    <div
+      ref={rootRef}
+      className={className}
+      data-testid='issue-composer'
+      {...(foldable
+        ? {
+            // Left empty, it folds back to the slim bar.
+            onBlur: (event: FocusEvent<HTMLDivElement>) => {
+              const next = event.relatedTarget;
+              if (next instanceof Node && rootRef.current?.contains(next))
+                return;
+              const text =
+                rootRef.current
+                  ?.querySelector('[contenteditable]')
+                  ?.textContent?.trim() ?? '';
+              if (!text && uploads.uploads.length === 0 && !replyTo)
+                setComposerOpen(false);
+            },
+          }
+        : {})}
+    >
       {conversation.memberSearchFailed ? (
         <MentionMembersLoadError
           message={appT('issuesPage.mentionMembersLoadFailed')}
@@ -66,7 +109,9 @@ export function IssueComposer({
       ) : null}
       <CommentComposer
         editorRef={conversation.editorRef}
-        replyingTo={replyTo ? authorLabel(replyTo) : null}
+        replyingTo={
+          replyTo ? (replyTo.authorName ?? appT('common.unknown')) : null
+        }
         onCancelReply={() => setReplyTo(null)}
         {...(modes ? { modes } : {})}
         onMentionSearch={conversation.searchMentions}
@@ -98,6 +143,7 @@ export function IssueComposer({
           });
           uploads.clear();
           setReplyTo(null);
+          if (foldable) setComposerOpen(false);
           return comment.id;
         }}
         labels={wording.composer}

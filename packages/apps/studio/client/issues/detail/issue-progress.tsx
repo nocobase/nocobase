@@ -18,18 +18,24 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 
+import { IssueLiveRunLink } from '../../agents/issue-runs.js';
 import { useNotify } from '../../access/notify.js';
-import { issueProgressKey, progressSentence } from './progress-text.js';
-import { OwnerHandoffActions } from './owner-handoff.js';
+import { Clamped } from '../live/clamped.js';
+import { issueProgressKey, progressStatusLine } from './progress-text.js';
+import { IssueMarkdown } from '../markdown.js';
 import { useIssueProgress } from './use-issue-progress.js';
+import { PersonalRunnerActions } from './personal-runner-actions.js';
 
 export function IssueProgressLine({
   issue,
   refresh,
   starting,
   onStart,
+  runsBase,
 }: {
   readonly issue: IssueDetail;
+  /** Where the live run's record opens from, such as `/issues/PM-12`; the issue's own path by default. */
+  readonly runsBase?: string;
   /** Changes whenever the issue or its runs do, to read the line again. */
   readonly refresh: string;
   readonly starting: boolean;
@@ -72,15 +78,19 @@ export function IssueProgressLine({
     <section
       aria-label={t('issueProgress.title')}
       data-testid='issue-progress'
-      className='flex flex-col gap-2 rounded-lg border bg-muted/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:gap-4'
+      className='flex flex-col gap-2 rounded-lg border bg-muted/40 px-4 py-3 text-sm sm:flex-row sm:items-center sm:gap-4 max-md:gap-1 max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:px-0 max-md:py-0'
     >
       <div className='min-w-0 flex-1 space-y-1'>
-        <p className='flex min-w-0 flex-wrap items-baseline gap-x-2'>
-          <span className='text-xs font-medium text-muted-foreground'>
+        <div className='flex min-w-0 items-baseline gap-x-2'>
+          <span className='shrink-0 text-xs font-medium text-muted-foreground'>
             {t('issueProgress.title')}
           </span>
           {data ? (
-            <span className='min-w-0 wrap-anywhere text-foreground'>
+            // One short line from the progress itself, never the manager's prose.
+            <Clamped
+              className='min-w-0 flex-1 wrap-anywhere text-foreground'
+              clampClassName='line-clamp-2'
+            >
               {data.state === 'checksPending' && data.pullRequest?.url ? (
                 <a
                   href={data.pullRequest.url}
@@ -88,12 +98,17 @@ export function IssueProgressLine({
                   rel='noreferrer'
                   className='hover:underline'
                 >
-                  {progressSentence(t, data)}
+                  {progressStatusLine(t, data)}
                 </a>
               ) : (
-                progressSentence(t, data)
+                <IssueLiveRunLink
+                  issue={issue}
+                  {...(runsBase ? { base: runsBase } : {})}
+                >
+                  {progressStatusLine(t, data)}
+                </IssueLiveRunLink>
               )}
-            </span>
+            </Clamped>
           ) : progress.isError ? (
             <span className='text-muted-foreground'>
               {t('issueProgress.loadFailed')}
@@ -101,14 +116,26 @@ export function IssueProgressLine({
           ) : (
             <Skeleton className='h-4 w-48' />
           )}
-        </p>
-        {data?.next ? (
-          <p className='wrap-anywhere text-muted-foreground'>
-            {t('issueProgress.next', { next: data.next })}
-          </p>
+        </div>
+        {data?.personalRunnerRequests
+          ?.filter((request) => request.canRunAsMe)
+          .map((request) => (
+            <PersonalRunnerActions key={request.id} request={request} />
+          ))}
+        {data?.next?.trim() ? (
+          // The manager's Next line as it wrote it: links and code rendered, two lines, the rest on request.
+          <Clamped
+            className='wrap-anywhere text-muted-foreground'
+            clampClassName='line-clamp-2'
+          >
+            <span className='font-medium'>{t('issueProgress.nextLabel')}</span>{' '}
+            <IssueMarkdown
+              content={data.next.trim()}
+              className='inline text-sm text-muted-foreground [&_p]:inline [&_p]:m-0'
+            />
+          </Clamped>
         ) : null}
       </div>
-      <OwnerHandoffActions issueId={issue.id} />
       {canStart || canHandOver ? (
         <div className='flex shrink-0 flex-wrap gap-2'>
           {canStart ? (

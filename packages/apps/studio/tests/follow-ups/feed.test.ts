@@ -288,10 +288,10 @@ describe('what the page lists', () => {
     const mark = { label: 'nocobase/nocobase#10662', state: 'open' } as const;
     expect(pullRequestLabel(mark)).toBe('PR #10662');
     expect(askOf(t, issue({ statusKey: 'in_review' }), mark)).toBe(
-      'issueLive.ask.acceptPullRequest {"label":"PR #10662"}',
+      'issueLive.ask.legacy',
     );
     expect(askOf(t, issue({ statusKey: 'in_review' }), null)).toBe(
-      'issueLive.ask.acceptIssue',
+      'issueLive.ask.legacy',
     );
     const progress = {
       state: 'needsDecision' as const,
@@ -300,12 +300,13 @@ describe('what the page lists', () => {
       since: null,
       runner: null,
       pullRequest: null,
-      question: 'Push again?',
+      needsYou: 'Push again?',
+      explanationCommentId: null,
       next: null,
       handOver: false,
     };
     expect(askOf(t, issue({ statusKey: 'blocked', progress }), null)).toBe(
-      'issueLive.ask.answer {"question":"Push again?"}',
+      'Push again?',
     );
     expect(
       askOf(t, issue({ statusKey: 'blocked', owned: false, progress }), null),
@@ -313,7 +314,7 @@ describe('what the page lists', () => {
     expect(
       nowLine(t, issue({ statusKey: 'blocked', owned: false, progress }), null),
     ).toEqual({
-      text: 'issueProgress.needsDecision {"question":"Push again?"}',
+      text: 'issueProgress.needsDecisionNoQuestion',
       needsViewer: false,
     });
     expect(nowLine(t, issue({ statusKey: 'backlog' }), null)).toBeNull();

@@ -6,6 +6,8 @@ const runWaitZhCN: RunWaitLocale = {
     capacity:
       '本应用占用 {{used}}/{{limit}}；{{detail}}；跨应用报告空位 {{reportedFree}}',
     reasons: {
+      updatePending: '执行机等待升级，暂不接活',
+      pruning: '执行机清理共享缓存，暂不接活',
       toolNotInstalled: '在线执行机未安装此工具',
       incompatible: '执行机不支持本次负载，需要升级',
       restricted: '执行机策略、目录或变量限制',

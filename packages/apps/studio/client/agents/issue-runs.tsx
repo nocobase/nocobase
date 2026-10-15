@@ -6,6 +6,7 @@
  */
 import { useClientApplication } from '@nocobase/app-client';
 import { runTriggerActor } from './run-trigger.js';
+import { hasClearedRunData, isRunPastRetention } from './run-retention.js';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import type { SubjectRun } from '@nocobase/app-plugin-agents/client/runs';
 import {
@@ -23,6 +24,7 @@ import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
 import { EraserIcon, FileTextIcon } from 'lucide-react';
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -66,6 +68,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { rememberRunFocus, runReturnFocus } from './run-focus.js';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from 'cn';
 
 import { useIssueRunsState, useRefreshIssueRuns } from './use-issue-runs.js';
 
@@ -172,7 +175,25 @@ function useHistoryRuns(
   unknownAgent: string,
 ): readonly AgentRunHistoryRun[] {
   const agentName = useAgentNames();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [now, setNow] = useState(() => Date.now());
+  const nextRetryAt = Math.min(
+    ...runs
+      .filter(
+        (run) =>
+          run.status === 'queued' && run.failureReason && run.availableAt,
+      )
+      .map((run) => new Date(run.availableAt!).getTime())
+      .filter((time) => time > now),
+  );
+  useEffect(() => {
+    if (!Number.isFinite(nextRetryAt)) return undefined;
+    const timer = window.setTimeout(
+      () => setNow(Date.now()),
+      Math.min(2_147_483_647, Math.max(0, nextRetryAt - Date.now())),
+    );
+    return () => window.clearTimeout(timer);
+  }, [nextRetryAt]);
   return runs.map((run) => ({
     id: run.id,
     agentId: run.agentId,
@@ -191,8 +212,35 @@ function useHistoryRuns(
     createdAt: run.createdAt,
     startedAt: run.startedAt,
     finishedAt: run.finishedAt,
-    failure: failure(run.failureReason),
+    failure:
+      run.status === 'failed' || run.status === 'cancelled'
+        ? failureMessage(run, failure)
+        : null,
+    retrying:
+      run.status === 'queued' && run.failureReason
+        ? [
+            run.attempt > 1 && run.failureReason !== 'setupFailed'
+              ? t('issueRuns.attemptFailed', { attempt: run.attempt - 1 })
+              : t('issueRuns.preparationFailed'),
+            failureMessage(run, failure),
+            run.availableAt && new Date(run.availableAt).getTime() > now
+              ? t('issueRuns.retryScheduled', {
+                  time: new Date(run.availableAt).toLocaleString(i18n.language),
+                })
+              : t('issueRuns.awaitingDispatch'),
+          ].join(' · ')
+        : null,
   }));
+}
+
+function failureMessage(
+  run: Run,
+  failure: (reason: string | null | undefined) => string | null,
+): string | null {
+  const reason = failure(run.failureReason);
+  return reason
+    ? `${reason}${run.failureDetail ? ` — ${run.failureDetail}` : ''}`
+    : null;
 }
 
 function useIssueHistoryRuns(issue: IssueDetail): {
@@ -448,6 +496,41 @@ export function IssueLiveRun({
   );
 }
 
+/**
+ * What the issue's "Now" line says, as the way to its live run's record: while a run is queued or working it opens the
+ * run's transcript (under the issue's own path, or under `base` such as `/issues/PM-12` elsewhere); otherwise it is
+ * plain text.
+ */
+export function IssueLiveRunLink({
+  issue,
+  base,
+  className,
+  children,
+}: {
+  readonly issue: IssueDetail;
+  readonly base?: string;
+  readonly className?: string;
+  readonly children: ReactNode;
+}): ReactElement {
+  const { runs } = useIssueHistoryRuns(issue);
+  const live = runs?.find((run) =>
+    ['queued', 'dispatched', 'running'].includes(run.status),
+  );
+  if (!live) return <span className={className}>{children}</span>;
+  const to = base
+    ? `${base.replace(/\/$/u, '')}/${runHref(live)}`
+    : runHref(live);
+  return (
+    <Link
+      to={to}
+      className={cn('hover:underline', className)}
+      onClick={(event) => rememberRunFocus(event.currentTarget, null)}
+    >
+      <span data-testid='run-live'>{children}</span>
+    </Link>
+  );
+}
+
 /** A run's row on the issue's activity line. */
 export function IssueRunRow({
   issue,
@@ -476,7 +559,13 @@ export function IssueRunRow({
 }
 
 /** "View brief": the brief the run's latest attempt was given. */
-function BriefButton({ runId }: { readonly runId: string }): ReactElement {
+function BriefButton({
+  runId,
+  cleared = false,
+}: {
+  readonly runId: string;
+  readonly cleared?: boolean;
+}): ReactElement {
   const { t } = useTranslation(AGENTS_NS);
   const [open, setOpen] = useState(false);
   const brief = useRunBrief(runId, open);
@@ -484,7 +573,7 @@ function BriefButton({ runId }: { readonly runId: string }): ReactElement {
   if (brief.isError)
     body = (
       <p className='text-sm text-muted-foreground'>
-        {t('runs.briefUnavailable')}
+        {t(cleared ? 'runs.processDataCleared' : 'runs.briefUnavailable')}
       </p>
     );
   else if (brief.data)
@@ -543,6 +632,15 @@ export function IssueRunTranscript({
   const { run, events, failed, trigger } = useRunWithTranscript(runId);
   const { session } = useAuthentication();
   const app = useClientApplication();
+  const expired = isRunPastRetention(
+    run.data,
+    app.config.public.get('agents.runs.retentionDays', 14),
+  );
+  const brief = useRunBrief(
+    runId,
+    expired && events !== undefined && events.length === 0 && !failed,
+  );
+  const cleared = hasClearedRunData(expired, events, failed, brief.error);
   const preferenceKey = session?.user.id
     ? `studio:run-transcript:${JSON.stringify([app.config.get<string>('app.basePath', '/'), session.user.id])}`
     : undefined;
@@ -578,7 +676,9 @@ export function IssueRunTranscript({
       labels={wording.history}
       actions={
         <>
-          {detail?.dispatchedAt ? <BriefButton runId={runId} /> : null}
+          {detail?.dispatchedAt ? (
+            <BriefButton runId={runId} cleared={cleared} />
+          ) : null}
           {detail?.retriedRunId ? (
             <Link
               className='text-sm text-primary hover:underline'
@@ -647,6 +747,9 @@ export function IssueRunTranscript({
           </span>
         ) : null}
         {` · ${appT('runTranscript.actingAs', { actor: detail.actorName ?? detail.actorUserId })}`}
+        {detail.confirmedByUserId
+          ? ` · ${appT('runTranscript.confirmedBy', { person: detail.confirmedByName ?? detail.confirmedByUserId })}`
+          : null}
         {triggerActor?.kind === 'system'
           ? ` · ${appT('runTranscript.systemTrigger')}`
           : triggerActor
@@ -660,10 +763,10 @@ export function IssueRunTranscript({
           : ''}
       </p>
       {shown?.failure ? (
-        <p className='text-sm text-destructive'>
-          {shown.failure}
-          {detail.failureDetail ? ` — ${detail.failureDetail}` : ''}
-        </p>
+        <p className='text-sm text-destructive'>{shown.failure}</p>
+      ) : null}
+      {shown?.retrying ? (
+        <p className='text-sm text-muted-foreground'>{shown.retrying}</p>
       ) : null}
       {detail.summary ? <p className='text-sm'>{detail.summary}</p> : null}
     </>
@@ -696,7 +799,12 @@ export function IssueRunTranscript({
         open={!detail || OPEN.has(detail.status)}
         failed={failed}
         locale={i18n.language}
-        labels={wording.transcript}
+        labels={{
+          ...wording.transcript,
+          empty: cleared
+            ? t('runs.processDataCleared')
+            : wording.transcript.empty,
+        }}
         {...(renderMarkdown ? { renderMarkdown } : {})}
       />
       <StopConfirm

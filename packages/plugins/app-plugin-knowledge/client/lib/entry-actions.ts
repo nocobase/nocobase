@@ -19,7 +19,7 @@ export interface EntryActions {
   /** Opens the file picker; the files chosen go under `parentId`. */
   upload(parentId: string | null): void;
   /** Proposes a new file, for someone who may propose but not edit. */
-  proposeFile(): void;
+  proposeFile(parentId?: string | null): void;
   rename(doc: KnowledgeDocSummary): void;
   move(doc: KnowledgeDocSummary): void;
   archive(doc: KnowledgeDocSummary): void;

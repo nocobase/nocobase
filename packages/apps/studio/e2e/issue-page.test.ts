@@ -9,6 +9,8 @@ import {
 } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
 
+test.use({ isolatedStudio: true });
+
 test.describe('issue page', () => {
   let me: { userId: string };
   let issue: Issue;
@@ -64,6 +66,7 @@ test.describe('issue page', () => {
     page,
     api,
     browser,
+    studio,
     context,
   }) => {
     test.setTimeout(120_000);
@@ -73,7 +76,7 @@ test.describe('issue page', () => {
       email: `issue-layout-${suffix}@example.com`,
       password: 'issue-layout-e2e-password',
     };
-    const admin = await apiAs(browser, 'admin');
+    const admin = await apiAs(browser, 'admin', studio);
     try {
       await admin.api.post('users', {
         ...user,
@@ -185,7 +188,7 @@ test.describe('issue page', () => {
       );
       await expect(layout.locator(':scope > div')).toHaveCSS(
         'flex-direction',
-        available >= 1024 ? 'row' : 'column',
+        available >= 896 ? 'row' : 'column',
       );
       await page.evaluate(
         `(() => { const scroller = document.querySelector('[data-slot="route-child-page"] > div'); scroller.scrollTop = 0; })()`,
@@ -208,7 +211,7 @@ test.describe('issue page', () => {
         (element) =>
           (element as unknown as { clientWidth: number }).clientWidth,
       ));
-    for (const available of [1023, 1024, 1025])
+    for (const available of [895, 896, 897, 1023])
       await check(available + inset, false);
     await expect(aside.locator(':scope > div')).toHaveCSS('position', 'static');
     await history
@@ -226,9 +229,7 @@ test.describe('issue page', () => {
       path: 'storage/ui-workflow/issue-runs/screenshots/history-bottom.png',
     });
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page
-      .getByRole('button', { name: '在面板中继续编辑', exact: true })
-      .click();
+    await page.keyboard.press('Control+j');
     await expect(page.getByTestId('chat-panel')).toBeVisible();
     await check(1280, true);
     await page
@@ -511,10 +512,11 @@ test.describe('issue page', () => {
     page,
     api,
     browser,
+    studio,
     context,
   }) => {
     test.setTimeout(120_000);
-    const admin = await apiAs(browser, 'admin');
+    const admin = await apiAs(browser, 'admin', studio);
     const suffix = unique();
     const triggerUser = {
       email: `identity-trigger-${suffix}@example.com`,

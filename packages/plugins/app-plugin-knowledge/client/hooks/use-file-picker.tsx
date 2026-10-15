@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState, type ReactElement } from 'react';
+import type { SpaceRef } from '../../shared/knowledge.js';
 
 /**
  * A hidden file input to pick files with, and `open(parentId)` to show it: the files picked go to `onFiles` with the
@@ -6,15 +7,21 @@ import { useCallback, useRef, useState, type ReactElement } from 'react';
  */
 export function useFilePicker(
   label: string,
-  onFiles: (files: readonly File[], parentId: string | null) => void,
+  onFiles: (
+    files: readonly File[],
+    parentId: string | null,
+    space?: SpaceRef,
+  ) => void,
 ): {
-  readonly open: (parentId: string | null) => void;
+  readonly open: (parentId: string | null, space?: SpaceRef) => void;
   readonly input: ReactElement;
 } {
   const inputRef = useRef<HTMLInputElement>(null);
   const [parent, setParent] = useState<string | null>(null);
-  const open = useCallback((parentId: string | null) => {
+  const [space, setSpace] = useState<SpaceRef | undefined>();
+  const open = useCallback((parentId: string | null, target?: SpaceRef) => {
     setParent(parentId);
+    setSpace(target);
     inputRef.current?.click();
   }, []);
   const input = (
@@ -27,7 +34,7 @@ export function useFilePicker(
       onChange={(event) => {
         const files = Array.from(event.currentTarget.files ?? []);
         event.currentTarget.value = '';
-        onFiles(files, parent);
+        onFiles(files, parent, space);
       }}
     />
   );

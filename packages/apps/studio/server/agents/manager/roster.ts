@@ -31,11 +31,14 @@ export function rosterLine(
           `sampledAt=${agent.wait.sampledAt}`,
           ...agent.wait.entries.map(
             (entry) =>
-              `${entry.tool}${entry.model ? `/${entry.model}` : ''}: ${entry.reason}`,
+              `${entry.tool}${entry.model ? `/${entry.model}` : ''}: ${entry.reason === 'updatePending' ? 'runner waiting for update; new work is paused' : entry.reason === 'pruning' ? 'runner cleaning shared store; new work is paused' : entry.reason}`,
           ),
         ]
       : []),
     ...(agent.personalOnly ? ['personal runners only'] : []),
+    ...(agent.runners?.names.length
+      ? [`runners: ${agent.runners.names.join(', ')}`]
+      : []),
     `${agent.busy} open ${agent.busy === 1 ? 'run' : 'runs'}`,
   ].join(', ');
   const goodAt = agent.goodAt.trim().replace(/\s+/gu, ' ');

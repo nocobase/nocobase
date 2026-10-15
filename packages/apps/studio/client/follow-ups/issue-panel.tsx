@@ -10,12 +10,13 @@ import { pmKeys, usePmApi } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeftIcon } from 'lucide-react';
+import { ArrowLeftIcon, ExternalLinkIcon } from 'lucide-react';
 import { useEffect, useMemo, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useMediaQuery } from '@/extensions/nocobase-agent-chat/use-media-query';
 import { cn } from 'cn';
 
 import type { FollowUpIssue } from '../../shared/follow-ups.js';
@@ -24,9 +25,10 @@ import { FollowToggle } from '../issues/live/follow-toggle.js';
 import { IssueComposer } from '../issues/live/issue-composer.js';
 import { IssueFeed } from '../issues/live/issue-feed.js';
 import { IssueSummary } from '../issues/live/issue-summary.js';
+import { PhoneBar } from '../layouts/components/phone-bar.js';
 
-/** The issue is read again this often besides the realtime refresh. */
-const POLL_MS = 15_000;
+/** The issue is read again this often besides the realtime refresh, as a fallback. */
+const POLL_MS = 60_000;
 
 export function IssuePanel({
   issueId,
@@ -65,7 +67,7 @@ export function IssuePanel({
       onSeen(issueId);
   }, [issueId, latest, onSeen]);
 
-  const back = onBack ? (
+  const backButton = onBack ? (
     <Button
       size='sm'
       variant='ghost'
@@ -75,6 +77,13 @@ export function IssuePanel({
       <ArrowLeftIcon data-icon='inline-start' />
       {t('followUps.activity.back')}
     </Button>
+  ) : null;
+  // A phone's only top row is Back, with the navigation and the agent chat; a tablet keeps the shell's header.
+  const back = backButton ? (
+    <>
+      <PhoneBar>{backButton}</PhoneBar>
+      <div className='max-md:hidden'>{backButton}</div>
+    </>
   ) : null;
   if (!data)
     return (
@@ -124,36 +133,45 @@ function LiveIssue({
   const detailKey = useMemo(() => pmKeys.issue(issue.id), [issue.id]);
   const update = useIssueUpdate(issue, detailKey);
   const issuePath = `/issues/${encodeURIComponent(issue.identifier)}`;
+  const phone = useMediaQuery('(max-width: 767px)');
   return (
     <IssueConversation detail={issue} detailKey={detailKey}>
-      {/* Pinned while the page scrolls, folding to a bar then. */}
-      <div className='sticky top-0 z-10 flex flex-col gap-2 rounded-t-xl border-b bg-card/95 px-5 py-4 backdrop-blur-md'>
-        {back}
-        <IssueSummary
-          issue={issue}
-          update={update}
-          refresh={`${issue.revision}|${issue.statusKey}`}
-          progressFallback={summary?.progress ?? null}
-          collapsible
-          defaultCollapsed={narrow}
-          autoCompact
-          actions={
-            <>
-              <FollowToggle issueId={issue.id} />
-              <Button
-                size='sm'
-                variant='outline'
-                nativeButton={false}
-                render={<Link to={issuePath} />}
-              >
+      {back ? <div className='px-2 pt-1 md:px-5 md:pt-4'>{back}</div> : null}
+      {/* It scrolls with the activity; its one-line bar stays at the top once it is gone. */}
+      <IssueSummary
+        issue={issue}
+        update={update}
+        refresh={`${issue.revision}|${issue.statusKey}`}
+        progressFallback={summary?.progress ?? null}
+        collapsible
+        defaultCollapsed={narrow}
+        pinnedBar
+        className='border-b px-5 py-4 max-md:px-4 max-md:py-3'
+        actions={
+          <>
+            <FollowToggle issueId={issue.id} />
+            <Button
+              size='sm'
+              variant='outline'
+              nativeButton={false}
+              render={<Link to={issuePath} />}
+            >
+              <ExternalLinkIcon
+                data-icon='inline-start'
+                className='md:hidden'
+              />
+              <span className='max-md:sr-only'>
                 {t('issueLive.summary.open')}
-              </Button>
-            </>
-          }
-        />
-      </div>
-      <IssueFeed className='px-5 py-4' />
-      <IssueComposer className='sticky bottom-0 z-10 rounded-b-xl border-t bg-card/95 px-5 py-3 backdrop-blur-md' />
+              </span>
+            </Button>
+          </>
+        }
+      />
+      <IssueFeed className='px-5 py-4 max-md:px-4 max-md:py-3' />
+      <IssueComposer
+        foldable={phone}
+        className='sticky bottom-0 z-10 rounded-b-xl border-t bg-card/95 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-md max-md:rounded-none max-md:px-4 max-md:pt-2 max-md:pb-[calc(0.5rem+env(safe-area-inset-bottom))]'
+      />
     </IssueConversation>
   );
 }
@@ -170,7 +188,7 @@ function PanelFrame({
     <section
       aria-label={t('followUps.activity.label')}
       className={cn(
-        'flex min-w-0 flex-col rounded-xl border bg-card text-card-foreground',
+        'flex min-w-0 flex-col rounded-xl border bg-card text-card-foreground max-md:rounded-none max-md:border-0',
         className,
       )}
       data-testid='follow-ups-activity'

@@ -24,7 +24,7 @@ const PAGES: readonly { path: string; heading: string | null }[] = [
   },
   { path: '/issues/new', heading: null },
   { path: '/projects', heading: '项目' },
-  { path: '/knowledge', heading: '系统知识' },
+  { path: '/knowledge', heading: '知识库' },
   { path: '/config/members', heading: '成员' },
   { path: '/agents', heading: 'Agent' },
   { path: '/config/api-keys', heading: 'API 密钥' },
@@ -43,6 +43,34 @@ test.describe('phone width', () => {
         await expect(
           page.getByRole('dialog', { name: '新建任务', exact: true }),
         ).toBeVisible();
+      if (path === '/knowledge') {
+        await expect(
+          page.getByRole('region', { name: 'Studio Platform', exact: true }),
+        ).toBeVisible();
+        const system = page.getByRole('region', {
+          name: '系统知识',
+          exact: true,
+        });
+        await expect(
+          system.getByText('跨项目共享', { exact: true }),
+        ).toBeVisible();
+        expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+
+        await system.getByRole('button', { name: /^系统知识,/ }).click();
+        const document = system
+          .getByRole('tree')
+          .getByRole('button', { name: 'Team conventions', exact: true });
+        await expect(document).toBeVisible();
+        expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+
+        await document.click();
+        await expect(page).toHaveURL(/doc=/);
+        await expect(
+          page
+            .getByRole('article')
+            .getByRole('heading', { name: 'Team conventions', level: 1 }),
+        ).toBeVisible();
+      }
       expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
     });
   }
@@ -71,18 +99,25 @@ test.describe('phone width', () => {
   });
 });
 
-test.describe('header chat at phone width', () => {
-  test('the multiline editor fits and the duplicate floating launcher is absent', async ({
+test.describe('the agent chat at phone width', () => {
+  test('is absent from both header rows and remains available by shortcut', async ({
     page,
   }) => {
-    await open(page, '/issues/PM-1');
-    const editor = page.getByTestId('header-chat-mobile').getByRole('textbox');
-    await editor.pressSequentially('第一行');
-    await editor.press('Shift+Enter');
-    await editor.pressSequentially('第二行');
-    await expect(editor).toHaveValue('第一行\n第二行');
-    await expect(page.getByTestId('chat-floating-button')).toHaveCount(0);
+    await open(page, '/inbox');
+    await expect(
+      page.getByRole('banner').getByTestId('chat-header-button'),
+    ).toHaveCount(0);
+    await page.keyboard.press('Control+j');
+    await expect(page.getByTestId('chat-panel')).toBeVisible();
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
-    expect((await editor.boundingBox())!.width).toBeGreaterThan(240);
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('chat-panel')).toBeHidden();
+    await open(page, '/issues/PM-1');
+    const phoneBar = page.getByTestId('phone-bar');
+    await expect(phoneBar.getByTestId('chat-header-button')).toHaveCount(0);
+    await expect(phoneBar.getByRole('button', { name: /导航/ })).toBeVisible();
+    await page.keyboard.press('Control+j');
+    await expect(page.getByTestId('chat-panel')).toBeVisible();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
   });
 });

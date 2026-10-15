@@ -203,6 +203,10 @@ function storedWorkspace(value: unknown): RunnerWorkspace | null {
       ? { cleanup: WorkspaceCleanupResultSchema.parse(item.cleanup) }
       : {}),
     workDir: item.workDir,
+    ...(typeof item.subjectKey === 'string'
+      ? { subjectKey: item.subjectKey }
+      : {}),
+    ...(isFiniteNumber(item.sizeBytes) ? { sizeBytes: item.sizeBytes } : {}),
     unpushed: item.unpushed === true,
     lastUsedAt: text(item.lastUsedAt) ?? '',
     subjectKind: text(item.subjectKind),
@@ -253,7 +257,8 @@ export function storedWorkspaceUsage(
 ): RunnerWorkspaceUsage | null {
   if (value === null || value === undefined) return null;
   const usage = jsonObject(value);
-  if (typeof usage.measuredAt !== 'string') return null;
+  if (typeof usage.measuredAt !== 'string' && usage.measuredAt !== null)
+    return null;
   const workspaces = (Array.isArray(usage.workspaces) ? usage.workspaces : [])
     .map(storedWorkspace)
     .filter((item): item is RunnerWorkspace => item !== null);
@@ -261,6 +266,9 @@ export function storedWorkspaceUsage(
     isFiniteNumber(field) ? field : fallback;
   return {
     disk: storedDisk(usage.disk),
+    ...(typeof usage.diskMeasuredAt === 'string'
+      ? { diskMeasuredAt: usage.diskMeasuredAt }
+      : {}),
     count: count(usage.count, workspaces.length),
     unpushedCount: count(
       usage.unpushedCount,
@@ -301,6 +309,12 @@ export function toRunner(
       typeof jsonObject(record.load).free === 'number'
         ? Number(jsonObject(record.load).free)
         : undefined,
+    draining:
+      jsonObject(record.load).draining === 'updatePending'
+        ? 'updatePending'
+        : jsonObject(record.load).draining === 'pruning'
+          ? 'pruning'
+          : undefined,
     acceptJobs: Boolean(record.acceptJobs),
     policy: storedPolicy(record.policy),
     variables: storedVariableNames(record.variables),

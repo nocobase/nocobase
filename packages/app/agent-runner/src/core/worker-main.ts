@@ -11,14 +11,17 @@ import { JobWorker } from './job-worker.ts';
 import {
   killLeftovers,
   killTagged,
-  taggedProcesses,
   PROCESS_TAG_ENV,
+  taggedProcesses,
   listProcesses,
+  descendantsOf,
   groupsBelow,
+  workspaceHolders,
 } from './process-tree.ts';
 import {
   jobRecordKey,
   recordPath,
+  isAlive,
   type RunRecord,
   type WorkerJob,
 } from './supervisor.ts';
@@ -95,13 +98,18 @@ async function main(): Promise<number> {
     log: '',
   };
   const settings = await readSettings(paths);
-  const groups = new Set<number>();
+  const seenGroups = new Set<number>();
+  const observeGroups = async () => {
+    for (const group of groupsBelow(process.pid, await listProcesses()))
+      seenGroups.add(group);
+  };
+  const strict = payload.workspace.readOnly === true;
+  let quiescing = false;
+  let observation = Promise.resolve();
   const scan = setInterval(() => {
-    void listProcesses().then((entries) => {
-      for (const group of groupsBelow(process.pid, entries)) groups.add(group);
-    });
-  }, 250);
-  scan.unref();
+    if (!quiescing)
+      observation = observation.then(observeGroups).catch(() => undefined);
+  }, job.timings.processScanMs ?? 1_000);
   const worker = new RunWorker(
     payload,
     job.timings,
@@ -109,6 +117,43 @@ async function main(): Promise<number> {
       paths,
       connection,
       settings,
+      stopWriters: async () => {
+        quiescing = true;
+        try {
+          await observation;
+          await observeGroups();
+          // A read-only checkout is removed with nothing saved, so a failed process scan keeps it for GC instead.
+          const left = await killLeftovers(process.pid, {
+            groups: seenGroups,
+            graceMs: 2_000,
+            strict,
+          });
+          const tag = process.env[PROCESS_TAG_ENV];
+          const tagged = tag === undefined ? 0 : await killTagged([tag]);
+          if (left.groups > 0)
+            log(
+              `worker: stopped ${left.groups} process group(s) before saving`,
+            );
+          if (left.processes + tagged > 0)
+            log(
+              `worker: stopped ${left.processes + tagged} process(es) the run left behind before saving`,
+            );
+          if (
+            descendantsOf(process.pid, await listProcesses(strict)).some(
+              (entry) => isAlive(entry.pid),
+            ) ||
+            (tag !== undefined &&
+              (await taggedProcesses([tag], strict)).length > 0) ||
+            (record.workDir !== undefined &&
+              (await workspaceHolders(record.workDir, strict)).length > 0)
+          )
+            throw new Error(
+              'Writers remain after stopping the tool; preserve the worktree for recovery.',
+            );
+        } finally {
+          quiescing = false;
+        }
+      },
       adapters: loadAdapters(
         process.env,
         settings.passEnv,
@@ -119,30 +164,14 @@ async function main(): Promise<number> {
         ),
       ),
       log,
-      stopWorkspaceProcesses: async () => {
-        clearInterval(scan);
-        await killLeftovers(process.pid, {
-          groups,
-          graceMs: 2_000,
-          strict: true,
-        });
-        const tag = process.env[PROCESS_TAG_ENV];
-        if (tag !== undefined) {
-          await killTagged([tag]);
-          if ((await taggedProcesses([tag], true)).length > 0)
-            throw new Error(
-              'Tagged run processes remain; keeping the workspace.',
-            );
-        }
-        log('workspace: run processes stopped before read-only removal');
-      },
     },
     record,
   );
   process.on('SIGUSR2', () => void worker.pollStatus());
   process.on('SIGTERM', () => worker.end({ kind: 'shutdown' }));
+  process.on('SIGUSR1', () => worker.end({ kind: 'upgrade' }));
   process.on('SIGINT', () => worker.end({ kind: 'shutdown' }));
-  const outcome = await worker.run();
+  const outcome = await worker.run().finally(() => clearInterval(scan));
   log(`run ${payload.run.id}: worker done (${outcome})`);
   // The outcome was reported to the server; the exit code only tells the daemon the worker did not crash.
   return 0;

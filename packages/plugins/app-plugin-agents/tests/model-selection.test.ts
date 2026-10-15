@@ -33,6 +33,47 @@ async function setup() {
 }
 
 describe('heartbeat capacity diagnostics', () => {
+  it.each(['updatePending', 'pruning'] as const)(
+    'reports %s consistently in runner, manager diagnostics and workload, refusing new claims',
+    async (draining) => {
+      h = await createHarness();
+      const runner = await h.registerRunner({ slots: 2 });
+      const agent = await h.createAgent();
+      const run = await h.enqueue(agent);
+      const registered = (await h.services.runners.find(
+        h.services.tx.read(),
+        runner.runnerId,
+      ))!;
+      expect(
+        (
+          await h.request('POST', '/agents/runners/heartbeat', {
+            runnerKey: runner.key,
+            body: {
+              version: registered.version,
+              features: registered.features,
+              tools: registered.tools,
+              active: [],
+              load: { slots: 2, free: 0, draining },
+            },
+          })
+        ).status,
+      ).toBe(200);
+      expect(
+        await h.services.runners.find(h.services.tx.read(), runner.runnerId),
+      ).toMatchObject({ globalFree: 0, draining });
+      expect(
+        (await h.services.claims.selectionWait(run))?.entries[0],
+      ).toMatchObject({
+        reason: draining,
+        runners: [expect.objectContaining({ reason: draining, used: 0 })],
+      });
+      expect(
+        (await h.services.runs.workload({ subjectKind: 'sample' })).runs[0]
+          ?.wait,
+      ).toMatchObject({ reason: draining });
+      expect(await claim(h, runner, 1)).toEqual([]);
+    },
+  );
   it('uses reported cross-application room and keeps it separate from server occupancy', async () => {
     h = await createHarness();
     const runner = await h.registerRunner({ slots: 2 });

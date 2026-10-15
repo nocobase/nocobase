@@ -7,7 +7,6 @@
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { STUDIO_NAMESPACE } from '../../shared/access.js';
 import { AGENT_BLOCKED } from '../../server/agents/blocked.js';
 import { RUN_FAILED_FINAL } from '../../server/agents/notices.js';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
@@ -36,6 +35,9 @@ async function update(
   const current = await h.projects.issueQueries.detail(viewer, issue.id);
   return h.projects.issues.update(viewer, issue.id, {
     revision: current.revision,
+    ...(patch.statusKey === 'blocked' || patch.statusKey === 'in_review'
+      ? { needsYou: 'Choose how to proceed.' }
+      : {}),
     ...patch,
   });
 }
@@ -62,7 +64,13 @@ async function blockedIssue(): Promise<{ issue: Issue; agentId: string }> {
   const moved = await h.request(
     'PATCH',
     `/projects/issues/${issue.identifier}`,
-    { runToken: token, body: { statusKey: 'blocked' } },
+    {
+      runToken: token,
+      body: {
+        statusKey: 'blocked',
+        needsYou: 'Which database should the migration target?',
+      },
+    },
   );
   expect(moved.status).toBe(200);
   return { issue, agentId: PROJECT_MANAGER_ID };
@@ -103,22 +111,36 @@ describe('an agent that reports itself blocked', () => {
     ).toBe(false);
   });
 
-  it("carries the project manager's name key, so the card words it in the reader's language", async () => {
-    const { agentId } = await blockedIssue();
-    await expect
-      .poll(() => planned.filter((notice) => notice.type === AGENT_BLOCKED))
-      .toHaveLength(1);
-    expect(
-      planned.find((notice) => notice.type === AGENT_BLOCKED),
-    ).toMatchObject({
-      params: {
-        agentId,
-        actorName: 'Project manager',
-        agentNameKey: 'studioAgents.projectManager.name',
-        agentNameNs: STUDIO_NAMESPACE,
-      },
-    });
-  });
+  it.each(['en-US', 'zh-CN'])(
+    'uses the saved manager identity for a %s reader',
+    async (locale) => {
+      await h.manager.update('root', { name: '负责人' });
+      const { agentId, issue } = await blockedIssue();
+      await expect
+        .poll(() => planned.filter((notice) => notice.type === AGENT_BLOCKED))
+        .toHaveLength(1);
+      const notice = planned.find((notice) => notice.type === AGENT_BLOCKED);
+      expect(notice).toMatchObject({
+        params: { agentId, actorName: '负责人' },
+      });
+      expect(
+        (notice?.params as Record<string, unknown>).agentNameKey,
+      ).toBeUndefined();
+      expect(
+        (notice?.params as Record<string, unknown>).agentNameNs,
+      ).toBeUndefined();
+      const response = await h.request(
+        'GET',
+        `/projects/issues/${issue.identifier}`,
+        {
+          user: 'alice',
+          headers: { 'Accept-Language': locale },
+        },
+      );
+      expect(response.status).toBe(200);
+      expect(response.body.data.executorName).toBe('负责人');
+    },
+  );
 
   it('settles for whoever answers it with a comment, but not for a note', async () => {
     const { issue } = await blockedIssue();

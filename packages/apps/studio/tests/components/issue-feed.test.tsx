@@ -290,12 +290,12 @@ describe('the issue feed', () => {
     expect((await screen.findByRole('dialog')).textContent).toBe('shot.png');
   });
 
-  it('folds the comment the summary shows as delivery notes to one line', async () => {
+  it('keeps the delivery explanation visible in the conversation', async () => {
     const delivery = comment(
       'd1',
       5,
-      { type: 'agent', id: 'sol', name: 'Sol' },
-      'Delivered: the export keeps the filters.',
+      { type: 'agent', id: PROJECT_MANAGER_ID, name: 'PM' },
+      '## Key changes\nDelivered: the export keeps the filters.',
     );
     mocks.entries = [thread(delivery)];
     await mount(
@@ -314,12 +314,6 @@ describe('the issue feed', () => {
       </IssueConversation>,
     );
     const feed = await screen.findByTestId('issue-feed');
-    expect(feed.textContent).not.toContain('the export keeps the filters');
-    fireEvent.click(
-      within(feed).getByRole('button', {
-        name: 'Delivery notes — shown above',
-      }),
-    );
     expect(feed.textContent).toContain('the export keeps the filters');
   });
 
@@ -354,16 +348,8 @@ describe('the follow star', () => {
   const answer = (initial: string[]) => {
     let following = initial;
     mocks.request.mockImplementation((request: { path: string }) => {
-      if (request.path === 'followUps')
-        return Promise.resolve({
-          data: {
-            following,
-            followingStored: true,
-            counts: { in_review: 0, blocked: 0, in_progress: 0, backlog: 0 },
-            truncated: false,
-            issues: [],
-          },
-        });
+      if (request.path === 'followUps/following')
+        return Promise.resolve({ data: { issueIds: following, max: 5 } });
       const star = /^followUps\/issues\/([^/]+)\/(follow|unfollow)$/u.exec(
         request.path,
       );
@@ -402,6 +388,12 @@ describe('the follow star', () => {
       }),
     );
     await screen.findByRole('button', { name: 'Follow' });
+    // The star reads only what is followed, never the whole overview.
+    expect(
+      mocks.request.mock.calls.some(
+        ([request]) => (request as { path: string }).path === 'followUps',
+      ),
+    ).toBe(false);
   });
 
   it('is held, with the reason, once five others are followed', async () => {

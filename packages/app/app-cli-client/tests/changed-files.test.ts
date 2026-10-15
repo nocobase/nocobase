@@ -11,6 +11,7 @@ import { removeDir, tempDir } from './helpers.ts';
 const sha = (text: string) => createHash('sha256').update(text).digest('hex');
 
 const spec: ChangedFilesSpec = {
+  // Keep every case independent of real knowledge mounts in a runner's ancestor directories.
   dir: '.changed-files-fixture/knowledge',
   manifest: '.manifest.json',
   maxBytes: 1000,

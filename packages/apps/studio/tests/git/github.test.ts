@@ -455,6 +455,7 @@ describe('the GitHub platform', () => {
       },
       {
         kind: 'check',
+        executionId: expect.any(String),
         name: 'test',
         status: 'in_progress',
         conclusion: null,

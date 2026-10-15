@@ -125,6 +125,10 @@ const TRIGGER_TASKS: Readonly<Record<string, string>> = {
     'An earlier attempt did not finish. Start again from where the issue is now.',
   prChecksFailed:
     'The checks of a pull request of this issue failed. Decide who reads the failure or fixes it.',
+  stepEnded:
+    'A delegated worker reached a terminal state; read its run and dispatch thread before handing work on.',
+  managerIdle:
+    'The previous manager run ended without subsequent work or activity; recheck runs and checks before deciding what next.',
   prChecksPassed:
     'The checks of a pull request of this issue passed. Decide whether the change is ready for acceptance.',
   prConflict:
@@ -261,8 +265,9 @@ function fileLine(file: IssueContextFile): string {
 }
 
 /**
- * The project's working directories as a run's, in order: repositories on the issue's branch (`branches`, by working
- * directory id: its repository's first branch rule; `agent/<key>` without one), directories as they are.
+ * The project's working directories as a run's, in order: repositories on the run's starting branch (`branches`, by
+ * working directory id: the earliest linked same-repository open pull request's head, else the branch rule, `agent/<key>`
+ * by default), directories as they are.
  */
 export function dirsOf(
   context: IssueContext,
@@ -391,6 +396,8 @@ const MANAGER_ONLY_TRIGGERS: ReadonlySet<string> = new Set([
   'prChecksFailed',
   'prChecksPassed',
   'prConflict',
+  'stepEnded',
+  'managerIdle',
 ]);
 
 /**
@@ -417,19 +424,65 @@ export function issueClaimRejection(
 export function createIssueContextProvider(
   agents: Pick<Agents, 'runs' | 'briefs' | 'gate'>,
   projects: () => Pick<Projects, 'issueContext' | 'commentQueries'>,
+  checkoutPullRequests?: (
+    issueId: string,
+  ) => Promise<ReadonlyMap<string, string>>,
+  commentActorMayRead?: SubjectBinding['commentActorMayRead'],
 ): ContextProvider {
   return {
-    prepare: (run) =>
-      agents.gate.allowed({
+    async prepare(run) {
+      const allowed = await agents.gate.allowed({
         kind: 'run',
         userId: run.actorUserId,
         displayName: '',
-      }),
-    async admit(conn, claim) {
+      });
+      const heads =
+        run.agentId === PROJECT_MANAGER_ID
+          ? new Map<string, string>()
+          : ((await checkoutPullRequests?.(run.subject.id)) ??
+            new Map<string, string>());
+      const canRead =
+        run.commentRootRunId && commentActorMayRead
+          ? await commentActorMayRead(run.subject.id, run.actorUserId)
+          : true;
+      return { allowed, heads, canRead };
+    },
+    async admit(conn, claim, prepared) {
+      if (
+        claim.runner &&
+        claim.run.commentRootRunId &&
+        (prepared as { canRead?: boolean } | undefined)?.canRead === false
+      )
+        return {
+          reason: 'notAllowed',
+          detail: 'The acting user may no longer read this issue.',
+        };
       if ((await readOwnerHandoff(conn, claim.run.subject.id))?.waiting)
         return {
           reason: 'waitingOwner',
           detail: 'Waiting for the new issue owner to take over.',
+        };
+      if (
+        claim.runner &&
+        !claim.run.commentRootRunId &&
+        (
+          (await agents.runs.identityInputs(conn, claim.run.id))?.inputs ??
+          claim.inputs
+        ).some(
+          (input) =>
+            input.type === 'comment' &&
+            !(
+              input.actor.kind === 'user' &&
+              input.actor.id === claim.run.ownerUserId &&
+              (input.payload as Record<string, unknown> | null)?.byAgent !==
+                true
+            ),
+        )
+      )
+        return {
+          reason: 'commentRetriggerRequired',
+          detail:
+            'Older queued comment work was withdrawn. Post the comment again to start a new authorized chain.',
         };
       const context = await projects().issueContext.contextFor(
         conn,
@@ -449,8 +502,10 @@ export function createIssueContextProvider(
       if (!context) throw new Error('The issue is gone.');
       const inputs = claim.inputs;
       const manager = isManager(claim.agent.id);
-      const allowed =
-        (prepared as ReadonlySet<string> | undefined) ?? new Set<string>();
+      const preparation = prepared as
+        | { allowed: ReadonlySet<string>; heads: ReadonlyMap<string, string> }
+        | undefined;
+      const allowed = preparation?.allowed ?? new Set<string>();
       const subject = { noun: SUBJECT_NOUN, key: context.identifier };
       const previousSummary = await agents.runs.lastSummary(
         conn,
@@ -462,6 +517,7 @@ export function createIssueContextProvider(
         claim.run.id,
       );
       const delta = await commentDelta(conn, projects(), {
+        commentRootRunId: claim.run.commentRootRunId,
         agentId: claim.agent.id,
         issueId: context.id,
         runId: claim.run.id,
@@ -506,7 +562,12 @@ export function createIssueContextProvider(
         turn: {
           prompt: agents.briefs.turnPrompt(inputs, { subject }),
           ...(previousSummary ? { previousSummary } : {}),
-          ...deltaNotes(delta, context.identifier, claim.cli),
+          ...deltaNotes(
+            delta,
+            context.identifier,
+            claim.cli,
+            Boolean(claim.run.commentRootRunId),
+          ),
         },
         data: { kind: ISSUE_SUBJECT, issue: context },
         // The project manager checks nothing out, in a work directory of its own.
@@ -523,6 +584,7 @@ export function createIssueContextProvider(
                 conn,
                 context.project?.repos ?? [],
                 context.identifier,
+                { issueId: context.id, heads: preparation?.heads ?? new Map() },
               ),
               initial,
               initializeIfEmpty,
@@ -649,10 +711,25 @@ export function issueBinding(
   projects: () => Pick<Projects, 'issueContext' | 'commentQueries'>,
   sink: SubjectBinding['sink'],
   queuedExpiryMs = 0,
+  checkoutPullRequests?: (
+    issueId: string,
+  ) => Promise<ReadonlyMap<string, string>>,
+  commentActorMayRead?: SubjectBinding['commentActorMayRead'],
 ): SubjectBinding {
   return {
     kind: ISSUE_SUBJECT,
+    commentActorMayRead,
     actsAs: issueExecutionIdentity(agents, projects),
+    responsibleUserId: async (conn, subjectId) =>
+      (await readOwnerHandoff(conn, subjectId))?.waiting
+        ? null
+        : ((
+            await projects().issueContext.contextFor(conn, subjectId, {
+              kind: AGENT_KIND,
+            })
+          )?.owner.id ?? null),
+    commentOwnerKey: async (conn, subjectId) =>
+      (await readOwnerHandoff(conn, subjectId))?.notificationKey ?? null,
     ...(queuedExpiryMs > 0 ? { queuedExpiryMs } : {}),
     title: ISSUE_TITLE,
     groupTitle: PROJECT_TITLE,
@@ -660,7 +737,12 @@ export function issueBinding(
     groupPath: '/projects/{id}',
     triggers: ISSUE_TRIGGER_TITLES,
     preview: issueSample(agents),
-    context: createIssueContextProvider(agents, projects),
+    context: createIssueContextProvider(
+      agents,
+      projects,
+      checkoutPullRequests,
+      commentActorMayRead,
+    ),
     ...(sink ? { sink } : {}),
   };
 }
