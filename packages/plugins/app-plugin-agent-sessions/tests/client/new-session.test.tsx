@@ -53,6 +53,37 @@ const choices: DiscoveredChoices = {
 beforeEach(() => localStorage.clear());
 
 describe('new-session composer', () => {
+  it('shows only the background connection command when all computers are offline', async () => {
+    await renderWithApp(
+      <QueryClientProvider client={new QueryClient()}>
+        <AgentSessionsConfigContext.Provider
+          value={{ cli: 'nb-studio', connectPrompt: null, linkPanels: {} }}
+        >
+          <NewSession />
+        </AgentSessionsConfigContext.Provider>
+      </QueryClientProvider>,
+      {
+        plugins: [plugin({ routes: false })],
+        namespace: '@nocobase/app-plugin-agent-sessions',
+        fetch: answerApi(({ path }) =>
+          path === 'agentSessions/computers'
+            ? { data: [{ ...computer, online: false }], meta: { total: 1 } }
+            : { data: [], meta: {} },
+        ),
+      },
+    );
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Your computers are offline',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('nb-studio acp service install'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('nb-studio acp start')).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  });
+
   it('explains an available surface with no selectable values instead of leaving an empty settings bar', async () => {
     await renderWithApp(
       <QueryClientProvider
