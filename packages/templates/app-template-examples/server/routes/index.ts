@@ -11,6 +11,7 @@ import {
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
 
+import { workflowRoutes } from './workflows.js';
 import { articlesRoutes } from './articles.js';
 import { numericExamplesRoutes } from './numeric-examples.js';
 import { analyticsRoutes } from './analytics.js';
@@ -83,6 +84,7 @@ const routes: readonly AppRouteContribution<Application>[] = [
   apiRoutes,
   rootRoutes,
   articlesRoutes,
+  workflowRoutes,
   analyticsRoutes,
   externalCrmRoutes,
   numericExamplesRoutes,

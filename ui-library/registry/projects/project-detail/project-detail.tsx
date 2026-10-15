@@ -206,7 +206,7 @@ export function ProjectHeader({
                   aria-label={words.private}
                 />
               ) : null}
-              <IssueStatusBadge status={status} />
+              <IssueStatusBadge status={status} size='sm' />
             </h1>
             <p className='flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground'>
               <span className='inline-flex items-center gap-1.5'>

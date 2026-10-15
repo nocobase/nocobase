@@ -14,6 +14,12 @@
 
 /** The project manager's agent id. */
 export const PROJECT_MANAGER_ID = 'studio-project-manager';
+/** Invalidation only, with no identity or settings values in its payload. */
+export const PROJECT_MANAGER_IDENTITY_TOPIC = 'studio:manager:identity';
+export const DEFAULT_FALLBACK_AFTER_SECONDS = 120;
+export const FALLBACK_AFTER_SECONDS_MAX = 3600;
+export const DEFAULT_DELEGATION_QUEUE_TIMEOUT_SECONDS = 600;
+export const DELEGATION_QUEUE_TIMEOUT_SECONDS_MAX = 86400;
 
 /** How many runs agents' comments may start on one issue within `COMMENT_RUN_WINDOW_HOURS` hours, by default. */
 export const DEFAULT_COMMENT_RUN_LIMIT = 20;
@@ -24,13 +30,17 @@ export const COMMENT_RUN_WINDOW_HOURS = 24;
 export const PRINCIPLES_MAX = 20_000;
 
 export interface ProjectManagerSettings {
+  readonly name: string;
+  readonly description: string | null;
   /** The agent whose tool and model the project manager runs with; null until someone chooses. */
   readonly firstChoiceAgentId: string | null;
-  /** Used when no runner can take the first choice's work; null for none. */
+  /** Used after the queue delay or when no compatible runner can take the first choice; null for none. */
   readonly fallbackAgentId: string | null;
   /** The allocation principles; null for the built-in ones. */
   readonly principles: string | null;
   readonly commentRunLimit: number;
+  readonly fallbackAfterSeconds: number;
+  readonly delegationQueueTimeoutSeconds: number;
 }
 
 export type ProjectManagerPatch = Partial<ProjectManagerSettings>;
@@ -60,13 +70,13 @@ export interface ProjectManagerView extends ProjectManagerSettings {
  * - `working`: an agent's run is on it (`agent`, `step` it was handed, since `since`, on `runner`).
  * - `queued`: an agent's run waits for a runner (`agent`, `step`).
  * - `checksPending`: no run is on it and a linked open pull request's checks have not finished (`pullRequest`).
- * - `needsDecision`: the issue is blocked; `question` is what the project manager asked the person.
+ * - `needsDecision`: the issue is blocked; `needsYou` is its structured request to the owner.
  * - `inReview`: it waits for a person to accept it.
  * - `notStarted`: in backlog.
  * - `finished`: done or cancelled.
  * - `idle`: nothing of the above.
  *
- * `next` is the project manager's latest "Next" line, when it wrote one. `handOver` says the project manager never
+ * `next` is the issue's structured next step. `handOver` says the project manager never
  * worked on the issue though it is its executor and the issue is open: someone may hand it over to go on.
  */
 export type IssueProgressState =
@@ -74,12 +84,39 @@ export type IssueProgressState =
   | 'queued'
   | 'checksPending'
   | 'needsDecision'
+  | 'waitingForContinuation'
   | 'inReview'
   | 'notStarted'
   | 'finished'
   | 'idle';
 
 export interface IssueProgress {
+  /** Current requests visible to the owner or original commenter, served by the existing progress API. */
+  readonly personalRunnerRequests?: readonly PersonalRunnerRequest[];
+  readonly managerWait?: {
+    readonly queueEnteredAt: string;
+    readonly fallbackAfterSeconds: number;
+    readonly sampledAt: string;
+    readonly entries: readonly {
+      readonly tool: string;
+      readonly model: string | null;
+      readonly reason: import('@nocobase/app-plugin-agents/shared/runs').ModelWaitReason;
+      readonly compatibleCount: number;
+      readonly blockers?: readonly import('@nocobase/app-plugin-agents/shared/runs').ModelWaitReason[];
+      readonly runners: readonly string[];
+      readonly runnerLoads?: readonly {
+        readonly name: string;
+        readonly reason?: import('@nocobase/app-plugin-agents/shared/runs').ModelWaitReason;
+        readonly lastSeenAt?: string | null;
+        readonly used?: number;
+        readonly limit?: number;
+        readonly toolUsed?: number;
+        readonly toolLimit?: number;
+        readonly reportedFree?: number;
+        readonly reportedTotalFree?: number;
+      }[];
+    }[];
+  };
   readonly waiting?: {
     readonly reason:
       | 'waitingOwner'
@@ -99,7 +136,19 @@ export interface IssueProgress {
     readonly number: number;
     readonly url: string | null;
   } | null;
-  readonly question: string | null;
+  readonly needsYou: string | null;
+  /** Latest undeleted project manager explanation; not bound to a status transition. */
+  readonly explanationCommentId: string | null;
   readonly next: string | null;
   readonly handOver: boolean;
+}
+
+export interface PersonalRunnerRequest {
+  readonly id: string;
+  readonly status: 'pending' | 'rejected';
+  readonly requestedBy: { readonly id: string; readonly name: string };
+  readonly commentId: string;
+  readonly commentText: string;
+  readonly canDecide: boolean;
+  readonly canRunAsMe: boolean;
 }

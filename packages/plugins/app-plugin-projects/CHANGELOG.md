@@ -1,5 +1,63 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.9
+
+### Minor Changes
+
+- 862a542: Support global default skills and transactional defaults for newly created Studio projects. Resolve skills from global through application scopes to working directories in one query, with more specific targets winning. Stop reading and exposing legacy agent skill attachments while preserving agent variables.
+- f43817d: Persist the owner's required decision and the next step as structured issue fields. Require needsYou only for authenticated Studio project-manager direct status updates to Blocked or In review, keep generic and human progress input optional, clear it when work resumes, and clear next when work ends. Studio displays these fields without extracting progress or delivery notes from comments and links to the project manager's latest explanation.
+
+### Patch Changes
+
+- 92afa27: Make My follow-ups fast for someone who owns many open issues. `GET /api/followUps` reads what every row's progress needs in a fixed number of queries instead of a few per issue, and a row no longer works out why queued work has not been claimed (`waiting`, `managerWait`): the issue's own progress (`GET /api/issueProgress/{issueId}`), shown beside the list, still does. A new `GET /api/followUps/issues?issueIds=…` answers the rows of the named issues, and the page uses it to refresh only the rows an announced change names, a burst at a time, reading the whole overview again only when the list itself changed, on reconnect, for a change that names no issue, and on its fallback poll. The follow star on an issue reads only what the viewer follows from a new `GET /api/followUps/following` (`follow-up following` on the command line) instead of the whole overview, and an agent session's issue progress reads its issues in the same fixed number of queries. The projects plugin's comment queries gain `newestByEach`, the agents plugin's runs gain `openOnEach`, and its run request list takes `subjectIds` and `statuses`.
+- facfe5c: Remove a duplicate Issue type import that prevented type checking and builds.
+- bdb0581: Reduce the server load of open issue and My follow-ups pages. Issue change announcements are gathered for a moment and name the issues that changed, so a page refreshes only what it shows of them; Studio announces new runs on an issue, so issue pages, What it waits for, owner handoffs and My follow-ups fall back to a slow poll instead of polling every few seconds; a preview label the server failed to set no longer makes the issue page poll every three seconds. Polled reads check issue visibility without loading the whole issue page (`IssueQueries.visible`), What it waits for reads only the project manager's newest comments (`CommentQueries.newestBy`), My follow-ups shares lookups across its issues, and pull request marks check visibility in one read. A runner heartbeat no longer announces a runner change, waking every waiting claim and refreshing every runtimes page, unless its disk sample moved by a gigabyte, crossed the free-space threshold or changed size.
+- 7534a32: Restore the previous task tables and remove grouped task tables for now.
+- 6c4634b: Scope Studio's pull request announcements (`studio:git`) to the issues they affect. Stores of a moment are gathered into one announcement naming the issues the changed pull requests are linked to, and pages read again only those issues' pull requests, marks, previews and progress, through one subscription per page; an announcement it cannot tie to pull requests, and a reconnect, still refresh everything. The topic now reaches signed-in connections only, and a hidden tab no longer polls an issue's previews. Also removes a duplicated type import in the projects plugin's issue queries.
+- bdb0581: A public realtime topic can be defined with `authenticated: true` (`defineTopic` and `registerTopic` of `@nocobase/app-server/realtime`): subscribing without a signed-in principal is then refused with `AUTHENTICATION_REQUIRED`, as for a user topic, and publishing skips connections without one. The projects plugin's `pm:changes`, the agents plugin's `agents:runners` and Studio's `studio:issues:runs`, whose announcements name records by id, now reach signed-in connections only. The authentication plugin opens the realtime connection again when the signed-in person changes, so a page signed in without a reload receives these topics and user topics.
+- Updated dependencies [69e212c]
+- Updated dependencies [943a9a8]
+- Updated dependencies [943a9a8]
+- Updated dependencies [1cd749c]
+- Updated dependencies [bdb0581]
+- Updated dependencies [9b946f4]
+  - @nocobase/app-server@2.0.0-beta.7
+  - @nocobase/db@1.0.0-beta.20
+  - @nocobase/app-plugin-authentication@2.0.0-beta.9
+  - @nocobase/app-plugin-file@1.0.0-beta.23
+  - @nocobase/app-plugin-authorization@1.0.0-beta.27
+  - @nocobase/app-plugin-notification@1.0.0-beta.27
+  - @nocobase/app-plugin-users@2.0.0-beta.4
+
+## 0.1.0-beta.8
+
+### Minor Changes
+
+- 6fc0af2: Require the issue owner to start or continue Studio project manager work, and ignore agent wakeups from comments on unstarted issues. Run the manager and its delegated steps as the current owner while preserving trigger audit information. Withdraw all queued agent work and request cancellation of held runs on owner transfers, without automatically restarting them. Correct legacy queued identities before claim and expose waiting reasons.
+
+  Expose the existing transactional `Projects.activity` recorder for application issue events and deliver owner transfers to all work kinds before ordinary triggers, including executor clearing. Restore Studio wording for models, efforts, the start dialog and historical sub-issue activity.
+
+  Preserve delegated execution identity throughout repeated retries, including handled inputs, and show the initiator of the current retry instead of copied retry history.
+
+- ddfe1b1: Replace workflows with six fixed issue statuses: Backlog, In progress, Blocked, In review, Done and Cancelled. Workflows, workflow templates, status rules, approval requests and checklists are removed, together with their routes, CLI commands, settings (`pm.workflows`) and client pieces (`WorkflowSelect`, the start dialog, status rule editors). A new issue starts in Backlog unless it is created in In progress ("Start now"); moving an issue to Blocked or In review notifies its owner. Other plugins register status events with `projectsStatusEventsToken` (`{ key, from, to }`) and fire them with `projects.statusEvents.fire`, replacing `workflowEvents`; a principal kind may now say which moves it makes (`moves`, `mayMove`) and which executor it defaults to (`defaultExecutor`). `PATCH /api/projects/issues/{issueId}` answers `{ data: { issue } }`. The migration `202610240010_pm_fixed_statuses` maps every issue to the fixed statuses by key and category (todo and other started statuses to In progress, ui_review to In review, done to Done, closed to Cancelled) and drops the workflow, approval and checklist tables and `pmProjects.workflowId`; it cannot be rolled back to the workflows it removed.
+
+### Patch Changes
+
+- 0e28a3c: Describe `issue subscribe` and `issue unsubscribe` (`POST /api/projects/issues/{issueId}/subscribe|unsubscribe`) as subscribing to and unsubscribing from an issue's notifications, so the API document and the command line no longer call them following, which Studio's "My follow-ups" means.
+- cb009d7: Pause agent work after an owner transfer until the new owner accepts. Add owner acceptance and rejection in issue pages and inbox decisions, with transfer activities and localized waiting reasons.
+- fad531f: Initialize the project manager's name and description once in the installation's default language and allow administrators to edit them, including clearing the description. Restarts and unrelated settings saves preserve the identity. Later changes to the installation language do not rename an initialized manager.
+
+  An upgrade seed preserves valid explicit settings, custom legacy agent values, empty descriptions, and unknown settings. Legacy agent values identical to the former built-in English defaults cannot be distinguished from manual writes and are initialized in the upgrade language when no valid explicit setting exists. A damaged `studioSettings.projectManager.value` stops initialization with a repair instruction instead of overwriting it.
+
+  Resolve historical run inputs, notifications, delegation cards, plans, and consultation identity labels from stable agent IDs without rewriting historical text or execution snapshots. Legacy limit notices and plans whose identity cannot be recovered use neutral labels, and unresolved consultations mark the originally requested subject. Refresh identity caches when the manager is renamed.
+
+  Mount application query effects inside the projects plugin's cache using its optional `queryEffects` composition point. Keep completed consultation labels current after renames and distinguish loading, inaccessible agents, and historical request snapshots.
+
+- Updated dependencies [9e99702]
+  - @nocobase/app-server@2.0.0-beta.6
+  - @nocobase/app-plugin-authentication@2.0.0-beta.8
+  - @nocobase/app-plugin-file@1.0.0-beta.23
+
 ## 0.1.0-beta.7
 
 ### Minor Changes

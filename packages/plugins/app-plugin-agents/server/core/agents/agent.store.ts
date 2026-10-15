@@ -16,7 +16,6 @@ import {
 } from '../../../shared/agents.js';
 import type { I18nText } from '../../../shared/i18n.js';
 import { jsonObject, stringArray } from '../../kernel/values.js';
-import { attachedSkillIdsOf } from '../skills/skill.store.js';
 
 const AGENTS = 'agAgents';
 
@@ -93,10 +92,7 @@ function i18nTextOf(value: unknown): I18nText | null {
     : null;
 }
 
-export function toAgent(
-  record: AgentRecord,
-  skillIds: readonly string[],
-): Agent {
+export function toAgent(record: AgentRecord): Agent {
   const toolPolicy =
     record.toolPolicy === null ? null : jsonObject(record.toolPolicy);
   const source: AgentSource = record.source === 'system' ? 'system' : 'runner';
@@ -121,7 +117,6 @@ export function toAgent(
     instructions: record.instructions,
     actions: stringArray(record.actions),
     confirmChanges: record.confirmChanges === 'always' ? 'always' : 'larger',
-    skillIds,
     maxConcurrentRuns: Number(record.maxConcurrentRuns),
     maxAttempts: Number(record.maxAttempts),
     toolPolicy,
@@ -139,10 +134,20 @@ export async function findAgent(
 ): Promise<Agent | null> {
   const record = await agentsRepo(conn).findOne({ filter: { id } });
   if (!record) return null;
-  return toAgent(
-    record,
-    (await attachedSkillIdsOf(conn, 'agent', [id])).get(id) ?? [],
-  );
+  return toAgent(record);
+}
+
+/** Load candidate agents in one query; skills belong to run scopes. */
+export async function findAgents(
+  conn: DatabaseConnection,
+  ids: readonly string[],
+): Promise<Map<string, Agent>> {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return new Map();
+  const records = await agentsRepo(conn).findMany({
+    filter: (f) => f.or(unique.map((id) => f.string('id').eq(id))),
+  });
+  return new Map(records.map((record) => [record.id, toAgent(record)]));
 }
 
 /** Whether the agent is gone, or was removed by an earlier version (its row kept for the names in its history). */
@@ -187,12 +192,7 @@ export async function listAgents(conn: DatabaseConnection): Promise<Agent[]> {
     filter: (f) => f.date('deletedAt').empty(),
     sort: (sort) => [sort.field('name').asc(), sort.field('id').asc()],
   });
-  const skills = await attachedSkillIdsOf(
-    conn,
-    'agent',
-    records.map((record) => record.id),
-  );
-  return records.map((record) => toAgent(record, skills.get(record.id) ?? []));
+  return records.map(toAgent);
 }
 
 export async function insertAgent(

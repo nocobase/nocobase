@@ -7,7 +7,15 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
+
+// Whether the person may open My tasks, as the authorization plugin answers.
+const access = vi.hoisted(() => ({ myTasks: true }));
+vi.mock('@nocobase/app-plugin-authorization/client', () => ({
+  useAuthorizationClient: () => ({
+    can: () => Promise.resolve(access.myTasks),
+  }),
+}));
 import LandingPage from '../../client/pages/landing/index.js';
 import HomeRedirect from '../../client/pages/home/redirect.js';
 
@@ -22,7 +30,7 @@ function Destination() {
   );
 }
 
-it('preserves search and fragment under the deployment base and replaces the root history entry', async () => {
+function renderLanding() {
   render(
     <MemoryRouter
       basename='/main'
@@ -34,16 +42,30 @@ it('preserves search and fragment under the deployment base and replaces the roo
     >
       <Routes>
         <Route path='/' element={<LandingPage />} />
+        <Route path='/my-issues' element={<Destination />} />
         <Route path='/inbox' element={<Destination />} />
         <Route path='/dashboard' element={<Destination />} />
       </Routes>
     </MemoryRouter>,
   );
-  expect(screen.getByRole('status')).toHaveTextContent(
-    '/inbox?account=preferences&kind=decision#detail',
+}
+
+it('opens My tasks, preserving search and fragment under the deployment base and replacing the root history entry', async () => {
+  access.myTasks = true;
+  renderLanding();
+  expect(await screen.findByRole('status')).toHaveTextContent(
+    '/my-issues?account=preferences&kind=decision#detail',
   );
   await userEvent.click(screen.getByRole('button', { name: 'Back' }));
   expect(screen.getByRole('status')).toHaveTextContent('/dashboard');
+});
+
+it('opens the inbox for someone My tasks is not granted to', async () => {
+  access.myTasks = false;
+  renderLanding();
+  expect(await screen.findByRole('status')).toHaveTextContent(
+    '/inbox?account=preferences&kind=decision#detail',
+  );
 });
 
 it('redirects legacy home URLs to the chat composer with search and fragment, replacing history', async () => {

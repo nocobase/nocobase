@@ -12,17 +12,14 @@ import {
   statusTone,
   useIntakeBreakdown,
   useMentionSearch,
-  useStatusName,
   type IssuePageActions,
   type IssueUpdate,
 } from '@nocobase/app-plugin-projects/client/issues';
 import { useViewer } from '@nocobase/app-plugin-projects/client/kit';
-import type {
-  IssueDetail,
-  StatusDefinition,
-} from '@nocobase/app-plugin-projects/shared/issues';
+import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
+  CornerLeftUpIcon,
   Link2Icon,
   ListTreeIcon,
   PaperclipIcon,
@@ -40,17 +37,16 @@ import {
   IssueDependencies,
   IssueDescription,
   IssueFilesButton,
-  IssueHeader,
   IssueSubtasks,
   type DependencyItem,
   type IssueDetailLink,
-  type IssueDetailStatus,
 } from '@/extensions/nocobase-issue-detail/issue-detail';
 
 import { toneColor } from '../rows.js';
 import { IssueMarkdown } from '../markdown.js';
 import { attachmentFile, useFilePreviewState } from './files.js';
 import { useDependencyActions } from './dependency-actions.js';
+import { underIssue, useIssueBase } from './issue-base.js';
 import { issueHrefUnder, useIssueParent } from './issue-parent.js';
 import { useIssueTrail } from './issue-trail.js';
 import { useIssuePageWording } from './labels.js';
@@ -63,27 +59,18 @@ const routerLink: IssueDetailLink = ({ href, className, children }) => (
   </Link>
 );
 
-/** A status as the block shows it. */
-function useStatusOf(
-  statuses: readonly StatusDefinition[],
-): (key: string) => IssueDetailStatus {
-  const statusName = useStatusName();
-  return (key) => ({
-    name: statusName(statuses, key),
-    color: toneColor(statusTone(statuses, key)),
-  });
-}
-
-/** The header: the page's `actions` and "Delete", the parent, the title and the meta; the trail by the issue's project and parent goes in the shell header (`issue-trail.ts`). */
-export function IssueHeaderSection({
+/**
+ * The body card's first row: the parent issue, the project and the page's marks (`meta`), then the page's `actions`
+ * and "Delete". The title, key and status are the pinned summary's (`../live/issue-summary.tsx`), which renames the
+ * issue; the trail by the issue's project and parent goes in the shell header (`issue-trail.ts`).
+ */
+export function IssueBodyHeader({
   detail,
-  update,
   actions,
   pageActions,
   meta,
 }: {
   readonly detail: IssueDetail;
-  readonly update: IssueUpdate;
   readonly actions?: ReactNode;
   readonly pageActions: IssuePageActions;
   readonly meta?: ReactNode;
@@ -91,57 +78,47 @@ export function IssueHeaderSection({
   const { detail: labels } = useIssuePageWording();
   const viewer = useViewer();
   const navigate = useNavigate();
-  const statusOf = useStatusOf(detail.statuses);
   const parent = useIssueParent();
   useIssueTrail(detail);
   return (
-    <IssueHeader
-      identifier={detail.identifier}
-      title={detail.title}
-      status={statusOf(detail.statusKey)}
-      parent={
-        detail.parent
-          ? {
-              identifier: detail.parent.identifier,
-              title: detail.parent.title,
-              href: issueHrefUnder(parent, detail.parent.id),
-            }
-          : null
-      }
-      project={
-        detail.project
-          ? {
-              name: detail.project.name,
-              href: `/projects/${encodeURIComponent(detail.project.id)}`,
-            }
-          : null
-      }
-      actions={
-        <>
-          {actions}
-          {canDeleteIssues(viewer) ? (
-            <IssueDeleteButton
-              identifier={detail.identifier}
-              labels={labels}
-              onDelete={async () => {
-                await pageActions.deleteIssue();
-                void navigate('..', { relative: 'path' });
-              }}
-            />
-          ) : null}
-        </>
-      }
-      meta={meta}
-      {...(canEditIssues(viewer)
-        ? {
-            onRename: async (title: string) => {
-              await update.mutateAsync({ title });
-            },
-          }
-        : {})}
-      link={routerLink}
-      labels={labels}
-    />
+    <div
+      className='flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground'
+      data-slot='issue-body-header'
+    >
+      {detail.parent ? (
+        <Link
+          to={issueHrefUnder(parent, detail.parent.id)}
+          className='inline-flex max-w-full min-w-0 items-center gap-1.5 hover:text-foreground'
+        >
+          <CornerLeftUpIcon className='size-3.5 shrink-0' aria-hidden='true' />
+          <span className='shrink-0'>{labels.parent}</span>
+          <span className='shrink-0 font-mono'>{detail.parent.identifier}</span>
+          <span className='truncate'>{detail.parent.title}</span>
+        </Link>
+      ) : null}
+      {detail.project ? (
+        <Link
+          to={`/projects/${encodeURIComponent(detail.project.id)}`}
+          className='truncate hover:text-foreground hover:underline'
+        >
+          {detail.project.name}
+        </Link>
+      ) : null}
+      {meta}
+      <span className='ml-auto flex shrink-0 items-center gap-1'>
+        {actions}
+        {canDeleteIssues(viewer) ? (
+          <IssueDeleteButton
+            identifier={detail.identifier}
+            labels={labels}
+            onDelete={async () => {
+              await pageActions.deleteIssue();
+              void navigate('..', { relative: 'path' });
+            }}
+          />
+        ) : null}
+      </span>
+    </div>
   );
 }
 
@@ -230,6 +207,7 @@ export function IssueAddSection({
 }): ReactElement | null {
   const { t, detail: labels, attachments } = useIssuePageWording();
   const viewer = useViewer();
+  const base = useIssueBase();
   const breakdown = useIntakeBreakdown(detail.id);
   const canEdit = canEditIssues(viewer);
   const noFiles =
@@ -256,7 +234,7 @@ export function IssueAddSection({
       {canEdit && noSubtasks ? (
         <IssueAddButton
           nativeButton={false}
-          render={<Link to='new-subtask' />}
+          render={<Link to={underIssue(base, 'new-subtask')} />}
           data-testid='issue-add-subtask'
         >
           <ListTreeIcon data-icon='inline-start' />
@@ -300,6 +278,7 @@ export function IssueSubtasksSection({
   const viewer = useViewer();
   const breakdown = useIntakeBreakdown(detail.id);
   const parent = useIssueParent();
+  const base = useIssueBase();
   const canEdit = canEditIssues(viewer);
   return (
     <IssueSubtasks
@@ -318,6 +297,7 @@ export function IssueSubtasksSection({
           status: {
             name: subtask.status.name,
             color: toneColor(statusTone([subtask.status], subtask.status.key)),
+            key: subtask.status.key,
           },
           waiting:
             subtask.blockedCount > 0
@@ -346,7 +326,7 @@ export function IssueSubtasksSection({
             ) : null}
             <IssueAddButton
               nativeButton={false}
-              render={<Link to='new-subtask' />}
+              render={<Link to={underIssue(base, 'new-subtask')} />}
             >
               <PlusIcon data-icon='inline-start' />
               {t('subtasks.new')}
@@ -388,6 +368,7 @@ export function IssueDependenciesSection({
     status: {
       name: dependency.status.name,
       color: toneColor(statusTone([dependency.status], dependency.status.key)),
+      key: dependency.status.key,
     },
   });
   const canEdit = canEditIssues(viewer);

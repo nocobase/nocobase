@@ -29,7 +29,7 @@ export interface FakePull {
   /** The squash commit, once merged. */
   merge_commit_sha?: string | null;
   draft: boolean;
-  head: { ref: string; sha: string };
+  head: { ref: string; sha: string; repo?: { full_name: string } | null };
   base: { ref: string };
   user: { login: string };
   mergeable_state: string;

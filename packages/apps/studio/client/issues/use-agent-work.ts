@@ -5,9 +5,10 @@ import {
 } from '@nocobase/app-client';
 import { RUNNERS_TOPIC } from '@nocobase/app-plugin-agents/shared/realtime';
 import type { IssueListItem } from '@nocobase/app-plugin-projects/shared/issues';
+import { announcedIssueIds } from '@nocobase/app-plugin-projects/client/kit';
 import { PM_REALTIME_TOPIC } from '@nocobase/app-plugin-projects/shared/realtime';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ISSUE_AGENT_WORK_BATCH,
   type IssueAgentWork,
@@ -34,6 +35,13 @@ export function useIssueAgentWork(
   );
   const pairs = [...executors].sort(([a], [b]) => a.localeCompare(b));
   const identity = JSON.stringify(pairs);
+  // The issues an announcement has to name to concern this view, read by the subscription below.
+  const shownRef = useRef<ReadonlySet<string>>(new Set());
+  useEffect(() => {
+    shownRef.current = new Set(
+      (JSON.parse(identity) as [string, string][]).map(([id]) => id),
+    );
+  }, [identity]);
 
   useEffect(() => {
     let timer: number | undefined;
@@ -51,7 +59,11 @@ export function useIssueAgentWork(
     };
     document.addEventListener('visibilitychange', visibility);
     const stops = [
-      realtime.subscribe<unknown>(PM_REALTIME_TOPIC, refresh),
+      realtime.subscribe<unknown>(PM_REALTIME_TOPIC, (event) => {
+        const named = announcedIssueIds(event?.payload);
+        if (named && ![...shownRef.current].some((id) => named.has(id))) return;
+        refresh();
+      }),
       realtime.subscribe<unknown>(RUNNERS_TOPIC, refresh),
       realtime.onOpen(refresh),
     ];

@@ -235,6 +235,7 @@ export default function ArticlesPage(): ReactElement {
                   variant={
                     article.status === 'published' ? 'default' : 'secondary'
                   }
+                  data-size='sm'
                 >
                   {statusLabel(article.status)}
                 </Badge>
@@ -319,7 +320,9 @@ export default function ArticlesPage(): ReactElement {
           {preview && (
             <div className='-mx-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4'>
               <div className='flex items-center gap-3 text-sm text-muted-foreground'>
-                <Badge variant='secondary'>{statusLabel(preview.status)}</Badge>
+                <Badge variant='secondary' data-size='sm'>
+                  {statusLabel(preview.status)}
+                </Badge>
                 {date(preview.updatedAt)}
               </div>
               <div className='whitespace-pre-wrap text-sm leading-relaxed'>

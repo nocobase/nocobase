@@ -5,10 +5,23 @@ const send = (record) => console.log(JSON.stringify(record));
 if (process.argv.includes('--version')) {
   console.log('pi 0.99.2');
 } else if (process.argv.includes('--list-models')) {
+  const configured = [
+    ...(process.env.LOCAL_PROVIDER_KEY === 'synthetic-key'
+      ? ['custom demo']
+      : []),
+    ...(process.env.FIXTURE_API_KEY === 'synthetic-key'
+      ? ['openai key-demo']
+      : []),
+    ...(process.env.FIXTURE_OAUTH_CONFIGURED === '1'
+      ? ['openai-codex oauth-demo']
+      : []),
+  ];
   console.log(
-    process.env.LOCAL_PROVIDER_KEY === 'synthetic-key'
-      ? 'provider model\ncustom demo'
-      : 'No available models',
+    process.argv.includes('--offline')
+      ? 'provider model\nunconfigured model'
+      : configured.length
+        ? `provider model\n${configured.join('\n')}`
+        : 'No available models',
   );
 } else {
   if (process.env.LOCAL_PROVIDER_KEY !== 'synthetic-key') {

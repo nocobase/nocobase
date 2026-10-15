@@ -33,7 +33,7 @@ export interface AttachmentUploads {
   /** The uploaded files' ids, in the order added. */
   readonly ids: readonly string[];
   readonly uploading: boolean;
-  readonly add: (files: readonly File[]) => void;
+  readonly add: (files: readonly File[]) => Promise<Attachment[]>;
   /** Takes a file back: an upload in flight is cancelled, a finished one deleted. */
   readonly remove: (key: string) => void;
   /** Forgets the files once they were sent, without deleting them. */
@@ -84,6 +84,7 @@ export function useAttachmentUploads(
   const notify = useNotify();
   const [uploads, setUploads] = useState<readonly PendingUpload[]>([]);
   const counterRef = useRef(0);
+  const activeRef = useRef(new Set<string>());
   const controllersRef = useRef(new Map<string, AbortController>());
   // What unmounting would discard; `clear()` empties it at once, ahead of a close that unmounts in the same render.
   const heldRef = useRef<readonly PendingUpload[]>([]);
@@ -110,7 +111,7 @@ export function useAttachmentUploads(
   }, []);
 
   const add = useCallback(
-    (files: readonly File[]) => {
+    async (files: readonly File[]) => {
       // The server refuses more than the maximum anyway; this keeps the reader from uploading what it would refuse.
       const room = ATTACHMENTS_PER_REQUEST_MAX - uploads.length;
       if (files.length > room)
@@ -118,36 +119,42 @@ export function useAttachmentUploads(
           null,
           t('attachments.tooMany', { count: ATTACHMENTS_PER_REQUEST_MAX }),
         );
-      files.slice(0, Math.max(room, 0)).forEach((original, index) => {
-        const file = named(original, index);
-        if (file.size > ATTACHMENT_SIZE_MAX) {
-          notify.error(
-            null,
-            t('attachments.tooLarge', {
-              name: file.name,
-              size: ATTACHMENT_SIZE_MB,
-            }),
-          );
-          return;
-        }
-        counterRef.current += 1;
-        const key = `upload-${counterRef.current}`;
-        const controller = new AbortController();
-        controllersRef.current.set(key, controller);
-        setUploads((current) => [
-          ...current,
-          { key, name: file.name, size: file.size, attachment: null },
-        ]);
-        api
-          .uploadAttachment(file, controller.signal)
-          .then((attachment) =>
+      const results = await Promise.all(
+        files.slice(0, Math.max(room, 0)).map(async (original, index) => {
+          const file = named(original, index);
+          if (file.size > ATTACHMENT_SIZE_MAX) {
+            notify.error(
+              null,
+              t('attachments.tooLarge', {
+                name: file.name,
+                size: ATTACHMENT_SIZE_MB,
+              }),
+            );
+            return;
+          }
+          counterRef.current += 1;
+          const key = `upload-${counterRef.current}`;
+          const controller = new AbortController();
+          controllersRef.current.set(key, controller);
+          activeRef.current.add(key);
+          setUploads((current) => [
+            ...current,
+            { key, name: file.name, size: file.size, attachment: null },
+          ]);
+          try {
+            const attachment = await api.uploadAttachment(
+              file,
+              controller.signal,
+            );
+            if (controller.signal.aborted) return undefined;
             setUploads((current) =>
               current.map((upload) =>
                 upload.key === key ? { ...upload, attachment } : upload,
               ),
-            ),
-          )
-          .catch((error: unknown) => {
+            );
+            return { key, attachment };
+          } catch (error: unknown) {
+            activeRef.current.delete(key);
             setUploads((current) =>
               current.filter((upload) => upload.key !== key),
             );
@@ -156,9 +163,15 @@ export function useAttachmentUploads(
                 error,
                 t('attachments.uploadFailed', { name: file.name }),
               );
-          })
-          .finally(() => controllersRef.current.delete(key));
-      });
+            return undefined;
+          } finally {
+            controllersRef.current.delete(key);
+          }
+        }),
+      );
+      return results.flatMap((result) =>
+        result && activeRef.current.has(result.key) ? [result.attachment] : [],
+      );
     },
     [api, notify, t, uploads.length],
   );
@@ -172,6 +185,7 @@ export function useAttachmentUploads(
     add,
     remove: (key) => {
       const upload = uploads.find((candidate) => candidate.key === key);
+      activeRef.current.delete(key);
       controllersRef.current.get(key)?.abort();
       setUploads((current) =>
         current.filter((candidate) => candidate.key !== key),
@@ -180,6 +194,7 @@ export function useAttachmentUploads(
         void api.removeAttachment(upload.attachment.id).catch(() => undefined);
     },
     clear: () => {
+      activeRef.current.clear();
       heldRef.current = [];
       sendingRef.current = false;
       setUploads([]);
@@ -192,7 +207,7 @@ export function useAttachmentUploads(
       if (files.length === 0) return;
       event.preventDefault();
       event.stopPropagation();
-      add(files);
+      void add(files);
     },
     onDragOver: (event) => {
       if (event.dataTransfer.types.includes('Files')) event.preventDefault();
@@ -201,7 +216,7 @@ export function useAttachmentUploads(
       if (event.dataTransfer.files.length === 0) return;
       event.preventDefault();
       event.stopPropagation();
-      add([...event.dataTransfer.files]);
+      void add([...event.dataTransfer.files]);
     },
   };
 }

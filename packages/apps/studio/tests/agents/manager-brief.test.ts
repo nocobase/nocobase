@@ -76,10 +76,10 @@ describe("the project manager's run", () => {
 
     expect(system).toContain('## Agents you can hand work to');
     expect(system).toContain(
-      `- [@Coder](mention://agent/${coder}) (online, 0 open runs): Writes and fixes code.`,
+      `- [@Coder](mention://agent/${coder}) (online, canStartNow=true,`,
     );
     expect(system).toContain(
-      `- [@Reviewer](mention://agent/${reviewer}) (online, 0 open runs): Reviews code thoroughly.`,
+      `- [@Reviewer](mention://agent/${reviewer}) (online, canStartNow=true,`,
     );
     expect(system).not.toContain(`mention://agent/${disabled}`);
     expect(system).not.toContain(`mention://agent/${PROJECT_MANAGER_ID}`);
@@ -88,6 +88,93 @@ describe("the project manager's run", () => {
     expect(payload.workspace.key).toBe(`${issue.identifier}.manager`);
     expect(payload.workspace.readOnly).toBeUndefined();
   });
+
+  it.each([false, true])(
+    'counts the manager tool reservation in its real brief (retry=%s)',
+    async (retry) => {
+      const worker = await h.createAgent({
+        name: 'Worker',
+        tool: retry ? 'codex' : 'claude',
+      });
+      await h.claimOne();
+      await h.database
+        .connection()
+        .query.updateTable('agRunners')
+        .set({ toolSlots: { claude: 1, codex: 1 } })
+        .allowAllRows()
+        .execute();
+      if (retry) {
+        const preferred = await h.createAgent({
+          name: 'Initial choice',
+          tool: 'claude',
+          model: 'initial',
+        });
+        await h.manager.update('alice', { firstChoiceAgentId: preferred });
+      }
+      await openIssue(true);
+      let payload = await h.claimOne();
+      if (retry) {
+        const oldTool = (await h.agents.runs.get(payload.run.id)).tool;
+        expect(oldTool).toBe('claude');
+        await h.database
+          .connection()
+          .query.updateTable('agRuns')
+          .set({
+            maxAttempts: 3,
+            leaseExpiresAt: new Date(Date.now() - 1_000).toISOString(),
+          })
+          .where('id', '=', payload.run.id)
+          .execute();
+        await h.agents.sweeper.sweep();
+        await h.manager.update('alice', { firstChoiceAgentId: worker });
+        await h.database
+          .connection()
+          .query.updateTable('agRuns')
+          .set({ availableAt: null })
+          .where('id', '=', payload.run.id)
+          .execute();
+        payload = await h.claimOne();
+      }
+      expect(payload.prompt.system).toContain(
+        `- [@Worker](mention://agent/${worker}) (online, canStartNow=false,`,
+      );
+      expect(payload.prompt.system).toContain(`${retry ? 'codex' : 'claude'}/`);
+      expect((await h.agents.runs.get(payload.run.id)).tool).toBe(
+        retry ? 'codex' : 'claude',
+      );
+    },
+  );
+
+  it.each([
+    ['in_progress', ['blocked', 'in_review']],
+    ['blocked', ['in_progress', 'in_review']],
+    ['in_review', ['in_progress', 'blocked']],
+  ] as const)(
+    'briefs the real next transitions from %s',
+    async (statusKey, moves) => {
+      await h.createAgent({ name: 'Coder' });
+      const issue = await openIssue(true);
+      if (statusKey !== 'in_progress') {
+        await h.projects.issues.update(alice(), issue.id, {
+          revision: issue.revision,
+          statusKey,
+          ...(statusKey === 'blocked' || statusKey === 'in_review'
+            ? { needsYou: 'Please review the requested work.' }
+            : {}),
+        });
+      }
+      const payload = await h.claimOne();
+      const system = payload.prompt.system as string;
+      expect(system).toContain(
+        `At this read, the current status is ${statusKey}; available next transitions are: ${moves.join(', ')}`,
+      );
+      expect(system).toContain(
+        'not a fixed restriction after the status changes',
+      );
+      expect(system).toContain(`nb-studio issue get ${issue.identifier}`);
+      expect(system).toContain('never bypass a refusal');
+    },
+  );
 
   it('leaves out of the roster an agent no runner reported for 14 days', async () => {
     await h.createAgent({ name: 'Coder' });
@@ -193,15 +280,30 @@ describe("an agent's step", () => {
     expect(payload.workspace.readOnly).toBeUndefined();
     const system = payload.prompt.system as string;
     expect(system).toContain(firstLine(WORKER_INSTRUCTIONS));
+    expect(WORKER_INSTRUCTIONS).toContain(
+      'git push origin HEAD:refs/heads/<branch>',
+    );
+    expect(system).toContain('private runner alias');
+    expect(WORKER_INSTRUCTIONS).toContain(
+      'never rewrite history already pushed',
+    );
+    expect(WORKER_INSTRUCTIONS).toContain('switch or create branches');
+    expect(WORKER_INSTRUCTIONS).toContain('push any branch of this repository');
+    expect(WORKER_INSTRUCTIONS).toContain('nb-studio pr open --head <branch>');
+    expect(WORKER_INSTRUCTIONS).toContain('nb-studio pr unlink');
     expect(system).toContain("Do not change the issue's status.");
     expect(system).not.toContain(firstLine(MANAGER_ROLE));
     expect(system).not.toContain('## Agents you can hand work to');
+    expect(system).not.toContain('available next transitions');
 
     const token = payload.cli.credential.content.token as string;
     const moved = await h.request(
       'PATCH',
       `/projects/issues/${issue.identifier}`,
-      { runToken: token, body: { statusKey: 'in_review' } },
+      {
+        runToken: token,
+        body: { statusKey: 'in_review', needsYou: 'Please review the work.' },
+      },
     );
     expect(moved.status).toBe(400);
     expect(moved.body.error.reason).toBe('TRANSITION_NOT_ALLOWED');

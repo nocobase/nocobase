@@ -152,7 +152,7 @@ export function createIssueRoutes(deps: {
         ],
       }),
       description:
-        'Needs `create` on `pm.issues` for the issue’s project, and `upload` on `pm.attachments` to send `attachmentIds` (the caller’s uploads attached to nothing, which become the issue’s own files). The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one.',
+        'Needs `create` on `pm.issues` for the issue’s project. The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one. Optional `attachmentIds` binds the caller’s own unattached uploads in the creation transaction before work starts; this also needs `upload` on `pm.attachments`.',
       responses: {
         201: dataResponse(IssueSchema),
         ...apiErrorResponses,
@@ -285,10 +285,12 @@ export function createIssueRoutes(deps: {
           projectId: { name: 'project' },
           labelIds: { name: 'label' },
           description: { contentFile: true },
+          needsYou: { name: 'needs-you', contentFile: true },
+          next: { contentFile: true },
         },
         action: 'pm.issues/edit',
         examples: [
-          'issue update PM-12 --status in_review',
+          'issue update PM-12 --status in_review --needs-you "Review the change and accept it or send it back."',
           'issue update PM-12 --file change.json',
         ],
       }),

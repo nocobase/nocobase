@@ -86,7 +86,7 @@ describe('app client routes', () => {
     ).toEqual([]);
   });
 
-  it('orders My tasks, Inbox, Dashboard and My follow-ups without a Home entry, followed by the existing sections', () => {
+  it('orders My tasks, My agents, Dashboard and My follow-ups without a Home entry, followed by the existing sections; the inbox is in the header', () => {
     const menu = (routes: readonly AppClientRegisteredRoute[]) =>
       routes.flatMap((route) =>
         route.navigation ? [route.navigation.title] : [],
@@ -94,7 +94,7 @@ describe('app client routes', () => {
     const { routes } = resolveRoutes();
     expect(menu(routes)).toEqual([
       'navigation.myIssues',
-      'navigation.inbox',
+      'navigation.agentSessions',
       'navigation.dashboard',
       'navigation.followUps',
       'navigation.development',
@@ -164,6 +164,7 @@ describe('app client routes', () => {
       // The person's own settings; every category's API checks what it serves.
       { name: 'account', authorizedAs: null },
       { name: 'account-category', authorizedAs: null },
+      { name: 'inbox', authorizedAs: null },
       { name: 'pm-my-issues', authorizedAs: 'pm-my-issues' },
       { name: 'pm-my-issues-owned', authorizedAs: 'pm-my-issues' },
       // An issue opened from a list is declared under it, behind the list's grant (`issueDetailRoute`).
@@ -191,7 +192,9 @@ describe('app client routes', () => {
       // Legacy `/pm` links open the chat panel; the inbox needs no page grant.
       { name: 'chat-pm', authorizedAs: null },
       { name: 'chat-pm-conversation', authorizedAs: null },
-      { name: 'inbox', authorizedAs: null },
+      // My agents: a session is its owner's alone, which its API checks.
+      { name: 'agent-sessions', authorizedAs: null },
+      { name: 'agent-sessions-session', authorizedAs: null },
       // The dashboard, behind the reports grant its figures' API checks too.
       { name: 'dashboard', authorizedAs: 'reports' },
       // My follow-ups opens with My issues' grant.

@@ -1,6 +1,5 @@
 ---
 '@nocobase/db': patch
-'@nocobase/db-dameng': patch
 '@nocobase/db-testkit': patch
 ---
 

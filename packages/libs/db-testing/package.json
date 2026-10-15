@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/db-testing",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "Portable database test fixtures for @nocobase/db: tests run on SQLite by default and on any dialect selected by environment variable.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -49,30 +49,21 @@
   },
   "peerDependencies": {
     "@nocobase/db": "workspace:^",
-    "@nocobase/db-dameng": "workspace:^",
-    "@nocobase/db-kingbase": "workspace:^",
     "@nocobase/db-mssql": "workspace:^",
     "@nocobase/db-mysql": "workspace:^",
-    "@nocobase/db-oceanbase": "workspace:^",
     "@nocobase/db-oracle": "workspace:^",
     "@nocobase/db-postgres": "workspace:^",
     "@nocobase/db-sqlite": "workspace:^",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@nocobase/db-dameng": "^0.1.0-beta.4",
+    "@nocobase/db-kingbase": "^0.1.0-beta.4",
+    "@nocobase/db-oceanbase": "^0.1.0-beta.4"
   },
   "peerDependenciesMeta": {
-    "@nocobase/db-dameng": {
-      "optional": true
-    },
-    "@nocobase/db-kingbase": {
-      "optional": true
-    },
     "@nocobase/db-mssql": {
       "optional": true
     },
     "@nocobase/db-mysql": {
-      "optional": true
-    },
-    "@nocobase/db-oceanbase": {
       "optional": true
     },
     "@nocobase/db-oracle": {
@@ -83,15 +74,21 @@
     },
     "vitest": {
       "optional": true
+    },
+    "@nocobase/db-dameng": {
+      "optional": true
+    },
+    "@nocobase/db-kingbase": {
+      "optional": true
+    },
+    "@nocobase/db-oceanbase": {
+      "optional": true
     }
   },
   "devDependencies": {
     "@nocobase/db": "workspace:*",
-    "@nocobase/db-dameng": "workspace:*",
-    "@nocobase/db-kingbase": "workspace:*",
     "@nocobase/db-mssql": "workspace:*",
     "@nocobase/db-mysql": "workspace:*",
-    "@nocobase/db-oceanbase": "workspace:*",
     "@nocobase/db-oracle": "workspace:*",
     "@nocobase/db-postgres": "workspace:*",
     "@nocobase/db-sqlite": "workspace:*",
@@ -101,5 +98,8 @@
     "prettier": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "import-meta-resolve": "^4.2.0"
   }
 }

@@ -4,8 +4,12 @@ import { z } from 'zod';
 import {
   DASHBOARD_PERIODS,
   USAGE_GROUP_BYS,
+  type AgentFigures,
+  type DashboardAgents,
   type DashboardAttention,
-  type DashboardReport,
+  type DashboardDelivery,
+  type DashboardProjects,
+  type DeliveryFigures,
   type MetricsReport,
   type MetricStatus,
   type UsageReport,
@@ -20,7 +24,7 @@ const CostsSchema = z
   .record(z.string(), z.number())
   .meta({ ref: 'StudioReportCosts', description: 'Cost per currency.' });
 
-const DashboardFiguresSchema = z
+const DeliveryFiguresSchema: z.ZodType<DeliveryFigures> = z
   .object({
     completed: count.meta({
       description: 'Throughput: issues that entered a done status.',
@@ -36,6 +40,11 @@ const DashboardFiguresSchema = z
       description:
         'The cost of the usage reported in the period over the issues completed.',
     }),
+  })
+  .meta({ ref: 'StudioDeliveryFigures' });
+
+const AgentFiguresSchema: z.ZodType<AgentFigures> = z
+  .object({
     runs: count.meta({ description: 'Runs queued in the period.' }),
     successRate: ratio.meta({
       description: 'Completed over completed and failed runs.',
@@ -55,31 +64,24 @@ const DashboardFiguresSchema = z
       description: 'Median queued → claimed of the runs, in milliseconds.',
     }),
   })
-  .meta({ ref: 'StudioDashboardFigures' });
+  .meta({ ref: 'StudioAgentFigures' });
 
-export const DashboardReportSchema: z.ZodType<DashboardReport> = z.object({
+const period = {
   days: z.literal(DASHBOARD_PERIODS),
   from: z.string().meta({ description: 'The first day, `YYYY-MM-DD` (UTC).' }),
   to: z.string().meta({ description: 'The last day, `YYYY-MM-DD` (UTC).' }),
   subjects: z.boolean().meta({
     description: 'False without issue figures: the issue figures stay empty.',
   }),
-  currency: z.string().meta({ description: 'The currency of `daily.cost`.' }),
-  current: DashboardFiguresSchema,
-  previous: DashboardFiguresSchema,
-  daily: z.array(
-    z.object({
-      day: z.string(),
-      completed: count,
-      completedByAgents: count,
-      cycleTimeP50Ms: ms,
-      cost: z.number(),
-      runsCompleted: count,
-      runsFailed: count,
-      runsCancelled: count,
-      runsOpen: count,
-    }),
-  ),
+};
+
+export const DashboardDeliverySchema: z.ZodType<DashboardDelivery> = z.object({
+  ...period,
+  currency: z
+    .string()
+    .meta({ description: 'The currency of `buckets.costPerIssue`.' }),
+  current: DeliveryFiguresSchema,
+  previous: DeliveryFiguresSchema,
   buckets: z.array(
     z.object({
       from: z.string(),
@@ -90,6 +92,25 @@ export const DashboardReportSchema: z.ZodType<DashboardReport> = z.object({
       costPerIssue: z.number().nullable(),
     }),
   ),
+});
+
+export const DashboardAgentsSchema: z.ZodType<DashboardAgents> = z.object({
+  ...period,
+  current: AgentFiguresSchema,
+  previous: AgentFiguresSchema,
+  daily: z.array(
+    z.object({
+      day: z.string(),
+      runsCompleted: count,
+      runsFailed: count,
+      runsCancelled: count,
+      runsOpen: count,
+    }),
+  ),
+});
+
+export const DashboardProjectsSchema: z.ZodType<DashboardProjects> = z.object({
+  ...period,
   projects: z.array(
     z.object({
       id: z.string(),

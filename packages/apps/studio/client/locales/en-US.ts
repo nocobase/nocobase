@@ -3,7 +3,9 @@ import { followUpsEnUS } from '../follow-ups/locales.js';
 import type { LocaleResource } from '@nocobase/i18n';
 import { gitEnUS } from '../git/locales.js';
 import { knowledgeEnUS } from '../knowledge/locales.js';
+import { taskGroupsEnUS } from '../issues/groups/locales.js';
 import { issuesEnUS } from '../issues/locales.js';
+import { issueLiveEnUS } from '../issues/live/locales.js';
 import { projectPageEnUS } from '../projects/locales.js';
 import { ciSetupEnUS } from '../releases/ci-setup/locales.js';
 import { previewsEnUS, deploysEnUS } from '../previews/locales.js';
@@ -13,6 +15,24 @@ import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 import planCardEnUS from '@/extensions/nocobase-plan-card/locales/en-US';
 
 const enUS = {
+  'auth.passwordResetSuccess':
+    'Your password has been reset. Sign in with your new password.',
+  'auth.requestNewResetLink': 'Request a new reset link',
+
+  'issueRuns.selection.preferredQueued': 'First choice queued, using fallback',
+  'issueRuns.selection.preferredUnavailable':
+    'First choice unavailable, using fallback',
+  'projectManager.settingsPage.delegationTimeout':
+    'Delegated step queue timeout (seconds)',
+  'projectManager.settingsPage.delegationTimeoutHint':
+    'Default 600 seconds. Withdraw only unclaimed manager delegations and reply in their dispatch thread. At the comment run limit, retain the input for manual continuation.',
+  'projectManager.settingsPage.delegationTimeoutInvalid':
+    'Enter a whole number from 1 to 86400.',
+  'projectManager.settingsPage.fallbackAfter': 'Fallback delay (seconds)',
+  'projectManager.settingsPage.fallbackAfterHint':
+    'Wait 1–3600 seconds before an idle fallback may take queued work. If no compatible runner can take the first choice, use the fallback immediately.',
+  'projectManager.settingsPage.fallbackAfterInvalid':
+    'Enter a whole number from 1 to 3600.',
   'ownerHandoff.title': 'Owner handoff',
   'ownerHandoff.accept': 'Take over',
   'ownerHandoff.claim': 'Claim',
@@ -43,6 +63,10 @@ const enUS = {
   'issueRuns.configuredModel': 'Configured model: {{model}}',
   'issueRuns.modelUnknown': 'Model not reported',
   'issueRuns.clearFilters': 'Clear filters',
+  'issueRuns.attemptFailed': 'Attempt {{attempt}} failed',
+  'issueRuns.preparationFailed': 'Run preparation failed',
+  'issueRuns.retryScheduled': 'Automatic retry scheduled for {{time}}',
+  'issueRuns.awaitingDispatch': 'Waiting to be dispatched again',
   'issueRuns.emptyHint':
     'Check the executor and status in Properties to start agent work.',
   'issueRuns.loading': 'Loading execution log…',
@@ -101,6 +125,7 @@ const enUS = {
   runTranscript: {
     usedModel: 'Model: {{model}}',
     defaultModel: 'Default model',
+    confirmedBy: 'Confirmed by {{person}}',
     actingAs: 'Running as {{actor}}',
     triggeredBy: 'Triggered by {{person}}',
     systemTrigger: 'Triggered by the system',
@@ -128,6 +153,11 @@ const enUS = {
     errorsAlwaysVisible: 'Errors are always shown',
   },
   overrides: {
+    '@nocobase/app-plugin-agent-sessions': {
+      links: {
+        startHint: 'The project manager assigns agents and moves them along.',
+      },
+    },
     '@nocobase/app-plugin-agents': {
       runWait: {
         reasons: {
@@ -269,6 +299,7 @@ const enUS = {
     allConversations: 'View all',
     untitled: 'Untitled conversation',
     agentSetup: {
+      menu: 'Use Studio in your agent',
       open: 'Manage Studio with a local Coding Agent',
       title: 'Connect a local Coding Agent',
       description:
@@ -490,6 +521,7 @@ const enUS = {
     usage: 'Usage',
     config: 'Settings',
     home: 'Home',
+    agentSessions: 'My agents',
     dashboard: 'Dashboard',
     open: 'Open navigation',
     close: 'Close navigation',
@@ -931,6 +963,7 @@ const enUS = {
   'inbox.text.executor_suggested':
     '{{agentName}} is suggested to execute {{identifier}}',
   'inbox.someone': 'Someone',
+  'inbox.anAgent': 'An agent',
   'inbox.titles.approval_requested': 'Status change waiting for approval',
   'inbox.outcomes.retried': 'Retried',
   'inbox.outcomes.newRun': 'A new run has started',
@@ -1088,6 +1121,7 @@ const enUS = {
     toolNetwork: 'Tool network',
     toolProcess: 'Tool crashed',
     contextOverflow: 'Context overflow',
+    delegatedQueueTimeout: 'Delegation queue timeout; withdrawn',
     queuedExpired: 'Queue expired',
     modelUnavailable: 'Model unavailable',
     stepLimit: 'Too many tool calls',
@@ -1095,6 +1129,9 @@ const enUS = {
   },
   /** What Studio contributes to the agents plugin's pages and the projects plugin's workflow editor. */
   studioAgents: {
+    newProjectSkill: 'Attach to new projects automatically',
+    newProjectSkillDescription:
+      'Saves immediately. Only projects created afterwards receive this skill; existing projects keep their attachments.',
     principalKinds: { agent: 'Agent' },
     templateMessages: {
       inReview:
@@ -1116,6 +1153,8 @@ const enUS = {
       stageEntered: 'Workflow stage',
       planDecided: 'Plan decided',
       prChecksFailed: 'Checks failed',
+      stepEnded: 'Worker step ended',
+      managerIdle: 'Idle waiting recheck',
       prChecksPassed: 'Checks passed',
       started: 'Started',
       prConflict: 'Pull request conflict',
@@ -1286,7 +1325,7 @@ const enUS = {
     commentRuns: {
       limitReached: 'Agent comments paused',
       continueHint:
-        'Agents’ comments started {{maxRuns}} runs on this issue in {{windowHours}} hours, so the last one woke nobody. Continue to wake the agents it names once and restart the count.',
+        'Comment-triggered runs reached the limit of {{maxRuns}} in the last {{windowHours}} hours.',
       continued: 'Agent comment continued',
       continueStale: 'This comment no longer waits. Refresh the issue.',
       continueFailed:
@@ -1358,7 +1397,9 @@ const enUS = {
   preferences: preferencesEnUS,
   knowledge: knowledgeEnUS,
   issuesPage: issuesEnUS,
+  taskGroups: taskGroupsEnUS,
   followUps: followUpsEnUS,
+  issueLive: issueLiveEnUS,
   projectPage: projectPageEnUS,
   // A repository's "Deployment" (`client/releases/ci-setup`).
   ciSetup: ciSetupEnUS,
@@ -1384,6 +1425,8 @@ const enUS = {
     settings: 'Settings',
     loadFailed: 'Could not load the project manager.',
     settingsPage: {
+      name: 'Name',
+      identityDescription: 'Description',
       title: 'Project manager',
       description:
         'There is one for all projects: it arranges the work of every issue.',
@@ -1394,7 +1437,7 @@ const enUS = {
       noFallback: 'No fallback',
       choose: 'Choose an agent',
       agentsHint:
-        'The fallback is used when no runner can run the first choice. The project manager writes no code, and its runner does not check out the repository.',
+        'An idle fallback is used after the queue delay, or immediately when no compatible runner can run the first choice. The project manager writes no code, and its runner does not check out the repository.',
       noChoices: 'No agent is enabled yet. Enable one on the Agent page first.',
       principles: 'Allocation principles',
       restore: 'Restore built-in',
@@ -1417,6 +1460,42 @@ const enUS = {
   },
   issueStart: { title: 'Start now?', later: "Don't start now", start: 'Start' },
   issueProgress: {
+    firstChoice: 'First choice',
+    fallback: 'Fallback',
+    managerModelWait: '{{choice}} {{model}}: {{reason}}{{runners}}',
+    waitingForContinuation:
+      'Waiting for manual continuation: the automatic reply was delivered; the comment run limit was reached and the pending input is retained.',
+    managerWaiting: 'Project manager waiting for a runner: {{entries}}',
+    fallbackIn: 'Fallback eligible in {{seconds}} seconds',
+    fallbackReady: 'Waiting for an idle runner for either choice',
+    runnerLoad:
+      '{{name}}: slots {{used}}/{{limit}}, {{tool}} {{toolUsed}}/{{toolLimit}}, reported total free {{totalFree}}, tool free {{free}}',
+    workerChoice: 'Model',
+    workerWaiting: '{{agent}} waiting for a runner: {{entries}}',
+    modelWait: {
+      updatePending: 'runner waiting for update; new work is paused',
+      pruning: 'runner cleaning shared store; new work is paused',
+      toolNotInstalled: 'tool not installed',
+      toolUnavailable: 'tool not signed in, disabled, or model unavailable',
+      noSharedRunner: 'only other people’s personal runners are online',
+      unknown: 'workload eligibility is not established',
+
+      ready: 'can claim now',
+      busy: 'compatible runners are busy',
+      incompatible: 'runner incompatible; upgrade required',
+      offline: 'no online runner',
+      restricted:
+        'identity, policy or payload requirements exclude the runners',
+      concurrencyFull: 'agent concurrency limit reached',
+      sameWorkActive: 'another run in this thread is active',
+      delayed: 'scheduled delay or retry backoff',
+    },
+    nextLabel: 'Next:',
+    status: {
+      working: '{{agent}} working',
+      queued: '{{agent}} queued',
+      minutes: '{{minutes}} min',
+    },
     waiting: {
       waitingOwner: 'Waiting for {{owner}} to take over',
       noOwner: 'Waiting for a valid issue owner',
@@ -1445,7 +1524,7 @@ const enUS = {
     notStarted:
       'Not started. Start it and the project manager arranges the work.',
     finished: 'Finished',
-    idle: 'Nothing is going on now',
+    idle: 'Nothing is running',
     next: 'Next: {{next}}',
     start: 'Start',
     handOver: 'Hand over to the project manager',

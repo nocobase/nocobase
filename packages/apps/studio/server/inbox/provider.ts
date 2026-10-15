@@ -31,6 +31,7 @@ import { bindRunnersNotices } from './runners.js';
 import { studioInboxPortToken } from './port.js';
 import { createProjectsNotices } from './projects.js';
 import { createStudioInbox } from './service.js';
+import { noticeIdentities } from './identities.js';
 import { createInboxSource } from '../agents/conversation/inbox.js';
 import { studioInboxSourceToken, studioInboxToken } from './token.js';
 import {
@@ -38,6 +39,7 @@ import {
   watchFailedRunCards,
 } from '../agents/failed-run-cards.js';
 import { RUN_FAILED_FINAL } from '../agents/notices.js';
+import { PM_REALTIME_TOPIC } from '@nocobase/app-plugin-projects/shared/realtime';
 
 const DEFAULT_CHANNEL = 'inbox';
 
@@ -77,6 +79,15 @@ export default class StudioInboxProvider extends ServiceProvider<Application> {
     this.app.container.singleton(studioInboxToken, (resolver) =>
       createStudioInbox({
         database: resolver.resolve(databaseManagerToken),
+        identities: (_userId, rows, notices) =>
+          resolver.has(agentsToken)
+            ? noticeIdentities(
+                resolver.resolve(databaseManagerToken).connection(),
+                resolver.resolve(agentsToken),
+                rows,
+                notices,
+              )
+            : Promise.resolve(notices),
         notifications: () =>
           channel && resolver.has(notificationServiceToken)
             ? resolver.resolve(notificationServiceToken)
@@ -86,8 +97,15 @@ export default class StudioInboxProvider extends ServiceProvider<Application> {
             ? resolver.resolve(inAppNotificationStoreToken)
             : null,
         channel: channel ?? DEFAULT_CHANNEL,
-        announce: (userId) =>
-          void this.topic?.publishFor(userId, { kind: 'studio.inbox.changed' }),
+        announce: (userId) => {
+          void this.topic?.publishFor(userId, { kind: 'studio.inbox.changed' });
+          // Public invalidation carries no issue, decision or recipient data; every subsequent read is authorized.
+          if (resolver.has(realtimeServiceToken))
+            resolver.resolve(realtimeServiceToken).publish(PM_REALTIME_TOPIC, {
+              kind: 'pm.changed',
+              domain: 'issues',
+            });
+        },
       }),
     );
     this.app.container.singleton(studioInboxSourceToken, (resolver) =>

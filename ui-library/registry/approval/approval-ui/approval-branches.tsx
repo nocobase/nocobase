@@ -101,8 +101,9 @@ export function ApprovalBranches({
                 <span className='ml-auto flex max-w-full shrink-0 items-center gap-1'>
                   {branch.badge ? (
                     <Badge
+                      data-size='sm'
                       variant={branch.badge.variant ?? 'outline'}
-                      className='h-auto min-h-5 min-w-0 max-w-full shrink whitespace-normal'
+                      className='min-w-0 max-w-full shrink whitespace-normal'
                     >
                       {branch.badge.label}
                     </Badge>

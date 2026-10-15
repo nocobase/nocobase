@@ -9,6 +9,7 @@ import type { Attachment } from '../../../shared/attachments.js';
 import type { IssueComment } from '../../../shared/comments.js';
 import type { StatusCategory } from '../../../shared/issues.js';
 import type { ProjectResourceBinding } from '../../../shared/projects.js';
+import { transactionRead } from '../../kernel/transaction-read.js';
 import type { KindRegistry } from '../../kernel/kinds.js';
 import { findProject, projectResources } from '../projects/index.js';
 import { findIssue, findIssueRow, liveChildren } from './issue.store.js';
@@ -144,104 +145,111 @@ export function issuePath(identifier: string): string {
 export function createIssueContextProvider(
   deps: IssueContextDeps,
 ): IssueContextProvider {
+  const cached = transactionRead<IssueContext | undefined>();
   return {
-    async contextFor(conn, idOrKey, options = {}) {
-      const issue = await findIssue(conn, idOrKey);
-      if (!issue || issue.deletedAt) return undefined;
-      const row = await findIssueRow(conn, issue.id);
-      const catalog = deps.statuses.catalog();
-      const statusOf = (key: string): IssueContextStatus => {
-        const found = catalog.statuses.find((status) => status.key === key);
-        return {
-          key,
-          name: found?.name ?? key,
-          category: found?.category ?? 'unstarted',
-        };
-      };
-      const project = issue.projectId
-        ? await findProject(conn, issue.projectId)
-        : undefined;
-      const parent = issue.parentIssueId
-        ? await findIssue(conn, issue.parentIssueId)
-        : undefined;
-      const children = await liveChildren(conn, [issue.id]);
-      const executorName = issue.executor
-        ? ((
-            await deps.kinds.names(conn, issue.executor.type, [
-              issue.executor.id,
-            ])
-          ).get(issue.executor.id) ?? null)
-        : null;
-      const comments = (await deps.comments(conn, issue.id))
-        .filter((comment) => !comment.deleted)
-        .slice(-CONTEXT_COMMENT_LIMIT);
-      const ref = (other: {
-        readonly id: string;
-        readonly identifier: string;
-        readonly title: string;
-        readonly statusKey: string;
-      }): IssueContextIssueRef => ({
-        id: other.id,
-        identifier: other.identifier,
-        title: other.title,
-        status: other.statusKey,
-      });
-      return {
-        id: issue.id,
-        identifier: issue.identifier,
-        title: issue.title,
-        description: issue.description,
-        status: statusOf(issue.statusKey),
-        statuses: catalog.statuses.map((status) => statusOf(status.key)),
-        allowedTransitions: options.kind
-          ? [...catalog.machine.allowedMoves(issue.statusKey, options.kind)]
-          : [],
-        priority: issue.priority,
-        labels: (row?.labels ?? []).map((label) => label.name),
-        owner: { id: issue.ownerUserId, name: row?.ownerName ?? '' },
-        executor: issue.executor
-          ? { ...issue.executor, name: executorName }
-          : null,
-        project: project
-          ? {
-              id: project.id,
-              name: project.name,
-              description: project.description,
-              repos: (await projectResources(conn, project.id)).map(
-                (resource) => ({
-                  id: resource.id,
-                  type: resource.type,
-                  url: resource.url,
-                  defaultRef: resource.defaultRef,
-                  binding: resource.binding,
-                  runnerId: resource.runnerId,
-                  path: resource.path,
-                  label: resource.label,
-                  initPrompt: resource.initPrompt,
-                }),
-              ),
-            }
-          : null,
-        parent: parent && !parent.deletedAt ? ref(parent) : null,
-        children: children.map(ref),
-        attachments: (await deps.extras().attachments(conn, null, issue)).map(
-          fileOf,
-        ),
-        comments: comments.map((comment) => ({
-          id: comment.id,
-          parentId: comment.parentId,
-          author: {
-            type: comment.authorType,
-            id: comment.authorId,
-            name: comment.authorName,
-          },
-          content: comment.content,
-          createdAt: comment.createdAt,
-          attachments: comment.attachments.map(fileOf),
-        })),
-        dueDate: issue.dueDate,
-        url: issuePath(issue.identifier),
-      };
+    contextFor(conn, idOrKey, options = {}) {
+      return cached(
+        conn,
+        JSON.stringify([idOrKey, options.kind ?? null]),
+        async () => {
+          const issue = await findIssue(conn, idOrKey);
+          if (!issue || issue.deletedAt) return undefined;
+          const row = await findIssueRow(conn, issue.id);
+          const catalog = deps.statuses.catalog();
+          const statusOf = (key: string): IssueContextStatus => {
+            const found = catalog.statuses.find((status) => status.key === key);
+            return {
+              key,
+              name: found?.name ?? key,
+              category: found?.category ?? 'unstarted',
+            };
+          };
+          const project = issue.projectId
+            ? await findProject(conn, issue.projectId)
+            : undefined;
+          const parent = issue.parentIssueId
+            ? await findIssue(conn, issue.parentIssueId)
+            : undefined;
+          const children = await liveChildren(conn, [issue.id]);
+          const executorName = issue.executor
+            ? ((
+                await deps.kinds.names(conn, issue.executor.type, [
+                  issue.executor.id,
+                ])
+              ).get(issue.executor.id) ?? null)
+            : null;
+          const comments = (await deps.comments(conn, issue.id))
+            .filter((comment) => !comment.deleted)
+            .slice(-CONTEXT_COMMENT_LIMIT);
+          const ref = (other: {
+            readonly id: string;
+            readonly identifier: string;
+            readonly title: string;
+            readonly statusKey: string;
+          }): IssueContextIssueRef => ({
+            id: other.id,
+            identifier: other.identifier,
+            title: other.title,
+            status: other.statusKey,
+          });
+          return {
+            id: issue.id,
+            identifier: issue.identifier,
+            title: issue.title,
+            description: issue.description,
+            status: statusOf(issue.statusKey),
+            statuses: catalog.statuses.map((status) => statusOf(status.key)),
+            allowedTransitions: options.kind
+              ? [...catalog.machine.allowedMoves(issue.statusKey, options.kind)]
+              : [],
+            priority: issue.priority,
+            labels: (row?.labels ?? []).map((label) => label.name),
+            owner: { id: issue.ownerUserId, name: row?.ownerName ?? '' },
+            executor: issue.executor
+              ? { ...issue.executor, name: executorName }
+              : null,
+            project: project
+              ? {
+                  id: project.id,
+                  name: project.name,
+                  description: project.description,
+                  repos: (await projectResources(conn, project.id)).map(
+                    (resource) => ({
+                      id: resource.id,
+                      type: resource.type,
+                      url: resource.url,
+                      defaultRef: resource.defaultRef,
+                      binding: resource.binding,
+                      runnerId: resource.runnerId,
+                      path: resource.path,
+                      label: resource.label,
+                      initPrompt: resource.initPrompt,
+                    }),
+                  ),
+                }
+              : null,
+            parent: parent && !parent.deletedAt ? ref(parent) : null,
+            children: children.map(ref),
+            attachments: (
+              await deps.extras().attachments(conn, null, issue)
+            ).map(fileOf),
+            comments: comments.map((comment) => ({
+              id: comment.id,
+              parentId: comment.parentId,
+              author: {
+                type: comment.authorType,
+                id: comment.authorId,
+                name: comment.authorName,
+              },
+              content: comment.content,
+              createdAt: comment.createdAt,
+              attachments: comment.attachments.map(fileOf),
+            })),
+            dueDate: issue.dueDate,
+            url: issuePath(issue.identifier),
+          };
+        },
+      );
     },
 
     async describe(conn, idOrKey) {

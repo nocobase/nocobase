@@ -28,6 +28,9 @@ vi.mock('@nocobase/app-plugin-authentication/client', () => ({
     refresh,
   }),
 }));
+vi.mock('../../client/pages/home/agent-setup.js', () => ({
+  AgentSetupDialog: () => null,
+}));
 vi.mock('../../client/layouts/components/language-switcher.js', () => ({
   LanguageSwitcher: () => null,
 }));

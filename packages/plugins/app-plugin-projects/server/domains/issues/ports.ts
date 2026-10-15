@@ -115,6 +115,7 @@ export interface IssueExtras {
   listCounts(
     conn: DatabaseConnection,
     issues: readonly Issue[],
+    readableIds?: ReadonlySet<string>,
   ): Promise<
     Map<
       string,

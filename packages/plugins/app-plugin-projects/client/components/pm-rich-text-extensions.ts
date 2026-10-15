@@ -11,6 +11,7 @@ import { Placeholder } from '@tiptap/extension-placeholder';
 import { TableKit } from '@tiptap/extension-table';
 import { Markdown } from '@tiptap/markdown';
 import { StarterKit } from '@tiptap/starter-kit';
+import { PmDescriptionImage } from './pm-description-image.js';
 
 /**
  * The TipTap schema behind `PmRichTextEditor`, kept apart from the React component so the Markdown round trip can be
@@ -156,6 +157,7 @@ export const PmMention: Node = Node.create({
 
 export interface PmRichTextSchemaOptions {
   readonly placeholder?: string;
+  readonly images?: boolean;
 }
 
 /** Every extension the editor uses; the Markdown extension last so it sees the others' markdown specs. */
@@ -175,6 +177,7 @@ export function npRichTextExtensions(
     TaskItem.configure({ nested: true }),
     TableKit.configure({ table: { resizable: false } }),
     PmMention,
+    ...(options.images ? [PmDescriptionImage] : []),
     Placeholder.configure({ placeholder: options.placeholder ?? '' }),
     Markdown,
   ];

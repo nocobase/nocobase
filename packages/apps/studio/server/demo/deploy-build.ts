@@ -259,7 +259,7 @@ export async function buildDeployDemo(
     projectId: string,
     spec: Pick<
       DemoDeployIssue,
-      'title' | 'description' | 'status' | 'priority' | 'owner'
+      'title' | 'description' | 'status' | 'needsYou' | 'priority' | 'owner'
     > & { readonly executor: Executor | null },
   ): Promise<{ id: string; identifier: string }> {
     const existing = await conn()
@@ -288,6 +288,7 @@ export async function buildDeployDemo(
       issue = await projects.issues.update(admin, issue.id, {
         revision: issue.revision,
         statusKey: spec.status,
+        needsYou: spec.needsYou,
       });
     created('issues');
     return { id: issue.id, identifier: issue.identifier };

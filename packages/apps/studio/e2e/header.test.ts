@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 
 import {
   apiAs,
+  atHome,
   expect,
   horizontalOverflow,
   open,
@@ -13,10 +14,8 @@ import {
 import type { Issue } from './support/runner.ts';
 
 /** The sidebar's inbox entry, including its full count label. */
-const inboxButton = (page: Page) =>
-  page
-    .getByRole('navigation', { name: '应用导航' })
-    .getByRole('link', { name: /^收件箱/ });
+/** The inbox: the header's notification button. */
+const inboxButton = (page: Page) => page.getByTestId('studio-inbox-button');
 
 /** The decisions waiting on the viewer, as the server counts them. */
 async function pendingDecisions(api: Api): Promise<number> {
@@ -30,7 +29,7 @@ async function unreadCount(api: Api): Promise<number> {
   ).count;
 }
 
-test.describe('sidebar inbox', () => {
+test.describe('header inbox', () => {
   // Lisa Nguyen, a contributor, is mentioned by Wendy Foster. No other test mentions her or asks her for a decision,
   // so the count is hers alone.
   test.use({ user: 'lisa' });
@@ -124,18 +123,13 @@ test.describe('sidebar inbox', () => {
       page.getByRole('heading', { name: '收件箱', level: 1 }),
     ).toBeVisible();
     await expect(inboxButton(page)).toHaveAttribute('aria-current', 'page');
-    // The sidebar is the only global inbox entry.
+    // The header's button is the only global inbox entry.
     await expect(
       page
         .getByRole('navigation', { name: '应用导航' })
         .getByRole('link', { name: /收件箱/ }),
-    ).toHaveCount(1);
-    await expect(
-      page
-        .getByRole('banner')
-        .getByRole('link', { name: /收件箱/ })
-        .and(page.locator('a[href]')),
     ).toHaveCount(0);
+    await expect(page.getByTestId('studio-inbox-button')).toHaveCount(1);
   });
 
   test('the button is reachable by keyboard', async ({ page }) => {
@@ -154,24 +148,27 @@ test.describe('sidebar inbox', () => {
       hasTouch: true,
     });
 
-    test('the inbox is reachable in the mobile menu without horizontal overflow', async ({
+    test('the inbox is in the header and the menu lists the pages, without horizontal overflow', async ({
       page,
     }) => {
       await open(page, '/my-issues');
+      await expect(inboxButton(page)).toBeVisible();
       await page
         .getByRole('banner')
         .getByRole('button', { name: /导航/ })
         .click();
       const nav = page.getByRole('navigation', { name: '应用导航' });
       const links = nav.getByRole('link');
-      await expect(links.nth(0)).toHaveAccessibleName('我的任务');
-      await expect(links.nth(1)).toHaveAccessibleName(/^收件箱/);
+      await expect(links.nth(0)).toHaveAccessibleName(/^我的任务/);
+      await expect(links.nth(1)).toHaveAccessibleName('我的 Agent');
       await expect(links.nth(2)).toHaveAccessibleName('仪表盘');
       await expect(
         nav.getByRole('link', { name: '首页', exact: true }),
       ).toHaveCount(0);
-      await expect(inboxButton(page)).toBeVisible();
       expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+      // Leaving the menu, the header's inbox opens the inbox.
+      await page.keyboard.press('Escape');
+      await expect(nav).toBeHidden();
       await inboxButton(page).click();
       await expect(page).toHaveURL(/\/inbox$/u);
       await expect(
@@ -197,10 +194,10 @@ test.describe('back-office settings', () => {
       await open(page, path);
       // The catch-all route sends it to the application's root, with or without the trailing slash.
       await expect
-        .poll(() => page.url().replace(/\/$/u, ''))
-        .toBe(url('/inbox'));
+        .poll(() => new URL(page.url()).pathname)
+        .toBe(new URL(url('/my-issues/owned')).pathname);
       await expect(
-        page.getByRole('heading', { name: '收件箱', level: 1 }),
+        page.getByRole('heading', { name: '我的任务', level: 1 }),
       ).toBeVisible();
     });
   }
@@ -219,15 +216,15 @@ test.describe('back-office settings', () => {
 });
 
 test.describe('default landing navigation', () => {
-  test('root lands on inbox with the menu in order, and direct destinations survive refresh and history', async ({
+  test('root lands on My tasks with the menu in order, and direct destinations survive refresh and history', async ({
     page,
   }) => {
     await open(page, '/');
-    await expect(page).toHaveURL(url('/inbox'));
+    await expect(page).toHaveURL(atHome());
     const nav = page.getByRole('navigation', { name: '应用导航' });
     const links = nav.getByRole('link');
-    await expect(links.nth(0)).toHaveAccessibleName('我的任务');
-    await expect(links.nth(1)).toHaveAccessibleName(/^收件箱/);
+    await expect(links.nth(0)).toHaveAccessibleName(/^我的任务/);
+    await expect(links.nth(1)).toHaveAccessibleName('我的 Agent');
     await expect(links.nth(2)).toHaveAccessibleName('仪表盘');
     await expect(
       nav.getByRole('link', { name: '首页', exact: true }),
@@ -239,7 +236,7 @@ test.describe('default landing navigation', () => {
       page.getByRole('heading', { name: '仪表盘', level: 1 }),
     ).toBeVisible();
     await page.goBack();
-    await expect(page).toHaveURL(url('/inbox'));
+    await expect(page).toHaveURL(atHome());
     await page.goForward();
     await expect(page).toHaveURL(url('/dashboard'));
     await open(page, '/inbox?kind=decision');
@@ -262,11 +259,16 @@ test.describe('default landing navigation', () => {
 
   test('root preserves account settings and fragment', async ({ page }) => {
     await open(page, '/?account=preferences#detail');
-    await expect(page).toHaveURL(url('/inbox?account=preferences#detail'));
+    await expect(page).toHaveURL(
+      (address) =>
+        atHome('?account=preferences')(address) && address.hash === '#detail',
+    );
     await expect(page.getByRole('dialog', { name: '个人设置' })).toBeVisible();
   });
 
-  test('icon mode retains the full count and tooltip', async ({ page }) => {
+  test('the header inbox keeps the full count and its tooltip', async ({
+    page,
+  }) => {
     await page.route('**/api/inbox/pending', (route) =>
       route.fulfill({ json: { data: { decision: 120 } } }),
     );
@@ -277,8 +279,8 @@ test.describe('default landing navigation', () => {
       .click();
     const nav = page.getByRole('navigation', { name: '应用导航' });
     const links = nav.getByRole('link');
-    await expect(links.nth(0)).toHaveAccessibleName('我的任务');
-    await expect(links.nth(1)).toHaveAccessibleName(/^收件箱/);
+    await expect(links.nth(0)).toHaveAccessibleName(/^我的任务/);
+    await expect(links.nth(1)).toHaveAccessibleName('我的 Agent');
     await expect(links.nth(2)).toHaveAccessibleName('仪表盘');
     await expect(
       nav.getByRole('link', { name: '首页', exact: true }),
@@ -294,5 +296,26 @@ test.describe('default landing navigation', () => {
       }),
     ).toBeVisible();
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+  });
+});
+
+test.describe('header actions', () => {
+  test('the chat shortcut opens and closes the panel, and the account menu offers the agent setup', async ({
+    page,
+  }) => {
+    await open(page, '/inbox');
+    const banner = page.getByRole('banner');
+    await page.keyboard.press('Control+j');
+    await expect(page.getByTestId('chat-panel')).toBeVisible();
+    await page.keyboard.press('Control+j');
+    await expect(page.getByTestId('chat-panel')).toBeHidden();
+
+    await banner.getByRole('button', { name: '打开账户菜单' }).click();
+    await page.getByTestId('user-menu-agent-setup').click();
+    const dialog = page.getByRole('dialog', { name: '连接本地 Coding Agent' });
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByLabel('发送给 Coding Agent 的配置指令'),
+    ).toContainText('nb-studio login --server');
   });
 });

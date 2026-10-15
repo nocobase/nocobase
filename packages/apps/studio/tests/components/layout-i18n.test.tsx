@@ -14,6 +14,10 @@ import { describe, expect, it, vi } from 'vitest';
 import locales from '../../client/locales/index.js';
 import { AppLayout } from '../../client/layouts/app-layout.js';
 
+vi.mock('../../client/issues/live/realtime-refresh.js', () => ({
+  useStudioIssueRefresh: () => undefined,
+}));
+
 // The agents' chat needs services these tests do not provide; the agent-chat block is tested in the UI Library.
 vi.mock(
   '@nocobase/app-plugin-agents/client/chat',
@@ -38,6 +42,14 @@ vi.mock('../../client/layouts/components/user-menu.js', () => ({
 // Inbox navigation needs the API and realtime; its own test covers its labels.
 vi.mock('../../client/inbox/navigation.js', () => ({
   useInboxNavigation: () => ({ badge: null, label: 'Inbox', hint: 'Inbox' }),
+}));
+// My tasks' count needs the API and realtime too.
+vi.mock('../../client/issues/groups/my-tasks-navigation.js', () => ({
+  useMyTasksNavigation: () => ({
+    badge: null,
+    label: 'My issues',
+    hint: 'My issues',
+  }),
 }));
 vi.mock('../../client/routing/route-navigation.js', async (importOriginal) => ({
   ...(await importOriginal<

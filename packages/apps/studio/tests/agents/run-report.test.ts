@@ -87,18 +87,29 @@ describe('a run an agent’s comment started', () => {
   it('answers with its output in that thread when it did not comment, waking the executor', async () => {
     const { issue, coordinator, worker, ask, runId } = await handOff();
     await complete(runId, 'Implemented the API in agent/api.');
-    await vi.waitFor(async () =>
-      expect(
-        (await commentsOf(issue.id)).filter(
-          (comment) => comment.authorId === worker,
-        ),
-      ).toEqual([
-        expect.objectContaining({
-          authorType: 'agent',
-          parentId: ask,
-          content: 'Implemented the API in agent/api.',
-        }),
-      ]),
+    await vi.waitFor(
+      async () => {
+        expect(
+          await h.database
+            .connection()
+            .repository<{ status: string; lastError: string | null }>(
+              'studioRunReports',
+            )
+            .findOne({ filter: { id: runId } }),
+        ).toMatchObject({ status: 'done', lastError: null });
+        expect(
+          (await commentsOf(issue.id)).filter(
+            (comment) => comment.authorId === worker,
+          ),
+        ).toEqual([
+          expect.objectContaining({
+            authorType: 'agent',
+            parentId: ask,
+            content: 'Implemented the API in agent/api.',
+          }),
+        ]);
+      },
+      { timeout: 10_000 },
     );
     const woken = (await runsOf(issue.id)).filter(
       (run) => run.agentId === coordinator,
@@ -107,7 +118,7 @@ describe('a run an agent’s comment started', () => {
     expect(woken[0]).toMatchObject({ actorUserId: 'alice' });
     expect(
       (await h.agents.runs.detail(woken[0]!.id)).inputs.at(-1)?.payload,
-    ).toMatchObject({ trigger: 'comment', byAgent: true });
+    ).toMatchObject({ trigger: 'stepEnded', runId });
     // Once per run, however often its end is delivered.
     expect(await reportRun(h.agents, h.projects, runId)).toBe(false);
     expect(
@@ -117,21 +128,71 @@ describe('a run an agent’s comment started', () => {
     ).toHaveLength(1);
   });
 
-  it('posts nothing when it commented itself', async () => {
-    const { issue, worker, ask, runId } = await handOff();
-    await h.projects.comments.create(asAgent(worker), issue.id, {
-      content: 'Done, see agent/api.',
-      parentId: ask,
-    });
-    await complete(runId, 'Implemented the API.');
-    await settle();
-    expect(await reportRun(h.agents, h.projects, runId)).toBe(false);
-    expect(
-      (await commentsOf(issue.id)).filter(
-        (comment) => comment.authorId === worker,
-      ),
-    ).toHaveLength(1);
-  });
+  it.each(['completed', 'failed', 'cancelled'])(
+    'keeps its own traced reply and adds exactly one %s terminal input',
+    async (status) => {
+      const { issue, worker, ask, runId } = await handOff();
+      await h.projects.comments.create(
+        {
+          ...asAgent(worker),
+          actor: { type: 'agent', id: worker, trace: { runId } },
+        },
+        issue.id,
+        {
+          content: 'Done, see agent/api.',
+          parentId: ask,
+        },
+      );
+      const managerRun = await start();
+      expect((await h.agents.runs.detail(runId)).status).toBe('running');
+      await complete(managerRun, 'Waiting for the worker run to end.');
+      if (status === 'completed') await complete(runId, 'Implemented the API.');
+      else if (status === 'failed')
+        expect(
+          (
+            await h.runner(RUNNER_ROUTES.fail, runId, {
+              reason: 'toolProcess',
+              detail: 'Controlled failure.',
+            })
+          ).status,
+        ).toBe(200);
+      else {
+        await h.agents.runs.cancel(runId, 'alice');
+        expect(
+          (await h.runner(RUNNER_ROUTES.cancelAck, runId, {})).status,
+        ).toBe(200);
+      }
+      await vi.waitFor(
+        async () => {
+          const row = await h.database
+            .connection()
+            .repository<{ status: string }>('studioRunReports')
+            .findOne({ filter: { id: runId } });
+          expect(row?.status).toBe('done');
+        },
+        { timeout: 10_000 },
+      );
+      expect(await reportRun(h.agents, h.projects, runId)).toBe(false);
+      const inputs = (
+        await Promise.all(
+          (await runsOf(issue.id))
+            .filter((r) => r.agentId === PROJECT_MANAGER_ID)
+            .map((r) => h.agents.runs.detail(r.id)),
+        )
+      ).flatMap((r) => r.inputs);
+      expect(
+        inputs.filter(
+          (i) =>
+            (i.payload as { trigger?: string } | null)?.trigger === 'stepEnded',
+        ),
+      ).toHaveLength(1);
+      expect(
+        (await commentsOf(issue.id)).filter(
+          (comment) => comment.authorId === worker,
+        ),
+      ).toHaveLength(1);
+    },
+  );
 
   it('says why it failed for good, waking the executor', async () => {
     const { issue, coordinator, worker, ask, runId } = await handOff();
@@ -143,33 +204,99 @@ describe('a run an agent’s comment started', () => {
         })
       ).status,
     ).toBe(200);
-    await vi.waitFor(async () =>
-      expect(
-        (await commentsOf(issue.id)).filter(
-          (comment) => comment.authorId === worker,
-        ),
-      ).toEqual([
-        expect.objectContaining({
-          parentId: ask,
-          content: 'The run failed (toolProcess): The tool exited with code 1.',
-        }),
-      ]),
+    await vi.waitFor(
+      async () =>
+        expect(
+          (await commentsOf(issue.id)).filter(
+            (comment) => comment.authorId === worker,
+          ),
+        ).toEqual([
+          expect.objectContaining({
+            parentId: ask,
+            content:
+              'The run failed (toolProcess): The tool exited with code 1.',
+          }),
+        ]),
+      { timeout: 5000 },
     );
     expect(
       (await runsOf(issue.id)).some((run) => run.agentId === coordinator),
     ).toBe(true);
   });
 
-  it('posts nothing when it was cancelled', async () => {
+  it('reports cancellation and wakes the manager once', async () => {
     const { issue, worker, runId } = await handOff();
     await h.agents.runs.cancel(runId, 'alice');
-    await settle();
+    expect((await h.runner(RUNNER_ROUTES.cancelAck, runId, {})).status).toBe(
+      200,
+    );
+    await vi.waitFor(
+      async () =>
+        expect(
+          (await commentsOf(issue.id)).filter((c) => c.authorId === worker),
+        ).toHaveLength(1),
+      { timeout: 10_000 },
+    );
     expect(await reportRun(h.agents, h.projects, runId)).toBe(false);
     expect(
       (await commentsOf(issue.id)).filter(
         (comment) => comment.authorId === worker,
       ),
-    ).toEqual([]);
+    ).toEqual([
+      expect.objectContaining({
+        content: `The step ended: cancelled (run ${runId}).`,
+      }),
+    ]);
+  });
+
+  it.each(['', 'Done.'])(
+    'still reports a step with empty or trivial output %s',
+    async (summary) => {
+      const { issue, runId, worker } = await handOff();
+      await complete(runId, summary);
+      await vi.waitFor(async () =>
+        expect(
+          (await commentsOf(issue.id)).filter((c) => c.authorId === worker),
+        ).toHaveLength(1),
+      );
+      const manager = (await runsOf(issue.id)).filter(
+        (r) => r.agentId === PROJECT_MANAGER_ID,
+      );
+      expect((await h.agents.runs.detail(manager[0]!.id)).inputs).toHaveLength(
+        1,
+      );
+    },
+  );
+
+  it('reports disk capacity failure to the manager without creating a human decision card', async () => {
+    const { issue, coordinator, worker, ask, runId } = await handOff();
+    const failed = await h.runner(RUNNER_ROUTES.fail, runId, {
+      reason: 'runnerDiskFull',
+      detail: 'ENOSPC: write',
+    });
+    expect(failed.status).toBe(200);
+    await vi.waitFor(
+      async () =>
+        expect(
+          (await commentsOf(issue.id)).filter(
+            (comment) => comment.authorId === worker,
+          ),
+        ).toEqual([
+          expect.objectContaining({
+            parentId: ask,
+            content: expect.stringContaining('runnerDiskFull'),
+          }),
+        ]),
+      { timeout: 10_000 },
+    );
+    expect(
+      (await runsOf(issue.id)).some((run) => run.agentId === coordinator),
+    ).toBe(true);
+    expect(
+      h.notices.some(
+        (notice) => notice.decisionKey === `agents:run-failed:${runId}`,
+      ),
+    ).toBe(false);
   });
 });
 
@@ -197,6 +324,18 @@ describe('a run a person started', () => {
 });
 
 describe('the report’s words', () => {
+  it('cannot turn runner or model metadata in a timeout into another mention', () => {
+    const text = reportText({
+      status: 'cancelled',
+      failureReason: 'delegatedQueueTimeout',
+      failureDetail:
+        '[@Other](mention://agent/other) host@personal; [label](mention://agent/another)',
+      summary: null,
+    });
+    expect(text).not.toContain('@');
+    expect(text).not.toContain('mention://');
+    expect(text).toContain('Other');
+  });
   it('skips trivial output, and bounds and redacts the rest', () => {
     const base = { failureReason: null, failureDetail: null };
     expect(
@@ -221,3 +360,216 @@ describe('the report’s words', () => {
     ).toBeNull();
   });
 });
+
+describe('durable terminal delivery', () => {
+  it('rolls back a failed delivery and skips waking a manager that already completed a later turn', async () => {
+    const { issue, runId, worker } = await handOff();
+    const post = vi
+      .spyOn(h.projects.comments, 'post')
+      .mockRejectedValue(new Error('test delivery interruption'));
+    await complete(runId, 'Implemented the API.');
+    await vi.waitFor(async () => {
+      const row = await h.database
+        .connection()
+        .repository<{ status: string; attempts: number }>('studioRunReports')
+        .findOne({ filter: { id: runId } });
+      expect(row?.status).toBe('pending');
+      expect(row?.attempts).toBeGreaterThan(0);
+    });
+    post.mockRestore();
+    expect(
+      (await commentsOf(issue.id)).filter((c) => c.authorId === worker),
+    ).toHaveLength(0);
+    await h.agents.runs.enqueue({
+      agentId: PROJECT_MANAGER_ID,
+      subject: { kind: 'issue', id: issue.id },
+      actorUserId: 'alice',
+      ownerUserId: 'alice',
+      input: {
+        type: 'signal',
+        actor: { kind: 'system', id: 'system', name: 'Test' },
+        text: 'Review current terminal state.',
+      },
+    });
+    const managerRun = await start();
+    await complete(managerRun, 'Read the completed worker.');
+    const { drainRunReports } =
+      await import('../../server/agents/run-report.js');
+    const { createAgentWork } = await import('../../server/agents/work.js');
+    const work = createAgentWork({
+      agents: h.agents,
+      projects: () => h.projects,
+    });
+    await drainRunReports(
+      h.agents,
+      h.projects,
+      new Date(Date.now() + 60_000),
+      undefined,
+      work,
+    );
+    await drainRunReports(
+      h.agents,
+      h.projects,
+      new Date(Date.now() + 60_000),
+      undefined,
+      work,
+    );
+    expect(
+      (await commentsOf(issue.id)).filter((c) => c.authorId === worker),
+    ).toHaveLength(1);
+    const inputs = (
+      await Promise.all(
+        (await runsOf(issue.id))
+          .filter((r) => r.agentId === PROJECT_MANAGER_ID)
+          .map((r) => h.agents.runs.detail(r.id)),
+      )
+    ).flatMap((r) => r.inputs);
+    expect(
+      inputs.filter(
+        (i) =>
+          (i.payload as { trigger?: string } | null)?.trigger === 'stepEnded',
+      ),
+    ).toHaveLength(0);
+  });
+});
+
+it('notifies a manual retry as a new run of the original manager step', async () => {
+  const { issue, runId } = await handOff();
+  expect(
+    (
+      await h.runner(RUNNER_ROUTES.fail, runId, {
+        reason: 'toolProcess',
+        detail: 'Controlled failure.',
+      })
+    ).status,
+  ).toBe(200);
+  await vi.waitFor(async () =>
+    expect(
+      await h.database
+        .connection()
+        .repository<{ status: string }>('studioRunReports')
+        .findOne({ filter: { id: runId } }),
+    ).toMatchObject({ status: 'done' }),
+  );
+  const firstManager = await start();
+  await complete(firstManager, 'Read failure.');
+  const retried = await h.agents.runs.retry(runId, 'alice');
+  expect(await start()).toBe(retried.id);
+  await complete(retried.id, 'Retried the step successfully.');
+  await vi.waitFor(async () =>
+    expect(
+      await h.database
+        .connection()
+        .repository<{ status: string }>('studioRunReports')
+        .findOne({ filter: { id: retried.id } }),
+    ).toMatchObject({ status: 'done' }),
+  );
+  const inputs = (
+    await Promise.all(
+      (await runsOf(issue.id))
+        .filter((r) => r.agentId === PROJECT_MANAGER_ID)
+        .map((r) => h.agents.runs.detail(r.id)),
+    )
+  ).flatMap((r) => r.inputs);
+  expect(
+    inputs.filter(
+      (i) =>
+        (i.payload as { trigger?: string } | null)?.trigger === 'stepEnded',
+    ),
+  ).toHaveLength(2);
+});
+
+it('does not treat a manager comment after worker finishedAt as consumption of the terminal input (PM-373)', async () => {
+  const { issue, runId, worker } = await handOff();
+  await h.agents.runs.enqueue({
+    agentId: PROJECT_MANAGER_ID,
+    subject: { kind: 'issue', id: issue.id },
+    actorUserId: 'alice',
+    ownerUserId: 'alice',
+    input: {
+      type: 'signal',
+      actor: { kind: 'system', id: 'system', name: 'Test' },
+      text: 'Snapshot says the worker is still running.',
+    },
+  });
+  const managerRun = await start();
+  const post = vi
+    .spyOn(h.projects.comments, 'post')
+    .mockRejectedValue(
+      new Error('Hold terminal dispatch until the stale manager finishes'),
+    );
+  await complete(runId, 'Worker completed.');
+  await vi.waitFor(
+    async () =>
+      expect(
+        await h.database
+          .connection()
+          .repository('studioRunReports')
+          .findOne({ filter: { id: runId } }),
+      ).toMatchObject({ status: 'pending' }),
+    { timeout: 10000 },
+  );
+  await vi.waitFor(
+    async () => {
+      const row = await h.database
+        .connection()
+        .repository<{ attempts: number }>('studioRunReports')
+        .findOne({ filter: { id: runId } });
+      expect(row?.attempts).toBeGreaterThan(0);
+    },
+    { timeout: 10000 },
+  );
+  const { comment } = await h.projects.comments.create(
+    {
+      ...asAgent(PROJECT_MANAGER_ID),
+      actor: {
+        type: 'agent',
+        id: PROJECT_MANAGER_ID,
+        trace: { runId: managerRun },
+      },
+    },
+    issue.id,
+    {
+      content:
+        'Waiting for the worker to end, according to my earlier snapshot.',
+    },
+  );
+  const workerRun = await h.agents.runs.detail(runId);
+  expect(new Date(comment.createdAt).getTime()).toBeGreaterThanOrEqual(
+    new Date(workerRun.finishedAt!).getTime(),
+  );
+  expect(
+    (await h.agents.runs.detail(managerRun)).inputs.every(
+      (i) =>
+        (i.payload as { trigger?: string } | null)?.trigger !== 'stepEnded',
+    ),
+  ).toBe(true);
+  await complete(managerRun, 'Waiting based on the old snapshot.');
+  post.mockRestore();
+  const { drainRunReports } = await import('../../server/agents/run-report.js');
+  const { createAgentWork } = await import('../../server/agents/work.js');
+  await drainRunReports(
+    h.agents,
+    h.projects,
+    new Date(Date.now() + 60000),
+    undefined,
+    createAgentWork({ agents: h.agents, projects: () => h.projects }),
+  );
+  const runs = await runsOf(issue.id);
+  const terminal = (
+    await Promise.all(runs.map((r) => h.agents.runs.detail(r.id)))
+  )
+    .flatMap((r) => r.inputs)
+    .filter(
+      (i) =>
+        (i.payload as { trigger?: string } | null)?.trigger === 'stepEnded',
+    );
+  expect(terminal).toHaveLength(1);
+  expect(terminal[0]?.handledAt).toBeNull();
+  expect(
+    (await commentsOf(issue.id)).filter((c) => c.authorId === worker),
+  ).toHaveLength(1);
+  process.stdout.write(
+    `PM373 stale snapshot evidence: ${JSON.stringify({ workerRun: runId, workerFinishedAt: workerRun.finishedAt, managerRun, managerStartedAt: (await h.agents.runs.detail(managerRun)).startedAt, staleCommentAt: comment.createdAt, terminal: terminal.map((i) => ({ id: i.id, createdAt: i.createdAt, handledAt: i.handledAt })) })}\n`,
+  );
+}, 120000);

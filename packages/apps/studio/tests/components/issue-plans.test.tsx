@@ -33,7 +33,9 @@ function plan(values: Partial<Plan> = {}): Plan {
 
 function renderPanel(awaiting: number): void {
   render(
-    <MemoryRouter initialEntries={['/issues/PM-12?comment=c1']}>
+    <MemoryRouter
+      initialEntries={['/issues/PM-12?view=list&owner=alice&comment=c1']}
+    >
       <Routes>
         <Route
           path='/issues/:issueId'
@@ -112,7 +114,7 @@ describe('IssuePlansPanel', () => {
       'data-to',
       JSON.stringify({
         pathname: '/issues/PM-12/plans/p1',
-        search: '?comment=c1',
+        search: '?view=list&owner=alice',
       }),
     );
   });

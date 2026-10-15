@@ -1,3 +1,6 @@
+import type { ScheduleExecutor } from '@nocobase/jobs';
+import { scheduleManagerWake } from './manager/wake-job.js';
+import { sweepManagerIdle } from './manager/idle.js';
 /**
  * Studio's join of the agents plugin and the projects plugin; neither plugin knows the other. The agents plugin knows
  * no domain of its own, so Studio fills its extension points with projects and issues. Binding it:
@@ -42,6 +45,7 @@ import type {
 import {
   noAbilities,
   noSettings,
+  businessKey,
 } from '@nocobase/app-plugin-projects/shared/access';
 
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
@@ -90,12 +94,14 @@ import {
 import { releaseRemovedAgents } from './removal.js';
 import { managerRoster } from './manager/roster.js';
 import type { ProjectManager } from './manager/service.js';
-import { relayAnnouncements } from './tx.js';
+import { relayAnnouncements, refreshRunIssues } from './tx.js';
 import { inactiveUsers } from './users.js';
 import { createAgentWork } from './work.js';
 import { commentRunNoticeRule } from './comment-run-limit.js';
-import { reportCommentRuns } from './run-report.js';
+import { delegationTimeout } from './delegated-queue.js';
+import { stageRunReport, reportCommentRuns } from './run-report.js';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
+import { bindCommentConsentInbox } from './comment-consent-inbox.js';
 import {
   OWNER_HANDOFF_NOTICE,
   ownerHandoffNoticeRule,
@@ -104,6 +110,9 @@ import {
 } from '../issues/owner-handoff-notices.js';
 
 export interface StudioAgentsDeps {
+  readonly checkoutPullRequests?: (
+    issueId: string,
+  ) => Promise<ReadonlyMap<string, string>>;
   readonly agents: Agents;
   readonly kinds: KindRegistry;
   readonly projects: () => Projects;
@@ -148,6 +157,9 @@ export interface StudioAgentsDeps {
    * (`notices.ts`); 0 waits forever. `DEFAULT_QUEUED_EXPIRY_HOURS` when left out.
    */
   readonly queuedExpiryMs?: number;
+  readonly managerIdleMinutes?: number;
+  readonly managerIdleSweepMinutes?: number;
+  readonly wakeExecutor?: ScheduleExecutor | null;
   /** Follows the work conversations hand to agents (`conversation/delegation.ts`); nothing is followed without. */
   readonly delegations?: Delegations;
   readonly onError?: (message: string, error: unknown) => void;
@@ -157,7 +169,7 @@ export interface StudioAgentsDeps {
 export const DEFAULT_QUEUED_EXPIRY_HOURS = 24;
 
 /** Connects agents to issues; returns what disconnects them. */
-export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
+export function bindStudioAgents(deps: StudioAgentsDeps): () => Promise<void> {
   const { agents } = deps;
   const onError =
     deps.onError ?? ((message, error) => console.error(message, error));
@@ -166,6 +178,39 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
   const viewerOf = (userId: string) =>
     permissions.viewerOf({ kind: 'user', userId, displayName: userId });
   const work = createAgentWork({ agents, projects: deps.projects, viewerOf });
+  const authorizeReport = async (
+    _conn: import('@nocobase/db').DatabaseConnection,
+    run: import('@nocobase/app-plugin-agents/shared/runs').Run,
+  ) => {
+    const context = await deps
+      .projects()
+      .issueContext.contextFor(_conn, run.subject.id);
+    const viewer = await viewerOf(context?.owner.id ?? run.actorUserId);
+    if (
+      viewer.permissions.scopes[businessKey('pm.issues', 'comment')] === 'none'
+    )
+      throw new Error('The acting user may no longer comment on this issue.');
+    await deps.projects().issueQueries.detail(viewer, run.subject.id);
+    return context?.owner.id ?? run.actorUserId;
+  };
+  let stopped = false;
+  const wakeSchedule = scheduleManagerWake(
+    async () => {
+      if (stopped) return;
+      await sweepManagerIdle(
+        agents,
+        deps.projects(),
+        work,
+        deps.managerIdleMinutes ?? 15,
+      );
+    },
+    deps.wakeExecutor ?? null,
+    (error) => onError('Studio could not check manager idle periods.', error),
+    deps.managerIdleSweepMinutes ?? 5,
+  );
+  void wakeSchedule.catch((error) =>
+    onError('Studio could not schedule manager idle checks.', error),
+  );
   const direct = createDirectWrites({ agents, projects: deps.projects });
   const principal = createRunPrincipal({
     askerOf,
@@ -181,6 +226,13 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
     inbox,
   });
   const releases: (() => void)[] = [
+    bindCommentConsentInbox(
+      agents,
+      deps.projects,
+      deps.inboxPort ?? (() => undefined),
+      (error) =>
+        onError('Studio could not update a personal runner request.', error),
+    ),
     deps.projects().events.on('work.announced', async (event) => {
       const port = deps.inboxPort?.();
       if (port && event.kind === OWNER_HANDOFF_NOTICE)
@@ -196,10 +248,25 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
         deps.projects,
         // A run told its issue moved to another project is followed by a run there.
         {
-          onRunFinished: (tx, run) => work.onRunFinished(tx, run),
+          onRunFinished: async (tx, run) => {
+            await stageRunReport(tx.conn, run);
+            await work.onRunFinished(tx, run);
+          },
         },
         deps.queuedExpiryMs ?? DEFAULT_QUEUED_EXPIRY_HOURS * 3_600_000,
+        deps.checkoutPullRequests,
+        async (issueId, userId) => {
+          try {
+            await deps
+              .projects()
+              .issueQueries.detail(await viewerOf(userId), issueId);
+            return true;
+          } catch {
+            return false;
+          }
+        },
       ),
+      queuedTimeout: delegationTimeout(agents),
       reports: issueReports(deps.projects, viewerOf),
       // Runners remove the working directories of finished issues (`issue-workspaces.ts`).
       workspaces: issueWorkspaces(),
@@ -246,6 +313,9 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
       agents.conversations.contextKinds.register(kind, resolvers[kind]),
     ),
     relayAnnouncements(deps.projects(), agents.events),
+    refreshRunIssues(deps.projects(), agents, (error) =>
+      onError('Agents could not refresh issue progress.', error),
+    ),
     // People: names from the user kind, the members to pick from, and who can no longer act (a runner they own stops).
     agents.people.provide({
       names: (conn, ids) => deps.kinds.names(conn, 'user', ids),
@@ -263,8 +333,16 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
       onError('Agents could not announce a failed run.', error),
     ),
     // A run an agent's comment started always answers in that comment's thread.
-    reportCommentRuns(agents, deps.projects, (error) =>
-      onError('Agents could not report a run an agent comment started.', error),
+    reportCommentRuns(
+      agents,
+      deps.projects,
+      (error) =>
+        onError(
+          'Agents could not report a run an agent comment started.',
+          error,
+        ),
+      authorizeReport,
+      work,
     ),
     releaseRemovedAgents(agents, deps.projects, (error) =>
       onError('Agents could not clear a removed agent as executor.', error),
@@ -316,7 +394,13 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => void {
           );
       }),
     );
-  return () => {
+  return async () => {
+    stopped = true;
+    await wakeSchedule
+      .then((stop) => stop())
+      .catch((error) =>
+        onError('Studio could not stop manager wake checks.', error),
+      );
     for (const release of releases.splice(0).reverse()) release();
   };
 }

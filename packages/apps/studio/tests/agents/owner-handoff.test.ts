@@ -1,4 +1,10 @@
 // @vitest-environment node
+import { mkdtempSync, rmSync } from 'node:fs';
+import { createServer, type Server } from 'node:http';
+import os from 'node:os';
+import path from 'node:path';
+import { Hono } from 'hono';
+import { runStudioCli } from '../fixtures/nb-studio-cli.js';
 import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createBridgeHarness, type BridgeHarness } from './bridge-harness.js';
@@ -452,5 +458,138 @@ describe('owner acceptance', () => {
           activity.details.reason === 'waitingOwner',
       ).length,
     ).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('owner handoff CLI', () => {
+  let server: Server;
+  let dir: string;
+  let origin: string;
+  let seen: string[];
+  let replaceOnDecision: (() => Promise<void>) | undefined;
+  beforeEach(async () => {
+    dir = mkdtempSync(path.join(os.tmpdir(), 'studio-handoff-cli-'));
+    seen = [];
+    replaceOnDecision = undefined;
+    const outer = new Hono().route('/api', h.app);
+    server = createServer(async (req, res) => {
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) chunks.push(chunk as Buffer);
+      const body = Buffer.concat(chunks);
+      const headers = req.headers as Record<string, string>;
+      if (headers['x-api-key']) headers['x-test-user'] = headers['x-api-key'];
+      if (req.url?.includes('/issueOwnerHandoffs/')) {
+        seen.push(`${req.method} ${req.url}`);
+        if (req.method === 'POST' && replaceOnDecision) {
+          const replace = replaceOnDecision;
+          replaceOnDecision = undefined;
+          await replace();
+        }
+      }
+      const response = await outer.fetch(
+        new Request(`http://localhost${req.url}`, {
+          method: req.method,
+          headers,
+          ...(body.length ? { body } : {}),
+        }),
+      );
+      res.writeHead(response.status, Object.fromEntries(response.headers));
+      res.end(Buffer.from(await response.arrayBuffer()));
+    });
+    await new Promise<void>((resolve) =>
+      server.listen(0, '127.0.0.1', resolve),
+    );
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('No port.');
+    origin = `http://127.0.0.1:${address.port}`;
+  });
+  afterEach(async () => {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+    rmSync(dir, { recursive: true, force: true });
+  });
+  const cli = (decision: string, issue: string, user = 'bob', json = true) =>
+    runStudioCli(
+      ['issue', 'handoff', decision, issue, ...(json ? ['--json'] : [])],
+      {
+        cwd: dir,
+        env: {
+          NB_STUDIO_SERVER: origin,
+          NB_STUDIO_API_KEY: user,
+          NB_STUDIO_HOME: path.join(dir, '.home'),
+          NB_STUDIO_KEYCHAIN: 'off',
+        },
+      },
+    );
+  it.each(['accept', 'reject'])(
+    'gets the handoff and runs %s with one read before the decision',
+    async (decision) => {
+      const issue = await task();
+      await transfer(issue.id);
+      const got = await cli('get', issue.identifier);
+      expect(got.code).toBe(0);
+      expect(JSON.parse(got.stdout).result.data).toMatchObject({
+        handoff: {
+          waiting: true,
+          ownerUserId: 'bob',
+          previousOwnerUserId: 'alice',
+          transferredByUserId: 'alice',
+          transferredAt: expect.any(String),
+        },
+        canDecide: true,
+      });
+      seen = [];
+      const result = await cli(decision, issue.identifier);
+      expect(result.code).toBe(0);
+      expect(JSON.parse(result.stdout).result.data.handoff.waiting).toBe(
+        decision === 'reject',
+      );
+      expect(seen).toEqual([
+        `GET /api/issueOwnerHandoffs/${issue.identifier}`,
+        `POST /api/issueOwnerHandoffs/${issue.identifier}/${decision}`,
+      ]);
+      expect(
+        (await runs(issue.id)).filter((run) => run.status === 'queued'),
+      ).toHaveLength(decision === 'accept' ? 1 : 0);
+      const repeated = await cli(decision, issue.identifier, 'bob', false);
+      expect(repeated.code).not.toBe(0);
+      expect(repeated.stderr).toContain('Refresh');
+    },
+  );
+  it.each(['accept', 'reject'])(
+    'refuses %s from another owner or without editing permission',
+    async (decision) => {
+      const issue = await task();
+      await transfer(issue.id);
+      const other = await cli(decision, issue.id, 'alice');
+      expect(other.code).toBe(3);
+      h.roles.set('bob', 'none');
+      const unpermitted = await cli(decision, issue.id);
+      expect(unpermitted.code).toBe(3);
+      expect(await runs(issue.id)).toEqual([]);
+    },
+  );
+  it('stops without a handoff and never retries a superseded handoff', async () => {
+    const issue = await task();
+    const missing = await cli('accept', issue.id, 'alice');
+    expect(JSON.parse(missing.stdout).error).toMatchObject({
+      code: 'READ_BINDING_MISSING',
+      message: expect.stringContaining('missing or expired'),
+    });
+    expect(seen).toHaveLength(1);
+    await transfer(issue.id);
+    replaceOnDecision = async () => {
+      await transfer(issue.id, 'carol');
+      await transfer(issue.id, 'bob');
+    };
+    seen = [];
+    const stale = await cli('accept', issue.id);
+    expect(JSON.parse(stale.stdout).error).toMatchObject({
+      code: 'ISSUE_OWNER_HANDOFF_STALE',
+      message: expect.stringContaining('Refresh'),
+    });
+    expect(seen).toHaveLength(2);
+    expect(await runs(issue.id)).toEqual([]);
   });
 });

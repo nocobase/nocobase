@@ -370,6 +370,8 @@ export type ConsultationState = (typeof CONSULTATION_STATES)[number];
  * The consulted agent's own run (`runId`) has its transcript and usage.
  */
 export interface ConsultationNotice {
+  /** Display-only marker: the requested subject could not be resolved; agentName is a historical snapshot. */
+  readonly identitySnapshot?: boolean;
   readonly code: 'consultation';
   /** The tool call: one card per call. */
   readonly callId: string;

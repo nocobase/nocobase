@@ -1,3 +1,4 @@
+import { PmDescriptionImage } from '@nocobase/app-plugin-projects/client/kit';
 /**
  * An issue's page, presented: the two-column frame, the header (trail, parent, title edited in place, meta line), the
  * description edited in the rich text editor, the sub-issues by stage, the dependencies with an issue search, the
@@ -23,6 +24,7 @@ import {
   UploadIcon,
 } from 'lucide-react';
 import {
+  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -63,7 +65,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from 'cn';
+
+import { IssueSectionInTabContext } from './section-context.js';
 
 import { IssueCard, type IssueCardLink } from '@/components/issue-card';
 import {
@@ -91,6 +101,8 @@ import {
 export interface IssueDetailStatus {
   readonly name: string;
   readonly color: IssueTableColor;
+  /** The status's key: drawn as its shape rather than a dot. */
+  readonly key?: string;
 }
 
 /** Draws a link; a plain anchor by default, a router link in an application. */
@@ -122,8 +134,9 @@ function useCardLink(Link: IssueDetailLink): IssueCardLink {
 export const ISSUE_SECTION_LIST = 'divide-y overflow-hidden rounded-lg border';
 
 /** One card of the main column: the body (title, description, sections) or the activity. */
+/** A card on a wide screen; on a phone a full-width section, the page's muted gaps between them. */
 export const ISSUE_SURFACE =
-  'rounded-lg border bg-card p-4 text-card-foreground md:p-6';
+  'rounded-lg border bg-card p-4 text-card-foreground md:p-6 max-md:rounded-none max-md:border-x-0 max-md:border-y-0';
 
 /**
  * A card of the main column on the page's background, holding the body or the activity. It does not clip, so a pinned
@@ -171,15 +184,27 @@ export function IssueSection({
   children,
   ...props
 }: IssueSectionProps): ReactElement {
+  const inTab = useContext(IssueSectionInTabContext);
   return (
     <section
       {...(typeof title === 'string' ? { 'aria-label': title } : {})}
       {...props}
-      className={cn('flex flex-col gap-3 border-t pt-6', className)}
+      className={cn(
+        'flex flex-col gap-3',
+        !inTab && 'border-t pt-6',
+        className,
+      )}
       data-slot='issue-section'
     >
-      <div className='flex min-h-8 flex-wrap items-center gap-x-2 gap-y-1'>
-        <div className='flex min-w-0 items-center gap-2'>
+      <div
+        className={cn(
+          'flex flex-wrap items-center gap-x-2 gap-y-1',
+          inTab ? 'empty:hidden' : 'min-h-8',
+        )}
+      >
+        <div
+          className={cn('flex min-w-0 items-center gap-2', inTab && 'sr-only')}
+        >
           {icon ? (
             <span
               className='flex shrink-0 text-muted-foreground [&_svg]:size-4'
@@ -504,13 +529,15 @@ function useFitsScrollViewport(
   return fits;
 }
 
-/** The page's padding, matching `md:p-6` and `lg:top-6` below, in pixels. */
+/** The page's padding, matching `md:p-6` and `@4xl/issue-detail:top-6` below, in pixels. */
 const LAYOUT_INSET = 24;
 
 /**
  * The frame of a record's page on the application's background: the main column (its cards, such as `IssueSurface`,
- * stacked with the frame's gap) beside a fixed 20rem side column when the page container reaches 64rem.
- * Narrow containers, including those beside the assistant, stack the same DOM to preserve focus. The side column follows the page while it fits the viewport.
+ * stacked with the frame's gap) beside a fixed 20rem side column of cards once the page's own width reaches `@4xl`
+ * (56rem), folded into one column below it. The threshold follows the page's own width through a container query
+ * rather than the viewport, so it also reacts to a sidebar docked beside the page, such as an AI assistant panel. The
+ * side column follows the page while it fits the viewport.
  */
 export function IssueDetailLayout({
   main,
@@ -527,20 +554,20 @@ export function IssueDetailLayout({
   const fits = useFitsScrollViewport(contentRef, LAYOUT_INSET);
   return (
     <div
-      className={cn('@container/issue min-h-full', className)}
+      className={cn('@container/issue-detail min-h-full', className)}
       data-slot='issue-detail-layout'
     >
-      <div className='flex min-h-full flex-col gap-4 p-4 md:gap-6 md:p-6 @min-[64rem]/issue:flex-row'>
-        <div className='flex min-w-0 flex-1 flex-col gap-4 md:gap-6'>
+      <div className='flex min-h-full flex-col gap-4 p-4 md:gap-6 md:p-6 @4xl/issue-detail:flex-row max-md:gap-2 max-md:bg-muted/60 max-md:p-0'>
+        <div className='flex min-w-0 flex-1 flex-col gap-4 md:gap-6 max-md:gap-2'>
           {main}
         </div>
         <aside
           aria-label={asideLabel}
-          className='min-w-0 @min-[64rem]/issue:w-[20rem] @min-[64rem]/issue:shrink-0'
+          className='min-w-0 @4xl/issue-detail:w-[20rem] @4xl/issue-detail:shrink-0'
         >
           <div
             className={cn(
-              fits && '@min-[64rem]/issue:sticky @min-[64rem]/issue:top-6',
+              fits && '@4xl/issue-detail:sticky @4xl/issue-detail:top-6',
             )}
             ref={contentRef}
           >
@@ -611,7 +638,7 @@ export function IssueHeader({
       });
   };
   return (
-    <div className='space-y-2' data-slot='issue-header'>
+    <div className='@container/issue-header space-y-2' data-slot='issue-header'>
       {trail ? <div className='min-w-0'>{trail}</div> : null}
       {parent ? (
         <Link
@@ -727,6 +754,7 @@ export function IssueDescription({
       <div className='space-y-2'>
         <RichTextEditor
           value={draft}
+          extensions={[PmDescriptionImage]}
           autoFocus
           aria-label={labels.description}
           placeholder={labels.descriptionPlaceholder}
@@ -1163,7 +1191,11 @@ export function IssueDependencies({
   );
 }
 
-/** Deletes the issue after a confirmation. */
+/**
+ * Deletes the issue after a confirmation. Below `@md` of the nearest named container (the issue header's own width,
+ * not the viewport), only the icon shows, with the label in a tooltip, so a docked panel beside the page does not
+ * squeeze the title out of its row.
+ */
 export function IssueDeleteButton({
   identifier,
   onDelete,
@@ -1177,15 +1209,27 @@ export function IssueDeleteButton({
   const [busy, setBusy] = useState(false);
   return (
     <>
-      <Button
-        variant='ghost'
-        size='sm'
-        className='text-muted-foreground'
-        onClick={() => setOpen(true)}
-      >
-        <Trash2Icon data-icon='inline-start' />
-        {labels.delete}
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant='ghost'
+                size='sm'
+                aria-label={labels.delete}
+                className='text-muted-foreground'
+                onClick={() => setOpen(true)}
+              />
+            }
+          >
+            <Trash2Icon data-icon='inline-start' />
+            <span className='hidden @md/issue-header:inline'>
+              {labels.delete}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{labels.delete}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -36,8 +36,8 @@ import {
   CapabilityOverview,
   isCapabilityOverview,
 } from './components/CapabilityOverview';
+import { ArchitecturePitch } from './components/ArchitecturePitch';
 import { FullHome } from './components/FullHome';
-import { DocsHome } from './components/DocsHome';
 import { HomeHero } from './components/HomeHero';
 import { DocsAssistant } from './components/DocsAssistant/DocsAssistant';
 import { decodeTargetBlankHref } from '../shared/blankTargetLink';
@@ -158,7 +158,7 @@ export function HomeLayout(props: HomeLayoutProps) {
   } = usePage();
 
   if (frontmatter.pageName === 'home') {
-    return <DocsHome groups={frontmatter.features ?? []} />;
+    return <FullHome />;
   }
 
   return (
@@ -232,6 +232,8 @@ export const Layout = () => {
     .join(' ');
 
   if (pageFrontmatter.pageName === 'home') return <FullHome />;
+  if (pageFrontmatter.pageName === 'version-comparison')
+    return <ArchitecturePitch />;
   if (isCapabilityOverview(routePath))
     return <CapabilityOverview key={routePath} routePath={routePath} />;
 

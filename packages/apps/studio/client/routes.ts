@@ -1,3 +1,6 @@
+import { agentSessionsRoute } from '@nocobase/app-plugin-agent-sessions/client';
+
+import { SessionTaskPanel } from './agents/session-task-panel-lazy.js';
 import { chatLinkRoutes } from '@nocobase/app-plugin-agents/client/chat';
 import {
   agentsRoute,
@@ -21,10 +24,10 @@ import {
   CircleUserRound,
   Cpu,
   FolderKanban,
-  InboxIcon,
   LayoutDashboard,
   ListChecks,
   ListTodo,
+  MessagesSquare,
   MonitorCog,
   Rocket,
   Server,
@@ -86,7 +89,7 @@ function issueDetailRoute(owner?: string): AppClientRouteDefinition {
 }
 
 /**
- * The sidebar: My tasks (0), Inbox (1), Dashboard (2), My follow-ups (3), then
+ * The sidebar: My tasks (0), My agents (0.5), Inbox (1), Dashboard (2), My follow-ups (3), then
  * Development (4: issues, projects, knowledge), Releases (4.5: Apps, environments), Agent team (5) and Settings (7).
  * The layout adds the inbox's live count to its route navigation. A section is a route without a page of its own;
  * the layout draws it as a label over its entries (`layouts/components/navigation-menu.tsx`). The projects and
@@ -156,6 +159,22 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     componentLoader: () => import('./pages/home/redirect.js'),
   },
   {
+    // Conversations with coding agents on the viewer's own computers (the agent sessions plugin's page), right below
+    // My tasks. A session is its owner's alone, which its API checks, so the page needs no grant.
+    ...agentSessionsRoute({
+      cli: 'nb-studio',
+      install: 'npm install -g @nocobase/studio-cli',
+      // A session's tasks open beside the conversation, in the split view's task detail.
+      linkPanels: { issue: SessionTaskPanel },
+    }),
+    navigation: {
+      title: 'navigation.agentSessions',
+      icon: MessagesSquare,
+      order: 0.5,
+    },
+    breadcrumb: { title: 'navigation.agentSessions' },
+  },
+  {
     // How delivery goes, how the agents perform and what is stuck (`pages/dashboard`), behind the `reports` grant,
     // which the reports API checks too.
     name: 'dashboard',
@@ -198,12 +217,12 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     ],
   },
   {
-    // Everyone's own inbox is the default landing page; its contents need no page grant.
+    // Everyone's own inbox, the landing page for whoever cannot open My tasks; its contents need no page grant.
     authz: 'skip',
     auth: 'required',
     componentLoader: () => import('./pages/inbox/index.js'),
     name: 'inbox',
-    navigation: { title: 'navigation.inbox', icon: InboxIcon, order: 1 },
+    // Opened from the header's notification button (`layouts/components/header-actions.tsx`), not the sidebar.
     breadcrumb: { title: 'navigation.inbox' },
     path: '/inbox',
   },

@@ -11,21 +11,45 @@ interface Issue {
 }
 
 test.describe('issues', () => {
-  test('the board is the default, beside the list and the Agent queue', async ({
+  test('the table is the default, beside the split view, the board and the Agent queue', async ({
     page,
   }) => {
+    const errors: string[] = [];
+    const treeRequests: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') errors.push(message.text());
+    });
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname.includes('/api/taskTrees'))
+        treeRequests.push(request.url());
+    });
     await open(page, '/issues');
     const views = page.getByRole('group', { name: '视图' });
-    await expect(views.getByRole('button', { name: '看板' })).toHaveAttribute(
+    // The views in their order: split, table, board, Agent queue.
+    for (const [index, name] of [
+      '分栏',
+      '表格',
+      '看板',
+      'Agent 队列',
+    ].entries())
+      await expect(views.getByRole('button').nth(index)).toHaveAccessibleName(
+        name,
+      );
+    await expect(views.getByRole('button', { name: '表格' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
+    await views.getByRole('button', { name: '看板' }).click();
     const board = page.getByRole('region', { name: '任务看板' });
     await expect(
       board.getByRole('region', { name: /^进行中 \d+$/ }),
     ).toBeVisible();
 
-    await views.getByRole('button', { name: '列表' }).click();
+    await views.getByRole('button', { name: '表格' }).click();
+    // Other tests add issues to the same list at the same time, so find the demo issue by its words.
+    await page
+      .getByRole('textbox', { name: '搜索任务' })
+      .fill('Drag to reorder issues on the board');
     const table = page.getByRole('table');
     await expect(
       table.getByRole('row', {
@@ -41,14 +65,16 @@ test.describe('issues', () => {
     await expect(
       views.getByRole('button', { name: 'Agent 队列' }),
     ).toHaveAttribute('aria-pressed', 'true');
+    expect(treeRequests).toEqual([]);
+    expect(errors).toEqual([]);
   });
 
-  test('my issues default to the board', async ({ page }) => {
+  test('my issues default to the split view', async ({ page }) => {
     await open(page, '/my-issues');
     await expect(
       page
         .getByRole('group', { name: '视图' })
-        .getByRole('button', { name: '看板' }),
+        .getByRole('button', { name: '分栏' }),
     ).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -113,7 +139,7 @@ test.describe('issues', () => {
     await open(page, '/issues');
     await page
       .getByRole('group', { name: '视图' })
-      .getByRole('button', { name: '列表' })
+      .getByRole('button', { name: '表格' })
       .click();
     await page
       .getByRole('textbox', { name: '搜索任务' })
@@ -123,8 +149,35 @@ test.describe('issues', () => {
       .getByRole('rowgroup')
       .last()
       .getByRole('row');
-    await expect(rows).toHaveCount(1);
-    await expect(rows.first()).toContainText('PM-2');
+    // The follow group's heading, then one group holding the one matching task.
+    const headings = rows.filter({
+      has: page.getByRole('button', { name: /^(折叠|展开)/ }),
+    });
+    await expect(headings).toHaveCount(2);
+    await expect(headings.nth(1)).toContainText(/1$/u);
+    // The demo task is done, whose group starts folded.
+    await page.getByRole('button', { name: '展开已完成' }).click();
+    const parent = rows.filter({
+      has: page.getByRole('link', { name: 'PM-1', exact: true }),
+    });
+    await expect(parent).toContainText('上下文');
+    await parent
+      .getByRole('button', { name: '展开 PM-1 的子任务', exact: true })
+      .click();
+    const tasks = rows.filter({
+      has: page.getByRole('link', { name: /^PM-\d+$/ }),
+    });
+    await expect(tasks).toHaveCount(4);
+    const match = tasks.filter({
+      has: page.getByRole('link', { name: 'PM-2', exact: true }),
+    });
+    await expect(match).toHaveCount(1);
+    await expect(match).toContainText(
+      'Board drag and drop: reorder within a column',
+    );
+    await expect(match).not.toContainText('上下文');
+    const context = tasks.filter({ hasText: '上下文' });
+    await expect(context).toHaveCount(3);
   });
 
   test('creating an issue by hand for later opens it in Backlog', async ({

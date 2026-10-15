@@ -7,7 +7,7 @@ import { STUDIO_ROOT } from './support/server.ts';
 // The initial demo administrator is isolated from the accounts used by the workflow tests.
 test.use({ user: 'admin' });
 
-test('inbox navigation adapts to languages, themes, icon mode and the mobile drawer', async ({
+test('the sidebar count and the header inbox adapt to languages, themes, icon mode and the mobile drawer', async ({
   page,
   api,
 }) => {
@@ -21,6 +21,18 @@ test('inbox navigation adapts to languages, themes, icon mode and the mobile dra
   await page.route('**/api/inbox/pending', (route) =>
     route.fulfill({ json: { data: { decision: 120 } } }),
   );
+  // My tasks' entry counts what waits for the viewer.
+  await page.route('**/api/taskGroups/summary', (route) =>
+    route.fulfill({
+      json: {
+        data: {
+          owned: { open: 3, waiting: 2 },
+          executing: { open: 1, waiting: 0 },
+          waiting: 120,
+        },
+      },
+    }),
+  );
   for (const preset of ['compact', 'default']) {
     for (const locale of ['en-US', 'zh-CN']) {
       for (const mode of ['light', 'dark']) {
@@ -32,18 +44,30 @@ test('inbox navigation adapts to languages, themes, icon mode and the mobile dra
         await page.setViewportSize({ width: 1440, height: 900 });
         await open(page, '/inbox');
         const name =
+          locale === 'en-US'
+            ? 'My issues, 120 waiting for you'
+            : '我的任务，120 项等你处理';
+        const inboxName =
           locale === 'en-US' ? 'Inbox, 120 waiting' : '收件箱，120 项待处理';
         const nav = page.getByRole('navigation', {
           name: locale === 'en-US' ? 'Application navigation' : '应用导航',
         });
         const links = nav.getByRole('link');
-        await expect(links.nth(0)).toHaveAccessibleName(
-          locale === 'en-US' ? 'My issues' : '我的任务',
+        await expect(links.nth(0)).toHaveAccessibleName(name);
+        await expect(links.nth(1)).toHaveAccessibleName(
+          locale === 'en-US' ? 'My agents' : '我的 Agent',
         );
-        await expect(links.nth(1)).toHaveAccessibleName(name);
         await expect(links.nth(2)).toHaveAccessibleName(
           locale === 'en-US' ? 'Dashboard' : '仪表盘',
         );
+        // The inbox is the header's notification button, not a sidebar entry.
+        await expect(
+          nav.getByRole('link', { name: /^(Inbox|收件箱)/u }),
+        ).toHaveCount(0);
+        const inbox = page
+          .getByRole('banner')
+          .getByRole('link', { name: inboxName, exact: true });
+        await expect(inbox.getByTestId('studio-inbox-badge')).toHaveText('99+');
         await expect(
           nav.getByRole('link', {
             name: locale === 'en-US' ? 'Home' : '首页',
@@ -58,13 +82,7 @@ test('inbox navigation adapts to languages, themes, icon mode and the mobile dra
           await toggle.click();
         const link = nav.getByRole('link', { name, exact: true });
         await expect(link).toBeVisible();
-        await expect(link.getByTestId('studio-inbox-badge')).toHaveText('99+');
-        await expect(
-          page
-            .getByRole('banner')
-            .getByRole('link', { name: /Inbox|收件箱/ })
-            .and(page.locator('a[href]')),
-        ).toHaveCount(0);
+        await expect(link.getByTestId('studio-nav-badge')).toHaveText('99+');
         await expect(page.locator('html')).toHaveAttribute(
           'data-theme',
           preset,
@@ -72,7 +90,7 @@ test('inbox navigation adapts to languages, themes, icon mode and the mobile dra
         await expect(page.locator('html')).toHaveClass(new RegExp(mode, 'u'));
         // Canvas resolves the semantic OKLCH colors into sRGB for the AA calculation.
         const contrast = await page.evaluate<number>(`(() => {
-        const badge = document.querySelector('[data-testid="studio-inbox-badge"]');
+        const badge = document.querySelector('[data-testid="studio-nav-badge"]');
         const style = getComputedStyle(badge);
         const canvas = document.createElement('canvas');
         canvas.width = canvas.height = 1;
@@ -101,11 +119,11 @@ test('inbox navigation adapts to languages, themes, icon mode and the mobile dra
         });
         await toggle.click();
         await expect(sidebar).toHaveAttribute('data-state', 'collapsed');
-        await expect(link.getByTestId('studio-inbox-badge')).toBeVisible();
+        await expect(link.getByTestId('studio-nav-badge')).toBeVisible();
         await expect
           .poll(() =>
             page.evaluate<boolean>(`(() => {
-          const element = document.querySelector('[data-testid="studio-inbox-badge"]');
+          const element = document.querySelector('[data-testid="studio-nav-badge"]');
           const badge = element.getBoundingClientRect();
           const sidebar = element.closest('[data-slot="sidebar-content"]').getBoundingClientRect();
           return badge.left >= sidebar.left && badge.right <= sidebar.right && badge.width >= 18;
@@ -129,7 +147,7 @@ test('inbox navigation adapts to languages, themes, icon mode and the mobile dra
         await expect(
           nav
             .getByRole('link', { name, exact: true })
-            .getByTestId('studio-inbox-badge'),
+            .getByTestId('studio-nav-badge'),
         ).toBeVisible();
         expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
         await page.screenshot({

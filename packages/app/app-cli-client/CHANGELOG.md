@@ -1,5 +1,45 @@
 # @nocobase/app-cli-client
 
+## 0.1.0-beta.7
+
+### Minor Changes
+
+- 1cd749c: Expose issue handoff viewing, acceptance, and rejection through generated CLI commands. Add a single declarative GET binding that supplies a request body field before a command executes, preserving handoff permissions and stale notification checks.
+
+### Patch Changes
+
+- 8e4cf26: Recover runners and agent-session bridges after a protocol upgrade. Heartbeat answers now carry the server's runner protocol (`protocolVersion`), and a runner that speaks an older protocol while no newer version is offered logs what it speaks, what the application needs and how to update, instead of looking up to date. A bridge refused for its protocol now receives the protocols the application speaks in the error's `metadata`; `acp start` then updates the CLI as `update` does and exits non-zero so its launchd, systemd or Startup service starts it again on the new version, and when no update helps it still exits non-zero after a pause rather than stopping with success. A computer whose bridge was refused as too old is shown on My agents with the commands to update it.
+- e23633e: Discover installed agents' real model and configuration choices before a new session's first message. Show loading, fixed, unsupported, offline and retry states, isolate settings by computer, agent and directory, and validate selected values before sending a prompt. Persist acknowledged dependent settings when existing sessions change models so reopening keeps their configuration. Bridge protocol version 2 requires upgrading the application CLI.
+- Updated dependencies [8e4cf26]
+- Updated dependencies [e23633e]
+- Updated dependencies [923a8e5]
+- Updated dependencies [f36da62]
+  - @nocobase/agent-protocol@0.1.0-beta.8
+  - @nocobase/acp-bridge@0.1.0-beta.1
+
+## 0.1.0-beta.6
+
+### Minor Changes
+
+- 157a914: Add `<bin> acp start`, which connects the computer to the signed-in person's agent sessions (`@nocobase/app-plugin-agent-sessions`) and keeps it connected until stopped, running their sessions with the coding agents installed there, and `<bin> acp service install`, `status` and `uninstall`, which keep it connected in the background from every login as a launchd agent on macOS, a systemd user unit on Linux or a Startup script on Windows. One bridge runs per profile on a computer. The person chooses the folders sessions work in from the application; `--root` limits them on the computer itself (the home directory by default).
+- 6758f9f: Add offline `skills install` and `skills status` commands for branded CLI packages that ship the nb-studio-cli Skill, with Claude Code and Codex detection, explicit tool selection, dry-run output and content comparison. Register installed locations and synchronize them from the new package after CLI self-update, preserving older copies on replacement failure and reporting synchronization warnings without failing the CLI upgrade. The update JSON payload gains an optional `skills` result and envelope warnings; local Skill commands return their payload under `result.data`. Preserve documented exit codes when static commands fail with JSON output.
+
+  Document local installation, Codex's current user Skill directory and legacy-copy behavior, and reinstalling Skills after external CLI upgrades.
+
+  Reject nested installation destinations before writing any target, including destinations registered by earlier installs. During self-update, preserve conflicting copies and their records, report warnings, and continue synchronizing unrelated destinations.
+
+### Patch Changes
+
+- 8698e80: Keep oclif from registering tsx when a packaged CLI runs from sources under `NODE_ENV=development` or `test`, which made every cold start about half again as slow.
+- Updated dependencies [157a914]
+- Updated dependencies [10e261b]
+- Updated dependencies [ddfe1b1]
+- Updated dependencies [ee24e95]
+- Updated dependencies [4748117]
+- Updated dependencies [a2cf036]
+  - @nocobase/acp-bridge@0.1.0-beta.0
+  - @nocobase/agent-protocol@0.1.0-beta.7
+
 ## 0.1.0-beta.5
 
 ### Patch Changes

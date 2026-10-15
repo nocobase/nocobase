@@ -9,7 +9,7 @@
 // Tool detection runs in the same environment, without the run's own (`detectionEnv`), so a tool that reads its login
 // or its key from a variable is detected as it will run.
 //
-// HOME is the real home of the user the runner runs as. The runner then sets what it owns: TMPDIR (inside the working
+// HOME is the real home of the user the runner runs as. The runner then sets what it owns: TMPDIR/TMP/TEMP (the short private run temporary
 // directory), Codex's CODEX_HOME (codex-home.ts), the machine's shared pnpm store (core/pnpm-store.ts), the runner's own Node.js and pnpm with pnpm kept from
 // switching versions (runner-tools.ts), the run's process tag (`AGENT_RUN_PROCESS_TAG`,
 // which marks what the tool starts as the run's, see core/process-tree.ts), the application CLI's directory first on
@@ -29,11 +29,7 @@ import {
   RUN_CREDENTIALS_ENV,
   type RunWorkspace,
 } from '../protocol/index.ts';
-import {
-  PNPM_STORE_ENV,
-  pnpmStoreEnv,
-  type PnpmImportMethod,
-} from '../core/pnpm-store.ts';
+import { PNPM_STORE_ENV, pnpmStoreEnv } from '../core/pnpm-store.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { PINNED_PNPM_ENV } from './runner-tools.ts';
 import { TRAILERS_ENV } from '../core/git-hooks.ts';
@@ -102,8 +98,6 @@ export interface BuildEnvOptions {
   codexHome?: string;
   /** The pnpm store every run on this machine shares. */
   pnpmStoreDir?: string;
-  /** How pnpm imports packages from that store (`pnpmImportMethod`); `copy` when absent. */
-  pnpmImportMethod?: PnpmImportMethod;
   /** The runner's hooks directory (git-hooks.ts). */
   hooksDir?: string;
   /** The run's repository credentials, through the runner's helper. */
@@ -120,7 +114,7 @@ export function forbidden(name: string): boolean {
     /^(NOCOBASE_RUNNER_|AGENT_RUN_|GIT_CONFIG|GIT_DIR$|GIT_WORK_TREE$|GIT_EXEC_PATH$)/i.test(
       name,
     ) ||
-    ['PATH', 'HOME', 'TMPDIR', 'CODEX_HOME'].includes(name) ||
+    ['PATH', 'HOME', 'TMPDIR', 'TMP', 'TEMP', 'CODEX_HOME'].includes(name) ||
     PNPM_STORE_ENV.includes(name.toLowerCase()) ||
     !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)
   );
@@ -197,13 +191,11 @@ export function buildAgentEnv(
       env.PATH === undefined || env.PATH === ''
         ? options.binDir
         : `${options.binDir}${path.delimiter}${env.PATH}`;
-  if (options.tmpDir !== undefined) env.TMPDIR = options.tmpDir;
+  if (options.tmpDir !== undefined)
+    for (const name of ['TMPDIR', 'TMP', 'TEMP']) env[name] = options.tmpDir;
   if (options.codexHome !== undefined) env.CODEX_HOME = options.codexHome;
   if (options.pnpmStoreDir !== undefined)
-    Object.assign(
-      env,
-      pnpmStoreEnv(options.pnpmStoreDir, options.pnpmImportMethod ?? 'copy'),
-    );
+    Object.assign(env, pnpmStoreEnv(options.pnpmStoreDir));
   if (options.pinPnpm === true) Object.assign(env, PINNED_PNPM_ENV);
   if (options.processTag !== undefined)
     env[PROCESS_TAG_ENV] = options.processTag;

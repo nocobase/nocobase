@@ -3,7 +3,7 @@
  * The `nb-studio` CLI's release commands, with release management on an in-memory driver: a person runs the real CLI
  * against release management's routes and Studio's build routes (`x-cli`), uploading a release (the archive streamed to
  * a one-time upload ticket, never through the command gateway), deploying and reading it back, and registering an
- * image CI pushed as a release a Docker environment runs; an agent's run calls the routes within its actions, and
+ * image CI pushed as a release a Docker environment runs; an agent's run calls the routes within its running identity's permissions, and
  * never deploys directly to a protected environment.
  */
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -517,7 +517,7 @@ describe('an agent’s release commands', () => {
     const payload = await h.claimOne();
     return payload.cli.credential.content.token as string;
   }
-  it('deploys to an unprotected environment within its actions, and never to a protected one', async () => {
+  it('uses identity grants without legacy actions and keeps protected deployment approvals human-only', async () => {
     const releases = h.releases!;
     const alice = await releases.callerForUser('alice');
     for (const [id, environmentId] of [
@@ -543,7 +543,8 @@ describe('an agent’s release commands', () => {
         await h.request('GET', '/releases/apps', { runToken: viewer })
       ).body.data.map((app: { app: { id: string } }) => app.app.id),
     ).toEqual(expect.arrayContaining(['crm', 'shop']));
-    // Not configured to deploy: refused.
+    // Revoke the identity grant; the agent catalog alone cannot authorize deployment.
+    h.roles.set('alice', 'none');
     expect(
       (
         await h.request('POST', '/releases/apps/crm/deploy', {
@@ -552,8 +553,36 @@ describe('an agent’s release commands', () => {
         })
       ).status,
     ).toBe(403);
-
-    const deployer = await run(['rel.apps/view', 'rel.apps/deploy']);
+    h.roles.set('alice', 'admin');
+    const deployer = await run([]);
+    const readScope = {
+      'x-test-key-scope': JSON.stringify({
+        'releases.apps': { level: 'read' },
+      }),
+    };
+    expect(
+      (
+        await h.request('POST', '/releases/apps/crm/deploy', {
+          user: 'alice',
+          headers: readScope,
+          body: { releaseId: crm.id },
+        })
+      ).status,
+    ).toBe(403);
+    const otherAppScope = {
+      'x-test-key-scope': JSON.stringify({
+        'releases.apps': { level: 'admin', objects: ['shop'] },
+      }),
+    };
+    expect(
+      (
+        await h.request('POST', '/releases/apps/crm/deploy', {
+          user: 'alice',
+          headers: otherAppScope,
+          body: { releaseId: crm.id },
+        })
+      ).status,
+    ).toBe(403);
     const deployed = await h.request('POST', '/releases/apps/crm/deploy', {
       runToken: deployer,
       body: { releaseId: crm.id },
@@ -573,6 +602,27 @@ describe('an agent’s release commands', () => {
     );
     expect(protectedDeploy.status).toBe(400);
     expect(protectedDeploy.body.error.reason).toBe('APPROVAL_REQUIRED');
+    const requested = await h.request(
+      'POST',
+      '/releases/apps/shop/deploymentRequests',
+      {
+        runToken: deployer,
+        body: { releaseId: shop.id },
+      },
+    );
+    expect(requested.status).toBe(201);
+    expect(requested.body.data.status).toBe('pending');
+    expect(requested.body.data.deploymentId).toBeNull();
+    const approvedByRun = await h.request(
+      'POST',
+      `/releases/deploymentRequests/${requested.body.data.id}/approve`,
+      { runToken: deployer, body: {} },
+    );
+    expect(approvedByRun.status).toBe(403);
+    expect(approvedByRun.body.error.reason).toBe('CREDENTIAL_NOT_ACCEPTED');
+    expect(
+      (await releases.requests.get(alice, requested.body.data.id)).status,
+    ).toBe('pending');
     // Deleting is a person's route only.
     const removed = await h.request(
       'DELETE',

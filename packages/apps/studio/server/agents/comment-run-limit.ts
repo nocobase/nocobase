@@ -29,6 +29,8 @@ export const COMMENT_RUNS_LIMITED = 'comment_runs_limited';
 interface CommentRunsNotice {
   readonly issue: Pick<Issue, 'id' | 'identifier' | 'title' | 'ownerUserId'>;
   readonly agentName: string;
+  readonly agentId: string;
+  readonly commentId: string;
   readonly limit: number;
   readonly windowHours: number;
   readonly continueToken: string;
@@ -66,6 +68,8 @@ export function commentRunNoticeRule(): NoticeRule {
               body: `Agents' comments started ${notice.limit} runs on ${issue.identifier} within ${notice.windowHours} hours, so a comment of ${notice.agentName} started nothing. Continue on the issue to wake the agents it names and reset the count.`,
               identifier: issue.identifier,
               agentName: notice.agentName,
+              agentId: notice.agentId,
+              commentId: notice.commentId,
               limit: String(notice.limit),
               windowHours: String(notice.windowHours),
               continueToken: notice.continueToken,
@@ -90,7 +94,7 @@ export async function pendingCommentRun(
   readonly maxRuns: number;
   readonly windowHours: number;
 } | null> {
-  const issue = await projects.issueQueries.detail(viewer, issueId);
+  const issue = await projects.issueQueries.visible(viewer, issueId);
   if (!mayContinue(viewer) || viewer.userId !== issue.ownerUserId) return null;
   if (await ownerHandoffWaiting(projects.tx.read(), issue)) return null;
   const guard = await commentGuards(projects.tx.read()).findOne({

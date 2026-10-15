@@ -41,6 +41,9 @@ async function move(issue: Pick<Issue, 'id'>, statusKey: string) {
   return h.projects.issues.update(alice(), issue.id, {
     revision: current.revision,
     statusKey,
+    ...(statusKey === 'in_review'
+      ? { needsYou: 'Please review this change.' }
+      : {}),
   });
 }
 
@@ -222,6 +225,22 @@ describe('required and reference checks', () => {
     await h.git.pollRepo(repo);
     expect(await passedInputs()).toHaveLength(1);
     expect(await checkWakes(issue.id)).toHaveLength(0);
+    h.github.setCheck(REPO, 'pass1', {
+      name: 'build',
+      status: 'in_progress',
+      conclusion: null,
+    });
+    await h.git.pollRepo(repo);
+    expect(await passedInputs()).toHaveLength(1);
+    h.github.setCheck(REPO, 'pass1', passing('build'));
+    await h.git.pollRepo(repo);
+    expect(await passedInputs()).toHaveLength(2);
+    await h.git.pollRepo(repo);
+    expect(await passedInputs()).toHaveLength(2);
+    // A check added and completed between polls changes the effective collection without an observed pending.
+    h.github.setCheck(REPO, 'pass1', passing('typecheck'));
+    await h.git.pollRepo(repo);
+    expect(await passedInputs()).toHaveLength(3);
   });
 
   it('allows a run to read visible linked checks over HTTP, rejecting invisible and unlinked requests', async () => {
@@ -257,6 +276,8 @@ describe('required and reference checks', () => {
     });
     await mentionAgent(h, 'alice', issue.id, agentId);
     const payload = await h.claimOne();
+    expect(payload).toBeDefined();
+    expect((await h.agents.runs.get(payload.run.id)).agentId).toBe(agentId);
     const token = payload.cli.credential.content.token as string;
     const url = `/git/pullRequests/${pullRequest.id}/checks`;
     const read = await h.request('GET', `${url}?issueId=${issue.id}`, {
@@ -309,6 +330,14 @@ describe('required and reference checks', () => {
     const restrictedAgent = await h.createAgent({ actions: [] });
     await mentionAgent(h, 'alice', issue.id, restrictedAgent);
     const restricted = await h.claimOne();
+    expect((await h.agents.runs.get(restricted.run.id)).agentId).toBe(
+      restrictedAgent,
+    );
+    const legacyRead = await h.request('GET', `${url}?issueId=${issue.id}`, {
+      runToken: restricted.cli.credential.content.token as string,
+    });
+    expect(legacyRead.status).toBe(200);
+    h.roles.set('alice', 'none');
     const forbidden = await h.request('GET', `${url}?issueId=${issue.id}`, {
       runToken: restricted.cli.credential.content.token as string,
     });
@@ -579,4 +608,51 @@ describe('merging past failed required checks', () => {
       details: { code: 'PR_NOT_MERGEABLE', blocker: 'draft' },
     });
   });
+});
+
+it('retries the same settled snapshot after the manager becomes available without consuming delivery', async () => {
+  const issue = await developedIssue();
+  const repo = await repoWithReference();
+  h.github.addPull(REPO, {
+    number: 93,
+    head: { ref: `agent/${issue.identifier}`, sha: 'recover' },
+  });
+  h.github.setCheck(REPO, 'recover', passing('test'));
+  await h.database
+    .connection()
+    .repository('agAgents')
+    .updateMany({
+      filter: { id: PROJECT_MANAGER_ID },
+      values: { status: 'disabled' },
+    });
+  await h.git.pollRepo(repo);
+  const inputs = async () =>
+    (
+      await Promise.all(
+        (
+          await h.agents.runs.list({
+            subjectKind: 'issue',
+            subjectId: issue.id,
+          })
+        ).map((r) => h.agents.runs.detail(r.id)),
+      )
+    )
+      .flatMap((r) => r.inputs)
+      .filter(
+        (i) =>
+          (i.payload as { trigger?: string } | null)?.trigger ===
+          'prChecksPassed',
+      );
+  expect(await inputs()).toHaveLength(0);
+  await h.database
+    .connection()
+    .repository('agAgents')
+    .updateMany({
+      filter: { id: PROJECT_MANAGER_ID },
+      values: { status: 'enabled' },
+    });
+  await h.git.pollRepo(repo);
+  expect(await inputs()).toHaveLength(1);
+  await h.git.pollRepo(repo);
+  expect(await inputs()).toHaveLength(1);
 });

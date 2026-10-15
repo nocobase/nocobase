@@ -1,3 +1,6 @@
+import { resolve } from 'import-meta-resolve';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import type { DatabaseCapabilities } from '@nocobase/db';
 import {
   resolveDatabaseCapabilities,
@@ -80,7 +83,21 @@ async function importProvisioner(
   const packageName = testDatabasePackage(dialect);
   let module: ProvisionerModule;
   try {
-    module = (await import(`${packageName}/testing`)) as ProvisionerModule;
+    const specifier = `${packageName}/testing`;
+    let url: string;
+    try {
+      // Resolve from the consuming project so external drivers need no dependency in this package.
+      url = resolve(
+        specifier,
+        pathToFileURL(path.join(process.cwd(), 'package.json')).href,
+      );
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ERR_MODULE_NOT_FOUND')
+        throw error;
+      // Built-in test drivers remain optional peers of this package.
+      url = resolve(specifier, import.meta.url);
+    }
+    module = (await import(url)) as ProvisionerModule;
   } catch (error) {
     const code = (error as { code?: unknown }).code;
     const text = String(error);

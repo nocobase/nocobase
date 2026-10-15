@@ -118,7 +118,7 @@ describe('cleaning up working directories', () => {
     );
     expect(existsSync(ended)).toBe(true);
     expect(server.workspaceReports[0]?.workspaces).toHaveLength(2);
-    // No sizes: the disk's free space and what is kept free instead.
+    // Sizes are not measured: that would read every file of every directory.
     expect(listed.workspaces[0]).not.toHaveProperty('sizeBytes');
     expect(server.workspaceReports[0]?.workspaces[0]).not.toHaveProperty(
       'sizeBytes',

@@ -1,4 +1,8 @@
 import {
+  ticketParameterGroup,
+  notificationParameterGroup,
+} from '../configuration/definitions.js';
+import {
   defineLifecycle,
   type Lifecycle,
   type LifecycleRecord,
@@ -32,7 +36,11 @@ export interface Ticket extends LifecycleRecord {
 export interface TicketTypes {
   record: Ticket;
   state: TicketState;
-  parameters: { waitMinutes: number; reopenDays: number };
+  parameters: {
+    waitMinutes: number;
+    reopenDays: number;
+    notificationPrefix: string;
+  };
   services: ExampleServices;
 }
 
@@ -110,7 +118,11 @@ export const ticketLifecycle: Lifecycle<TicketTypes> =
     },
     states: ['new', 'open', 'awaitingCustomer', 'closed'],
     // A real help desk waits days; the example waits minutes so you can watch it.
-    parameters: { waitMinutes: 2, reopenDays: 7 },
+    parameterConfiguration: {
+      readMode: 'live',
+      groups: [ticketParameterGroup, notificationParameterGroup],
+    },
+    parameters: { notificationPrefix: '', waitMinutes: 2, reopenDays: 7 },
     transitions: {
       accept: {
         title: '受理',

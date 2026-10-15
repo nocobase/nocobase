@@ -19,7 +19,10 @@ import {
 import { pmKeys } from '../../api/keys.js';
 import { PmExecutorSelect } from '../../components/pm-executor-select.js';
 import { PmPendingFiles } from '../../components/pm-pending-files.js';
-import { PmRichTextEditor } from '../../components/pm-rich-text-editor.js';
+import {
+  PmRichTextEditor,
+  type PmRichTextHandle,
+} from '../../components/pm-rich-text-editor.js';
 import { Alert, AlertDescription } from '../../components/ui/alert.js';
 import { Button } from '../../components/ui/button.js';
 import {
@@ -87,6 +90,7 @@ export function NewIssueForm({
   const queryClient = useQueryClient();
   const viewer = useViewer();
   const candidates = useMentionCandidates();
+  const editorRef = useRef<PmRichTextHandle>(null);
   const otherExecutors = useExecutorOptions();
 
   const projects = useQuery({
@@ -138,7 +142,7 @@ export function NewIssueForm({
     uploadingChangeRef.current?.(uploading);
   }, [uploading]);
   const addFiles = (files: File[]): void => {
-    if (!submittingRef.current) uploads.add(files);
+    if (!submittingRef.current) void uploads.add(files);
   };
   const owner = ownerUserId ?? viewer?.userId ?? null;
   const markSaved = useUnsavedChanges(
@@ -252,6 +256,12 @@ export function NewIssueForm({
           <FieldLabel>{t('issueForm.descriptionLabel')}</FieldLabel>
           <PmRichTextEditor
             value={description}
+            images
+            disabled={submitting}
+            ref={editorRef}
+            onPasteImages={async (files) =>
+              submittingRef.current ? [] : uploads.add(files)
+            }
             aria-label={t('issueForm.descriptionLabel')}
             placeholder={t('issueForm.descriptionPlaceholder')}
             mentionCandidates={candidates}
@@ -265,7 +275,24 @@ export function NewIssueForm({
             disabled={submitting}
             onAdd={addFiles}
             onRemove={(key) => {
-              if (!submittingRef.current) uploads.remove(key);
+              if (submittingRef.current) return;
+              const upload = uploads.uploads.find((file) => file.key === key);
+              const editor = editorRef.current?.editor();
+              if (editor && upload?.attachment) {
+                const tr = editor.state.tr;
+                editor.state.doc.descendants((node, position) => {
+                  if (
+                    node.type.name === 'image' &&
+                    node.attrs.src === upload.attachment?.contentUrl
+                  )
+                    tr.delete(
+                      tr.mapping.map(position),
+                      tr.mapping.map(position + node.nodeSize),
+                    );
+                });
+                editor.view.dispatch(tr);
+              }
+              uploads.remove(key);
             }}
           />
         </Field>

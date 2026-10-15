@@ -321,6 +321,23 @@ describe('files on a new issue', () => {
     );
   });
 
+  it('keeps a chosen image as an attachment even when it is absent from the description', async () => {
+    const dialog = await openForm();
+    fireEvent.change(within(dialog).getByTestId('pm-pending-files-input'), {
+      target: { files: [screenshot()] },
+    });
+    await uploaded(dialog);
+    expect(
+      within(dialog)
+        .getByRole('textbox', { name: 'issueForm.descriptionLabel' })
+        .querySelector('img'),
+    ).toBeNull();
+    fireEvent.click(within(dialog).getByText('issueForm.createAndStart'));
+    await waitFor(() => expect(created).toHaveLength(1));
+    expect(created[0]).toMatchObject({ attachmentIds: ['f1'] });
+    expect(deleted()).toEqual([]);
+  });
+
   it('creates nothing while a file still uploads', async () => {
     const uploads = deferredUploads();
     const dialog = await openForm();
@@ -505,14 +522,21 @@ describe('files on a new issue', () => {
     expect(created[0]).toMatchObject({ attachmentIds: ['f1'] });
   });
 
-  it('takes a file back, deleting its upload', async () => {
+  it('takes a file back, deleting its upload and its inline image', async () => {
     const dialog = await openForm();
     paste(dialog, [screenshot()]);
     const list = await within(dialog).findByRole('list', {
       name: 'attachments.pending',
     });
     await waitFor(() => expect(list.querySelector('img')).not.toBeNull());
+    const description = within(dialog).getByRole('textbox', {
+      name: 'issueForm.descriptionLabel',
+    });
+    await waitFor(() =>
+      expect(description.querySelector('img')).not.toBeNull(),
+    );
     fireEvent.click(within(list).getByLabelText(/^attachments\.remove/u));
+    expect(description.querySelector('img')).toBeNull();
     await waitFor(() => expect(deleted()).toEqual(['projects/attachments/f1']));
     expect(
       within(dialog).queryByRole('list', { name: 'attachments.pending' }),
@@ -559,4 +583,62 @@ describe('the "New issue" button', () => {
     expect(screen.getByText('issues.new')).toBeTruthy();
     expect(screen.getByText('C')).toBeTruthy();
   });
+});
+
+it('pastes an image at the caret, blocks creation until upload finishes, and binds it on creation', async () => {
+  let finish!: (value: unknown) => void;
+  api.routes['POST projects/attachments'] = () =>
+    new Promise((resolve) => {
+      finish = resolve;
+    });
+  api.routes['POST projects/issues'] = () => ({
+    data: { id: 'i1', identifier: 'PM-1' },
+  });
+  renderNewIssue();
+  const description = await screen.findByRole('textbox', {
+    name: 'issueForm.descriptionLabel',
+  });
+  fireEvent.change(screen.getByLabelText('issueForm.titleLabel'), {
+    target: { value: 'Screenshot' },
+  });
+  description.focus();
+  fireEvent.paste(description, {
+    clipboardData: {
+      files: [new File(['png'], 'image.png', { type: 'image/png' })],
+      getData: () => '',
+      types: ['Files'],
+    },
+  });
+  await waitFor(() => expect(finish).toBeTypeOf('function'));
+  expect(
+    screen
+      .getByRole('button', { name: 'issueForm.createAndStart' })
+      .hasAttribute('disabled'),
+  ).toBe(true);
+  finish({
+    data: {
+      id: 'f1',
+      filename: 'shot.png',
+      contentUrl: '/api/projects/attachments/f1/content',
+      previewable: true,
+    },
+  });
+  await waitFor(() =>
+    expect(description.querySelector('img')?.getAttribute('src')).toBe(
+      '/api/projects/attachments/f1/content',
+    ),
+  );
+  fireEvent.submit(document.getElementById('pm-issue-new-form')!);
+  await waitFor(() =>
+    expect(
+      api.calls.find(
+        (call) => call.method === 'POST' && call.path === 'projects/issues',
+      )?.json,
+    ).toMatchObject({
+      attachmentIds: ['f1'],
+      description: expect.stringContaining(
+        '![shot.png](/api/projects/attachments/f1/content)',
+      ),
+    }),
+  );
 });

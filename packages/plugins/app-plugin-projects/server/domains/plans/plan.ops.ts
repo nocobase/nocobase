@@ -423,6 +423,16 @@ const issueCreate: OpDefinition = {
 
 type IssueUpdate = IssueUpdateParams;
 
+/** Status changes also clear progress; rehearsal and undo must account for those existing fields. */
+function changedIssueFields(params: IssueUpdate): string[] {
+  return [
+    ...new Set([
+      ...Object.keys(params.set),
+      ...(params.set.statusKey === undefined ? [] : ['needsYou', 'next']),
+    ]),
+  ];
+}
+
 const issueUpdate: OpDefinition = {
   proposable: true,
   problems(params) {
@@ -436,7 +446,15 @@ const issueUpdate: OpDefinition = {
           message: 'params.set names no field to change.',
         },
       ];
-    return checkShape(ISSUE_FIELDS, set, 'params.set');
+    return checkShape(
+      {
+        ...ISSUE_FIELDS,
+        needsYou: opt('nullableString'),
+        next: opt('nullableString'),
+      },
+      set,
+      'params.set',
+    );
   },
   async baseline(ctx, params: IssueUpdate) {
     // An issue an earlier row creates has no state to compare yet.
@@ -445,7 +463,7 @@ const issueUpdate: OpDefinition = {
     if (!issue || issue.deletedAt) return null;
     return {
       target: issueRef(issue),
-      fields: await issueFields(ctx, issue, Object.keys(params.set)),
+      fields: await issueFields(ctx, issue, changedIssueFields(params)),
     };
   },
   async run(ctx, params: IssueUpdate) {
@@ -473,7 +491,7 @@ const issueUpdate: OpDefinition = {
     return {
       target: issueRef(after),
       created: null,
-      after: await issueFields(ctx, after, Object.keys(params.set)),
+      after: await issueFields(ctx, after, changedIssueFields(params)),
       flags,
     };
   },

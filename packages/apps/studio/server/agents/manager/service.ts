@@ -7,7 +7,7 @@
  * manage previews: it writes no code.
  *
  * Every agent discovered from runners gets the same built-in instructions (`WORKER_INSTRUCTIONS`) and every business
- * action an agent may be given but reading the reports (`setDefaults` of the agents plugin), within what the person who
+ * action in Studio's command scope, reports included (`setDefaults` of the agents plugin), within what the person who
  * woke it may do.
  *
  * Choosing the first choice also makes it the team's default chat agent, so a new conversation and AI intake go to it.
@@ -19,7 +19,6 @@ import type {
 } from '@nocobase/app-plugin-agents/shared/agents';
 import type { DatabaseConnection } from '@nocobase/db';
 
-import { STUDIO_NAMESPACE } from '../../../shared/access.js';
 import {
   PROJECT_MANAGER_ID,
   type ProjectManagerPatch,
@@ -27,11 +26,7 @@ import {
   type ProjectManagerView,
 } from '../../../shared/project-manager.js';
 import { studioError } from '../../http/errors.js';
-import {
-  OPEN_PR_ACTION,
-  PREVIEWS_MANAGE_ACTION,
-  REPORTS_READ_ACTION,
-} from '../capabilities.js';
+import { OPEN_PR_ACTION, PREVIEWS_MANAGE_ACTION } from '../capabilities.js';
 import {
   BUILT_IN_PRINCIPLES,
   managerInstructions,
@@ -39,21 +34,8 @@ import {
 } from './texts.js';
 import { readManagerSettings, writeManagerSettings } from './settings.js';
 
-/** What the project manager's agent is called, in English and as a key of Studio's own. */
-export const MANAGER_NAME = 'Project manager';
-const MANAGER_NAME_TEXT = {
-  key: 'studioAgents.projectManager.name',
-  ns: STUDIO_NAMESPACE,
-};
-const MANAGER_DESCRIPTION =
-  'Arranges every issue: hands each step to the agent that fits it, reads the replies and decides what comes next.';
-
-/** What no agent discovered from runners is given. */
-const NOT_FOR_WORKERS: readonly string[] = [REPORTS_READ_ACTION];
-
-/** What the project manager is not given besides: it writes no code. */
+/** Compatibility catalog for the project manager's coordinating role; authorization uses its running identity. */
 const NOT_FOR_MANAGER: readonly string[] = [
-  ...NOT_FOR_WORKERS,
   OPEN_PR_ACTION,
   PREVIEWS_MANAGE_ACTION,
 ];
@@ -78,21 +60,33 @@ function entryOf(agent: Agent | null): RunnerModelEntry | null {
 }
 
 export function createProjectManager(deps: {
+  readonly defaultLocale?: string;
+  readonly identityChanged?: () => void;
   readonly agents: Pick<
     Agents,
-    'agents' | 'actions' | 'chat' | 'tx' | 'availability'
+    | 'agents'
+    | 'actions'
+    | 'chat'
+    | 'tx'
+    | 'eligibility'
+    | 'runners'
+    | 'selectionPolicies'
   >;
 }): ProjectManager {
   const { agents } = deps;
+  const readSettings = (conn: DatabaseConnection) =>
+    readManagerSettings(conn, deps.defaultLocale);
+  agents.selectionPolicies.register(PROJECT_MANAGER_ID, async (conn) => ({
+    fallbackAfterSeconds: (await readSettings(conn)).fallbackAfterSeconds,
+  }));
 
-  const workerActions = (): string[] =>
-    agents.actions.keys().filter((key) => !NOT_FOR_WORKERS.includes(key));
+  const workerActions = (): string[] => [...agents.actions.keys()];
   const managerActions = (): string[] =>
     agents.actions.keys().filter((key) => !NOT_FOR_MANAGER.includes(key));
 
   async function sync(byUserId: string | null = null): Promise<Agent> {
     const conn = agents.tx.read();
-    const settings = await readManagerSettings(conn);
+    const settings = await readSettings(conn);
     const entries: RunnerModelEntry[] = [];
     for (const id of [settings.firstChoiceAgentId, settings.fallbackAgentId]) {
       if (!id) continue;
@@ -108,9 +102,9 @@ export function createProjectManager(deps: {
     return agents.agents.ensureSystem(
       {
         id: PROJECT_MANAGER_ID,
-        name: MANAGER_NAME,
-        nameText: MANAGER_NAME_TEXT,
-        description: MANAGER_DESCRIPTION,
+        name: settings.name,
+        nameText: null,
+        description: settings.description,
         instructions: managerInstructions(settings.principles),
         actions: managerActions(),
         modelEntries: entries,
@@ -124,11 +118,29 @@ export function createProjectManager(deps: {
     canEdit: boolean,
   ): Promise<ProjectManagerView> {
     const conn = agents.tx.read();
-    const settings = await readManagerSettings(conn);
+    const settings = await readSettings(conn);
     const offered = (await agents.agents.listActive(conn)).filter(
       (agent) => agent.source === 'runner',
     );
-    const availability = await agents.availability(conn, offered, userId);
+    const manager = await agents.agents.find(conn, PROJECT_MANAGER_ID);
+    const runners = await agents.runners.online(conn);
+    const online = new Map(
+      await Promise.all(
+        offered.map(
+          async (agent) =>
+            [
+              agent.id,
+              manager
+                ? await agents.eligibility.canClaim(
+                    conn,
+                    { ...manager, modelEntries: agent.modelEntries },
+                    { actorUserId: userId, workspaceKey: true, runners },
+                  )
+                : false,
+            ] as const,
+        ),
+      ),
+    );
     return {
       ...settings,
       builtInPrinciples: BUILT_IN_PRINCIPLES,
@@ -136,7 +148,7 @@ export function createProjectManager(deps: {
         id: agent.id,
         name: agent.name,
         description: agent.description,
-        online: availability.get(agent.id)?.online ?? false,
+        online: online.get(agent.id) ?? false,
       })),
       canEdit,
     };
@@ -155,13 +167,22 @@ export function createProjectManager(deps: {
   }
 
   return {
-    settings: (conn) => readManagerSettings(conn ?? agents.tx.read()),
+    settings: (conn) => readSettings(conn ?? agents.tx.read()),
     view,
     async update(byUserId, patch) {
-      const current = await readManagerSettings(agents.tx.read());
+      const current = await readSettings(agents.tx.read());
       const next: ProjectManagerSettings = {
         ...current,
         ...patch,
+        ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
+        ...(patch.description !== undefined
+          ? {
+              description:
+                patch.description === null || patch.description.trim() === ''
+                  ? null
+                  : patch.description,
+            }
+          : {}),
         // The built-in text saved as it is, or nothing, is the built-in principles.
         ...(patch.principles !== undefined
           ? {
@@ -197,6 +218,11 @@ export function createProjectManager(deps: {
         );
       await agents.tx.run(({ conn }) => writeManagerSettings(conn, next));
       await sync(byUserId);
+      if (
+        current.name !== next.name ||
+        current.description !== next.description
+      )
+        deps.identityChanged?.();
       // New conversations and AI intake go to the first choice.
       if (
         patch.firstChoiceAgentId !== undefined &&
@@ -213,7 +239,7 @@ export function createProjectManager(deps: {
         instructions: WORKER_INSTRUCTIONS,
         actions: workerActions(),
       }));
-      await agents.agents.applyDefaults();
+      await agents.agents.applyDefaults({ preserveInstructions: true });
       await sync();
     },
   };

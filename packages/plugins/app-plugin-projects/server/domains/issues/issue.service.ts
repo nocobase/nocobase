@@ -8,7 +8,7 @@ import type {
   Issue,
   UpdateIssueRequest,
 } from '../../../shared/issues.js';
-import { requireAction, scopeOf, type Viewer } from '../../access/viewer.js';
+import { scopeOf, type Viewer } from '../../access/viewer.js';
 import type { ActivityRecorder } from '../../kernel/activity.js';
 import { SYSTEM_ACTOR, type Actor } from '../../kernel/actor.js';
 import {
@@ -20,6 +20,11 @@ import {
 import type { IdSource } from '../../kernel/ids.js';
 import { mentions, newMentions } from '../../kernel/mentions.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
+import {
+  readAttachmentIds,
+  requireUploader,
+  uploaderOf,
+} from '../attachments/index.js';
 import type { SettingsService } from '../settings/index.js';
 import { updateProject } from '../projects/index.js';
 import {
@@ -33,6 +38,7 @@ import type { EventActor, IssueChangeSet } from './issue.events.js';
 import {
   resolveCreate,
   resolveUpdate,
+  progressValues,
   type FieldDeps,
 } from './issue.fields.js';
 import {
@@ -233,19 +239,10 @@ export function createIssueService(deps: IssueDeps): IssueService {
   const service: IssueService = {
     async create(viewer, input) {
       requireCreator(viewer);
-      // Checked here rather than by the route: a plan's `issue.create` row calls this directly.
-      const attachmentIds: unknown = input.attachmentIds;
-      const sendsFiles =
-        Array.isArray(attachmentIds) && attachmentIds.length > 0;
-      if (sendsFiles)
-        requireAction(
-          viewer,
-          'pm.attachments',
-          'upload',
-          'You may not attach files.',
-        );
+      const attachmentIds = readAttachmentIds(input.attachmentIds);
+      if (attachmentIds.length) requireUploader(viewer);
       const attachments = deps.attachments?.();
-      if (sendsFiles && !attachments)
+      if (attachmentIds.length && !attachments)
         throw invalid('FILES_UNAVAILABLE', 'This application stores no files.');
       return deps.tx.run(async (tx) => {
         const values = await resolveCreate(
@@ -270,6 +267,8 @@ export function createIssueService(deps: IssueDeps): IssueService {
           title: values.title,
           description: values.description,
           statusKey: values.statusKey,
+          needsYou: null,
+          next: null,
           priority: values.priority,
           ownerUserId: values.ownerUserId,
           executorType: values.executor?.type ?? null,
@@ -291,16 +290,15 @@ export function createIssueService(deps: IssueDeps): IssueService {
             id,
             values.labelIds,
           );
-        await record(tx, id, viewer.actor, 'issue_created', { identifier });
+        await record(tx, id, viewer.actor, 'issue_created', {
+          identifier,
+          ...(attachmentIds.length ? { attachmentIds } : {}),
+        });
         // Files added while the issue was being written, uploaded before it existed: refused ones roll it all back.
-        if (
-          attachments &&
-          attachmentIds !== undefined &&
-          attachmentIds !== null
-        ) {
+        if (attachments && attachmentIds.length) {
           const files = await attachments.attach(
             tx,
-            { type: viewer.actor.type, id: viewer.actor.id ?? viewer.userId },
+            uploaderOf(viewer.actor, viewer.userId),
             { issueId: id, commentId: null },
             attachmentIds,
           );
@@ -386,7 +384,12 @@ export function createIssueService(deps: IssueDeps): IssueService {
             : { added: [], removed: [] };
           if (labels.added.length > 0 || labels.removed.length > 0)
             activities.push({ action: 'labels_changed', details: labels });
-          if (activities.length === 0 && !ownerClaimed) return;
+          if (
+            activities.length === 0 &&
+            Object.keys(values).length === 0 &&
+            !ownerClaimed
+          )
+            return;
           const now = new Date().toISOString();
           await updateIssue(
             tx.conn,
@@ -450,6 +453,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
         };
       const recorded = cause.actor ?? SYSTEM_ACTOR;
       try {
+        const progress = progressValues(issue, { statusKey: to });
         await moveIssue(deps, tx, {
           issue,
           catalog,
@@ -461,6 +465,7 @@ export function createIssueService(deps: IssueDeps): IssueService {
             const now = new Date().toISOString();
             await updateIssue(tx.conn, issue.id, {
               statusKey: to,
+              ...progress,
               updatedAt: now,
               lastActivityAt: now,
             });
