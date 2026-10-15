@@ -127,13 +127,10 @@ const CliManifestSchema: z.ZodType<CliManifest> = z
     version: z.number().int(),
     etag: z.string(),
     identity: z.object({
-      settings: z
-        .array(z.string())
-        .optional()
-        .meta({
-          description:
-            'Settings permissions for display only; absent when not provided.',
-        }),
+      settings: z.array(z.string()).optional().meta({
+        description:
+          'Settings permissions for display only; absent when not provided.',
+      }),
       kind: Identity,
       userId: z.string(),
       displayName: z.string(),

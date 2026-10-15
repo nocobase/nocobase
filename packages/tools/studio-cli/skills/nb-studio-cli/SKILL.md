@@ -19,7 +19,7 @@ Claude Code's personal copy goes under `<CLAUDE_CONFIG_DIR or ~/.claude>/skills/
 
 - Inside a run's working directory (a `.nb-studio/run.json` at or above it) `nb-studio` acts as the run: it presents the run's token and can do what the agent is given. You never need a key or `nb-studio login` there, and must not pass any credential on the command line.
 - Elsewhere it acts as the person signed in with `nb-studio login` (the current profile, or `--profile <name>`), or with `NB_STUDIO_SERVER` and `NB_STUDIO_API_KEY` in CI.
-- `nb-studio whoami` shows the server, who you act as, the actions you hold, and how many commands need an action you lack; `nb-studio whoami --missing` lists them by action.
+- `nb-studio whoami` shows the server, who you act as, business actions, settings permissions, and how many commands need an action you lack; `nb-studio whoami --missing` lists them by action. Settings are separate from business actions; an older server that omits them shows “not provided”. Run tokens hold no settings permissions. `agents.runs/self` is granted only to run tokens, never by assigning a role to a person.
 
 ## Finding a command
 
