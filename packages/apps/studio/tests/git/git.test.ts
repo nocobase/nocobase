@@ -193,6 +193,12 @@ describe('pull requests', () => {
     await h.git.refresh(alice(), issue.id, pr.id);
     const merged = (await findPullRequestById(h.projects.tx.read(), pr.id))!;
     expect(merged).toMatchObject({ state: 'merged', mergedManually: false });
+    // The merge and issue-status handlers each settle the same idempotent decision.
+    const settlement = {
+      decisionKey: `pr:${pr.id}:${issue.id}`,
+      outcome: 'merged',
+    };
+    await expect.poll(() => h.port.settled).toEqual([settlement, settlement]);
     for (const state of ['closed', 'open', 'merged'] as const) {
       Object.assign(h.github.pull(REPO, 91), {
         state: state === 'merged' ? 'closed' : state,
@@ -213,10 +219,9 @@ describe('pull requests', () => {
         closedAt: merged.closedAt,
         mergedManually: false,
       });
+      expect(h.port.settled).toEqual([settlement, settlement]);
     }
-    expect(
-      h.port.settled.filter((ref) => ref.outcome === 'merged'),
-    ).toHaveLength(1);
+    expect(h.port.settled).toEqual([settlement, settlement]);
     expect(
       (
         await h.projects.issueQueries.activities(alice(), issue.id, {})
