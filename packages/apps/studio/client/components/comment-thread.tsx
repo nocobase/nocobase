@@ -24,6 +24,7 @@ import {
 import {
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactElement,
   type ReactNode,
   type Ref,
@@ -63,6 +64,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from 'cn';
+
+import { ComposerSession } from './composer-session.js';
 
 import {
   RichTextEditor,
@@ -459,6 +462,8 @@ export interface CommentTimelineProps {
   readonly headerActions?: ReactNode;
   /** The entries run newest first, so "Load older" goes under them. */
   readonly newestFirst?: boolean;
+  /** Read out but not drawn, where a tab above already names the timeline. */
+  readonly titleHidden?: boolean;
 }
 
 const DEFAULT_EMOJIS = ['👍', '👎', '😄', '🎉', '😕', '❤️', '🚀', '👀'];
@@ -473,6 +478,7 @@ export function CommentTimeline({
   className,
   headerActions,
   newestFirst = false,
+  titleHidden = false,
   ...context
 }: CommentTimelineProps): ReactElement {
   const loadOlder =
@@ -495,8 +501,20 @@ export function CommentTimeline({
       aria-label={labels.title}
       data-slot='comment-timeline'
     >
-      <div className='flex flex-wrap items-center justify-between gap-2'>
-        <h2 className='font-heading text-sm font-semibold'>{labels.title}</h2>
+      <div
+        className={cn(
+          'flex flex-wrap items-center gap-2',
+          titleHidden ? 'justify-end' : 'justify-between',
+        )}
+      >
+        <h2
+          className={cn(
+            'font-heading text-sm font-semibold',
+            titleHidden && 'sr-only',
+          )}
+        >
+          {labels.title}
+        </h2>
         {headerActions || (loadOlder && !newestFirst) ? (
           <div className='flex flex-wrap items-center gap-2'>
             {headerActions}
@@ -1076,6 +1094,8 @@ export interface CommentComposerMode {
 }
 
 export interface CommentComposerProps {
+  /** Keeps the text and mode outside the composer, so a draft survives it unmounting (the split view's tasks). */
+  readonly session?: ComposerSession;
   /**
    * Posts the comment in `mode` and answers the posted comment's id: the box clears and the comment, once the timeline
    * draws it, is brought into view just above the composer and kept there while the timeline settles. Answering
@@ -1178,6 +1198,7 @@ export function CommentComposer({
   onSubmit,
   replyingTo,
   onCancelReply,
+  session: externalSession,
   modes,
   onMentionSearch,
   mentionSearchRevision,
@@ -1188,15 +1209,24 @@ export function CommentComposer({
   labels = defaultComposerLabels,
   className,
 }: CommentComposerProps): ReactElement {
-  const [content, setContent] = useState('');
-  const [mode, setMode] = useState<string | null>(modes?.[0]?.value ?? null);
-  const [pending, setPending] = useState(false);
+  const [localSession] = useState(() => new ComposerSession());
+  const session = externalSession ?? localSession;
+  useSyncExternalStore(session.subscribe, session.snapshot, session.snapshot);
+  const content = session.read('content', '');
+  const setContent = session.setter('content', '');
+  const mode = session.read<string | null>('mode', modes?.[0]?.value ?? null);
+  const setMode = session.setter<string | null>(
+    'mode',
+    modes?.[0]?.value ?? null,
+  );
+  const pending = session.read('pending', false);
+  const setPending = session.setter('pending', false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const current = modes?.find((item) => item.value === mode);
 
   const submit = (): void => {
-    if (!content.trim() || pending || busy) return;
+    if (!content.trim() || session.read('pending', false) || busy) return;
     setPending(true);
     const reply = Boolean(replyingTo);
     void onSubmit(content.trim(), mode)

@@ -14,7 +14,10 @@ import {
   sparkPoints,
   trendOf,
 } from '../../client/pages/dashboard/model.ts';
-import type { DashboardDay, DashboardFigures } from '../../shared/reports.ts';
+import type {
+  DashboardFigures,
+  DashboardRunDay,
+} from '../../shared/reports.ts';
 
 const figures = (extra: Partial<DashboardFigures> = {}): DashboardFigures => ({
   completed: 10,
@@ -139,12 +142,8 @@ describe('dashboard figures', () => {
   });
 
   it('tells whether any run happened, a project’s progress and days since', () => {
-    const day = (runsFailed: number): DashboardDay => ({
+    const day = (runsFailed: number): DashboardRunDay => ({
       day: '2026-10-01',
-      completed: 0,
-      completedByAgents: 0,
-      cycleTimeP50Ms: null,
-      cost: 0,
       runsCompleted: 0,
       runsFailed,
       runsCancelled: 0,

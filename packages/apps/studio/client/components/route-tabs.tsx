@@ -41,6 +41,16 @@ export interface RouteTab {
   /** The child route path relative to the page, such as `owned`. */
   readonly path: string;
   readonly label: string;
+  /** After the label, such as a count. */
+  readonly extra?: ReactNode;
+}
+
+function kept(search: string, drop: readonly string[]): string {
+  if (drop.length === 0) return search;
+  const params = new URLSearchParams(search);
+  for (const name of drop) params.delete(name);
+  const text = params.toString();
+  return text ? `?${text}` : '';
 }
 
 /**
@@ -51,10 +61,13 @@ export function RouteTabs({
   tabs,
   label,
   keepSearch = true,
+  dropParams = [],
 }: {
   readonly tabs: readonly RouteTab[];
   readonly label: string;
   readonly keepSearch?: boolean;
+  /** Query parameters that belong to one tab, left behind when moving to another, such as the selected task. */
+  readonly dropParams?: readonly string[];
 }): ReactElement {
   const location = useLocation();
   const base = useResolvedPath('.').pathname;
@@ -67,7 +80,7 @@ export function RouteTabs({
         ) !== null,
     )?.path ?? null;
   return (
-    <Tabs value={active}>
+    <Tabs value={active} className='shrink-0'>
       <TabsList variant='line' aria-label={label}>
         {tabs.map((tab) => (
           <RouteTabTrigger
@@ -75,10 +88,13 @@ export function RouteTabs({
             value={tab.path}
             to={{
               pathname: tab.path,
-              search: keepSearch ? location.search : undefined,
+              search: keepSearch
+                ? kept(location.search, dropParams)
+                : undefined,
             }}
           >
             {tab.label}
+            {tab.extra}
           </RouteTabTrigger>
         ))}
       </TabsList>

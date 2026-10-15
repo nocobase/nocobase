@@ -35,6 +35,8 @@ export interface IssueCardIssue {
   readonly status?: {
     readonly name: string;
     readonly color: IssueTableColor;
+    /** The status's key: drawn as its shape rather than a dot. */
+    readonly key?: string;
   } | null;
   /** `none` shows nothing. */
   readonly priority?: IssueTablePriority;

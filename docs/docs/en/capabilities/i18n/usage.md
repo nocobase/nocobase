@@ -71,7 +71,7 @@ the language in use  →  the application's default  →  English
 
 For example: the application defaults to Chinese, you added Spanish, and a plugin translated only Chinese and English. A Spanish-speaking user sees your own text in Spanish and that plugin's text in Chinese.
 
-To put a plugin's wording in your own words, override it from your own locale file — see [Application development / Internationalization](../../app/i18n.md).
+To put a plugin's wording in your own words, ask a Coding Agent to follow the application's internationalization guidance and override it in your application's locale files.
 
 ## Common questions
 
@@ -90,11 +90,6 @@ Usually the language was added to `client/locales/` alone. Without the correspon
 ### Two tabs on the same account affect each other
 
 The server stores the language on the session, and tabs sharing an account share one session, so the later switch overwrites the earlier. The interface itself is unaffected — each tab shows its own language. What is affected is what the server produces, such as error messages. This is a known limitation.
-
-## Related
-
-- [Application development / Internationalization](../../app/i18n.md) — writing translatable text, organizing locale files, overriding a plugin's wording
-- [Configuration](../../app/configuration.md) — what else goes in `config.yml`
 
 ## Northstar example
 

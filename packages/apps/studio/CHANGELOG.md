@@ -1,5 +1,81 @@
 # @nocobase/studio
 
+## 1.0.0-beta.58
+
+### Minor Changes
+
+- 862a542: Support global default skills and transactional defaults for newly created Studio projects. Resolve skills from global through application scopes to working directories in one query, with more specific targets winning. Stop reading and exposing legacy agent skill attachments while preserving agent variables.
+- ff9d41b: Show an authorized project and shared system knowledge directory with lazy trees, accurate document counts, global search, explicit creation targets, and complete permission-filtered pending reviews. Preserve single-space views, existing links and archive workflows, with consistent creation parents/permissions and per-space search diagnostic targets.
+
+### Patch Changes
+
+- 42aaf81: Append authorized project manager follow-ups to compatible active runs, deduplicate source comments, preserve comment authorization when dispatching multiple agents, and guard run completion with Collection optimistic revisions.
+- 8e4cf26: Recover runners and agent-session bridges after a protocol upgrade. Heartbeat answers now carry the server's runner protocol (`protocolVersion`), and a runner that speaks an older protocol while no newer version is offered logs what it speaks, what the application needs and how to update, instead of looking up to date. A bridge refused for its protocol now receives the protocols the application speaks in the error's `metadata`; `acp start` then updates the CLI as `update` does and exits non-zero so its launchd, systemd or Startup service starts it again on the new version, and when no update helps it still exits non-zero after a pause rather than stopping with success. A computer whose bridge was refused as too old is shown on My agents with the commands to update it.
+- a2e3dd0: Install Node.js before the nb-studio CLI in generated CI workflows and document how to update existing workflows.
+- facfe5c: Clear failures when a retried agent run is dispatched or succeeds, and show queued retry explanations separately from current failures while preserving historical errors.
+- c1d2601: Require owner consent before another person's comment can run on the owner's personal runner. Team runners can take the queued work directly. Keep consent within the comment's run chain, show decisions in Studio's existing Needs you card and inbox, and let the original commenter run pending or rejected work as themselves.
+- 92afa27: Make My follow-ups fast for someone who owns many open issues. `GET /api/followUps` reads what every row's progress needs in a fixed number of queries instead of a few per issue, and a row no longer works out why queued work has not been claimed (`waiting`, `managerWait`): the issue's own progress (`GET /api/issueProgress/{issueId}`), shown beside the list, still does. A new `GET /api/followUps/issues?issueIds=…` answers the rows of the named issues, and the page uses it to refresh only the rows an announced change names, a burst at a time, reading the whole overview again only when the list itself changed, on reconnect, for a change that names no issue, and on its fallback poll. The follow star on an issue reads only what the viewer follows from a new `GET /api/followUps/following` (`follow-up following` on the command line) instead of the whole overview, and an agent session's issue progress reads its issues in the same fixed number of queries. The projects plugin's comment queries gain `newestByEach`, the agents plugin's runs gain `openOnEach`, and its run request list takes `subjectIds` and `statuses`.
+- e23633e: Discover installed agents' real model and configuration choices before a new session's first message. Show loading, fixed, unsupported, offline and retry states, isolate settings by computer, agent and directory, and validate selected values before sending a prompt. Persist acknowledged dependent settings when existing sessions change models so reopening keeps their configuration. Bridge protocol version 2 requires upgrading the application CLI.
+- 9478dc0: Use the current Studio interface language for task titles and descriptions created in My Agent sessions, respecting explicit user language requests and refreshing instructions after a language switch or session restoration.
+- 1cd749c: Expose issue handoff viewing, acceptance, and rejection through generated CLI commands. Add a single declarative GET binding that supplies a request body field before a command executes, preserving handoff permissions and stale notification checks.
+- 4626949: Start issue runs from the earliest linked open pull request in the same repository, allow agents to manage branches and pull request associations without rewriting pushed history, and preserve shared local branches and stashes when removing run worktrees. Only published runner-created temporary branches are cleaned up. A run that ends on another branch is preserved by that branch, without a saved head or push failure on the starting target.
+- c1d2601: Preserve owner-initiated comment delegation without extra personal runner consent and retain every unfinished target and input when the commenter chooses Run as me.
+- 3e562f3: Wake project managers once when delegated worker runs end, combine automatic reports with durable terminal notifications, and recover inactive manager work with a configurable structured periodic check using existing run and activity facts. Track exact PR check conclusions and actual delivery per issue so later results at the same head wake the manager again. Ignore check responses for heads that moved or pull requests that closed while the checks were being read. Avoid write transactions for ineligible or unchanged idle scans and settled CI signal retries; revalidate actual candidates under their existing locks. Preserve issue run push refreshes and personal runner consent when consuming terminal manager continuations.
+
+  Include the committed pull request id in checks-only refresh notifications so Git updates reach only the affected issue pages.
+
+  Check idle issues for newer inputs through their runs and the existing run/time index instead of scanning unrelated run inputs.
+
+- bdb0581: Reduce the server load of open issue and My follow-ups pages. Issue change announcements are gathered for a moment and name the issues that changed, so a page refreshes only what it shows of them; Studio announces new runs on an issue, so issue pages, What it waits for, owner handoffs and My follow-ups fall back to a slow poll instead of polling every few seconds; a preview label the server failed to set no longer makes the issue page poll every three seconds. Polled reads check issue visibility without loading the whole issue page (`IssueQueries.visible`), What it waits for reads only the project manager's newest comments (`CommentQueries.newestBy`), My follow-ups shares lookups across its issues, and pull request marks check visibility in one read. A runner heartbeat no longer announces a runner change, waking every waiting claim and refreshing every runtimes page, unless its disk sample moved by a gigabyte, crossed the free-space threshold or changed size.
+- 25be3ee: Restore the My follow-ups page and remove the unified personal workspace for now.
+- 7534a32: Restore the previous task tables and remove grouped task tables for now.
+- aae3508: Clear finished runs' events and prompt snapshots hourly after a configurable retention period, defaulting to 14 days. Keep run history and delivery records, and show a retention notice when an expired run has no process data.
+- 6c4634b: Scope Studio's pull request announcements (`studio:git`) to the issues they affect. Stores of a moment are gathered into one announcement naming the issues the changed pull requests are linked to, and pages read again only those issues' pull requests, marks, previews and progress, through one subscription per page; an announcement it cannot tie to pull requests, and a reconnect, still refresh everything. The topic now reaches signed-in connections only, and a hidden tab no longer polls an issue's previews. Also removes a duplicated type import in the projects plugin's issue queries.
+- bdb0581: A public realtime topic can be defined with `authenticated: true` (`defineTopic` and `registerTopic` of `@nocobase/app-server/realtime`): subscribing without a signed-in principal is then refused with `AUTHENTICATION_REQUIRED`, as for a user topic, and publishing skips connections without one. The projects plugin's `pm:changes`, the agents plugin's `agents:runners` and Studio's `studio:issues:runs`, whose announcements name records by id, now reach signed-in connections only. The authentication plugin opens the realtime connection again when the signed-in person changes, so a page signed in without a reload receives these topics and user topics.
+- f43817d: Persist the owner's required decision and the next step as structured issue fields. Require needsYou only for authenticated Studio project-manager direct status updates to Blocked or In review, keep generic and human progress input optional, clear it when work resumes, and clear next when work ends. Studio displays these fields without extracting progress or delivery notes from comments and links to the project manager's latest explanation.
+- 6dae113: Fix chat submission on HTTP origins by generating UUID v4 message correlation IDs with crypto.getRandomValues instead of the secure-context-only crypto.randomUUID.
+- 0afcdb7: Show one current decision card on issue pages, share its text with follow-up lists, and refresh issue details, comments and progress on live changes.
+- 760235c: Stop bare Markdown URLs before adjacent CJK text and full-width punctuation.
+- Updated dependencies [42aaf81]
+- Updated dependencies [8e4cf26]
+- Updated dependencies [8558f9f]
+- Updated dependencies [facfe5c]
+- Updated dependencies [c1d2601]
+- Updated dependencies [c1d2601]
+- Updated dependencies [69e212c]
+- Updated dependencies [92afa27]
+- Updated dependencies [943a9a8]
+- Updated dependencies [943a9a8]
+- Updated dependencies [facfe5c]
+- Updated dependencies [e23633e]
+- Updated dependencies [1ccefb5]
+- Updated dependencies [9478dc0]
+- Updated dependencies [862a542]
+- Updated dependencies [1cd749c]
+- Updated dependencies [4626949]
+- Updated dependencies [c1d2601]
+- Updated dependencies [bdb0581]
+- Updated dependencies [7534a32]
+- Updated dependencies [aae3508]
+- Updated dependencies [f36da62]
+- Updated dependencies [6c4634b]
+- Updated dependencies [99be3d0]
+- Updated dependencies [bdb0581]
+- Updated dependencies [f43817d]
+- Updated dependencies [9b946f4]
+- Updated dependencies [ff9d41b]
+  - @nocobase/app-plugin-agents@0.1.0-beta.11
+  - @nocobase/agent-protocol@0.1.0-beta.8
+  - @nocobase/app-plugin-agent-sessions@0.1.0-beta.1
+  - @nocobase/app-server@2.0.0-beta.7
+  - @nocobase/app-cli@1.0.0-beta.22
+  - @nocobase/db@1.0.0-beta.20
+  - @nocobase/app-plugin-projects@0.1.0-beta.9
+  - @nocobase/app-plugin-releases@0.1.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.9
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.15
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.4
+
 ## 1.0.0-beta.57
 
 ### Minor Changes

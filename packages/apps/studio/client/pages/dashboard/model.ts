@@ -5,10 +5,9 @@
  */
 import type {
   DashboardBucket,
-  DashboardDay,
   DashboardFigures,
   DashboardProject,
-  DashboardReport,
+  DashboardRunDay,
 } from '../../../shared/reports.js';
 
 export type FigureKey = keyof DashboardFigures;
@@ -75,14 +74,21 @@ export const ISSUE_FIGURES: ReadonlySet<FigureKey> = new Set([
 
 /** A figure as a number in the report's currency; null when there is none. */
 export function figureValue(
-  figures: DashboardFigures,
+  figures: Partial<DashboardFigures>,
   key: FigureKey,
   currency: string,
 ): number | null {
   const value = figures[key];
-  if (value === null) return null;
+  if (value === null || value === undefined) return null;
   if (typeof value === 'number') return value;
   return value[currency] ?? null;
+}
+
+/** A panel's figures over the period and the one before, in its currency (the delivery panel's; none for the agents). */
+export interface FigureReport {
+  readonly current: Partial<DashboardFigures>;
+  readonly previous: Partial<DashboardFigures>;
+  readonly currency: string;
 }
 
 export interface Trend {
@@ -96,7 +102,7 @@ export interface Trend {
 /** How a figure compares with the period before; null when either has none, or the one before was zero. */
 export function trendOf(
   spec: Pick<FigureSpec, 'key' | 'format' | 'better'>,
-  report: Pick<DashboardReport, 'current' | 'previous' | 'currency'>,
+  report: FigureReport,
 ): Trend | null {
   const now = figureValue(report.current, spec.key, report.currency);
   const before = figureValue(report.previous, spec.key, report.currency);
@@ -223,14 +229,14 @@ export function hasSpark(
 
 /** The runs chart's rows: each day with its axis label. */
 export function runRows(
-  days: readonly DashboardDay[],
+  days: readonly DashboardRunDay[],
   locale: string,
-): (DashboardDay & { readonly label: string })[] {
+): (DashboardRunDay & { readonly label: string })[] {
   return days.map((day) => ({ ...day, label: dayLabel(day.day, locale) }));
 }
 
 /** Whether any run was queued in the period. */
-export function hasRuns(days: readonly DashboardDay[]): boolean {
+export function hasRuns(days: readonly DashboardRunDay[]): boolean {
   return days.some(
     (day) =>
       day.runsCompleted + day.runsFailed + day.runsCancelled + day.runsOpen > 0,

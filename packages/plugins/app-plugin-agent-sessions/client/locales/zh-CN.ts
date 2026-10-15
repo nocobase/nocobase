@@ -15,6 +15,7 @@ const zhCN: AgentSessionsResource = {
     sessionNotFound: '这个会话不存在，或者不属于你。',
   },
   list: {
+    expand: '展开会话列表',
     label: '会话',
     title: '我的 Agent',
     archived: '已归档',
@@ -60,6 +61,7 @@ const zhCN: AgentSessionsResource = {
     left: '{{keys}} 留在{{status}}',
     separator: '、',
     comma: '，',
+    waiting: '等你 {{count}}',
     unknown: '未知',
   },
   newSession: {
@@ -112,6 +114,7 @@ const zhCN: AgentSessionsResource = {
     noProject: '不关联项目',
   },
   session: {
+    info: '会话信息',
     archived: '这个会话已归档，恢复后才能继续。',
     offline: '{{computer}}离线',
     offlineBody:

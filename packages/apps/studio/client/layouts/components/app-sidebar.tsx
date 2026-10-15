@@ -52,7 +52,7 @@ function useNoSidebarShortcut(): void {
 
 /**
  * The shell's sidebar state: the shadcn provider, with the desktop icon mode kept in the shared sidebar preference
- * (`use-sidebar-preference.ts`) so every layout on this origin opens it the same way. It has no keyboard shortcut.
+ * (`use-sidebar-preference.ts`) so every layout of this application opens it the same way. It has no keyboard shortcut.
  */
 export function AppSidebarProvider({
   children,

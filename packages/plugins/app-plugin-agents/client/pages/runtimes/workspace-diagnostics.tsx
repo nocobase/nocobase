@@ -4,6 +4,7 @@ import { WORKSPACE_REPORT_INTERVAL_MS } from '@nocobase/agent-protocol';
 import {
   runnerLowOnDisk,
   type RunnerSummary,
+  type RunnerListItem,
 } from '../../../shared/runners.js';
 import { AgSection } from '../../components/ag-section.js';
 import { AgTag } from '../../components/ag-tag.js';
@@ -20,7 +21,7 @@ import {
 import { useFormatters } from '../../lib/format.js';
 
 function workspaceDiskState(
-  runner: Pick<RunnerSummary, 'workspaceUsage' | 'status'>,
+  runner: Pick<RunnerListItem, 'workspaceUsage' | 'status'>,
   now: number = Date.now(),
 ): { low: boolean; stale: boolean } {
   const usage = runner.workspaceUsage;
@@ -40,7 +41,7 @@ function workspaceDiskState(
 export function WorkspaceDiskTag({
   runner,
 }: {
-  readonly runner: RunnerSummary;
+  readonly runner: RunnerListItem;
 }): ReactElement | null {
   const { t } = useTranslation();
   const { low, stale } = workspaceDiskState(runner);
@@ -150,14 +151,13 @@ export function WorkspaceDiagnostics({
                         : 'runtimes.workspaces.working',
                     )}
                   </p>
-                  <p>
-                    {t('runtimes.workspaces.size', {
-                      value:
-                        workspace.sizeBytes === undefined
-                          ? t('runtimes.workspaces.sizeUnknown')
-                          : bytes(workspace.sizeBytes),
-                    })}
-                  </p>
+                  {workspace.sizeBytes === undefined ? null : (
+                    <p>
+                      {t('runtimes.workspaces.size', {
+                        value: bytes(workspace.sizeBytes),
+                      })}
+                    </p>
+                  )}
                   <p>
                     {t(
                       workspace.workDir.includes('.readonly-')

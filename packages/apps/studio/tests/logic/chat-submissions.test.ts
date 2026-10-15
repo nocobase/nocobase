@@ -45,6 +45,45 @@ function setup() {
   return { api, updated, store };
 }
 describe('stable submissions', () => {
+  it.each([null, 'c1'])(
+    'sends over HTTP without randomUUID (conversation %s)',
+    async (conversationId) => {
+      const { api, store } = setup();
+      vi.stubGlobal('crypto', {
+        getRandomValues: crypto.getRandomValues.bind(crypto),
+      });
+      try {
+        expect(store.submit({ ...input, conversationId })).toBe(true);
+        await vi.waitFor(() =>
+          expect(store.snapshot()[0]?.status).toBe('confirmed'),
+        );
+        const firstId = store.snapshot()[0]!.clientId;
+        expect(firstId).toMatch(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u,
+        );
+        expect(api.createConversation).toHaveBeenCalledTimes(
+          conversationId ? 0 : 1,
+        );
+        expect(api.sendMessage).toHaveBeenCalledWith(
+          'c1',
+          expect.objectContaining({
+            clientId: firstId,
+            content: input.content,
+            context: input.context,
+          }),
+        );
+        expect(store.submit({ ...input, conversationId })).toBe(true);
+        await vi.waitFor(() =>
+          expect(store.snapshot()[1]?.status).toBe('confirmed'),
+        );
+        expect(store.snapshot()[1]!.clientId).not.toBe(firstId);
+        expect(api.sendMessage).toHaveBeenCalledTimes(2);
+      } finally {
+        vi.unstubAllGlobals();
+        store.dispose();
+      }
+    },
+  );
   it('registers synchronously, prevents doubles, preserves submitted snapshot', async () => {
     const { api, store } = setup();
     const context = {

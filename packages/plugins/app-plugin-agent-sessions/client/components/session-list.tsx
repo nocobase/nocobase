@@ -12,6 +12,7 @@ import {
   ArchiveRestoreIcon,
   ChevronDownIcon,
   LaptopIcon,
+  PanelLeftOpenIcon,
   PlusIcon,
   SearchIcon,
 } from 'lucide-react';
@@ -41,12 +42,59 @@ import { dayGroup, shortTime, type DayGroup } from '../lib/format.js';
 import { sessionFacts, type SessionFacts } from '../lib/facts.js';
 import { ComputersDialog } from './computers-dialog.js';
 import { LinkBar } from './link-bar.js';
+import { WaitingCount } from './waiting-count.js';
 
 type Filter = 'all' | 'waiting' | 'active';
 
 const GROUPS: readonly DayGroup[] = ['today', 'yesterday', 'week', 'earlier'];
 
 export function SessionList({
+  activeId,
+  className,
+  rail = false,
+  onExpand,
+}: {
+  readonly activeId: string | undefined;
+  readonly className?: string | undefined;
+  /** Folded to a narrow rail, to make room for an open record's panel; `onExpand` unfolds it. */
+  readonly rail?: boolean;
+  readonly onExpand?: () => void;
+}): ReactElement {
+  const { t } = useTranslation();
+  if (rail)
+    return (
+      <section
+        className={cn(
+          'hidden h-full w-12 shrink-0 flex-col items-center gap-2 border-r py-3 md:flex',
+          className,
+        )}
+        aria-label={t('list.label')}
+        data-testid='session-list-rail'
+      >
+        <Button
+          variant='ghost'
+          size='icon-sm'
+          aria-label={t('list.expand')}
+          title={t('list.expand')}
+          onClick={onExpand}
+        >
+          <PanelLeftOpenIcon />
+        </Button>
+        <Button
+          size='icon-sm'
+          aria-label={t('list.new')}
+          title={t('list.new')}
+          nativeButton={false}
+          render={<Link to='/agent-sessions?new' />}
+        >
+          <PlusIcon />
+        </Button>
+      </section>
+    );
+  return <FullSessionList activeId={activeId} className={className} />;
+}
+
+function FullSessionList({
   activeId,
   className,
 }: {
@@ -95,23 +143,22 @@ export function SessionList({
     >
       <div className='flex flex-col gap-2.5 px-3.5 pt-3.5 pb-2'>
         <div className='flex items-center gap-2'>
-          <h1 className='flex-1 text-[15px] font-semibold'>
+          <h1 className='flex-1 text-base font-semibold'>
             {archived ? t('list.archived') : t('list.title')}
           </h1>
+          {/* The application's primary button, as "New issue" is: its default size and text. */}
           <Button
-            size='sm'
-            className='h-9 px-3 text-xs font-normal'
             nativeButton={false}
             render={<Link to='/agent-sessions?new' />}
           >
-            <PlusIcon />
+            <PlusIcon data-icon='inline-start' />
             {t('list.new')}
           </Button>
         </div>
         <div className='relative'>
           <SearchIcon className='text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2' />
           <Input
-            className='bg-card h-9 pl-8 text-base md:text-[13px]'
+            className='bg-card h-8 pl-8 text-base md:text-sm'
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder={t('list.search')}
@@ -180,7 +227,7 @@ export function SessionList({
             if (rows.length === 0) return null;
             return (
               <div key={group}>
-                <h2 className='text-muted-foreground px-2.5 pt-3 pb-1 text-[11px]'>
+                <h2 className='text-muted-foreground px-2.5 pt-3 pb-1 text-xs'>
                   {t(`list.groups.${group}`)}
                 </h2>
                 {rows.map((session) => (
@@ -215,7 +262,7 @@ export function SessionList({
           {t('computers.title')}
         </FooterButton>
         {!archived && (
-          <span className='text-muted-foreground inline-flex items-center gap-1 text-[11px]'>
+          <span className='text-muted-foreground inline-flex items-center gap-1 text-xs'>
             <kbd className='bg-card rounded-[3px] border px-1 font-sans text-[10.5px]'>
               E
             </kbd>
@@ -274,10 +321,10 @@ function SessionRow({
       )}
     >
       <div className='flex items-baseline gap-2'>
-        <span className='min-w-0 flex-1 truncate text-[13px] font-medium'>
+        <span className='min-w-0 flex-1 truncate text-sm font-medium'>
           {session.title}
         </span>
-        <span className='text-muted-foreground shrink-0 text-[11px] tabular-nums group-hover:invisible group-focus-within:invisible'>
+        <span className='text-muted-foreground shrink-0 text-xs tabular-nums group-hover:invisible group-focus-within:invisible'>
           {shortTime(session.lastActivityAt, locale)}
         </span>
       </div>
@@ -294,8 +341,12 @@ function SessionRow({
             : t('links.none')}
         </span>
         {session.links.length > 0 && <LinkBar links={session.links} />}
-        <span className='ml-auto shrink-0'>
-          <StatusChip facts={facts} />
+        <span className='ml-auto flex shrink-0 items-center gap-1.5'>
+          {facts.waitingLinks > 0 && facts.online ? (
+            <WaitingCount count={facts.waitingLinks} />
+          ) : (
+            <StatusChip facts={facts} />
+          )}
         </span>
       </div>
       <button
@@ -305,7 +356,7 @@ function SessionRow({
           onArchive();
         }}
         aria-label={restoring ? t('list.restore') : t('list.archive')}
-        className='group/archive bg-card text-muted-foreground hover:text-foreground absolute top-2 right-2 hidden h-6 min-w-6 items-center justify-center gap-1 rounded-[5px] border px-1 text-[11px] group-focus-within:inline-flex group-hover:inline-flex'
+        className='group/archive bg-card text-muted-foreground hover:text-foreground absolute top-2 right-2 hidden h-6 min-w-6 items-center justify-center gap-1 rounded-[5px] border px-1 text-xs group-focus-within:inline-flex group-hover:inline-flex'
       >
         {restoring ? (
           <ArchiveRestoreIcon className='size-3.5' />
@@ -326,7 +377,7 @@ export function StatusChip({
   readonly facts: SessionFacts;
 }): ReactElement | null {
   const { t } = useTranslation();
-  const chip = 'inline-flex items-center gap-1.5 text-[11px] whitespace-nowrap';
+  const chip = 'inline-flex items-center gap-1.5 text-xs whitespace-nowrap';
   if (!facts.online)
     return (
       <span className={cn(chip, 'text-muted-foreground')}>

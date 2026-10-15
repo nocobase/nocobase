@@ -3,6 +3,7 @@ import { followUpsZhCN } from '../follow-ups/locales.js';
 import type { AppResource } from './en-US.js';
 import { gitZhCN } from '../git/locales.js';
 import { knowledgeZhCN } from '../knowledge/locales.js';
+import { taskGroupsZhCN } from '../issues/groups/locales.js';
 import { issuesZhCN } from '../issues/locales.js';
 import { issueLiveZhCN } from '../issues/live/locales.js';
 import { projectPageZhCN } from '../projects/locales.js';
@@ -1035,6 +1036,9 @@ const zhCN: AppResource = {
     unknown: '未知',
   },
   studioAgents: {
+    newProjectSkill: '新项目自动挂载',
+    newProjectSkillDescription:
+      '立即保存，仅影响之后创建的项目；已有项目的挂载不变。',
     principalKinds: { agent: 'Agent' },
     templateMessages: {
       inReview:
@@ -1273,6 +1277,7 @@ const zhCN: AppResource = {
   preferences: preferencesZhCN,
   knowledge: knowledgeZhCN,
   issuesPage: issuesZhCN,
+  taskGroups: taskGroupsZhCN,
   followUps: followUpsZhCN,
   issueLive: issueLiveZhCN,
   projectPage: projectPageZhCN,

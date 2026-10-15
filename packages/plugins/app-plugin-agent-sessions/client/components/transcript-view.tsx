@@ -48,6 +48,8 @@ import {
   type ToolKind,
   type TranscriptItem,
 } from '../transcript.js';
+import { useLinkOpen } from '../config.js';
+import { plainClick } from '../lib/clicks.js';
 import { LinkName } from './link-name.js';
 import { StatusPill } from './status-pill.js';
 
@@ -343,6 +345,7 @@ function MentionedText({
   readonly text: string;
   readonly links: readonly SessionLink[];
 }): ReactElement {
+  const open = useLinkOpen();
   const byKey = new Map(
     links.flatMap((link) => (link.key && link.href ? [[link.key, link]] : [])),
   );
@@ -369,6 +372,9 @@ function MentionedText({
             to={link.href}
             title={link.title}
             className='text-primary font-medium hover:underline'
+            onClick={(event) => {
+              if (plainClick(event) && open?.(link)) event.preventDefault();
+            }}
           >
             {part}
           </Link>

@@ -46,6 +46,7 @@ import { toneColor } from '../rows.js';
 import { IssueMarkdown } from '../markdown.js';
 import { attachmentFile, useFilePreviewState } from './files.js';
 import { useDependencyActions } from './dependency-actions.js';
+import { underIssue, useIssueBase } from './issue-base.js';
 import { issueHrefUnder, useIssueParent } from './issue-parent.js';
 import { useIssueTrail } from './issue-trail.js';
 import { useIssuePageWording } from './labels.js';
@@ -206,6 +207,7 @@ export function IssueAddSection({
 }): ReactElement | null {
   const { t, detail: labels, attachments } = useIssuePageWording();
   const viewer = useViewer();
+  const base = useIssueBase();
   const breakdown = useIntakeBreakdown(detail.id);
   const canEdit = canEditIssues(viewer);
   const noFiles =
@@ -232,7 +234,7 @@ export function IssueAddSection({
       {canEdit && noSubtasks ? (
         <IssueAddButton
           nativeButton={false}
-          render={<Link to='new-subtask' />}
+          render={<Link to={underIssue(base, 'new-subtask')} />}
           data-testid='issue-add-subtask'
         >
           <ListTreeIcon data-icon='inline-start' />
@@ -276,6 +278,7 @@ export function IssueSubtasksSection({
   const viewer = useViewer();
   const breakdown = useIntakeBreakdown(detail.id);
   const parent = useIssueParent();
+  const base = useIssueBase();
   const canEdit = canEditIssues(viewer);
   return (
     <IssueSubtasks
@@ -294,6 +297,7 @@ export function IssueSubtasksSection({
           status: {
             name: subtask.status.name,
             color: toneColor(statusTone([subtask.status], subtask.status.key)),
+            key: subtask.status.key,
           },
           waiting:
             subtask.blockedCount > 0
@@ -322,7 +326,7 @@ export function IssueSubtasksSection({
             ) : null}
             <IssueAddButton
               nativeButton={false}
-              render={<Link to='new-subtask' />}
+              render={<Link to={underIssue(base, 'new-subtask')} />}
             >
               <PlusIcon data-icon='inline-start' />
               {t('subtasks.new')}
@@ -364,6 +368,7 @@ export function IssueDependenciesSection({
     status: {
       name: dependency.status.name,
       color: toneColor(statusTone([dependency.status], dependency.status.key)),
+      key: dependency.status.key,
     },
   });
   const canEdit = canEditIssues(viewer);
