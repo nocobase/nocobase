@@ -468,20 +468,21 @@ The issues the caller sees, cursor-paged. `deleted=true` lists deleted issues in
 nb-studio issue search
 ```
 
-| Flag                 | Type    | Description                                                             |
-| -------------------- | ------- | ----------------------------------------------------------------------- |
-| `--involves-user-id` | string  | Owned by this user or executed by them as a person, each issue once.    |
-| `--status`           | string  |                                                                         |
-| `--project`          | string  |                                                                         |
-| `--owner`            | string  |                                                                         |
-| `--executor`         | string  |                                                                         |
-| `--label`            | string  |                                                                         |
-| `--parent`           | string  | A parent issue, by identifier (PM-12) or id; none for top-level issues. |
-| `--q`                | string  |                                                                         |
-| `--deleted`          | boolean |                                                                         |
-| `--order-by`         | string  |                                                                         |
-| `--limit`            | integer | (default 20)                                                            |
-| `--page-token`       | string  |                                                                         |
+| Flag                 | Type    | Description                                                                         |
+| -------------------- | ------- | ----------------------------------------------------------------------------------- |
+| `--issue-ids`        | string  | Only these issues, comma-separated ids, at most 100; the other filters still apply. |
+| `--involves-user-id` | string  | Owned by this user or executed by them as a person, each issue once.                |
+| `--status`           | string  |                                                                                     |
+| `--project`          | string  |                                                                                     |
+| `--owner`            | string  |                                                                                     |
+| `--executor`         | string  |                                                                                     |
+| `--label`            | string  |                                                                                     |
+| `--parent`           | string  | A parent issue, by identifier (PM-12) or id; none for top-level issues.             |
+| `--q`                | string  |                                                                                     |
+| `--deleted`          | boolean |                                                                                     |
+| `--order-by`         | string  |                                                                                     |
+| `--limit`            | integer | (default 20)                                                                        |
+| `--page-token`       | string  |                                                                                     |
 
 **Output:** A list (table columns: `identifier`, `title`, `statusKey`, `owner.name`, `executorName`); with `--json`, `result.data` is the array and `result.meta` the paging.
 

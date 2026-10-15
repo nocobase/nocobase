@@ -47,6 +47,7 @@ import type {
   InvitationResult,
 } from '../../shared/invitations.js';
 import {
+  ISSUE_IDS_MAX,
   type Activity,
   type CreateIssueRequest,
   type Executor,
@@ -310,6 +311,25 @@ function sortOf(value: string | undefined): {
 }
 
 const issueFilters = {
+  issueIds: z
+    .string()
+    .optional()
+    .transform((value) =>
+      value === undefined
+        ? undefined
+        : [
+            ...new Set(
+              value
+                .split(',')
+                .map((id) => id.trim())
+                .filter(Boolean),
+            ),
+          ],
+    )
+    .pipe(z.array(z.string().max(64)).max(ISSUE_IDS_MAX).optional())
+    .meta({
+      description: `Only these issues, comma-separated ids, at most ${ISSUE_IDS_MAX}; the other filters still apply.`,
+    }),
   involvesUserId: text.meta({
     description:
       'Owned by this user or executed by them as a person, each issue once.',
@@ -327,6 +347,7 @@ const issueFilters = {
 };
 
 type IssueFilterInput = {
+  issueIds?: string[] | undefined;
   involvesUserId?: string | undefined;
   statusKey?: string | undefined;
   projectId?: string | undefined;
