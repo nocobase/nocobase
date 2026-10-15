@@ -64,6 +64,46 @@ Full integration suites ran sequentially through their owning dialect packages. 
 
 After making the shared alias regression portable, the Query select contract was rerun successfully on SQLite, PostgreSQL, MySQL, and MariaDB. The successful full SQL Server and Oracle runs already include that final version.
 
-The agents-plugin claim, admission, and skill-cost test selection passed its 23 enabled tests on SQLite, with 18 tests skipped by their existing database selection. The warm claim measurements above also executed successfully on PostgreSQL. Prototype-like property names are tested directly at the result mapper boundary; the shared SQL regression exercises portable aliases, nulls, and timestamps because native drivers differ in how they assemble prototype-like column names before the mapper receives a row.
+The agents-plugin claim, admission, and skill-cost test selection passed its 23 enabled tests on SQLite, with 18 optional cost-report cases disabled because `PM387_COST_REPORT` was unset. The warm claim measurements above also executed successfully on PostgreSQL. Prototype-like property names are tested directly at the result mapper boundary; the shared SQL regression exercises portable aliases, nulls, and timestamps because native drivers differ in how they assemble prototype-like column names before the mapper receives a row.
 
 Two supplemental checks fail identically in the unchanged baseline and this checkout: `@nocobase/db api:check` reports an already-outdated public API snapshot, and `@nocobase/db-testkit typecheck:integration` reports seven existing errors in `builder/text-defaults.test.ts`, `repository/fixtures/tenants.ts`, and `repository/policy/scope-pushdown.test.ts`. Their baselines were not updated as part of this performance change.
+
+## Local acceptance rerun, 2026-10-15
+
+The local acceptance pass compares baseline `494fb7e49` with PR commit `06b801193` on the same host and runtime described above. The benchmark and locked dependencies are identical in the two checkouts. It runs three independent rounds per checkout and database, each with ten warmups and thirty samples. Round two reverses the baseline/candidate order; rounds one and three run the baseline first. Other database tests finished before sampling, and monitoring found no overlapping Docker services during any performance run. No runtime code was changed for this acceptance pass.
+
+The agreed local gates are at least a 50% reduction in both Query wall time and Node CPU time on each database, and no more than a 10% regression in the twelve-table transaction wall time. The comparison takes the median of each round's medians. These are controlled local acceptance gates, not CI timing assertions or production service objectives.
+
+| Database   | Round | Query before / after, ms | Query CPU before / after, ms | Transaction before / after, ms |
+| ---------- | ----: | -----------------------: | ---------------------------: | -----------------------------: |
+| PostgreSQL |     1 |            36.63 / 15.11 |                 33.08 / 8.74 |                  47.14 / 39.95 |
+| PostgreSQL |     2 |            34.95 / 15.87 |                 32.23 / 8.74 |                  40.11 / 39.75 |
+| PostgreSQL |     3 |            35.83 / 14.86 |                 33.14 / 8.62 |                  39.85 / 42.29 |
+| SQLite     |     1 |             26.76 / 7.69 |                 26.93 / 7.82 |                    6.18 / 5.17 |
+| SQLite     |     2 |             27.01 / 7.85 |                 27.44 / 8.02 |                    6.25 / 5.14 |
+| SQLite     |     3 |             29.55 / 7.82 |                 30.09 / 7.98 |                    6.41 / 5.17 |
+
+| Acceptance metric                                        |                     PostgreSQL |                        SQLite | Result |
+| -------------------------------------------------------- | -----------------------------: | ----------------------------: | ------ |
+| Query median of medians                                  | 35.83 → 15.11 ms, 57.84% lower | 27.01 → 7.82 ms, 71.06% lower | Pass   |
+| Query Node CPU median of medians                         |  33.08 → 8.74 ms, 73.58% lower | 27.44 → 7.98 ms, 70.94% lower | Pass   |
+| Twelve-table transaction median of medians               |  40.11 → 39.95 ms, 0.40% lower |  6.25 → 5.17 ms, 17.37% lower | Pass   |
+| Twelve-table transaction metadata statements, each round |                        61 → 25 |                      145 → 73 | Pass   |
+| Warm claim metadata statements, each round               |                        71 → 29 |                      177 → 85 | Pass   |
+| Warm empty transaction, each round                       |       2 statements, 0 metadata |      2 statements, 0 metadata | Pass   |
+
+The PostgreSQL transaction results support the absence of a material regression, not a meaningful speedup. Native Knex medians were 9.60 → 9.11 ms on PostgreSQL and 2.36 → 2.94 ms on SQLite. The raw samples retain this variation; the SQLite native control is about 0.59 ms slower in this run. The Query improvement remains above the acceptance threshold on both databases.
+
+All three rounds preserve the fourteen non-metadata statements of the twelve-table transaction: BEGIN, twelve business reads, and COMMIT. Warm claims were independently traced three times per checkout and dialect through the real agents services. Their 41 other statements retain identical SQL text and order after normalizing generated fixture schema names. Counts stay at 112 → 70 total statements on PostgreSQL and 218 → 126 on SQLite. Assertions also check the claimed run identity, dispatched status, runner assignment, input, and credential payload. SQL traces omit binding values; this comparison verifies the executed statement sequence rather than bound-value equality.
+
+The following targeted PostgreSQL regression passed all 34 tests in four files, with no failures or skips:
+
+```bash
+pnpm test:db postgres --filter @nocobase/app-plugin-agents -- tests/claim.test.ts tests/claim-admission.test.ts tests/claim-concurrency.test.ts tests/claim-secrets-safety.test.ts --maxWorkers=1 --no-file-parallelism
+```
+
+Coverage includes duplicate prevention when four runners claim twelve runs concurrently, agent and runner capacity limits, assembly failure handling, admission rejection, and rollback of refused claims without retained run tokens or delivered inputs. The comment-chain burst completed 24 polls and six distinct claims in 1,057 ms, with 17 writing transactions and no sampled lock waits on run rows. Other lock-wait samples were present; the test does not require all database locking to disappear.
+
+Raw samples, SQL traces, JSON test results, environment details, fixture scripts, and a verification script are retained in the local `pm397-acceptance-2026-10-15.tar.gz` evidence archive. Its verifier checks the performance gates, counts, normalized business SQL sequences, and zero failed or skipped PostgreSQL tests. The archive is generated output and is not part of the package release.
+
+Local performance, SQL-count, and PostgreSQL claim acceptance are complete. Studio deployment, page and project/issue integration checks, application request latency, and database CPU measurements remain pending. The previously completed cross-dialect suites were not rerun for this documentation-only acceptance update.
