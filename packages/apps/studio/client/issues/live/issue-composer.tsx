@@ -121,7 +121,13 @@ export function IssueComposer({
         {...(modes ? { modes } : {})}
         onMentionSearch={conversation.searchMentions}
         mentionSearchRevision={conversation.mentionSearchRevision}
-        {...(canUploadAttachments(viewer) ? { onAttach: uploads.add } : {})}
+        {...(canUploadAttachments(viewer)
+          ? {
+              onAttach: (files: readonly File[]) => {
+                void uploads.add(files);
+              },
+            }
+          : {})}
         attachments={
           <PendingAttachments
             files={uploads.uploads.map((upload) => ({

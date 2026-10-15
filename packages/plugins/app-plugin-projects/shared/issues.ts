@@ -179,6 +179,8 @@ export interface IssueListQuery {
 }
 
 export interface CreateIssueRequest {
+  /** The creator's unattached uploads, bound before work starts. */
+  readonly attachmentIds?: readonly string[];
   readonly title: string;
   readonly description?: string;
   /** `in_progress` (start now) or `backlog` (later, the default; `START_STATUSES`). */
