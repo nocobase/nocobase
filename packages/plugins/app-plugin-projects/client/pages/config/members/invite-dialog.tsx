@@ -36,6 +36,7 @@ import { pmKeys } from '../../../api/keys.js';
 import { useNotify } from '../../../hooks/use-notify.js';
 import { usePmApi } from '../../../hooks/use-pm-api.js';
 import { isEmailAddress, parseEmailList } from './emails.js';
+import { invitationEmailError } from './invitation-email-error.js';
 
 export interface InviteProjectOption {
   readonly id: string;
@@ -229,17 +230,6 @@ function InviteForm({
       </DialogFooter>
     </form>
   );
-}
-
-export function invitationEmailError(
-  t: (key: string) => string,
-  result: InvitationResult,
-): string {
-  if (result.emailError === 'Email not sent: no email channel configured')
-    return t('invitations.outcome.noEmailChannel');
-  if (result.emailError === 'Email not sent: email delivery failed')
-    return t('invitations.outcome.deliveryFailed');
-  return t('invitations.outcome.notSent');
 }
 
 function outcomeLabel(
