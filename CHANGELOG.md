@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.26](https://github.com/nocobase/nocobase/compare/v2.2.25...v2.2.26) - 2026-10-15
+
+### 🐛 Bug Fixes
+
+- **[server]** Fix duplicate snowflake primary keys after an application reload ([#10911](https://github.com/nocobase/nocobase/pull/10911)) by @2013xile
+
+- **[Workflow]** Fixed incorrect workflow enabled and executed status checks when KingBase returns boolean and execution count fields as strings. ([#10888](https://github.com/nocobase/nocobase/pull/10888)) by @mytharcher
+
+- **[Data source manager]** Fixed v2 relation field configuration to allow entering a new foreign key name or selecting an existing field. ([#10915](https://github.com/nocobase/nocobase/pull/10915)) by @katherinehhh
+
 ## [v2.2.25](https://github.com/nocobase/nocobase/compare/v2.2.24...v2.2.25) - 2026-10-14
 
 ### 🐛 Bug Fixes
