@@ -101,8 +101,7 @@ for (const kind of ['name', 'permission'] as const) {
     await expect(nameInput(page)).toHaveValue(title);
     const permission = page.getByRole('switch').first();
     if (kind === 'name') {
-      await nameInput(page).press('End');
-      await page.keyboard.type(' unsaved');
+      await nameInput(page).fill(`${title} unsaved`);
     } else await permission.click();
     await rolesNavigation(page).click();
     await expect(confirmation(page)).toBeVisible();

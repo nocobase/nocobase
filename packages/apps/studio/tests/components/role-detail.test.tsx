@@ -1,4 +1,7 @@
-import { NavigationGuardProvider } from '@nocobase/app-client';
+import {
+  ClientApplicationContext,
+  NavigationGuardProvider,
+} from '@nocobase/app-client';
 import projects from '@nocobase/app-plugin-projects/client';
 import {
   createTestI18nRuntime,
@@ -22,6 +25,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import enUS from '../../client/locales/en-US.js';
 import RoleDetailPage from '../../client/pages/config/role-detail.js';
 import type { Role, SaveRoleRequest } from '../../shared/access.js';
+import { createRoleTestApp } from '../helpers/role-authorization.js';
 
 const state = vi.hoisted(() => ({
   update: vi.fn(),
@@ -38,7 +42,6 @@ vi.mock('@nocobase/app-plugin-projects/client/kit', async (importOriginal) => ({
     typeof import('@nocobase/app-plugin-projects/client/kit')
   >()),
   useViewer: () => ({ userId: 'root' }),
-  canUseSetting: () => true,
 }));
 vi.mock('../../client/access/api.js', () => ({
   studioKeys: { roles: ['roles'], catalog: ['catalog'] },
@@ -81,23 +84,28 @@ async function mount() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  const app = createRoleTestApp();
   render(
     <TestI18nProvider runtime={runtime}>
-      <QueryClientProvider client={client}>
-        <MemoryRouter initialEntries={['/config/roles/custom']}>
-          <NavigationGuardProvider>
-            <Routes>
-              <Route
-                path='/config/roles/:roleKey'
-                element={<RoleDetailPage />}
-              />
-            </Routes>
-          </NavigationGuardProvider>
-        </MemoryRouter>
-      </QueryClientProvider>
+      <ClientApplicationContext.Provider value={app}>
+        <QueryClientProvider client={client}>
+          <MemoryRouter initialEntries={['/config/roles/custom']}>
+            <NavigationGuardProvider>
+              <Routes>
+                <Route
+                  path='/config/roles/:roleKey'
+                  element={<RoleDetailPage />}
+                />
+              </Routes>
+            </NavigationGuardProvider>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ClientApplicationContext.Provider>
     </TestI18nProvider>,
   );
-  await screen.findByRole('textbox', { name: 'Name' });
+  await waitFor(() =>
+    expect(screen.getByRole('textbox', { name: 'Name' })).toBeEnabled(),
+  );
   return client;
 }
 function name(value: string) {

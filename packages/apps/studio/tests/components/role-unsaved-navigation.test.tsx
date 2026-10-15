@@ -1,4 +1,7 @@
-import { NavigationGuardProvider } from '@nocobase/app-client';
+import {
+  ClientApplicationContext,
+  NavigationGuardProvider,
+} from '@nocobase/app-client';
 import projects from '@nocobase/app-plugin-projects/client';
 import {
   TestI18nProvider,
@@ -18,6 +21,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import enUS from '../../client/locales/en-US.ts';
 import RoleDetailPage from '../../client/pages/config/role-detail.tsx';
 import type { Role } from '../../shared/access.ts';
+import { createRoleTestApp } from '../helpers/role-authorization.js';
 
 const state = vi.hoisted(() => ({
   update: vi.fn(),
@@ -53,7 +57,6 @@ vi.mock('@nocobase/app-plugin-projects/client/kit', async (original) => ({
     typeof import('@nocobase/app-plugin-projects/client/kit')
   >()),
   useViewer: () => ({ userId: 'owner' }),
-  canUseSetting: () => true,
 }));
 
 const plugin = projects({ routes: false });
@@ -66,28 +69,36 @@ async function setup() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  const app = createRoleTestApp();
   render(
     <TestI18nProvider runtime={runtime}>
-      <QueryClientProvider client={client}>
-        <MemoryRouter initialEntries={['/config/roles/custom']}>
-          <NavigationGuardProvider>
-            <Link to='/config/roles'>Leave role</Link>
-            <Routes>
-              <Route
-                path='/config/roles/:roleKey'
-                element={<RoleDetailPage />}
-              />
-              <Route
-                path='/config/roles'
-                element={<p>Role list destination</p>}
-              />
-            </Routes>
-          </NavigationGuardProvider>
-        </MemoryRouter>
-      </QueryClientProvider>
+      <ClientApplicationContext.Provider value={app}>
+        <QueryClientProvider client={client}>
+          <MemoryRouter initialEntries={['/config/roles/custom']}>
+            <NavigationGuardProvider>
+              <Link to='/config/roles'>Leave role</Link>
+              <Routes>
+                <Route
+                  path='/config/roles/:roleKey'
+                  element={<RoleDetailPage />}
+                />
+                <Route
+                  path='/config/roles'
+                  element={<p>Role list destination</p>}
+                />
+              </Routes>
+            </NavigationGuardProvider>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ClientApplicationContext.Provider>
     </TestI18nProvider>,
   );
-  return screen.findByRole('textbox', { name: 'Name', exact: true });
+  const name = await screen.findByRole('textbox', {
+    name: 'Name',
+    exact: true,
+  });
+  await waitFor(() => expect(name).toBeEnabled());
+  return name;
 }
 
 beforeEach(() => {

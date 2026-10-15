@@ -1,17 +1,21 @@
-import { NavigationGuardProvider } from '@nocobase/app-client';
+import {
+  ClientApplicationContext,
+  NavigationGuardProvider,
+} from '@nocobase/app-client';
 import projects from '@nocobase/app-plugin-projects/client';
 import {
   TestI18nProvider,
   createTestI18nRuntime,
 } from '@nocobase/i18n/testing';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
 import enUS from '../../client/locales/en-US.js';
 import RoleDetailPage from '../../client/pages/config/role-detail.js';
 import type { Role } from '../../shared/access.js';
+import { createRoleTestApp } from '../helpers/role-authorization.js';
 
 const { api, success } = vi.hoisted(() => ({
   api: { roles: vi.fn(), catalog: vi.fn(), createRole: vi.fn() },
@@ -33,7 +37,6 @@ vi.mock('@nocobase/app-plugin-projects/client/kit', async (original) => ({
     typeof import('@nocobase/app-plugin-projects/client/kit')
   >()),
   useViewer: () => ({}),
-  canUseSetting: () => true,
 }));
 const runtime = await createTestI18nRuntime({
   application: { namespace: '@nocobase/studio', resources: enUS },
@@ -65,22 +68,33 @@ describe('duplicating from the role detail page', () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
+    const app = createRoleTestApp();
     render(
       <TestI18nProvider runtime={runtime}>
-        <QueryClientProvider client={queryClient}>
-          <MemoryRouter initialEntries={['/config/roles/source']}>
-            <NavigationGuardProvider>
-              <Routes>
-                <Route
-                  path='/config/roles/:roleKey'
-                  element={<RoleDetailPage />}
-                />
-                <Route path='/config/roles/copy' element={<p>Copy detail</p>} />
-              </Routes>
-            </NavigationGuardProvider>
-          </MemoryRouter>
-        </QueryClientProvider>
+        <ClientApplicationContext.Provider value={app}>
+          <QueryClientProvider client={queryClient}>
+            <MemoryRouter initialEntries={['/config/roles/source']}>
+              <NavigationGuardProvider>
+                <Routes>
+                  <Route
+                    path='/config/roles/:roleKey'
+                    element={<RoleDetailPage />}
+                  />
+                  <Route
+                    path='/config/roles/copy'
+                    element={<p>Copy detail</p>}
+                  />
+                </Routes>
+              </NavigationGuardProvider>
+            </MemoryRouter>
+          </QueryClientProvider>
+        </ClientApplicationContext.Provider>
       </TestI18nProvider>,
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Duplicate as new role' }),
+      ).toBeEnabled(),
     );
     fireEvent.click(
       await screen.findByRole('switch', { name: 'Projects', exact: true }),
