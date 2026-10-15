@@ -5,8 +5,7 @@
  * - the merge checks that are due (`StudioGit.runMergeChecks`): pull requests whose mergeability GitHub works out after
  *   a push, which no webhook reports;
  * - each watched repository whose turn it is (`StudioGit.pollRepo`): its pull request list with the last validator,
- *   then each linked open pull request and its checks with theirs, and recent closures without validators or CI.
- *   A repository is read every `intervalSeconds` (60 by
+ *   then each linked open pull request and its checks with theirs. A repository is read every `intervalSeconds` (60 by
  *   default, `studio.git.pollIntervalSeconds`), and only every `fallbackSeconds` (600, `studio.git.webhookPollSeconds`)
  *   while its webhook works (a secret is set and the last delivery was verified): then polling is only the safety net
  *   for a lost delivery. An unchanged repository costs only 304 answers, which GitHub does not count against the rate
@@ -79,7 +78,7 @@ export function createGitPoller(deps: {
     await deps.git().runMergeChecks(at);
     // A working directory linked since the last tick: its repository is watched from now on.
     await deps.git().syncRepos();
-    for (const repo of await reposToPoll(deps.conn(), at)) {
+    for (const repo of await reposToPoll(deps.conn())) {
       if (paused(repo, now().getTime())) continue;
       if (!force && !due(repo, at.getTime())) continue;
       const { retryAt } = await deps.git().pollRepo(repo);

@@ -569,32 +569,6 @@ describe('webhook signatures and deliveries', () => {
 });
 
 describe('webhook events', () => {
-  it('recovers a first incomplete closed webhook through the existing poller', async () => {
-    const row = await repo();
-    const issue = await issueIn('in_review');
-    h.github.addPull(REPO, {
-      number: 94,
-      head: { ref: `agent/${issue.identifier}`, sha: 'a1' },
-    });
-    await deliver(row, 'pull_request', pullPayload(94));
-    h.github.merge(REPO, 94, 'bob');
-    const payload = pullPayload(94, 'closed');
-    Object.assign(payload.pull_request, {
-      merged: false,
-      merged_at: null,
-      merged_by: null,
-      merge_commit_sha: null,
-    });
-    await deliver(row, 'pull_request', payload);
-    expect((await h.git.list(alice(), issue.id)).data[0]!.state).toBe('closed');
-    await h.git.pollRepo(await reread(row));
-    expect((await h.git.list(alice(), issue.id)).data[0]!).toMatchObject({
-      state: 'merged',
-      mergedAt: h.github.pull(REPO, 94).merged_at,
-    });
-    expect((await detail(issue)).statusKey).toBe('done');
-  });
-
   it('pull_request: links an agent branch, then moves the issue to Done on the merge, once', async () => {
     const row = await repo();
     const issue = await issueIn('in_review');

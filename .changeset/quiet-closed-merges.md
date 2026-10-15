@@ -2,4 +2,4 @@
 '@nocobase/studio': patch
 ---
 
-Preserve confirmed pull request merges and reconfirm recent closures so incomplete GitHub snapshots cannot leave merged pull requests or their inbox cards marked closed.
+Preserve confirmed pull request merges and their known merge details when late or incomplete GitHub snapshots arrive.

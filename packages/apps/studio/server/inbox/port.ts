@@ -8,8 +8,7 @@
  *   is about (`subject`, optional), the contributor's values (`data`) and, for a decision, the contributor's own key
  *   of it (`decisionKey`).
  * - `resolve` settles every recipient's item of a decision at once, with the contributor's own outcome; `withdraw`
- *   settles it as `withdrawn`. Both are found by `(source, decisionKey)`; settling again changes nothing, except the
- *   explicit correction of a Git merge card from closed to merged once the host confirms the merge.
+ *   settles it as `withdrawn`. Both are found by `(source, decisionKey)`; settling again changes nothing.
  * - `settle` settles every item of a source about one subject that still stands, decisions and information alike
  *   (of some types, or for some recipients only): what the contributor no longer needs anyone to act on or know, such
  *   as a runner's upgrade notice once it upgraded, or a failed run's card once its issue finished.
@@ -86,8 +85,6 @@ export interface StudioInboxPort {
     ref: InboxDecisionRef & {
       readonly outcome: InboxOutcome;
       readonly data?: InboxData;
-      /** Only Git's merge cards: correct an earlier closed outcome once GitHub confirms the merge. */
-      readonly correctClosedMerge?: true;
     },
   ): Promise<void>;
   /** The contributor took the question back: settled as `withdrawn`. */

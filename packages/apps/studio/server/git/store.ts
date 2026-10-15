@@ -27,9 +27,6 @@ export const LINKS = 'studioIssuePullRequests';
 export const SUGGESTIONS = 'studioPullRequestSuggestions';
 export const DELIVERIES = 'studioGitWebhookDeliveries';
 
-/** Closed snapshots may briefly omit GitHub's merge facts. Never extend this window on a refresh. */
-export const CLOSED_CONFIRMATION_MS = 60 * 60 * 1000;
-
 type Row = Record<string, unknown>;
 
 const str = (value: unknown): string | null =>
@@ -271,46 +268,30 @@ export async function updateRepo(
 }
 
 /**
- * The repositories to poll: those reached through a connection, and those with a linked pull request still open or
- * recently closed (a public one read without a credential).
+ * The repositories to poll: those reached through a connection, and those with a linked pull request still open (a
+ * public one read without a credential).
  */
 export async function reposToPoll(
   conn: DatabaseConnection,
-  at = new Date(),
 ): Promise<RepoRow[]> {
-  const since = new Date(at.getTime() - CLOSED_CONFIRMATION_MS);
   const withToken = await conn.query
     .selectFrom(REPOS)
     .selectAll()
     .where('connectionId', 'is not', null)
     .execute();
   const linked = await linkedIds(conn);
-  const watched =
+  const open =
     linked.length === 0
       ? []
       : await conn.query
           .selectFrom(PULL_REQUESTS)
           .select('repoId')
-          .where((eb) =>
-            eb.or([
-              eb('state', '=', 'open'),
-              eb.and([
-                eb('state', '=', 'closed'),
-                eb.or([
-                  eb('closedAt', '>=', since),
-                  eb.and([
-                    eb('closedAt', 'is', null),
-                    eb('createdAt', '>=', since),
-                  ]),
-                ]),
-              ]),
-            ]),
-          )
+          .where('state', '=', 'open')
           .where('id', 'in', linked)
           .distinct()
           .execute();
   const ids = new Set(withToken.map((row) => String(row.id)));
-  const extra = watched
+  const extra = open
     .map((row) => String(row.repoId))
     .filter((id) => !ids.has(id));
   const more =
@@ -522,28 +503,6 @@ export async function openPullRequestsOf(
     .where('state', '=', 'open')
     .execute();
   return withRepos(conn, rows);
-}
-
-/** Closed pull requests still within their fixed confirmation window; includes unlinked preview records. */
-export async function recentlyClosedPullRequestsOf(
-  conn: DatabaseConnection,
-  repoId: string,
-  at = new Date(),
-): Promise<Pick<PullRequestRow, 'number'>[]> {
-  const since = new Date(at.getTime() - CLOSED_CONFIRMATION_MS);
-  const rows = await conn.query
-    .selectFrom(PULL_REQUESTS)
-    .select('number')
-    .where('repoId', '=', repoId)
-    .where('state', '=', 'closed')
-    .where((eb) =>
-      eb.or([
-        eb('closedAt', '>=', since),
-        eb.and([eb('closedAt', 'is', null), eb('createdAt', '>=', since)]),
-      ]),
-    )
-    .execute();
-  return rows.map((row) => ({ number: Number(row.number) }));
 }
 
 /**

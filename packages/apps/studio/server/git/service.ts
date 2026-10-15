@@ -109,7 +109,6 @@ import {
   linkedOpenPullRequests,
   linksOfPullRequest,
   openPullRequestsOf,
-  recentlyClosedPullRequestsOf,
   previewManagedOpenPullRequests,
   pullRequestsOfIssue,
   pullRequestsOfIssues,
@@ -2183,12 +2182,6 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
             await updateRepo(conn(), repo.id, { listEtag: list.etag });
           }
         }
-        // Capture candidates before polling open PRs, so a newly closed PR is not read twice in this poll.
-        const closed = await recentlyClosedPullRequestsOf(
-          conn(),
-          repo.id,
-          now(),
-        );
         const open = (await tracks(repo))
           ? await openPullRequestsOf(conn(), repo.id)
           : [
@@ -2199,17 +2192,6 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         for (const pr of new Map(open.map((pr) => [pr.id, pr])).values()) {
           await pollPullRequest(repo, pr);
           await previewLabels.sync(pr.id);
-        }
-        for (const pr of closed) {
-          const pull = await platformOf(repo).getPullRequest(
-            acting.auth,
-            repo.repo,
-            pr.number,
-            null,
-          );
-          // Reconfirm without validators or CI. An unchanged closure must not write or extend its window.
-          if (!pull.notModified && pull.body.snapshot.state !== 'closed')
-            await flow.store(repo, pull.body.snapshot, { pullEtag: pull.etag });
         }
         await updateRepo(conn(), repo.id, {
           polledAt: new Date(),

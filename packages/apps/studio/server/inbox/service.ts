@@ -15,8 +15,6 @@ import type { NotificationService } from '@nocobase/app-plugin-notification/serv
 import type { InAppStore } from '@nocobase/app-plugin-notification-in-app/server';
 import type { DatabaseManager, DatabaseConnection } from '@nocobase/db';
 
-import { GIT_INBOX_SOURCE, PR_MERGE_REQUESTED } from '../../shared/git.js';
-
 import {
   INBOX_WAITING_MAX,
   INBOX_WITHDRAWN,
@@ -285,27 +283,14 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
     decisionKey: string,
     outcome: string,
     data?: InboxData,
-    correctClosedMerge = false,
   ): Promise<void> {
-    const correctingMerge =
-      correctClosedMerge && source === GIT_INBOX_SOURCE && outcome === 'merged';
     const waiting = await table()
       .selectFrom(TABLE)
       .select(['userId', 'data'])
       .where('source', '=', source)
       .where('decisionKey', '=', decisionKey)
       .where('kind', '=', 'decision')
-      .where((eb) =>
-        correctingMerge
-          ? eb.or([
-              eb('resolvedAt', 'is', null),
-              eb.and([
-                eb('type', '=', PR_MERGE_REQUESTED),
-                eb('outcome', '=', 'closed'),
-              ]),
-            ])
-          : eb('resolvedAt', 'is', null),
-      )
+      .where('resolvedAt', 'is', null)
       .execute();
     if (waiting.length === 0) return;
     await table()
@@ -320,17 +305,7 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
       .where('source', '=', source)
       .where('decisionKey', '=', decisionKey)
       .where('kind', '=', 'decision')
-      .where((eb) =>
-        correctingMerge
-          ? eb.or([
-              eb('resolvedAt', 'is', null),
-              eb.and([
-                eb('type', '=', PR_MERGE_REQUESTED),
-                eb('outcome', '=', 'closed'),
-              ]),
-            ])
-          : eb('resolvedAt', 'is', null),
-      )
+      .where('resolvedAt', 'is', null)
       .execute();
     for (const userId of new Set(waiting.map((row) => String(row.userId))))
       deps.announce(userId);
@@ -392,13 +367,7 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
 
     async resolve(ref) {
       checkDecisionRef(ref);
-      await settle(
-        ref.source,
-        ref.decisionKey,
-        ref.outcome,
-        ref.data,
-        ref.correctClosedMerge,
-      );
+      await settle(ref.source, ref.decisionKey, ref.outcome, ref.data);
     },
 
     async withdraw(ref) {

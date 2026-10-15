@@ -82,12 +82,7 @@ export async function settleMergeCards(
       decisionKey: decisionKeyOf(pullRequestId, issueId),
     };
     if (outcome === 'withdrawn') await port.withdraw(ref);
-    else
-      await port.resolve({
-        ...ref,
-        outcome,
-        ...(outcome === 'merged' ? { correctClosedMerge: true as const } : {}),
-      });
+    else await port.resolve({ ...ref, outcome });
   }
 }
 
