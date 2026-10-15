@@ -10,6 +10,7 @@ import { Link } from 'react-router';
 import { Button } from '@/components/ui/button';
 
 import { IssuesView } from '../../issues/issues-view.js';
+import { STUDIO_ISSUE_VIEWS } from '../../issues/views.js';
 import { useProjectPage } from './context.js';
 import { useProjectPageWording } from './labels.js';
 
@@ -18,27 +19,30 @@ export function ProjectIssues(): ReactElement {
   const { t } = useProjectPageWording();
   const search = `?project=${encodeURIComponent(project.id)}`;
   return (
-    <div className='flex h-[calc(100svh-16rem)] min-h-96 flex-col gap-3'>
-      <div className='flex justify-end'>
-        <Button
-          variant='ghost'
-          size='sm'
-          nativeButton={false}
-          render={
-            <Link to={{ pathname: '/issues', search: `${search}&view=list` }} />
-          }
-        >
-          <ListIcon data-icon='inline-start' />
-          {t('projectPage.openInList')}
-        </Button>
-      </div>
+    <div className='flex h-[calc(100svh-16rem)] min-h-96 flex-col'>
       <div className='min-h-0 flex-1'>
         <IssuesView
           fixedFilters={{ projectId: project.id }}
           hiddenFilters={['projectId']}
           viewKey='project'
-          views={['board', 'list', 'agent']}
-          defaultView='board'
+          // In the toolbar's row, so the tab spends no line on it.
+          toolbarEnd={
+            <Button
+              variant='ghost'
+              size='sm'
+              nativeButton={false}
+              render={
+                <Link
+                  to={{ pathname: '/issues', search: `${search}&view=list` }}
+                />
+              }
+            >
+              <ListIcon data-icon='inline-start' />
+              {t('projectPage.openInList')}
+            </Button>
+          }
+          views={STUDIO_ISSUE_VIEWS}
+          defaultView='list'
           empty={{
             title: t('projectPage.noIssues'),
             description: t('issues.emptyDescription'),

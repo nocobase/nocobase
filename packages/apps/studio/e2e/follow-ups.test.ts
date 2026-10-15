@@ -40,14 +40,13 @@ test.describe('my follow-ups', () => {
     await api.put('followUps/following', { issueIds: [] });
 
     await open(page, '/follow-ups');
-    // Follow-ups follows the default landing navigation, including the inbox's live count.
+    // Follow-ups follows the default landing navigation, including My tasks' live count.
     const menu = page.getByRole('navigation', { name: '应用导航' });
     const entries = menu.getByRole('link');
-    await expect(entries.nth(0)).toHaveAccessibleName('我的任务');
+    await expect(entries.nth(0)).toHaveAccessibleName(/^我的任务(?:，.*)?$/u);
     await expect(entries.nth(1)).toHaveAccessibleName('我的 Agent');
-    await expect(entries.nth(2)).toHaveAccessibleName(/^收件箱(?:，.*)?$/u);
-    await expect(entries.nth(3)).toHaveAccessibleName('仪表盘');
-    await expect(entries.nth(4)).toHaveAccessibleName('我的跟进');
+    await expect(entries.nth(2)).toHaveAccessibleName('仪表盘');
+    await expect(entries.nth(3)).toHaveAccessibleName('我的跟进');
     await expect(
       page.getByRole('heading', { name: '我的跟进', level: 1 }),
     ).toBeVisible();

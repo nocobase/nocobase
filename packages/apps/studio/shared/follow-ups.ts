@@ -85,6 +85,11 @@ export interface FollowingView {
 /** What the viewer follows now, and how many they may: the follow star's whole read. */
 export interface FollowingState extends FollowingView {
   readonly max: number;
+  /**
+   * Whether the viewer chose them. Until they do, `issueIds` is "My follow-ups"' default list (their blocked and in-review
+   * issues), which only that page counts as followed.
+   */
+  readonly stored: boolean;
 }
 
 /** The followed ids a stored value holds: unique strings, at most `FOLLOW_UPS_MAX`; null when it holds none. */

@@ -3,6 +3,7 @@ import { followUpsEnUS } from '../follow-ups/locales.js';
 import type { LocaleResource } from '@nocobase/i18n';
 import { gitEnUS } from '../git/locales.js';
 import { knowledgeEnUS } from '../knowledge/locales.js';
+import { taskGroupsEnUS } from '../issues/groups/locales.js';
 import { issuesEnUS } from '../issues/locales.js';
 import { issueLiveEnUS } from '../issues/live/locales.js';
 import { projectPageEnUS } from '../projects/locales.js';
@@ -1391,6 +1392,7 @@ const enUS = {
   preferences: preferencesEnUS,
   knowledge: knowledgeEnUS,
   issuesPage: issuesEnUS,
+  taskGroups: taskGroupsEnUS,
   followUps: followUpsEnUS,
   issueLive: issueLiveEnUS,
   projectPage: projectPageEnUS,
