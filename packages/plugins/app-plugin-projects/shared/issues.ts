@@ -160,6 +160,8 @@ export type IssueSort = (typeof ISSUE_SORTS)[number];
  * `limit` and `cursor`. `GET /api/projects/issues/board` takes the filters and `pageSize` per column.
  */
 export interface IssueListQuery {
+  /** Owned by this person or executed by them as a user, each issue once. */
+  readonly involvesUserId?: string;
   readonly statusKey?: string;
   readonly projectId?: string;
   readonly ownerUserId?: string;

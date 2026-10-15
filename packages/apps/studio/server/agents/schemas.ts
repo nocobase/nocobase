@@ -51,6 +51,7 @@ export const AgentBoardQuery = z.object({
   labelId: filter,
   ownerUserId: filter,
   executorId: filter,
+  involvesUserId: filter,
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
