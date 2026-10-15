@@ -12,7 +12,7 @@
  *   the page shows (the chips above the composer);
  * - `ChatExtensionsContext`: what the application adds among a conversation's messages, and how it words its news;
  * - the data hooks (`useChatAgents`, `useConversation`, `useConversationMessages`, `useConversationList`,
- *   `useSendMessage`, `useConversationActions`, keyed by `chatKeys`, and `useLiveRunEvents`, `useConversationSources`),
+ *   `useConsultationIdentity` for current consultation labels without rewriting loaded messages, `useSendMessage`, `useConversationActions`, keyed by `chatKeys`, and `useLiveRunEvents`, `useConversationSources`),
  *   the pure models of the timeline and the context chips, the panel's state helpers, and `ChatPanelScope` /
  *   `useChatPageTracking` for a full-page view.
  *
@@ -154,3 +154,8 @@ export function chatLinkRoutes(
     },
   ];
 }
+
+export {
+  useConsultationIdentity,
+  type ConsultationIdentity,
+} from './chat/consultation-identity.js';

@@ -108,7 +108,11 @@ export interface GitHubPullRequestPayload {
   /** The merge (or squash) commit once merged; before that, GitHub's test merge commit, which Studio ignores. */
   readonly merge_commit_sha?: string | null;
   readonly closed_at?: string | null;
-  readonly head?: { readonly ref?: string; readonly sha?: string };
+  readonly head?: {
+    readonly ref?: string;
+    readonly sha?: string;
+    readonly repo?: { readonly full_name?: string } | null;
+  };
   readonly base?: { readonly ref?: string };
   readonly user?: { readonly login?: string };
   readonly mergeable_state?: string | null;
@@ -152,6 +156,9 @@ export function snapshotFromPayload(
     state,
     draft: payload.draft === true,
     headRef: (payload.head?.ref ?? '').slice(0, 255),
+    ...(payload.head?.repo?.full_name
+      ? { headRepo: payload.head.repo.full_name }
+      : {}),
     baseRef: (payload.base?.ref ?? '').slice(0, 255),
     headSha: (payload.head?.sha ?? '').slice(0, 64),
     authorLogin: (payload.user?.login ?? '').slice(0, 255),
@@ -199,6 +206,7 @@ function readOf(
 // --- Checks ----------------------------------------------------------------------------------------------------------
 
 interface StatusFields {
+  readonly id?: unknown;
   readonly context?: unknown;
   readonly state?: unknown;
   readonly target_url?: unknown;
@@ -276,6 +284,9 @@ export function checkOfStatus(status: StatusFields): GitCheck {
   const state = typeof status.state === 'string' ? status.state : '';
   return {
     kind: 'status',
+    ...(typeof status.id === 'number' || typeof status.id === 'string'
+      ? { executionId: String(status.id) }
+      : {}),
     name: (typeof status.context === 'string'
       ? status.context
       : 'status'
@@ -305,6 +316,9 @@ export function checkOfRun(run: CheckRunFields): GitCheck {
         : null;
   return {
     kind: 'check',
+    ...(typeof run.id === 'number' || typeof run.id === 'string'
+      ? { executionId: String(run.id) }
+      : {}),
     name: (typeof run.name === 'string' ? run.name : 'check').slice(0, 255),
     status,
     conclusion:
@@ -701,13 +715,19 @@ function oauthTokensOf(authentication: {
 }
 
 /**
- * GitHub's OAuth pages answer a refusal with 200 and an `error` in the body, which `@octokit/oauth-methods` throws as a
- * 400: that body (`authorization_pending`, `bad_verification_code`, …), or null for any other failure.
+ * GitHub's OAuth pages answer a refusal with an `error` in the body, mostly with 200, which `@octokit/oauth-methods`
+ * throws as a 400, and some with a 4xx of their own (an app without the device flow), which the client passes on: that
+ * body (`authorization_pending`, `bad_verification_code`, `device_flow_disabled`, …), or null for any other failure.
  */
 function oauthRefusalOf(
   error: unknown,
 ): { readonly error: string; readonly interval?: number } | null {
-  if (!(error instanceof RequestError) || error.status !== 400) return null;
+  if (
+    !(error instanceof RequestError) ||
+    error.status < 400 ||
+    error.status >= 500
+  )
+    return null;
   const data = error.response?.data as
     { error?: unknown; interval?: unknown } | undefined;
   if (typeof data?.error !== 'string') return null;
@@ -723,6 +743,7 @@ const refused = (what: string, error: unknown): GitApiError => {
   return new GitApiError(
     400,
     `GitHub refused ${what}${refusal ? ` (${refusal.error})` : ''}.`,
+    { hostError: refusal?.error ?? null },
   );
 };
 

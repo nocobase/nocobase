@@ -10,7 +10,7 @@ Database fixtures for tests outside the `@nocobase/db` packages — plugins, lib
 | -------------------------- | --------------------------------------------------------------------------- |
 | `NOCOBASE_TEST_DB_DIALECT` | `sqlite` when unset. Any other value loads `@nocobase/db-<dialect>/testing` |
 
-The dialect packages are optional peer dependencies: SQLite is required, every other dialect only when it is selected, and a dialect that is not installed fails with the name of the package to add. In this repository they are development dependencies of this package, so every workspace package can select any of them.
+The dialect packages are optional peer dependencies: SQLite is required, every other dialect only when it is selected, and a dialect that is not installed fails with the name of the package to add. In this repository the OSS dialects are development dependencies of this package. External dialects are resolved from the consuming project first; add their packages to that project’s devDependencies. KingbaseES, Dameng and OceanBase are maintained in `nocobase/nocobase3-pro` and installed through its private registry.
 
 Each dialect reads its server from the variables its own integration suite uses:
 

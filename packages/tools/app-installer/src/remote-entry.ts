@@ -12,7 +12,7 @@ import { UPGRADE_FLAGS } from './commands/upgrade.ts';
 import { ROLLBACK_FLAGS } from './commands/rollback.ts';
 import { STATUS_FLAGS } from './commands/status.ts';
 import { errorEnvelope, exitCodeOf } from './lib/output.ts';
-import { InstallerError } from './lib/errors.ts';
+import { EXIT_INVALID, InstallerError } from './lib/errors.ts';
 import { sha256, type RemoteRequest } from './lib/remote.ts';
 
 let input = '';
@@ -46,6 +46,12 @@ try {
   const stateFile = path.join(root, 'installer.json');
   if (command === 'deploy')
     command = existsSync(stateFile) ? 'upgrade' : 'install';
+  if (command === 'install' && request.flags['repair-checksums'] !== undefined)
+    throw new InstallerError(
+      'INVALID_USAGE',
+      'Checksum repair approval applies only to upgrading an existing installation.',
+      { exitCode: EXIT_INVALID },
+    );
   if (command === 'upgrade') {
     const state = JSON.parse(await readFile(stateFile, 'utf8')) as {
       source?: { kind?: string };

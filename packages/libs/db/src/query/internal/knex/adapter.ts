@@ -1,3 +1,7 @@
+import {
+  prepareResultRowMapper,
+  type ResultMap,
+} from '../result-row-mapper.js';
 import { decimalString } from '../../../numeric/decimal.js';
 import type {
   CollectionDefinition,
@@ -388,9 +392,8 @@ class KnexSelectQuery<
       numericLookup,
     );
     const rows = await query;
-    return normalizeRows(rows).map((row) =>
-      decode(mapResultRow(row, resultMap, this.naming)),
-    ) as T[];
+    const mapRow = prepareResultRowMapper(resultMap, this.naming);
+    return normalizeRows(rows).map((row) => decode(mapRow(row))) as T[];
   }
 
   async executeTakeFirst<T = TResult>(): Promise<T | undefined> {
@@ -418,7 +421,9 @@ class KnexSelectQuery<
     const row = await query.first();
     return row === undefined
       ? undefined
-      : (decode(mapResultRow(row as Row, resultMap, this.naming)) as T);
+      : (decode(
+          prepareResultRowMapper(resultMap, this.naming)(row as Row),
+        ) as T);
   }
 
   async executeTakeFirstOrThrow<T = TResult>(): Promise<T> {
@@ -1443,13 +1448,6 @@ interface ResolvedTableSource {
   readonly sql: string;
   readonly logicalQualifier: string;
   readonly sqlQualifier: string;
-}
-
-interface ResultMap {
-  hidden?: Set<string>;
-  explicit: Map<string, string>;
-  mapUnmatchedColumns: boolean;
-  scalarDecoders?: Map<string, (value: unknown) => unknown>;
 }
 
 const expressionNodeSymbol = Symbol('NocoBaseQueryExpressionNode');
@@ -3099,30 +3097,6 @@ function parseAliasedIdentifier(value: string): {
   return { identifier: trimmed };
 }
 
-function mapResultRow(
-  row: Row,
-  resultMap: ResultMap,
-  naming: NamingStrategy,
-): Row {
-  const shouldCamelCaseUnmatched =
-    resultMap.mapUnmatchedColumns && isUnderscoredNaming(naming);
-  return Object.fromEntries(
-    Object.entries(row)
-      .filter(([key]) => !resultMap.hidden?.has(key))
-      .map(([key, value]) => {
-        // A decoder that legitimately returns null must not fall back to the
-        // raw value: a JSON column holding the literal `null` decodes to null
-        // and would otherwise leak the stored text back to the caller.
-        const decode = resultMap.scalarDecoders?.get(key);
-        return [
-          resultMap.explicit.get(key) ??
-            (shouldCamelCaseUnmatched ? camelCase(key) : key),
-          decode ? decode(value) : value,
-        ];
-      }),
-  );
-}
-
 function addScalarDecoder(
   resultMap: ResultMap,
   context: ExpressionCompileContext,
@@ -3347,16 +3321,6 @@ function assertRightJoinReference(
     );
   }
   return reference;
-}
-
-function isUnderscoredNaming(naming: NamingStrategy): boolean {
-  return naming.fieldToColumnName('createdAt') === 'created_at';
-}
-
-function camelCase(value: string): string {
-  return value.replace(/_([a-z0-9])/g, (_, letter: string) =>
-    letter.toUpperCase(),
-  );
 }
 
 function lastReferenceSegment(reference: string): string {

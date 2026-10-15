@@ -38,7 +38,9 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
-  useClientApplication: () => ({ config: { get: () => '/main' } }),
+  useClientApplication: () => ({
+    config: { get: () => '/main', public: { get: () => 14 } },
+  }),
 }));
 vi.mock('@nocobase/app-plugin-authentication/client', async (original) => ({
   ...(await original<
@@ -165,6 +167,87 @@ beforeEach(() => {
 });
 
 describe('issue execution history', () => {
+  it.each([
+    'queued',
+    'dispatched',
+    'running',
+    'completed',
+    'failed',
+    'cancelled',
+  ])(
+    'shows failures in the list and activity row according to %s',
+    async (status) => {
+      mocks.runs.mockResolvedValue([
+        {
+          ...run('run', status),
+          attempt: 2,
+          failureReason: 'toolNetwork',
+          failureDetail: 'Previous connection failure',
+          availableAt: null,
+        },
+      ]);
+      await show({ consumers: true });
+      const list = await screen.findByTestId('run-run');
+      const row = await screen.findByTestId('run-row-run');
+      for (const entry of [list, row]) {
+        if (status === 'queued') {
+          expect(entry).toHaveTextContent('Attempt 1 failed');
+          expect(entry).toHaveTextContent('Waiting to be dispatched again');
+          expect(entry).toHaveTextContent('Previous connection failure');
+          expect(entry.querySelector('.text-destructive')).toBeNull();
+        } else {
+          if (entry === row && status === 'failed') {
+            expect(entry).toHaveTextContent('Previous connection failure');
+            expect(entry.querySelector('.text-destructive')).not.toBeNull();
+          } else {
+            expect(entry).not.toHaveTextContent('Previous connection failure');
+            expect(entry.querySelector('.text-destructive')).toBeNull();
+          }
+        }
+      }
+      if (status === 'failed' || status === 'cancelled') {
+        expect(list.getAttribute('title')).toContain(
+          'Previous connection failure',
+        );
+      } else if (status !== 'queued') {
+        expect(list).not.toHaveAttribute('title');
+      }
+    },
+  );
+
+  it('describes an actively stopped run without repeating its cancellation reason', async () => {
+    mocks.runs.mockResolvedValue([
+      { ...run('run', 'cancelled'), failureReason: 'cancelled' },
+    ]);
+    await show({ consumers: true });
+    const list = await screen.findByTestId('run-run');
+    const row = await screen.findByTestId('run-row-run');
+    expect(list.getAttribute('title')).toContain('Cancelled');
+    expect(list.querySelector('.text-destructive')).toBeNull();
+    expect(row).toHaveTextContent('was stopped');
+    expect(row).not.toHaveTextContent('Cancelled');
+    expect(row.querySelector('.text-destructive')).toBeNull();
+  });
+
+  it.each(['en-US', 'zh-CN'] as const)(
+    'shows the persisted fallback reason in %s',
+    async (locale) => {
+      mocks.runs.mockResolvedValue([
+        {
+          ...run(),
+          executions: [{ selection: { reason: 'preferredQueued' } }],
+        },
+      ]);
+      await show({ locale });
+      expect(
+        await screen.findByText(
+          locale === 'en-US'
+            ? /First choice queued, using fallback/u
+            : /首选排队，改用备选/u,
+        ),
+      ).toBeInTheDocument();
+    },
+  );
   it.each(['en-US', 'zh-CN'] as const)(
     'shows models, “Turn ended” and distinguishable transcript links in %s',
     async (locale) => {

@@ -1,5 +1,23 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.36
+
+### Patch Changes
+
+- c048d7d: The application development Skill now says how a list, dashboard or chart endpoint stays fast: it reads with a fixed number of queries whatever the row count, aggregates in the database, keeps expensive per-item work on the detail endpoint, answers a small fact from a small endpoint, and has a test that its query count does not grow with the rows; and how the browser keeps such a page live by refreshing only the rows an event names instead of reading the whole list on every event.
+- 69e212c: Move KingbaseES, Dameng and OceanBase driver ownership to NocoBase Pro while preserving optional peer dependencies, automatic loading and CLI configuration support. Install the selected driver through the Pro registry in the application's production dependencies and rebuild deployments; explicit driver registration remains optional. Test fixtures resolve external dialect provisioners from the consuming project.
+- e8bc078: Guide application and deployment upgrades through independent read-only checksum checks, reviewed checksum repair, documented data prerequisites, and recovery after irreversible schema changes. Preserve pre-repair history in the backup used for recovery. Include the agents and releases MySQL index correction and distinguish installer rollback from external database restoration.
+
+## 0.1.0-beta.35
+
+### Patch Changes
+
+- ca0adee: Document the quieter template interface in the application development Skill: the `--hover` token and the navigation built on it, the single border, which a preset with a darker page has to make opaque, and the compact preset's values, one shared focus ring, the two badge sizes, the pointer cursor, cards that lift on hover, and table rows on the `--hover` grey. Add the long-text rule (I14) for `LongText` and `LongTextPreview`, show a record's particulars inline, describe navigation sections and counts beside menu entries, with guideline L8 on which counts belong there, and list the UI Library's new `long-text` item and the inline variant of `property-fields`. The upgrade Skill's theme checks now say to merge a token together with every use of it, and a global attribute rule together with the components that set the attribute.
+- ddfe1b1: Update the UI Library catalog reference for the agents blocks: the agent picker, chat and composer no longer offer online agents or a model choice, and the issue detail no longer has checklist or approval parts.
+- 43d7d1f: Add code-declared lifecycle parameter groups with asynchronous execution resolution, immutable configuration versions, atomic CAS saves, first-submission snapshots, per-execution usage facts and flat reviewer selection rules. Demonstrate shared configuration editors, optional diagram bindings, snapshot expense thresholds, live ticket policy and finite candidate review workflows, and document application integration.
+- 9555de6: Guide agents to expose node-related lifecycle parameters through editing dialogs on process diagrams, with references to the workflow example. Clarify HTTP-compatible browser request IDs and key reuse for transport retries.
+- 758c372: Ask whether users want a flowchart or process interface when developing a lifecycle, respect separate interface and diagram preferences, and document UI Library diagram integration including label callback arguments.
+
 ## 0.1.0-beta.34
 
 ### Patch Changes

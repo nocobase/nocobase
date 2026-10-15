@@ -147,14 +147,16 @@ describe('RichTextEditor', () => {
   );
 
   it('inserts a mention chosen from the suggestion list, stored as a mention link', async () => {
+    const user = userEvent.setup();
     const { editor, textbox, onChange } = renderEditor();
+    // Focus synchronously: Tiptap's focus command defers selection to an animation frame.
     act(() => {
-      editor.commands.focus();
+      textbox.focus();
       editor.commands.insertContent('Ask @Ad');
     });
     await screen.findByRole('option', { name: 'Ada Lovelace' });
     expect(textbox.getAttribute('aria-expanded')).toBe('true');
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    await user.keyboard('{Enter}');
     await waitFor(() =>
       expect(onChange).toHaveBeenLastCalledWith(
         'Ask [@Ada Lovelace](mention://user/u1) ',
@@ -164,6 +166,7 @@ describe('RichTextEditor', () => {
   });
 
   it('refreshes an open mention query after a retry without changing the draft', async () => {
+    const user = userEvent.setup();
     const agent: RichTextMention = {
       kind: 'agent',
       id: 'a1',
@@ -214,8 +217,13 @@ describe('RichTextEditor', () => {
     });
     expect(textbox.textContent).toBe('@');
     expect(document.activeElement).toBe(textbox);
-    fireEvent.keyDown(textbox, { key: 'ArrowDown' });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    await user.keyboard('{ArrowDown}');
+    expect(
+      screen.getByRole('option', { name: 'Ada Lovelace' }),
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(textbox.textContent).toBe('@');
+    expect(document.activeElement).toBe(textbox);
+    await user.keyboard('{Enter}');
     await waitFor(() =>
       expect(onChange).toHaveBeenLastCalledWith(
         '[@Ada Lovelace](mention://user/u1) ',

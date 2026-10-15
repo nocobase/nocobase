@@ -34,6 +34,8 @@ const colors = [
   'popover-foreground',
   'primary',
   'primary-foreground',
+  'inbox-pending',
+  'inbox-pending-foreground',
   'secondary',
   'secondary-foreground',
   'muted',

@@ -144,6 +144,7 @@ import {
   normalizeLabels,
   normalizeName,
   normalizeRuntimePolicy,
+  releaseArtifactKey,
 } from './validation.js';
 
 const DEFAULT_STARTUP_WAIT_MS = 5_000;
@@ -805,7 +806,7 @@ export class ReleasesService {
         );
         if (existing) return existing;
         const id = randomUUID();
-        const artifactKey = `${appId}/${id}.tar.gz`;
+        const artifactKey = releaseArtifactKey(appId, id);
         const release: ReleaseRecord = {
           id,
           appId,
@@ -988,7 +989,7 @@ export class ReleasesService {
       }
       const id = randomUUID();
       const artifactKey = release.artifactKey
-        ? `${targetAppId}/${id}.tar.gz`
+        ? releaseArtifactKey(targetAppId, id)
         : null;
       const copy: ReleaseRecord = {
         ...release,

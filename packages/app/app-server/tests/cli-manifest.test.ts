@@ -242,6 +242,51 @@ const byId = (commands: readonly CliCommand[], id: string): CliCommand => {
   return found;
 };
 
+describe('read bindings', () => {
+  it('resolves a GET operation below the base path and omits the automatically filled body flag', async () => {
+    const document = await trackerDocument();
+    const operation =
+      document.paths!['/api/tracker/issues/{issueId}/comments']!.post!;
+    Object.assign(
+      operation,
+      cliRoute({
+        command: 'issue decide',
+        args: ['issueId'],
+        readBinding: {
+          operation: 'trackerListIssues',
+          params: {},
+          responseField: 'data.key',
+          bodyField: 'content',
+        },
+      }),
+    );
+    const command = byId(deriveAllCliCommands(document), 'issue:decide');
+    expect(command.readBinding).toEqual({
+      path: '/main/api/tracker/issues',
+      params: {},
+      responseField: 'data.key',
+      bodyField: 'content',
+    });
+    expect(
+      command.parameters.some((parameter) => parameter.field === 'content'),
+    ).toBe(false);
+    Object.assign(
+      operation,
+      cliRoute({
+        readBinding: {
+          operation: 'missing',
+          params: {},
+          responseField: 'data.key',
+          bodyField: 'content',
+        },
+      }),
+    );
+    expect(() => deriveAllCliCommands(document)).toThrow(
+      'requires a GET operation',
+    );
+  });
+});
+
 describe('command words', () => {
   it('derive from the tag, the path and the method', () => {
     expect(deriveCommandWords('get', '/api/tracker/issues', 'Tracker')).toEqual(

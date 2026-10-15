@@ -45,7 +45,7 @@ test.describe('settings', () => {
         section.getByRole('heading', { name, level: 1 }),
       ).toBeVisible();
     }
-    // Opened directly, the settings' Back leads home.
+    // Opened directly, the settings' Back leads to the home page, My tasks.
     await page
       .getByRole('navigation', { name: '设置导航' })
       .getByRole('link', { name: '返回' })

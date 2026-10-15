@@ -21,7 +21,13 @@ interface Seen {
 }
 
 /** A kind whose work handler records what it hears and starts work for every call, unless told to refuse. */
-function addBots(options: { refuse?: boolean } = {}): Seen[] {
+function addBots(
+  options: {
+    refuse?: boolean;
+    observesOwnerClaims?: boolean;
+    changed?: IssueWorkHandler['onIssueChanged'];
+  } = {},
+): Seen[] {
   const seen: Seen[] = [];
   const attempt = (
     subjectId: string,
@@ -38,7 +44,9 @@ function addBots(options: { refuse?: boolean } = {}): Seen[] {
     },
   ];
   const work: IssueWorkHandler = {
+    observesOwnerClaims: options.observesOwnerClaims,
     onIssueChanged(_tx, change) {
+      if (options.changed) return options.changed(_tx, change);
       if (options.refuse) return Promise.reject(new Error('No runner.'));
       seen.push({
         hook: 'changed',
@@ -85,6 +93,72 @@ function addBots(options: { refuse?: boolean } = {}): Seen[] {
   });
   return seen;
 }
+
+it('delivers only trusted owner claims to an opt-in work kind without an executor', async () => {
+  const seen = addBots({ observesOwnerClaims: true });
+  const issue = await h.services.issues.create(alice(), {
+    title: 'Claim',
+    executor: null,
+  });
+  seen.length = 0;
+  await h.services.issues.update(alice(), issue.id, {
+    revision: issue.revision,
+    title: 'Ordinary change',
+  });
+  expect(seen).toEqual([]);
+  const current = await h.services.issueQueries.detail(alice(), issue.id);
+  await h.services.issues.update(alice(), issue.id, {
+    revision: current.revision,
+    ownerUserId: 'alice',
+  });
+  expect(seen.filter((event) => event.hook === 'changed')).toHaveLength(1);
+});
+
+it('returns the final issue after ordinary updates and nested work-hook updates', async () => {
+  const calls: string[] = [];
+  addBots({
+    changed: async (tx, change) => {
+      calls.push(change.after.title);
+      if (change.after.title === 'Outer update')
+        await h.services.tx.savepoint(tx, () =>
+          h.services.issues.update(alice(), change.after.id, {
+            revision: change.after.revision,
+            title: 'Hook update',
+            start: false,
+          }),
+        );
+      return [];
+    },
+  });
+  const issue = await h.services.issues.create(alice(), {
+    title: 'Initial',
+    executor: { type: 'bot', id: 'b1' },
+  });
+  calls.length = 0;
+  const ordinary = await h.services.issues.update(alice(), issue.id, {
+    revision: issue.revision,
+    title: 'Ordinary update',
+  });
+  expect(ordinary).toMatchObject({
+    title: 'Ordinary update',
+    revision: issue.revision + 1,
+  });
+  const nested = await h.services.issues.update(alice(), issue.id, {
+    revision: ordinary.revision,
+    title: 'Outer update',
+  });
+  const stored = await h.services.issueQueries.detail(alice(), issue.id);
+  expect(nested).toMatchObject({
+    title: 'Hook update',
+    revision: ordinary.revision + 2,
+  });
+  expect(nested.revision).toBe(stored.revision);
+  expect(nested.title).toBe(stored.title);
+  expect(calls).toEqual(['Ordinary update', 'Outer update', 'Hook update']);
+  expect(
+    stored.activities.filter((entry) => entry.action === 'title_changed'),
+  ).toHaveLength(3);
+});
 
 describe('work handlers of registered kinds', () => {
   it('hears an issue given to its kind, in the same transaction, and reports the attempt', async () => {
@@ -381,5 +455,46 @@ describe('issue context', () => {
         'NOPE-1',
       ),
     ).toBeUndefined();
+  });
+});
+
+it('reuses context only for the same transaction and parameters, and reads fresh after commit or rollback', async () => {
+  const issue = await h.services.issues.create(alice(), { title: 'Before' });
+  const root = h.database.connection();
+  const provider = h.services.issueContext;
+  await root.transaction(async (conn) => {
+    const first = await provider.contextFor(conn, issue.id, { kind: 'user' });
+    expect(await provider.contextFor(conn, issue.id, { kind: 'user' })).toBe(
+      first,
+    );
+    expect(await provider.contextFor(conn, issue.id)).not.toBe(first);
+    expect(await provider.contextFor(conn, 'MISSING-1')).toBeUndefined();
+    expect(await provider.contextFor(conn, 'MISSING-1')).toBeUndefined();
+  });
+  await root.query
+    .updateTable('pmIssues')
+    .set({ title: 'After commit' })
+    .where('id', '=', issue.id)
+    .execute();
+  await expect(
+    root.transaction(async (conn) => {
+      expect((await provider.contextFor(conn, issue.id))?.title).toBe(
+        'After commit',
+      );
+      await conn.query
+        .updateTable('pmIssues')
+        .set({ title: 'Rolled back' })
+        .where('id', '=', issue.id)
+        .execute();
+      throw new Error('rollback');
+    }),
+  ).rejects.toThrow('rollback');
+  await root.query
+    .updateTable('pmIssues')
+    .set({ title: 'Retry' })
+    .where('id', '=', issue.id)
+    .execute();
+  await root.transaction(async (conn) => {
+    expect((await provider.contextFor(conn, issue.id))?.title).toBe('Retry');
   });
 });

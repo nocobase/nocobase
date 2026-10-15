@@ -25,7 +25,7 @@ import {
 import { PR_ACTIVITY_LABELS } from '../../git/lib.js';
 
 import type { Translate } from './labels.js';
-import { actionLabel } from './activity-labels.js';
+import { actionLabel, isOwnerHandoffActivity } from './activity-labels.js';
 import { usePlanLinkTo } from './plan-links.js';
 import { StatusBadge } from './status-badge.js';
 
@@ -60,7 +60,20 @@ function PullRequestActivity({
   const fields =
     activity.action === PR_ACTIVITIES.edited ? editedFields(t, details) : '';
   const reason =
-    activity.action === PR_ACTIVITIES.closed ? text(details.reason) : null;
+    activity.action === PR_ACTIVITIES.closed ||
+    activity.action === PR_ACTIVITIES.forceMerged ||
+    activity.action === PR_ACTIVITIES.forceMergeRefused
+      ? text(details.reason)
+      : null;
+  const failedChecks = Array.isArray(details.failedChecks)
+    ? details.failedChecks.flatMap((check: unknown) => {
+        const name =
+          check && typeof check === 'object'
+            ? (check as { name?: unknown }).name
+            : null;
+        return typeof name === 'string' && name ? [name] : [];
+      })
+    : [];
   return (
     <>
       {label && url ? (
@@ -81,6 +94,9 @@ function PullRequestActivity({
       ) : null}
       {reason ? (
         <span className='min-w-0 break-words text-foreground'>{reason}</span>
+      ) : null}
+      {failedChecks.length > 0 ? (
+        <span className='min-w-0 break-words'>({failedChecks.join(', ')})</span>
       ) : null}
     </>
   );
@@ -238,7 +254,9 @@ export function ActivityRow({
                       text(activity.details.name) ??
                       t('common.unknown'),
                   })
-                : t(actionLabel(activity.action, activity.details), {
+                : (isOwnerHandoffActivity(activity.action, activity.details)
+                    ? studioT
+                    : t)(actionLabel(activity.action, activity.details), {
                     name: text(activity.details.name) ?? t('common.unknown'),
                   })}
       </span>

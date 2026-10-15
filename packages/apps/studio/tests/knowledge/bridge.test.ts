@@ -169,15 +169,15 @@ describe('a run on an issue', () => {
     );
   });
 
-  it('says nothing of knowledge to an agent not configured to read it', async () => {
+  it('includes knowledge context when the running identity can read, despite absent legacy actions', async () => {
     agentId = await h.createAgent({
       name: 'Plain',
       actions: [OPEN_PR_ACTION, 'pm.issues/view', 'pm.issues/comment'],
     });
     await startWork();
     const payload = await h.claimOne(withMounts);
-    expect(payload.prompt.system).not.toContain('## Knowledge');
-    expect(payload).not.toHaveProperty('mounts');
+    expect(payload.prompt.system).toContain('## Knowledge');
+    expect(payload).toHaveProperty('mounts');
   });
 });
 
@@ -570,7 +570,7 @@ describe('nb-studio kb for a person and a run without the actions', () => {
     });
   });
 
-  it('refuses a run whose agent may not read or propose knowledge', async () => {
+  it('allows absent legacy actions and rejects after the running identity loses knowledge access', async () => {
     agentId = await h.createAgent({
       name: 'Plain',
       actions: [OPEN_PR_ACTION, 'pm.issues/view', 'pm.issues/comment'],
@@ -580,11 +580,12 @@ describe('nb-studio kb for a person and a run without the actions', () => {
     const token = payload.cli.credential.content.token as string;
     expect(
       (await h.manifest({ runToken: token })).commands.map((c) => c.id),
-    ).not.toContain('kb:search');
+    ).toContain('kb:search');
     const search = await h.request('GET', kb('/search?q=commits'), {
       runToken: token,
     });
-    expect(search.status).toBe(403);
+    expect(search.status).toBe(200);
+    h.roles.set('bob', 'none');
     const propose = await h.request('POST', kb('/proposals'), {
       runToken: token,
       body: { doc: 'conventions', verify: true, reason: 'Still true.' },
@@ -592,7 +593,7 @@ describe('nb-studio kb for a person and a run without the actions', () => {
     expect(propose.status).toBe(403);
   });
 
-  it('lets a run that only reads read, and refuses its proposals', async () => {
+  it('does not let a legacy read-only list hide the running identity proposal capability', async () => {
     agentId = await h.createAgent({
       name: 'Reader',
       actions: [OPEN_PR_ACTION, 'pm.issues/view', 'kb.knowledge/read'],
@@ -604,8 +605,8 @@ describe('nb-studio kb for a person and a run without the actions', () => {
       (c) => c.id,
     );
     expect(ids).toContain('kb:read');
-    expect(ids).not.toContain('kb:propose');
-    expect(ids).not.toContain('kb:upload');
+    expect(ids).toContain('kb:propose');
+    expect(ids).toContain('kb:upload');
     expect(
       (await h.request('GET', kb('/docs/conventions'), { runToken: token }))
         .status,
@@ -614,6 +615,6 @@ describe('nb-studio kb for a person and a run without the actions', () => {
       runToken: token,
       body: { title: 'x', reason: 'y' },
     });
-    expect(ticket.status).toBe(403);
+    expect(ticket.status).toBe(201);
   });
 });

@@ -1,6 +1,7 @@
 /**
  * The dashboard page: the headline figures over the period chosen (30 days at first) against the period before, the
- * agents' figures, what needs attention (or one "All clear"), each project, and the header's Refresh.
+ * agents' figures, what needs attention (or one "All clear"), each project, and the header's Refresh. Each panel reads
+ * its own figures and fails on its own.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -8,19 +9,34 @@ import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type {
+  AgentFigures,
+  DashboardAgents,
   DashboardAttention,
-  DashboardFigures,
-  DashboardReport,
+  DashboardDelivery,
+  DashboardProjects,
+  DeliveryFigures,
 } from '../../shared/reports.js';
 
-const report = vi.fn();
+const delivery = vi.fn();
+const agents = vi.fn();
+const projects = vi.fn();
 const attention = vi.fn();
 
-const figures: DashboardFigures = {
+const PERIOD = {
+  days: 30,
+  from: '2026-09-04',
+  to: '2026-10-03',
+  subjects: true,
+} as const;
+
+const deliveryFigures: DeliveryFigures = {
   completed: 4,
   cycleTimeP50Ms: 3_600_000,
   agentShare: 0.5,
   costPerIssue: { USD: 3 },
+};
+
+const agentFigures: AgentFigures = {
   runs: 10,
   successRate: 0.8,
   reworkRate: 0.25,
@@ -29,16 +45,25 @@ const figures: DashboardFigures = {
   queueWaitP50Ms: 2000,
 };
 
-const REPORT: DashboardReport = {
-  days: 30,
-  from: '2026-09-04',
-  to: '2026-10-03',
-  subjects: true,
+const DELIVERY: DashboardDelivery = {
+  ...PERIOD,
   currency: 'USD',
-  current: figures,
-  previous: { ...figures, completed: 2, reworkRate: 0.5 },
-  daily: [],
+  current: deliveryFigures,
+  previous: { ...deliveryFigures, completed: 2 },
   buckets: [],
+};
+
+const AGENTS: DashboardAgents = {
+  ...PERIOD,
+  current: agentFigures,
+  previous: { ...agentFigures, reworkRate: 0.5 },
+  daily: [],
+};
+
+let agentsAnswer: () => Promise<DashboardAgents>;
+
+const PROJECTS: DashboardProjects = {
+  ...PERIOD,
   projects: [
     {
       id: 'p1',
@@ -63,9 +88,17 @@ vi.mock('../../client/pages/dashboard/api.js', async (importOriginal) => ({
     typeof import('../../client/pages/dashboard/api.js')
   >()),
   useDashboardApi: () => ({
-    report: (days: number) => {
-      report(days);
-      return Promise.resolve(REPORT);
+    delivery: (days: number) => {
+      delivery(days);
+      return Promise.resolve(DELIVERY);
+    },
+    agents: (days: number) => {
+      agents(days);
+      return agentsAnswer();
+    },
+    projects: (days: number) => {
+      projects(days);
+      return Promise.resolve(PROJECTS);
     },
     attention: () => {
       attention();
@@ -93,8 +126,9 @@ function renderDashboard(): void {
 
 describe('the dashboard page', () => {
   beforeEach(() => {
-    report.mockClear();
-    attention.mockClear();
+    for (const read of [delivery, agents, projects, attention])
+      read.mockClear();
+    agentsAnswer = () => Promise.resolve(AGENTS);
     attentionData = {
       subjects: true,
       blocked: {
@@ -139,7 +173,8 @@ describe('the dashboard page', () => {
     expect(
       await screen.findByText('dashboard.figures.completed.label'),
     ).toBeVisible();
-    expect(report).toHaveBeenCalledWith(30);
+    for (const read of [delivery, agents, projects])
+      expect(read).toHaveBeenCalledWith(30);
     // Issues completed doubled; rework fell by 25 points, which is good news.
     expect(screen.getByText('+100%')).toBeVisible();
     expect(screen.getByText('dashboard.points')).toBeVisible();
@@ -193,12 +228,25 @@ describe('the dashboard page', () => {
     );
   });
 
+  it('shows a failed panel on its own while the others show their figures', async () => {
+    agentsAnswer = () => Promise.reject(new Error('Agents failed'));
+    renderDashboard();
+    expect(
+      await screen.findByText('dashboard.figures.completed.label'),
+    ).toBeVisible();
+    expect(await screen.findByRole('link', { name: 'Shop' })).toBeVisible();
+    // The agents' panel offers its own retry.
+    expect(
+      await screen.findByRole('button', { name: 'common.retry' }),
+    ).toBeVisible();
+  });
+
   it('reads every block again on Refresh', async () => {
     renderDashboard();
     await screen.findByText('dashboard.figures.completed.label');
     await waitFor(() => expect(attention).toHaveBeenCalledTimes(1));
     fireEvent.click(screen.getByRole('button', { name: 'actions.refresh' }));
-    await waitFor(() => expect(report).toHaveBeenCalledTimes(2));
-    expect(attention).toHaveBeenCalledTimes(2);
+    for (const read of [delivery, agents, projects, attention])
+      await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
   });
 });

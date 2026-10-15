@@ -32,6 +32,19 @@ export interface CatalogModel {
 
 /** The models the catalog names. OpenCode and Pi list them as `provider/<id>` and are matched by `<id>`. */
 export const MODEL_CATALOG: readonly CatalogModel[] = [
+  ...[
+    ['claude-opus-4-6', 'Opus 4.6'],
+    ['claude-sonnet-4-6', 'Sonnet 4.6'],
+    ['gpt-5.5', 'GPT-5.5'],
+    ['gpt-4', 'GPT-4'],
+    ['o1', 'o1'],
+    ['gpt-4o', 'GPT-4o'],
+    ['gpt-4o-2024-05-13', 'GPT-4o (2024-05-13)'],
+  ].map(([id, label]) => ({
+    id: id,
+    label: label,
+    goodAt: { en: '', zh: '' },
+  })),
   {
     id: 'claude-opus-5-5',
     label: 'Opus 5.5',
@@ -164,4 +177,9 @@ export function agentNameOf(tool: AgentTool, model: string): string {
 /** Whether two ids of one tool's model name the same model. */
 export function sameModel(tool: AgentTool, a: string, b: string): boolean {
   return normalizeModel(tool, a) === normalizeModel(tool, b);
+}
+
+/** Display identity only. Unknown models retain their provider; execution identity never changes. */
+export function discoveryKey(tool: AgentTool, model: string): string {
+  return `${tool}:${catalogEntry(tool, model)?.id ?? model}`;
 }

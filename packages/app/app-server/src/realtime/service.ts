@@ -202,7 +202,10 @@ export function createRealtimeService(
 
     defineTopic<Payload, Audience extends RealtimeTopicAudience>(
       topic: string,
-      topicDefinition: { readonly audience: Audience },
+      topicDefinition: {
+        readonly audience: Audience;
+        readonly authenticated?: boolean;
+      },
     ): DefinedRealtimeTopic<Payload, Audience> {
       const close = service.registerTopic(topic, topicDefinition);
       const definedTopic =
@@ -230,6 +233,7 @@ export function createRealtimeService(
     publish(topic, payload, options = {}) {
       validateRealtimeTopic(topic);
       const audience = topicOptions.get(topic)?.audience ?? 'public';
+      const authenticated = requiresAuthentication(topic);
       if (audience === 'user' && !options.userId) {
         throw new RealtimeProtocolError(
           'USER_AUDIENCE_REQUIRED',
@@ -268,6 +272,7 @@ export function createRealtimeService(
           !subscription ||
           !connection ||
           (audience === 'user' && subscription.userId !== options.userId) ||
+          (authenticated && !connection.principal?.userId) ||
           sentConnections.has(connection.id)
         ) {
           continue;
@@ -390,7 +395,7 @@ export function createRealtimeService(
     connection: RealtimeConnection,
     topic: string,
   ): string | undefined {
-    if ((topicOptions.get(topic)?.audience ?? 'public') !== 'user') {
+    if (!requiresAuthentication(topic)) {
       return undefined;
     }
 
@@ -402,6 +407,14 @@ export function createRealtimeService(
       );
     }
     return userId;
+  }
+
+  /** User topics, and public topics registered with `authenticated`, reach only connections with a principal. */
+  function requiresAuthentication(topic: string): boolean {
+    const definition = topicOptions.get(topic);
+    return (
+      definition?.audience === 'user' || definition?.authenticated === true
+    );
   }
 
   function removeSubscription(

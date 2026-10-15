@@ -72,7 +72,8 @@ import { z } from 'zod';
  * without it still gets the credentials in its payload. The number moved so that a runner announcing
  * `gitCredentials` is refused cleanly by a server that does not know it; update the application first.
  */
-export const PROTOCOL_VERSION = 9;
+/** Version 11 adds runnerUpgrade reports, which older servers cannot parse; version 10 added workspace.key. */
+export const PROTOCOL_VERSION = 11;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;
@@ -89,6 +90,7 @@ export function isProtocolSupported(version: number): boolean {
 /**
  * What a runner can do beyond the baseline (claim, lease, events, complete/fail).
  *
+ * - `workspaceKey`: honors the separately named work directory in `RunWorkspace.key`.
  * - `input`: accepts input while a run is running (`status.inputs`, and the `handledInputIds` fence on complete).
  * - `steer`: injects input into the running turn instead of waiting for a turn boundary.
  * - `attachments`: the agent can upload files through the CLI.
@@ -106,6 +108,7 @@ export function isProtocolSupported(version: number): boolean {
  *   `RUNNER_ROUTES.gitCredential`), instead of keeping the one the claim handed out for the whole run.
  */
 export const RUNNER_FEATURES = [
+  'workspaceKey',
   'input',
   'steer',
   'attachments',

@@ -141,6 +141,12 @@ describe('a runner at a glance', () => {
   });
 
   it('is busy while every slot is taken', () => {
+    expect(runnerActivity(runner('r1', { draining: 'updatePending' }))).toBe(
+      'updatePending',
+    );
+    expect(runnerActivity(runner('r1', { draining: 'pruning' }))).toBe(
+      'pruning',
+    );
     expect(runnerActivity(runner('r1'))).toBe('online');
     expect(runnerActivity(runner('r1', { activeJobs: 1 }))).toBe('busy');
     expect(
@@ -149,6 +155,22 @@ describe('a runner at a glance', () => {
     expect(
       runnerActivity(runner('r1', { status: 'offline', activeRuns: 1 })),
     ).toBe('offline');
+  });
+
+  it('shows low disk capacity before slot availability without changing offline state', () => {
+    const low = runner('r1', {
+      activeRuns: 1,
+      workspaceUsage: {
+        disk: { freeBytes: 1, totalBytes: 100, minFreeBytes: 20 },
+        count: 0,
+        unpushedCount: 0,
+        measuredAt: null,
+        workspaces: [],
+      },
+    });
+    expect(runnerActivity(low)).toBe('low_disk');
+    expect(runnerActivity({ ...low, status: 'offline' })).toBe('offline');
+    expect(runnerActivity({ ...low, workspaceUsage: null })).toBe('busy');
   });
 
   it('takes an agent its tool and model, and its owner’s policy, allow', () => {

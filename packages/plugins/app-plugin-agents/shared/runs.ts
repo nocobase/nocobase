@@ -29,6 +29,13 @@ export interface RunEffortReport {
 }
 
 export interface RunExecutionSnapshot {
+  readonly selection?: {
+    readonly reason: 'preferredQueued' | 'preferredUnavailable';
+    readonly preferredTool: string;
+    readonly preferredModel: string | null;
+    readonly queueEnteredAt: string;
+    readonly waitedSeconds: number;
+  };
   readonly attempt: number;
   readonly runnerId: string;
   readonly runnerName: string | null;
@@ -55,6 +62,46 @@ export interface RunExecutionSnapshot {
   readonly dispatchedAt: string;
   readonly finishedAt: string | null;
   readonly failureReason: string | null;
+}
+
+export type ModelWaitReason =
+  | 'updatePending'
+  | 'pruning'
+  | 'ready'
+  | 'busy'
+  | 'incompatible'
+  | 'offline'
+  | 'restricted'
+  | 'noSharedRunner'
+  | 'toolNotInstalled'
+  | 'toolUnavailable'
+  | 'unknown'
+  | 'concurrencyFull'
+  | 'sameWorkActive'
+  | 'delayed';
+export interface ModelSelectionWait {
+  readonly queueEnteredAt: string;
+  readonly fallbackAfterSeconds: number;
+  readonly sampledAt: string;
+  readonly entries: readonly {
+    readonly tool: string;
+    readonly model: string | null;
+    readonly reason: ModelWaitReason;
+    readonly compatibleCount: number;
+    readonly blockers?: readonly ModelWaitReason[];
+    readonly runners: readonly {
+      readonly name: string;
+      readonly reason?: ModelWaitReason;
+      readonly lastSeenAt?: string | null;
+      readonly ownerUserId: string | null;
+      readonly used?: number;
+      readonly limit?: number;
+      readonly toolUsed?: number;
+      readonly toolLimit?: number;
+      readonly reportedFree?: number;
+      readonly reportedTotalFree?: number;
+    }[];
+  }[];
 }
 
 export interface Run {
@@ -101,6 +148,10 @@ export interface Run {
   /** The run was asked to start a new session; absent on older servers. */
   readonly freshSession?: boolean;
   /** The person the run acts as: their permissions bound it, and only their own runners (or team runners) take it. */
+  /** Server-managed authorization for runs caused by one comment, never independent events. */
+  readonly commentRootRunId?: string | null;
+  readonly commentExecution?: 'owner' | 'requester' | null;
+  readonly commentOwnerKey?: string | null;
   readonly actorUserId: string;
   /**
    * Who the chain of work the run belongs to started with: the person whose action woke the agent, or for work a run
@@ -113,6 +164,8 @@ export interface Run {
   readonly requires: readonly RunnerFeature[];
   readonly acceptsInput: boolean;
   readonly availableAt: string | null;
+  /** Start of this queue episode; older servers may omit it. */
+  readonly queueEnteredAt?: string | null;
   readonly leaseExpiresAt: string | null;
   readonly dispatchedAt: string | null;
   readonly startedAt: string | null;
@@ -184,6 +237,7 @@ export interface RunChild {
 }
 
 export interface RunDetail extends Run {
+  readonly confirmedByName?: string;
   readonly actorName?: string;
   readonly requestedByName?: string;
   /** The first run that retried this one; absent on older servers. */
@@ -225,7 +279,13 @@ export interface RunEventPage {
  * - `next`: nothing holds it; the next free runner that asks takes it.
  */
 export const RUN_WAIT_REASONS = [
+  'updatePending',
+  'pruning',
   'agentArchived',
+  'incompatible',
+  'toolNotInstalled',
+  'restricted',
+  'unknown',
   'delayed',
   'noRunnerOnline',
   'runnersOffline',
@@ -383,6 +443,11 @@ export interface RunRequestInput {
  * runs only once the responsible confirms it, as them, or when the person who asked runs it as themselves.
  */
 export interface RunRequest {
+  /** Personal runner consent releases an existing comment chain instead of creating another run. */
+  readonly purpose?: 'personalRunner' | null;
+  readonly commentRunId?: string | null;
+  readonly commentRootRunId?: string | null;
+  readonly commentOwnerKey?: string | null;
   readonly id: string;
   readonly agentId: string;
   readonly subject: { readonly kind: string; readonly id: string };

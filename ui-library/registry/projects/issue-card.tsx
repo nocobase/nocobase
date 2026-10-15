@@ -240,7 +240,12 @@ function Labels({
   return (
     <span className={cn('flex min-w-0 flex-wrap gap-1', className)}>
       {labels.slice(0, 3).map((label) => (
-        <Badge key={label.id} variant='outline' className='font-normal'>
+        <Badge
+          data-size='sm'
+          key={label.id}
+          variant='outline'
+          className='font-normal'
+        >
           <span
             aria-hidden
             className={cn('size-1.5 rounded-full', LABEL_DOT[label.color])}
@@ -378,7 +383,9 @@ export function IssueCard({
             </span>
           ) : null}
           {identifier}
-          {issue.status ? <IssueStatusBadge status={issue.status} /> : null}
+          {issue.status ? (
+            <IssueStatusBadge status={issue.status} size='sm' />
+          ) : null}
           <span className='ml-auto flex shrink-0 items-center gap-1.5'>
             <Priority priority={issue.priority} labels={labels} />
             {trailing ? <span className={above}>{trailing}</span> : null}
@@ -446,7 +453,11 @@ export function IssueCard({
         className='shrink-0 flex-nowrap max-md:hidden'
       />
       {issue.status ? (
-        <IssueStatusBadge status={issue.status} className='shrink-0' />
+        <IssueStatusBadge
+          status={issue.status}
+          size='sm'
+          className='shrink-0'
+        />
       ) : null}
       <Priority priority={issue.priority} labels={labels} />
       {issue.dueDate ? (

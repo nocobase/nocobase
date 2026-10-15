@@ -72,6 +72,9 @@ async function move(issue: Pick<Issue, 'id'>, statusKey: string) {
   return h.projects.issues.update(alice(), issue.id, {
     revision: current.revision,
     statusKey,
+    ...(statusKey === 'in_review'
+      ? { needsYou: 'Please review this change.' }
+      : {}),
   });
 }
 
@@ -698,6 +701,7 @@ describe('webhook events', () => {
       },
       {
         kind: 'check',
+        executionId: expect.any(String),
         name: 'build',
         status: 'completed',
         conclusion: 'success',
@@ -738,30 +742,34 @@ describe('webhook events', () => {
     ).toMatchObject({ ignored: true, reason: 'notLinked' });
   });
 
-  it('check events fall back on what the delivery says when GitHub cannot be read', async () => {
-    const row = await repo();
-    const issue = await issueIn('in_review');
-    h.github.addPull(REPO, { number: 5, head: { ref: 'x', sha: 'e1' } });
-    await h.git.link(alice(), issue.id, PR_URL(5), {
-      type: 'user',
-      id: 'alice',
-    });
-    h.github.tokens.clear();
-    h.github.tokens.add('another-token');
-    await deliver(row, 'check_suite', {
-      action: 'completed',
-      repository: { full_name: REPO },
-      check_suite: {
-        head_sha: 'e1',
-        status: 'completed',
-        conclusion: 'failure',
-        latest_check_runs_count: 2,
-      },
-    });
-    expect((await h.git.list(alice(), issue.id)).data[0]?.ciState).toBe(
-      'failure',
-    );
-  });
+  it.each(['success', 'failure'])(
+    'does not infer a full %s check snapshot from a webhook when GitHub cannot be read',
+    async (conclusion) => {
+      const row = await repo();
+      const issue = await issueIn('in_review');
+      h.github.addPull(REPO, { number: 5, head: { ref: 'x', sha: 'e1' } });
+      await h.git.link(alice(), issue.id, PR_URL(5), {
+        type: 'user',
+        id: 'alice',
+      });
+      const before = (await h.git.list(alice(), issue.id)).data[0]?.ciState;
+      h.github.tokens.clear();
+      h.github.tokens.add('another-token');
+      await deliver(row, 'check_suite', {
+        action: 'completed',
+        repository: { full_name: REPO },
+        check_suite: {
+          head_sha: 'e1',
+          status: 'completed',
+          conclusion,
+          latest_check_runs_count: 2,
+        },
+      });
+      expect((await h.git.list(alice(), issue.id)).data[0]?.ciState).toBe(
+        before,
+      );
+    },
+  );
 
   it('tells pushes and workflow runs to the repository’s listeners', async () => {
     const row = await repo();
@@ -976,6 +984,25 @@ describe('repository settings', () => {
     });
     expect(saved.branchRules).toEqual(['feat/{key}', 'agent/{key}']);
     expect(saved.connection).toMatchObject({ name: 'GitHub', kind: 'token' });
+  });
+
+  it('keeps reference checks per repository, by name', async () => {
+    const workdir = await resource();
+    expect(
+      (await h.git.repoSettings(alice(), workdir.id)).referenceChecks,
+    ).toEqual([]);
+    await expect(
+      h.git.updateRepoSettings(alice(), workdir.id, {
+        referenceChecks: ['Preview', ' '],
+      }),
+    ).rejects.toMatchObject({ details: { code: 'INVALID_REFERENCE_CHECKS' } });
+    const saved = await h.git.updateRepoSettings(alice(), workdir.id, {
+      referenceChecks: [' Preview ', 'Studio preview', 'Preview'],
+    });
+    expect(saved.referenceChecks).toEqual(['Preview', 'Studio preview']);
+    expect(
+      (await h.git.repoSettings(alice(), workdir.id)).referenceChecks,
+    ).toEqual(['Preview', 'Studio preview']);
   });
 
   it('keeps the webhook secret write-only, and shows where GitHub posts and what it last sent', async () => {

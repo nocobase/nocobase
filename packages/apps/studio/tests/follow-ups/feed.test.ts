@@ -1,7 +1,7 @@
 // @vitest-environment node
 /**
- * "My follow-ups" tells an issue's activity by what it means (`client/follow-ups/feed.ts`) and works out what the page
- * lists and asks (`client/follow-ups/model.ts`).
+ * An issue's activity told by what it means (`client/issues/live/feed.ts`), what "My follow-ups" lists
+ * (`client/follow-ups/model.ts`) and what an issue asks of the viewer (`client/issues/live/summary-model.ts`).
  */
 import type { CommentThread } from '@nocobase/app-plugin-projects/client/issues';
 import type { Activity } from '@nocobase/app-plugin-projects/shared/issues';
@@ -12,15 +12,13 @@ import {
   firstLine,
   mentionedAgents,
   reviewVerdict,
-} from '../../client/follow-ups/feed.js';
+} from '../../client/issues/live/feed.js';
+import { followedIssues, ownedRows } from '../../client/follow-ups/model.js';
 import {
   askOf,
-  followedIssues,
   nowLine,
-  ownedRows,
   pullRequestLabel,
-  toggledFollowing,
-} from '../../client/follow-ups/model.js';
+} from '../../client/issues/live/summary-model.js';
 import type { FollowUpIssue, FollowUpsView } from '../../shared/follow-ups.js';
 import type { IssuePullRequest } from '../../shared/git.js';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
@@ -290,10 +288,10 @@ describe('what the page lists', () => {
     const mark = { label: 'nocobase/nocobase#10662', state: 'open' } as const;
     expect(pullRequestLabel(mark)).toBe('PR #10662');
     expect(askOf(t, issue({ statusKey: 'in_review' }), mark)).toBe(
-      'followUps.mine.acceptPullRequest {"label":"PR #10662"}',
+      'issueLive.ask.legacy',
     );
     expect(askOf(t, issue({ statusKey: 'in_review' }), null)).toBe(
-      'followUps.mine.acceptIssue',
+      'issueLive.ask.legacy',
     );
     const progress = {
       state: 'needsDecision' as const,
@@ -302,12 +300,13 @@ describe('what the page lists', () => {
       since: null,
       runner: null,
       pullRequest: null,
-      question: 'Push again?',
+      needsYou: 'Push again?',
+      explanationCommentId: null,
       next: null,
       handOver: false,
     };
     expect(askOf(t, issue({ statusKey: 'blocked', progress }), null)).toBe(
-      'followUps.mine.answer {"question":"Push again?"}',
+      'Push again?',
     );
     expect(
       askOf(t, issue({ statusKey: 'blocked', owned: false, progress }), null),
@@ -315,15 +314,9 @@ describe('what the page lists', () => {
     expect(
       nowLine(t, issue({ statusKey: 'blocked', owned: false, progress }), null),
     ).toEqual({
-      text: 'issueProgress.needsDecision {"question":"Push again?"}',
+      text: 'issueProgress.needsDecisionNoQuestion',
       needsViewer: false,
     });
     expect(nowLine(t, issue({ statusKey: 'backlog' }), null)).toBeNull();
-  });
-
-  it('follows at most the limit and unfollows', () => {
-    expect(toggledFollowing(['a'], 'b', 2)).toEqual(['a', 'b']);
-    expect(toggledFollowing(['a', 'b'], 'c', 2)).toEqual(['a', 'b']);
-    expect(toggledFollowing(['a', 'b'], 'a', 2)).toEqual(['b']);
   });
 });

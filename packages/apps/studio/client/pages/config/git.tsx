@@ -14,7 +14,10 @@
  * where they are entered. Without a connection nothing about git shows elsewhere.
  */
 import { useCan } from '@nocobase/app-plugin-authorization/client';
-import { SettingsPageHeader } from '@nocobase/app-plugin-projects/client/kit';
+import {
+  PmLoadError,
+  SettingsPageHeader,
+} from '@nocobase/app-plugin-projects/client/kit';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -230,6 +233,14 @@ export default function GitSettingsPage(): ReactElement {
 
   let content: ReactNode;
   if (query.isPending) content = <Spinner />;
+  else if (query.isError)
+    content = (
+      <PmLoadError
+        title={t('studioGit.connections.loadFailed')}
+        error={query.error}
+        onRetry={() => void query.refetch()}
+      />
+    );
   else if (sources.length === 0)
     content = (
       <Empty className='min-h-48 border border-dashed'>
@@ -269,7 +280,7 @@ export default function GitSettingsPage(): ReactElement {
         title={t('studioGit.connections.title')}
         description={t('studioGit.connections.description')}
         readOnly={!canManage}
-        actions={sources.length > 0 ? addMenu('end') : null}
+        actions={!query.isError && sources.length > 0 ? addMenu('end') : null}
       />
       {content}
       <GitConnectionDialog

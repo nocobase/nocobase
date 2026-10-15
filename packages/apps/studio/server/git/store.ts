@@ -98,6 +98,8 @@ export interface RepoRow {
   readonly wakeOnChecks: boolean;
   readonly wakeOnChecksPassed: boolean;
   readonly wakeOnConflict: boolean;
+  /** Check names only for information (`CheckSummary`). */
+  readonly referenceChecks: readonly string[];
   readonly listEtag: string | null;
   readonly polledAt: string | null;
   readonly pollError: string | null;
@@ -144,6 +146,13 @@ function rulesOf(value: unknown): string[] {
   return rules.length > 0 ? rules : [DEFAULT_BRANCH_RULE];
 }
 
+function namesOf(value: unknown): string[] {
+  const parsed = json(value);
+  return Array.isArray(parsed)
+    ? parsed.filter((name): name is string => typeof name === 'string')
+    : [];
+}
+
 function repoOf(row: Row): RepoRow {
   return {
     id: str(row.id) ?? '',
@@ -156,6 +165,7 @@ function repoOf(row: Row): RepoRow {
     wakeOnChecks: bool(row.wakeOnChecks),
     wakeOnChecksPassed: bool(row.wakeOnChecksPassed),
     wakeOnConflict: bool(row.wakeOnConflict),
+    referenceChecks: namesOf(row.referenceChecks),
     listEtag: str(row.listEtag),
     polledAt: iso(row.polledAt),
     pollError: str(row.pollError),
@@ -215,6 +225,7 @@ export async function ensureRepo(
           wakeOnChecks: true,
           wakeOnChecksPassed: true,
           wakeOnConflict: true,
+          referenceChecks: null,
           listEtag: null,
           polledAt: null,
           pollError: null,
@@ -246,6 +257,9 @@ export async function updateRepo(
       ...values,
       ...(values.branchRules !== undefined
         ? { branchRules: JSON.stringify(values.branchRules) }
+        : {}),
+      ...(values.referenceChecks !== undefined
+        ? { referenceChecks: JSON.stringify(values.referenceChecks) }
         : {}),
       updatedAt: new Date(),
     })
@@ -306,10 +320,12 @@ export async function reposToPoll(
 // --- Pull requests -------------------------------------------------------------------------------------------------
 
 export interface SignalState {
-  /** `<kind>@<headSha>` of the signal last reported. */
+  /** Kind, head and exact conclusion identity. */
   readonly key: string;
-  /** How many heads in a row it was reported for. */
+  /** Consecutive failure conclusions; per-issue delivery budgets live in `counts`. */
   readonly count: number;
+  readonly delivered?: Readonly<Record<string, string>>;
+  readonly counts?: Readonly<Record<string, number>>;
 }
 
 export type Signals = Readonly<
@@ -858,6 +874,20 @@ export async function linksOfPullRequest(
     .where('pullRequestId', '=', pullRequestId)
     .execute();
   return rows.map((row) => linkOf(row));
+}
+
+/** The issues linked to any of the pull requests. */
+export async function issuesOfPullRequests(
+  conn: DatabaseConnection,
+  pullRequestIds: readonly string[],
+): Promise<string[]> {
+  if (pullRequestIds.length === 0) return [];
+  const rows = await conn.query
+    .selectFrom(LINKS)
+    .select('issueId')
+    .where('pullRequestId', 'in', [...new Set(pullRequestIds)])
+    .execute();
+  return [...new Set(rows.map((row) => String(row.issueId)))];
 }
 
 /** An issue's links with their pull requests, oldest link first. */

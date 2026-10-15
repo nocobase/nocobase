@@ -38,9 +38,20 @@ export default function DashboardPage(): ReactElement {
   const { t } = useTranslation();
   const [days, setDays] = useState<DashboardPeriod>(30);
   const api = useDashboardApi();
-  const report = useQuery({
-    queryKey: dashboardKeys.report(days),
-    queryFn: () => api.report(days),
+  // Each panel reads its own figures, so a slow or failed one holds up none of the others.
+  const delivery = useQuery({
+    queryKey: dashboardKeys.delivery(days),
+    queryFn: () => api.delivery(days),
+    placeholderData: keepPreviousData,
+  });
+  const agents = useQuery({
+    queryKey: dashboardKeys.agents(days),
+    queryFn: () => api.agents(days),
+    placeholderData: keepPreviousData,
+  });
+  const projects = useQuery({
+    queryKey: dashboardKeys.projects(days),
+    queryFn: () => api.projects(days),
     placeholderData: keepPreviousData,
   });
   const attention = useQuery({
@@ -81,10 +92,10 @@ export default function DashboardPage(): ReactElement {
         }
       />
       <div className='flex flex-col gap-8'>
-        <HeadlineFigures report={report} />
-        <AgentPerformance report={report} />
+        <HeadlineFigures report={delivery} />
+        <AgentPerformance report={agents} />
         <NeedsAttention attention={attention} />
-        <ByProject report={report} />
+        <ByProject report={projects} />
       </div>
     </PageContainer>
   );

@@ -117,7 +117,11 @@ export interface ExecResult {
   stdout: string;
 }
 
-export type ExecFn = (file: string, args: string[]) => Promise<ExecResult>;
+export type ExecFn = (
+  file: string,
+  args: string[],
+  options?: { signal?: AbortSignal },
+) => Promise<ExecResult>;
 
 export interface OpencodeAdapterOptions {
   /** PATH searched for `opencode`; defaults to the PATH of `env`. */
@@ -211,13 +215,13 @@ export class OpencodeAdapter implements AgentAdapter {
     return ['steer'];
   }
 
-  detect(): Promise<ToolDetection> {
-    this.detection ??= this.runDetection();
+  detect(signal?: AbortSignal): Promise<ToolDetection> {
+    this.detection ??= this.runDetection(signal);
     return this.detection;
   }
 
   async detectModels(signal: AbortSignal): Promise<ToolCapabilities> {
-    const detection = await this.detect();
+    const detection = await this.detect(signal);
     if (!detection.path) return { modelsDetectionStatus: 'unsupported' };
     const binary = detection.path;
     return withDetectionEnvironment(
@@ -268,14 +272,14 @@ export class OpencodeAdapter implements AgentAdapter {
     );
   }
 
-  private async runDetection(): Promise<ToolDetection> {
+  private async runDetection(signal?: AbortSignal): Promise<ToolDetection> {
     const { searchPath, home } = this;
     const fallbacks =
       this.fallbackPaths ??
       (home ? [path.join(home, '.opencode', 'bin', 'opencode')] : []);
     const found = await findOpencode(searchPath, fallbacks);
     if (!found) return { installed: false, authenticated: false };
-    const v = await this.exec(found, ['--version']);
+    const v = await this.exec(found, ['--version'], { signal });
     const version = v.code === 0 ? parseVersion(v.stdout) : undefined;
     // 1.x serves a different API; treat it as not installed for this adapter.
     const installed = Boolean(
@@ -283,7 +287,7 @@ export class OpencodeAdapter implements AgentAdapter {
     );
     let authenticated = false;
     if (installed) {
-      const auth = await this.exec(found, ['auth', 'list']);
+      const auth = await this.exec(found, ['auth', 'list'], { signal });
       authenticated = auth.code === 0 && hasCredentials(auth.stdout);
     }
     return {

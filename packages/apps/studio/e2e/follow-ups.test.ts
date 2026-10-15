@@ -1,30 +1,54 @@
-import { expect, open, test, unique } from './support/fixtures.ts';
+import { expect, open, test, unique, signIn } from './support/fixtures.ts';
 import type { Issue } from './support/runner.ts';
+
+// Following preferences belong to the account, so parallel files need separate Studios.
+test.use({ user: 'admin', isolatedStudio: true });
 
 test.describe('my follow-ups', () => {
   test('lists what the viewer owns, shows an issue’s activity and keeps what they follow', async ({
     page,
     api,
+    context,
+    studio,
   }) => {
-    const me = await api.get<{ userId: string }>('projects/me');
     const suffix = unique();
+    const owner = {
+      email: `follow-ups-${suffix}@example.com`,
+      password: 'isolated-follow-ups-password',
+    };
+    await api.post('users', {
+      ...owner,
+      name: 'Follow-ups test owner',
+      roleScopes: { studio: ['admin'] },
+    });
+    await signIn(context, owner, studio);
+    const me = await api.get<{ userId: string }>('projects/me');
+    const needsYou =
+      'Please review the completed work. Confirm the acceptance decision.';
+    const next = 'Apply the owner’s review feedback after acceptance.';
     const review = await api.post<Issue>('projects/issues', {
       title: `待验收的跟进 ${suffix}`,
       ownerUserId: me.userId,
+      start: false,
     });
-    await api.patch(`projects/issues/${review.id}`, { statusKey: 'in_review' });
+    await api.patch(`projects/issues/${review.id}`, {
+      statusKey: 'in_review',
+      needsYou,
+      next,
+    });
     await api.post(`projects/issues/${review.id}/comments`, {
       content: '改动已完成，请验收。',
     });
     await api.put('followUps/following', { issueIds: [] });
 
     await open(page, '/follow-ups');
-    // The menu entry sits right above My issues.
+    // Follow-ups follows the default landing navigation, including My tasks' live count.
     const menu = page.getByRole('navigation', { name: '应用导航' });
-    const entries = await menu.getByRole('link').allInnerTexts();
-    const position = entries.findIndex((text) => text.includes('我的跟进'));
-    expect(position).toBeGreaterThanOrEqual(0);
-    expect(entries[position + 1]).toContain('我的任务');
+    const entries = menu.getByRole('link');
+    await expect(entries.nth(0)).toHaveAccessibleName(/^我的任务(?:，.*)?$/u);
+    await expect(entries.nth(1)).toHaveAccessibleName('我的 Agent');
+    await expect(entries.nth(2)).toHaveAccessibleName('仪表盘');
+    await expect(entries.nth(3)).toHaveAccessibleName('我的跟进');
     await expect(
       page.getByRole('heading', { name: '我的跟进', level: 1 }),
     ).toBeVisible();
@@ -32,15 +56,21 @@ test.describe('my follow-ups', () => {
     const mine = page.getByTestId('follow-ups-mine');
     await mine.getByRole('searchbox').fill(suffix);
     const row = mine.locator(`li[data-issue="${review.identifier}"]`);
-    await expect(row).toContainText('验收结果');
+    await expect(row).toContainText(needsYou);
     await row.getByText(review.title).click();
 
     const activity = page.getByTestId('follow-ups-activity');
     await expect(
       activity.getByRole('heading', { name: review.title }),
     ).toBeVisible();
-    await expect(activity.getByTestId('follow-ups-needs-you')).toBeVisible();
-    await expect(activity.getByTestId('follow-ups-feed')).toContainText(
+    await expect(activity.getByTestId('issue-needs-you')).toContainText(
+      needsYou,
+    );
+    await expect(activity.getByTestId('issue-summary')).toContainText(next);
+    await expect(activity.getByTestId('issue-summary')).not.toContainText(
+      '改动已完成，请验收。',
+    );
+    await expect(activity.getByTestId('issue-feed')).toContainText(
       '改动已完成，请验收。',
     );
     await expect(page.getByTestId('follow-ups-following')).toContainText(
@@ -61,5 +91,12 @@ test.describe('my follow-ups', () => {
         .getByTestId('follow-ups-following')
         .locator(`[data-issue="${review.identifier}"]`),
     ).toBeVisible();
+    await expect(
+      rail.locator(`[data-issue="${review.identifier}"]`),
+    ).toContainText(needsYou);
+    await expect(activity.getByTestId('issue-needs-you')).toContainText(
+      needsYou,
+    );
+    await expect(activity.getByTestId('issue-summary')).toContainText(next);
   });
 });

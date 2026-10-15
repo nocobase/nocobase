@@ -4,7 +4,7 @@
  *
  * - **Knowledge**: the top-level documents of the run's project and of the system (title, slug, summary, how many
  *   below), and where the full text is: the mounted `.nocobase-runner/knowledge/` for a runner that places mounts,
- *   otherwise `nb-studio kb read`. Only for an agent configured to read knowledge, for someone who may.
+ *   otherwise `nb-studio kb read`. Only when the running identity may read knowledge.
  * - **User manual**: while the issue is being worked on (a status of the `started` category), when the agent
  *   may propose and the system space has the manual (`manual` and its pages), the agent checks the pages its change
  *   affects, proposes updates or confirms them (`--verify`), and ends its delivery comment with the manual line. The
@@ -38,7 +38,6 @@ import {
 import type { PermissionSource } from '../agents/commands/permissions.js';
 import { AGENT_KIND } from '../agents/tx.js';
 import type { KnowledgeLevels } from './access.js';
-import { KNOWLEDGE_PROPOSE, KNOWLEDGE_READ } from './actions.js';
 import type { ConversationKnowledgeOf } from './conversation.js';
 import { KNOWLEDGE_TARGET } from './mount.js';
 
@@ -119,20 +118,17 @@ export function prepareKnowledge(
 
 /** Whether the run's agent may read, and propose, knowledge for the person who woke it. */
 export function rightsOf(
-  claim: Pick<ClaimContext, 'agent'>,
+  claim: Pick<ClaimContext, 'agent'> & Partial<Pick<ClaimContext, 'run'>>,
   prepared: PreparedKnowledge | undefined,
 ): { read: boolean; propose: boolean } {
-  const actions = new Set(claim.agent.actions);
-  const read =
-    Boolean(prepared) &&
-    prepared!.levels.read !== 'none' &&
-    actions.has(KNOWLEDGE_READ);
+  const read = Boolean(prepared) && prepared!.levels.read !== 'none';
   return {
     read,
     propose:
       read &&
-      prepared!.levels.propose !== 'none' &&
-      actions.has(KNOWLEDGE_PROPOSE),
+      !claim.run?.parentRunId &&
+      claim.run?.subject.kind !== 'intake' &&
+      prepared!.levels.propose !== 'none',
   };
 }
 

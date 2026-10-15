@@ -39,6 +39,8 @@ const chatEnUS = {
       runCancelled: 'Stopped.',
     },
     consultation: {
+      unavailableTitle: 'Consulted agent unavailable',
+      snapshotTitle: 'Requested {{name}} at the time',
       title: 'Consulted {{name}}',
     },
     steps: {

@@ -33,7 +33,7 @@ import { AppBrand } from './app-brand.js';
 
 /**
  * The shell's sidebar state: shadcn's provider, with the desktop icon mode kept in the shared sidebar preference
- * (`use-sidebar-preference.ts`) so every layout on this origin opens it the same way. Whether the phone's sheet is
+ * (`use-sidebar-preference.ts`) so every layout of this application opens it the same way. Whether the phone's sheet is
  * open stays local to the layout.
  */
 export function AppSidebarProvider({
@@ -48,11 +48,11 @@ export function AppSidebarProvider({
       open={!collapsed}
       onOpenChange={(open) => setCollapsed(!open)}
       className='h-svh bg-background'
-      // Give expanded navigation more breathing room while retaining density-aware sizing
-      // and the existing compact icon rail (the provider's documented width override).
+      // shadcn's 16rem in spacing units, so a density preset that changes the unit scales the sidebar together with
+      // the items inside it (the provider's documented width override).
       style={
         {
-          '--sidebar-width': 'calc(var(--spacing) * 75)',
+          '--sidebar-width': 'calc(var(--spacing) * 64)',
           '--sidebar-width-icon': 'calc(var(--spacing) * 12)',
         } as CSSProperties
       }
@@ -102,7 +102,7 @@ export function AppSidebar({
   }, [isMobile, openMobile, setOpenMobile]);
 
   const header = (
-    <SidebarHeader className='h-16 shrink-0 flex-row items-center justify-between border-b border-sidebar-border/70 px-5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0'>
+    <SidebarHeader className='h-16 shrink-0 flex-row items-center justify-between border-b border-sidebar-border px-5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0'>
       <AppBrand compact={state === 'collapsed' && !isMobile} />
       {isMobile ? (
         <Button
@@ -123,7 +123,7 @@ export function AppSidebar({
     <>
       {header}
       {/* The primitive hides the icon mode's overflow; a long menu still scrolls there. */}
-      <SidebarContent className='app-navigation group-data-[collapsible=icon]:overflow-y-auto [&_[data-slot=sidebar-menu-button]]:h-10 [&_[data-slot=sidebar-menu-button]]:px-3'>
+      <SidebarContent className='app-navigation group-data-[collapsible=icon]:overflow-y-auto'>
         {children}
       </SidebarContent>
       {footer}

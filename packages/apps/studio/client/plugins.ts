@@ -18,6 +18,9 @@ import projects from '@nocobase/app-plugin-projects/client';
 import agents from '@nocobase/app-plugin-agents/client';
 import releases from '@nocobase/app-plugin-releases/client';
 import knowledge from '@nocobase/app-plugin-knowledge/client';
+import agentSessions from '@nocobase/app-plugin-agent-sessions/client';
+
+import { ProjectManagerIdentityRefresh } from './agents/project-manager/identity-refresh.js';
 
 // Array order is contribution order. A plugin is enabled by appearing in this
 // list; removing its entry and its import disables it.
@@ -39,7 +42,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   file(),
   scheduler(),
   // Studio routes the work pages itself, under its Work section (`client/routes.ts`).
-  projects({ routes: false }),
+  projects({ routes: false, queryEffects: ProjectManagerIdentityRefresh }),
   // Studio routes the agent team pages itself, under its Agent team section (`client/routes.ts`).
   agents(),
   // Studio routes release management's pages itself, under its Releases section (`client/routes.ts`).
@@ -47,6 +50,8 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   // Studio routes the knowledge page itself (`/knowledge`, the system's space) and composes the knowledge view into a
   // project's Knowledge tab (`client/routes.ts`).
   knowledge({ routes: false }),
+  // Studio routes the agent sessions page itself, below Home (`client/routes.ts`).
+  agentSessions({ routes: false }),
 ]);
 
 export default clientPlugins;

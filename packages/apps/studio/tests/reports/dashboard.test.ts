@@ -15,10 +15,11 @@ import {
   PULL_REQUESTS,
 } from '../../server/git/store.js';
 import {
+  agentFigures,
+  deliveryFigures,
   failedRecently,
   interventions,
   median,
-  periodFigures,
 } from '../../server/reports/dashboard.js';
 import {
   createStudioReports,
@@ -187,8 +188,8 @@ describe('dashboard figures', () => {
         },
       });
 
-    const report = await reports.dashboard(ALL, 7);
-    expect(report).toMatchObject({
+    const delivery = await reports.delivery(ALL, 7);
+    expect(delivery).toMatchObject({
       days: 7,
       subjects: true,
       currency: 'USD',
@@ -196,16 +197,25 @@ describe('dashboard figures', () => {
         completed: 2,
         agentShare: 1,
         costPerIssue: { USD: 4.545 },
-        successRate: 1,
-        // Work 2 was reopened after done: one of the two agent issues completed.
-        reworkRate: 0.5,
-        interventionRate: 1 / 3,
       },
       previous: {
         completed: 0,
         cycleTimeP50Ms: null,
         agentShare: null,
         costPerIssue: null,
+      },
+    });
+    const agents = await reports.agentPerformance(ALL, 7);
+    expect(agents).toMatchObject({
+      days: 7,
+      subjects: true,
+      current: {
+        successRate: 1,
+        // Work 2 was reopened after done: one of the two agent issues completed.
+        reworkRate: 0.5,
+        interventionRate: 1 / 3,
+      },
+      previous: {
         runs: 0,
         successRate: null,
         reworkRate: null,
@@ -220,41 +230,43 @@ describe('dashboard figures', () => {
       groupId: null,
     });
     expect(onDone.length).toBeGreaterThanOrEqual(2);
-    expect(report.current.runsPerIssue).toBe(onDone.length / 2);
-    expect(report.current.runs).toBeGreaterThanOrEqual(3);
-    expect(report.current.queueWaitP50Ms).toBeGreaterThanOrEqual(0);
+    expect(agents.current.runsPerIssue).toBe(onDone.length / 2);
+    expect(agents.current.runs).toBeGreaterThanOrEqual(3);
+    expect(agents.current.queueWaitP50Ms).toBeGreaterThanOrEqual(0);
     // Work 2 went to done within a moment of being started; Work 1 took two days: the median is the shorter.
-    expect(report.current.cycleTimeP50Ms).toBeLessThan(DAY);
+    expect(delivery.current.cycleTimeP50Ms).toBeLessThan(DAY);
 
-    expect(report.daily).toHaveLength(7);
+    // Over 7 days each sparkline point is a day.
+    expect(delivery.buckets).toHaveLength(7);
     const yesterday = new Date(now - DAY).toISOString().slice(0, 10);
-    expect(report.daily.find((day) => day.day === yesterday)).toMatchObject({
+    expect(
+      delivery.buckets.find((bucket) => bucket.from === yesterday),
+    ).toMatchObject({
+      to: yesterday,
       completed: 1,
-      completedByAgents: 1,
+      agentShare: 1,
       cycleTimeP50Ms: 2 * DAY,
     });
-    // Over 7 days each sparkline point is a day.
-    expect(report.buckets).toHaveLength(7);
-    expect(report.buckets.at(-1)).toMatchObject({
-      from: report.to,
-      to: report.to,
+    expect(delivery.buckets.at(-1)).toMatchObject({
+      from: delivery.to,
+      to: delivery.to,
       completed: 1,
       agentShare: 1,
       costPerIssue: 9.09,
     });
-    const month = await reports.dashboard(ALL, 30);
+    const month = await reports.delivery(ALL, 30);
     expect(month.buckets).toHaveLength(10);
     expect(month.buckets[0]).toMatchObject({ from: month.from });
     expect(month.buckets.at(-1)).toMatchObject({ to: month.to, completed: 2 });
-    expect(report.daily.at(-1)).toMatchObject({
-      day: report.to,
-      completed: 1,
-      cost: 9.09,
+    expect(agents.daily).toHaveLength(7);
+    expect(agents.daily.at(-1)).toMatchObject({
+      day: agents.to,
       runsCompleted: 3,
       runsFailed: 0,
     });
 
-    expect(report.projects).toEqual([
+    const progress = await reports.projectProgress(ALL, 7);
+    expect(progress.projects).toEqual([
       {
         id: alpha.id,
         name: 'Alpha',
@@ -276,9 +288,14 @@ describe('dashboard figures', () => {
     ]);
 
     // Bob may not see Beta nor every run: neither its project nor its run counts.
-    const bobs = await reports.dashboard({ userId: 'bob', allRuns: false }, 30);
-    expect(bobs.projects.map((project) => project.name)).toEqual(['Alpha']);
-    expect(bobs.current).toMatchObject({ runs: 0, costPerIssue: null });
+    const bob = { userId: 'bob', allRuns: false } as const;
+    expect(
+      (await reports.projectProgress(bob, 30)).projects.map(
+        (project) => project.name,
+      ),
+    ).toEqual(['Alpha']);
+    expect((await reports.agentPerformance(bob, 30)).current.runs).toBe(0);
+    expect((await reports.delivery(bob, 30)).current.costPerIssue).toBeNull();
   });
 
   it('works the figures out of one period as defined', () => {
@@ -304,71 +321,63 @@ describe('dashboard figures', () => {
       startedAt: new Date(DAY + 2000).toISOString(),
       finishedAt: new Date(DAY + 60_000).toISOString(),
     });
-    const figures = periodFigures(
-      {
-        completed: [
-          issue('i1', true, DAY),
-          issue('i2', true, 3 * DAY),
-          issue('i3', false, null),
-          issue('i4', false, 2 * DAY),
-        ],
-        returned: [
-          {
-            id: 'i1',
-            projectId: 'p',
-            byAgent: true,
-            at: '',
-            from: 'in_review',
-            to: 'in_progress',
-          },
-          {
-            id: 'i1',
-            projectId: 'p',
-            byAgent: true,
-            at: '',
-            from: 'in_review',
-            to: 'in_progress',
-          },
-          {
-            id: 'i4',
-            projectId: 'p',
-            byAgent: false,
-            at: '',
-            from: 'done',
-            to: 'backlog',
-          },
-        ],
-        agentBlocks: [
-          {
-            issueId: 'i2',
-            agentId: 'a',
-            runId: null,
-            at: new Date(DAY + 30_000).toISOString(),
-          },
-        ],
-      },
-      {
-        runs: 5,
-        completedRuns: 3,
-        failedRuns: 1,
-        claimLatencyP50Ms: 1000,
-        estimatedCost: { USD: 10 },
-      },
-      [
-        run('r1', 'completed'),
-        run('r2', 'completed', 'i2'),
-        run('r3', 'failed'),
-        run('r4', 'completed'),
-        run('r5', 'running'),
+    const flow = {
+      completed: [
+        issue('i1', true, DAY),
+        issue('i2', true, 3 * DAY),
+        issue('i3', false, null),
+        issue('i4', false, 2 * DAY),
       ],
-      6,
-    );
-    expect(figures).toEqual({
+      returned: [
+        {
+          id: 'i1',
+          projectId: 'p',
+          byAgent: true,
+          at: '',
+          from: 'in_review',
+          to: 'in_progress',
+        },
+        {
+          id: 'i1',
+          projectId: 'p',
+          byAgent: true,
+          at: '',
+          from: 'in_review',
+          to: 'in_progress',
+        },
+        {
+          id: 'i4',
+          projectId: 'p',
+          byAgent: false,
+          at: '',
+          from: 'done',
+          to: 'backlog',
+        },
+      ],
+      agentBlocks: [
+        {
+          issueId: 'i2',
+          agentId: 'a',
+          runId: null,
+          at: new Date(DAY + 30_000).toISOString(),
+        },
+      ],
+    };
+    expect(deliveryFigures(flow, { USD: 10 })).toEqual({
       completed: 4,
       // Nearest rank over 1, 2 and 3 days.
       cycleTimeP50Ms: 2 * DAY,
       agentShare: 0.5,
       costPerIssue: { USD: 2.5 },
+    });
+    const runs = [
+      run('r1', 'completed'),
+      run('r2', 'completed', 'i2'),
+      run('r3', 'failed'),
+      run('r4', 'completed'),
+      run('r5', 'running'),
+    ];
+    expect(agentFigures(flow, runs, 6)).toEqual({
       runs: 5,
       successRate: 0.75,
       // i1 was sent back twice: one issue of the two the agents completed.
@@ -398,6 +407,7 @@ describe('what needs attention', () => {
     await h.projects.issues.update(alice, issues[2].id, {
       revision: third.revision,
       statusKey: 'blocked',
+      needsYou: 'Choose how to proceed.',
     });
     const late = await h.projects.issues.create(alice, {
       title: 'Late',

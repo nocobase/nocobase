@@ -1,3 +1,4 @@
+import { mailerToken } from '@nocobase/app-server/mailer';
 import { joinBasePath, normalizeBasePath } from '@nocobase/app-server/support';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
@@ -26,6 +27,7 @@ import {
 import {
   createAuthentication,
   type Auth,
+  type AuthRequestOptions,
   type CreateAuthenticationOptions,
 } from '../auth.js';
 import {
@@ -132,6 +134,10 @@ export class AuthenticationProvider<
     );
   }
 
+  public override async shutdown(): Promise<void> {
+    await this.app.container.resolveIfCreated(authenticationToken)?.close();
+  }
+
   private createAuthentication(container: ServiceResolver): Auth {
     const app = this.app.config.get<AppIdentityConfig>('app')!;
     const configuredAuth = this.app.config.get<AuthConfig>('auth') ?? {};
@@ -176,6 +182,20 @@ export class AuthenticationProvider<
       secondaryStorage: createAuthStorage(caching),
       appName: app.name,
       ...authConfig,
+      passwordResetServices: {
+        mailer: container.has(mailerToken)
+          ? container.resolve(mailerToken)
+          : undefined,
+        increment: (key) =>
+          caching
+            .getCounter({ namespace: 'password-reset-rate-limit' })
+            .increment(key, 1, 60_000),
+        report: (category) =>
+          logger?.warn(
+            { category },
+            'Password reset submission did not complete.',
+          ),
+      },
       logger:
         authConfig.logger ??
         (logger
@@ -217,8 +237,14 @@ export class AuthenticationProvider<
       },
     });
     const originalAuthHandler = auth.handler.bind(auth);
-    auth.handler = (request: Request): Promise<Response> =>
-      originalAuthHandler(toPublicRequest(request, app.publicBasePath));
+    auth.handler = (
+      request: Request,
+      options?: AuthRequestOptions,
+    ): Promise<Response> =>
+      originalAuthHandler(
+        toPublicRequest(request, app.publicBasePath),
+        options,
+      );
     return auth;
   }
 }

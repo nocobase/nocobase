@@ -13,6 +13,11 @@ import {
   type BackupResult,
 } from '../lib/backup.ts';
 import { confirm } from '../lib/confirm.ts';
+import {
+  previewChecksumRepair,
+  requireChecksumApproval,
+  type ChecksumRepairPlan,
+} from '../lib/checksum-repair.ts';
 import { switchCurrent } from '../lib/current-link.ts';
 import { healthUrl, mountPathOf, readAppEnv } from '../lib/env-file.ts';
 import { assertFixedMountPath } from '../lib/mount-path.ts';
@@ -89,6 +94,10 @@ export const UPGRADE_FLAGS = {
     description:
       'Confirm that the databases app-installer cannot back up, any but SQLite, are backed up.',
   }),
+  'repair-checksums': Flags.string({
+    description:
+      'Authorize only the checksum repair plan identified by the token returned during preflight.',
+  }),
   'health-timeout': Flags.integer({
     default: 180,
     min: 1,
@@ -118,6 +127,7 @@ export interface UpgradeInput {
     to?: string;
     rebuild?: boolean;
     'backup-done': boolean;
+    'repair-checksums'?: string;
     'health-timeout': number;
     keep: number;
     yes: boolean;
@@ -248,6 +258,8 @@ interface RollbackContext {
   from: ReleaseRecord;
   to: ReleaseRecord;
   pending: number;
+  checksumRepairs: number;
+  externalConnections: string[];
   backup: BackupResult;
   /** Set when this upgrade put the release on disk rather than reusing one already recorded. */
   newRecord: ReleaseRecord | undefined;
@@ -281,7 +293,7 @@ async function rollBackUpgrade(context: RollbackContext): Promise<never> {
   let rollbackError: unknown;
   try {
     await switchCurrent(layout, releaseLinkTarget(from.id));
-    if (context.pending > 0 && hasDatabase) {
+    if ((context.pending > 0 || context.checksumRepairs > 0) && hasDatabase) {
       await restoreDatabase(layout, backup.relative);
       databaseRestored = true;
     }
@@ -309,6 +321,7 @@ async function rollBackUpgrade(context: RollbackContext): Promise<never> {
     at: new Date().toISOString(),
     outcome: 'rolled-back',
     migrations: context.pending,
+    checksumRepairs: context.checksumRepairs,
     backup: backup.relative,
     databaseRestored,
   });
@@ -316,8 +329,9 @@ async function rollBackUpgrade(context: RollbackContext): Promise<never> {
 
   const doing = `Upgrading to ${to.id}`;
   const externalDatabaseNote =
-    context.pending > 0 && !hasDatabase
-      ? ` ${to.id} may already have migrated the external database; restore it from your own backup if ${from.id} misbehaves.`
+    (context.pending > 0 || context.checksumRepairs > 0) &&
+    context.externalConnections.length > 0
+      ? ` ${to.id} may already have migrated or repaired the external database connections ${context.externalConnections.join(', ')}; these were not restored. Restore them from your own pre-upgrade backup before relying on ${from.id}.`
       : '';
   if (healthy) {
     throw new InstallerError(
@@ -521,44 +535,6 @@ export async function upgrade(
 
     const inventory = readDatabaseInventory(layout, env);
     const unprotected = [...inventory.external, ...inventory.unresolved];
-    const discardPrepared = async () => {
-      if (prepared) {
-        await rm(path.dirname(prepared.dir), { recursive: true, force: true });
-      }
-    };
-    try {
-      if (unprotected.length > 0 && !flags['backup-done']) {
-        throw new InstallerError(
-          'BACKUP_REQUIRED',
-          `app-installer cannot back up the database connection${unprotected.length === 1 ? '' : 's'} ${unprotected.join(', ')}. Back ${unprotected.length === 1 ? 'it' : 'them'} up, then pass --backup-done.`,
-          { exitCode: EXIT_INVALID },
-        );
-      }
-      await confirm(
-        [
-          `Upgrade the application at ${root} from ${from.id} to ${unpacked.id}.`,
-          'The application stops while the release switches.',
-          inventory.sqlite.length > 0
-            ? 'The SQLite databases and the configuration are copied to backups/ before anything is migrated.'
-            : 'The configuration is copied to backups/ before anything is migrated.',
-          ...(unprotected.length > 0
-            ? [
-                `You confirmed with --backup-done that ${unprotected.join(', ')} ${unprotected.length === 1 ? 'is' : 'are'} backed up.`,
-              ]
-            : []),
-          ...(nodeChanged
-            ? [
-                `This machine runs Node ${machineMajor}, but ${from.id} was built for Node ${from.buildTarget.nodeMajor}: it cannot be rolled back to.`,
-              ]
-            : []),
-        ],
-        { yes: flags.yes, json: flags.json },
-      );
-    } catch (error) {
-      await discardPrepared();
-      throw error;
-    }
-
     // Everything up to the stop happens while the current release keeps serving.
     let to: ReleaseRecord;
     let newRecord: ReleaseRecord | undefined;
@@ -593,6 +569,12 @@ export async function upgrade(
 
     const cli = { releaseDir: dir, cwd: root, env, run };
     let pending: number;
+    let repairPlan: ChecksumRepairPlan;
+    const repairIdentity = {
+      appName: state.appName,
+      from: from.id,
+      version: to.version,
+    };
     try {
       reporter.progress(
         `Checking the configuration and pending migrations with ${to.id}`,
@@ -600,6 +582,36 @@ export async function upgrade(
       await runAppCli(['config', 'check'], cli);
       pending = pendingTaskCount(
         await runAppCli(['db', 'apply', '--dry-run'], cli),
+      );
+      repairPlan = await previewChecksumRepair(cli, repairIdentity);
+      requireChecksumApproval(repairPlan, flags['repair-checksums']);
+      if (unprotected.length > 0 && !flags['backup-done']) {
+        throw new InstallerError(
+          'BACKUP_REQUIRED',
+          `app-installer cannot back up the database connection${unprotected.length === 1 ? '' : 's'} ${unprotected.join(', ')}. Back ${unprotected.length === 1 ? 'it' : 'them'} up, then pass --backup-done.`,
+          { exitCode: EXIT_INVALID },
+        );
+      }
+      await confirm(
+        [
+          `Upgrade the application at ${root} from ${from.id} to ${to.id}.`,
+          'The application stops while the release switches.',
+          `${pending} migration and seed task(s) will run; ${repairPlan.changes.length} checksum(s) will be repaired after backup.`,
+          inventory.sqlite.length > 0
+            ? 'The SQLite databases and the configuration are copied to backups/ before anything is migrated.'
+            : 'The configuration is copied to backups/ before anything is migrated.',
+          ...(unprotected.length > 0
+            ? [
+                `You confirmed with --backup-done that ${unprotected.join(', ')} ${unprotected.length === 1 ? 'is' : 'are'} backed up.`,
+              ]
+            : []),
+          ...(nodeChanged
+            ? [
+                `This machine runs Node ${machineMajor}, but ${from.id} was built for Node ${from.buildTarget.nodeMajor}: it cannot be rolled back to.`,
+              ]
+            : []),
+        ],
+        { yes: flags.yes, json: flags.json },
       );
     } catch (error) {
       await removeNewRelease();
@@ -670,9 +682,26 @@ export async function upgrade(
 
     try {
       // Marked before the link moves, so an interruption from here on is undone with a database restore.
+      // Older installers cannot safely recover a repair-only upgrade; make them refuse this state.
+      if (repairPlan.changes.length > 0) state.schemaVersion = 2;
       state.pending.switched = true;
       await writeState(layout, state);
       await switchCurrent(layout, releaseLinkTarget(to.id));
+      // Recheck after stopping writers; an approval never covers newly discovered drift.
+      const finalPlan = await previewChecksumRepair(cli, repairIdentity);
+      if (finalPlan.token !== repairPlan.token) {
+        throw new InstallerError(
+          'CHECKSUM_PLAN_CHANGED',
+          'The checksum repair plan changed after preflight. Review the new plan before retrying.',
+          { details: { checksumRepair: finalPlan } },
+        );
+      }
+      if (repairPlan.changes.length > 0) {
+        reporter.progress(
+          'Repairing the reviewed migration and seed checksums',
+        );
+        await runAppCli(['db', 'repair', '--force'], cli);
+      }
       reporter.progress('Applying database migrations');
       await runAppCli(['db', 'apply'], cli);
       assertStorageOutsideRelease(dir);
@@ -697,6 +726,8 @@ export async function upgrade(
         from,
         to,
         pending,
+        checksumRepairs: repairPlan.changes.length,
+        externalConnections: unprotected,
         backup,
         newRecord,
         timeoutMs: flags['health-timeout'] * 1000,
@@ -720,6 +751,7 @@ export async function upgrade(
       at,
       outcome: 'completed',
       migrations: pending,
+      checksumRepairs: repairPlan.changes.length,
       backup: backup.relative,
     });
     await writeState(layout, state);
@@ -753,6 +785,7 @@ export async function upgrade(
         upgraded: true,
         reused: reuse !== undefined,
         migrations: pending,
+        checksumRepairs: repairPlan.changes.length,
         backup: backup.relative,
         pruned: pruned.map((record) => record.id),
       },

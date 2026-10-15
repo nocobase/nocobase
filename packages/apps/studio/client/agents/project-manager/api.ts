@@ -15,6 +15,7 @@ import type {
   ProjectManagerPatch,
   ProjectManagerView,
 } from '../../../shared/project-manager.js';
+import { refreshManagerIdentity } from './identity-cache.js';
 
 export const projectManagerKey = ['studio', 'projectManager'] as const;
 
@@ -47,8 +48,9 @@ export function useUpdateProjectManager(): UseMutationResult<
           json: patch,
         })
       ).data,
-    onSuccess: (view) => {
+    onSuccess: async (view) => {
       queryClient.setQueryData(projectManagerKey, view);
+      await refreshManagerIdentity(queryClient);
     },
   });
 }
