@@ -263,7 +263,7 @@ describe('nocobase-runner cli', () => {
             { data: unicodeBytes.subarray(7, 8), delayMs: 0 },
             { data: unicodeBytes.subarray(8), delayMs: 0 },
           ],
-          synchronizeAtParse: true,
+          synchronizeAtStdinRead: true,
         },
       });
       expect(splitUnicode.code).toBe(0);
@@ -277,7 +277,7 @@ describe('nocobase-runner cli', () => {
               { data: 'consumed-prefix-', delayMs: 0 },
               { data: 'delayed-suffix', delayMs: 100 },
             ],
-            synchronizeAtParse: true,
+            synchronizeAtStdinRead: true,
           },
         },
       );
@@ -287,7 +287,7 @@ describe('nocobase-runner cli', () => {
         input: {
           chunks: [{ data: 'all-bytes-before-eof', delayMs: 0 }],
           endDelayMs: 500,
-          synchronizeAtParse: true,
+          synchronizeAtStdinRead: true,
         },
       });
       expect(delayedEof.code).toBe(0);

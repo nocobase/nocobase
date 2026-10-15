@@ -92,7 +92,7 @@ export interface CliInput {
   }[];
   readonly endDelayMs?: number;
   /** Start input delivery when the CLI's first stdin reader is ready. */
-  readonly synchronizeAtParse?: boolean;
+  readonly synchronizeAtStdinRead?: boolean;
 }
 
 export function cli(
@@ -105,23 +105,23 @@ export function cli(
       env:
         options.input &&
         typeof options.input !== 'string' &&
-        options.input.synchronizeAtParse
+        options.input.synchronizeAtStdinRead
           ? {
               ...env,
               NODE_OPTIONS: [
                 env.NODE_OPTIONS,
-                `--import=${path.join(PACKAGE_ROOT, 'tests/fixtures/oclif-parse-gate.mjs')}`,
+                `--import=${path.join(PACKAGE_ROOT, 'tests/fixtures/stdin-reader-gate.mjs')}`,
               ]
                 .filter(Boolean)
                 .join(' '),
-              NOCOBASE_RUNNER_TEST_PARSE_GATE: '1',
+              NOCOBASE_RUNNER_TEST_STDIN_GATE: '1',
             }
           : env,
       cwd: options.cwd ?? PACKAGE_ROOT,
       stdio:
         options.input &&
         typeof options.input !== 'string' &&
-        options.input.synchronizeAtParse
+        options.input.synchronizeAtStdinRead
           ? ['pipe', 'pipe', 'pipe', 'pipe']
           : undefined,
     });
@@ -150,7 +150,7 @@ export function cli(
           lastWriteAt + (input.endDelayMs ?? 0),
         );
       };
-      if (options.input.synchronizeAtParse) {
+      if (options.input.synchronizeAtStdinRead) {
         let gateOutput = '';
         let delivered = false;
         child.stdio[3]?.on('data', (chunk: Buffer) => {
