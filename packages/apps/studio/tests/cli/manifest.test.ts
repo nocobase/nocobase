@@ -378,7 +378,7 @@ describe('Studio’s command manifest', () => {
         headers,
         body: JSON.stringify({ title }),
       });
-      expect(response.status, await response.clone().text()).toBe(201);
+      expect(response.status).toBe(201);
       const issue = (
         (await response.json()) as {
           data: { id: string; projectId: string; statusKey: string };
