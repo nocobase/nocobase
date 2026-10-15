@@ -39,11 +39,19 @@ export function RuntimePolicyFields({
   value,
   onChange,
   supported = true,
+  timerModes,
+  onTimerModesChange,
 }: {
   readonly value: RuntimePolicyDraft;
   readonly onChange: (value: RuntimePolicyDraft) => void;
   /** Whether the environment's driver honours the policy. */
   readonly supported?: boolean;
+  /** In a new App, each blank timer may inherit independently or explicitly be off. */
+  readonly timerModes?: {
+    readonly idle: 'inherit' | 'custom';
+    readonly dormant: 'inherit' | 'custom';
+  };
+  readonly onTimerModesChange?: (modes: NonNullable<typeof timerModes>) => void;
 }): ReactElement {
   const { t } = useTranslation(ACCESS_NAMESPACE);
   const parsed = parsePolicyDraft(value);
@@ -84,12 +92,22 @@ export function RuntimePolicyFields({
           <FieldLabel htmlFor='rel-policy-idle'>
             {t('ui.policy.idleLabel')}
           </FieldLabel>
+          {timerModes ? (
+            <TimerModeSelect
+              id='rel-policy-idle-mode'
+              label={t('ui.policy.idleModeLabel')}
+              value={timerModes.idle}
+              onChange={(idle) => onTimerModesChange?.({ ...timerModes, idle })}
+              t={t}
+            />
+          ) : null}
           <InputGroup>
             <InputGroupInput
               id='rel-policy-idle'
               inputMode='numeric'
               value={value.idleStopMinutes}
               placeholder={t('ui.policy.neverIdle')}
+              disabled={timerModes?.idle === 'inherit'}
               aria-invalid={parsed.errors?.idle ? true : undefined}
               onChange={(event) =>
                 onChange({ ...value, idleStopMinutes: event.target.value })
@@ -111,12 +129,24 @@ export function RuntimePolicyFields({
           <FieldLabel htmlFor='rel-policy-dormant'>
             {t('ui.policy.dormantLabel')}
           </FieldLabel>
+          {timerModes ? (
+            <TimerModeSelect
+              id='rel-policy-dormant-mode'
+              label={t('ui.policy.dormantModeLabel')}
+              value={timerModes.dormant}
+              onChange={(dormant) =>
+                onTimerModesChange?.({ ...timerModes, dormant })
+              }
+              t={t}
+            />
+          ) : null}
           <InputGroup>
             <InputGroupInput
               id='rel-policy-dormant'
               inputMode='decimal'
               value={value.dormantAfterHours}
               placeholder={t('ui.policy.neverDormant')}
+              disabled={timerModes?.dormant === 'inherit'}
               aria-invalid={parsed.errors?.dormant ? true : undefined}
               onChange={(event) =>
                 onChange({ ...value, dormantAfterHours: event.target.value })
@@ -139,5 +169,42 @@ export function RuntimePolicyFields({
         {supported ? t('ui.policy.timersHint') : t('ui.policy.unsupported')}
       </FieldDescription>
     </FieldGroup>
+  );
+}
+
+function TimerModeSelect({
+  id,
+  label,
+  value,
+  onChange,
+  t,
+}: {
+  readonly id: string;
+  readonly label: string;
+  readonly value: 'inherit' | 'custom';
+  readonly onChange: (value: 'inherit' | 'custom') => void;
+  readonly t: (key: string) => string;
+}): ReactElement {
+  const items = (['inherit', 'custom'] as const).map((mode) => ({
+    value: mode,
+    label: t(`ui.policy.timerMode.${mode}`),
+  }));
+  return (
+    <Select
+      items={items}
+      value={value}
+      onValueChange={(next) => next && onChange(next)}
+    >
+      <SelectTrigger id={id} aria-label={label} className='w-full'>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((item) => (
+          <SelectItem key={item.value} value={item.value}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

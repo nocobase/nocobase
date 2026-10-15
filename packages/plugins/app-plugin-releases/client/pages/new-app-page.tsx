@@ -71,6 +71,10 @@ export default function NewAppPage(): ReactElement {
   const [labels, setLabels] = useState<LabelRow[]>([]);
   const [policy, setPolicy] =
     useState<RuntimePolicyDraft>(DEFAULT_POLICY_DRAFT);
+  const [timerModes, setTimerModes] = useState<{
+    idle: 'inherit' | 'custom';
+    dormant: 'inherit' | 'custom';
+  }>({ idle: 'inherit', dormant: 'inherit' });
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const parsedPolicy = parsePolicyDraft(policy);
@@ -110,7 +114,13 @@ export default function NewAppPage(): ReactElement {
         name: name.trim(),
         environmentId: selected,
         labels: labelsOf(labels),
-        ...parsedPolicy.policy,
+        activation: parsedPolicy.policy.activation,
+        ...(timerModes.idle === 'custom'
+          ? { idleStopMinutes: parsedPolicy.policy.idleStopMinutes }
+          : {}),
+        ...(timerModes.dormant === 'custom'
+          ? { dormantAfterHours: parsedPolicy.policy.dormantAfterHours }
+          : {}),
       });
       notify.success(t('ui.apps.created', { name: name.trim() }));
       setSubmitting(false);
@@ -191,7 +201,12 @@ export default function NewAppPage(): ReactElement {
             </Select>
           </Field>
           <AdvancedSection summary={advancedSummary || null}>
-            <RuntimePolicyFields value={policy} onChange={setPolicy} />
+            <RuntimePolicyFields
+              value={policy}
+              onChange={setPolicy}
+              timerModes={timerModes}
+              onTimerModesChange={setTimerModes}
+            />
             <Field>
               <FieldLabel>{t('ui.apps.labels')}</FieldLabel>
               <LabelsEditor rows={labels} onChange={setLabels} />

@@ -283,7 +283,11 @@ describe('client', () => {
       </MemoryRouter>,
     );
     fireEvent.click(await screen.findByRole('link', { name: 'Create app' }));
-    const dialog = await screen.findByRole('dialog');
+    let dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    fireEvent.click(await screen.findByRole('link', { name: 'Create app' }));
+    dialog = await screen.findByRole('dialog');
     // The list stays behind the dialog.
     expect(screen.getByText('No apps yet')).toBeInTheDocument();
     fireEvent.change(within(dialog).getByLabelText('Name'), {
@@ -292,6 +296,18 @@ describe('client', () => {
     fireEvent.change(within(dialog).getByLabelText('App ID'), {
       target: { value: 'shop' },
     });
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Advanced (optional)' }),
+    );
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add label' }));
+    fireEvent.change(
+      within(dialog).getByRole('textbox', { name: 'Name of label 1' }),
+      { target: { value: 'team' } },
+    );
+    fireEvent.change(
+      within(dialog).getByRole('textbox', { name: 'Value of label 1' }),
+      { target: { value: 'web' } },
+    );
     await waitFor(() =>
       expect(
         within(dialog).getByRole('button', { name: 'Create app' }),
@@ -304,7 +320,112 @@ describe('client', () => {
         (item) => item.method === 'POST' && item.path === 'releases/apps',
       ),
     ).toMatchObject({
-      json: { id: 'shop', name: 'Shop', environmentId: 'staging' },
+      json: {
+        id: 'shop',
+        name: 'Shop',
+        environmentId: 'staging',
+        labels: { team: 'web' },
+      },
+    });
+    const create = sent.find(
+      (item) => item.method === 'POST' && item.path === 'releases/apps',
+    )!;
+    expect(create.json).not.toHaveProperty('idleStopMinutes');
+    expect(create.json).not.toHaveProperty('dormantAfterHours');
+  });
+
+  it('sends timer overrides and explicit off independently of inherited timers', async () => {
+    const sent: { path: string; method?: string; json?: unknown }[] = [];
+    let createAttempts = 0;
+    mocks.request.mockImplementation(
+      (options: { path: string; method?: string; json?: unknown }) => {
+        sent.push(options);
+        if (options.path === 'releases/me')
+          return Promise.resolve({
+            data: { userId: 'u', kind: 'human', permissions: allPermissions() },
+          });
+        if (options.path === 'releases/environments')
+          return Promise.resolve({
+            data: [{ id: 'staging', name: 'Staging' }],
+            meta: { total: 1 },
+          });
+        if (options.method === 'POST' && options.path === 'releases/apps') {
+          createAttempts += 1;
+          if (createAttempts === 1)
+            return Promise.reject(new Error('Try again'));
+          return Promise.resolve({ data: {} });
+        }
+        return Promise.resolve({ data: [], meta: { total: 0 } });
+      },
+    );
+    function Where(): ReactElement {
+      return <span data-testid='where'>{useLocation().pathname}</span>;
+    }
+    render(
+      <MemoryRouter initialEntries={['/apps']}>
+        <Routes>
+          <Route path='/apps' element={<AppsPage />}>
+            <Route path='new' element={<NewAppPage />} />
+            <Route path=':appId' element={<Where />} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole('link', { name: 'Create app' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('Name'), {
+      target: { value: 'Shop' },
+    });
+    fireEvent.change(within(dialog).getByLabelText('App ID'), {
+      target: { value: 'shop' },
+    });
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Advanced (optional)' }),
+    );
+
+    const idleMode = within(dialog).getByRole('combobox', {
+      name: 'Idle timer behavior',
+    });
+    fireEvent.click(idleMode);
+    let option = await screen.findByRole('option', {
+      name: 'Set a custom value',
+    });
+    fireEvent.pointerDown(option, { pointerType: 'mouse' });
+    fireEvent.mouseUp(option);
+    fireEvent.click(option);
+    fireEvent.change(within(dialog).getByLabelText('Stop when unvisited for'), {
+      target: { value: '10' },
+    });
+    const dormantMode = within(dialog).getByRole('combobox', {
+      name: 'Hibernate timer behavior',
+    });
+    fireEvent.click(dormantMode);
+    option = await screen.findByRole('option', { name: 'Set a custom value' });
+    fireEvent.pointerDown(option, { pointerType: 'mouse' });
+    fireEvent.mouseUp(option);
+    fireEvent.click(option);
+
+    const createButton = within(dialog).getByRole('button', {
+      name: 'Create app',
+    });
+    fireEvent.click(createButton);
+    await waitFor(() => expect(createButton).toBeEnabled());
+    expect(within(dialog).getByLabelText('Name')).toHaveValue('Shop');
+    expect(within(dialog).getByLabelText('App ID')).toHaveValue('shop');
+    expect(
+      within(dialog).getByLabelText('Stop when unvisited for'),
+    ).toHaveValue('10');
+    expect(
+      within(dialog).getByLabelText('Hibernate when unvisited for'),
+    ).toHaveValue('');
+    fireEvent.click(createButton);
+    await screen.findByTestId('where');
+    const create = sent.find(
+      (item) => item.method === 'POST' && item.path === 'releases/apps',
+    );
+    expect(create?.json).toMatchObject({
+      idleStopMinutes: 10,
+      dormantAfterHours: null,
     });
   });
 
