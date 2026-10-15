@@ -631,6 +631,8 @@ export interface SendMessageResult {
  * `CreateConversationRequest`). The text is at most `MESSAGE_CONTENT_MAX` characters: 400 `INVALID_REQUEST` otherwise.
  */
 export interface StartConversationRequest {
+  /** The caller's own unattached chat uploads for the first message. */
+  readonly attachmentIds?: readonly string[];
   readonly source: Exclude<ConversationSource, 'panel'>;
   readonly text: string;
   readonly agentId?: string;

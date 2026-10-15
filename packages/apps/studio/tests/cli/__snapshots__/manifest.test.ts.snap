@@ -161,7 +161,7 @@ intake ai start [--mode! --text --project --plan --instruction --issue --file] -
 intake extract [--file] -> POST /api/projects/intake/extractTexts (person)
 intake file delete <file> -> DELETE /api/projects/intake/files/{fileId} (person) confirm
 intake file upload [--file!] -> POST /api/projects/intake/files (person)
-intake organize [--text! --title --agent --project --files] -> POST /api/organizeIntake (person)
+intake organize [--text! --title --agent --project --files --image-file-ids] -> POST /api/organizeIntake (person)
 intake split [--text --project --file] -> POST /api/projects/intake/split (person)
 issue activity list <issue> [--limit --page-token] -> GET /api/projects/issues/{issueId}/activities (person) pm.issues/view
 issue attachment add <issue> [--file!] -> POST /api/projects/issues/{issueId}/attachments (person) pm.attachments/upload
