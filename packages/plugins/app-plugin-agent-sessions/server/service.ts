@@ -29,7 +29,6 @@ import {
   type SessionTarget,
 } from '@nocobase/acp-bridge/protocol';
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
-import { z } from 'zod';
 
 import type {
   AgentSessionsChange,
@@ -42,13 +41,6 @@ import type {
   TranscriptEvent,
 } from '../shared/api.js';
 import { AgentSessionsError } from './errors.js';
-import {
-  defineSessionTool,
-  TOOLS_PATH,
-  type SessionTool,
-  type ToolHost,
-  type ToolTokens,
-} from './tools.js';
 import {
   allowedFolders,
   appendEvents,
@@ -98,7 +90,7 @@ export interface LinkResolver {
   /** Starts the work on `refIds` as the viewer, when the application lets sessions start it. */
   start?(refIds: readonly string[], viewer: Viewer): Promise<void>;
   /**
-   * What the agent should know of how each of `refIds` is going, as JSON, for the session's `list_session_work` tool:
+   * What the agent should know of how each of `refIds` is going, as JSON, for the session's `session work` command:
    * who works on it, what it waits for, and the like.
    */
   progress?(
@@ -140,8 +132,6 @@ export interface Mention {
 
 export interface AgentSessionsServiceOptions {
   readonly database: DatabaseManager;
-  /** Signs the tokens agents call the application's tools with; without it, sessions get no tools. */
-  readonly toolTokens?: ToolTokens;
   /** Tells the owner's pages what changed. */
   readonly publish?: (userId: string, change: AgentSessionsChange) => void;
   /** Where bridges' replies wait; this instance's memory by default. */
@@ -178,9 +168,6 @@ export class AgentSessionsService {
   readonly #diagnose: AgentSessionsServiceOptions['diagnose'];
   readonly #waiters = new Map<string, Set<() => void>>();
   readonly #linkKinds = new Map<string, LinkResolver>();
-  readonly #tools: SessionTool[] = [];
-  #toolServer = 'app';
-  readonly #toolTokens: ToolTokens | undefined;
   #projects: ProjectSource | undefined;
   #instructions: string | ((viewer: Viewer) => string) | undefined;
   #notices: SessionNotices | undefined;
@@ -191,14 +178,12 @@ export class AgentSessionsService {
 
   constructor(options: AgentSessionsServiceOptions) {
     this.#database = options.database;
-    this.#toolTokens = options.toolTokens;
     this.#replies = options.replies ?? memoryReplies();
     this.#images = options.images;
     this.#schedule = options.schedule ?? later;
     this.#publish = options.publish ?? (() => undefined);
     this.#now = options.now ?? Date.now;
     this.#diagnose = options.diagnose;
-    this.#tools.push(this.#workTool());
   }
 
   /** Lets sessions show, and start, what the application ties to them under `kind`. */
@@ -236,51 +221,37 @@ export class AgentSessionsService {
     this.#projects = source;
   }
 
-  /**
-   * Offers `tools` to the agents in sessions as the MCP server `serverName`, such as `studio`. Sessions opened from
-   * then on get them.
-   */
-  registerTools(serverName: string, tools: readonly SessionTool[]): void {
-    this.#toolServer = serverName;
-    this.#tools.push(...tools);
+  /** Validates the caller's session before a CLI write; a session id is never a credential. */
+  async creationContext(
+    userId: string,
+    sessionId: string,
+  ): Promise<{ projectId: string | null }> {
+    const session = await this.#session(userId, sessionId);
+    if (session.archivedAt) throw new AgentSessionsError('sessionArchived');
+    return { projectId: session.projectId ?? null };
   }
 
-  /** The tools' side of the service, for the MCP endpoint (`tools.ts`). */
-  get toolHost(): ToolHost {
-    return {
-      serverName: this.#toolServer,
-      tools: () => this.#tools,
-      caller: async (token) => {
-        const sessionId = this.#toolTokens?.verify(token);
-        const session = sessionId
-          ? await sessions(this.#conn()).findOne({ filter: { id: sessionId } })
-          : undefined;
-        return session && !session.archivedAt
-          ? {
-              userId: session.userId,
-              sessionId: session.id,
-              projectId: session.projectId ?? null,
-            }
-          : undefined;
-      },
-      instructions: async (caller) => {
-        const viewer = await this.#ownerOf(caller);
-        const project = caller.projectId
-          ? (await this.listProjects(viewer)).find(
-              (candidate) => candidate.id === caller.projectId,
-            )
-          : undefined;
-        const work = workNote(await this.#work(viewer, caller.sessionId), null);
-        const lines = [
-          this.#instructionsFor(viewer),
-          project &&
-            `This session works for the project "${project.name}" (id ${project.id}). File and look for work there unless the person names another project.`,
-          work && `${work}\nCall \`list_session_work\` for how each is going.`,
-        ].filter(Boolean);
-        return lines.length > 0 ? lines.join('\n\n') : undefined;
-      },
-      link: (sessionId, kind, refId) => this.link(sessionId, kind, refId),
-    };
+  /** The work visible to the owner, with the application's existing batch progress resolver. */
+  async sessionWork(
+    viewer: Viewer,
+    sessionId: string,
+  ): Promise<readonly (WorkItem & { progress: unknown })[]> {
+    const session = await this.#session(viewer.userId, sessionId);
+    const reader = { ...viewer, locale: session.locale ?? viewer.locale };
+    const work = await this.#work(reader, sessionId);
+    const progress = new Map<string, unknown>();
+    for (const [kind, resolver] of this.#linkKinds) {
+      const refIds = work
+        .filter((item) => item.kind === kind)
+        .map((item) => item.refId);
+      if (!resolver.progress || refIds.length === 0) continue;
+      for (const [refId, detail] of await resolver.progress(refIds, reader))
+        progress.set(`${kind}:${refId}`, detail);
+    }
+    return work.map((item) => ({
+      ...item,
+      progress: progress.get(`${item.kind}:${item.refId}`) ?? null,
+    }));
   }
 
   /** Ties `refId` to the session, once, and tells its transcript. */
@@ -1387,21 +1358,12 @@ export class AgentSessionsService {
 
   /** What the bridge needs to run a command of the session. */
   #target(session: SessionRecord): SessionTarget {
-    const tools =
-      this.#tools.length > 0 && this.#toolTokens
-        ? {
-            name: this.#toolServer,
-            path: TOOLS_PATH,
-            token: this.#toolTokens.sign(session.id),
-          }
-        : null;
     return {
       id: session.id,
       agentId: session.agentId,
       cwd: session.cwd,
       acpSessionId: session.acpSessionId,
       settings: session.settings,
-      tools,
     };
   }
 
@@ -1503,44 +1465,6 @@ export class AgentSessionsService {
       if (!known.has(`${mention.kind}:${mention.refId}`))
         items.push(item(mention.kind, mention.refId, mention));
     return items;
-  }
-
-  /** The owner a tool is called for, in the interface language supplied with their latest message. */
-  async #ownerOf(caller: {
-    readonly userId: string;
-    readonly sessionId: string;
-  }): Promise<Viewer> {
-    const session = await sessions(this.#conn()).findOne({
-      filter: { id: caller.sessionId },
-    });
-    return { userId: caller.userId, locale: session?.locale ?? undefined };
-  }
-
-  /** The tool every session's agent has: the work tied to its session, and how each is going. */
-  #workTool(): SessionTool {
-    return defineSessionTool({
-      name: 'list_session_work',
-      description:
-        'Lists the work tied to this session, what was created in it or mentioned in its messages, with how each stands and, where the application tells, how it is going: who works on it, what it waits for, its pull request. When the person asks about the tasks or their progress without naming others, they mean these: call this first.',
-      input: z.object({}),
-      run: async (_input, caller) => {
-        const viewer = await this.#ownerOf(caller);
-        const work = await this.#work(viewer, caller.sessionId);
-        const progress = new Map<string, unknown>();
-        for (const [kind, resolver] of this.#linkKinds) {
-          const refIds = work
-            .filter((item) => item.kind === kind)
-            .map((item) => item.refId);
-          if (!resolver.progress || refIds.length === 0) continue;
-          for (const [refId, detail] of await resolver.progress(refIds, viewer))
-            progress.set(`${kind}:${refId}`, detail);
-        }
-        return work.map(({ kind, refId, ...item }) => ({
-          ...item,
-          progress: progress.get(`${kind}:${refId}`) ?? null,
-        }));
-      },
-    });
   }
 
   /** The records mentioned, as the viewer sees them; one the viewer cannot see is refused. */

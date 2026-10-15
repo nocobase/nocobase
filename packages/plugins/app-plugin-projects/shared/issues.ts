@@ -102,6 +102,7 @@ export interface Activity {
 }
 
 export interface IssueDetail extends IssueListItem {
+  readonly progress?: Record<string, unknown> | null;
   readonly parent: IssueRef | null;
   /** The fixed statuses, in order. */
   readonly statuses: readonly StatusDefinition[];

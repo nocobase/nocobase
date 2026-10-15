@@ -9,7 +9,6 @@ import {
   type RealtimeUserTopic,
 } from '@nocobase/app-server/realtime';
 import { apiDocsToken } from '@nocobase/app-server/router';
-import { secretsServiceToken } from '@nocobase/app-server/secrets';
 import { loggingToken } from '@nocobase/app-server/logging';
 import { databaseManagerToken } from '@nocobase/db';
 import { ServiceProvider } from '@nocobase/service-provider';
@@ -22,7 +21,6 @@ import { computerKeyFragment, computerKeyResolver } from '../computer-key.js';
 import { createImageStorage } from '../images.js';
 import { AgentSessionsService } from '../service.js';
 import { agentSessionsToken } from '../tokens.js';
-import { createToolTokens } from '../tools.js';
 
 export class AgentSessionsProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-agent-sessions';
@@ -41,9 +39,6 @@ export class AgentSessionsProvider extends ServiceProvider<AppPluginApplication>
           });
       }
       const topic = this.#topic;
-      const secrets = container.has(secretsServiceToken)
-        ? container.resolve(secretsServiceToken)
-        : undefined;
       const logger = container.has(loggingToken)
         ? container.resolve(loggingToken).getLogger('agent-sessions')
         : undefined;
@@ -66,14 +61,6 @@ export class AgentSessionsProvider extends ServiceProvider<AppPluginApplication>
             }
           : {}),
         database: container.resolve(databaseManagerToken),
-        // Without a secrets key there is nothing to sign tool tokens with, and sessions get no tools.
-        ...(secrets?.ready
-          ? {
-              toolTokens: createToolTokens(() =>
-                secrets.keyring('agent-sessions/tools'),
-              ),
-            }
-          : {}),
         ...(topic
           ? {
               publish: (userId, change) =>

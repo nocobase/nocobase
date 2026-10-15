@@ -7,6 +7,11 @@
  * `<words> <args> [flags] -> METHOD path (identities) action`; a flag is `!` when required and `@env` when the CLI reads
  * it from CI's environment when left out.
  */
+import { AsyncLocalStorage } from 'node:async_hooks';
+import type { Knex } from 'knex';
+import { databaseManagerToken } from '@nocobase/db';
+import { BRIDGE_PROTOCOL_VERSION } from '../../../../libs/acp-bridge/src/protocol.js';
+import { agentSessionsToken } from '@nocobase/app-plugin-agent-sessions/server';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -286,5 +291,153 @@ describe('Studio’s command manifest', () => {
     expect(document.paths['/api/cli/manifest']?.get?.security).toEqual(
       expect.arrayContaining([{ runToken: [] }]),
     );
+  });
+  it('creates and reads session work through the real CLI routes with existing permissions and batch progress', async () => {
+    const manifest = await manifestOf({ cookie });
+    expect(
+      manifest.commands
+        .find((command) => command.id === 'session:work')
+        ?.parameters.find((parameter) => parameter.field === 'sessionId')?.env,
+    ).toEqual(['NB_STUDIO_AGENT_SESSION']);
+    const { container } = server.application;
+    const sessions = container.resolve(agentSessionsToken);
+    const projects = container.resolve(projectsToken);
+    const me = (await (
+      await request('/auth/get-session', { headers: { cookie } })
+    ).json()) as { user: { id: string }; session: { token: string } };
+    const userId = me.user.id;
+    const viewer: Viewer = {
+      userId,
+      actor: { type: 'user', id: userId },
+      permissions:
+        await container.resolve(projectsAccessToken).permissionsOfUser!(userId),
+    };
+    const project = await projects.projects.create(viewer, {
+      name: 'CLI session integration',
+    });
+    const { computerId } = await sessions.register(userId, {
+      protocol: BRIDGE_PROTOCOL_VERSION,
+      computerId: null,
+      computer: {
+        name: 'Test laptop',
+        platform: 'linux',
+        arch: 'x64',
+        host: 'test',
+        roots: ['/workspace'],
+        agents: [{ id: 'codex', name: 'Codex', version: 'test' }],
+      },
+    });
+    const session = await sessions.createSession(
+      { userId },
+      {
+        computerId,
+        agentId: 'codex',
+        projectId: project.id,
+        cwd: '/workspace',
+        content: [{ type: 'text', text: 'Plan related work.' }],
+      },
+    );
+    const scope = new AsyncLocalStorage<symbol>();
+    const client = await container
+      .resolve(databaseManagerToken)
+      .connection()
+      .client<Knex>();
+    const measure = async () => {
+      const mark = Symbol('session-work');
+      const sql: string[] = [];
+      const listener = (query: { sql: string }) => {
+        if (scope.getStore() === mark) sql.push(query.sql);
+      };
+      client.on('query', listener);
+      try {
+        await scope.run(mark, () =>
+          sessions.sessionWork({ userId }, session.id),
+        );
+      } finally {
+        client.removeListener('query', listener);
+      }
+      expect(
+        sql.filter((query) =>
+          /^(insert|update|delete|begin|commit)\b|\bfor\s+update\b/iu.test(
+            query,
+          ),
+        ),
+      ).toEqual([]);
+      return sql.length;
+    };
+    await sessions.sessionWork({ userId }, session.id);
+    const empty = await measure();
+    const headers = {
+      authorization: `Bearer ${me.session.token}`,
+      'x-nb-agent-session': session.id,
+    };
+    const made: string[] = [];
+    for (const title of ['First linked task', 'Second linked task']) {
+      const response = await request('/projects/issues', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ title }),
+      });
+      expect(response.status, await response.clone().text()).toBe(201);
+      const issue = (
+        (await response.json()) as {
+          data: { id: string; projectId: string; statusKey: string };
+        }
+      ).data;
+      expect(issue).toMatchObject({
+        projectId: project.id,
+        statusKey: 'backlog',
+      });
+      made.push(issue.id);
+    }
+    const response = await request(
+      `/agentSessions/sessions/${session.id}/work`,
+      { headers: { cookie } },
+    );
+    expect(response.status).toBe(200);
+    const work = (
+      (await response.json()) as {
+        data: { refId: string; progress: unknown }[];
+      }
+    ).data;
+    expect(work.map((item) => item.refId)).toEqual(made);
+    expect(work.every((item) => item.progress !== null)).toBe(true);
+    await sessions.sessionWork({ userId }, session.id);
+    const multiple = await measure();
+    process.stdout.write(
+      `Session work SQL reads: empty=${empty}, two tasks=${multiple}; writes/locks/transactions=0.\n`,
+    );
+    expect(
+      (
+        await request('/projects/issues', {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${me.session.token}`,
+            'x-nb-agent-session': 'missing',
+          },
+          body: JSON.stringify({ title: 'Refused' }),
+        })
+      ).status,
+    ).toBe(403);
+    await sessions.updateSession({ userId }, session.id, { archived: true });
+    expect(
+      (
+        await request('/projects/issues', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ title: 'Archived' }),
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (await request(`/agentSessions/sessions/${session.id}/work`)).status,
+    ).toBe(401);
+    expect(
+      (
+        await request(`/agentSessions/sessions/${session.id}/work`, {
+          headers: { [HEADERS.runToken]: token },
+        })
+      ).status,
+    ).not.toBe(200);
   });
 });

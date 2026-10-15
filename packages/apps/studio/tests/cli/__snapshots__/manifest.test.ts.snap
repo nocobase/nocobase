@@ -333,6 +333,7 @@ service delete <service> -> DELETE /api/agents/services/{serviceName} (person) c
 service discover [--service --provider --base-url --api-key] -> POST /api/agents/discoverModels (person)
 service list -> GET /api/agents/services (person)
 service update <service> [--title --base-url --api-key --models --enabled --file] -> PATCH /api/agents/services/{serviceName} (person)
+session work <session> -> GET /api/agentSessions/sessions/{sessionId}/work (person)
 skill attachment get <kind> <scope> -> GET /api/agents/skillAttachments/{scopeKind}/{scopeId} (person)
 skill attachment set <kind> <scope> [--skills!] -> PUT /api/agents/skillAttachments/{scopeKind}/{scopeId} (person)
 skill create [--content --files --file] -> POST /api/agents/skills (person)

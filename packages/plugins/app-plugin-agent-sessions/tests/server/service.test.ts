@@ -17,8 +17,6 @@ import {
   AgentSessionsService,
   type LinkResolver,
 } from '../../server/service.js';
-import { createToolTokens, defineSessionTool } from '../../server/tools.js';
-import { z } from 'zod';
 import { test } from '../helpers/database.js';
 
 const T0 = Date.parse('2026-10-13T08:00:00.000Z');
@@ -472,7 +470,6 @@ describe('AgentSessionsService', () => {
         cwd: '/home/zhou/code',
         acpSessionId: null,
         settings: {},
-        tools: null,
       },
     });
     await expect(take(computerId)).resolves.toEqual([]);
@@ -1035,25 +1032,16 @@ describe('AgentSessionsService', () => {
     ).rejects.toMatchObject({ key: 'directoryNotAllowed' });
   });
 
-  test('works for one of the application’s projects, which its tools default to', async ({
+  test('works for one of the application’s projects, which CLI creation defaults to', async ({
     database,
   }) => {
     const service = new AgentSessionsService({
       database,
       now: () => T0,
-      toolTokens: createToolTokens(() => [{ value: 'key' }]),
     });
     service.registerProjects({
       list: () => Promise.resolve([{ id: 'p1', name: 'Studio' }]),
     });
-    service.registerTools('studio', [
-      defineSessionTool({
-        name: 'noop',
-        description: 'Does nothing.',
-        input: z.object({}),
-        run: () => Promise.resolve(null),
-      }),
-    ]);
     const { computerId } = await service.register('u1', {
       protocol: BRIDGE_PROTOCOL_VERSION,
       computerId: null,
@@ -1084,17 +1072,24 @@ describe('AgentSessionsService', () => {
     const [command] = (
       await service.poll('u1', { computerId, wait: false }, signal)
     ).commands;
-    const token =
-      command?.type === 'prompt' ? command.session.tools?.token : undefined;
-    const caller = await service.toolHost.caller(token ?? '');
-    expect(caller).toEqual({
-      userId: 'u1',
-      sessionId: session.id,
+    expect(command?.type === 'prompt' && command.session).not.toHaveProperty(
+      'tools',
+    );
+    await expect(service.creationContext('u1', session.id)).resolves.toEqual({
       projectId: 'p1',
     });
-    await expect(service.toolHost.instructions(caller!)).resolves.toContain(
-      '"Studio" (id p1)',
-    );
+    await expect(
+      service.creationContext('u2', session.id),
+    ).rejects.toMatchObject({ key: 'sessionNotFound' });
+    await expect(
+      service.creationContext('u1', 'missing'),
+    ).rejects.toMatchObject({ key: 'sessionNotFound' });
+    await service.updateSession({ userId: 'u1' }, session.id, {
+      archived: true,
+    });
+    await expect(
+      service.creationContext('u1', session.id),
+    ).rejects.toMatchObject({ key: 'sessionArchived' });
   });
 
   test('ties what a message mentions to the session and tells the agent what it is', async ({
@@ -1234,13 +1229,6 @@ describe('AgentSessionsService', () => {
       'and now?',
       'How to work in this session:\nMake small fixes yourself.',
     ]);
-    await expect(
-      service.toolHost.instructions({
-        userId: 'u1',
-        sessionId: session.id,
-        projectId: null,
-      }),
-    ).resolves.toBe('How to work in this session:\nMake small fixes yourself.');
   });
 
   for (const locale of ['zh-CN', 'en-US']) {
@@ -1275,14 +1263,6 @@ describe('AgentSessionsService', () => {
       );
       const restored = new AgentSessionsService({ database, now: () => T0 });
       restored.registerInstructions(instructions);
-      const caller = {
-        userId: viewer.userId,
-        sessionId: session.id,
-        projectId: null,
-      };
-      await expect(restored.toolHost.instructions(caller)).resolves.toContain(
-        `Create tasks in ${locale}.`,
-      );
       await restored.prompt(viewer, session.id, text('Continue'));
       await expect(told()).resolves.toEqual(['Continue']);
       const switched = locale === 'zh-CN' ? 'en-US' : 'zh-CN';
@@ -1295,9 +1275,6 @@ describe('AgentSessionsService', () => {
         'Create another',
         `How to work in this session:\nCreate tasks in ${switched}.`,
       ]);
-      await expect(restored.toolHost.instructions(caller)).resolves.toContain(
-        `Create tasks in ${switched}.`,
-      );
       // Context is sent to the agent without rewriting the person's transcript.
       const events = await restored.listEvents(viewer.userId, session.id, {
         after: 0,
@@ -1317,7 +1294,6 @@ describe('AgentSessionsService', () => {
     const service = new AgentSessionsService({
       database,
       now: () => T0,
-      toolTokens: createToolTokens(() => [{ value: 'key' }]),
     });
     service.registerLinkKind('issue', {
       resolve: (refIds, viewer) =>
@@ -1362,14 +1338,15 @@ describe('AgentSessionsService', () => {
     );
     await service.link(session.id, 'issue', 'ST-1');
 
-    const caller = { userId: 'u1', sessionId: session.id, projectId: null };
-    const tool = service.toolHost
-      .tools()
-      .find((candidate) => candidate.name === 'list_session_work');
     await expect(
-      tool?.run({}, { ...caller, link: () => Promise.resolve() }),
+      service.sessionWork({ userId: 'u2' }, session.id),
+    ).rejects.toMatchObject({ key: 'sessionNotFound' });
+    await expect(
+      service.sessionWork({ userId: 'u1' }, session.id),
     ).resolves.toEqual([
       {
+        kind: 'issue',
+        refId: 'ST-1',
         key: 'ST-1',
         title: 'Issue ST-1',
         status: 'Backlog in zh-CN',
@@ -1377,8 +1354,5 @@ describe('AgentSessionsService', () => {
         progress: { waitsFor: 'the owner' },
       },
     ]);
-    await expect(service.toolHost.instructions(caller)).resolves.toMatch(
-      /- #ST-1 Issue ST-1: Backlog in zh-CN\nCall `list_session_work`/u,
-    );
   });
 });
