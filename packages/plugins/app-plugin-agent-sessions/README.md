@@ -41,12 +41,12 @@ agentSessions({ routes: false }),
 
 // client/routes.ts
 {
-  ...agentSessionsRoute({ cli: 'acme', install: 'npm install -g @acme/cli' }),
+  ...agentSessionsRoute({ cli: 'acme', connectPrompt: ComputerSetup }),
   navigation: { title: 'navigation.agentSessions', icon: MessagesSquare },
 },
 ```
 
-`cli` is the command people connect a computer with, and is required; `install` is how they install it. The page's "My computers" dialog shows both. An application that does not place the page itself registers `agentSessions({ cli, install })` instead, and the plugin adds the route with its own menu entry.
+`cli` is the command people connect a computer with, and is required. The optional `connectPrompt` component supplies the application’s setup trigger and dialog in both the empty state and "My computers". Without it, the plugin shows its default command checklist. An application that does not place the page itself registers `agentSessions({ cli, connectPrompt })` instead, and the plugin adds the route with its own menu entry. The previous `install` option is replaced by `connectPrompt`; applications own installation instructions and credentials. An offline computer still shows only the background service command.
 
 ### Tying records to sessions
 

@@ -203,7 +203,8 @@ export function NewSession({
     }
   };
 
-  if (computers.data && !computer) {
+  // A remembered or fallback computer can still be selected while every bridge is offline.
+  if (computers.data && (!computer || online.length === 0)) {
     return (
       <div className='h-full overflow-y-auto'>
         <div className='mx-auto flex max-w-[560px] flex-col gap-4 px-4 py-10 sm:pt-24'>
@@ -232,7 +233,11 @@ export function NewSession({
               <OutdatedBridgeNotice key={candidate.id} computer={candidate} />
             ))}
           <div className='rounded-[10px] border p-4 text-[13px]'>
-            {all.length === 0 ? <ConnectSteps /> : <KeepConnected />}
+            {all.length === 0 ? (
+              <ConnectSteps />
+            ) : (
+              <KeepConnected temporary={false} />
+            )}
           </div>
           {all.length > 0 && (
             <Button
