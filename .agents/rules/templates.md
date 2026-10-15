@@ -10,7 +10,7 @@ They drift otherwise, and the drift is invisible until someone hits it. Both tem
 
 Not everything transfers. Examples owns its demonstration homepage, article module, and example plugin composition. Each template keeps its own identity and the parts that follow from what it is: `package.json` name, `displayName`, and version; `nocobase.templateKind` and its plugin list; the pages, locales, and branding that make it that product. When a documentation change mentions the other template by name, reword it rather than copying the sentence.
 
-`packages/apps/` is outside this rule. An application there, such as NocoBase Studio, is built on a template rather than being one, and takes a newer template through its `nocobase-app-upgrade` Skill like any generated application; a framework change it needs is made in the same pull request as the Studio change, but the templates are not edited to match it.
+`packages/apps/` is outside this rule. An application there is built on a template rather than being one, and takes a newer template through its `nocobase-app-upgrade` Skill like any generated application; a framework change it needs is made in the same pull request as the application's change, but the templates are not edited to match it.
 
 Apply all applicable sides in one change and run each affected template's `check`. A framework change that lands in only one template is incomplete, and a reviewer cannot tell whether the omission was a decision or an oversight; if it genuinely does not apply, say so in the pull request.
 
