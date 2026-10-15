@@ -12,7 +12,9 @@ test('invitation creation and resend explain missing email configuration and kee
   await dialog.getByLabel('邮箱', { exact: true }).fill(email);
   await dialog.getByRole('button', { name: '发送邀请', exact: true }).click();
   await expect(
-    dialog.getByText('邮件未发送：未配置邮件渠道', { exact: true }),
+    dialog
+      .getByRole('list')
+      .getByText('邮件未发送：未配置邮件渠道', { exact: true }),
   ).toBeVisible();
   const original = await dialog
     .getByLabel('邀请链接', { exact: true })
@@ -29,7 +31,9 @@ test('invitation creation and resend explain missing email configuration and kee
     .click();
   await page.getByRole('menuitem', { name: '重新发送', exact: true }).click();
   await expect(
-    dialog.getByText('邮件未发送：未配置邮件渠道', { exact: true }),
+    dialog
+      .getByRole('list')
+      .getByText('邮件未发送：未配置邮件渠道', { exact: true }),
   ).toBeVisible();
   const renewed = await dialog
     .getByLabel('邀请链接', { exact: true })
