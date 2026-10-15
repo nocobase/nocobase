@@ -260,13 +260,37 @@ describe('nocobase-runner cli', () => {
         input: {
           chunks: [
             { data: unicodeBytes.subarray(0, 7), delayMs: 0 },
-            { data: unicodeBytes.subarray(7, 8), delayMs: 30 },
-            { data: unicodeBytes.subarray(8), delayMs: 60 },
+            { data: unicodeBytes.subarray(7, 8), delayMs: 0 },
+            { data: unicodeBytes.subarray(8), delayMs: 0 },
           ],
-          endDelayMs: 30,
+          synchronizeAtParse: true,
         },
       });
       expect(splitUnicode.code).toBe(0);
+
+      const delayedRemainder = await cli(
+        ['env', 'set', 'DELAYED_REMAINDER'],
+        testEnv,
+        {
+          input: {
+            chunks: [
+              { data: 'consumed-prefix-', delayMs: 0 },
+              { data: 'delayed-suffix', delayMs: 100 },
+            ],
+            synchronizeAtParse: true,
+          },
+        },
+      );
+      expect(delayedRemainder.code).toBe(0);
+
+      const delayedEof = await cli(['env', 'set', 'DELAYED_EOF'], testEnv, {
+        input: {
+          chunks: [{ data: 'all-bytes-before-eof', delayMs: 0 }],
+          endDelayMs: 500,
+          synchronizeAtParse: true,
+        },
+      });
+      expect(delayedEof.code).toBe(0);
 
       const delayed = await cli(['env', 'set', 'DELAYED_INPUT'], testEnv, {
         input: {
@@ -285,11 +309,6 @@ describe('nocobase-runner cli', () => {
       });
       expect(whitespace.code).toBe(0);
 
-      const missingName = await cli(['env', 'set'], testEnv, {
-        input: 'not-a-variable-name',
-      });
-      expect(missingName.code).not.toBe(0);
-
       const saved = (
         JSON.parse(
           readFileSync(path.join(testHome, 'apps', 'test-app.json'), 'utf8'),
@@ -298,11 +317,26 @@ describe('nocobase-runner cli', () => {
       expect(saved).toMatchObject({
         NO_NEWLINE: 'plain-value',
         SPLIT_UNICODE: unicode,
+        DELAYED_REMAINDER: 'consumed-prefix-delayed-suffix',
+        DELAYED_EOF: 'all-bytes-before-eof',
         DELAYED_INPUT: 'arrived-after-parser-timeout',
         EMPTY_VALUE: '',
         WHITESPACE: ' \t keep  ',
       });
-      expect(saved).not.toHaveProperty('not-a-variable-name');
+
+      const missingName = await cli(['env', 'set'], testEnv, {
+        input: 'VALID_PIPE_NAME',
+      });
+      expect(missingName.code).not.toBe(0);
+      expect(missingName.stderr).toMatch(
+        /Missing \d+ required arg:[\s\S]*\bname\s+The variable name\./,
+      );
+      const afterMissingName = (
+        JSON.parse(
+          readFileSync(path.join(testHome, 'apps', 'test-app.json'), 'utf8'),
+        ) as { variables: Record<string, string> }
+      ).variables;
+      expect(afterMissingName).not.toHaveProperty('VALID_PIPE_NAME');
     } finally {
       await server.close();
       removeDir(testHome);

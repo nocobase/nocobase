@@ -91,6 +91,8 @@ export interface CliInput {
     readonly delayMs: number;
   }[];
   readonly endDelayMs?: number;
+  /** Start input delivery when the CLI's first stdin reader is ready. */
+  readonly synchronizeAtParse?: boolean;
 }
 
 export function cli(
@@ -100,8 +102,28 @@ export function cli(
 ): Promise<CliResult> {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [BIN, ...args], {
-      env,
+      env:
+        options.input &&
+        typeof options.input !== 'string' &&
+        options.input.synchronizeAtParse
+          ? {
+              ...env,
+              NODE_OPTIONS: [
+                env.NODE_OPTIONS,
+                `--import=${path.join(PACKAGE_ROOT, 'tests/fixtures/oclif-parse-gate.mjs')}`,
+              ]
+                .filter(Boolean)
+                .join(' '),
+              NOCOBASE_RUNNER_TEST_PARSE_GATE: '1',
+            }
+          : env,
       cwd: options.cwd ?? PACKAGE_ROOT,
+      stdio:
+        options.input &&
+        typeof options.input !== 'string' &&
+        options.input.synchronizeAtParse
+          ? ['pipe', 'pipe', 'pipe', 'pipe']
+          : undefined,
     });
     let stdout = '';
     let stderr = '';
@@ -110,15 +132,38 @@ export function cli(
     if (typeof options.input === 'string' || options.input === undefined) {
       child.stdin.end(options.input ?? '');
     } else {
-      let lastWriteAt = 0;
-      for (const chunk of options.input.chunks) {
-        lastWriteAt = Math.max(lastWriteAt, chunk.delayMs);
-        setTimeout(() => child.stdin.write(chunk.data), chunk.delayMs);
+      const input = options.input;
+      const deliver = (includeImmediateFirstChunk = false) => {
+        let lastWriteAt = 0;
+        const firstChunk = input.chunks[0];
+        if (includeImmediateFirstChunk && firstChunk?.delayMs === 0) {
+          child.stdin.write(firstChunk.data);
+        }
+        for (const [index, chunk] of input.chunks.entries()) {
+          if (includeImmediateFirstChunk && index === 0 && chunk.delayMs === 0)
+            continue;
+          lastWriteAt = Math.max(lastWriteAt, chunk.delayMs);
+          setTimeout(() => child.stdin.write(chunk.data), chunk.delayMs);
+        }
+        setTimeout(
+          () => child.stdin.end(),
+          lastWriteAt + (input.endDelayMs ?? 0),
+        );
+      };
+      if (options.input.synchronizeAtParse) {
+        let gateOutput = '';
+        let delivered = false;
+        child.stdio[3]?.on('data', (chunk: Buffer) => {
+          gateOutput += chunk.toString();
+          if (!delivered && gateOutput.includes('stdin-read-start')) {
+            delivered = true;
+            deliver(true);
+            child.stdio[3]?.write('!');
+          }
+        });
+      } else {
+        deliver();
       }
-      setTimeout(
-        () => child.stdin.end(),
-        lastWriteAt + (options.input.endDelayMs ?? 0),
-      );
     }
     child.on('close', (code) => resolve({ code, stdout, stderr }));
   });
