@@ -1,4 +1,5 @@
 import { writeFileSync } from 'node:fs';
+import type { KeyScope } from '@nocobase/authorization/core';
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -83,6 +84,29 @@ describe('new project default skills', () => {
     client.off('query', capture);
     expect(statements).toHaveLength(3);
     expect(statements.every((sql) => /^\s*select\b/iu.test(sql))).toBe(true);
+    const keyScope: KeyScope = {
+      keyId: 'test-settings-only',
+      permissions: null,
+      allows: (resource) => resource.type === 'settings',
+      objects: () => 'all',
+    };
+    expect(
+      (await projectScope.describe!([project.id], 'alice', keyScope)).size,
+    ).toBe(0);
+    expect(
+      (await workdirScope.describe!([resource.id], 'alice', keyScope)).size,
+    ).toBe(0);
+    const limited: KeyScope = {
+      ...keyScope,
+      allows: () => true,
+      objects: () => [],
+    };
+    expect(
+      (await projectScope.describe!([project.id], 'alice', limited)).size,
+    ).toBe(0);
+    expect(
+      (await workdirScope.describe!([resource.id], 'alice', limited)).size,
+    ).toBe(0);
     await h.addUser('bob');
     expect((await projectScope.describe!([project.id], 'bob')).size).toBe(0);
     expect((await workdirScope.describe!([resource.id], 'bob')).size).toBe(0);

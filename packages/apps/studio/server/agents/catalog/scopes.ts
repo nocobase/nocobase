@@ -8,6 +8,7 @@ import type {
   ScopeKind,
 } from '@nocobase/app-plugin-agents/server/tokens';
 import type { Projects } from '@nocobase/app-plugin-projects/server/tokens';
+import type { KeyScope } from '@nocobase/authorization/core';
 
 import { STUDIO_NAMESPACE } from '../../../shared/access.js';
 import type { PermissionSource } from '../commands/permissions.js';
@@ -23,15 +24,22 @@ export function studioScopes(deps: {
 }): ScopeKind[] {
   const describe =
     (target: 'project' | 'workdir') =>
-    async (ids: readonly string[], userId: string) => {
+    async (ids: readonly string[], userId: string, keyScope?: KeyScope) => {
       const viewer = await deps.permissions.viewerOf({
         kind: 'user',
         userId,
         displayName: userId,
+        ...(keyScope ? { keyScope } : {}),
       });
-      const names = await deps
-        .projects()
-        .projects.targetNames(viewer, target, ids);
+      const projectIds = keyScope?.objects('pm.projects') ?? 'all';
+      const names = await deps.projects().projects.targetNames(
+        {
+          ...viewer,
+          ...(projectIds === 'all' ? {} : { projectIds }),
+        },
+        target,
+        ids,
+      );
       return new Map(
         [...names].map(([id, item]) => [
           id,

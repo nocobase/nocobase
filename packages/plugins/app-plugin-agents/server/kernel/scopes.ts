@@ -10,6 +10,7 @@
  * nobody may.
  */
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
+import type { KeyScope } from '@nocobase/authorization/core';
 import type { I18nText } from '../../shared/i18n.js';
 
 export const CORE_SCOPES = ['agent', 'workdir'] as const;
@@ -37,6 +38,7 @@ export interface ScopeKind {
   describe?(
     scopeIds: readonly string[],
     userId: string,
+    keyScope?: KeyScope,
   ): Promise<
     ReadonlyMap<string, { readonly name: string; readonly href?: string }>
   >;

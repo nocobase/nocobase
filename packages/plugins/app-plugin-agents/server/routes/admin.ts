@@ -72,6 +72,7 @@ import {
   encodePageToken,
 } from '../kernel/http.js';
 import { WORKDIR_TITLE } from '../kernel/scopes.js';
+import type { KeyScope } from '@nocobase/authorization/core';
 import { tags } from './openapi.js';
 import {
   AgentActionOptionSchema,
@@ -168,6 +169,7 @@ const revisionConflict = (what: string): ApiResponseObject =>
 /** Who is asking, what the settings items allow them, and how far their business actions reach. */
 export interface AdminCaller {
   readonly userId: string;
+  readonly keyScope?: KeyScope;
   can(item: SettingsItem, action: SettingsAction): Promise<boolean>;
   /** Whether a page grant (`PAGES`) opens the page for the caller. */
   opens(page: Page): Promise<boolean>;
@@ -789,6 +791,7 @@ export function createAdminRoutes(
               .filter((item) => item.scope === scope)
               .map((item) => item.scopeId),
             caller(context).userId,
+            caller(context).keyScope,
           ),
         );
     }

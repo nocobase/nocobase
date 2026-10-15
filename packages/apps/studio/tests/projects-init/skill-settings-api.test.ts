@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createTestAppConfig } from '@nocobase/app-testing/server';
@@ -9,6 +9,9 @@ import {
   type StandaloneServer,
 } from '../../server/standalone.js';
 import type { AccessMe } from '../../shared/access.js';
+import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
+import { projectsToken } from '@nocobase/app-plugin-projects/server/tokens';
+import { studioAccessToken } from '../../server/access/token.js';
 
 let server: StandaloneServer | undefined;
 let config: Awaited<ReturnType<typeof createTestAppConfig>> | undefined;
@@ -147,6 +150,78 @@ it('lets a non-root owner configure both defaults through the real routes and CL
       data: { skillIds: [] },
     });
   }
+  const projects = server.application.container.resolve(projectsToken);
+  const agents = server.application.container.resolve(agentsToken);
+  const client = await projects.tx.read().client<{
+    on(event: string, listener: (query: { sql: string }) => void): void;
+    off(event: string, listener: (query: { sql: string }) => void): void;
+  }>();
+  const measure = async () => {
+    const cost = { select: 0, writes: 0, explicitLocks: 0 };
+    const capture = ({ sql }: { sql: string }) => {
+      if (/^\s*(select|with)\b/iu.test(sql)) cost.select += 1;
+      if (/^\s*(insert|update|delete)\b/iu.test(sql)) cost.writes += 1;
+      if (/for update|lock table/iu.test(sql)) cost.explicitLocks += 1;
+    };
+    client.on('query', capture);
+    const response = await request(`/agents/skills/${skillId}`, owner);
+    client.off('query', capture);
+    expect(response.status).toBe(200);
+    expect(cost.writes).toBe(0);
+    expect(cost.explicitLocks).toBe(0);
+    return {
+      cost,
+      data: (await response.json()) as { data: { attachments: unknown[] } },
+    };
+  };
+  await measure();
+  const baseline = await measure();
+  const access = server.application.container.resolve(studioAccessToken);
+  const viewer = {
+    userId,
+    permissions: await access.permissionsOf({
+      principal: { type: 'user', id: userId },
+      subjects: [{ type: 'authenticated', id: '*' }],
+    }),
+  };
+  const project = await projects.projects.create(viewer, {
+    name: 'Owner project',
+  });
+  const resource = await projects.projects.addResource(viewer, project.id, {
+    type: 'gitRepo',
+    url: 'https://example.com/team/repository.git',
+    label: 'Repository',
+  });
+  await agents.skills.attach({ scope: 'project', scopeId: project.id }, [
+    skillId,
+  ]);
+  await agents.skills.attach({ scope: 'workdir', scopeId: resource.id }, [
+    skillId,
+  ]);
+  const named = await measure();
+  expect(named.data.data.attachments).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        scope: 'project',
+        name: 'Owner project',
+        href: `/projects/${project.id}/settings`,
+      }),
+      expect.objectContaining({ scope: 'workdir', name: 'Repository' }),
+    ]),
+  );
+  if (process.env.PM391_DETAIL_COST_REPORT)
+    writeFileSync(
+      process.env.PM391_DETAIL_COST_REPORT,
+      JSON.stringify(
+        {
+          baseline: baseline.cost,
+          named: named.cost,
+          addedSelects: named.cost.select - baseline.cost.select,
+        },
+        null,
+        2,
+      ),
+    );
   expect(
     (
       await request(
