@@ -672,24 +672,38 @@ export class OracleSchemaInspector extends BaseSchemaInspector {
       group.push(row);
       groups.set(row.index_name, group);
     }
-    return [...groups.entries()].map(([name, entries]) => ({
-      name,
-      keys: entries
-        .sort((left, right) => left.column_position - right.column_position)
-        .map(oracleIndexKey),
-      unique: entries[0].uniqueness === 'UNIQUE',
-      // Partitioned indexes report N/A at the index level; inspect their leaves.
-      valid: numberValue(entries[0].valid) === 1,
-      backsConstraint:
-        entries[0].constraint_type === 'P' || entries[0].constraint_type === 'U'
-          ? {
-              kind:
-                entries[0].constraint_type === 'P' ? 'primaryKey' : 'unique',
-              name: optionalString(entries[0].constraint_name),
-            }
-          : undefined,
-      method: entries[0].index_type,
-    }));
+    return [...groups.entries()].map(([name, entries]) => {
+      // Joining constraints repeats each key when several constraints share an index.
+      const keys = new Map<number, OracleIndexRow>();
+      const constraints = new Map<
+        string,
+        NonNullable<PhysicalIndexSchema['backsConstraint']>
+      >();
+      for (const entry of entries) {
+        keys.set(entry.column_position, entry);
+        if (entry.constraint_type === 'P' || entry.constraint_type === 'U') {
+          constraints.set(`${entry.constraint_type}:${entry.constraint_name}`, {
+            kind: entry.constraint_type === 'P' ? 'primaryKey' : 'unique',
+            name: optionalString(entry.constraint_name),
+          });
+        }
+      }
+      const references = [...constraints.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([, reference]) => reference);
+      return {
+        name,
+        keys: [...keys.values()]
+          .sort((left, right) => left.column_position - right.column_position)
+          .map(oracleIndexKey),
+        unique: entries[0].uniqueness === 'UNIQUE',
+        // Partitioned indexes report N/A at the index level; inspect their leaves.
+        valid: numberValue(entries[0].valid) === 1,
+        backsConstraint: references[0],
+        backsConstraints: references.length > 1 ? references : undefined,
+        method: entries[0].index_type,
+      };
+    });
   }
 
   private async readKnexAutoIncrementColumns(

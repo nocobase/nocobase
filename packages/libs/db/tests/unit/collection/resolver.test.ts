@@ -13,6 +13,54 @@ import type {
 } from '../../../src/schema/inspector/types.js';
 
 describe('CollectionResolver', () => {
+  it.each([false, true])(
+    'preserves every shared backing-index restriction (legacy reference=%s)',
+    (legacy) => {
+      const references = [
+        { kind: 'unique' as const, name: 'unique_key' },
+        { kind: 'primaryKey' as const, name: 'primary_key' },
+      ];
+      const result = resolveCollection({
+        physical: physicalCollection({
+          columns: [column('id', 1), column('tenant', 2)],
+          primaryKey: { name: 'primary_key', columns: ['tenant', 'id'] },
+          uniqueConstraints: [
+            { name: 'unique_key', columns: ['id', 'tenant'] },
+          ],
+          indexes: [
+            {
+              name: 'shared_index',
+              keys: [
+                { columnName: 'id', columnEquality: false },
+                { columnName: 'tenant' },
+              ],
+              unique: true,
+              valid: false,
+              ...(legacy ? { backsConstraint: references[0] } : {}),
+              backsConstraints: references,
+            },
+          ],
+        }),
+        context: emptyContext(),
+      });
+      expect(result.collection.constraints).toEqual([
+        {
+          type: 'primary',
+          name: 'primary_key',
+          fields: ['tenant', 'id'],
+          db: { columnEquality: false, valid: false },
+        },
+        {
+          type: 'unique',
+          name: 'unique_key',
+          fields: ['id', 'tenant'],
+          db: { columnEquality: false, valid: false },
+        },
+      ]);
+      expect(result.collection.indexes).toEqual([]);
+    },
+  );
+
   describe.each(['primaryKey', 'unique'] as const)(
     '%s backing index identity',
     (kind) => {

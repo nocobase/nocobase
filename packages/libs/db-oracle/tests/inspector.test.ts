@@ -99,4 +99,70 @@ describe('oracle schema inspector', () => {
       'decimal',
     );
   });
+
+  it.each([false, true])(
+    'deduplicates shared index keys and preserves all constraints (reversed rows=%s)',
+    async (reverse) => {
+      const rows = [
+        {
+          column_position: 1,
+          column_name: 'ID',
+          data_type: 'VARCHAR2',
+          collation: 'USING_NLS_COMP',
+        },
+        {
+          column_position: 2,
+          column_name: 'TENANT',
+          data_type: 'NUMBER',
+          collation: null,
+        },
+      ].flatMap((key) =>
+        [
+          { constraint_type: 'U', constraint_name: 'UNIQUE_KEY' },
+          { constraint_type: 'P', constraint_name: 'PRIMARY_KEY' },
+        ].map((constraint) => ({
+          index_name: 'SHARED_INDEX',
+          uniqueness: 'UNIQUE',
+          index_type: 'NORMAL',
+          valid: 1,
+          column_expression: null,
+          descend: 'ASC',
+          ...key,
+          ...constraint,
+        })),
+      );
+      const raw = vi
+        .fn()
+        .mockResolvedValueOnce([{ schema_name: 'APP' }])
+        .mockResolvedValueOnce([
+          { schema_name: 'APP', table_name: 'ITEMS', object_kind: 'TABLE' },
+        ])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce(reverse ? rows.reverse() : rows);
+      const inspector = new OracleSchemaInspector({
+        connectionName: 'main',
+        resolveClient: async () => ({ raw }) as never,
+      });
+      const collection = await inspector.getPhysicalCollection({
+        tableName: 'ITEMS',
+      });
+      expect(collection?.indexes).toEqual([
+        expect.objectContaining({
+          name: 'SHARED_INDEX',
+          unique: true,
+          valid: true,
+          keys: [
+            { columnName: 'ID', order: 'asc', columnEquality: false },
+            { columnName: 'TENANT', order: 'asc' },
+          ],
+          backsConstraints: [
+            { kind: 'primaryKey', name: 'PRIMARY_KEY' },
+            { kind: 'unique', name: 'UNIQUE_KEY' },
+          ],
+        }),
+      ]);
+    },
+  );
 });

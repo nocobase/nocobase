@@ -314,3 +314,137 @@ describeIntegrationDatabases('Oracle binary identities', (context) => {
     ]);
   });
 });
+
+describeIntegrationDatabases('Oracle shared backing indexes', (context) => {
+  it.each(
+    (
+      [
+        ['unique', 'primary'],
+        ['primary', 'unique'],
+        ['unique', 'unique'],
+      ] as const
+    ).flatMap(([first, second]) =>
+      [false, true].flatMap((reverseNames) =>
+        [false, true].map((character) => ({
+          first,
+          second,
+          reverseNames,
+          character,
+        })),
+      ),
+    ),
+  )(
+    'preserves $first then $second sharing an index (reverse names=$reverseNames, character=$character)',
+    async ({ first, second, reverseNames, character }) => {
+      await context.builder.createCollection('sharedItems', (c) => {
+        if (character) c.string('id').notNull();
+        else c.integer('id').notNull();
+        c.integer('tenant').notNull();
+        c.string('name').notNull();
+        c.integer('version').notNull();
+        c.optimisticLock('version');
+      });
+      const table = context.table('sharedItems');
+      const index = context.identifier('sharedIndex');
+      const names = [context.identifier('aKey'), context.identifier('zKey')];
+      if (reverseNames) names.reverse();
+      await context.db.raw('create unique index ?? on ?? ("id", "tenant")', [
+        index,
+        table,
+      ]);
+      for (const [position, kind] of [first, second].entries()) {
+        await context.db.raw(
+          `alter table ?? add constraint ?? ${kind === 'primary' ? 'primary key' : 'unique'} (${position === 0 ? '"id", "tenant"' : '"tenant", "id"'}) using index ??`,
+          [table, names[position], index],
+        );
+      }
+      context.connection.collections.invalidate();
+      const rows = [
+        { tenant: 1, id: character ? 'key' : 1, name: 'first', version: 1 },
+        { tenant: 1, id: character ? 'KEY' : 2, name: 'second', version: 2 },
+      ];
+      for (const row of rows) await context.db(table).insert(row);
+      const definition =
+        await context.connection.collections.get('sharedItems');
+      const physical =
+        await context.connection.schemaInspector.getPhysicalCollection({
+          tableName: table,
+        });
+      const statements: string[] = [];
+      const listener = ({ sql }: { sql: string }) => {
+        if (/^(select|update)\b/i.test(sql) && sql.includes(table))
+          statements.push(sql);
+      };
+      let outcome: unknown;
+      await context.database.transaction(async (connection) => {
+        const client = await connection.client<Knex>();
+        await client.raw(
+          'alter session set nls_comp = LINGUISTIC nls_sort = BINARY_CI',
+        );
+        try {
+          const repository = connection.repository('sharedItems');
+          const filter = { tenant: 1, id: character ? 'key' : 1 };
+          expect(await repository.findMany({ filter })).toHaveLength(
+            character ? 2 : 1,
+          );
+          context.db.on('query', listener);
+          try {
+            outcome = await repository.updateOne({
+              filter,
+              ifVersion: 1,
+              values: { name: 'changed' },
+            });
+          } catch (error) {
+            // Commit the caller transaction to expose writes left behind by rejected calls.
+            outcome = error;
+          } finally {
+            context.db.off('query', listener);
+          }
+        } finally {
+          await client.raw(
+            'alter session set nls_comp = BINARY nls_sort = BINARY',
+          );
+        }
+      }, context.spec.name);
+      if (character) {
+        expect(outcome).toMatchObject({ code: 'MULTIPLE_RECORDS_MATCHED' });
+        expect(statements.some((sql) => /^update\b/i.test(sql))).toBe(false);
+        expect(await context.db(table).select('*').orderBy('name')).toEqual(
+          rows,
+        );
+        for (const name of names) {
+          expect(definition?.constraints).toContainEqual(
+            expect.objectContaining({ name, db: { columnEquality: false } }),
+          );
+        }
+      } else {
+        expect(outcome).toMatchObject({
+          record: { ...rows[0], name: 'changed', version: 2 },
+          version: 2,
+        });
+        expect(statements).toHaveLength(2);
+        expect(statements[0]).toMatch(/^update\b/i);
+        expect(await context.db(table).select('*').orderBy('id')).toEqual([
+          { ...rows[0], name: 'changed', version: 2 },
+          rows[1],
+        ]);
+      }
+      const sharedIndex = physical?.indexes.find(
+        (entry) => entry.name === index,
+      );
+      expect(sharedIndex?.keys.map((key) => key.columnName)).toEqual([
+        'id',
+        'tenant',
+      ]);
+      expect(sharedIndex?.backsConstraints).toEqual(
+        expect.arrayContaining(
+          [first, second].map((kind, position) => ({
+            kind: kind === 'primary' ? 'primaryKey' : 'unique',
+            name: names[position],
+          })),
+        ),
+      );
+      expect(sharedIndex?.backsConstraints).toHaveLength(2);
+    },
+  );
+});

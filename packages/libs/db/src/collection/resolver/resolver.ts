@@ -588,18 +588,22 @@ function constraintIndexOptions(
   constraint: PhysicalPrimaryKeySchema | PhysicalUniqueConstraintSchema,
 ): { columnEquality?: false; valid?: false } | undefined {
   const indexes = input.physical.indexes.filter((index) => {
-    const reference = index.backsConstraint;
-    if (reference?.kind !== kind) return false;
-    // A named backing index can reorder constraint columns or contain extra keys.
-    if (constraint.name !== undefined && reference.name !== undefined)
-      return reference.name === constraint.name;
-    // Some inspectors omit constraint names; key order still does not identify a constraint.
-    return (
-      index.keys.length === constraint.columns.length &&
-      constraint.columns.every((column) =>
-        index.keys.some((key) => key.columnName === column),
-      )
-    );
+    const references =
+      index.backsConstraints ??
+      (index.backsConstraint ? [index.backsConstraint] : []);
+    return references.some((reference) => {
+      if (reference.kind !== kind) return false;
+      // A named backing index can reorder constraint columns or contain extra keys.
+      if (constraint.name !== undefined && reference.name !== undefined)
+        return reference.name === constraint.name;
+      // Some inspectors omit constraint names; key order still does not identify a constraint.
+      return (
+        index.keys.length === constraint.columns.length &&
+        constraint.columns.every((column) =>
+          index.keys.some((key) => key.columnName === column),
+        )
+      );
+    });
   });
   const incompatible = indexes.some((index) => !indexUsesColumnEquality(index));
   const invalid =
@@ -810,7 +814,7 @@ function resolveIndexes(
 ): IndexDefinition[] {
   const indexes: IndexDefinition[] = [];
   for (const [index, physical] of input.physical.indexes.entries()) {
-    if (physical.backsConstraint) continue;
+    if (physical.backsConstraint || physical.backsConstraints?.length) continue;
     const resolved = resolveIndex(physical, index, columns, issues);
     if (resolved) indexes.push(resolved);
   }

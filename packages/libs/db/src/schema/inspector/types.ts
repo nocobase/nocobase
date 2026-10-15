@@ -148,7 +148,10 @@ export interface PhysicalIndexSchema {
   readonly unique: boolean;
   /** False when the index is incomplete or is not maintained for writes. */
   readonly valid?: boolean;
+  /** A single backing relationship, retained for compatibility with existing inspectors. */
   readonly backsConstraint?: PhysicalIndexConstraintReference;
+  /** Complete backing relationships when an index supports multiple constraints; takes precedence over backsConstraint. */
+  readonly backsConstraints?: readonly PhysicalIndexConstraintReference[];
   readonly method?: string;
   /** True even when a partial index's predicate could not be inspected. */
   readonly partial?: boolean;
