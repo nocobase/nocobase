@@ -6,13 +6,13 @@ import { expect, open, test, unique, signIn } from './support/fixtures.ts';
 const isTaskGroups = (response: Response) =>
   new URL(response.url()).pathname.endsWith('/api/taskGroups') && response.ok();
 
-// An unrelated refresh may finish while the status menu opens. Wait for a
-// changed snapshot rather than treating the first successful read as the update.
-const changedTaskGroups = (page: Page, generation: string) =>
+// Generation also changes when readable issues outside this query change.
+// These status transitions move group membership; unrelated refreshes do not.
+const changedTaskMembership = (page: Page, membership: string) =>
   page.waitForResponse(
     async (response) =>
       isTaskGroups(response) &&
-      ((await response.json()).data as TaskGroups).generation !== generation,
+      ((await response.json()).data as TaskGroups).membership !== membership,
   );
 
 interface ListNode {
@@ -73,7 +73,7 @@ test('retains the only task after cancellation until the query scope changes', a
       'original',
     ),
   );
-  const refresh = changedTaskGroups(page, initial.generation);
+  const refresh = changedTaskMembership(page, initial.membership);
   await detail.getByTestId('task-status-menu').click();
   await page
     .getByRole('menuitemradio', { name: 'Cancelled', exact: true })
@@ -169,13 +169,25 @@ test('retains a task omitted from the full waiting page, then releases it on sel
       'original',
     ),
   );
-  const refresh = changedTaskGroups(page, initial.generation);
-  // Reproduce a background read completing before the status mutation, as in CI.
-  const unchanged = page.waitForResponse(isTaskGroups);
-  await page.evaluate("document.dispatchEvent(new Event('visibilitychange'))");
-  expect(((await (await unchanged).json()).data as TaskGroups).generation).toBe(
-    initial.generation,
+  const refresh = changedTaskMembership(page, initial.membership);
+  // Reproduce CI's concurrent changes outside this query. Even a new generation
+  // can still describe the old groups before the selected task's status changes.
+  const background = page.waitForResponse(
+    async (response) =>
+      isTaskGroups(response) &&
+      ((await response.json()).data as TaskGroups).generation !==
+        initial.generation,
   );
+  await api.post('projects/issues', {
+    title: `Outside placement query ${unique()}`,
+    ownerUserId: me.userId,
+    executor: null,
+    start: false,
+  });
+  await page.evaluate("document.dispatchEvent(new Event('visibilitychange'))");
+  const unchanged = (await (await background).json()).data as TaskGroups;
+  expect(unchanged.membership).toBe(initial.membership);
+  expect(unchanged.groups).toEqual(initial.groups);
   await detail.getByTestId('task-status-menu').click();
   await page
     .getByRole('menuitemradio', { name: 'Blocked', exact: true })
