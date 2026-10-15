@@ -414,8 +414,8 @@ export function IntakePanel({
             ) : null}
           </Field>
           <IntakeFiles uploads={uploads} reads={split?.files ?? []} />
-          <div className='flex flex-wrap items-end gap-3'>
-            <Field className='w-full sm:max-w-xs'>
+          <div className='grid items-start gap-3 sm:grid-cols-2'>
+            <Field className='min-w-0'>
               <FieldLabel htmlFor='pm-intake-project'>
                 {t('intake.project')}
               </FieldLabel>
@@ -431,7 +431,7 @@ export function IntakePanel({
                 onChange={setProjectId}
               />
             </Field>
-            <div className='ml-auto flex flex-wrap items-center gap-2'>
+            <div className='flex min-w-0 flex-col items-stretch gap-2'>
               <IntakeAgentSlot
                 text={text}
                 fileIds={fileIds}
