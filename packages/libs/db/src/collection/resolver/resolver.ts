@@ -174,6 +174,9 @@ function addUniqueIndexConstraints(
       fields: [...index.fields],
       name: index.name,
       mode: 'index',
+      ...(index.db?.columnEquality === false
+        ? { db: { columnEquality: false } }
+        : {}),
     });
   }
 }
@@ -567,6 +570,29 @@ function applyFieldMetadata(
   }
 }
 
+/** A unique index is only a proof for ordinary column equality when its comparisons agree. */
+function indexUsesColumnEquality(index: PhysicalIndexSchema): boolean {
+  return index.keys.every((key) => key.columnEquality !== false);
+}
+
+function constraintComparisonOptions(
+  input: CollectionResolutionInput,
+  kind: 'primaryKey' | 'unique',
+  physicalFields: readonly string[],
+): { columnEquality: false } | undefined {
+  return input.physical.indexes.some(
+    (index) =>
+      index.backsConstraint?.kind === kind &&
+      index.keys.length === physicalFields.length &&
+      index.keys.every(
+        (key, offset) => key.columnName === physicalFields[offset],
+      ) &&
+      !indexUsesColumnEquality(index),
+  )
+    ? { columnEquality: false }
+    : undefined;
+}
+
 function resolveConstraints(
   input: CollectionResolutionInput,
   columns: ResolvedColumns,
@@ -586,6 +612,15 @@ function resolveConstraints(
           type: 'primary' as const,
           name: input.physical.primaryKey.name,
           fields,
+          deferrable: resolveDeferrable(
+            input.physical.primaryKey.deferrable,
+            input.physical.primaryKey.initiallyDeferred,
+          ),
+          db: constraintComparisonOptions(
+            input,
+            'primaryKey',
+            input.physical.primaryKey.columns,
+          ),
         }),
       );
     }
@@ -611,6 +646,7 @@ function resolveConstraints(
             constraint.deferrable,
             constraint.initiallyDeferred,
           ),
+          db: constraintComparisonOptions(input, 'unique', constraint.columns),
         }),
       );
     }
@@ -811,6 +847,7 @@ function resolveIndex(
     order: Object.keys(order).length > 0 ? order : undefined,
     db: pruneUndefined({
       unique: physical.unique,
+      columnEquality: indexUsesColumnEquality(physical) ? undefined : false,
       keys,
       includeFields:
         includeFields && includeFields.length > 0 ? includeFields : undefined,

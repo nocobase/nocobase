@@ -318,7 +318,12 @@ export class DamengSchemaInspector extends BaseSchemaInspector {
         };
       }),
       primaryKey: primary
-        ? { name: primary.name, columns: primary.columns }
+        ? {
+            name: primary.name,
+            columns: primary.columns,
+            deferrable: primary.deferrable,
+            initiallyDeferred: primary.initiallyDeferred,
+          }
         : undefined,
       uniqueConstraints: constraints
         .filter((item) => item.type === 'U')

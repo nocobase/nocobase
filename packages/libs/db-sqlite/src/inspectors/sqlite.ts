@@ -77,6 +77,7 @@ interface SqliteIndexInfoRow {
   readonly name: string | null;
   readonly desc: 0 | 1;
   readonly key: 0 | 1;
+  readonly coll: string;
 }
 
 interface SqliteForeignKeyRow {
@@ -148,7 +149,10 @@ export class SqliteSchemaInspector extends BaseSchemaInspector {
       });
     }
 
-    const indexResult = await this.readIndexes(knex, row.name);
+    // PRAGMA exposes index collations but not column collations. Without a
+    // COLLATE clause columns use BINARY; otherwise compatibility is unknown.
+    const binaryColumns = Boolean(row.sql && !/\bcollate\b/i.test(row.sql));
+    const indexResult = await this.readIndexes(knex, row.name, binaryColumns);
     warnings.push(...indexResult.warnings);
     const foreignKeys = await this.readForeignKeys(knex, row.name);
     const checkConstraints =
@@ -279,6 +283,7 @@ export class SqliteSchemaInspector extends BaseSchemaInspector {
   private async readIndexes(
     knex: Knex,
     tableName: string,
+    binaryColumns: boolean,
   ): Promise<{
     indexes: PhysicalIndexSchema[];
     uniqueConstraints: PhysicalUniqueConstraintSchema[];
@@ -309,6 +314,9 @@ export class SqliteSchemaInspector extends BaseSchemaInspector {
           return {
             columnName: key.name,
             order: key.desc === 1 ? 'desc' : 'asc',
+            ...(binaryColumns && key.coll === 'BINARY'
+              ? {}
+              : { columnEquality: false }),
           };
         }
         const expression = parsed.keys[key.seqno];

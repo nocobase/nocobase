@@ -105,6 +105,8 @@ export interface PhysicalColumnSchema {
 export interface PhysicalPrimaryKeySchema {
   readonly name?: string;
   readonly columns: readonly string[];
+  readonly deferrable?: boolean;
+  readonly initiallyDeferred?: boolean;
 }
 
 export interface PhysicalUniqueConstraintSchema {
@@ -126,6 +128,8 @@ export type PhysicalIndexKey = (
 ) & {
   readonly order?: 'asc' | 'desc';
   readonly nulls?: 'first' | 'last';
+  /** False when equality on the source column is not known to imply equality under this key's comparisons. */
+  readonly columnEquality?: boolean;
 };
 
 export interface PhysicalIndexConstraintReference {

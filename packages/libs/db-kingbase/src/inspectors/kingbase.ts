@@ -78,6 +78,7 @@ interface KingbaseCollectionRow {
 interface KingbaseColumnRow {
   readonly collation: string | null;
   readonly collation_schema: string | null;
+  readonly collation_oid: number;
   readonly character_set: string | null;
   readonly attnum: number;
   readonly column_name: string;
@@ -116,6 +117,7 @@ interface KingbaseIndexRow {
   readonly attribute_count: number;
   readonly attribute_numbers: string;
   readonly options: string;
+  readonly collation_oids: string;
   readonly constraint_name: string | null;
   readonly constraint_type: 'p' | 'u' | null;
 }
@@ -174,6 +176,7 @@ export class KingbaseSchemaInspector extends BaseSchemaInspector {
             tn.nspname as native_type_schema,
             co.collname as collation,
             cn.nspname as collation_schema,
+            a.attcollation as collation_oid,
             case when t.typcategory = 'S' then current_setting('server_encoding') end as character_set,
             not a.attnotnull as nullable,
             pg_catalog.pg_get_expr(ad.adbin, ad.adrelid) as default_expression,
@@ -257,6 +260,8 @@ export class KingbaseSchemaInspector extends BaseSchemaInspector {
         ? {
             name: primary.constraint_name,
             columns: primary.columns,
+            deferrable: primary.deferrable,
+            initiallyDeferred: primary.initially_deferred,
           }
         : undefined,
       uniqueConstraints: constraints
@@ -486,6 +491,7 @@ export class KingbaseSchemaInspector extends BaseSchemaInspector {
             i.indnatts as attribute_count,
             i.indkey::text as attribute_numbers,
             i.indoption::text as options,
+            i.indcollation::text as collation_oids,
             con.conname as constraint_name,
             con.contype as constraint_type
           from pg_catalog.pg_index i
@@ -501,10 +507,14 @@ export class KingbaseSchemaInspector extends BaseSchemaInspector {
     const columnNames = new Map(
       columns.map((column) => [column.attnum, column.column_name]),
     );
+    const columnCollations = new Map(
+      columns.map((column) => [column.attnum, Number(column.collation_oid)]),
+    );
     const indexes: PhysicalIndexSchema[] = [];
     for (const row of rows) {
       const attributeNumbers = parseKingbaseVector(row.attribute_numbers);
       const indexOptions = parseKingbaseVector(row.options);
+      const indexCollations = parseKingbaseVector(row.collation_oids);
       const keyCount = Number(row.key_count);
       const keys: PhysicalIndexKey[] = [];
       const includeColumns: string[] = [];
@@ -526,7 +536,15 @@ export class KingbaseSchemaInspector extends BaseSchemaInspector {
         const nulls = (option & 2) === 2 ? 'first' : 'last';
         const columnName = columnNames.get(attributeNumber);
         if (attributeNumber !== 0 && columnName) {
-          keys.push({ columnName, order, nulls });
+          keys.push({
+            columnName,
+            order,
+            nulls,
+            ...(indexCollations[position] ===
+            columnCollations.get(attributeNumber)
+              ? {}
+              : { columnEquality: false }),
+          });
           continue;
         }
         const definition = rawRows<{ definition: string }>(

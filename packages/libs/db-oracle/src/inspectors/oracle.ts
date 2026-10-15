@@ -304,7 +304,12 @@ export class OracleSchemaInspector extends BaseSchemaInspector {
         };
       }),
       primaryKey: primary
-        ? { name: primary.name, columns: primary.columns }
+        ? {
+            name: primary.name,
+            columns: primary.columns,
+            deferrable: primary.deferrable,
+            initiallyDeferred: primary.initiallyDeferred,
+          }
         : undefined,
       uniqueConstraints: constraints
         .filter((constraint) => constraint.type === 'U')

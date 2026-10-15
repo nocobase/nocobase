@@ -35,6 +35,57 @@ describeIntegrationDatabases(
       );
     }
 
+    it('preserves deferred primary key cardinality inside a transaction', async ({
+      skip,
+    }) => {
+      if (!context.connection.capabilities.deferrableConstraints) skip();
+      await context.builder.createCollection('deferredItems', (c) => {
+        c.string('id').notNull();
+        c.primary(['id'], { deferrable: 'deferred' });
+        c.string('name').notNull();
+        c.string('marker').notNull();
+        c.integer('version').notNull();
+        c.optimisticLock('version');
+      });
+      const collection =
+        await context.connection.collections.get('deferredItems');
+      expect(collection?.constraints).toContainEqual(
+        expect.objectContaining({
+          type: 'primary',
+          fields: ['id'],
+          deferrable: 'deferred',
+        }),
+      );
+      await context.database.transaction(async (connection) => {
+        const repository = connection.repository('deferredItems');
+        await repository.createMany({
+          values: [
+            { id: 'A', name: 'first', marker: 'first' },
+            { id: 'A', name: 'second', marker: 'second' },
+          ],
+        });
+        await expect(
+          repository.updateOne({
+            filter: { id: 'A' },
+            ifVersion: 1,
+            values: { name: 'changed' },
+          }),
+        ).rejects.toMatchObject({ code: 'MULTIPLE_RECORDS_MATCHED' });
+        await repository.updateMany({
+          filter: { marker: 'second' },
+          values: { id: 'B' },
+        });
+      }, context.spec.name);
+      expect(
+        await context.database
+          .repository('deferredItems')
+          .findMany({ sort: (s) => s.field('id').asc() }),
+      ).toEqual([
+        { id: 'A', name: 'first', marker: 'first', version: 1 },
+        { id: 'B', name: 'second', marker: 'second', version: 2 },
+      ]);
+    });
+
     it('updates values and a custom version in one statement before reading the result', async () => {
       const repository = await fixture();
       const { result, statements } = await captureSql(context, () =>

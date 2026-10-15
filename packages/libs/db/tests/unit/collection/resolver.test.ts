@@ -13,6 +13,28 @@ import type {
 } from '../../../src/schema/inspector/types.js';
 
 describe('CollectionResolver', () => {
+  it.each([false, 'immediate', 'deferred'] as const)(
+    'preserves %s primary key deferrability',
+    (deferrable) => {
+      const result = resolveCollection({
+        physical: physicalCollection({
+          columns: [column('id', 1)],
+          primaryKey: {
+            columns: ['id'],
+            deferrable: deferrable !== false,
+            initiallyDeferred: deferrable === 'deferred',
+          },
+        }),
+        context: emptyContext(),
+      });
+      expect(result.collection.constraints).toContainEqual({
+        type: 'primary',
+        fields: ['id'],
+        deferrable,
+      });
+    },
+  );
+
   it.each([
     ['integer', true, true],
     [undefined, true, false],

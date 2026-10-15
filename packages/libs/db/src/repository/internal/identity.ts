@@ -47,10 +47,13 @@ export function unchangedFilterSelector(
   const constraint = identityConstraints(collection).find(
     (candidate) =>
       !candidate.deferrable &&
+      candidate.db?.columnEquality !== false &&
       candidate.fields.every(
         (field) =>
           equalities.has(field) &&
           !Object.hasOwn(values, field) &&
+          collection.fields?.find((definition) => definition.name === field)?.db
+            ?.generated === undefined &&
           field !== collection.optimisticLock?.field,
       ),
   );

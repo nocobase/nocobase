@@ -27,6 +27,38 @@ const and = (...items: FilterNode[]): FilterAst => ({
 });
 
 describe('Conditional update identity', () => {
+  it('does not locate updates through generated fields or incompatible comparisons', () => {
+    const filter = and(eq('id', 'A'));
+    expect(
+      unchangedFilterSelector(
+        {
+          ...collection,
+          fields: [
+            {
+              name: 'id',
+              type: 'string',
+              db: { generated: { expression: 'lower(name)' } },
+            },
+          ],
+        },
+        filter,
+        { name: 'New' },
+      ),
+    ).toBeUndefined();
+    expect(
+      unchangedFilterSelector(
+        {
+          ...collection,
+          constraints: [
+            { type: 'primary', fields: ['id'], db: { columnEquality: false } },
+          ],
+        },
+        filter,
+        {},
+      ),
+    ).toBeUndefined();
+  });
+
   it.each([true, 'immediate', 'deferred'] as const)(
     'does not assume uniqueness while a %s constraint can be deferred',
     (deferrable) => {
