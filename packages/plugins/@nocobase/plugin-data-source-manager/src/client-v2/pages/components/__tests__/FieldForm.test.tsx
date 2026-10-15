@@ -704,17 +704,12 @@ describe('FieldForm', () => {
         }),
       ),
     );
-    const foreignKeySelect = screen
-      .getAllByTestId('mock-select')
-      .find((select) =>
-        Array.from((select as HTMLSelectElement).options).some((option) => option.value === 'customerId'),
-      ) as HTMLSelectElement;
-    expect(Array.from(foreignKeySelect.options).map((option) => option.value)).toEqual([
-      '',
-      'id',
-      'customerId',
-      'status',
-    ]);
+    const foreignKeyInput = screen.getByLabelText('Foreign key');
+    fireEvent.focus(foreignKeyInput);
+    fireEvent.change(foreignKeyInput, { target: { value: 'customer' } });
+    expect(await screen.findByText('Customer ID')).toBeTruthy();
+    expect(screen.queryByText('Payload')).toBeNull();
+    expect(screen.queryByText('Customers', { selector: '.ant-select-item-option-content' })).toBeNull();
 
     const selects = screen.getAllByTestId('mock-select');
     fireEvent.change(screen.getByLabelText('t:Field display name'), {
@@ -726,7 +721,7 @@ describe('FieldForm', () => {
     fireEvent.change(selects[0], { target: { value: 'customers' } });
     fireEvent.change(selects[1], { target: { value: 'id' } });
     fireEvent.change(selects[2], { target: { value: 'id' } });
-    fireEvent.change(foreignKeySelect, { target: { value: 'customerId' } });
+    fireEvent.click(screen.getByText('Customer ID'));
     fireEvent.click(screen.getByText('t:Submit'));
 
     await waitFor(() =>
@@ -737,6 +732,92 @@ describe('FieldForm', () => {
         }),
       ),
     );
+  });
+
+  it('submits a manually entered foreign key without selecting a suggestion', async () => {
+    renderFieldForm({ interfaceName: 'belongsTo' });
+    fireEvent.change(await screen.findByLabelText('t:Field display name'), { target: { value: 'Customer' } });
+    fireEvent.change(screen.getByLabelText('t:Field name'), { target: { value: 'customer' } });
+    const selects = screen.getAllByTestId('mock-select');
+    fireEvent.change(selects[0], { target: { value: 'customers' } });
+    fireEvent.change(selects[1], { target: { value: 'id' } });
+    fireEvent.change(selects[2], { target: { value: 'id' } });
+    const input = screen.getByLabelText('Foreign key');
+    expect((input as HTMLInputElement).value).toBe('f_fixed');
+    fireEvent.change(input, { target: { value: 'newCustomerId' } });
+    fireEvent.blur(input);
+    fireEvent.click(screen.getByText('t:Submit'));
+    await waitFor(() =>
+      expect(apiRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'collectionFields:create',
+          data: expect.objectContaining({ foreignKey: 'newCustomerId' }),
+        }),
+      ),
+    );
+  });
+
+  it('supports manually entering both foreign keys of a many-to-many relation', async () => {
+    const manager = flowMocks.ctx.dataSourceManager.collectionFieldInterfaceManager;
+    manager.getFieldInterfaceConfigure.mockReturnValueOnce({
+      ...relationFieldInterfaceConfigure,
+      default: { ...relationFieldInterfaceConfigure.default, type: 'belongsToMany' },
+      items: [
+        ...relationFieldInterfaceConfigure.items,
+        { name: 'otherKey', title: 'Foreign key 2', component: 'ForeignKey', required: true },
+      ],
+    });
+    renderFieldForm({ interfaceName: 'belongsTo' });
+    fireEvent.change(await screen.findByLabelText('t:Field display name'), { target: { value: 'Customers' } });
+    fireEvent.change(screen.getByLabelText('t:Field name'), { target: { value: 'customers' } });
+    const selects = screen.getAllByTestId('mock-select');
+    fireEvent.change(selects[0], { target: { value: 'customers' } });
+    fireEvent.change(selects[1], { target: { value: 'id' } });
+    fireEvent.change(selects[2], { target: { value: 'id' } });
+    fireEvent.change(screen.getByLabelText('Foreign key'), { target: { value: 'orderId' } });
+    fireEvent.change(screen.getByLabelText('Foreign key 2'), { target: { value: 'customerId' } });
+    fireEvent.click(screen.getByText('t:Submit'));
+    await waitFor(() =>
+      expect(apiRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ type: 'belongsToMany', foreignKey: 'orderId', otherKey: 'customerId' }),
+        }),
+      ),
+    );
+  });
+
+  it('respects the disabled foreign key configuration', async () => {
+    flowMocks.ctx.dataSourceManager.collectionFieldInterfaceManager.getFieldInterfaceConfigure.mockReturnValueOnce({
+      ...relationFieldInterfaceConfigure,
+      items: relationFieldInterfaceConfigure.items.map((item) =>
+        item.name === 'foreignKey' ? { ...item, disabled: true } : item,
+      ),
+    });
+    renderFieldForm({ interfaceName: 'belongsTo' });
+    expect(((await screen.findByLabelText('Foreign key')) as HTMLInputElement).disabled).toBe(true);
+  });
+
+  it('rejects invalid manually entered foreign key names', async () => {
+    renderFieldForm({ interfaceName: 'belongsTo' });
+    fireEvent.change(await screen.findByLabelText('Foreign key'), { target: { value: '123 invalid' } });
+    fireEvent.click(screen.getByText('t:Submit'));
+    expect(
+      await screen.findByText(
+        't:Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.',
+      ),
+    ).toBeTruthy();
+    expect(apiRequest).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { dataSourceKey: 'main', collection: { ...collection, template: 'view' } },
+    { dataSourceKey: 'external' },
+    { mode: 'edit' as const },
+  ])('keeps foreign keys as selects for restricted contexts: %j', async (props) => {
+    renderFieldForm({ interfaceName: 'belongsTo', ...props });
+    await screen.findByLabelText('t:Field display name');
+    expect(screen.queryByRole('combobox', { name: 'Foreign key' })).toBeNull();
+    expect(screen.getAllByTestId('mock-select').length).toBeGreaterThanOrEqual(4);
   });
 
   it('creates relation fields with selected keys and normalized reverse field values', async () => {
