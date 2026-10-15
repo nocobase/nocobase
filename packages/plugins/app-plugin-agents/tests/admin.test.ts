@@ -1101,10 +1101,8 @@ describe('admin API', () => {
       user: 'bob',
       can: ['agents.agents/read'],
     });
-    expect(detail.body.data.attachments).toEqual([
-      { scope: 'agent', scopeId: agentId, name: 'Coder' },
-    ]);
-    expect(detail.body.data.agentCount).toBe(1);
+    expect(detail.body.data.attachments).toEqual([]);
+    expect(detail.body.data).not.toHaveProperty('agentCount');
     expect(
       (
         await h.request('DELETE', `/agents/skills/${id}`, {
@@ -1113,6 +1111,6 @@ describe('admin API', () => {
         })
       ).status,
     ).toBe(204);
-    expect((await h.services.agents.get(agentId)).skillIds).toEqual([]);
+    expect(await h.services.agents.get(agentId)).not.toHaveProperty('skillIds');
   });
 });

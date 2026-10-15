@@ -195,6 +195,62 @@ describe('the agent sessions routes', () => {
     ).toBe(401);
   });
 
+  test('refuse an older bridge with the protocols they speak, and show its computer as outdated until it registers', async ({
+    database,
+  }) => {
+    const router = await mount(database);
+    const register = (protocol: number, computerId: string | null) =>
+      call(router, 'POST', '/bridge/register', 'u1', {
+        protocol,
+        computerId,
+        bridgeStartedAt: 'bridge-1',
+        computer,
+      });
+    const { computerId } = (
+      (await (await register(BRIDGE_PROTOCOL_VERSION, null)).json()) as {
+        data: { computerId: string };
+      }
+    ).data;
+
+    const old = BRIDGE_PROTOCOL_VERSION - 1;
+    const refused = await register(old, computerId);
+    expect(refused.status).toBe(400);
+    expect(
+      ((await refused.json()) as { error: Record<string, unknown> }).error,
+    ).toMatchObject({
+      status: 'FAILED_PRECONDITION',
+      reason: 'AGENT_SESSIONS_UPGRADE_REQUIRED',
+      domain: 'agentSessions',
+      metadata: {
+        bridgeProtocol: old,
+        protocol: BRIDGE_PROTOCOL_VERSION,
+        supportedProtocols: [BRIDGE_PROTOCOL_VERSION],
+      },
+    });
+    const listed = async () =>
+      (
+        (await (await call(router, 'GET', '/computers', 'u1')).json()) as {
+          data: Record<string, unknown>[];
+        }
+      ).data;
+    expect((await listed())[0]).toMatchObject({
+      outdatedBridge: {
+        host: computer.host,
+        bridgeProtocol: old,
+        protocol: BRIDGE_PROTOCOL_VERSION,
+      },
+    });
+
+    // A newer bridge than the application is the application's to update: its computer is not marked.
+    expect(
+      (await register(BRIDGE_PROTOCOL_VERSION + 1, computerId)).status,
+    ).toBe(400);
+    expect((await register(BRIDGE_PROTOCOL_VERSION, computerId)).status).toBe(
+      200,
+    );
+    expect((await listed())[0]).not.toHaveProperty('outdatedBridge');
+  });
+
   test('let a person reach only their own computers and sessions', async ({
     database,
   }) => {

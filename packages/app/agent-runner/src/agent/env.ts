@@ -29,11 +29,7 @@ import {
   RUN_CREDENTIALS_ENV,
   type RunWorkspace,
 } from '../protocol/index.ts';
-import {
-  PNPM_STORE_ENV,
-  pnpmStoreEnv,
-  type PnpmImportMethod,
-} from '../core/pnpm-store.ts';
+import { PNPM_STORE_ENV, pnpmStoreEnv } from '../core/pnpm-store.ts';
 import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { PINNED_PNPM_ENV } from './runner-tools.ts';
 import { TRAILERS_ENV } from '../core/git-hooks.ts';
@@ -102,8 +98,6 @@ export interface BuildEnvOptions {
   codexHome?: string;
   /** The pnpm store every run on this machine shares. */
   pnpmStoreDir?: string;
-  /** How pnpm imports packages from that store (`pnpmImportMethod`); `copy` when absent. */
-  pnpmImportMethod?: PnpmImportMethod;
   /** The runner's hooks directory (git-hooks.ts). */
   hooksDir?: string;
   /** The run's repository credentials, through the runner's helper. */
@@ -201,10 +195,7 @@ export function buildAgentEnv(
     for (const name of ['TMPDIR', 'TMP', 'TEMP']) env[name] = options.tmpDir;
   if (options.codexHome !== undefined) env.CODEX_HOME = options.codexHome;
   if (options.pnpmStoreDir !== undefined)
-    Object.assign(
-      env,
-      pnpmStoreEnv(options.pnpmStoreDir, options.pnpmImportMethod ?? 'copy'),
-    );
+    Object.assign(env, pnpmStoreEnv(options.pnpmStoreDir));
   if (options.pinPnpm === true) Object.assign(env, PINNED_PNPM_ENV);
   if (options.processTag !== undefined)
     env[PROCESS_TAG_ENV] = options.processTag;

@@ -87,7 +87,7 @@ describe.each(sources)('work source %j', (actor) => {
     h.services.statusEvents.types.add({
       key: 'test.finished',
       from: ['in_progress'],
-      to: 'in_review',
+      to: 'done',
     });
     const issue = await h.services.issues.create(viewer, {
       title: 'Event source',
@@ -105,14 +105,14 @@ describe.each(sources)('work source %j', (actor) => {
         issueId: issue.id,
         outcome: 'moved',
         from: 'in_progress',
-        to: 'in_review',
+        to: 'done',
       },
     ]);
     const activities = (
       await h.services.issueQueries.activities(viewer, issue.id, {})
     ).data;
-    // The status change and the owner's notice are both recorded as the event's source.
-    for (const action of ['status_changed', 'owner_notified'])
+    // A system transition retains the event's source on the status activity.
+    for (const action of ['status_changed'])
       expect(
         activities.find((activity) => activity.action === action),
       ).toMatchObject({ actorType: 'user', actorId: 'alice' });

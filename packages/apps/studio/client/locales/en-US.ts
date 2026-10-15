@@ -62,6 +62,10 @@ const enUS = {
   'issueRuns.configuredModel': 'Configured model: {{model}}',
   'issueRuns.modelUnknown': 'Model not reported',
   'issueRuns.clearFilters': 'Clear filters',
+  'issueRuns.attemptFailed': 'Attempt {{attempt}} failed',
+  'issueRuns.preparationFailed': 'Run preparation failed',
+  'issueRuns.retryScheduled': 'Automatic retry scheduled for {{time}}',
+  'issueRuns.awaitingDispatch': 'Waiting to be dispatched again',
   'issueRuns.emptyHint':
     'Check the executor and status in Properties to start agent work.',
   'issueRuns.loading': 'Loading execution log…',
@@ -120,6 +124,7 @@ const enUS = {
   runTranscript: {
     usedModel: 'Model: {{model}}',
     defaultModel: 'Default model',
+    confirmedBy: 'Confirmed by {{person}}',
     actingAs: 'Running as {{actor}}',
     triggeredBy: 'Triggered by {{person}}',
     systemTrigger: 'Triggered by the system',
@@ -1144,6 +1149,8 @@ const enUS = {
       stageEntered: 'Workflow stage',
       planDecided: 'Plan decided',
       prChecksFailed: 'Checks failed',
+      stepEnded: 'Worker step ended',
+      managerIdle: 'Idle waiting recheck',
       prChecksPassed: 'Checks passed',
       started: 'Started',
       prConflict: 'Pull request conflict',

@@ -75,6 +75,9 @@ describe('claiming queued issue work', () => {
     await harness.projects.issues.update(harness.viewer('alice'), issueId, {
       revision: current.revision,
       statusKey,
+      ...(statusKey === 'blocked' || statusKey === 'in_review'
+        ? { needsYou: 'Please review the requested work.' }
+        : {}),
     });
   }
 

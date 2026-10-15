@@ -1,3 +1,7 @@
+import {
+  createAppSidebarPreferenceStore,
+  SidebarPreferenceProvider,
+} from '../../client/layouts/use-sidebar-preference.js';
 import { Refine } from '@refinedev/core';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
@@ -114,5 +118,9 @@ export default function Fixture() {
 }
 
 const root = createRoot(document.getElementById('root')!);
-root.render(<Fixture />);
+root.render(
+  <SidebarPreferenceProvider value={createAppSidebarPreferenceStore('/main')}>
+    <Fixture />
+  </SidebarPreferenceProvider>,
+);
 import.meta.hot?.dispose(() => root.unmount());

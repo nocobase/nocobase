@@ -35,6 +35,9 @@ async function update(
   const current = await h.projects.issueQueries.detail(viewer, issue.id);
   return h.projects.issues.update(viewer, issue.id, {
     revision: current.revision,
+    ...(patch.statusKey === 'blocked' || patch.statusKey === 'in_review'
+      ? { needsYou: 'Choose how to proceed.' }
+      : {}),
     ...patch,
   });
 }
@@ -61,7 +64,13 @@ async function blockedIssue(): Promise<{ issue: Issue; agentId: string }> {
   const moved = await h.request(
     'PATCH',
     `/projects/issues/${issue.identifier}`,
-    { runToken: token, body: { statusKey: 'blocked' } },
+    {
+      runToken: token,
+      body: {
+        statusKey: 'blocked',
+        needsYou: 'Which database should the migration target?',
+      },
+    },
   );
   expect(moved.status).toBe(200);
   return { issue, agentId: PROJECT_MANAGER_ID };

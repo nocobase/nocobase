@@ -497,6 +497,7 @@ export const IssuePullRequestSchema: z.ZodType<IssuePullRequest> = z
     checks: z.array(
       z.object({
         kind: z.enum(['check', 'status']),
+        executionId: z.string().optional(),
         name: z.string(),
         status: z.enum(['queued', 'in_progress', 'completed']),
         conclusion: z.string().nullable(),

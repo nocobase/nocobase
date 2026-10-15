@@ -17,7 +17,8 @@ const progress = (patch: Partial<IssueProgress> = {}): IssueProgress => ({
   since: null,
   runner: null,
   pullRequest: null,
-  question: null,
+  needsYou: null,
+  explanationCommentId: null,
   next: null,
   handOver: false,
   ...patch,
@@ -38,6 +39,62 @@ const entry = (
   >;
 
 describe('the shared Needs you text and coverage', () => {
+  it('shares personal runner text and hides only the same request from the issue body', () => {
+    const pending = progress({
+      personalRunnerRequests: [
+        {
+          id: 'request-1',
+          status: 'pending',
+          requestedBy: { id: 'bob', name: 'Bob' },
+          commentId: 'comment-1',
+          commentText: 'Please continue.',
+          canDecide: true,
+          canRunAsMe: false,
+        },
+      ],
+    });
+    expect(askOf(t, issue('in_progress', pending), null)).toBe(
+      'issueLive.personalRunner.request{"name":"Bob"}',
+    );
+    const notice = (id: string) =>
+      ({
+        notice: {
+          source: 'runners',
+          type: 'personal_runner_consent',
+          data: { requestId: id },
+        },
+      }) as Pick<InboxEntry, 'notice'>;
+    expect(
+      coveredBySummary(notice('request-1'), {
+        accepting: false,
+        handoff: false,
+        personalRequestIds: ['request-1'],
+      }),
+    ).toBe(true);
+    expect(
+      coveredBySummary(notice('other'), {
+        accepting: false,
+        handoff: false,
+        personalRequestIds: ['request-1'],
+      }),
+    ).toBe(false);
+    const requester = progress({
+      personalRunnerRequests: [
+        {
+          ...pending.personalRunnerRequests![0],
+          canDecide: false,
+          canRunAsMe: true,
+        },
+      ],
+    });
+    expect(
+      nowLine(
+        t,
+        { owned: false, statusKey: 'in_progress', progress: requester },
+        null,
+      ),
+    ).toEqual({ text: 'issueLive.personalRunner.waiting', needsViewer: false });
+  });
   it('PM-297 continues the comment limit instead of asking a question', () => {
     expect(
       askOf(
@@ -46,12 +103,12 @@ describe('the shared Needs you text and coverage', () => {
           'blocked',
           progress({
             state: 'waitingForContinuation',
-            question: 'A report was received.',
+            needsYou: 'A report was received.',
           }),
         ),
         null,
       ),
-    ).toBe('issueLive.ask.continue');
+    ).toBe('A report was received.');
     expect(
       askOf(
         t,
@@ -60,32 +117,52 @@ describe('the shared Needs you text and coverage', () => {
       ),
     ).toBe('issueLive.ask.continue');
   });
-  it('shows a declared line without calling it a question; a report without a line is only Waiting', () => {
-    expect(
-      askOf(
-        t,
-        issue('blocked', progress({ question: 'Confirm **this** proposal.' })),
-        null,
-      ),
-    ).toBe('Confirm this proposal.');
-    const waiting = issue(
-      'blocked',
-      progress({
-        blockedComment: {
-          id: 'source',
-          content: 'Next: wait.\n\nThe read-only report is complete.',
-        },
-      }),
-    );
-    expect(nowLine(t, waiting, null)).toEqual({
-      text: 'issueLive.ask.waiting{"reason":"The read-only report is complete."}',
-      needsViewer: false,
-    });
-  });
+  it.each(['blocked', 'in_review'])(
+    'shows the entire structured request and historical fallback for %s',
+    (statusKey) => {
+      const needsYou =
+        'Confirm **this** proposal.\nProvide the URL and choose the region.';
+      expect(askOf(t, issue(statusKey, progress({ needsYou })), null)).toBe(
+        needsYou,
+      );
+      expect(
+        askOf(
+          t,
+          issue(
+            statusKey,
+            progress({
+              needsYou,
+              personalRunnerRequests: [
+                {
+                  id: 'consent',
+                  status: 'pending',
+                  requestedBy: { id: 'bob', name: 'Bob' },
+                  commentId: 'comment',
+                  commentText: 'Original consent context.',
+                  canDecide: true,
+                  canRunAsMe: false,
+                },
+              ],
+              state: 'waitingForContinuation',
+              waiting: { reason: 'waitingOwner', owner: null },
+            }),
+          ),
+          null,
+        ),
+      ).toBe(needsYou);
+      expect(
+        nowLine(
+          t,
+          issue(statusKey, progress({ explanationCommentId: 'latest' })),
+          null,
+        ),
+      ).toEqual({ text: 'issueLive.ask.legacy', needsViewer: true });
+    },
+  );
   it('PM-331 hides the old blocked request immediately after leaving Blocked', () => {
     const stale = progress({
       state: 'needsDecision',
-      question: 'Restore the disk.',
+      needsYou: 'Restore the disk.',
     });
     expect(askOf(t, issue('in_progress', stale), null)).toBeNull();
     expect(
@@ -120,15 +197,16 @@ describe('the shared Needs you text and coverage', () => {
         label: 'acme/app#7',
         state: 'open',
       }),
-    ).toBe('issueLive.ask.acceptPullRequest{"label":"PR #7"}');
+    ).toBe('issueLive.ask.legacy');
   });
-  it('covers only the selected PR, handoff instance and blocked comment', () => {
+  it('covers the selected PR, handoff instance and the structured blocked request regardless of explanation ID', () => {
     const shown = {
       accepting: true,
       handoff: true,
       pullRequest: { repo: 'acme/app', number: 7 },
       notificationKey: 'current',
       blocked: true,
+      ownerRequest: true,
       commentId: 'source',
     };
     expect(
@@ -173,6 +251,6 @@ describe('the shared Needs you text and coverage', () => {
         entry('agent_blocked', { commentId: 'independent' }),
         shown,
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 });

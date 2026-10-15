@@ -399,6 +399,7 @@ const zhCN: AgentsResource = {
     briefDescription: '这次运行最近一次被认领时 Agent 收到的内容。',
     briefOf: '第 {{attempt}} 次尝试，认领于 {{time}}',
     briefUnavailable: '这次运行没有可查看的完整提示词。',
+    processDataCleared: '运行过程数据已按保留期清理。',
     briefFailed: '无法加载完整提示词',
     workspaceReset: {
       button: '清理工作目录',

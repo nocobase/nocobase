@@ -293,7 +293,7 @@ export const projectManagerRoutes: AppApiRouteContribution<Application> =
       apiValidator('param', Params),
       async (context) => {
         const viewer = await viewerOf(context, 'pm.issues/view');
-        const issue = await projects.issueQueries.detail(
+        const issue = await projects.issueQueries.visible(
           viewer,
           context.req.valid('param').issueId,
         );

@@ -12,7 +12,7 @@ export function createOwnerHandoffApi(projects: Projects, agents: Agents) {
   const work = createAgentWork({ agents, projects: () => projects });
   return {
     async read(viewer: Viewer, key: string, personUserId: string | null) {
-      const issue = await projects.issueQueries.detail(viewer, key);
+      const issue = await projects.issueQueries.visible(viewer, key);
       const handoff = await readOwnerHandoff(projects.tx.read(), issue.id);
       const canClaim = Boolean(
         handoff?.waiting &&
