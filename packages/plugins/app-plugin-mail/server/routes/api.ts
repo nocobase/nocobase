@@ -1808,7 +1808,9 @@ function toMailApiError(error: unknown, context: Context): unknown {
           context,
           error.reason === 'MAIL_ACCOUNT_CREDENTIALS_INVALID'
             ? 'errors.accountCredentialsInvalid'
-            : 'errors.invalidRequest',
+            : /^(?:to|cc|bcc|recipients)(?:\.|$)/u.test(error.field ?? '')
+              ? 'errors.invalidRecipient'
+              : 'errors.invalidRequest',
         ),
         cause: error,
       });

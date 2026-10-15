@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { mailboxError, mailboxNameError } from '../../shared/addresses.js';
 import { parseMailParticipant } from '../../shared/participant.js';
 
 import {
@@ -68,11 +69,36 @@ const idList = (maxItems: number = MAX_MAIL_ARRAY_ITEMS) =>
 const dateTime = z.iso.datetime({ offset: true });
 
 const Address = z.strictObject({
-  address: requiredText(MAX_MAIL_ADDRESS_LENGTH),
-  name: optionalText(MAX_MAIL_NAME_LENGTH),
+  // Drafts may keep an unfinished recipient field verbatim in one address slot.
+  address: requiredText(32_768).refine(
+    (value) => !/\p{Cc}/u.test(value.replace(/[\t\r\n]/gu, '')),
+    {
+      message: 'Draft recipient text contains unsupported control characters.',
+    },
+  ),
+  name: optionalText(MAX_MAIL_NAME_LENGTH).refine(
+    (value) => !mailboxNameError(value),
+    { message: 'Display names must not contain control characters.' },
+  ),
 });
 
 const addressList = z.array(Address).max(MAX_MAIL_ARRAY_ITEMS);
+const sendAddressList = z
+  .array(
+    z.strictObject({
+      address: requiredText(MAX_MAIL_ADDRESS_LENGTH).refine(
+        (value) => !mailboxError(value),
+        {
+          message: 'Enter a valid single email address without a display name.',
+        },
+      ),
+      name: optionalText(MAX_MAIL_NAME_LENGTH).refine(
+        (value) => !mailboxNameError(value),
+        { message: 'Display names must not contain control characters.' },
+      ),
+    }),
+  )
+  .max(MAX_MAIL_ARRAY_ITEMS);
 
 /** A boolean query parameter, written `true` or `false`. */
 const queryBoolean = z
@@ -592,7 +618,9 @@ export const SendMessageInput: z.ZodObject<
 > = z
   .strictObject({
     ...singleComposeFields,
-    to: addressList.min(1),
+    to: sendAddressList.min(1),
+    cc: sendAddressList.optional(),
+    bcc: sendAddressList.optional(),
     scheduledAt: dateTime.optional(),
   })
   .refine(hasBody, bodyRequired);
@@ -688,7 +716,7 @@ export const SendBulkInput: z.ZodObject<
 > = z
   .strictObject({
     ...composeFields,
-    recipients: addressList.min(1),
+    recipients: sendAddressList.min(1),
     draftKey: optionalText(MAX_MAIL_DRAFT_KEY_LENGTH),
     sourceDraftMessageId: optionalText(),
     scheduledAt: dateTime.optional(),

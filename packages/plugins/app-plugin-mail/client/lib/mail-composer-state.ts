@@ -15,6 +15,11 @@ import {
 import { replaceMailSignatureContent } from './mail-signature.js';
 import { sanitizeMailHtml } from './mail-template.js';
 import { composeMailBody } from './mail-forward-content.js';
+import {
+  parseMailboxList,
+  formatMailboxList,
+  type Mailbox,
+} from '../../shared/addresses.js';
 
 export type { ComposerState } from '../contracts/composer.js';
 
@@ -35,14 +40,8 @@ export interface ComposerRecoverySnapshot {
 
 const COMPOSER_RECOVERY_KEY_PREFIX = 'nocobase:mail:composer-recovery:v1:';
 
-export function parseAddressList(
-  value: string,
-): readonly { address: string }[] {
-  return value
-    .split(/[;,\n]/u)
-    .map((address) => address.trim())
-    .filter(Boolean)
-    .map((address) => ({ address }));
+export function parseAddressList(value: string): readonly Mailbox[] {
+  return parseMailboxList(value).mailboxes;
 }
 
 export function replaceComposerSignature(
@@ -127,8 +126,16 @@ export function buildDraftComposerInput(
       attachments,
       retainedAttachments,
     ),
+    to: draftAddresses(composer.to),
+    cc: draftAddresses(composer.cc),
+    bcc: draftAddresses(composer.bcc),
     scheduledAt: undefined,
   };
+}
+
+function draftAddresses(value: string): readonly Mailbox[] {
+  const parsed = parseMailboxList(value);
+  return parsed.issues.length ? [{ address: value }] : parsed.mailboxes;
 }
 
 export function mergeProviderDraftBody(
@@ -331,5 +338,5 @@ export function formatBytes(size: number): string {
 export function formatAddressList(
   addresses: readonly { address: string; name?: string }[],
 ): string {
-  return addresses.map((address) => address.address).join(', ');
+  return formatMailboxList(addresses);
 }
