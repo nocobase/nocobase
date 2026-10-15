@@ -47,7 +47,9 @@ it('measures the existing lifecycle SQL on a warm migrated database', async () =
             metadataReads: queries.filter(
               (q) =>
                 /^\s*select/i.test(q) &&
-                /sqlite_schema|__nocobase_collection_metadata/i.test(q),
+                /sqlite_schema|__nocobase_collection_metadata|pragma_|information_schema|pg_catalog/i.test(
+                  q,
+                ),
             ).length,
             sql: queries,
           }) + '\n',

@@ -16,7 +16,7 @@ async function readOnly<T>(work: () => Promise<T>, selects: number) {
   client.on('query', listener);
   try {
     const result = await work();
-    expect(sql, sql.join('\n')).toHaveLength(selects);
+    expect(sql).toHaveLength(selects);
     expect(sql.every((query) => /^select\b/iu.test(query))).toBe(true);
     return result;
   } finally {
