@@ -5,16 +5,7 @@ import { createRequire } from 'node:module';
 const { parseDocument, isMap } = createRequire(
   new URL('../packages/tools/create-app/package.json', import.meta.url),
 )('yaml');
-export const dialects = [
-  'sqlite',
-  'postgres',
-  'mysql',
-  'mssql',
-  'oracle',
-  'dameng',
-  'kingbase',
-  'oceanbase',
-];
+export const dialects = ['sqlite', 'postgres', 'mysql', 'mssql', 'oracle'];
 
 export function readMainConfig(file, dialect) {
   const doc = parseDocument(fs.readFileSync(file, 'utf8'));

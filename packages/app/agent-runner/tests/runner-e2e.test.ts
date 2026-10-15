@@ -456,10 +456,10 @@ describe('runner end to end', () => {
     expect(
       server
         .events(id)
-        .some(
+        .filter(
           (event) => event.type === 'input' && event.meta?.inputId === input.id,
         ),
-    ).toBe(true);
+    ).toHaveLength(1);
   });
 
   it('starts another turn when complete answers RUN_INPUT_PENDING', async () => {

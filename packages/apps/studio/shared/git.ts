@@ -85,6 +85,8 @@ export const REFERENCE_CHECK_MAX = 200;
  */
 export interface GitCheck {
   readonly kind: 'check' | 'status';
+  /** Stable host execution identity, when available; distinguishes reruns that complete between polls. */
+  readonly executionId?: string;
   readonly name: string;
   readonly status: 'queued' | 'in_progress' | 'completed';
   readonly conclusion: string | null;

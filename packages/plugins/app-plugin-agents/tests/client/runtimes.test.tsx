@@ -245,6 +245,42 @@ describe('runtimes page', () => {
     expect(
       within(sheet).getByText('runtimes.workspaces.oldRunner'),
     ).toBeInTheDocument();
+    // Runners no longer measure sizes routinely: no line rather than "unknown" on every directory.
+    expect(
+      within(sheet).queryByText(/^runtimes\.workspaces\.size/u),
+    ).toBeNull();
+  });
+
+  it('shows a working directory size when the runner reported one', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canSeeMachine: true,
+      workspaceUsage: {
+        disk: null,
+        count: 1,
+        unpushedCount: 0,
+        measuredAt: '2026-10-01T00:00:00.000Z',
+        workspaces: [
+          {
+            runId: 'run',
+            workDir: '/work/long/subject',
+            unpushed: false,
+            sizeBytes: 2048,
+            lastUsedAt: '2026-10-01T00:00:00.000Z',
+            subjectKind: 'sample',
+            subjectId: 'subject',
+          },
+        ],
+      },
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    await userEvent.click(
+      within(sheet).getByRole('button', { name: /^subject · /u }),
+    );
+    expect(
+      within(sheet).getByText(/^runtimes\.workspaces\.size\(value=/u),
+    ).toBeInTheDocument();
   });
 
   it('lists each runtime as one overview row, without switches', async () => {

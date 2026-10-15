@@ -57,3 +57,5 @@ description: '选择应用主数据库，并连接已有的外部业务数据库
 - **连接不等于同步**：本例在访问页面时读取外部数据，不会自动复制到主库。需要同步时，应另行说明同步频率和失败处理方式。
 
 :::
+
+KingbaseES, Dameng and OceanBase drivers are maintained in `nocobase/nocobase3-pro` and distributed through the Pro registry. Install the selected package in the application’s production dependencies, then configure its dialect and connection settings. Automatic loading and `config init --dialect` remain supported; explicit registration in `database.drivers` is optional and takes precedence.

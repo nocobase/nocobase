@@ -295,8 +295,19 @@ describe('live issue updates with the real subject run cache', () => {
 
   it('discovers externally triggered work from an idle page, without an issue edit', async () => {
     await show();
+    expect(IDLE_POLL_MS).toBe(60_000);
+    const runReads = () =>
+      api.request.mock.calls.filter(
+        ([request]) => request.path === 'agents/runs',
+      ).length;
+    const calls = runReads();
     serverRuns = [run()];
-    await advance(IDLE_POLL_MS);
+    await advance(59_000);
+    expect(runReads()).toBe(calls);
+    expect(screen.getByLabelText('Activity runs')).not.toHaveTextContent(
+      'running',
+    );
+    await advance(1000);
     expect(screen.getByLabelText('Activity runs')).toHaveTextContent('running');
     expect(detail.revision).toBe(1);
   });

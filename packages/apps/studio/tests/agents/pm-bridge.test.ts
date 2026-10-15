@@ -292,7 +292,14 @@ describe('a conversation run acts as the person who asked', () => {
       authorType: 'agent',
       authorId: agentId,
       via: 'agent',
-      source: { agentId, runId: payload.run.id },
+      source: { type: 'agent', agentId, runId: payload.run.id },
+    });
+    const stored = await h.database
+      .connection()
+      .repository<{ origin: unknown }>('pmComments')
+      .findOne({ filter: { id: posted.body.data.comment.id } });
+    expect(stored?.origin).toMatchObject({
+      trace: { agentId, runId: payload.run.id },
     });
   });
 

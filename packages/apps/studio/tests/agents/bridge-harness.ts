@@ -1538,7 +1538,7 @@ export async function createBridgeHarness(
         : answer;
     },
     async close() {
-      unbindAgents();
+      await unbindAgents();
       await delegations.settled();
       await releases?.releases.shutdown();
       await testDatabase.destroy();

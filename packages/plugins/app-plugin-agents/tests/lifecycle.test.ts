@@ -782,6 +782,7 @@ describe('run lifecycle', () => {
         .status,
     ).toBe(401);
 
+    await post(runner, runId, 'start', start);
     await post(runner, runId, 'complete', {
       summary: '',
       handledInputIds: inputIds,

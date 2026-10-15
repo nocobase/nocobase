@@ -2,9 +2,7 @@
 '@nocobase/db': patch
 '@nocobase/db-sqlite': patch
 '@nocobase/db-postgres': patch
-'@nocobase/db-kingbase': patch
 '@nocobase/db-oracle': patch
-'@nocobase/db-dameng': patch
 '@nocobase/db-mssql': patch
 ---
 

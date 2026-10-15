@@ -131,7 +131,8 @@ test('unrelated paths and empty changes skip the matrix', () => {
 const claimConcurrency = {
   dialect: 'postgres',
   filter: '@nocobase/app-plugin-agents',
-  tests: 'tests/claim-concurrency.test.ts',
+  tests:
+    'tests/claim-concurrency.test.ts tests/active-input.test.ts tests/run-revision-migration.test.ts',
 };
 
 const artifactKeyMigration = {
@@ -161,6 +162,7 @@ test('a guarded package path selects its dialect suite, and nothing else does', 
     'packages/plugins/app-plugin-agents/server/core/runs/comment-consent.ts',
     'packages/plugins/app-plugin-agents/server/core/agents/agent.store.ts',
     'packages/plugins/app-plugin-agents/tests/claim-concurrency.test.ts',
+    'packages/plugins/app-plugin-agents/database/migrations/202610260001_ag_run_revision.ts',
   ]) {
     assert.deepEqual(selectPackageSuites([file]), [claimConcurrency], file);
     assert.deepEqual(selectDatabases([file]), [], file);
@@ -203,10 +205,10 @@ test('git selection covers additions, deletion, renames in and out, and unusual 
     path.join(repo.cwd, 'packages/libs/db-postgres/move-out.ts'),
     path.join(repo.cwd, 'docs/moved-out.ts'),
   );
-  repo.write('packages/libs/db-kingbase/placeholder.ts');
+  repo.write('packages/libs/db-mssql/placeholder.ts');
   renameSync(
     path.join(repo.cwd, 'docs/move-in.ts'),
-    path.join(repo.cwd, 'packages/libs/db-kingbase/moved-in.ts'),
+    path.join(repo.cwd, 'packages/libs/db-mssql/moved-in.ts'),
   );
   repo.write('packages/libs/db-sqlite/空 格\nfile.ts');
   const headSha = repo.commit();
@@ -214,7 +216,7 @@ test('git selection covers additions, deletion, renames in and out, and unusual 
     'sqlite',
     'postgres',
     'mysql',
-    'kingbase',
+    'mssql',
   ]);
 });
 
