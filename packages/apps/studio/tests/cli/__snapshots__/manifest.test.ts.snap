@@ -175,6 +175,9 @@ issue dependency add <issue> <dependsOn> [--type] -> POST /api/projects/issues/{
 issue dependency remove <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/removeDependency (person,run) pm.issues/edit
 issue executor list -> GET /api/projects/executors (person)
 issue get <issue> -> GET /api/projects/issues/{issueId} (person,run) pm.issues/view
+issue handoff accept <issue> -> POST /api/issueOwnerHandoffs/{issueId}/accept (person) pm.issues/edit
+issue handoff get <issue> -> GET /api/issueOwnerHandoffs/{issueId} (person) pm.issues/view
+issue handoff reject <issue> -> POST /api/issueOwnerHandoffs/{issueId}/reject (person) pm.issues/edit
 issue progress <issue> -> GET /api/issueProgress/{issueId} (person)
 issue restore <issue> -> POST /api/projects/issues/{issueId}/restore (person,run) pm.issues/delete
 issue runs [issue] [--limit --page-token] -> GET /api/issueRuns (person,run) pm.issues/view
