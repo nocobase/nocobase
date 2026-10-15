@@ -1129,6 +1129,9 @@ const enUS = {
   },
   /** What Studio contributes to the agents plugin's pages and the projects plugin's workflow editor. */
   studioAgents: {
+    newProjectSkill: 'Attach to new projects automatically',
+    newProjectSkillDescription:
+      'Saves immediately. Only projects created afterwards receive this skill; existing projects keep their attachments.',
     principalKinds: { agent: 'Agent' },
     templateMessages: {
       inReview:

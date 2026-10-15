@@ -1036,6 +1036,9 @@ const zhCN: AppResource = {
     unknown: '未知',
   },
   studioAgents: {
+    newProjectSkill: '新项目自动挂载',
+    newProjectSkillDescription:
+      '立即保存，仅影响之后创建的项目；已有项目的挂载不变。',
     principalKinds: { agent: 'Agent' },
     templateMessages: {
       inReview:

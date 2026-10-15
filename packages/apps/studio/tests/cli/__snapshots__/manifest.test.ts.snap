@@ -262,6 +262,8 @@ project-manager get -> GET /api/projectManager (person)
 project-manager start <issue> -> POST /api/projectManager/issues/{issueId}/start (person)
 project-manager update [--name --description --delegation-queue-timeout-seconds --fallback-after-seconds --first-choice --fallback --principles --comment-run-limit] -> PATCH /api/projectManager (person)
 project create <name> [--description --visibility --status --priority --lead --start-date --due-date] -> POST /api/projects (person) pm.projects/create
+project default-skills get -> GET /api/projectDefaultSkills (person)
+project default-skills set [--skills!] -> PUT /api/projectDefaultSkills (person)
 project delete <project> -> DELETE /api/projects/{projectId} (person) pm.projects/delete confirm
 project get <project> -> GET /api/projects/{projectId} (person,run) pm.projects/view
 project invitation create [--email! --project] -> POST /api/projects/invitations (person)

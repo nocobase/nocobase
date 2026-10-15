@@ -93,8 +93,10 @@ export interface SkillImport {
 export interface SkillAttachment {
   readonly scope: SkillScope;
   readonly scopeId: string;
-  /** The agent's name for `agent`; null where this plugin cannot name it. */
+  /** The visible target's name; null when unavailable to the caller. */
   readonly name: string | null;
+  /** An application-internal link, present only for visible targets. */
+  readonly href?: string;
 }
 
 export interface SkillDetail extends Skill {
