@@ -36,6 +36,7 @@ const mocks = vi.hoisted(() => ({
   stop: vi.fn(),
   reset: vi.fn(),
   retry: vi.fn(),
+  transcript: vi.fn(),
   detail: null as Record<string, unknown> | null,
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
@@ -57,12 +58,15 @@ vi.mock('@nocobase/app-plugin-agents/client/runs', () => ({
   useWorkspaceReset: () => ({ mutate: mocks.reset, isPending: false }),
   useRetryRun: () => ({ mutate: mocks.retry, isPending: false }),
   useRunBrief: () => ({}),
-  useRunWithTranscript: () => ({
-    run: { data: mocks.detail },
-    events: [],
-    failed: false,
-    trigger: null,
-  }),
+  useRunWithTranscript: (runId: string) => {
+    mocks.transcript(runId);
+    return {
+      run: { data: mocks.detail },
+      events: [],
+      failed: false,
+      trigger: null,
+    };
+  },
 }));
 vi.mock('@nocobase/app-plugin-agents/client/kit', () => ({
   AgentAvatar: () => null,
@@ -613,6 +617,7 @@ describe('embedded task runs', () => {
       await user.click(screen.getByRole('button', { name: 'Close' }));
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
       expect(link.isConnected).toBe(true);
+      await waitFor(() => expect(link).toHaveFocus());
     }
   });
 
@@ -629,11 +634,17 @@ describe('embedded task runs', () => {
     await act(() =>
       mocks.retry.mock.calls[0]![1].onSuccess({ id: 'next-run' }),
     );
+    await waitFor(() =>
+      expect(mocks.transcript).toHaveBeenLastCalledWith('next-run'),
+    );
     expect(screen.getByLabelText('Current address')).toHaveTextContent(
       '/my-agent/session',
     );
     await user.click(
       await screen.findByRole('link', { name: 'Retried → New run' }),
+    );
+    await waitFor(() =>
+      expect(mocks.transcript).toHaveBeenLastCalledWith('another-run'),
     );
     expect(screen.getByLabelText('Current address')).toHaveTextContent(
       '/my-agent/session',
