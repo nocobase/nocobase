@@ -1,5 +1,6 @@
 /**
- * `/api/reports`: the dashboard page (its figures and what needs attention) and the acceptance metrics (`shared/reports.ts`). Both need the reports grant
+ * `/api/reports`: the dashboard page, one route per panel (delivery, the agents, the projects, what needs attention),
+ * and the acceptance metrics (`shared/reports.ts`). Both need the reports grant
  * (page `reports`, which Studio declares in `shared/access.ts`), checked before the input; they count every run for a
  * reader of agents (`agents.agents` read), otherwise the caller's own, and only runs on issues the caller may see.
  * Errors are the standard body (`../http/errors.ts`).
@@ -32,8 +33,10 @@ import {
 import { studioError, studioErrorHandler } from '../http/errors.js';
 import { metricsText, REPORTS_READ, usageText } from './text.js';
 import {
+  DashboardAgentsSchema,
   DashboardAttentionSchema,
-  DashboardReportSchema,
+  DashboardDeliverySchema,
+  DashboardProjectsSchema,
   MetricsReportSchema,
   UsageReportSchema,
 } from './schemas.js';
@@ -130,26 +133,77 @@ export const reportsRoutes: AppApiRouteContribution<Application> =
       await next();
     });
 
+    const days = apiValidator('query', DashboardQuery);
     routes.get(
-      '/dashboard',
+      '/delivery',
       describeRoute({
         tags,
-        summary: 'Get the dashboard report',
-        operationId: 'reportsGetDashboard',
+        summary: 'Get the dashboard delivery figures',
+        operationId: 'reportsGetDelivery',
         ...cliRoute({
-          command: 'report dashboard',
-          examples: ['report dashboard --days 7'],
+          command: 'report delivery',
+          examples: ['report delivery --days 7'],
         }),
-        description: `The last \`days\` days up to today (UTC), against the days before them: delivery, the agents' performance, day by day and by project. ${NEEDS}`,
+        description: `The last \`days\` days up to today (UTC), against the days before them: issues completed, the median cycle time, the agents' share and the cost per issue, with a point per stretch of the period. ${NEEDS}`,
         responses: {
-          200: dataResponse(DashboardReportSchema),
+          200: dataResponse(DashboardDeliverySchema),
           ...apiErrorResponses,
         },
       }),
-      apiValidator('query', DashboardQuery),
+      days,
       async (context) =>
         context.json({
-          data: await reports.dashboard(
+          data: await reports.delivery(
+            context.get('reportCaller'),
+            context.req.valid('query').days,
+          ),
+        }),
+    );
+    routes.get(
+      '/agents',
+      describeRoute({
+        tags,
+        summary: "Get the agents' performance",
+        operationId: 'reportsGetAgents',
+        ...cliRoute({
+          command: 'report agents',
+          examples: ['report agents --days 7'],
+        }),
+        description: `The last \`days\` days up to today (UTC), against the days before them: run success, rework, runs per issue, human intervention and queue wait, and the runs queued each day by how they ended. ${NEEDS}`,
+        responses: {
+          200: dataResponse(DashboardAgentsSchema),
+          ...apiErrorResponses,
+        },
+      }),
+      days,
+      async (context) =>
+        context.json({
+          data: await reports.agentPerformance(
+            context.get('reportCaller'),
+            context.req.valid('query').days,
+          ),
+        }),
+    );
+    routes.get(
+      '/projects',
+      describeRoute({
+        tags,
+        summary: "Get the projects' progress",
+        operationId: 'reportsGetProjects',
+        ...cliRoute({
+          command: 'report projects',
+          examples: ['report projects --days 7'],
+        }),
+        description: `Every project the caller may see but cancelled ones: its live issues now, done and blocked, and the issues it completed in the last \`days\` days with their median cycle time. ${NEEDS}`,
+        responses: {
+          200: dataResponse(DashboardProjectsSchema),
+          ...apiErrorResponses,
+        },
+      }),
+      days,
+      async (context) =>
+        context.json({
+          data: await reports.projectProgress(
             context.get('reportCaller'),
             context.req.valid('query').days,
           ),

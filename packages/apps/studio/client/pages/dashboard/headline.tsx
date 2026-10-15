@@ -1,7 +1,7 @@
 /**
  * The four headline figures over the period chosen (`HEADLINES`): issues completed, the median cycle time, the share
  * completed by agents and the cost per completed issue. Each card shows the figure large, its change against the period
- * before, and a sparkline over the period's stretches (`DashboardReport.buckets`).
+ * before, and a sparkline over the period's stretches (`DashboardDelivery.buckets`).
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart';
 import { cn } from 'cn';
 
-import type { DashboardReport } from '../../../shared/reports.js';
+import type { DashboardDelivery } from '../../../shared/reports.js';
 import {
   figureValue,
   formatFigure,
@@ -31,7 +31,7 @@ const GRID = 'grid gap-4 sm:grid-cols-2 xl:grid-cols-4';
 export function HeadlineFigures({
   report,
 }: {
-  readonly report: UseQueryResult<DashboardReport>;
+  readonly report: UseQueryResult<DashboardDelivery>;
 }): ReactElement {
   const { t } = useTranslation();
   if (!report.data)
@@ -78,13 +78,13 @@ function HeadlineCard({
   report,
 }: {
   readonly spec: FigureSpec;
-  readonly report: DashboardReport;
+  readonly report: DashboardDelivery;
 }): ReactElement {
   const { t } = useTranslation();
   const locale = useFormatLocale();
   const label = t(`dashboard.figures.${spec.key}.label`);
   const available = report.subjects || !ISSUE_FIGURES.has(spec.key);
-  const text = (figures: DashboardReport['current']) =>
+  const text = (figures: DashboardDelivery['current']) =>
     available
       ? formatFigure(
           figureValue(figures, spec.key, report.currency),
