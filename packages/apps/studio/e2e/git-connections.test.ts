@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import type { GitConnection } from '../shared/git.ts';
-import type { MemberWithRoles, Role } from '../shared/access.ts';
+import type { Role } from '../shared/access.ts';
 import { expect, open, signIn, test, unique, url } from './support/fixtures.ts';
 
 test.use({ user: 'admin', isolatedStudio: true, locale: 'en-US' });
@@ -159,16 +159,28 @@ test('a reader can recover connections and read an empty list without management
   context,
   studio,
 }, info) => {
-  const members = await api.get<MemberWithRoles[]>('access/members');
-  const member = members.find((entry) => entry.email === 'lisa@example.com')!;
+  const users = await api.get<
+    Array<{
+      id: string;
+      email: string;
+      roleScopes: Record<string, string | string[]>;
+    }>
+  >('users?q=lisa@example.com&pageSize=100');
+  const member = users.find((entry) => entry.email === 'lisa@example.com')!;
   expect(member).toBeTruthy();
+  const originalRoles = member.roleScopes.studio;
+  const roles = Array.isArray(originalRoles)
+    ? originalRoles
+    : originalRoles
+      ? [originalRoles]
+      : [];
   const role = await api.post<Role>('access/roles', {
     title: `Git reader ${unique()}`,
     settings: { 'studio.git/read': true },
   });
   try {
-    await api.patch(`access/members/${member.userId}`, {
-      roles: [...member.roles, role.key],
+    await api.put(`users/${member.id}/roleScopes/studio`, {
+      value: [...roles, role.key],
     });
     await signIn(context, 'lisa', studio);
     const status = await api.get<{ canManage: boolean }>('git/status');
@@ -235,7 +247,7 @@ test('a reader can recover connections and read an empty list without management
     await capture(page, 'git-read-only-empty', info);
   } finally {
     await signIn(context, 'admin', studio);
-    await api.patch(`access/members/${member.userId}`, { roles: member.roles });
+    await api.put(`users/${member.id}/roleScopes/studio`, { value: roles });
     await api.delete(`access/roles/${role.key}`);
   }
 });
