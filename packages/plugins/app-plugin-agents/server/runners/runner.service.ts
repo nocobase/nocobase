@@ -61,7 +61,6 @@ import {
   credentialsRepo,
   findRunner,
   registrationTokensRepo,
-  lockRegistration,
   runnersRepo,
   storedPolicy,
   storedVariableNames,
@@ -413,12 +412,6 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         const status = liveStatus(request.protocolVersion);
         const now = clock.now();
         const nowText = now.toISOString();
-        // The unique row serializes registrations even when this host has no runner yet. Hold it while checking
-        // the token and replacing current registrations, until this transaction commits.
-        const lockId = hashCredential(
-          JSON.stringify([request.name, request.hostname]),
-        );
-        await lockRegistration(conn, lockId, nowText);
         const tokens = registrationTokensRepo(conn);
         const token = await tokens.findOne({
           filter: { tokenHash: hashCredential(request.registrationToken) },

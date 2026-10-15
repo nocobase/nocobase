@@ -79,29 +79,91 @@ describe('runners', () => {
       );
   });
 
-  it('serializes registrations with different tokens for the same host', async () => {
+  it('repeatedly replaces the current registration without changing already revoked records', async () => {
     h = await createHarness();
-    const tokens = await Promise.all(
-      [1, 2].map(() => h.services.runners.createRegistrationToken('alice', {})),
+    const register = async () => {
+      const token = await h.services.runners.createRegistrationToken(
+        'alice',
+        {},
+      );
+      return h.services.runners.register({
+        ...registration(token.token),
+        features: [],
+        tools: [],
+      });
+    };
+    const first = await register();
+    h.clock.advance(1000);
+    const second = await register();
+    const revoked = await h.services.runners.get(first.runnerId);
+    h.clock.advance(1000);
+    const third = await register();
+    expect(await h.services.runners.get(first.runnerId)).toEqual(revoked);
+    for (const old of [first, second]) {
+      expect((await h.services.runners.get(old.runnerId)).status).toBe(
+        'revoked',
+      );
+      await expect(
+        h.services.runners.authenticate(old.runnerKey),
+      ).rejects.toMatchObject({
+        code: 'RUNNER_REVOKED',
+      });
+    }
+    expect((await h.services.runners.authenticate(third.runnerKey)).id).toBe(
+      third.runnerId,
     );
-    const results = await Promise.all(
-      tokens.map((token) =>
-        h.services.runners.register({
-          ...registration(token.token),
-          features: [],
-          tools: [],
-        }),
-      ),
+  });
+
+  it('cleans up multiple active records and all their keys on the next registration', async () => {
+    h = await createHarness();
+    const register = async (name = 'laptop') => {
+      const token = await h.services.runners.createRegistrationToken(
+        'alice',
+        {},
+      );
+      return h.services.runners.register({
+        ...registration(token.token),
+        name,
+        features: [],
+        tools: [],
+      });
+    };
+    const first = await register();
+    const second = await register('temporary');
+    // Reproduce the records simultaneous registrations can leave behind without relying on a race.
+    await h.database
+      .connection()
+      .repository('agRunners')
+      .updateMany({
+        filter: { id: second.runnerId },
+        values: { name: 'laptop' },
+      });
+    for (const old of [first, second])
+      expect((await h.services.runners.authenticate(old.runnerKey)).id).toBe(
+        old.runnerId,
+      );
+    const fresh = await register();
+    for (const old of [first, second]) {
+      expect((await h.services.runners.get(old.runnerId)).status).toBe(
+        'revoked',
+      );
+      const keys = await h.database
+        .connection()
+        .repository('agRunnerCredentials')
+        .findMany({
+          filter: { runnerId: old.runnerId },
+        });
+      expect(keys.length).toBeGreaterThan(0);
+      for (const key of keys) expect(key.revokedAt).toBeTruthy();
+      await expect(
+        h.services.runners.authenticate(old.runnerKey),
+      ).rejects.toMatchObject({
+        code: 'RUNNER_REVOKED',
+      });
+    }
+    expect((await h.services.runners.authenticate(fresh.runnerKey)).id).toBe(
+      fresh.runnerId,
     );
-    const runners = await Promise.all(
-      results.map((result) => h.services.runners.get(result.runnerId)),
-    );
-    expect(runners.filter((runner) => runner.status === 'online')).toHaveLength(
-      1,
-    );
-    expect(
-      runners.filter((runner) => runner.status === 'revoked'),
-    ).toHaveLength(1);
   });
 
   it('leaves the current runner usable when a replacement token is invalid', async () => {
