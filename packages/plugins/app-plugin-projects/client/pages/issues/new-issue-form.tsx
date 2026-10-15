@@ -1,7 +1,14 @@
+import { useAttachmentUploads } from '../../hooks/use-attachment-uploads.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircleIcon } from 'lucide-react';
-import { type FormEvent, type ReactElement, useState } from 'react';
+import {
+  type FormEvent,
+  type ReactElement,
+  useState,
+  useEffect,
+  useRef,
+} from 'react';
 import { useNavigate } from 'react-router';
 
 import { PRIORITIES, type Priority } from '../../../shared/common.js';
@@ -12,7 +19,10 @@ import {
 } from '../../../shared/statuses.js';
 import { pmKeys } from '../../api/keys.js';
 import { PmExecutorSelect } from '../../components/pm-executor-select.js';
-import { PmRichTextEditor } from '../../components/pm-rich-text-editor.js';
+import {
+  PmRichTextEditor,
+  type PmRichTextHandle,
+} from '../../components/pm-rich-text-editor.js';
 import { Alert, AlertDescription } from '../../components/ui/alert.js';
 import { Button } from '../../components/ui/button.js';
 import {
@@ -35,7 +45,7 @@ import { errorText, useNotify } from '../../hooks/use-notify.js';
 import { usePmApi } from '../../hooks/use-pm-api.js';
 import { useViewer } from '../../hooks/use-viewer.js';
 import { useExecutorOptions } from '../../lib/kinds.js';
-import { canUseSetting } from '../../lib/permissions.js';
+import { canUseSetting, canUploadAttachments } from '../../lib/permissions.js';
 import {
   DateField,
   LabelsField,
@@ -55,10 +65,12 @@ const FORM_ID = 'pm-issue-new-form';
  */
 export function NewIssueForm({
   onSubmittingChange,
+  onUploadingChange,
   onStartChange,
   onCreated,
 }: {
   readonly onSubmittingChange: (submitting: boolean) => void;
+  readonly onUploadingChange?: (uploading: boolean) => void;
   /** Whether the issue starts right away, for the footer's button. */
   readonly onStartChange?: (startNow: boolean) => void;
   /** Where to go once created; by default the issue's page. */
@@ -71,6 +83,13 @@ export function NewIssueForm({
   const queryClient = useQueryClient();
   const viewer = useViewer();
   const candidates = useMentionCandidates();
+  const uploads = useAttachmentUploads();
+  const editorRef = useRef<PmRichTextHandle>(null);
+  const [creating, setCreating] = useState(false);
+  useEffect(() => {
+    onUploadingChange?.(uploads.uploading);
+    return () => onUploadingChange?.(false);
+  }, [uploads.uploading, onUploadingChange]);
   const otherExecutors = useExecutorOptions();
 
   const projects = useQuery({
@@ -111,7 +130,7 @@ export function NewIssueForm({
   const [formError, setFormError] = useState<string>();
   const owner = ownerUserId ?? viewer?.userId ?? null;
   const markSaved = useUnsavedChanges(
-    Boolean(title.trim() || description.trim()) ||
+    Boolean(title.trim() || description.trim() || uploads.uploads.length) ||
       priority !== 'none' ||
       projectId !== presetProjectId ||
       ownerUserId !== null ||
@@ -134,12 +153,25 @@ export function NewIssueForm({
   }
 
   async function create(): Promise<void> {
+    if (uploads.uploading || creating) return;
     const trimmed = title.trim();
     setFormError(undefined);
+    setCreating(true);
     onSubmittingChange(true);
     try {
       const issue = await api.createIssue({
         title: trimmed,
+        ...(uploads.ids.length
+          ? {
+              attachmentIds: uploads.uploads.flatMap((upload) =>
+                upload.attachment &&
+                (!upload.attachment.previewable ||
+                  description.includes(upload.attachment.contentUrl))
+                  ? [upload.attachment.id]
+                  : [],
+              ),
+            }
+          : {}),
         statusKey: startNow ? IN_PROGRESS_STATUS : BACKLOG_STATUS,
         ...(description.trim() ? { description } : {}),
         priority,
@@ -153,12 +185,14 @@ export function NewIssueForm({
       notify.success(t('issueForm.created', { identifier: issue.identifier }));
       void queryClient.invalidateQueries({ queryKey: pmKeys.issues });
       void queryClient.invalidateQueries({ queryKey: pmKeys.projects });
+      uploads.clear();
       markSaved();
       if (onCreated) onCreated(issue);
       else void navigate(`/issues/${encodeURIComponent(issue.id)}`);
     } catch (error) {
       setFormError(errorText(t, error, t('common.requestFailed')));
     } finally {
+      setCreating(false);
       onSubmittingChange(false);
     }
   }
@@ -190,6 +224,12 @@ export function NewIssueForm({
           <FieldLabel>{t('issueForm.descriptionLabel')}</FieldLabel>
           <PmRichTextEditor
             value={description}
+            images
+            disabled={creating}
+            ref={editorRef}
+            onPasteImages={
+              canUploadAttachments(viewer) ? uploads.add : undefined
+            }
             aria-label={t('issueForm.descriptionLabel')}
             placeholder={t('issueForm.descriptionPlaceholder')}
             mentionCandidates={candidates}
@@ -197,6 +237,45 @@ export function NewIssueForm({
             contentClassName='min-h-28'
             onChange={setDescription}
           />
+          {uploads.uploads.map((upload) => (
+            <div
+              key={upload.key}
+              className='flex items-center gap-2 text-sm text-muted-foreground'
+            >
+              <span className='min-w-0 flex-1 truncate'>
+                {upload.attachment
+                  ? upload.name
+                  : t('attachments.uploading', { name: upload.name })}
+              </span>
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                disabled={creating}
+                aria-label={t('attachments.remove', { name: upload.name })}
+                onClick={() => {
+                  const editor = editorRef.current?.editor();
+                  if (editor && upload.attachment) {
+                    const tr = editor.state.tr;
+                    editor.state.doc.descendants((node, position) => {
+                      if (
+                        node.type.name === 'image' &&
+                        node.attrs.src === upload.attachment?.contentUrl
+                      )
+                        tr.delete(
+                          tr.mapping.map(position),
+                          tr.mapping.map(position + node.nodeSize),
+                        );
+                    });
+                    editor.view.dispatch(tr);
+                  }
+                  uploads.remove(upload.key);
+                }}
+              >
+                {t('attachments.removeConfirm')}
+              </Button>
+            </div>
+          ))}
         </Field>
         <FieldSet>
           <FieldLegend variant='label'>{t('issueForm.startLabel')}</FieldLegend>
@@ -344,9 +423,11 @@ export function NewIssueForm({
 
 export function NewIssueFooter({
   submitting,
+  uploading = false,
   startNow = true,
 }: {
   readonly submitting: boolean;
+  readonly uploading?: boolean;
   /** Whether the form starts the issue right away: the button says so. */
   readonly startNow?: boolean;
 }): ReactElement {
@@ -362,7 +443,7 @@ export function NewIssueFooter({
       >
         {t('actions.cancel')}
       </Button>
-      <Button type='submit' form={FORM_ID} disabled={submitting}>
+      <Button type='submit' form={FORM_ID} disabled={submitting || uploading}>
         {submitting ? <Spinner data-icon='inline-start' /> : null}
         {submitting
           ? t('common.creating')

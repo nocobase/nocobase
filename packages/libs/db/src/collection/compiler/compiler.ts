@@ -571,16 +571,16 @@ export class CollectionCompiler {
       const definition = current?.constraints?.find(
         (candidate) => candidate.name === constraint,
       );
-      // A unique constraint with a predicate exists only as a partial unique index — no database can attach a
-      // predicate to a constraint — so it is dropped as one; as a constraint, PostgreSQL refused to drop it. A
-      // definition resolved from the database keeps the predicate on the index, which it lists under the same
-      // name among the indexes; a unique constraint backed by a constraint of its own is not listed there.
+      // Partial and invalid unique indexes stay in indexes without becoming
+      // unconditional identity constraints. They must still be droppable by
+      // the same name supplied to the Builder's unique() declaration.
+      const index = current?.indexes?.find(
+        (candidate) => candidate.name === constraint,
+      );
       const indexBacked =
-        definition?.type === 'unique' &&
-        (definition.predicate !== undefined ||
-          (current?.indexes ?? []).some(
-            (candidate) => candidate.name === constraint,
-          ));
+        definition?.type === 'unique'
+          ? definition.predicate !== undefined || index !== undefined
+          : definition === undefined && index?.db?.unique === true;
       if (indexBacked) {
         operations.push({ type: 'dropIndex', name: constraint });
         continue;

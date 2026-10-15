@@ -29,6 +29,7 @@ import {
 
 import type { PromptContent, Reference } from '../../shared/api.js';
 import { useMentions, type Mention } from '../api.js';
+import { useSessionMemory } from '../use-session-memory.js';
 import { StatusPill } from './status-pill.js';
 
 type Image = Extract<PromptContent, { type: 'image' }>;
@@ -37,7 +38,10 @@ type Pending = Image & { readonly id: string };
 
 export interface ComposerProps {
   readonly placeholder: string;
+  readonly draftKey?: string;
   readonly disabled?: boolean;
+  /** Settings may still be loading while the draft remains editable. */
+  readonly sendDisabled?: boolean;
   /** The agent is answering: Enter queues the message, ⌘↩ interrupts. */
   readonly busy?: boolean;
   readonly sending?: boolean;
@@ -60,6 +64,8 @@ export interface ComposerProps {
   /** The keys it takes, under the box. */
   readonly hints?: boolean;
   readonly autoFocus?: boolean;
+  /** A deliberate draft edit, including adding an image before its asynchronous read. */
+  readonly onEdit?: () => void;
   readonly onSend: (
     content: PromptContent[],
     interrupt: boolean,
@@ -90,7 +96,9 @@ const mentionText = (reference: Reference): string =>
 
 export function Composer({
   placeholder,
+  draftKey,
   disabled,
+  sendDisabled,
   busy,
   sending,
   commands = [],
@@ -103,13 +111,20 @@ export function Composer({
   hints,
   autoFocus,
   onSend,
+  onEdit,
 }: ComposerProps): ReactElement {
   const { t } = useTranslation();
-  const [text, setText] = useState('');
+  const [text, setText] = useSessionMemory(draftKey && `text:${draftKey}`, '');
   const [expanded, setExpanded] = useState(false);
   const [caret, setCaret] = useState(0);
-  const [images, setImages] = useState<Pending[]>([]);
-  const [mentioned, setMentioned] = useState<Reference[]>([]);
+  const [images, setImages] = useSessionMemory<Pending[]>(
+    draftKey && `images:${draftKey}`,
+    [],
+  );
+  const [mentioned, setMentioned] = useSessionMemory<Reference[]>(
+    draftKey && `mentions:${draftKey}`,
+    [],
+  );
   const [highlight, setHighlight] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const filesRef = useRef<HTMLInputElement>(null);
@@ -164,6 +179,7 @@ export function Composer({
   const empty = !text.trim() && images.length === 0;
 
   const type = (next: string, at: number): void => {
+    onEdit?.();
     setText(next);
     setCaret(at);
     setHighlight(0);
@@ -201,8 +217,11 @@ export function Composer({
     );
   };
 
+  const sendingRef = useRef(false);
   const send = async (interrupt: boolean): Promise<void> => {
-    if (empty || disabled || sending) return;
+    if (empty || disabled || sendDisabled || sending || sendingRef.current)
+      return;
+    sendingRef.current = true;
     const content: PromptContent[] = [
       ...(text.trim() ? [{ type: 'text' as const, text: text.trim() }] : []),
       ...images.map(({ mimeType, data }) => ({
@@ -219,8 +238,10 @@ export function Composer({
       await onSend(content, interrupt, kept);
     } catch {
       // The caller said what went wrong; the draft stays for another try.
+      sendingRef.current = false;
       return;
     }
+    sendingRef.current = false;
     setText('');
     setCaret(0);
     setImages([]);
@@ -228,21 +249,20 @@ export function Composer({
   };
 
   const addFiles = async (list: Iterable<File>): Promise<void> => {
-    const read = await Promise.all(
-      [...list]
-        .filter(
-          (file) =>
-            file.type.startsWith('image/') && file.size <= MAX_IMAGE_BYTES,
-        )
-        .map(async (file): Promise<Pending> => ({
-          id: crypto.randomUUID(),
-          type: 'image',
-          mimeType: file.type,
-          data: await base64(file),
-        })),
+    const files = [...list].filter(
+      (file) => file.type.startsWith('image/') && file.size <= MAX_IMAGE_BYTES,
     );
-    if (read.length > 0)
-      setImages((current) => [...current, ...read].slice(0, 10));
+    if (files.length === 0) return;
+    onEdit?.();
+    const read = await Promise.all(
+      files.map(async (file): Promise<Pending> => ({
+        id: crypto.randomUUID(),
+        type: 'image',
+        mimeType: file.type,
+        data: await base64(file),
+      })),
+    );
+    setImages((current) => [...current, ...read].slice(0, 10));
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
@@ -359,11 +379,12 @@ export function Composer({
                 <button
                   type='button'
                   aria-label={t('composer.removeImage')}
-                  onClick={() =>
+                  onClick={() => {
+                    onEdit?.();
                     setImages((current) =>
                       current.filter((other) => other.id !== image.id),
-                    )
-                  }
+                    );
+                  }}
                   className='bg-card text-muted-foreground hover:text-foreground absolute -top-1.5 -right-1.5 rounded-full border p-0.5'
                 >
                   <XIcon className='size-3.5' />
@@ -377,10 +398,11 @@ export function Composer({
           value={text}
           rows={large ? 4 : compact ? 1 : 2}
           autoFocus={autoFocus}
-          disabled={disabled}
+          disabled={disabled || sending}
           placeholder={placeholder}
           aria-label={placeholder}
           onChange={(event) => {
+            onEdit?.();
             setText(event.target.value);
             setCaret(event.target.selectionStart);
             setHighlight(0);
@@ -412,7 +434,7 @@ export function Composer({
         >
           <ToolButton
             label={t('composer.addImage')}
-            disabled={disabled}
+            disabled={disabled || sending}
             onClick={() => filesRef.current?.click()}
           >
             <ImageIcon className='size-4' />
@@ -421,7 +443,7 @@ export function Composer({
             <span className='md:hidden'>
               <ToolButton
                 label={expanded ? t('composer.collapse') : t('composer.expand')}
-                disabled={disabled}
+                disabled={disabled || sending}
                 onClick={() => {
                   setExpanded(!expanded);
                   inputRef.current?.focus();
@@ -449,7 +471,7 @@ export function Composer({
           {mentions && (
             <ToolButton
               label={t('composer.mentions')}
-              disabled={disabled}
+              disabled={disabled || sending}
               onClick={() => insert('#')}
             >
               <HashIcon className='size-4' />
@@ -458,7 +480,7 @@ export function Composer({
           {commands.length > 0 && (
             <ToolButton
               label={t('composer.commands')}
-              disabled={disabled}
+              disabled={disabled || sending}
               onClick={() => type('/', 1)}
             >
               <SlashSquareIcon className='size-4' />
@@ -466,6 +488,11 @@ export function Composer({
           )}
           <div className='order-first flex w-full min-w-0 items-center gap-0.5 overflow-x-auto pb-1 [scrollbar-width:none] empty:hidden sm:order-none sm:ml-0.5 sm:w-auto sm:flex-1 sm:flex-wrap sm:overflow-visible sm:border-l sm:pb-0 sm:pl-1'>
             {toolbar}
+            {sending && (
+              <span role='status' className='text-muted-foreground text-xs'>
+                {t('composer.sending')}
+              </span>
+            )}
           </div>
           <div className='ml-auto flex shrink-0 items-center gap-0.5'>
             {trailing}
@@ -473,7 +500,7 @@ export function Composer({
               type='button'
               aria-label={busy ? t('composer.queue') : t('composer.send')}
               title={busy ? t('composer.queue') : t('composer.send')}
-              disabled={empty || disabled || sending}
+              disabled={empty || disabled || sendDisabled || sending}
               onClick={() => void send(false)}
               className={cn(
                 'inline-flex size-9 shrink-0 items-center justify-center rounded-full transition-colors',

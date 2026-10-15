@@ -167,30 +167,31 @@ nb-studio issue comment list <issue>
 
 Create an issue
 
-Needs `create` on `pm.issues` for the issue’s project. The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one.
+Needs `create` on `pm.issues` for the issue’s project. The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one. Optional `attachmentIds` binds the caller’s own unattached uploads in the creation transaction before work starts; this also needs `upload` on `pm.attachments`.
 
 ```bash
 nb-studio issue create
 ```
 
-| Flag              | Type                                    | Description                                                                                |
-| ----------------- | --------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `--title`         | string                                  |                                                                                            |
-| `--description`   | string                                  | (or --description-file <path>)                                                             |
-| `--status`        | string                                  | The status it starts in: in_progress (start now) or backlog (nothing starts, the default). |
-| `--priority`      | urgent \| high \| medium \| low \| none |                                                                                            |
-| `--owner`         | string                                  |                                                                                            |
-| `--executor`      | json                                    |                                                                                            |
-| `--parent`        | string                                  |                                                                                            |
-| `--stage`         | integer                                 |                                                                                            |
-| `--project`       | string                                  |                                                                                            |
-| `--start-date`    | string                                  |                                                                                            |
-| `--due-date`      | string                                  |                                                                                            |
-| `--label`         | string[]                                | (repeatable)                                                                               |
-| `--start`         | boolean                                 |                                                                                            |
-| `--blocked-by`    | string[]                                | (repeatable)                                                                               |
-| `--project-setup` | boolean                                 |                                                                                            |
-| `--file`          | path                                    | The request body as a JSON object; the flags override its fields.                          |
+| Flag               | Type                                    | Description                                                                                                    |
+| ------------------ | --------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `--title`          | string                                  |                                                                                                                |
+| `--attachment-ids` | string[]                                | The caller's unattached uploads; requires attachment upload permission. Bound before work starts. (repeatable) |
+| `--description`    | string                                  | (or --description-file <path>)                                                                                 |
+| `--status`         | string                                  | The status it starts in: in_progress (start now) or backlog (nothing starts, the default).                     |
+| `--priority`       | urgent \| high \| medium \| low \| none |                                                                                                                |
+| `--owner`          | string                                  |                                                                                                                |
+| `--executor`       | json                                    |                                                                                                                |
+| `--parent`         | string                                  |                                                                                                                |
+| `--stage`          | integer                                 |                                                                                                                |
+| `--project`        | string                                  |                                                                                                                |
+| `--start-date`     | string                                  |                                                                                                                |
+| `--due-date`       | string                                  |                                                                                                                |
+| `--label`          | string[]                                | (repeatable)                                                                                                   |
+| `--start`          | boolean                                 |                                                                                                                |
+| `--blocked-by`     | string[]                                | (repeatable)                                                                                                   |
+| `--project-setup`  | boolean                                 |                                                                                                                |
+| `--file`           | path                                    | The request body as a JSON object; the flags override its fields.                                              |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

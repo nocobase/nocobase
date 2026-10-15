@@ -41,6 +41,7 @@ import { temporalBinding, temporalProjection } from './temporal-sql.js';
 import {
   createdRecordSelector as deriveCreatedSelector,
   recordSelector as selectorFromRecord,
+  unchangedFilterSelector,
 } from './identity.js';
 import { isNumericMutation } from '../numeric-mutation.js';
 import { compileJsonCondition, jsonOperators } from '../json-filter.js';
@@ -106,6 +107,12 @@ import { bulkStrategy, eventIdentityFields } from './events/strategy.js';
 interface LockedMutationRecord {
   readonly record: RepositoryRecord;
   readonly unique: UniqueSelector;
+}
+
+class ConditionalUpdateMiss extends Error {
+  constructor() {
+    super('Conditional update did not affect a record.');
+  }
 }
 
 type PhysicalWriteRecord = Record<string, RepositoryRecord[string] | Knex.Raw>;
@@ -707,7 +714,114 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         (result) => typeof result === 'object',
       );
     }
-    return this.inTransaction((adapter) => adapter.executeUpdateOne(plan));
+    // The recorded and nested paths still need the original row. An
+    // unobserved scalar update can claim a stable identity with one UPDATE.
+    // Keep non-numeric versions on the existing comparison path: SQL would
+    // otherwise coerce e.g. "1" into 1 and accept a previously stale version.
+    const unique =
+      !this.recorder &&
+      !plan.relations?.items.length &&
+      plan.collection.optimisticLock &&
+      typeof plan.ifVersion === 'number' &&
+      Number.isSafeInteger(plan.ifVersion)
+        ? unchangedFilterSelector(plan.collection, plan.filter, plan.values)
+        : undefined;
+    // A failed post-write invariant must roll back this call even if the
+    // caller catches the error and commits its surrounding transaction.
+    if (!unique)
+      return this.inTransaction((adapter) => adapter.executeUpdateOne(plan));
+    try {
+      return await this.inSavepoint((adapter) =>
+        adapter.executeConditionalUpdateOne(plan, unique),
+      );
+    } catch (error) {
+      if (!(error instanceof ConditionalUpdateMiss)) throw error;
+      // Diagnose only after rollback: a statement trigger may have inserted or
+      // removed the very row being diagnosed. Keep the complete original filter
+      // so an invisible row still answers exactly like a missing one.
+      return this.inTransaction(async (adapter) => {
+        // A repeatable-read snapshot may predate rows the UPDATE already saw.
+        const current = await adapter.lockByFilter(
+          plan.collection,
+          plan.filter,
+        );
+        return current === 'missing' || current === 'multiple'
+          ? current
+          : 'conflict';
+      });
+    }
+  }
+
+  private async executeConditionalUpdateOne(
+    plan: RepositoryUpdateOnePlan,
+    unique: UniqueSelector,
+  ): Promise<RepositoryExecutedMutation | RepositorySingleMutationMiss> {
+    const client = this.getClient();
+    const query = tableQuery(client, plan.collection).update(
+      mapUpdate(client, plan.collection, plan.values),
+    );
+    const graph = await this.prepareFilterGraph(
+      plan.collection,
+      plan.filter.root,
+    );
+    // Keep the whole filter, including policy scope and business predicates.
+    applyFilter(
+      query,
+      plan.collection,
+      plan.filter.root,
+      graph,
+      tableName(plan.collection),
+      client,
+    );
+    applyVersion(query, plan.collection, plan.ifVersion);
+    incrementVersion(query, plan.collection);
+    const count = affectedCount(await query);
+    if (count > 1) {
+      throw new RepositoryError(
+        'MULTIPLE_RECORDS_MATCHED',
+        'Repository filter matched multiple records.',
+        { collection: plan.collection.name, path: ['filter'] },
+      );
+    }
+    if (count === 0) {
+      // Even a zero-row UPDATE can write through statement-level triggers.
+      throw new ConditionalUpdateMiss();
+    }
+    if (
+      plan.scopeCheck &&
+      (await this.scopeCheckApplies(
+        plan.collection,
+        plan.scopeCheck,
+        plan.values,
+        undefined,
+      ))
+    ) {
+      await this.assertWithinScope(
+        plan.collection,
+        [unique],
+        plan.scopeCheck,
+        'update',
+      );
+    }
+    // The UPDATE holds the row's write lock through this read and commit.
+    const record = await this.findOne({
+      collection: plan.collection,
+      fields: plan.fields,
+      select: plan.select,
+      filter: uniqueFilter(unique),
+    });
+    if (!record) {
+      throw new RepositoryError(
+        'RECORD_NOT_FOUND',
+        'Updated Repository record could not be reloaded.',
+        { collection: plan.collection.name },
+      );
+    }
+    return {
+      record,
+      createdTargets: [],
+      version: versionOf(plan.collection, record),
+    };
   }
 
   private async executeUpdateOne(

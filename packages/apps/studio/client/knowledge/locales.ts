@@ -46,6 +46,7 @@ export const knowledgeEnUS = {
   },
   search: { inherited: 'System' },
   searchSettings: {
+    loadFailed: 'Could not load the knowledge search settings.',
     none: 'None',
     save: 'Save',
     saved: 'Knowledge search settings saved',
@@ -256,6 +257,7 @@ export const knowledgeZhCN: typeof knowledgeEnUS = {
   },
   search: { inherited: '系统' },
   searchSettings: {
+    loadFailed: '无法读取知识检索设置。',
     none: '无',
     save: '保存',
     saved: '知识检索设置已保存',

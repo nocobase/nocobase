@@ -414,6 +414,10 @@ const issueFields = {
 
 export const CreateIssueBody: z.ZodType<CreateIssueRequest> = z.strictObject({
   title: z.string(),
+  attachmentIds: z.array(id).optional().meta({
+    description:
+      "The caller's unattached uploads; requires attachment upload permission. Bound before work starts.",
+  }),
   ...issueFields,
   blockedBy: z.array(id).optional(),
   projectSetup: z.boolean().optional(),

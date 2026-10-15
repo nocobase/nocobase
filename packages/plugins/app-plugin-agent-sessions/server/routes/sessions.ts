@@ -45,7 +45,10 @@ const tags = ['AgentSessions'];
 const pageOnly = cliRoute(false);
 const own =
   "Every signed-in person has their own computers and sessions and reaches only those; anyone else's answers 404.";
-const errors = { 401: apiErrorResponse(401), 500: apiErrorResponse(500) };
+const errors = {
+  401: apiErrorResponse(401),
+  500: apiErrorResponse(500),
+};
 const computerNotFound = apiErrorResponse(
   404,
   'No computer with this id is yours (`AGENT_SESSIONS_COMPUTER_NOT_FOUND`).',
@@ -90,6 +93,7 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
           userId(context),
           context.req.valid('param').computerId,
           context.req.valid('json'),
+          context.req.raw.signal,
         ),
       }),
   );
@@ -300,6 +304,10 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
           'The session, its first message sent.',
         ),
         ...errors,
+        409: apiErrorResponse(
+          409,
+          'The submission ID belongs to another request.',
+        ),
         400: apiErrorResponse(
           400,
           'The computer is offline (`AGENT_SESSIONS_COMPUTER_OFFLINE`) or not yours (`AGENT_SESSIONS_COMPUTER_NOT_FOUND`), cannot run the agent (`AGENT_SESSIONS_AGENT_UNAVAILABLE`), or does not allow the directory (`AGENT_SESSIONS_DIRECTORY_NOT_ALLOWED`).',
@@ -461,6 +469,10 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
           'The message as it entered the transcript.',
         ),
         ...errors,
+        409: apiErrorResponse(
+          409,
+          'The submission ID belongs to another request.',
+        ),
         400: notWritable,
         404: sessionNotFound,
       },
@@ -474,6 +486,7 @@ export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
           context.req.valid('param').sessionId,
           context.req.valid('json').content,
           context.req.valid('json').mentions,
+          context.req.valid('json').submissionId,
         ),
       }),
   );

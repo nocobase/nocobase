@@ -4,7 +4,7 @@
  * first, then a session, or a new one (`?new`), on its own.
  */
 import { cn } from 'cn';
-import { useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import {
   Navigate,
   useLocation,
@@ -39,7 +39,19 @@ export default function AgentSessionsPage(): ReactElement {
   const outlet = useOutlet();
   const location = useLocation();
   const open = useMatch('/agent-sessions/:sessionId');
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
+  // Starting a draft makes this an explicit new session before a late list can redirect it.
+  const startNew = useCallback(() => {
+    if (params.has('new')) return;
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.set('new', '');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [params, setParams]);
   const focused = Boolean(open) || params.has('new');
   const linkPanels = useLinkPanels();
   const roomy = useMatches(ROOMY);
@@ -52,7 +64,7 @@ export default function AgentSessionsPage(): ReactElement {
   const [expandedFor, setExpandedFor] = useState<string | null>(null);
   const expanded = expandedFor === opened;
   // Entering the page on a wide screen opens the latest session; a new one only when there is none, or when asked
-  // (`?new`). The list's own read answers it, so nothing more is fetched. A phone starts on the list.
+  // (`?new`). While that read is pending, the new-session editor stays usable. A phone starts on the list.
   const wide = useMatches('(min-width: 768px)');
   const sessions = useSessions(false);
   const latest = sessions.data?.pages[0]?.data[0];
@@ -66,8 +78,6 @@ export default function AgentSessionsPage(): ReactElement {
         }}
       />
     );
-  const loadingLatest =
-    !open && !params.has('new') && wide && sessions.isPending;
   return (
     <div className='flex h-full min-h-0'>
       <SessionList
@@ -77,7 +87,12 @@ export default function AgentSessionsPage(): ReactElement {
         onExpand={() => setExpandedFor(opened)}
       />
       <main className={cn('min-w-0 flex-1', !focused && 'hidden md:block')}>
-        {outlet ?? (loadingLatest ? null : <NewSession />)}
+        {outlet ?? (
+          <NewSession
+            onStart={startNew}
+            deferDiscovery={!params.has('new') && wide && sessions.isPending}
+          />
+        )}
       </main>
     </div>
   );

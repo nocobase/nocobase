@@ -1677,6 +1677,41 @@ describe('the API as a run', () => {
 });
 
 describe('claims and endings', () => {
+  it('includes creation attachments in the first run and lets that run download the image', async () => {
+    const png = new File(
+      [
+        Buffer.from(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=',
+          'base64',
+        ),
+      ],
+      'pasted.png',
+      { type: 'image/png' },
+    );
+    const file = await h.projects.attachments.upload(alice(), png);
+    const { issue, token, payload } = await managerRun({
+      attachmentIds: [file.id],
+      description: `![Pasted image](${file.contentUrl})`,
+    });
+    expect(payload.prompt.system).toContain(file.id);
+    expect(payload.prompt.system).toContain('pasted.png');
+    const files = await h.request(
+      'GET',
+      `/projects/issues/${issue.identifier}/attachments`,
+      { runToken: token },
+    );
+    expect(files.status).toBe(200);
+    expect(files.body.data).toMatchObject([{ id: file.id, issueId: issue.id }]);
+    const downloaded = await h.request(
+      'GET',
+      `/projects/attachments/${file.id}/content?download=true`,
+      { runToken: token },
+    );
+    expect(downloaded.status).toBe(200);
+    expect(downloaded.headers.get('content-type')).toContain('image/png');
+    expect(downloaded.body).toContain('PNG');
+  });
+
   it('hands the runner the issue as brief, prompt, context and working directories', async () => {
     h.roles.set('alice', 'admin');
     const project = await h.projects.projects.create(alice(), { name: 'Web' });

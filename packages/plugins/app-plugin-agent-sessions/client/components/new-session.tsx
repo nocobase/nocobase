@@ -5,9 +5,10 @@
  * by browsing the computer, never typed. The computer, agent, folder and project last used are remembered in this
  * browser. Without a connected computer it says how to connect one.
  */
-import { useToaster } from '@nocobase/app-client';
+import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
+import { useIsMutating, useQueryClient } from '@tanstack/react-query';
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -16,7 +17,13 @@ import {
   FolderSearchIcon,
   LaptopIcon,
 } from 'lucide-react';
-import { useRef, useState, type ReactElement, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { useNavigate } from 'react-router';
 
 import { Button } from './ui/button.js';
@@ -47,6 +54,8 @@ import { AgentBadge } from './agent-badge.js';
 import { BackLink } from './back-link.js';
 import { ChoiceMenus } from './choice-menus.js';
 import { Composer } from './composer.js';
+import { useSubmission } from '../use-submission.js';
+import { SubmissionNotice } from './submission-notice.js';
 import {
   ComputersDialog,
   ConnectSteps,
@@ -65,7 +74,14 @@ interface Choice {
   readonly projectId?: string | undefined;
 }
 
-export function NewSession(): ReactElement {
+export function NewSession({
+  onStart,
+  deferDiscovery = false,
+}: {
+  readonly onStart?: () => void;
+  /** Ordinary entry may still open history; do not initialize an unused agent. */
+  readonly deferDiscovery?: boolean;
+}): ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const toaster = useToaster();
@@ -73,6 +89,22 @@ export function NewSession(): ReactElement {
   const projects = useProjects();
   const recent = useSessions(false);
   const create = useCreateSession();
+  const client = useQueryClient();
+  const creating =
+    useIsMutating({ mutationKey: ['agentSessions', 'createSession'] }) > 0;
+  const mountedRef = useRef(true);
+  const submission = useSubmission<
+    Omit<Parameters<typeof create.mutateAsync>[0], 'submissionId'>
+  >('new-session', 'new-session', async (input) => {
+    const session = await create.mutateAsync(input);
+    if (mountedRef.current) void navigate(`/agent-sessions/${session.id}`);
+  });
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   const [computersOpen, setComputersOpen] = useState(false);
   const [choice, setChoice] = useState<Choice>(remembered);
   const sendingRef = useRef(false);
@@ -80,7 +112,9 @@ export function NewSession(): ReactElement {
   const all = computers.data ?? [];
   const online = all.filter((computer) => computer.online);
   const computer =
-    all.find((candidate) => candidate.id === choice.computerId) ?? online[0];
+    all.find((candidate) => candidate.id === choice.computerId) ??
+    online[0] ??
+    all[0];
   if (computer && choice.computerId !== computer.id)
     setChoice({ ...choice, computerId: computer.id });
   const installed = computer ? installedAgents(computer) : [];
@@ -108,25 +142,59 @@ export function NewSession(): ReactElement {
       computer?.id,
       agent,
       cwd,
-      computer?.online,
       computer?.folders,
+      computer?.roots,
+      computer?.home,
+      computer?.host,
     ]),
     {
       computerId: computer?.id ?? '',
       agentId: agent?.id ?? '',
       cwd,
       enabled: Boolean(computer?.online && agent && cwd),
+      deferred: deferDiscovery,
     },
   );
-  const offered = discovery.result?.choices;
+  const offered = discovery.displayed?.choices;
   const values = Object.fromEntries(
-    (offered ?? []).map((offer) => [offer.id, offer.currentValue]),
+    (offered ?? []).map((offer) => [
+      offer.id,
+      discovery.settings[offer.id] ?? offer.currentValue,
+    ]),
   );
   const ready = Boolean(computer?.online && agent && cwd && discovery.result);
 
+  const begin = (): void => {
+    if (sendingRef.current || creating) return;
+
+    // Keep the current folder when late history offers a different recent folder.
+    if (
+      computer &&
+      agent &&
+      cwd &&
+      (choice.computerId !== computer.id ||
+        choice.agentId !== agent.id ||
+        choice.cwd !== cwd)
+    )
+      setChoice({
+        ...choice,
+        computerId: computer.id,
+        agentId: agent.id,
+        cwd,
+      });
+    onStart?.();
+  };
+
   const pick = (next: Choice): void => {
-    if (sendingRef.current) return;
-    const merged = { ...choice, ...next };
+    if (sendingRef.current || creating) return;
+    onStart?.();
+    const merged = {
+      ...choice,
+      computerId: computer?.id,
+      agentId: agent?.id,
+      cwd,
+      ...next,
+    };
     setChoice(merged);
     try {
       localStorage.setItem(REMEMBERED, JSON.stringify(merged));
@@ -139,6 +207,12 @@ export function NewSession(): ReactElement {
     return (
       <div className='h-full overflow-y-auto'>
         <div className='mx-auto flex max-w-[560px] flex-col gap-4 px-4 py-10 sm:pt-24'>
+          <SubmissionNotice
+            pending={submission.pending}
+            sending={creating}
+            retry={submission.retry}
+            edit={submission.edit}
+          />
           <div className='flex flex-col items-center gap-2 text-center'>
             <LaptopIcon className='text-muted-foreground size-8' />
             <h2 className='text-[17px] font-semibold'>
@@ -179,7 +253,13 @@ export function NewSession(): ReactElement {
   }
 
   return (
-    <div className='flex h-full min-h-0'>
+    <div
+      className='flex h-full min-h-0'
+      onFocusCapture={(event) => {
+        if (event.target.closest('button, [role="button"], [role="combobox"]'))
+          begin();
+      }}
+    >
       <div className='min-w-0 flex-1 overflow-y-auto'>
         <div className='mx-auto flex max-w-[720px] flex-col gap-4 px-4 pt-3 pb-10 sm:px-6 sm:pt-24'>
           <BackLink />
@@ -191,16 +271,28 @@ export function NewSession(): ReactElement {
               {t('newSession.subtitle')}
             </p>
           </div>
+          {computer?.outdatedBridge && (
+            <OutdatedBridgeNotice computer={computer} />
+          )}
+          <SubmissionNotice
+            pending={submission.pending}
+            sending={creating}
+            retry={submission.retry}
+            edit={submission.edit}
+          />
           <Composer
+            disabled={submission.pending}
             large
+            draftKey='new-session'
+            onEdit={begin}
             autoFocus
             placeholder={t('newSession.placeholder')}
-            disabled={!ready}
-            sending={create.isPending}
+            sendDisabled={!ready}
+            sending={creating}
             commands={computer && agent ? computer.commands[agent.id] : []}
             mentions={{ projectId: project?.id ?? null }}
             header={
-              <div className='contents' inert={create.isPending}>
+              <div className='contents' inert={creating}>
                 <Picker
                   label={
                     <>
@@ -298,8 +390,12 @@ export function NewSession(): ReactElement {
                 <ChoiceMenus
                   choices={offered}
                   values={values}
-                  disabled={create.isPending || discovery.loading}
-                  onChoose={discovery.choose}
+                  disabled={creating || !computer?.online}
+                  loading={discovery.loading}
+                  onChoose={(id, value) => {
+                    pick({});
+                    discovery.choose(id, value);
+                  }}
                 />
                 <span role='status' className='text-muted-foreground text-xs'>
                   {computer?.outdatedBridge && !computer.online
@@ -321,17 +417,49 @@ export function NewSession(): ReactElement {
                               : null}
                 </span>
                 {discovery.error && (
-                  <Button variant='ghost' size='sm' onClick={discovery.retry}>
-                    {t('newSession.settingsRetry')}
-                  </Button>
+                  <>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={() => {
+                        pick({});
+                        discovery.retry();
+                      }}
+                    >
+                      {t('newSession.settingsRetry')}
+                    </Button>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={() => {
+                        pick({});
+                        discovery.reset();
+                      }}
+                    >
+                      {t('newSession.settingsReset')}
+                    </Button>
+                  </>
                 )}
               </>
             }
             onSend={async (content, _interrupt, mentions) => {
-              if (!computer || !agent || !ready || sendingRef.current) return;
+              onStart?.();
+              if (
+                !computer ||
+                !agent ||
+                !ready ||
+                !discovery.isCurrent() ||
+                sendingRef.current ||
+                client.isMutating({
+                  mutationKey: ['agentSessions', 'createSession'],
+                }) > 0
+              ) {
+                discovery.retry();
+                throw new Error(t('newSession.settingsLoading'));
+              }
               sendingRef.current = true;
               try {
-                const session = await create.mutateAsync({
+                await submission.send({
                   computerId: computer.id,
                   agentId: agent.id,
                   cwd,
@@ -345,11 +473,13 @@ export function NewSession(): ReactElement {
                   projectId: project?.id ?? null,
                   mentions,
                 });
-                void navigate(`/agent-sessions/${session.id}`);
               } catch (error) {
                 toaster.show({
                   type: 'error',
-                  title: errorText(error, t('errors.generic')),
+                  title:
+                    error instanceof ApiClientError && error.status < 500
+                      ? errorText(error, t('errors.generic'))
+                      : t('newSession.sendUnconfirmed'),
                 });
                 throw error;
               } finally {

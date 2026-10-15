@@ -254,6 +254,7 @@ export const ListEventsQuery: z.ZodType<{ after: number; pageSize: number }> =
   });
 
 export const CreateSessionInput: z.ZodType<{
+  submissionId?: string | undefined;
   computerId: string;
   agentId: string;
   cwd: string;
@@ -262,6 +263,10 @@ export const CreateSessionInput: z.ZodType<{
   projectId?: string | null | undefined;
   mentions?: { kind: string; refId: string }[] | undefined;
 }> = z.strictObject({
+  submissionId: z.uuid().optional().meta({
+    description:
+      'A client UUID retained with immutable input for safe explicit retries.',
+  }),
   computerId: z.string().min(1),
   agentId: z.string().min(1),
   cwd: z
@@ -298,9 +303,14 @@ export const UpdateSessionInput: z.ZodType<{
 });
 
 export const PromptInput: z.ZodType<{
+  submissionId?: string | undefined;
   content: PromptContent[];
   mentions?: { kind: string; refId: string }[] | undefined;
 }> = z.strictObject({
+  submissionId: z.uuid().optional().meta({
+    description:
+      'A client UUID retained with immutable input for safe explicit retries.',
+  }),
   content,
   mentions,
 });

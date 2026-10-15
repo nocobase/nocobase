@@ -139,7 +139,7 @@ export function createIssueRoutes(deps: {
         examples: ['issue create --file issue.json --status in_progress'],
       }),
       description:
-        'Needs `create` on `pm.issues` for the issue’s project. The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one.',
+        'Needs `create` on `pm.issues` for the issue’s project. The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one. Optional `attachmentIds` binds the caller’s own unattached uploads in the creation transaction before work starts; this also needs `upload` on `pm.attachments`.',
       responses: {
         201: dataResponse(IssueSchema),
         ...apiErrorResponses,

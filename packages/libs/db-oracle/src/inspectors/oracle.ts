@@ -107,6 +107,8 @@ interface OracleConstraintRow {
   readonly delete_rule: string | null;
   readonly deferrable: 'DEFERRABLE' | 'NOT DEFERRABLE';
   readonly deferred: 'DEFERRED' | 'IMMEDIATE';
+  readonly status: string;
+  readonly validated: string;
   readonly search_condition: string | null;
 }
 
@@ -114,8 +116,11 @@ interface OracleIndexRow {
   readonly index_name: string;
   readonly uniqueness: 'UNIQUE' | 'NONUNIQUE';
   readonly index_type: string;
+  readonly valid: number;
   readonly column_position: number;
   readonly column_name: string | null;
+  readonly data_type: string | null;
+  readonly collation: string | null;
   readonly column_expression: string | null;
   readonly descend: 'ASC' | 'DESC';
   readonly constraint_name: string | null;
@@ -145,6 +150,7 @@ interface GroupedOracleConstraint {
   readonly onDelete?: string;
   readonly deferrable: boolean;
   readonly initiallyDeferred: boolean;
+  readonly valid: boolean;
   readonly checkExpression?: string;
 }
 
@@ -304,7 +310,13 @@ export class OracleSchemaInspector extends BaseSchemaInspector {
         };
       }),
       primaryKey: primary
-        ? { name: primary.name, columns: primary.columns }
+        ? {
+            name: primary.name,
+            columns: primary.columns,
+            deferrable: primary.deferrable,
+            initiallyDeferred: primary.initiallyDeferred,
+            valid: primary.valid,
+          }
         : undefined,
       uniqueConstraints: constraints
         .filter((constraint) => constraint.type === 'U')
@@ -569,6 +581,8 @@ export class OracleSchemaInspector extends BaseSchemaInspector {
             c.delete_rule,
             c.deferrable,
             c.deferred,
+            c.status,
+            c.validated,
             c.search_condition_vc as search_condition
           from user_constraints c
           join user_cons_columns cc
@@ -605,8 +619,30 @@ export class OracleSchemaInspector extends BaseSchemaInspector {
             i.index_name,
             i.uniqueness,
             i.index_type,
+            case
+              when i.partitioned = 'NO' and i.status = 'VALID' then 1
+              when i.partitioned = 'YES'
+                and exists (
+                  select 1 from user_ind_partitions p
+                  where p.index_name = i.index_name
+                )
+                and not exists (
+                  select 1 from user_ind_partitions p
+                  left join user_ind_subpartitions s
+                    on s.index_name = p.index_name
+                    and s.partition_name = p.partition_name
+                  where p.index_name = i.index_name
+                    and nvl(case p.composite
+                      when 'YES' then s.status
+                      when 'NO' then p.status
+                    end, 'UNUSABLE') <> 'USABLE'
+                ) then 1
+              else 0
+            end as valid,
             ic.column_position,
             ic.column_name,
+            tc.data_type,
+            tc.collation,
             ie.column_expression,
             ic.descend,
             c.constraint_name,
@@ -614,6 +650,9 @@ export class OracleSchemaInspector extends BaseSchemaInspector {
           from user_indexes i
           join user_ind_columns ic
             on ic.index_name = i.index_name
+          left join user_tab_cols tc
+            on tc.table_name = ic.table_name
+            and tc.column_name = ic.column_name
           left join user_ind_expressions ie
             on ie.index_name = ic.index_name
             and ie.column_position = ic.column_position
@@ -633,22 +672,38 @@ export class OracleSchemaInspector extends BaseSchemaInspector {
       group.push(row);
       groups.set(row.index_name, group);
     }
-    return [...groups.entries()].map(([name, entries]) => ({
-      name,
-      keys: entries
-        .sort((left, right) => left.column_position - right.column_position)
-        .map(oracleIndexKey),
-      unique: entries[0].uniqueness === 'UNIQUE',
-      backsConstraint:
-        entries[0].constraint_type === 'P' || entries[0].constraint_type === 'U'
-          ? {
-              kind:
-                entries[0].constraint_type === 'P' ? 'primaryKey' : 'unique',
-              name: optionalString(entries[0].constraint_name),
-            }
-          : undefined,
-      method: entries[0].index_type,
-    }));
+    return [...groups.entries()].map(([name, entries]) => {
+      // Joining constraints repeats each key when several constraints share an index.
+      const keys = new Map<number, OracleIndexRow>();
+      const constraints = new Map<
+        string,
+        NonNullable<PhysicalIndexSchema['backsConstraint']>
+      >();
+      for (const entry of entries) {
+        keys.set(entry.column_position, entry);
+        if (entry.constraint_type === 'P' || entry.constraint_type === 'U') {
+          constraints.set(`${entry.constraint_type}:${entry.constraint_name}`, {
+            kind: entry.constraint_type === 'P' ? 'primaryKey' : 'unique',
+            name: optionalString(entry.constraint_name),
+          });
+        }
+      }
+      const references = [...constraints.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([, reference]) => reference);
+      return {
+        name,
+        keys: [...keys.values()]
+          .sort((left, right) => left.column_position - right.column_position)
+          .map(oracleIndexKey),
+        unique: entries[0].uniqueness === 'UNIQUE',
+        // Partitioned indexes report N/A at the index level; inspect their leaves.
+        valid: numberValue(entries[0].valid) === 1,
+        backsConstraint: references[0],
+        backsConstraints: references.length > 1 ? references : undefined,
+        method: entries[0].index_type,
+      };
+    });
   }
 
   private async readKnexAutoIncrementColumns(
@@ -842,6 +897,8 @@ function groupOracleConstraints(
       onDelete: optionalString(sorted[0].delete_rule),
       deferrable: sorted[0].deferrable === 'DEFERRABLE',
       initiallyDeferred: sorted[0].deferred === 'DEFERRED',
+      valid:
+        sorted[0].status === 'ENABLED' && sorted[0].validated === 'VALIDATED',
       checkExpression: optionalString(sorted[0].search_condition),
     };
   });
@@ -869,6 +926,7 @@ function oracleUniqueConstraint(
     columns: constraint.columns,
     deferrable: constraint.deferrable,
     initiallyDeferred: constraint.initiallyDeferred,
+    valid: constraint.valid,
   };
 }
 
@@ -901,7 +959,17 @@ function oracleCheckConstraint(
 function oracleIndexKey(row: OracleIndexRow): PhysicalIndexKey {
   const order = row.descend === 'DESC' ? 'desc' : 'asc';
   const expression = optionalString(row.column_expression);
+  // Session-dependent collations can broaden WHERE equality without changing
+  // the index's uniqueness. Never cache a proof from the inspecting session.
+  const columnEquality =
+    typeof row.data_type === 'string' &&
+    (!/^(N?VARCHAR2?|N?CHAR|LONG|N?CLOB)$/i.test(row.data_type) ||
+      row.collation === 'BINARY');
   return expression
     ? { expression, order }
-    : { columnName: row.column_name as string, order };
+    : {
+        columnName: row.column_name as string,
+        order,
+        ...(columnEquality ? {} : { columnEquality: false }),
+      };
 }

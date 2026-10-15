@@ -1,3 +1,5 @@
+import type { Attachment } from '../../shared/attachments.js';
+import type { Transaction } from '@tiptap/pm/state';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   chainCommands,
@@ -62,6 +64,8 @@ export interface PmRichTextHandle {
 export interface PmRichTextEditorProps {
   /** Markdown. The editor follows changes that did not come from itself (a reset, a reload after a conflict). */
   readonly value: string;
+  readonly images?: boolean;
+  readonly onPasteImages?: (files: readonly File[]) => Promise<Attachment[]>;
   readonly onChange: (markdown: string) => void;
   readonly mentionCandidates?: readonly PmMentionCandidate[];
   readonly placeholder?: string;
@@ -153,6 +157,8 @@ const CONTENT_CLASS = cn(
  */
 export function PmRichTextEditor({
   value,
+  images = false,
+  onPasteImages,
   onChange,
   mentionCandidates = [],
   placeholder,
@@ -174,9 +180,21 @@ export function PmRichTextEditor({
   const [dismissedAt, setDismissedAt] = useState<number | null>(null);
   const [active, setActive] = useState({ key: '', index: 0 });
   const lastEmittedRef = useRef(value);
-  const callbacksRef = useRef({ onChange, onSubmit, submitOnEnter, onEscape });
+  const callbacksRef = useRef({
+    onChange,
+    onSubmit,
+    submitOnEnter,
+    onEscape,
+    onPasteImages,
+  });
   useEffect(() => {
-    callbacksRef.current = { onChange, onSubmit, submitOnEnter, onEscape };
+    callbacksRef.current = {
+      onChange,
+      onSubmit,
+      submitOnEnter,
+      onEscape,
+      onPasteImages,
+    };
   });
 
   const open = mention !== null && mention.from !== dismissedAt && !disabled;
@@ -207,7 +225,7 @@ export function PmRichTextEditor({
   });
 
   const editor = useEditor({
-    extensions: npRichTextExtensions({ placeholder }),
+    extensions: npRichTextExtensions({ placeholder, images }),
     content: value,
     contentType: 'markdown',
     editable: !disabled,
@@ -215,6 +233,34 @@ export function PmRichTextEditor({
     shouldRerenderOnTransaction: true,
     editorProps: {
       attributes: { class: cn(CONTENT_CLASS, contentClassName) },
+      handlePaste: (view, event) => {
+        const upload = callbacksRef.current.onPasteImages;
+        const files = [...(event.clipboardData?.files ?? [])];
+        if (!upload || !files.length) return false;
+        event.preventDefault();
+        let bookmark = view.state.selection.getBookmark();
+        const map = ({ transaction }: { transaction: Transaction }): void => {
+          bookmark = bookmark.map(transaction.mapping);
+        };
+        const current = editor;
+        current?.on('transaction', map);
+        void upload(files)
+          .then((attachments) => {
+            if (!current || current.isDestroyed) return;
+            const images = attachments.filter((file) => file.previewable);
+            if (!images.length) return;
+            const selection = bookmark.resolve(current.state.doc);
+            current.commands.insertContentAt(
+              { from: selection.from, to: selection.to },
+              images.map((file) => ({
+                type: 'image',
+                attrs: { src: file.contentUrl, alt: file.filename },
+              })),
+            );
+          })
+          .finally(() => current?.off('transaction', map));
+        return true;
+      },
       handleKeyDown: (view, event) => {
         const state = listStateRef.current;
         if (state.open && !event.isComposing) {
