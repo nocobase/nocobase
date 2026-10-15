@@ -15,27 +15,23 @@ export interface IntakeFileText {
 }
 
 /**
- * The text and files within what one message may carry: the text first, then the files in order, each cut at
- * `START_FILE_TEXT_MAX`, until the budget is spent; files that no longer fit are left out.
+ * Keeps the complete text and every file, or returns null when they cannot fit in one message.
+ * Silently cutting a file would hide requirements from the agent.
  */
 export function fitIntake(
   text: string,
   files: readonly IntakeFileText[],
   budget: number = MESSAGE_CONTENT_MAX - WRAPPING_RESERVE,
-): { readonly text: string; readonly files: IntakeFileText[] } {
-  let left = budget;
-  const fittedText = text.slice(0, left);
-  left -= fittedText.length;
-  const fitted: IntakeFileText[] = [];
-  for (const file of files.slice(0, START_FILES_MAX)) {
+): { readonly text: string; readonly files: IntakeFileText[] } | null {
+  if (files.length > START_FILES_MAX || text.length > budget) return null;
+  let left = budget - text.length;
+  for (const file of files) {
     // A file's name and fences count too.
-    const room = Math.min(START_FILE_TEXT_MAX, left - file.name.length - 20);
-    if (room <= 0) break;
-    const kept = file.text.slice(0, room);
-    fitted.push({ name: file.name, text: kept });
-    left -= kept.length + file.name.length + 20;
+    if (file.text.length > START_FILE_TEXT_MAX) return null;
+    left -= file.text.length + file.name.length + 20;
+    if (left < 0) return null;
   }
-  return { text: fittedText, files: fitted };
+  return { text, files: [...files] };
 }
 
 /** A conversation title from the intake's first line, without Markdown markers, at most `max` characters. */

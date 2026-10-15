@@ -1,3 +1,5 @@
+import { NavigationGuardProvider } from '@nocobase/app-client';
+import projects from '@nocobase/app-plugin-projects/client';
 import {
   createTestI18nRuntime,
   TestI18nProvider,
@@ -62,7 +64,10 @@ const original: Role = {
   holderCount: 0,
 };
 const runtime = await createTestI18nRuntime({
-  application: { namespace: 'app', resources: enUS },
+  application: { namespace: '@nocobase/studio', resources: enUS },
+  namespaces: {
+    '@nocobase/app-plugin-projects': projects({ routes: false }).locales!,
+  },
 });
 
 beforeEach(() => {
@@ -80,9 +85,14 @@ async function mount() {
     <TestI18nProvider runtime={runtime}>
       <QueryClientProvider client={client}>
         <MemoryRouter initialEntries={['/config/roles/custom']}>
-          <Routes>
-            <Route path='/config/roles/:roleKey' element={<RoleDetailPage />} />
-          </Routes>
+          <NavigationGuardProvider>
+            <Routes>
+              <Route
+                path='/config/roles/:roleKey'
+                element={<RoleDetailPage />}
+              />
+            </Routes>
+          </NavigationGuardProvider>
         </MemoryRouter>
       </QueryClientProvider>
     </TestI18nProvider>,

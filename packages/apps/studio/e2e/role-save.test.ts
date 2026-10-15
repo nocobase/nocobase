@@ -4,12 +4,16 @@ import path from 'node:path';
 import { expect, test as base, type Page } from '@playwright/test';
 
 import type { Role } from '../shared/access.js';
-import { Api, apiAs, signIn, unique, url } from './support/fixtures.ts';
+import { Api, apiAs, server, signIn, unique, url } from './support/fixtures.ts';
 
 // Preferences belong to the identity: shell tests may change the shared administrator's language in parallel.
 const test = base.extend<{ roleIdentity: void }>({
   roleIdentity: [
     async ({ browser, context }, use) => {
+      if (!server.owned)
+        throw new Error(
+          'Role save tests require the throwaway e2e database; unset NB_STUDIO_E2E_URL.',
+        );
       const admin = await apiAs(browser, 'admin');
       try {
         const credentials = {
@@ -90,6 +94,38 @@ async function save(page: Page): Promise<void> {
   expect((await response).status()).toBe(200);
 }
 
+async function cancelLeave(page: Page): Promise<void> {
+  await page
+    .getByRole('navigation', { name: 'Settings navigation' })
+    .getByRole('link', { name: 'Roles', exact: true })
+    .click();
+  const dialog = page.getByRole('alertdialog', {
+    name: 'Discard unsaved changes?',
+  });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Keep editing' }).click();
+  await expect(dialog).toBeHidden();
+}
+
+async function leaveCleanAndReopen(
+  page: Page,
+  role: Role,
+  title: string,
+): Promise<void> {
+  await page
+    .getByRole('navigation', { name: 'Settings navigation' })
+    .getByRole('link', { name: 'Roles', exact: true })
+    .click();
+  await expect(page).toHaveURL(url('/config/roles'));
+  await expect(page.getByRole('alertdialog')).toBeHidden();
+  await page
+    .getByRole('region', { name: 'Roles', exact: true })
+    .getByRole('link', { name: title, exact: true })
+    .click();
+  await expect(page).toHaveURL(url('/config/roles/' + role.key));
+  await clean(page, title);
+}
+
 test('normalizes the saved title, saves ordinary titles again and preserves permissions', async ({
   page,
 }) => {
@@ -97,7 +133,31 @@ test('normalizes the saved title, saves ordinary titles again and preserves perm
     const input = page.getByRole('textbox', { name: 'Name', exact: true });
     await input.fill('');
     await input.pressSequentially('  QA test role  ');
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let reached!: () => void;
+    const refreshing = new Promise<void>((resolve) => {
+      reached = resolve;
+    });
+    await page.route('**/api/access/roles', async (route) => {
+      const response = await route.fetch();
+      reached();
+      await held;
+      await route.fulfill({ response });
+    });
     await save(page);
+    await refreshing;
+    await clean(page, 'QA test role');
+    // Leave while the invalidation GET is pending: the PATCH response is already the baseline.
+    try {
+      await leaveCleanAndReopen(page, role, 'QA test role');
+    } finally {
+      release();
+    }
+    await page.unrouteAll({ behavior: 'wait' });
+    await leaveCleanAndReopen(page, role, 'QA test role');
     const saved = (await api.get<Role[]>('access/roles')).find(
       (r) => r.key === role.key,
     )!;
@@ -189,6 +249,7 @@ for (const field of ['title', 'permission'] as const) {
           console.log(
             `${field}: GET returned Submitted and rendered before PATCH response`,
           );
+          await cancelLeave(page);
           if (field === 'title') await expect(input).toHaveValue('Original');
           else await expect(permission).not.toBeChecked();
         } finally {
@@ -197,6 +258,9 @@ for (const field of ['title', 'permission'] as const) {
         await expect(
           page.getByRole('button', { name: 'Save', exact: true }),
         ).toBeEnabled();
+        if (field === 'title') await expect(input).toHaveValue('Original');
+        else await expect(permission).not.toBeChecked();
+        await cancelLeave(page);
         if (field === 'title') await expect(input).toHaveValue('Original');
         else await expect(permission).not.toBeChecked();
         console.log(
@@ -291,10 +355,18 @@ test('keeps input and permissions with visible feedback after a failed request',
     await expect(
       page.getByRole('button', { name: 'Discard changes', exact: true }),
     ).toBeEnabled();
+    await cancelLeave(page);
+    await expect(
+      page.getByRole('textbox', { name: 'Name', exact: true }),
+    ).toHaveValue('  Keep after failure  ');
+    await expect(permission).toBeChecked();
     if (process.env.PM367_SCREENSHOT_DIR)
       await page.screenshot({
         path: path.join(process.env.PM367_SCREENSHOT_DIR, 'role-failure.png'),
       });
+    await page.unrouteAll({ behavior: 'wait' });
+    await save(page);
+    await clean(page, 'Keep after failure');
   });
 });
 
@@ -352,6 +424,7 @@ test('keeps edits made during the save and its subsequent refresh', async ({
     );
     releaseRefresh();
     await refreshed;
+    await cancelLeave(page);
     await expect(input).toHaveValue('Typed while refreshing');
     await expect(permission).not.toBeChecked();
     await expect(
@@ -366,3 +439,61 @@ test('keeps edits made during the save and its subsequent refresh', async ({
     expect(saved.pages).not.toContain('pm-my-issues');
   });
 });
+
+for (const edited of ['name', 'permission'] as const) {
+  test(`data refresh preserves changed ${edited}, synchronizes untouched fields and updates discard baseline`, async ({
+    page,
+  }) => {
+    await withRole(page, async (role, api) => {
+      const input = page.getByRole('textbox', { name: 'Name', exact: true });
+      const permission = page.getByRole('switch', {
+        name: 'My issues',
+        exact: true,
+      });
+      let lastRefresh = Date.now();
+      page.on('response', (response) => {
+        if (response.url().endsWith('/api/access/roles'))
+          lastRefresh = Date.now();
+      });
+      if (edited === 'name') await input.fill('Local name');
+      else await permission.click();
+      await api.patch(`access/roles/${role.key}`, {
+        title: 'Remote name',
+        pages: edited === 'name' ? ['pm-my-issues'] : [],
+        settings: {},
+        abilities: {},
+      });
+      await expect
+        .poll(() => Date.now() - lastRefresh, { timeout: 15000 })
+        .toBeGreaterThan(10050);
+      const refreshed = page.waitForResponse(
+        (response) =>
+          response.url().endsWith('/api/access/roles') &&
+          response.request().method() === 'GET',
+      );
+      await page.evaluate(
+        "window.dispatchEvent(new Event('offline')); window.dispatchEvent(new Event('online'));",
+      );
+      expect((await refreshed).status()).toBe(200);
+      await expect(
+        page.getByRole('heading', { name: 'Remote name Custom', exact: true }),
+      ).toBeVisible();
+      await expect(input).toHaveValue(
+        edited === 'name' ? 'Local name' : 'Remote name',
+      );
+      await expect(permission).toBeChecked();
+      await cancelLeave(page);
+      await expect(input).toHaveValue(
+        edited === 'name' ? 'Local name' : 'Remote name',
+      );
+      await expect(permission).toBeChecked();
+      await page
+        .getByRole('button', { name: 'Discard changes', exact: true })
+        .click();
+      await clean(page, 'Remote name');
+      if (edited === 'name') await expect(permission).toBeChecked();
+      else await expect(permission).not.toBeChecked();
+      await leaveCleanAndReopen(page, role, 'Remote name');
+    });
+  });
+}

@@ -1374,6 +1374,8 @@ const enUS = {
       retry: 'Try organizing again',
       tooLong:
         'The requirements and files are too long for one message. Shorten the text or remove some files, then try again.',
+      filesUnreadable:
+        'These files could not be read in full: {{files}}. Retry, or replace them with shorter supported text or document files, then try again.',
       requestFailed:
         'The request failed. Your requirements are still here; check your connection and try again.',
       noAgent:
@@ -1390,6 +1392,14 @@ const enUS = {
         'You cannot invoke this agent. Ask an administrator to check your access.',
       chatUnavailable:
         'Chat is unavailable. Ask an administrator to enable chat before organizing with an agent.',
+      retained:
+        'Your requirements and source files are kept in this tab until cleared, tasks are created, or you sign out. A refresh discards this draft.',
+      returnToEdit: 'Return to edit requirements',
+      clearDraft: 'Discard saved input',
+      stillRunning:
+        'This conversation is still running. Wait for it to finish or stop it in chat before organizing again.',
+      imageFailed:
+        'Could not prepare every image. Use your own PNG or JPEG files and retry. Your requirements and files are kept.',
       filesOnly: 'The requirements are in the files below.',
       conversationTitle: 'Organize: {{text}}',
     },

@@ -424,6 +424,7 @@ export interface BridgeHarness {
 function memoryStorage(
   database: DatabaseManager,
   stored: Map<string, Uint8Array>,
+  table = 'pmAttachments',
 ): NonNullable<ProjectsDeps['storage']> {
   return {
     async store(file, uploader) {
@@ -435,7 +436,7 @@ function memoryStorage(
       stored.set(key, new Uint8Array(await file.arrayBuffer()));
       await database
         .connection()
-        .repository('pmAttachments')
+        .repository(table)
         .createOne({
           values: {
             id,
@@ -445,7 +446,9 @@ function memoryStorage(
             ext,
             mimeType: file.type || 'application/octet-stream',
             size: file.size,
-            uploaderType: uploader.type,
+            ...(table === 'pmAttachments'
+              ? { uploaderType: uploader.type }
+              : { conversationId: null, messageId: null }),
             uploaderId: uploader.id,
             createdAt: now,
             updatedAt: now,
@@ -453,8 +456,12 @@ function memoryStorage(
         });
       return id;
     },
-    bytes: (object) =>
-      Promise.resolve(stored.get(object.key) ?? new Uint8Array()),
+    bytes: (object) => {
+      const bytes = stored.get(object.key);
+      return bytes
+        ? Promise.resolve(bytes)
+        : Promise.reject(new Error('Stored file is unavailable.'));
+    },
     stream: (object) =>
       Promise.resolve(
         new Response(stored.get(object.key) ?? new Uint8Array())
@@ -596,7 +603,13 @@ export async function createBridgeHarness(
   const agentIds = {
     generateString: () => `a-${String((nextAgentId += 1)).padStart(6, '0')}`,
   };
+  const chatStorage = memoryStorage(database, stored, 'agChatAttachments');
   const agents = createAgents({
+    chatFiles: {
+      ...chatStorage,
+      store: (file, userId) =>
+        chatStorage.store(file, { type: 'user', id: userId }),
+    },
     database,
     // Studio's names, as `server/config/agents.ts` gives them.
     app: { id: 'nb-studio', name: 'NocoBase Studio' },

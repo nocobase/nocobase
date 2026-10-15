@@ -196,13 +196,14 @@ Starts a conversation with an agent that organizes the text and files into issue
 nb-studio intake organize --text <string>
 ```
 
-| Flag        | Type   | Description                                                                |
-| ----------- | ------ | -------------------------------------------------------------------------- |
-| `--text`    | string | The source text to organize into issues. (required; or --text-file <path>) |
-| `--title`   | string | The intake conversation title.                                             |
-| `--agent`   | string | The agent to organize this intake.                                         |
-| `--project` | string | The destination project identifier.                                        |
-| `--files`   | json   | Files to include, with their names and extracted text.                     |
+| Flag               | Type     | Description                                                                    |
+| ------------------ | -------- | ------------------------------------------------------------------------------ |
+| `--text`           | string   | The source text to organize into issues. (required; or --text-file <path>)     |
+| `--title`          | string   | The intake conversation title.                                                 |
+| `--agent`          | string   | The agent to organize this intake.                                             |
+| `--project`        | string   | The destination project identifier.                                            |
+| `--files`          | json     | Files to include, with their names and extracted text.                         |
+| `--image-file-ids` | string[] | Uploaded image identifiers to include in the intake conversation. (repeatable) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

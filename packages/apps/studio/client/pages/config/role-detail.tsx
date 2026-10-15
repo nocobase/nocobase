@@ -1,4 +1,8 @@
-import { usePageBreadcrumb } from '@nocobase/app-client';
+import {
+  useNavigationGuard,
+  usePageBreadcrumb,
+  useUnsavedChangesGuard,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   canUseSetting,
@@ -6,6 +10,7 @@ import {
   PmLoadError,
   PmTag,
   useViewer,
+  UnsavedChangesBoundary,
 } from '@nocobase/app-plugin-projects/client/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CopyIcon } from 'lucide-react';
@@ -60,6 +65,7 @@ function RoleBody({
   const navigate = useNavigate();
   const [baseline, setBaseline] = useState(role);
   const saved = draftOf(baseline);
+
   const [draft, setDraft] = useState<RoleDraft>(saved);
   const [title, setTitle] = useState(() => roleTitle(t, role));
   const [previousRole, setPreviousRole] = useState(role);
@@ -67,6 +73,8 @@ function RoleBody({
   const dirty =
     !sameDraft(draft, saved) ||
     (!role.builtIn && title !== roleTitle(t, baseline));
+  const unsaved = useUnsavedChangesGuard(!readOnly && dirty);
+  useNavigationGuard(unsaved.confirmDiscard);
 
   const save = useMutation({
     mutationFn: (submitted: { title: string; draft: RoleDraft }) =>
@@ -87,6 +95,7 @@ function RoleBody({
         roles?.map((item) => (item.key === updated.key ? updated : item)),
       );
       notify.success(t('roles.saved', { name: roleTitle(t, updated) }));
+
       void queryClient.invalidateQueries({ queryKey: studioKeys.roles });
     },
     onError: roleError,
@@ -115,7 +124,7 @@ function RoleBody({
   });
 
   return (
-    <>
+    <UnsavedChangesBoundary guard={unsaved}>
       <PageHeader
         title={
           <span className='inline-flex flex-wrap items-center gap-3'>
@@ -185,7 +194,7 @@ function RoleBody({
         readOnly={readOnly}
         onChange={setDraft}
       />
-    </>
+    </UnsavedChangesBoundary>
   );
 }
 

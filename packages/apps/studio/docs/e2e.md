@@ -25,6 +25,8 @@ Global setup (`e2e/global-setup.ts`, `e2e/support/server.ts`) starts `dist/serve
 
 Its log is `server.log` in that directory. Teardown removes the directory; set `NB_STUDIO_E2E_KEEP=1` to keep it. To run against a server that is already running instead, set `NB_STUDIO_E2E_URL=http://127.0.0.1:<port>/main`: nothing is started or stopped, and the tests change that server's data.
 
+The role navigation suite requires the owned throwaway database and refuses `NB_STUDIO_E2E_URL`. Each test creates a private administrator with English preferences, disables it afterwards to end its sessions, and leaves account removal to database teardown because Studio does not configure user deletion. Its custom roles are deleted after each test.
+
 Tests that change global manager settings, exercise manager queue ownership or replace account following preferences use `test.use({ isolatedStudio: true })`. The fixture starts a separate built Studio, database and queue for each test and stops it after that test; a worker-scoped server still allows pending runs to leak between tests. Pass that test's `studio` to `signIn(newContext, user, studio)` and `apiAs(browser, user, studio)` for secondary accounts. Keep the runner's strict full-claim and empty-queue assertions: an unexpected run is an isolation failure, not work to filter out.
 
 ## Writing tests
@@ -59,6 +61,8 @@ Import `test` and `expect` from `e2e/support/fixtures.ts`. Its `page` is already
 ## Screenshots
 
 `pnpm test:screenshots` runs `e2e/screenshots/screenshots.test.ts` against a server of its own and saves the key pages, as the initial administrator, in four combinations: zh-CN and en-US, each light and dark. They go to `output/screenshots/<locale>-<mode>/<page>.png` (gitignored), with `<page>.phone.png` for the pages also taken at 390 px. `NB_STUDIO_SCREENSHOT_PAGES=inbox,issue` takes a subset, `NB_STUDIO_SCREENSHOT_THEMES=en-US-dark` a subset of the combinations, and `NB_STUDIO_SCREENSHOT_DIR` another directory. They are for looking at, not compared against a baseline.
+
+Playwright's failure artifacts for the flows stay in `test-results/`; the screenshot project's artifacts use `output/screenshot-results/` so running it afterwards preserves the flow traces and failure screenshots. CI should upload both directories when collecting failure evidence.
 
 ## In CI
 

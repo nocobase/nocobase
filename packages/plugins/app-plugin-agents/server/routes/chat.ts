@@ -28,7 +28,6 @@ import {
   type ConversationPatch,
   type CreateConversationRequest,
   type MessageAttachment,
-  type SendMessageRequest,
   type StartConversationRequest,
 } from '../../shared/conversations.js';
 import type { Agents } from '../composition.js';
@@ -105,7 +104,7 @@ const PatchSchema: z.ZodType<ConversationPatch> = z.strictObject({
     .describe('Whether to archive the conversation.'),
 });
 
-const SendSchema: z.ZodType<SendMessageRequest> = z.strictObject({
+const SendSchema = z.strictObject({
   content: z
     .string()
     .max(MESSAGE_CONTENT_MAX * 2)
@@ -187,6 +186,7 @@ const noAttachment = apiErrorResponse(
 );
 
 const StartSchema: z.ZodType<StartConversationRequest> = z.strictObject({
+  attachmentIds: SendSchema.shape.attachmentIds,
   source: z.string().regex(CONVERSATION_SOURCE_PATTERN),
   text: z
     .string()

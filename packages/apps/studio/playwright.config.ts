@@ -50,6 +50,8 @@ export default defineConfig({
     {
       name: 'screenshots',
       testMatch: 'screenshots/**/*.test.ts',
+      // A later screenshot run must not erase the flow suite's failure traces and screenshots.
+      outputDir: './output/screenshot-results',
       // One test per language and colour scheme, each visiting every page in turn.
       timeout: 300_000,
     },
