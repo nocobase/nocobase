@@ -10,22 +10,20 @@ describeMigration('202610270001_ag_online_agent', {
     },
   ],
   before: async ({ connection }) => {
-    await connection
-      .repository('agConversations')
-      .createOne({
-        values: {
-          id: 'legacy-online',
-          userId: 'alice',
-          agentId: 'legacy-agent',
-          mode: 'online',
-          titleSource: 'auto',
-          category: 'chat',
-          source: 'chat',
-          lastMessageAt: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      });
+    await connection.repository('agConversations').createOne({
+      values: {
+        id: 'legacy-online',
+        userId: 'alice',
+        agentId: 'legacy-agent',
+        mode: 'online',
+        titleSource: 'auto',
+        category: 'chat',
+        source: 'chat',
+        lastMessageAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
   },
   up: async ({ connection, expectCollection }) => {
     await expectCollection('agConversations').toHaveField('metadata', {

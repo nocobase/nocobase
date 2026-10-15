@@ -96,16 +96,19 @@ async function fixture(
   });
   const resolver = new ServiceContainer();
   const errors: unknown[] = [];
+  const resolveModel = vi.fn(
+    async (_ref: typeof ref, _sessionId: string) => model,
+  );
   const service = new OnlineAgentService({
     sessions,
     ids,
     resolver,
     streams,
-    model: async () => model,
+    model: resolveModel,
     defaultModel: async () => ref,
     onError: (error) => errors.push(error),
   });
-  return { service, sessions, resolver, errors, measurements };
+  return { service, sessions, resolver, errors, measurements, resolveModel };
 }
 
 async function settle(
@@ -167,6 +170,12 @@ describe('OnlineAgent service slice', () => {
     await agent.send([{ role: 'user', content: 'Read twice.' }]);
     await settle(agent);
     client.off('query', record);
+    expect(
+      await h.database
+        .connection()
+        .repository('agConversationMessages')
+        .count({ filter: { conversationId: agent.sessionId } }),
+    ).toBe(6);
     expect(read).toHaveBeenCalledTimes(2);
     expect(step).toBe(3);
     expect(f.errors).toEqual([]);
@@ -242,6 +251,10 @@ describe('OnlineAgent service slice', () => {
     });
     const provider = vi.fn(() => ({ tool: ['wait'] }));
     f.service.configurer.registerOnlineAgentGlobalScope(provider);
+    const client = await h.database.connection().client<Knex>();
+    const sql: string[] = [];
+    const record = (query: { sql: string }) => sql.push(query.sql);
+    client.on('query', record);
     const agent = await f.service.realtime(context());
     await agent.send([{ role: 'user', content: 'Wait' }]);
     await entered.promise;
@@ -264,6 +277,62 @@ describe('OnlineAgent service slice', () => {
     release.resolve();
     await stopping;
     expect(await agent.status()).toBe('idle');
+    const rows = await h.database
+      .connection()
+      .repository('agConversationMessages')
+      .findMany({
+        filter: { conversationId: agent.sessionId },
+        sort: (sort) => sort.field('seq').asc(),
+      });
+    const evidence = rows.filter(
+      (row) => row.content.original?.excludedFromHistory,
+    );
+    expect(evidence).toHaveLength(2);
+    expect(evidence.map((row) => decode(row.content.original.message))).toEqual(
+      [
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'call',
+              toolName: 'wait',
+              input: {},
+            },
+          ],
+        },
+        {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool-result',
+              toolCallId: 'call',
+              toolName: 'wait',
+              output: { type: 'json', value: 'stopped' },
+            },
+          ],
+        },
+      ],
+    );
+    expect(evidence.map((row) => row.content.content)).toEqual(['', '']);
+    expect(await agent.history()).toEqual([{ role: 'user', content: 'Wait' }]);
+    expect(model.doStreamCalls).toHaveLength(1);
+    client.off('query', record);
+    expect(f.measurements.map((item) => item.phase)).toEqual([
+      'accept',
+      'save',
+      'finish',
+    ]);
+    if (process.env.PM438_SQL_REPORT)
+      await appendFile(
+        process.env.PM438_SQL_REPORT,
+        JSON.stringify({
+          scenario: 'cancelled-tool',
+          dialect: h.database.connection().dialect,
+          sql,
+          measurements: f.measurements,
+        }) + '\n',
+      );
     expect(
       (await f.sessions.load('alice', agent.sessionId)).call,
     ).toMatchObject({ outcome: 'cancelled', requiresEffectReview: true });
@@ -617,3 +686,213 @@ it('drains a provider error before finalization and keeps incomplete text out of
   expect(JSON.stringify(rows)).toContain('Partial answer');
   expect(model.doStreamCalls).toHaveLength(1);
 });
+
+it('selects the first resolved business or request model before validating the original model columns', async () => {
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({ stream: streamed(text('Done')) }),
+    }),
+  );
+  f.service.configurer.registerOnlineAgentScope('business', {
+    model: ['fixture/business'],
+  });
+  const business = await f.service.realtime(context(), { scope: ['business'] });
+  expect((await f.sessions.load('alice', business.sessionId)).model).toEqual({
+    modelService: 'fixture',
+    model: 'business',
+  });
+  const direct = await f.service.realtime(context(), {
+    model: ['other/direct'],
+  });
+  expect((await f.sessions.load('alice', direct.sessionId)).model).toEqual({
+    modelService: 'other',
+    model: 'direct',
+  });
+  expect(f.resolveModel).toHaveBeenCalledWith(
+    { modelService: 'other', model: 'direct' },
+    '',
+  );
+});
+
+it('atomically changes idle model columns and configuration within or across services', async () => {
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({ stream: streamed(text('Done')) }),
+    }),
+  );
+  const agent = await f.service.realtime(context());
+  for (const selectedModel of [
+    { modelService: 'fixture', model: 'other' },
+    { modelService: 'other', model: 'chat' },
+  ]) {
+    const model = [`${selectedModel.modelService}/${selectedModel.model}`];
+    await expect(
+      agent.send([{ role: 'user', content: 'Change' }], {
+        overrides: { model },
+        selectedModel,
+        attachmentIds: [['missing-upload']],
+      }),
+    ).rejects.toThrow();
+    const unchanged = await f.sessions.load('alice', agent.sessionId);
+    expect(unchanged.model).not.toEqual(selectedModel);
+    expect(unchanged.config.model).not.toEqual(model);
+    await agent.send([{ role: 'user', content: 'Change' }], {
+      overrides: { model },
+      selectedModel,
+    });
+    await settle(agent);
+    const changed = await f.sessions.load('alice', agent.sessionId);
+    expect(changed.model).toEqual(selectedModel);
+    expect(changed.config.model).toEqual(model);
+    expect(f.resolveModel).toHaveBeenCalledWith(selectedModel, agent.sessionId);
+  }
+  await agent.send([{ role: 'user', content: 'Implicit first model' }], {
+    overrides: { model: ['third/chat'] },
+  });
+  await settle(agent);
+  expect((await f.sessions.load('alice', agent.sessionId)).model).toEqual({
+    modelService: 'third',
+    model: 'chat',
+  });
+});
+
+it.each(['realtime', 'background'] as const)(
+  'consumes opening overrides once after acceptance for %s, then restores newer snapshots',
+  async (kind) => {
+    const f = await fixture(
+      new MockLanguageModelV4({
+        doStream: async () => ({ stream: streamed(text('Done')) }),
+      }),
+    );
+    f.service.configurer.registerOnlineAgentGlobalScope({
+      systemPromptTemplate: 'Initial',
+    });
+    const provider = vi.fn(() => ({
+      systemPromptTemplate: {
+        template: (ctx: Context) => `${ctx.systemPrompt}:once`,
+      },
+    }));
+    f.service.configurer.registerOnlineAgentScope('change', provider);
+    const agent = await f.service[kind](context());
+    const opened = await f.service[kind](context(), {
+      sessionId: agent.sessionId,
+      scope: ['change'],
+    });
+    const submit = () =>
+      kind === 'realtime'
+        ? opened.send([{ role: 'user', content: 'Next' }])
+        : opened.run([{ role: 'user', content: 'Next' }]);
+    const accept = vi
+      .spyOn(f.sessions, 'accept')
+      .mockRejectedValueOnce(new Error('Admission failed'));
+    await expect(submit()).rejects.toThrow('Admission failed');
+    expect(
+      (await f.sessions.load('alice', agent.sessionId)).config.systemPrompt,
+    ).toBe('Initial');
+    await submit();
+    await settle(opened);
+    expect(
+      (await f.sessions.load('alice', agent.sessionId)).config.systemPrompt,
+    ).toBe('Initial:once');
+    await submit();
+    await settle(opened);
+    expect(provider).toHaveBeenCalledTimes(2);
+    expect(
+      (await f.sessions.load('alice', agent.sessionId)).config.systemPrompt,
+    ).toBe('Initial:once');
+    const newer = await f.service[kind](context(), {
+      sessionId: agent.sessionId,
+    });
+    await newer.send([{ role: 'user', content: 'Update elsewhere' }], {
+      overrides: { systemPromptTemplate: 'Newer' },
+    });
+    await settle(newer);
+    await submit();
+    await settle(opened);
+    expect(provider).toHaveBeenCalledTimes(2);
+    expect(
+      (await f.sessions.load('alice', agent.sessionId)).config.systemPrompt,
+    ).toBe('Newer');
+    accept.mockRestore();
+  },
+);
+
+it.each(['success', 'error', 'stream'] as const)(
+  'retains cancelled tool %s evidence through save retry without replay or public leakage',
+  async (mode) => {
+    const entered = deferred();
+    const release = deferred();
+    let signal!: AbortSignal;
+    const model = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: streamed([
+          {
+            type: 'tool-call',
+            toolCallId: 'effect',
+            toolName: 'effect',
+            input: '{"key":"private-input"}',
+            providerMetadata: { fixture: { signature: 'private-provider' } },
+          },
+          finish('tool-calls'),
+        ]),
+      }),
+    });
+    const f = await fixture(model);
+    const execute = vi.fn(async () => {
+      entered.resolve();
+      await release.promise;
+      if (mode === 'error') throw new Error('private-failure');
+      return { value: 'private-result' };
+    });
+    f.service.configurer.registerTool('effect', {
+      version: '1',
+      definition: {
+        inputSchema: z.object({ key: z.string() }),
+        execute: (_input, options) => {
+          signal = options.context.signal;
+          if (mode !== 'stream') return execute();
+          return (async function* () {
+            yield { value: 'preliminary' };
+            yield await execute();
+          })();
+        },
+      },
+    });
+    const agent = await f.service.realtime(context(), { tool: ['effect'] });
+    const save = vi
+      .spyOn(f.sessions, 'save')
+      .mockRejectedValueOnce(new Error('Save unavailable'));
+    await agent.send([{ role: 'user', content: 'Run' }]);
+    await entered.promise;
+    const stopped = agent.abort();
+    await vi.waitFor(() => expect(signal.aborted).toBe(true));
+    release.resolve();
+    await stopped;
+    expect(save).toHaveBeenCalledTimes(2);
+    const rows = await h.database
+      .connection()
+      .repository('agConversationMessages')
+      .findMany({ filter: { conversationId: agent.sessionId } });
+    const evidence = rows.filter(
+      (row) => row.content.original?.excludedFromHistory,
+    );
+    expect(evidence).toHaveLength(2);
+    const messages = evidence.map(
+      (row) => decode(row.content.original.message) as ModelMessage,
+    );
+    expect(JSON.stringify(messages)).toContain('private-input');
+    expect(JSON.stringify(messages)).toContain('private-provider');
+    expect(JSON.stringify(messages)).toContain(
+      mode === 'error' ? 'private-failure' : 'private-result',
+    );
+    expect(
+      JSON.stringify(messages.map((message) => project(message))),
+    ).not.toContain('private');
+    expect(await agent.history()).toEqual([{ role: 'user', content: 'Run' }]);
+    expect(await agent.status()).toBe('idle');
+    await agent.retryFinalization();
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(model.doStreamCalls).toHaveLength(1);
+    expect(await agent.receive()).toBeNull();
+  },
+);

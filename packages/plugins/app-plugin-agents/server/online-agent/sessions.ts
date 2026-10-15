@@ -87,7 +87,12 @@ export interface SessionManager {
   save(
     userId: string,
     id: string,
-    items: { id: string; message: ModelMessage | null; partial?: string }[],
+    items: {
+      id: string;
+      message: ModelMessage | null;
+      excludedFromHistory?: boolean;
+      partial?: string;
+    }[],
     call: Call,
   ): Promise<number>;
   finish(userId: string, id: string): Promise<void>;
@@ -151,6 +156,7 @@ export function createSessionManager(deps: {
     items: {
       id: string;
       message: ModelMessage | null;
+      excludedFromHistory?: boolean;
       partial?: string;
       attachments?: string[];
     }[],
@@ -165,7 +171,12 @@ export function createSessionManager(deps: {
         { conversationId: row.id, messageId: item.id },
         item.attachments ?? [],
       );
-      const payload = content(item.message, outcome, item.partial);
+      const payload = content(
+        item.message,
+        outcome,
+        item.partial,
+        item.excludedFromHistory,
+      );
       await messagesRepo(conn).createOne({
         values: {
           id: item.id,
@@ -292,7 +303,12 @@ export function createSessionManager(deps: {
     save(
       userId: string,
       id: string,
-      items: { id: string; message: ModelMessage | null; partial?: string }[],
+      items: {
+        id: string;
+        message: ModelMessage | null;
+        excludedFromHistory?: boolean;
+        partial?: string;
+      }[],
       call: Call,
     ) {
       return write(userId, id, 'save', async (conn, row) => {
@@ -317,7 +333,12 @@ export function createSessionManager(deps: {
               !saved ||
               !isDeepStrictEqual(
                 saved.content,
-                content(item.message, call.outcome ?? 'failed', item.partial),
+                content(
+                  item.message,
+                  call.outcome ?? 'failed',
+                  item.partial,
+                  item.excludedFromHistory,
+                ),
               )
             );
           })

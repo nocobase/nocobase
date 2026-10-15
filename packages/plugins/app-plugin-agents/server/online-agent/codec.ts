@@ -137,6 +137,7 @@ export function content(
   message: ModelMessage | null,
   outcome: Outcome = 'completed',
   partial: string = '',
+  excludedFromHistory = false,
 ): { type: string; content: string; original: Original } {
   const view = project(message, partial);
   return {
@@ -146,6 +147,7 @@ export function content(
       version: 1,
       message: message ? encode(message) : null,
       outcome,
+      ...(excludedFromHistory ? { excludedFromHistory: true } : {}),
     } satisfies Original,
   };
 }

@@ -139,17 +139,17 @@ export class OnlineAgentService {
     let id = options.sessionId;
     if (!id) {
       const defaults = await this.deps.sessions.defaults(context.user.id);
-      const model =
+      const fallback =
         options.selectedModel ??
         defaults.model ??
         (await this.deps.defaultModel());
-      if (!model) throw invalid('Select a chat model.');
       const config = await this.configurer.resolve(
         context,
         { ...options, scope: options.scope ?? defaults.scope },
         undefined,
-        [`${model.modelService}/${model.model}`],
+        fallback ? [`${fallback.modelService}/${fallback.model}`] : [],
       );
+      const model = options.selectedModel ?? this.firstModel(config.model);
       this.validateModel(config.model, model);
       await this.deps.model(model, '');
       id = await this.deps.sessions.create(
@@ -166,10 +166,11 @@ export class OnlineAgentService {
     const userId = context.user.id;
     const {
       sessionId: _sessionId,
-      selectedModel: requestedModel,
+      selectedModel: initialModel,
       ...requestedOptions
     } = options;
-    const requestedOverrides =
+    let requestedModel = options.sessionId ? initialModel : undefined;
+    let requestedOverrides =
       options.sessionId && Object.keys(requestedOptions).length
         ? requestedOptions
         : undefined;
@@ -217,25 +218,28 @@ export class OnlineAgentService {
           await this.finish(execution);
         }
       },
-      send: (
+      send: async (
         messages: ModelMessage[],
         input?: {
           attachmentIds?: string[][];
           overrides?: Options;
           selectedModel?: ModelRef;
         },
-      ) =>
-        this.start(context, sessionId, messages, {
+      ) => {
+        await this.start(context, sessionId, messages, {
           ...input,
           overrides: input?.overrides ?? requestedOverrides,
           selectedModel: input?.selectedModel ?? requestedModel,
-        }),
-      run: (
+        });
+        requestedOverrides = undefined;
+        requestedModel = undefined;
+      },
+      run: async (
         messages: ModelMessage[],
         schema?: ZodType,
         input?: { overrides?: Options; selectedModel?: ModelRef },
-      ) =>
-        this.start(
+      ) => {
+        await this.start(
           context,
           sessionId,
           messages,
@@ -245,7 +249,10 @@ export class OnlineAgentService {
             selectedModel: input?.selectedModel ?? requestedModel,
           },
           schema,
-        ),
+        );
+        requestedOverrides = undefined;
+        requestedModel = undefined;
+      },
       get: async (): Promise<Json> => {
         const row = await this.deps.sessions.load(userId, sessionId);
         if (
@@ -269,6 +276,16 @@ export class OnlineAgentService {
     options: Options & { sessionId?: string; selectedModel?: ModelRef } = {},
   ): Promise<Agent> {
     return this.open(context, 'background', options);
+  }
+  private firstModel(models: string[]): ModelRef {
+    const value = models[0];
+    const separator = value?.indexOf('/') ?? -1;
+    if (separator < 1 || separator === value.length - 1)
+      throw invalid('The selected model is outside this configuration.');
+    return {
+      modelService: value.slice(0, separator),
+      model: value.slice(separator + 1),
+    };
   }
   private validateModel(allowed: string[], model: ModelRef) {
     if (!allowed.includes(`${model.modelService}/${model.model}`))
@@ -355,10 +372,13 @@ export class OnlineAgentService {
             session.config,
           )
         : session.config;
-      const selected = input?.selectedModel ?? session.model;
+      const modelsChanged =
+        input?.overrides?.model !== undefined ||
+        JSON.stringify(config.model) !== JSON.stringify(session.config.model);
+      const selected =
+        input?.selectedModel ??
+        (modelsChanged ? this.firstModel(config.model) : session.model);
       this.validateModel(config.model, selected);
-      if (selected.modelService !== session.model.modelService)
-        throw invalid('Create a new session to change model services.');
       model = await this.deps.model(selected, id);
       boundContext = Object.freeze({
         ...context,
@@ -393,6 +413,8 @@ export class OnlineAgentService {
       accepted.reject(error);
       return;
     }
+    const toolEvidence = new Map<string, ModelMessage[]>();
+    const toolCompletions = new Map<string, () => void>();
     let writer: Writer | undefined;
     let response: ModelMessage[] = [];
     let partial = '';
@@ -416,6 +438,49 @@ export class OnlineAgentService {
         maxRetries: 0,
         reasoning: reasoningOf(config.thinking),
         stopWhen: stepCountIs(20),
+        onToolExecutionStart: ({ toolCall }) => {
+          const { toolCallId, toolName, input, providerMetadata } = toolCall;
+          toolEvidence.set(toolCallId, [
+            {
+              role: 'assistant',
+              content: [
+                {
+                  type: 'tool-call',
+                  toolCallId,
+                  toolName,
+                  input,
+                  ...(providerMetadata
+                    ? { providerOptions: providerMetadata }
+                    : {}),
+                },
+              ],
+            },
+          ]);
+          pending.push(
+            new Promise<void>((resolve) => {
+              toolCompletions.set(toolCallId, resolve);
+            }),
+          );
+        },
+        onToolExecutionEnd: ({ toolCall, toolOutput }) => {
+          const { toolCallId, toolName } = toolCall;
+          const evidence = toolEvidence.get(toolCallId)!;
+          evidence.push({
+            role: 'tool',
+            content: [
+              {
+                type: 'tool-result',
+                toolCallId,
+                toolName,
+                output:
+                  toolOutput.type === 'tool-error'
+                    ? { type: 'error-text', value: String(toolOutput.error) }
+                    : { type: 'json', value: toolOutput.output as Json },
+              },
+            ],
+          });
+          toolCompletions.get(toolCallId)!();
+        },
         onChunk: async ({ chunk }) => {
           if (chunk.type === 'text-delta') {
             partial += chunk.text;
@@ -474,11 +539,34 @@ export class OnlineAgentService {
     }
     await sdkStopped;
     await Promise.allSettled(pending);
-    const items: { id: string; message: ModelMessage | null }[] = response.map(
-      (message) => ({
+    // Completed SDK steps remain canonical. Evidence from an unfinished step is
+    // retained for effect review, never replayed as a completed model exchange.
+    const canonicalCalls = new Set(
+      response.flatMap((message) =>
+        message.role === 'assistant' && Array.isArray(message.content)
+          ? message.content.flatMap((part) =>
+              part.type === 'tool-call' ? [part.toolCallId] : [],
+            )
+          : [],
+      ),
+    );
+    const evidence = [...toolEvidence.entries()].flatMap(
+      ([callId, messages]) => (canonicalCalls.has(callId) ? [] : messages),
+    );
+    const items: {
+      id: string;
+      message: ModelMessage | null;
+      excludedFromHistory?: boolean;
+    }[] = response.map((message) => ({
+      id: this.deps.ids.next(),
+      message: message,
+    }));
+    items.push(
+      ...evidence.map((message) => ({
         id: this.deps.ids.next(),
-        message: message,
-      }),
+        message,
+        excludedFromHistory: true,
+      })),
     );
     if (partial) items.push({ id: this.deps.ids.next(), message: null });
     let saved: number | undefined;
@@ -507,6 +595,7 @@ export class OnlineAgentService {
         sealed = true;
       }
       await this.deps.sessions.finish(context.user.id, id);
+      execution.finalize = undefined;
       if (this.active.get(id) === execution) this.active.delete(id);
     };
     try {
