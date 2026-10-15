@@ -21,10 +21,12 @@ import {
   toolState,
   type RunnerPatch,
   type RunnerSummary,
+  type RunnerListItem,
   type RunnerTrust,
 } from '../../../shared/runners.js';
 import { agentsKeys } from '../../api/keys.js';
 import { AgSection } from '../../components/ag-section.js';
+import { AgLoadError } from '../../components/ag-states.js';
 import { AgTag } from '../../components/ag-tag.js';
 import {
   AlertDialog,
@@ -90,7 +92,7 @@ export function RunnerSheet({
   onClose,
 }: {
   /** Null while closed. */
-  readonly runner: RunnerSummary | null;
+  readonly runner: RunnerListItem | null;
   readonly onClose: () => void;
 }): ReactElement {
   const { t } = useTranslation();
@@ -132,7 +134,7 @@ export function RunnerSheet({
                 <RunnerStatusCell runner={runner} />
               </div>
             </SheetHeader>
-            <RunnerDetail key={runner.id} runner={runner} />
+            <LoadRunnerDetail key={runner.id} runnerId={runner.id} />
           </>
         ) : (
           <SheetTitle className='sr-only'>{t('runtimes.title')}</SheetTitle>
@@ -140,6 +142,36 @@ export function RunnerSheet({
       </SheetContent>
     </Sheet>
   );
+}
+
+function LoadRunnerDetail({
+  runnerId,
+}: {
+  readonly runnerId: string;
+}): ReactElement {
+  const api = useAgentsApi();
+  const { t } = useTranslation();
+  const detail = useQuery({
+    queryKey: [...agentsKeys.runners, 'detail', runnerId],
+    queryFn: () => api.runner(runnerId),
+  });
+  if (detail.isPending)
+    return (
+      <div className='flex justify-center p-4'>
+        <Spinner />
+      </div>
+    );
+  if (detail.isError)
+    return (
+      <div className='p-4'>
+        <AgLoadError
+          title={t('runtimes.loadFailed')}
+          error={detail.error}
+          onRetry={() => void detail.refetch()}
+        />
+      </div>
+    );
+  return <RunnerDetail runner={detail.data} />;
 }
 
 function RunnerDetail({
