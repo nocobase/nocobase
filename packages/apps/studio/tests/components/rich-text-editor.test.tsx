@@ -231,6 +231,49 @@ describe('RichTextEditor', () => {
     );
   });
 
+  it('refreshes an open mention query when its asynchronous candidate source changes', async () => {
+    const candidate: RichTextMention = {
+      kind: 'agent',
+      id: 'a1',
+      name: 'Project manager',
+    };
+    const ref = createRef<RichTextHandle>();
+    const onChange = vi.fn();
+    const firstSearch = vi.fn(() => Promise.resolve([]));
+    const { rerender } = render(
+      <RichTextEditor
+        ref={ref}
+        value=''
+        onChange={onChange}
+        onMentionSearch={firstSearch}
+        aria-label='Comment'
+        mentionSearchRevision={0}
+      />,
+    );
+    const textbox = screen.getByRole('textbox', { name: 'Comment' });
+    act(() => {
+      ref.current?.editor()?.commands.focus();
+      ref.current?.editor()?.commands.insertContent('@');
+    });
+    expect(await screen.findByText('No matches')).toBeInTheDocument();
+
+    const loadedSearch = vi.fn(() => Promise.resolve([candidate]));
+    rerender(
+      <RichTextEditor
+        ref={ref}
+        value=''
+        onChange={onChange}
+        onMentionSearch={loadedSearch}
+        aria-label='Comment'
+        mentionSearchRevision={0}
+      />,
+    );
+    expect(
+      await screen.findByRole('option', { name: 'Project manager' }),
+    ).toBeInTheDocument();
+    expect(textbox.textContent).toBe('@');
+  });
+
   it('keeps candidates beyond eight reachable by keyboard and in a scrollable list', async () => {
     const agents = Array.from({ length: 10 }, (_, index) => ({
       kind: 'agent',

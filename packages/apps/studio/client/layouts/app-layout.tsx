@@ -14,6 +14,7 @@ import { Breadcrumbs } from '@/components/breadcrumbs';
 import { useInboxNavigation } from '../inbox/navigation.js';
 import { useMyTasksNavigation } from '../issues/groups/my-tasks-navigation.js';
 import { useStudioIssueRefresh } from '../issues/live/realtime-refresh.js';
+import { ProjectManagerIdentityRefresh } from '../agents/project-manager/identity-refresh.js';
 
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
@@ -66,6 +67,7 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
   return (
     // The shell owns the business route tree used by its pages and navigation.
     <RouteTreeProvider routes={routes}>
+      <ProjectManagerIdentityRefresh />
       <PageBreadcrumbProvider>
         <ReturnLocationsContext.Provider value={returnLocations}>
           {/* The agents' chat panel (the UI Library's agent-chat block, in extensions/nocobase-agent-chat): its provider

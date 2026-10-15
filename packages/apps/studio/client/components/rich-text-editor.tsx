@@ -324,11 +324,21 @@ export function RichTextEditor({
     editor.setEditable(!disabled, false);
   }, [editor, disabled]);
 
-  const previousMentionSearchRevisionRef = useRef(mentionSearchRevision);
+  const previousMentionSearchRef = useRef({
+    revision: mentionSearchRevision,
+    search: onMentionSearch,
+  });
   useEffect(() => {
-    if (previousMentionSearchRevisionRef.current === mentionSearchRevision)
+    const previous = previousMentionSearchRef.current;
+    if (
+      previous.revision === mentionSearchRevision &&
+      previous.search === onMentionSearch
+    )
       return;
-    previousMentionSearchRevisionRef.current = mentionSearchRevision;
+    previousMentionSearchRef.current = {
+      revision: mentionSearchRevision,
+      search: onMentionSearch,
+    };
     if (!list || !onMentionSearch) return;
     const query = list.suggestion.query;
     let stale = false;
