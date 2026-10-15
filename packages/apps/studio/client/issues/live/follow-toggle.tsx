@@ -47,9 +47,17 @@ export function FollowToggle({
   const followIssue = useFollowIssue((error) =>
     notify.error(error, t('issueLive.follow.saveFailed')),
   );
-  const following =
+  const listed =
     known ??
     (read.data && (defaults || read.data.stored) ? read.data.issueIds : []);
+  // The list's copy is read back once the change is saved; until then the star shows the change it is making.
+  const pending = followIssue.isPending ? followIssue.variables : undefined;
+  const following =
+    known !== undefined && pending?.issueId === issueId
+      ? pending.follow
+        ? [...listed.filter((id) => id !== issueId), issueId]
+        : listed.filter((id) => id !== issueId)
+      : listed;
   const max = read.data?.max ?? FOLLOW_UPS_MAX;
   const { followed, full } = followState(following, issueId, max);
   const loading = known === undefined && !read.data;
