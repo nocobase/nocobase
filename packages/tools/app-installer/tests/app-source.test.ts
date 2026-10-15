@@ -19,7 +19,7 @@ let root: string;
 let port: string;
 beforeEach(async () => {
   temp = tempDir('installer-app-source-');
-  root = path.join(temp.dir, 'studio');
+  root = path.join(temp.dir, 'example-app');
   port = String(await freePort());
 });
 afterEach(() => temp.remove());
@@ -41,7 +41,7 @@ function npmWorld() {
     const ok = (value = '') => ({ stdout: value, stderr: '' });
     if (command === 'npm' && args[0] === 'view') {
       return ok(
-        JSON.stringify({ name: '@nocobase/studio', version: npm.version }),
+        JSON.stringify({ name: '@nocobase/example-app', version: npm.version }),
       );
     }
     const cwd = options!.cwd!;
@@ -53,7 +53,7 @@ function npmWorld() {
       writeFileSync(
         path.join(pkg, 'package.json'),
         JSON.stringify({
-          name: '@nocobase/studio',
+          name: '@nocobase/example-app',
           version: npm.version,
           nocobase: { templateKind: 'app' },
           scripts: { build: 'nocobase build' },
@@ -75,7 +75,7 @@ function npmWorld() {
       if (npm.failBuild)
         throw new CommandFailedError('pnpm build', 1, '', 'broken source');
       const archive = archiveFor(world, temp.dir, npm.version, {
-        name: npm.mismatch ? 'other-app' : '@nocobase/studio',
+        name: npm.mismatch ? 'other-app' : '@nocobase/example-app',
         relocatable: true,
       });
       mkdirSync(path.join(cwd, 'storage/exports'), { recursive: true });
@@ -90,15 +90,15 @@ function npmWorld() {
   return { world, npm };
 }
 
-it.each(['studio', '@nocobase/studio'])(
+it.each(['example-app', '@nocobase/example-app'])(
   'resolves %s to the official package',
   (spec) => {
     expect(parseAppSpec(spec)).toEqual({
-      package: '@nocobase/studio',
+      package: '@nocobase/example-app',
       selector: 'latest',
     });
     expect(parseAppSpec(`${spec}@beta`)).toEqual({
-      package: '@nocobase/studio',
+      package: '@nocobase/example-app',
       selector: 'beta',
     });
   },
@@ -109,12 +109,12 @@ it('accepts another publisher and rejects paths, URLs and empty selectors', () =
     selector: '1.2.0',
   });
   for (const spec of [
-    '../studio',
-    'file:studio',
+    '../example-app',
+    'file:example-app',
     'https://example.com/app.tgz',
-    'studio@',
-    'studio@^1',
-    '@nocobase/studio@latest\n',
+    'example-app@',
+    'example-app@^1',
+    '@nocobase/example-app@latest\n',
   ])
     expect(() => parseAppSpec(spec)).toThrow();
 });
@@ -124,7 +124,7 @@ it('rejects conflicting sources before downloading or writing', async () => {
     'install',
     root,
     '--app',
-    'studio',
+    'example-app',
     '--archive',
     'archive.tgz',
   ]);
@@ -132,7 +132,7 @@ it('rejects conflicting sources before downloading or writing', async () => {
   expect(npm.calls).toHaveLength(0);
   expect(existsSync(root)).toBe(false);
 });
-it.each(['studio', '@nocobase/studio'])(
+it.each(['example-app', '@nocobase/example-app'])(
   'installs %s with its published identity and discards the build tree',
   async (spec) => {
     const { world, npm } = npmWorld();
@@ -149,15 +149,15 @@ it.each(['studio', '@nocobase/studio'])(
     expect(result.code).toBe(0);
     const state = await readState(layoutOf(root));
     expect(state).toMatchObject({
-      appName: '@nocobase/studio',
-      source: { kind: 'app', package: '@nocobase/studio' },
+      appName: '@nocobase/example-app',
+      source: { kind: 'app', package: '@nocobase/example-app' },
       registry: 'https://registry.example.test',
     });
     expect(state.releases[0].version).toBe(npm.version);
     expect(npm.calls[0]).toEqual([
       'npm',
       'view',
-      '@nocobase/studio@latest',
+      '@nocobase/example-app@latest',
       'name',
       'version',
       '--json',
@@ -172,7 +172,7 @@ it.each(['studio', '@nocobase/studio'])(
 it('cleans a failed install and rejects a build that changes application identity', async () => {
   const { world, npm } = npmWorld();
   npm.failBuild = true;
-  const args = ['install', root, '--app', 'studio', '--port', port];
+  const args = ['install', root, '--app', 'example-app', '--port', port];
   expect((await installer(world, args)).json.error?.code).toBe(
     'APP_BUILD_FAILED',
   );
@@ -193,7 +193,7 @@ it('upgrades, rebuilds and rolls back an npm application while preserving its da
         'install',
         root,
         '--app',
-        'studio',
+        'example-app',
         '--port',
         port,
       ])
