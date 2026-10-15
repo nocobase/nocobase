@@ -1,3 +1,4 @@
+import { PmDescriptionImage } from '@nocobase/app-plugin-projects/client/kit';
 /**
  * An issue's page, presented: the two-column frame, the header (trail, parent, title edited in place, meta line), the
  * description edited in the rich text editor, the sub-issues by stage, the dependencies with an issue search, the
@@ -736,6 +737,7 @@ export function IssueDescription({
       <div className='space-y-2'>
         <RichTextEditor
           value={draft}
+          extensions={[PmDescriptionImage]}
           autoFocus
           aria-label={labels.description}
           placeholder={labels.descriptionPlaceholder}
