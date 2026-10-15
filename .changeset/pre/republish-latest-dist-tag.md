@@ -58,11 +58,8 @@
 '@nocobase/create-app': patch
 '@nocobase/create-plugin': patch
 '@nocobase/db': patch
-'@nocobase/db-dameng': patch
-'@nocobase/db-kingbase': patch
 '@nocobase/db-mssql': patch
 '@nocobase/db-mysql': patch
-'@nocobase/db-oceanbase': patch
 '@nocobase/db-oracle': patch
 '@nocobase/db-postgres': patch
 '@nocobase/db-sqlite': patch

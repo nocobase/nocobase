@@ -349,7 +349,9 @@ describe('the follow star', () => {
     let following = initial;
     mocks.request.mockImplementation((request: { path: string }) => {
       if (request.path === 'followUps/following')
-        return Promise.resolve({ data: { issueIds: following, max: 5 } });
+        return Promise.resolve({
+          data: { issueIds: following, max: 5, stored: true },
+        });
       const star = /^followUps\/issues\/([^/]+)\/(follow|unfollow)$/u.exec(
         request.path,
       );

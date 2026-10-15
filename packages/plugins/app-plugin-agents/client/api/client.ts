@@ -36,6 +36,7 @@ import type {
   RunnerPatch,
   RunnerRecentRun,
   RunnerSummary,
+  RunnerListItem,
 } from '../../shared/runners.js';
 import type { Run, RunDetail, RunEventPage } from '../../shared/runs.js';
 import type {
@@ -223,8 +224,12 @@ export class AgentsApi {
 
   // Runners
 
-  public runners(): Promise<RunnerSummary[]> {
+  public runners(): Promise<RunnerListItem[]> {
     return this.runnersApi.runners();
+  }
+
+  public runner(runnerId: string): Promise<RunnerSummary> {
+    return this.runnersApi.runner(runnerId);
   }
 
   /** A runner's latest runs, newest first. */

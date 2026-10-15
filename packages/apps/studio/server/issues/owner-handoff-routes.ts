@@ -76,7 +76,13 @@ export const ownerHandoffRoutes: AppApiRouteContribution<Application> =
         tags: ['Studio'],
         operationId: 'issueOwnerHandoffGet',
         summary: 'Get an issue owner handoff',
-        ...cliRoute(false),
+        ...cliRoute({
+          command: 'issue handoff get',
+          args: ['issueId'],
+          flags: { issueId: { name: 'issue' } },
+          action: 'pm.issues/view',
+          identities: ['person'],
+        }),
         security: [{ cookieAuth: [] }, { apiKeyAuth: [] }],
         responses: {
           200: dataResponse(
@@ -109,10 +115,22 @@ export const ownerHandoffRoutes: AppApiRouteContribution<Application> =
           tags: ['Studio'],
           operationId: `issueOwnerHandoff${decision === 'accept' ? 'Accept' : 'Reject'}`,
           summary: `${decision === 'accept' ? 'Accept' : 'Reject'} an issue owner handoff`,
-          ...cliRoute(false),
+          ...cliRoute({
+            command: `issue handoff ${decision}`,
+            args: ['issueId'],
+            flags: { issueId: { name: 'issue' } },
+            action: 'pm.issues/edit',
+            identities: ['person'],
+            readBinding: {
+              operation: 'issueOwnerHandoffGet',
+              params: { issueId: 'issueId' },
+              responseField: 'data.handoff.notificationKey',
+              bodyField: 'notificationKey',
+            },
+          }),
           security: [{ cookieAuth: [] }, { apiKeyAuth: [] }],
           description:
-            'Only the current owner in person, with issue editing permission, may decide the current handoff. Rejection keeps the issue paused. A stale notification returns a conflict.',
+            'Only the current owner in person, with issue editing permission, may decide the current handoff. Rejection keeps the issue paused. The CLI reads the current handoff once to supply notificationKey automatically. A missing handoff stops the command; a stale notification returns a conflict with a refresh hint and is never retried.',
           responses: {
             200: dataResponse(
               z.object({ handoff: Handoff, runId: z.string().nullable() }),

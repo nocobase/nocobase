@@ -256,12 +256,19 @@ export function storedUnavailableModels(value: unknown): UnavailableModel[] {
 /** A runner's last workspace report as stored: null when it never reported one. */
 export function storedWorkspaceUsage(
   value: unknown,
+  details = true,
 ): RunnerWorkspaceUsage | null {
   if (value === null || value === undefined) return null;
   const usage = jsonObject(value);
   if (typeof usage.measuredAt !== 'string' && usage.measuredAt !== null)
     return null;
-  const workspaces = (Array.isArray(usage.workspaces) ? usage.workspaces : [])
+  const needsDirectories =
+    details ||
+    !isFiniteNumber(usage.count) ||
+    !isFiniteNumber(usage.unpushedCount);
+  const workspaces = (
+    needsDirectories && Array.isArray(usage.workspaces) ? usage.workspaces : []
+  )
     .map(storedWorkspace)
     .filter((item): item is RunnerWorkspace => item !== null);
   const count = (field: unknown, fallback: number): number =>
@@ -280,13 +287,14 @@ export function storedWorkspaceUsage(
     ...(isFiniteNumber(usage.intervalMs)
       ? { intervalMs: usage.intervalMs }
       : {}),
-    workspaces,
+    workspaces: details ? workspaces : [],
   };
 }
 
 export function toRunner(
   record: RunnerRecord,
   ownerName: string | null = null,
+  workspaceDetails = true,
 ): Runner {
   return {
     id: record.id,
@@ -321,7 +329,10 @@ export function toRunner(
     acceptJobs: Boolean(record.acceptJobs),
     policy: storedPolicy(record.policy),
     variables: storedVariableNames(record.variables),
-    workspaceUsage: storedWorkspaceUsage(record.workspaceUsage),
+    workspaceUsage: storedWorkspaceUsage(
+      record.workspaceUsage,
+      workspaceDetails,
+    ),
     unavailableModels: storedUnavailableModels(record.unavailableModels),
     lastSeenAt: record.lastSeenAt,
     createdAt: record.createdAt,

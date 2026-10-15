@@ -28,7 +28,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { cn } from 'cn';
 
-import type { DashboardReport } from '../../../shared/reports.js';
+import type { DashboardAgents } from '../../../shared/reports.js';
 import {
   AGENT_FIGURES,
   figureValue,
@@ -54,7 +54,7 @@ const FIGURES_GRID = 'grid gap-x-6 gap-y-5 sm:grid-cols-3 lg:grid-cols-5';
 export function AgentPerformance({
   report,
 }: {
-  readonly report: UseQueryResult<DashboardReport>;
+  readonly report: UseQueryResult<DashboardAgents>;
 }): ReactElement {
   const { t } = useTranslation();
   const data = report.data;
@@ -111,17 +111,23 @@ function AgentFigure({
   report,
 }: {
   readonly spec: FigureSpec;
-  readonly report: DashboardReport;
+  readonly report: DashboardAgents;
 }): ReactElement {
   const { t } = useTranslation();
   const locale = useFormatLocale();
   const label = t(`dashboard.figures.${spec.key}.label`);
   const available = report.subjects || !ISSUE_FIGURES.has(spec.key);
+  // The agents' figures hold no amounts.
+  const figures = {
+    current: report.current,
+    previous: report.previous,
+    currency: '',
+  };
   const value = available
     ? formatFigure(
-        figureValue(report.current, spec.key, report.currency),
+        figureValue(report.current, spec.key, figures.currency),
         spec.format,
-        report.currency,
+        figures.currency,
         locale,
       )
     : '—';
@@ -134,7 +140,7 @@ function AgentFigure({
       <div className='font-heading text-xl font-semibold tabular-nums'>
         {value}
       </div>
-      <TrendText trend={available ? trendOf(spec, report) : null} />
+      <TrendText trend={available ? trendOf(spec, figures) : null} />
     </div>
   );
 }
@@ -142,7 +148,7 @@ function AgentFigure({
 function RunsChart({
   report,
 }: {
-  readonly report: DashboardReport;
+  readonly report: DashboardAgents;
 }): ReactElement {
   const { t } = useTranslation();
   const locale = useFormatLocale();

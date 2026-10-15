@@ -233,7 +233,7 @@ function NavigationItem({
           {decoration?.badge ? (
             <span
               aria-hidden='true'
-              data-testid='studio-inbox-badge'
+              data-testid='studio-nav-badge'
               data-kind={decoration.badge.kind}
               className={cn(
                 'flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 text-xs leading-none font-semibold tabular-nums',

@@ -26,21 +26,19 @@ export interface Slots {
   jobsByRunner(conn: DatabaseConnection): Promise<ReadonlyMap<string, number>>;
 }
 
-/** `runsHeld` counts the runs each of the runners holds now, `runsByTool` one runner's by coding tool. */
+/** Read total run occupancy and per-tool occupancy together. */
 export function createSlots(
-  runsHeld: (
-    conn: DatabaseConnection,
-    runnerIds: readonly string[],
-  ) => Promise<ReadonlyMap<string, number>>,
-  runsByTool: (
+  runsSnapshot: (
     conn: DatabaseConnection,
     runnerId: string,
-  ) => Promise<Partial<Record<AgentTool, number>>>,
+  ) => Promise<{
+    readonly runs: number;
+    readonly byTool: Readonly<Partial<Record<AgentTool, number>>>;
+  }>,
 ): Slots {
   const held: Slots['held'] = async (conn, runnerId) => ({
     jobs: await activeJobsOn(conn, runnerId),
-    runs: (await runsHeld(conn, [runnerId])).get(runnerId) ?? 0,
-    byTool: await runsByTool(conn, runnerId),
+    ...(await runsSnapshot(conn, runnerId)),
   });
   return {
     held,

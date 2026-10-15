@@ -133,6 +133,7 @@ describe('claiming and pruning the shared store', () => {
     await received.promise;
     abandoned();
     const collection = runner['collectGarbage']();
+    await waitFor(() => runner['holdingForPrune']);
     expect(prune).not.toHaveBeenCalled();
     expect(await runner['claimFrom'](link, 1, false)).toBe(0);
     deliver.resolve();
@@ -150,6 +151,32 @@ describe('claiming and pruning the shared store', () => {
     expect(prune).not.toHaveBeenCalled();
     await waitFor(() => prune.mock.calls.length === 1);
     expect(run.complete).toBeDefined();
+  });
+
+  it('keeps claiming and starting work while a collection round is running', async () => {
+    const runner = await daemon(async () => true);
+    const link = runner['links'][0]!;
+    server.workspaceReporting = { intervalMs: 60_000 };
+    await runner.heartbeat(link);
+    const reporting = Promise.withResolvers<void>();
+    const finishReport = Promise.withResolvers<void>();
+    const request = link.client.request.bind(link.client);
+    vi.spyOn(link.client, 'request').mockImplementation(async (...args) => {
+      if (args[1] === RUNNER_ROUTES.workspaces) {
+        reporting.resolve();
+        await finishReport.promise;
+      }
+      return request(...args);
+    });
+    const run = server.enqueue({ subject: { key: 'during-collection' } });
+    const collection = runner['collectGarbage']();
+    await reporting.promise;
+    expect(runner['collecting']).toBeDefined();
+    expect(await runner['claimFrom'](link, 1, false)).toBe(1);
+    await waitFor(() => run.complete);
+    expect(runner['collecting']).toBeDefined();
+    finishReport.resolve();
+    await collection;
   });
 
   it('waits for an outstanding claim when the last worker exits', async () => {

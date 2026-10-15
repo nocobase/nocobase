@@ -8,7 +8,6 @@
 import {
   buildBoardColumns,
   canEditIssues,
-  statusTone,
   useBoardMove,
   useBoardPages,
   useStatusName,
@@ -33,11 +32,10 @@ import {
 } from '@/components/kanban';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { cn } from 'cn';
+import { StatusIcon } from '@/components/status-icon';
 
 import { IssueMarks } from './issue-marks.js';
 import { useIssueAgentWork } from './use-agent-work.js';
-import { toneColor } from './rows.js';
 import type { IssuesPage } from './use-issues-page.js';
 
 interface Card {
@@ -45,16 +43,6 @@ interface Card {
   readonly column: string;
   readonly issue: IssueListItem;
 }
-
-const DOT: Readonly<Record<string, string>> = {
-  gray: 'bg-muted-foreground/50',
-  blue: 'bg-blue-500 dark:bg-blue-400',
-  purple: 'bg-violet-500 dark:bg-violet-400',
-  yellow: 'bg-amber-500 dark:bg-amber-400',
-  green: 'bg-emerald-500 dark:bg-emerald-400',
-  red: 'bg-red-500 dark:bg-red-400',
-  orange: 'bg-orange-500 dark:bg-orange-400',
-};
 
 /** The projects plugin's issue as a board card shows it: the column says its status. */
 function cardIssue(issue: IssueListItem): IssueCardIssue {
@@ -194,7 +182,6 @@ export function IssueBoardView({
         )}
       >
         {(column) => {
-          const color = toneColor(statusTone(statuses, column.id));
           const count = cards.filter(
             (card) => card.column === column.id,
           ).length;
@@ -206,10 +193,7 @@ export function IssueBoardView({
               aria-label={`${column.name} ${count}`}
             >
               <KanbanHeader>
-                <span
-                  aria-hidden
-                  className={cn('size-2 rounded-full', DOT[color])}
-                />
+                <StatusIcon statusKey={column.id} className='size-3.5' />
                 <h3>{column.name}</h3>
                 <span className='text-muted-foreground tabular-nums'>
                   {count}

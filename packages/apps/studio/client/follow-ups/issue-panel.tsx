@@ -149,7 +149,7 @@ function LiveIssue({
         className='border-b px-5 py-4 max-md:px-4 max-md:py-3'
         actions={
           <>
-            <FollowToggle issueId={issue.id} />
+            <FollowToggle issueId={issue.id} defaults />
             <Button
               size='sm'
               variant='outline'

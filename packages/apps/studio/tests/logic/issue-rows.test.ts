@@ -28,7 +28,7 @@ describe('an issue as a row of the issue table', () => {
       identifier: 'PM-1',
       title: 'Stream exports',
       labels: [{ id: 'l1', name: 'export', color: 'purple' }],
-      status: { name: 'status:in_review', color: 'purple' },
+      status: { name: 'status:in_review', color: 'purple', key: 'in_review' },
       priority: 'high',
       owner: { name: 'Ada' },
       executor: { name: 'Code Agent', kind: 'agent' },

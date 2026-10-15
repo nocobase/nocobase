@@ -61,6 +61,7 @@ export function issueTableRow(
     status: {
       name: wording.statusName(statuses, issue.statusKey),
       color: toneColor(wording.statusTone(statuses, issue.statusKey)),
+      key: issue.statusKey,
     },
     priority: issue.priority,
     owner: issue.owner ? { name: issue.owner.name } : null,

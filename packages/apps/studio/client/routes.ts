@@ -1,4 +1,6 @@
 import { agentSessionsRoute } from '@nocobase/app-plugin-agent-sessions/client';
+
+import { SessionTaskPanel } from './agents/session-task-panel-lazy.js';
 import { chatLinkRoutes } from '@nocobase/app-plugin-agents/client/chat';
 import {
   agentsRoute,
@@ -22,7 +24,6 @@ import {
   CircleUserRound,
   Cpu,
   FolderKanban,
-  InboxIcon,
   LayoutDashboard,
   ListChecks,
   ListTodo,
@@ -163,6 +164,8 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     ...agentSessionsRoute({
       cli: 'nb-studio',
       install: 'npm install -g @nocobase/studio-cli',
+      // A session's tasks open beside the conversation, in the split view's task detail.
+      linkPanels: { issue: SessionTaskPanel },
     }),
     navigation: {
       title: 'navigation.agentSessions',
@@ -214,12 +217,12 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     ],
   },
   {
-    // Everyone's own inbox is the default landing page; its contents need no page grant.
+    // Everyone's own inbox, the landing page for whoever cannot open My tasks; its contents need no page grant.
     authz: 'skip',
     auth: 'required',
     componentLoader: () => import('./pages/inbox/index.js'),
     name: 'inbox',
-    navigation: { title: 'navigation.inbox', icon: InboxIcon, order: 1 },
+    // Opened from the header's notification button (`layouts/components/header-actions.tsx`), not the sidebar.
     breadcrumb: { title: 'navigation.inbox' },
     path: '/inbox',
   },
