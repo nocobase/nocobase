@@ -3025,6 +3025,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.577.0
         version: 3.1111.0
+      '@poppinss/utils':
+        specifier: ^7.0.1
+        version: 7.0.1
       ali-oss:
         specifier: ^6.23.0
         version: 6.23.0(supports-color@8.1.1)

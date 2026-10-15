@@ -41,6 +41,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.577.0",
     "@aws-sdk/s3-request-presigner": "^3.577.0",
+    "@poppinss/utils": "^7.0.1",
     "ali-oss": "^6.23.0",
     "flydrive": "^2.1.0"
   },

@@ -25,8 +25,7 @@ function nonempty(value: unknown): value is string {
 
 // Keep the timeout active until the response body has been consumed.
 async function request(path: string, token?: string): Promise<string> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 1000);
+  const signal = AbortSignal.timeout(1000);
   try {
     const response = await fetch(`${METADATA}${path}`, {
       method: token === undefined ? 'PUT' : 'GET',
@@ -35,7 +34,7 @@ async function request(path: string, token?: string): Promise<string> {
           ? { 'X-aliyun-ecs-metadata-token-ttl-seconds': String(TOKEN_TTL) }
           : { 'X-aliyun-ecs-metadata-token': token },
       redirect: 'error',
-      signal: controller.signal,
+      signal,
     });
     if (!response.ok) {
       await response.body?.cancel();
@@ -50,12 +49,10 @@ async function request(path: string, token?: string): Promise<string> {
     if (error instanceof MetadataError) throw error;
     // Fetch errors can include request details; never propagate their contents.
     throw new MetadataError(
-      controller.signal.aborted ? 'request timed out' : 'request failed',
+      signal.aborted ? 'request timed out' : 'request failed',
       undefined,
       true,
     );
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
@@ -108,9 +105,8 @@ export function createAliyunEcsRamRoleProvider(
 ): () => Promise<Credentials> {
   let token: string | undefined;
   let tokenExpires = 0;
-  let pending: Promise<Credentials> | undefined;
 
-  async function resolve(): Promise<Credentials> {
+  return async () => {
     let recoveredUnauthorized = false;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
@@ -150,12 +146,5 @@ export function createAliyunEcsRamRoleProvider(
       }
     }
     throw new MetadataError('attempt limit reached');
-  }
-
-  return () => {
-    pending ??= resolve().finally(() => {
-      pending = undefined;
-    });
-    return pending;
   };
 }

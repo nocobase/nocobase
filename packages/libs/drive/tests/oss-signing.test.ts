@@ -10,6 +10,47 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+it.each([undefined, 'test-role'])(
+  'merges initial credentials across concurrent operations and signatures (role=%s)',
+  async (roleName) => {
+    const response = Promise.withResolvers<Response>();
+    const started = Promise.withResolvers<void>();
+    const metadata = vi.fn(async (url: string, options: RequestInit) => {
+      if (options.method === 'PUT') {
+        started.resolve();
+        return response.promise;
+      }
+      return url.endsWith('/security-credentials/')
+        ? new Response('test-role')
+        : Response.json({
+            Code: 'Success',
+            AccessKeyId: 'test-key',
+            AccessKeySecret: 'test-secret',
+            SecurityToken: 'test-token',
+            Expiration: new Date(Date.now() + 3600000).toISOString(),
+          });
+    });
+    vi.stubGlobal('fetch', metadata);
+    const transport = mockTransport();
+    const storage = disk({
+      credentials: { provider: 'aliyun-ecs-ram-role', roleName },
+    });
+    const operations = Promise.all([
+      storage.put('file', 'hello'),
+      storage.getSignedUrl('file'),
+      storage.getSignedUploadUrl('file'),
+    ]);
+    await started.promise;
+    expect(metadata).toHaveBeenCalledTimes(1);
+    response.resolve(new Response('metadata-token'));
+    await operations;
+    expect(metadata).toHaveBeenCalledTimes(roleName ? 2 : 3);
+    expect(transport).toHaveBeenCalledTimes(1);
+    await storage.getSignedUrl('file');
+    expect(metadata).toHaveBeenCalledTimes(roleName ? 2 : 3);
+  },
+);
+
 it('refreshes actual SDK requests and upload/download signatures, merges concurrent refreshes and recovers', async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
   const started = Date.now();
@@ -94,7 +135,12 @@ it('refreshes actual SDK requests and upload/download signatures, merges concurr
   expect(reads).toBe(1);
   vi.setSystemTime(started + 56 * 60000);
   invalid = true;
-  await expect(storage.driver.get('file.txt')).rejects.toThrow('Expiration');
+  await Promise.all([
+    expect(storage.driver.get('file.txt')).rejects.toThrow('Expiration'),
+    expect(storage.driver.getSignedUploadUrl('file.txt')).rejects.toThrow(
+      'Expiration',
+    ),
+  ]);
   expect(transport).not.toHaveBeenCalled();
   invalid = false;
   generation = 2;

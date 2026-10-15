@@ -40,12 +40,10 @@ afterEach(() => {
 });
 
 describe('Aliyun ECS instance credentials', () => {
-  it('discovers a role, maps credentials, merges concurrent calls and reuses the token', async () => {
+  it('discovers a role, maps credentials and reuses the token', async () => {
     const fetchMock = mockMetadata();
     const provider = createAliyunEcsRamRoleProvider();
-    const first = provider();
-    expect(provider()).toBe(first);
-    expect(await first).toEqual({
+    expect(await provider()).toEqual({
       accessKeyId: valid.AccessKeyId,
       secretAccessKey: valid.AccessKeySecret,
       sessionToken: valid.SecurityToken,

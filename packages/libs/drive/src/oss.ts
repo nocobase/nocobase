@@ -1,6 +1,7 @@
 import { Readable } from 'node:stream';
 import { finished } from 'node:stream/promises';
 
+import string from '@poppinss/utils/string';
 import type OSS from 'ali-oss';
 import { DriveDirectory, DriveFile } from 'flydrive';
 import type {
@@ -34,25 +35,16 @@ function statusOf(error: unknown): number | undefined {
 
 function seconds(value: string | number = 1800): number {
   if (typeof value === 'number') return value;
+  const duration = value.trim().replace(/\s+/g, ' ');
   const match =
     /^(\d+(?:\.\d+)?)\s*(ms|s|sec(?:ond)?s?|m|min(?:ute)?s?|h|hours?|d|days?|w|weeks?)?$/i.exec(
-      value.trim(),
+      duration,
     );
   if (!match) throw new Error('Invalid OSS signed URL lifetime.');
-  const unit = (match[2] || 's').toLowerCase();
-  const scale =
-    unit === 'ms'
-      ? 0.001
-      : unit.startsWith('m')
-        ? 60
-        : unit.startsWith('h')
-          ? 3600
-          : unit.startsWith('d')
-            ? 86400
-            : unit.startsWith('w')
-              ? 604800
-              : 1;
-  return Number(match[1]) * scale;
+  // Preserve bare seconds and zero; the shared parser treats bare strings as ms.
+  return match[2] && Number(match[1]) !== 0
+    ? string.seconds.parse(duration)
+    : Number(match[1]);
 }
 
 function headersFor(
@@ -165,26 +157,16 @@ class OssDriver implements DriverContract {
   }
 
   async #resolveClient(): Promise<ClientState> {
-    let state: ClientState;
-    if (this.#provider) {
-      const credentials = await this.#provider();
-      state = {
-        client: await this.#createClient(
-          credentials.accessKeyId,
-          credentials.secretAccessKey,
-          credentials.sessionToken,
-        ),
-        expiration: credentials.expiration,
-      };
-    } else {
-      const credentials = this.#config.credentials;
-      state = {
-        client: await this.#createClient(
-          credentials.accessKeyId!,
-          credentials.accessKeySecret!,
-        ),
-      };
-    }
+    const credentials = await this.#provider?.();
+    const state: ClientState = {
+      client: await this.#createClient(
+        credentials?.accessKeyId ?? this.#config.credentials.accessKeyId!,
+        credentials?.secretAccessKey ??
+          this.#config.credentials.accessKeySecret!,
+        credentials?.sessionToken,
+      ),
+      expiration: credentials?.expiration,
+    };
     this.#state = state;
     return state;
   }
