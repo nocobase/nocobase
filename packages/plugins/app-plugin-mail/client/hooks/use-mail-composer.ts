@@ -105,9 +105,15 @@ export function useMailComposer({
       ref.current?.focus();
     }
   }, [focusRecipient]);
-  const recipientError = (field: RecipientField): string | undefined => {
+  const recipientError = (
+    field: RecipientField,
+    bulk = false,
+  ): string | undefined => {
     const value = composer?.[field] ?? '';
-    const parsed = parseMailboxList(value);
+    const parsed = parseMailboxList(
+      value,
+      bulk && field === 'to' ? Infinity : 100,
+    );
     if (field === 'to' && parsed.mailboxes.length === 0)
       return t('workspace.recipientRequired');
     if (parsed.issues.length)
@@ -387,7 +393,7 @@ export function useMailComposer({
     const errors = Object.fromEntries(
       (['to', 'cc', 'bcc'] as const).map((field) => [
         field,
-        recipientError(field),
+        recipientError(field, mode === 'bulk'),
       ]),
     );
     setCheckedRecipients(
