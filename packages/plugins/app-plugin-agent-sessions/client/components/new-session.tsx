@@ -294,14 +294,17 @@ export function NewSession({
             header={
               <div className='contents' inert={creating}>
                 <Picker
+                  title={computer?.name ?? t('newSession.pickComputer')}
                   label={
                     <>
                       <LaptopIcon className='size-4' />
-                      {computer?.name ?? t('newSession.pickComputer')}
+                      <span className='min-w-0 truncate'>
+                        {computer?.name ?? t('newSession.pickComputer')}
+                      </span>
                       {computer && (
                         <span
                           className={cn(
-                            'size-2 rounded-full',
+                            'size-2 shrink-0 rounded-full',
                             computer.online
                               ? 'bg-emerald-500'
                               : 'bg-muted-foreground',
@@ -338,11 +341,12 @@ export function NewSession({
                   </DropdownMenuItem>
                 </Picker>
                 <Picker
+                  title={agent?.name ?? t('newSession.noAgent')}
                   label={
                     agent ? (
                       <>
                         <AgentBadge agentId={agent.id} name={agent.name} />
-                        {agent.name}
+                        <span className='min-w-0 truncate'>{agent.name}</span>
                       </>
                     ) : (
                       t('newSession.noAgent')
@@ -527,6 +531,7 @@ function FolderPicker({
     <>
       <Picker
         shrink
+        title={value || t('newSession.folder')}
         label={
           <>
             <FolderIcon className='size-4 shrink-0' />
@@ -548,7 +553,7 @@ function FolderPicker({
                 key={folder}
                 checked={folder === value}
                 title={
-                  <code className='text-xs'>
+                  <code className='text-xs' title={folder}>
                     {displayPath(folder, computer.home)}
                   </code>
                 }
@@ -607,10 +612,16 @@ function ProjectPicker({
   const { t } = useTranslation();
   return (
     <Picker
+      title={value?.name ?? t('newSession.noProject')}
       label={
         <>
           <FolderKanbanIcon className='size-4' />
-          <span className={cn(!value && 'text-muted-foreground')}>
+          <span
+            className={cn(
+              'min-w-0 truncate',
+              !value && 'text-muted-foreground',
+            )}
+          >
             {value?.name ?? t('newSession.noProject')}
           </span>
         </>
@@ -637,10 +648,12 @@ function ProjectPicker({
 }
 
 function Picker({
+  title,
   label,
   shrink,
   children,
 }: {
+  readonly title: string;
   readonly label: ReactNode;
   /** Takes the room the row has left, its label cut short; on a row of its own when that is too little. */
   readonly shrink?: boolean;
@@ -649,9 +662,10 @@ function Picker({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
+        title={title}
         className={cn(
-          'bg-muted hover:border-foreground/20 aria-expanded:border-foreground/20 inline-flex h-9 items-center gap-2 rounded-full border px-3 text-xs whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
-          shrink ? 'max-w-full min-w-40 flex-1' : 'shrink-0',
+          'bg-muted hover:border-foreground/20 aria-expanded:border-foreground/20 inline-flex h-9 max-w-full min-w-0 items-center gap-2 rounded-full border px-3 text-xs whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring/50 [&>svg]:shrink-0',
+          shrink && 'flex-1 basis-40',
         )}
       >
         {label}
@@ -682,6 +696,7 @@ function PickItem({
       disabled={disabled}
       onClick={onPick}
       className='items-start'
+      title={typeof title === 'string' ? title : undefined}
     >
       <CheckIcon
         className={cn(
@@ -690,9 +705,11 @@ function PickItem({
         )}
       />
       <span className='flex min-w-0 flex-col'>
-        <span className='truncate'>{title}</span>
+        <span className='break-words'>{title}</span>
         {detail && (
-          <span className='text-muted-foreground text-xs'>{detail}</span>
+          <span className='text-muted-foreground text-xs break-words'>
+            {detail}
+          </span>
         )}
       </span>
     </DropdownMenuItem>
@@ -748,7 +765,7 @@ function ComputerDetails({
       aria-label={t('newSession.thisComputer')}
     >
       <section className='flex flex-col gap-3 border-b px-5 py-4'>
-        <h3 className='flex items-center gap-2 text-xs font-semibold'>
+        <h3 className='flex items-center gap-2 text-xs font-semibold whitespace-nowrap'>
           <LaptopIcon className='size-4' />
           {t('newSession.thisComputer')}
           <span className='text-muted-foreground ml-auto inline-flex items-center gap-1.5 font-normal'>
@@ -761,13 +778,13 @@ function ComputerDetails({
             {t(computer.online ? 'computers.online' : 'computers.offline')}
           </span>
         </h3>
-        <dl className='grid grid-cols-[4rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-xs'>
+        <dl className='grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-2 text-xs [&>dt]:whitespace-nowrap [&>dd]:min-w-0 [&>dd]:break-words'>
           <dt className='text-muted-foreground'>{t('computers.name')}</dt>
           <dd className='break-words'>{computer.name}</dd>
           <dt className='text-muted-foreground'>{t('computers.system')}</dt>
           <dd>{systemName(computer)}</dd>
           <dt className='text-muted-foreground'>{t('computers.cli')}</dt>
-          <dd>
+          <dd className='break-all'>
             <code>{computer.host}</code>
           </dd>
           <dt className='text-muted-foreground'>{t('computers.folders')}</dt>
@@ -799,17 +816,19 @@ function ComputerDetails({
             >
               <AgentBadge agentId={agent.id} name={agent.name} large />
               <span className='min-w-0 flex-1'>
-                <span className='block'>{agent.name}</span>
-                <span className='text-muted-foreground block text-[11px]'>
+                <span className='block truncate' title={agent.name}>
+                  {agent.name}
+                </span>
+                <span className='text-muted-foreground block text-[11px] break-all'>
                   {agent.version ?? '—'}
                 </span>
               </span>
               {agent.problem ? (
-                <span className='text-muted-foreground text-[11px]'>
+                <span className='text-muted-foreground shrink-0 text-[11px] whitespace-nowrap'>
                   {t(`computers.problems.${agent.problem}`)}
                 </span>
               ) : (
-                <span className='inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400'>
+                <span className='inline-flex shrink-0 items-center gap-1 text-[11px] whitespace-nowrap text-emerald-700 dark:text-emerald-400'>
                   <CheckIcon className='size-3.5' />
                   {t('computers.ready')}
                 </span>
@@ -831,11 +850,12 @@ function ComputerDetails({
         <Button
           variant='outline'
           size='sm'
-          className='font-normal'
+          className='max-w-full min-w-0 font-normal'
+          title={t('newSession.manageComputers')}
           onClick={onManage}
         >
           <LaptopIcon />
-          {t('newSession.manageComputers')}
+          <span className='truncate'>{t('newSession.manageComputers')}</span>
         </Button>
       </section>
     </aside>
