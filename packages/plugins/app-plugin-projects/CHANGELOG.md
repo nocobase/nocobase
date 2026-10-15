@@ -1,5 +1,34 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.9
+
+### Minor Changes
+
+- 862a542: Support global default skills and transactional defaults for newly created Studio projects. Resolve skills from global through application scopes to working directories in one query, with more specific targets winning. Stop reading and exposing legacy agent skill attachments while preserving agent variables.
+- f43817d: Persist the owner's required decision and the next step as structured issue fields. Require needsYou only for authenticated Studio project-manager direct status updates to Blocked or In review, keep generic and human progress input optional, clear it when work resumes, and clear next when work ends. Studio displays these fields without extracting progress or delivery notes from comments and links to the project manager's latest explanation.
+
+### Patch Changes
+
+- 92afa27: Make My follow-ups fast for someone who owns many open issues. `GET /api/followUps` reads what every row's progress needs in a fixed number of queries instead of a few per issue, and a row no longer works out why queued work has not been claimed (`waiting`, `managerWait`): the issue's own progress (`GET /api/issueProgress/{issueId}`), shown beside the list, still does. A new `GET /api/followUps/issues?issueIds=…` answers the rows of the named issues, and the page uses it to refresh only the rows an announced change names, a burst at a time, reading the whole overview again only when the list itself changed, on reconnect, for a change that names no issue, and on its fallback poll. The follow star on an issue reads only what the viewer follows from a new `GET /api/followUps/following` (`follow-up following` on the command line) instead of the whole overview, and an agent session's issue progress reads its issues in the same fixed number of queries. The projects plugin's comment queries gain `newestByEach`, the agents plugin's runs gain `openOnEach`, and its run request list takes `subjectIds` and `statuses`.
+- facfe5c: Remove a duplicate Issue type import that prevented type checking and builds.
+- bdb0581: Reduce the server load of open issue and My follow-ups pages. Issue change announcements are gathered for a moment and name the issues that changed, so a page refreshes only what it shows of them; Studio announces new runs on an issue, so issue pages, What it waits for, owner handoffs and My follow-ups fall back to a slow poll instead of polling every few seconds; a preview label the server failed to set no longer makes the issue page poll every three seconds. Polled reads check issue visibility without loading the whole issue page (`IssueQueries.visible`), What it waits for reads only the project manager's newest comments (`CommentQueries.newestBy`), My follow-ups shares lookups across its issues, and pull request marks check visibility in one read. A runner heartbeat no longer announces a runner change, waking every waiting claim and refreshing every runtimes page, unless its disk sample moved by a gigabyte, crossed the free-space threshold or changed size.
+- 7534a32: Restore the previous task tables and remove grouped task tables for now.
+- 6c4634b: Scope Studio's pull request announcements (`studio:git`) to the issues they affect. Stores of a moment are gathered into one announcement naming the issues the changed pull requests are linked to, and pages read again only those issues' pull requests, marks, previews and progress, through one subscription per page; an announcement it cannot tie to pull requests, and a reconnect, still refresh everything. The topic now reaches signed-in connections only, and a hidden tab no longer polls an issue's previews. Also removes a duplicated type import in the projects plugin's issue queries.
+- bdb0581: A public realtime topic can be defined with `authenticated: true` (`defineTopic` and `registerTopic` of `@nocobase/app-server/realtime`): subscribing without a signed-in principal is then refused with `AUTHENTICATION_REQUIRED`, as for a user topic, and publishing skips connections without one. The projects plugin's `pm:changes`, the agents plugin's `agents:runners` and Studio's `studio:issues:runs`, whose announcements name records by id, now reach signed-in connections only. The authentication plugin opens the realtime connection again when the signed-in person changes, so a page signed in without a reload receives these topics and user topics.
+- Updated dependencies [69e212c]
+- Updated dependencies [943a9a8]
+- Updated dependencies [943a9a8]
+- Updated dependencies [1cd749c]
+- Updated dependencies [bdb0581]
+- Updated dependencies [9b946f4]
+  - @nocobase/app-server@2.0.0-beta.7
+  - @nocobase/db@1.0.0-beta.20
+  - @nocobase/app-plugin-authentication@2.0.0-beta.9
+  - @nocobase/app-plugin-file@1.0.0-beta.23
+  - @nocobase/app-plugin-authorization@1.0.0-beta.27
+  - @nocobase/app-plugin-notification@1.0.0-beta.27
+  - @nocobase/app-plugin-users@2.0.0-beta.4
+
 ## 0.1.0-beta.8
 
 ### Minor Changes

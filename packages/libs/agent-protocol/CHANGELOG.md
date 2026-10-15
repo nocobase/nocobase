@@ -1,5 +1,12 @@
 # @nocobase/agent-protocol
 
+## 0.1.0-beta.8
+
+### Patch Changes
+
+- 8e4cf26: Recover runners and agent-session bridges after a protocol upgrade. Heartbeat answers now carry the server's runner protocol (`protocolVersion`), and a runner that speaks an older protocol while no newer version is offered logs what it speaks, what the application needs and how to update, instead of looking up to date. A bridge refused for its protocol now receives the protocols the application speaks in the error's `metadata`; `acp start` then updates the CLI as `update` does and exits non-zero so its launchd, systemd or Startup service starts it again on the new version, and when no update helps it still exits non-zero after a pause rather than stopping with success. A computer whose bridge was refused as too old is shown on My agents with the commands to update it.
+- f36da62: Keep a runner claiming work while it collects working directories. Collection no longer measures every directory's size by reading every file, which on runners with many directories took tens of minutes per round and held all claims meanwhile; only pruning the shared pnpm store still holds claims. Routine collection now runs an hour after the previous round ended (`WORKSPACE_REPORT_INTERVAL_MS`), still at once when the disk runs low, and the runner logs each round's start and duration. Workspace diagnostics show a directory's size only when a runner reported one.
+
 ## 0.1.0-beta.7
 
 ### Minor Changes

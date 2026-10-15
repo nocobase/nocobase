@@ -250,6 +250,41 @@ export async function executeRest(
   }
   const uploaded: { path: string; id: string }[] = [];
   try {
+    if (command.readBinding) {
+      const binding = command.readBinding;
+      const values = Object.entries(binding.params).map(([field, source]) => {
+        const entry = [...call.values].find(
+          ([parameter]) =>
+            parameter.in === 'path' && parameter.field === source,
+        );
+        return [{ in: 'path' as const, field }, entry?.[1]] as const;
+      });
+      const read = fillRequest({ method: 'GET', path: binding.path }, values);
+      const answer = await send(
+        urlFor(session.server, read.path),
+        {
+          method: 'GET',
+          headers: { accept: 'application/json', ...session.headers },
+        },
+        options,
+      );
+      let value: unknown = answer;
+      for (const field of binding.responseField.split('.'))
+        value =
+          value && typeof value === 'object' && Object.hasOwn(value, field)
+            ? (value as Record<string, unknown>)[field]
+            : undefined;
+      if (value === undefined || value === null || value === '')
+        throw new CliCommandError(
+          'READ_BINDING_MISSING',
+          'There is no current value for this decision; the resource may be missing or expired. Refresh it before deciding.',
+          { exit: EXIT_CODES.validation },
+        );
+      call = {
+        ...call,
+        bodyFile: { ...call.bodyFile, [binding.bodyField]: value },
+      };
+    }
     const ids = await uploadAll(session, call, options, uploaded);
     const { url, body, type } = await buildRequest(session, command, call, ids);
     const init: RequestInit = {

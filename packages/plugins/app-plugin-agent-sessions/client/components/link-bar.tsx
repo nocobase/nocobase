@@ -2,9 +2,12 @@ import { cn } from 'cn';
 import type { ReactElement } from 'react';
 
 import type { SessionLink } from '../../shared/api.js';
-import { TONE_CLASS, TONE_ORDER } from '../lib/tones.js';
+import { byIcon, ICON_FILL, linkIcon } from '../lib/tones.js';
 
-/** One segment per linked record, colored by how it stands: finished, going on, waiting for the viewer, not started. */
+/**
+ * One segment per linked record, coloured by its status as its application draws it: done, closed, in review,
+ * started, blocked, not started.
+ */
 export function LinkBar({
   links,
   className,
@@ -12,11 +15,6 @@ export function LinkBar({
   readonly links: readonly SessionLink[];
   readonly className?: string;
 }): ReactElement {
-  const sorted = [...links].sort(
-    (a, b) =>
-      TONE_ORDER.indexOf(a.status?.tone ?? 'idle') -
-      TONE_ORDER.indexOf(b.status?.tone ?? 'idle'),
-  );
   return (
     <span
       className={cn(
@@ -25,10 +23,10 @@ export function LinkBar({
       )}
       aria-hidden
     >
-      {sorted.map((link) => (
+      {byIcon(links).map((link) => (
         <span
           key={`${link.kind}:${link.refId}`}
-          className={cn('flex-1', TONE_CLASS[link.status?.tone ?? 'idle'])}
+          className={cn('flex-1', ICON_FILL[linkIcon(link)])}
         />
       ))}
     </span>

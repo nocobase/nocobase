@@ -8,6 +8,23 @@ export function isTemporalType(type: string): type is TemporalType {
 }
 
 const offsetPattern = '(Z|[+-]\\d{2}:\\d{2})';
+const storedTimestampPattern =
+  /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2})?$/;
+
+/** Validate the calendar without allocating a Date for each stored cell. */
+function validCalendarDate(year: number, month: number, day: number): boolean {
+  if (year < 1000 || year > 9999 || month < 1 || month > 12 || day < 1)
+    return false;
+  const days =
+    month === 2
+      ? year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
+        ? 29
+        : 28
+      : month === 4 || month === 6 || month === 9 || month === 11
+        ? 30
+        : 31;
+  return day <= days;
+}
 
 /** `Z` and every real zone offset; `-00:00` is the one ISO 8601 spells but forbids. */
 function isValidOffset(offset: string): boolean {
@@ -199,6 +216,22 @@ export function normalizeTemporalResultValue(
       `Invalid stored ${field.type} value for Field "${field.name}".`,
       { field: field.name, path: ['select', field.name] },
     );
+  }
+  if (field.type === 'datetime' || field.type === 'datetimeTz') {
+    const stamp = storedTimestampPattern.exec(input);
+    // The common driver result is an offset-free or UTC timestamp. Validate
+    // it once and format directly; real offsets retain the conversion path.
+    if (
+      stamp &&
+      (stamp[8] === undefined || stamp[8] === 'Z' || stamp[8] === '+00:00') &&
+      validCalendarDate(Number(stamp[1]), Number(stamp[2]), Number(stamp[3])) &&
+      Number(stamp[4]) < 24 &&
+      Number(stamp[5]) < 60 &&
+      Number(stamp[6]) < 60
+    ) {
+      const local = `${stamp[1]}-${stamp[2]}-${stamp[3]}T${stamp[4]}:${stamp[5]}:${stamp[6]}.${(stamp[7] ?? '').slice(0, 3).padEnd(3, '0')}`;
+      return field.type === 'datetimeTz' ? `${local}Z` : local;
+    }
   }
   if (field.type === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(input))
     return normalizeTemporalValue(

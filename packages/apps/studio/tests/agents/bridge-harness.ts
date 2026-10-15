@@ -118,6 +118,7 @@ import {
 } from '../../server/agents/conversation/delegation.js';
 import { issueRunsRoutes } from '../../server/agents/run-views.js';
 import { projectManagerRoutes } from '../../server/agents/manager/routes.js';
+import { taskGroupRoutes } from '../../server/issues/task-group-routes.js';
 import { ownerHandoffRoutes } from '../../server/issues/owner-handoff-routes.js';
 import { followUpsRoutes } from '../../server/follow-ups/routes.js';
 import { createProjectManager } from '../../server/agents/manager/service.js';
@@ -1217,6 +1218,10 @@ export async function createBridgeHarness(
     ...(buildsService ? [buildsRoutes] : []),
   ])
     api.route('/', await contribution.createRouter(appLike));
+  api.route(
+    '/',
+    await taskGroupRoutes.createRouter(appLike as unknown as never),
+  );
   api.route('/', await reportsRoutes.createRouter(appLike as unknown as never));
   api.route(
     '/',

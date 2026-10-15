@@ -26,9 +26,15 @@ function followState(
 
 export function FollowToggle({
   issueId,
+  defaults = false,
   className,
 }: {
   readonly issueId: string;
+  /**
+   * Counts "My follow-ups"' default list (the viewer's blocked and in-review issues) as followed until they choose, as
+   * that page shows it; elsewhere only what they chose is followed.
+   */
+  readonly defaults?: boolean;
   readonly className?: string;
 }): ReactElement {
   const { t } = useTranslation();
@@ -37,7 +43,8 @@ export function FollowToggle({
   const followIssue = useFollowIssue((error) =>
     notify.error(error, t('issueLive.follow.saveFailed')),
   );
-  const following = read.data?.issueIds ?? [];
+  const following =
+    read.data && (defaults || read.data.stored) ? read.data.issueIds : [];
   const max = read.data?.max ?? FOLLOW_UPS_MAX;
   const { followed, full } = followState(following, issueId, max);
   const loading = !read.data;

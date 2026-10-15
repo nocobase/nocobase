@@ -13,6 +13,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import locales from '../../client/locales/index.js';
 import { AppLayout } from '../../client/layouts/app-layout.js';
+import {
+  createAppSidebarPreferenceStore,
+  SidebarPreferenceProvider,
+} from '../../client/layouts/use-sidebar-preference.js';
 vi.mock('@nocobase/app-plugin-i18n/client', () => ({
   useSyncServerLocale: () => {},
 }));
@@ -45,6 +49,7 @@ const overview: AppClientRegisteredRoute = {
 };
 
 async function setup(children: ReactNode) {
+  const sidebarPreference = createAppSidebarPreferenceStore('/test-app');
   vi.stubGlobal('matchMedia', () => ({
     matches: true,
     addEventListener: vi.fn(),
@@ -64,7 +69,9 @@ async function setup(children: ReactNode) {
   render(
     <I18nProvider runtime={runtime}>
       <ClientApplicationContext.Provider value={app}>
-        <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
+        <SidebarPreferenceProvider value={sidebarPreference}>
+          <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
+        </SidebarPreferenceProvider>
       </ClientApplicationContext.Provider>
     </I18nProvider>,
   );

@@ -106,14 +106,19 @@ function useSaveSettings() {
   const notify = useNotify();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (patch: Partial<KnowledgeSearchSettings>) => {
+    scope: { id: 'studio-knowledge-search-settings' },
+    mutationFn: async (patch: Partial<KnowledgeSearchSettings>) => {
+      // A read started before this save must not replace its base configuration.
+      await queryClient.cancelQueries({ queryKey: knowledgeSearchKey });
       const latest =
         queryClient.getQueryData<KnowledgeSearchConfig>(knowledgeSearchKey);
       if (!latest)
         throw new Error('The knowledge search settings are not loaded.');
       return api.updateKnowledgeSearch({ ...latest.settings, ...patch });
     },
-    onSuccess: (next) => {
+    onSuccess: async (next) => {
+      // Also discard reads started while the PUT was in flight.
+      await queryClient.cancelQueries({ queryKey: knowledgeSearchKey });
       queryClient.setQueryData(knowledgeSearchKey, next);
       notify.success(t('knowledge.searchSettings.saved'));
     },

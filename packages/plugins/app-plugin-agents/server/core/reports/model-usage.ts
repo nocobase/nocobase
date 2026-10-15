@@ -78,60 +78,52 @@ export async function modelUsageRows(
   range: { readonly start: Date; readonly end: Date },
   book: PriceBook,
 ): Promise<ModelUsageRow[]> {
-  const records = await conn.repository<ModelUsageRecord>(TABLE).findMany({
-    filter: (f) =>
-      f.and([
-        f.date('createdAt').notBefore(range.start),
-        f.date('createdAt').before(range.end),
-      ]),
-  });
-  const rows = new Map<
-    string,
-    {
-      -readonly [K in keyof ModelUsageRow]: ModelUsageRow[K];
-    } & { cost: Record<string, number> | null }
-  >();
-  for (const record of records) {
-    const key = [
-      record.purpose,
-      record.source,
-      record.modelService,
-      record.model,
-    ].join('\u0000');
-    const price = priceFor(book, {
-      tool: ONLINE_TOOL,
-      modelService: record.modelService,
-      model: record.model,
-    });
-    const row = rows.get(key) ?? {
-      purpose: record.purpose,
-      source: record.source,
-      modelService: record.modelService,
-      model: record.model,
-      calls: 0,
-      units: 0,
-      inputTokens: 0,
-      outputTokens: 0,
-      cost: price ? {} : null,
+  // Summed in the database: one row per purpose, caller and model however many calls were made.
+  const groups = await conn.query
+    .selectFrom(TABLE)
+    .select((eb) => [
+      'purpose',
+      'source',
+      'modelService',
+      'model',
+      eb.fn.countAll().as('calls'),
+      eb.fn.sum('units').as('units'),
+      eb.fn.sum('inputTokens').as('inputTokens'),
+      eb.fn.sum('outputTokens').as('outputTokens'),
+    ])
+    .where('createdAt', '>=', range.start)
+    .where('createdAt', '<', range.end)
+    .groupBy(['purpose', 'source', 'modelService', 'model'])
+    .execute<Record<string, unknown>>();
+  const rows = groups.map((group): ModelUsageRow => {
+    const modelService = String(group.modelService);
+    const model = String(group.model);
+    const inputTokens = count(group.inputTokens);
+    const outputTokens = count(group.outputTokens);
+    // Prices are per token, so the calls' summed tokens cost what the calls cost one by one.
+    const price = priceFor(book, { tool: ONLINE_TOOL, modelService, model });
+    return {
+      purpose: String(group.purpose) as ModelUsagePurpose,
+      source: String(group.source),
+      modelService,
+      model,
+      calls: count(group.calls),
+      units: count(group.units),
+      inputTokens,
+      outputTokens,
+      cost: price
+        ? {
+            [price.currency]: costOf(price, {
+              inputTokens,
+              outputTokens,
+              cacheReadTokens: 0,
+              cacheWriteTokens: 0,
+            }),
+          }
+        : null,
     };
-    const inputTokens = count(record.inputTokens);
-    const outputTokens = count(record.outputTokens);
-    row.calls += 1;
-    row.units += count(record.units);
-    row.inputTokens += inputTokens;
-    row.outputTokens += outputTokens;
-    if (price && row.cost)
-      row.cost[price.currency] =
-        (row.cost[price.currency] ?? 0) +
-        costOf(price, {
-          inputTokens,
-          outputTokens,
-          cacheReadTokens: 0,
-          cacheWriteTokens: 0,
-        });
-    rows.set(key, row);
-  }
-  return [...rows.values()].sort(
+  });
+  return rows.sort(
     (a, b) =>
       a.purpose.localeCompare(b.purpose) ||
       a.source.localeCompare(b.source) ||

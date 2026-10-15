@@ -1,3 +1,4 @@
+import { commercialDatabaseNotice } from './commercial-database.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -71,6 +72,8 @@ export function configErrorCode(reason: string): string {
 }
 
 export interface ConfigInitOptions {
+  /** Reports commercial licensing requirements before connection prompts or configuration writes. */
+  readonly onNotice?: (message: string) => void;
   /** The application root the CLI was assembled with: the project directory, or `dist` in a deployment. */
   readonly rootDir: string;
   readonly dialect?: string;
@@ -256,6 +259,7 @@ export async function runConfigInit(
     available,
     { rootDir, mode },
     options.selectDialect,
+    options.onNotice,
   );
 
   // Checked here rather than left to the write, so that a mistyped --config reports the directory it could not find
@@ -487,7 +491,12 @@ async function resolveDialect(
   select:
     | ((available: readonly OfficialDialect[]) => Promise<OfficialDialect>)
     | undefined,
+  onNotice?: (message: string) => void,
 ): Promise<OfficialDialect> {
+  const notify = (dialect: OfficialDialect): void => {
+    const notice = commercialDatabaseNotice(dialect);
+    if (notice) onNotice?.(notice);
+  };
   if (requested !== undefined) {
     if (!isOfficialDialect(requested)) {
       throw new ConfigInitError(
@@ -495,6 +504,7 @@ async function resolveDialect(
         `Unknown dialect "${requested}". Choose one of: ${OFFICIAL_DIALECTS.join(', ')}.`,
       );
     }
+    notify(requested);
     assertDriverInstalled(requested, available, where);
     return requested;
   }
@@ -504,11 +514,13 @@ async function resolveDialect(
   }
 
   if (available.length === 1) {
+    notify(available[0]);
     return available[0];
   }
 
   if (select) {
     const chosen = await select(available);
+    notify(chosen);
     assertDriverInstalled(chosen, available, where);
     return chosen;
   }
@@ -539,14 +551,14 @@ function assertDriverInstalled(
   if (where.mode === 'deployment') {
     throw new ConfigInitError(
       'driver-missing',
-      `This build does not include ${packageName}. Install it in the application sources and build again.`,
+      `This build does not include ${packageName}. Install it in the application sources and build again.${commercialDatabaseNotice(dialect) ? ` ${commercialDatabaseNotice(dialect)}` : ''}`,
       { details: { dialect, missingDrivers: [packageName] } },
     );
   }
 
   throw new ConfigInitError(
     'driver-missing',
-    `The ${dialect} driver is not installed.`,
+    `The ${dialect} driver is not installed.${commercialDatabaseNotice(dialect) ? ` ${commercialDatabaseNotice(dialect)}` : ''}`,
     {
       suggestion: installSuggestion(where.rootDir, packageName),
       details: { dialect, missingDrivers: [packageName] },
