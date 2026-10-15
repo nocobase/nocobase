@@ -325,6 +325,7 @@ runtime list -> GET /api/agents/runners (person)
 runtime revoke <runtime> -> POST /api/agents/runners/{runnerId}/revoke (person) confirm
 runtime runs <runtime> -> GET /api/agents/runners/{runnerId}/runs (person)
 runtime token create [--trust --enabled-tools --slots --tool-slots] -> POST /api/agents/runners/registrationTokens (person)
+runtime token list [--page --page-size] -> GET /api/agents/runners/registrationTokens (person)
 runtime update <runtime> [--name --trust --slots --tool-slots --enabled-tools --accept-jobs] -> PATCH /api/agents/runners/{runnerId} (person)
 runtime work <runtime> -> GET /api/agents/runners/{runnerId}/work (person)
 service check [--service --provider --base-url --api-key --model! --kind --dimensions] -> POST /api/agents/checkConnection (person)
