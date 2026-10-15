@@ -4,16 +4,16 @@
  * is safe to run on several instances at once: every move it makes is a guarded
  * update, so a run another instance (or its runner) moved first is left alone.
  *
- * - The runs an offline runner holds go back to the queue (`runnerOffline`); so do the runs of a revoked runner.
+ * - The runs an offline or revoked runner holds go back to the queue; before start this is `runnerOfflineBeforeStart`.
  * - A dispatched run not started within `startTimeoutMs` goes back to the queue (`startTimeout`).
- * - A held run whose lease lapsed goes back to the queue (`leaseExpired`).
+ * - A running run whose lease lapsed goes back to the queue (`leaseExpired`).
  * - A running run with no event for twice its idle timeout fails (`idleTimeout`).
  * - A cancellation not acknowledged within `cancelGraceMs` is recorded as done.
  * - Queued runs of an agent that is not enabled are cancelled.
  * - A queued run that waited longer than its subject allows (`SubjectBinding.queuedExpiryMs`), counted from its last
  *   change (queued, sent back to the queue, merged into) or from when its delay passed, fails (`queuedExpired`).
  *
- * A run that goes back to the queue with no attempt left fails with the same reason instead.
+ * Pre-start environment interruptions never consume failure attempts. Other retries fail once their budget is exhausted.
  *
  * A runner that stops answering never sends the usage of the attempt it held; the latest `usage` event it reported for
  * the attempt (cumulative, `meta.usage`) is recorded instead, so the tokens it spent still reach the reports.
@@ -130,7 +130,8 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
           if (
             !current ||
             current.status !== run.status ||
-            current.runnerId !== run.runnerId
+            current.runnerId !== run.runnerId ||
+            Number(current.attempt) !== Number(run.attempt)
           )
             return;
           await salvageUsage(unit, deps, current);
@@ -189,17 +190,25 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
           continue;
         }
         if (run.runnerId && absent.has(run.runnerId)) {
-          await take(run, 'runnerOffline');
+          await take(
+            run,
+            run.status === 'dispatched'
+              ? 'runnerOfflineBeforeStart'
+              : 'runnerOffline',
+          );
           continue;
         }
         if (
           run.status === 'dispatched' &&
-          time(run.dispatchedAt) < now.getTime() - TIMINGS.startTimeoutMs
+          time(run.dispatchedAt) <= now.getTime() - TIMINGS.startTimeoutMs
         ) {
           await take(run, 'startTimeout');
           continue;
         }
-        if (time(run.leaseExpiresAt) < now.getTime()) {
+        if (
+          run.status === 'running' &&
+          time(run.leaseExpiresAt) < now.getTime()
+        ) {
           await take(run, 'leaseExpired');
           continue;
         }

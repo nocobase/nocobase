@@ -236,7 +236,11 @@ describe('repository credentials on demand', () => {
     expect(otherAttempt.status).toBe(409);
     expect(otherAttempt.body.error.reason).toBe('LEASE_LOST');
 
-    // The lease runs out before the sweeper has taken the run back.
+    // A started run keeps the existing 45-second lease.
+    await h.request('POST', `/agents/runners/runs/${runId}/start`, {
+      runnerKey: runner.key,
+      body: start,
+    });
     h.clock.advance(46_000);
     const expired = await ask(runner, runId, { attempt: 1, url: APP });
     expect(expired.status).toBe(409);
@@ -331,6 +335,7 @@ describe('repository credentials on demand', () => {
       repos(APP);
       const provider = paused();
       const { runner, payload } = await claimedOnDemand();
+      await post(runner, payload.run.id, 'start', start);
       const pending = ask(runner, payload.run.id, { attempt: 1, url: APP });
       await provider.started;
       h.clock.advance(46_000);

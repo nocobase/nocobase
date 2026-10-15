@@ -28,6 +28,7 @@ import {
   findInAppItemId,
   inAppItemsOf,
   unreadNotifications,
+  visibleDecisions,
 } from './in-app-items.js';
 import {
   checkDecisionRef,
@@ -414,12 +415,9 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
     },
 
     async waitingFor(userId, subject) {
-      let select = table()
-        .selectFrom(TABLE)
-        .select([...COLUMNS])
-        .where('userId', '=', userId)
-        .where('kind', '=', 'decision')
-        .where('resolvedAt', 'is', null);
+      let select = visibleDecisions(deps.database.connection(), userId).select([
+        ...COLUMNS,
+      ]);
       if (subject)
         select = select
           .where('subjectType', '=', subject.type)
@@ -539,15 +537,10 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
       unreadNotifications(deps.database.connection(), userId),
 
     async pending(userId) {
-      // A handful per person: decisions stop counting once resolved.
-      const rows = await table()
-        .selectFrom(TABLE)
-        .select('id')
-        .where('userId', '=', userId)
-        .where('kind', '=', 'decision')
-        .where('resolvedAt', 'is', null)
-        .execute();
-      return rows.length;
+      const row = await visibleDecisions(deps.database.connection(), userId)
+        .select((eb) => [eb.fn.count('id').as('count')])
+        .executeTakeFirst();
+      return Number(row?.count ?? 0);
     },
   };
 }

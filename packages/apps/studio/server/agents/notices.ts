@@ -72,6 +72,33 @@ export function runFailedRule(
         'An agent';
       const reason = run.failureReason ?? 'unknown';
       if (reason === 'runnerDiskFull') continue;
+      const attempts =
+        run.attempt -
+        (run.executions ?? []).filter(
+          (execution) =>
+            execution.failureReason === 'workspaceBusy' ||
+            execution.failureReason === 'runnerUpgrade' ||
+            execution.failureReason === 'runnerOfflineBeforeStart' ||
+            execution.failureReason === 'startTimeout',
+        ).length;
+      const failureKind = [
+        'runnerOffline',
+        'runnerOfflineBeforeStart',
+        'leaseExpired',
+        'startTimeout',
+        'queuedExpired',
+        'setupFailed',
+        'checkoutFailed',
+        'cliUnavailable',
+        'prepareNetwork',
+        'workspaceBusy',
+        'runnerUpgrade',
+        'policyRefused',
+        'repoAccessUnavailable',
+        'repoAccessDenied',
+      ].includes(reason)
+        ? 'environment'
+        : 'agent';
       notices.push({
         key: runFailedKey(run.id),
         kind: 'decision' as const,
@@ -86,7 +113,7 @@ export function runFailedRule(
         slot: 'change' as const,
         params: {
           title: `${agentName} could not finish ${issue.identifier}`,
-          body: `The run failed after ${run.attempt} attempt(s) (${reason}). Retry it, give the issue to someone else, or cancel.`,
+          body: `The run failed because of an ${failureKind} problem after ${attempts} attempt(s) (${reason}). Retry it, give the issue to someone else, or cancel.`,
           identifier: issue.identifier,
           runId: run.id,
           agentId: run.agentId,
@@ -95,7 +122,8 @@ export function runFailedRule(
           agentName,
           ...agentNameParams(agent?.nameText),
           failureReason: reason,
-          attempts: String(run.attempt),
+          attempts: String(Math.max(1, attempts)),
+          failureKind,
           actions: RUN_FAILED_ACTIONS.join(','),
         },
       });

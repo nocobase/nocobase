@@ -86,6 +86,8 @@ export const UsageSchema: z.ZodType<Usage> = z.object({
 
 export const FAILURE_REASONS = [
   'runnerOffline',
+  /** The runtime went offline before starting; requeue without consuming the failure budget. */
+  'runnerOfflineBeforeStart',
   /** The execution machine ran out of disk space. Reassignment is decided by the project manager. */
   'runnerDiskFull',
   'leaseExpired',
@@ -149,6 +151,7 @@ export const FailureReasonSchema: z.ZodType<FailureReason> =
 /** Failures worth another attempt: the run goes back to the queue while attempts remain. */
 export const RETRYABLE_FAILURES: readonly FailureReason[] = [
   'runnerOffline',
+  'runnerOfflineBeforeStart',
   'policyRefused',
   'leaseExpired',
   'startTimeout',

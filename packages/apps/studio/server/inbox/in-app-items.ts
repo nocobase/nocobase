@@ -111,3 +111,25 @@ export async function inAppItemsOf(
   }
   return items;
 }
+
+/** The same visible, unresolved decisions feed both the list and its count, before pagination. */
+export function visibleDecisions(conn: DatabaseConnection, userId: string) {
+  return conn.query
+    .selectFrom('studioInboxNotices')
+    .where('userId', '=', userId)
+    .where('kind', '=', 'decision')
+    .where('resolvedAt', 'is', null)
+    .where((eb) =>
+      eb.exists(
+        eb
+          .selectFrom(ITEMS)
+          .select('id')
+          .whereRef(
+            `${ITEMS}.notificationId`,
+            '=',
+            'studioInboxNotices.notificationId',
+          )
+          .whereRef(`${ITEMS}.userId`, '=', 'studioInboxNotices.userId'),
+      ),
+    );
+}

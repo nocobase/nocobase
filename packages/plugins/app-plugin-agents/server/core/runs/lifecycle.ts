@@ -161,9 +161,16 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
     );
   }
 
-  async function extendLease(conn: DatabaseConnection, run: RunRecord) {
+  async function extendLease(
+    conn: DatabaseConnection,
+    run: RunRecord,
+    starting = false,
+  ) {
     const now = clock.now();
-    const leaseExpiresAt = later(now, TIMINGS.leaseMs);
+    const leaseExpiresAt =
+      run.status === 'dispatched' && !starting
+        ? later(new Date(run.dispatchedAt!), TIMINGS.startTimeoutMs)
+        : later(now, TIMINGS.leaseMs);
     await runsRepo(conn).updateMany({
       filter: { id: run.id },
       values: { leaseExpiresAt, updatedAt: now.toISOString() },
@@ -318,11 +325,13 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         const cancelRequested = run.cancelRequestedAt !== null;
         if (run.status === 'dispatched' && !cancelRequested) {
           const now = clock.now().toISOString();
-          await runsRepo(conn).updateMany({
+          const changed = await runsRepo(conn).updateMany({
             filter: (f) =>
               f.and([
                 f.string('id').eq(run.id),
                 f.string('status').eq('dispatched'),
+                f.string('runnerId').eq(runner.id),
+                f.number('attempt').eq(Number(run.attempt)),
               ]),
             values: {
               status: 'running',
@@ -334,9 +343,11 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
               updatedAt: now,
             },
           });
+          if (changed.updatedCount !== 1)
+            throw new ProtocolError('LEASE_LOST', 'The run moved on; stop it.');
           unit.emit({ type: 'run.changed', runId: run.id, status: 'running' });
         }
-        const leaseExpiresAt = await extendLease(conn, run);
+        const leaseExpiresAt = await extendLease(conn, run, true);
         const current = (await findRunRecord(conn, run.id))!;
         return {
           status: current.status,

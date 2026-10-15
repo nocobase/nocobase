@@ -1083,7 +1083,9 @@ const enUS = {
   'inbox.text.stage_action_problem':
     'A stage action of {{identifier}} was skipped',
   'inbox.body.run_failed_final':
-    'The run failed after {{attempts}} attempts ({{reason}}). Retry it, give the issue to a person, or leave it.',
+    'The agent failed after {{attempts}} attempts ({{reason}}). Retry it, give the issue to a person, or leave it.',
+  'inbox.body.run_failed_environment':
+    'The runtime failed after {{attempts}} attempts ({{reason}}). Retry it, give the issue to a person, or leave it.',
   'inbox.body.stage_action_problem':
     '"{{rule}}" in {{status}} was skipped: {{why}}.',
   'inbox.types.comment_runs_limited': 'Agent comments paused',
@@ -1113,6 +1115,7 @@ const enUS = {
   'inbox.chime.hint': 'Chime when a new decision waits for you.',
   'common.cancel': 'Cancel',
   runFailureReasons: {
+    runnerOfflineBeforeStart: 'Runtime offline before starting',
     runnerOffline: 'Runtime offline',
     leaseExpired: 'Lease expired',
     startTimeout: 'Did not start',

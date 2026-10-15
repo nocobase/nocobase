@@ -998,7 +998,9 @@ const zhCN: AppResource = {
   'inbox.text.run_failed_final': '{{agentName}} 没能完成 {{identifier}}',
   'inbox.text.stage_action_problem': '{{identifier}} 的一个阶段动作被跳过',
   'inbox.body.run_failed_final':
-    '运行在 {{attempts}} 次尝试后失败（{{reason}}）。可以重试、改派给人，或不再重试。',
+    'Agent 执行在 {{attempts}} 次尝试后失败（{{reason}}）。可以重试、改派给人，或不再重试。',
+  'inbox.body.run_failed_environment':
+    '运行因环境问题在 {{attempts}} 次尝试后失败（{{reason}}）。可以重试、改派给人，或不再重试。',
   'inbox.body.stage_action_problem':
     '状态「{{status}}」的「{{rule}}」被跳过：{{why}}。',
   'inbox.types.comment_runs_limited': 'Agent 评论已暂停唤醒',
@@ -1022,6 +1024,7 @@ const zhCN: AppResource = {
   'inbox.chime.hint': '有新的待决定事项时响一声。',
   'common.cancel': '取消',
   runFailureReasons: {
+    runnerOfflineBeforeStart: '启动前运行环境离线',
     runnerOffline: '运行环境离线',
     leaseExpired: '租约过期',
     startTimeout: '未能启动',

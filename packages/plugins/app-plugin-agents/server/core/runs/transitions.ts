@@ -15,7 +15,6 @@ import {
 } from './policy.js';
 import { endExecution } from './execution.js';
 import {
-  ACTIVE,
   findRunRecord,
   runsRepo,
   tokensRepo,
@@ -138,7 +137,7 @@ interface WorkspaceWaits {
 }
 
 /**
- * Workspace waits and runner upgrade interruptions do not consume maxAttempts. Include the open current attempt
+ * Workspace waits, runner upgrades and pre-start environment interruptions do not consume maxAttempts. Include the open current attempt
  * when reporting workspace contention; only consecutive workspace waits set the contention limit.
  */
 function workspaceWaits(run: RunRecord, reporting: boolean): WorkspaceWaits {
@@ -150,7 +149,9 @@ function workspaceWaits(run: RunRecord, reporting: boolean): WorkspaceWaits {
   let total = ended.filter(
     (item) =>
       item.failureReason === 'workspaceBusy' ||
-      item.failureReason === 'runnerUpgrade',
+      item.failureReason === 'runnerUpgrade' ||
+      item.failureReason === 'runnerOfflineBeforeStart' ||
+      item.failureReason === 'startTimeout',
   ).length;
   let trailing = 0;
   let since: string | null = null;
@@ -188,13 +189,16 @@ export async function requeueRun(
 ): Promise<RequeueOutcome> {
   const now = deps.clock.now();
   const waits = workspaceWaits(run, reason === 'workspaceBusy');
-  const exhausted =
-    reason === 'runnerUpgrade'
-      ? false
-      : reason === 'workspaceBusy'
-        ? waits.since !== null &&
-          now.getTime() - Date.parse(waits.since) >= WORKSPACE_WAIT_LIMIT_MS
-        : Number(run.attempt) - waits.total >= Number(run.maxAttempts);
+  const interruption =
+    reason === 'runnerUpgrade' ||
+    reason === 'runnerOfflineBeforeStart' ||
+    reason === 'startTimeout';
+  const exhausted = interruption
+    ? false
+    : reason === 'workspaceBusy'
+      ? waits.since !== null &&
+        now.getTime() - Date.parse(waits.since) >= WORKSPACE_WAIT_LIMIT_MS
+      : Number(run.attempt) - waits.total >= Number(run.maxAttempts);
   if (exhausted) {
     const ended = await finishRun(tx, deps, run, {
       status: 'failed',
@@ -204,18 +208,18 @@ export async function requeueRun(
     return { status: ended?.status ?? run.status, run: ended };
   }
   const nowText = now.toISOString();
-  const delay =
-    reason === 'runnerUpgrade'
-      ? 0
-      : reason === 'workspaceBusy'
-        ? workspaceBusyDelayMs(waits.trailing)
-        : retryDelayMs(reason, Number(run.attempt) - waits.total);
+  const delay = interruption
+    ? 0
+    : reason === 'workspaceBusy'
+      ? workspaceBusyDelayMs(waits.trailing)
+      : retryDelayMs(reason, Number(run.attempt) - waits.total);
   const availableAt = delay > 0 ? later(now, delay) : null;
   const result = await runsRepo(tx.conn).updateMany({
     filter: (f) =>
       f.and([
         f.string('id').eq(run.id),
-        f.or(ACTIVE.map((status) => f.string('status').eq(status))),
+        f.string('status').eq(run.status),
+        f.number('attempt').eq(Number(run.attempt)),
         run.runnerId === null
           ? f.string('runnerId').eq(null)
           : f.string('runnerId').eq(run.runnerId),

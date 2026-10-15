@@ -237,15 +237,20 @@ export function useEntryText(): (
         break;
       case 'run_failed_final':
         if (params.attempts)
-          sentence = t('inbox.body.run_failed_final', {
-            attempts: params.attempts,
-            reason: t(
-              `runFailureReasons.${params.failureReason ?? 'unknown'}`,
-              {
-                defaultValue: params.failureReason ?? '',
-              },
-            ),
-          });
+          sentence = t(
+            params.failureKind === 'environment'
+              ? 'inbox.body.run_failed_environment'
+              : 'inbox.body.run_failed_final',
+            {
+              attempts: params.attempts,
+              reason: t(
+                `runFailureReasons.${params.failureReason ?? 'unknown'}`,
+                {
+                  defaultValue: params.failureReason ?? '',
+                },
+              ),
+            },
+          );
         break;
       case 'agent_blocked':
         sentence = t('inbox.body.agent_blocked', { actor });

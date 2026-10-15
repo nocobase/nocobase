@@ -34,6 +34,7 @@ import {
 
 import type { ProjectsNotices } from '@nocobase/app-plugin-projects/server/tokens';
 
+import { INBOX_WAITING_MAX } from '../../shared/inbox.js';
 import { createProjectsNotices } from '../../server/inbox/projects.js';
 import {
   createStudioInbox,
@@ -284,6 +285,49 @@ describe('waiting decisions and settling', () => {
       (await inbox.waitingFor('bob')).map(({ notice }) => notice.decisionKey),
     ).toEqual(['r1']);
     expect(await inbox.waitingFor('cat')).toEqual([]);
+  });
+
+  it('counts visible decisions across pages and filters deleted messages before limiting the list', async () => {
+    for (let index = 0; index < INBOX_WAITING_MAX + 5; index++)
+      await projects.send(
+        decision(`page-${index}`, String(index), ['bob', 'cat']),
+      );
+    const queries: string[] = [];
+    const client = await database.connection().client<{
+      on(event: 'query', listener: (query: { sql: string }) => void): void;
+      off(event: 'query', listener: (query: { sql: string }) => void): void;
+    }>();
+    const capture = ({ sql }: { sql: string }) => {
+      queries.push(sql);
+    };
+    client.on('query', capture);
+    try {
+      expect(await inbox.pending('bob')).toBe(INBOX_WAITING_MAX + 5);
+    } finally {
+      client.off('query', capture);
+    }
+    expect(queries).toHaveLength(1);
+    expect(queries[0]).toMatch(/^select /iu);
+    expect(queries[0]).not.toMatch(/for update/iu);
+    expect(await inbox.waitingFor('bob')).toHaveLength(INBOX_WAITING_MAX);
+    // Remove every recent message for Bob, keeping only the oldest three.
+    await database
+      .connection()
+      .query.deleteFrom('notificationInAppItems')
+      .where('userId', '=', 'bob')
+      .where('notificationId', 'not in', ['n1', 'n2', 'n3'])
+      .execute();
+    expect(await inbox.pending('bob')).toBe(3);
+    expect(await inbox.waitingFor('bob')).toHaveLength(3);
+    expect(await inbox.pending('cat')).toBe(INBOX_WAITING_MAX + 5);
+    expect(await inbox.pending('nobody')).toBe(0);
+    await inbox.resolve({
+      source: 'projects',
+      decisionKey: 'page-0',
+      outcome: 'answered',
+    });
+    expect(await inbox.pending('bob')).toBe(2);
+    expect(await inbox.waitingFor('bob')).toHaveLength(2);
   });
 
   it('settles what a source no longer needs about a subject: of some types, for some people', async () => {

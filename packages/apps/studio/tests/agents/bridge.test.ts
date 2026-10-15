@@ -1516,6 +1516,63 @@ describe('claims and endings', () => {
     });
   });
 
+  it.each(['toolNetwork', 'leaseExpired'])(
+    'only announces exhausted %s failures, excluding pre-start environment interruptions',
+    async (reason) => {
+      const { runId } = await claimedRun();
+      const planned: any[] = [];
+      h.projects.events.on('notice.planned', (event) => {
+        planned.push(event.notice);
+      });
+      const fail = async (failureReason: string) => {
+        const response = await h.runner(RUNNER_ROUTES.fail, runId, {
+          reason: failureReason,
+        });
+        expect(response.status).toBe(200);
+        return response.body.status;
+      };
+      const claimAgain = async () => {
+        await h.database
+          .connection()
+          .query.updateTable('agRuns')
+          .set({ availableAt: null })
+          .where('id', '=', runId)
+          .execute();
+        expect((await h.claimOne()).run.id).toBe(runId);
+      };
+      const start = async () => {
+        expect(
+          (
+            await h.runner(RUNNER_ROUTES.start, runId, {
+              workDir: '/work/test',
+              adapter: { kind: 'claude' },
+              acceptsInput: true,
+            })
+          ).status,
+        ).toBe(200);
+      };
+      await start();
+      expect(await fail(reason)).toBe('queued');
+      await claimAgain();
+      for (let index = 0; index < 5; index++) {
+        expect(await fail('startTimeout')).toBe('queued');
+        await claimAgain();
+      }
+      expect(planned).toEqual([]);
+      await start();
+      expect(await fail(reason)).toBe('queued');
+      await claimAgain();
+      await start();
+      expect(await fail(reason)).toBe('failed');
+      await expect.poll(() => planned.length).toBe(1);
+      expect(planned[0].params).toMatchObject({
+        attempts: '3',
+        failureReason: reason,
+        failureKind: reason === 'leaseExpired' ? 'environment' : 'agent',
+      });
+    },
+  );
+
   describe("deciding a failed run's card", () => {
     /** Studio's inbox as the decision needs it: the card waits until resolved. */
     function inbox() {
