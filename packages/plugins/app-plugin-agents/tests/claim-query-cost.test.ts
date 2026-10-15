@@ -40,7 +40,7 @@ describe('claim query cost', () => {
         const agent = (await agentsRepo(conn).findOne({
           filter: { id: excluded },
         }))!;
-        const run = (await runsRepo(conn).findOne({
+        const { revision: _revision, ...run } = (await runsRepo(conn).findOne({
           filter: { id: excludedRun },
         }))!;
         const inputs = await inputsRepo(conn).findMany({
