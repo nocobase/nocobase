@@ -3,9 +3,7 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   defineApiRoutes,
   getRequestId,
-  defineRootRoutes,
   type AppApiRouteContribution,
-  type AppRootRouteContribution,
   type AppRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono, type Context } from 'hono';
@@ -14,7 +12,6 @@ import { loggingToken } from '@nocobase/app-server/logging';
 
 import { agentSessionsErrorHandler } from '../errors.js';
 import { agentSessionsToken } from '../tokens.js';
-import { toolRoutes } from '../tools.js';
 import { bridgeRoutes } from './bridge.js';
 import { sessionRoutes } from './sessions.js';
 
@@ -77,15 +74,8 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     return router;
   });
 
-/** The tools' MCP endpoint, which answers JSON-RPC and authenticates by the session's tools token (`tools.ts`). */
-export const mcpRoutes: AppRootRouteContribution<AppPluginApplication> =
-  defineRootRoutes(({ container }) =>
-    toolRoutes(container.resolve(agentSessionsToken).toolHost),
-  );
-
 const routes: readonly AppRouteContribution<AppPluginApplication>[] = [
   apiRoutes,
-  mcpRoutes,
 ];
 
 export default routes;

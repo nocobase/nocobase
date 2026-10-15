@@ -21,6 +21,16 @@ Claude Code's personal copy goes under `<CLAUDE_CONFIG_DIR or ~/.claude>/skills/
 - Elsewhere it acts as the person signed in with `nb-studio login` (the current profile, or `--profile <name>`), or with `NB_STUDIO_SERVER` and `NB_STUDIO_API_KEY` in CI.
 - `nb-studio whoami` shows the server, who you act as, business actions, settings permissions, and how many commands need an action you lack; `nb-studio whoami --missing` lists them by action. Settings are separate from business actions; an older server that omits them shows “not provided”. Run tokens hold no settings permissions. `agents.runs/self` is granted only to run tokens, never by assigning a role to a person.
 
+## Plan and record work together
+
+Discuss the person's goals and agree on the work before recording tasks. Before creating a task, use `nb-studio issue search` to check for existing work; update or refer to it when appropriate.
+
+When a person brings several requirements at once, first compare their code areas, whether they fit one pull request, their dependencies and whether they can be accepted together. Combine related requirements into as few tasks as practical, listing each requirement and its completion criteria as a checklist in the description. Split only requirements that are independent, suited to parallel work or separate acceptance, or individually large. Do not automatically create one task per sentence.
+
+Give a task a title that states the resulting behavior. Its description records the background, agreed decisions and completion criteria, preserving what was settled in the discussion. Ask for missing decisions only when they affect the work.
+
+In a My Agent session, the bridge supplies `NB_STUDIO_PROFILE` and `NB_STUDIO_AGENT_SESSION`. The CLI uses that stored login profile even inside a run directory or when environment API keys are set. Do not change profiles or remove session context to get around a refusal. `issue create` automatically links the task to this session, defaults to its project and leaves it in Backlog unless a start status is explicitly requested. If this session has no project, specify one. For the session's tasks and their progress, call `nb-studio session work --json`; `issue get` includes who is working, what is waiting and the pull request.
+
 ## Finding a command
 
 1. `nb-studio --help` lists every command you may run; `nb-studio <area> --help` (such as `nb-studio issue --help`) narrows it.

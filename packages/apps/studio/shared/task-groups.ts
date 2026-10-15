@@ -122,17 +122,16 @@ export interface TaskGroupQuery extends Omit<
   readonly limit?: number;
 }
 
-/** The two halves of "My tasks" and their counts, for its tabs, and what waits for the viewer, for its menu entry. */
+/** My tasks counts for the merged list and its menu entry. */
 export interface TaskGroupSummary {
-  readonly owned: TaskRoleCount;
-  readonly executing: TaskRoleCount;
-  /** Every unfinished task the viewer may see that waits for them, each once, whoever owns or executes it. */
+  readonly mine: TaskCount;
+  /** Tasks owned or executed by the viewer, plus followed tasks, waiting for them, each once. */
   readonly waiting: number;
 }
 
-export interface TaskRoleCount {
-  /** Unfinished tasks in the role. */
+export interface TaskCount {
+  /** Unfinished tasks in the merged scope. */
   readonly open: number;
-  /** Tasks in the role waiting for the viewer, plus the followed ones waiting for them outside it. */
+  /** Tasks in the merged scope waiting for the viewer, plus the followed ones waiting for them outside it. */
   readonly waiting: number;
 }

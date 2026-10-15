@@ -8,6 +8,7 @@ import { AuthSplitLayout } from '#extensions/nocobase-auth-split-layout/auth-spl
 import './auth-page.css';
 
 export interface AuthPageProps {
+  readonly className?: string;
   readonly title: ReactNode;
   readonly description: ReactNode;
   readonly children: ReactNode;
@@ -20,6 +21,7 @@ export interface AuthPageProps {
  */
 export function AuthPage({
   children,
+  className,
   description,
   title,
 }: AuthPageProps): ReactElement {
@@ -28,7 +30,7 @@ export function AuthPage({
     <AuthSplitLayout
       aside={<BrandPanel />}
       asideLabel={t('auth.about')}
-      className='auth-page'
+      className={['auth-page', className].filter(Boolean).join(' ')}
       description={description}
       logo={
         <>

@@ -44,13 +44,14 @@ The issues agents are involved in that the caller may see, by section, with the 
 nb-studio board get
 ```
 
-| Flag         | Type   | Description                |
-| ------------ | ------ | -------------------------- |
-| `--q`        | string | Text to search for.        |
-| `--project`  | string | The project identifier.    |
-| `--label`    | string | The label identifier.      |
-| `--owner`    | string | The owner user identifier. |
-| `--executor` | string | The executor identifier.   |
+| Flag                 | Type   | Description                                                          |
+| -------------------- | ------ | -------------------------------------------------------------------- |
+| `--q`                | string | Text to search for.                                                  |
+| `--project`          | string | The project identifier.                                              |
+| `--label`            | string | The label identifier.                                                |
+| `--owner`            | string | The owner user identifier.                                           |
+| `--executor`         | string | The executor identifier.                                             |
+| `--involves-user-id` | string | Owned by this user or executed by them as a person, each issue once. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

@@ -44,7 +44,7 @@ export const ComputerParams: z.ZodType<{ computerId: string }> = z.object({
   computerId: z.string().min(1),
 });
 export const SessionParams: z.ZodType<{ sessionId: string }> = z.object({
-  sessionId: z.string().min(1),
+  sessionId: z.string().min(1).describe('The agent session identifier.'),
 });
 
 export const ImageParams: z.ZodType<{ sessionId: string; file: string }> =
@@ -411,3 +411,16 @@ export const UpdateComputerInput: z.ZodType<{ folders: string[] | null }> =
         'The directories sessions may work in, each under what the bridge allows; null for all it allows.',
     }),
   });
+
+/** Work visible to the session owner; progress is supplied by the application's link resolver. */
+export const SessionWorkSchema: z.ZodType<
+  import('../work.js').WorkItem & { readonly progress: unknown }
+> = z.object({
+  kind: z.string(),
+  refId: z.string(),
+  key: z.string().nullable(),
+  title: z.string(),
+  status: z.string().nullable(),
+  group: z.string().nullable(),
+  progress: z.unknown().nullable(),
+});

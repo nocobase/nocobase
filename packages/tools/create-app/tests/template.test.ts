@@ -1,4 +1,6 @@
 import { mkdtemp, rm } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -172,9 +174,32 @@ describe('downloadTemplate', () => {
     'reports the source when a package cannot be fetched',
     { timeout: 60_000 },
     async () => {
-      await expect(
-        downloadTemplate({ source: '@nocobase/this-template-does-not-exist' }),
-      ).rejects.toThrow(/this-template-does-not-exist/u);
+      const requests: string[] = [];
+      const registry = createServer((request, response) => {
+        requests.push(request.url ?? '');
+        response.writeHead(404, { 'content-type': 'application/json' });
+        response.end(JSON.stringify({ error: 'Not found' }));
+      });
+      await new Promise<void>((resolve, reject) => {
+        registry.once('error', reject);
+        registry.listen(0, '127.0.0.1', resolve);
+      });
+      try {
+        const { port } = registry.address() as AddressInfo;
+        await expect(
+          downloadTemplate({
+            source: '@nocobase/this-template-does-not-exist',
+            registry: `http://127.0.0.1:${port}`,
+          }),
+        ).rejects.toThrow(/this-template-does-not-exist/u);
+        expect(requests.map((url) => decodeURIComponent(url))).toContain(
+          '/@nocobase/this-template-does-not-exist',
+        );
+      } finally {
+        await new Promise<void>((resolve, reject) => {
+          registry.close((error) => (error ? reject(error) : resolve()));
+        });
+      }
     },
   );
 

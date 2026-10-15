@@ -25,8 +25,6 @@ export const issuesEnUS = {
     'Every issue you may see. Agents take the ones they execute; the Agent view shows their queue.',
   myTitle: 'My issues',
   myDescription: 'The issues you own or execute.',
-  myTabsLabel: 'My issues',
-  myTabs: { owned: 'I own', executing: 'I execute' },
   views: {
     label: 'View',
     split: 'Split',
@@ -78,10 +76,7 @@ export const issuesEnUS = {
   emptyTitle: 'No issues yet',
   emptyDescription:
     'Create an issue, or describe the work and let AI draft it.',
-  myEmpty: {
-    owned: 'You own no issues',
-    executing: 'You execute no issues',
-  },
+  myEmpty: 'You have no tasks',
   shown: '{{count}} shown',
   loadMore: 'Load more',
   boardLabel: 'Issue board',
@@ -209,8 +204,6 @@ export const issuesZhCN: IssuesWording = {
     '你有权查看的全部任务。Agent 会领取由它执行的任务，Agent 视图展示它们的队列。',
   myTitle: '我的任务',
   myDescription: '你负责或执行的任务。',
-  myTabsLabel: '我的任务',
-  myTabs: { owned: '我负责的', executing: '我执行的' },
   views: {
     label: '视图',
     split: '分栏',
@@ -260,10 +253,7 @@ export const issuesZhCN: IssuesWording = {
   noResults: '没有符合筛选条件的任务。',
   emptyTitle: '还没有任务',
   emptyDescription: '新建一个任务，或描述要做的事，让 AI 起草。',
-  myEmpty: {
-    owned: '你还没有负责的任务',
-    executing: '你还没有执行的任务',
-  },
+  myEmpty: '你还没有任务',
   shown: '已显示 {{count}} 个',
   loadMore: '加载更多',
   boardLabel: '任务看板',

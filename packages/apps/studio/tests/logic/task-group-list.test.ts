@@ -20,7 +20,12 @@ import type {
 
 function item(id: string, waits: readonly WaitReason[] = []): TaskGroupItem {
   return {
-    issue: { id, identifier: `PM-${id}` } as IssueListItem,
+    issue: {
+      id,
+      identifier: `PM-${id}`,
+      revision: 1,
+      statusKey: 'in_progress',
+    } as IssueListItem,
     parent: null,
     waits,
     waitingSince: null,
@@ -68,7 +73,14 @@ describe('the split list', () => {
 
   it('keeps a task just handled where it was until the person moves on', () => {
     const sticky = placementOf(groups, '2')!;
-    expect(sticky).toEqual({ id: '2', group: 'wait', index: 0 });
+    expect(sticky).toEqual({
+      id: '2',
+      group: 'wait',
+      index: 0,
+      followed: false,
+      item: item('2', ['accept']),
+      layout: groups.map((g) => ({ group: g.group, showMore: false })),
+    });
     // Accepted: the next read lists it as done.
     const after = [
       group('follow', [item('1')]),
@@ -86,13 +98,40 @@ describe('the split list', () => {
     expect(keepPlacement(after, null)).toEqual(after);
   });
 
+  it('keeps the selected followed task at its index when an update reorders the group', () => {
+    const before = [group('follow', [item('1'), item('2'), item('3')])];
+    const sticky = placementOf(before, '2')!;
+    const after = [group('follow', [item('2'), item('1'), item('3')])];
+    expect(
+      keepPlacement(after, sticky)[0]!.items.map((row) => row.issue.id),
+    ).toEqual(['1', '2', '3']);
+  });
+
   it('moves a task into or out of the follow group at once', () => {
     const sticky = placementOf(groups, '2')!;
     const followed = [
-      group('follow', [item('1'), item('2', ['accept'])]),
+      group('follow', [
+        item('1'),
+        { ...item('2', ['accept']), followed: true },
+      ]),
       group('wait', [item('3', ['answer'])]),
     ];
     expect(keepPlacement(followed, sticky)).toEqual(followed);
+  });
+
+  it('keeps a followed task in its old group when status changes do not change following', () => {
+    const before = [group('follow', [{ ...item('2'), followed: true }])];
+    const sticky = placementOf(before, '2')!;
+    const after = [
+      group('follow', []),
+      group('done', [{ ...item('2'), followed: true }]),
+    ];
+    expect(
+      keepPlacement(after, sticky)
+        .find((row) => row.group === 'follow')!
+        .items.map((row) => row.issue.id),
+    ).toEqual(['2']);
+    expect(keepPlacement(after, null)).toEqual(after);
   });
 
   it('brings back the group a handled task was the last of', () => {
@@ -103,6 +142,79 @@ describe('the split list', () => {
       'wait',
       'done',
     ]);
+  });
+
+  it('retains the sole cancelled task with its updated status and server counts', () => {
+    const before = [group('backlog', [item('only')])];
+    const sticky = placementOf(before, 'only')!;
+    const after = [group('follow', [])];
+    const updated = {
+      ...item('only').issue,
+      revision: 2,
+      statusKey: 'cancelled',
+    };
+    const shown = keepPlacement(after, sticky, updated);
+    expect(findItem(shown, 'only')?.issue.statusKey).toBe('cancelled');
+    expect(placementOf(shown, 'only')).toMatchObject({
+      group: 'backlog',
+      index: 0,
+    });
+    expect(shown.find((g) => g.group === 'backlog')?.count).toBe(0);
+    expect(keepPlacement(after, null, updated)).toEqual(after);
+  });
+
+  it('retains a task outside the first waiting page without loading that page', () => {
+    const waiting = Array.from({ length: 50 }, (_, n) =>
+      item(`waiting-${n}`, ['answer']),
+    );
+    const before = [group('wait', waiting), group('doing', [item('selected')])];
+    const sticky = placementOf(before, 'selected')!;
+    const after = [
+      { ...group('wait', waiting), count: 51, nextCursor: 'next-page' },
+    ];
+    const updated = {
+      ...item('selected').issue,
+      revision: 2,
+      statusKey: 'blocked',
+    };
+    const shown = keepPlacement(after, sticky, updated);
+    expect(findItem(shown, 'selected')?.issue.statusKey).toBe('blocked');
+    expect(placementOf(shown, 'selected')).toMatchObject({
+      group: 'doing',
+      index: 0,
+    });
+    expect(shown.find((g) => g.group === 'wait')).toMatchObject(after[0]);
+    expect(shown.find((g) => g.group === 'wait')?.showMore).toBe(false);
+    // If the task later appears in a loaded page, it still appears exactly once at its retained position.
+    const loaded = [
+      group('wait', [...waiting, { ...item('selected'), issue: updated }]),
+    ];
+    expect(
+      keepPlacement(loaded, sticky, updated)
+        .flatMap((g) => g.items)
+        .filter((i) => i.issue.id === 'selected'),
+    ).toHaveLength(1);
+    expect(
+      keepPlacement(after, placementOf(after, 'waiting-0'), updated),
+    ).toEqual(after);
+  });
+
+  it('defers a new empty destination header while retaining the row', () => {
+    const before = [group('follow', []), group('doing', [item('selected')])];
+    const sticky = placementOf(before, 'selected')!;
+    const updated = {
+      ...item('selected').issue,
+      revision: 2,
+      statusKey: 'blocked',
+    };
+    const after = [
+      group('follow', []),
+      group('wait', [{ ...item('selected', ['answer']), issue: updated }]),
+    ];
+    const shown = keepPlacement(after, sticky, updated);
+    expect(shown.map((g) => g.group)).toEqual(['follow', 'doing']);
+    expect(findItem(shown, 'selected')?.issue.statusKey).toBe('blocked');
+    expect(keepPlacement(after, null)).toEqual(after);
   });
 
   it('offers the next task waiting after the current one, wrapping around', () => {

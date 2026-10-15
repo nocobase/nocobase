@@ -383,6 +383,10 @@ function sortOf(value: string | undefined): {
 }
 
 const issueFilters = {
+  involvesUserId: text.meta({
+    description:
+      'Owned by this user or executed by them as a person, each issue once.',
+  }),
   statusKey: text.describe('Filter by issue status key.'),
   projectId: text.describe('The project identifier.'),
   ownerUserId: text.describe('The owner user identifier.'),
@@ -396,6 +400,7 @@ const issueFilters = {
 };
 
 type IssueFilterInput = {
+  involvesUserId?: string | undefined;
   statusKey?: string | undefined;
   projectId?: string | undefined;
   ownerUserId?: string | undefined;
@@ -1113,6 +1118,7 @@ export const IssueDependencySchema: z.ZodType<IssueDependency> = z
   .meta({ ref: 'ProjectsIssueDependency' });
 
 export const IssueDetailSchema: z.ZodType<IssueDetail> = z.object({
+  progress: z.record(z.string(), z.unknown()).nullable().optional(),
   ...issueListItemShape,
   parent: z
     .object({ id: z.string(), identifier: z.string(), title: z.string() })
@@ -1612,3 +1618,9 @@ export const singleFileBody: OpenAPIV3_1.RequestBodyObject = {
     },
   },
 };
+
+/** Context supplied by the session bridge, never an authentication credential. */
+export const IssueSessionHeader: z.ZodType<{ 'x-nb-agent-session'?: string }> =
+  z.object({
+    'x-nb-agent-session': z.string().min(1).max(200).optional(),
+  });

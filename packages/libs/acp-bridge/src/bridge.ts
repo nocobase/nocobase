@@ -53,6 +53,10 @@ export interface BridgeOptions {
   /** The directories sessions may work in; the home directory by default. */
   readonly roots?: readonly string[];
   readonly env?: NodeJS.ProcessEnv;
+  /** Ensures the CLI Skill is available and supplies the selected profile and session, on start and resume. */
+  readonly prepareSession?:
+    | ((agentId: string, sessionId: string) => Promise<NodeJS.ProcessEnv>)
+    | undefined;
   /**
    * Whether a computer whose key the application refuses at start, such as one removed there, connects again as the
    * person, as when they start the bridge themselves (the default); a bridge started at login stops instead.
@@ -302,11 +306,9 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
         cwd: command.cwd,
         settings: command.settings,
         acpSessionId: null,
-        tools: null,
       },
       {
         client: options.client,
-        server: options.server,
         env,
         roots,
         resolve,
@@ -415,8 +417,8 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
         log(JSON.stringify({ phase, at: Date.now(), sessionId, promptId }));
       };
       session = new BridgeSession(command.session, {
+        prepareSession: options.prepareSession,
         client: options.client,
-        server: options.server,
         env,
         roots,
         resolve,

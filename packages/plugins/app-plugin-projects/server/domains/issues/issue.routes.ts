@@ -1,4 +1,5 @@
 import {
+  ApiError,
   apiErrorResponse,
   apiErrorResponses,
   apiValidator,
@@ -9,6 +10,7 @@ import {
   listResponse,
 } from '@nocobase/app-server/router';
 import type { Hono } from 'hono';
+import type { IssueSessionIntegration } from '../../tokens.js';
 
 import {
   delegatedWrite,
@@ -36,6 +38,7 @@ import {
   IssueListQuerySchema,
   IssueParams,
   IssueSchema,
+  IssueSessionHeader,
   StatusDefinitionSchema,
   UpdateIssueBody,
   UpdateIssueResultSchema,
@@ -58,6 +61,7 @@ const statusRefused =
 export function createIssueRoutes(deps: {
   readonly issues: IssueService;
   readonly queries: IssueQueries;
+  readonly session?: () => IssueSessionIntegration | undefined;
 }): Hono<ViewerEnv> {
   const routes = domainRouter<ViewerEnv>();
   routes.get(
@@ -122,8 +126,10 @@ export function createIssueRoutes(deps: {
       security: personOrRunSecurity,
       ...cliRoute({
         command: 'issue create',
+        // Session context comes from the bridge's environment, not a user-supplied CLI flag.
         bodyFile: 'file',
         flags: {
+          'x-nb-agent-session': { hidden: true },
           statusKey: {
             name: 'status',
             description:
@@ -139,7 +145,7 @@ export function createIssueRoutes(deps: {
         examples: ['issue create --file issue.json --status in_progress'],
       }),
       description:
-        'Needs `create` on `pm.issues` for the issue’s project. The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one. Optional `attachmentIds` binds the caller’s own unattached uploads in the creation transaction before work starts; this also needs `upload` on `pm.attachments`.',
+        'Needs `create` on `pm.issues` for the issue’s project. A session context header must identify an active session owned by the caller; its project is the default and successful creation is linked to it. The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one. Optional `attachmentIds` binds the caller’s own unattached uploads in the creation transaction before work starts; this also needs `upload` on `pm.attachments`.',
       responses: {
         201: dataResponse(IssueSchema),
         ...apiErrorResponses,
@@ -150,16 +156,46 @@ export function createIssueRoutes(deps: {
         ),
       },
     }),
+    apiValidator('header', IssueSessionHeader),
     apiValidator('json', CreateIssueBody),
     async (context) => {
       const viewer = viewerOf(context);
-      const input = context.req.valid('json');
+      let input = context.req.valid('json');
+      const sessionId = context.req.valid('header')['x-nb-agent-session'];
+      let session:
+        | Awaited<ReturnType<IssueSessionIntegration['creationContext']>>
+        | undefined;
+      if (sessionId !== undefined) {
+        const integration = deps.session?.();
+        if (
+          !integration ||
+          viewer.actor.type !== 'user' ||
+          context.get('auth')?.credential
+        )
+          throw new ApiError({
+            status: 'PERMISSION_DENIED',
+            reason: 'SESSION_CONTEXT_REFUSED',
+            domain: 'projects',
+            message: 'A session context requires its signed-in owner.',
+          });
+        session = await integration.creationContext(viewer, sessionId);
+        const projectId = input.projectId ?? session.projectId;
+        if (!projectId)
+          throw new ApiError({
+            status: 'INVALID_ARGUMENT',
+            reason: 'SESSION_PROJECT_REQUIRED',
+            domain: 'projects',
+            message: 'This session has no project. Specify a project.',
+          });
+        input = { ...input, projectId };
+      }
       const delegated = await delegatedWrite(context, {
         title: `Create "${input.title}"`,
         rows: [{ op: 'issue.create', params: input }],
       });
       if (delegated) {
         const created = delegated.plan.rows[0]?.result?.created?.id;
+        if (created && session) await session.link(created);
         return context.json(
           {
             data: created ? await deps.queries.detail(viewer, created) : null,
@@ -168,10 +204,9 @@ export function createIssueRoutes(deps: {
           201,
         );
       }
-      return context.json(
-        { data: await deps.issues.create(viewer, input) },
-        201,
-      );
+      const created = await deps.issues.create(viewer, input);
+      if (session) await session.link(created.id);
+      return context.json({ data: created }, 201);
     },
   );
   // A column per status, each with its first page; the list's filters apply.
@@ -230,7 +265,7 @@ export function createIssueRoutes(deps: {
         flags: { issueId: { name: 'issue' } },
         action: 'pm.issues/view',
       }),
-      description: `The issue with its newest activities and comment threads, files, sub-issues and dependencies. ${idOrKey}`,
+      description: `The issue with its newest activities and comment threads, files, sub-issues and dependencies, and application progress when available. ${idOrKey}`,
       responses: {
         200: dataResponse(IssueDetailSchema),
         ...apiErrorResponses,
@@ -238,13 +273,19 @@ export function createIssueRoutes(deps: {
       },
     }),
     apiValidator('param', IssueParams),
-    async (context) =>
-      context.json({
-        data: await deps.queries.detail(
-          viewerOf(context),
-          context.req.valid('param').issueId,
-        ),
-      }),
+    async (context) => {
+      const viewer = viewerOf(context);
+      const issue = await deps.queries.detail(
+        viewer,
+        context.req.valid('param').issueId,
+      );
+      const integration = deps.session?.();
+      return context.json({
+        data: integration
+          ? { ...issue, progress: await integration.progress(viewer, issue) }
+          : issue,
+      });
+    },
   );
   routes.patch(
     '/:issueId',

@@ -309,7 +309,15 @@ const enUS = {
         '1. `nb-studio` needs Node.js 24 or newer with npm: check with `node --version`, and if it is missing or older, ask me before installing it. Then run `{{install}}` to install `nb-studio`.\n' +
         '2. Run `nb-studio login --server {{server}}`, share the sign-in URL and code it displays, and wait for me to confirm the sign-in in my browser.\n' +
         '3. Once signed in, run `nb-studio whoami` to check the identity and permissions, then run `nb-studio docs` to learn the available commands.\n' +
-        '4. Use `nb-studio` for my subsequent requests instead of calling the HTTP API directly.',
+        '4. Run `nb-studio skills install` to install the CLI skill for your coding agent.\n' +
+        '5. Use `nb-studio` for my subsequent requests instead of calling the HTTP API directly.',
+      computerTitle: 'Connect your computer',
+      computerDescription:
+        'Send these instructions to a coding agent on the computer you want to connect, such as Claude Code or Codex.',
+      computerPrompt:
+        '6. Run `nb-studio acp service install` to keep this computer online. For a temporary connection, use `nb-studio acp start` instead.\n' +
+        '7. The entire user home directory is allowed by default. You can change the allowed folders in My computers.\n' +
+        '8. Ask me to confirm in Studio that this computer is online.',
       promptLabel: 'Setup instructions for your Coding Agent',
       preparing: 'Generating setup instructions',
       identity:
@@ -317,7 +325,7 @@ const enUS = {
       expiry:
         'The installation link in these instructions is valid for 30 minutes. Generate new instructions if it expires.',
       runtime:
-        'To let Studio assign tasks to run on your computer, go to Agent team › Runtimes › Add runtime to install and register a Runner.',
+        'A local coding agent uses the CLI to manage Studio. My Agent connects your computer for interactive sessions. A Runner executes tasks dispatched by Studio; register one under Agent team › Runtimes › Add runtime.',
       regenerate: 'Regenerate instructions',
       copy: 'Copy setup instructions',
       copied: 'Setup instructions copied',

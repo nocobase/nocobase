@@ -43,6 +43,7 @@ import {
   projectsPlanSourceToken,
   projectsRequestActorToken,
   projectsToken,
+  projectsIssueSessionToken,
 } from '../tokens.js';
 
 export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
@@ -136,6 +137,10 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       createIssueRoutes({
         issues: services.issues,
         queries: services.issueQueries,
+        session: () =>
+          container.has(projectsIssueSessionToken)
+            ? container.resolve(projectsIssueSessionToken)
+            : undefined,
       }),
     );
     projects.route('/', createProjectRoutes(services.projects));

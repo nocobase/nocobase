@@ -58,6 +58,10 @@ export const AgentBoardQuery = z.object({
   labelId: filter.describe('The label identifier.'),
   ownerUserId: filter.describe('The owner user identifier.'),
   executorId: filter.describe('The executor identifier.'),
+  involvesUserId: filter.meta({
+    description:
+      'Owned by this user or executed by them as a person, each issue once.',
+  }),
 });
 
 // ---------------------------------------------------------------------------------------------------------------------

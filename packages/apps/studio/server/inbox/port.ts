@@ -69,6 +69,10 @@ export interface InboxDecisionRef {
 
 /** Which items `settle` settles: a source's items about one subject, optionally of some types or recipients. */
 export interface InboxSettleRef {
+  /** Restrict settlement to decisions or information; both when omitted. */
+  readonly kind?: InboxKind;
+  /** Restrict settlement to the decision keys inspected by the caller. */
+  readonly decisionKeys?: readonly string[];
   readonly source: string;
   readonly subject: { readonly type: string; readonly id: string };
   /** Only items of these types; every type when left out. */
@@ -160,9 +164,13 @@ export function checkInboxSend(notice: InboxSend): InboxSend {
 
 export function checkSettleRef(ref: InboxSettleRef): void {
   name('source', ref.source);
+  if (ref.kind !== undefined && ref.kind !== 'decision' && ref.kind !== 'info')
+    throw new InboxNoticeError('kind must be decision or info.');
   name('subject.type', ref.subject.type, 32);
   name('subject.id', ref.subject.id);
   name('outcome', ref.outcome);
+  for (const key of ref.decisionKeys ?? [])
+    name('decisionKey', key, INBOX_DECISION_KEY_MAX);
   for (const type of ref.types ?? []) name('type', type);
 }
 

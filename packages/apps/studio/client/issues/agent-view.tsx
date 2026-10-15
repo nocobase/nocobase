@@ -50,13 +50,15 @@ export function AgentQueueView({
   const api = useApiClient();
   const queryClient = useQueryClient();
   const notify = useNotify();
-  const { q, projectId, labelId, ownerUserId, executorId } = page.filters;
+  const { q, projectId, labelId, ownerUserId, executorId, involvesUserId } =
+    page.filters;
   const board = useAgentBoard({
     ...(q ? { q } : {}),
     ...(projectId ? { projectId } : {}),
     ...(labelId ? { labelId } : {}),
     ...(ownerUserId ? { ownerUserId } : {}),
     ...(executorId ? { executorId } : {}),
+    ...(involvesUserId ? { involvesUserId } : {}),
   });
   const onlyMine = mineToggle && page.params.get(MINE_PARAM) === '1';
   // The agents' names in the viewer's language (a built-in agent's `nameText`).

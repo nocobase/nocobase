@@ -124,6 +124,28 @@ nb-studio inbox pending
 
 **Request:** `GET /api/inbox/pending` (`inboxGetPending`)
 
+## inbox reconcile
+
+Reconcile obsolete decisions on finished issues
+
+Previews one page by default. Set execute=true to recheck and settle obsolete decisions; repeat with nextPageToken, then restart without a token to retry failures. Does not cancel runs or change issues.
+
+```bash
+nb-studio inbox reconcile
+```
+
+| Flag           | Type    | Description     |
+| -------------- | ------- | --------------- |
+| `--execute`    | boolean | (default false) |
+| `--limit`      | integer | (default 100)   |
+| `--page-token` | string  |                 |
+
+**Output:** A list (table columns: `identifier`, `type`, `count`, `outcome`); with `--json`, `result.data` is the array and `result.meta` the paging.
+
+**Who:** People (a sign-in or an API key); needs the action `pm.general/update`.
+
+**Request:** `POST /api/inbox/reconcile` (`inboxReconcileDecisions`)
+
 ## inbox unread-count
 
 Count the unread messages in the inbox

@@ -131,3 +131,34 @@ export const InboxItemSchema: z.ZodType<InboxItemView> = z
     createdAt: dateTime(),
   })
   .meta({ ref: 'StudioInboxItem' });
+
+/** Default preview, explicitly executed by an administrator one bounded page at a time. */
+export const RepairInput = z.strictObject({
+  execute: z.boolean().default(false),
+  pageSize: z.number().int().min(1).max(500).default(100),
+  pageToken: z
+    .string()
+    .regex(/^(git|projects|runners):.+$/u)
+    .max(256)
+    .optional(),
+});
+export const RepairSchema: z.ZodType<import('./reconcile.js').DecisionRepair> =
+  z
+    .object({
+      issueId: z.string(),
+      identifier: z.string(),
+      source: z.string(),
+      type: z.string(),
+      decisionKey: z.string(),
+      outcome: z.string(),
+      count: z.number().int(),
+    })
+    .meta({ ref: 'StudioDecisionRepair' });
+export const RepairMetaSchema: z.ZodType<
+  import('./reconcile.js').RepairPage['meta']
+> = z.object({
+  scanned: z.number().int(),
+  execute: z.boolean(),
+  failed: z.number().int(),
+  nextPageToken: z.string().optional(),
+});

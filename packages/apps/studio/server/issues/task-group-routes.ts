@@ -4,7 +4,7 @@
  * - `GET /taskGroups`: the groups of the query's tasks, a page of each; `group` with `cursor` and `generation` continues
  *   one group.
  * - `GET /taskGroups/children`: a page of one task's children in the table, `parentId` and `generation` required.
- * - `GET /taskGroups/summary`: what My tasks' tabs count.
+ * - `GET /taskGroups/summary`: My tasks' merged counts.
  *
  * Each needs a signed-in person, or an API key, with the projects plugin's issue view permission; a key restricted to
  * some projects reads only their tasks. A continuation whose data changed answers `409 TASK_GROUPS_CHANGED`.
@@ -56,6 +56,10 @@ const Query = z.object({
   projectId: z.string().optional().describe('The project identifier.'),
   ownerUserId: z.string().optional().describe('The owner user identifier.'),
   executorId: z.string().optional().describe('The executor identifier.'),
+  involvesUserId: z.string().optional().meta({
+    description:
+      'Owned by this user or executed by them as a person, each task once.',
+  }),
   labelId: z.string().optional().describe('The label identifier.'),
   sort: z.enum(['updated', 'created', 'number', 'priority']).optional(),
   direction: z.enum(['asc', 'desc']).optional(),
@@ -110,13 +114,12 @@ const Children = z.object({
   nextCursor: z.string().nullable(),
 }) satisfies z.ZodType<TaskChildrenPage>;
 
-const RoleCount = z.object({ open: z.number(), waiting: z.number() });
+const TaskCount = z.object({ open: z.number(), waiting: z.number() });
 const Summary = z.object({
-  owned: RoleCount,
-  executing: RoleCount,
+  mine: TaskCount,
   waiting: z.number().meta({
     description:
-      'Every unfinished task the caller may see that waits for them, each once.',
+      'Tasks owned or executed by the caller, plus followed tasks, waiting for them, each once.',
   }),
 }) satisfies z.ZodType<TaskGroupSummary>;
 
@@ -179,7 +182,7 @@ export const taskGroupRoutes: AppApiRouteContribution<Application> =
       describeRoute({
         tags,
         operationId: 'studioReadTaskGroupSummary',
-        summary: 'Count the tasks the caller owns and executes',
+        summary: 'Count the tasks the caller owns or executes',
         ...cliRoute(false),
         security: [{ cookieAuth: [] }, { apiKeyAuth: [] }],
         responses: { 200: dataResponse(Summary), ...apiErrorResponses },

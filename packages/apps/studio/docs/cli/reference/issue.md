@@ -167,7 +167,7 @@ nb-studio issue comment list <issue>
 
 Create an issue
 
-Needs `create` on `pm.issues` for the issue’s project. The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one. Optional `attachmentIds` binds the caller’s own unattached uploads in the creation transaction before work starts; this also needs `upload` on `pm.attachments`.
+Needs `create` on `pm.issues` for the issue’s project. A session context header must identify an active session owned by the caller; its project is the default and successful creation is linked to it. The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one. Optional `attachmentIds` binds the caller’s own unattached uploads in the creation transaction before work starts; this also needs `upload` on `pm.attachments`.
 
 ```bash
 nb-studio issue create
@@ -305,7 +305,7 @@ nb-studio issue update PM-12 --executor type=agent --executor id=<id>
 
 Get an issue
 
-The issue with its newest activities and comment threads, files, sub-issues and dependencies. `issueId` is an id or an identifier such as `PM-12`.
+The issue with its newest activities and comment threads, files, sub-issues and dependencies, and application progress when available. `issueId` is an id or an identifier such as `PM-12`.
 
 ```bash
 nb-studio issue get <issue>
@@ -468,19 +468,20 @@ The issues the caller sees, cursor-paged. `deleted=true` lists deleted issues in
 nb-studio issue search
 ```
 
-| Flag           | Type    | Description                                                             |
-| -------------- | ------- | ----------------------------------------------------------------------- |
-| `--status`     | string  | Filter by issue status key.                                             |
-| `--project`    | string  | The project identifier.                                                 |
-| `--owner`      | string  | The owner user identifier.                                              |
-| `--executor`   | string  | The executor identifier.                                                |
-| `--label`      | string  | The label identifier.                                                   |
-| `--parent`     | string  | A parent issue, by identifier (PM-12) or id; none for top-level issues. |
-| `--q`          | string  | Text to search for.                                                     |
-| `--deleted`    | boolean | Whether to include deleted records.                                     |
-| `--order-by`   | string  | The field and direction to sort by.                                     |
-| `--limit`      | integer | The maximum number of records to return. (default 20)                   |
-| `--page-token` | string  | The continuation token returned by the previous page.                   |
+| Flag                 | Type    | Description                                                             |
+| -------------------- | ------- | ----------------------------------------------------------------------- |
+| `--involves-user-id` | string  | Owned by this user or executed by them as a person, each issue once.    |
+| `--status`           | string  | Filter by issue status key.                                             |
+| `--project`          | string  | The project identifier.                                                 |
+| `--owner`            | string  | The owner user identifier.                                              |
+| `--executor`         | string  | The executor identifier.                                                |
+| `--label`            | string  | The label identifier.                                                   |
+| `--parent`           | string  | A parent issue, by identifier (PM-12) or id; none for top-level issues. |
+| `--q`                | string  | Text to search for.                                                     |
+| `--deleted`          | boolean | Whether to include deleted records.                                     |
+| `--order-by`         | string  | The field and direction to sort by.                                     |
+| `--limit`            | integer | The maximum number of records to return. (default 20)                   |
+| `--page-token`       | string  | The continuation token returned by the previous page.                   |
 
 **Output:** A list (table columns: `identifier`, `title`, `statusKey`, `owner.name`, `executorName`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
