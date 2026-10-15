@@ -102,3 +102,7 @@ This rule changed once, and the reason is worth recording. Client imports used t
 When the check reports something, inspect ownership and usage: declare an ordinary server dependency, declare a shared peer and its application provider, or remove a client or build-time import that leaked into server code. Adding a declaration only to silence the check can leave either a duplicate shared module or an unnecessary deployment dependency.
 
 `pnpm plugin:create` emits a generated plugin's `AGENTS.md` carrying this rule, so a plugin created tomorrow is told where a dependency goes before anyone adds one. When the rule changes here, change `packages/tools/create-plugin/template/AGENTS.md` in the same commit — the two are kept in step by a test, but only for the files' existence, not their content.
+
+## Commercial database optional peers
+
+The runtime and testing packages retain optional peer contracts for KingbaseES, Dameng and OceanBase with ordinary semver ranges because their source belongs to Pro. The root `.pnpmfile.cjs` omits only those optional peers from OSS development resolution: pnpm otherwise installs workspace projects' optional peers automatically. The hook does not edit package manifests or published artifacts, and it is not applied when OSS is a submodule of Pro. Do not add commercial driver development dependencies to OSS. Pro validates automatic loading against the actual drivers.
