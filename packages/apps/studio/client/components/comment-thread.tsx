@@ -683,7 +683,7 @@ function CommentBlock({
     <div
       data-comment-id={comment.id}
       className={cn(
-        'group space-y-1.5 p-3 max-md:space-y-1 max-md:px-4 max-md:py-2.5',
+        'group space-y-1.5 p-3 transition-shadow duration-700 max-md:space-y-1 max-md:px-4 max-md:py-2.5',
         nested && 'pl-9',
         context.replyingToId === comment.id && 'bg-accent/50',
         context.targetId === comment.id && 'ring-2 ring-primary/40 ring-inset',

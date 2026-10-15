@@ -11,6 +11,7 @@ import type { TimelineEntry } from '@nocobase/app-plugin-projects/client/issues'
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -19,14 +20,17 @@ import {
   within,
 } from '@testing-library/react';
 import type { ReactElement } from 'react';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, useLocation, useNavigationType } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import enUS from '../../client/locales/en-US.js';
 import { Clamped } from '../../client/issues/live/clamped.js';
 import { IssueConversation } from '../../client/issues/live/conversation.js';
 import { FollowToggle } from '../../client/issues/live/follow-toggle.js';
-import { IssueFeed } from '../../client/issues/live/issue-feed.js';
+import {
+  COMMENT_HIGHLIGHT_FADE_MS,
+  IssueFeed,
+} from '../../client/issues/live/issue-feed.js';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 
 const mocks = vi.hoisted(() => ({
@@ -179,7 +183,19 @@ const detail = {
   statuses: [],
 } as unknown as IssueDetail;
 
-async function mount(node: ReactElement) {
+/** Shows the current location and how it was reached, so a test can check a push from a replace. */
+function LocationProbe() {
+  const location = useLocation();
+  const type = useNavigationType();
+  return (
+    <div data-testid='location-probe' data-nav-type={type}>
+      {location.pathname}
+      {location.search}
+    </div>
+  );
+}
+
+async function mount(node: ReactElement, initialEntries?: string[]) {
   const runtime = await createTestI18nRuntime({
     application: { namespace: 'studio', resources: enUS },
     locale: 'en-US',
@@ -190,7 +206,10 @@ async function mount(node: ReactElement) {
   render(
     <TestI18nProvider runtime={runtime} namespace='studio'>
       <QueryClientProvider client={client}>
-        <MemoryRouter>{node}</MemoryRouter>
+        <MemoryRouter {...(initialEntries ? { initialEntries } : {})}>
+          <LocationProbe />
+          {node}
+        </MemoryRouter>
       </QueryClientProvider>
     </TestI18nProvider>,
   );
@@ -341,6 +360,88 @@ describe('the issue feed', () => {
     await mount(<Clamped>Short</Clamped>);
     expect(screen.getByText('Short')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Show more' })).toBeNull();
+  });
+});
+
+describe('a `?comment=` link', () => {
+  beforeEach(() => {
+    mocks.entries = [
+      thread(
+        comment('c1', 1, { type: 'user', id: 'bob', name: 'Bob' }, 'Root note'),
+      ),
+    ];
+  });
+
+  it('highlights the comment, then drops the parameter by replacing the address, not pushing one', async () => {
+    await mount(
+      <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+        <IssueFeed />
+      </IssueConversation>,
+      ['/issues/i1?comment=c1'],
+    );
+    const feed = await screen.findByTestId('issue-feed');
+    const target = within(feed)
+      .getByText('Root note')
+      .closest('[data-comment-id="c1"]') as HTMLElement;
+    expect(target.className).toContain('ring-2');
+    const probe = await screen.findByTestId('location-probe');
+    await waitFor(() => expect(probe.textContent).toBe('/issues/i1'));
+    expect(probe.getAttribute('data-nav-type')).toBe('REPLACE');
+  });
+
+  it('fades the highlight a few seconds after the comment is located', async () => {
+    vi.useFakeTimers();
+    try {
+      await mount(
+        <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+          <IssueFeed />
+        </IssueConversation>,
+        ['/issues/i1?comment=c1'],
+      );
+      const feed = screen.getByTestId('issue-feed');
+      const target = within(feed)
+        .getByText('Root note')
+        .closest('[data-comment-id="c1"]') as HTMLElement;
+      expect(target.className).toContain('ring-2');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(COMMENT_HIGHLIGHT_FADE_MS);
+      });
+      expect(target.className).not.toContain('ring-2');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('cancels the highlight on the next click anywhere', async () => {
+    await mount(
+      <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+        <IssueFeed />
+      </IssueConversation>,
+      ['/issues/i1?comment=c1'],
+    );
+    const feed = await screen.findByTestId('issue-feed');
+    const target = within(feed)
+      .getByText('Root note')
+      .closest('[data-comment-id="c1"]') as HTMLElement;
+    expect(target.className).toContain('ring-2');
+    fireEvent.click(document.body);
+    await waitFor(() => expect(target.className).not.toContain('ring-2'));
+  });
+
+  it('leaves a feed with no `comment` parameter alone', async () => {
+    await mount(
+      <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+        <IssueFeed />
+      </IssueConversation>,
+      ['/issues/i1'],
+    );
+    const feed = await screen.findByTestId('issue-feed');
+    const target = within(feed)
+      .getByText('Root note')
+      .closest('[data-comment-id="c1"]') as HTMLElement;
+    expect(target.className).not.toContain('ring-2');
+    const probe = await screen.findByTestId('location-probe');
+    expect(probe.getAttribute('data-nav-type')).toBe('POP');
   });
 });
 

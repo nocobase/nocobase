@@ -4,7 +4,9 @@
  * each stretch of system records into one row that unfolds in place; "All" shows each. Long comments are cut to a few
  * lines. The project manager's hand-overs and agents' reviews are tagged as `feed.ts` reads them. It is the installed
  * `comment-thread` over the projects plugin's headless hooks, inside an `IssueConversation`; a link with
- * `?comment=<id>` highlights that comment and loads older threads until it is found.
+ * `?comment=<id>` highlights that comment and loads older threads until it is found. Once found, the parameter is
+ * dropped from the address (replacing, not a new history entry) and the highlight fades a few seconds later, or
+ * cancels on the next click anywhere.
  */
 import { AgentAvatar } from '@nocobase/app-plugin-agents/client/kit';
 import {
@@ -28,7 +30,13 @@ import {
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
 import { BotIcon, ChevronRightIcon } from 'lucide-react';
-import { useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { useSearchParams } from 'react-router';
 
 import { AttachmentList } from '@/components/attachment-list';
@@ -58,6 +66,8 @@ import {
 
 const NO_RUNS: readonly TimelineRun[] = [];
 const NO_KINDS: Readonly<Record<string, string>> = {};
+/** How long a located comment stays highlighted before it fades on its own. */
+export const COMMENT_HIGHLIGHT_FADE_MS = 4000;
 
 export function IssueFeed({
   runs = NO_RUNS,
@@ -82,12 +92,21 @@ export function IssueFeed({
   const apiKeys = useApiKeyActors();
   const authorLabel = useAuthorLabel();
   const kindLabel = useKindLabel();
-  const [params] = useSearchParams();
-  const targetId = params.get('comment');
+  const [params, setParams] = useSearchParams();
+  const urlTargetId = params.get('comment');
+  // Captured locally so the highlight and the scroll-to-load survive the address being cleaned up below.
+  const [highlightedId, setHighlightedId] = useState<string | null>(
+    () => urlTargetId,
+  );
+  const [seenUrlTargetId, setSeenUrlTargetId] = useState(urlTargetId);
+  if (urlTargetId !== seenUrlTargetId) {
+    setSeenUrlTargetId(urlTargetId);
+    if (urlTargetId) setHighlightedId(urlTargetId);
+  }
   const timeline = useIssueTimeline(
     detail,
     renderRun ? runs : NO_RUNS,
-    targetId,
+    highlightedId,
   );
   const preview = useFilePreviewState();
   const [mode, setMode] = useState<FeedMode>('conversation');
@@ -109,6 +128,35 @@ export function IssueFeed({
       ),
     [timeline.entries],
   );
+  const targetFound =
+    highlightedId !== null &&
+    threads.some(
+      (thread) =>
+        thread.root.id === highlightedId ||
+        thread.replies.some((reply) => reply.id === highlightedId),
+    );
+  // Once located, replace the address rather than push, so Back does not step through the link.
+  useEffect(() => {
+    if (!targetFound || !params.get('comment')) return;
+    const next = new URLSearchParams(params);
+    next.delete('comment');
+    setParams(next, { replace: true });
+  }, [targetFound, params, setParams]);
+  // The highlight fades on its own a few seconds after it is shown, or cancels on the next click anywhere.
+  useEffect(() => {
+    if (!targetFound) return;
+    const timer = window.setTimeout(
+      () => setHighlightedId(null),
+      COMMENT_HIGHLIGHT_FADE_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [targetFound]);
+  useEffect(() => {
+    if (!highlightedId) return;
+    const cancel = () => setHighlightedId(null);
+    document.addEventListener('click', cancel);
+    return () => document.removeEventListener('click', cancel);
+  }, [highlightedId]);
   // What each comment is on the feed: a hand-over, a review and its verdict.
   const meanings = useMemo(
     () =>
@@ -337,7 +385,7 @@ export function IssueFeed({
         onMentionSearch={conversation.searchMentions}
         mentionSearchRevision={conversation.mentionSearchRevision}
         replyingToId={conversation.replyTo?.id ?? null}
-        targetId={targetId}
+        targetId={highlightedId}
         hasOlder={timeline.hasOlder}
         loadingOlder={timeline.loadingOlder}
         onLoadOlder={timeline.loadOlder}
