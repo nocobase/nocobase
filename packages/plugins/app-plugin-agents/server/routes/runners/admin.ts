@@ -271,15 +271,17 @@ export function createAdminRoutes(
       }))
         if ((await runnerRights(context, runner)).see) visible.push(runner);
       const takes = await takesOf(visible);
-      const data: RunnerListItem[] = [];
-      for (const runner of visible) {
-        const summary = await summarizeRunner(context, runner, takes);
-        const { workspaceUsage, ...rest } = summary;
-        if (workspaceUsage) {
-          const { workspaces: _workspaces, ...totals } = workspaceUsage;
-          data.push({ ...rest, workspaceUsage: totals });
-        } else data.push({ ...rest, workspaceUsage });
-      }
+      const data = await Promise.all(
+        visible.map(async (runner): Promise<RunnerListItem> => {
+          const summary = await summarizeRunner(context, runner, takes);
+          const { workspaceUsage, ...rest } = summary;
+          if (workspaceUsage) {
+            const { workspaces: _workspaces, ...totals } = workspaceUsage;
+            return { ...rest, workspaceUsage: totals };
+          }
+          return { ...rest, workspaceUsage };
+        }),
+      );
       return context.json({ data, meta: { total: data.length } });
     },
   );
