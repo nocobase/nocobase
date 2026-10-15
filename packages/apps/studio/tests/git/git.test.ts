@@ -32,6 +32,7 @@ import {
   findRepoById,
   updateRepo,
 } from '../../server/git/store.js';
+import { sendMergeCard } from '../../server/git/cards.js';
 import { issueKeyOfBranch } from '../../shared/git.js';
 import {
   bindingOf,
@@ -185,6 +186,8 @@ describe('pull requests', () => {
     const notices: string[] = [];
     const notificationIds: string[] = [];
     let inbox: StudioInbox;
+    const targetIssue = { id: undefined as string | undefined };
+    let backgroundSettlementFinished!: Promise<void>;
     await h.close();
     h = await createBridgeHarness({
       inboxPort(database) {
@@ -207,6 +210,45 @@ describe('pull requests', () => {
           channel: 'inbox',
           announce: () => undefined,
         });
+        let finishBackgroundSettlement!: () => void;
+        let failBackgroundSettlement!: (error: unknown) => void;
+        backgroundSettlementFinished = new Promise<void>((resolve, reject) => {
+          finishBackgroundSettlement = resolve;
+          failBackgroundSettlement = reject;
+        });
+        // The event listener catches failures itself, so keep the rejection handled until the test awaits it.
+        void backgroundSettlementFinished.catch(() => undefined);
+        const resolve = inbox.resolve.bind(inbox);
+        const settle = inbox.settle.bind(inbox);
+        inbox.resolve = async (ref) => {
+          try {
+            await resolve(ref);
+          } catch (error) {
+            if (
+              targetIssue.id &&
+              ref.decisionKey.endsWith(`:${targetIssue.id}`)
+            )
+              failBackgroundSettlement(error);
+            throw error;
+          }
+        };
+        inbox.settle = async (ref) => {
+          try {
+            await settle(ref);
+          } catch (error) {
+            if (targetIssue.id && ref.subject.id === targetIssue.id)
+              failBackgroundSettlement(error);
+            throw error;
+          }
+          if (
+            targetIssue.id &&
+            ref.subject.type === 'issue' &&
+            ref.subject.id === targetIssue.id &&
+            ref.types?.includes(PR_MERGE_REQUESTED)
+          ) {
+            finishBackgroundSettlement();
+          }
+        };
         return inbox;
       },
     });
@@ -216,6 +258,7 @@ describe('pull requests', () => {
       if (event.notice.type === 'pr_merged') notices.push(event.notice.key);
     });
     const { issue } = await reviewIssue();
+    targetIssue.id = issue.id;
     const repo = await repoWithToken();
     h.github.addPull(REPO, {
       number: 91,
@@ -223,6 +266,22 @@ describe('pull requests', () => {
     });
     await h.git.pollRepo(repo);
     const pr = (await h.git.list(alice(), issue.id)).data[0]!;
+    const cleanupSentinelPr = {
+      ...pr,
+      id: `${pr.id}-cleanup-sentinel`,
+    };
+    await sendMergeCard(
+      inbox,
+      {
+        id: issue.id,
+        identifier: issue.identifier,
+        title: issue.title,
+        ownerUserId: issue.ownerUserId,
+        revision: issue.revision,
+      },
+      cleanupSentinelPr,
+      'cleanup-sentinel',
+    );
     h.github.merge(REPO, 91, 'bob');
     await h.git.refresh(alice(), issue.id, pr.id);
     const merged = (await findPullRequestById(h.projects.tx.read(), pr.id))!;
@@ -248,14 +307,16 @@ describe('pull requests', () => {
         mergedManually: false,
       });
     }
-    await expect
-      .poll(async () => {
-        const cards = await inbox.notices('alice', notificationIds);
-        return cards.filter(
-          (card) => card.decisionKey === `pr:${pr.id}:${issue.id}`,
-        );
-      })
-      .toEqual([expect.objectContaining({ outcome: 'merged' })]);
+    await backgroundSettlementFinished;
+    const cards = await inbox.notices('alice', notificationIds);
+    expect(
+      cards.filter((card) => card.decisionKey === `pr:${pr.id}:${issue.id}`),
+    ).toEqual([expect.objectContaining({ outcome: 'merged' })]);
+    expect(
+      cards.filter(
+        (card) => card.decisionKey === `pr:${cleanupSentinelPr.id}:${issue.id}`,
+      ),
+    ).toEqual([expect.objectContaining({ outcome: 'withdrawn' })]);
     expect(
       (
         await h.projects.issueQueries.activities(alice(), issue.id, {})
