@@ -9,15 +9,19 @@ import {
 } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
 
+// Manager settings, queued runs and account preferences belong to this test alone.
+test.use({ isolatedStudio: true });
+
 test('owner handoff controls in the issue and inbox, in Chinese and English', async ({
   page,
   api,
   browser,
   context,
+  studio,
 }) => {
   test.setTimeout(120_000);
-  const admin = await apiAs(browser, 'admin');
-  const lisa = await apiAs(browser, 'lisa');
+  const admin = await apiAs(browser, 'admin', studio);
+  const lisa = await apiAs(browser, 'lisa', studio);
   const me = await api.get<{ userId: string }>('projects/me');
   const next = await lisa.api.get<{ userId: string }>('projects/me');
   const settings = await admin.api.get<{
@@ -50,7 +54,7 @@ test('owner handoff controls in the issue and inbox, in Chinese and English', as
     await expect(
       page.getByRole('button', { name: '接手', exact: true }),
     ).toHaveCount(0);
-    await signIn(context, 'lisa');
+    await signIn(context, 'lisa', studio);
     await open(page, `/issues/${issue.identifier}`);
     await expect(
       page.getByRole('button', { name: '接手', exact: true }),

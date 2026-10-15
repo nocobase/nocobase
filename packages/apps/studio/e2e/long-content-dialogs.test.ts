@@ -19,7 +19,12 @@ interface ScrollElement {
   };
 }
 
-test.use({ user: 'admin', viewport: { width: 1440, height: 1000 } });
+// Locale changes must not reach the accounts used by other browser tests.
+test.use({
+  user: 'admin',
+  viewport: { width: 1440, height: 1000 },
+  isolatedStudio: true,
+});
 
 async function captureLayout(
   dialog: Locator,
@@ -96,6 +101,7 @@ async function scrollingBody(
 test('variable dialog keeps legal long values and its actions reachable', async ({
   page,
   api,
+  studio,
 }, info) => {
   await api.patch('users/me/preferences', { locale: 'en-US' });
   const project = await api.post<{ id: string }>('projects', {
@@ -103,7 +109,9 @@ test('variable dialog keeps legal long values and its actions reachable', async 
     visibility: 'members',
   });
   try {
-    await page.goto(url(`/projects/${project.id}/settings?section=variables`));
+    await page.goto(
+      url(`/projects/${project.id}/settings?section=variables`, studio),
+    );
     await page
       .getByRole('button', { name: 'Add variable', exact: true })
       .click();
@@ -231,11 +239,12 @@ test('variable dialog keeps legal long values and its actions reachable', async 
 test('agent capability dialog keeps long descriptions and its actions reachable', async ({
   page,
   api,
+  studio,
 }, info) => {
   await api.patch('users/me/preferences', { locale: 'en-US' });
   const runner = new FakeRunner(api, `dialog-${unique()}`);
   const agent = await runner.discovered();
-  await page.goto(url('/agents'));
+  await page.goto(url('/agents', studio));
   await page
     .getByRole('button', { name: `Edit ${agent.name}`, exact: true })
     .click();
@@ -311,6 +320,7 @@ test('agent capability dialog keeps long descriptions and its actions reachable'
 test('a project member cannot manage or reveal its variables', async ({
   browser,
   api,
+  studio,
 }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -322,12 +332,14 @@ test('a project member cannot manage or reveal its variables', async ({
     await api.put(`agents/variables/project/${project.id}/DIALOG_VALUE`, {
       value: 'synthetic test value',
     });
-    await signIn(context, 'lisa');
+    await signIn(context, 'lisa', studio);
     const member = new Api(context.request);
     const viewer = await member.get<{ userId: string }>('projects/me');
     await api.post(`projects/${project.id}/members`, { userId: viewer.userId });
     await member.patch('users/me/preferences', { locale: 'en-US' });
-    await page.goto(url(`/projects/${project.id}/settings?section=variables`));
+    await page.goto(
+      url(`/projects/${project.id}/settings?section=variables`, studio),
+    );
     await expect(page).toHaveURL((address) =>
       address.pathname.endsWith('/overview'),
     );
@@ -343,10 +355,10 @@ test('a project member cannot manage or reveal its variables', async ({
       ['GET', '/audits', undefined],
     ] as const) {
       const response = await context.request.fetch(
-        url(`/api/agents/variables/project/${project.id}${suffix}`),
+        url(`/api/agents/variables/project/${project.id}${suffix}`, studio),
         {
           method,
-          headers: { origin: new URL(url('/')).origin },
+          headers: { origin: studio.origin },
           ...(data ? { data } : {}),
         },
       );
