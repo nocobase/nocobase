@@ -1,6 +1,7 @@
 ---
 "@nocobase/app-plugin-agents": minor
 "@nocobase/studio": minor
+"@nocobase/app-plugin-projects": patch
 "@nocobase/api-client": patch
 ---
 
@@ -11,3 +12,5 @@ Recognize no-content streaming responses by HTTP status even when a browser expo
 Resolve Scope/Provider model changes consistently through the configuration API. Let users explicitly permit a new input after an unknown send result, and preserve Registry drafts and files when the shared client refuses a submission.
 
 Prepare Organize intake files without starting a Runner, then use the shared chat client and messages endpoint for first-input acceptance. Keep requirements editable after preparation or image-reading failures.
+
+Let application-provided Organize entries own their availability feedback while retaining default Runner availability hints.
