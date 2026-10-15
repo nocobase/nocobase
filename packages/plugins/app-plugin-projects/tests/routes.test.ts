@@ -549,6 +549,28 @@ describe('issues over HTTP', () => {
     expect(
       (await call('/issues?orderBy=title', { role: 'member' })).status,
     ).toBe(400);
+    // Some issues by id, within the other filters; too many ids are refused.
+    const ids = (await (
+      await call('/issues?orderBy=number%20asc', { role: 'member' })
+    ).json()) as { data: { id: string; identifier: string }[] };
+    const named = (await (
+      await call(
+        `/issues?issueIds=${ids.data[0]!.id},${ids.data[2]!.id},unknown`,
+        { role: 'member' },
+      )
+    ).json()) as { data: { identifier: string }[] };
+    expect(named.data.map((issue) => issue.identifier).sort()).toEqual([
+      'PM-1',
+      'PM-3',
+    ]);
+    expect(
+      (
+        await call(
+          `/issues?issueIds=${Array.from({ length: 101 }, (_, n) => `i${n}`).join(',')}`,
+          { role: 'member' },
+        )
+      ).status,
+    ).toBe(400);
     const board = (await (
       await call('/issues/board', { role: 'member' })
     ).json()) as {

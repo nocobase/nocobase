@@ -6,6 +6,11 @@
  *   (`GET /api/taskGroups/rows`) and merges them in; a list whose membership moved meanwhile is read whole instead;
  * - one that names nothing, the inbox's, the plans', and a reconnect read every shown list whole, and the summary too.
  *
+ * The projects plugin's flat lists on Studio's pages, the board (`pmKeys.board`) and the issue pages (`pmKeys.issuePages`,
+ * the trash), are kept current the same way: a named change reads those rows alone through `GET /api/projects/issues`
+ * with `issueIds` and the list's own filters, and the list is read whole when a shown row left it or changed column,
+ * or for an announcement naming no issues.
+ *
  * One refresh runs at a time and never cancels a read under way: a burst during a refresh is handled after it. Nothing
  * is read while the page is hidden; what was missed is read when it is shown again. Lists not shown are only marked
  * stale.
@@ -16,7 +21,18 @@ import {
   PM_REALTIME_TOPIC,
   type PmChangeEvent,
 } from '@nocobase/app-plugin-projects/shared/realtime';
-import type { QueryClient, QueryKey } from '@tanstack/react-query';
+import type { Page } from '@nocobase/app-plugin-projects/shared/common';
+import {
+  ISSUE_IDS_MAX,
+  type IssueBoard,
+  type IssueListItem,
+  type IssueListQuery,
+} from '@nocobase/app-plugin-projects/shared/issues';
+import type {
+  InfiniteData,
+  QueryClient,
+  QueryKey,
+} from '@tanstack/react-query';
 
 import { STUDIO_INBOX_TOPIC } from '../../../shared/inbox.js';
 import {
@@ -66,7 +82,22 @@ export function readTaskGroupRows(
     ).data;
 }
 
+/** Reads the rows of `ids` a flat issue list holds now (`GET /api/projects/issues?issueIds=`), within its filters. */
+export type IssueRowsReader = (
+  query: IssueListQuery,
+  ids: readonly string[],
+) => Promise<readonly IssueListItem[]>;
+
+/** The projects plugin's flat lists this keeps current: `['pm', 'issues', 'board' | 'pages', query]`. */
+const PM_LISTS = ['board', 'pages'] as const;
+const isPmList = (key: QueryKey): boolean =>
+  key[0] === 'pm' &&
+  key[1] === 'issues' &&
+  (PM_LISTS as readonly unknown[]).includes(key[2]);
+
 export interface TaskGroupsLiveOptions {
+  /** Reads rows of the projects plugin's flat lists; without it they are read whole for every named change. */
+  readonly issueRows?: IssueRowsReader;
   readonly delay?: number;
   /** Whether the page is shown; read nothing while it is not. */
   readonly visible?: () => boolean;
@@ -110,6 +141,8 @@ export function subscribeTaskGroupsLive(
   const visible = options.visible ?? documentVisible;
   const named = new Set<string>();
   let whole = false;
+  // The flat issue lists are read whole only for announcements about issues or labels, never for the inbox's.
+  let wholeIssues = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let running = false;
   let stopped = false;
@@ -126,6 +159,109 @@ export function subscribeTaskGroupsLive(
       readAgain(taskGroupKeys.lists, false),
       readAgain(taskGroupKeys.summary),
     ]);
+  }
+
+  const readPmListsAgain = () =>
+    client.invalidateQueries(
+      {
+        queryKey: ['pm', 'issues'],
+        predicate: (query) => isPmList(query.queryKey),
+        refetchType: 'active',
+      },
+      { cancelRefetch: false },
+    );
+
+  /** The issues a flat list shows, each with the column it is in (the board) or null (pages). */
+  function shownIn(key: QueryKey, data: unknown): Map<string, string | null> {
+    const shown = new Map<string, string | null>();
+    if (key[2] === 'board')
+      for (const column of (data as IssueBoard).columns)
+        for (const issue of column.issues)
+          shown.set(issue.id, column.status.key);
+    else
+      for (const page of (data as InfiniteData<Page<IssueListItem>>).pages)
+        for (const issue of page.data) shown.set(issue.id, null);
+    return shown;
+  }
+
+  function mergeInto(
+    key: QueryKey,
+    data: unknown,
+    rows: ReadonlyMap<string, IssueListItem>,
+  ): unknown {
+    if (key[2] === 'board') {
+      const board = data as IssueBoard;
+      return {
+        ...board,
+        columns: board.columns.map((column) => ({
+          ...column,
+          issues: column.issues.map((issue) => rows.get(issue.id) ?? issue),
+        })),
+      };
+    }
+    const pages = data as InfiniteData<Page<IssueListItem>>;
+    return {
+      ...pages,
+      pages: pages.pages.map((page) => ({
+        ...page,
+        data: page.data.map((issue) => rows.get(issue.id) ?? issue),
+      })),
+    };
+  }
+
+  /** The rows of `ids` in one flat list: merged, or the list read whole when one left it or changed column. */
+  async function refreshPmList(
+    queryKey: QueryKey,
+    ids: ReadonlySet<string>,
+  ): Promise<void> {
+    const query = client.getQueryCache().find({ queryKey, exact: true });
+    const data = query?.state.data;
+    if (!query || !data) return;
+    const shown = new Map(
+      [...shownIn(queryKey, data)].filter(([id]) => ids.has(id)),
+    );
+    if (shown.size === 0) return;
+    if (query.getObserversCount() === 0) {
+      await client.invalidateQueries({
+        queryKey,
+        exact: true,
+        refetchType: 'none',
+      });
+      return;
+    }
+    const readRows = options.issueRows;
+    if (!readRows || shown.size > ISSUE_IDS_MAX) {
+      await readAgain(queryKey);
+      return;
+    }
+    let answer: readonly IssueListItem[];
+    try {
+      answer = await readRows(queryKey[3] ?? {}, [...shown.keys()]);
+    } catch {
+      await readAgain(queryKey);
+      return;
+    }
+    const current = client
+      .getQueryCache()
+      .find({ queryKey, exact: true })?.state;
+    if (
+      stopped ||
+      !current?.data ||
+      current.data !== data ||
+      current.fetchStatus === 'fetching'
+    )
+      return;
+    const rows = new Map(answer.map((issue) => [issue.id, issue]));
+    // Left the list's filters, or moved to another column: the list itself changed.
+    const moved = [...shown].some(([id, column]) => {
+      const row = rows.get(id);
+      return !row || (column !== null && row.statusKey !== column);
+    });
+    if (moved) {
+      await readAgain(queryKey);
+      return;
+    }
+    client.setQueryData(queryKey, mergeInto(queryKey, data, rows));
   }
 
   /** The rows of `ids` in one list: merged, or the list read whole when its membership moved. */
@@ -211,7 +347,11 @@ export function subscribeTaskGroupsLive(
     if (stopped) return;
     if (!visible()) return;
     const listsFetching =
-      client.isFetching({ queryKey: taskGroupKeys.all }) > 0;
+      client.isFetching({ queryKey: taskGroupKeys.all }) > 0 ||
+      client.isFetching({
+        queryKey: ['pm', 'issues'],
+        predicate: (query) => isPmList(query.queryKey),
+      }) > 0;
     // A read under way may have started before the change: follow it rather than cancel it.
     if (listsFetching) {
       schedule(Math.max(50, Math.round(delay / 4)));
@@ -221,6 +361,8 @@ export function subscribeTaskGroupsLive(
     named.clear();
     const all = whole;
     whole = false;
+    const allIssues = wholeIssues;
+    wholeIssues = false;
     running = true;
     try {
       if (all) await refreshWhole();
@@ -229,10 +371,17 @@ export function subscribeTaskGroupsLive(
           .getQueryCache()
           .findAll({ queryKey: taskGroupKeys.lists }))
           await refreshRows(query.queryKey, ids);
+      if (allIssues) await readPmListsAgain();
+      else if (ids.size > 0)
+        for (const query of client.getQueryCache().findAll({
+          queryKey: ['pm', 'issues'],
+          predicate: (each) => isPmList(each.queryKey),
+        }))
+          await refreshPmList(query.queryKey, ids);
     } finally {
       running = false;
     }
-    if (named.size > 0 || whole) schedule();
+    if (named.size > 0 || whole || wholeIssues) schedule();
   }
 
   function schedule(wait: number = delay): void {
@@ -247,6 +396,7 @@ export function subscribeTaskGroupsLive(
   const stops = [
     realtime.onOpen(() => {
       whole = true;
+      wholeIssues = true;
       schedule();
     }),
     realtime.subscribe<unknown>(PM_REALTIME_TOPIC, ({ payload }) => {
@@ -254,7 +404,10 @@ export function subscribeTaskGroupsLive(
       if (change?.kind !== 'pm.changed') return;
       const ids = change.domain === 'issues' ? announcedIssueIds(change) : null;
       if (ids) for (const id of ids) named.add(id);
-      else whole = true;
+      else {
+        whole = true;
+        if (change.domain !== 'plans') wholeIssues = true;
+      }
       schedule();
     }),
     realtime.subscribe(STUDIO_INBOX_TOPIC, () => {
@@ -262,7 +415,7 @@ export function subscribeTaskGroupsLive(
       schedule();
     }),
     (options.onVisible ?? onDocumentVisible)(() => {
-      if (named.size > 0 || whole) schedule(0);
+      if (named.size > 0 || whole || wholeIssues) schedule(0);
     }),
   ];
   return () => {

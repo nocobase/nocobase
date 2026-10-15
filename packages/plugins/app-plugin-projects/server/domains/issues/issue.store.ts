@@ -194,6 +194,31 @@ export async function findIssueRows(
   return rows.map((row) => toRow(row as Parameters<typeof toRow>[0]));
 }
 
+/** The sort fields of an issue, for placing it in a list without reading what the list shows of it. */
+export type IssueRef = Pick<
+  Issue,
+  'id' | 'number' | 'priority' | 'createdAt' | 'updatedAt'
+>;
+
+/** The ids and sort fields of the issues `query` lists, in its order: a cheap first step before `findIssueRows`. */
+export async function findIssueRefs(
+  conn: DatabaseConnection,
+  query: IssueQuery,
+): Promise<IssueRef[]> {
+  const rows = await issues(conn).findMany({
+    ...(query.filter ? { filter: query.filter } : {}),
+    ...(query.cursor ? { cursor: query.cursor } : {}),
+    select: (select) =>
+      select.fields('id', 'number', 'priority', 'createdAt', 'updatedAt'),
+    sort: (sort) =>
+      query.direction === 'asc'
+        ? [sort.field(query.order).asc(), sort.field('id').asc()]
+        : [sort.field(query.order).desc(), sort.field('id').desc()],
+    limit: query.limit,
+  });
+  return rows;
+}
+
 const IDENTIFIER = /^[A-Za-z][A-Za-z0-9]*-\d+$/u;
 
 /** An issue by id or identifier (`PM-12`, any case), deleted or not. */
