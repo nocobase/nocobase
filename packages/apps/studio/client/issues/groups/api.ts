@@ -282,9 +282,12 @@ export function useTaskChildren(
     void client.invalidateQueries(
       {
         queryKey: [...taskGroupKeys.children, scope],
+        // Read against an older generation, or failed against one (`TASK_GROUPS_CHANGED`) with nothing read yet.
         predicate: (each) => {
           const page = each.state.data as TaskChildrenPage | undefined;
-          return page !== undefined && page.generation !== generation;
+          return page === undefined
+            ? each.state.status === 'error'
+            : page.generation !== generation;
         },
       },
       { cancelRefetch: false },
