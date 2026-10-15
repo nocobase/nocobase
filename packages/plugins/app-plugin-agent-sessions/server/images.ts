@@ -11,6 +11,7 @@
 import { randomUUID } from 'node:crypto';
 
 import type { PromptContent, PromptPart } from '@nocobase/acp-bridge/protocol';
+import type { DatabaseConnection } from '@nocobase/db';
 
 export const IMAGES = 'agentSessionImages';
 
@@ -23,6 +24,7 @@ export interface ImageUploader {
     collection: string,
     options: {
       readonly disk: string;
+      readonly transaction?: DatabaseConnection;
       readonly accessPath: string;
       readonly policy: {
         readonly read: true;
@@ -68,6 +70,7 @@ export interface ImageStorage {
   keep(
     session: { readonly id: string; readonly userId: string },
     content: readonly PromptContent[],
+    transaction?: DatabaseConnection,
   ): Promise<PromptPart[]>;
   bytes(image: StoredImage): Promise<Uint8Array>;
 }
@@ -81,11 +84,12 @@ const EXTENSIONS: Readonly<Record<string, string>> = {
 
 export function createImageStorage(deps: ImageStorageDeps): ImageStorage {
   return {
-    async keep(session, content) {
+    async keep(session, content, transaction) {
       const uploader = deps.uploader();
       if (!uploader || !deps.disks()) return [...content];
       const repository = uploader.repository(IMAGES, {
         disk: deps.disk(),
+        ...(transaction ? { transaction } : {}),
         accessPath: IMAGES_ACCESS_PATH,
         policy: {
           read: true,

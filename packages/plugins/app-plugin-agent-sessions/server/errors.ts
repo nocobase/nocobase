@@ -21,6 +21,7 @@ export const AGENT_SESSIONS_NAMESPACE = '@nocobase/app-plugin-agent-sessions';
 export type AgentSessionsErrorKey = keyof (typeof enUS)['errors'];
 
 const STATUS: Readonly<Record<AgentSessionsErrorKey, ApiErrorStatus>> = {
+  submissionConflict: 'ALREADY_EXISTS',
   authenticationRequired: 'UNAUTHENTICATED',
   computerNotFound: 'NOT_FOUND',
   sessionNotFound: 'NOT_FOUND',
@@ -48,12 +49,20 @@ export class AgentSessionsError extends Error {
   readonly key: AgentSessionsErrorKey;
   readonly field: string | undefined;
   readonly detail: string | undefined;
+  /** Machine-readable facts the error body carries as `metadata`. */
+  readonly metadata: Readonly<Record<string, unknown>> | undefined;
 
-  constructor(key: AgentSessionsErrorKey, field?: string, detail?: string) {
+  constructor(
+    key: AgentSessionsErrorKey,
+    field?: string,
+    detail?: string,
+    metadata?: Readonly<Record<string, unknown>>,
+  ) {
     super(detail ? `${enUS.errors[key]} ${detail}` : enUS.errors[key]);
     this.key = key;
     this.field = field;
     this.detail = detail;
+    this.metadata = metadata;
   }
 }
 
@@ -110,6 +119,7 @@ function toApiError(error: AgentSessionsError, context: Context): ApiError {
     reason: `AGENT_SESSIONS_${error.key.replace(/[A-Z]/gu, (letter) => `_${letter}`).toUpperCase()}`,
     domain: AGENT_SESSIONS_DOMAIN,
     message: error.message,
+    ...(error.metadata ? { metadata: error.metadata } : {}),
     ...(locale && localized
       ? {
           localizedMessage: {

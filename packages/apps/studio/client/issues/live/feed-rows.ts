@@ -1,20 +1,9 @@
 /**
  * How the issue pages' feed (`issue-feed.tsx`) lays out the issue's timeline: newest first, a thread where its latest
  * comment is; conversation (comments, status moves, pull requests, owner handoffs) apart from system records (runs and every other
- * change), which "Conversation only" folds into one row per stretch. Also which comment speaks for a delivery.
+ * change), which "Conversation only" folds into one row per stretch.
  */
-import type {
-  CommentThread,
-  TimelineEntry,
-} from '@nocobase/app-plugin-projects/client/issues';
-import type {
-  Activity,
-  IssueDetail,
-} from '@nocobase/app-plugin-projects/shared/issues';
-import { IN_REVIEW_STATUS } from '@nocobase/app-plugin-projects/shared/statuses';
-
-import { PROJECT_MANAGER_ID } from '../../../shared/project-manager.js';
-
+import type { TimelineEntry } from '@nocobase/app-plugin-projects/client/issues';
 import { isOwnerHandoffActivity } from '../detail/activity-labels.js';
 import { activityFeedKind } from './feed.js';
 
@@ -92,89 +81,4 @@ export function groupFeedRows(
   }
   close();
   return rows;
-}
-
-/** A delivery report's headings, in English or Chinese, as a heading line rather than prose. */
-const REPORT_TERMS =
-  '(?:what was asked|key changes|open issues|需求|要求|关键改动|主要改动|遗留问题|未完成事项)';
-const REPORT_HEADING = new RegExp(
-  [
-    // `## Key changes`
-    `^\\s*#{1,6}\\s*${REPORT_TERMS}`,
-    // `**Key changes**`, then anything
-    `^\\s*(?:\\*\\*|__)\\s*${REPORT_TERMS}\\s*[:：]?\\s*(?:\\*\\*|__)`,
-    // `Key changes:` alone on its line
-    `^\\s*${REPORT_TERMS}\\s*[:：]?\\s*$`,
-  ].join('|'),
-  'imu',
-);
-
-/** The comment holds a delivery report: one of its lines is a report heading. */
-export function isDeliveryReport(content: string): boolean {
-  return REPORT_HEADING.test(content);
-}
-
-/** How long before the move to In review a report still counts as the one for it. */
-const REPORT_WINDOW_MS = 2 * 60 * 60 * 1000;
-
-export interface Delivery {
-  readonly comment: CommentThread['root'];
-  /** The project manager's delivery report; otherwise only the latest agent comment. */
-  readonly report: boolean;
-}
-
-/**
- * What the summary shows as the delivery: the project manager's delivery report (a comment with the report's
- * headings) posted around the latest move to In review, newest first; failing that, the latest agent comment (other
- * than the project manager's) written by that move, else the latest agent comment at all.
- */
-export function deliveryComment(
-  threads: readonly CommentThread[],
-  activities: readonly Pick<Activity, 'action' | 'details' | 'createdAt'>[],
-  managerId: string,
-): Delivery | null {
-  const comments = threads
-    .flatMap((thread) => [thread.root, ...thread.replies])
-    .filter(
-      (comment) =>
-        !comment.deleted &&
-        comment.authorType === 'agent' &&
-        comment.content.trim() !== '',
-    )
-    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
-  const movedAt = activities
-    .filter(
-      (activity) =>
-        activity.action === 'status_changed' &&
-        activity.details.to === 'in_review',
-    )
-    .map((activity) => Date.parse(activity.createdAt))
-    .sort((a, b) => b - a)[0];
-  const reports = comments.filter(
-    (comment) =>
-      comment.authorId === managerId && isDeliveryReport(comment.content),
-  );
-  const report =
-    movedAt === undefined
-      ? reports[0]
-      : (reports.find(
-          (comment) =>
-            Date.parse(comment.createdAt) >= movedAt - REPORT_WINDOW_MS,
-        ) ?? reports[0]);
-  if (report) return { comment: report, report: true };
-  const byWorker = comments.filter((comment) => comment.authorId !== managerId);
-  const before = (list: typeof comments) =>
-    movedAt === undefined
-      ? list[0]
-      : list.find((comment) => Date.parse(comment.createdAt) <= movedAt);
-  const latest = before(byWorker) ?? byWorker[0] ?? comments[0];
-  return latest ? { comment: latest, report: false } : null;
-}
-
-/** In review, what the summary shows as the delivery; null otherwise. */
-export function deliveryCommentOf(
-  issue: Pick<IssueDetail, 'statusKey' | 'threads' | 'activities'>,
-): Delivery | null {
-  if (issue.statusKey !== IN_REVIEW_STATUS) return null;
-  return deliveryComment(issue.threads, issue.activities, PROJECT_MANAGER_ID);
 }

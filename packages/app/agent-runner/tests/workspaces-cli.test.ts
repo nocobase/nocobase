@@ -118,11 +118,11 @@ describe('cleaning up working directories', () => {
     );
     expect(existsSync(ended)).toBe(true);
     expect(server.workspaceReports[0]?.workspaces).toHaveLength(2);
-    // CLI output remains compact; periodic workspace reports carry measured diagnostic sizes.
+    // Sizes are not measured: that would read every file of every directory.
     expect(listed.workspaces[0]).not.toHaveProperty('sizeBytes');
-    expect(
-      server.workspaceReports[0]?.workspaces[0]?.sizeBytes,
-    ).toBeGreaterThan(0);
+    expect(server.workspaceReports[0]?.workspaces[0]).not.toHaveProperty(
+      'sizeBytes',
+    );
     expect(listed.disk?.totalBytes).toBeGreaterThan(0);
     expect(listed.minFreeBytes).toBeNull();
     expect(server.workspaceReports[0]?.disk).toMatchObject({

@@ -72,10 +72,11 @@ describe('scoped agent work', () => {
     const query = h.database.connection().repository<RunRecord>('agRuns');
     await query.updateOne({ filter: { id }, values: { status: 'running' } });
     const original = await query.findOne({ filter: { id } });
+    const { revision: _revision, ...copy } = original!;
     for (let offset = 0; offset < 510; offset += 30) {
       await query.createMany({
         values: Array.from({ length: 30 }, (_, index) => ({
-          ...original!,
+          ...copy,
           id: `unrelated-${offset + index}`,
           subjectId: `other-${offset + index}`,
         })),

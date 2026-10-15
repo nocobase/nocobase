@@ -4,7 +4,9 @@
  * each stretch of system records into one row that unfolds in place; "All" shows each. Long comments are cut to a few
  * lines. The project manager's hand-overs and agents' reviews are tagged as `feed.ts` reads them. It is the installed
  * `comment-thread` over the projects plugin's headless hooks, inside an `IssueConversation`; a link with
- * `?comment=<id>` highlights that comment and loads older threads until it is found.
+ * `?comment=<id>` highlights that comment and loads older threads until it is found. The parameter is captured locally
+ * and dropped from the address immediately (replacing, not a new history entry); the highlight fades a few seconds
+ * later, or cancels on the next click anywhere, while the lookup continues independently.
  */
 import { AgentAvatar } from '@nocobase/app-plugin-agents/client/kit';
 import {
@@ -28,7 +30,13 @@ import {
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
 import { BotIcon, ChevronRightIcon } from 'lucide-react';
-import { useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { useSearchParams } from 'react-router';
 
 import { AttachmentList } from '@/components/attachment-list';
@@ -50,7 +58,6 @@ import { Clamped } from './clamped.js';
 import { useIssueConversation } from './conversation-state.js';
 import { buildFeed, type FeedEvent } from './feed.js';
 import {
-  deliveryCommentOf,
   groupFeedRows,
   newestFirst,
   type FeedMode,
@@ -59,13 +66,18 @@ import {
 
 const NO_RUNS: readonly TimelineRun[] = [];
 const NO_KINDS: Readonly<Record<string, string>> = {};
+/** How long a located comment stays highlighted before it fades on its own. */
+export const COMMENT_HIGHLIGHT_FADE_MS = 4000;
 
 export function IssueFeed({
   runs = NO_RUNS,
   renderRun,
   kindLabels = NO_KINDS,
+  titleHidden = false,
   className,
 }: {
+  /** Read out but not drawn, where a tab above already names the activity. */
+  readonly titleHidden?: boolean;
   readonly runs?: readonly TimelineRun[];
   /** Draws an agent's run on the feed; without it runs are left out. */
   readonly renderRun?: (runId: string) => ReactNode;
@@ -83,8 +95,23 @@ export function IssueFeed({
   const apiKeys = useApiKeyActors();
   const authorLabel = useAuthorLabel();
   const kindLabel = useKindLabel();
-  const [params] = useSearchParams();
-  const targetId = params.get('comment');
+  const [params, setParams] = useSearchParams();
+  const urlTargetId = params.get('comment');
+  // Keep the lookup alive after the address is cleaned and independently from highlight cancellation.
+  const [targetId, setTargetId] = useState<string | null>(() => urlTargetId);
+  const [highlightedId, setHighlightedId] = useState<string | null>(
+    () => urlTargetId,
+  );
+  const [seenUrlTargetId, setSeenUrlTargetId] = useState(urlTargetId);
+  const [highlightRequest, setHighlightRequest] = useState(0);
+  if (urlTargetId !== seenUrlTargetId) {
+    setSeenUrlTargetId(urlTargetId);
+    if (urlTargetId) {
+      setTargetId(urlTargetId);
+      setHighlightedId(urlTargetId);
+      setHighlightRequest((request) => request + 1);
+    }
+  }
   const timeline = useIssueTimeline(
     detail,
     renderRun ? runs : NO_RUNS,
@@ -110,6 +137,35 @@ export function IssueFeed({
       ),
     [timeline.entries],
   );
+  const targetFound =
+    targetId !== null &&
+    threads.some(
+      (thread) =>
+        thread.root.id === targetId ||
+        thread.replies.some((reply) => reply.id === targetId),
+    );
+  // The target is captured in local state above, so remove it from navigation immediately without adding a history entry.
+  useEffect(() => {
+    if (!urlTargetId) return;
+    const next = new URLSearchParams(params);
+    next.delete('comment');
+    setParams(next, { replace: true });
+  }, [urlTargetId, params, setParams]);
+  // The highlight fades on its own a few seconds after it is shown, or cancels on the next click anywhere.
+  useEffect(() => {
+    if (!targetFound) return;
+    const timer = window.setTimeout(
+      () => setHighlightedId(null),
+      COMMENT_HIGHLIGHT_FADE_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [targetFound, highlightRequest]);
+  useEffect(() => {
+    if (!highlightedId) return;
+    const cancel = () => setHighlightedId(null);
+    document.addEventListener('click', cancel);
+    return () => document.removeEventListener('click', cancel);
+  }, [highlightedId]);
   // What each comment is on the feed: a hand-over, a review and its verdict.
   const meanings = useMemo(
     () =>
@@ -129,9 +185,6 @@ export function IssueFeed({
     [timeline.entries, mode],
   );
 
-  // The comment the summary shows as the delivery notes reads as one line here.
-  const delivery = deliveryCommentOf(detail);
-  const deliveryId = delivery?.comment.id ?? null;
   const comments = new Map<string, IssueComment>();
   const meaningTags = (event: FeedEvent | undefined): CommentTag[] => {
     if (event?.kind === 'handOver')
@@ -215,15 +268,6 @@ export function IssueFeed({
       })),
       canEdit: canEditComment(viewer, comment),
       canDelete: canDeleteComment(viewer, comment, detail),
-      ...(comment.id === deliveryId
-        ? {
-            collapsedLabel: appT(
-              delivery?.report
-                ? 'issueLive.feed.deliveryShownAbove'
-                : 'issueLive.feed.latestShownAbove',
-            ),
-          }
-        : {}),
     };
   };
 
@@ -305,6 +349,7 @@ export function IssueFeed({
       <CommentTimeline
         entries={entries}
         newestFirst
+        titleHidden={titleHidden}
         headerActions={
           <ToggleGroup
             variant='outline'
@@ -350,7 +395,7 @@ export function IssueFeed({
         onMentionSearch={conversation.searchMentions}
         mentionSearchRevision={conversation.mentionSearchRevision}
         replyingToId={conversation.replyTo?.id ?? null}
-        targetId={targetId}
+        targetId={highlightedId}
         hasOlder={timeline.hasOlder}
         loadingOlder={timeline.loadingOlder}
         onLoadOlder={timeline.loadOlder}

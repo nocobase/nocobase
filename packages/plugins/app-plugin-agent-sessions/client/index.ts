@@ -5,3 +5,6 @@ export {
   agentSessionsRoute,
   type AgentSessionsRouteOptions,
 } from './routes.js';
+export type { LinkPanelProps } from './config.js';
+
+export { AgentSessionsProvider } from './application-provider.js';

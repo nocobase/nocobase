@@ -1,3 +1,4 @@
+import { realtimeClientToken } from '@nocobase/app-client';
 import {
   answerApi,
   renderWithApp,
@@ -5,7 +6,8 @@ import {
 } from '@nocobase/app-testing/client';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { useState, type ReactElement } from 'react';
-import { describe, expect, it } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { describe, expect, it, vi } from 'vitest';
 
 import plugin from '../../client/plugin.js';
 import { ChoiceMenus } from '../../client/components/choice-menus.js';
@@ -33,9 +35,11 @@ function Probe(): ReactElement {
   const [agentId, setAgentId] = useState('codex');
   const [cwd, setCwd] = useState('/work');
   const [online, setOnline] = useState(true);
+  const [deferred, setDeferred] = useState(false);
+  const [sent, setSent] = useState('');
   const discovery = useChoiceDiscovery(
-    JSON.stringify([computerId, agentId, cwd, online]),
-    { computerId, agentId, cwd, enabled: online },
+    JSON.stringify([computerId, agentId, cwd]),
+    { computerId, agentId, cwd, enabled: online, deferred },
   );
   return (
     <>
@@ -51,8 +55,24 @@ function Probe(): ReactElement {
         Folder
       </button>
       <button onClick={() => setOnline(!online)}>Connection</button>
+      <button onClick={() => setDeferred(!deferred)}>Defer</button>
       <button onClick={discovery.retry}>Retry</button>
-      <button disabled={!discovery.result || discovery.loading}>Send</button>
+      <button onClick={discovery.reset}>Defaults</button>
+      <button
+        disabled={!discovery.result || discovery.loading}
+        onClick={() => setSent(discovery.isCurrent() ? 'Sent' : 'Blocked')}
+      >
+        Send
+      </button>
+      <button
+        onClick={() => {
+          discovery.choose('model', 'other');
+          setSent(discovery.isCurrent() ? 'Sent' : 'Blocked');
+        }}
+      >
+        Choose and send
+      </button>
+      <span>{sent}</span>
       <output>
         {online
           ? discovery.loading
@@ -63,7 +83,9 @@ function Probe(): ReactElement {
           : 'Offline'}
       </output>
       <ChoiceMenus
-        choices={discovery.result?.choices}
+        choices={discovery.displayed?.choices}
+        values={discovery.settings}
+        loading={discovery.loading}
         onChoose={discovery.choose}
       />
     </>
@@ -72,48 +94,297 @@ function Probe(): ReactElement {
 
 async function setup() {
   const requests: { call: ApiCall; resolve: (result: unknown) => void }[] = [];
-  await renderWithApp(<Probe />, {
-    namespace: '@nocobase/app-plugin-agent-sessions',
-    plugins: [plugin({ routes: false })],
-    fetch: answerApi(
-      (call) =>
-        new Promise((resolve) => {
-          requests.push({ call, resolve });
-        }),
-    ),
+  const signals: AbortSignal[] = [];
+  let connected = true;
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
   });
+  function Menu(): ReactElement {
+    const [shown, setShown] = useState(true);
+    return (
+      <>
+        <button onClick={() => setShown(!shown)}>Navigate</button>
+        {shown && <Probe />}
+      </>
+    );
+  }
+  await renderWithApp(
+    <QueryClientProvider client={client}>
+      <Menu />
+    </QueryClientProvider>,
+    {
+      namespace: '@nocobase/app-plugin-agent-sessions',
+      plugins: [plugin({ routes: false })],
+      services: (app) => {
+        vi.spyOn(
+          app.container.resolve(realtimeClientToken),
+          'connected',
+          'get',
+        ).mockImplementation(() => connected);
+      },
+      fetch: async (request) => {
+        signals.push(request.signal);
+        return answerApi(
+          (call) =>
+            new Promise((resolve) => {
+              requests.push({ call, resolve });
+            }),
+        )(request);
+      },
+    },
+  );
   await waitFor(() => expect(requests).toHaveLength(1));
   const answer = async (index: number, result: unknown): Promise<void> => {
     await act(async () => {
       requests[index]!.resolve(result);
     });
   };
-  return { requests, answer };
+  return {
+    requests,
+    answer,
+    client,
+    signals,
+    disconnect: () => {
+      connected = false;
+    },
+  };
 }
 
 describe('choice discovery', () => {
-  it('ignores delayed responses across A → B → A and clears settings on computer, agent and folder changes', async () => {
+  it('defers new work without aborting a shared request or expiring its valid result', async () => {
+    const { requests, answer, signals } = await setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Defer' }));
+    expect(signals[0]?.aborted).toBe(false);
+    expect(requests).toHaveLength(1);
+    await answer(0, { data: choice('First') });
+    await screen.findByRole('button', { name: 'First' });
+    expect(
+      screen.getByRole('button', { name: 'Send', exact: true }),
+    ).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Defer' }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Send', exact: true }),
+      ).not.toBeDisabled(),
+    );
+    expect(requests).toHaveLength(1);
+    expect(signals[0]?.aborted).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Send', exact: true }));
+    await screen.findByText('Sent');
+  });
+  it('can recover removed settings with fresh defaults rather than reuse the older default cache', async () => {
+    const { requests, answer } = await setup();
+    await answer(0, { data: choice('First') });
+    await screen.findByText('First');
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
+    fireEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'Other' }),
+    );
+    await waitFor(() => expect(requests).toHaveLength(2));
+    await answer(
+      1,
+      Response.json(
+        { error: { reason: 'invalid', message: 'The setting was removed.' } },
+        { status: 400 },
+      ),
+    );
+    await screen.findByText('Failure');
+    fireEvent.click(screen.getByText('Defaults'));
+    await waitFor(() => expect(requests).toHaveLength(3));
+    expect(requests[2]!.call.json).toMatchObject({ settings: {} });
+    expect(
+      screen.getByRole('button', { name: 'Send', exact: true }),
+    ).toBeDisabled();
+    await answer(2, { data: choice('New default') });
+    await screen.findByText('New default');
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Send', exact: true }),
+      ).not.toBeDisabled(),
+    );
+  });
+  it('aborts explicit offline invalidation but shares ordinary navigation', async () => {
+    const { requests, answer, signals } = await setup();
+    fireEvent.click(screen.getByText('Connection'));
+    await screen.findByText('Offline');
+    await waitFor(() => expect(signals[0]?.aborted).toBe(true));
+    fireEvent.click(screen.getByText('Connection'));
+    await waitFor(() => expect(requests).toHaveLength(2));
+    await answer(0, { data: choice('Late') });
+    await answer(1, { data: choice('Current') });
+    await screen.findByText('Current');
+    expect(screen.queryByText('Late')).not.toBeInTheDocument();
+  });
+
+  it('blocks a submit on transport closure before a connection notification renders', async () => {
+    const { answer, disconnect } = await setup();
+    await answer(0, { data: choice('First') });
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Send', exact: true }),
+      ).not.toBeDisabled(),
+    );
+    disconnect();
+    fireEvent.click(screen.getByRole('button', { name: 'Send', exact: true }));
+    await screen.findByText('Blocked');
+  });
+  it('blocks a submit immediately after selection before the cache render notification', async () => {
+    const { answer } = await setup();
+    await answer(0, { data: choice('First') });
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Send', exact: true }),
+      ).not.toBeDisabled(),
+    );
+    fireEvent.click(screen.getByText('Choose and send'));
+    await screen.findByText('Blocked');
+    expect(screen.queryByText('Sent')).not.toBeInTheDocument();
+  });
+  it('shares a pending request through navigation and retains the selected model across ten returns', async () => {
+    const { requests, answer } = await setup();
+    fireEvent.click(screen.getByText('Navigate'));
+    fireEvent.click(screen.getByText('Navigate'));
+    expect(requests).toHaveLength(1);
+    await answer(0, { data: choice('First') });
+    await screen.findByText('First');
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
+    fireEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'Other' }),
+    );
+    await waitFor(() => expect(requests).toHaveLength(2));
+    await answer(1, { data: choice('other') });
+    for (let i = 0; i < 10; i++) {
+      fireEvent.click(screen.getByText('Navigate'));
+      fireEvent.click(screen.getByText('Navigate'));
+      await screen.findByText('other');
+      expect(screen.getByRole('button', { name: 'Send' })).not.toBeDisabled();
+    }
+    expect(requests).toHaveLength(2);
+  });
+
+  it('blocks cached settings while realtime is disconnected and revalidates without losing the model', async () => {
+    const { requests, answer, client } = await setup();
+    await answer(0, { data: choice('First') });
+    await screen.findByText('First');
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
+    fireEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'Other' }),
+    );
+    await waitFor(() => expect(requests).toHaveLength(2));
+    await answer(1, { data: choice('other') });
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Send' })).not.toBeDisabled(),
+    );
+    await act(async () => {
+      client.setQueryData(['agentSessions', 'discoveryConnection'], false);
+    });
+    await screen.findByText('Failure');
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    await act(async () => {
+      void client.invalidateQueries({
+        queryKey: ['agentSessions', 'discovery'],
+        refetchType: 'none',
+      });
+      client.setQueryData(['agentSessions', 'discoveryConnection'], true);
+    });
+    await waitFor(() => expect(requests).toHaveLength(3));
+    expect(requests[2]!.call.json).toMatchObject({
+      settings: { model: 'other' },
+    });
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    await answer(2, { data: choice('other') });
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Send' })).not.toBeDisabled(),
+    );
+  });
+
+  it('bounds an unresponsive transport and retries without accepting its late response', async () => {
+    let expire: (() => void) | undefined;
+    const original = globalThis.setTimeout;
+    const timer = vi
+      .spyOn(globalThis, 'setTimeout')
+      .mockImplementation((handler, ms, ...args) => {
+        if (ms === 30_000 && typeof handler === 'function')
+          expire = () => handler(...args);
+        return original(handler, ms, ...args);
+      });
+    try {
+      const { requests, answer } = await setup();
+      await act(async () => {
+        expire?.();
+      });
+      await screen.findByText('Failure');
+      expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+      fireEvent.click(screen.getByText('Retry'));
+      await waitFor(() => expect(requests).toHaveLength(2));
+      await answer(0, { data: choice('Late') });
+      expect(screen.queryByText('Late')).toBeNull();
+      await answer(1, { data: choice('Retried') });
+      await screen.findByText('Retried');
+    } finally {
+      timer.mockRestore();
+    }
+  });
+
+  it('checks expiration again at submission even before a stale timer rerenders', async () => {
+    const { answer } = await setup();
+    await answer(0, { data: choice('First') });
+    await screen.findByText('First');
+    const clock = vi
+      .spyOn(Date, 'now')
+      .mockReturnValue(Date.now() + 6 * 60_000);
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+      expect(screen.getByText('Blocked')).toBeInTheDocument();
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
+  it('reuses a valid cached target and disables sending during revalidation', async () => {
+    const { requests, answer, client } = await setup();
+    await answer(0, { data: choice('First') });
+    await screen.findByText('First');
+    fireEvent.click(screen.getByText('Computer'));
+    await waitFor(() => expect(requests).toHaveLength(2));
+    await answer(1, { data: choice('Second') });
+    await screen.findByText('Second');
+    fireEvent.click(screen.getByText('Computer'));
+    await screen.findByText('First');
+    expect(requests).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Send' })).not.toBeDisabled();
+    await act(async () => {
+      void client.invalidateQueries({
+        queryKey: ['agentSessions', 'discovery'],
+      });
+    });
+    await waitFor(() => expect(requests).toHaveLength(3));
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    await answer(2, { data: choice('Refreshed') });
+    await screen.findByText('Refreshed');
+  });
+
+  it('shares pending discovery across A → B → A and isolates settings on computer, agent and folder changes', async () => {
     const { requests, answer } = await setup();
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
     fireEvent.click(screen.getByText('Computer'));
     await waitFor(() => expect(requests).toHaveLength(2));
     fireEvent.click(screen.getByText('Computer'));
-    await waitFor(() => expect(requests).toHaveLength(3));
-    await answer(0, { data: choice('stale-A') });
+    expect(requests).toHaveLength(2);
     await answer(1, { data: choice('stale-B') });
-    expect(screen.queryByText('stale-A')).toBeNull();
+    expect(screen.queryByText('stale-B')).toBeNull();
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
-    await answer(2, { data: choice('fresh-A') });
+    await answer(0, { data: choice('fresh-A') });
     await screen.findByText('fresh-A');
     fireEvent.click(screen.getByRole('button', { name: 'fresh-A' }));
     fireEvent.click(
       await screen.findByRole('menuitemradio', { name: 'Other' }),
     );
-    await waitFor(() => expect(requests).toHaveLength(4));
-    expect(requests[3]!.call.json).toMatchObject({
+    await waitFor(() => expect(requests).toHaveLength(3));
+    expect(requests[2]!.call.json).toMatchObject({
       settings: { model: 'other' },
     });
-    await answer(3, { data: choice('other') });
+    await answer(2, { data: choice('other') });
     for (const name of ['Agent', 'Folder', 'Computer']) {
       const index = requests.length;
       fireEvent.click(screen.getByText(name));
@@ -146,6 +417,7 @@ describe('choice discovery', () => {
     fireEvent.click(screen.getByText('Retry'));
     await waitFor(() => expect(requests).toHaveLength(2));
     await answer(1, { data: { status: 'available', choices: [] } });
+    await screen.findByText('available');
     expect(screen.getByRole('button', { name: 'Send' })).not.toBeDisabled();
     fireEvent.click(screen.getByText('Connection'));
     expect(screen.getByText('Offline')).toBeInTheDocument();

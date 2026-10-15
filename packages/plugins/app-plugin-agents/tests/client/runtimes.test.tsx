@@ -11,7 +11,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RUNNERS_TOPIC } from '../../shared/realtime.js';
 import type { RunnerSummary } from '../../shared/runners.js';
-import { callsTo, clientMocks, realtime, resetApi } from './fake-client.js';
+import {
+  api,
+  callsTo,
+  clientMocks,
+  FakeApiError,
+  realtime,
+  resetApi,
+} from './fake-client.js';
 import { runner } from './fixtures.js';
 import { renderPage, renderRoute } from './render.js';
 import { RunnersRefresh } from '../../client/components/runners-refresh.js';
@@ -52,6 +59,8 @@ describe('runtimes page', () => {
     ];
     resetApi({
       'agents/runners': () => runners,
+      'agents/runners/r1': () => runners[0],
+      'agents/runners/r2': () => runners[1],
       'agents/runners/r1/runs': () => [
         {
           id: 'run1',
@@ -81,9 +90,76 @@ describe('runtimes page', () => {
 
   /** Opens r1's sheet by clicking its row. */
   const openSheet = async (id = 'r1'): Promise<HTMLElement> => {
+    api.routes[`agents/runners/${id}`] ??= () =>
+      runners.find((item) => item.id === id);
     fireEvent.click(await screen.findByTestId(`runner-${id}`));
-    return await screen.findByTestId('runner-sheet');
+    const sheet = await screen.findByTestId('runner-sheet');
+    await within(sheet).findByText('runtimes.detail.general');
+    return sheet;
   };
+
+  it('shows loading and a retryable failure while fetching a runner instead of an empty diagnostic', async () => {
+    let rejectDetail!: (error: Error) => void;
+    api.routes['agents/runners/r1'] = () =>
+      new Promise((_resolve, reject) => {
+        rejectDetail = reject;
+      });
+    renderPage(<RuntimesPage />);
+    fireEvent.click(await screen.findByTestId('runner-r1'));
+    const sheet = await screen.findByTestId('runner-sheet');
+    expect(within(sheet).getByRole('status')).toBeInTheDocument();
+    expect(
+      within(sheet).queryByText('runtimes.workspaces.empty'),
+    ).not.toBeInTheDocument();
+    rejectDetail(new FakeApiError(500));
+    await within(sheet).findByText('runtimes.loadFailed');
+    api.routes['agents/runners/r1'] = () => runners[0];
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: 'common.retry' }),
+    );
+    await within(sheet).findByText('runtimes.detail.general');
+    expect(callsTo('GET', 'agents/runners/r1')).toHaveLength(2);
+  });
+
+  it('fetches directories only after opening the runner and keeps list totals separate', async () => {
+    const detail = runner('r1', {
+      canSeeMachine: true,
+      workspaceUsage: {
+        disk: null,
+        count: 1,
+        unpushedCount: 1,
+        measuredAt: new Date().toISOString(),
+        workspaces: [
+          {
+            workDir: '/work/PM-396',
+            lastUsedAt: new Date().toISOString(),
+            unpushed: true,
+            subjectKey: 'PM-396',
+          },
+        ],
+      },
+    });
+    api.routes['agents/runners'] = () => [
+      {
+        ...detail,
+        workspaceUsage: {
+          disk: null,
+          count: 1,
+          unpushedCount: 1,
+          measuredAt: detail.workspaceUsage!.measuredAt,
+        },
+      },
+    ];
+    api.routes['agents/runners/r1'] = () => detail;
+    renderPage(<RuntimesPage />);
+    await screen.findByTestId('runner-r1');
+    expect(callsTo('GET', 'agents/runners/r1')).toHaveLength(0);
+    const sheet = await openSheet();
+    expect(callsTo('GET', 'agents/runners/r1')).toHaveLength(1);
+    expect(
+      within(sheet).getByRole('button', { name: /PM-396/u }),
+    ).toBeInTheDocument();
+  });
 
   it('updates disk state from a fresh heartbeat while retaining the older directory collection time', async () => {
     runners[0] = {
@@ -244,6 +320,42 @@ describe('runtimes page', () => {
     ).toBeInTheDocument();
     expect(
       within(sheet).getByText('runtimes.workspaces.oldRunner'),
+    ).toBeInTheDocument();
+    // Runners no longer measure sizes routinely: no line rather than "unknown" on every directory.
+    expect(
+      within(sheet).queryByText(/^runtimes\.workspaces\.size/u),
+    ).toBeNull();
+  });
+
+  it('shows a working directory size when the runner reported one', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canSeeMachine: true,
+      workspaceUsage: {
+        disk: null,
+        count: 1,
+        unpushedCount: 0,
+        measuredAt: '2026-10-01T00:00:00.000Z',
+        workspaces: [
+          {
+            runId: 'run',
+            workDir: '/work/long/subject',
+            unpushed: false,
+            sizeBytes: 2048,
+            lastUsedAt: '2026-10-01T00:00:00.000Z',
+            subjectKind: 'sample',
+            subjectId: 'subject',
+          },
+        ],
+      },
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    await userEvent.click(
+      within(sheet).getByRole('button', { name: /^subject · /u }),
+    );
+    expect(
+      within(sheet).getByText(/^runtimes\.workspaces\.size\(value=/u),
     ).toBeInTheDocument();
   });
 

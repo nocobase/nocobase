@@ -16,6 +16,7 @@ const enUS = {
     sessionNotFound: 'This session does not exist, or it is not yours.',
   },
   list: {
+    expand: 'Show sessions',
     label: 'Sessions',
     title: 'My agents',
     archived: 'Archived',
@@ -67,14 +68,20 @@ const enUS = {
     left: '{{keys}} left in {{status}}',
     separator: ', ',
     comma: ', ',
+    waiting: 'Needs you {{count}}',
     unknown: 'Unknown',
   },
   newSession: {
+    sendUnconfirmed:
+      'Send was not confirmed. Use Retry original submission to recover its confirmation.',
+    settingsOutdated:
+      'This computer\'s command line is too old for this application. Update it there, as "My computers" shows.',
     settingsOffline:
       'This computer is offline. Reconnect its bridge to load settings and send.',
     settingsLoading: 'Loading settings…',
     settingsFailed: 'Could not load agent settings.',
     settingsRetry: 'Retry settings',
+    settingsReset: 'Use agent defaults',
     settingsUnsupported:
       'This agent does not expose settings. Its defaults will be used.',
     settingsEmpty:
@@ -123,6 +130,7 @@ const enUS = {
     noProject: 'No project',
   },
   session: {
+    info: 'Session info',
     archived: 'This session is archived. Restore it to continue.',
     offline: '{{computer}} is offline',
     offlineBody:
@@ -153,6 +161,13 @@ const enUS = {
     recordBody: 'The full record is kept here, and only you can see it.',
   },
   composer: {
+    unconfirmed:
+      'Delivery is unconfirmed. Retry the original submission, or edit as a new message (the original may already have arrived).',
+    retrySubmission: 'Retry original submission',
+    editAsNew: 'Edit as new message',
+    sendUnconfirmed:
+      'Send was not confirmed. Use Retry original submission to recover its confirmation.',
+    sending: 'Sending…',
     expand: 'Expand input',
     collapse: 'Collapse input',
     placeholder: 'Reply, or ask for the next thing…',
@@ -247,6 +262,12 @@ const enUS = {
     truncated: 'Only the first 500 folders are shown.',
   },
   computers: {
+    outdated: {
+      title: 'Update the command line on this computer ({{host}})',
+      body: 'The application refused its connection: it speaks bridge protocol {{bridgeProtocol}}, and the application needs {{protocol}}. Run this on the computer:',
+      restart:
+        'An up-to-date command line restarts its background connection by itself; if it does not reconnect within a few minutes, run:',
+    },
     offline: 'Offline',
     title: 'My computers',
     description:

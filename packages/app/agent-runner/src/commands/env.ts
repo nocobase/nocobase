@@ -61,9 +61,14 @@ export class EnvSet extends RunnerCommand {
     name: Interfaces.Arg<string>;
     value: Interfaces.Arg<string | undefined>;
   } = {
-    name: Args.string({ description: 'The variable name.', required: true }),
+    name: Args.string({
+      description: 'The variable name.',
+      required: true,
+      ignoreStdin: true,
+    }),
     value: Args.string({
       description: 'The value; read from standard input when left out.',
+      ignoreStdin: true,
     }),
   };
   static override flags: { server: Interfaces.OptionFlag<string | undefined> } =

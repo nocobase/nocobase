@@ -1,5 +1,34 @@
 # @nocobase/app-plugin-agent-sessions
 
+## 0.1.0-beta.1
+
+### Minor Changes
+
+- e23633e: Discover installed agents' real model and configuration choices before a new session's first message. Show loading, fixed, unsupported, offline and retry states, isolate settings by computer, agent and directory, and validate selected values before sending a prompt. Persist acknowledged dependent settings when existing sessions change models so reopening keeps their configuration. Bridge protocol version 2 requires upgrading the application CLI.
+
+### Patch Changes
+
+- 8e4cf26: Recover runners and agent-session bridges after a protocol upgrade. Heartbeat answers now carry the server's runner protocol (`protocolVersion`), and a runner that speaks an older protocol while no newer version is offered logs what it speaks, what the application needs and how to update, instead of looking up to date. A bridge refused for its protocol now receives the protocols the application speaks in the error's `metadata`; `acp start` then updates the CLI as `update` does and exits non-zero so its launchd, systemd or Startup service starts it again on the new version, and when no update helps it still exits non-zero after a pause rather than stopping with success. A computer whose bridge was refused as too old is shown on My agents with the commands to update it.
+- 8558f9f: Show the full title of truncated session work links on hover or keyboard focus.
+- 1ccefb5: Reduce the mobile session header and reply box, keep linked task counts and actual statuses visible, and fit replies to the keyboard viewport. Defer header folding until its height change can be compensated without moving the message being read, including at scroll boundaries. Preserve the compensated reading position when the header resize reaches the automatic bottom-follow observer.
+- 9478dc0: Use the current Studio interface language for task titles and descriptions created in My Agent sessions, respecting explicit user language requests and refreshing instructions after a language switch or session restoration.
+- Updated dependencies [8e4cf26]
+- Updated dependencies [69e212c]
+- Updated dependencies [943a9a8]
+- Updated dependencies [943a9a8]
+- Updated dependencies [e23633e]
+- Updated dependencies [923a8e5]
+- Updated dependencies [1cd749c]
+- Updated dependencies [f36da62]
+- Updated dependencies [bdb0581]
+- Updated dependencies [9b946f4]
+  - @nocobase/agent-protocol@0.1.0-beta.8
+  - @nocobase/acp-bridge@0.1.0-beta.1
+  - @nocobase/app-server@2.0.0-beta.7
+  - @nocobase/db@1.0.0-beta.20
+  - @nocobase/app-plugin-authentication@2.0.0-beta.9
+  - @nocobase/app-plugin-file@1.0.0-beta.23
+
 ## 0.1.0-beta.0
 
 ### Minor Changes

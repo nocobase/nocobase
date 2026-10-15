@@ -11,13 +11,10 @@ import type { Activity } from '@nocobase/app-plugin-projects/shared/issues';
 import { describe, expect, it } from 'vitest';
 
 import {
-  deliveryComment,
-  isDeliveryReport,
   groupFeedRows,
   isSystemEntry,
   newestFirst,
 } from '../../client/issues/live/feed-rows.js';
-import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 
 const at = (minute: number) =>
   new Date(Date.UTC(2026, 9, 12, 13, minute)).toISOString();
@@ -164,65 +161,5 @@ describe('the feed layout', () => {
     expect(groupFeedRows(entries, 'all').map((row) => row.key)).toEqual(
       keys(entries),
     );
-  });
-
-  it('reads a delivery report by its headings, not by prose', () => {
-    expect(
-      isDeliveryReport('## What was asked\nExport CSV\n## Key changes\n- x'),
-    ).toBe(true);
-    expect(isDeliveryReport('**Key changes**\n- x')).toBe(true);
-    expect(isDeliveryReport('Open issues:\n- none')).toBe(true);
-    expect(isDeliveryReport('### 关键改动\n- x')).toBe(true);
-    expect(isDeliveryReport('**遗留问题**：无')).toBe(true);
-    expect(
-      isDeliveryReport('The key changes are in the list view; no open issues.'),
-    ).toBe(false);
-  });
-
-  it('prefers the manager’s delivery report around the move to In review, then the latest agent comment', () => {
-    const agent = { type: 'agent', id: 'sol' };
-    const reviewer = { type: 'agent', id: 'astra' };
-    const manager = { type: 'agent', id: PROJECT_MANAGER_ID };
-    const report = (id: string, minute: number) =>
-      comment(
-        id,
-        minute,
-        manager,
-        '## What was asked\nExport\n## Key changes\n- csv',
-      );
-    const moved = [
-      {
-        action: 'status_changed',
-        details: { to: 'in_review' },
-        createdAt: at(30),
-      },
-    ];
-    const threads = [
-      {
-        root: comment('a1', 10, agent, 'Done: the export keeps the filters.'),
-        replies: [],
-      },
-      { root: report('m-old', 1), replies: [] },
-      {
-        root: report('m1', 31),
-        replies: [comment('r1', 32, reviewer, 'Review: approved, can merge')],
-      },
-      { root: comment('m2', 33, manager, 'Please accept.'), replies: [] },
-    ] as CommentThread[];
-    // A report posted just after the move counts; the reviewer's comment and the manager's prose do not.
-    expect(deliveryComment(threads, moved, PROJECT_MANAGER_ID)).toMatchObject({
-      comment: { id: 'm1' },
-      report: true,
-    });
-    // Without a report: the latest agent comment by the move, labelled as such.
-    const plain = threads.filter((thread) => !thread.root.id.startsWith('m'));
-    expect(deliveryComment(plain, moved, PROJECT_MANAGER_ID)).toMatchObject({
-      comment: { id: 'a1' },
-      report: false,
-    });
-    expect(deliveryComment(plain, [], PROJECT_MANAGER_ID)?.comment.id).toBe(
-      'a1',
-    );
-    expect(deliveryComment([], [], PROJECT_MANAGER_ID)).toBeNull();
   });
 });

@@ -457,3 +457,44 @@ describe('issue context', () => {
     ).toBeUndefined();
   });
 });
+
+it('reuses context only for the same transaction and parameters, and reads fresh after commit or rollback', async () => {
+  const issue = await h.services.issues.create(alice(), { title: 'Before' });
+  const root = h.database.connection();
+  const provider = h.services.issueContext;
+  await root.transaction(async (conn) => {
+    const first = await provider.contextFor(conn, issue.id, { kind: 'user' });
+    expect(await provider.contextFor(conn, issue.id, { kind: 'user' })).toBe(
+      first,
+    );
+    expect(await provider.contextFor(conn, issue.id)).not.toBe(first);
+    expect(await provider.contextFor(conn, 'MISSING-1')).toBeUndefined();
+    expect(await provider.contextFor(conn, 'MISSING-1')).toBeUndefined();
+  });
+  await root.query
+    .updateTable('pmIssues')
+    .set({ title: 'After commit' })
+    .where('id', '=', issue.id)
+    .execute();
+  await expect(
+    root.transaction(async (conn) => {
+      expect((await provider.contextFor(conn, issue.id))?.title).toBe(
+        'After commit',
+      );
+      await conn.query
+        .updateTable('pmIssues')
+        .set({ title: 'Rolled back' })
+        .where('id', '=', issue.id)
+        .execute();
+      throw new Error('rollback');
+    }),
+  ).rejects.toThrow('rollback');
+  await root.query
+    .updateTable('pmIssues')
+    .set({ title: 'Retry' })
+    .where('id', '=', issue.id)
+    .execute();
+  await root.transaction(async (conn) => {
+    expect((await provider.contextFor(conn, issue.id))?.title).toBe('Retry');
+  });
+});

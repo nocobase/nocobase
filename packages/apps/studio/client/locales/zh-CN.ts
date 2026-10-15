@@ -3,6 +3,7 @@ import { followUpsZhCN } from '../follow-ups/locales.js';
 import type { AppResource } from './en-US.js';
 import { gitZhCN } from '../git/locales.js';
 import { knowledgeZhCN } from '../knowledge/locales.js';
+import { taskGroupsZhCN } from '../issues/groups/locales.js';
 import { issuesZhCN } from '../issues/locales.js';
 import { issueLiveZhCN } from '../issues/live/locales.js';
 import { projectPageZhCN } from '../projects/locales.js';
@@ -54,6 +55,10 @@ const zhCN: AppResource = {
   'issueRuns.configuredModel': '配置模型：{{model}}',
   'issueRuns.modelUnknown': '模型尚未报告',
   'issueRuns.clearFilters': '清除筛选',
+  'issueRuns.attemptFailed': '第 {{attempt}} 次尝试失败',
+  'issueRuns.preparationFailed': '运行准备失败',
+  'issueRuns.retryScheduled': '将于 {{time}} 自动重试',
+  'issueRuns.awaitingDispatch': '等待重新派发',
   'issueRuns.emptyHint': '请在属性中确认执行者和任务状态，以启动 Agent 工作。',
   'issueRuns.loading': '正在加载执行记录…',
   'issueRuns.failed': '执行记录加载失败，请重试。',
@@ -103,6 +108,7 @@ const zhCN: AppResource = {
   runTranscript: {
     usedModel: '使用模型：{{model}}',
     defaultModel: '默认模型',
+    confirmedBy: '确认人：{{person}}',
     actingAs: '运行身份：{{actor}}',
     triggeredBy: '触发人：{{person}}',
     systemTrigger: '由系统触发',
@@ -1030,6 +1036,9 @@ const zhCN: AppResource = {
     unknown: '未知',
   },
   studioAgents: {
+    newProjectSkill: '新项目自动挂载',
+    newProjectSkillDescription:
+      '立即保存，仅影响之后创建的项目；已有项目的挂载不变。',
     principalKinds: { agent: 'Agent' },
     templateMessages: {
       inReview:
@@ -1050,6 +1059,8 @@ const zhCN: AppResource = {
       stageEntered: '流程阶段',
       planDecided: '计划已决定',
       prChecksFailed: '检查失败',
+      stepEnded: '执行步骤已结束',
+      managerIdle: '空闲等待复核',
       prChecksPassed: '检查通过',
       started: '开始',
       prConflict: 'PR 冲突',
@@ -1266,6 +1277,7 @@ const zhCN: AppResource = {
   preferences: preferencesZhCN,
   knowledge: knowledgeZhCN,
   issuesPage: issuesZhCN,
+  taskGroups: taskGroupsZhCN,
   followUps: followUpsZhCN,
   issueLive: issueLiveZhCN,
   projectPage: projectPageZhCN,

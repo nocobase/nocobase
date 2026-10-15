@@ -30,6 +30,7 @@ import { studioKeys, useStudioApi } from '../../access/api.js';
 import { useNotify } from '../../access/notify.js';
 import { RoleEditor } from './members/role-editor.js';
 import {
+  copyRoleTitle,
   draftOf,
   requestOf,
   rolePath,
@@ -102,7 +103,7 @@ function RoleBody({
   const duplicate = useMutation({
     mutationFn: () =>
       api.createRole({
-        title: t('roles.copyOf', { name: roleTitle(t, role) }),
+        title: copyRoleTitle(t, roleTitle(t, role)),
         ...requestOf(draft),
       }),
     onSuccess: (copy) => {

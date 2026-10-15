@@ -15,6 +15,7 @@ const zhCN: AgentSessionsResource = {
     sessionNotFound: '这个会话不存在，或者不属于你。',
   },
   list: {
+    expand: '展开会话列表',
     label: '会话',
     title: '我的 Agent',
     archived: '已归档',
@@ -60,12 +61,17 @@ const zhCN: AgentSessionsResource = {
     left: '{{keys}} 留在{{status}}',
     separator: '、',
     comma: '，',
+    waiting: '等你 {{count}}',
     unknown: '未知',
   },
   newSession: {
+    sendUnconfirmed: '发送尚未确认。请使用“重试原提交”恢复发送确认。',
+    settingsOutdated:
+      '这台电脑上的命令行版本过旧，请按“我的电脑”里的提示在那台电脑上更新。',
     settingsOffline: '此电脑已离线。请重新连接桥接程序以加载设置和发送消息。',
     settingsLoading: '正在加载设置…',
     settingsFailed: '无法加载智能体设置。',
+    settingsReset: '使用 Agent 默认设置',
     settingsRetry: '重试设置',
     settingsUnsupported: '此智能体不提供设置，将使用默认值。',
     settingsEmpty: '此智能体没有可配置的设置，将使用默认值。',
@@ -110,6 +116,7 @@ const zhCN: AgentSessionsResource = {
     noProject: '不关联项目',
   },
   session: {
+    info: '会话信息',
     archived: '这个会话已归档，恢复后才能继续。',
     offline: '{{computer}}离线',
     offlineBody:
@@ -140,6 +147,12 @@ const zhCN: AgentSessionsResource = {
     recordBody: '完整记录保存在这里，只有你能看到。',
   },
   composer: {
+    unconfirmed:
+      '发送结果尚未确认。可重试原提交，或编辑为新消息（原消息可能已送达）。',
+    retrySubmission: '重试原提交',
+    editAsNew: '编辑为新消息',
+    sendUnconfirmed: '发送尚未确认。请使用“重试原提交”恢复发送确认。',
+    sending: '正在发送…',
     expand: '展开输入',
     collapse: '收起输入',
     placeholder: '回复，或者说下一件事…',
@@ -234,6 +247,12 @@ const zhCN: AgentSessionsResource = {
     truncated: '只显示前 500 个文件夹。',
   },
   computers: {
+    outdated: {
+      title: '请更新这台电脑上的命令行（{{host}}）',
+      body: '应用拒绝了它的连接：它使用桥接协议 {{bridgeProtocol}}，应用需要 {{protocol}}。在这台电脑上运行：',
+      restart:
+        '更新后的命令行会自动重启后台连接；如果几分钟内仍未重新连接，请运行：',
+    },
     offline: '离线',
     title: '我的电脑',
     description:

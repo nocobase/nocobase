@@ -6,16 +6,16 @@
 
 Get a scope's default skills
 
-The skills every run working in the scope gets (a working directory, or a scope the application registers; an agent's own skills are its `skillIds`).
+The skills every run gets: global default, then application scopes, then working directories; later scopes override the same slug. Global reads require agents.agents read or manage.
 
 ```bash
 nb-studio skill attachment get <kind> <scope>
 ```
 
-| Argument | Description                                                                      |
-| -------- | -------------------------------------------------------------------------------- |
-| `kind`   | The scope kind: `agent`, `workdir`, or one the application registers.            |
-| `scope`  | The scope: an agent id, a working directory id, or the id the application gives. |
+| Argument | Description                                                                               |
+| -------- | ----------------------------------------------------------------------------------------- |
+| `kind`   | The scope kind: `global`, `workdir`, or one the application registers.                    |
+| `scope`  | The scope: `default` for global, a working directory id, or the id the application gives. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -27,16 +27,16 @@ nb-studio skill attachment get <kind> <scope>
 
 Replace a scope's default skills
 
-Makes `skillIds` the skills attached to the scope. Needs the right to change the scope.
+Makes `skillIds` the skills attached to the scope. Global accepts only default and requires agents.agents manage; other scopes need the right to change that scope. An empty skillIds array clears attachments. Agent attachments are refused.
 
 ```bash
 nb-studio skill attachment set <kind> <scope> --skills <string[]>
 ```
 
-| Argument | Description                                                                      |
-| -------- | -------------------------------------------------------------------------------- |
-| `kind`   | The scope kind: `agent`, `workdir`, or one the application registers.            |
-| `scope`  | The scope: an agent id, a working directory id, or the id the application gives. |
+| Argument | Description                                                                               |
+| -------- | ----------------------------------------------------------------------------------------- |
+| `kind`   | The scope kind: `global`, `workdir`, or one the application registers.                    |
+| `scope`  | The scope: `default` for global, a working directory id, or the id the application gives. |
 
 | Flag       | Type     | Description            |
 | ---------- | -------- | ---------------------- |
@@ -51,6 +51,8 @@ nb-studio skill attachment set <kind> <scope> --skills <string[]>
 **Examples:**
 
 ```bash
+nb-studio skill attachment set global default --skills <skill>,<skill>
+nb-studio skill attachment set global default --file empty-skills.json
 nb-studio skill attachment set workdir <workdir> --skills <skill>,<skill>
 ```
 
@@ -229,7 +231,7 @@ The skill library. Needs `agents.agents` read.
 nb-studio skill list
 ```
 
-**Output:** A list (table columns: `id`, `name`, `version`, `agentCount`, `updatedAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
+**Output:** A list (table columns: `id`, `name`, `version`, `updatedAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
 **Who:** People (a sign-in or an API key).
 

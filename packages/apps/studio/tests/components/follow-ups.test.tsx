@@ -93,7 +93,8 @@ const progress = (overrides: Partial<IssueProgress> = {}): IssueProgress => ({
   since: null,
   runner: null,
   pullRequest: null,
-  question: null,
+  needsYou: null,
+  explanationCommentId: null,
   next: null,
   handOver: false,
   ...overrides,
@@ -133,7 +134,10 @@ beforeEach(() => {
         statusKey: 'in_review',
         followed: true,
         unread: 2,
-        progress: progress({ state: 'inReview' }),
+        progress: progress({
+          state: 'inReview',
+          needsYou: 'Review the release page. Confirm acceptance.',
+        }),
       }),
       issue({
         id: 'b1',
@@ -143,7 +147,7 @@ beforeEach(() => {
         lastActivityAt: at(3),
         progress: progress({
           state: 'needsDecision',
-          question: 'Push again?',
+          needsYou: 'Push again?',
         }),
       }),
       issue({
@@ -179,6 +183,10 @@ beforeEach(() => {
   mocks.request.mockImplementation(
     (request: { path: string; method?: string; json?: unknown }) => {
       if (request.path === 'followUps') return Promise.resolve({ data: view });
+      if (request.path === 'followUps/following')
+        return Promise.resolve({
+          data: { issueIds: view.following, max: 5 },
+        });
       if (/^followUps\/issues\/[^/]+\/(?:un)?follow$/u.test(request.path))
         return Promise.resolve({ data: { issueIds: view.following } });
       if (request.path === 'git/marks')
@@ -207,7 +215,11 @@ beforeEach(() => {
         });
       if (request.path.startsWith('issueProgress/'))
         return Promise.resolve({
-          data: progress({ state: 'inReview', next: 'merge once accepted' }),
+          data: progress({
+            state: 'inReview',
+            needsYou: 'Review the release page. Confirm acceptance.',
+            next: 'merge once accepted',
+          }),
         });
       return Promise.resolve(undefined);
     },
@@ -269,7 +281,9 @@ describe('My follow-ups', () => {
     const rail = await mount();
     const first = card(rail, 'WEB-5');
     await waitFor(() =>
-      expect(first.textContent).toContain('Needs you: Accept: PR #12'),
+      expect(first.textContent).toContain(
+        'Needs you: Review the release page. Confirm acceptance.',
+      ),
     );
     // The open issue's count is not shown; the other one's is.
     expect(first.getAttribute('aria-current')).toBe('true');
@@ -293,14 +307,17 @@ describe('My follow-ups', () => {
       expect(panel.textContent).toContain('Checks passed · Has conflicts'),
     );
     expect(within(panel).getByTestId('issue-needs-you').textContent).toContain(
-      'Accept: PR #12',
+      'Review the release page. Confirm acceptance.',
     );
     expect(within(panel).getByTestId('follow-toggle').textContent).toContain(
       'Following · 2/5',
     );
-    // In review: what was delivered and Send back; the feed and the reply box under it.
+    // In review: the structured owner request and Send back; explanation prose stays in the feed.
     const delivery = within(panel).getByTestId('issue-delivery');
-    expect(delivery.textContent).toContain('Implement the change');
+    expect(delivery.textContent).toContain(
+      'Review the release page. Confirm acceptance.',
+    );
+    expect(delivery.textContent).not.toContain('Implement the change');
     fireEvent.click(
       within(delivery).getByRole('button', { name: 'Send back' }),
     );

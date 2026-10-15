@@ -14,6 +14,7 @@
  * `conversation` subject.
  */
 import type { RunApp } from '@nocobase/agent-protocol';
+import { createRunDataPurge } from './core/runs/run-data-purge.js';
 import {
   createModelSelectionPolicies,
   type ModelSelectionPolicies,
@@ -125,8 +126,7 @@ import {
   createRunnerView,
   createSweeper,
   resolveAgentCli,
-  runsHeldBy,
-  runsHeldByTool,
+  runsHeldSnapshot,
   openCounts,
   type AgentCli,
   type Availability,
@@ -143,6 +143,7 @@ import {
 } from './core/runs/index.js';
 
 export interface AgentsDeps {
+  readonly runRetentionDays?: () => number;
   readonly database: Pick<DatabaseManager, 'transaction' | 'connection'>;
   readonly idGenerator: { generateString(): string };
   /**
@@ -244,6 +245,7 @@ export interface Agents {
   readonly gitCredentials: GitCredentialService;
   /** Marks silent runners offline, then takes back and ends the runs and jobs nobody will finish. */
   readonly sweeper: RunnerSweeper;
+  readonly purgeRunData: () => Promise<number>;
   /** Variables of agents, working directories and the scopes the application registers. */
   readonly variables: VariableService;
   /** The skill library and where skills are attached. */
@@ -323,7 +325,7 @@ export function createAgents(deps: AgentsDeps): Agents {
 
   const people = createPeople();
   const dist = createDistService(deps.dist);
-  const slots = createSlots(runsHeldBy, runsHeldByTool);
+  const slots = createSlots(runsHeldSnapshot);
   const runners = createRunnerService({
     tx,
     ids,
@@ -422,6 +424,8 @@ export function createAgents(deps: AgentsDeps): Agents {
     openRuns: openCounts,
   });
   const runs = createRunService({
+    reconcileCommentConsent: (unit, runId) =>
+      claims.reconcileCommentConsent(unit, runId),
     diagnose: (conn, run, agent) => claims.diagnose(conn, run, agent),
     ...transitions,
     tx,
@@ -452,6 +456,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     repoAccess,
     dist,
     slotsUsed: (conn, runnerId) => slots.used(conn, runnerId),
+    slotsHeld: (conn, runnerId) => slots.held(conn, runnerId),
     ...transitions,
     tx,
     ids,
@@ -485,7 +490,13 @@ export function createAgents(deps: AgentsDeps): Agents {
   const sweeper = createRunnerSweeper({
     clock,
     runners,
-    runs: createSweeper({ ...transitions, tx, ids, runners }),
+    runs: createSweeper({
+      ...transitions,
+      tx,
+      ids,
+      runners,
+      reconcileCommentQueue: () => claims.reconcileCommentQueue(),
+    }),
     jobs,
     requests: runs.requests,
   });
@@ -559,6 +570,10 @@ export function createAgents(deps: AgentsDeps): Agents {
   });
 
   return {
+    purgeRunData: createRunDataPurge({
+      tx,
+      retentionDays: deps.runRetentionDays ?? (() => 14),
+    }),
     events,
     tx,
     clock,

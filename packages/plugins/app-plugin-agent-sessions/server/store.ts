@@ -116,7 +116,7 @@ export const computers = (
   conn.repository<ComputerRecord>('agentSessionComputers');
 export const sessions = (conn: DatabaseConnection): Repository<SessionRecord> =>
   conn.repository<SessionRecord>('agentSessions');
-const events = (conn: DatabaseConnection): Repository<EventRecord> =>
+export const events = (conn: DatabaseConnection): Repository<EventRecord> =>
   conn.repository<EventRecord>('agentSessionEvents');
 const commands = (conn: DatabaseConnection): Repository<CommandRecord> =>
   conn.repository<CommandRecord>('agentSessionCommands');
@@ -228,6 +228,7 @@ export async function appendEvents(
   session: SessionRecord,
   appended: readonly SessionEvent[],
   now: string,
+  submission?: { readonly id: string; readonly digest: string },
 ): Promise<number> {
   const base = Number(session.lastSeq);
   const head = appended[0];
@@ -253,11 +254,14 @@ export async function appendEvents(
   const [first, ...rest] = appended
     .map(redacted)
     .map(({ kind, ...data }, index) => ({
-      id: randomUUID(),
+      id: index === 0 && submission ? submission.id : randomUUID(),
       sessionId: session.id,
       seq: base + index + 1,
       kind,
-      data,
+      data:
+        index === 0 && submission
+          ? { ...data, _submission: submission.digest }
+          : data,
       createdAt: now,
     }));
   if (first) await events(conn).createMany({ values: [first, ...rest] });
@@ -277,14 +281,17 @@ export async function readEvents(
     sort: (sort) => sort.field('seq').asc(),
     limit,
   });
-  return rows.map(
-    (row) =>
-      ({
-        ...row.data,
-        kind: row.kind,
-        seq: Number(row.seq),
-      }) as TranscriptEvent,
-  );
+  return rows.map(eventView);
+}
+
+/** Internal submission metadata never enters public transcripts or bridge commands. */
+export function eventView(row: EventRecord): TranscriptEvent {
+  const { _submission: _internal, ...data } = row.data;
+  return {
+    ...data,
+    kind: row.kind,
+    seq: Number(row.seq),
+  } as TranscriptEvent;
 }
 
 export async function enqueue(

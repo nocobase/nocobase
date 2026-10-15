@@ -105,7 +105,7 @@ describe('Studio access, inbox, agents, reports and knowledge search API documen
     expect(findUndeclaredApiRoutes(router)).toEqual([]);
     const routes = inspectApiRoutes(router);
     expect(routes.filter((route) => route.hidden)).toEqual([]);
-    expect(routes).toHaveLength(38);
+    expect(routes).toHaveLength(40);
   });
 
   it('converts every schema cleanly', () => {
@@ -124,7 +124,7 @@ describe('Studio access, inbox, agents, reports and knowledge search API documen
           },
         })),
     );
-    expect(operations).toHaveLength(38);
+    expect(operations).toHaveLength(40);
     for (const { path, operation } of operations) {
       expect(operation.tags).toEqual(['Studio']);
       expect(operation.summary).toBeTruthy();
@@ -147,7 +147,9 @@ describe('Studio access, inbox, agents, reports and knowledge search API documen
         'failedRunsDecide',
         'agentBoardStartIssue',
         'agentBoardIssueWork',
-        'reportsGetDashboard',
+        'reportsGetDelivery',
+        'reportsGetAgents',
+        'reportsGetProjects',
         'reportsGetAttention',
         'knowledgeSearchGetSettings',
       ]),

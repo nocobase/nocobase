@@ -21,13 +21,18 @@ import {
   parseFollowing,
   parseSeen,
   pruneSeen,
+  type FollowingState,
   type FollowingView,
   type FollowUpIssue,
   type FollowUpStatus,
   type FollowUpsView,
 } from '../../shared/follow-ups.js';
 import { studioError } from '../http/errors.js';
-import { issueProgress } from '../agents/manager/progress.js';
+import {
+  issueProgress,
+  prefetchProgressReads,
+  type ProgressMemo,
+} from '../agents/manager/progress.js';
 
 /** The part of the users plugin's preferences service this reads and writes. */
 export interface FollowUpPreferences {
@@ -50,6 +55,13 @@ export interface FollowUpsDeps {
 
 export interface FollowUps {
   overview(viewer: Viewer): Promise<FollowUpsView>;
+  /**
+   * The overview's rows of the issues among `issueIds` it lists (the viewer's own in `FOLLOW_UP_STATUSES` and the ones
+   * they follow), for the page to refresh only them; the others are left out.
+   */
+  rows(viewer: Viewer, issueIds: readonly string[]): Promise<FollowUpIssue[]>;
+  /** What the viewer follows now, the issues they can no longer see left out, and how many they may. */
+  following(viewer: Viewer): Promise<FollowingState>;
   /** Replaces what the viewer follows; 400 when an issue is not one they can see. */
   setFollowing(
     viewer: Viewer,
@@ -64,6 +76,16 @@ export interface FollowUps {
   unfollow(viewer: Viewer, issueIdOrKey: string): Promise<FollowingView>;
   /** Records that the viewer looked at the issue now; 404 when they cannot see it. */
   markSeen(viewer: Viewer, issueId: string): Promise<void>;
+  /**
+   * What the viewer follows, in order, and how much happened on each since they last looked; without the overview's
+   * progress, for the issue lists' follow group.
+   */
+  followState(viewer: Viewer): Promise<FollowState>;
+}
+
+export interface FollowState {
+  readonly ids: readonly string[];
+  readonly unread: ReadonlyMap<string, number>;
 }
 
 /** Records of work the system did not start, which say nothing new to a person. */
@@ -130,12 +152,28 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
     since: string,
   ): Promise<number> {
     const after = Date.parse(since);
-    const { data } = await projects.issueQueries.activities(viewer, issueId, {
-      limit: UNREAD_MAX,
-    });
+    // The newest activities, as the issue's timeline reads them; the overview has checked the viewer sees the issue.
+    const data = await projects.tx
+      .read()
+      .repository<{
+        id: string;
+        issueId: string;
+        actorType: string;
+        actorId: string | null;
+        action: string;
+        createdAt: string | Date;
+      }>('pmActivities')
+      .findMany({
+        filter: { issueId },
+        sort: (sort) => [
+          sort.field('createdAt').desc(),
+          sort.field('id').desc(),
+        ],
+        limit: UNREAD_MAX,
+      });
     return data.filter(
       (activity) =>
-        Date.parse(activity.createdAt) > after &&
+        new Date(activity.createdAt).getTime() > after &&
         !QUIET_ACTIONS.has(activity.action) &&
         !(activity.actorType === 'user' && activity.actorId === viewer.userId),
     ).length;
@@ -176,9 +214,22 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
     };
   }
 
+  /**
+   * What the viewer chose to follow, only issues they can still see. Starring and the issue lists go by this alone: the
+   * overview's defaults stand in for a choice on "My follow-ups" only, and never become one by themselves.
+   */
+  async function chosenFollowing(viewer: Viewer): Promise<string[]> {
+    const stored =
+      parseFollowing(
+        await preferences.get(viewer.userId, FOLLOWING_PREFERENCE),
+      ) ?? [];
+    const found = await visible(viewer, stored);
+    return stored.filter((id) => found.has(id));
+  }
+
   /** The issue's id; 404 when the viewer cannot see it. */
   async function issueIdOf(viewer: Viewer, issueIdOrKey: string) {
-    const issue = await projects.issueQueries.detail(viewer, issueIdOrKey);
+    const issue = await projects.issueQueries.visible(viewer, issueIdOrKey);
     if (issue.deletedAt)
       throw studioError('NOT_FOUND', 'ISSUE_NOT_FOUND', 'Issue not found.');
     return issue.id;
@@ -202,6 +253,54 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
       await preferences.set(userId, SEEN_PREFERENCE, pruneSeen(seen, ids));
     await preferences.set(userId, FOLLOWING_PREFERENCE, [...ids]);
     return { issueIds: [...ids] };
+  }
+
+  /** The rows of `issues`, each with its progress, read for all of them at once, and its unread count. */
+  async function summarize(
+    viewer: Viewer,
+    issues: readonly IssueListItem[],
+    owns: (issue: IssueListItem) => boolean,
+    followed: ReadonlySet<string>,
+    seen: Readonly<Record<string, string>>,
+  ): Promise<FollowUpIssue[]> {
+    const conn = projects.tx.read();
+    const memo: ProgressMemo = new Map();
+    const progressViewer = { userId: viewer.userId, seesMachines: false };
+    const wantsProgress = (issue: IssueListItem) =>
+      followed.has(issue.id) || issue.statusKey !== 'backlog';
+    const reads = await prefetchProgressReads(
+      { agents, projects },
+      conn,
+      issues.filter(wantsProgress),
+      progressViewer,
+    );
+    return mapLimited(issues, async (issue): Promise<FollowUpIssue> => {
+      const isFollowed = followed.has(issue.id);
+      const seenAt = isFollowed ? (seen[issue.id] ?? null) : null;
+      return {
+        id: issue.id,
+        identifier: issue.identifier,
+        title: issue.title,
+        statusKey: issue.statusKey,
+        projectId: issue.projectId,
+        executorName: issue.executorName,
+        lastActivityAt: issue.lastActivityAt,
+        owned: owns(issue),
+        followed: isFollowed,
+        progress: wantsProgress(issue)
+          ? await issueProgress(
+              { agents, projects },
+              conn,
+              issue,
+              progressViewer,
+              memo,
+              { reads, list: true },
+            )
+          : null,
+        unread: seenAt ? await unreadOf(viewer, issue.id, seenAt) : 0,
+        seenAt,
+      };
+    });
   }
 
   return {
@@ -258,34 +357,12 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
           return issue ? [issue] : [];
         }),
       ];
-      const conn = projects.tx.read();
-      const summaries = await mapLimited(
+      const summaries = await summarize(
+        viewer,
         issues,
-        async (issue): Promise<FollowUpIssue> => {
-          const isFollowed = followed.has(issue.id);
-          const isOwned = ownedById.has(issue.id);
-          const seenAt = isFollowed ? (seen[issue.id] ?? null) : null;
-          const wantsProgress = isFollowed || issue.statusKey !== 'backlog';
-          return {
-            id: issue.id,
-            identifier: issue.identifier,
-            title: issue.title,
-            statusKey: issue.statusKey,
-            projectId: issue.projectId,
-            executorName: issue.executorName,
-            lastActivityAt: issue.lastActivityAt,
-            owned: isOwned,
-            followed: isFollowed,
-            progress: wantsProgress
-              ? await issueProgress({ agents, projects }, conn, issue, {
-                  userId: viewer.userId,
-                  seesMachines: false,
-                })
-              : null,
-            unread: seenAt ? await unreadOf(viewer, issue.id, seenAt) : 0,
-            seenAt,
-          };
-        },
+        (issue) => ownedById.has(issue.id),
+        followed,
+        seen,
       );
       return {
         following,
@@ -294,6 +371,32 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
         counts,
         truncated,
       };
+    },
+
+    async rows(viewer, issueIds) {
+      const found = await visible(viewer, [...new Set(issueIds)]);
+      if (found.size === 0) return [];
+      const { ids: following } = await currentFollowing(viewer);
+      const followed = new Set(following);
+      const owns = (issue: IssueListItem) =>
+        issue.ownerUserId === viewer.userId &&
+        (FOLLOW_UP_STATUSES as readonly string[]).includes(issue.statusKey);
+      const listed = [...found.values()].filter(
+        (issue) => owns(issue) || followed.has(issue.id),
+      );
+      if (listed.length === 0) return [];
+      return summarize(
+        viewer,
+        listed,
+        owns,
+        followed,
+        await readSeen(viewer.userId),
+      );
+    },
+
+    async following(viewer) {
+      const { ids, stored } = await currentFollowing(viewer);
+      return { issueIds: ids, max: FOLLOW_UPS_MAX, stored };
     },
 
     async setFollowing(viewer, issueIds) {
@@ -331,12 +434,8 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
 
     async follow(viewer, issueIdOrKey) {
       const issueId = await issueIdOf(viewer, issueIdOrKey);
-      const { ids, stored } = await currentFollowing(viewer);
-      if (ids.includes(issueId)) {
-        if (stored) return { issueIds: ids };
-        // Following one of the defaults makes the defaults the viewer's choice.
-        return saveFollowing(viewer, ids);
-      }
+      const ids = await chosenFollowing(viewer);
+      if (ids.includes(issueId)) return { issueIds: ids };
       if (ids.length >= FOLLOW_UPS_MAX)
         throw studioError(
           'FAILED_PRECONDITION',
@@ -349,12 +448,34 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
 
     async unfollow(viewer, issueIdOrKey) {
       const issueId = await issueIdOf(viewer, issueIdOrKey);
-      const { ids } = await currentFollowing(viewer);
+      // Unfollowing one of "My follow-ups"' defaults keeps the others, which become the viewer's choice.
+      const stored = parseFollowing(
+        await preferences.get(viewer.userId, FOLLOWING_PREFERENCE),
+      );
+      const ids =
+        stored === null
+          ? await (async () => {
+              const defaults = await defaultFollowing(viewer);
+              const found = await visible(viewer, defaults);
+              return defaults.filter((id) => found.has(id));
+            })()
+          : await chosenFollowing(viewer);
       if (!ids.includes(issueId)) return { issueIds: ids };
       return saveFollowing(
         viewer,
         ids.filter((id) => id !== issueId),
       );
+    },
+
+    async followState(viewer) {
+      const ids = await chosenFollowing(viewer);
+      const seen = await readSeen(viewer.userId);
+      const unread = new Map<string, number>();
+      for (const id of ids) {
+        const at = seen[id];
+        unread.set(id, at ? await unreadOf(viewer, id, at) : 0);
+      }
+      return { ids, unread };
     },
 
     async markSeen(viewer, issueId) {

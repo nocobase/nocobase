@@ -77,6 +77,16 @@ sessions.registerProjects({
 
 With `search`, a person mentions records in a message by typing `#`: the composer offers those matching what follows, the session's project's first, and inserts `#ST-58`. A mentioned record is tied to the session as already decided, so the session shows it without asking to start it, and the agent is told what each mention is beneath the message; the transcript keeps the message as written, its mentions linking to the record.
 
+A record's `status` carries its `label` and a `tone` (`idle`, `active`, `attention`, `done`), which older data has alone. Give it an `icon` too (`backlog`, `started`, `blocked`, `review`, `done`, `closed`) and, when it waits for the viewer, `needsYou` ("Needs your acceptance"): the page then draws the status as that shape, orders the session's bar by it and counts what waits for the viewer.
+
+To open a kind's records beside the conversation instead of at their `href`, give `agentSessionsRoute` a panel for that kind, a component taking `LinkPanelProps` (the record, its place among the session's records of that kind, previous, next and close, and `variant`: `side` beside the conversation or `sheet` on a phone):
+
+```ts
+agentSessionsRoute({ cli: 'acme', linkPanels: { issue: IssuePanel } }),
+```
+
+The open record is in the address as `?<kind>=<refId>`; J and K move among the session's records of that kind and Esc closes it. Below 1600 pixels wide the session list folds to a rail while a record is open.
+
 ### What the agent knows of the session's work
 
 The records tied to a session, created in it or mentioned in its messages, are what the person means by "the tasks", and the agent is told so. A message carries the list beneath it whenever it changed since the agent was last told, each record with its standing in the person's language and what is new or changed marked, so that an agent coming back to a session a day later learns what happened meanwhile; a message after which nothing changed carries nothing. Every session's agent also has the tool `list_session_work`, which lists that work with how each is going as the kind's `progress` tells it, and the MCP `initialize` answer lists the work when the agent's session opens. `agentSessions.toldWork` keeps what the agent was last told, and `locale` the interface language supplied with its owner’s latest message. Application instructions can be registered as a string or a `(viewer) => string` resolver; the resolver receives that current locale on each message, and the existing instruction hash resends instructions when their generated content changes. MCP initialization resolves the same instructions using the session’s latest locale.
@@ -176,3 +186,13 @@ pnpm --filter @nocobase/app-plugin-agent-sessions typecheck
 pnpm --filter @nocobase/app-plugin-agent-sessions test
 pnpm --filter @nocobase/app-plugin-agent-sessions build
 ```
+
+## Retaining new-session state across navigation
+
+An application can mount `AgentSessionsProvider` from `@nocobase/app-plugin-agent-sessions/client` inside its authentication provider and above its routes, with `owner` set to the authenticated user ID (or `null` when signed out). The routed pages then use that owner’s cache and a single live subscription across navigation. Changing owner destroys the previous cache; do not reuse an owner identifier across users. Studio supplies its owner-aware component through `agentSessions({ routes: false, cacheProvider: { name: 'owner-cache', after: ['@nocobase/app-plugin-authentication:authentication'], component: OwnerCache } })`. The plugin registers it in the extension layer after authentication; application-owned provider definitions cannot use that layer.
+
+Discovery results remain valid for at most five minutes for the computer, agent metadata, directory, exposed roots/home/host and selected settings. Computer notifications and realtime reconnect invalidate discovery without clearing the selection or draft; expired or refreshing results cannot authorize sending. External agent configuration changes without an observable notification are bounded by that lifetime and can be refreshed with Retry. Same-key in-flight requests survive navigation, share one result and retain their thirty-second timeout; abandoning client waiting does not cancel queued bridge work. New-session drafts, attachments and selections live only in the owner’s memory cache, with a thirty-minute inactive eviction period, and disappear on reload, sign-out or account changes.
+
+Both session creation and prompt submission accept an optional UUID `submissionId`. The browser always supplies it and retains the exact input with that ID until confirmation. After an uncertain result, **Retry original submission** sends the captured input with the same ID; **Edit as new message** explicitly releases it for a new submission, warning that the original may have arrived. Retry can recover confirmation while the computer is offline or the session is archived. No automatic retry or page-persistent recovery is performed; reload and account changes discard pending input. Legacy requests without an ID keep their previous behavior and have no duplicate protection.
+
+The prompt event's existing primary key stores the submission ID; session creation uses that ID for both the session and its first prompt event. An internal digest of the normalized operation, target and ordered input detects conflicting reuse, which returns `409 AGENT_SESSIONS_SUBMISSION_CONFLICT` without exposing another owner's data. Internal digest metadata is removed from transcript responses and never sent to the bridge. The session, first event, links, image metadata and command commit together; notifications follow commit. Concurrent conflicts roll back before reading the original confirmation. Credentials last as long as the prompt event: permanent data removal or manual database restoration is outside this guarantee. No new collection, index or migration is required.

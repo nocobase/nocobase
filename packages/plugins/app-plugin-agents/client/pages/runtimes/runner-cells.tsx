@@ -13,7 +13,7 @@ import {
   toolUsage,
   type Runner,
   type RunnerActivity,
-  type RunnerSummary,
+  type RunnerListItem,
   type ToolState,
 } from '../../../shared/runners.js';
 import { AgTag, type Tone } from '../../components/ag-tag.js';
@@ -49,7 +49,7 @@ export function RunnerStatusCell({
   runner,
 }: {
   readonly runner: Pick<
-    RunnerSummary,
+    RunnerListItem,
     | 'status'
     | 'slots'
     | 'activeRuns'
@@ -251,7 +251,7 @@ export function RunnerUpgradeRequired({
   runner,
 }: {
   readonly runner: Pick<
-    RunnerSummary,
+    RunnerListItem,
     | 'version'
     | 'product'
     | 'protocolVersion'

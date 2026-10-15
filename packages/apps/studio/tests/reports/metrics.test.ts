@@ -69,12 +69,13 @@ async function seed() {
     // A person executes it and hands the agent its step.
     const issue = await h.projects.issues.create(alice, {
       title: `Work ${index + 1}`,
+      ownerUserId: index < 2 ? 'alice' : 'bob',
       projectId,
       executor: null,
       statusKey: 'in_progress',
       start: false,
     });
-    // Alice hands the first two their step, Bob the last: its run acts for him.
+    // Each owner hands the agent their step; Bob owns the last issue.
     await h.projects.comments.post(
       { type: 'user', id: index < 2 ? 'alice' : 'bob' },
       issue.id,

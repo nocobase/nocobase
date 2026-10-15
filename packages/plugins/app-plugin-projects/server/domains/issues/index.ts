@@ -32,6 +32,7 @@ export {
   type IssueMatches,
   type IssueMatchScope,
   type IssueQueries,
+  type IssueHierarchy,
 } from './issue.queries.js';
 export {
   CONTEXT_COMMENT_LIMIT,

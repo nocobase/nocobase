@@ -848,6 +848,63 @@ describe('run requests', () => {
     expect((await h.request('GET', '/agents/runRequests')).status).toBe(401);
   });
 
+  it('lists requests on several subjects in some statuses at once, and the open runs on each', async () => {
+    await setUp();
+    const first = await bobAsks('One.');
+    await bobAsks('Two.', { subject: { kind: 'sample', id: '2' } });
+    await bobAsks('Three.', { subject: { kind: 'sample', id: '3' } });
+    const firstId = first.outcome === 'pending' ? first.requestId : '';
+    await h.services.runs.requests.reject(firstId, ALICE);
+    const texts = async (statuses: readonly ('pending' | 'rejected')[]) =>
+      (
+        await h.services.runs.requests.list({
+          userId: ALICE,
+          subject: { kind: 'sample' },
+          subjectIds: ['1', '2'],
+          statuses,
+        })
+      )
+        .map((request) => request.input.text)
+        .sort();
+    expect(await texts(['pending', 'rejected'])).toEqual(['One.', 'Two.']);
+    expect(await texts(['pending'])).toEqual(['Two.']);
+    expect(await texts([])).toEqual([]);
+    expect(
+      await h.services.runs.requests.list({
+        userId: ALICE,
+        subject: { kind: 'sample' },
+        subjectIds: [],
+      }),
+    ).toEqual([]);
+
+    // Alice's own work runs at once.
+    const own = (id: string) =>
+      h.services.runs.enqueue({
+        agentId,
+        subject: { kind: 'sample', id },
+        responsibleUserId: ALICE,
+        input: comment(ALICE, `Work on ${id}.`),
+      });
+    await own('1');
+    await own('3');
+    const conn = h.database.connection();
+    const open = await h.services.runs.openOnEach(conn, 'sample', [
+      '1',
+      '2',
+      '3',
+    ]);
+    expect(open.map((run) => run.subject.id).sort()).toEqual(['1', '3']);
+    for (const id of ['1', '2', '3'])
+      expect(
+        open.filter((run) => run.subject.id === id).map((run) => run.id),
+      ).toEqual(
+        (await h.services.runs.openOn(conn, { kind: 'sample', id })).map(
+          (run) => run.id,
+        ),
+      );
+    expect(await h.services.runs.openOnEach(conn, 'sample', [])).toEqual([]);
+  });
+
   it('carries the source of a chain of work along the runs it causes', async () => {
     await setUp();
     await h.registerRunner({ trust: 'team' });

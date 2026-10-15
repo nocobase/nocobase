@@ -484,9 +484,13 @@ describe('durable bounded account removal', () => {
     });
     try {
       await runtime.start();
-      await vi.waitFor(async () => {
-        expect(await store.getAccount(account.id)).toBeUndefined();
-      });
+      // Real database cleanup can outlast waitFor's one-second default.
+      await vi.waitFor(
+        async () => {
+          expect(await store.getAccount(account.id)).toBeUndefined();
+        },
+        { timeout: 15000 },
+      );
       expect(await count('mailAccountRemovals')).toBe(0);
     } finally {
       await runtime.close();

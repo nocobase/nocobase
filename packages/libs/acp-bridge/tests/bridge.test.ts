@@ -6,8 +6,9 @@ import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { BRIDGE_HEADERS } from '../src/protocol.js';
+import { BRIDGE_HEADERS, BRIDGE_PROTOCOL_VERSION } from '../src/protocol.js';
 import * as agents from '../src/agents.js';
+import { BridgeSession } from '../src/session.js';
 import { AgentProcess } from '../src/agent-process.js';
 import type { BridgeCommand } from '../src/protocol.js';
 
@@ -18,7 +19,11 @@ interface Seen {
   readonly body: Record<string, unknown>;
 }
 
-type Answer = { readonly status?: number; readonly data?: unknown };
+type Answer = {
+  readonly status?: number;
+  readonly data?: unknown;
+  readonly error?: Record<string, unknown>;
+};
 
 let root: string;
 let server: Server;
@@ -43,13 +48,19 @@ beforeEach(async () => {
         body: JSON.parse(text || '{}') as Record<string, unknown>,
       };
       seen.push(one);
-      const { status = 200, data } = one.path.endsWith('/poll')
+      const {
+        status = 200,
+        data,
+        error,
+      }: Answer = one.path.endsWith('/poll')
         ? { data: { commands: commands.splice(0) } }
         : answer(one);
       const body = JSON.stringify(
         status === 200
           ? { data }
-          : { error: { reason: 'AGENT_SESSIONS_COMPUTER_KEY_INVALID' } },
+          : {
+              error: error ?? { reason: 'AGENT_SESSIONS_COMPUTER_KEY_INVALID' },
+            },
       );
       // A poll waits a little, as the application's does.
       setTimeout(
@@ -100,6 +111,47 @@ const registers = (): Seen[] =>
   seen.filter((request) => request.path.endsWith('/register'));
 
 describe('runBridge', () => {
+  it('delivers discovered choices before slow cleanup and awaits cleanup during shutdown', async () => {
+    let release: (() => void) | undefined;
+    vi.spyOn(BridgeSession.prototype, 'discover').mockResolvedValue({
+      status: 'available',
+      choices: [],
+    });
+    vi.spyOn(BridgeSession.prototype, 'close').mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        }),
+    );
+    answer = () => ({ data: { computerId: 'c1', key: 'k1' } });
+    commands.push({
+      type: 'discoverChoices',
+      requestId: 'd1',
+      agentId: 'opencode',
+      cwd: root,
+      settings: {},
+    });
+    const { done, stop } = await run();
+    try {
+      await until(() => seen.some((one) => one.path.endsWith('/reply')));
+      expect(release).toBeDefined();
+      expect(
+        seen.find((one) => one.path.endsWith('/reply'))?.body,
+      ).toMatchObject({ requestId: 'd1', discovery: { status: 'available' } });
+      let settled = false;
+      void done.then(() => {
+        settled = true;
+      });
+      stop();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(settled).toBe(false);
+    } finally {
+      release?.();
+      stop();
+      await done;
+    }
+  });
+
   it('refreshes with separate probe processes while an active session keeps running', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     vi.spyOn(agents, 'resolveAgent').mockImplementation(async (spec) =>
@@ -328,6 +380,49 @@ describe('runBridge', () => {
       message: expect.stringMatching(/no longer connected/u),
     });
     expect(registers().every((request) => request.key === 'old')).toBe(true);
+  });
+
+  it('stops for an update when the application refuses its protocol, saying which one it speaks', async () => {
+    const { BridgeUpgradeRequired } = await import('../src/bridge.js');
+    const refused = (metadata?: Record<string, unknown>): Answer => ({
+      status: 400,
+      error: {
+        reason: 'AGENT_SESSIONS_UPGRADE_REQUIRED',
+        message: 'The bridge speaks another protocol version.',
+        ...(metadata ? { metadata } : {}),
+      },
+    });
+
+    answer = () =>
+      refused({
+        bridgeProtocol: BRIDGE_PROTOCOL_VERSION,
+        protocol: BRIDGE_PROTOCOL_VERSION + 1,
+        supportedProtocols: [BRIDGE_PROTOCOL_VERSION + 1],
+      });
+    let failure: unknown = await (await run()).done.catch((error) => error);
+    expect(failure).toBeInstanceOf(BridgeUpgradeRequired);
+    expect(failure).toMatchObject({
+      protocol: BRIDGE_PROTOCOL_VERSION + 1,
+      bridgeProtocol: BRIDGE_PROTOCOL_VERSION,
+      bridgeIsOlder: true,
+    });
+
+    // An application older than the bridge: updating the bridge does not help.
+    answer = () => refused({ protocol: BRIDGE_PROTOCOL_VERSION - 1 });
+    failure = await (await run()).done.catch((error) => error);
+    expect(failure).toMatchObject({ bridgeIsOlder: false });
+
+    // An application from before it said which protocol it speaks.
+    answer = () => refused();
+    failure = await (await run()).done.catch((error) => error);
+    expect(failure).toMatchObject({ protocol: undefined, bridgeIsOlder: true });
+
+    // Refused when it registers again while running, as after the application was updated under it.
+    let accepted = 0;
+    answer = () =>
+      accepted++ === 0 ? { data: { computerId: 'c1', key: 'k1' } } : refused();
+    failure = await (await run()).done.catch((error) => error);
+    expect(failure).toBeInstanceOf(BridgeUpgradeRequired);
   });
 
   it('connects again as the person when the key is refused at start', async () => {

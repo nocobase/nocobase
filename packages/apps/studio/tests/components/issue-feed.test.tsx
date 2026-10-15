@@ -11,6 +11,7 @@ import type { TimelineEntry } from '@nocobase/app-plugin-projects/client/issues'
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -19,19 +20,28 @@ import {
   within,
 } from '@testing-library/react';
 import type { ReactElement } from 'react';
-import { MemoryRouter } from 'react-router';
+import {
+  Link,
+  MemoryRouter,
+  useLocation,
+  useNavigationType,
+} from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import enUS from '../../client/locales/en-US.js';
 import { Clamped } from '../../client/issues/live/clamped.js';
 import { IssueConversation } from '../../client/issues/live/conversation.js';
 import { FollowToggle } from '../../client/issues/live/follow-toggle.js';
-import { IssueFeed } from '../../client/issues/live/issue-feed.js';
+import {
+  COMMENT_HIGHLIGHT_FADE_MS,
+  IssueFeed,
+} from '../../client/issues/live/issue-feed.js';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
   entries: [] as TimelineEntry[],
+  timelineTargets: [] as (string | null)[],
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
@@ -61,12 +71,19 @@ vi.mock('@nocobase/app-plugin-projects/client/issues', () => ({
   useKindLabel: () => (kind: string) => kind,
   useMentionSearch: () => () => Promise.resolve([]),
   useIssueCommentActions: () => ({}),
-  useIssueTimeline: () => ({
-    entries: mocks.entries,
-    hasOlder: false,
-    loadingOlder: false,
-    loadOlder: () => undefined,
-  }),
+  useIssueTimeline: (
+    _detail: unknown,
+    _runs: unknown,
+    targetId: string | null,
+  ) => {
+    mocks.timelineTargets.push(targetId);
+    return {
+      entries: mocks.entries,
+      hasOlder: false,
+      loadingOlder: false,
+      loadOlder: () => undefined,
+    };
+  },
 }));
 vi.mock('@nocobase/app-plugin-agents/client/kit', () => ({
   AgentAvatar: () => null,
@@ -179,7 +196,19 @@ const detail = {
   statuses: [],
 } as unknown as IssueDetail;
 
-async function mount(node: ReactElement) {
+/** Shows the current location and how it was reached, so a test can check a push from a replace. */
+function LocationProbe() {
+  const location = useLocation();
+  const type = useNavigationType();
+  return (
+    <div data-testid='location-probe' data-nav-type={type}>
+      {location.pathname}
+      {location.search}
+    </div>
+  );
+}
+
+async function mount(node: ReactElement, initialEntries?: string[]) {
   const runtime = await createTestI18nRuntime({
     application: { namespace: 'studio', resources: enUS },
     locale: 'en-US',
@@ -187,17 +216,27 @@ async function mount(node: ReactElement) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  render(
+  const app = (child: ReactElement) => (
     <TestI18nProvider runtime={runtime} namespace='studio'>
       <QueryClientProvider client={client}>
-        <MemoryRouter>{node}</MemoryRouter>
+        <MemoryRouter {...(initialEntries ? { initialEntries } : {})}>
+          <LocationProbe />
+          <Link to='/my-issues'>Other page</Link>
+          {child}
+        </MemoryRouter>
       </QueryClientProvider>
-    </TestI18nProvider>,
+    </TestI18nProvider>
   );
+  const rendered = render(app(node));
+  return {
+    ...rendered,
+    rerenderNode: (child: ReactElement) => rendered.rerender(app(child)),
+  };
 }
 
 beforeEach(() => {
   mocks.request.mockReset();
+  mocks.timelineTargets = [];
   mocks.entries = [
     thread(
       comment(
@@ -290,7 +329,7 @@ describe('the issue feed', () => {
     expect((await screen.findByRole('dialog')).textContent).toBe('shot.png');
   });
 
-  it('folds the comment the summary shows as delivery notes to one line', async () => {
+  it('keeps the delivery explanation visible in the conversation', async () => {
     const delivery = comment(
       'd1',
       5,
@@ -314,12 +353,6 @@ describe('the issue feed', () => {
       </IssueConversation>,
     );
     const feed = await screen.findByTestId('issue-feed');
-    expect(feed.textContent).not.toContain('the export keeps the filters');
-    fireEvent.click(
-      within(feed).getByRole('button', {
-        name: 'Delivery notes — shown above',
-      }),
-    );
     expect(feed.textContent).toContain('the export keeps the filters');
   });
 
@@ -350,19 +383,226 @@ describe('the issue feed', () => {
   });
 });
 
+describe('a `?comment=` link', () => {
+  beforeEach(() => {
+    mocks.entries = [
+      thread(
+        comment('c1', 1, { type: 'user', id: 'bob', name: 'Bob' }, 'Root note'),
+      ),
+    ];
+  });
+
+  it('highlights the comment, then drops the parameter by replacing the address, not pushing one', async () => {
+    await mount(
+      <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+        <IssueFeed />
+      </IssueConversation>,
+      ['/issues/i1?comment=c1'],
+    );
+    const feed = await screen.findByTestId('issue-feed');
+    const target = within(feed)
+      .getByText('Root note')
+      .closest('[data-comment-id="c1"]') as HTMLElement;
+    expect(target.className).toContain('ring-2');
+    const probe = await screen.findByTestId('location-probe');
+    await waitFor(() => expect(probe.textContent).toBe('/issues/i1'));
+    expect(probe.getAttribute('data-nav-type')).toBe('REPLACE');
+  });
+
+  it('fades the highlight a few seconds after the comment is located', async () => {
+    vi.useFakeTimers();
+    try {
+      await mount(
+        <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+          <IssueFeed />
+        </IssueConversation>,
+        ['/issues/i1?comment=c1'],
+      );
+      const feed = screen.getByTestId('issue-feed');
+      const target = within(feed)
+        .getByText('Root note')
+        .closest('[data-comment-id="c1"]') as HTMLElement;
+      expect(target.className).toContain('ring-2');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(COMMENT_HIGHLIGHT_FADE_MS);
+      });
+      expect(target.className).not.toContain('ring-2');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('restarts the fade timer when the same comment is located again', async () => {
+    vi.useFakeTimers();
+    try {
+      await mount(
+        <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+          <Link to='/issues/i1?comment=c1'>Locate the same comment</Link>
+          <IssueFeed />
+        </IssueConversation>,
+        ['/issues/i1?comment=c1'],
+      );
+      const feed = screen.getByTestId('issue-feed');
+      const target = within(feed)
+        .getByText('Root note')
+        .closest('[data-comment-id="c1"]') as HTMLElement;
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(COMMENT_HIGHLIGHT_FADE_MS);
+      });
+      expect(target.className).not.toContain('ring-2');
+
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('link', { name: 'Locate the same comment' }),
+        );
+      });
+      expect(target.className).toContain('ring-2');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(COMMENT_HIGHLIGHT_FADE_MS);
+      });
+      expect(target.className).not.toContain('ring-2');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('starts a fresh fade timer when locating a different loaded comment', async () => {
+    vi.useFakeTimers();
+    try {
+      mocks.entries = [
+        thread(
+          comment(
+            'c1',
+            1,
+            { type: 'user', id: 'bob', name: 'Bob' },
+            'Root note',
+          ),
+        ),
+        thread(
+          comment(
+            'c2',
+            2,
+            { type: 'user', id: 'bob', name: 'Bob' },
+            'Another note',
+          ),
+        ),
+      ];
+      await mount(
+        <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+          <Link to='/issues/i1?comment=c2'>Locate another comment</Link>
+          <IssueFeed />
+        </IssueConversation>,
+        ['/issues/i1?comment=c1'],
+      );
+      const feed = screen.getByTestId('issue-feed');
+      const firstTarget = within(feed)
+        .getByText('Root note')
+        .closest('[data-comment-id="c1"]') as HTMLElement;
+      const nextTarget = within(feed)
+        .getByText('Another note')
+        .closest('[data-comment-id="c2"]') as HTMLElement;
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(COMMENT_HIGHLIGHT_FADE_MS);
+      });
+      expect(firstTarget.className).not.toContain('ring-2');
+
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole('link', { name: 'Locate another comment' }),
+        );
+      });
+      expect(nextTarget.className).toContain('ring-2');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(COMMENT_HIGHLIGHT_FADE_MS);
+      });
+      expect(nextTarget.className).not.toContain('ring-2');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('cancels the highlight on the next click anywhere', async () => {
+    await mount(
+      <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+        <IssueFeed />
+      </IssueConversation>,
+      ['/issues/i1?comment=c1'],
+    );
+    const feed = await screen.findByTestId('issue-feed');
+    const target = within(feed)
+      .getByText('Root note')
+      .closest('[data-comment-id="c1"]') as HTMLElement;
+    expect(target.className).toContain('ring-2');
+    fireEvent.click(document.body);
+    await waitFor(() => expect(target.className).not.toContain('ring-2'));
+  });
+
+  it('cleans the address immediately and keeps locating after a click during loading', async () => {
+    mocks.entries = [];
+    const page = await mount(
+      <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+        <IssueFeed />
+      </IssueConversation>,
+      ['/issues/i1?view=list&owner=alice&comment=c1'],
+    );
+    const probe = await screen.findByTestId('location-probe');
+    await waitFor(() =>
+      expect(probe.textContent).toBe('/issues/i1?view=list&owner=alice'),
+    );
+    expect(probe.getAttribute('data-nav-type')).toBe('REPLACE');
+    expect(mocks.timelineTargets.at(-1)).toBe('c1');
+
+    fireEvent.click(document.body);
+    expect(mocks.timelineTargets.at(-1)).toBe('c1');
+
+    mocks.entries = [
+      thread(
+        comment('c1', 1, { type: 'user', id: 'bob', name: 'Bob' }, 'Root note'),
+      ),
+    ];
+    await act(async () =>
+      page.rerenderNode(
+        <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+          <IssueFeed />
+        </IssueConversation>,
+      ),
+    );
+    const feed = await screen.findByTestId('issue-feed');
+    const target = within(feed)
+      .getByText('Root note')
+      .closest('[data-comment-id="c1"]') as HTMLElement;
+    expect(target.className).not.toContain('ring-2');
+    expect(screen.getByTestId('location-probe').textContent).toBe(
+      '/issues/i1?view=list&owner=alice',
+    );
+    fireEvent.click(screen.getByRole('link', { name: 'Other page' }));
+    expect(screen.getByTestId('location-probe').textContent).toBe('/my-issues');
+  });
+
+  it('leaves a feed with no `comment` parameter alone', async () => {
+    await mount(
+      <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+        <IssueFeed />
+      </IssueConversation>,
+      ['/issues/i1'],
+    );
+    const feed = await screen.findByTestId('issue-feed');
+    const target = within(feed)
+      .getByText('Root note')
+      .closest('[data-comment-id="c1"]') as HTMLElement;
+    expect(target.className).not.toContain('ring-2');
+    const probe = await screen.findByTestId('location-probe');
+    expect(probe.getAttribute('data-nav-type')).toBe('POP');
+  });
+});
+
 describe('the follow star', () => {
   const answer = (initial: string[]) => {
     let following = initial;
     mocks.request.mockImplementation((request: { path: string }) => {
-      if (request.path === 'followUps')
+      if (request.path === 'followUps/following')
         return Promise.resolve({
-          data: {
-            following,
-            followingStored: true,
-            counts: { in_review: 0, blocked: 0, in_progress: 0, backlog: 0 },
-            truncated: false,
-            issues: [],
-          },
+          data: { issueIds: following, max: 5, stored: true },
         });
       const star = /^followUps\/issues\/([^/]+)\/(follow|unfollow)$/u.exec(
         request.path,
@@ -402,6 +642,12 @@ describe('the follow star', () => {
       }),
     );
     await screen.findByRole('button', { name: 'Follow' });
+    // The star reads only what is followed, never the whole overview.
+    expect(
+      mocks.request.mock.calls.some(
+        ([request]) => (request as { path: string }).path === 'followUps',
+      ),
+    ).toBe(false);
   });
 
   it('is held, with the reason, once five others are followed', async () => {

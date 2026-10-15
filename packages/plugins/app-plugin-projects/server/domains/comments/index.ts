@@ -6,6 +6,7 @@ export {
 export {
   createCommentQueries,
   threadPage,
+  type AuthoredComment,
   type CommentQueries,
 } from './comment.queries.js';
 export {

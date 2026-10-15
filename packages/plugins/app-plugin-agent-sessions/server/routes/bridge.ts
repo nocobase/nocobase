@@ -54,7 +54,7 @@ export function bridgeRoutes(service: AgentSessionsService): Hono<AuthEnv> {
         ...errors,
         400: apiErrorResponse(
           400,
-          'The bridge speaks another protocol version (`AGENT_SESSIONS_UPGRADE_REQUIRED`).',
+          'The bridge speaks another protocol version (`AGENT_SESSIONS_UPGRADE_REQUIRED`); `metadata` carries the `bridgeProtocol` it sent, the `protocol` the application speaks and the `supportedProtocols` it accepts.',
         ),
       },
     }),

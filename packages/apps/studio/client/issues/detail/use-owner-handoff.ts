@@ -28,7 +28,8 @@ export function useOwnerHandoffView(
           path: `issueOwnerHandoffs/${encodeURIComponent(issueId)}`,
         })
       ).data,
-    refetchInterval: 15_000,
+    // A fallback: a handoff is decided by changing the issue, which is announced and read again at once.
+    refetchInterval: 60_000,
   });
 }
 

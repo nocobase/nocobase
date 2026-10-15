@@ -35,6 +35,10 @@ export interface Issue {
   /** Markdown. */
   readonly description: string;
   readonly statusKey: string;
+  /** The owner's optional decision or input; applications may constrain authenticated callers. */
+  readonly needsYou: string | null;
+  /** The next step; independent of comments. */
+  readonly next: string | null;
   readonly priority: Priority;
   /** The accountable person; never empty. */
   readonly ownerUserId: string;
@@ -175,6 +179,8 @@ export interface IssueListQuery {
 }
 
 export interface CreateIssueRequest {
+  /** The creator's unattached uploads, bound before work starts. */
+  readonly attachmentIds?: readonly string[];
   readonly title: string;
   readonly description?: string;
   /** `in_progress` (start now) or `backlog` (later, the default; `START_STATUSES`). */
@@ -209,6 +215,10 @@ export interface UpdateIssueRequest {
   readonly title?: string;
   readonly description?: string;
   readonly statusKey?: string;
+  /** Optional owner input: omit to retain; null or whitespace clears it. Cleared outside waiting statuses. */
+  readonly needsYou?: string | null;
+  /** Omitted: keep; null or whitespace: clear. Terminal statuses always clear it. */
+  readonly next?: string | null;
   readonly priority?: Priority;
   readonly ownerUserId?: string;
   readonly executor?: Executor | null;
@@ -227,5 +237,6 @@ export interface UpdateIssueRequest {
 
 export const ISSUE_TITLE_MAX = 500;
 export const ISSUE_DESCRIPTION_MAX = 200_000;
+export const ISSUE_PROGRESS_MAX = 2_000;
 export const ISSUE_PAGE_LIMIT = { default: 50, max: 100 } as const;
 export const ACTIVITY_PAGE_LIMIT = { default: 50, max: 200 } as const;

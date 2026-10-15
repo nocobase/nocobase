@@ -15,8 +15,10 @@
 //   claims rotate across them without waiting, starting each round with the application after the one that last had
 //   work, and a round that found nothing waits a few seconds.
 //
-// - collect working directories, every 10 minutes: the retention rules, then a report to every application whose
-//   heartbeat answer accepts one, removing what it says is over and what is over the owner's limit (workspaces.ts).
+// - collect working directories, an hour after the last collection ended (sooner when an application asks, at once when
+//   the disk runs low): the retention rules, then a report to every application whose heartbeat answer accepts one,
+//   removing what it says is over and what is over the owner's limit (workspaces.ts). Claims go on meanwhile; only a
+//   due prune of the shared store holds them.
 //
 // A revoked runner key ends that application's loops; the daemon stops when no application is left.
 //
@@ -106,7 +108,9 @@ import {
 import {
   applyUpdate,
   isNewer,
+  protocolBehindMessage,
   RESTART_EXIT_CODE,
+  updateDecision,
   type UpdateTarget,
 } from './update.ts';
 import { runnerCommandLine, runnerHost } from '../host.ts';
@@ -234,6 +238,8 @@ export class RunnerDaemon {
   private gcTimer: NodeJS.Timeout | undefined;
   private lastCollect = 0;
   private collecting: Promise<void> | undefined;
+  /** A collection waits for outstanding claims to finish before pruning the store; new claims wait meanwhile. */
+  private holdingForPrune = false;
   private claimLoop: Promise<void> | undefined;
   private stopped: Promise<void> | undefined;
   /** Where the next round of claims starts, with several applications. */
@@ -253,6 +259,8 @@ export class RunnerDaemon {
   /** Failed pruning is retried at the next idle opportunity after this time. */
   private pruneRetryAt = 0;
   private readonly failedUpdates = new Map<string, number>();
+  /** The newer server protocol each application was last reported to speak (`noticeProtocol`). */
+  private readonly protocolNoticed = new Map<string, number>();
   /** The version the daemon installed before it stopped, if it did. */
   updatedTo: string | undefined;
 
@@ -511,7 +519,7 @@ export class RunnerDaemon {
     };
   }
 
-  /** How often working directories are collected: every 10 minutes, or sooner when an application asks. */
+  /** How long after a collection the next one starts: `WORKSPACE_REPORT_INTERVAL_MS`, or sooner when an application asks. */
   private get collectIntervalMs(): number {
     return Math.min(
       this.timings.collectIntervalMs ?? WORKSPACE_REPORT_INTERVAL_MS,
@@ -530,13 +538,10 @@ export class RunnerDaemon {
    */
   collectGarbage(): Promise<void> {
     this.collecting ??= (async () => {
-      this.lastCollect = Date.now();
       const { paths, log } = this.options;
+      const startedAt = Date.now();
+      log('gc: collection started');
       try {
-        if (this.claimsInFlight > 0)
-          await new Promise<void>((resolve) => {
-            this.claimsDrained = resolve;
-          });
         const settings = await readSettings(paths);
         const reporters = new Map<
           string,
@@ -593,13 +598,37 @@ export class RunnerDaemon {
         );
       }
       try {
-        await this.pruneStore();
+        await this.pruneAfterCollection();
       } finally {
+        this.lastCollect = Date.now();
+        log(`gc: collection finished in ${this.lastCollect - startedAt} ms`);
         this.collecting = undefined;
+        // Space it recovered may let claims resume.
         this.slotFreed?.();
       }
     })();
     return this.collecting;
+  }
+
+  /** Prunes a due store once outstanding claims have started their workers, holding new claims only for that. */
+  private async pruneAfterCollection(): Promise<void> {
+    if (
+      !this.pruneDue ||
+      this.supervisor.size > 0 ||
+      Date.now() < this.pruneRetryAt
+    )
+      return;
+    this.holdingForPrune = true;
+    try {
+      if (this.claimsInFlight > 0)
+        await new Promise<void>((resolve) => {
+          this.claimsDrained = resolve;
+        });
+      await this.pruneStore();
+    } finally {
+      this.holdingForPrune = false;
+      this.slotFreed?.();
+    }
   }
 
   /**
@@ -749,6 +778,11 @@ export class RunnerDaemon {
           version: npmUpgrade.latestVersion,
           package: npmUpgrade.package,
         });
+      this.noticeProtocol(
+        link,
+        response.protocolVersion,
+        (upgrade ?? npmUpgrade)?.latestVersion,
+      );
       for (const runId of response.cancelRequested)
         void this.supervisor.enforceCancel(runId);
       for (const runId of response.release) void this.supervisor.release(runId);
@@ -802,6 +836,27 @@ export class RunnerDaemon {
     this.pendingUpdate = { link, target };
     this.slotFreed?.();
     void this.updateWhenIdle();
+  }
+
+  /**
+   * Tells the owner, once per application and protocol, that the application speaks a newer protocol than this runner
+   * while it offers no newer version: the versions may look the same, as with an application run from source, yet
+   * runs that need the newer protocol are never handed here.
+   */
+  private noticeProtocol(
+    link: AppLink,
+    serverProtocol: number | undefined,
+    offered: string | undefined,
+  ): void {
+    if (
+      serverProtocol === undefined ||
+      updateDecision({ running: runnerVersion(), offered, serverProtocol }) !==
+        'protocol' ||
+      this.protocolNoticed.get(link.key) === serverProtocol
+    )
+      return;
+    this.protocolNoticed.set(link.key, serverProtocol);
+    this.options.log(`${link.key}: ${protocolBehindMessage(serverProtocol)}`);
   }
 
   /** Interrupts agent runs, waits for their cleanup and background jobs, then installs and restarts. */
@@ -870,7 +925,7 @@ export class RunnerDaemon {
     if (
       this.pendingUpdate ||
       this.pruning ||
-      this.collecting ||
+      this.holdingForPrune ||
       this.diskPaused ||
       this.stopping.signal.aborted
     )
@@ -880,7 +935,7 @@ export class RunnerDaemon {
       this.options.paths.workRoot,
     );
     if (
-      this.collecting ||
+      this.holdingForPrune ||
       this.pendingUpdate ||
       this.pruning ||
       this.diskPaused ||
@@ -1025,7 +1080,7 @@ export class RunnerDaemon {
         this.slots - this.supervisor.size <= 0 ||
         this.pendingUpdate ||
         this.pruning ||
-        this.collecting ||
+        this.holdingForPrune ||
         this.diskPaused
       ) {
         await new Promise<void>((resolve) => {

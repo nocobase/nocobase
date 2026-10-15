@@ -263,7 +263,6 @@ describe('working directories', () => {
       unpushed: false,
       inUse: false,
     });
-    expect(entry?.sizeBytes).toBeGreaterThan(0);
     expect(meta(done.workDir)).toMatchObject({ unpushed: false });
     expect(meta(done.workDir).measuredAt).toBeDefined();
   });
@@ -712,7 +711,6 @@ describe('working directories', () => {
         workDir: entries[0]?.workDir,
         unpushed: false,
         lastUsedAt: entries[0]?.lastUsedAt,
-        sizeBytes: entries[0]?.sizeBytes,
       },
     ]);
     expect(workspacesRequest(entries, 'crm', undefined).workspaces).toEqual([]);

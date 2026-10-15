@@ -74,8 +74,8 @@ import {
   IssueSubtasksSection,
 } from '../../../issues/detail/issue-main.js';
 import { useIssueMainState } from '../../../issues/detail/main-state.js';
-import { usePendingCommentRun } from '../../../issues/detail/use-pending-comment-run.js';
 import { useIssueProgress } from '../../../issues/detail/use-issue-progress.js';
+import { usePendingCommentRun } from '../../../issues/detail/use-pending-comment-run.js';
 import { useIssuePullRequests } from '../../../git/api.js';
 import { IssuePlansSection } from '../../../issues/detail/issue-plans.js';
 import { IssueParentOutlet } from '../../../issues/detail/issue-parent-outlet.js';
@@ -172,12 +172,12 @@ function IssuePage({
     detail.statusKey,
     ...runs.map((run) => `${run.id}:${run.status}`),
   ].join('|');
+  const progress = useIssueProgress(detail.id, progressRefresh).data;
   const main = useIssueMainState(pageActions);
   const narrow = useMediaQuery('(max-width: 767px)');
   const viewer = useViewer();
   // The decisions the summary's "Needs you" card shows are left out of "Waiting for you".
   const handoff = useOwnerHandoffView(detail.id).data;
-  const progress = useIssueProgress(detail.id, progressRefresh).data;
   const pending = usePendingCommentRun(detail).data;
   const prs = useIssuePullRequests(detail.id, detail.revision).data;
   const selectedPr = prs?.data.find((pr) => pr.state === 'open') ?? null;
@@ -185,6 +185,9 @@ function IssuePage({
     (entry: InboxEntry) =>
       coveredBySummary(entry, {
         accepting:
+          !progress?.personalRunnerRequests?.some(
+            (request) => request.canDecide,
+          ) &&
           !handoffWaitsOn(handoff) &&
           detail.statusKey === IN_REVIEW_STATUS &&
           Boolean(viewer?.userId) &&
@@ -193,13 +196,13 @@ function IssuePage({
         notificationKey: handoff?.handoff?.notificationKey,
         pullRequest: selectedPr,
         blocked: detail.statusKey === 'blocked',
-        commentId:
-          !handoffWaitsOn(handoff) &&
-          !pending &&
-          viewer?.userId === detail.ownerUserId
-            ? progress?.blockedComment?.id
-            : null,
+        ownerRequest:
+          detail.statusKey === 'blocked' &&
+          viewer?.userId === detail.ownerUserId,
         continuation: Boolean(pending),
+        personalRequestIds: progress?.personalRunnerRequests
+          ?.filter((request) => request.canDecide)
+          .map((request) => request.id),
       }),
     [
       detail.statusKey,
@@ -207,8 +210,8 @@ function IssuePage({
       viewer?.userId,
       handoff,
       selectedPr,
-      progress,
       pending,
+      progress,
     ],
   );
   const [linkingPullRequest, setLinkingPullRequest] = useState(false);

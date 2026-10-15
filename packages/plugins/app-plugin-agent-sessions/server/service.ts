@@ -34,6 +34,7 @@ import { z } from 'zod';
 import type {
   AgentSessionsChange,
   Computer,
+  OutdatedBridge,
   Reference,
   Session,
   SessionLink,
@@ -54,6 +55,8 @@ import {
   computers,
   computerView,
   enqueue,
+  events,
+  eventView,
   isOnline,
   images,
   links,
@@ -125,6 +128,7 @@ export interface ProjectSource {
  */
 export interface ReplyStore {
   set(key: string, value: unknown, ttl?: number): Promise<void>;
+  get<T>(key: string): Promise<T | undefined>;
   take<T>(key: string): Promise<T | undefined>;
 }
 
@@ -147,6 +151,11 @@ export interface AgentSessionsServiceOptions {
   /** Runs `task` after `delayMs`, as owners are told of what they did not see (`notices.ts`); a timer by default. */
   readonly schedule?: (task: () => Promise<void>, delayMs: number) => void;
   readonly now?: () => number;
+  /** Optional phase timing; excludes message bodies, credentials and user metadata. */
+  readonly diagnose?: (
+    phase: string,
+    fields: Readonly<Record<string, number | string>>,
+  ) => void;
 }
 
 export interface SessionPage {
@@ -166,6 +175,7 @@ export class AgentSessionsService {
   readonly #database: DatabaseManager;
   readonly #publish: (userId: string, change: AgentSessionsChange) => void;
   readonly #now: () => number;
+  readonly #diagnose: AgentSessionsServiceOptions['diagnose'];
   readonly #waiters = new Map<string, Set<() => void>>();
   readonly #linkKinds = new Map<string, LinkResolver>();
   readonly #tools: SessionTool[] = [];
@@ -187,6 +197,7 @@ export class AgentSessionsService {
     this.#schedule = options.schedule ?? later;
     this.#publish = options.publish ?? (() => undefined);
     this.#now = options.now ?? Date.now;
+    this.#diagnose = options.diagnose;
     this.#tools.push(this.#workTool());
   }
 
@@ -309,7 +320,45 @@ export class AgentSessionsService {
       filter: { userId },
       sort: (sort) => [sort.field('name').asc(), sort.field('id').asc()],
     });
-    return rows.map((row) => computerView(row, this.#now()));
+    return Promise.all(
+      rows.map(async (row) => {
+        const outdated = await this.#replies.get<OutdatedBridge>(
+          outdatedKey(row.id),
+        );
+        return {
+          ...computerView(row, this.#now()),
+          ...(outdated ? { outdatedBridge: outdated } : {}),
+        };
+      }),
+    );
+  }
+
+  /**
+   * Remembers for a while that a known computer's bridge was refused for speaking an older protocol, so its owner's
+   * page can say to update it. Kept with the replies, not stored: a bridge refused again renews it, and one that
+   * registers clears it.
+   */
+  async #noteOutdatedBridge(
+    userId: string,
+    request: RegisterRequest,
+  ): Promise<void> {
+    if (!request.computerId) return;
+    const known = await computers(this.#conn()).findOne({
+      filter: { id: request.computerId, userId },
+    });
+    if (!known) return;
+    const outdated: OutdatedBridge = {
+      host: request.computer.host,
+      bridgeProtocol: request.protocol,
+      protocol: BRIDGE_PROTOCOL_VERSION,
+      refusedAt: this.#iso(),
+    };
+    await this.#replies.set(
+      outdatedKey(known.id),
+      outdated,
+      OUTDATED_BRIDGE_MS,
+    );
+    this.#publish(userId, { kind: 'computers' });
   }
 
   async removeComputer(userId: string, computerId: string): Promise<void> {
@@ -385,7 +434,9 @@ export class AgentSessionsService {
       readonly cwd: string;
       readonly settings: Readonly<Record<string, string>>;
     },
+    signal?: AbortSignal,
   ): Promise<DiscoveredChoices> {
+    signal?.throwIfAborted();
     const computer = await this.#computer(userId, computerId);
     if (!isOnline(computer, this.#now()))
       throw new AgentSessionsError('computerOffline');
@@ -418,6 +469,7 @@ export class AgentSessionsService {
     const reply = await this.#awaitReply(
       `${computer.id}:${requestId}`,
       DISCOVERY_TIMEOUT_MS + 10_000,
+      signal,
     );
     if (!reply.discovery || reply.error)
       throw new AgentSessionsError(
@@ -447,8 +499,22 @@ export class AgentSessionsService {
     request: RegisterRequest,
     keyed = false,
   ): Promise<RegisterResponse> {
-    if (request.protocol !== BRIDGE_PROTOCOL_VERSION)
-      throw new AgentSessionsError('upgradeRequired');
+    if (request.protocol !== BRIDGE_PROTOCOL_VERSION) {
+      if (request.protocol < BRIDGE_PROTOCOL_VERSION)
+        await this.#noteOutdatedBridge(userId, request);
+      // `metadata` lets a bridge tell whether it is the older side and update itself; the reason stays what bridges
+      // before it branch on.
+      throw new AgentSessionsError(
+        'upgradeRequired',
+        undefined,
+        `This bridge speaks protocol ${request.protocol}; the application speaks ${BRIDGE_PROTOCOL_VERSION}.`,
+        {
+          bridgeProtocol: request.protocol,
+          protocol: BRIDGE_PROTOCOL_VERSION,
+          supportedProtocols: [BRIDGE_PROTOCOL_VERSION],
+        },
+      );
+    }
     const now = this.#iso();
     const key = keyed
       ? undefined
@@ -468,12 +534,22 @@ export class AgentSessionsService {
       : undefined;
     if (keyed && !known) throw new AgentSessionsError('computerNotFound');
     const computerId = known?.id ?? randomUUID();
-    if (known)
+    const restarted = known?.bridgeStartedAt !== request.bridgeStartedAt;
+    const viewChanged =
+      !known ||
+      restarted ||
+      !isOnline(known, this.#now()) ||
+      Object.entries(request.computer).some(
+        ([field, value]) =>
+          JSON.stringify(known[field as keyof typeof known]) !==
+          JSON.stringify(value),
+      );
+    if (known && (viewChanged || !keyed))
       await computers(this.#conn()).updateMany({
         filter: { id: computerId },
         values,
       });
-    else
+    else if (!known)
       await computers(this.#conn()).createOne({
         values: {
           id: computerId,
@@ -484,7 +560,6 @@ export class AgentSessionsService {
         },
       });
 
-    const restarted = known?.bridgeStartedAt !== request.bridgeStartedAt;
     const interrupted = !restarted
       ? []
       : await sessions(this.#conn()).findMany({
@@ -515,7 +590,8 @@ export class AgentSessionsService {
       });
       if (changed) this.#changed(changed);
     }
-    this.#publish(userId, { kind: 'computers' });
+    const outdated = await this.#replies.take(outdatedKey(computerId));
+    if (viewChanged || outdated) this.#publish(userId, { kind: 'computers' });
     return { computerId, ...(key ? { key } : {}) };
   }
 
@@ -674,6 +750,7 @@ export class AgentSessionsService {
   async createSession(
     viewer: Viewer,
     input: {
+      readonly submissionId?: string | undefined;
       readonly computerId: string;
       readonly agentId: string;
       readonly cwd: string;
@@ -687,6 +764,23 @@ export class AgentSessionsService {
     },
   ): Promise<Session> {
     const { userId } = viewer;
+    const submission = input.submissionId
+      ? {
+          id: input.submissionId,
+          digest: submissionDigest({
+            operation: 'create',
+            computerId: input.computerId,
+            agentId: input.agentId,
+            cwd: input.cwd,
+            content: input.content,
+            settings: input.settings ?? {},
+            projectId: input.projectId ?? null,
+            mentions: input.mentions ?? [],
+          }),
+        }
+      : undefined;
+    const previous = await this.#submission(viewer, submission);
+    if (previous) return this.getSession(viewer, previous.sessionId);
     const computer = await this.#computer(
       userId,
       input.computerId,
@@ -712,37 +806,65 @@ export class AgentSessionsService {
     const mentioned = await this.#mentioned(viewer, input.mentions ?? []);
     const settings = input.settings ?? {};
     const now = this.#iso();
-    const sessionId = randomUUID();
-    await sessions(this.#conn()).createOne({
-      values: {
-        id: sessionId,
-        userId,
-        computerId: computer.id,
-        agentId: agent.id,
-        projectId,
-        cwd: pathsOf(computer).resolve(input.cwd),
-        title: null,
-        firstMessage: redactor.text(firstLine(input.content)),
-        acpSessionId: null,
-        state: null,
-        settings,
-        toldWork: null,
-        toldInstructions: null,
-        seenSeq: 0,
-        noticedSeq: null,
-        locale: viewer.locale ?? null,
-        running: false,
-        pendingPermissions: 0,
-        lastSeq: 0,
-        reportedBatch: 0,
-        bridgeStartedAt: null,
-        archivedAt: null,
-        lastActivityAt: now,
-        createdAt: now,
-        updatedAt: now,
-      },
-    });
-    await this.#send(viewer, sessionId, input.content, mentioned);
+    const sessionId = submission?.id ?? randomUUID();
+    try {
+      await this.#transaction(async (conn, at) => {
+        await sessions(conn).createOne({
+          values: {
+            id: sessionId,
+            userId,
+            computerId: computer.id,
+            agentId: agent.id,
+            projectId,
+            cwd: pathsOf(computer).resolve(input.cwd),
+            title: null,
+            firstMessage: redactor.text(firstLine(input.content)),
+            acpSessionId: null,
+            state: null,
+            settings,
+            toldWork: null,
+            toldInstructions: null,
+            seenSeq: 0,
+            noticedSeq: null,
+            locale: viewer.locale ?? null,
+            running: false,
+            pendingPermissions: 0,
+            lastSeq: 0,
+            reportedBatch: 0,
+            bridgeStartedAt: null,
+            archivedAt: null,
+            lastActivityAt: now,
+            createdAt: now,
+            updatedAt: now,
+          },
+        });
+        const session = (await sessions(conn).findOne({
+          filter: { id: sessionId },
+        }))!;
+        const work = mentioned.map((item) => ({
+          kind: item.kind,
+          refId: item.refId,
+          key: item.key,
+          title: item.title,
+          status: item.status?.label ?? null,
+          group: item.group,
+        }));
+        await this.#sendInTransaction(
+          conn,
+          at,
+          viewer,
+          session,
+          input.content,
+          mentioned,
+          work,
+          submission,
+        );
+      });
+    } catch (error) {
+      const winner = await this.#submission(viewer, submission);
+      if (!winner) throw error;
+      return this.getSession(viewer, winner.sessionId);
+    }
     return this.getSession(viewer, sessionId);
   }
 
@@ -842,13 +964,28 @@ export class AgentSessionsService {
     sessionId: string,
     content: readonly PromptContent[],
     mentions: readonly Mention[] = [],
+    submissionId?: string,
   ): Promise<TranscriptEvent> {
+    const submission = submissionId
+      ? {
+          id: submissionId,
+          digest: submissionDigest({
+            operation: 'prompt',
+            sessionId,
+            content,
+            mentions,
+          }),
+        }
+      : undefined;
+    const previous = await this.#submission(viewer, submission, sessionId);
+    if (previous) return previous.event;
     await this.#writable(viewer.userId, sessionId);
     return this.#send(
       viewer,
       sessionId,
       content,
       await this.#mentioned(viewer, mentions),
+      submission,
     );
   }
 
@@ -885,21 +1022,78 @@ export class AgentSessionsService {
     return found.flat().slice(0, MENTION_LIMIT);
   }
 
+  async #submission(
+    viewer: Viewer,
+    submission: { readonly id: string; readonly digest: string } | undefined,
+    sessionId?: string,
+  ): Promise<{ sessionId: string; event: TranscriptEvent } | undefined> {
+    if (!submission) return undefined;
+    const event = await events(this.#conn()).findOne({
+      filter: { id: submission.id },
+    });
+    if (!event) return undefined;
+    const session = await sessions(this.#conn()).findOne({
+      filter: { id: event.sessionId },
+    });
+    if (
+      !session ||
+      session.userId !== viewer.userId ||
+      (sessionId && session.id !== sessionId) ||
+      event.kind !== 'prompt' ||
+      event.data._submission !== submission.digest
+    )
+      throw new AgentSessionsError('submissionConflict');
+    return { sessionId: session.id, event: eventView(event) };
+  }
+
   async #send(
     viewer: Viewer,
     sessionId: string,
     content: readonly PromptContent[],
     mentioned: readonly (Mention & LinkView)[],
+    submission?: { readonly id: string; readonly digest: string },
   ): Promise<TranscriptEvent> {
     const session = await this.#session(viewer.userId, sessionId);
-    const promptId = randomUUID();
     const work = await this.#work(viewer, sessionId, mentioned);
-    const note = workNote(work, session.toldWork);
+    try {
+      return await this.#transaction((conn, now) =>
+        this.#sendInTransaction(
+          conn,
+          now,
+          viewer,
+          session,
+          content,
+          mentioned,
+          work,
+          submission,
+        ),
+      );
+    } catch (error) {
+      const winner = await this.#submission(viewer, submission, sessionId);
+      if (winner) return winner.event;
+      throw error;
+    }
+  }
+
+  async #sendInTransaction(
+    conn: DatabaseConnection,
+    now: string,
+    viewer: Viewer,
+    session: SessionRecord,
+    content: readonly PromptContent[],
+    mentioned: readonly (Mention & LinkView)[],
+    work: readonly WorkItem[],
+    submission?: { readonly id: string; readonly digest: string },
+  ): Promise<TranscriptEvent> {
+    const sessionId = session.id;
+    const promptId = randomUUID();
+    const locked = (await lockSession(conn, sessionId, now))!;
+    const note = workNote(work, locked.toldWork);
     const currentInstructions = this.#instructionsFor(viewer);
     const toldInstructions =
       currentInstructions && instructionsHash(currentInstructions);
     const instructions =
-      toldInstructions !== session.toldInstructions
+      toldInstructions !== locked.toldInstructions
         ? currentInstructions
         : undefined;
     // The agent reads the application's instructions until it was told them, what the message mentions, and the
@@ -917,58 +1111,105 @@ export class AgentSessionsService {
         : []),
       ...(note ? [{ type: 'text' as const, text: note }] : []),
     ];
-    const kept = this.#images
-      ? await this.#images.keep(
-          { id: sessionId, userId: session.userId },
-          content,
-        )
-      : content;
-    const changed = await this.#transaction(async (conn, now) => {
-      const locked = (await lockSession(conn, sessionId, now))!;
-      const result = await this.#append(
-        conn,
-        locked,
-        [{ kind: 'prompt', at: now, promptId, content: kept }],
-        now,
+    const storesImages = Boolean(
+      this.#images && content.some((part) => part.type === 'image'),
+    );
+    // Reserve the unique event before any image upload. A concurrent loser rolls back without external effects.
+    // Image bytes enter only the file service (or the final fallback event), never the temporary receipt.
+    const result = await this.#append(
+      conn,
+      locked,
+      [
         {
-          ...(note ? { toldWork: workSnapshot(work) } : {}),
-          ...(instructions ? { toldInstructions } : {}),
-          ...(viewer.locale ? { locale: viewer.locale } : {}),
-        },
-      );
-      for (const item of mentioned) {
-        const filter = { sessionId, kind: item.kind, refId: item.refId };
-        if (await links(conn).findOne({ filter })) continue;
-        await links(conn).createOne({
-          values: {
-            id: randomUUID(),
-            ...filter,
-            seq: result.lastSeq,
-            decidedAt: now,
-            createdAt: now,
-          },
-        });
-      }
-      await enqueue(
-        conn,
-        session.computerId,
-        {
-          type: 'prompt',
-          session: this.#target(locked),
+          kind: 'prompt',
+          at: now,
           promptId,
-          content: told,
+          content: storesImages ? [] : content,
         },
-        now,
-      );
-      return result;
+      ],
+      now,
+      {
+        ...(note ? { toldWork: workSnapshot(work) } : {}),
+        ...(instructions ? { toldInstructions } : {}),
+        ...(viewer.locale ? { locale: viewer.locale } : {}),
+      },
+      submission,
+    );
+    const kept =
+      this.#images && storesImages
+        ? await this.#images.keep(
+            { id: sessionId, userId: session.userId },
+            content,
+            conn,
+          )
+        : content;
+    if (storesImages) {
+      await events(conn).updateMany({
+        filter: { sessionId, seq: result.lastSeq },
+        values: {
+          data: {
+            at: now,
+            promptId,
+            content: kept.map((part) =>
+              part.type === 'text'
+                ? { ...part, text: redactor.text(part.text) }
+                : part,
+            ),
+            ...(submission ? { _submission: submission.digest } : {}),
+          },
+        },
+      });
+    }
+    for (const item of mentioned) {
+      const filter = { sessionId, kind: item.kind, refId: item.refId };
+      if (await links(conn).findOne({ filter })) continue;
+      await links(conn).createOne({
+        values: {
+          id: randomUUID(),
+          ...filter,
+          seq: result.lastSeq,
+          decidedAt: now,
+          createdAt: now,
+        },
+      });
+    }
+    await enqueue(
+      conn,
+      session.computerId,
+      {
+        type: 'prompt',
+        session: this.#target(locked),
+        promptId,
+        content: told,
+      },
+      now,
+    );
+    const changed = result;
+    conn.afterCommit(() => {
+      this.#diagnose?.('promptPersisted', {
+        sessionId,
+        at: Date.now(),
+        seq: changed.lastSeq,
+        promptId,
+      });
+      this.#wake(session.computerId);
+      this.#changed(changed);
+      this.#diagnose?.('promptConfirmed', {
+        sessionId,
+        at: Date.now(),
+        seq: changed.lastSeq,
+        promptId,
+      });
     });
-    this.#wake(session.computerId);
-    this.#changed(changed);
     return {
       kind: 'prompt',
       at: changed.session.lastActivityAt,
       promptId,
-      content,
+      content: kept.map((part) =>
+        part.type === 'text'
+          ? { ...part, text: redactor.text(part.text) }
+          : part,
+      ),
       seq: changed.lastSeq,
     };
   }
@@ -1118,17 +1359,25 @@ export class AgentSessionsService {
   async #awaitReply(
     key: string,
     timeout: number = REPLY_WAIT_MS,
+    signal?: AbortSignal,
   ): Promise<ReplyRequest> {
-    for (let waited = 0; waited < timeout; waited += REPLY_CHECK_MS) {
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
+      signal?.throwIfAborted();
       const reply = await this.#replies.take<ReplyRequest>(key);
       if (reply) return reply;
       await new Promise<void>((resolve) => {
-        const timer = setTimeout(done, REPLY_CHECK_MS);
+        const timer = setTimeout(
+          done,
+          Math.min(REPLY_CHECK_MS, deadline - Date.now()),
+        );
+        signal?.addEventListener('abort', done, { once: true });
         const waiters = this.#replyWaiters;
         waiters.set(key, done);
         function done(): void {
           clearTimeout(timer);
           waiters.delete(key);
+          signal?.removeEventListener('abort', done);
           resolve();
         }
       });
@@ -1373,8 +1622,9 @@ export class AgentSessionsService {
     added: readonly SessionEvent[],
     now: string,
     values: Partial<SessionRecord>,
+    submission?: { readonly id: string; readonly digest: string },
   ): Promise<{ readonly session: SessionRecord; readonly lastSeq: number }> {
-    const lastSeq = await appendEvents(conn, session, added, now);
+    const lastSeq = await appendEvents(conn, session, added, now, submission);
     const written = {
       ...values,
       lastSeq,
@@ -1471,6 +1721,11 @@ export class AgentSessionsService {
     readonly session: SessionRecord;
     readonly lastSeq: number;
   }): void {
+    this.#diagnose?.('eventPublishRequested', {
+      sessionId: changed.session.id,
+      at: Date.now(),
+      seq: changed.lastSeq,
+    });
     this.#publish(changed.session.userId, {
       kind: 'session',
       sessionId: changed.session.id,
@@ -1605,6 +1860,13 @@ function same(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+/** How long a refused bridge is shown as outdated without trying again. */
+const OUTDATED_BRIDGE_MS = 60 * 60_000;
+
+function outdatedKey(computerId: string): string {
+  return `outdated:${computerId}`;
+}
+
 /** Replies kept in this instance's memory, for an application of one instance. */
 function memoryReplies(): ReplyStore {
   const kept = new Map<string, { value: unknown; until: number }>();
@@ -1612,6 +1874,12 @@ function memoryReplies(): ReplyStore {
     set(key, value, ttl = REPLY_WAIT_MS) {
       kept.set(key, { value, until: Date.now() + ttl });
       return Promise.resolve();
+    },
+    get<T>(key: string) {
+      const entry = kept.get(key);
+      return Promise.resolve(
+        entry && entry.until > Date.now() ? (entry.value as T) : undefined,
+      );
     },
     take<T>(key: string) {
       const entry = kept.get(key);
@@ -1645,4 +1913,21 @@ function later(task: () => Promise<void>, delayMs: number): void {
       ),
     );
   }, delayMs).unref();
+}
+
+/** Stable object keys, ordered content/mentions, and a digest rather than a second persisted copy of the input. */
+function submissionDigest(input: unknown): string {
+  const canonical = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(canonical);
+    if (value && typeof value === 'object')
+      return Object.fromEntries(
+        Object.entries(value)
+          .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+          .map(([key, item]) => [key, canonical(item)]),
+      );
+    return value;
+  };
+  return createHash('sha256')
+    .update(JSON.stringify(canonical(input)))
+    .digest('hex');
 }

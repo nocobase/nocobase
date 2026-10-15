@@ -87,6 +87,44 @@ describe("a runner's working directories", () => {
     });
   });
 
+  it('announces a heartbeat disk sample only when it moves, crosses the threshold or appears', async () => {
+    h = await createHarness();
+    const runner = await h.registerRunner();
+    const changes: string[] = [];
+    h.services.events.on('runner.changed', (event) =>
+      changes.push(event.runnerId),
+    );
+    const beat = (sample: unknown) =>
+      h.request('POST', api(RUNNER_ROUTES.heartbeat), {
+        runnerKey: runner.key,
+        body: {
+          version: '0.1.0',
+          features: ['input', 'checkout'],
+          tools: [{ kind: 'claude', authenticated: true }],
+          active: [],
+          load: { slots: 1, free: 1 },
+          disk: sample,
+        },
+      });
+    expect((await beat(disk)).status).toBe(200);
+    const first = changes.length;
+    expect(first).toBeGreaterThan(0);
+    // The usual heartbeat: a few megabytes more or less, nothing to tell.
+    await beat({ ...disk, freeBytes: disk.freeBytes + 5 * 1024 ** 2 });
+    await beat(disk);
+    expect(changes).toHaveLength(first);
+    // Below the threshold, and a large move, are told.
+    await beat({ ...disk, freeBytes: disk.freeBytes - 1024 });
+    expect(changes).toHaveLength(first + 1);
+    await beat({ ...disk, freeBytes: disk.freeBytes + 4 * GB });
+    expect(changes).toHaveLength(first + 2);
+    // The newest sample is still stored for the runtimes page.
+    const stored = await h.services.runners.get(runner.runnerId);
+    expect(stored.workspaceUsage?.disk).toMatchObject({
+      freeBytes: disk.freeBytes + 4 * GB,
+    });
+  });
+
   it('answers which runs belong to subjects whose work is over, as the binding says', async () => {
     h = await createHarness();
     h.settled = new Set(['1']);

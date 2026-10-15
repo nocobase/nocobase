@@ -30,13 +30,14 @@ export const DiscoverChoicesInput: z.ZodType<{
     }),
 });
 
-import type {
-  Computer,
-  FolderListing,
-  Reference,
-  Session,
-  SessionLink,
-  SessionProject,
+import {
+  SESSION_LINK_ICONS,
+  type Computer,
+  type FolderListing,
+  type Reference,
+  type Session,
+  type SessionLink,
+  type SessionProject,
 } from '../../shared/api.js';
 
 export const ComputerParams: z.ZodType<{ computerId: string }> = z.object({
@@ -114,8 +115,35 @@ export const ComputerSchema: z.ZodType<Computer> = z
     }),
     lastSeenAt: z.string(),
     createdAt: z.string(),
+    outdatedBridge: z
+      .object({
+        host: z.string(),
+        bridgeProtocol: z.number().int(),
+        protocol: z.number().int(),
+        refusedAt: z.string(),
+      })
+      .optional()
+      .meta({
+        description:
+          'Present while its bridge was lately refused for speaking an older protocol than the application: its command line needs an update.',
+      }),
   })
   .meta({ ref: 'AgentSessionsComputer' });
+
+const LinkStatusSchema = z
+  .object({
+    label: z.string(),
+    tone: z.enum(['idle', 'active', 'attention', 'done']),
+    icon: z.enum(SESSION_LINK_ICONS).optional().meta({
+      description:
+        "The status's shape and colour; links without one are drawn by `tone`.",
+    }),
+    needsYou: z.string().nullable().optional().meta({
+      description:
+        'What it waits on the viewer for, such as "Waiting for you to accept".',
+    }),
+  })
+  .nullable();
 
 const LinkSchema: z.ZodType<SessionLink> = z.object({
   kind: z.string(),
@@ -123,12 +151,7 @@ const LinkSchema: z.ZodType<SessionLink> = z.object({
   key: z.string().nullable(),
   title: z.string(),
   group: z.string().nullable(),
-  status: z
-    .object({
-      label: z.string(),
-      tone: z.enum(['idle', 'active', 'attention', 'done']),
-    })
-    .nullable(),
+  status: LinkStatusSchema,
   href: z.string().nullable(),
   startable: z.boolean(),
   decidedAt: z.string().nullable(),
@@ -231,6 +254,7 @@ export const ListEventsQuery: z.ZodType<{ after: number; pageSize: number }> =
   });
 
 export const CreateSessionInput: z.ZodType<{
+  submissionId?: string | undefined;
   computerId: string;
   agentId: string;
   cwd: string;
@@ -239,6 +263,10 @@ export const CreateSessionInput: z.ZodType<{
   projectId?: string | null | undefined;
   mentions?: { kind: string; refId: string }[] | undefined;
 }> = z.strictObject({
+  submissionId: z.uuid().optional().meta({
+    description:
+      'A client UUID retained with immutable input for safe explicit retries.',
+  }),
   computerId: z.string().min(1),
   agentId: z.string().min(1),
   cwd: z
@@ -275,9 +303,14 @@ export const UpdateSessionInput: z.ZodType<{
 });
 
 export const PromptInput: z.ZodType<{
+  submissionId?: string | undefined;
   content: PromptContent[];
   mentions?: { kind: string; refId: string }[] | undefined;
 }> = z.strictObject({
+  submissionId: z.uuid().optional().meta({
+    description:
+      'A client UUID retained with immutable input for safe explicit retries.',
+  }),
   content,
   mentions,
 });
@@ -334,12 +367,7 @@ export const ReferenceSchema: z.ZodType<Reference> = z
     key: z.string().nullable(),
     title: z.string(),
     group: z.string().nullable(),
-    status: z
-      .object({
-        label: z.string(),
-        tone: z.enum(['idle', 'active', 'attention', 'done']),
-      })
-      .nullable(),
+    status: LinkStatusSchema,
   })
   .meta({ ref: 'AgentSessionsReference' });
 
