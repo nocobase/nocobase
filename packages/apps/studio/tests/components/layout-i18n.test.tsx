@@ -6,6 +6,7 @@ import {
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { I18nRuntime } from '@nocobase/i18n';
 import { I18nProvider } from '@nocobase/i18n/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
@@ -16,6 +17,11 @@ import { AppLayout } from '../../client/layouts/app-layout.js';
 
 vi.mock('../../client/issues/live/realtime-refresh.js', () => ({
   useStudioIssueRefresh: () => undefined,
+}));
+
+vi.mock('../../client/agents/project-manager/identity-refresh.js', () => ({
+  ProjectManagerIdentityRefresh: ({ children }: { children: ReactNode }) =>
+    children,
 }));
 
 // The agents' chat needs services these tests do not provide; the agent-chat block is tested in the UI Library.
@@ -78,12 +84,15 @@ async function setup(children: ReactNode, path = '/') {
   const app = {
     config: createAppClientConfig({ rawConfig: {} }),
   } as unknown as ClientApplication;
+  const queryClient = new QueryClient();
   render(
-    <I18nProvider runtime={runtime}>
-      <ClientApplicationContext.Provider value={app}>
-        <MemoryRouter initialEntries={[path]}>{children}</MemoryRouter>
-      </ClientApplicationContext.Provider>
-    </I18nProvider>,
+    <QueryClientProvider client={queryClient}>
+      <I18nProvider runtime={runtime}>
+        <ClientApplicationContext.Provider value={app}>
+          <MemoryRouter initialEntries={[path]}>{children}</MemoryRouter>
+        </ClientApplicationContext.Provider>
+      </I18nProvider>
+    </QueryClientProvider>,
   );
   return runtime;
 }

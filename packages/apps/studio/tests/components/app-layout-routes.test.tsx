@@ -1,7 +1,8 @@
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { usePageBreadcrumb } from '@nocobase/app-client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, within } from '@testing-library/react';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { expect, it, vi } from 'vitest';
 
@@ -9,6 +10,11 @@ import { AppLayout } from '../../client/layouts/app-layout.js';
 
 vi.mock('../../client/issues/live/realtime-refresh.js', () => ({
   useStudioIssueRefresh: () => undefined,
+}));
+
+vi.mock('../../client/agents/project-manager/identity-refresh.js', () => ({
+  ProjectManagerIdentityRefresh: ({ children }: { children: ReactNode }) =>
+    children,
 }));
 
 vi.mock('../../client/inbox/navigation.js', () => ({
@@ -103,14 +109,17 @@ function OrderPage(): ReactElement {
 }
 
 function renderLayout(page: ReactElement): HTMLElement {
+  const queryClient = new QueryClient();
   render(
-    <MemoryRouter initialEntries={['/orders/42']}>
-      <Routes>
-        <Route element={<AppLayout routes={routes} />}>
-          <Route path='/orders/:id' element={page} />
-        </Route>
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={['/orders/42']}>
+        <Routes>
+          <Route element={<AppLayout routes={routes} />}>
+            <Route path='/orders/:id' element={page} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
   return screen.getByRole('banner');
 }

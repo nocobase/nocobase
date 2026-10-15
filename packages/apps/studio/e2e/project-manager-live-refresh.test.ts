@@ -47,6 +47,7 @@ test.describe('project manager live refresh', () => {
 
   test('refreshes an open @ list when its real candidate request finishes', async ({
     page,
+    studio,
   }, testInfo) => {
     let releaseResponse!: () => void;
     let responseHeld!: () => void;
@@ -64,7 +65,7 @@ test.describe('project manager live refresh', () => {
     });
 
     try {
-      await page.goto(url(`/issues/${issue.identifier}`));
+      await page.goto(url(`/issues/${issue.identifier}`, studio));
       await expect(
         page.getByRole('heading', { name: issue.title }),
       ).toBeVisible();
