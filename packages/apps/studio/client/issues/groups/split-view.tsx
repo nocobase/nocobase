@@ -215,6 +215,7 @@ export function SplitIssuesView({
             tab={tab}
             onTabChange={setTab}
             onGoto={(id) => list.select(id)}
+            following={list.query.data?.following}
             nav={{
               index: index + 1,
               total: list.order.length,

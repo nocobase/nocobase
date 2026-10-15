@@ -57,6 +57,12 @@ import {
 } from './model.js';
 import type { AgentQueueData, AgentQueueIssue } from './types.js';
 
+/** Renders an unfolded queued item's exact reason, such as a component that reads it from the application's API. */
+export type AgentQueueWaitDetail = (
+  item: AgentQueueItem,
+  agent: AgentQueueLane['agent'],
+) => ReactNode;
+
 export interface AgentQueueProps {
   readonly data: AgentQueueData;
   /** The viewer's user id, so "waiting for you" names them first. */
@@ -84,6 +90,11 @@ export interface AgentQueueProps {
    * the page's `t`. The item knows no reason; without this it shows the code.
    */
   readonly formatWait?: AgentQueueFormatWait;
+  /**
+   * The exact reason a queued item waits, read only once the viewer unfolds it (its badge says why in short). Given, a
+   * queued item with a run gets a toggle beside its line that shows what this renders.
+   */
+  readonly waitDetail?: AgentQueueWaitDetail;
   /** The language durations and times are written in. */
   readonly locale?: string;
   readonly className?: string;
@@ -304,72 +315,140 @@ function QueueList({
   nav,
   locale,
   formatWait,
+  waitDetail,
 }: {
   readonly lane: AgentQueueLane;
   readonly labels: AgentQueueLabels;
   readonly nav: Nav;
   readonly locale: string | undefined;
   readonly formatWait: AgentQueueFormatWait | undefined;
+  readonly waitDetail: AgentQueueWaitDetail | undefined;
 }): ReactElement {
   return (
     <ol className='flex flex-col'>
-      {lane.next.map((item, index) => {
-        const view = waitView(labels, item, lane.agent, formatWait);
-        const blocking = view?.blocking === true;
-        const hover =
-          typeof view?.detail === 'string'
-            ? view.detail
-            : typeof view?.text === 'string'
-              ? view.text
-              : undefined;
-        const last = index === lane.next.length - 1;
-        return (
-          <li key={item.issue.id} className='relative'>
-            {last ? null : (
-              <span
-                aria-hidden
-                className='absolute top-7 bottom-0 left-[1.0625rem] w-px bg-border'
-              />
-            )}
-            <NavLink
-              href={nav.issueHref(item.issue)}
-              nav={nav}
-              data-issue={item.issue.identifier}
-              data-mine={item.mine || undefined}
-              className='grid grid-cols-[1.5rem_minmax(0,1fr)] gap-x-2 px-1 py-1.5 hover:bg-background/70 dark:hover:bg-background/40'
-            >
-              <span className='mt-0.5 flex size-5 items-center justify-center justify-self-center rounded-full bg-background text-[10px] font-medium text-muted-foreground tabular-nums ring-1 ring-border'>
-                {index + 1}
-              </span>
-              <div className='flex min-w-0 flex-col gap-1'>
-                <IssueLine item={item} labels={labels} />
-                <div className='flex min-w-0 items-center gap-1.5'>
-                  {view ? (
-                    <Badge
-                      variant='secondary'
-                      title={hover}
-                      className={cn(
-                        'h-auto max-w-full min-w-0 justify-start rounded-md bg-muted px-1.5 py-0 text-[11px] font-normal text-muted-foreground',
-                        blocking &&
-                          'bg-amber-500/10 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300',
-                      )}
-                    >
-                      {blocking ? <CircleAlertIcon aria-hidden /> : null}
-                      <span className='truncate'>{view.text}</span>
-                    </Badge>
-                  ) : null}
-                  {item.entry.run ? (
-                    <span className='shrink-0 text-[11px] text-muted-foreground/80'>
-                      <Elapsed since={item.entry.run.since} locale={locale} />
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            </NavLink>
-          </li>
-        );
-      })}
+      {lane.next.map((item, index) => (
+        <QueueItem
+          key={item.issue.id}
+          item={item}
+          index={index}
+          last={index === lane.next.length - 1}
+          lane={lane}
+          labels={labels}
+          nav={nav}
+          locale={locale}
+          formatWait={formatWait}
+          waitDetail={waitDetail}
+        />
+      ))}
     </ol>
+  );
+}
+
+function QueueItem({
+  item,
+  index,
+  last,
+  lane,
+  labels,
+  nav,
+  locale,
+  formatWait,
+  waitDetail,
+}: {
+  readonly item: AgentQueueItem;
+  readonly index: number;
+  readonly last: boolean;
+  readonly lane: AgentQueueLane;
+  readonly labels: AgentQueueLabels;
+  readonly nav: Nav;
+  readonly locale: string | undefined;
+  readonly formatWait: AgentQueueFormatWait | undefined;
+  readonly waitDetail: AgentQueueWaitDetail | undefined;
+}): ReactElement {
+  const [open, setOpen] = useState(false);
+  const view = waitView(labels, item, lane.agent, formatWait);
+  const blocking = view?.blocking === true;
+  const hover =
+    typeof view?.detail === 'string'
+      ? view.detail
+      : typeof view?.text === 'string'
+        ? view.text
+        : undefined;
+  // Only a queued run has an exact reason to read; one waiting for its blockers says it all already.
+  const explains = Boolean(waitDetail && item.entry.queue && item.entry.run);
+  const detailId = `agent-queue-why-${lane.agent.id}-${item.issue.id}`;
+  return (
+    <li className='relative'>
+      {last ? null : (
+        <span
+          aria-hidden
+          className='absolute top-7 bottom-0 left-[1.0625rem] w-px bg-border'
+        />
+      )}
+      <NavLink
+        href={nav.issueHref(item.issue)}
+        nav={nav}
+        data-issue={item.issue.identifier}
+        data-mine={item.mine || undefined}
+        className='grid grid-cols-[1.5rem_minmax(0,1fr)] gap-x-2 px-1 py-1.5 hover:bg-background/70 dark:hover:bg-background/40'
+      >
+        <span className='mt-0.5 flex size-5 items-center justify-center justify-self-center rounded-full bg-background text-[10px] font-medium text-muted-foreground tabular-nums ring-1 ring-border'>
+          {index + 1}
+        </span>
+        <div className='flex min-w-0 flex-col gap-1'>
+          <IssueLine item={item} labels={labels} />
+          <div className='flex min-w-0 items-center gap-1.5'>
+            {view ? (
+              <Badge
+                data-size='sm'
+                variant='secondary'
+                title={hover}
+                className={cn(
+                  'h-auto max-w-full min-w-0 justify-start rounded-md bg-muted px-1.5 py-0 text-[11px] font-normal text-muted-foreground',
+                  blocking &&
+                    'bg-amber-500/10 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300',
+                )}
+              >
+                {blocking ? <CircleAlertIcon aria-hidden /> : null}
+                <span className='truncate'>{view.text}</span>
+              </Badge>
+            ) : null}
+            {item.entry.run ? (
+              <span className='shrink-0 text-[11px] text-muted-foreground/80'>
+                <Elapsed since={item.entry.run.since} locale={locale} />
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </NavLink>
+      {explains ? (
+        <div className='flex flex-col gap-1 pr-1 pb-1.5 pl-9'>
+          <button
+            type='button'
+            aria-expanded={open}
+            aria-controls={open ? detailId : undefined}
+            data-testid='agent-queue-why'
+            onClick={() => setOpen((current) => !current)}
+            className='-ml-0.5 flex w-fit items-center gap-0.5 rounded-sm text-[11px] text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring'
+          >
+            <ChevronRightIcon
+              aria-hidden
+              className={cn('size-3 transition-transform', open && 'rotate-90')}
+            />
+            {open ? labels.queue.hideWhy : labels.queue.showWhy}
+          </button>
+          {open ? (
+            <div
+              id={detailId}
+              className='text-[11px] text-muted-foreground'
+              data-testid='agent-queue-why-detail'
+            >
+              {waitDetail!(item, lane.agent)}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </li>
   );
 }
 
@@ -408,13 +487,17 @@ function WaitingItem({
       </NavLink>
       <div className='flex min-w-0 items-center gap-1.5'>
         <Badge
+          data-size='sm'
           variant='outline'
           className='h-5 shrink-0 rounded-md px-1.5 text-[11px] font-normal'
         >
           {labels.wait.kinds[waiting.kind]}
         </Badge>
         {item.forMe ? (
-          <Badge className='h-5 shrink-0 rounded-md bg-amber-500 px-1.5 text-[11px] text-white dark:bg-amber-400 dark:text-amber-950'>
+          <Badge
+            data-size='sm'
+            className='h-5 shrink-0 rounded-md bg-amber-500 px-1.5 text-[11px] text-white dark:bg-amber-400 dark:text-amber-950'
+          >
             {labels.wait.forYou}
           </Badge>
         ) : (
@@ -551,11 +634,13 @@ function Lane({
   onStart,
   expandIdle,
   formatWait,
+  waitDetail,
   className,
 }: {
   readonly lane: AgentQueueLane;
   readonly labels: AgentQueueLabels;
   readonly formatWait: AgentQueueFormatWait | undefined;
+  readonly waitDetail: AgentQueueWaitDetail | undefined;
   readonly nav: Nav;
   readonly viewerId: string | null;
   readonly locale: string | undefined;
@@ -590,7 +675,11 @@ function Lane({
           <div className='flex min-w-0 items-center gap-1.5'>
             <h2 className='truncate text-sm font-semibold'>{agent.name}</h2>
             {agent.archived ? (
-              <Badge variant='outline' className='h-4 px-1 text-[10px]'>
+              <Badge
+                data-size='sm'
+                variant='outline'
+                className='h-4 px-1 text-[10px]'
+              >
                 {labels.lane.archived}
               </Badge>
             ) : null}
@@ -658,6 +747,7 @@ function Lane({
               nav={nav}
               locale={locale}
               formatWait={formatWait}
+              waitDetail={waitDetail}
             />
           </div>
         ) : null}
@@ -774,6 +864,7 @@ export function AgentQueue({
   extra,
   labels = defaultAgentQueueLabels,
   formatWait,
+  waitDetail,
   locale,
   className,
 }: AgentQueueProps): ReactElement {
@@ -923,6 +1014,7 @@ export function AgentQueue({
                   onStart={onStart}
                   expandIdle={expandIdle}
                   formatWait={formatWait}
+                  waitDetail={waitDetail}
                   className={cn(
                     lane.agent.id !== current?.agent.id && 'max-md:hidden',
                   )}

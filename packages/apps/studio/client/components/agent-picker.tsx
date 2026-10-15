@@ -111,6 +111,7 @@ export function AgentTag({
 }: ComponentProps<'span'> & { readonly tone: AgentTagTone }): ReactElement {
   return (
     <Badge
+      data-size='sm'
       variant='secondary'
       data-tone={tone}
       className={cn('font-normal', TONE[tone], className)}

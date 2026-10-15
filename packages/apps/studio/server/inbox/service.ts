@@ -314,30 +314,31 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
   return {
     async taskDecisions(issueIds, viewerUserId, connection) {
       const summaries = new Map<string, TaskDecisionSummary>();
-      for (let at = 0; at < issueIds.length; at += 100) {
-        const rows = await (connection?.query ?? table())
-          .selectFrom(TABLE)
-          .select(['subjectId', 'type', 'userId'])
-          .distinct()
-          .where('source', '=', 'projects')
-          .where('subjectType', '=', 'issue')
-          .where('subjectId', 'in', issueIds.slice(at, at + 100))
-          .where('kind', '=', 'decision')
-          .where('resolvedAt', 'is', null)
-          .where('type', 'in', ['agent_blocked', 'run_failed_final'])
-          .execute();
-        for (const row of rows) {
-          const issueId = String(row.subjectId);
-          const type = row.type as TaskDecisionSummary['type'];
-          const key = `${issueId}:${type}`;
-          summaries.set(key, {
-            issueId,
-            type,
-            waitingForViewer:
-              summaries.get(key)?.waitingForViewer === true ||
-              row.userId === viewerUserId,
-          });
-        }
+      if (issueIds.length === 0) return [];
+      const wanted = new Set(issueIds);
+      // The open decisions on issues are few, so they are read once and narrowed here rather than in chunks of ids.
+      const rows = await (connection?.query ?? table())
+        .selectFrom(TABLE)
+        .select(['subjectId', 'type', 'userId'])
+        .distinct()
+        .where('source', '=', 'projects')
+        .where('subjectType', '=', 'issue')
+        .where('kind', '=', 'decision')
+        .where('resolvedAt', 'is', null)
+        .where('type', 'in', ['agent_blocked', 'run_failed_final'])
+        .execute();
+      for (const row of rows) {
+        const issueId = String(row.subjectId);
+        if (!wanted.has(issueId)) continue;
+        const type = row.type as TaskDecisionSummary['type'];
+        const key = `${issueId}:${type}`;
+        summaries.set(key, {
+          issueId,
+          type,
+          waitingForViewer:
+            summaries.get(key)?.waitingForViewer === true ||
+            row.userId === viewerUserId,
+        });
       }
       return [...summaries.values()];
     },

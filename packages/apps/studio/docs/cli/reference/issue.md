@@ -468,20 +468,21 @@ The issues the caller sees, cursor-paged. `deleted=true` lists deleted issues in
 nb-studio issue search
 ```
 
-| Flag                 | Type    | Description                                                             |
-| -------------------- | ------- | ----------------------------------------------------------------------- |
-| `--involves-user-id` | string  | Owned by this user or executed by them as a person, each issue once.    |
-| `--status`           | string  | Filter by issue status key.                                             |
-| `--project`          | string  | The project identifier.                                                 |
-| `--owner`            | string  | The owner user identifier.                                              |
-| `--executor`         | string  | The executor identifier.                                                |
-| `--label`            | string  | The label identifier.                                                   |
-| `--parent`           | string  | A parent issue, by identifier (PM-12) or id; none for top-level issues. |
-| `--q`                | string  | Text to search for.                                                     |
-| `--deleted`          | boolean | Whether to include deleted records.                                     |
-| `--order-by`         | string  | The field and direction to sort by.                                     |
-| `--limit`            | integer | The maximum number of records to return. (default 20)                   |
-| `--page-token`       | string  | The continuation token returned by the previous page.                   |
+| Flag                 | Type    | Description                                                                         |
+| -------------------- | ------- | ----------------------------------------------------------------------------------- |
+| `--issue-ids`        | string  | Only these issues, comma-separated ids, at most 100; the other filters still apply. |
+| `--involves-user-id` | string  | Owned by this user or executed by them as a person, each issue once.                |
+| `--status`           | string  | Filter by issue status key.                                                         |
+| `--project`          | string  | The project identifier.                                                             |
+| `--owner`            | string  | The owner user identifier.                                                          |
+| `--executor`         | string  | The executor identifier.                                                            |
+| `--label`            | string  | The label identifier.                                                               |
+| `--parent`           | string  | A parent issue, by identifier (PM-12) or id; none for top-level issues.             |
+| `--q`                | string  | Text to search for.                                                                 |
+| `--deleted`          | boolean | Whether to include deleted records.                                                 |
+| `--order-by`         | string  | The field and direction to sort by.                                                 |
+| `--limit`            | integer | The maximum number of records to return. (default 20)                               |
+| `--page-token`       | string  | The continuation token returned by the previous page.                               |
 
 **Output:** A list (table columns: `identifier`, `title`, `statusKey`, `owner.name`, `executorName`); with `--json`, `result.data` is the array and `result.meta` the paging.
 

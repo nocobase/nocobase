@@ -14,7 +14,8 @@ export function usePendingCommentRun(issue: IssueDetail) {
   const api = useApiClient();
   const viewer = useViewer();
   return useQuery({
-    queryKey: ['studio', 'commentRunLimit', issue.id, issue.revision],
+    // Announcements about the issue read it again (`issues/live/realtime-refresh.ts`), so its revision is no part of it.
+    queryKey: ['studio', 'commentRunLimit', issue.id],
     enabled:
       canEditIssues(viewer) &&
       viewer?.userId === issue.ownerUserId &&

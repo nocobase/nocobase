@@ -7,19 +7,18 @@ import { issueProgressKey } from './progress-text.js';
 
 /**
  * Refetches on its own too, as a fallback: changes to the issue, its runs and its pull requests are announced and read
- * again at once (`issues/live/realtime-refresh.ts`, `git/api.ts`).
+ * again at once (`issues/live/realtime-refresh.ts`, `git/api.ts`), so nothing about the issue is part of its key.
  */
 const PROGRESS_POLL_MS = 60_000;
 
-/** What the issue waits for, read again whenever `refresh` changes; `fallback` shows until the first answer. */
+/** What the issue waits for; `fallback` shows until the first answer. */
 export function useIssueProgress(
   issueId: string,
-  refresh: string,
   fallback?: IssueProgress | null,
 ): UseQueryResult<IssueProgress> {
   const api = useApiClient();
   return useQuery({
-    queryKey: [...issueProgressKey(issueId), refresh],
+    queryKey: issueProgressKey(issueId),
     queryFn: async ({ signal }) =>
       (
         await api.request<{ data: IssueProgress }>({

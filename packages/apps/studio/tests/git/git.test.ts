@@ -176,6 +176,86 @@ describe('pull requests', () => {
 
   const repoWithToken = () => connectedRepo(h, REPO);
 
+  it('keeps GitHub merge facts after late closed, open and incomplete merged REST snapshots', async () => {
+    const notices: string[] = [];
+    h.projects.events.on('notice.planned', (event) => {
+      if (event.notice.type === 'pr_merged') notices.push(event.notice.key);
+    });
+    const { issue } = await reviewIssue();
+    const repo = await repoWithToken();
+    h.github.addPull(REPO, {
+      number: 91,
+      head: { ref: `agent/${issue.identifier}`, sha: 'a1' },
+    });
+    await h.git.pollRepo(repo);
+    const pr = (await h.git.list(alice(), issue.id)).data[0]!;
+    h.github.merge(REPO, 91, 'bob');
+    await h.git.refresh(alice(), issue.id, pr.id);
+    const merged = (await findPullRequestById(h.projects.tx.read(), pr.id))!;
+    expect(merged).toMatchObject({ state: 'merged', mergedManually: false });
+    for (const state of ['closed', 'open', 'merged'] as const) {
+      Object.assign(h.github.pull(REPO, 91), {
+        state: state === 'merged' ? 'closed' : state,
+        merged: state === 'merged',
+        merged_at: null,
+        merged_by: null,
+        merge_commit_sha: null,
+      });
+      await h.git.refresh(alice(), issue.id, pr.id);
+      expect(
+        await findPullRequestById(h.projects.tx.read(), pr.id),
+      ).toMatchObject({
+        state: 'merged',
+        mergedAt: merged.mergedAt,
+        mergeCommitSha: merged.mergeCommitSha,
+        mergedByLogin: 'bob',
+        mergedByUserId: 'bob',
+        closedAt: merged.closedAt,
+        mergedManually: false,
+      });
+    }
+    expect(
+      h.port.settled.filter((ref) => ref.outcome === 'merged'),
+    ).toHaveLength(1);
+    expect(
+      (
+        await h.projects.issueQueries.activities(alice(), issue.id, {})
+      ).data.filter(
+        (entry) =>
+          entry.action === 'status_changed' &&
+          (entry.details as { to?: string }).to === 'done',
+      ),
+    ).toHaveLength(1);
+    await expect.poll(() => notices.length).toBe(1);
+  });
+
+  it.each(['merged', 'closed'] as const)(
+    'allows an unmerged PR to close, reopen and become %s',
+    async (finalState) => {
+      const { issue } = await reviewIssue();
+      await repoWithToken();
+      h.github.addPull(REPO, { number: 92 });
+      const { pullRequest: pr } = await h.git.link(
+        alice(),
+        issue.id,
+        PR_URL(92),
+        { type: 'user', id: 'alice' },
+      );
+      const pull = h.github.pull(REPO, 92);
+      for (const state of ['closed', 'open', finalState] as const) {
+        if (state === 'merged') h.github.merge(REPO, 92, 'bob');
+        else pull.state = state;
+        await h.git.refresh(alice(), issue.id, pr.id);
+        expect((await h.git.list(alice(), issue.id)).data[0]!.state).toBe(
+          state,
+        );
+      }
+      expect((await detail(issue)).statusKey).toBe(
+        finalState === 'merged' ? 'done' : 'in_review',
+      );
+    },
+  );
+
   it('links a pull request by hand and asks the owner to merge it', async () => {
     const { issue } = await reviewIssue();
     h.github.addPull(REPO, {
@@ -692,15 +772,27 @@ describe('pull requests', () => {
     );
     expect(marked).toMatchObject({ state: 'merged', mergedManually: true });
     expect((await detail(second.issue)).statusKey).toBe('done');
-    // GitHub still says open: a later read does not reopen it.
-    await h.git.refresh(
-      alice(),
-      second.issue.identifier,
+    const markedRow = (await findPullRequestById(
+      h.projects.tx.read(),
       linked.pullRequest.id,
-    );
-    expect(
-      (await h.git.list(alice(), second.issue.identifier)).data[0]?.state,
-    ).toBe('merged');
+    ))!;
+    for (const state of ['open', 'closed'] as const) {
+      h.github.pull(REPO, 8).state = state;
+      await h.git.refresh(
+        alice(),
+        second.issue.identifier,
+        linked.pullRequest.id,
+      );
+      expect(
+        await findPullRequestById(h.projects.tx.read(), linked.pullRequest.id),
+      ).toMatchObject({
+        state: 'merged',
+        mergedManually: true,
+        mergedAt: markedRow.mergedAt,
+        mergedByUserId: markedRow.mergedByUserId,
+        mergeCommitSha: markedRow.mergeCommitSha,
+      });
+    }
   });
 
   it('links from a run with `nb-studio pr link`, to the run’s issue', async () => {

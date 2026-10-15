@@ -15,6 +15,7 @@ import {
 
 import { useSettingsSections } from '../../pages/config/sections.js';
 import { useReturnLocations } from '../return-locations.js';
+import { SELECTED } from './selected-entry.js';
 
 /**
  * What the app's sidebar shows inside the workspace settings (`/config`), in place of the app's navigation: Back to
@@ -76,6 +77,7 @@ export function SettingsNavigation(): ReactElement {
                       }
                       isActive={active}
                       tooltip={label}
+                      className={SELECTED}
                     >
                       <Icon />
                       <span>{label}</span>

@@ -110,7 +110,7 @@ export function ProjectInitBody({
   return (
     <div className='space-y-3' data-project-init={view.state}>
       <div className='flex flex-wrap items-center gap-2 text-sm'>
-        <Badge variant={STATE_VARIANT[view.state]}>
+        <Badge data-size='sm' variant={STATE_VARIANT[view.state]}>
           {t(`projectPage.init.states.${view.state}`)}
         </Badge>
         <span className='text-muted-foreground' data-init-executor>

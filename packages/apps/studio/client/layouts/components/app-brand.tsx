@@ -18,7 +18,7 @@ export function AppBrand(inputProps: AppBrandProps): ReactElement {
       to='/'
     >
       {compact ? (
-        <span className='size-8 shrink-0 overflow-hidden'>
+        <span className='size-9 shrink-0 overflow-hidden'>
           <img
             src={resolveAppUrl('/assets/logo-mark.png')}
             alt=''

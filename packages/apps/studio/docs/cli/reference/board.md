@@ -110,3 +110,30 @@ nb-studio board start <issue>
 ```bash
 nb-studio board start PM-12
 ```
+
+## board wait
+
+Get why an agent’s queued run on an issue waits
+
+The exact reason a queued row of the Agent queue shows in short: the claim’s diagnosis of the run’s candidate runners. Needs a caller who sees the issue; the preparation detail only for one who could open the run. 404 `QUEUED_RUN_NOT_FOUND` when the agent has no queued run on the issue.
+
+```bash
+nb-studio board wait <issue> <agent>
+```
+
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
+| `agent`  | The agent identifier. |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key).
+
+**Request:** `GET /api/agentBoard/issues/{issueId}/agents/{agentId}/wait` (`agentBoardGetWait`)
+
+**Examples:**
+
+```bash
+nb-studio board wait PM-12 coder
+```

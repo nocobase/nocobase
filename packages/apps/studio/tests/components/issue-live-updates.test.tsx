@@ -33,6 +33,7 @@ vi.mock('@nocobase/app-plugin-projects/client/kit', async (importOriginal) => ({
 const { useLiveIssue, IDLE_POLL_MS, WAKE_POLL_MS, WAKE_WINDOW_MS } =
   await import('../../client/pages/issues/detail/use-live-issue.js');
 const { useIssueRuns } = await import('../../client/agents/use-issue-runs.js');
+const { wakeIssue } = await import('../../client/issues/live/wake.js');
 const { useIssueTimeline } =
   await import('@nocobase/app-plugin-projects/client/issues');
 
@@ -218,6 +219,14 @@ async function invalidate(issueId = detail.identifier): Promise<void> {
   await flush();
 }
 
+/** The viewer did something here that starts an agent's work, such as handing the issue over. */
+async function startWork(): Promise<void> {
+  await act(async () => {
+    wakeIssue(detail.id);
+  });
+  await flush();
+}
+
 function delayRunResponses(ms: number): void {
   api.request.mockImplementation(() => {
     const data = [...serverRuns];
@@ -256,11 +265,11 @@ afterEach(() => {
 });
 
 describe('live issue updates with the real subject run cache', () => {
-  it('discovers work immediately after an action invalidates detail without changing revision', async () => {
+  it('discovers work immediately after the viewer starts work here, without an issue edit', async () => {
     await show();
     expect(screen.getByLabelText('Activity runs')).toBeEmptyDOMElement();
     serverRuns = [run()];
-    await invalidate();
+    await startWork();
     expect(screen.getByLabelText('Activity runs')).toHaveTextContent('running');
     expect(screen.getByLabelText('Run panel')).toHaveTextContent('running');
     expect(api.request).toHaveBeenLastCalledWith(
@@ -274,7 +283,7 @@ describe('live issue updates with the real subject run cache', () => {
 
   it('finds delayed wakeups during the short polling window', async () => {
     await show();
-    await invalidate();
+    await startWork();
     await advance(1000);
     serverRuns = [run()];
     await advance(WAKE_POLL_MS);
@@ -283,7 +292,7 @@ describe('live issue updates with the real subject run cache', () => {
 
   it('returns to idle polling after the wake window when no agent wakes', async () => {
     await show();
-    await invalidate();
+    await startWork();
     await advance(WAKE_WINDOW_MS);
     const calls = api.request.mock.calls.length;
     await advance(WAKE_POLL_MS);
@@ -330,7 +339,7 @@ describe('live issue updates with the real subject run cache', () => {
     api.request.mockClear();
     delayRunResponses(6500);
     serverRuns = [run()];
-    await invalidate();
+    await startWork();
     await advance(2000);
     await advance(2000);
     await advance(2000);
@@ -370,14 +379,14 @@ describe('live issue updates with the real subject run cache', () => {
     );
   });
 
-  it('keeps discovering work when an invalidation reuses an older empty response', async () => {
+  it('keeps discovering work when a wakeup reuses an older empty response', async () => {
     await show();
     api.request.mockClear();
     const delay = WAKE_POLL_MS * 2 + 500;
     delayRunResponses(delay);
     await advance(IDLE_POLL_MS);
     serverRuns = [run()];
-    await invalidate();
+    await startWork();
     // The request already in flight captured the empty list before the comment woke work.
     await advance(WAKE_POLL_MS);
     await advance(WAKE_POLL_MS);
@@ -415,7 +424,7 @@ describe('live issue updates with the real subject run cache', () => {
     );
 
     serverRuns = [run()];
-    await invalidate();
+    await startWork();
     const addReply = (content: string) => {
       olderThreads = [
         {
@@ -565,6 +574,28 @@ describe('live issue updates with the real subject run cache', () => {
     detail = { ...detail, statusKey: 'done' };
     await advance(IDLE_POLL_MS);
     expect(screen.getByLabelText('Issue status')).toHaveTextContent('done');
+  });
+
+  it('does not speed up for an announcement, only for work the viewer starts here', async () => {
+    await show();
+    api.request.mockClear();
+    // An announcement reads the detail again: no fast polling of runs follows.
+    await invalidate();
+    const afterAnnouncement = api.request.mock.calls.length;
+    await advance(WAKE_POLL_MS * 3);
+    expect(api.request).toHaveBeenCalledTimes(afterAnnouncement);
+    // A comment the viewer just wrote, put into the detail by the page itself, wakes it.
+    await act(async () => {
+      client.setQueryData<IssueDetail>(['pm', 'issue', detail.identifier], {
+        ...detail,
+        threads: [{ root: comment('mine'), replies: [] }],
+      });
+    });
+    await flush();
+    const woken = api.request.mock.calls.length;
+    expect(woken).toBeGreaterThan(afterAnnouncement);
+    await advance(WAKE_POLL_MS);
+    expect(api.request.mock.calls.length).toBeGreaterThan(woken);
   });
 
   it('ignores invalidations for another issue and stops polling after leaving the page', async () => {

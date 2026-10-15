@@ -31,12 +31,13 @@ import {
   type UpgradeRequired,
 } from '@nocobase/agent-protocol';
 
-import type { DatabaseConnection } from '@nocobase/db';
+import type { DatabaseConnection, RepositoryFilter } from '@nocobase/db';
 
 import { normalizeModel } from '../../shared/model-catalog.js';
 import type {
   RegistrationToken,
   RegistrationTokenInput,
+  RegistrationTokenSummary,
   Runner,
   RunnerPatch,
   RunnerWorkspaceDisk,
@@ -67,6 +68,7 @@ import {
   storedToolLoad,
   storedToolSlots,
   toRunner,
+  type RegistrationTokenRecord,
 } from './runner.store.js';
 
 /** How long a registration token stays usable. */
@@ -77,6 +79,11 @@ export interface RunnerService {
     createdById: string | null,
     input: RegistrationTokenInput,
   ): Promise<RegistrationToken>;
+  listRegistrationTokens(options: {
+    readonly createdById?: string;
+    readonly page: number;
+    readonly pageSize: number;
+  }): Promise<{ data: RegistrationTokenSummary[]; total: number }>;
   /** Registers a runner of any protocol; one this application does not serve starts `upgrade_required`. */
   register(request: RegisterRequest): Promise<RegisterResponse>;
   /** Whether `token` is a registration token that can still be used; using it is left to `register`. */
@@ -333,6 +340,37 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
   }
 
   return {
+    listRegistrationTokens: async (options) => {
+      const filter: RepositoryFilter<RegistrationTokenRecord> = (f) =>
+        f.and([
+          f.date('usedAt').empty(),
+          f.date('expiresAt').after(clock.now()),
+          ...(options.createdById === undefined
+            ? []
+            : [f.string('createdById').eq(options.createdById)]),
+        ]);
+      const repo = registrationTokensRepo(tx.read());
+      const records = await repo.findMany({
+        filter,
+        sort: (sort) => sort.field('id').desc(),
+        limit: options.pageSize,
+        offset: (options.page - 1) * options.pageSize,
+      });
+      const total = await repo.count({ filter });
+      return {
+        data: records.map((record) => ({
+          id: record.id,
+          createdById: record.createdById,
+          trust: record.trust,
+          enabledTools: storedToolChoice(record.enabledTools),
+          slots: record.slots,
+          toolSlots: storedToolSlots(record.toolSlots),
+          createdAt: record.createdAt,
+          expiresAt: record.expiresAt,
+        })),
+        total,
+      };
+    },
     createRegistrationToken: (createdById, input) =>
       tx.run(async ({ conn }) => {
         const now = clock.now();
@@ -397,6 +435,33 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         if (claimed.updatedCount !== 1) throw invalidToken;
 
         const runnerId = ids.next();
+        // Host names are self-reported: they must never authorize revoking another person's machine.
+        const previous = await runnersRepo(conn).findMany({
+          filter: (f) =>
+            f.and([
+              f.string('name').eq(request.name),
+              f.string('hostname').eq(request.hostname),
+              token.createdById === null
+                ? f.string('ownerUserId').empty()
+                : f.string('ownerUserId').eq(token.createdById),
+              f.string('status').ne('revoked'),
+            ]),
+        });
+        for (const runner of previous) {
+          await runnersRepo(conn).updateMany({
+            filter: { id: runner.id },
+            values: { status: 'revoked', updatedAt: nowText },
+          });
+          await credentialsRepo(conn).updateMany({
+            filter: (f) =>
+              f.and([
+                f.string('runnerId').eq(runner.id),
+                f.date('revokedAt').empty(),
+              ]),
+            values: { revokedAt: nowText },
+          });
+          emit({ type: 'runner.changed', runnerId: runner.id });
+        }
         // The runner's explicit `--slots`, else the token's, else 1.
         const slots =
           request.slots ?? (token.slots === null ? 1 : Number(token.slots));
@@ -653,7 +718,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         if (runner.status !== 'revoked')
           throw precondition(
             'RUNNER_NOT_REVOKED',
-            'Revoke the runner before deleting it.',
+            `Revoke the runner before deleting it: run runtime revoke ${id}, then runtime delete ${id}.`,
           );
         await credentialsRepo(conn).deleteMany({
           filter: (f) => f.string('runnerId').eq(id),

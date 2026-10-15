@@ -69,7 +69,7 @@ describe('live issue summaries', () => {
     const threads = ['issue-331', 'PM-331'].map((id) =>
       observe([...pmKeys.issue(id), 'threads'], () => ({ content })),
     );
-    const following = observe(['pm', 'issues', 'followUps'], () => ({
+    const following = observe(['studio', 'followUps'], () => ({
       issues: [{ id: 'issue-331' }],
       following: [],
       statusKey,
@@ -185,13 +185,23 @@ describe('live issue summaries', () => {
       ['studio', 'issue-runs'],
       ['studio', 'commentRunLimit'],
       ['studio', 'ownerHandoff'],
-      ['pm', 'issues', 'followUps'],
     ])
       expect(invalidateQueries).toHaveBeenCalledWith({ queryKey });
-    expect(invalidateQueries).toHaveBeenCalledTimes(6);
+    for (const queryKey of [
+      ['studio', 'followUps'],
+      ['studio', 'following'],
+    ])
+      expect(invalidateQueries).toHaveBeenCalledWith({ queryKey, exact: true });
+    expect(invalidateQueries).toHaveBeenCalledTimes(7);
+    // The inbox changes nothing the viewer follows; a reconnect may have missed anything.
     emit(STUDIO_INBOX_TOPIC, { kind: 'studio.inbox.changed' });
+    expect(invalidateQueries).toHaveBeenCalledTimes(13);
+    expect(invalidateQueries).not.toHaveBeenLastCalledWith({
+      queryKey: ['studio', 'following'],
+      exact: true,
+    });
     opened();
-    expect(invalidateQueries).toHaveBeenCalledTimes(18);
+    expect(invalidateQueries).toHaveBeenCalledTimes(20);
     stop();
     for (const unsubscribe of stops) expect(unsubscribe).toHaveBeenCalledOnce();
   });
@@ -237,7 +247,7 @@ describe('live issue summaries', () => {
       observe(['studio', 'ownerHandoff', 'issue-331'], {}),
       observe(pmKeys.issue('PM-9'), { id: 'issue-9' }),
       observe(['studio', 'issueProgress', 'issue-9', 'r1'], {}),
-      observe(['pm', 'issues', 'followUps'], {
+      observe(['studio', 'followUps'], {
         following: [],
         issues: [{ id: 'issue-331' }],
       }),
@@ -252,14 +262,14 @@ describe('live issue summaries', () => {
         expect(count([...pmKeys.issue('PM-331'), 'threads'])).toBe(2);
         expect(count(['studio', 'issueProgress', 'issue-331', 'r1'])).toBe(2);
         expect(count(['studio', 'ownerHandoff', 'issue-331'])).toBe(2);
-        expect(count(['pm', 'issues', 'followUps'])).toBe(2);
+        expect(count(['studio', 'followUps'])).toBe(2);
       });
       // An issue nothing here shows refreshes nothing.
       emit(['issue-elsewhere']);
       await new Promise((resolve) => setTimeout(resolve, 20));
       expect(count(pmKeys.issue('PM-9'))).toBe(1);
       expect(count(['studio', 'issueProgress', 'issue-9', 'r1'])).toBe(1);
-      expect(count(['pm', 'issues', 'followUps'])).toBe(2);
+      expect(count(['studio', 'followUps'])).toBe(2);
       expect(count(pmKeys.issue('PM-331'))).toBe(2);
       // A run on an issue refreshes what is shown of that issue.
       listeners.get(STUDIO_ISSUE_RUNS_TOPIC)?.({
@@ -273,7 +283,7 @@ describe('live issue summaries', () => {
       );
       expect(count(pmKeys.issue('PM-9'))).toBe(2);
       expect(count(pmKeys.issue('PM-331'))).toBe(2);
-      expect(count(['pm', 'issues', 'followUps'])).toBe(2);
+      expect(count(['studio', 'followUps'])).toBe(2);
     } finally {
       stop();
       for (const unsubscribe of stops) unsubscribe();

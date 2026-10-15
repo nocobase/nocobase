@@ -107,7 +107,11 @@ export function PullRequestStateBadge({
   const Icon = STATE_ICONS[state];
   const key = state === 'open' && draft ? 'draft' : state;
   return (
-    <Badge variant='outline' className={cn('gap-1', STATE_TONES[key])}>
+    <Badge
+      data-size='sm'
+      variant='outline'
+      className={cn('gap-1', STATE_TONES[key])}
+    >
       <Icon className='size-3' aria-hidden />
       {t(`studioGit.state.${key}`)}
     </Badge>
@@ -130,6 +134,7 @@ export function ChecksBadge({
   const Icon = CHECK_ICONS[ciState];
   return (
     <Badge
+      data-size='sm'
       variant={ciState === 'failure' ? 'destructive' : 'outline'}
       className='gap-1'
     >
@@ -224,7 +229,7 @@ export function CheckRow({
 export function ConflictBadge(): ReactElement {
   const { t } = useTranslation();
   return (
-    <Badge variant='destructive' className='gap-1'>
+    <Badge data-size='sm' variant='destructive' className='gap-1'>
       <AlertTriangleIcon className='size-3' aria-hidden />
       {t('studioGit.conflict')}
     </Badge>
@@ -867,7 +872,7 @@ export function PullRequestMarkBadge({
   readonly issue: Pick<Issue, 'id' | 'revision'>;
 }): ReactElement | null {
   const { t } = useTranslation();
-  const { data } = usePullRequestMark(issue.id, issue.revision);
+  const { data } = usePullRequestMark(issue.id);
   if (!data) return null;
   return <MarkBadge mark={data} title={t} />;
 }

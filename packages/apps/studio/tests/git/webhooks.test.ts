@@ -621,6 +621,20 @@ describe('webhook events', () => {
       },
     );
     expect(replay.body).toEqual({ data: { duplicate: true } });
+    const late = pullPayload(2, 'converted_to_draft');
+    Object.assign(late.pull_request, {
+      merged: false,
+      merged_at: null,
+      merged_by: null,
+      merge_commit_sha: null,
+      draft: true,
+    });
+    await deliver(row, 'pull_request', late);
+    expect((await h.git.list(alice(), issue.id)).data[0]!).toMatchObject({
+      state: 'merged',
+      mergedAt: h.github.pull(REPO, 2).merged_at,
+      mergeCommitSha: h.github.pull(REPO, 2).merge_commit_sha,
+    });
     const moves = (
       await h.projects.issueQueries.activities(alice(), issue.id, {})
     ).data.filter(

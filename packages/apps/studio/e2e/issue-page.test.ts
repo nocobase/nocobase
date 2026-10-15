@@ -184,7 +184,9 @@ test.describe('issue page', () => {
       const layout = page.locator('[data-slot="issue-detail-layout"]');
       const available = await layout.evaluate(
         (element) =>
-          (element as unknown as { clientWidth: number }).clientWidth,
+          (
+            element as unknown as { getBoundingClientRect(): { width: number } }
+          ).getBoundingClientRect().width,
       );
       await expect(layout.locator(':scope > div')).toHaveCSS(
         'flex-direction',
@@ -204,15 +206,18 @@ test.describe('issue page', () => {
       });
     };
     for (const width of [375, 1280, 1600]) await check(width, false);
+    // Fractional widths: the theme's 0.225rem spacing gives the sidebar 230.4px, which clientWidth would round.
     const layout = page.locator('[data-slot="issue-detail-layout"]');
     const inset =
       1600 -
       (await layout.evaluate(
         (element) =>
-          (element as unknown as { clientWidth: number }).clientWidth,
+          (
+            element as unknown as { getBoundingClientRect(): { width: number } }
+          ).getBoundingClientRect().width,
       ));
     for (const available of [895, 896, 897, 1023])
-      await check(available + inset, false);
+      await check(Math.ceil(available + inset), false);
     await expect(aside.locator(':scope > div')).toHaveCSS('position', 'static');
     await history
       .getByRole('button', { name: '查看全部 6 条' })

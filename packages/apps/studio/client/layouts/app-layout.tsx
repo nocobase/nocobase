@@ -10,6 +10,7 @@ import { isSettingsPath } from '../pages/config/sections.js';
 import { StudioChat } from '../agents/chat.js';
 import { RouteTreeProvider } from '../routing/route-context.js';
 import { ChatPanel } from '@/extensions/nocobase-agent-chat/chat-panel';
+import { BrandWatermark } from '@/components/brand-watermark';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { useInboxNavigation } from '../inbox/navigation.js';
 import { useMyTasksNavigation } from '../issues/groups/my-tasks-navigation.js';
@@ -110,7 +111,8 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
                 {/* The chat panel docks beside main on wide screens and floats over it (or covers it) otherwise, so main
           and the panel share a positioned row. */}
                 <div className='relative flex min-h-0 min-w-0 flex-1'>
-                  <main className='relative min-w-0 flex-1 overflow-hidden'>
+                  <main className='app-brand-surface relative isolate min-w-0 flex-1 overflow-hidden'>
+                    <BrandWatermark className='-z-10' />
                     {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
               moved by the page's scrolling nor stretched by its height. */}
                     <div className='h-full overflow-y-auto'>

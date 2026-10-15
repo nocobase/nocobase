@@ -80,15 +80,19 @@ it('requires authentication and the issue view permission, and documents itself'
   for (const path of [
     '/taskGroups',
     '/taskGroups/summary',
-    '/taskGroups/children?parentId=x&generation=y',
+    '/taskGroups/children?parentIds=x&generation=y',
+    '/taskGroups/rows?ids=x',
   ])
     expect((await h.request('GET', path, { user: 'bob' })).status).toBe(403);
   const ok = await h.request('GET', '/taskGroups', { user: 'alice' });
   expect(ok.status).toBe(200);
   expect(ok.body.data).toMatchObject({ mode: 'split', waiting: 0 });
-  expect(
-    (await h.request('GET', '/taskGroups/children', { user: 'alice' })).status,
-  ).toBe(400);
+  for (const path of [
+    '/taskGroups/children',
+    '/taskGroups/children?parentIds=a,b&generation=g&cursor=c',
+    '/taskGroups/rows',
+  ])
+    expect((await h.request('GET', path, { user: 'alice' })).status).toBe(400);
   expect(
     (await h.request('GET', '/taskGroups?cursor=abc', { user: 'alice' }))
       .status,
@@ -240,11 +244,15 @@ it('reads table trees with context rows, children pages and a changed generation
   });
   const children = await tasks.children(h.viewer('alice'), {
     ownerUserId: 'alice',
-    parentId: root.id,
+    parentIds: [root.id],
     generation: result.generation,
   });
+  expect(children.parents.map((page) => page.parentId)).toEqual([root.id]);
   expect(
-    children.data.map((item) => [item.issue.title, item.context]).sort(),
+    children.parents[0]!.data.map((item) => [
+      item.issue.title,
+      item.context,
+    ]).sort(),
   ).toEqual([
     ['My child', false],
     ['Their child', true],
@@ -256,13 +264,13 @@ it('reads table trees with context rows, children pages and a changed generation
   await expect(
     tasks.children(h.viewer('alice'), {
       ownerUserId: 'alice',
-      parentId: root.id,
+      parentIds: [root.id],
       generation: result.generation,
     }),
   ).rejects.toBeInstanceOf(TaskGroupsChangedError);
   const stale = await h.request(
     'GET',
-    `/taskGroups/children?ownerUserId=alice&parentId=${root.id}&generation=${encodeURIComponent(result.generation)}`,
+    `/taskGroups/children?ownerUserId=alice&parentIds=${root.id}&generation=${encodeURIComponent(result.generation)}`,
     { user: 'alice' },
   );
   expect(stale.status).toBe(409);

@@ -35,6 +35,8 @@ import {
   type RouteNavigationItem,
 } from '../../routing/route-navigation.js';
 
+import { SELECTED } from './selected-entry.js';
+
 interface Section {
   readonly key: string;
   readonly group: RouteNavigationItem | null;
@@ -218,7 +220,7 @@ function NavigationItem({
           render={link}
           isActive={isSelected}
           tooltip={inPopover ? undefined : (decoration?.hint ?? label)}
-          className={decoration ? 'relative overflow-visible' : undefined}
+          className={cn(SELECTED, decoration && 'relative overflow-visible')}
         >
           {Icon ? <Icon /> : null}
           <span
@@ -279,6 +281,7 @@ function NavigationItem({
             render={link}
             isActive={isSelected}
             tooltip={inPopover ? undefined : label}
+            className={SELECTED}
           >
             {Icon ? <Icon /> : null}
             <span>{label}</span>
@@ -336,7 +339,11 @@ function NavigationSubItem({
   if (children.length === 0)
     return (
       <SidebarMenuSubItem>
-        <SidebarMenuSubButton render={link} isActive={isSelected}>
+        <SidebarMenuSubButton
+          render={link}
+          isActive={isSelected}
+          className={SELECTED}
+        >
           {content}
         </SidebarMenuSubButton>
       </SidebarMenuSubItem>
@@ -350,7 +357,11 @@ function NavigationSubItem({
     >
       {link ? (
         <>
-          <SidebarMenuSubButton render={link} isActive={isSelected}>
+          <SidebarMenuSubButton
+            render={link}
+            isActive={isSelected}
+            className={SELECTED}
+          >
             {content}
           </SidebarMenuSubButton>
           <SidebarMenuAction
@@ -440,6 +451,7 @@ function NavigationPopover({
     <Popover open={open} onOpenChange={setOpen}>
       <SidebarMenuButton
         isActive={containsSelection(item, selectedKey)}
+        className={`${SELECTED} data-popup-open:bg-sidebar-accent data-popup-open:text-sidebar-accent-foreground`}
         render={
           <PopoverTrigger
             openOnHover
@@ -490,9 +502,9 @@ function NavigationPopover({
           restoringFocusRef.current = interaction === 'keyboard';
           return interaction === 'keyboard';
         }}
-        className='max-h-(--available-height) w-max min-w-40 max-w-sm gap-0.5 overflow-y-auto border border-sidebar-border bg-sidebar p-1.5 text-sidebar-foreground'
+        className='max-h-(--available-height) w-max min-w-40 max-w-sm gap-0.5 overflow-y-auto border border-sidebar-border bg-sidebar p-1.5 text-sidebar-foreground shadow-lg'
       >
-        <PopoverTitle className='px-2 pt-1 pb-0.5 text-xs font-medium whitespace-nowrap text-sidebar-foreground/70'>
+        <PopoverTitle className='px-2 pt-1 pb-0.5 text-xs font-medium whitespace-nowrap text-muted-foreground'>
           {label}
         </PopoverTitle>
         <SidebarMenu>

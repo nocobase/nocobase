@@ -11,10 +11,13 @@ import {
 } from '../../shared/follow-ups.js';
 
 export const followUpsKeys = {
-  /** Under the projects plugin's issues, so reading the issues again after an edit reads it again too. */
-  overview: ['pm', 'issues', 'followUps'] as const,
-  /** What the viewer follows: the follow star's read, under the overview's key. */
-  following: ['pm', 'issues', 'followUps', 'following'] as const,
+  /**
+   * Studio's own, kept current by `issues/live/realtime-refresh.ts`: under the projects plugin's issues every
+   * announcement would read the whole overview again.
+   */
+  overview: ['studio', 'followUps'] as const,
+  /** What the viewer follows: the follow star's read, apart from the overview so reading one does not read the other. */
+  following: ['studio', 'following'] as const,
 };
 
 /**

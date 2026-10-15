@@ -96,7 +96,7 @@ export function AppSidebar({
   const { t } = useTranslation();
   const { isMobile, openMobile, setOpenMobile, state } = useSidebar();
   const header = (
-    <SidebarHeader className='h-16 shrink-0 flex-row items-center justify-between border-b border-sidebar-border/70 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0'>
+    <SidebarHeader className='h-16 shrink-0 flex-row items-center justify-between border-b border-sidebar-border px-5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0'>
       <AppBrand compact={state === 'collapsed' && !isMobile} />
       {isMobile ? (
         <Button
@@ -121,7 +121,7 @@ export function AppSidebar({
           data-sidebar='sidebar'
           data-slot='sidebar'
           data-mobile='true'
-          className='w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground'
+          className='w-(--sidebar-width) gap-0 bg-sidebar p-0 text-sidebar-foreground'
           // shadcn's 18rem, in spacing units like the provider's widths.
           style={
             { '--sidebar-width': 'calc(var(--spacing) * 72)' } as CSSProperties
@@ -138,7 +138,9 @@ export function AppSidebar({
           </SheetHeader>
           <div className='flex h-full w-full flex-col'>
             {header}
-            <SidebarContent>{children}</SidebarContent>
+            <SidebarContent className='app-navigation group-data-[collapsible=icon]:overflow-y-auto'>
+              {children}
+            </SidebarContent>
             {footer}
           </div>
         </SheetContent>
@@ -149,7 +151,9 @@ export function AppSidebar({
   return (
     <Sidebar collapsible='icon'>
       {header}
-      <SidebarContent>{children}</SidebarContent>
+      <SidebarContent className='app-navigation group-data-[collapsible=icon]:overflow-y-auto'>
+        {children}
+      </SidebarContent>
       {footer}
       <SidebarRail />
     </Sidebar>
@@ -198,7 +202,7 @@ export function AppSidebarFooter(): ReactElement {
   );
 
   return (
-    <SidebarFooter className='min-h-16 shrink-0 flex-row items-center gap-3 border-t border-sidebar-border/70 px-5 py-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2'>
+    <SidebarFooter className='min-h-16 shrink-0 flex-row items-center gap-3 border-t border-sidebar-border px-5 py-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2'>
       {state === 'collapsed' && !isMobile ? (
         <Tooltip>
           <TooltipTrigger
