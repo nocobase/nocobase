@@ -140,12 +140,10 @@ test('normal load and cached refresh failure preserve settings without writes', 
   await expect(
     page.getByRole('heading', { name: 'General', exact: true }),
   ).toBeVisible();
-  await page.clock.install();
-  await page.clock.fastForward(10_001);
+  await page.clock.setFixedTime(Date.now() + 10_001);
   await page
     .getByRole('link', { name: 'Knowledge search', exact: true })
     .click();
-  await page.clock.resume();
   await expect.poll(failure.attempts).toBe(4);
   await expect(page.getByRole('alert')).toContainText(
     'Could not load the knowledge search settings.',
@@ -156,6 +154,42 @@ test('normal load and cached refresh failure preserve settings without writes', 
   await failure.restore();
   await page.getByRole('button', { name: 'Retry', exact: true }).click();
   await expect(page.getByRole('alert')).toHaveCount(0);
+  expect(
+    (await api.get<KnowledgeSearchConfig>('knowledgeSearch')).settings,
+  ).toEqual(before.settings);
+  expect(failure.writes()).toBe(0);
+});
+
+test('failed background refresh and retry preserve unsaved input', async ({
+  page,
+  context,
+  api,
+}, info) => {
+  const before = await api.get<KnowledgeSearchConfig>('knowledgeSearch');
+  await open(page, '/config/knowledge-search');
+  const results = page.getByLabel('Results', { exact: true });
+  await expect(results).toHaveValue(String(before.settings.recall.limit));
+  const draft = before.settings.recall.limit === 21 ? '22' : '21';
+  await results.fill(draft);
+  const failure = await failReads(page);
+  // Reconnecting a stale query refreshes it without unmounting the form.
+  await page.clock.setFixedTime(Date.now() + 10_001);
+  await context.setOffline(true);
+  await expect.poll(() => page.evaluate('navigator.onLine')).toBe(false);
+  await context.setOffline(false);
+  await expect.poll(failure.attempts).toBe(4);
+  await expect(page.getByRole('alert')).toContainText(
+    'Could not load the knowledge search settings.',
+  );
+  await expect(results).toHaveValue(draft);
+  await page.screenshot({
+    path: info.outputPath('unsaved-refresh-error-en.png'),
+    fullPage: true,
+  });
+  await failure.restore();
+  await page.getByRole('button', { name: 'Retry', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(results).toHaveValue(draft);
   expect(
     (await api.get<KnowledgeSearchConfig>('knowledgeSearch')).settings,
   ).toEqual(before.settings);
