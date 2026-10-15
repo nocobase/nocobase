@@ -5,3 +5,4 @@ export {
   agentSessionsRoute,
   type AgentSessionsRouteOptions,
 } from './routes.js';
+export type { LinkPanelProps } from './config.js';

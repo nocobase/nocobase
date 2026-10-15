@@ -63,8 +63,11 @@ export function IssueFeed({
   runs = NO_RUNS,
   renderRun,
   kindLabels = NO_KINDS,
+  titleHidden = false,
   className,
 }: {
+  /** Read out but not drawn, where a tab above already names the activity. */
+  readonly titleHidden?: boolean;
   readonly runs?: readonly TimelineRun[];
   /** Draws an agent's run on the feed; without it runs are left out. */
   readonly renderRun?: (runId: string) => ReactNode;
@@ -292,6 +295,7 @@ export function IssueFeed({
       <CommentTimeline
         entries={entries}
         newestFirst
+        titleHidden={titleHidden}
         headerActions={
           <ToggleGroup
             variant='outline'

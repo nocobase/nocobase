@@ -1,6 +1,7 @@
 /**
  * The state of an issues page: search, filters and the view, all in the query string (the projects plugin's helpers,
- * `@nocobase/app-plugin-projects/client/issues`), and what the toolbar's filters offer.
+ * `@nocobase/app-plugin-projects/client/issues`), and what the toolbar's filters offer: status (the table), project, owner
+ * and executor. A label in the address (`?label=`) still narrows the list; the toolbar no longer offers one.
  */
 import {
   hasIssueFilters,
@@ -96,10 +97,6 @@ export function useIssuesPage({
     queryKey: pmKeys.projects,
     queryFn: () => api.projects(),
   });
-  const labels = useQuery({
-    queryKey: pmKeys.labels,
-    queryFn: () => api.labels(),
-  });
   const members = useQuery({
     queryKey: pmKeys.members,
     queryFn: () => api.members(),
@@ -147,13 +144,6 @@ export function useIssuesPage({
     filter(
       'projectId',
       (projects.data ?? []).map((item) => ({
-        value: item.id,
-        label: item.name,
-      })),
-    ),
-    filter(
-      'labelId',
-      (labels.data ?? []).map((item) => ({
         value: item.id,
         label: item.name,
       })),

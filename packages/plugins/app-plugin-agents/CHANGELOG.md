@@ -1,5 +1,48 @@
 # @nocobase/app-plugin-agents
 
+## 0.1.0-beta.11
+
+### Minor Changes
+
+- 862a542: Support global default skills and transactional defaults for newly created Studio projects. Resolve skills from global through application scopes to working directories in one query, with more specific targets winning. Stop reading and exposing legacy agent skill attachments while preserving agent variables.
+- aae3508: Clear finished runs' events and prompt snapshots hourly after a configurable retention period, defaulting to 14 days. Keep run history and delivery records, and show a retention notice when an expired run has no process data.
+
+### Patch Changes
+
+- 42aaf81: Append authorized project manager follow-ups to compatible active runs, deduplicate source comments, preserve comment authorization when dispatching multiple agents, and guard run completion with Collection optimistic revisions.
+- 8e4cf26: Recover runners and agent-session bridges after a protocol upgrade. Heartbeat answers now carry the server's runner protocol (`protocolVersion`), and a runner that speaks an older protocol while no newer version is offered logs what it speaks, what the application needs and how to update, instead of looking up to date. A bridge refused for its protocol now receives the protocols the application speaks in the error's `metadata`; `acp start` then updates the CLI as `update` does and exits non-zero so its launchd, systemd or Startup service starts it again on the new version, and when no update helps it still exits non-zero after a pause rather than stopping with success. A computer whose bridge was refused as too old is shown on My agents with the commands to update it.
+- facfe5c: Clear failures when a retried agent run is dispatched or succeeds, and show queued retry explanations separately from current failures while preserving historical errors.
+- c1d2601: Claim polls no longer lock or write anything for queued runs they cannot take: comment consent, identity and the agent's concurrency limit are decided from reads, and a transaction opens only for the run about to be claimed. Consent decisions use guarded updates on the request and on each run instead of locking the whole comment run chain, which had exhausted the database pool when several runners polled at once.
+- c1d2601: Require owner consent before another person's comment can run on the owner's personal runner. Team runners can take the queued work directly. Keep consent within the comment's run chain, show decisions in Studio's existing Needs you card and inbox, and let the original commenter run pending or rejected work as themselves.
+- 92afa27: Make My follow-ups fast for someone who owns many open issues. `GET /api/followUps` reads what every row's progress needs in a fixed number of queries instead of a few per issue, and a row no longer works out why queued work has not been claimed (`waiting`, `managerWait`): the issue's own progress (`GET /api/issueProgress/{issueId}`), shown beside the list, still does. A new `GET /api/followUps/issues?issueIds=…` answers the rows of the named issues, and the page uses it to refresh only the rows an announced change names, a burst at a time, reading the whole overview again only when the list itself changed, on reconnect, for a change that names no issue, and on its fallback poll. The follow star on an issue reads only what the viewer follows from a new `GET /api/followUps/following` (`follow-up following` on the command line) instead of the whole overview, and an agent session's issue progress reads its issues in the same fixed number of queries. The projects plugin's comment queries gain `newestByEach`, the agents plugin's runs gain `openOnEach`, and its run request list takes `subjectIds` and `statuses`.
+- 943a9a8: Fix MySQL installation of the agents and releases plugins by removing the unused directory/status index and limiting archive artifact keys to 172 characters while preserving full-value uniqueness. Add a Collection builder inspection method and forward migrations to converge existing installations without truncating data; oversized legacy artifact keys stop the upgrade before any column or index change. Rebuild the existing artifact-key unique index within the migration transaction on SQL Server so indexed legacy columns can be shortened while retaining uniqueness, nullable behavior and the actual index name under custom naming configurations.
+
+  This fix edits the released migrations `202610020003_ag_create_runs` and `202610020001_rel_create_tables` because their oversized indexes prevent fresh MySQL installations from reaching a later repair migration. Existing installations should expect checksum warnings on the next `nocobase db apply`; installations using `onChecksumMismatch: error` stop instead. After reviewing these exact changes, use `nocobase db repair --dry-run` and then `nocobase db repair` to acknowledge the new checksums, followed by `nocobase db apply` to perform the forward schema changes. Repairing checksums alone does not upgrade the schema. The forward corrections are irreversible because restoring the old indexes would make MySQL installations invalid again. See the plugins' `docs/mysql-installation-upgrade.md` for the upgrade and failed-installation recovery procedure.
+
+- 4626949: Start issue runs from the earliest linked open pull request in the same repository, allow agents to manage branches and pull request associations without rewriting pushed history, and preserve shared local branches and stashes when removing run worktrees. Only published runner-created temporary branches are cleaned up. A run that ends on another branch is preserved by that branch, without a saved head or push failure on the starting target.
+- c1d2601: Preserve owner-initiated comment delegation without extra personal runner consent and retain every unfinished target and input when the commenter chooses Run as me.
+- bdb0581: Reduce the server load of open issue and My follow-ups pages. Issue change announcements are gathered for a moment and name the issues that changed, so a page refreshes only what it shows of them; Studio announces new runs on an issue, so issue pages, What it waits for, owner handoffs and My follow-ups fall back to a slow poll instead of polling every few seconds; a preview label the server failed to set no longer makes the issue page poll every three seconds. Polled reads check issue visibility without loading the whole issue page (`IssueQueries.visible`), What it waits for reads only the project manager's newest comments (`CommentQueries.newestBy`), My follow-ups shares lookups across its issues, and pull request marks check visibility in one read. A runner heartbeat no longer announces a runner change, waking every waiting claim and refreshing every runtimes page, unless its disk sample moved by a gigabyte, crossed the free-space threshold or changed size.
+- f36da62: Keep a runner claiming work while it collects working directories. Collection no longer measures every directory's size by reading every file, which on runners with many directories took tens of minutes per round and held all claims meanwhile; only pruning the shared pnpm store still holds claims. Routine collection now runs an hour after the previous round ended (`WORKSPACE_REPORT_INTERVAL_MS`), still at once when the disk runs low, and the runner logs each round's start and duration. Workspace diagnostics show a directory's size only when a runner reported one.
+- 99be3d0: Use short private per-run temporary directories on Linux and macOS so Unix sockets can start, reserve TMP and TEMP alongside TMPDIR, and reclaim temporary files through the existing run lifecycle and garbage collection.
+- bdb0581: A public realtime topic can be defined with `authenticated: true` (`defineTopic` and `registerTopic` of `@nocobase/app-server/realtime`): subscribing without a signed-in principal is then refused with `AUTHENTICATION_REQUIRED`, as for a user topic, and publishing skips connections without one. The projects plugin's `pm:changes`, the agents plugin's `agents:runners` and Studio's `studio:issues:runs`, whose announcements name records by id, now reach signed-in connections only. The authentication plugin opens the realtime connection again when the signed-in person changes, so a page signed in without a reload receives these topics and user topics.
+- Updated dependencies [8e4cf26]
+- Updated dependencies [69e212c]
+- Updated dependencies [943a9a8]
+- Updated dependencies [943a9a8]
+- Updated dependencies [e23633e]
+- Updated dependencies [1cd749c]
+- Updated dependencies [f36da62]
+- Updated dependencies [bdb0581]
+- Updated dependencies [9b946f4]
+  - @nocobase/agent-protocol@0.1.0-beta.8
+  - @nocobase/app-cli-client@0.1.0-beta.7
+  - @nocobase/app-server@2.0.0-beta.7
+  - @nocobase/app-cli@1.0.0-beta.22
+  - @nocobase/db@1.0.0-beta.20
+  - @nocobase/app-plugin-authentication@2.0.0-beta.9
+  - @nocobase/app-plugin-file@1.0.0-beta.23
+  - @nocobase/app-plugin-authorization@1.0.0-beta.27
+
 ## 0.1.0-beta.10
 
 ### Minor Changes

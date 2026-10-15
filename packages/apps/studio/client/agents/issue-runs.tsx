@@ -34,6 +34,8 @@ import {
 } from 'react';
 import { Link, useNavigate } from 'react-router';
 
+import { underIssue, useIssueBase } from '../issues/detail/issue-base.js';
+
 import {
   RunActions,
   RunActivityRow,
@@ -390,6 +392,7 @@ export function IssueRunPanel({
   readonly issue: IssueDetail;
 }): ReactElement | null {
   const navigate = useNavigate();
+  const issueBase = useIssueBase();
   const { runs, wording, state } = useIssueHistoryRuns(issue);
   const [stopping, setStopping] = useState<AgentRunHistoryRun | null>(null);
   const stopTargetRef = useRef<HTMLElement | null>(null);
@@ -456,7 +459,9 @@ export function IssueRunPanel({
           emptyDescription={t('issueRuns.emptyHint')}
           error={failure}
           runHref={runHref}
-          onOpenRun={(run) => void navigate(runHref(run))}
+          onOpenRun={(run) =>
+            void navigate(underIssue(issueBase, runHref(run)))
+          }
           onStop={(run, target) => {
             stopTargetRef.current = target ?? null;
             setStopping(run);
@@ -482,6 +487,7 @@ export function IssueLiveRun({
   readonly issue: IssueDetail;
 }): ReactElement | null {
   const navigate = useNavigate();
+  const issueBase = useIssueBase();
   const { runs, wording } = useIssueHistoryRuns(issue);
   return (
     <RunLivePill
@@ -489,7 +495,7 @@ export function IssueLiveRun({
       runHref={runHref}
       onOpenRun={(run, target) => {
         rememberRunFocus(target ?? null, null);
-        void navigate(runHref(run));
+        void navigate(underIssue(issueBase, runHref(run)));
       }}
       labels={wording.history}
     />
@@ -540,6 +546,7 @@ export function IssueRunRow({
   readonly runId: string;
 }): ReactElement | null {
   const navigate = useNavigate();
+  const issueBase = useIssueBase();
   const { i18n } = useTranslation();
   const { runs, wording } = useIssueHistoryRuns(issue);
   const run = runs?.find((candidate) => candidate.id === runId);
@@ -550,7 +557,7 @@ export function IssueRunRow({
       runHref={runHref}
       onOpenRun={(run, target) => {
         rememberRunFocus(target ?? null, null);
-        void navigate(runHref(run));
+        void navigate(underIssue(issueBase, runHref(run)));
       }}
       locale={i18n.language}
       labels={wording.history}

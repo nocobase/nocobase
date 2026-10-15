@@ -17,7 +17,10 @@ import type { Application } from '@nocobase/app-server/application';
 import { i18nToken } from '@nocobase/app-server/i18n';
 import { ServiceProvider } from '@nocobase/service-provider';
 
+import { STUDIO_NAMESPACE } from '../../shared/access.js';
+import type { WaitReason } from '../../shared/task-groups.js';
 import { agentSessionNotices } from '../inbox/agent-sessions.js';
+import enUS from '../locales/en-US.js';
 import { studioInboxPortToken } from '../inbox/port.js';
 import { issueLinks } from './links.js';
 import { studioTools } from './tools.js';
@@ -79,6 +82,22 @@ export default class StudioAgentSessionsProvider extends ServiceProvider<Applica
       }
     };
 
+    const englishWaits = enUS.taskWaits;
+    const waitNames = async (
+      locale: string | undefined,
+    ): Promise<(reason: WaitReason) => string> => {
+      const fallback = (reason: WaitReason): string => englishWaits[reason];
+      if (!i18n || !locale) return fallback;
+      try {
+        await i18n.ensureLocaleLoaded(locale);
+        const t = i18n.getFixedT(STUDIO_NAMESPACE, locale);
+        return (reason) =>
+          t(`taskWaits.${reason}`, { defaultValue: fallback(reason) });
+      } catch {
+        return fallback;
+      }
+    };
+
     sessions.registerInstructions(({ locale }) =>
       sessionInstructions(locale ?? i18n?.getLocale() ?? 'en-US'),
     );
@@ -94,7 +113,7 @@ export default class StudioAgentSessionsProvider extends ServiceProvider<Applica
     });
     sessions.registerLinkKind(
       'issue',
-      issueLinks({ projects, viewerOf, statusNames, progress }),
+      issueLinks({ projects, viewerOf, statusNames, waitNames, progress }),
     );
     sessions.registerTools(
       'studio',

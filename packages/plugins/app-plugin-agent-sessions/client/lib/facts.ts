@@ -1,4 +1,5 @@
 import type { Session, SessionLink } from '../../shared/api.js';
+import { linkIcon, linkNeedsYou } from './tones.js';
 
 /** What a session's row and header say about it at a glance. */
 export interface SessionFacts {
@@ -9,6 +10,8 @@ export interface SessionFacts {
   readonly active: boolean;
   /** The project it works for, else where most of its work belongs. */
   readonly group: string | null;
+  /** How many records tied to it wait for the viewer. */
+  readonly waitingLinks: number;
 }
 
 export function sessionFacts(session: Session): SessionFacts {
@@ -16,12 +19,15 @@ export function sessionFacts(session: Session): SessionFacts {
     online: session.computerOnline,
     needsMe:
       session.waiting ||
-      session.links.some(
-        (link) => awaitsStart(link) || link.status?.tone === 'attention',
-      ),
+      session.links.some((link) => awaitsStart(link) || linkNeedsYou(link)),
     active:
       session.running ||
-      session.links.some((link) => link.status?.tone === 'active'),
+      session.links.some((link) =>
+        link.status?.icon
+          ? linkIcon(link) === 'started'
+          : link.status?.tone === 'active',
+      ),
+    waitingLinks: session.links.filter(linkNeedsYou).length,
     group:
       session.project?.name ??
       mostCommon(
