@@ -640,6 +640,18 @@ export async function installSkills(
     : lock(path.join(environment.stateHome, '.skills.lock'), perform);
 }
 
+/** A session must load the same shared Skill before its first prompt or its restoration. */
+export async function prepareSessionSkill(
+  environment: SkillsEnvironment,
+  agentId: string,
+): Promise<void> {
+  if (agentId !== 'claude' && agentId !== 'codex')
+    throw new Error(
+      `Automatic Skill setup is not supported for ${agentId}. Choose Claude Code or Codex to use agent sessions with the shared Skill.`,
+    );
+  await installSkills(environment, [agentId]);
+}
+
 /** Called after CLI activation, reading the new package. Failures are warnings, never CLI update failures. */
 export async function syncInstalledSkills(
   environment: SkillsEnvironment,
