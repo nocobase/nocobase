@@ -129,4 +129,4 @@ server {
 
 `proxy_pass` 不追加路径，以保留应用的 `/crm` 前缀；`Upgrade` 和 `Connection` 用于支持 WebSocket。同一域名下部署多个应用时，每个应用使用一个 `location /crm/`，转发至各自的端口。执行 `nginx -t` 检查配置后再重新加载。
 
-KingbaseES, Dameng and OceanBase drivers are maintained in `nocobase/nocobase3-pro` and distributed through the Pro registry. Install the selected package in the application’s production dependencies, then configure its dialect and connection settings. Automatic loading and `config init --dialect` remain supported; explicit registration in `database.drivers` is optional and takes precedence.
+KingbaseES, Dameng and OceanBase drivers are NocoBase Pro commercial packages requiring the appropriate commercial license and authenticated access to the private package registry. Install the selected package in the application’s production dependencies, then configure its dialect and connection settings. Automatic loading and `config init --dialect` remain supported; explicit registration in `database.drivers` is optional and takes precedence.

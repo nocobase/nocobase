@@ -4,11 +4,9 @@ import type { ReactElement } from 'react';
 import { IssueStatusBadge } from '@/components/issue-table';
 import { cn } from 'cn';
 
-import {
-  STATUS_DOT,
-  statusColor,
-  useFollowUpStatusName,
-} from './status-colors.js';
+import { StatusIcon } from '@/components/status-icon';
+
+import { statusColor, useFollowUpStatusName } from './status-colors.js';
 
 export function StatusDot({
   statusKey,
@@ -18,14 +16,7 @@ export function StatusDot({
   readonly className?: string;
 }): ReactElement {
   return (
-    <span
-      aria-hidden
-      className={cn(
-        'size-2 shrink-0 rounded-full',
-        STATUS_DOT[statusColor(statusKey)],
-        className,
-      )}
-    />
+    <StatusIcon statusKey={statusKey} className={cn('size-3.5', className)} />
   );
 }
 
@@ -37,7 +28,11 @@ export function StatusPill({
   const statusName = useFollowUpStatusName();
   return (
     <IssueStatusBadge
-      status={{ name: statusName(statusKey), color: statusColor(statusKey) }}
+      status={{
+        name: statusName(statusKey),
+        color: statusColor(statusKey),
+        key: statusKey,
+      }}
     />
   );
 }

@@ -76,6 +76,16 @@ export interface FollowUps {
   unfollow(viewer: Viewer, issueIdOrKey: string): Promise<FollowingView>;
   /** Records that the viewer looked at the issue now; 404 when they cannot see it. */
   markSeen(viewer: Viewer, issueId: string): Promise<void>;
+  /**
+   * What the viewer follows, in order, and how much happened on each since they last looked; without the overview's
+   * progress, for the issue lists' follow group.
+   */
+  followState(viewer: Viewer): Promise<FollowState>;
+}
+
+export interface FollowState {
+  readonly ids: readonly string[];
+  readonly unread: ReadonlyMap<string, number>;
 }
 
 /** Records of work the system did not start, which say nothing new to a person. */
@@ -202,6 +212,19 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
       ids: chosen.filter((id) => found.has(id)),
       stored: stored !== null,
     };
+  }
+
+  /**
+   * What the viewer chose to follow, only issues they can still see. Starring and the issue lists go by this alone: the
+   * overview's defaults stand in for a choice on "My follow-ups" only, and never become one by themselves.
+   */
+  async function chosenFollowing(viewer: Viewer): Promise<string[]> {
+    const stored =
+      parseFollowing(
+        await preferences.get(viewer.userId, FOLLOWING_PREFERENCE),
+      ) ?? [];
+    const found = await visible(viewer, stored);
+    return stored.filter((id) => found.has(id));
   }
 
   /** The issue's id; 404 when the viewer cannot see it. */
@@ -372,8 +395,8 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
     },
 
     async following(viewer) {
-      const { ids } = await currentFollowing(viewer);
-      return { issueIds: ids, max: FOLLOW_UPS_MAX };
+      const { ids, stored } = await currentFollowing(viewer);
+      return { issueIds: ids, max: FOLLOW_UPS_MAX, stored };
     },
 
     async setFollowing(viewer, issueIds) {
@@ -411,12 +434,8 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
 
     async follow(viewer, issueIdOrKey) {
       const issueId = await issueIdOf(viewer, issueIdOrKey);
-      const { ids, stored } = await currentFollowing(viewer);
-      if (ids.includes(issueId)) {
-        if (stored) return { issueIds: ids };
-        // Following one of the defaults makes the defaults the viewer's choice.
-        return saveFollowing(viewer, ids);
-      }
+      const ids = await chosenFollowing(viewer);
+      if (ids.includes(issueId)) return { issueIds: ids };
       if (ids.length >= FOLLOW_UPS_MAX)
         throw studioError(
           'FAILED_PRECONDITION',
@@ -429,12 +448,34 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
 
     async unfollow(viewer, issueIdOrKey) {
       const issueId = await issueIdOf(viewer, issueIdOrKey);
-      const { ids } = await currentFollowing(viewer);
+      // Unfollowing one of "My follow-ups"' defaults keeps the others, which become the viewer's choice.
+      const stored = parseFollowing(
+        await preferences.get(viewer.userId, FOLLOWING_PREFERENCE),
+      );
+      const ids =
+        stored === null
+          ? await (async () => {
+              const defaults = await defaultFollowing(viewer);
+              const found = await visible(viewer, defaults);
+              return defaults.filter((id) => found.has(id));
+            })()
+          : await chosenFollowing(viewer);
       if (!ids.includes(issueId)) return { issueIds: ids };
       return saveFollowing(
         viewer,
         ids.filter((id) => id !== issueId),
       );
+    },
+
+    async followState(viewer) {
+      const ids = await chosenFollowing(viewer);
+      const seen = await readSeen(viewer.userId);
+      const unread = new Map<string, number>();
+      for (const id of ids) {
+        const at = seen[id];
+        unread.set(id, at ? await unreadOf(viewer, id, at) : 0);
+      }
+      return { ids, unread };
     },
 
     async markSeen(viewer, issueId) {

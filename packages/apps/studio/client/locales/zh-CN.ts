@@ -3,6 +3,7 @@ import { followUpsZhCN } from '../follow-ups/locales.js';
 import type { AppResource } from './en-US.js';
 import { gitZhCN } from '../git/locales.js';
 import { knowledgeZhCN } from '../knowledge/locales.js';
+import { taskGroupsZhCN } from '../issues/groups/locales.js';
 import { issuesZhCN } from '../issues/locales.js';
 import { issueLiveZhCN } from '../issues/live/locales.js';
 import { projectPageZhCN } from '../projects/locales.js';
@@ -1273,6 +1274,7 @@ const zhCN: AppResource = {
   preferences: preferencesZhCN,
   knowledge: knowledgeZhCN,
   issuesPage: issuesZhCN,
+  taskGroups: taskGroupsZhCN,
   followUps: followUpsZhCN,
   issueLive: issueLiveZhCN,
   projectPage: projectPageZhCN,

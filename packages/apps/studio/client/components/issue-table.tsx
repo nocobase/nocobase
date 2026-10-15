@@ -26,6 +26,8 @@ import {
 } from '@/components/ui/table';
 import { cn } from 'cn';
 
+import { StatusName } from './status-icon.js';
+
 /** The colours statuses and labels take, as the projects plugin names them. */
 export type IssueTableColor =
   'gray' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple';
@@ -41,6 +43,8 @@ export interface IssueTablePerson {
 
 export interface IssueTableRow {
   readonly id: string;
+  /** Tells the row apart where one issue shows twice, such as in a tree and among the followed ones; `id` otherwise. */
+  readonly rowKey?: string;
   readonly identifier: string;
   readonly title: string;
   readonly labels: readonly {
@@ -51,6 +55,8 @@ export interface IssueTableRow {
   readonly status: {
     readonly name: string;
     readonly color: IssueTableColor;
+    /** The status's key: drawn as its shape (`StatusIcon`) rather than a dot. */
+    readonly key?: string;
   } | null;
   readonly priority: IssueTablePriority;
   readonly owner: IssueTablePerson | null;
@@ -145,6 +151,14 @@ export function IssueStatusBadge({
   readonly status: NonNullable<IssueTableRow['status']>;
   readonly className?: string;
 }): ReactElement {
+  if (status.key)
+    return (
+      <StatusName
+        statusKey={status.key}
+        name={status.name}
+        {...(className ? { className } : {})}
+      />
+    );
   return (
     <Badge
       variant='secondary'
@@ -274,6 +288,18 @@ function SortButton({
 
 export interface IssueTableProps {
   readonly rows: readonly IssueTableRow[];
+  /** Flat ordered table entries; full-width entries supply group, pagination or child-load controls. */
+  readonly entries?: readonly (
+    | IssueTableRow
+    | {
+        readonly key: string;
+        readonly content: ReactNode;
+        /** The full-width cell's own look, such as a group heading's. */
+        readonly className?: string;
+      }
+  )[];
+  readonly rowLeading?: (row: IssueTableRow) => ReactNode;
+  readonly rowDescription?: (row: IssueTableRow) => ReactNode;
   /** The order the rows are in, shown on the column headers. */
   readonly sort?: IssueTableSort;
   /** Makes the identifier, priority and updated headers sortable; the consumer reorders (usually on the server). */
@@ -289,6 +315,8 @@ export interface IssueTableProps {
   readonly rowAction?: (row: IssueTableRow) => ReactNode;
   /** Small marks after a row's title and labels, such as where the issue is deployed. */
   readonly rowMarks?: (row: IssueTableRow) => ReactNode;
+  /** A row's own look, such as a context row's quieter text. */
+  readonly rowClassName?: (row: IssueTableRow) => string | undefined;
   /** What shows when there are no rows; `labels.empty` by default. */
   readonly empty?: ReactNode;
   /** The language dates are written in. */
@@ -309,6 +337,9 @@ function plainClick(event: MouseEvent): boolean {
 
 export function IssueTable({
   rows,
+  entries,
+  rowLeading,
+  rowDescription,
   sort,
   onSortChange,
   selectedIds,
@@ -317,6 +348,7 @@ export function IssueTable({
   onRowClick,
   rowAction,
   rowMarks,
+  rowClassName,
   empty,
   locale,
   labels = defaultIssueTableLabels,
@@ -397,7 +429,7 @@ export function IssueTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.length === 0 ? (
+        {(entries ?? rows).length === 0 ? (
           <TableRow className='hover:bg-transparent'>
             <TableCell
               colSpan={columns}
@@ -407,14 +439,26 @@ export function IssueTable({
             </TableCell>
           </TableRow>
         ) : null}
-        {rows.map((row) => {
+        {(entries ?? rows).map((row) => {
+          if ('content' in row)
+            return (
+              <TableRow key={row.key} className='hover:bg-transparent'>
+                <TableCell colSpan={columns} className={row.className}>
+                  {row.content}
+                </TableCell>
+              </TableRow>
+            );
           const href = rowHref?.(row);
           const checked = selectedIds?.has(row.id) ?? false;
           return (
             <TableRow
-              key={row.id}
+              key={row.rowKey ?? row.id}
+              data-task-id={row.id}
               data-state={checked ? 'selected' : undefined}
-              className={cn(onRowClick && 'cursor-pointer')}
+              className={cn(
+                onRowClick && 'cursor-pointer',
+                rowClassName?.(row),
+              )}
               onClick={(event) => {
                 if (onRowClick && plainClick(event)) onRowClick(row, event);
               }}
@@ -432,25 +476,28 @@ export function IssueTable({
                 </TableCell>
               ) : null}
               <TableCell>
-                {href ? (
-                  <a
-                    href={href}
-                    className='font-mono text-xs text-muted-foreground hover:text-foreground hover:underline'
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (onRowClick && plainClick(event)) {
-                        event.preventDefault();
-                        onRowClick(row, event);
-                      }
-                    }}
-                  >
-                    {row.identifier}
-                  </a>
-                ) : (
-                  <span className='font-mono text-xs text-muted-foreground'>
-                    {row.identifier}
-                  </span>
-                )}
+                <div className='flex items-center gap-1'>
+                  {rowLeading?.(row)}
+                  {href ? (
+                    <a
+                      href={href}
+                      className='font-mono text-xs text-muted-foreground hover:text-foreground hover:underline'
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (onRowClick && plainClick(event)) {
+                          event.preventDefault();
+                          onRowClick(row, event);
+                        }
+                      }}
+                    >
+                      {row.identifier}
+                    </a>
+                  ) : (
+                    <span className='font-mono text-xs text-muted-foreground'>
+                      {row.identifier}
+                    </span>
+                  )}
+                </div>
               </TableCell>
               <TableCell className='max-w-0'>
                 <div className='flex min-w-0 items-center gap-2'>
@@ -481,6 +528,7 @@ export function IssueTable({
                     </span>
                   ) : null}
                 </div>
+                {rowDescription?.(row)}
               </TableCell>
               <TableCell>
                 {row.status ? (
