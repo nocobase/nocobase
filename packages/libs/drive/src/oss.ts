@@ -1,4 +1,5 @@
 import { Readable } from 'node:stream';
+import { finished } from 'node:stream/promises';
 
 import type OSS from 'ali-oss';
 import { DriveDirectory, DriveFile } from 'flydrive';
@@ -359,14 +360,32 @@ class OssDriver implements DriverContract {
     contents: Readable,
     options?: WriteOptions,
   ): Promise<void> {
-    await this.#run('put stream', async ({ client }) => {
-      // The SDK accepts optional options here; its community types mark them required.
-      await client.putStream(
-        key,
-        contents,
-        this.#writeOptions(options) as OSS.PutStreamOptions,
+    // Sources can fail while credentials or the SDK are still loading.
+    let sourceFailed = Boolean(contents.errored);
+    const onError = (): void => {
+      sourceFailed = true;
+    };
+    contents.on('error', onError);
+    try {
+      await this.#run('put stream', async ({ client }) => {
+        if (sourceFailed || contents.destroyed)
+          throw new Error('OSS input stream failed.');
+        // The SDK accepts optional options here; its community types mark them required.
+        await client.putStream(
+          key,
+          contents,
+          this.#writeOptions(options) as OSS.PutStreamOptions,
+        );
+      });
+    } finally {
+      if (!contents.readableEnded) contents.destroy();
+      // A destroyed stream can still have a pending error from opening its file.
+      // Keep the guard until completion; #run already handles upload failures.
+      await finished(contents, { cleanup: true, writable: false }).catch(
+        () => undefined,
       );
-    });
+      contents.off('error', onError);
+    }
   }
 
   async #copy(
