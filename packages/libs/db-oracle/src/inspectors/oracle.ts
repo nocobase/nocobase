@@ -116,7 +116,7 @@ interface OracleIndexRow {
   readonly index_name: string;
   readonly uniqueness: 'UNIQUE' | 'NONUNIQUE';
   readonly index_type: string;
-  readonly status: string;
+  readonly valid: number;
   readonly column_position: number;
   readonly column_name: string | null;
   readonly column_expression: string | null;
@@ -617,7 +617,26 @@ export class OracleSchemaInspector extends BaseSchemaInspector {
             i.index_name,
             i.uniqueness,
             i.index_type,
-            i.status,
+            case
+              when i.partitioned = 'NO' and i.status = 'VALID' then 1
+              when i.partitioned = 'YES'
+                and exists (
+                  select 1 from user_ind_partitions p
+                  where p.index_name = i.index_name
+                )
+                and not exists (
+                  select 1 from user_ind_partitions p
+                  left join user_ind_subpartitions s
+                    on s.index_name = p.index_name
+                    and s.partition_name = p.partition_name
+                  where p.index_name = i.index_name
+                    and nvl(case p.composite
+                      when 'YES' then s.status
+                      when 'NO' then p.status
+                    end, 'UNUSABLE') <> 'USABLE'
+                ) then 1
+              else 0
+            end as valid,
             ic.column_position,
             ic.column_name,
             ie.column_expression,
@@ -652,7 +671,8 @@ export class OracleSchemaInspector extends BaseSchemaInspector {
         .sort((left, right) => left.column_position - right.column_position)
         .map(oracleIndexKey),
       unique: entries[0].uniqueness === 'UNIQUE',
-      valid: entries[0].status === 'VALID',
+      // Partitioned indexes report N/A at the index level; inspect their leaves.
+      valid: numberValue(entries[0].valid) === 1,
       backsConstraint:
         entries[0].constraint_type === 'P' || entries[0].constraint_type === 'U'
           ? {
