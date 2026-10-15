@@ -895,7 +895,8 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
           (!onlyPullRequestId || pr.id === onlyPullRequestId),
       );
       if (!links.length) return;
-      for (const { pr } of links) await sendMergeCard(port, issue, pr);
+      for (const { pr, link } of links)
+        await sendMergeCard(port, issue, pr, link.id);
       // Delivery may finish after a concurrent issue transition committed.
       const latest = await conn.query
         .selectFrom('pmIssues')

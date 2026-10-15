@@ -24,7 +24,13 @@ import {
   type BridgeHarness,
 } from '../agents/bridge-harness.js';
 import { connectedRepo } from '../git/helpers.js';
-import { ensureRepo, findRepoById } from '../../server/git/store.js';
+import {
+  ensureRepo,
+  findRepoById,
+  findLink,
+  findPullRequestById,
+} from '../../server/git/store.js';
+import { sendMergeCard } from '../../server/git/cards.js';
 
 let h: BridgeHarness;
 let inbox: StudioInbox;
@@ -41,6 +47,7 @@ let deliveryGate: ((notice: InboxSend) => Promise<void>) | undefined;
 beforeEach(async () => {
   announced = [];
   next = 0;
+  const notifications = new Map<string, string>();
   errors.mockClear();
   deliveryGate = undefined;
   beforeSettle = undefined;
@@ -57,7 +64,18 @@ beforeEach(async () => {
         notifications: () =>
           ({
             async send(input: NotificationSendInput<never>) {
+              const key = input.idempotencyKey;
+              const existing = key ? notifications.get(key) : undefined;
+              if (existing)
+                return {
+                  notificationId: existing,
+                  deliveries: [],
+                  status: 'completed',
+                  deduplicated: true,
+                  idempotencyKey: key,
+                };
               const notificationId = `n${++next}`;
+              if (key) notifications.set(key, notificationId);
               const message = (input.messages as Record<string, InAppMessage>)
                 .inbox!;
               const users =
@@ -281,7 +299,7 @@ it('preserves a known merged result during automatic completion and clears sibli
   expect((await inbox.notices('alice', ['n1']))[0]?.outcome).toBe('merged');
 });
 
-it('withdraws on unlink and leaving review, then creates a fresh decision on the next review', async () => {
+it('keeps withdrawn history and restores one fresh decision on relink or the next review', async () => {
   const task = await issue('in_review');
   await connectedRepo(h, 'acme/studio');
   h.github.addPull('acme/studio', { number: 2 });
@@ -291,6 +309,10 @@ it('withdraws on unlink and leaving review, then creates a fresh decision on the
     'https://github.com/acme/studio/pull/2',
     { type: 'user', id: 'alice' },
   );
+  const beforeUnlink = await h.projects.issueQueries.detail(
+    h.viewer('alice'),
+    task.id,
+  );
   await h.git.unlink(h.viewer('alice'), task.id, linked.pullRequest.id);
   expect(await inbox.pending('alice')).toBe(0);
   await h.git.link(
@@ -299,6 +321,44 @@ it('withdraws on unlink and leaving review, then creates a fresh decision on the
     'https://github.com/acme/studio/pull/2',
     { type: 'user', id: 'alice' },
   );
+  expect(await inbox.pending('alice')).toBe(1);
+  const fresh = await inbox.waitingFor('alice', { type: 'issue', id: task.id });
+  expect(fresh).toHaveLength(1);
+  expect(fresh[0]!.notice.notificationId).not.toBe('n1');
+  expect((await inbox.notices('alice', ['n1']))[0]).toMatchObject({
+    outcome: 'withdrawn',
+    resolvedAt: expect.any(String),
+  });
+  // Linking again and replaying delivery must reuse the current decision.
+  await h.git.link(
+    h.viewer('alice'),
+    task.id,
+    'https://github.com/acme/studio/pull/2',
+    { type: 'user', id: 'alice' },
+  );
+  const current = await h.projects.issueQueries.detail(
+    h.viewer('alice'),
+    task.id,
+  );
+  expect(current.revision).toBe(beforeUnlink.revision);
+  const conn = h.database.connection();
+  const link = (await findLink(conn, task.id, linked.pullRequest.id))!;
+  await sendMergeCard(
+    inbox,
+    {
+      id: task.id,
+      identifier: task.identifier,
+      title: task.title,
+      ownerUserId: 'alice',
+      revision: current.revision,
+    },
+    (await findPullRequestById(conn, linked.pullRequest.id))!,
+    link.id,
+  );
+  expect(await inbox.pending('alice')).toBe(1);
+  expect(
+    await inbox.waitingFor('alice', { type: 'issue', id: task.id }),
+  ).toEqual(fresh);
   await move(task.id, 'in_progress');
   await clear(task.id);
   await move(task.id, 'in_review');

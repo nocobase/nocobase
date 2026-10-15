@@ -36,15 +36,16 @@ export interface CardIssue {
 export const decisionKeyOf = (pullRequestId: string, issueId: string) =>
   `pr:${pullRequestId}:${issueId}`;
 
-/** Asks the owner to merge a ready pull request of an issue in review. */
+/** A new link or review stay gets a fresh request; replaying the same link and revision is idempotent. */
 export async function sendMergeCard(
   port: StudioInboxPort,
   issue: CardIssue,
   pr: PullRequestRow,
+  linkId: string,
 ): Promise<void> {
   if (pr.state !== 'open' || pr.draft) return;
   await port.send({
-    key: `git:merge:${pr.id}:${issue.id}:${issue.revision}`,
+    key: `git:merge:${pr.id}:${issue.id}:${issue.revision}:${linkId}`,
     source: GIT_INBOX_SOURCE,
     kind: 'decision',
     type: PR_MERGE_REQUESTED,
