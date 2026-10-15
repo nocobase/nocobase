@@ -8,10 +8,15 @@ import { appendFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path, { join as joinPath } from 'node:path';
 
+import { idGeneratorToken } from '@nocobase/app-server/id-generator';
 import {
   createTestAppConfig,
   type TestAppConfig,
 } from '@nocobase/app-testing/server';
+import {
+  SnowflakeIdGenerator,
+  type SnowflakeIdGeneratorConfig,
+} from '@nocobase/snowflake';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.setConfig({ testTimeout: 120_000 });
 
@@ -60,6 +65,8 @@ async function startApp(
     env: {
       APP_CONFIG_FILE: config.path,
       APP_STORAGE_DIR: path.join(directory, 'storage'),
+      // Concurrent instances sharing a database must own different Snowflake worker IDs.
+      SNOWFLAKE_WORKER_ID: String(servers.length),
     },
     paths: {
       rootDir: sourceRoot,
@@ -571,6 +578,32 @@ describe('ordinary user management through the actual HTTP boundary', () => {
         : [...final.roleScopes.studio].sort(),
     );
   }, 120_000);
+  it('establishes distinct sessions on shared-database instances in the same second', async () => {
+    const first = await startApp();
+    const second = await startApp(configs.at(-1));
+    // Freeze only ID generation after startup, beyond the seed IDs. Authentication and expiry use real time.
+    const now = Date.now() + 1_000;
+    for (const server of [first, second]) {
+      const config =
+        server.application.config.get<SnowflakeIdGeneratorConfig>('snowflake')!;
+      const ids = new SnowflakeIdGenerator({ ...config, clock: () => now });
+      vi.spyOn(
+        server.application.container.resolve(idGeneratorToken),
+        'generateString',
+      ).mockImplementation(() => ids.generateString());
+    }
+    const firstCookie = await signInAsAdmin(first);
+    const secondCookie = await signInAsAdmin(second);
+    expect(Boolean(firstCookie) && Boolean(secondCookie)).toBe(true);
+    expect(firstCookie === secondCookie).toBe(false);
+    for (const server of [first, second]) {
+      for (const cookie of [firstCookie, secondCookie]) {
+        expect(
+          (await apiRequest(server, '/users', { headers: { cookie } })).status,
+        ).toBe(200);
+      }
+    }
+  });
   it('rejects account writes from ordinary and scoped keys, fails closed for unknown legacy permissions and observes revocation in a second instance', async () => {
     const first = await startApp();
     const second = await startApp(configs.at(-1));
@@ -707,6 +740,7 @@ describe('ordinary user management through the actual HTTP boundary', () => {
       { email: member.email, password: 'OldPassword123!' },
       '',
     );
+    expect(login.status).toBe(200);
     const memberCookie = cookieOf(login);
     expect(
       (
