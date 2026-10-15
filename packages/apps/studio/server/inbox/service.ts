@@ -385,6 +385,11 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
         .where('subjectType', '=', ref.subject.type)
         .where('subjectId', '=', ref.subject.id)
         .where('resolvedAt', 'is', null);
+      if (ref.kind) select = select.where('kind', '=', ref.kind);
+      if (ref.decisionKeys) {
+        if (!ref.decisionKeys.length) return;
+        select = select.where('decisionKey', 'in', [...ref.decisionKeys]);
+      }
       if (ref.types?.length)
         select = select.where('type', 'in', [...ref.types]);
       if (ref.userIds) {
