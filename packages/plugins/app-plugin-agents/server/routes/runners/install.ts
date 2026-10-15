@@ -152,7 +152,7 @@ Usage: install.sh --token <token> [--server <url>] [--runner] [options]
   --api-key-env <name>    Install the CLI alone with the API key in the environment variable <name> (such as one from
                           your CI's secrets) instead of a token; not with --token or --runner. The key is not saved,
                           so @CLI@ is not signed in afterwards.
-  --server <url>          The application (default: the one this script came from)
+  --server <url>          The application (required with --runner; otherwise defaults to the script's application)
   --runner                Also install ${RUNNER_PRODUCT}, register this host as a runtime and start it as a user service
   --prefix <dir>          Where to install @CLI@ (default: ~/.local/share/@CLI@, or NOCOBASE_CLI_INSTALL_DIR)
   --bin-dir <dir>         Where to link the commands (default: ~/.local/bin, or NOCOBASE_CLI_BIN_DIR)
@@ -169,6 +169,7 @@ USAGE
 cli=@CLI@
 runner_cmd=${RUNNER_PRODUCT}
 server="@DEFAULT_SERVER@"
+server_explicit=0
 token=""
 api_key_env=""
 key_mode=0
@@ -183,7 +184,7 @@ service=1
 dry_run=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --server) server="\${2:-}"; shift 2 ;;
+    --server) server="\${2:-}"; server_explicit=1; shift 2 ;;
     --token) token="\${2:-}"; shift 2 ;;
     --api-key-env) api_key_env="\${2:-}"; key_mode=1; shift 2 ;;
     --runner) runner=1; shift ;;
@@ -198,6 +199,10 @@ while [ $# -gt 0 ]; do
     *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
   esac
 done
+if [ "$runner" = 1 ] && { [ "$server_explicit" = 0 ] || [ -z "$server" ]; }; then
+  echo '--runner requires --server <url>. Run: curl -fsSL <server>/api/agents/dist/installScript | sh -s -- --runner --server <server> --token <registration token>' >&2
+  exit 2
+fi
 if [ -z "$server" ] || { [ -z "$token" ] && [ "$key_mode" = 0 ]; }; then
   usage >&2
   exit 2

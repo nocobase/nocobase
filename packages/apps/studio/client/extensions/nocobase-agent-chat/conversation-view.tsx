@@ -4,6 +4,7 @@
  * (`conversationId` null) it is a new one: an empty log whose first message creates it on the server, and the
  * composer's toolbar chooses its agent (`NewChatChoice`).
  */
+import { IntakeReturn } from '../../agents/intake-recovery.js';
 import {
   ChatExtensionsContext,
   newConversationAgent,
@@ -367,6 +368,7 @@ function ConversationBody({
           </p>
         </div>
       ) : null}
+      <IntakeReturn conversationId={conversationId ?? ''} />
       {/* Positioned so absolutely placed content (sr-only text, live regions) stays inside the scroller instead of growing the page. */}
       <div ref={listRef} className='relative min-h-0 flex-1 overflow-y-auto'>
         <div

@@ -2,6 +2,11 @@ import type { Page } from '@playwright/test';
 
 import { expect, open, test, unique } from './support/fixtures.ts';
 
+interface TaskListNode {
+  scrollTop: number;
+  setAttribute(name: string, value: string): void;
+}
+
 interface Issue {
   id: string;
   identifier: string;
@@ -53,10 +58,7 @@ test.describe('the split view', () => {
   }) => {
     const prefix = `分栏 ${unique()}`;
     const { accept, answer, working } = await tasks(api, prefix);
-    await open(
-      page,
-      `/my-issues/owned?view=split&q=${encodeURIComponent(prefix)}`,
-    );
+    await open(page, `/my-issues?view=split&q=${encodeURIComponent(prefix)}`);
     const list = page.getByRole('listbox', { name: '任务列表' });
     const waiting = list.getByRole('region', { name: '等你处理' });
     await expect(waiting.getByRole('option')).toHaveCount(2);
@@ -109,9 +111,7 @@ test.describe('the split view', () => {
     // Enter opens the full page over the list; Back returns to the split view with the task still selected.
     await page.getByRole('option', { name: new RegExp(accept.title) }).focus();
     await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(
-      new RegExp(`/my-issues/owned/${accept.identifier}`),
-    );
+    await expect(page).toHaveURL(new RegExp(`/my-issues/${accept.identifier}`));
     await expect(
       page.getByRole('heading', { name: accept.title, level: 1 }),
     ).toBeVisible();
@@ -132,14 +132,21 @@ test.describe('the split view', () => {
     const { accept, answer } = await tasks(api, prefix);
     await open(
       page,
-      `/my-issues/owned?view=split&q=${encodeURIComponent(prefix)}&issue=${accept.id}`,
+      `/my-issues?view=split&q=${encodeURIComponent(prefix)}&issue=${accept.id}`,
     );
     const detail = page.getByTestId('task-detail');
     await expect(
       detail.getByRole('heading', { name: accept.title }),
     ).toBeVisible();
+    const refreshed = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/taskGroups?') &&
+        response.request().method() === 'GET' &&
+        response.ok(),
+    );
     await detail.getByTestId('task-status-menu').click();
     await page.getByRole('menuitemradio', { name: '已完成' }).click();
+    await refreshed;
 
     const next = page.getByRole('button', {
       name: `下一个等你处理：${answer.identifier}`,
@@ -162,16 +169,139 @@ test.describe('the split view', () => {
     ).toHaveCount(0);
   });
 
-  test('My tasks counts what waits for you on its tabs', async ({
+  test('changing a followed task status keeps the list, selection and scroll', async ({
+    page,
+    api,
+  }) => {
+    const prefix = `Placement ${unique()}`;
+    const { make, accept, working } = await tasks(api, prefix);
+    await api.post(`followUps/issues/${accept.id}/follow`);
+    for (let n = 0; n < 18; n++) await make(`Other ${n}`, 'in_progress');
+    await open(
+      page,
+      `/my-issues?view=split&q=${encodeURIComponent(prefix)}&issue=${accept.id}`,
+    );
+    const list = page.getByRole('listbox', { name: '任务列表' });
+    const followed = list.getByRole('region', { name: '关注', exact: true });
+    const selected = followed
+      .getByRole('option')
+      .filter({ hasText: accept.title });
+    await expect(selected).toHaveAttribute('aria-selected', 'true');
+    await list.evaluate((node) => {
+      (node as unknown as TaskListNode).scrollTop = 240;
+    });
+    const scroll = await list.evaluate(
+      (node) => (node as unknown as TaskListNode).scrollTop,
+    );
+    // Track the actual list node, so a skeleton/unmount cannot silently reset it.
+    await list.evaluate((node) => {
+      (node as unknown as TaskListNode).setAttribute(
+        'data-placement-check',
+        'original',
+      );
+    });
+    const detail = page.getByTestId('task-detail');
+    const refreshed = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/taskGroups?') &&
+        response.request().method() === 'GET' &&
+        response.ok(),
+    );
+    await detail.getByTestId('task-status-menu').click();
+    await page.getByRole('menuitemradio', { name: '已完成' }).click();
+    await refreshed;
+    await expect(selected.locator('[data-status-shape=done]')).toHaveCount(1);
+    await expect(detail.getByTestId('task-status-menu')).toContainText(
+      '已完成',
+    );
+    await expect
+      .poll(
+        async () =>
+          (await api.get<{ statusKey: string }>(`projects/issues/${accept.id}`))
+            .statusKey,
+      )
+      .toBe('done');
+    await expect(selected).toHaveAttribute('aria-selected', 'true');
+    await expect(list).toHaveAttribute('data-placement-check', 'original');
+    expect(
+      await list.evaluate(
+        (node) => (node as unknown as TaskListNode).scrollTop,
+      ),
+    ).toBe(scroll);
+    expect(issueParam(page)).toBe(accept.id);
+    await list.getByRole('option').filter({ hasText: working.title }).click();
+    await expect(
+      detail.getByRole('heading', { name: working.title }),
+    ).toBeVisible();
+    await api.post(`followUps/issues/${accept.id}/unfollow`);
+  });
+
+  test('My tasks has one list and its navigation counts the merged scope', async ({
     page,
     api,
   }) => {
     await tasks(api, `计数 ${unique()}`);
-    await open(page, '/my-issues/owned');
+    await open(page, '/my-issues');
     await expect(
-      page.getByRole('tab', { name: /我负责的/ }).getByTestId('tab-waiting'),
-    ).toHaveAttribute('aria-label', /^等你 \d+$/u);
+      page.getByRole('tab', { name: /我负责的|我执行的/ }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole('link', { name: /我的任务.*项等你处理/ }),
+    ).toBeVisible();
   });
+});
+
+test('merges owned and executed tasks once and preserves legacy links', async ({
+  page,
+  api,
+}) => {
+  const prefix = `Merged ${unique()}`;
+  const me = await api.get<{ userId: string }>('projects/me');
+  const members = await api.get<{ userId: string }[]>('projects/members');
+  const other = members.find((member) => member.userId !== me.userId)!;
+  const make = (title: string, ownerUserId: string, executes: boolean) =>
+    api.post<Issue>('projects/issues', {
+      title: `${prefix} ${title}`,
+      ownerUserId,
+      executor: executes ? { type: 'user', id: me.userId } : null,
+      start: false,
+    });
+  const owned = await make('Owner only', me.userId, false);
+  const executed = await make('Executor only', other.userId, true);
+  const both = await make('Both roles', me.userId, true);
+  const outside = await make('Outside', other.userId, false);
+  for (const view of ['split', 'list']) {
+    await open(page, `/my-issues?view=${view}&q=${encodeURIComponent(prefix)}`);
+    const rows =
+      view === 'split' ? page.getByRole('option') : page.getByRole('row');
+    for (const issue of [owned, executed, both])
+      await expect(rows.filter({ hasText: issue.title })).toHaveCount(1);
+    await expect(rows.filter({ hasText: outside.title })).toHaveCount(0);
+  }
+  for (const role of ['owned', 'executing']) {
+    const query = `?view=split&q=${encodeURIComponent(prefix)}&issue=${executed.id}`;
+    await open(page, `/my-issues/${role}${query}#selection`);
+    await expect(
+      page
+        .getByTestId('task-detail')
+        .getByRole('heading', { name: executed.title }),
+    ).toBeVisible();
+    const current = new URL(page.url());
+    expect(current.pathname.endsWith('/my-issues')).toBe(true);
+    expect(current.searchParams.get('view')).toBe('split');
+    expect(current.searchParams.get('q')).toBe(prefix);
+    expect(current.searchParams.get('issue')).toBe(executed.id);
+    expect(current.hash).toBe('#selection');
+    await open(page, `/my-issues/${role}/${executed.identifier}${query}`);
+    await expect(
+      page.getByRole('heading', { name: executed.title, level: 1 }),
+    ).toBeVisible();
+    expect(
+      new URL(page.url()).pathname.endsWith(
+        `/my-issues/${executed.identifier}`,
+      ),
+    ).toBe(true);
+  }
 });
 
 test.describe('the grouped table', () => {
@@ -183,10 +313,7 @@ test.describe('the grouped table', () => {
     const { make } = await tasks(api, prefix);
     const parent = await make('父任务', 'in_progress');
     const child = await make('子任务等回复', 'blocked', parent.id);
-    await open(
-      page,
-      `/my-issues/owned?view=list&q=${encodeURIComponent(prefix)}`,
-    );
+    await open(page, `/my-issues?view=list&q=${encodeURIComponent(prefix)}`);
     const table = page.getByRole('table');
     await expect(
       table.getByRole('button', { name: '折叠等你处理' }),
@@ -224,7 +351,7 @@ test.describe('on a phone', () => {
   }) => {
     const prefix = `手机 ${unique()}`;
     const { accept } = await tasks(api, prefix);
-    await open(page, `/my-issues/owned?q=${encodeURIComponent(prefix)}`);
+    await open(page, `/my-issues?q=${encodeURIComponent(prefix)}`);
     const list = page.getByRole('listbox', { name: '任务列表' });
     await list.getByRole('option').filter({ hasText: accept.title }).click();
     const screen = page.getByTestId('phone-task');

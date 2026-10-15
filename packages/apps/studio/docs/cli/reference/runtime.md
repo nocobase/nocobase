@@ -6,7 +6,7 @@
 
 Delete a runner
 
-Deletes a revoked runner; its past runs keep its id.
+Deletes a revoked runner; its past runs keep its id. First run runtime revoke <runtime>, then runtime delete <runtime>.
 
 ```bash
 nb-studio runtime delete <runtime>
@@ -134,6 +134,27 @@ nb-studio runtime token create
 ```bash
 nb-studio runtime token create --trust team
 ```
+
+## runtime token list
+
+List usable runner registration tokens
+
+Unused, unexpired token metadata, without secrets or hashes. Managers of runners see all tokens; other signed-in callers see their own.
+
+```bash
+nb-studio runtime token list
+```
+
+| Flag          | Type    | Description  |
+| ------------- | ------- | ------------ |
+| `--page`      | integer | (default 1)  |
+| `--page-size` | integer | (default 50) |
+
+**Output:** A list (table columns: `id`, `createdById`, `trust`, `expiresAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
+
+**Who:** People (a sign-in or an API key).
+
+**Request:** `GET /api/agents/runners/registrationTokens` (`agentsListRunnerRegistrationTokens`)
 
 ## runtime update
 

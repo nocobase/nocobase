@@ -299,13 +299,13 @@ export function TaskListBody({
                     locale={locale}
                   />
                 ))}
-                {group.nextCursor ? (
+                {(group.showMore ?? Boolean(group.nextCursor)) ? (
                   <div className='px-3 py-2'>
                     <Button
                       variant='ghost'
                       size='sm'
                       className='w-full'
-                      disabled={list.query.isFetching}
+                      disabled={list.query.isFetching || !group.nextCursor}
                       onClick={() => list.loadMore(group.group)}
                     >
                       {t('taskGroups.loadMore')}

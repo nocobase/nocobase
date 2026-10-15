@@ -1259,6 +1259,8 @@ const zhCN: AppResource = {
       retry: '重试整理',
       tooLong:
         '需求和文件内容超过单条消息的长度限制，请缩短文字或移除部分文件后重试。',
+      filesUnreadable:
+        '未能完整读取这些文件：{{files}}。请重试，或换成内容更短的受支持文本或文档文件后重试。',
       requestFailed: '请求失败。需求仍保留在这里，请检查网络后重试。',
       noAgent:
         '没有配置可用的默认 Agent。请在个人偏好中选择默认 Agent，或请管理员配置团队默认 Agent，然后重试。',
@@ -1272,6 +1274,13 @@ const zhCN: AppResource = {
       forbidden: '你没有唤醒此 Agent 的权限，请管理员检查权限设置。',
       chatUnavailable:
         '对话功能不可用，请管理员启用对话功能后再让 Agent 整理。',
+      retained:
+        '需求和源文件会在本标签页保留，直到清空、创建任务或退出登录；刷新页面会丢失此草稿。',
+      returnToEdit: '返回修改需求',
+      clearDraft: '清空保留的输入',
+      stillRunning: '此前的对话仍在运行。请等待结束或在聊天中停止后再整理。',
+      imageFailed:
+        '未能准备全部图片。请使用自己上传的 PNG 或 JPEG 图片后重试，需求和文件已保留。',
       filesOnly: '需求见下面的文件。',
       conversationTitle: '整理需求：{{text}}',
     },

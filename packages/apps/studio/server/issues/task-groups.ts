@@ -24,7 +24,7 @@ import type {
   TaskGroupQuery,
   TaskGroups,
   TaskGroupSummary,
-  TaskRoleCount,
+  TaskCount,
 } from '../../shared/task-groups.js';
 import type { FollowState } from '../follow-ups/service.js';
 import type { StudioInbox, TaskDecisionSummary } from '../inbox/service.js';
@@ -159,6 +159,7 @@ export function createTaskGroups(deps: TaskGroupDeps): TaskGroupService {
       projectId: query.projectId,
       ownerUserId: query.ownerUserId,
       executorId: query.executorId,
+      involvesUserId: query.involvesUserId,
       labelId: query.labelId,
     };
   }
@@ -206,7 +207,7 @@ export function createTaskGroups(deps: TaskGroupDeps): TaskGroupService {
       followIds,
       mode: query.mode ?? 'split',
       statusFilter: query.statusKey,
-      flat: Boolean(query.executorId),
+      flat: Boolean(query.executorId || query.involvesUserId),
       sort: query.sort,
       direction: query.direction,
       queryIdentity: JSON.stringify([
@@ -266,7 +267,7 @@ export function createTaskGroups(deps: TaskGroupDeps): TaskGroupService {
     viewer: Viewer,
     query: TaskGroupQuery,
     follow: FollowState,
-  ): Promise<TaskRoleCount> {
+  ): Promise<TaskCount> {
     const { model, issues, matchingIds } = await assemble(
       viewer,
       { ...query, mode: 'split', follow: 'all' },
@@ -336,20 +337,14 @@ export function createTaskGroups(deps: TaskGroupDeps): TaskGroupService {
     },
     async summary(viewer) {
       const followed = await followOf(viewer);
-      return projects.tx.unit(async () => ({
-        owned: await roleCount(
+      return projects.tx.unit(async () => {
+        const mine = await roleCount(
           viewer,
-          { ownerUserId: viewer.userId },
+          { involvesUserId: viewer.userId },
           followed,
-        ),
-        executing: await roleCount(
-          viewer,
-          { executorId: viewer.userId },
-          followed,
-        ),
-        waiting: (await assemble(viewer, { mode: 'split' }, followed)).waits
-          .size,
-      }));
+        );
+        return { mine, waiting: mine.waiting };
+      });
     },
   };
 }

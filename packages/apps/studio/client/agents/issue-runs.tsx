@@ -24,6 +24,7 @@ import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
 import { EraserIcon, FileTextIcon } from 'lucide-react';
 import {
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -34,6 +35,7 @@ import {
 } from 'react';
 import { Link, useNavigate } from 'react-router';
 
+import { RunNavigationContext, useOpenIssueRun } from './run-navigation.js';
 import { underIssue, useIssueBase } from '../issues/detail/issue-base.js';
 
 import {
@@ -392,6 +394,7 @@ export function IssueRunPanel({
   readonly issue: IssueDetail;
 }): ReactElement | null {
   const navigate = useNavigate();
+  const openRun = useOpenIssueRun();
   const issueBase = useIssueBase();
   const { runs, wording, state } = useIssueHistoryRuns(issue);
   const [stopping, setStopping] = useState<AgentRunHistoryRun | null>(null);
@@ -458,10 +461,8 @@ export function IssueRunPanel({
           loadingLabel={t('issueRuns.loading')}
           emptyDescription={t('issueRuns.emptyHint')}
           error={failure}
-          runHref={runHref}
-          onOpenRun={(run) =>
-            void navigate(underIssue(issueBase, runHref(run)))
-          }
+          runHref={(run) => underIssue(issueBase, runHref(run))}
+          onOpenRun={(run) => openRun(run.id)}
           onStop={(run, target) => {
             stopTargetRef.current = target ?? null;
             setStopping(run);
@@ -486,16 +487,16 @@ export function IssueLiveRun({
 }: {
   readonly issue: IssueDetail;
 }): ReactElement | null {
-  const navigate = useNavigate();
+  const openRun = useOpenIssueRun();
   const issueBase = useIssueBase();
   const { runs, wording } = useIssueHistoryRuns(issue);
   return (
     <RunLivePill
       runs={runs}
-      runHref={runHref}
+      runHref={(run) => underIssue(issueBase, runHref(run))}
       onOpenRun={(run, target) => {
         rememberRunFocus(target ?? null, null);
-        void navigate(underIssue(issueBase, runHref(run)));
+        openRun(run.id);
       }}
       labels={wording.history}
     />
@@ -518,6 +519,7 @@ export function IssueLiveRunLink({
   readonly className?: string;
   readonly children: ReactNode;
 }): ReactElement {
+  const openEmbedded = useContext(RunNavigationContext);
   const { runs } = useIssueHistoryRuns(issue);
   const live = runs?.find((run) =>
     ['queued', 'dispatched', 'running'].includes(run.status),
@@ -530,7 +532,20 @@ export function IssueLiveRunLink({
     <Link
       to={to}
       className={cn('hover:underline', className)}
-      onClick={(event) => rememberRunFocus(event.currentTarget, null)}
+      onClick={(event) => {
+        rememberRunFocus(event.currentTarget, null);
+        if (
+          openEmbedded &&
+          event.button === 0 &&
+          !event.metaKey &&
+          !event.ctrlKey &&
+          !event.shiftKey &&
+          !event.altKey
+        ) {
+          event.preventDefault();
+          openEmbedded(live.id);
+        }
+      }}
     >
       <span data-testid='run-live'>{children}</span>
     </Link>
@@ -545,7 +560,7 @@ export function IssueRunRow({
   readonly issue: IssueDetail;
   readonly runId: string;
 }): ReactElement | null {
-  const navigate = useNavigate();
+  const openRun = useOpenIssueRun();
   const issueBase = useIssueBase();
   const { i18n } = useTranslation();
   const { runs, wording } = useIssueHistoryRuns(issue);
@@ -554,10 +569,10 @@ export function IssueRunRow({
   return (
     <RunActivityRow
       run={run}
-      runHref={runHref}
+      runHref={(run) => underIssue(issueBase, runHref(run))}
       onOpenRun={(run, target) => {
         rememberRunFocus(target ?? null, null);
-        void navigate(underIssue(issueBase, runHref(run)));
+        openRun(run.id);
       }}
       locale={i18n.language}
       labels={wording.history}
@@ -627,11 +642,14 @@ function BriefButton({
 export function IssueRunTranscript({
   runId,
   renderMarkdown,
+  onOpenRun,
 }: {
+  readonly onOpenRun?: (runId: string) => void;
   readonly runId: string;
   readonly renderMarkdown?: (text: string) => ReactNode;
 }): ReactElement {
   const navigate = useNavigate();
+  const issueBase = useIssueBase();
   const { i18n, t: appT } = useTranslation();
   const wording = useRunWording();
   const { t } = wording;
@@ -689,8 +707,25 @@ export function IssueRunTranscript({
           {detail?.retriedRunId ? (
             <Link
               className='text-sm text-primary hover:underline'
-              to={`../${encodeURIComponent(detail.retriedRunId)}`}
+              to={
+                onOpenRun && issueBase
+                  ? underIssue(issueBase, runHref({ id: detail.retriedRunId }))
+                  : `../${encodeURIComponent(detail.retriedRunId)}`
+              }
               relative='path'
+              onClick={(event) => {
+                if (
+                  onOpenRun &&
+                  event.button === 0 &&
+                  !event.metaKey &&
+                  !event.ctrlKey &&
+                  !event.shiftKey &&
+                  !event.altKey
+                ) {
+                  event.preventDefault();
+                  onOpenRun(detail.retriedRunId!);
+                }
+              }}
             >
               {appT('issueRuns.alreadyRetried')}
             </Link>
@@ -708,9 +743,11 @@ export function IssueRunTranscript({
                   onSuccess: (next) => {
                     void refresh();
                     notify.success(t('runs.retried'));
-                    void navigate(`../${encodeURIComponent(next.id)}`, {
-                      relative: 'path',
-                    });
+                    if (onOpenRun) onOpenRun(next.id);
+                    else
+                      void navigate(`../${encodeURIComponent(next.id)}`, {
+                        relative: 'path',
+                      });
                   },
                   onError: (error) => notify.error(error),
                 })

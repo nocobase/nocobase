@@ -149,7 +149,7 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
           200: dataResponse(IntakeStartedSchema),
           400: apiErrorResponse(
             400,
-            'When the text and files together are longer than a message may be (`INTAKE_TOO_LONG`).',
+            'When the text and files exceed the message limit (`INTAKE_TOO_LONG`), or selected images cannot be prepared (`INTAKE_IMAGE_FAILED`).',
           ),
           403: apiErrorResponse(403, 'When the caller may not wake the agent.'),
           409: apiErrorResponse(
@@ -203,9 +203,28 @@ export const studioAgentsRoutes: AppApiRouteContribution<Application> =
             intakeFailureMessages[reason ?? 'INTAKE_NO_AGENT'],
             { httpStatus: 409 },
           );
+        const attachmentIds: string[] = [];
+        if (request.imageFileIds?.length) {
+          try {
+            const images = await container
+              .resolve(projectsToken)
+              .intake.images(userId, request.imageFileIds);
+            for (const image of images)
+              attachmentIds.push(
+                (await agents.chatAttachments.upload(userId, image)).id,
+              );
+          } catch {
+            throw studioError(
+              'INVALID_ARGUMENT',
+              'INTAKE_IMAGE_FAILED',
+              'Could not prepare all images. Use your own PNG or JPEG uploads and retry; your requirements are kept.',
+            );
+          }
+        }
         return context.json({
           data: await agents.conversations.start(userId, {
             source: INTAKE_SOURCE,
+            attachmentIds,
             text,
             title: request.title ?? intakeTitle(request.text),
             agentId: agent.id,

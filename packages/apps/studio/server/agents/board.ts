@@ -220,6 +220,7 @@ export async function readAgentBoard(
       ...(query.labelId ? { labelId: query.labelId } : {}),
       ...(query.ownerUserId ? { ownerUserId: query.ownerUserId } : {}),
       ...(query.executorId ? { executorId: query.executorId } : {}),
+      ...(query.involvesUserId ? { involvesUserId: query.involvesUserId } : {}),
     },
     {
       executorType: AGENT_KIND,

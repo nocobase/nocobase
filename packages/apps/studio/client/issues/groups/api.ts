@@ -97,7 +97,7 @@ export function useTaskGroupsRefresh(): void {
 export interface TaskGroupsOptions {
   readonly filters: IssueFilters;
   readonly mode: TaskGroupMode;
-  /** `all`: My tasks' follow group goes beyond the role filter. */
+  /** `all`: My tasks' follow group goes beyond the merged scope. */
   readonly follow?: 'all' | 'scope';
   /** How many pages of each group to show. */
   readonly pages?: Readonly<Partial<Record<TaskGroupId, number>>>;
@@ -237,7 +237,7 @@ export function useTaskChildren(
   return new Map(parents.map((parent, index) => [parent.id, results[index]]));
 }
 
-/** My tasks' tab counts. */
+/** My tasks' merged counts. */
 export function useTaskGroupSummary(
   enabled = true,
 ): UseQueryResult<TaskGroupSummary> {

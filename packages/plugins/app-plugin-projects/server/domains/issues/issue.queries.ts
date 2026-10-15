@@ -136,6 +136,16 @@ function listFilter(viewer: Viewer, query: IssueListQuery) {
     ];
     if (query.statusKey) nodes.push(f.string('statusKey').eq(query.statusKey));
     if (query.projectId) nodes.push(f.string('projectId').eq(query.projectId));
+    if (query.involvesUserId)
+      nodes.push(
+        f.or([
+          f.string('ownerUserId').eq(query.involvesUserId),
+          f.and([
+            f.string('executorType').eq('user'),
+            f.string('executorId').eq(query.involvesUserId),
+          ]),
+        ]),
+      );
     if (query.ownerUserId)
       nodes.push(f.string('ownerUserId').eq(query.ownerUserId));
     if (query.executorId)

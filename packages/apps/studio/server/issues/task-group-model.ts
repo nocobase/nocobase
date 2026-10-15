@@ -410,7 +410,7 @@ export function createTaskGroupModel(input: TaskGroupModelInput) {
   return {
     generation,
     groups: groupIds.map((group) => ({ group, count: countOf(group) })),
-    /** The tasks waiting for the viewer the tabs count: the wait group and the followed ones. */
+    /** The tasks waiting for the viewer the menu counts: the wait group and the followed ones. */
     waiting: countOf('wait') + followWaiting,
     following: followIds,
     rootOf: (id: string): string | undefined => rootIds.get(id),

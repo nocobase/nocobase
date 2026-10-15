@@ -14,6 +14,8 @@ The plugin knows no domain of its own beyond conversations: what agents work on 
 
 ## What it does
 
+Registering the same runner name and hostname again revokes every active prior registration and its keys for the token's owner, leaving other owners' runners untouched. Registration uses the existing transaction without a dedicated lock or additional table. Simultaneous registrations may leave multiple active records until the next registration cleans them up. Existing tasks continue through the usual sweep and retry rules.
+
 Applications forward the `notice` event of type `run_secrets_not_allowed` to the run's actor and owner: a personal runner left the run because some of its variables are for team runners only. Its subject is the run, its parameters are `runId`, `agentId` and `variables` (in words), and its key is stable per run. `notice.cleared` settles it once a runner takes the run.
 
 Repository access providers that mint credentials in `prepare` implement the idempotent `discard(run, prepared)` hook to revoke them when the claim is skipped or rolled back. It runs outside the transaction and receives the same prepared value as `forRun`. The application owns code host credentials and their revocation API; providers without this hook cannot revoke externally issued credentials.

@@ -332,7 +332,7 @@ it('never reaches past a parent the viewer cannot see, also for a project-scoped
   expect(JSON.stringify(keyed.body)).not.toContain(parent.id);
 });
 
-it('counts both halves of My tasks for the tabs', async () => {
+it('counts owned or executed tasks once for My tasks', async () => {
   await create('Owned review', 'in_review');
   await create('Owned work', 'in_progress');
   await create('Executed', 'in_progress', {
@@ -341,12 +341,80 @@ it('counts both halves of My tasks for the tabs', async () => {
   });
   await create('Closed', 'done');
   const summary = await service().summary(h.viewer('alice'));
-  expect(summary.owned).toEqual({ open: 2, waiting: 1 });
+  expect(summary.mine).toEqual({ open: 3, waiting: 1 });
   expect(summary.waiting).toBe(1);
-  expect(summary.executing.open).toBe(1);
   const routed = await h.request('GET', '/taskGroups/summary', {
     user: 'alice',
   });
   expect(routed.status).toBe(200);
-  expect(routed.body.data.owned.open).toBe(2);
+  expect(routed.body.data.mine.open).toBe(3);
+});
+
+it('merges ownership and human execution with scoped filters, follows and waits', async () => {
+  const own = await create('Union owned', 'in_review');
+  const both = await create('Union both', 'in_progress', {
+    executorId: 'alice',
+  });
+  const executed = await create('Union executed', 'in_progress', {
+    owner: 'bob',
+    executorId: 'alice',
+  });
+  const outside = await create('Union outside', 'blocked', { owner: 'bob' });
+  const followed = await create('Union followed', 'in_progress', {
+    owner: 'bob',
+  });
+  h.preferences.set(`alice:${FOLLOWING_PREFERENCE}`, [followed.id]);
+  for (const mode of ['split', 'table'] as const) {
+    const result = await service().read(h.viewer('alice'), {
+      involvesUserId: 'alice',
+      follow: 'all',
+      mode,
+      q: 'Union',
+    });
+    const ids = result.groups.flatMap((group) =>
+      group.data.map((row) => row.issue.id),
+    );
+    expect(new Set(ids)).toEqual(
+      new Set([own.id, both.id, executed.id, followed.id]),
+    );
+    expect(ids.length).toBe(4);
+    expect(ids).not.toContain(outside.id);
+    expect(result.waiting).toBe(1);
+    expect(titles(result, 'follow')).toEqual(['Union followed']);
+  }
+  const narrowed = await service().read(h.viewer('alice'), {
+    involvesUserId: 'alice',
+    q: 'executed',
+  });
+  expect(
+    narrowed.groups.flatMap((group) => group.data.map((row) => row.issue.id)),
+  ).toEqual([executed.id]);
+  expect((await service().summary(h.viewer('alice'))).mine).toEqual({
+    open: 3,
+    waiting: 1,
+  });
+  const routed = await h.request(
+    'GET',
+    '/taskGroups?involvesUserId=alice&follow=all',
+    { user: 'alice' },
+  );
+  expect(routed.status).toBe(200);
+  expect(JSON.stringify(routed.body)).toContain(executed.id);
+  expect(JSON.stringify(routed.body)).not.toContain(outside.id);
+});
+
+it('keeps executed sub-tasks in the merged split list even when their parent is also mine', async () => {
+  const parent = await create('My parent', 'in_progress');
+  const child = await create('I execute the child', 'in_progress', {
+    parentIssueId: parent.id,
+    owner: 'bob',
+    executorId: 'alice',
+  });
+  const result = await service().read(h.viewer('alice'), {
+    involvesUserId: 'alice',
+  });
+  const ids = result.groups.flatMap((group) =>
+    group.data.map((row) => row.issue.id),
+  );
+  expect(new Set(ids)).toEqual(new Set([parent.id, child.id]));
 });
