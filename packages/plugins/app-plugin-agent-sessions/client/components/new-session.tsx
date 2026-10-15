@@ -232,7 +232,11 @@ export function NewSession({
               <OutdatedBridgeNotice key={candidate.id} computer={candidate} />
             ))}
           <div className='rounded-[10px] border p-4 text-[13px]'>
-            {all.length === 0 ? <ConnectSteps /> : <KeepConnected />}
+            {all.length === 0 ? (
+              <ConnectSteps />
+            ) : (
+              <KeepConnected temporary={false} />
+            )}
           </div>
           {all.length > 0 && (
             <Button

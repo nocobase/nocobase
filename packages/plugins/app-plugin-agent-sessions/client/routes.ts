@@ -40,7 +40,7 @@ export function agentSessionsRoute(
       ]);
       const value = {
         cli: options.cli,
-        install: options.install ?? null,
+        connectPrompt: options.connectPrompt ?? null,
         linkPanels: options.linkPanels ?? {},
       };
       const Configured = (): ReactElement =>

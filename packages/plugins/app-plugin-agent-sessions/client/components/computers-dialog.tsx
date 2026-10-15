@@ -14,7 +14,7 @@ import {
   PlusIcon,
   XIcon,
 } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import { createElement, useState, type ReactElement } from 'react';
 
 import {
   Dialog,
@@ -73,8 +73,13 @@ export function ComputersDialog({
 
 /** What connects a computer: an agent signed in there, the command line signed in, and the bridge kept running. */
 export function ConnectSteps(): ReactElement {
+  const { connectPrompt } = useAgentSessionsConfig();
+  return connectPrompt ? createElement(connectPrompt) : <DefaultConnectSteps />;
+}
+
+function DefaultConnectSteps(): ReactElement {
   const { t } = useTranslation();
-  const { cli, install } = useAgentSessionsConfig();
+  const { cli } = useAgentSessionsConfig();
   const server = useServerUrl();
   return (
     <ol className='flex list-decimal flex-col gap-3 pl-5 text-[13px]'>
@@ -84,12 +89,6 @@ export function ConnectSteps(): ReactElement {
           {t('computers.steps.agentHint')}
         </p>
       </li>
-      {install && (
-        <li>
-          {t('computers.steps.install')}
-          <Command text={install} />
-        </li>
-      )}
       <li>
         {t('computers.steps.login')}
         <Command text={`${cli} login --server ${server}`} />
@@ -106,7 +105,9 @@ export function ConnectSteps(): ReactElement {
 }
 
 /** The command that keeps a computer connected from every login, and the one that connects it for a while. */
-export function KeepConnected(): ReactElement {
+export function KeepConnected({
+  temporary = true,
+}: { readonly temporary?: boolean } = {}): ReactElement {
   const { t } = useTranslation();
   const { cli } = useAgentSessionsConfig();
   return (
@@ -115,10 +116,14 @@ export function KeepConnected(): ReactElement {
       <p className='text-muted-foreground mt-1.5 text-xs'>
         {t('computers.steps.startHint')}
       </p>
-      <p className='text-muted-foreground mt-2 text-xs'>
-        {t('computers.steps.foreground')}
-      </p>
-      <Command text={`${cli} acp start`} />
+      {temporary ? (
+        <>
+          <p className='text-muted-foreground mt-2 text-xs'>
+            {t('computers.steps.foreground')}
+          </p>
+          <Command text={`${cli} acp start`} />
+        </>
+      ) : null}
     </>
   );
 }

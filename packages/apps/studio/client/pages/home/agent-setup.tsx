@@ -1,5 +1,5 @@
 /**
- * "Use Studio in your agent", under the chat page's composer and in the account menu: a dialog with a prompt to paste into a coding agent
+ * Shared CLI setup for the account menu, chat composer and My Agent: a dialog with a prompt to paste into a coding agent
  * (Claude Code, Codex…) that installs the nb-studio CLI, signs it in as the person and points it at `nb-studio docs`. Opening
  * it mints a short-lived download token (`agents/dist/downloadTokens`) that the prompt's install line carries; the
  * person can make a new one when it has expired. The CLI acts as the person, so the dialog says so; it signs in only
@@ -33,7 +33,7 @@ function useServerUrl(): string {
 }
 
 export function AgentSetup(): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/studio');
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -52,32 +52,63 @@ export function AgentSetup(): ReactElement {
   );
 }
 
-/** The setup dialog, opened from the chat page's link and from the account menu. */
+/** One setup dialog and token issuance flow for local agents and connected computers. */
 export function AgentSetupDialog({
   open,
   onOpenChange,
+  purpose = 'local',
 }: {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
+  readonly purpose?: 'local' | 'computer';
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/studio');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-xl'>
+      <DialogContent className='max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] sm:max-w-xl'>
         <DialogHeader>
-          <DialogTitle>{t('home.agentSetup.title')}</DialogTitle>
+          <DialogTitle>
+            {t(
+              purpose === 'computer'
+                ? 'home.agentSetup.computerTitle'
+                : 'home.agentSetup.title',
+            )}
+          </DialogTitle>
           <DialogDescription>
-            {t('home.agentSetup.description')}
+            {t(
+              purpose === 'computer'
+                ? 'home.agentSetup.computerDescription'
+                : 'home.agentSetup.description',
+            )}
           </DialogDescription>
         </DialogHeader>
         {/* Mounted with the open dialog, so each opening mints a fresh token. */}
-        {open ? <MintedPrompt /> : null}
+        {open ? <MintedPrompt purpose={purpose} /> : null}
       </DialogContent>
     </Dialog>
   );
 }
 
-function MintedPrompt(): ReactElement {
+/** Both computer entry points use the same dialog and token issuance as the account menu. */
+export function ComputerSetup(): ReactElement {
+  const { t } = useTranslation('@nocobase/studio');
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button type='button' variant='outline' onClick={() => setOpen(true)}>
+        <TerminalIcon />
+        {t('home.agentSetup.computerTitle')}
+      </Button>
+      <AgentSetupDialog open={open} onOpenChange={setOpen} purpose='computer' />
+    </>
+  );
+}
+
+function MintedPrompt({
+  purpose,
+}: {
+  readonly purpose: 'local' | 'computer';
+}): ReactElement {
   const home = useHomeApi();
   const mint = useMutation({ mutationFn: () => home.downloadToken() });
   const { mutate } = mint;
@@ -86,6 +117,7 @@ function MintedPrompt(): ReactElement {
   }, [mutate]);
   return (
     <PromptBody
+      purpose={purpose}
       token={mint.data?.token ?? null}
       pending={mint.isPending || mint.isIdle}
       failed={mint.isError}
@@ -95,22 +127,26 @@ function MintedPrompt(): ReactElement {
 }
 
 function PromptBody({
+  purpose,
   token,
   pending,
   failed,
   onRetry,
 }: {
+  readonly purpose: 'local' | 'computer';
   readonly token: string | null;
   readonly pending: boolean;
   readonly failed: boolean;
   readonly onRetry: () => void;
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation('@nocobase/studio');
   const notify = useNotify();
   const server = useServerUrl();
   const [copied, setCopied] = useState(false);
   const prompt =
-    token === null || pending ? null : agentSetupPrompt(t, server, token);
+    token === null || pending || failed
+      ? null
+      : agentSetupPrompt(t, server, token, { purpose });
 
   async function copy(): Promise<void> {
     if (prompt === null) return;
@@ -140,7 +176,7 @@ function PromptBody({
       ) : (
         <pre
           aria-label={t('home.agentSetup.promptLabel')}
-          className='max-h-72 overflow-auto rounded-lg border bg-muted p-3 font-mono text-xs leading-relaxed break-words whitespace-pre-wrap select-all'
+          className='max-h-72 min-h-0 overflow-auto rounded-lg border bg-muted p-3 font-mono text-xs leading-relaxed break-words whitespace-pre-wrap select-all'
         >
           {prompt}
         </pre>
@@ -155,7 +191,10 @@ function PromptBody({
           type='button'
           variant='outline'
           disabled={pending}
-          onClick={onRetry}
+          onClick={() => {
+            setCopied(false);
+            onRetry();
+          }}
         >
           <RefreshCwIcon />
           {t('home.agentSetup.regenerate')}

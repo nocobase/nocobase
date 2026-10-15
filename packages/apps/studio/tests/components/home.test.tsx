@@ -109,6 +109,7 @@ function ChatPageStub() {
 
 const { default: HomePage } = await import('../../client/pages/home/index');
 const { homeKeys } = await import('../../client/pages/home/api');
+const { ComputerSetup } = await import('../../client/pages/home/agent-setup');
 
 function agent(id: string, extra: Partial<ChatAgent> = {}): ChatAgent {
   return {
@@ -181,6 +182,49 @@ describe('the home page', () => {
       screen.getByRole('button', { name: 'home.agentSetup.regenerate' }),
     );
     await waitFor(() => expect(minted).toHaveBeenCalledTimes(2));
+  });
+
+  it('opens computer instructions, copies the appended steps and retries a failed regeneration', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText');
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <ComputerSetup />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'home.agentSetup.computerTitle' }),
+    );
+    const prompt = await screen.findByLabelText('home.agentSetup.promptLabel');
+    expect(prompt).toHaveTextContent(
+      'home.agentSetup.prompt home.agentSetup.computerPrompt',
+    );
+    expect(screen.getByRole('dialog')).toHaveTextContent(
+      'home.agentSetup.expiry',
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'home.agentSetup.copy' }),
+    );
+    expect(writeText).toHaveBeenCalledWith(prompt.textContent);
+    minted.mockImplementationOnce(() => {
+      throw new Error('Download unavailable');
+    });
+    await user.click(
+      screen.getByRole('button', { name: 'home.agentSetup.regenerate' }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'home.agentSetup.failed',
+    );
+    expect(
+      screen.getByRole('button', { name: /home.agentSetup.(copy|copied)$/ }),
+    ).toBeDisabled();
+    await user.click(
+      screen.getByRole('button', { name: 'home.agentSetup.regenerate' }),
+    );
+    await screen.findByLabelText('home.agentSetup.promptLabel');
+    expect(minted).toHaveBeenCalledTimes(3);
   });
 
   it('starts a conversation with the default agent and opens it full screen', async () => {

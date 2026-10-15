@@ -107,7 +107,7 @@ describe('new-session composer', () => {
         }
       >
         <AgentSessionsConfigContext.Provider
-          value={{ cli: 'nb-studio', install: null, linkPanels: {} }}
+          value={{ cli: 'nb-studio', connectPrompt: null, linkPanels: {} }}
         >
           <NewSession />
         </AgentSessionsConfigContext.Provider>
