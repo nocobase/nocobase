@@ -13,7 +13,7 @@
  * - A queued run that waited longer than its subject allows (`SubjectBinding.queuedExpiryMs`), counted from its last
  *   change (queued, sent back to the queue, merged into) or from when its delay passed, fails (`queuedExpired`).
  *
- * Pre-start environment interruptions never consume failure attempts. Other retries fail once their budget is exhausted.
+ * Pre-start environment interruptions are exempt from the failure budget, but ten consecutive interruptions end the run. Other retries fail once their budget is exhausted.
  *
  * A runner that stops answering never sends the usage of the attempt it held; the latest `usage` event it reported for
  * the attempt (cumulative, `meta.usage`) is recorded instead, so the tokens it spent still reach the reports.
@@ -135,7 +135,14 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
           )
             return;
           await salvageUsage(unit, deps, current);
-          const outcome = await requeueRun(unit, deps, current, reason);
+          const outcome = await requeueRun(
+            unit,
+            deps,
+            current,
+            reason,
+            undefined,
+            'sweeper',
+          );
           if (outcome.status === 'queued') counts.requeued += 1;
           else if (outcome.run) counts.failed += 1;
         });

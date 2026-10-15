@@ -1516,7 +1516,7 @@ describe('claims and endings', () => {
     });
   });
 
-  it.each(['toolNetwork', 'leaseExpired'])(
+  it.each(['toolNetwork', 'leaseExpired', 'startTimeout'])(
     'only announces exhausted %s failures, excluding pre-start environment interruptions',
     async (reason) => {
       const { runId } = await claimedRun();
@@ -1551,27 +1551,88 @@ describe('claims and endings', () => {
           ).status,
         ).toBe(200);
       };
-      await start();
+      if (reason !== 'startTimeout') await start();
       expect(await fail(reason)).toBe('queued');
+      if (reason === 'startTimeout')
+        expect(
+          Date.parse((await h.agents.runs.get(runId)).availableAt!),
+        ).toBeGreaterThan(Date.now());
       await claimAgain();
       for (let index = 0; index < 5; index++) {
-        expect(await fail('startTimeout')).toBe('queued');
+        await h.database
+          .connection()
+          .query.updateTable('agRuns')
+          .set({ dispatchedAt: new Date(Date.now() - 300_000).toISOString() })
+          .where('id', '=', runId)
+          .execute();
+        expect(await h.agents.sweeper.sweep()).toMatchObject({
+          requeued: 1,
+          failed: 0,
+        });
         await claimAgain();
       }
       expect(planned).toEqual([]);
-      await start();
+      if (reason !== 'startTimeout') await start();
       expect(await fail(reason)).toBe('queued');
       await claimAgain();
-      await start();
+      if (reason !== 'startTimeout') await start();
       expect(await fail(reason)).toBe('failed');
       await expect.poll(() => planned.length).toBe(1);
       expect(planned[0].params).toMatchObject({
         attempts: '3',
         failureReason: reason,
-        failureKind: reason === 'leaseExpired' ? 'environment' : 'agent',
+        failureKind: reason === 'toolNetwork' ? 'agent' : 'environment',
       });
     },
   );
+
+  it('announces an environment card only at the tenth alternating pre-start interruption', async () => {
+    const { runId } = await claimedRun();
+    const planned: any[] = [];
+    h.projects.events.on('notice.planned', (event) => {
+      planned.push(event.notice);
+    });
+    for (let attempt = 1; attempt <= 10; attempt++) {
+      const run = await h.agents.runs.get(runId);
+      const conn = h.database.connection();
+      if (attempt % 2 === 0) {
+        await conn.query
+          .updateTable('agRunners')
+          .set({ status: 'offline' })
+          .where('id', '=', run.runnerId!)
+          .execute();
+      } else {
+        await conn.query
+          .updateTable('agRuns')
+          .set({ dispatchedAt: new Date(Date.now() - 300_000).toISOString() })
+          .where('id', '=', runId)
+          .execute();
+      }
+      expect(await h.agents.sweeper.sweep()).toMatchObject(
+        attempt < 10 ? { requeued: 1, failed: 0 } : { requeued: 0, failed: 1 },
+      );
+      if (attempt < 10) {
+        expect(planned).toEqual([]);
+        await conn.query
+          .updateTable('agRunners')
+          .set({ status: 'online', lastSeenAt: new Date().toISOString() })
+          .where('id', '=', run.runnerId!)
+          .execute();
+        expect((await h.claimOne()).run.id).toBe(runId);
+      }
+    }
+    await expect.poll(() => planned.length).toBe(1);
+    expect(planned[0].params).toMatchObject({
+      attempts: '10',
+      failureReason: 'startTimeout',
+      failureKind: 'environment',
+    });
+    expect(await h.agents.sweeper.sweep()).toMatchObject({
+      requeued: 0,
+      failed: 0,
+    });
+    expect(planned).toHaveLength(1);
+  });
 
   describe("deciding a failed run's card", () => {
     /** Studio's inbox as the decision needs it: the card waits until resolved. */

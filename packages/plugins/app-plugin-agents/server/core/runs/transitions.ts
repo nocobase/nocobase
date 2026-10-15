@@ -4,6 +4,11 @@
  * runner reporting while the sweeper reclaims, cannot both win.
  */
 import type { FailureReason, RunStatus } from '@nocobase/agent-protocol';
+import {
+  isPreStartInterruption,
+  PRE_START_INTERRUPTION_LIMIT,
+  consecutivePreStartInterruptions,
+} from '../../../shared/runs.js';
 
 import { later, type Clock } from '../../kernel/clock.js';
 import type { Tx } from '../../kernel/tx.js';
@@ -35,6 +40,7 @@ export interface FinishOutcome {
   readonly summary?: string;
   readonly sessionId?: string;
   readonly cancelledById?: string;
+  readonly failureSource?: 'sweeper';
 }
 
 /** Revokes every live token of the run. */
@@ -87,10 +93,10 @@ export async function finishRun(
       f.and([
         f.string('id').eq(run.id),
         f.string('status').eq(run.status),
+        f.number('attempt').eq(Number(run.attempt)),
         ...(versioned ? [f.number('revision').eq(run.revision)] : []),
         ...(run.status === 'queued'
           ? [
-              f.number('attempt').eq(Number(run.attempt)),
               run.queueEnteredAt
                 ? f.and([
                     f
@@ -117,7 +123,13 @@ export async function finishRun(
   });
   if (result.updatedCount !== 1) return null;
   await afterGuard?.();
-  await endExecution(tx.conn, run, now, outcome.reason ?? null);
+  await endExecution(
+    tx.conn,
+    run,
+    now,
+    outcome.reason ?? null,
+    outcome.failureSource,
+  );
   await revokeTokens(tx, run.id, now);
   const ended = (await findRunRecord(tx.conn, run.id))!;
   tx.emit({ type: 'run.changed', runId: run.id, status: ended.status });
@@ -150,8 +162,7 @@ function workspaceWaits(run: RunRecord, reporting: boolean): WorkspaceWaits {
     (item) =>
       item.failureReason === 'workspaceBusy' ||
       item.failureReason === 'runnerUpgrade' ||
-      item.failureReason === 'runnerOfflineBeforeStart' ||
-      item.failureReason === 'startTimeout',
+      isPreStartInterruption(item),
   ).length;
   let trailing = 0;
   let since: string | null = null;
@@ -186,13 +197,31 @@ export async function requeueRun(
   run: RunRecord,
   reason: FailureReason,
   detail?: string,
+  source: 'runner' | 'sweeper' = 'runner',
 ): Promise<RequeueOutcome> {
   const now = deps.clock.now();
   const waits = workspaceWaits(run, reason === 'workspaceBusy');
-  const interruption =
-    reason === 'runnerUpgrade' ||
-    reason === 'runnerOfflineBeforeStart' ||
-    reason === 'startTimeout';
+  const preStartInterruption =
+    source === 'sweeper' &&
+    run.status === 'dispatched' &&
+    run.startedAt === null &&
+    (reason === 'runnerOfflineBeforeStart' || reason === 'startTimeout');
+  const failureSource = preStartInterruption ? ('sweeper' as const) : undefined;
+  if (
+    preStartInterruption &&
+    consecutivePreStartInterruptions(toExecutions(run.executionHistory)) + 1 >=
+      PRE_START_INTERRUPTION_LIMIT
+  ) {
+    const ended = await finishRun(tx, deps, run, {
+      status: 'failed',
+      reason: 'startTimeout',
+      failureSource,
+      detail:
+        'The runtime did not receive the run in 10 consecutive pre-start attempts.',
+    });
+    return { status: ended?.status ?? run.status, run: ended };
+  }
+  const interruption = reason === 'runnerUpgrade' || preStartInterruption;
   const exhausted = interruption
     ? false
     : reason === 'workspaceBusy'
@@ -243,7 +272,7 @@ export async function requeueRun(
     },
   });
   if (result.updatedCount !== 1) return { status: run.status, run: null };
-  await endExecution(tx.conn, run, nowText, reason);
+  await endExecution(tx.conn, run, nowText, reason, failureSource);
   await revokeTokens(tx, run.id, nowText);
   tx.emit({ type: 'run.changed', runId: run.id, status: 'queued' });
   tx.emit({ type: 'run.requeued', runId: run.id, availableAt });

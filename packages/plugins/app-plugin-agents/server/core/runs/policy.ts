@@ -43,11 +43,7 @@ export function toolPolicyFor(
 }
 
 /** Failures of the runner itself retry at once, elsewhere; the tool's own failures back off. */
-const IMMEDIATE: readonly FailureReason[] = [
-  'runnerOffline',
-  'leaseExpired',
-  'startTimeout',
-];
+const IMMEDIATE: readonly FailureReason[] = ['runnerOffline', 'leaseExpired'];
 
 /** How long before attempt `attempt + 1` may start, after attempt `attempt` failed for `reason`. */
 export function retryDelayMs(reason: FailureReason, attempt: number): number {

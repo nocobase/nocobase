@@ -160,3 +160,123 @@ it.each(['startTimeout', 'runnerOfflineBeforeStart'])(
     });
   },
 );
+
+it('backs off runner-reported worker startup failures and exhausts the real budget', async () => {
+  h = await createHarness();
+  const agent = await h.createAgent({ maxAttempts: 3 });
+  const runId = await h.enqueue(agent);
+  const runner = await h.registerRunner();
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    await heartbeat(runner);
+    expect(await claim(h, runner)).toHaveLength(1);
+    expect(
+      await h.services.reports.fail({ id: runner.runnerId }, runId, {
+        reason: 'startTimeout',
+        detail: 'The runner could not start a worker',
+      }),
+    ).toMatchObject({ status: attempt < 3 ? 'queued' : 'failed' });
+    const run = await h.services.runs.get(runId);
+    expect(run.executions.at(-1)?.failureSource).toBeUndefined();
+    if (attempt < 3) {
+      const delay = attempt === 1 ? 30_000 : 60_000;
+      expect(Date.parse(run.availableAt!) - h.clock.now().getTime()).toBe(
+        delay,
+      );
+      expect(await claim(h, runner)).toHaveLength(0);
+      expect(h.finished).toEqual([]);
+      h.clock.advance(delay);
+    }
+  }
+  expect(h.finished).toHaveLength(1);
+  expect(await h.services.runs.get(runId)).toMatchObject({
+    attempt: 3,
+    failureReason: 'startTimeout',
+  });
+});
+
+async function interrupt(
+  runId: string,
+  runner: RegisteredRunner,
+  offline: boolean,
+): Promise<RegisteredRunner> {
+  await heartbeat(runner);
+  expect((await claim(h, runner))[0].run.id).toBe(runId);
+  if (offline) {
+    h.clock.advance(TIMINGS.offlineAfterMs + 1);
+    return h.registerRunner({ name: 'replacement' });
+  }
+  h.clock.advance(TIMINGS.startTimeoutMs);
+  await heartbeat(runner);
+  return runner;
+}
+
+it.each(['timeout', 'offline', 'alternating'])(
+  'requeues nine consecutive %s interruptions and fails on the tenth',
+  async (mode) => {
+    h = await createHarness();
+    const agent = await h.createAgent({ maxAttempts: 2 });
+    const runId = await h.enqueue(agent);
+    let runner = await h.registerRunner();
+    for (let attempt = 1; attempt <= 10; attempt++) {
+      runner = await interrupt(
+        runId,
+        runner,
+        mode === 'offline' || (mode === 'alternating' && attempt % 2 === 0),
+      );
+      expect(await h.sweep()).toMatchObject(
+        attempt < 10 ? { requeued: 1, failed: 0 } : { requeued: 0, failed: 1 },
+      );
+      expect(
+        (await h.services.runs.get(runId)).executions.at(-1),
+      ).toMatchObject({ failureSource: 'sweeper' });
+      if (attempt < 10) {
+        expect(await h.services.runs.get(runId)).toMatchObject({
+          status: 'queued',
+          availableAt: null,
+        });
+        expect(h.finished).toEqual([]);
+      }
+    }
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'failed',
+      attempt: 10,
+      failureReason: 'startTimeout',
+      failureDetail: expect.stringContaining('10 consecutive'),
+    });
+    expect(h.finished).toHaveLength(1);
+    expect(await h.sweep()).toMatchObject({ requeued: 0, failed: 0 });
+    expect(await claim(h, runner)).toHaveLength(0);
+  },
+);
+
+it.each(['startTimeout', 'toolNetwork'] as const)(
+  'breaks the environment streak on a real %s failure without resetting its budget',
+  async (reason) => {
+    h = await createHarness();
+    const agent = await h.createAgent({ maxAttempts: 2 });
+    const runId = await h.enqueue(agent);
+    let runner = await h.registerRunner();
+    for (let real = 1; real <= 2; real++) {
+      for (let index = 0; index < 5; index++) {
+        runner = await interrupt(runId, runner, index % 2 === 0);
+        expect(await h.sweep()).toMatchObject({ requeued: 1, failed: 0 });
+      }
+      expect(h.finished).toEqual([]);
+      expect(await claim(h, runner)).toHaveLength(1);
+      if (reason === 'toolNetwork')
+        await h.services.reports.start({ id: runner.runnerId }, runId, start);
+      expect(
+        await h.services.reports.fail({ id: runner.runnerId }, runId, {
+          reason,
+        }),
+      ).toMatchObject({ status: real === 1 ? 'queued' : 'failed' });
+      if (real === 1) h.clock.advance(30_000);
+    }
+    expect(h.finished).toHaveLength(1);
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'failed',
+      attempt: 12,
+      failureReason: reason,
+    });
+  },
+);

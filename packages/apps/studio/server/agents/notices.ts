@@ -15,7 +15,12 @@ import type {
 } from '@nocobase/app-plugin-projects/server/tokens';
 
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
-import type { Run } from '@nocobase/app-plugin-agents/shared/runs';
+import {
+  isPreStartInterruption,
+  PRE_START_INTERRUPTION_LIMIT,
+  consecutivePreStartInterruptions,
+  type Run,
+} from '@nocobase/app-plugin-agents/shared/runs';
 import type { StudioInboxPort, InboxDecisionRef } from '../inbox/port.js';
 import {
   ISSUE_SUBJECT as INBOX_ISSUE,
@@ -72,15 +77,19 @@ export function runFailedRule(
         'An agent';
       const reason = run.failureReason ?? 'unknown';
       if (reason === 'runnerDiskFull') continue;
+      const environmentStreak = consecutivePreStartInterruptions(
+        run.executions ?? [],
+      );
       const attempts =
-        run.attempt -
-        (run.executions ?? []).filter(
-          (execution) =>
-            execution.failureReason === 'workspaceBusy' ||
-            execution.failureReason === 'runnerUpgrade' ||
-            execution.failureReason === 'runnerOfflineBeforeStart' ||
-            execution.failureReason === 'startTimeout',
-        ).length;
+        environmentStreak >= PRE_START_INTERRUPTION_LIMIT
+          ? environmentStreak
+          : run.attempt -
+            (run.executions ?? []).filter(
+              (execution) =>
+                execution.failureReason === 'workspaceBusy' ||
+                execution.failureReason === 'runnerUpgrade' ||
+                isPreStartInterruption(execution),
+            ).length;
       const failureKind = [
         'runnerOffline',
         'runnerOfflineBeforeStart',
