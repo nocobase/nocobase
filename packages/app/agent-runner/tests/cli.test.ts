@@ -208,6 +208,14 @@ describe('nocobase-runner cli', () => {
       input: 'from-stdin\n',
     });
     expect(piped.code).toBe(0);
+    expect(
+      (
+        JSON.parse(
+          readFileSync(path.join(home, 'apps', 'test-app.json'), 'utf8'),
+        ) as { variables: Record<string, string> }
+      ).variables.OTHER_KEY,
+    ).toBe('from-stdin');
+
     const listed = await cli(['env', 'list', '--json'], env);
     expect(listed.stdout).not.toContain('sk-local-value');
     const entries = (
@@ -231,5 +239,74 @@ describe('nocobase-runner cli', () => {
     expect((await cli(['env', 'unset', 'PI_KEY'], env)).code).toBe(0);
     expect((await cli(['env', 'unset', 'PI_KEY'], env)).code).toBe(4);
     await cli(['env', 'unset', 'OTHER_KEY'], env);
+  });
+
+  it('preserves env values read from delayed and split standard input', async () => {
+    const testHome = tempDir('nocobase-runner-piped-env-home-');
+    const testEnv = cliEnv(testHome);
+    const server = new FakeServer();
+    await server.listen();
+    try {
+      await registerRunner(server.url, testEnv);
+
+      const noNewline = await cli(['env', 'set', 'NO_NEWLINE'], testEnv, {
+        input: 'plain-value',
+      });
+      expect(noNewline.code).toBe(0);
+
+      const unicode = 'prefix-☃-suffix';
+      const unicodeBytes = Buffer.from(unicode);
+      const splitUnicode = await cli(['env', 'set', 'SPLIT_UNICODE'], testEnv, {
+        input: {
+          chunks: [
+            { data: unicodeBytes.subarray(0, 7), delayMs: 0 },
+            { data: unicodeBytes.subarray(7, 8), delayMs: 30 },
+            { data: unicodeBytes.subarray(8), delayMs: 60 },
+          ],
+          endDelayMs: 30,
+        },
+      });
+      expect(splitUnicode.code).toBe(0);
+
+      const delayed = await cli(['env', 'set', 'DELAYED_INPUT'], testEnv, {
+        input: {
+          chunks: [{ data: 'arrived-after-parser-timeout', delayMs: 30 }],
+        },
+      });
+      expect(delayed.code).toBe(0);
+
+      const emptyValue = await cli(['env', 'set', 'EMPTY_VALUE', ''], testEnv, {
+        input: 'must-not-replace-explicit-empty',
+      });
+      expect(emptyValue.code).toBe(0);
+
+      const whitespace = await cli(['env', 'set', 'WHITESPACE'], testEnv, {
+        input: ' \t keep  \r\n',
+      });
+      expect(whitespace.code).toBe(0);
+
+      const missingName = await cli(['env', 'set'], testEnv, {
+        input: 'not-a-variable-name',
+      });
+      expect(missingName.code).not.toBe(0);
+
+      const saved = (
+        JSON.parse(
+          readFileSync(path.join(testHome, 'apps', 'test-app.json'), 'utf8'),
+        ) as { variables: Record<string, string> }
+      ).variables;
+      expect(saved).toMatchObject({
+        NO_NEWLINE: 'plain-value',
+        SPLIT_UNICODE: unicode,
+        DELAYED_INPUT: 'arrived-after-parser-timeout',
+        EMPTY_VALUE: '',
+        WHITESPACE: ' \t keep  ',
+      });
+      expect(saved).not.toHaveProperty('not-a-variable-name');
+    } finally {
+      await server.close();
+      removeDir(testHome);
+      removeDir(workRootOf(testHome));
+    }
   });
 });

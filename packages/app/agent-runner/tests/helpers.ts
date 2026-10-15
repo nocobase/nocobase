@@ -85,10 +85,18 @@ export interface CliResult {
   stderr: string;
 }
 
+export interface CliInput {
+  readonly chunks: readonly {
+    readonly data: string | Buffer;
+    readonly delayMs: number;
+  }[];
+  readonly endDelayMs?: number;
+}
+
 export function cli(
   args: string[],
   env: NodeJS.ProcessEnv,
-  options: { cwd?: string; input?: string } = {},
+  options: { cwd?: string; input?: string | CliInput } = {},
 ): Promise<CliResult> {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [BIN, ...args], {
@@ -99,7 +107,19 @@ export function cli(
     let stderr = '';
     child.stdout.on('data', (chunk: Buffer) => (stdout += chunk.toString()));
     child.stderr.on('data', (chunk: Buffer) => (stderr += chunk.toString()));
-    child.stdin.end(options.input ?? '');
+    if (typeof options.input === 'string' || options.input === undefined) {
+      child.stdin.end(options.input ?? '');
+    } else {
+      let lastWriteAt = 0;
+      for (const chunk of options.input.chunks) {
+        lastWriteAt = Math.max(lastWriteAt, chunk.delayMs);
+        setTimeout(() => child.stdin.write(chunk.data), chunk.delayMs);
+      }
+      setTimeout(
+        () => child.stdin.end(),
+        lastWriteAt + (options.input.endDelayMs ?? 0),
+      );
+    }
     child.on('close', (code) => resolve({ code, stdout, stderr }));
   });
 }
