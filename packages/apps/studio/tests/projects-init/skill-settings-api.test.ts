@@ -93,10 +93,10 @@ it('lets a non-root owner configure both defaults through the real routes and CL
   expect(
     (
       await request(
-        `/access/members/${userId}`,
+        `/users/${userId}/roleScopes/studio`,
         root,
-        { roles: ['owner'] },
-        'PATCH',
+        { value: ['owner'] },
+        'PUT',
       )
     ).status,
   ).toBe(200);
@@ -225,10 +225,10 @@ it('lets a non-root owner configure both defaults through the real routes and CL
   expect(
     (
       await request(
-        `/access/members/${userId}`,
+        `/users/${userId}/roleScopes/studio`,
         root,
-        { roles: ['contributor'] },
-        'PATCH',
+        { value: ['contributor'] },
+        'PUT',
       )
     ).status,
   ).toBe(200);
