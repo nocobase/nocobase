@@ -78,7 +78,6 @@ export const projectDefaultSkillsRoutes: AppApiRouteContribution<Application> =
         security,
         ...cliRoute({
           command: 'project default-skills get',
-          action: 'agents.agents/read',
         }),
         description:
           'An empty list by default. Existing projects keep their own attachments. Requires agents.agents read or manage.',
@@ -103,7 +102,6 @@ export const projectDefaultSkillsRoutes: AppApiRouteContribution<Application> =
         security,
         ...cliRoute({
           command: 'project default-skills set',
-          action: 'agents.agents/manage',
           flags: { skillIds: { name: 'skills' } },
         }),
         description:

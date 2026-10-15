@@ -50,7 +50,7 @@ nb-studio project default-skills get
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
-**Who:** People (a sign-in or an API key); needs the action `agents.agents/read`.
+**Who:** People (a sign-in or an API key).
 
 **Request:** `GET /api/projectDefaultSkills` (`projectDefaultSkillsGet`)
 
@@ -70,7 +70,7 @@ nb-studio project default-skills set --skills <string[]>
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
-**Who:** People (a sign-in or an API key); needs the action `agents.agents/manage`.
+**Who:** People (a sign-in or an API key).
 
 **Request:** `PUT /api/projectDefaultSkills` (`projectDefaultSkillsSet`)
 

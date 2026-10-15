@@ -5,7 +5,11 @@ import { projectsToken } from '@nocobase/app-plugin-projects/server/tokens';
 import type { Application } from '@nocobase/app-server/application';
 import { ServiceContainer } from '@nocobase/service-provider';
 import StudioInboxProvider from '../../server/inbox/provider.js';
-import { studioInboxToken } from '../../server/inbox/token.js';
+import { createDecisionReconciler } from '../../server/inbox/reconcile.js';
+import {
+  decisionReconcilerToken,
+  studioInboxToken,
+} from '../../server/inbox/token.js';
 import type {
   NotificationService,
   NotificationSendInput,
@@ -275,6 +279,13 @@ describe('failed-run card lifecycle over committed runs and the real inbox', () 
       ...inbox,
       openDecisions: () => pending,
     }));
+    container.singleton(decisionReconcilerToken, () =>
+      createDecisionReconciler(
+        () => h.database.connection(),
+        () => inbox,
+        () => undefined,
+      ),
+    );
     const provider = new StudioInboxProvider({
       container,
     } as unknown as Application);

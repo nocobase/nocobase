@@ -597,7 +597,7 @@ describe('editing a working directory', () => {
 });
 
 describe('ProjectIssues', () => {
-  it('offers the board first and by default, scoped to the project', () => {
+  it('offers the four views, the table by default, scoped to the project', () => {
     render(
       <MemoryRouter>
         <ProjectIssues />
@@ -607,8 +607,8 @@ describe('ProjectIssues', () => {
       expect.objectContaining({
         fixedFilters: { projectId: 'p1' },
         viewKey: 'project',
-        views: ['board', 'list', 'agent'],
-        defaultView: 'board',
+        views: ['split', 'list', 'board', 'agent'],
+        defaultView: 'list',
       }),
     );
   });

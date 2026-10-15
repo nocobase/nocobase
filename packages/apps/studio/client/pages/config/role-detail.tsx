@@ -35,6 +35,7 @@ import { studioKeys, useStudioApi } from '../../access/api.js';
 import { useNotify } from '../../access/notify.js';
 import { RoleEditor } from './members/role-editor.js';
 import {
+  copyRoleTitle,
   draftOf,
   requestOf,
   rolePath,
@@ -62,13 +63,16 @@ function RoleBody({
   const roleError = useRoleError();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [saved, setSaved] = useState(() => draftOf(role));
-  const [savedTitle, setSavedTitle] = useState(() => roleTitle(t, role));
+  const [baseline, setBaseline] = useState(role);
+  const saved = draftOf(baseline);
+
   const [draft, setDraft] = useState<RoleDraft>(saved);
   const [title, setTitle] = useState(() => roleTitle(t, role));
+  const [previousRole, setPreviousRole] = useState(role);
   const readOnly = !canDefine || !role.editable;
   const dirty =
-    !sameDraft(draft, saved) || (!role.builtIn && title !== savedTitle);
+    !sameDraft(draft, saved) ||
+    (!role.builtIn && title !== roleTitle(t, baseline));
   const unsaved = useUnsavedChangesGuard(!readOnly && dirty);
   useNavigationGuard(unsaved.confirmDiscard);
 
@@ -80,25 +84,35 @@ function RoleBody({
         ...requestOf(submitted.draft),
       }),
     onSuccess: (updated, submitted) => {
-      const updatedTitle = roleTitle(t, updated);
-      const updatedDraft = draftOf(updated);
-      setSaved(updatedDraft);
-      setDraft((current) =>
-        sameDraft(current, submitted.draft) ? updatedDraft : current,
-      );
-      setSavedTitle(updatedTitle);
+      setBaseline(updated);
       setTitle((current) =>
-        current === submitted.title ? updatedTitle : current,
+        current === submitted.title ? roleTitle(t, updated) : current,
       );
-      notify.success(t('roles.saved', { name: updatedTitle }));
+      setDraft((current) =>
+        sameDraft(current, submitted.draft) ? draftOf(updated) : current,
+      );
+      queryClient.setQueryData<Role[]>(studioKeys.roles, (roles) =>
+        roles?.map((item) => (item.key === updated.key ? updated : item)),
+      );
+      notify.success(t('roles.saved', { name: roleTitle(t, updated) }));
+
       void queryClient.invalidateQueries({ queryKey: studioKeys.roles });
     },
     onError: roleError,
   });
+  if (previousRole !== role) {
+    setPreviousRole(role);
+    // A pending write may already be visible to GET. Its response coordinates the editable values instead.
+    if (!save.isPending) {
+      if (sameDraft(draft, saved)) setDraft(draftOf(role));
+      if (title === roleTitle(t, baseline)) setTitle(roleTitle(t, role));
+    }
+    setBaseline(role);
+  }
   const duplicate = useMutation({
     mutationFn: () =>
       api.createRole({
-        title: t('roles.copyOf', { name: roleTitle(t, role) }),
+        title: copyRoleTitle(t, roleTitle(t, role)),
         ...requestOf(draft),
       }),
     onSuccess: (copy) => {
@@ -141,7 +155,7 @@ function RoleBody({
                     disabled={!dirty || save.isPending}
                     onClick={() => {
                       setDraft(saved);
-                      setTitle(savedTitle);
+                      setTitle(roleTitle(t, baseline));
                     }}
                   >
                     {t('roles.discard')}

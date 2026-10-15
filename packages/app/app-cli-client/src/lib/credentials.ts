@@ -107,6 +107,8 @@ export interface ProfileSummary {
 }
 
 export interface UserConfigOptions {
+  /** Session agents must use the bridge-selected stored profile, ignoring run and environment credentials. */
+  profileOnly?: boolean;
   paths?: AppCliPaths;
   config?: AppCliConfig;
   /** The keychain; the platform's own by default, undefined for none. */
@@ -206,7 +208,7 @@ export async function readUserConfig(
 ): Promise<UserConfig | undefined> {
   const { config, env, paths, store } = resolveOptions(options);
   const named = env[RUN_CREDENTIALS_ENV];
-  if (named !== undefined && named !== '')
+  if (!options.profileOnly && named !== undefined && named !== '')
     throw new UsageError(
       `This is an agent run, and its credentials file (${named}) is gone: the run has ended.`,
       EXIT_CODES.auth,
@@ -214,7 +216,9 @@ export async function readUserConfig(
   const stored = await readStored(paths);
   const profile = selectedProfile(stored, options, config, env);
   const entry = stored.profiles[profile];
-  const envKey = envValue(config, env, 'API_KEY');
+  const envKey = options.profileOnly
+    ? undefined
+    : envValue(config, env, 'API_KEY');
   if (envKey !== undefined) {
     const server = envValue(config, env, 'SERVER') ?? entry?.server;
     if (server === undefined)
@@ -240,7 +244,9 @@ export async function readUserConfig(
       );
     return undefined;
   }
-  const server = envValue(config, env, 'SERVER') ?? entry.server;
+  const server = options.profileOnly
+    ? entry.server
+    : (envValue(config, env, 'SERVER') ?? entry.server);
   const known = {
     profile,
     kind: entry.auth.kind,

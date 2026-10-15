@@ -256,9 +256,7 @@ test('structured owner request, latest explanation, matching follow-ups and live
       new RegExp(`comment=${explanation.comment.id}`),
     );
     await explanationLink.click();
-    await expect(page).toHaveURL(
-      new RegExp(`comment=${explanation.comment.id}`),
-    );
+    await expect(page).not.toHaveURL(/comment=/u);
     await expect(
       page.locator(`[data-comment-id="${explanation.comment.id}"]`),
     ).toBeInViewport();
@@ -309,9 +307,7 @@ test('structured owner request, latest explanation, matching follow-ups and live
         name: 'View the project manager’s latest explanation',
       })
       .click();
-    await expect(page).toHaveURL(
-      new RegExp(`comment=${explanation.comment.id}`),
-    );
+    await expect(page).not.toHaveURL(/comment=/u);
     const focusedExplanation = panel.locator(
       `[data-comment-id="${explanation.comment.id}"]`,
     );
@@ -341,7 +337,9 @@ test('structured owner request, latest explanation, matching follow-ups and live
       timeout: 3000,
     });
     await expect(
-      rail.locator(`[data-issue="${issue.identifier}"] .bg-blue-500`),
+      rail.locator(
+        `[data-issue="${issue.identifier}"] [data-status-shape="started"]`,
+      ),
     ).toBeVisible({ timeout: 3000 });
     await expect(
       panel

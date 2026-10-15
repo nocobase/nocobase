@@ -11,6 +11,7 @@
  * | ------------------------------------------- | ---------------------------------------------------------------- |
  * | read, download, list                        | seeing the issue (an upload attached to nothing: its uploader)   |
  * | upload                                      | `pm.attachments` `upload`                                        |
+ * | create an issue with uploads                 | `upload`, and `pm.issues` `create` in the project              |
  * | attach to an issue                          | `upload`, and `pm.issues` `edit` on the issue                    |
  * | send with a comment                         | `upload`, and `pm.issues` `comment` on the issue                 |
  * | remove an issue's file                      | its uploader (with `edit`), or `moderate-comments` on the issue  |
@@ -26,6 +27,9 @@
  * | `DELETE /attachments/{attachmentId}`     |                          | 204                                              |
  * | `GET /issues/{issueId}/attachments`      |                          | `{ data: Attachment[], meta: { total } }`        |
  * | `POST /issues/{issueId}/attachments`     | multipart, one `file`    | 201 `{ data: Attachment }`, attached to it       |
+ *
+ * `POST /issues` accepts optional `attachmentIds` of the creator's unattached uploads. They are bound in the
+ * creation transaction before triggers start work; without files no upload permission is required.
  *
  * `POST /issues/{issueId}/comments` takes `attachmentIds` (`CreateCommentRequest`): the caller's own uploads attached
  * to nothing, at most `ATTACHMENTS_PER_REQUEST_MAX`, attached in the comment's transaction. Errors: 400

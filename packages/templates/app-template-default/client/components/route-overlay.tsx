@@ -20,6 +20,8 @@ import {
   Dialog,
   DialogClose,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogOverlay,
   DialogPortal,
   DialogTitle,
@@ -147,7 +149,10 @@ export function RouteOverlay({
                 return true;
               }}
               className={cn(
-                'fixed top-1/2 left-1/2 z-50 w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-popover text-popover-foreground shadow-lg outline-none duration-150 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95',
+                // The frame of `DialogContent` (position, surface, ring, motion), laid out as a column so the header and
+                // footer stay fixed while only the body scrolls within the viewport cap.
+                'fixed top-1/2 left-1/2 z-50 w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95',
+                // Route dialogs hold the 5-8 field forms of guideline I1, hence wider than the plain dialog's default.
                 'flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl',
                 // The viewport constraints are deliberate; all ordinary styling uses theme tokens.
                 drawer &&
@@ -155,27 +160,35 @@ export function RouteOverlay({
                 className,
               )}
             >
+              {/* The regions reproduce `DialogContent`'s `p-6 gap-5` around the dialog primitives, split so the body can
+                  scroll on its own: the header and body own the padding, and the body's top padding is the gap. */}
               <header
                 data-slot='route-overlay-header'
-                className='flex shrink-0 flex-col gap-2 border-b p-6 pr-14'
+                className='shrink-0 px-6 pt-6'
               >
-                <DialogTitle>{title}</DialogTitle>
-                {description != null && (
-                  <DialogDescription>{description}</DialogDescription>
-                )}
+                <DialogHeader>
+                  <DialogTitle>{title}</DialogTitle>
+                  {description != null && (
+                    <DialogDescription>{description}</DialogDescription>
+                  )}
+                </DialogHeader>
               </header>
               <div
                 data-slot='route-overlay-body'
-                className='min-h-0 flex-1 overflow-y-auto p-6'
+                className={cn(
+                  'min-h-0 flex-1 overflow-y-auto px-6 pt-5',
+                  footer != null ? 'pb-5' : 'pb-6',
+                )}
               >
                 {children}
               </div>
               {footer != null && (
-                <footer
-                  data-slot='route-overlay-footer'
-                  className='flex shrink-0 flex-wrap justify-end gap-2 border-t bg-muted/30 p-6'
-                >
-                  {footer}
+                <footer data-slot='route-overlay-footer' className='shrink-0'>
+                  {/* `DialogFooter` pulls itself out of `DialogContent`'s padding with negative margins; here it
+                      already sits at the panel's edges, and the panel clips the corners. */}
+                  <DialogFooter className='mx-0 mb-0 rounded-none'>
+                    {footer}
+                  </DialogFooter>
                 </footer>
               )}
               <DialogClose
@@ -183,7 +196,7 @@ export function RouteOverlay({
                   <Button
                     variant='ghost'
                     size='icon-sm'
-                    className='absolute top-4 right-4'
+                    className='absolute top-2 right-2'
                   />
                 }
               >

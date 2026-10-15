@@ -13,6 +13,7 @@ import type {
 } from '@nocobase/agent-protocol';
 import type { DatabaseConnection, Repository } from '@nocobase/db';
 
+import { transactionRead } from '../transaction-read.js';
 import type {
   Run,
   RunExecutionSnapshot,
@@ -341,6 +342,32 @@ export async function findRunRecord(
   return runsRepo(conn).findOne({ filter: { id } });
 }
 
+export type RunStatusRecord = Pick<
+  RunRecord,
+  'id' | 'status' | 'runnerId' | 'cancelRequestedAt' | 'leaseExpiresAt'
+> & { readonly pendingInputId: string | null };
+
+/** One row for a poll, including whether unhandled input needs to be read. */
+export async function findRunStatus(
+  conn: DatabaseConnection,
+  id: string,
+): Promise<RunStatusRecord | undefined> {
+  return conn.query
+    .selectFrom('agRuns')
+    .select(['id', 'status', 'runnerId', 'cancelRequestedAt', 'leaseExpiresAt'])
+    .select((eb) => [
+      eb
+        .selectFrom('agRunInputs')
+        .select('id')
+        .whereRef('agRunInputs.runId', '=', 'agRuns.id')
+        .where('handledAt', 'is', null)
+        .limit(1)
+        .as('pendingInputId'),
+    ])
+    .where('id', '=', id)
+    .executeTakeFirst<RunStatusRecord>();
+}
+
 /** The run's input not yet reported as handled, oldest first. */
 export async function pendingInputs(
   conn: DatabaseConnection,
@@ -474,6 +501,8 @@ export async function inputsOnSince(
   }));
 }
 
+const summaryRead = transactionRead<string | null>();
+
 /** The summary of the newest completed run of an agent on a subject, other than `exceptRunId`. */
 export async function lastSummary(
   conn: DatabaseConnection,
@@ -484,19 +513,28 @@ export async function lastSummary(
   },
   exceptRunId: string,
 ): Promise<string | null> {
-  const records = await runsRepo(conn).findMany({
-    filter: (f) =>
-      f.and([
-        f.string('agentId').eq(key.agentId),
-        f.string('subjectKind').eq(key.subjectKind),
-        f.string('subjectId').eq(key.subjectId),
-        f.string('status').eq('completed'),
-        f.string('id').ne(exceptRunId),
-      ]),
-    sort: (sort) => [sort.field('finishedAt').desc(), sort.field('id').desc()],
-    limit: 5,
-  });
-  return records.find((record) => record.summary)?.summary ?? null;
+  return summaryRead(
+    conn,
+    JSON.stringify([key.agentId, key.subjectKind, key.subjectId, exceptRunId]),
+    async () => {
+      const records = await runsRepo(conn).findMany({
+        filter: (f) =>
+          f.and([
+            f.string('agentId').eq(key.agentId),
+            f.string('subjectKind').eq(key.subjectKind),
+            f.string('subjectId').eq(key.subjectId),
+            f.string('status').eq('completed'),
+            f.string('id').ne(exceptRunId),
+          ]),
+        sort: (sort) => [
+          sort.field('finishedAt').desc(),
+          sort.field('id').desc(),
+        ],
+        limit: 5,
+      });
+      return records.find((record) => record.summary)?.summary ?? null;
+    },
+  );
 }
 
 /** Per agent, the runs it has not finished (queued or held). */

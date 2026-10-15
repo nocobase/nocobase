@@ -199,6 +199,40 @@ const file = (name = 'hello.txt', text = 'hello'): File =>
   new File([text], name, { type: 'text/plain' });
 
 describe('server repository and Client API', () => {
+  it('encloses uploads in a caller transaction and removes objects on rollback', async () => {
+    const { db, manager, drive } = await fixture();
+    let rolledBackKey = '';
+    await expect(
+      db.transaction(async (transaction) => {
+        const files = manager.repository('attachments', {
+          disk: 'local',
+          accessPath: '/files',
+          policy: openPolicy,
+          transaction,
+        });
+        const result = await files.uploadOne({ file: file() });
+        rolledBackKey = result.record.key;
+        expect(await transaction.repository('attachments').count()).toBe(1);
+        throw new Error('Rollback upload');
+      }),
+    ).rejects.toThrow('Rollback upload');
+    expect(await db.repository('attachments').count()).toBe(0);
+    expect(await drive.use('local').exists(rolledBackKey)).toBe(false);
+    const result = await db.transaction(async (transaction) =>
+      manager
+        .repository('attachments', {
+          disk: 'local',
+          accessPath: '/files',
+          policy: openPolicy,
+          transaction,
+        })
+        .uploadMany({ files: [file(), file('second.txt')] }),
+    );
+    expect(result.records).toHaveLength(2);
+    expect(await db.repository('attachments').count()).toBe(2);
+    for (const record of result.records)
+      expect(await drive.use('local').exists(record.key)).toBe(true);
+  });
   it.each(['string', 'bigint'])(
     'normalizes %s sizes for Server uploads, queries and mutations',
     async (representation) => {

@@ -3,9 +3,10 @@
  * choices, and beside it that work in detail, where the session runs and what it has used. A session whose computer is
  * offline, or that is archived, reads as before and takes no new messages.
  */
-import { useToaster } from '@nocobase/app-client';
+import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
+import { useIsMutating } from '@tanstack/react-query';
 import {
   AlertTriangleIcon,
   ArchiveIcon,
@@ -41,7 +42,12 @@ import {
 import { Input } from './ui/input.js';
 import { Skeleton } from './ui/skeleton.js';
 
-import type { Computer, PromptContent, Session } from '../../shared/api.js';
+import type {
+  Computer,
+  PromptContent,
+  Session,
+  SessionLinkIcon,
+} from '../../shared/api.js';
 import {
   type Mention,
   useAnswer,
@@ -55,17 +61,22 @@ import {
   useTranscript,
   useUpdateSession,
 } from '../api.js';
+import { LinkOpenContext } from '../config.js';
 import { valueName } from '../lib/choices.js';
 import { errorText } from '../lib/errors.js';
-import { sessionFacts } from '../lib/facts.js';
 import { dateTime, shortTime, tokens } from '../lib/format.js';
 import { displayPath } from '../lib/paths.js';
-import { TONE_CLASS, TONE_ORDER } from '../lib/tones.js';
+import { byIcon, linkIcon, linkNeedsYou } from '../lib/tones.js';
+import { StatusIcon } from './status-icon.js';
+import { WaitingCount } from './waiting-count.js';
 import { foldTranscript, type TranscriptItem } from '../transcript.js';
 import { AgentBadge } from './agent-badge.js';
 import { BackLink } from './back-link.js';
 import { ChoiceMenus } from './choice-menus.js';
 import { Composer } from './composer.js';
+import { useSubmission } from '../use-submission.js';
+import { SubmissionNotice } from './submission-notice.js';
+import { useLinkPanel } from './link-panel.js';
 import { LinkBar } from './link-bar.js';
 import { LinkName } from './link-name.js';
 import { StatusPill } from './status-pill.js';
@@ -118,6 +129,7 @@ export function SessionView({
     () => foldTranscript(transcript.data ?? []),
     [transcript.data],
   );
+  const panel = useLinkPanel(session.data, () => setDetails(true));
 
   if (session.isError) {
     return (
@@ -137,31 +149,44 @@ export function SessionView({
   const computer = computers.data?.find(
     (candidate) => candidate.id === session.data.computerId,
   );
+  // An open record's panel takes the details' place beside the conversation.
+  const showDetails = details && !panel.opened;
   return (
-    <div ref={viewportRef} className='flex h-full min-h-0'>
-      <Conversation
-        session={session.data}
-        computer={computer}
-        items={transcript.data ? items : undefined}
-        details={details}
-        onToggleDetails={() => setDetails(!details)}
-      />
-      {details && (
-        <div
-          aria-hidden
-          className='fixed inset-0 z-40 bg-black/30 xl:hidden'
-          onClick={() => setDetails(false)}
-        />
-      )}
-      {details && (
-        <Details
+    <LinkOpenContext.Provider value={panel.open}>
+      <div ref={viewportRef} className='flex h-full min-h-0'>
+        <Conversation
           session={session.data}
           computer={computer}
-          items={items}
-          onClose={() => setDetails(false)}
+          items={transcript.data ? items : undefined}
+          details={showDetails}
+          onToggleDetails={() => {
+            if (panel.opened) {
+              panel.close();
+              setDetails(true);
+            } else setDetails(!details);
+          }}
+          onSummary={() => {
+            if (!panel.openSummary()) setDetails(true);
+          }}
         />
-      )}
-    </div>
+        {showDetails && (
+          <div
+            aria-hidden
+            className='fixed inset-0 z-40 bg-black/30 xl:hidden'
+            onClick={() => setDetails(false)}
+          />
+        )}
+        {showDetails && (
+          <Details
+            session={session.data}
+            computer={computer}
+            items={items}
+            onClose={() => setDetails(false)}
+          />
+        )}
+        {panel.element}
+      </div>
+    </LinkOpenContext.Provider>
   );
 }
 
@@ -171,16 +196,27 @@ function Conversation({
   items,
   details,
   onToggleDetails,
+  onSummary,
 }: {
   readonly session: Session;
   readonly computer: Computer | undefined;
   readonly items: readonly TranscriptItem[] | undefined;
   readonly details: boolean;
   readonly onToggleDetails: () => void;
+  /** The work summary under the title: opens the record waiting for the viewer, else the details. */
+  readonly onSummary: () => void;
 }): ReactElement {
   const { t, i18n } = useTranslation();
   const toaster = useToaster();
   const prompt = usePrompt(session.id);
+  const submission = useSubmission<{
+    content: PromptContent[];
+    mentions: Mention[];
+  }>(`session:${session.id}`, `session:${session.id}`, (input) =>
+    prompt.mutateAsync(input),
+  );
+  const sending =
+    useIsMutating({ mutationKey: ['agentSessions', 'prompt', session.id] }) > 0;
   const cancel = useCancel(session.id);
   const answer = useAnswer(session.id);
   const decide = useDecideLinks(session.id);
@@ -261,10 +297,15 @@ function Conversation({
   ): Promise<void> => {
     try {
       if (interrupt && session.running) await cancel.mutateAsync();
-      await prompt.mutateAsync({ content, mentions });
+      await submission.send({ content, mentions });
       pinnedRef.current = true;
     } catch (error) {
-      fail(error);
+      if (error instanceof ApiClientError && error.status < 500) fail(error);
+      else
+        void toaster.show({
+          type: 'error',
+          title: t('composer.sendUnconfirmed'),
+        });
       throw error;
     }
   };
@@ -283,9 +324,7 @@ function Conversation({
           onToggleDetails={onToggleDetails}
           onStop={() => cancel.mutate(undefined, { onError: fail })}
           collapsed={collapsed}
-          onShowDetails={() => {
-            if (!details) onToggleDetails();
-          }}
+          onShowDetails={onSummary}
         />
       </div>
       {session.archivedAt !== null ? (
@@ -377,6 +416,12 @@ function Conversation({
         </div>
       </div>
       <div className='mx-auto w-full max-w-[760px] px-3 pt-2 pb-3 sm:px-6 sm:pb-4'>
+        <SubmissionNotice
+          pending={submission.pending}
+          sending={sending}
+          retry={submission.retry}
+          edit={submission.edit}
+        />
         <Composer
           compact
           hints
@@ -391,9 +436,10 @@ function Conversation({
                   ? t('composer.busy')
                   : t('composer.placeholder')
           }
-          disabled={!writable}
+          disabled={!writable || submission.pending}
           busy={session.running}
-          sending={prompt.isPending}
+          sending={sending}
+          draftKey={`session:${session.id}`}
           commands={session.state?.commands}
           mentions={{ projectId: session.project?.id ?? null }}
           toolbar={
@@ -463,7 +509,7 @@ function Header({
                 setRenaming(false);
               }
             }}
-            className='h-9 max-w-md'
+            className='h-9 min-w-0 max-w-md flex-1'
             aria-label={t('session.rename')}
           />
         ) : (
@@ -478,13 +524,13 @@ function Header({
           </h2>
         )}
         {session.waiting ? (
-          <span className='max-md:sr-only inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-amber-800 dark:text-amber-300'>
+          <span className='max-md:sr-only inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-amber-800 dark:text-amber-300'>
             <span className='size-2 rounded-full bg-amber-400' />
             {t('session.asking')}
           </span>
         ) : (
           session.running && (
-            <span className='max-md:sr-only text-primary inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium'>
+            <span className='max-md:sr-only text-primary inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium whitespace-nowrap'>
               <span className='bg-primary size-2 animate-pulse rounded-full' />
               {t('session.answering')}
             </span>
@@ -560,33 +606,41 @@ function Header({
           collapsed && 'max-md:hidden',
         )}
       >
-        <MetaChip>
+        <MetaChip
+          title={[agentName(session, computer), mode]
+            .filter(Boolean)
+            .join(' · ')}
+        >
           <AgentBadge
             agentId={session.agentId}
             name={agentName(session, computer)}
           />
-          {agentName(session, computer)}
-          {mode && <span className='text-muted-foreground'>{mode}</span>}
+          <span className='truncate'>{agentName(session, computer)}</span>
+          {mode && (
+            <span className='text-muted-foreground truncate'>{mode}</span>
+          )}
         </MetaChip>
         {session.project && (
-          <MetaChip>
-            <FolderKanbanIcon className='size-4' />
-            {session.project.name}
+          <MetaChip shrink title={session.project.name}>
+            <FolderKanbanIcon className='size-4 shrink-0' />
+            <span className='truncate'>{session.project.name}</span>
           </MetaChip>
         )}
-        <MetaChip>
-          <LaptopIcon className='size-4' />
-          {computer?.name ?? t('session.removedComputer')}
+        <MetaChip shrink title={computer?.name ?? t('session.removedComputer')}>
+          <LaptopIcon className='size-4 shrink-0' />
+          <span className='truncate'>
+            {computer?.name ?? t('session.removedComputer')}
+          </span>
           <span
             className={cn(
-              'size-2 rounded-full',
+              'size-2 shrink-0 rounded-full',
               session.computerOnline
                 ? 'bg-emerald-500'
                 : 'border-muted-foreground border-[1.5px]',
             )}
           />
         </MetaChip>
-        <MetaChip shrink>
+        <MetaChip shrink title={session.cwd}>
           <FolderIcon className='size-4 shrink-0' />
           <code className='truncate'>
             {displayPath(session.cwd, computer?.home ?? null)}
@@ -614,18 +668,21 @@ function Header({
 }
 
 function MetaChip({
+  title,
   shrink,
   children,
 }: {
+  readonly title: string;
   /** Gives way when the row is narrow, its text cut short. */
   readonly shrink?: boolean;
   readonly children: ReactNode;
 }): ReactElement {
   return (
     <span
+      title={title}
       className={cn(
         'bg-card inline-flex h-7.5 max-w-full items-center gap-1.5 overflow-hidden rounded-full border px-2.5 text-xs whitespace-nowrap',
-        shrink ? 'min-w-0' : 'shrink-0',
+        shrink ? 'min-w-0' : 'max-w-40 shrink-0',
       )}
     >
       {children}
@@ -633,30 +690,48 @@ function MetaChip({
   );
 }
 
-/** Each standing of the session's work with how many are in it, colored as in its bar. */
-function Legend({ session }: { readonly session: Session }): ReactElement {
+/**
+ * Each status of the session's work with how many are in it, its shape as in the bar, then how many wait for the
+ * viewer ("Needs you 1").
+ */
+function Legend({
+  session,
+  nowrap = false,
+}: {
+  readonly session: Session;
+  /** On one line, cut short at the end rather than wrapping, with what waits for the viewer kept at the right. */
+  readonly nowrap?: boolean;
+}): ReactElement {
   const { t } = useTranslation();
-  const groups = new Map<
-    string,
-    { tone: (typeof TONE_ORDER)[number]; count: number }
-  >();
-  for (const link of session.links) {
+  const groups = new Map<string, { icon: SessionLinkIcon; count: number }>();
+  for (const link of byIcon(session.links)) {
     const label = link.status?.label ?? t('links.unknown');
-    const tone = link.status?.tone ?? 'idle';
     const group = groups.get(label);
-    groups.set(label, { tone, count: (group?.count ?? 0) + 1 });
+    groups.set(label, { icon: linkIcon(link), count: (group?.count ?? 0) + 1 });
   }
-  const sorted = [...groups].sort(
-    (a, b) => TONE_ORDER.indexOf(a[1].tone) - TONE_ORDER.indexOf(b[1].tone),
-  );
-  return (
-    <span className='text-muted-foreground flex flex-wrap gap-x-3 text-xs'>
-      {sorted.map(([label, { tone, count }]) => (
-        <span key={label} className='inline-flex items-center gap-1.5'>
-          <span className={cn('size-2 rounded-full', TONE_CLASS[tone])} />
-          {label} {count}
+  const waiting = session.links.filter(linkNeedsYou).length;
+  const items = [...groups].map(([label, { icon, count }]) => (
+    <span
+      key={label}
+      className='inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap'
+    >
+      <StatusIcon icon={icon} className='size-3' />
+      {label} {count}
+    </span>
+  ));
+  if (nowrap)
+    return (
+      <span className='text-muted-foreground flex min-w-0 items-center gap-3 text-xs'>
+        <span className='flex min-w-0 flex-1 items-center gap-x-3 overflow-hidden'>
+          {items}
         </span>
-      ))}
+        {waiting > 0 && <WaitingCount count={waiting} />}
+      </span>
+    );
+  return (
+    <span className='text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs'>
+      {items}
+      {waiting > 0 && <WaitingCount count={waiting} />}
     </span>
   );
 }
@@ -675,7 +750,6 @@ function Details({
   const { t, i18n } = useTranslation();
   const decide = useDecideLinks(session.id);
   const toaster = useToaster();
-  const facts = sessionFacts(session);
   const context = session.state?.context;
   const used = usage(items);
   const mode = modeName(session);
@@ -713,14 +787,10 @@ function Details({
           <p className='text-muted-foreground text-xs'>{t('links.empty')}</p>
         ) : (
           <>
+            {/* The work at a glance: its bar, then its statuses on one line. */}
             <div className='flex flex-col gap-1.5'>
               <LinkBar links={session.links} className='h-2.5 w-full' />
-              <div className='text-muted-foreground flex justify-between gap-2 text-xs'>
-                <span className='text-foreground font-medium'>
-                  {facts.group}
-                </span>
-                <Legend session={session} />
-              </div>
+              <Legend session={session} nowrap />
             </div>
             <ul className='flex flex-col gap-2'>
               {session.links.map((link) => (
@@ -728,9 +798,19 @@ function Details({
                   key={`${link.kind}:${link.refId}`}
                   className='bg-card flex flex-col gap-1.5 rounded-lg border px-3 py-2.5'
                 >
+                  {/* The title on its own line; below, the key, and the status at the right, as every card has it. */}
+                  <LinkName link={link} title className='font-medium' />
                   <div className='flex min-w-0 items-center gap-2'>
-                    <LinkName link={link} className='font-medium' />
-                    {link.status && <StatusPill status={link.status} />}
+                    {link.key && (
+                      <span className='text-muted-foreground font-mono text-xs'>
+                        {link.key}
+                      </span>
+                    )}
+                    {link.status && (
+                      <span className='ml-auto'>
+                        <StatusPill status={link.status} compact />
+                      </span>
+                    )}
                   </div>
                   {link.startable && session.archivedAt === null && (
                     <div className='text-muted-foreground flex items-center gap-2 text-[11px]'>
@@ -769,10 +849,13 @@ function Details({
         )}
       </DetailSection>
       <DetailSection title={t('session.about')}>
-        <dl className='grid grid-cols-[4rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-xs'>
+        <dl className='grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-2 text-xs [&>dt]:whitespace-nowrap [&>dd]:min-w-0 [&>dd]:break-words'>
           <dt className='text-muted-foreground'>{t('session.computer')}</dt>
           <dd className='flex min-w-0 items-center gap-1.5'>
-            <span className='truncate'>
+            <span
+              className='truncate'
+              title={computer?.name ?? t('session.removedComputer')}
+            >
               {computer?.name ?? t('session.removedComputer')}
             </span>
             <span
@@ -890,7 +973,7 @@ function DetailSection({
 }): ReactElement {
   return (
     <section className='flex flex-col gap-2.5 border-b px-5 py-4'>
-      <h3 className='flex items-center gap-1.5 text-xs font-semibold'>
+      <h3 className='flex items-center gap-1.5 text-sm font-semibold'>
         {title}
       </h3>
       {children}

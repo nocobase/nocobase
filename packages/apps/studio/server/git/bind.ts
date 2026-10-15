@@ -21,7 +21,8 @@ import type {
 import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
 
 import type { StudioInboxPort } from '../inbox/port.js';
-import { IN_REVIEW } from './cards.js';
+import { findPullRequestById } from './store.js';
+import { IN_REVIEW, settleMergeCards } from './cards.js';
 import {
   createPullRequestEvents,
   createRepoEvents,
@@ -134,7 +135,9 @@ export function bindStudioGit(deps: StudioGitBindDeps): {
       const work =
         status.to === IN_REVIEW
           ? flow.requestMerges(event.issueId)
-          : status.from === IN_REVIEW
+          : status.from === IN_REVIEW ||
+              status.to === 'done' ||
+              status.to === 'cancelled'
             ? flow.withdrawMerges(event.issueId)
             : null;
       work?.catch((error: unknown) =>
@@ -143,6 +146,26 @@ export function bindStudioGit(deps: StudioGitBindDeps): {
           error,
         ),
       );
+    }),
+  );
+  releases.push(
+    events.on(async (event) => {
+      if (event.type !== 'unlinked') return;
+      const port = deps.inbox();
+      if (port) {
+        const pr = await findPullRequestById(
+          deps.projects().tx.read(),
+          event.pullRequestId,
+        );
+        await settleMergeCards(
+          port,
+          event.pullRequestId,
+          [event.issueId],
+          pr?.state === 'merged' || pr?.state === 'closed'
+            ? pr.state
+            : 'withdrawn',
+        );
+      }
     }),
   );
   return {

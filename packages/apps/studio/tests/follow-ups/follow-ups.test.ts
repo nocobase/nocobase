@@ -369,11 +369,19 @@ describe('following', () => {
     await move(review, 'in_review');
     const read = () =>
       h.request('GET', '/followUps/following', { user: 'alice' });
-    // By default, their in-review and blocked issues.
-    expect((await read()).body.data).toEqual({ issueIds: [review.id], max: 5 });
+    // By default, their in-review and blocked issues, not yet their choice.
+    expect((await read()).body.data).toEqual({
+      issueIds: [review.id],
+      max: 5,
+      stored: false,
+    });
     const theirs = await create('bob', { title: 'Theirs' });
     expect((await follow([theirs.id])).status).toBe(200);
-    expect((await read()).body.data).toEqual({ issueIds: [theirs.id], max: 5 });
+    expect((await read()).body.data).toEqual({
+      issueIds: [theirs.id],
+      max: 5,
+      stored: true,
+    });
     expect((await h.request('GET', '/followUps/following')).status).toBe(401);
     h.roles.set('bob', 'none');
     expect(
@@ -438,14 +446,26 @@ describe('following one issue', () => {
     expect((await overview()).following).toEqual([second.id]);
   });
 
-  it('starts from the default list, and makes it the caller’s own once they change it', async () => {
+  it('follows only what the caller stars, the default list never becoming a choice by itself', async () => {
     const review = await create('alice', { title: 'Ready' });
     await move(review, 'in_review');
     const other = await create('alice', { title: 'Other' });
+    expect((await overview()).following).toEqual([review.id]);
     expect((await star('follow', other.id)).body.data).toEqual({
-      issueIds: [review.id, other.id],
+      issueIds: [other.id],
     });
     expect((await overview()).followingStored).toBe(true);
+  });
+
+  it('keeps the other defaults when the caller unfollows one of them', async () => {
+    const first = await create('alice', { title: 'First' });
+    await move(first, 'in_review');
+    const second = await create('alice', { title: 'Second' });
+    await move(second, 'blocked');
+    expect((await star('unfollow', first.id)).body.data).toEqual({
+      issueIds: [second.id],
+    });
+    expect((await overview()).following).toEqual([second.id]);
   });
 
   it('refuses a sixth issue with what to do instead', async () => {

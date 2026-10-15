@@ -133,6 +133,7 @@ export const gitEnUS = {
       'The app is installed: Studio reaches its repositories now.',
     appFailed: 'The app could not be set up ({{code}}).',
     emptyTitle: 'No code host connected yet',
+    loadFailed: 'Could not load code host connections.',
     emptyDescription:
       'Connect a code host so projects can link repositories, agents open pull requests and checks keep issues current.',
     emptyDescriptionReadOnly:
@@ -671,6 +672,7 @@ export const gitZhCN: typeof gitEnUS = {
     installedNotice: 'App 已安装：Studio 现在可以访问它的仓库。',
     appFailed: '无法完成 App 设置（{{code}}）。',
     emptyTitle: '还没有连接代码托管平台',
+    loadFailed: '无法读取代码托管平台连接。',
     emptyDescription:
       '连接代码托管平台后，项目可以关联仓库，Agent 可以开启 Pull request，检查结果也会同步到事项。',
     emptyDescriptionReadOnly:

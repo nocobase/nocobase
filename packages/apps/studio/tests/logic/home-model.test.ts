@@ -79,43 +79,37 @@ describe('home composer', () => {
 });
 
 describe('the agent setup prompt', () => {
-  /** A `t` that fills `{{name}}` from the options, as i18next does without escaping. */
-  const translator =
-    (prompt: string) => (_key: string, options: Record<string, unknown>) =>
-      prompt.replace(/\{\{(\w+)\}\}/gu, (_, name: string) =>
-        String(options[name]),
-      );
-
-  it('installs the CLI with the token, signs in to the server and points at nb-studio docs', () => {
-    const server = 'https://studio.example.com/app';
-    expect(cliInstallLine(server, 'fgdl_abc')).toBe(
-      'curl -fsSL https://studio.example.com/app/api/agents/dist/installScript | sh -s -- --token fgdl_abc',
-    );
-    const zh = agentSetupPrompt(
-      translator(zhCN.home.agentSetup.prompt),
-      server,
-      'fgdl_abc',
-    );
-    expect(zh).toBe(
-      [
-        '请帮我安装并配置 NocoBase Studio CLI，用来管理 NocoBase Studio（https://studio.example.com/app）的项目和任务：',
-        '1. `nb-studio` 需要 Node.js 24 或更高版本及 npm：先用 `node --version` 检查，缺少或版本过低时先征得我同意再安装；然后运行 `curl -fsSL https://studio.example.com/app/api/agents/dist/installScript | sh -s -- --token fgdl_abc` 安装 `nb-studio`；',
-        '2. 运行 `nb-studio login --server https://studio.example.com/app`，把它显示的登录地址和验证码告诉我，等待我在浏览器中确认登录；',
-        '3. 登录成功后运行 `nb-studio whoami` 确认身份和权限，再运行 `nb-studio docs` 了解可用命令；',
-        '4. 之后按我的要求通过 `nb-studio` 操作，不要直接调用 HTTP 接口。',
-      ].join('\n'),
-    );
-    const en = agentSetupPrompt(
-      translator(enUS.home.agentSetup.prompt),
-      server,
-      'fgdl_abc',
-    );
-    expect(en).toContain('sh -s -- --token fgdl_abc');
-    expect(en).toContain(
-      'nb-studio login --server https://studio.example.com/app',
-    );
-    expect(en).toContain('nb-studio docs');
-    expect(en).toContain('Node.js 24 or newer with npm');
-    expect(en).not.toMatch(/api key/iu);
-  });
+  for (const locale of [enUS, zhCN]) {
+    it(`shares the common instructions and appends computer setup in ${locale === enUS ? 'English' : 'Chinese'}`, () => {
+      const t = (key: string, options: Record<string, unknown>) => {
+        const template = key.endsWith('.computerPrompt')
+          ? locale.home.agentSetup.computerPrompt
+          : locale.home.agentSetup.prompt;
+        return template.replace(/\{\{(\w+)\}\}/gu, (_, name: string) =>
+          String(options[name]),
+        );
+      };
+      const server = 'https://studio.example.com/app';
+      const local = agentSetupPrompt(t, server, 'fgdl_abc');
+      const computer = agentSetupPrompt(t, server, 'fgdl_abc', {
+        purpose: 'computer',
+      });
+      expect(computer.startsWith(`${local}\n`)).toBe(true);
+      expect(local).toContain(cliInstallLine(server, 'fgdl_abc'));
+      for (const command of [
+        'node --version',
+        `nb-studio login --server ${server}`,
+        'nb-studio whoami',
+        'nb-studio docs',
+        'nb-studio skills install',
+      ]) {
+        expect(local).toContain(command);
+      }
+      expect(local).not.toContain('acp');
+      expect(computer).toContain('nb-studio acp service install');
+      expect(computer).toContain('nb-studio acp start');
+      expect(computer).not.toMatch(/npm install -g|api key/iu);
+      expect(computer).not.toContain('{{');
+    });
+  }
 });

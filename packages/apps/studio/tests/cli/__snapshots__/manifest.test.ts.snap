@@ -169,7 +169,7 @@ issue attachment download <file> -> GET /api/projects/attachments/{attachmentId}
 issue attachment list <issue> [--comments] -> GET /api/projects/issues/{issueId}/attachments (person,run) pm.issues/view
 issue comment add <issue> [--content! --reply-to --attach] -> POST /api/projects/issues/{issueId}/comments (person,run) pm.issues/comment
 issue comment list <issue> [--limit --page-token --since] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
-issue create [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
+issue create [--title --attachment-ids --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
 issue delete <issue> -> DELETE /api/projects/issues/{issueId} (person,run) pm.issues/delete confirm
 issue dependency add <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/dependencies (person,run) pm.issues/edit
 issue dependency remove <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/removeDependency (person,run) pm.issues/edit
@@ -262,6 +262,8 @@ project-manager get -> GET /api/projectManager (person)
 project-manager start <issue> -> POST /api/projectManager/issues/{issueId}/start (person)
 project-manager update [--name --description --delegation-queue-timeout-seconds --fallback-after-seconds --first-choice --fallback --principles --comment-run-limit] -> PATCH /api/projectManager (person)
 project create <name> [--description --visibility --status --priority --lead --start-date --due-date] -> POST /api/projects (person) pm.projects/create
+project default-skills get -> GET /api/projectDefaultSkills (person)
+project default-skills set [--skills!] -> PUT /api/projectDefaultSkills (person)
 project delete <project> -> DELETE /api/projects/{projectId} (person) pm.projects/delete confirm
 project get <project> -> GET /api/projects/{projectId} (person,run) pm.projects/view
 project invitation create [--email! --project] -> POST /api/projects/invitations (person)
@@ -298,9 +300,11 @@ release promote <app> <release> [--to! --label] -> POST /api/releases/apps/{appI
 release update <app> <release> [--label!] -> PATCH /api/releases/apps/{appId}/releases/{releaseId} (person) rel.apps/upload
 release upload [--app! --sha!@env --repository@env --file!] -> POST /api/builds/uploadTickets (person) rel.apps/upload
 release variables <app> <release> -> GET /api/releases/apps/{appId}/releases/{releaseId}/variables (person) rel.apps/view
+report agents [--days] -> GET /api/reports/agents (person)
 report attention -> GET /api/reports/attention (person)
-report dashboard [--days] -> GET /api/reports/dashboard (person)
+report delivery [--days] -> GET /api/reports/delivery (person)
 report metrics [--from --to --project] -> GET /api/reports/metrics (person,run) studio.reports/read
+report projects [--days] -> GET /api/reports/projects (person)
 report usage [--from --to --project --group-by --agent --user] -> GET /api/reports/usage (person,run) studio.reports/read
 run brief <run> -> GET /api/agents/runs/{runId}/brief (person)
 run cancel <run> -> POST /api/agents/runs/{runId}/cancel (person) confirm
@@ -329,6 +333,7 @@ service delete <service> -> DELETE /api/agents/services/{serviceName} (person) c
 service discover [--service --provider --base-url --api-key] -> POST /api/agents/discoverModels (person)
 service list -> GET /api/agents/services (person)
 service update <service> [--title --base-url --api-key --models --enabled --file] -> PATCH /api/agents/services/{serviceName} (person)
+session work <session> -> GET /api/agentSessions/sessions/{sessionId}/work (person)
 skill attachment get <kind> <scope> -> GET /api/agents/skillAttachments/{scopeKind}/{scopeId} (person)
 skill attachment set <kind> <scope> [--skills!] -> PUT /api/agents/skillAttachments/{scopeKind}/{scopeId} (person)
 skill create [--content --files --file] -> POST /api/agents/skills (person)
@@ -391,7 +396,7 @@ issue attachment download <file> -> GET /api/projects/attachments/{attachmentId}
 issue attachment list <issue> [--comments] -> GET /api/projects/issues/{issueId}/attachments (person,run) pm.issues/view
 issue comment add <issue> [--content! --reply-to --attach] -> POST /api/projects/issues/{issueId}/comments (person,run) pm.issues/comment
 issue comment list <issue> [--limit --page-token --since] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
-issue create [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
+issue create [--title --attachment-ids --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
 issue delete <issue> -> DELETE /api/projects/issues/{issueId} (person,run) pm.issues/delete confirm
 issue dependency add <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/dependencies (person,run) pm.issues/edit
 issue dependency remove <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/removeDependency (person,run) pm.issues/edit

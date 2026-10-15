@@ -21,6 +21,7 @@ import type { Role } from '../../shared/access.ts';
 
 const state = vi.hoisted(() => ({
   update: vi.fn(),
+  roles: vi.fn(),
   error: vi.fn(),
   success: vi.fn(),
 }));
@@ -36,7 +37,7 @@ const role: Role = {
   holderCount: 0,
 };
 const api = {
-  roles: () => Promise.resolve([role]),
+  roles: state.roles,
   catalog: () => Promise.resolve({ businesses: [], settings: [] }),
   updateRole: state.update,
 };
@@ -90,6 +91,7 @@ async function setup() {
 }
 
 beforeEach(() => {
+  state.roles.mockReset().mockResolvedValue([role]);
   state.update.mockReset();
   state.error.mockReset();
   state.success.mockReset();
@@ -112,14 +114,23 @@ it('asks before leaving a changed name, preserves a cancellation, and leaves aft
 });
 
 it('clears the saved baseline immediately without waiting for the roles refetch', async () => {
-  state.update.mockResolvedValue({ ...role, title: 'Saved role' });
+  const updated = { ...role, title: 'Saved role' };
+  state.update.mockResolvedValue(updated);
   const name = await setup();
+  let release!: (roles: Role[]) => void;
+  state.roles.mockImplementation(
+    () =>
+      new Promise<Role[]>((resolve) => {
+        release = resolve;
+      }),
+  );
   fireEvent.change(name, { target: { value: 'Saved role ' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save', exact: true }));
   await waitFor(() => expect(name).toHaveValue('Saved role'));
   fireEvent.click(screen.getByText('Leave role'));
   expect(await screen.findByText('Role list destination')).toBeVisible();
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  await act(async () => release([updated]));
 });
 
 it('retains a failed save and protects leaving', async () => {
@@ -150,6 +161,7 @@ it('keeps edits made during a successful request dirty', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Save', exact: true }));
   await waitFor(() => expect(state.update).toHaveBeenCalledOnce());
   fireEvent.change(name, { target: { value: 'Next unsaved edit' } });
+  state.roles.mockResolvedValue([{ ...role, title: 'Submitted role' }]);
   await act(async () => finish({ ...role, title: 'Submitted role' }));
   expect(name).toHaveValue('Next unsaved edit');
   fireEvent.click(screen.getByText('Leave role'));

@@ -19,6 +19,7 @@ import type {
   FollowUpIssue,
   FollowUpsView,
 } from '../../shared/follow-ups.js';
+import { taskGroupKeys } from '../issues/groups/api.js';
 import { followUpsKeys, mergeFollowUpRows } from './model.js';
 
 const OVERVIEW_POLL_MS = 60_000;
@@ -115,11 +116,15 @@ export function useFollowIssue(
       if (previousFollowing)
         client.setQueryData<FollowingState>(followUpsKeys.following, {
           ...previousFollowing,
+          // Following starts from what the viewer chose, never from the default list; unfollowing keeps the rest.
           issueIds: follow
-            ? previousFollowing.issueIds.includes(issueId)
-              ? previousFollowing.issueIds
-              : [...previousFollowing.issueIds, issueId]
+            ? previousFollowing.stored
+              ? previousFollowing.issueIds.includes(issueId)
+                ? previousFollowing.issueIds
+                : [...previousFollowing.issueIds, issueId]
+              : [issueId]
             : previousFollowing.issueIds.filter((id) => id !== issueId),
+          stored: true,
         });
       if (previous) {
         const following = follow
@@ -147,7 +152,11 @@ export function useFollowIssue(
     },
     // The overview's key holds the star's, so both are read again.
     onSettled: () =>
-      client.invalidateQueries({ queryKey: followUpsKeys.overview }),
+      Promise.all([
+        client.invalidateQueries({ queryKey: followUpsKeys.overview }),
+        // The issue lists' follow group (`../issues/groups/api.ts`).
+        client.invalidateQueries({ queryKey: taskGroupKeys.all }),
+      ]),
   });
 }
 

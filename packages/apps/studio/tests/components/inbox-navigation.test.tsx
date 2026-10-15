@@ -117,7 +117,7 @@ describe('inbox navigation', () => {
     const link = screen.getByRole('link', { name: 'Inbox' });
     expect(link).toHaveAttribute('href', '/inbox');
     expect(link).toHaveAttribute('aria-current', 'page');
-    expect(screen.queryByTestId('studio-inbox-badge')).toBeNull();
+    expect(screen.queryByTestId('studio-nav-badge')).toBeNull();
     expect(document.title).toBe('Studio');
   });
 
@@ -132,8 +132,8 @@ describe('inbox navigation', () => {
       Object.assign(state, { decision, unread, plans });
       await setup();
       expect(screen.getByRole('link', { name: label })).toBeVisible();
-      expect(screen.getByTestId('studio-inbox-badge')).toHaveTextContent(text);
-      expect(screen.getByTestId('studio-inbox-badge')).toHaveAttribute(
+      expect(screen.getByTestId('studio-nav-badge')).toHaveTextContent(text);
+      expect(screen.getByTestId('studio-nav-badge')).toHaveAttribute(
         'data-kind',
         kind,
       );
@@ -146,7 +146,7 @@ describe('inbox navigation', () => {
     state.decision = 1;
     const view = await setup();
     view.update({ collapsed: true });
-    expect(screen.getByTestId('studio-inbox-badge')).toHaveTextContent('1');
+    expect(screen.getByTestId('studio-nav-badge')).toHaveTextContent('1');
     expect(play).not.toHaveBeenCalled();
     state.decision = 2;
     view.update({ settings: true });
@@ -167,7 +167,7 @@ describe('inbox navigation', () => {
     expect(document.title).toBe('(4) Studio');
     state.unread = 0;
     view.update({});
-    expect(screen.queryByTestId('studio-inbox-badge')).toBeNull();
+    expect(screen.queryByTestId('studio-nav-badge')).toBeNull();
     state.chime = false;
     state.decision = 3;
     view.update({});
@@ -186,6 +186,6 @@ describe('inbox navigation', () => {
     expect(
       screen.getByRole('link', { name: '收件箱，120 项待处理' }),
     ).toBeVisible();
-    expect(screen.getByTestId('studio-inbox-badge')).toHaveTextContent('99+');
+    expect(screen.getByTestId('studio-nav-badge')).toHaveTextContent('99+');
   });
 });

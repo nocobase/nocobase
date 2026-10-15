@@ -15,6 +15,7 @@ import {
   projectsNoticesToken,
   projectsToken,
 } from '@nocobase/app-plugin-projects/server/tokens';
+import { loggingToken } from '@nocobase/app-server/logging';
 import type { Application } from '@nocobase/app-server/application';
 import {
   realtimeServiceToken,
@@ -30,15 +31,21 @@ import {
 import { bindRunnersNotices } from './runners.js';
 import { studioInboxPortToken } from './port.js';
 import { createProjectsNotices } from './projects.js';
+import { bindDecisionCleanup, createDecisionReconciler } from './reconcile.js';
 import { createStudioInbox } from './service.js';
 import { noticeIdentities } from './identities.js';
 import { createInboxSource } from '../agents/conversation/inbox.js';
-import { studioInboxSourceToken, studioInboxToken } from './token.js';
+import {
+  decisionReconcilerToken,
+  studioInboxSourceToken,
+  studioInboxToken,
+} from './token.js';
 import {
   reconcileFailedRunCards,
   watchFailedRunCards,
 } from '../agents/failed-run-cards.js';
 import { RUN_FAILED_FINAL } from '../agents/notices.js';
+import { PM_REALTIME_TOPIC } from '@nocobase/app-plugin-projects/shared/realtime';
 
 const DEFAULT_CHANNEL = 'inbox';
 
@@ -48,6 +55,25 @@ export default class StudioInboxProvider extends ServiceProvider<Application> {
   private releaseRunners?: () => void;
   private releaseFailedRuns?: () => Promise<void>;
   private reconciliation?: Promise<void>;
+  private releaseIssueDecisions?: () => void;
+
+  private reportDecisionError(error: unknown, decisionKey?: string): void {
+    const { container } = this.app;
+    if (container.has(loggingToken))
+      container
+        .resolve(loggingToken)
+        .getLogger('inbox')
+        .error(
+          { err: error, decisionKey },
+          'Studio could not reconcile an issue decision.',
+        );
+    else
+      console.error(
+        'Studio could not reconcile an issue decision.',
+        decisionKey,
+        error,
+      );
+  }
 
   private reconcileFailedRuns(issueId?: string): Promise<void> {
     const { container } = this.app;
@@ -96,9 +122,23 @@ export default class StudioInboxProvider extends ServiceProvider<Application> {
             ? resolver.resolve(inAppNotificationStoreToken)
             : null,
         channel: channel ?? DEFAULT_CHANNEL,
-        announce: (userId) =>
-          void this.topic?.publishFor(userId, { kind: 'studio.inbox.changed' }),
+        announce: (userId) => {
+          void this.topic?.publishFor(userId, { kind: 'studio.inbox.changed' });
+          // Public invalidation carries no issue, decision or recipient data; every subsequent read is authorized.
+          if (resolver.has(realtimeServiceToken))
+            resolver.resolve(realtimeServiceToken).publish(PM_REALTIME_TOPIC, {
+              kind: 'pm.changed',
+              domain: 'issues',
+            });
+        },
       }),
+    );
+    this.app.container.singleton(decisionReconcilerToken, (resolver) =>
+      createDecisionReconciler(
+        () => resolver.resolve(databaseManagerToken).connection(),
+        () => resolver.resolve(studioInboxToken),
+        (error, decisionKey) => this.reportDecisionError(error, decisionKey),
+      ),
     );
     this.app.container.singleton(studioInboxSourceToken, (resolver) =>
       createInboxSource({
@@ -118,6 +158,15 @@ export default class StudioInboxProvider extends ServiceProvider<Application> {
         async (notice) => {
           if (notice.type === RUN_FAILED_FINAL)
             await this.reconcileFailedRuns(notice.issue.id);
+          if (
+            notice.kind === 'decision' &&
+            ['agent_blocked', 'run_failed_final', 'owner_handoff'].includes(
+              notice.type,
+            )
+          )
+            await resolver
+              .resolve(decisionReconcilerToken)
+              .issue(notice.issue.id);
         },
       ),
     );
@@ -150,6 +199,12 @@ export default class StudioInboxProvider extends ServiceProvider<Application> {
         (error) =>
           console.error('Studio could not settle failed-run cards.', error),
       );
+    if (!this.releaseIssueDecisions && container.has(projectsToken))
+      this.releaseIssueDecisions = bindDecisionCleanup(
+        container.resolve(projectsToken),
+        container.resolve(decisionReconcilerToken),
+        (error) => this.reportDecisionError(error),
+      );
     this.reconciliation ??= this.reconcileFailedRuns().catch((error) =>
       console.error(
         'Studio could not reconcile failed-run cards at startup.',
@@ -160,6 +215,8 @@ export default class StudioInboxProvider extends ServiceProvider<Application> {
   }
 
   public override async shutdown(): Promise<void> {
+    this.releaseIssueDecisions?.();
+    this.releaseIssueDecisions = undefined;
     this.releaseRunners?.();
     this.releaseRunners = undefined;
     await this.releaseFailedRuns?.();
