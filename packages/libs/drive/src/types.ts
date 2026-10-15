@@ -19,10 +19,15 @@ export interface S3DriveDiskConfig {
   forcePathStyle: boolean;
   supportsACL: boolean;
   encryption?: string;
-  credentials: {
-    accessKeyId?: string;
-    secretAccessKey?: string;
-  };
+  credentials:
+    | {
+        accessKeyId?: string;
+        secretAccessKey?: string;
+      }
+    | {
+        provider: 'aliyun-ecs-ram-role';
+        roleName?: string;
+      };
   visibility: DriveVisibility;
 }
 
