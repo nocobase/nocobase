@@ -205,6 +205,8 @@ export interface PhysicalSchemaInspection {
 export interface PhysicalCollectionSchema extends PhysicalCollectionSummary {
   /** SQLite STRICT table status; undefined for views or unknown status. */
   readonly strict?: boolean;
+  /** Traditional inheritance children are queried with this table but not covered by its unique keys. */
+  readonly hasInheritedChildren?: boolean;
   readonly viewDefinition?: string;
   readonly columns: readonly PhysicalColumnSchema[];
   readonly primaryKey?: PhysicalPrimaryKeySchema;

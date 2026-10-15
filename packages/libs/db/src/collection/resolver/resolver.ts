@@ -130,6 +130,7 @@ export function resolveCollection(
     db: pruneUndefined({
       schema: input.physical.schema,
       strict: input.physical.strict,
+      hasInheritedChildren: input.physical.hasInheritedChildren,
       comment: input.physical.comment,
       physicalKind:
         input.physical.kind === 'partitionedTable' ||

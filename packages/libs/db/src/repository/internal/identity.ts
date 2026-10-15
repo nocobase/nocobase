@@ -24,6 +24,8 @@ export function unchangedFilterSelector(
   filter: FilterAst,
   values: RepositoryRecord,
 ): UniqueSelector | undefined {
+  // A parent's unique keys do not constrain its traditional inheritance children.
+  if (collection.db?.hasInheritedChildren) return undefined;
   const scalar = (node: FilterNode): boolean =>
     node.kind === 'group'
       ? node.items.every(scalar)

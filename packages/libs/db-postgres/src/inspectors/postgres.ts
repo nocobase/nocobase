@@ -73,6 +73,7 @@ interface PostgresCollectionRow {
   readonly relkind: string;
   readonly comment: string | null;
   readonly view_definition: string | null;
+  readonly has_inherited_children?: boolean;
 }
 
 interface PostgresColumnRow {
@@ -210,6 +211,7 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
       schema: collection.schema,
       tableName: collection.table_name,
       kind: postgresKind(collection.relkind),
+      hasInheritedChildren: collection.has_inherited_children || undefined,
       comment: optionalString(collection.comment),
       viewDefinition: optionalString(collection.view_definition),
       columns: rawColumns.map((column) => {
@@ -400,6 +402,12 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
             n.nspname as schema,
             c.relname as table_name,
             c.relkind,
+            exists (
+              select 1
+              from pg_catalog.pg_inherits i
+              join pg_catalog.pg_class child on child.oid = i.inhrelid
+              where i.inhparent = c.oid and not child.relispartition
+            ) as has_inherited_children,
             pg_catalog.obj_description(c.oid, 'pg_class') as comment,
             case when c.relkind in ('v', 'm')
               then pg_catalog.pg_get_viewdef(c.oid, true)
