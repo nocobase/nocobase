@@ -141,6 +141,8 @@ export interface TaskDetailPaneProps {
   readonly onGoto?: (issueId: string) => void;
   /** At the bottom instead of the comment box, such as the phone's action bar. */
   readonly footer?: (detail: IssueDetail, update: IssueUpdate) => ReactNode;
+  /** What the viewer follows, as the list beside the pane read it; the follow star reads it itself without. */
+  readonly following?: readonly string[] | undefined;
   readonly className?: string;
 }
 
@@ -210,13 +212,8 @@ function LiveTask({
   const pageActions = useIssuePageActions(detail);
   const runs = useLiveIssue(detail, issueId, detailKey, 0);
   const main = useIssueMainState(pageActions);
-  const prs = useIssuePullRequests(detail.id, detail.revision).data;
+  const prs = useIssuePullRequests(detail.id).data;
   const markSeen = useMarkSeen();
-  const progressRefresh = [
-    detail.revision,
-    detail.statusKey,
-    ...runs.map((run) => `${run.id}:${run.status}`),
-  ].join('|');
   const entry = useMemo(
     () =>
       ({
@@ -287,7 +284,6 @@ function LiveTask({
                 <IssueSummary
                   issue={detail}
                   update={update}
-                  refresh={progressRefresh}
                   runsBase={props.issuePath}
                   // The key and the status menu are in the top row.
                   meta={false}
@@ -713,6 +709,7 @@ function PaneTop({
   onClose,
   leading,
   update,
+  following,
 }: TaskDetailPaneProps & {
   readonly detail: IssueDetail | null;
   readonly pageActions?: IssuePageActions;
@@ -782,6 +779,7 @@ function PaneTop({
         {detail ? (
           <FollowToggle
             issueId={detail.id}
+            following={following}
             // Borderless and quiet beside the title; a narrow panel shows the star alone.
             className={cn(
               'border-transparent bg-transparent font-normal text-muted-foreground shadow-none hover:text-foreground',

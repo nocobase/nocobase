@@ -135,6 +135,7 @@ export function PhoneTaskList({
                 issueSearch={`?${params.toString()}`}
                 tab={tab}
                 onTabChange={setTab}
+                following={list.query.data?.following}
                 leading={
                   <Button
                     variant='ghost'
@@ -216,7 +217,7 @@ function WaitActions({
 }): ReactElement {
   const { t } = useTranslation();
   const viewer = useViewer();
-  const prs = useIssuePullRequests(detail.id, detail.revision).data;
+  const prs = useIssuePullRequests(detail.id).data;
   const canEdit = canEditIssues(viewer);
   const row = 'flex items-center gap-2 [&>*]:h-11 [&>*]:flex-1';
   if (wait === 'accept') {

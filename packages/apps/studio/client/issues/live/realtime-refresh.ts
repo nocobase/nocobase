@@ -3,6 +3,12 @@
  * (`PmChangeEvent.issueIds`, or the runs on them, `StudioIssueRunsEvent`) refreshes only what is shown of those issues;
  * anything else refreshes every projection. My follow-ups reads only the rows of the named issues and merges them in
  * (`mergeFollowUpRows`), a burst of announcements at once, and reads the whole overview when the list itself changed.
+ * What the viewer follows is read again only for an announcement naming nothing and on reconnect: only an issue leaving
+ * their sight changes it besides their own following and unfollowing. The grouped task lists keep themselves current
+ * (`../groups/live.ts`), mounted here once for the whole app.
+ *
+ * Studio's pages read through Refine's query client, which the projects plugin's provider does not refresh, so the
+ * issues' own reads are refreshed here.
  */
 import {
   realtimeClientToken,
@@ -24,7 +30,8 @@ import type {
   FollowUpsView,
 } from '../../../shared/follow-ups.js';
 import { readFollowUpRows } from '../../follow-ups/api.js';
-import { mergeFollowUpRows } from '../../follow-ups/model.js';
+import { followUpsKeys, mergeFollowUpRows } from '../../follow-ups/model.js';
+import { useTaskGroupsLive } from '../groups/api.js';
 import { STUDIO_INBOX_TOPIC } from '../../../shared/inbox.js';
 import {
   STUDIO_ISSUE_RUNS_TOPIC,
@@ -39,7 +46,7 @@ const ISSUE_PROJECTIONS = [
   ['studio', 'ownerHandoff'],
 ] as const;
 
-const FOLLOW_UPS = ['pm', 'issues', 'followUps'] as const;
+const FOLLOW_UPS = followUpsKeys.overview;
 
 /** Whether My follow-ups shows one of `issueIds`, or has nothing loaded to tell. */
 function followUpsShow(
@@ -70,6 +77,7 @@ export function useStudioIssueRefresh(): void {
   const realtime = useService(realtimeClientToken);
   const api = useApiClient();
   const client = useQueryClient();
+  useTaskGroupsLive();
   useEffect(
     () =>
       subscribeIssueRefresh(realtime, client, (issueIds) =>
@@ -99,7 +107,7 @@ export function followUpsRefresh(
   // One read of rows at a time, so an older answer never lands after a newer one.
   let busy = false;
   const readAll = () =>
-    void client.invalidateQueries({ queryKey: [...FOLLOW_UPS] });
+    void client.invalidateQueries({ queryKey: [...FOLLOW_UPS], exact: true });
 
   async function flush(): Promise<void> {
     const issueIds = new Set(named);
@@ -192,6 +200,7 @@ export function refreshIssues(
   else
     void client.invalidateQueries({
       queryKey: FOLLOW_UPS,
+      exact: true,
       predicate: (query) =>
         followUpsShow(query.state.data as FollowUpsView | undefined, issueIds),
     });
@@ -206,18 +215,25 @@ export function subscribeIssueRefresh(
   const followUps = readFollowUps
     ? followUpsRefresh(client, readFollowUps)
     : undefined;
-  const refresh = () => {
+  /** Everything shown of every issue; with `following`, what the viewer follows too. */
+  const refresh = (following: boolean) => {
     for (const queryKey of [
       // Refine owns the page cache; the projects provider refreshes a separate client.
       ['pm', 'issue'],
       ...ISSUE_PROJECTIONS,
-      ...(followUps ? [] : [FOLLOW_UPS]),
     ])
       void client.invalidateQueries({ queryKey: [...queryKey] });
-    followUps?.all();
+    if (following)
+      void client.invalidateQueries({
+        queryKey: followUpsKeys.following,
+        exact: true,
+      });
+    if (followUps) followUps.all();
+    else
+      void client.invalidateQueries({ queryKey: [...FOLLOW_UPS], exact: true });
   };
   const stops = [
-    realtime.onOpen(refresh),
+    realtime.onOpen(() => refresh(true)),
     realtime.subscribe<unknown>(PM_REALTIME_TOPIC, ({ payload }) => {
       if (
         typeof payload !== 'object' ||
@@ -228,9 +244,9 @@ export function subscribeIssueRefresh(
         return;
       const named = announcedIssueIds(payload);
       if (named) refreshIssues(client, named, followUps);
-      else refresh();
+      else refresh(true);
     }),
-    realtime.subscribe(STUDIO_INBOX_TOPIC, refresh),
+    realtime.subscribe(STUDIO_INBOX_TOPIC, () => refresh(false)),
     realtime.subscribe<StudioIssueRunsEvent>(
       STUDIO_ISSUE_RUNS_TOPIC,
       (event) => {
