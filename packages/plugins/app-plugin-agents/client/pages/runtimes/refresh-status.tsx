@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
-import type { RunnerSummary } from '../../../shared/runners.js';
+import type { RunnerListItem } from '../../../shared/runners.js';
 import { agentsKeys } from '../../api/keys.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useNotify } from '../../hooks/use-notify.js';
@@ -12,7 +12,7 @@ export function RefreshStatus({
   runner,
   menu = false,
 }: {
-  readonly runner: RunnerSummary;
+  readonly runner: RunnerListItem;
   readonly menu?: boolean;
 }): ReactElement | null {
   const { t } = useTranslation();
@@ -22,12 +22,14 @@ export function RefreshStatus({
   const refresh = useMutation({
     mutationFn: () => api.refreshRunnerStatus(runner.id),
     onSuccess: (saved) => {
-      queryClient.setQueryData<RunnerSummary[]>(agentsKeys.runners, (runners) =>
-        runners?.map((item) =>
-          item.id === saved.id
-            ? { ...item, toolsRefreshRequestId: saved.toolsRefreshRequestId }
-            : item,
-        ),
+      queryClient.setQueryData<RunnerListItem[]>(
+        agentsKeys.runners,
+        (runners) =>
+          runners?.map((item) =>
+            item.id === saved.id
+              ? { ...item, toolsRefreshRequestId: saved.toolsRefreshRequestId }
+              : item,
+          ),
       );
     },
     onError: (error) => notify.error(error),
