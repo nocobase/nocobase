@@ -1,6 +1,14 @@
 /** Consent decisions own their server: concurrent tests may change the shared manager's model choices. */
-import type { Page } from '@playwright/test';
-import { Api, expect, signIn, test, unique } from './support/fixtures.ts';
+import type { Browser, Page } from '@playwright/test';
+import {
+  Api,
+  apiAs,
+  expect,
+  signIn,
+  test,
+  unique,
+} from './support/fixtures.ts';
+import type { ServerState } from './support/server.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
 import type { IssueProgress } from '../shared/project-manager.ts';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
@@ -14,17 +22,36 @@ test.use({
 });
 test.setTimeout(240_000);
 
-async function createRequester(api: Api) {
+test.beforeEach(async ({ api, context }) => {
+  // Keep the owner's preferences and personal runner identity private to each case.
+  const owner = {
+    email: `consent-owner-${unique()}@example.com`,
+    password: 'consent-owner-e2e-password',
+  };
+  await api.post('users', {
+    ...owner,
+    name: 'Consent test owner',
+    roleScopes: { studio: ['admin'] },
+  });
+  await signIn(context, owner);
+});
+
+async function createRequester(browser: Browser, studio: ServerState) {
   // Preferences persist on the account; never change the demo person used by parallel sign-in tests.
   const credentials = {
     email: `consent-requester-${unique()}@example.com`,
     password: 'consent-e2e-password',
   };
-  await api.post('users', {
-    ...credentials,
-    name: 'Lisa Nguyen',
-    roleScopes: { studio: ['contributor'] },
-  });
+  const admin = await apiAs(browser, 'admin', studio);
+  try {
+    await admin.api.post('users', {
+      ...credentials,
+      name: 'Lisa Nguyen',
+      roleScopes: { studio: ['contributor'] },
+    });
+  } finally {
+    await admin.close();
+  }
   return credentials;
 }
 
@@ -42,7 +69,11 @@ test('comment work shares the decision card and runs only on an authorized ident
     viewport: { width: 1440, height: 900 },
     locale: 'en-US',
   });
-  await signIn(requesterContext, await createRequester(api), studio);
+  await signIn(
+    requesterContext,
+    await createRequester(browser, studio),
+    studio,
+  );
   const requester = new Api(requesterContext.request, studio);
   const requesterPage = await requesterContext.newPage();
   await requester.patch('users/me/preferences', { locale: 'en-US' });
@@ -97,7 +128,7 @@ test('comment work shares the decision card and runs only on an authorized ident
     expect((await progress(teamIssue)).personalRunnerRequests).toEqual([]);
     await open(page, `/issues/${teamIssue.identifier}/runs/${teamRun.runId}`);
     await expect(
-      page.getByText('Running as Super Admin', { exact: false }).first(),
+      page.getByText('Running as Consent test owner', { exact: false }).first(),
     ).toBeVisible();
     await shot('team-direct');
     await team.complete(
@@ -129,7 +160,26 @@ test('comment work shares the decision card and runs only on an authorized ident
     expect(await laptop.probe()).toEqual([]);
     await open(page, `/issues/${personalIssue.identifier}`);
     const card = page.getByRole('region', { name: 'Needs you', exact: true });
-    await expect(card).toHaveCount(1);
+    try {
+      await expect(card).toHaveCount(1);
+    } catch (error) {
+      const preferences = await api.get<{ locale?: string }>(
+        'users/me/preferences',
+      );
+      await test.info().attach('consent-decision-state', {
+        contentType: 'application/json',
+        body: JSON.stringify({
+          locale: preferences.locale,
+          regionNames: await page.evaluate<string[]>(
+            `Array.from(document.querySelectorAll('[role="region"]')).map((region) => region.getAttribute('aria-label')).filter(Boolean)`,
+          ),
+          canDecide: (
+            await progress(personalIssue)
+          ).personalRunnerRequests?.map((request) => request.canDecide),
+        }),
+      });
+      throw error;
+    }
     await expect(card.getByText(original)).toBeVisible();
     await expect(
       card.getByRole('button', { name: 'Confirm', exact: true }),
@@ -193,7 +243,9 @@ test('comment work shares the decision card and runs only on an authorized ident
       `/issues/${personalIssue.identifier}/runs/${personalRun.runId}`,
     );
     await expect(
-      page.getByText('Confirmed by Super Admin', { exact: false }).first(),
+      page
+        .getByText('Confirmed by Consent test owner', { exact: false })
+        .first(),
     ).toBeVisible();
     await shot('confirmed-personal-confirmer');
     await laptop.complete(
@@ -312,7 +364,11 @@ test('owner delegation needs no extra consent and Run as me preserves both comme
     viewport: { width: 1440, height: 900 },
     locale: 'en-US',
   });
-  await signIn(requesterContext, await createRequester(api), studio);
+  await signIn(
+    requesterContext,
+    await createRequester(browser, studio),
+    studio,
+  );
   const requester = new Api(requesterContext.request, studio);
   const requesterPage = await requesterContext.newPage();
   await requester.patch('users/me/preferences', { locale: 'en-US' });
@@ -396,7 +452,7 @@ test('owner delegation needs no extra consent and Run as me preserves both comme
     expect(ownStep.confirmedByUserId).toBeNull();
     await open(page, `/issues/${ownIssue.identifier}/runs/${workerTurn.runId}`);
     await expect(
-      page.getByText('Running as Super Admin', { exact: false }).first(),
+      page.getByText('Running as Consent test owner', { exact: false }).first(),
     ).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Confirm', exact: true }),
