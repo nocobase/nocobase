@@ -1,5 +1,6 @@
 import { afterEach, expect, it } from 'vitest';
 import { TIMINGS } from '@nocobase/agent-protocol';
+import { RunExecutionSnapshotSchema } from '../server/routes/schemas.js';
 import {
   claim,
   createHarness,
@@ -227,7 +228,9 @@ it.each(['timeout', 'offline', 'alternating'])(
         attempt < 10 ? { requeued: 1, failed: 0 } : { requeued: 0, failed: 1 },
       );
       expect(
-        (await h.services.runs.get(runId)).executions.at(-1),
+        RunExecutionSnapshotSchema.parse(
+          (await h.services.runs.get(runId)).executions.at(-1),
+        ),
       ).toMatchObject({ failureSource: 'sweeper' });
       if (attempt < 10) {
         expect(await h.services.runs.get(runId)).toMatchObject({
