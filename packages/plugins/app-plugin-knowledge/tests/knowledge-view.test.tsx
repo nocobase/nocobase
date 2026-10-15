@@ -1,6 +1,7 @@
 /** The knowledge view over a mocked API: the tree, an opened document, the space's home and the proposals waiting. */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -9,7 +10,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect, type ReactElement } from 'react';
-import { MemoryRouter, useLocation } from 'react-router';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import enUS from '../client/locales/en-US.js';
@@ -95,12 +96,15 @@ function summary(
   };
 }
 
-function treeOf(docs: readonly KnowledgeDocSummary[]): KnowledgeTree {
+function treeOf(
+  docs: readonly KnowledgeDocSummary[],
+  viewSpace = space,
+): KnowledgeTree {
   return {
     spaces: [
       {
         space: {
-          ...space,
+          ...viewSpace,
           id: 's1',
           title: 'Acme',
           inherited: false,
@@ -140,12 +144,14 @@ let extra: (request: {
 function serve(
   docs: readonly KnowledgeDocSummary[],
   proposals: readonly Partial<KnowledgeProposal>[] = [],
+  viewSpace = space,
 ): void {
   mocks.request.mockImplementation(async (request: { path: string }) => {
     const { path } = request;
     const answered = extra(request);
     if (answered !== undefined) return answered;
-    if (path === 'knowledge/spaces') return { data: treeOf(docs).spaces };
+    if (path === 'knowledge/spaces')
+      return { data: treeOf(docs, viewSpace).spaces };
     if (path === 'knowledge/proposals')
       return { data: proposals, meta: { total: proposals.length } };
     if (path === 'knowledge/subjects')
@@ -183,7 +189,7 @@ function serve(
   });
 }
 
-const url = { search: '' };
+const url = { search: '', navigate: (_delta: number): void => {} };
 
 // A user's press lets React finish wiring a trigger that has just appeared. It lands off (0, 0),
 // where jsdom's zero-sized layout puts the panes' resize handle, which would take the press.
@@ -197,9 +203,11 @@ async function press(target: Element): Promise<void> {
 
 function Where(): null {
   const { search } = useLocation();
+  const navigate = useNavigate();
   useEffect(() => {
     url.search = search;
-  }, [search]);
+    url.navigate = navigate;
+  }, [search, navigate]);
   return null;
 }
 
@@ -208,7 +216,7 @@ function show(
   embedded = true,
   directory?: KnowledgeDirectorySource,
   viewSpace = space,
-): void {
+): ReturnType<typeof render> {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -224,7 +232,7 @@ function show(
       </MemoryRouter>
     </QueryClientProvider>
   );
-  render(tree);
+  return render(tree);
 }
 
 beforeEach(() => {
@@ -752,6 +760,90 @@ describe('the knowledge view', () => {
     ).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
   });
+
+  it.each(['system', 'project'])(
+    'opens an old version from %s history and returns to current',
+    async (scope) => {
+      const viewSpace = {
+        scope,
+        scopeId: scope === 'system' ? 'system' : 'p1',
+      };
+      serve([summary('d1', 'Release flow', viewSpace)], [], viewSpace);
+      const versions = [2, 1].map((version) => ({
+        docId: 'd1',
+        version,
+        title: 'Release flow',
+        summary: '',
+        content:
+          version === 1
+            ? 'Original release instructions.'
+            : 'Tag it, then deploy.',
+        contentHash: `h${version}`,
+        file: null,
+        author,
+        source: null,
+        runId: null,
+        proposalId: null,
+        approvedBy: null,
+        note: null,
+        createdAt: '2026-10-01T00:00:00Z',
+      }));
+      extra = ({ path }) => {
+        if (path === 'knowledge/docs/d1/versions') return { data: versions };
+        const match = /^knowledge\/docs\/d1\/versions\/(\d+)$/u.exec(path);
+        return match
+          ? { data: versions.find((item) => item.version === Number(match[1])) }
+          : undefined;
+      };
+      const shown = show(
+        '/?tab=knowledge&doc=d1&mode=history',
+        true,
+        undefined,
+        viewSpace,
+      );
+      const history = await screen.findByTestId('knowledge-history');
+      const row = (
+        await within(history).findByText('v1', { selector: 'li > span' })
+      ).closest('li')!;
+      fireEvent.click(within(row).getByRole('button', { name: 'View' }));
+      await waitFor(() =>
+        expect(url.search).toBe('?tab=knowledge&doc=d1&version=1'),
+      );
+      expect(
+        await screen.findByText('Original release instructions.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByTestId('knowledge-history')).toBeNull();
+      await act(() => url.navigate(-1));
+      expect(
+        await screen.findByTestId('knowledge-history'),
+      ).toBeInTheDocument();
+      expect(url.search).toBe('?tab=knowledge&doc=d1&mode=history');
+      await act(() => url.navigate(1));
+      expect(
+        await screen.findByText('Original release instructions.'),
+      ).toBeInTheDocument();
+      const savedSearch = url.search;
+      shown.unmount();
+      show(`/${savedSearch}`, true, undefined, viewSpace);
+      await waitFor(() =>
+        expect(
+          screen.getByText('Original release instructions.'),
+        ).toBeInTheDocument(),
+      );
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Back to the current version' }),
+      );
+      await waitFor(() => expect(url.search).toBe('?tab=knowledge&doc=d1'));
+      expect(
+        await screen.findByText('Tag it, then deploy.'),
+      ).toBeInTheDocument();
+      expect(
+        mocks.request.mock.calls.every(
+          ([request]) => !request.method || request.method === 'GET',
+        ),
+      ).toBe(true);
+    },
+  );
 
   it('says an empty space is empty and offers to write the first article', async () => {
     serve([]);
