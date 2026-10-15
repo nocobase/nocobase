@@ -801,7 +801,7 @@ function RecentBuilds({
                   {build.sha.slice(0, 7)}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={BUILD_VARIANT[build.state]}>
+                  <Badge data-size='sm' variant={BUILD_VARIANT[build.state]}>
                     {t(`previews.build.states.${build.state}`)}
                   </Badge>
                 </TableCell>

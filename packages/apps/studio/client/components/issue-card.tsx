@@ -242,7 +242,12 @@ function Labels({
   return (
     <span className={cn('flex min-w-0 flex-wrap gap-1', className)}>
       {labels.slice(0, 3).map((label) => (
-        <Badge key={label.id} variant='outline' className='font-normal'>
+        <Badge
+          data-size='sm'
+          key={label.id}
+          variant='outline'
+          className='font-normal'
+        >
           <span
             aria-hidden
             className={cn('size-1.5 rounded-full', LABEL_DOT[label.color])}

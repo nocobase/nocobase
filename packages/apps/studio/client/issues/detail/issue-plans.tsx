@@ -119,7 +119,9 @@ export function IssuePlansPanel({
             {hasMore ? `${plans.length}+` : plans.length}
           </span>
           {awaiting > 0 ? (
-            <Badge>{t('issuePlans.awaiting', { count: awaiting })}</Badge>
+            <Badge data-size='sm'>
+              {t('issuePlans.awaiting', { count: awaiting })}
+            </Badge>
           ) : null}
         </CollapsibleTrigger>
       </h2>

@@ -180,7 +180,24 @@
    a board's card, wherever several sit in a dense row. The default one is a
    status standing on its own, as in a table's column or a record's
    particulars. */
-[data-slot='badge'][data-size='sm'] {
+[data-slot='badge'][data-size='sm'],
+/* Studio: a badge inside a control or a menu row, such as a status shown as a
+   select's value or option, takes the small size even where the component
+   that renders it (a plugin's, say) does not set it, so it fits the control. */
+:is(
+    [data-slot='select-trigger'],
+    [data-slot='select-value'],
+    [data-slot='select-item'],
+    [data-slot='combobox-chip'],
+    [data-slot='combobox-item'],
+    [data-slot='input-group'],
+    [data-slot='dropdown-menu-item'],
+    [data-slot='command-item'],
+    [data-slot='table-cell'],
+    [role='option'],
+    [role='menuitem']
+  )
+  [data-slot='badge'] {
   min-height: calc(var(--spacing) * 5.5);
   padding-block: 0;
   padding-inline: calc(var(--spacing) * 1.5);

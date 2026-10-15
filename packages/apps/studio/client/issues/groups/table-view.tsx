@@ -477,6 +477,7 @@ export function GroupedTableView({
                 ) : null}
                 {item.context ? (
                   <Badge
+                    data-size='sm'
                     variant='outline'
                     title={t('taskGroups.table.contextHint')}
                   >

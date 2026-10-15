@@ -236,7 +236,7 @@ function AttentionCard<T extends { readonly id: string }>({
       title={
         <>
           {title}
-          <Badge variant='secondary' className='tabular-nums'>
+          <Badge data-size='sm' variant='secondary' className='tabular-nums'>
             {list.total}
           </Badge>
         </>
