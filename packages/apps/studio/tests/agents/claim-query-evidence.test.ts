@@ -24,11 +24,15 @@ function aliases() {
 }
 
 function template(sql: string) {
-  return sql
-    .replace(/'(?:''|[^'])*'/gu, '?')
-    .replace(/\b\d+(?:\.\d+)?\b/gu, '?')
-    .replace(/\s+/gu, ' ')
-    .trim();
+  return (
+    sql
+      // Independent fixtures use different PostgreSQL schemas for the same tables.
+      .replace(/"nbt_[^"]+"\./gu, '"test_schema".')
+      .replace(/'(?:''|[^'])*'/gu, '?')
+      .replace(/\b\d+(?:\.\d+)?\b/gu, '?')
+      .replace(/\s+/gu, ' ')
+      .trim()
+  );
 }
 
 function business(sql: string) {
@@ -140,7 +144,15 @@ async function capture(
                         ),
                       ].sort(),
                     ]
-                  : [identity];
+                  : source === 'comments.list'
+                    ? [
+                        args[1],
+                        args[2]?.since ?? null,
+                        args[2]?.rootId ?? null,
+                        args[2]?.rootsOnly ?? false,
+                        args[2]?.limit ?? null,
+                      ]
+                    : [identity];
         const call = {
           id: ++nextCall,
           source,
@@ -174,7 +186,7 @@ async function capture(
       wrap(subject.context, 'prepare', 'subject.prepare');
       wrap(subject.context, 'admit', 'subject.admit');
       wrap(subject.context, 'assemble', 'subject.assemble');
-      wrap(summaries, 'lastSummary', 'materials.summary');
+      wrap(h.agents.runs, 'lastSummary', 'materials.summary');
       wrap(deltas, 'commentDelta', 'materials.comment-delta');
       wrap(initialization, 'initialDirOf', 'materials.initialization');
       wrap(skills, 'attachedSkillIds', 'plugin.skills');
