@@ -546,7 +546,11 @@ export async function upsertPullRequest(
             snapshot.state === 'merged'
               ? (snapshot.mergeCommitSha ?? previous?.mergeCommitSha ?? null)
               : null,
-          closedAt: snapshot.closedAt ? new Date(snapshot.closedAt) : null,
+          closedAt: snapshot.closedAt
+            ? new Date(snapshot.closedAt)
+            : snapshot.state === 'merged' && previous?.closedAt
+              ? new Date(previous.closedAt)
+              : null,
         }),
     // The CI of the old head no longer applies.
     ...(headMoved
