@@ -35,30 +35,38 @@ function setup(database: DatabaseManager) {
     now: () => clock.now,
     publish: (userId, change) => changes.push([userId, change]),
   });
-  const register = (userId = 'u1', overrides: Partial<RegisterRequest> = {}) =>
-    service.register(userId, {
-      protocol: BRIDGE_PROTOCOL_VERSION,
-      computerId: null,
-      bridgeStartedAt: 'bridge-1',
-      computer: {
-        name: 'Laptop',
-        platform: 'darwin',
-        arch: 'arm64',
-        host: 'nb-studio 1.0.0',
-        home: '/home/zhou',
-        roots: ['/home/zhou'],
-        agents: [
-          { id: 'codex', name: 'Codex', version: '2.2.2' },
-          {
-            id: 'opencode',
-            name: 'OpenCode',
-            version: null,
-            problem: 'notInstalled',
-          },
-        ],
+  const register = (
+    userId = 'u1',
+    overrides: Partial<RegisterRequest> = {},
+    keyed = false,
+  ) =>
+    service.register(
+      userId,
+      {
+        protocol: BRIDGE_PROTOCOL_VERSION,
+        computerId: null,
+        bridgeStartedAt: 'bridge-1',
+        computer: {
+          name: 'Laptop',
+          platform: 'darwin',
+          arch: 'arm64',
+          host: 'nb-studio 1.0.0',
+          home: '/home/zhou',
+          roots: ['/home/zhou'],
+          agents: [
+            { id: 'codex', name: 'Codex', version: '2.2.2' },
+            {
+              id: 'opencode',
+              name: 'OpenCode',
+              version: null,
+              problem: 'notInstalled',
+            },
+          ],
+        },
+        ...overrides,
       },
-      ...overrides,
-    });
+      keyed,
+    );
   let batch = 0;
   const report = (
     computerId: string,
@@ -288,6 +296,51 @@ describe('AgentSessionsService', () => {
       }
     });
   }
+
+  test('publishes registration changes and recovery, but not an unchanged scan', async ({
+    database,
+  }) => {
+    const { service, register, clock, changes } = setup(database);
+    const { computerId } = await register();
+    changes.length = 0;
+    await register('u1', { computerId }, true);
+    expect(changes).toEqual([]);
+    await register('u1', { computerId, bridgeStartedAt: 'bridge-2' });
+    expect(
+      changes.filter(([, change]) => change.kind === 'computers'),
+    ).toHaveLength(1);
+    changes.length = 0;
+    clock.now += 120_000;
+    await register('u1', { computerId, bridgeStartedAt: 'bridge-2' });
+    expect(
+      changes.filter(([, change]) => change.kind === 'computers'),
+    ).toHaveLength(1);
+    expect((await service.listComputers('u1'))[0]?.online).toBe(true);
+  });
+
+  test('stops waiting after discovery cancellation without assuming the queued command was cancelled', async ({
+    database,
+  }) => {
+    const { service, register, take } = setup(database);
+    const { computerId } = await register();
+    const stop = new AbortController();
+    const pending = service.discoverChoices(
+      'u1',
+      computerId,
+      { agentId: 'codex', cwd: '/home/zhou', settings: {} },
+      stop.signal,
+    );
+    const rejected = pending.catch((error: unknown) => error);
+    let queued:
+      import('@nocobase/acp-bridge/protocol').BridgeCommand | undefined;
+    await vi.waitFor(async () => {
+      [queued] = await take(computerId);
+      expect(queued?.type).toBe('discoverChoices');
+    });
+    stop.abort();
+    expect(await rejected).toMatchObject({ name: 'AbortError' });
+    expect(queued?.type).toBe('discoverChoices');
+  });
 
   test('discovers a fresh computer without a Studio session and carries settings to the first prompt', async ({
     database,

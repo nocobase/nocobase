@@ -124,6 +124,8 @@ interface MssqlKeyConstraintRow {
 interface MssqlIndexRow {
   readonly index_name: string;
   readonly is_unique: boolean | number;
+  readonly is_disabled: boolean | number;
+  readonly has_filter: boolean | number;
   readonly is_primary_key: boolean | number;
   readonly is_unique_constraint: boolean | number;
   readonly type_desc: string;
@@ -485,6 +487,8 @@ export class MssqlSchemaInspector extends BaseSchemaInspector {
           select
             i.name as index_name,
             i.is_unique,
+            i.is_disabled,
+            i.has_filter,
             i.is_primary_key,
             i.is_unique_constraint,
             i.type_desc,
@@ -601,6 +605,7 @@ function groupIndexes(rows: readonly MssqlIndexRow[]): PhysicalIndexSchema[] {
       keys,
       includeColumns: includeColumns.length > 0 ? includeColumns : undefined,
       unique: truthy(first.is_unique),
+      valid: !truthy(first.is_disabled),
       backsConstraint: truthy(first.is_primary_key)
         ? { kind: 'primaryKey', name }
         : truthy(first.is_unique_constraint)
@@ -608,8 +613,30 @@ function groupIndexes(rows: readonly MssqlIndexRow[]): PhysicalIndexSchema[] {
           : undefined,
       method: first.type_desc,
       predicate: optionalString(first.filter_definition),
+      partial: truthy(first.has_filter),
+      predicateSatisfiedByNonNullKeys: nonNullKeysSatisfyPredicate(
+        first.filter_definition,
+        keys,
+      ),
     };
   });
+}
+
+/** SQL Server's nullable unique indexes exclude NULL keys rather than restricting business rows. */
+function nonNullKeysSatisfyPredicate(
+  predicate: string | null,
+  keys: readonly PhysicalIndexKey[],
+): boolean | undefined {
+  if (!predicate) return undefined;
+  const columns = new Set(keys.map((key) => key.columnName));
+  const terms = predicate
+    .replace(
+      /\[((?:[^\]]|\]\])*)\]\s+IS\s+NOT\s+NULL/giu,
+      (term, column: string) =>
+        columns.has(column.replace(/\]\]/gu, ']')) ? '1' : term,
+    )
+    .replace(/[()\s]/gu, '');
+  return /^1(?:AND1)*$/iu.test(terms) || undefined;
 }
 
 function groupForeignKeys(

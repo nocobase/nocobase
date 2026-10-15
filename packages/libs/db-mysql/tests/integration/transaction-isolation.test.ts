@@ -11,6 +11,72 @@ import { describe, expect, it } from 'vitest';
 import mysql from '../../src/index.js';
 
 describe('MySQL transaction isolation', () => {
+  it.each(['insert', 'delete', 'scope'] as const)(
+    'diagnoses a conditional update after a concurrent %s using current rows',
+    async (operation) => {
+      const prefix = `conditional_${randomUUID().replaceAll('-', '')}_`;
+      const database = createManager(undefined, prefix);
+      const other = createManager();
+      try {
+        await database.builder().createCollection('items', (c) => {
+          c.string('id').primary().notNull();
+          c.string('tenant').notNull();
+          c.string('name').notNull();
+          c.integer('version').notNull();
+          c.optimisticLock('version');
+        });
+        const client = await database.connection().client<Knex>();
+        const otherClient = await other.connection().client<Knex>();
+        const table = `${prefix}items`;
+        if (operation !== 'insert') {
+          await otherClient(table).insert({
+            id: 'A',
+            tenant: 'T1',
+            name: 'before',
+            version: 1,
+          });
+        }
+        await database.collections().get('items');
+        // The single-connection pool keeps this isolation level for the next BEGIN.
+        await client.raw(
+          'set session transaction isolation level repeatable read',
+        );
+        await database.transaction(async (transaction) => {
+          const repository = transaction.repository('items');
+          await repository.findMany();
+          if (operation === 'insert') {
+            await otherClient(table).insert({
+              id: 'A',
+              tenant: 'T1',
+              name: 'concurrent',
+              version: 2,
+            });
+          } else if (operation === 'delete') {
+            await otherClient(table).where({ id: 'A' }).delete();
+          } else {
+            await otherClient(table)
+              .where({ id: 'A' })
+              .update({ tenant: 'T2' });
+          }
+          await expect(
+            repository.updateOne({
+              filter: { id: 'A', tenant: 'T1' },
+              ifVersion: 1,
+              values: { name: 'changed' },
+            }),
+          ).rejects.toMatchObject({
+            code:
+              operation === 'insert' ? 'VERSION_CONFLICT' : 'RECORD_NOT_FOUND',
+          });
+        });
+      } finally {
+        await other.destroy();
+        await database.connection().resetManagedSchema();
+        await database.destroy();
+      }
+    },
+  );
+
   it.each(['insert', 'update', 'delete'] as const)(
     'checks the current revision after a concurrent %s outside a repeatable-read snapshot',
     async (operation) => {

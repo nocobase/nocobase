@@ -20,6 +20,8 @@ import releases from '@nocobase/app-plugin-releases/client';
 import knowledge from '@nocobase/app-plugin-knowledge/client';
 import agentSessions from '@nocobase/app-plugin-agent-sessions/client';
 
+import { AgentSessionsApplication } from './agent-sessions-cache.js';
+
 import { ProjectManagerIdentityRefresh } from './agents/project-manager/identity-refresh.js';
 
 // Array order is contribution order. A plugin is enabled by appearing in this
@@ -51,7 +53,14 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   // project's Knowledge tab (`client/routes.ts`).
   knowledge({ routes: false }),
   // Studio routes the agent sessions page itself, below Home (`client/routes.ts`).
-  agentSessions({ routes: false }),
+  agentSessions({
+    routes: false,
+    cacheProvider: {
+      name: 'owner-cache',
+      after: ['@nocobase/app-plugin-authentication:authentication'],
+      component: AgentSessionsApplication,
+    },
+  }),
 ]);
 
 export default clientPlugins;

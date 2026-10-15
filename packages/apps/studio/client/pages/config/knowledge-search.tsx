@@ -7,6 +7,7 @@
  * set its own) and adding context to sections (a switch, its model and the spaces it is on for). The models come from the agents plugin's model services, by kind; each picker links to them.
  */
 import {
+  PmLoadError,
   SectionHeading,
   SettingsPageHeader,
 } from '@nocobase/app-plugin-projects/client/kit';
@@ -823,6 +824,13 @@ export default function KnowledgeSearchSettingsPage(): ReactElement {
         description={t('config.knowledgeSearch.description')}
         readOnly={data ? !data.canManage : false}
       />
+      {config.isError ? (
+        <PmLoadError
+          title={t('knowledge.searchSettings.loadFailed')}
+          error={config.error}
+          onRetry={() => void config.refetch()}
+        />
+      ) : null}
       {data ? (
         <div className='flex flex-col gap-10 pt-2'>
           <StatusCard config={data} />
@@ -851,7 +859,7 @@ export default function KnowledgeSearchSettingsPage(): ReactElement {
             config={data}
           />
         </div>
-      ) : (
+      ) : !config.isError ? (
         <div
           className='flex flex-col gap-4 pt-2'
           role='status'
@@ -860,7 +868,7 @@ export default function KnowledgeSearchSettingsPage(): ReactElement {
           <Skeleton className='h-40 w-full' />
           <Skeleton className='h-24 w-full' />
         </div>
-      )}
+      ) : null}
     </section>
   );
 }
