@@ -1,3 +1,4 @@
+import { GLOBAL_SKILL_TARGET } from '../../../shared/skills.js';
 /**
  * Claiming: handing queued runs to a runner that fits them, within each agent's concurrency limit, one run per
  * (agent, subject, thread) at a time, through the runners' one long-poll (`routes/runners/runner.ts`), which hands
@@ -127,6 +128,7 @@ import {
   inputsRepo,
   sessionsRepo,
   toInput,
+  toExecutions,
   toRun,
   type RunRecord,
 } from './run.store.js';
@@ -363,14 +365,16 @@ export function variableTargets(
   ];
 }
 
-/** Where a run's skills come from, the agent's first so its own win a shared slug. */
+/** Team defaults, application scopes and directories, from lowest to highest priority. */
 export function skillTargets(
-  agent: Pick<Agent, 'id'>,
+  _agent: Pick<Agent, 'id'>,
   assembly: Pick<SubjectAssembly, 'scopes' | 'dirs'>,
 ): SkillTarget[] {
   return [
-    { scope: 'agent', scopeId: agent.id },
-    ...assembly.scopes,
+    GLOBAL_SKILL_TARGET,
+    ...assembly.scopes.filter(
+      (target) => target.scope !== 'agent' && target.scope !== 'global',
+    ),
     ...assembly.dirs.flatMap((dir) =>
       dir.scopeId ? [{ scope: 'workdir', scopeId: dir.scopeId }] : [],
     ),
@@ -968,7 +972,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     const sessionNote = resume ? assembly.turn.resumed : assembly.turn.fresh;
     const turn = [
       brief.turn,
-      ...(run.failureReason === 'runnerUpgrade'
+      ...(toExecutions(run.executionHistory).find(
+        (execution) => execution.attempt === Number(run.attempt) - 1,
+      )?.failureReason === 'runnerUpgrade'
         ? [
             'The previous attempt was interrupted by a runner upgrade. Continue from the current state.',
           ]
@@ -1455,6 +1461,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             ]),
           values: {
             status: 'dispatched',
+            failureReason: null,
+            failureDetail: null,
             runnerId: runner.id,
             // Brief providers observe this reservation inside the claim transaction.
             // Replace a previous attempt's tool before computing the roster.
@@ -1648,6 +1656,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         filter: { id: runId },
         values: {
           claimFailures: failures,
+          failureReason: 'setupFailed',
           failureDetail: error.message.slice(0, 10_000),
         },
       });

@@ -320,10 +320,12 @@ export async function reposToPoll(
 // --- Pull requests -------------------------------------------------------------------------------------------------
 
 export interface SignalState {
-  /** `<kind>@<headSha>` of the signal last reported. */
+  /** Kind, head and exact conclusion identity. */
   readonly key: string;
-  /** How many heads in a row it was reported for. */
+  /** Consecutive failure conclusions; per-issue delivery budgets live in `counts`. */
   readonly count: number;
+  readonly delivered?: Readonly<Record<string, string>>;
+  readonly counts?: Readonly<Record<string, number>>;
 }
 
 export type Signals = Readonly<
@@ -872,6 +874,20 @@ export async function linksOfPullRequest(
     .where('pullRequestId', '=', pullRequestId)
     .execute();
   return rows.map((row) => linkOf(row));
+}
+
+/** The issues linked to any of the pull requests. */
+export async function issuesOfPullRequests(
+  conn: DatabaseConnection,
+  pullRequestIds: readonly string[],
+): Promise<string[]> {
+  if (pullRequestIds.length === 0) return [];
+  const rows = await conn.query
+    .selectFrom(LINKS)
+    .select('issueId')
+    .where('pullRequestId', 'in', [...new Set(pullRequestIds)])
+    .execute();
+  return [...new Set(rows.map((row) => String(row.issueId)))];
 }
 
 /** An issue's links with their pull requests, oldest link first. */

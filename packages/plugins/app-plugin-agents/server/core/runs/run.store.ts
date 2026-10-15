@@ -26,6 +26,7 @@ import {
 } from '../../kernel/values.js';
 
 export interface RunRecord {
+  readonly revision: number;
   readonly id: string;
   readonly agentId: string;
   readonly agentType: string;

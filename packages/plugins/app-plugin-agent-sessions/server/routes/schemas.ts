@@ -30,13 +30,14 @@ export const DiscoverChoicesInput: z.ZodType<{
     }),
 });
 
-import type {
-  Computer,
-  FolderListing,
-  Reference,
-  Session,
-  SessionLink,
-  SessionProject,
+import {
+  SESSION_LINK_ICONS,
+  type Computer,
+  type FolderListing,
+  type Reference,
+  type Session,
+  type SessionLink,
+  type SessionProject,
 } from '../../shared/api.js';
 
 export const ComputerParams: z.ZodType<{ computerId: string }> = z.object({
@@ -129,18 +130,28 @@ export const ComputerSchema: z.ZodType<Computer> = z
   })
   .meta({ ref: 'AgentSessionsComputer' });
 
+const LinkStatusSchema = z
+  .object({
+    label: z.string(),
+    tone: z.enum(['idle', 'active', 'attention', 'done']),
+    icon: z.enum(SESSION_LINK_ICONS).optional().meta({
+      description:
+        "The status's shape and colour; links without one are drawn by `tone`.",
+    }),
+    needsYou: z.string().nullable().optional().meta({
+      description:
+        'What it waits on the viewer for, such as "Waiting for you to accept".',
+    }),
+  })
+  .nullable();
+
 const LinkSchema: z.ZodType<SessionLink> = z.object({
   kind: z.string(),
   refId: z.string(),
   key: z.string().nullable(),
   title: z.string(),
   group: z.string().nullable(),
-  status: z
-    .object({
-      label: z.string(),
-      tone: z.enum(['idle', 'active', 'attention', 'done']),
-    })
-    .nullable(),
+  status: LinkStatusSchema,
   href: z.string().nullable(),
   startable: z.boolean(),
   decidedAt: z.string().nullable(),
@@ -346,12 +357,7 @@ export const ReferenceSchema: z.ZodType<Reference> = z
     key: z.string().nullable(),
     title: z.string(),
     group: z.string().nullable(),
-    status: z
-      .object({
-        label: z.string(),
-        tone: z.enum(['idle', 'active', 'attention', 'done']),
-      })
-      .nullable(),
+    status: LinkStatusSchema,
   })
   .meta({ ref: 'AgentSessionsReference' });
 

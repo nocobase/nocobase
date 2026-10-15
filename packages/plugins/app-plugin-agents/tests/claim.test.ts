@@ -191,7 +191,10 @@ describe('claiming', () => {
     const skill = await h.services.skills.create('owner', {
       content: skillMd('pr-etiquette', 'How we write pull requests.'),
     });
-    const agentId = await h.createAgent({ skillIds: [skill.id] });
+    const agentId = await h.createAgent();
+    await h.services.skills.attach({ scope: 'global', scopeId: 'default' }, [
+      skill.id,
+    ]);
     const runId = await h.enqueue(agentId, '1');
     const old = await h.registerRunner({ features: ['input', 'checkout'] });
     expect(await claim(h, old)).toEqual([]);
@@ -253,10 +256,11 @@ describe('claiming', () => {
     const agentId = await h.createAgent({ maxConcurrentRuns: 5 });
     const elsewhere = await h.registerRunner({ slots: 4 });
     const holder = await h.registerRunner({ slots: 4 });
+    const directory = `/srv/${'d'.repeat(1000)}`;
     h.dirs = [
       {
         kind: 'directory',
-        path: '/srv/app',
+        path: directory,
         runnerId: holder.runnerId,
         scopeId: 'res-1',
         initPrompt: 'Run make setup.',
@@ -268,7 +272,7 @@ describe('claiming', () => {
     const claimed = await claim(h, holder, 4);
     expect(claimed.map((payload) => payload.run.id)).toEqual([first]);
     expect(claimed[0].workspace.dirs).toEqual([
-      { kind: 'directory', path: '/srv/app', initPrompt: 'Run make setup.' },
+      { kind: 'directory', path: directory, initPrompt: 'Run make setup.' },
     ]);
     expect(claimed[0].run.requires).toEqual(['directories']);
 
@@ -561,6 +565,8 @@ describe('claiming', () => {
     expect(await h.services.runs.get(runId)).toMatchObject({
       status: 'queued',
       runnerId: null,
+      failureReason: 'setupFailed',
+      failureDetail: expect.any(String),
     });
     await claim(h, runner);
     await claim(h, runner);

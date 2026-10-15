@@ -131,8 +131,30 @@ test('unrelated paths and empty changes skip the matrix', () => {
 const claimConcurrency = {
   dialect: 'postgres',
   filter: '@nocobase/app-plugin-agents',
-  tests: 'tests/claim-concurrency.test.ts',
+  tests:
+    'tests/claim-concurrency.test.ts tests/active-input.test.ts tests/run-revision-migration.test.ts',
 };
+
+const artifactKeyMigration = {
+  dialect: 'mssql',
+  filter: '@nocobase/app-plugin-releases',
+  tests: 'tests/artifact-key-migration.test.ts',
+};
+
+test('release migration changes select the SQL Server upgrade regression', () => {
+  for (const file of [
+    'packages/plugins/app-plugin-releases/database/migrations/202610020001_rel_create_tables.ts',
+    'packages/plugins/app-plugin-releases/database/migrations/202610260002_rel_bound_artifact_keys.ts',
+    'packages/plugins/app-plugin-releases/tests/artifact-key-migration.test.ts',
+  ])
+    assert.deepEqual(selectPackageSuites([file]), [artifactKeyMigration], file);
+  assert.deepEqual(
+    selectPackageSuites([
+      'packages/plugins/app-plugin-releases/server/plugin.ts',
+    ]),
+    [],
+  );
+});
 
 test('a guarded package path selects its dialect suite, and nothing else does', () => {
   for (const file of [
@@ -140,6 +162,7 @@ test('a guarded package path selects its dialect suite, and nothing else does', 
     'packages/plugins/app-plugin-agents/server/core/runs/comment-consent.ts',
     'packages/plugins/app-plugin-agents/server/core/agents/agent.store.ts',
     'packages/plugins/app-plugin-agents/tests/claim-concurrency.test.ts',
+    'packages/plugins/app-plugin-agents/database/migrations/202610260001_ag_run_revision.ts',
   ]) {
     assert.deepEqual(selectPackageSuites([file]), [claimConcurrency], file);
     assert.deepEqual(selectDatabases([file]), [], file);
@@ -182,10 +205,10 @@ test('git selection covers additions, deletion, renames in and out, and unusual 
     path.join(repo.cwd, 'packages/libs/db-postgres/move-out.ts'),
     path.join(repo.cwd, 'docs/moved-out.ts'),
   );
-  repo.write('packages/libs/db-kingbase/placeholder.ts');
+  repo.write('packages/libs/db-mssql/placeholder.ts');
   renameSync(
     path.join(repo.cwd, 'docs/move-in.ts'),
-    path.join(repo.cwd, 'packages/libs/db-kingbase/moved-in.ts'),
+    path.join(repo.cwd, 'packages/libs/db-mssql/moved-in.ts'),
   );
   repo.write('packages/libs/db-sqlite/空 格\nfile.ts');
   const headSha = repo.commit();
@@ -193,7 +216,7 @@ test('git selection covers additions, deletion, renames in and out, and unusual 
     'sqlite',
     'postgres',
     'mysql',
-    'kingbase',
+    'mssql',
   ]);
 });
 
@@ -235,7 +258,7 @@ test('missing or unavailable comparison commits conservatively select every data
   for (const baseSha of [undefined, '', '0'.repeat(40), 'f'.repeat(40)]) {
     const plan = planDbIntegration({ ...repo, baseSha, headSha });
     assert.deepEqual(plan.databases, databases);
-    assert.deepEqual(plan.suites, [claimConcurrency]);
+    assert.deepEqual(plan.suites, [claimConcurrency, artifactKeyMigration]);
   }
   assert.deepEqual(
     planDbIntegration({ ...repo, baseSha: headSha }).databases,

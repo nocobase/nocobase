@@ -70,13 +70,13 @@ export interface ProjectManagerView extends ProjectManagerSettings {
  * - `working`: an agent's run is on it (`agent`, `step` it was handed, since `since`, on `runner`).
  * - `queued`: an agent's run waits for a runner (`agent`, `step`).
  * - `checksPending`: no run is on it and a linked open pull request's checks have not finished (`pullRequest`).
- * - `needsDecision`: the issue is blocked; `question` is its source comment's explicit Needs you line, when present.
+ * - `needsDecision`: the issue is blocked; `needsYou` is its structured request to the owner.
  * - `inReview`: it waits for a person to accept it.
  * - `notStarted`: in backlog.
  * - `finished`: done or cancelled.
  * - `idle`: nothing of the above.
  *
- * `next` is the project manager's latest "Next" line, when it wrote one. `handOver` says the project manager never
+ * `next` is the issue's structured next step. `handOver` says the project manager never
  * worked on the issue though it is its executor and the issue is open: someone may hand it over to go on.
  */
 export type IssueProgressState =
@@ -136,12 +136,9 @@ export interface IssueProgress {
     readonly number: number;
     readonly url: string | null;
   } | null;
-  readonly question: string | null;
-  /** The manager comment at the current transition to Blocked, unchanged by later reports. */
-  readonly blockedComment?: {
-    readonly id: string;
-    readonly content: string;
-  } | null;
+  readonly needsYou: string | null;
+  /** Latest undeleted project manager explanation; not bound to a status transition. */
+  readonly explanationCommentId: string | null;
   readonly next: string | null;
   readonly handOver: boolean;
 }

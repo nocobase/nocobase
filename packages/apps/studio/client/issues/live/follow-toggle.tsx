@@ -1,7 +1,7 @@
 /**
  * The star that adds an issue to "My follow-ups" or takes it off (`POST /api/followUps/issues/:issueId/follow` or
- * `/unfollow`). It says how many of
- * the allowed issues are followed; once that many are, an unfollowed issue's star is held, with the reason as its hint.
+ * `/unfollow`), reading only what the viewer follows (`GET /api/followUps/following`). It says how many of the allowed
+ * issues are followed; once that many are, an unfollowed issue's star is held, with the reason as its hint.
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { StarIcon } from 'lucide-react';
@@ -12,7 +12,7 @@ import { cn } from 'cn';
 
 import { FOLLOW_UPS_MAX } from '../../../shared/follow-ups.js';
 import { useNotify } from '../../access/notify.js';
-import { useFollowIssue, useFollowUps } from '../../follow-ups/api.js';
+import { useFollowIssue, useFollowing } from '../../follow-ups/api.js';
 
 /** What the star shows: followed, or held because the list is full. */
 function followState(
@@ -26,20 +26,28 @@ function followState(
 
 export function FollowToggle({
   issueId,
+  defaults = false,
   className,
 }: {
   readonly issueId: string;
+  /**
+   * Counts "My follow-ups"' default list (the viewer's blocked and in-review issues) as followed until they choose, as
+   * that page shows it; elsewhere only what they chose is followed.
+   */
+  readonly defaults?: boolean;
   readonly className?: string;
 }): ReactElement {
   const { t } = useTranslation();
   const notify = useNotify();
-  const overview = useFollowUps();
+  const read = useFollowing();
   const followIssue = useFollowIssue((error) =>
     notify.error(error, t('issueLive.follow.saveFailed')),
   );
-  const following = overview.data?.following ?? [];
-  const { followed, full } = followState(following, issueId);
-  const loading = !overview.data;
+  const following =
+    read.data && (defaults || read.data.stored) ? read.data.issueIds : [];
+  const max = read.data?.max ?? FOLLOW_UPS_MAX;
+  const { followed, full } = followState(following, issueId, max);
+  const loading = !read.data;
   const held = full || loading;
   return (
     <Button
@@ -53,7 +61,7 @@ export function FollowToggle({
       )}
       title={
         full
-          ? t('issueLive.follow.fullHint', { max: FOLLOW_UPS_MAX })
+          ? t('issueLive.follow.fullHint', { max })
           : followed
             ? t('issueLive.follow.unfollow')
             : undefined
@@ -74,15 +82,15 @@ export function FollowToggle({
         {followed
           ? t('issueLive.follow.following', {
               count: following.length,
-              max: FOLLOW_UPS_MAX,
+              max,
             })
           : full
-            ? t('issueLive.follow.full', { max: FOLLOW_UPS_MAX })
+            ? t('issueLive.follow.full', { max })
             : t('issueLive.follow.follow')}
       </span>
       {followed ? (
         <span aria-hidden className='tabular-nums md:hidden'>
-          {following.length}/{FOLLOW_UPS_MAX}
+          {following.length}/{max}
         </span>
       ) : null}
     </Button>

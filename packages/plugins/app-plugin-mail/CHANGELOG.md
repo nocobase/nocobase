@@ -1,5 +1,27 @@
 # @nocobase/app-plugin-mail
 
+## 1.0.0-beta.14
+
+### Minor Changes
+
+- dcd45ed: Give IMAP messages a reliable identity and track every remote copy. A message is identified by the server's OBJECTID `EMAILID`, then Gmail's `X-GM-MSGID`, then an RFC `Message-ID` proven by byte-identical MIME, and otherwise by its folder, UIDVALIDITY and UID. Each copy is stored in the new `mailMessageImapLocations` collection; read state, star state and folders are derived from the verified copies, flag changes and permanent deletion apply to every copy (permanent deletion now requires UIDPLUS), and a message without copies is removed only when a sync run completes after two matching full verification passes. Migration `202610250001_mail_imap_message_locations` upgrades existing IMAP locator messages and remote draft mirrors offline, preserving their identities, UUIDs and business data while backfilling locator sources and recorded positions. It does not contact mail servers or invent positions for local drafts, SMTP-accepted RFC records or other providers. Unsafe locators and conflicting tuple ownership fail preflight before structural changes; populated destructive rollback remains prohibited. UID, UIDVALIDITY, identity source and location status bounds are validated by application writes; this migration does not install database CHECK constraints, so direct database writes can bypass those bounds.
+
+  Keep opaque remote attachment IDs out of local upload UUID queries so localized drafts can read their remote attachments on PostgreSQL while preserving upload ownership and expiration checks.
+
+### Patch Changes
+
+- 1993feb: Add user-event as a mail plugin test dependency.
+- Updated dependencies [69e212c]
+- Updated dependencies [943a9a8]
+- Updated dependencies [943a9a8]
+- Updated dependencies [1cd749c]
+- Updated dependencies [bdb0581]
+- Updated dependencies [9b946f4]
+  - @nocobase/app-server@2.0.0-beta.7
+  - @nocobase/db@1.0.0-beta.20
+  - @nocobase/app-plugin-authentication@2.0.0-beta.9
+  - @nocobase/app-plugin-authorization@1.0.0-beta.27
+
 ## 1.0.0-beta.13
 
 ### Minor Changes

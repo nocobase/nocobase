@@ -1,8 +1,10 @@
+import { projectDefaultSkillsRoutes } from '../projects-init/default-skills-routes.js';
 import type { Application } from '@nocobase/app-server/application';
 import type { AppRouteContribution } from '@nocobase/app-server/router';
 
 import { accessRoutes } from '../access/routes.js';
 import { ownerHandoffRoutes } from '../issues/owner-handoff-routes.js';
+import { taskGroupRoutes } from '../issues/task-group-routes.js';
 import { ciRunRoutes } from '../builds/ci-run-routes.js';
 import { buildsRoutes } from '../builds/routes.js';
 import { studioAgentsRoutes } from '../agents/routes.js';
@@ -22,6 +24,7 @@ import { reportsRoutes } from '../reports/routes.js';
 const routes: readonly AppRouteContribution<Application>[] = [
   accessRoutes,
   ownerHandoffRoutes,
+  taskGroupRoutes,
   inboxRoutes,
   studioAgentsRoutes,
   issueRunsRoutes,
@@ -35,6 +38,7 @@ const routes: readonly AppRouteContribution<Application>[] = [
   gitOAuthRoutes,
   previewsRoutes,
   projectInitsRoutes,
+  projectDefaultSkillsRoutes,
   buildsRoutes,
   knowledgeSearchRoutes,
   knowledgeDirectoryRoutes,

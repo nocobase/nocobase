@@ -1,0 +1,9 @@
+# Default skills for new projects
+
+Studio stores the project default skill IDs in `studioSettings.projectDefaultSkills`, using the existing settings table. The missing setting is an empty list. There is no built-in team list, schema migration or settings page.
+
+Use `nb-studio project default-skills get` to read the list and `nb-studio project default-skills set --skills <id>,<id>` to replace it. Pass `--file defaults.json` with `{ "skillIds": [] }` to clear it. Reading requires `agents.agents` read or manage; writing requires manage. IDs must exist, duplicates are removed in order, and at most 100 IDs are accepted. Invalid replacements leave the previous configuration intact.
+
+Only newly created projects copy this list into their `project` attachments. The public project creation service emits `project.created`; Studio copies defaults in the same transaction before commit. The wizard, direct project creation and plan execution all use that service. A deleted skill still referenced by the configuration fails creation and rolls back the project, members and attachments together; correct the setting before retrying. Plan rehearsal rolls back and does not run commit hooks. Configuration changes never backfill existing projects; their skill attachments remain independently editable.
+
+Runs inherit global → project → workdir skills, with the more specific target winning a shared slug. The project default configuration is read only during project creation, never during claim, heartbeat or polling. An empty configuration adds one settings read to creation; a nonempty list also validates the IDs and replaces project attachments within the existing transaction. No explicit lock or additional creation transaction is introduced. Administrators manage production defaults and global attachments themselves.

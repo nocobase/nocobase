@@ -12,6 +12,7 @@ import { RouteTreeProvider } from '../routing/route-context.js';
 import { ChatPanel } from '@/extensions/nocobase-agent-chat/chat-panel';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { useInboxNavigation } from '../inbox/navigation.js';
+import { useMyTasksNavigation } from '../issues/groups/my-tasks-navigation.js';
 import { useStudioIssueRefresh } from '../issues/live/realtime-refresh.js';
 
 import { useTranslation } from '@nocobase/i18n/client';
@@ -48,6 +49,7 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
   // The person's language and theme follow them from the server (`account/preferences-sync.ts`).
   useUserPreferencesSync();
   const inbox = useInboxNavigation();
+  const myTasks = useMyTasksNavigation();
   useStudioIssueRefresh();
 
   const { t } = useTranslation();
@@ -82,7 +84,7 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
                     })}
                     sections
                     selectedKey={selectedKey}
-                    decorations={{ inbox }}
+                    decorations={{ 'pm-my-issues': myTasks }}
                   />
                 )}
               </AppSidebar>
@@ -103,7 +105,7 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
                     {/* The current page's trail: the route tree's, or the one the page declares (`usePageBreadcrumb`). */}
                     <Breadcrumbs denied={denied} />
                   </div>
-                  <HeaderActions />
+                  <HeaderActions inbox={inbox.badge} />
                 </LayoutHeader>
                 {/* The chat panel docks beside main on wide screens and floats over it (or covers it) otherwise, so main
           and the panel share a positioned row. */}

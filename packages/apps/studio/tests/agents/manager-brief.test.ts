@@ -158,6 +158,9 @@ describe("the project manager's run", () => {
         await h.projects.issues.update(alice(), issue.id, {
           revision: issue.revision,
           statusKey,
+          ...(statusKey === 'blocked' || statusKey === 'in_review'
+            ? { needsYou: 'Please review the requested work.' }
+            : {}),
         });
       }
       const payload = await h.claimOne();
@@ -297,7 +300,10 @@ describe("an agent's step", () => {
     const moved = await h.request(
       'PATCH',
       `/projects/issues/${issue.identifier}`,
-      { runToken: token, body: { statusKey: 'in_review' } },
+      {
+        runToken: token,
+        body: { statusKey: 'in_review', needsYou: 'Please review the work.' },
+      },
     );
     expect(moved.status).toBe(400);
     expect(moved.body.error.reason).toBe('TRANSITION_NOT_ALLOWED');

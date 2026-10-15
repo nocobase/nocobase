@@ -166,6 +166,7 @@ describe('RichTextEditor', () => {
   });
 
   it('refreshes an open mention query after a retry without changing the draft', async () => {
+    const user = userEvent.setup();
     const agent: RichTextMention = {
       kind: 'agent',
       id: 'a1',
@@ -216,8 +217,13 @@ describe('RichTextEditor', () => {
     });
     expect(textbox.textContent).toBe('@');
     expect(document.activeElement).toBe(textbox);
-    fireEvent.keyDown(textbox, { key: 'ArrowDown' });
-    fireEvent.keyDown(textbox, { key: 'Enter' });
+    await user.keyboard('{ArrowDown}');
+    expect(
+      screen.getByRole('option', { name: 'Ada Lovelace' }),
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(textbox.textContent).toBe('@');
+    expect(document.activeElement).toBe(textbox);
+    await user.keyboard('{Enter}');
     await waitFor(() =>
       expect(onChange).toHaveBeenLastCalledWith(
         '[@Ada Lovelace](mention://user/u1) ',

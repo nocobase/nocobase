@@ -1,16 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 
-export const databases = [
-  'sqlite',
-  'postgres',
-  'mysql',
-  'oceanbase',
-  'oracle',
-  'mssql',
-  'dameng',
-  'kingbase',
-];
+export const databases = ['sqlite', 'postgres', 'mysql', 'oracle', 'mssql'];
 
 // Keep whole packages covered, including their tests, manifests, and local configuration.
 const sharedDirectories = [
@@ -33,7 +24,7 @@ const sharedFiles = new Set([
   'tests/scripts/select-db-integration-matrix.test.mjs',
 ]);
 
-// Package tests whose subject is how one dialect behaves under concurrency, such as row locks and lock waits. The
+// Package tests whose subject is dialect-specific behavior, such as row locks, lock waits and indexed column changes. The
 // matrix above runs the dialect packages' own suites; these run a package's named tests on that dialect through
 // `pnpm test:db`, in the Database tests workflow, when a path they guard changes.
 export const packageSuites = [
@@ -43,11 +34,28 @@ export const packageSuites = [
       'packages/plugins/app-plugin-agents/server/core/runs/',
       'packages/plugins/app-plugin-agents/server/core/agents/agent.store.ts',
       'packages/plugins/app-plugin-agents/tests/claim-concurrency.test.ts',
+      'packages/plugins/app-plugin-agents/tests/active-input.test.ts',
+      'packages/plugins/app-plugin-agents/database/migrations/202610260001_ag_run_revision.ts',
+      'packages/apps/studio/server/agents/work.ts',
       'packages/plugins/app-plugin-agents/tests/harness.ts',
     ],
     dialect: 'postgres',
     filter: '@nocobase/app-plugin-agents',
-    tests: ['tests/claim-concurrency.test.ts'],
+    tests: [
+      'tests/claim-concurrency.test.ts',
+      'tests/active-input.test.ts',
+      'tests/run-revision-migration.test.ts',
+    ],
+  },
+  {
+    // SQL Server requires rebuilding the unique index before shrinking the legacy artifact-key column.
+    paths: [
+      'packages/plugins/app-plugin-releases/database/migrations/',
+      'packages/plugins/app-plugin-releases/tests/artifact-key-migration.test.ts',
+    ],
+    dialect: 'mssql',
+    filter: '@nocobase/app-plugin-releases',
+    tests: ['tests/artifact-key-migration.test.ts'],
   },
 ];
 

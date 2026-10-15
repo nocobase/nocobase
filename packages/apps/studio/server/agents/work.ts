@@ -156,6 +156,13 @@ const agentOf = (issue: Issue | null): string | null =>
 
 /** The work handler, and "Start" on an issue its agent executes. */
 export interface AgentWork extends IssueWorkHandler {
+  managerSignal(
+    tx: ProjectsTx,
+    issue: Issue,
+    trigger: string,
+    text: string,
+    payload: Record<string, unknown>,
+  ): Promise<RunAttempt>;
   takeOver(
     tx: ProjectsTx,
     issue: Issue,
@@ -191,6 +198,7 @@ export function createAgentWork(deps: {
     | 'subtasks'
     | 'issueContext'
     | 'commentQueries'
+    | 'comments'
     | 'activity'
     | 'issues'
     | 'tx'
@@ -270,6 +278,10 @@ export function createAgentWork(deps: {
         requestedByUserId: request.actorUserId,
         causedByRunId: request.causedByRunId,
         comment: request.comment,
+        preferActive:
+          request.triggerType === 'mention' &&
+          request.input.actor.kind === 'agent' &&
+          request.input.actor.id === PROJECT_MANAGER_ID,
         ownerUserId: request.issue.ownerUserId,
         priority: runPriorityOf(request.issue.priority),
         freshSession: request.freshSession,
@@ -290,6 +302,33 @@ export function createAgentWork(deps: {
       },
       agentsTx(tx),
     );
+    if (
+      request.triggerType === 'mention' &&
+      request.input.actor.kind === 'agent' &&
+      request.input.actor.id === PROJECT_MANAGER_ID &&
+      result.outcome === 'appended' &&
+      !result.duplicate
+    ) {
+      const commentId = jsonObject(request.input.payload).commentId;
+      if (typeof commentId === 'string')
+        await deps.projects().comments.post(
+          { type: 'system', id: null },
+          request.issue.id,
+          {
+            content: `Appended to run ${result.runId} (input ${result.inputId}).`,
+            parentId: commentId,
+          },
+          {
+            outer: tx,
+            trigger: false,
+            origin: {
+              runId: result.runId,
+              inputId: result.inputId,
+              sourceCommentId: commentId,
+            },
+          },
+        );
+    }
     // Mark only the creating input, in this transaction. An appended mention must never adopt an existing run.
     if (
       result.outcome === 'created' &&
@@ -475,8 +514,24 @@ export function createAgentWork(deps: {
               },
             }),
       );
-      if (personComment && !commentRootRunId)
+      if (personComment && !commentRootRunId) {
         commentRootRunId = attempts.at(-1)?.runId ?? undefined;
+        // An appended descendant is not necessarily the authorization root shared by the remaining mentions.
+        if (
+          commentRootRunId &&
+          held.actor.kind === 'agent' &&
+          held.actor.id === PROJECT_MANAGER_ID &&
+          held.targets.length > 1
+        ) {
+          const selected = await tx.conn
+            .repository<{ id: string; commentRootRunId: string | null }>(
+              'agRuns',
+            )
+            .findOne({ filter: { id: commentRootRunId } });
+          // A reused owner-started run has no comment authorization to share.
+          commentRootRunId = selected?.commentRootRunId ?? undefined;
+        }
+      }
     }
     return attempts;
   }
@@ -722,6 +777,62 @@ export function createAgentWork(deps: {
     observesComments: true,
     observesOwnerClaims: true,
     takeOver,
+    async managerSignal(tx, issue, trigger, text, payload) {
+      if (agentOf(issue) !== PROJECT_MANAGER_ID || dormant(issue))
+        return skipped(PROJECT_MANAGER_ID, issue, trigger, 'dormant');
+      const guard = await commentGuards(tx.conn).findOne({
+        filter: { id: commentGuardId(issue.id) },
+      });
+      const { commentRunLimit } = await readManagerSettings(tx.conn);
+      if (
+        guard?.pendingToken ||
+        (await recentCommentRunCount(
+          tx.conn,
+          issue.id,
+          COMMENT_RUN_WINDOW_HOURS,
+        )) >= commentRunLimit
+      ) {
+        const previous = guard?.ruleConfig as unknown as HeldCommentWake | null;
+        const duplicate = (
+          previous?.pendingWakes ?? (previous ? [previous] : [])
+        ).some(
+          (held) =>
+            held.signal?.trigger === trigger &&
+            JSON.stringify(held.signal.payload) === JSON.stringify(payload),
+        );
+        if (!duplicate) {
+          const comments = await deps
+            .projects()
+            .commentQueries.list(tx.conn, issue.id);
+          const commentId =
+            typeof payload.commentId === 'string'
+              ? payload.commentId
+              : comments.filter((c) => !c.deleted).at(-1)?.id;
+          if (commentId)
+            await commentLimited(tx, issue, {
+              commentId,
+              parentId: null,
+              content: text,
+              actor: { kind: 'system', id: 'system', name: 'Studio' },
+              targets: [{ agentId: PROJECT_MANAGER_ID, triggerType: trigger }],
+              signal: { trigger, payload },
+            });
+        }
+        return skipped(PROJECT_MANAGER_ID, issue, trigger, 'limited');
+      }
+      return wake(tx, {
+        issue,
+        agentId: PROJECT_MANAGER_ID,
+        actorUserId: issue.ownerUserId,
+        triggerType: trigger,
+        input: {
+          type: 'signal',
+          actor: { kind: 'system', id: 'system', name: 'Studio' },
+          text,
+          payload,
+        },
+      });
+    },
     async onRunFinished(tx, run) {
       if (run.subject.kind !== ISSUE_SUBJECT) return;
       if ((await readOwnerHandoff(tx.conn, run.subject.id))?.waiting) return;
@@ -1067,6 +1178,47 @@ export function createAgentWork(deps: {
         .projects()
         .commentQueries.list(tx.conn, issue.id);
       for (const input of held.pendingWakes ?? [held]) {
+        if (input.signal) {
+          const attempt = await wake(tx, {
+            agentId: PROJECT_MANAGER_ID,
+            issue,
+            actorUserId: userId,
+            triggerType: input.signal.trigger,
+            input: {
+              type: 'signal',
+              actor: { kind: 'system', id: 'system', name: 'Studio' },
+              text: input.content,
+              payload: { ...input.signal.payload, continuedFrom },
+            },
+          });
+          attempts.push(attempt);
+          if (
+            attempt.started &&
+            input.signal.trigger === 'stepEnded' &&
+            typeof input.signal.payload.runId === 'string'
+          ) {
+            const report = await tx.conn
+              .repository<{ id: string; payload: unknown }>('studioRunReports')
+              .findOne({ filter: { id: input.signal.payload.runId } });
+            await tx.conn.repository('studioRunReports').updateMany({
+              filter: { id: input.signal.payload.runId, status: 'pending' },
+              values: {
+                status: 'done',
+                payload: {
+                  ...jsonObject(report?.payload),
+                  delivery: {
+                    outcome: 'delivered',
+                    reason: 'ownerContinued',
+                    managerRunId: attempt.runId ?? null,
+                  },
+                },
+                lastError: null,
+                updatedAt: new Date().toISOString(),
+              },
+            });
+          }
+          continue;
+        }
         const comment = comments.find(
           (comment) => comment.id === input.commentId,
         );

@@ -260,7 +260,11 @@ it('installs a real registry item, builds and packs a generated plugin, and load
   });
   try {
     // Copy workspace metadata so real pnpm can resolve catalog/workspace versions without touching the checkout lockfile.
-    for (const name of ['pnpm-workspace.yaml', 'pnpm-lock.yaml'])
+    for (const name of [
+      'pnpm-workspace.yaml',
+      'pnpm-lock.yaml',
+      '.pnpmfile.cjs',
+    ])
       await copyFile(path.join(repository, name), path.join(root, name));
     for (const category of await readdir(path.join(repository, 'packages'))) {
       const source = path.join(repository, 'packages', category);

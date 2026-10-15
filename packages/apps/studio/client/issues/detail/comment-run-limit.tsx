@@ -22,9 +22,12 @@ import { usePendingCommentRun } from './use-pending-comment-run.js';
 export function IssueCommentRunLimit({
   issue,
   onContinued,
+  actionsOnly = false,
 }: {
   readonly issue: IssueDetail;
   readonly onContinued?: () => void;
+  /** Waiting-state cards already display the structured request; keep only the continuation control there. */
+  readonly actionsOnly?: boolean;
 }): ReactElement | null {
   const api = useApiClient();
   const viewer = useViewer();
@@ -74,6 +77,21 @@ export function IssueCommentRunLimit({
   });
   const held = pending.data;
   if (!allowed || !held) return null;
+  const button = (
+    <Button
+      size='sm'
+      disabled={continuation.isPending}
+      onClick={() => {
+        if (continuingRef.current) return;
+        continuingRef.current = true;
+        continuation.mutate(held.token);
+      }}
+    >
+      {continuation.isPending ? <Spinner /> : null}
+      {t('studioAgents.commentRuns.continue')}
+    </Button>
+  );
+  if (actionsOnly) return button;
   return (
     <Alert>
       <TriangleAlertIcon />
@@ -87,18 +105,7 @@ export function IssueCommentRunLimit({
             windowHours: held.windowHours,
           })}
         </p>
-        <Button
-          size='sm'
-          disabled={continuation.isPending}
-          onClick={() => {
-            if (continuingRef.current) return;
-            continuingRef.current = true;
-            continuation.mutate(held.token);
-          }}
-        >
-          {continuation.isPending ? <Spinner /> : null}
-          {t('studioAgents.commentRuns.continue')}
-        </Button>
+        {button}
       </AlertDescription>
     </Alert>
   );

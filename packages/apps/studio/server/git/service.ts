@@ -179,7 +179,7 @@ export interface StudioGitDeps {
   /** Where pushes and workflow runs a webhook delivers are told (`events.ts`). */
   readonly repoEvents?: RepoEvents;
   /** A pull request's preview label state changed, so open pages read the issue's previews again. */
-  readonly onLabelChanged?: () => void;
+  readonly onLabelChanged?: (pullRequestId: string) => void;
 }
 
 /** Who links: a person, or an agent on a run (named by its id). */
@@ -838,7 +838,10 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
         ? { status: null, runs: null }
         : { status: pr.statusEtag, runs: pr.runsEtag },
     );
-    if (pull.notModified && !ci) return;
+    if (pull.notModified && !ci) {
+      await flow.deliverSignals(repo, pr);
+      return;
+    }
     await flow.store(repo, snapshot, {
       ...(pull.notModified ? {} : { pullEtag: pull.etag }),
       ...(ci ? { ci } : {}),
@@ -1055,21 +1058,20 @@ export function createStudioGit(deps: StudioGitDeps): StudioGit {
   async function receiveChecks(
     repo: RepoRow,
     sha: string,
-    reported: PullRequestCiState | null,
+    _reported: PullRequestCiState | null,
   ) {
     const prs = await linkedOpenAtHead(conn(), repo.id, sha);
     if (prs.length === 0) return 'notLinked' as const;
-    // Every check and status of the head together, as polling reads them; what the delivery says when the host cannot
-    // be read (a private repository without a connection).
+    // Read the complete check set, then revalidate the head under the write lock before applying it.
     const ci = await readAuth(repo)
       .then((auth) => readCi(auth, repo, sha, { status: null, runs: null }))
-      .catch((): Ci | null =>
-        reported === null
-          ? null
-          : { ciState: reported, checks: [], statusEtag: null, runsEtag: null },
-      );
-    if (ci)
-      for (const pr of prs) await flow.store(repo, snapshotOfRow(pr), { ci });
+      .catch((): Ci | null => {
+        console.error(
+          'Studio could not read the complete check set; awaiting a fresh snapshot.',
+        );
+        return null;
+      });
+    if (ci) for (const pr of prs) await flow.storeChecks(repo, pr, sha, ci);
     return null;
   }
 

@@ -1,3 +1,4 @@
+import { projectDefaultSkillsRoutes } from '../../server/projects-init/default-skills-routes.js';
 /**
  * Studio's join of the agents and projects plugins over one real database (SQLite in memory): the authentication,
  * authorization, projects, agents and Studio migrations, the projects plugin's services and the agents plugin's,
@@ -117,6 +118,7 @@ import {
 } from '../../server/agents/conversation/delegation.js';
 import { issueRunsRoutes } from '../../server/agents/run-views.js';
 import { projectManagerRoutes } from '../../server/agents/manager/routes.js';
+import { taskGroupRoutes } from '../../server/issues/task-group-routes.js';
 import { ownerHandoffRoutes } from '../../server/issues/owner-handoff-routes.js';
 import { followUpsRoutes } from '../../server/follow-ups/routes.js';
 import { createProjectManager } from '../../server/agents/manager/service.js';
@@ -355,6 +357,8 @@ export interface BridgeHarness {
   /** Pushes and workflow runs webhooks delivered. */
   readonly gitRepoEvents: RepoEvents;
   readonly github: FakeGitHub;
+  /** The pull requests Studio stored something about, in order (`onChanged`). */
+  readonly gitChanges: string[];
   /** People's preferences, by `<userId>:<key>`. */
   readonly preferences: Map<string, unknown>;
   /** What Studio's inbox port was given: every notice sent, and every decision settled. */
@@ -633,6 +637,7 @@ export async function createBridgeHarness(
   const releaseServices = releases;
   // Before the agents: the template they add names the workflow event this registers.
   const github = createFakeGitHub();
+  const gitChanges: string[] = [];
   const port = {
     sent: [] as InboxSend[],
     settled: [] as { decisionKey: string; outcome: string }[],
@@ -663,6 +668,7 @@ export async function createBridgeHarness(
     events: gitEvents,
     repoEvents: gitRepoEvents,
   } = bindStudioGit({
+    onChanged: (pullRequestId) => gitChanges.push(pullRequestId),
     preferenceOf: (userId, key) =>
       Promise.resolve(preferences.get(`${userId}:${key}`)),
     projects: () => projects,
@@ -1204,6 +1210,7 @@ export async function createBridgeHarness(
   };
   // The API routes the CLI's commands are: the projects plugin's, and release management's when assembled.
   const api = new Hono();
+  api.route('/', await projectDefaultSkillsRoutes.createRouter(appLike));
   for (const contribution of [
     ...(projectsPlugin.routes ?? []),
     ...(releaseServices ? (releasesPlugin.routes ?? []) : []),
@@ -1211,6 +1218,10 @@ export async function createBridgeHarness(
     ...(buildsService ? [buildsRoutes] : []),
   ])
     api.route('/', await contribution.createRouter(appLike));
+  api.route(
+    '/',
+    await taskGroupRoutes.createRouter(appLike as unknown as never),
+  );
   api.route('/', await reportsRoutes.createRouter(appLike as unknown as never));
   api.route(
     '/',
@@ -1387,6 +1398,7 @@ export async function createBridgeHarness(
     gitConnections,
     gitRepoEvents,
     github,
+    gitChanges,
     preferences,
     port,
     app,
@@ -1531,7 +1543,7 @@ export async function createBridgeHarness(
         : answer;
     },
     async close() {
-      unbindAgents();
+      await unbindAgents();
       await delegations.settled();
       await releases?.releases.shutdown();
       await testDatabase.destroy();

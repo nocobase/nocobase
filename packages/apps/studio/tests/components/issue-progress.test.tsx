@@ -62,7 +62,8 @@ const progress = (overrides: Partial<IssueProgress> = {}): IssueProgress => ({
   since: null,
   runner: null,
   pullRequest: null,
-  question: null,
+  needsYou: null,
+  explanationCommentId: null,
   next: null,
   handOver: false,
   ...overrides,
@@ -240,7 +241,7 @@ describe('what an issue waits for', () => {
       '等待 PR #10777 的检查结果',
     ],
     [
-      progress({ state: 'needsDecision', question: 'Keep the old API?' }),
+      progress({ state: 'needsDecision', needsYou: 'Keep the old API?' }),
       'The project manager asks: Keep the old API?',
       '项目经理在等你决定：Keep the old API?',
     ],
@@ -318,7 +319,7 @@ describe('what an issue waits for', () => {
     expect(
       progressStatusLine(
         en,
-        progress({ state: 'needsDecision', question: 'Retry after `429`?' }),
+        progress({ state: 'needsDecision', needsYou: 'Retry after `429`?' }),
         NOW,
       ),
     ).toBe('Waiting for your decision');

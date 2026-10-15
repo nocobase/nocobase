@@ -163,6 +163,8 @@ export interface IssueFieldChanges {
   readonly title?: string;
   readonly description?: string;
   readonly statusKey?: string;
+  readonly needsYou?: string | null;
+  readonly next?: string | null;
   readonly priority?: Priority;
   readonly ownerUserId?: string;
   readonly executor?: Executor | null;
