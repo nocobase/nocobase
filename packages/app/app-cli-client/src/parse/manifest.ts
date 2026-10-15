@@ -28,6 +28,7 @@ export interface CliParameter {
   readonly default?: unknown;
   readonly alias?: string | undefined;
   readonly contentFile?: boolean | undefined;
+  readonly contentFileNonEmpty?: boolean | undefined;
   readonly prompt?: boolean | undefined;
   /** `--from-env` fills it from the environment variable named by the value of this field. */
   readonly fromEnv?: string | undefined;

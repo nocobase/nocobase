@@ -1012,6 +1012,10 @@ export function createGitConnections(deps: {
         WEBHOOK_SECRET_MIN,
       ],
     ] as const) {
+      if (typeof input[key] === 'string' && input[key].trim() === '')
+        throw invalid(
+          `${key} must not be empty or whitespace-only; use null to clear it.`,
+        );
       const value = field(input, key, max);
       if (value === undefined) continue;
       if (value === null) {
@@ -1026,12 +1030,15 @@ export function createGitConnections(deps: {
   }
 
   /** An app without an installation id finds it from its account; every kind checks what it cannot work without. */
-  async function complete(id: string): Promise<void> {
+  async function complete(id: string, allowIncomplete = false): Promise<void> {
     const row = await required(id);
     if (row.demo) return;
     if (row.kind === 'token') {
-      if (!row.tokenSealed)
-        throw invalid('A token connection needs its token.');
+      if (!row.tokenSealed) {
+        if (!allowIncomplete)
+          throw invalid('A token connection needs its token.');
+        return;
+      }
       if (!row.account) {
         // The token's own account, so a new repository's default owner is known.
         const user = await on(row)
@@ -1043,8 +1050,12 @@ export function createGitConnections(deps: {
       }
       return;
     }
-    if (!row.appId || !row.privateKeySealed)
-      throw invalid('An app connection needs its app id and private key.');
+    if (!row.appId || !row.privateKeySealed) {
+      if (!allowIncomplete)
+        throw invalid('An app connection needs its app id and private key.');
+      await installationTokens.forget(id);
+      return;
+    }
     if (!row.installationId) {
       if (!row.account)
         throw invalid(
@@ -1560,7 +1571,7 @@ export function createGitConnections(deps: {
           webhookReason: null,
         });
       await updateConnectionRow(conn(), id, values);
-      await complete(id);
+      await complete(id, true);
       return viewOf(await required(id));
     },
 

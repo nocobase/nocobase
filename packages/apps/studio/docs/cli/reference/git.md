@@ -217,7 +217,7 @@ nb-studio git connection reach <connection>
 
 Update a connection to a code host
 
-For whoever manages the connections. A credential left out stays; null removes it. `--token`, `--client-secret`, `--webhook-secret` and `--private-key` are each readable from a file with the matching `--*-file` flag instead of the command line.
+For whoever manages the connections. A credential left out stays; only explicit null removes it. To clear a credential, put its field and null in a JSON file (for example, {"token":null}) and pass --file clear-credentials.json. Do not combine a field cleared in that file with its value flag or content file. Empty or whitespace-only credential files are rejected. `--token`, `--client-secret`, `--webhook-secret` and `--private-key` are each readable from a file with the matching `--*-file` flag instead of the command line.
 
 ```bash
 nb-studio git connection update <connection>
@@ -227,28 +227,35 @@ nb-studio git connection update <connection>
 | ------------ | ----------- |
 | `connection` |             |
 
-| Flag                      | Type         | Description                       |
-| ------------------------- | ------------ | --------------------------------- |
-| `--provider`              | github       |                                   |
-| `--kind`                  | app \| token |                                   |
-| `--same-app-as`           | string       |                                   |
-| `--name`                  | string       |                                   |
-| `--web-url`               | string       |                                   |
-| `--account`               | string       |                                   |
-| `--app-id`                | string       |                                   |
-| `--installation-id`       | string       |                                   |
-| `--client-id`             | string       |                                   |
-| `--private-key`           | string       | (or --private-key-file <path>)    |
-| `--client-secret`         | string       | (or --client-secret-file <path>)  |
-| `--token`                 | string       | (or --token-file <path>)          |
-| `--webhook-secret`        | string       | (or --webhook-secret-file <path>) |
-| `--allow-personal-tokens` | boolean      |                                   |
+| Flag                      | Type         | Description                                                       |
+| ------------------------- | ------------ | ----------------------------------------------------------------- |
+| `--provider`              | github       |                                                                   |
+| `--kind`                  | app \| token |                                                                   |
+| `--same-app-as`           | string       |                                                                   |
+| `--name`                  | string       |                                                                   |
+| `--web-url`               | string       |                                                                   |
+| `--account`               | string       |                                                                   |
+| `--app-id`                | string       |                                                                   |
+| `--installation-id`       | string       |                                                                   |
+| `--client-id`             | string       |                                                                   |
+| `--private-key`           | string       | (or --private-key-file <path>)                                    |
+| `--client-secret`         | string       | (or --client-secret-file <path>)                                  |
+| `--token`                 | string       | (or --token-file <path>)                                          |
+| `--webhook-secret`        | string       | (or --webhook-secret-file <path>)                                 |
+| `--allow-personal-tokens` | boolean      |                                                                   |
+| `--file`                  | path         | The request body as a JSON object; the flags override its fields. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
 **Who:** People (a sign-in or an API key).
 
 **Request:** `PATCH /api/git/connections/{connectionId}` (`gitUpdateConnection`)
+
+**Examples:**
+
+```bash
+nb-studio git connection update acme --file clear-credentials.json
+```
 
 ## git connection usage
 

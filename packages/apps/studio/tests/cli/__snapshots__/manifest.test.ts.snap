@@ -134,7 +134,7 @@ git connection create [--provider --kind --same-app-as --name --web-url --accoun
 git connection delete <connection> -> DELETE /api/git/connections/{connectionId} (person) confirm
 git connection list -> GET /api/git/connections (person)
 git connection reach <connection> -> GET /api/git/connections/{connectionId}/reach (person)
-git connection update <connection> [--provider --kind --same-app-as --name --web-url --account --app-id --installation-id --client-id --private-key --client-secret --token --webhook-secret --allow-personal-tokens] -> PATCH /api/git/connections/{connectionId} (person)
+git connection update <connection> [--provider --kind --same-app-as --name --web-url --account --app-id --installation-id --client-id --private-key --client-secret --token --webhook-secret --allow-personal-tokens --file] -> PATCH /api/git/connections/{connectionId} (person)
 git connection usage <connection> -> GET /api/git/connections/{connectionId}/usage (person)
 git project get <project> -> GET /api/git/projects/{projectId} (person)
 git project set <project> [--attribution!] -> PUT /api/git/projects/{projectId} (person)

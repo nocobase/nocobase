@@ -403,10 +403,14 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
           command: 'git connection create',
           flags: {
             sameAppAs: { name: 'same-app-as' },
-            privateKey: { contentFile: true },
-            clientSecret: { contentFile: true },
-            token: { contentFile: true, prompt: true },
-            webhookSecret: { contentFile: true },
+            privateKey: { contentFile: true, contentFileNonEmpty: true },
+            clientSecret: { contentFile: true, contentFileNonEmpty: true },
+            token: {
+              contentFile: true,
+              contentFileNonEmpty: true,
+              prompt: true,
+            },
+            webhookSecret: { contentFile: true, contentFileNonEmpty: true },
           },
           examples: [
             'git connection create --kind token --name GitHub --account acme --token-file ./token.txt',
@@ -487,16 +491,24 @@ export const gitRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
         operationId: 'gitUpdateConnection',
         ...cliRoute({
           command: 'git connection update',
+          bodyFile: 'file',
+          examples: [
+            'git connection update acme --file clear-credentials.json',
+          ],
           flags: {
             connectionId: { name: 'connection' },
-            privateKey: { contentFile: true },
-            clientSecret: { contentFile: true },
-            token: { contentFile: true, prompt: true },
-            webhookSecret: { contentFile: true },
+            privateKey: { contentFile: true, contentFileNonEmpty: true },
+            clientSecret: { contentFile: true, contentFileNonEmpty: true },
+            token: {
+              contentFile: true,
+              contentFileNonEmpty: true,
+              prompt: true,
+            },
+            webhookSecret: { contentFile: true, contentFileNonEmpty: true },
           },
         }),
         description:
-          'For whoever manages the connections. A credential left out stays; null removes it. `--token`, `--client-secret`, `--webhook-secret` and `--private-key` are each readable from a file with the matching `--*-file` flag instead of the command line.',
+          'For whoever manages the connections. A credential left out stays; only explicit null removes it. To clear a credential, put its field and null in a JSON file (for example, {"token":null}) and pass --file clear-credentials.json. Do not combine a field cleared in that file with its value flag or content file. Empty or whitespace-only credential files are rejected. `--token`, `--client-secret`, `--webhook-secret` and `--private-key` are each readable from a file with the matching `--*-file` flag instead of the command line.',
         responses: {
           200: dataResponse(GitConnectionSchema),
           400: hostRefused,

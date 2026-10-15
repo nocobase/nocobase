@@ -75,7 +75,11 @@ function trackerRouter(): Hono {
         command: 'issue comment add',
         action: 'tracker.issues/comment',
         flags: {
-          content: { contentFile: true, fromEnv: 'issueId' },
+          content: {
+            contentFile: true,
+            contentFileNonEmpty: true,
+            fromEnv: 'issueId',
+          },
           parentId: {
             name: 'reply-to',
             env: ['TRACKER_PARENT', { file: 'EVENT_PATH', path: 'comment.id' }],
@@ -335,6 +339,7 @@ describe('deriveCliCommands', () => {
         required: true,
         description: 'Markdown.',
         contentFile: true,
+        contentFileNonEmpty: true,
         fromEnv: 'issueId',
       },
       {
