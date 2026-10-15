@@ -1,3 +1,4 @@
+import { GLOBAL_SKILL_TARGET } from '../../../shared/skills.js';
 /**
  * Claiming: handing queued runs to a runner that fits them, within each agent's concurrency limit, one run per
  * (agent, subject, thread) at a time, through the runners' one long-poll (`routes/runners/runner.ts`), which hands
@@ -29,6 +30,16 @@
  *
  * Portable by design: the database layer offers no `FOR UPDATE SKIP LOCKED` or advisory locks, and the guarded update
  * plus the agent-row write give the same guarantees on every dialect (SQLite serializes writers anyway).
+ *
+ * Polls are the hot path: every runner walks the same candidates, so a write per candidate is a write per candidate per
+ * runner per poll. Everything that rules a candidate out is read outside any transaction — identity, `fits()`, slots,
+ * concurrency and comment consent — and a transaction opens only for the run about to be claimed. The agent row is
+ * the only row a claim locks with a self-update, and only in that final transaction after `fits()` (or when a stale
+ * identity has to be repaired first, which current work never needs). PostgreSQL runs at READ COMMITTED, where each
+ * statement sees the latest committed rows, so no transaction needs no-op writes to refresh a snapshot; comment
+ * consent needs no chain lock, because confirmation is final and rejection or Run as me end the chain's queued runs,
+ * which the guarded update sees. A new write or lock here needs a measured reason (`tests/claim-concurrency.test.ts`
+ * counts them, and the lock waits on PostgreSQL).
 
  */
 import {
@@ -117,16 +128,16 @@ import {
   inputsRepo,
   sessionsRepo,
   toInput,
+  toExecutions,
   toRun,
   type RunRecord,
 } from './run.store.js';
 import { dropInputs } from './input-gate.js';
 import { finishRun, type TransitionDeps } from './transitions.js';
-import { refreshQueuedIdentity } from './identity.js';
+import { queuedIdentityCurrent, refreshQueuedIdentity } from './identity.js';
 import {
-  lockCommentRoot,
   currentCommentOwner,
-  commentDecision,
+  commentConsent,
   commentFromOwner,
   withdrawCommentRequests,
 } from './comment-consent.js';
@@ -247,7 +258,9 @@ function toolRoom(
 
 type Attempt =
   | { readonly kind: 'claimed'; readonly payload: RunPayload }
-  | { readonly kind: 'skipped' };
+  | { readonly kind: 'skipped' }
+  /** Nothing else of this agent (`agent`) or for this runner (`runner`) can be claimed in this pass. */
+  | { readonly kind: 'full'; readonly scope: 'agent' | 'runner' };
 
 /**
  * The entry `runner` takes a run of `agent` with: the first whose tool it has enabled, installed and signed in, with
@@ -352,14 +365,16 @@ export function variableTargets(
   ];
 }
 
-/** Where a run's skills come from, the agent's first so its own win a shared slug. */
+/** Team defaults, application scopes and directories, from lowest to highest priority. */
 export function skillTargets(
-  agent: Pick<Agent, 'id'>,
+  _agent: Pick<Agent, 'id'>,
   assembly: Pick<SubjectAssembly, 'scopes' | 'dirs'>,
 ): SkillTarget[] {
   return [
-    { scope: 'agent', scopeId: agent.id },
-    ...assembly.scopes,
+    GLOBAL_SKILL_TARGET,
+    ...assembly.scopes.filter(
+      (target) => target.scope !== 'agent' && target.scope !== 'global',
+    ),
     ...assembly.dirs.flatMap((dir) =>
       dir.scopeId ? [{ scope: 'workdir', scopeId: dir.scopeId }] : [],
     ),
@@ -957,7 +972,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     const sessionNote = resume ? assembly.turn.resumed : assembly.turn.fresh;
     const turn = [
       brief.turn,
-      ...(run.failureReason === 'runnerUpgrade'
+      ...(toExecutions(run.executionHistory).find(
+        (execution) => execution.attempt === Number(run.attempt) - 1,
+      )?.failureReason === 'runnerUpgrade'
         ? [
             'The previous attempt was interrupted by a runner upgrade. Continue from the current state.',
           ]
@@ -1093,61 +1110,69 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     });
   }
 
-  async function reconcileCommentConsent(
-    unit: Tx,
+  type ConsentPlan =
+    | { readonly kind: 'none' }
+    | { readonly kind: 'refresh'; readonly run: RunRecord }
+    | { readonly kind: 'withdraw'; readonly rootId: string }
+    | {
+        readonly kind: 'cancel';
+        readonly run: RunRecord;
+        readonly detail: string;
+      }
+    | {
+        readonly kind: 'request';
+        readonly run: RunRecord;
+        readonly root: RunRecord;
+        readonly input: InputRecord;
+      };
+
+  /** What reconciling a comment run would change, read without writing: most runs need nothing. */
+  async function planCommentConsent(
+    conn: DatabaseConnection,
     runId: string,
-  ): Promise<void> {
-    let run: RunRecord | null | undefined = await findRunRecord(
-      unit.conn,
-      runId,
-    );
-    if (!run?.commentRootRunId) return;
-    const root = await lockCommentRoot(unit.conn, run.commentRootRunId);
-    run = await findRunRecord(unit.conn, runId);
-    if (!run || run.status !== 'queued') {
-      await withdrawCommentRequests(
-        unit,
-        root.id,
-        clock.now().toISOString(),
-        runId,
-      );
-      return;
-    }
-    run = await refreshQueuedIdentity(unit, deps, run);
-    if (!run) return;
-    if (!(await currentCommentOwner(unit.conn, deps.subjects, root))) {
-      await finishRun(unit, deps, run, {
-        status: 'cancelled',
-        reason: null,
-        detail: 'The comment belongs to an earlier owner assignment.',
+  ): Promise<ConsentPlan> {
+    const none = { kind: 'none' } as const;
+    const run = await findRunRecord(conn, runId);
+    if (!run?.commentRootRunId) return none;
+    const root = await findRunRecord(conn, run.commentRootRunId);
+    if (!root) return none;
+    if (run.status !== 'queued') {
+      const pending = await runRequestsRepo(conn).findMany({
+        filter: {
+          commentRootRunId: root.id,
+          commentRunId: run.id,
+          purpose: 'personalRunner',
+          status: 'pending',
+        },
+        limit: 1,
       });
-      return;
+      return pending.length > 0 ? { kind: 'withdraw', rootId: root.id } : none;
     }
-    if (root.commentExecution === 'requester') return;
+    if (!(await queuedIdentityCurrent(conn, deps, run)))
+      return { kind: 'refresh', run };
+    if (!(await currentCommentOwner(conn, deps.subjects, root)))
+      return {
+        kind: 'cancel',
+        run,
+        detail: 'The comment belongs to an earlier owner assignment.',
+      };
     if (
-      (await commentFromOwner(unit.conn, root)) ||
+      root.commentExecution === 'requester' ||
       run.actorUserId !== root.ownerUserId
     )
-      return;
-    const decision = await commentDecision(unit.conn, root);
-    if (decision === 'rejected') {
-      await finishRun(unit, deps, run, {
-        status: 'cancelled',
-        reason: null,
+      return none;
+    const { decision } = await commentConsent(conn, root);
+    if (decision === 'confirmed' || decision === 'pending') return none;
+    if (await commentFromOwner(conn, root)) return none;
+    if (decision === 'rejected')
+      return {
+        kind: 'cancel',
+        run,
         detail: 'The comment personal runner authorization is no longer valid.',
-      });
-      return;
-    }
-    if (decision === 'confirmed' || decision === 'pending') return;
-    const agent = await findAgent(unit.conn, run.agentId);
-    if (!agent) return;
-    const team = await selectionFacts(
-      unit.conn,
-      toRun(run),
-      agent,
-      false,
-      'team',
-    );
+      };
+    const agent = await findAgent(conn, run.agentId);
+    if (!agent) return none;
+    const team = await selectionFacts(conn, toRun(run), agent, false, 'team');
     if (
       !team ||
       team.entries.some(
@@ -1157,16 +1182,16 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           e.blockers?.includes('unknown'),
       )
     )
-      return;
+      return none;
     const personal = await selectionFacts(
-      unit.conn,
+      conn,
       toRun(run),
       agent,
       false,
       'personal',
     );
-    if (!personal?.entries.some((e) => e.compatibleCount > 0)) return;
-    const sourceInputs = await inputsRepo(unit.conn).findMany({
+    if (!personal?.entries.some((e) => e.compatibleCount > 0)) return none;
+    const sourceInputs = await inputsRepo(conn).findMany({
       filter: { runId: root.id },
       sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
     });
@@ -1176,24 +1201,126 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           input.type === 'comment' &&
           jsonObject(input.payload).commentSourceSnapshot === true,
       ) ?? sourceInputs.find((input) => input.type === 'comment');
-    if (!input) return;
-    await insertRunRequest(unit, deps, {
-      purpose: 'personalRunner',
-      commentRootRunId: root.id,
-      commentRunId: run.id,
-      commentOwnerKey: root.commentOwnerKey ?? null,
-      agentId: run.agentId,
-      subject: toRun(run).subject,
-      threadScope: run.threadScope,
-      responsibleUserId: root.ownerUserId,
-      requestedByUserId: root.requestedByUserId ?? root.actorUserId,
-      ownerUserId: root.ownerUserId,
-      priority: Number(run.priority),
-      requires: toRun(run).requires,
-      fireAt: run.availableAt,
-      maxAttempts: Number(run.maxAttempts),
-      input: toInput(input),
-    });
+    return input ? { kind: 'request', run, root, input } : none;
+  }
+
+  /**
+   * Brings a comment run's consent up to date. It takes no lock of its own: callers that may create a request hold
+   * the run's agent row (enqueue, retry and the sweeper do), which serializes the duplicate check in insertRunRequest
+   * with every other enqueue and claim of that agent. Everything else is a guarded update.
+   */
+  async function reconcileCommentConsent(
+    unit: Tx,
+    runId: string,
+  ): Promise<void> {
+    let plan = await planCommentConsent(unit.conn, runId);
+    if (plan.kind === 'refresh') {
+      if (!(await refreshQueuedIdentity(unit, deps, plan.run))) return;
+      plan = await planCommentConsent(unit.conn, runId);
+    }
+    switch (plan.kind) {
+      case 'withdraw':
+        await withdrawCommentRequests(
+          unit,
+          plan.rootId,
+          clock.now().toISOString(),
+          runId,
+        );
+        return;
+      case 'cancel':
+        await finishRun(unit, deps, plan.run, {
+          status: 'cancelled',
+          reason: null,
+          detail: plan.detail,
+        });
+        return;
+      case 'request': {
+        const { run, root, input } = plan;
+        await insertRunRequest(unit, deps, {
+          purpose: 'personalRunner',
+          commentRootRunId: root.id,
+          commentRunId: run.id,
+          commentOwnerKey: root.commentOwnerKey ?? null,
+          agentId: run.agentId,
+          subject: toRun(run).subject,
+          threadScope: run.threadScope,
+          // The plan only asks for runs acting as the chain's owner.
+          responsibleUserId: run.actorUserId,
+          requestedByUserId: root.requestedByUserId ?? root.actorUserId,
+          ownerUserId: run.actorUserId,
+          priority: Number(run.priority),
+          requires: toRun(run).requires,
+          fireAt: run.availableAt,
+          maxAttempts: Number(run.maxAttempts),
+          input: toInput(input),
+        });
+        return;
+      }
+      default:
+        return;
+    }
+  }
+
+  /**
+   * Whether this runner may take this candidate under comment consent, read outside any transaction. Immutable facts
+   * settle most candidates without a query: no comment chain, work run as the commenter, or work not run as the
+   * chain's owner. The rest read the chain's requests once. A decision never needs a lock: confirmation is final,
+   * and rejection or Run as me end the chain's queued runs, which the claim's guarded `status = 'queued'` update sees.
+   */
+  async function commentConsentFor(
+    conn: DatabaseConnection,
+    runner: Runner,
+    run: RunRecord,
+  ): Promise<{
+    readonly allowed: boolean;
+    readonly confirmedByUserId: string | null;
+  }> {
+    const allowed = { allowed: true, confirmedByUserId: null } as const;
+    const refused = { allowed: false, confirmedByUserId: null } as const;
+    if (!run.commentRootRunId || run.commentExecution === 'requester')
+      return allowed;
+    const root = await findRunRecord(conn, run.commentRootRunId);
+    if (!root || root.commentRootRunId !== root.id) return refused;
+    if (
+      root.commentExecution === 'requester' ||
+      run.actorUserId !== root.ownerUserId
+    )
+      return allowed;
+    const { decision, confirmation } = await commentConsent(conn, root);
+    if (decision === 'rejected') return refused;
+    if (decision === 'confirmed')
+      return {
+        allowed: true,
+        confirmedByUserId: confirmation?.settledById ?? null,
+      };
+    if (runner.trust === 'team') return allowed;
+    return (await commentFromOwner(conn, root)) ? allowed : refused;
+  }
+
+  /** Withdraws the request a team claim made obsolete, writing only when one is pending. */
+  async function withdrawIfPending(rootId: string, runId: string) {
+    try {
+      const pending = await runRequestsRepo(tx.read()).findMany({
+        filter: {
+          commentRootRunId: rootId,
+          commentRunId: runId,
+          purpose: 'personalRunner',
+          status: 'pending',
+        },
+        limit: 1,
+      });
+      if (pending.length > 0)
+        await tx.run((unit) =>
+          withdrawCommentRequests(
+            unit,
+            rootId,
+            clock.now().toISOString(),
+            runId,
+          ),
+        );
+    } catch (error) {
+      deps.onClaimFailure?.(runId, error);
+    }
   }
 
   async function admit(
@@ -1231,11 +1358,22 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     candidate: RunRecord,
     reported: ToolRoom,
   ): Promise<Attempt> {
-    // Repair pre-upgrade queued work before even checking personal runner ownership.
-    if (deps.subjects.get(candidate.subjectKind)?.actsAs) {
+    const conn = tx.read();
+    // Rules that do not depend on who the run acts as come first, and settle the rest of the pass: an agent at its
+    // limit is checked once per poll, not once per queued run.
+    if ((await deps.slotsUsed(conn, runner.id)) >= runner.slots)
+      return { kind: 'full', scope: 'runner' };
+    if (
+      (await countActive(conn, 'agentId', agent.id)) >= agent.maxConcurrentRuns
+    )
+      return { kind: 'full', scope: 'agent' };
+    // Repair pre-upgrade queued work before even checking personal runner ownership. Reading first keeps a poll over
+    // current work free of transactions and row locks; only work whose identity changed is written.
+    if (
+      deps.subjects.get(candidate.subjectKind)?.actsAs &&
+      !(await queuedIdentityCurrent(conn, deps, candidate))
+    ) {
       const current = await tx.run(async (unit) => {
-        if (candidate.commentRootRunId)
-          await lockCommentRoot(unit.conn, candidate.commentRootRunId);
         await lockAgentForClaim(unit.conn, agent.id, clock.now().toISOString());
         const run = await findRunRecord(unit.conn, candidate.id);
         return run?.status === 'queued'
@@ -1246,15 +1384,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       candidate = current;
     }
     // Avoid assembling or asking authorization when a cheap claim rule already rules this work out.
-    const conn = tx.read();
     if (
       !fits(runner, agent, candidate) ||
-      (await deps.slotsUsed(conn, runner.id)) >= runner.slots ||
-      (await countActive(conn, 'agentId', agent.id)) >=
-        agent.maxConcurrentRuns ||
       (await runsOfKey(conn, candidate, ACTIVE)).length > 0
     )
       return { kind: 'skipped' };
+    const consent = await commentConsentFor(conn, runner, candidate);
+    if (!consent.allowed) return { kind: 'skipped' };
     // Before the transaction: on SQLite it holds the only connection, so the providers read what else they need now.
     const prepared = new Map(
       await prepareExtensions(
@@ -1280,9 +1416,6 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         const { conn } = unit;
         const now = clock.now();
         const nowText = now.toISOString();
-        const root = candidate.commentRootRunId
-          ? await lockCommentRoot(conn, candidate.commentRootRunId)
-          : null;
         await lockAgentForClaim(conn, agent.id, nowText);
         const queuedRun = await findRunRecord(conn, candidate.id);
         if (!queuedRun || queuedRun.status !== 'queued') return null;
@@ -1290,32 +1423,6 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         // Providers were prepared for the candidate's identity outside this transaction.
         if (!identity || identity.actorUserId !== candidate.actorUserId)
           return null;
-        if (root && !(await currentCommentOwner(conn, deps.subjects, root)))
-          return null;
-        if (
-          root &&
-          root.commentExecution !== 'requester' &&
-          !(await commentFromOwner(conn, root)) &&
-          identity.actorUserId === root.ownerUserId
-        ) {
-          const decision = await commentDecision(conn, root);
-          if (decision === 'rejected') return null;
-          if (runner.trust !== 'team' && decision !== 'confirmed') return null;
-          if (decision === 'confirmed') {
-            const confirmation = await runRequestsRepo(conn).findOne({
-              filter: {
-                commentRootRunId: root.id,
-                purpose: 'personalRunner',
-                status: 'confirmed',
-              },
-            });
-            if (confirmation?.settledById)
-              await runsRepo(conn).updateMany({
-                filter: { id: identity.id, status: 'queued' },
-                values: { confirmedByUserId: confirmation.settledById },
-              });
-          }
-        }
         if (
           (await countActive(conn, 'agentId', agent.id)) >=
           agent.maxConcurrentRuns
@@ -1354,6 +1461,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             ]),
           values: {
             status: 'dispatched',
+            failureReason: null,
+            failureDetail: null,
             runnerId: runner.id,
             // Brief providers observe this reservation inside the claim transaction.
             // Replace a previous attempt's tool before computing the roster.
@@ -1363,6 +1472,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             lastActivityAt: nowText,
             availableAt: null,
             updatedAt: nowText,
+            ...(consent.confirmedByUserId
+              ? { confirmedByUserId: consent.confirmedByUserId }
+              : {}),
           },
         });
         if (claimed.updatedCount !== 1) return null;
@@ -1487,8 +1599,6 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
               subject: { kind: 'run', id: run.id, label: run.id },
             },
           });
-        if (root && runner.trust === 'team')
-          await withdrawCommentRequests(unit, root.id, nowText, run.id);
         return assembled.payload;
       });
     } catch (error) {
@@ -1503,6 +1613,11 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       await discardRepoAccess(candidate, prepared);
       return { kind: 'skipped' };
     }
+    // After the claim commits, never inside it: decisions settle the request before touching runs, so a claim that
+    // held its run while waiting for the request could deadlock with them. A request left pending by a crash here is
+    // withdrawn by the next reconciliation, and confirming it finds the run no longer waiting.
+    if (candidate.commentRootRunId && runner.trust === 'team')
+      await withdrawIfPending(candidate.commentRootRunId, candidate.id);
     return { kind: 'claimed', payload: taken };
   }
 
@@ -1541,6 +1656,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         filter: { id: runId },
         values: {
           claimFailures: failures,
+          failureReason: 'setupFailed',
           failureDetail: error.message.slice(0, 10_000),
         },
       });
@@ -1577,8 +1693,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     const conn = tx.read();
     const queued = await candidates();
     const agents = new Map<string, Agent | null>();
+    const full = new Set<string>();
     for (const candidate of queued) {
-      if (seen.has(candidate.id)) continue;
+      if (seen.has(candidate.id) || full.has(candidate.agentId)) continue;
       seen.add(candidate.id);
       if (!agents.has(candidate.agentId))
         agents.set(candidate.agentId, await findAgent(conn, candidate.agentId));
@@ -1594,6 +1711,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       try {
         const result = await attempt(runner, agent, candidate, reported);
         if (result.kind === 'claimed') return result.payload;
+        if (result.kind === 'full') {
+          if (result.scope === 'runner') return null;
+          // Seen candidates are passed over for good in this claim; unvisited ones stay eligible for the next pass.
+          seen.delete(candidate.id);
+          full.add(candidate.agentId);
+        }
       } catch (error) {
         // Rolled back: the run stays queued for a runner it fits.
         if (error instanceof NotForThisRunner) continue;
@@ -1607,7 +1730,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
   return {
     reconcileCommentConsent,
     async reconcileCommentQueue() {
-      const queued = await runsRepo(tx.read()).findMany({
+      const conn = tx.read();
+      const queued = await runsRepo(conn).findMany({
         filter: (f) =>
           f.and([
             f.string('status').eq('queued'),
@@ -1616,7 +1740,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         sort: (s) => [s.field('createdAt').asc()],
         limit: 100,
       });
-      const pending = await runRequestsRepo(tx.read()).findMany({
+      const pending = await runRequestsRepo(conn).findMany({
         filter: { purpose: 'personalRunner', status: 'pending' },
         limit: 100,
       });
@@ -1625,8 +1749,20 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         ...pending
           .map((request) => request.commentRunId)
           .filter((id): id is string => Boolean(id)),
-      ]))
-        await tx.run((unit) => reconcileCommentConsent(unit, id));
+      ])) {
+        // Read first: a sweep over settled chains opens no transaction at all.
+        const plan = await planCommentConsent(conn, id);
+        if (plan.kind === 'none') continue;
+        await tx.run(async (unit) => {
+          if (plan.kind === 'request' || plan.kind === 'refresh')
+            await lockAgentForClaim(
+              unit.conn,
+              plan.run.agentId,
+              clock.now().toISOString(),
+            );
+          await reconcileCommentConsent(unit, id);
+        });
+      }
     },
     diagnose: (conn, run, agent) => selectionFacts(conn, run, agent, false),
     async selectionWait(runId) {

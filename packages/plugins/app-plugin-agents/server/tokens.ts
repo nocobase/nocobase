@@ -1,3 +1,4 @@
+export { SkillIdsSchema } from './core/skills/skill.service.js';
 import type { AuthorizationIdentity } from '@nocobase/authorization/core';
 import {
   createServiceToken,

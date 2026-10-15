@@ -46,6 +46,12 @@ export type RealtimeTopicAudience = 'public' | 'user';
 
 export interface RealtimeTopicOptions {
   readonly audience: RealtimeTopicAudience;
+  /**
+   * A public topic delivered only to authenticated connections: subscribing without a principal is refused
+   * (`AUTHENTICATION_REQUIRED`) and publishing skips such connections. For payloads that name records, such as ids,
+   * which anonymous visitors should not learn of. User topics always require authentication.
+   */
+  readonly authenticated?: boolean;
 }
 
 export interface RealtimePublishOptions {
@@ -97,7 +103,10 @@ export interface RealtimeService {
   registerTopic(topic: string, options: RealtimeTopicOptions): () => void;
   defineTopic<Payload, Audience extends RealtimeTopicAudience>(
     topic: string,
-    options: { readonly audience: Audience },
+    options: {
+      readonly audience: Audience;
+      readonly authenticated?: boolean;
+    },
   ): DefinedRealtimeTopic<Payload, Audience>;
   publish(
     topic: string,

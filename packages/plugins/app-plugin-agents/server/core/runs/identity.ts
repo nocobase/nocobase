@@ -1,4 +1,5 @@
 /** Subject-selected identities, refreshed before a queued run can borrow a runner or credentials. */
+import type { DatabaseConnection } from '@nocobase/db';
 import type { Tx } from '../../kernel/tx.js';
 import type { TransitionDeps } from './transitions.js';
 import { currentCommentOwner } from './comment-consent.js';
@@ -12,21 +13,24 @@ import {
   type RunRecord,
 } from './run.store.js';
 
-export async function refreshQueuedIdentity(
-  unit: Tx,
+type IdentityPlan =
+  | { readonly kind: 'keep' }
+  | { readonly kind: 'cancel'; readonly detail: string }
+  | { readonly kind: 'update'; readonly actorUserId: string };
+
+/** What refreshing would do, read without writing, so a claim poll opens no transaction for current work. */
+async function planQueuedIdentity(
+  conn: DatabaseConnection,
   deps: TransitionDeps,
   run: RunRecord,
-): Promise<RunRecord | null> {
+): Promise<IdentityPlan> {
   if (run.commentRootRunId && run.status === 'queued') {
-    const root = await findRunRecord(unit.conn, run.commentRootRunId);
-    if (!root || !(await currentCommentOwner(unit.conn, deps.subjects, root))) {
-      await finishRun(unit, deps, run, {
-        status: 'cancelled',
-        reason: null,
+    const root = await findRunRecord(conn, run.commentRootRunId);
+    if (!root || !(await currentCommentOwner(conn, deps.subjects, root)))
+      return {
+        kind: 'cancel',
         detail: 'The comment belongs to an earlier owner assignment.',
-      });
-      return null;
-    }
+      };
   }
   const resolve = deps.subjects.get(run.subjectKind)?.actsAs;
   // A run returned to the queue after a lease loss has already fixed its identity.
@@ -37,11 +41,11 @@ export async function refreshQueuedIdentity(
     Number(run.attempt) > 1 ||
     toExecutions(run).length > 0
   )
-    return run;
-  const inputs = await inputsRepo(unit.conn).findMany({
+    return { kind: 'keep' };
+  const inputs = await inputsRepo(conn).findMany({
     filter: { runId: run.id },
   });
-  const identity = await resolve(unit.conn, {
+  const identity = await resolve(conn, {
     subjectId: run.subjectId,
     agentId: run.agentId,
     causedByRunId: run.retryOfRunId ?? undefined,
@@ -49,24 +53,45 @@ export async function refreshQueuedIdentity(
     actorUserId: run.actorUserId,
     inputs: inputs.map(toInput),
   });
-  if (!identity) return run;
-  if (!identity.actorUserId) {
-    await finishRun(unit, deps, run, {
-      status: 'cancelled',
-      reason: null,
-      detail: identity.reason ?? 'noOwner',
-    });
-    return null;
-  }
-  if (run.commentExecution === 'requester') return run;
+  if (!identity) return { kind: 'keep' };
+  if (!identity.actorUserId)
+    return { kind: 'cancel', detail: identity.reason ?? 'noOwner' };
+  if (run.commentExecution === 'requester') return { kind: 'keep' };
   if (
     run.actorUserId === identity.actorUserId &&
     run.ownerUserId === identity.actorUserId
   )
-    return run;
+    return { kind: 'keep' };
+  return { kind: 'update', actorUserId: identity.actorUserId };
+}
+
+/** Whether a queued run's identity is current; a claim refreshes it in a transaction only when it is not. */
+export async function queuedIdentityCurrent(
+  conn: DatabaseConnection,
+  deps: TransitionDeps,
+  run: RunRecord,
+): Promise<boolean> {
+  return (await planQueuedIdentity(conn, deps, run)).kind === 'keep';
+}
+
+export async function refreshQueuedIdentity(
+  unit: Tx,
+  deps: TransitionDeps,
+  run: RunRecord,
+): Promise<RunRecord | null> {
+  const plan = await planQueuedIdentity(unit.conn, deps, run);
+  if (plan.kind === 'keep') return run;
+  if (plan.kind === 'cancel') {
+    await finishRun(unit, deps, run, {
+      status: 'cancelled',
+      reason: null,
+      detail: plan.detail,
+    });
+    return null;
+  }
   const values = {
-    actorUserId: identity.actorUserId,
-    ownerUserId: identity.actorUserId,
+    actorUserId: plan.actorUserId,
+    ownerUserId: plan.actorUserId,
     requestedByUserId: run.requestedByUserId ?? run.actorUserId,
     updatedAt: deps.clock.now().toISOString(),
   };

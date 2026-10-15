@@ -43,7 +43,7 @@ In a writable run, the worktree's initial target may be a same-repository linked
 nb-studio issue search --q "login" --json
 nb-studio issue get PM-12 --json
 nb-studio issue comment add PM-12 --content-file report.md
-nb-studio issue update PM-12 --status in_review
+nb-studio issue update PM-12 --status in_review --needs-you "Review the result and accept it or send it back."
 nb-studio issue attachment download <file-id>
 nb-studio conversation attachment download <file-id>
 nb-studio pr open --issue PM-12 --title "Fix the login redirect"
@@ -58,6 +58,8 @@ nb-studio app deploy my-app --release <release>
 ```
 
 Check each with `nb-studio docs <command>` before relying on its flags: they follow the server's version.
+
+Issue progress flags are optional for people and other agents. In Studio, an authenticated project-manager run must submit a nonblank `--needs-you` (or its file form) with every direct `--status blocked` or `--status in_review` update, including the same status or switching between them. This is enforced by the shared API, including JSON `--file` input; stored text cannot substitute for this submission. Updating only `--next` does not trigger it. Omitted fields are retained while waiting; explicit null/blank clears them. Leaving waiting states clears needsYou, and Done/Cancelled clear next.
 
 ## From CI
 

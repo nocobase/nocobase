@@ -105,12 +105,12 @@
     "@nocobase/jobs": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "class-variance-authority": "catalog:",
+    "cn": "catalog:",
+    "date-fns": "^4.4.0",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "date-fns": "^4.4.0",
     "react-day-picker": "^10.0.1",
-    "cn": "catalog:"
+    "react-dom": "^19.0.0"
   },
   "dependencies": {
     "@sinclair/typebox": "catalog:",
@@ -121,9 +121,13 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@nocobase/app-testing": "workspace:*",
+    "@nocobase/config": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
+    "@playwright/test": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
     "@types/mailparser": "^3.4.6",
     "@types/node": "catalog:",
     "@types/nodemailer": "^8.0.1",
@@ -139,10 +143,7 @@
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "@nocobase/app-testing": "workspace:*",
-    "@nocobase/config": "workspace:*",
-    "@playwright/test": "catalog:"
+    "vitest": "catalog:"
   },
   "repository": {
     "type": "git",

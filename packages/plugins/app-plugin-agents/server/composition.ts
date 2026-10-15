@@ -14,6 +14,7 @@
  * `conversation` subject.
  */
 import type { RunApp } from '@nocobase/agent-protocol';
+import { createRunDataPurge } from './core/runs/run-data-purge.js';
 import {
   createModelSelectionPolicies,
   type ModelSelectionPolicies,
@@ -143,6 +144,7 @@ import {
 } from './core/runs/index.js';
 
 export interface AgentsDeps {
+  readonly runRetentionDays?: () => number;
   readonly database: Pick<DatabaseManager, 'transaction' | 'connection'>;
   readonly idGenerator: { generateString(): string };
   /**
@@ -244,6 +246,7 @@ export interface Agents {
   readonly gitCredentials: GitCredentialService;
   /** Marks silent runners offline, then takes back and ends the runs and jobs nobody will finish. */
   readonly sweeper: RunnerSweeper;
+  readonly purgeRunData: () => Promise<number>;
   /** Variables of agents, working directories and the scopes the application registers. */
   readonly variables: VariableService;
   /** The skill library and where skills are attached. */
@@ -567,6 +570,10 @@ export function createAgents(deps: AgentsDeps): Agents {
   });
 
   return {
+    purgeRunData: createRunDataPurge({
+      tx,
+      retentionDays: deps.runRetentionDays ?? (() => 14),
+    }),
     events,
     tx,
     clock,

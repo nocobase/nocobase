@@ -1,3 +1,4 @@
+import { BRIDGE_PROTOCOL_VERSION } from '@nocobase/acp-bridge/protocol';
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import {
   findApiDocumentSchemaProblems,
@@ -8,7 +9,7 @@ import {
 import type { DatabaseManager } from '@nocobase/db';
 import { ServiceContainer } from '@nocobase/service-provider';
 import type { Hono, MiddlewareHandler } from 'hono';
-import { describe, expect } from 'vitest';
+import { describe, expect, vi } from 'vitest';
 
 import {
   COMPUTER_CREDENTIAL,
@@ -95,6 +96,66 @@ const computer = {
 };
 
 describe('the agent sessions routes', () => {
+  test('discovers through authenticated owned routes with validated input and a correlated bridge reply', async ({
+    database,
+  }) => {
+    const router = await mount(database);
+    const {
+      data: { computerId },
+    } = (await (
+      await call(router, 'POST', '/bridge/register', 'u1', {
+        protocol: BRIDGE_PROTOCOL_VERSION,
+        computerId: null,
+        bridgeStartedAt: 'bridge-1',
+        computer,
+      })
+    ).json()) as { data: { computerId: string } };
+    const input = { agentId: 'codex', cwd: '/home/zhou', settings: {} };
+    const route = `/computers/${computerId}/discoverChoices`;
+    expect((await call(router, 'POST', route, undefined, input)).status).toBe(
+      401,
+    );
+    expect((await call(router, 'POST', route, 'u2', input)).status).toBe(404);
+    expect(
+      (await call(router, 'POST', route, 'u1', { ...input, unwanted: true }))
+        .status,
+    ).toBe(400);
+    const pending = call(router, 'POST', route, 'u1', input);
+    let requestId = '';
+    await vi.waitFor(async () => {
+      const reply = (await (
+        await call(
+          router,
+          'POST',
+          '/bridge/poll',
+          'u1',
+          { computerId, wait: false },
+          computerId,
+        )
+      ).json()) as {
+        data: { commands: { type: string; requestId: string }[] };
+      };
+      requestId =
+        reply.data.commands.find(
+          (command) => command.type === 'discoverChoices',
+        )?.requestId ?? '';
+      expect(requestId).not.toBe('');
+    });
+    const discovery = { status: 'unsupported', choices: [] };
+    expect(
+      (
+        await call(
+          router,
+          'POST',
+          '/bridge/reply',
+          'u1',
+          { computerId, requestId, listing: null, discovery, error: null },
+          computerId,
+        )
+      ).status,
+    ).toBe(204);
+    expect(await (await pending).json()).toEqual({ data: discovery });
+  });
   test('declare themselves for the API document', async ({ database }) => {
     const router = await mount(database);
     expect(findUndeclaredApiRoutes(router)).toEqual([]);
@@ -125,7 +186,7 @@ describe('the agent sessions routes', () => {
     expect(
       (
         await call(router, 'POST', '/bridge/register', undefined, {
-          protocol: 1,
+          protocol: BRIDGE_PROTOCOL_VERSION,
           computerId: null,
           bridgeStartedAt: 'bridge-1',
           computer,
@@ -134,12 +195,68 @@ describe('the agent sessions routes', () => {
     ).toBe(401);
   });
 
+  test('refuse an older bridge with the protocols they speak, and show its computer as outdated until it registers', async ({
+    database,
+  }) => {
+    const router = await mount(database);
+    const register = (protocol: number, computerId: string | null) =>
+      call(router, 'POST', '/bridge/register', 'u1', {
+        protocol,
+        computerId,
+        bridgeStartedAt: 'bridge-1',
+        computer,
+      });
+    const { computerId } = (
+      (await (await register(BRIDGE_PROTOCOL_VERSION, null)).json()) as {
+        data: { computerId: string };
+      }
+    ).data;
+
+    const old = BRIDGE_PROTOCOL_VERSION - 1;
+    const refused = await register(old, computerId);
+    expect(refused.status).toBe(400);
+    expect(
+      ((await refused.json()) as { error: Record<string, unknown> }).error,
+    ).toMatchObject({
+      status: 'FAILED_PRECONDITION',
+      reason: 'AGENT_SESSIONS_UPGRADE_REQUIRED',
+      domain: 'agentSessions',
+      metadata: {
+        bridgeProtocol: old,
+        protocol: BRIDGE_PROTOCOL_VERSION,
+        supportedProtocols: [BRIDGE_PROTOCOL_VERSION],
+      },
+    });
+    const listed = async () =>
+      (
+        (await (await call(router, 'GET', '/computers', 'u1')).json()) as {
+          data: Record<string, unknown>[];
+        }
+      ).data;
+    expect((await listed())[0]).toMatchObject({
+      outdatedBridge: {
+        host: computer.host,
+        bridgeProtocol: old,
+        protocol: BRIDGE_PROTOCOL_VERSION,
+      },
+    });
+
+    // A newer bridge than the application is the application's to update: its computer is not marked.
+    expect(
+      (await register(BRIDGE_PROTOCOL_VERSION + 1, computerId)).status,
+    ).toBe(400);
+    expect((await register(BRIDGE_PROTOCOL_VERSION, computerId)).status).toBe(
+      200,
+    );
+    expect((await listed())[0]).not.toHaveProperty('outdatedBridge');
+  });
+
   test('let a person reach only their own computers and sessions', async ({
     database,
   }) => {
     const router = await mount(database);
     const registered = await call(router, 'POST', '/bridge/register', 'u1', {
-      protocol: 1,
+      protocol: BRIDGE_PROTOCOL_VERSION,
       computerId: null,
       bridgeStartedAt: 'bridge-1',
       computer,
@@ -186,7 +303,7 @@ describe('the agent sessions routes', () => {
   }) => {
     const router = await mount(database);
     const registered = await call(router, 'POST', '/bridge/register', 'u1', {
-      protocol: 1,
+      protocol: BRIDGE_PROTOCOL_VERSION,
       computerId: null,
       bridgeStartedAt: 'bridge-1',
       computer,
@@ -217,7 +334,11 @@ describe('the agent sessions routes', () => {
           await call(router, 'POST', '/bridge/register', 'u1', json, as)
         ).json()) as { data: { computerId: string; key?: string } }
       ).data;
-    const body = { protocol: 1, bridgeStartedAt: 'bridge-1', computer };
+    const body = {
+      protocol: BRIDGE_PROTOCOL_VERSION,
+      bridgeStartedAt: 'bridge-1',
+      computer,
+    };
     const mine = await register({ ...body, computerId: null });
     const other = await register({ ...body, computerId: null });
     expect(mine.key).toMatch(/^nbc_/u);
@@ -252,7 +373,7 @@ describe('the agent sessions routes', () => {
     const { computerId } = (
       (await (
         await call(router, 'POST', '/bridge/register', 'u1', {
-          protocol: 1,
+          protocol: BRIDGE_PROTOCOL_VERSION,
           computerId: null,
           bridgeStartedAt: 'bridge-1',
           computer,

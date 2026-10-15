@@ -287,7 +287,11 @@ export interface RunRequestFilter {
   /** `responsible`: the ones they answer for; `requester`: the ones they asked; both when left out. */
   readonly role?: 'responsible' | 'requester';
   readonly status?: RunRequestStatus;
+  /** Any of these statuses. */
+  readonly statuses?: readonly RunRequestStatus[];
   readonly subject?: { readonly kind: string; readonly id?: string };
+  /** Only these subjects of `subject.kind`. */
+  readonly subjectIds?: readonly string[];
   readonly agentId?: string;
   readonly limit?: number;
   /** The newest-first position to read after: the last request of the previous page. */
@@ -369,8 +373,11 @@ export interface RunRequestDeps {
     record: RunRequestRecord,
     byUserId: string,
   ) => Promise<void>;
-  /** Locks and validates the original comment chain before any personal consent decision. */
-  readonly lockCommentRequest?: (
+  /**
+   * Validates the original comment chain before any personal consent decision, without locking it: the decision is
+   * the guarded settle of the request row, and what it changes in the chain is guarded on each run's status.
+   */
+  readonly checkCommentRequest?: (
     unit: Tx,
     record: RunRequestRecord,
   ) => Promise<void>;
@@ -597,6 +604,8 @@ export function createRunRequestService(
     },
 
     async list(filter) {
+      if (filter.subjectIds?.length === 0 || filter.statuses?.length === 0)
+        return [];
       const records = await runRequestsRepo(tx.read()).findMany({
         filter: (f) =>
           f.and([
@@ -609,11 +618,27 @@ export function createRunRequestService(
                     f.string('requestedByUserId').eq(filter.userId),
                   ]),
             ...(filter.status ? [f.string('status').eq(filter.status)] : []),
+            ...(filter.statuses
+              ? [
+                  f.or(
+                    filter.statuses.map((status) =>
+                      f.string('status').eq(status),
+                    ),
+                  ),
+                ]
+              : []),
             ...(filter.subject
               ? [f.string('subjectKind').eq(filter.subject.kind)]
               : []),
             ...(filter.subject?.id
               ? [f.string('subjectId').eq(filter.subject.id)]
+              : []),
+            ...(filter.subjectIds
+              ? [
+                  f.or(
+                    filter.subjectIds.map((id) => f.string('subjectId').eq(id)),
+                  ),
+                ]
               : []),
             ...(filter.agentId ? [f.string('agentId').eq(filter.agentId)] : []),
           ]),
@@ -651,7 +676,7 @@ export function createRunRequestService(
       return tx.run(async (unit) => {
         const record = await require(unit.conn, requestId);
         if (record.purpose === 'personalRunner')
-          await deps.lockCommentRequest!(unit, record);
+          await deps.checkCommentRequest!(unit, record);
         if (record.responsibleUserId !== byUserId)
           throw forbidden(
             'Only the person who answers for the subject may confirm this request.',
@@ -688,7 +713,7 @@ export function createRunRequestService(
       tx.run(async (unit) => {
         const record = await require(unit.conn, requestId);
         if (record.purpose === 'personalRunner')
-          await deps.lockCommentRequest!(unit, record);
+          await deps.checkCommentRequest!(unit, record);
         if (record.responsibleUserId !== byUserId)
           throw forbidden(
             'Only the person who answers for the subject may reject this request.',
@@ -713,7 +738,7 @@ export function createRunRequestService(
       tx.run(async (unit) => {
         const record = await require(unit.conn, requestId);
         if (record.purpose === 'personalRunner')
-          await deps.lockCommentRequest!(unit, record);
+          await deps.checkCommentRequest!(unit, record);
         if (record.requestedByUserId !== byUserId)
           throw forbidden(
             'Only the person who asked may withdraw this request.',
@@ -742,7 +767,7 @@ export function createRunRequestService(
       return tx.run(async (unit) => {
         const record = await require(unit.conn, requestId);
         if (record.purpose === 'personalRunner')
-          await deps.lockCommentRequest!(unit, record);
+          await deps.checkCommentRequest!(unit, record);
         if (record.requestedByUserId !== byUserId)
           throw forbidden(
             'Only the person who asked may run this request as themselves.',

@@ -60,6 +60,8 @@ export async function finishRun(
   deps: TransitionDeps,
   run: RunRecord,
   outcome: FinishOutcome,
+  versioned = false,
+  afterGuard?: () => Promise<void>,
 ): Promise<RunRecord | null> {
   const now = deps.clock.now().toISOString();
   const values: Record<string, unknown> = {
@@ -69,8 +71,13 @@ export async function finishRun(
     availableAt: null,
     updatedAt: now,
   };
-  if (outcome.reason !== undefined) values.failureReason = outcome.reason;
-  if (outcome.detail !== undefined)
+  if (outcome.status === 'completed') {
+    values.failureReason = null;
+    values.failureDetail = null;
+  } else if (outcome.reason !== undefined) {
+    values.failureReason = outcome.reason;
+    values.failureDetail = outcome.detail?.slice(0, 10_000) ?? null;
+  } else if (outcome.detail !== undefined)
     values.failureDetail = outcome.detail.slice(0, 10_000);
   if (outcome.summary !== undefined) values.summary = outcome.summary;
   if (outcome.sessionId !== undefined) values.sessionId = outcome.sessionId;
@@ -81,6 +88,7 @@ export async function finishRun(
       f.and([
         f.string('id').eq(run.id),
         f.string('status').eq(run.status),
+        ...(versioned ? [f.number('revision').eq(run.revision)] : []),
         ...(run.status === 'queued'
           ? [
               f.number('attempt').eq(Number(run.attempt)),
@@ -109,6 +117,7 @@ export async function finishRun(
     values,
   });
   if (result.updatedCount !== 1) return null;
+  await afterGuard?.();
   await endExecution(tx.conn, run, now, outcome.reason ?? null);
   await revokeTokens(tx, run.id, now);
   const ended = (await findRunRecord(tx.conn, run.id))!;

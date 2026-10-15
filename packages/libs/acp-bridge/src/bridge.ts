@@ -22,6 +22,7 @@ import {
   BRIDGE_PROTOCOL_VERSION,
   BRIDGE_ROUTES,
   coalesce,
+  DISCOVERY_TIMEOUT_MS,
   MAX_EVENTS_PER_REPORT,
   POLL_WAIT_MS,
   type AgentInfo,
@@ -66,16 +67,47 @@ export class BridgeStopped extends Error {
   override readonly name: string = 'BridgeStopped';
 }
 
+/**
+ * The application refused the bridge for speaking another protocol (`AGENT_SESSIONS_UPGRADE_REQUIRED`). When the
+ * application says which protocol it speaks (`protocol`), a bridge older than that can update itself and start again;
+ * one from an application that does not say may be the older side too.
+ */
+export class BridgeUpgradeRequired extends BridgeStopped {
+  override readonly name: string = 'BridgeUpgradeRequired';
+  /** The protocol this bridge speaks. */
+  readonly bridgeProtocol: number = BRIDGE_PROTOCOL_VERSION;
+  /** The protocol the application speaks, when it says. */
+  readonly protocol: number | undefined;
+
+  constructor(message: string, protocol: number | undefined) {
+    super(message);
+    this.protocol = protocol;
+  }
+
+  /** Whether an update of this bridge may help: the application speaks a newer protocol, or does not say. */
+  get bridgeIsOlder(): boolean {
+    return this.protocol === undefined || this.protocol > this.bridgeProtocol;
+  }
+}
+
 /** An answer other than 2xx from the application. */
 export class BridgeHttpError extends Error {
   override readonly name: string = 'BridgeHttpError';
   readonly status: number;
   readonly reason: string | undefined;
+  /** The error body's `metadata`, when it has one. */
+  readonly metadata: Readonly<Record<string, unknown>> | undefined;
 
-  constructor(status: number, reason: string | undefined, message: string) {
+  constructor(
+    status: number,
+    reason: string | undefined,
+    message: string,
+    metadata?: Readonly<Record<string, unknown>>,
+  ) {
     super(message);
     this.status = status;
     this.reason = reason;
+    this.metadata = metadata;
   }
 }
 
@@ -191,6 +223,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     `This computer is connected to ${options.server} as "${computer().name}".`,
   );
   let probing: Promise<void> | undefined;
+  let refused: BridgeUpgradeRequired | undefined;
   const refresh = (): void => {
     if (probing || signal.aborted) return;
     probing = (async () => {
@@ -207,8 +240,15 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       await register();
     })()
       .catch((error: unknown) => {
-        if (!signal.aborted)
-          log(`Could not check the agents: ${message(error)}`);
+        if (signal.aborted) return;
+        // The application was updated under a running bridge: it cannot go on, as when refused at start.
+        const stopped = refusal(error);
+        if (stopped instanceof BridgeUpgradeRequired) {
+          refused = stopped;
+          stopping.abort();
+          return;
+        }
+        log(`Could not check the agents: ${message(error)}`);
       })
       .finally(() => {
         probing = undefined;
@@ -219,6 +259,75 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
   rescan.unref();
 
   const sessions = new Map<string, BridgeSession>();
+  const discoveryShutdown = new AbortController();
+  const discoveries = new Set<Promise<void>>();
+  const resolve = async (agentId: string): Promise<ResolvedAgent> => {
+    const spec = AGENTS.find((candidate) => candidate.id === agentId);
+    if (!spec)
+      throw new Error(
+        `This version of ${options.client.name} cannot run the agent "${agentId}".`,
+      );
+    const resolved = found.get(agentId) ?? (await resolveAgent(spec, env));
+    if (!resolved)
+      throw new Error(`${spec.name} is not installed on this computer.`);
+    found.set(agentId, resolved);
+    return resolved;
+  };
+  const discover = async (
+    command: Extract<BridgeCommand, { type: 'discoverChoices' }>,
+  ): Promise<void> => {
+    const discoverySignal = AbortSignal.any([
+      signal,
+      discoveryShutdown.signal,
+      AbortSignal.timeout(DISCOVERY_TIMEOUT_MS),
+    ]);
+    const session = new BridgeSession(
+      {
+        id: command.requestId,
+        agentId: command.agentId,
+        cwd: command.cwd,
+        settings: command.settings,
+        acpSessionId: null,
+        tools: null,
+      },
+      {
+        client: options.client,
+        server: options.server,
+        env,
+        roots,
+        resolve,
+        emit: () => undefined,
+        stateChanged: () => undefined,
+        discoverySignal,
+      },
+    );
+    let reply: ReplyRequest;
+    try {
+      reply = {
+        computerId,
+        requestId: command.requestId,
+        listing: null,
+        discovery: await session.discover(),
+        error: null,
+      };
+    } catch (error) {
+      reply = {
+        computerId,
+        requestId: command.requestId,
+        listing: null,
+        error: (discoverySignal.aborted
+          ? 'Agent settings discovery was stopped or timed out. Retry settings.'
+          : message(error)
+        ).slice(0, 2000),
+      };
+    } finally {
+      await session.close();
+    }
+    if (!signal.aborted)
+      await post(BRIDGE_ROUTES.reply, reply).catch((error: unknown) =>
+        log(`Could not answer the application: ${message(error)}`),
+      );
+  };
   const reporter = new Reporter({
     send: (request) => post<ReportResponse>(BRIDGE_ROUTES.report, request),
     computerId,
@@ -254,6 +363,16 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     );
   };
   const dispatch = (command: BridgeCommand): void => {
+    if (command.type === 'discoverChoices') {
+      const pending = discover(command);
+      discoveries.add(pending);
+      void pending
+        .finally(() => discoveries.delete(pending))
+        .catch((error: unknown) =>
+          log(`Could not discover agent settings: ${message(error)}`),
+        );
+      return;
+    }
     if (command.type === 'close') {
       void closeSession(command.sessionId);
       return;
@@ -270,19 +389,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
         server: options.server,
         env,
         roots,
-        resolve: async (agentId) => {
-          const spec = AGENTS.find((candidate) => candidate.id === agentId);
-          if (!spec)
-            throw new Error(
-              `This version of ${options.client.name} cannot run the agent "${agentId}".`,
-            );
-          const resolved =
-            found.get(agentId) ?? (await resolveAgent(spec, env));
-          if (!resolved)
-            throw new Error(`${spec.name} is not installed on this computer.`);
-          found.set(agentId, resolved);
-          return resolved;
-        },
+        resolve,
         emit: (event) => reporter.add(sessionId, event),
         stateChanged: () => reporter.touch(sessionId),
       });
@@ -321,9 +428,12 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     clearInterval(rescan);
     stopping.abort();
     await probing;
+    discoveryShutdown.abort();
+    await Promise.all(discoveries);
     await Promise.all([...sessions.keys()].map(closeSession));
     await reporter.drain();
   }
+  if (refused && !options.signal.aborted) throw refused;
 }
 
 /** What the application learns of an agent before the bridge has started it. */
@@ -519,7 +629,11 @@ function createPost(
     const text = await response.text();
     let parsed: {
       data?: unknown;
-      error?: { reason?: string; message?: string };
+      error?: {
+        reason?: string;
+        message?: string;
+        metadata?: Record<string, unknown>;
+      };
     } = {};
     try {
       parsed = text ? (JSON.parse(text) as typeof parsed) : {};
@@ -531,6 +645,7 @@ function createPost(
         response.status,
         parsed.error?.reason,
         parsed.error?.message ?? `${response.status} ${response.statusText}`,
+        parsed.error?.metadata,
       );
     }
     return parsed.data as T;
@@ -554,8 +669,10 @@ function refusal(error: unknown): BridgeStopped | undefined {
     );
   }
   if (error.reason === 'AGENT_SESSIONS_UPGRADE_REQUIRED') {
-    return new BridgeStopped(
-      `The application needs a newer command line: ${error.message}`,
+    const protocol = error.metadata?.protocol;
+    return new BridgeUpgradeRequired(
+      `The application refused this bridge's protocol: ${error.message}`,
+      typeof protocol === 'number' ? protocol : undefined,
     );
   }
   if (error.status === 404)

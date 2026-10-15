@@ -3,39 +3,28 @@ import type { DatabaseConnection } from '@nocobase/db';
 import type { Tx } from '../../kernel/tx.js';
 import { precondition } from '../../kernel/errors.js';
 import type { SubjectRegistry } from './ports.js';
-import {
-  findRunRecord,
-  runsRepo,
-  inputsRepo,
-  type RunRecord,
-} from './run.store.js';
+import { findRunRecord, inputsRepo, type RunRecord } from './run.store.js';
 import { jsonObject } from '../../kernel/values.js';
-import { runRequestsRepo, toRunRequest } from './run-requests.js';
+import {
+  runRequestsRepo,
+  toRunRequest,
+  type RunRequestRecord,
+} from './run-requests.js';
 
-/** Every claim and decision locks this same existing root row, including work of different agents. */
-export async function lockCommentRoot(
+/**
+ * The root of a comment's run chain, read without locking: its subject, owner and execution mode never change once
+ * written. Decisions and claims protect themselves with guarded updates on the rows they change instead.
+ */
+export async function findCommentRoot(
   conn: DatabaseConnection,
   rootId: string,
 ): Promise<RunRecord> {
-  await runsRepo(conn).updateMany({
-    filter: { id: rootId, commentRootRunId: rootId },
-    values: { commentRootRunId: rootId },
-  });
   const root = await findRunRecord(conn, rootId);
   if (!root || root.commentRootRunId !== rootId)
     throw precondition(
       'RUN_REQUEST_SETTLED',
       'The comment run chain is no longer available.',
     );
-  // Own writes expose the latest child and request rows even if an earlier read established a repeatable-read snapshot.
-  await runsRepo(conn).updateMany({
-    filter: { commentRootRunId: rootId },
-    values: { commentRootRunId: rootId },
-  });
-  await runRequestsRepo(conn).updateMany({
-    filter: { commentRootRunId: rootId },
-    values: { commentRootRunId: rootId },
-  });
   return root;
 }
 
@@ -117,14 +106,28 @@ export async function commentFromOwner(
     : true;
 }
 
+export type CommentDecision = 'confirmed' | 'rejected' | 'pending' | null;
+
+/** One indexed read of the chain's personal runner requests; `confirmation` names who released the chain. */
 export async function commentDecision(
   conn: DatabaseConnection,
   root: RunRecord,
-): Promise<'confirmed' | 'rejected' | 'pending' | null> {
+): Promise<CommentDecision> {
+  return (await commentConsent(conn, root)).decision;
+}
+
+export async function commentConsent(
+  conn: DatabaseConnection,
+  root: RunRecord,
+): Promise<{
+  readonly decision: CommentDecision;
+  readonly confirmation: RunRequestRecord | null;
+}> {
   const records = await runRequestsRepo(conn).findMany({
     filter: { commentRootRunId: root.id, purpose: 'personalRunner' },
     sort: (s) => [s.field('createdAt').desc(), s.field('id').desc()],
   });
+  const confirmation = records.find((r) => r.status === 'confirmed') ?? null;
   if (
     records.some(
       (r) =>
@@ -132,9 +135,12 @@ export async function commentDecision(
         (r.status === 'withdrawn' && r.settledById === root.requestedByUserId),
     )
   )
-    return 'rejected';
-  if (records.some((r) => r.status === 'confirmed')) return 'confirmed';
-  return records.some((r) => r.status === 'pending') ? 'pending' : null;
+    return { decision: 'rejected', confirmation };
+  if (confirmation) return { decision: 'confirmed', confirmation };
+  return {
+    decision: records.some((r) => r.status === 'pending') ? 'pending' : null,
+    confirmation: null,
+  };
 }
 
 /** A team claim makes the pending request obsolete, without granting later personal claims. */

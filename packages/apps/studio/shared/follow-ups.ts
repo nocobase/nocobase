@@ -6,6 +6,8 @@
  * | Method | Route                                      | Body                    | `data`            |
  * | ------ | ------------------------------------------ | ----------------------- | ----------------- |
  * | GET    | `followUps`                                |                         | `FollowUpsView`   |
+ * | GET    | `followUps/issues?issueIds=a,b`            |                         | `FollowUpIssue[]` |
+ * | GET    | `followUps/following`                      |                         | `FollowingState`  |
  * | PUT    | `followUps/following`                      | `{ issueIds }`          | `FollowingView`   |
  * | POST   | `followUps/issues/:issueId/follow`         |                         | `FollowingView`   |
  * | POST   | `followUps/issues/:issueId/unfollow`       |                         | `FollowingView`   |
@@ -78,6 +80,11 @@ export interface FollowUpsView {
 
 export interface FollowingView {
   readonly issueIds: readonly string[];
+}
+
+/** What the viewer follows now, and how many they may: the follow star's whole read. */
+export interface FollowingState extends FollowingView {
+  readonly max: number;
 }
 
 /** The followed ids a stored value holds: unique strings, at most `FOLLOW_UPS_MAX`; null when it holds none. */

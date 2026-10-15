@@ -10,7 +10,6 @@ import {
 } from '../../server/tokens.js';
 import { gmailMailProviderDefinition } from '../../server/adapters/gmail/definition.js';
 import { microsoftMailProviderDefinition } from '../../server/adapters/microsoft/definition.js';
-import { imapSmtpMailProviderDefinition } from '../../server/adapters/imap-smtp/definition.js';
 
 describe('Mail built-in providers', () => {
   it('registers all built-ins through the Mail plugin without configuration or external connections', async () => {
@@ -32,11 +31,13 @@ describe('Mail built-in providers', () => {
       for (const provider of providers) await provider.boot();
 
       const registry = container.resolve(mailProviderRegistryToken);
-      expect(registry.definitions()).toEqual([
+      const [gmail, microsoft, imap] = registry.definitions();
+      expect([gmail, microsoft]).toEqual([
         gmailMailProviderDefinition,
         microsoftMailProviderDefinition,
-        imapSmtpMailProviderDefinition,
       ]);
+      // IMAP is bound to Mail's database lazily, without resolving it at boot.
+      expect(imap).toMatchObject({ type: 'imap-smtp', label: 'IMAP / SMTP' });
       expect(container.resolveIfCreated(mailRuntimeToken)).toBeUndefined();
       expect(fetch).not.toHaveBeenCalled();
 

@@ -70,6 +70,17 @@ const enUS = {
     unknown: 'Unknown',
   },
   newSession: {
+    settingsOutdated:
+      'This computer\'s command line is too old for this application. Update it there, as "My computers" shows.',
+    settingsOffline:
+      'This computer is offline. Reconnect its bridge to load settings and send.',
+    settingsLoading: 'Loading settings…',
+    settingsFailed: 'Could not load agent settings.',
+    settingsRetry: 'Retry settings',
+    settingsUnsupported:
+      'This agent does not expose settings. Its defaults will be used.',
+    settingsEmpty:
+      'This agent has no configurable settings. Its defaults will be used.',
     title: 'New session',
     subtitle:
       'Discuss and clarify requirements with an agent on your own computer, record tasks, and follow progress here. Studio’s project manager coordinates agents to develop tasks after you start them.',
@@ -144,6 +155,8 @@ const enUS = {
     recordBody: 'The full record is kept here, and only you can see it.',
   },
   composer: {
+    expand: 'Expand input',
+    collapse: 'Collapse input',
     placeholder: 'Reply, or ask for the next thing…',
     busy: 'The agent is answering. Your message goes once it is done.',
     waiting: 'Answer the request above, or write a message to send after it.',
@@ -236,6 +249,13 @@ const enUS = {
     truncated: 'Only the first 500 folders are shown.',
   },
   computers: {
+    outdated: {
+      title: 'Update the command line on this computer ({{host}})',
+      body: 'The application refused its connection: it speaks bridge protocol {{bridgeProtocol}}, and the application needs {{protocol}}. Run this on the computer:',
+      restart:
+        'An up-to-date command line restarts its background connection by itself; if it does not reconnect within a few minutes, run:',
+    },
+    offline: 'Offline',
     title: 'My computers',
     description:
       'These computers run only your own sessions, and the agents work as you. Machines that run the team’s background work are managed separately.',

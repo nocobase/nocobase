@@ -92,7 +92,7 @@ import { PROCESS_TAG_ENV } from '../core/process-tree.ts';
 import { EventSpool } from '../core/events.ts';
 import { isDiskFull } from '../lib/disk-full.ts';
 import { LeaseKeeper, LOST_CODES } from '../core/lease.ts';
-import { ensurePnpmStore, pnpmImportMethod } from '../core/pnpm-store.ts';
+import { ensurePnpmStore } from '../core/pnpm-store.ts';
 import { writeRunnerTools } from './runner-tools.ts';
 import {
   agentCwd,
@@ -208,7 +208,8 @@ export function workspaceNotes(options: {
   }
   if (options.pnpmStoreDir !== undefined)
     lines.push(
-      `pnpm is set up to use this machine's shared store, ${options.pnpmStoreDir}, which you may write: install with a plain \`pnpm install\`, without \`--store-dir\` or \`--package-import-method\`, so dependencies are cloned or copied from it, never hard-linked, instead of downloaded again. Never change the store's files; use \`pnpm patch\` to change a dependency.`,
+      `pnpm is set up to use this machine's shared store, ${options.pnpmStoreDir}, which you may write: install with a plain \`pnpm install\`, without \`--store-dir\`, so dependencies come from it instead of being downloaded again. Never change the store's files.`,
+      'Dependencies under `node_modules` are hard links into that store, shared by every run on this machine: never edit them in place. To change a dependency for debugging, use `pnpm patch <pkg>` (edit the extracted copy, then `pnpm patch-commit` or discard it), or copy the file elsewhere.',
     );
   if (options.skillsDir !== undefined)
     lines.push(
@@ -769,7 +770,6 @@ export class RunWorker {
         ? []
         : await writeRunnerTools(binDir);
     const pnpmStoreDir = await ensurePnpmStore(deps.paths);
-    const importMethod = await pnpmImportMethod(deps.paths);
     const cwd = agentCwd(context);
     if (this.broker !== undefined && this.broker.urls.length > 0) {
       this.credentialServer = await serveGitCredentials(
@@ -794,7 +794,6 @@ export class RunWorker {
       tmpDir,
       ...(codexHome === undefined ? {} : { codexHome }),
       pnpmStoreDir,
-      pnpmImportMethod: importMethod,
       pinPnpm: runnerTools.includes('pnpm'),
       hooksDir: deps.paths.hooksDir,
       ...(credentialHelper === undefined ? {} : { credentialHelper }),

@@ -8,7 +8,7 @@ import { prepareDirs, readWorkspaceMeta } from '../src/core/checkout.ts';
 import { EventSpool } from '../src/core/events.ts';
 import { runWorkDir } from '../src/core/run-worktrees.ts';
 import { runnerPaths } from '../src/lib/home.ts';
-import { makeRemote, tempDir, removeDir } from './helpers.ts';
+import { git, makeRemote, tempDir, removeDir } from './helpers.ts';
 
 vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>();
@@ -67,6 +67,11 @@ describe('disk-full failure reporting with secondary local write failures', () =
         ],
       });
       const draft = path.join(workDir, 'repo/draft');
+      git(['config', '--worktree', 'user.name', 'Test'], path.dirname(draft));
+      git(
+        ['config', '--worktree', 'user.email', 'test@example.com'],
+        path.dirname(draft),
+      );
       await fs.writeFile(draft, 'unpublished work');
       const stopWriters = vi.fn(async () => {
         if (fault === 'metadata') throw new Error('writer stop failed');

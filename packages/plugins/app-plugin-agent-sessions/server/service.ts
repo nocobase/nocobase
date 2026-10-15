@@ -11,6 +11,8 @@ import path from 'node:path';
 
 import {
   BRIDGE_PROTOCOL_VERSION,
+  DISCOVERY_TIMEOUT_MS,
+  type DiscoveredChoices,
   POLL_WAIT_MS,
   type BridgeCommand,
   type FolderListing,
@@ -32,6 +34,7 @@ import { z } from 'zod';
 import type {
   AgentSessionsChange,
   Computer,
+  OutdatedBridge,
   Reference,
   Session,
   SessionLink,
@@ -123,6 +126,7 @@ export interface ProjectSource {
  */
 export interface ReplyStore {
   set(key: string, value: unknown, ttl?: number): Promise<void>;
+  get<T>(key: string): Promise<T | undefined>;
   take<T>(key: string): Promise<T | undefined>;
 }
 
@@ -307,7 +311,45 @@ export class AgentSessionsService {
       filter: { userId },
       sort: (sort) => [sort.field('name').asc(), sort.field('id').asc()],
     });
-    return rows.map((row) => computerView(row, this.#now()));
+    return Promise.all(
+      rows.map(async (row) => {
+        const outdated = await this.#replies.get<OutdatedBridge>(
+          outdatedKey(row.id),
+        );
+        return {
+          ...computerView(row, this.#now()),
+          ...(outdated ? { outdatedBridge: outdated } : {}),
+        };
+      }),
+    );
+  }
+
+  /**
+   * Remembers for a while that a known computer's bridge was refused for speaking an older protocol, so its owner's
+   * page can say to update it. Kept with the replies, not stored: a bridge refused again renews it, and one that
+   * registers clears it.
+   */
+  async #noteOutdatedBridge(
+    userId: string,
+    request: RegisterRequest,
+  ): Promise<void> {
+    if (!request.computerId) return;
+    const known = await computers(this.#conn()).findOne({
+      filter: { id: request.computerId, userId },
+    });
+    if (!known) return;
+    const outdated: OutdatedBridge = {
+      host: request.computer.host,
+      bridgeProtocol: request.protocol,
+      protocol: BRIDGE_PROTOCOL_VERSION,
+      refusedAt: this.#iso(),
+    };
+    await this.#replies.set(
+      outdatedKey(known.id),
+      outdated,
+      OUTDATED_BRIDGE_MS,
+    );
+    this.#publish(userId, { kind: 'computers' });
   }
 
   async removeComputer(userId: string, computerId: string): Promise<void> {
@@ -374,11 +416,63 @@ export class AgentSessionsService {
 
   // The bridge.
 
+  /** Request-scoped discovery uses no Studio session or persisted choice cache. */
+  async discoverChoices(
+    userId: string,
+    computerId: string,
+    input: {
+      readonly agentId: string;
+      readonly cwd: string;
+      readonly settings: Readonly<Record<string, string>>;
+    },
+  ): Promise<DiscoveredChoices> {
+    const computer = await this.#computer(userId, computerId);
+    if (!isOnline(computer, this.#now()))
+      throw new AgentSessionsError('computerOffline');
+    if (
+      !computer.agents.some(
+        (agent) => agent.id === input.agentId && !agent.problem,
+      )
+    )
+      throw new AgentSessionsError('agentUnavailable', 'agentId');
+    const paths = pathsOf(computer);
+    if (
+      !paths.isAbsolute(input.cwd) ||
+      !within(paths, allowedFolders(computer), input.cwd)
+    )
+      throw new AgentSessionsError('directoryNotAllowed', 'cwd');
+    const requestId = randomUUID();
+    await enqueue(
+      this.#conn(),
+      computer.id,
+      {
+        type: 'discoverChoices',
+        requestId,
+        agentId: input.agentId,
+        cwd: paths.resolve(input.cwd),
+        settings: input.settings,
+      },
+      this.#iso(),
+    );
+    this.#wake(computer.id);
+    const reply = await this.#awaitReply(
+      `${computer.id}:${requestId}`,
+      DISCOVERY_TIMEOUT_MS + 10_000,
+    );
+    if (!reply.discovery || reply.error)
+      throw new AgentSessionsError(
+        'discoveryFailed',
+        undefined,
+        reply.error ? redactor.text(reply.error) : undefined,
+      );
+    return reply.discovery;
+  }
+
   /** Takes the bridge's reply to a command that asked for one, for the request waiting on it. */
   async reply(userId: string, request: ReplyRequest): Promise<void> {
     const computer = await this.#computer(userId, request.computerId);
     const key = `${computer.id}:${request.requestId}`;
-    await this.#replies.set(key, request, REPLY_WAIT_MS * 2);
+    await this.#replies.set(key, request, (DISCOVERY_TIMEOUT_MS + 10_000) * 2);
     this.#replyWaiters.get(key)?.();
   }
 
@@ -393,8 +487,22 @@ export class AgentSessionsService {
     request: RegisterRequest,
     keyed = false,
   ): Promise<RegisterResponse> {
-    if (request.protocol !== BRIDGE_PROTOCOL_VERSION)
-      throw new AgentSessionsError('upgradeRequired');
+    if (request.protocol !== BRIDGE_PROTOCOL_VERSION) {
+      if (request.protocol < BRIDGE_PROTOCOL_VERSION)
+        await this.#noteOutdatedBridge(userId, request);
+      // `metadata` lets a bridge tell whether it is the older side and update itself; the reason stays what bridges
+      // before it branch on.
+      throw new AgentSessionsError(
+        'upgradeRequired',
+        undefined,
+        `This bridge speaks protocol ${request.protocol}; the application speaks ${BRIDGE_PROTOCOL_VERSION}.`,
+        {
+          bridgeProtocol: request.protocol,
+          protocol: BRIDGE_PROTOCOL_VERSION,
+          supportedProtocols: [BRIDGE_PROTOCOL_VERSION],
+        },
+      );
+    }
     const now = this.#iso();
     const key = keyed
       ? undefined
@@ -461,6 +569,7 @@ export class AgentSessionsService {
       });
       if (changed) this.#changed(changed);
     }
+    await this.#replies.take(outdatedKey(computerId));
     this.#publish(userId, { kind: 'computers' });
     return { computerId, ...(key ? { key } : {}) };
   }
@@ -551,6 +660,12 @@ export class AgentSessionsService {
           ? {
               state: redactor.value(request.state),
               acpSessionId: request.state.acpSessionId,
+              settings: Object.fromEntries(
+                request.state.choices.map((choice) => [
+                  choice.id,
+                  choice.currentValue,
+                ]),
+              ),
             }
           : {}),
       });
@@ -618,7 +733,7 @@ export class AgentSessionsService {
       readonly agentId: string;
       readonly cwd: string;
       readonly content: readonly PromptContent[];
-      /** Choices to open the session with, from what the agent offered on the computer (`Computer.choices`). */
+      /** Explicit settings validated authoritatively by the agent before the first prompt. */
       readonly settings?: Readonly<Record<string, string>> | undefined;
       /** The project the session works for, from `listProjects`. */
       readonly projectId?: string | null | undefined;
@@ -651,12 +766,6 @@ export class AgentSessionsService {
       throw new AgentSessionsError('projectNotFound', 'projectId');
     const mentioned = await this.#mentioned(viewer, input.mentions ?? []);
     const settings = input.settings ?? {};
-    const offered = computer.choices[agent.id] ?? [];
-    for (const [choiceId, value] of Object.entries(settings)) {
-      const choice = offered.find((candidate) => candidate.id === choiceId);
-      if (!choice?.options.some((option) => option.value === value))
-        throw new AgentSessionsError('choiceNotFound', 'settings');
-    }
     const now = this.#iso();
     const sessionId = randomUUID();
     await sessions(this.#conn()).createOne({
@@ -974,14 +1083,10 @@ export class AgentSessionsService {
     if (!choice?.options.some((option) => option.value === input.value)) {
       throw new AgentSessionsError('choiceNotFound', 'value');
     }
-    const settings = { ...session.settings, [input.choiceId]: input.value };
-    await sessions(this.#conn()).updateMany({
-      filter: { id: sessionId },
-      values: { settings, updatedAt: this.#iso() },
-    });
+    // Keep acknowledged settings until the bridge reports the complete resulting configuration.
     await this.#command(session, {
       type: 'choose',
-      session: { ...this.#target(session), settings },
+      session: this.#target(session),
       ...input,
     });
     return this.getSession(viewer, sessionId);
@@ -1065,8 +1170,11 @@ export class AgentSessionsService {
   }
 
   /** The bridge's reply to a command, once it reaches this instance or the store another one put it in. */
-  async #awaitReply(key: string): Promise<ReplyRequest> {
-    for (let waited = 0; waited < REPLY_WAIT_MS; waited += REPLY_CHECK_MS) {
+  async #awaitReply(
+    key: string,
+    timeout: number = REPLY_WAIT_MS,
+  ): Promise<ReplyRequest> {
+    for (let waited = 0; waited < timeout; waited += REPLY_CHECK_MS) {
       const reply = await this.#replies.take<ReplyRequest>(key);
       if (reply) return reply;
       await new Promise<void>((resolve) => {
@@ -1552,6 +1660,13 @@ function same(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+/** How long a refused bridge is shown as outdated without trying again. */
+const OUTDATED_BRIDGE_MS = 60 * 60_000;
+
+function outdatedKey(computerId: string): string {
+  return `outdated:${computerId}`;
+}
+
 /** Replies kept in this instance's memory, for an application of one instance. */
 function memoryReplies(): ReplyStore {
   const kept = new Map<string, { value: unknown; until: number }>();
@@ -1559,6 +1674,12 @@ function memoryReplies(): ReplyStore {
     set(key, value, ttl = REPLY_WAIT_MS) {
       kept.set(key, { value, until: Date.now() + ttl });
       return Promise.resolve();
+    },
+    get<T>(key: string) {
+      const entry = kept.get(key);
+      return Promise.resolve(
+        entry && entry.until > Date.now() ? (entry.value as T) : undefined,
+      );
     },
     take<T>(key: string) {
       const entry = kept.get(key);

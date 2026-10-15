@@ -206,6 +206,7 @@ function readOf(
 // --- Checks ----------------------------------------------------------------------------------------------------------
 
 interface StatusFields {
+  readonly id?: unknown;
   readonly context?: unknown;
   readonly state?: unknown;
   readonly target_url?: unknown;
@@ -283,6 +284,9 @@ export function checkOfStatus(status: StatusFields): GitCheck {
   const state = typeof status.state === 'string' ? status.state : '';
   return {
     kind: 'status',
+    ...(typeof status.id === 'number' || typeof status.id === 'string'
+      ? { executionId: String(status.id) }
+      : {}),
     name: (typeof status.context === 'string'
       ? status.context
       : 'status'
@@ -312,6 +316,9 @@ export function checkOfRun(run: CheckRunFields): GitCheck {
         : null;
   return {
     kind: 'check',
+    ...(typeof run.id === 'number' || typeof run.id === 'string'
+      ? { executionId: String(run.id) }
+      : {}),
     name: (typeof run.name === 'string' ? run.name : 'check').slice(0, 255),
     status,
     conclusion:
