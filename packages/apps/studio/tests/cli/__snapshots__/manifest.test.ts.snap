@@ -298,9 +298,11 @@ release promote <app> <release> [--to! --label] -> POST /api/releases/apps/{appI
 release update <app> <release> [--label!] -> PATCH /api/releases/apps/{appId}/releases/{releaseId} (person) rel.apps/upload
 release upload [--app! --sha!@env --repository@env --file!] -> POST /api/builds/uploadTickets (person) rel.apps/upload
 release variables <app> <release> -> GET /api/releases/apps/{appId}/releases/{releaseId}/variables (person) rel.apps/view
+report agents [--days] -> GET /api/reports/agents (person)
 report attention -> GET /api/reports/attention (person)
-report dashboard [--days] -> GET /api/reports/dashboard (person)
+report delivery [--days] -> GET /api/reports/delivery (person)
 report metrics [--from --to --project] -> GET /api/reports/metrics (person,run) studio.reports/read
+report projects [--days] -> GET /api/reports/projects (person)
 report usage [--from --to --project --group-by --agent --user] -> GET /api/reports/usage (person,run) studio.reports/read
 run brief <run> -> GET /api/agents/runs/{runId}/brief (person)
 run cancel <run> -> POST /api/agents/runs/{runId}/cancel (person) confirm

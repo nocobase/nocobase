@@ -324,29 +324,35 @@ describe('the demo data', () => {
       connection: () => h.database.connection(),
     });
     const admin = { userId: 'admin', allRuns: true };
-    const report = await reports.dashboard(admin, 30);
+    const delivery = await reports.delivery(admin, 30);
+    const agents = await reports.agentPerformance(admin, 30);
+    const progress = await reports.projectProgress(admin, 30);
     const recent = DEMO_HISTORY.filter((item) => item.doneDaysAgo < 29);
     // The demo's own done issues were done today, without a start.
-    expect(report.current.completed).toBeGreaterThanOrEqual(recent.length);
-    expect(report.current.completed).toBeGreaterThan(report.previous.completed);
-    expect(report.current).toMatchObject({
+    expect(delivery.current.completed).toBeGreaterThanOrEqual(recent.length);
+    expect(delivery.current.completed).toBeGreaterThan(
+      delivery.previous.completed,
+    );
+    expect(delivery.current).toMatchObject({
       cycleTimeP50Ms: expect.any(Number),
       agentShare: expect.any(Number),
       costPerIssue: { USD: expect.any(Number) },
+    });
+    expect(agents.current).toMatchObject({
       successRate: expect.any(Number),
       reworkRate: expect.any(Number),
       runsPerIssue: expect.any(Number),
       interventionRate: expect.any(Number),
       queueWaitP50Ms: expect.any(Number),
     });
-    expect(report.current.successRate).toBeLessThan(1);
-    expect(report.current.reworkRate).toBeGreaterThan(0);
-    expect(report.current.interventionRate).toBeGreaterThan(0);
+    expect(agents.current.successRate).toBeLessThan(1);
+    expect(agents.current.reworkRate).toBeGreaterThan(0);
+    expect(agents.current.interventionRate).toBeGreaterThan(0);
     expect(
-      report.buckets.filter((bucket) => bucket.completed > 0).length,
+      delivery.buckets.filter((bucket) => bucket.completed > 0).length,
     ).toBeGreaterThan(5);
     expect(
-      report.projects.find((project) => project.name === 'Studio Platform'),
+      progress.projects.find((project) => project.name === 'Studio Platform'),
     ).toMatchObject({ completed: expect.any(Number) });
     // Blocked and overdue issues, and a run that failed a few hours ago.
     const attention = await reports.attention(admin);
