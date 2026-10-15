@@ -7,8 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionOptions } from '@nocobase/database';
+import { CollectionOptions, Model } from '@nocobase/database';
 
 import options from '../../common/collections/workflows';
 
-export default options as CollectionOptions;
+export default {
+  ...options,
+  fields: options.fields.map((field) =>
+    field.name === 'enabled'
+      ? {
+          ...field,
+          get(this: Model): boolean {
+            let value: unknown = this.getDataValue('enabled');
+            if (typeof value === 'boolean') {
+              return value;
+            }
+            // KingBase may return boolean columns as "0" or "1".
+            if (typeof value === 'string') {
+              value = Number(value);
+            }
+            return typeof value === 'number' && value === 1;
+          },
+        }
+      : field,
+  ),
+} as CollectionOptions;
