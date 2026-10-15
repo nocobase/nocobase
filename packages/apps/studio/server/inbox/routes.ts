@@ -7,12 +7,14 @@
  * (`/api/notificationInApp`). Deciding is never here: each contributor decides through its own API and settles the
  * item through Studio's inbox port.
  */
+import { studioAccessToken } from '../access/token.js';
 import { INBOX_READ_ACTION } from '../agents/capabilities.js';
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import type { Application } from '@nocobase/app-server/application';
 import {
   apiErrorResponse,
+  apiErrorResponses,
   apiValidator,
   cliRoute,
   dataResponse,
@@ -29,6 +31,9 @@ import { boundedList } from '../http/input.js';
 import { callerOfRequest } from '../agents/run-principal.js';
 import { decodeItemToken, encodeItemToken, itemView } from './items.js';
 import {
+  RepairInput,
+  RepairSchema,
+  RepairMetaSchema,
   InboxItemSchema,
   InboxNoticeSchema,
   InboxPendingSchema,
@@ -37,7 +42,11 @@ import {
   NoticesQuery,
   WaitingQuery,
 } from './schemas.js';
-import { studioInboxSourceToken, studioInboxToken } from './token.js';
+import {
+  decisionReconcilerToken,
+  studioInboxSourceToken,
+  studioInboxToken,
+} from './token.js';
 
 const tags = ['Studio'];
 const errors = { 401: apiErrorResponse(401), 500: apiErrorResponse(500) };
@@ -204,6 +213,64 @@ export const inboxRoutes: AppApiRouteContribution<Application> =
                 context.req.valid('query').subject,
               ),
             ),
+          ),
+      );
+    }
+
+    if (
+      container.has(decisionReconcilerToken) &&
+      container.has(authorizationToken) &&
+      container.has(studioAccessToken)
+    ) {
+      routes.post(
+        '/reconcile',
+        required,
+        container
+          .resolve(authorizationToken)
+          .middleware() as unknown as MiddlewareHandler,
+        async (context, next) => {
+          const authz = context.get('authz' as never) as {
+            identity: Parameters<
+              import('../access/service.js').StudioAccess['permissionsOf']
+            >[0];
+          };
+          const permissions = await container
+            .resolve(studioAccessToken)
+            .permissionsOf(authz.identity);
+          if (!permissions.settings['pm.general/update'])
+            throw studioError(
+              'PERMISSION_DENIED',
+              'FORBIDDEN',
+              'Managing general settings is required to reconcile inbox decisions.',
+            );
+          await next();
+        },
+        describeRoute({
+          tags,
+          summary: 'Reconcile obsolete decisions on finished issues',
+          operationId: 'inboxReconcileDecisions',
+          description:
+            'Previews one page by default. Set execute=true to recheck and settle obsolete decisions; repeat with nextPageToken, then restart without a token to retry failures. Does not cancel runs or change issues.',
+          ...cliRoute({
+            command: 'inbox reconcile',
+            action: 'pm.general/update',
+            flags: {
+              execute: { name: 'execute' },
+              pageSize: { name: 'limit' },
+            },
+            columns: ['identifier', 'type', 'count', 'outcome'],
+          }),
+          responses: {
+            200: listResponse(RepairSchema, RepairMetaSchema),
+            ...apiErrorResponses,
+          },
+        }),
+        apiValidator('json', RepairInput),
+        async (context) =>
+          context.json(
+            await container
+              .resolve(decisionReconcilerToken)
+              .page(context.req.valid('json')),
           ),
       );
     }

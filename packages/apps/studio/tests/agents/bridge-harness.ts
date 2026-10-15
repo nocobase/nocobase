@@ -102,7 +102,13 @@ import { studioAccessToken } from '../../server/access/token.js';
 import { reportsRoutes } from '../../server/reports/routes.js';
 import { studioAgentsRoutes } from '../../server/agents/routes.js';
 import { inboxRoutes } from '../../server/inbox/routes.js';
-import { studioInboxSourceToken } from '../../server/inbox/token.js';
+import { createDecisionReconciler } from '../../server/inbox/reconcile.js';
+import {
+  studioInboxToken,
+  decisionReconcilerToken,
+  studioInboxSourceToken,
+} from '../../server/inbox/token.js';
+import type { StudioInbox } from '../../server/inbox/service.js';
 import { gitRoutes } from '../../server/git/routes.js';
 import { studioGitToken } from '../../server/git/token.js';
 import { previewsRoutes } from '../../server/previews/routes.js';
@@ -467,6 +473,7 @@ export async function createBridgeHarness(
     readonly previews?: boolean;
     readonly knowledge?: boolean;
     readonly inApp?: boolean;
+    readonly inboxPort?: (database: DatabaseManager) => StudioInbox;
   } = {},
 ): Promise<BridgeHarness> {
   const projectsRoot = packageRoot('@nocobase/app-plugin-projects');
@@ -643,7 +650,8 @@ export async function createBridgeHarness(
     settled: [] as { decisionKey: string; outcome: string }[],
     cleared: [] as InboxSettleRef[],
   };
-  const inboxPort: StudioInboxPort = {
+  const realInbox = options.inboxPort?.(database);
+  const inboxPort: StudioInboxPort = realInbox ?? {
     send: (notice) => {
       port.sent.push(notice);
       return Promise.resolve();
@@ -1151,6 +1159,19 @@ export async function createBridgeHarness(
   container.instance(studioReportsToken, reports);
   // Studio's inbox as `inbox list` reads it.
   container.instance(studioInboxSourceToken, inboxSource);
+  if (realInbox) {
+    container.instance(studioInboxToken, realInbox);
+    container.instance(
+      decisionReconcilerToken,
+      createDecisionReconciler(
+        () => database.connection(),
+        () => realInbox,
+        (error) => {
+          throw error;
+        },
+      ),
+    );
+  }
   container.instance(agentsToken, agents);
   container.instance(studioDelegationsToken, delegations);
   container.instance(studioProjectManagerToken, manager);
@@ -1165,6 +1186,7 @@ export async function createBridgeHarness(
   } as never);
   // Studio's roles as far as the routes ask them: an administrator manages agents.
   container.instance(studioAccessToken, {
+    permissionsOf: access.permissionsOf,
     grantsOfUser: (userId: string) =>
       Promise.resolve({
         settings: { 'agents.agents/manage': roleOf(userId) === 'admin' },
