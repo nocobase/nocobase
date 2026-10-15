@@ -36,7 +36,8 @@ interface Target {
 const TARGETS: readonly Target[] = [
   { name: 'inbox', path: '/inbox', phone: true },
   { name: 'dashboard', path: '/dashboard', phone: true },
-  { name: 'my-issues', path: '/my-issues' },
+  { name: 'my-issues-split', path: '/my-issues/owned?view=split', phone: true },
+  { name: 'my-issues-table', path: '/my-issues/owned?view=list' },
   { name: 'issues-list', path: '/issues?view=list', phone: true },
   { name: 'issues-board', path: '/issues?view=board' },
   { name: 'issues-agent-queue', path: '/issues?view=agent', phone: true },

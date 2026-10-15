@@ -83,6 +83,8 @@ export function IssueSummary({
   headingLevel = 2,
   rename,
   runsBase,
+  statusControl,
+  meta = true,
   className,
 }: {
   readonly issue: IssueDetail;
@@ -105,6 +107,10 @@ export function IssueSummary({
   readonly rename?: SummaryRename;
   /** Where the live run's record opens from, such as `/issues/PM-12`; the issue's own path by default. */
   readonly runsBase?: string;
+  /** Takes the status badge's place, such as a menu that changes the status (the split view). */
+  readonly statusControl?: ReactNode;
+  /** The key, status and actions row under the title; off where the frame shows them, as the split view's top row does. */
+  readonly meta?: boolean;
   /** The summary's frame. */
   readonly className?: string;
 }): ReactElement {
@@ -194,12 +200,21 @@ export function IssueSummary({
               {...(rename ? { rename } : {})}
             />
             {/* Key and status, then the actions as icon buttons on a phone, all on one row. */}
-            <div className='flex min-w-0 flex-wrap items-center gap-2'>
+            <div
+              className={cn(
+                'flex min-w-0 flex-wrap items-center gap-2',
+                !meta && 'hidden',
+              )}
+            >
               <span className='flex items-center gap-2'>
-                <span className='font-mono text-sm text-muted-foreground'>
-                  {issue.identifier}
-                </span>
-                <StatusPill statusKey={issue.statusKey} />
+                {statusControl ?? (
+                  <>
+                    <span className='font-mono text-sm text-muted-foreground'>
+                      {issue.identifier}
+                    </span>
+                    <StatusPill statusKey={issue.statusKey} />
+                  </>
+                )}
               </span>
               <span className='ml-auto flex flex-wrap items-center gap-1.5 max-md:[&_[data-slot=button]]:h-8 max-md:[&_[data-slot=button]]:px-2'>
                 {actions}

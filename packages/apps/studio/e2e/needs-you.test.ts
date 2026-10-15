@@ -341,7 +341,9 @@ test('structured owner request, latest explanation, matching follow-ups and live
       timeout: 3000,
     });
     await expect(
-      rail.locator(`[data-issue="${issue.identifier}"] .bg-blue-500`),
+      rail.locator(
+        `[data-issue="${issue.identifier}"] [data-status-shape="started"]`,
+      ),
     ).toBeVisible({ timeout: 3000 });
     await expect(
       panel

@@ -8,3 +8,4 @@ export {
   registerBusinesses,
   registerSettings,
 } from './providers/authorization.js';
+export { IssueListItemSchema } from './routes/schemas.js';

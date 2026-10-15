@@ -77,6 +77,16 @@ sessions.registerProjects({
 
 With `search`, a person mentions records in a message by typing `#`: the composer offers those matching what follows, the session's project's first, and inserts `#ST-58`. A mentioned record is tied to the session as already decided, so the session shows it without asking to start it, and the agent is told what each mention is beneath the message; the transcript keeps the message as written, its mentions linking to the record.
 
+A record's `status` carries its `label` and a `tone` (`idle`, `active`, `attention`, `done`), which older data has alone. Give it an `icon` too (`backlog`, `started`, `blocked`, `review`, `done`, `closed`) and, when it waits for the viewer, `needsYou` ("Needs your acceptance"): the page then draws the status as that shape, orders the session's bar by it and counts what waits for the viewer.
+
+To open a kind's records beside the conversation instead of at their `href`, give `agentSessionsRoute` a panel for that kind, a component taking `LinkPanelProps` (the record, its place among the session's records of that kind, previous, next and close, and `variant`: `side` beside the conversation or `sheet` on a phone):
+
+```ts
+agentSessionsRoute({ cli: 'acme', linkPanels: { issue: IssuePanel } }),
+```
+
+The open record is in the address as `?<kind>=<refId>`; J and K move among the session's records of that kind and Esc closes it. Below 1600 pixels wide the session list folds to a rail while a record is open.
+
 ### What the agent knows of the session's work
 
 The records tied to a session, created in it or mentioned in its messages, are what the person means by "the tasks", and the agent is told so. A message carries the list beneath it whenever it changed since the agent was last told, each record with its standing in the person's language and what is new or changed marked, so that an agent coming back to a session a day later learns what happened meanwhile; a message after which nothing changed carries nothing. Every session's agent also has the tool `list_session_work`, which lists that work with how each is going as the kind's `progress` tells it, and the MCP `initialize` answer lists the work when the agent's session opens. `agentSessions.toldWork` keeps what the agent was last told, and `locale` the interface language supplied with its owner’s latest message. Application instructions can be registered as a string or a `(viewer) => string` resolver; the resolver receives that current locale on each message, and the existing instruction hash resends instructions when their generated content changes. MCP initialization resolves the same instructions using the session’s latest locale.

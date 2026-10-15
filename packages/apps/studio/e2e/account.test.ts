@@ -1,4 +1,4 @@
-import { atInbox, expect, open, test } from './support/fixtures.ts';
+import { atHome, expect, open, test } from './support/fixtures.ts';
 
 // Preferences follow the person, so these tests use an account no other test signs in as.
 test.use({ user: 'wendy' });
@@ -64,7 +64,7 @@ test.describe('personal settings', () => {
 
   test('the profile page shows the signed-in person', async ({ page }) => {
     await open(page, '/account');
-    await expect(page).toHaveURL(atInbox('?account=profile'));
+    await expect(page).toHaveURL(atHome('?account=profile'));
     await expect(page.getByRole('dialog', { name: '个人设置' })).toBeVisible();
     const profile = page.getByRole('region', { name: '个人资料' });
     await expect(
