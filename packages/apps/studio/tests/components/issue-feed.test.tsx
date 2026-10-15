@@ -20,7 +20,12 @@ import {
   within,
 } from '@testing-library/react';
 import type { ReactElement } from 'react';
-import { MemoryRouter, useLocation, useNavigationType } from 'react-router';
+import {
+  Link,
+  MemoryRouter,
+  useLocation,
+  useNavigationType,
+} from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import enUS from '../../client/locales/en-US.js';
@@ -36,6 +41,7 @@ import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
   entries: [] as TimelineEntry[],
+  timelineTargets: [] as (string | null)[],
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
@@ -65,12 +71,19 @@ vi.mock('@nocobase/app-plugin-projects/client/issues', () => ({
   useKindLabel: () => (kind: string) => kind,
   useMentionSearch: () => () => Promise.resolve([]),
   useIssueCommentActions: () => ({}),
-  useIssueTimeline: () => ({
-    entries: mocks.entries,
-    hasOlder: false,
-    loadingOlder: false,
-    loadOlder: () => undefined,
-  }),
+  useIssueTimeline: (
+    _detail: unknown,
+    _runs: unknown,
+    targetId: string | null,
+  ) => {
+    mocks.timelineTargets.push(targetId);
+    return {
+      entries: mocks.entries,
+      hasOlder: false,
+      loadingOlder: false,
+      loadOlder: () => undefined,
+    };
+  },
 }));
 vi.mock('@nocobase/app-plugin-agents/client/kit', () => ({
   AgentAvatar: () => null,
@@ -203,20 +216,27 @@ async function mount(node: ReactElement, initialEntries?: string[]) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  render(
+  const app = (child: ReactElement) => (
     <TestI18nProvider runtime={runtime} namespace='studio'>
       <QueryClientProvider client={client}>
         <MemoryRouter {...(initialEntries ? { initialEntries } : {})}>
           <LocationProbe />
-          {node}
+          <Link to='/my-issues'>Other page</Link>
+          {child}
         </MemoryRouter>
       </QueryClientProvider>
-    </TestI18nProvider>,
+    </TestI18nProvider>
   );
+  const rendered = render(app(node));
+  return {
+    ...rendered,
+    rerenderNode: (child: ReactElement) => rendered.rerender(app(child)),
+  };
 }
 
 beforeEach(() => {
   mocks.request.mockReset();
+  mocks.timelineTargets = [];
   mocks.entries = [
     thread(
       comment(
@@ -426,6 +446,48 @@ describe('a `?comment=` link', () => {
     expect(target.className).toContain('ring-2');
     fireEvent.click(document.body);
     await waitFor(() => expect(target.className).not.toContain('ring-2'));
+  });
+
+  it('cleans the address immediately and keeps locating after a click during loading', async () => {
+    mocks.entries = [];
+    const page = await mount(
+      <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+        <IssueFeed />
+      </IssueConversation>,
+      ['/issues/i1?view=list&owner=alice&comment=c1'],
+    );
+    const probe = await screen.findByTestId('location-probe');
+    await waitFor(() =>
+      expect(probe.textContent).toBe('/issues/i1?view=list&owner=alice'),
+    );
+    expect(probe.getAttribute('data-nav-type')).toBe('REPLACE');
+    expect(mocks.timelineTargets.at(-1)).toBe('c1');
+
+    fireEvent.click(document.body);
+    expect(mocks.timelineTargets.at(-1)).toBe('c1');
+
+    mocks.entries = [
+      thread(
+        comment('c1', 1, { type: 'user', id: 'bob', name: 'Bob' }, 'Root note'),
+      ),
+    ];
+    await act(async () =>
+      page.rerenderNode(
+        <IssueConversation detail={detail} detailKey={['pm', 'issue', 'i1']}>
+          <IssueFeed />
+        </IssueConversation>,
+      ),
+    );
+    const feed = await screen.findByTestId('issue-feed');
+    const target = within(feed)
+      .getByText('Root note')
+      .closest('[data-comment-id="c1"]') as HTMLElement;
+    expect(target.className).not.toContain('ring-2');
+    expect(screen.getByTestId('location-probe').textContent).toBe(
+      '/issues/i1?view=list&owner=alice',
+    );
+    fireEvent.click(screen.getByRole('link', { name: 'Other page' }));
+    expect(screen.getByTestId('location-probe').textContent).toBe('/my-issues');
   });
 
   it('leaves a feed with no `comment` parameter alone', async () => {

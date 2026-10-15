@@ -11,6 +11,14 @@ import { issueUnder, useIssueParent } from './issue-parent.js';
 
 type Place = Pick<Path, 'pathname' | 'search'>;
 
+/** A comment target belongs to the issue page and must not leak into a plan route or its return link. */
+function withoutComment(search: string): string {
+  const params = new URLSearchParams(search);
+  params.delete('comment');
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
 /** The plan `planId` over the issue page at `issuePath`, with that page's `search`. */
 export function issuePlanLocation(
   issuePath: string,
@@ -19,7 +27,7 @@ export function issuePlanLocation(
 ): Place {
   return {
     pathname: `${issuePath}/plans/${encodeURIComponent(planId)}`,
-    search,
+    search: withoutComment(search),
   };
 }
 
@@ -27,7 +35,7 @@ export function issuePlanLocation(
 export function issueBeneathPlan(location: Place): Place | null {
   const match = /^(\/.+)\/plans\/[^/]+\/?$/u.exec(location.pathname);
   return match?.[1] && match[1] !== '/issues'
-    ? { pathname: match[1], search: location.search }
+    ? { pathname: match[1], search: withoutComment(location.search) }
     : null;
 }
 

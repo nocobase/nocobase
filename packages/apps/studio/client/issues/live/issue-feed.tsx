@@ -4,9 +4,9 @@
  * each stretch of system records into one row that unfolds in place; "All" shows each. Long comments are cut to a few
  * lines. The project manager's hand-overs and agents' reviews are tagged as `feed.ts` reads them. It is the installed
  * `comment-thread` over the projects plugin's headless hooks, inside an `IssueConversation`; a link with
- * `?comment=<id>` highlights that comment and loads older threads until it is found. Once found, the parameter is
- * dropped from the address (replacing, not a new history entry) and the highlight fades a few seconds later, or
- * cancels on the next click anywhere.
+ * `?comment=<id>` highlights that comment and loads older threads until it is found. The parameter is captured locally
+ * and dropped from the address immediately (replacing, not a new history entry); the highlight fades a few seconds
+ * later, or cancels on the next click anywhere, while the lookup continues independently.
  */
 import { AgentAvatar } from '@nocobase/app-plugin-agents/client/kit';
 import {
@@ -94,19 +94,23 @@ export function IssueFeed({
   const kindLabel = useKindLabel();
   const [params, setParams] = useSearchParams();
   const urlTargetId = params.get('comment');
-  // Captured locally so the highlight and the scroll-to-load survive the address being cleaned up below.
+  // Keep the lookup alive after the address is cleaned and independently from highlight cancellation.
+  const [targetId, setTargetId] = useState<string | null>(() => urlTargetId);
   const [highlightedId, setHighlightedId] = useState<string | null>(
     () => urlTargetId,
   );
   const [seenUrlTargetId, setSeenUrlTargetId] = useState(urlTargetId);
   if (urlTargetId !== seenUrlTargetId) {
     setSeenUrlTargetId(urlTargetId);
-    if (urlTargetId) setHighlightedId(urlTargetId);
+    if (urlTargetId) {
+      setTargetId(urlTargetId);
+      setHighlightedId(urlTargetId);
+    }
   }
   const timeline = useIssueTimeline(
     detail,
     renderRun ? runs : NO_RUNS,
-    highlightedId,
+    targetId,
   );
   const preview = useFilePreviewState();
   const [mode, setMode] = useState<FeedMode>('conversation');
@@ -129,19 +133,19 @@ export function IssueFeed({
     [timeline.entries],
   );
   const targetFound =
-    highlightedId !== null &&
+    targetId !== null &&
     threads.some(
       (thread) =>
-        thread.root.id === highlightedId ||
-        thread.replies.some((reply) => reply.id === highlightedId),
+        thread.root.id === targetId ||
+        thread.replies.some((reply) => reply.id === targetId),
     );
-  // Once located, replace the address rather than push, so Back does not step through the link.
+  // The target is captured in local state above, so remove it from navigation immediately without adding a history entry.
   useEffect(() => {
-    if (!targetFound || !params.get('comment')) return;
+    if (!urlTargetId) return;
     const next = new URLSearchParams(params);
     next.delete('comment');
     setParams(next, { replace: true });
-  }, [targetFound, params, setParams]);
+  }, [urlTargetId, params, setParams]);
   // The highlight fades on its own a few seconds after it is shown, or cancels on the next click anywhere.
   useEffect(() => {
     if (!targetFound) return;

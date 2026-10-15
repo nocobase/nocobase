@@ -2,4 +2,4 @@
 "@nocobase/studio": patch
 ---
 
-Clear the `?comment=` parameter from an issue page's address once the linked comment is located, replacing the current history entry instead of leaving it behind across navigation and refreshes. The highlight now fades on its own a few seconds later, or cancels on the next click anywhere on the page.
+Capture the `?comment=` target locally and remove it from the issue page's address immediately, replacing the current history entry so it cannot leak across navigation or refreshes. Keep locating the comment after highlight cancellation, remove `comment` from plan links and their return paths while preserving other query parameters, and keep the highlight's timed fade and click cancellation.
