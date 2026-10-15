@@ -621,12 +621,12 @@ function Header({
           )}
         </MetaChip>
         {session.project && (
-          <MetaChip title={session.project.name}>
+          <MetaChip shrink title={session.project.name}>
             <FolderKanbanIcon className='size-4 shrink-0' />
             <span className='truncate'>{session.project.name}</span>
           </MetaChip>
         )}
-        <MetaChip title={computer?.name ?? t('session.removedComputer')}>
+        <MetaChip shrink title={computer?.name ?? t('session.removedComputer')}>
           <LaptopIcon className='size-4 shrink-0' />
           <span className='truncate'>
             {computer?.name ?? t('session.removedComputer')}
@@ -682,7 +682,7 @@ function MetaChip({
       title={title}
       className={cn(
         'bg-card inline-flex h-7.5 max-w-full items-center gap-1.5 overflow-hidden rounded-full border px-2.5 text-xs whitespace-nowrap',
-        shrink ? 'min-w-0' : 'shrink-0 md:min-w-0 md:shrink',
+        shrink ? 'min-w-0' : 'max-w-40 shrink-0',
       )}
     >
       {children}
