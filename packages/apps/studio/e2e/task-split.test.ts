@@ -143,6 +143,39 @@ test.describe('the split view', () => {
         name: accept.title,
       }),
     ).toBeVisible();
+    // Verify the reverse optimistic transition in the same task list too.
+    let saveUnfollow!: () => void;
+    const unfollowingSaved = new Promise<void>((resolve) => {
+      saveUnfollow = resolve;
+    });
+    await page.route(
+      `**/api/followUps/issues/${accept.id}/unfollow`,
+      async (route) => {
+        await unfollowingSaved;
+        await route.continue();
+      },
+    );
+    try {
+      await page.keyboard.press('s');
+      await expect(
+        detail.getByRole('button', { name: /^关注/u }),
+      ).toHaveAttribute('aria-pressed', 'false');
+      await expect(
+        detail.getByRole('heading', { name: accept.title }),
+      ).toBeVisible();
+      expect(issueParam(page)).toBe(accept.id);
+    } finally {
+      saveUnfollow();
+    }
+    await expect(
+      waiting.getByRole('option').filter({ hasText: accept.title }),
+    ).toBeVisible();
+    await expect(
+      list
+        .getByRole('region', { name: '关注', exact: true })
+        .getByRole('option')
+        .filter({ hasText: accept.title }),
+    ).toHaveCount(0);
     await api.post(`followUps/issues/${accept.id}/unfollow`);
   });
 

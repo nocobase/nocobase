@@ -1,4 +1,19 @@
+import type { Page, Response } from '@playwright/test';
+import type { TaskGroups } from '../shared/task-groups.js';
+
 import { expect, open, test, unique, signIn } from './support/fixtures.ts';
+
+const isTaskGroups = (response: Response) =>
+  new URL(response.url()).pathname.endsWith('/api/taskGroups') && response.ok();
+
+// An unrelated refresh may finish while the status menu opens. Wait for a
+// changed snapshot rather than treating the first successful read as the update.
+const changedTaskGroups = (page: Page, generation: string) =>
+  page.waitForResponse(
+    async (response) =>
+      isTaskGroups(response) &&
+      ((await response.json()).data as TaskGroups).generation !== generation,
+  );
 
 interface ListNode {
   scrollTop: number;
@@ -40,7 +55,9 @@ test('retains the only task after cancellation until the query scope changes', a
     executor: null,
     start: false,
   });
+  const loaded = page.waitForResponse(isTaskGroups);
   await open(page, `/my-issues?view=split&issue=${issue.id}`);
+  const initial = (await (await loaded).json()).data as TaskGroups;
   const list = page.getByRole('listbox', { name: 'Tasks' });
   const row = list.getByRole('option').filter({ hasText: issue.title });
   const detail = page.getByTestId('task-detail');
@@ -56,9 +73,7 @@ test('retains the only task after cancellation until the query scope changes', a
       'original',
     ),
   );
-  const refresh = page.waitForResponse(
-    (r) => r.url().includes('/api/taskGroups?') && r.ok(),
-  );
+  const refresh = changedTaskGroups(page, initial.generation);
   await detail.getByTestId('task-status-menu').click();
   await page
     .getByRole('menuitemradio', { name: 'Cancelled', exact: true })
@@ -126,10 +141,12 @@ test('retains a task omitted from the full waiting page, then releases it on sel
     first ??= waiting;
   }
   const selected = await make('Selected task', 'in_progress');
+  const loaded = page.waitForResponse(isTaskGroups);
   await open(
     page,
     `/my-issues?view=split&q=${encodeURIComponent(prefix)}&issue=${selected.id}`,
   );
+  const initial = (await (await loaded).json()).data as TaskGroups;
   const list = page.getByRole('listbox', { name: 'Tasks' });
   const doing = list.getByRole('region', { name: 'In progress', exact: true });
   const row = doing.getByRole('option').filter({ hasText: selected.title });
@@ -152,22 +169,19 @@ test('retains a task omitted from the full waiting page, then releases it on sel
       'original',
     ),
   );
-  const refresh = page.waitForResponse(
-    (r) => r.url().includes('/api/taskGroups?') && r.ok(),
+  const refresh = changedTaskGroups(page, initial.generation);
+  // Reproduce a background read completing before the status mutation, as in CI.
+  const unchanged = page.waitForResponse(isTaskGroups);
+  await page.evaluate("document.dispatchEvent(new Event('visibilitychange'))");
+  expect(((await (await unchanged).json()).data as TaskGroups).generation).toBe(
+    initial.generation,
   );
   await detail.getByTestId('task-status-menu').click();
   await page
     .getByRole('menuitemradio', { name: 'Blocked', exact: true })
     .click();
   const response = await refresh;
-  const result = (await response.json()).data as {
-    groups: {
-      group: string;
-      count: number;
-      nextCursor: string | null;
-      data: { issue: Issue }[];
-    }[];
-  };
+  const result = (await response.json()).data as TaskGroups;
   const waiting = result.groups.find((g) => g.group === 'wait')!;
   expect(waiting.count).toBe(51);
   expect(waiting.nextCursor).not.toBeNull();
@@ -202,4 +216,7 @@ test('retains a task omitted from the full waiting page, then releases it on sel
   await expect(
     list.getByRole('button', { name: 'Show more', exact: true }),
   ).toBeVisible();
+  await page.screenshot({
+    path: info.outputPath('paginated-task-released.png'),
+  });
 });
