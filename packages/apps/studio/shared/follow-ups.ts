@@ -6,7 +6,11 @@
  * | Method | Route                                      | Body                    | `data`            |
  * | ------ | ------------------------------------------ | ----------------------- | ----------------- |
  * | GET    | `followUps`                                |                         | `FollowUpsView`   |
+ * | GET    | `followUps/issues?issueIds=a,b`            |                         | `FollowUpIssue[]` |
+ * | GET    | `followUps/following`                      |                         | `FollowingState`  |
  * | PUT    | `followUps/following`                      | `{ issueIds }`          | `FollowingView`   |
+ * | POST   | `followUps/issues/:issueId/follow`         |                         | `FollowingView`   |
+ * | POST   | `followUps/issues/:issueId/unfollow`       |                         | `FollowingView`   |
  * | POST   | `followUps/issues/:issueId/markSeen`       |                         | (204)             |
  *
  * What a person follows and when they last looked at each issue are their own preferences (the users plugin's
@@ -76,6 +80,16 @@ export interface FollowUpsView {
 
 export interface FollowingView {
   readonly issueIds: readonly string[];
+}
+
+/** What the viewer follows now, and how many they may: the follow star's whole read. */
+export interface FollowingState extends FollowingView {
+  readonly max: number;
+  /**
+   * Whether the viewer chose them. Until they do, `issueIds` is "My follow-ups"' default list (their blocked and in-review
+   * issues), which only that page counts as followed.
+   */
+  readonly stored: boolean;
 }
 
 /** The followed ids a stored value holds: unique strings, at most `FOLLOW_UPS_MAX`; null when it holds none. */

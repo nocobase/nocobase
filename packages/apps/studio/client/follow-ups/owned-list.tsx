@@ -25,13 +25,14 @@ import {
   type FollowUpsView,
 } from '../../shared/follow-ups.js';
 import { usePullRequestMark } from '../git/api.js';
-import { nowLine } from './model.js';
-import { StatusPill } from './status.js';
+import { nowLine } from '../issues/live/summary-model.js';
+import { StatusPill } from '../issues/live/status.js';
 import {
   STATUS_CHIP,
   statusColor,
   useFollowUpStatusName,
-} from './status-colors.js';
+} from '../issues/live/status-colors.js';
+import { COLUMN_SCROLL } from './column-scroll.js';
 
 export function OwnedList({
   view,
@@ -43,8 +44,10 @@ export function OwnedList({
   selectedId,
   onSelect,
   onToggleFollow,
+  className,
 }: {
   readonly view: FollowUpsView;
+  readonly className?: string;
   readonly rows: readonly FollowUpIssue[];
   readonly filter: readonly FollowUpStatus[];
   readonly onFilter: (next: readonly FollowUpStatus[]) => void;
@@ -62,19 +65,20 @@ export function OwnedList({
   return (
     <section
       aria-labelledby='follow-ups-mine'
-      className='flex min-w-0 flex-col gap-2.5'
+      className={cn('flex min-w-0 flex-col gap-2.5', className)}
       data-testid='follow-ups-mine'
     >
       <h2
         id='follow-ups-mine'
-        className='text-sm font-semibold text-muted-foreground'
+        className='text-sm font-semibold text-muted-foreground max-md:px-4 max-md:text-[13px] max-md:tracking-wide max-md:uppercase'
       >
         {t('followUps.mine.title')}
       </h2>
       <div
         role='group'
         aria-label={t('followUps.mine.filters')}
-        className='flex flex-wrap gap-1.5'
+        // On a phone one compact row that scrolls sideways.
+        className='flex flex-wrap gap-1.5 max-md:flex-nowrap max-md:overflow-x-auto max-md:px-4 max-md:[scrollbar-width:none]'
       >
         {FOLLOW_UP_STATUSES.map((status) => {
           const on = filter.includes(status);
@@ -91,7 +95,7 @@ export function OwnedList({
                 )
               }
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none max-md:h-7 max-md:shrink-0',
                 on
                   ? STATUS_CHIP[statusColor(status)]
                   : 'bg-background text-foreground hover:bg-accent',
@@ -105,7 +109,7 @@ export function OwnedList({
           );
         })}
       </div>
-      <InputGroup>
+      <InputGroup className='max-md:mx-4 max-md:w-auto'>
         <InputGroupAddon>
           <SearchIcon />
         </InputGroupAddon>
@@ -118,14 +122,22 @@ export function OwnedList({
         />
       </InputGroup>
       {rows.length === 0 ? (
-        <p className='rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground'>
+        <p className='rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground max-md:mx-4'>
           {ownsAny ? t('followUps.mine.empty') : t('followUps.mine.emptyAll')}
         </p>
       ) : (
-        <ul className='overflow-hidden rounded-xl border bg-card text-card-foreground'>
+        // On a wide screen the list scrolls under its filters.
+        <ul
+          className={cn(
+            'overflow-hidden rounded-xl border bg-card text-card-foreground max-md:overflow-visible max-md:rounded-none max-md:border-x-0 lg:min-h-0 lg:overflow-y-auto',
+            COLUMN_SCROLL,
+          )}
+        >
           {rows.map((issue) => (
             <OwnedRow
               key={issue.id}
+              // With one status chosen, its pill would only repeat the chip on a phone.
+              statusShown={filter.length !== 1}
               issue={issue}
               selected={issue.id === selectedId}
               followed={following.has(issue.id)}
@@ -146,6 +158,7 @@ export function OwnedList({
 }
 
 function OwnedRow({
+  statusShown,
   issue,
   selected,
   followed,
@@ -153,6 +166,7 @@ function OwnedRow({
   onSelect,
   onToggleFollow,
 }: {
+  readonly statusShown: boolean;
   readonly issue: FollowUpIssue;
   readonly selected: boolean;
   readonly followed: boolean;
@@ -170,7 +184,7 @@ function OwnedRow({
   return (
     <li
       className={cn(
-        'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 border-b px-3.5 py-3 last:border-b-0',
+        'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 border-b px-3.5 py-3 last:border-b-0 max-md:gap-1 max-md:border-b-0 max-md:py-0 max-md:pr-1 max-md:pl-4',
         selected && 'bg-primary/5',
       )}
       data-issue={issue.identifier}
@@ -179,13 +193,15 @@ function OwnedRow({
         type='button'
         aria-current={selected ? 'true' : undefined}
         onClick={onSelect}
-        className='flex min-w-0 flex-col gap-1 rounded-md text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+        className='flex min-w-0 flex-col gap-1 rounded-md text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none max-md:rounded-none max-md:border-b max-md:py-3 max-md:in-[li:last-child]:border-b-0'
       >
         <span className='flex w-full items-center gap-2'>
           <span className='font-mono text-xs text-muted-foreground'>
             {issue.identifier}
           </span>
-          <StatusPill statusKey={issue.statusKey} />
+          <span className={cn(!statusShown && 'max-md:hidden')}>
+            <StatusPill statusKey={issue.statusKey} />
+          </span>
           <time
             dateTime={issue.lastActivityAt}
             className='ml-auto shrink-0 text-xs text-muted-foreground'
@@ -193,11 +209,13 @@ function OwnedRow({
             {relativeTime(issue.lastActivityAt, i18n.language)}
           </time>
         </span>
-        <span className='w-full truncate text-sm'>{issue.title}</span>
+        <span className='w-full truncate text-sm max-md:line-clamp-2 max-md:text-[15px] max-md:font-semibold max-md:whitespace-normal'>
+          {issue.title}
+        </span>
         {line ? (
           <span
             className={cn(
-              'line-clamp-2 text-xs',
+              'text-xs whitespace-pre-wrap wrap-break-word max-md:text-[13px]',
               issue.statusKey === 'blocked'
                 ? 'text-amber-700 dark:text-amber-300'
                 : issue.statusKey === 'in_review'
@@ -205,7 +223,9 @@ function OwnedRow({
                   : 'text-muted-foreground',
             )}
           >
-            {line.text}
+            {line.needsViewer
+              ? t('followUps.following.needsYou', { ask: line.text })
+              : line.text}
           </span>
         ) : null}
       </button>
@@ -219,13 +239,13 @@ function OwnedRow({
         }
         title={
           blocked
-            ? t('followUps.activity.fullHint', { max: FOLLOW_UPS_MAX })
+            ? t('issueLive.follow.fullHint', { max: FOLLOW_UPS_MAX })
             : undefined
         }
         // Not `disabled`, so the hint still shows on hover and focus.
         aria-disabled={blocked || undefined}
         onClick={blocked ? undefined : onToggleFollow}
-        className='inline-flex size-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50'
+        className='inline-flex size-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 max-md:size-10 max-md:border-0 max-md:bg-transparent'
       >
         <StarIcon
           className={cn('size-4', followed && 'fill-amber-400 text-amber-500')}

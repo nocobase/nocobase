@@ -146,7 +146,10 @@ export function createGitHubClient(options: {
   const { now, sleep } = options;
   const clients = new Map<string, Octokit>();
 
-  /** What a failure stands for: 304, a `GitApiError`, or null for an error that is not GitHub's (a defect). */
+  /**
+   * What a failure stands for: 304, a `GitApiError`, or null for an error passed on unchanged (one that is not
+   * GitHub's, a defect; or an OAuth refusal, read by its caller).
+   */
   function failureOf(error: unknown): GitApiError | typeof NOT_MODIFIED | null {
     if (error instanceof GitApiError) return error;
     if (error instanceof RequestError) {
@@ -157,6 +160,17 @@ export function createGitHubClient(options: {
         string,
         string | number | undefined
       >;
+      // An OAuth page's refusal (`{ error: 'device_flow_disabled' }` with a 4xx) stays the error
+      // `@octokit/oauth-methods` throws when GitHub answers the same body with 200, so its caller reads it either way.
+      if (
+        error.status >= 400 &&
+        error.status < 500 &&
+        error.status !== 403 &&
+        error.status !== 429 &&
+        typeof (error.response.data as { error?: unknown } | undefined)
+          ?.error === 'string'
+      )
+        return null;
       return apiErrorOf(
         error.status,
         (name) => {

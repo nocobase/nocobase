@@ -51,6 +51,8 @@ export interface ServerState {
   readonly directory: string;
   /** Whether this run started the server, rather than reusing one through `NB_STUDIO_E2E_URL`. */
   readonly owned: boolean;
+  /** A server reserved exclusively for a destructive test, never the global server. */
+  readonly isolated?: boolean;
   /** The mock model's process and base URL, when this run started one. */
   readonly llm?: { readonly pid: number; readonly url: string };
 }
@@ -272,7 +274,9 @@ async function startLlm(
   throw new Error('The mock model did not answer.');
 }
 
-export async function startStudio(): Promise<ServerState> {
+export async function startStudio(
+  options: { isolated?: boolean } = {},
+): Promise<ServerState> {
   const entry = path.join(STUDIO_ROOT, 'dist/server/standalone.js');
   if (!existsSync(entry))
     throw new Error(
@@ -310,9 +314,10 @@ export async function startStudio(): Promise<ServerState> {
     pid: child.pid,
     directory,
     owned: true,
+    isolated: options.isolated === true,
     llm,
   };
-  writeState(state);
+  if (!state.isolated) writeState(state);
   let exited: number | null = null;
   child.once('exit', (code) => {
     exited = code ?? -1;
@@ -362,4 +367,50 @@ export async function stopStudio(state: ServerState): Promise<void> {
       // Already gone.
     }
   }
+}
+
+/** Crashes and restarts only this test's owned server against its existing database and configuration. */
+export async function restartOwnedStudio(
+  state: ServerState,
+): Promise<ServerState> {
+  if (!state.owned || !state.isolated)
+    throw new Error(
+      'Crash verification requires a throwaway server owned by this test.',
+    );
+  process.kill(-state.pid, 'SIGKILL');
+  await sleep(500);
+  const log = openSync(path.join(state.directory, 'server.log'), 'a');
+  const port = new URL(state.origin).port;
+  const child = spawn(
+    process.execPath,
+    [path.join(STUDIO_ROOT, 'dist/server/standalone.js')],
+    {
+      cwd: path.join(STUDIO_ROOT, 'dist'),
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        APP_CONFIG_FILE: path.join(state.directory, 'config.yml'),
+        APP_STORAGE_DIR: path.join(state.directory, 'storage'),
+        APP_BASE_PATH: '/main',
+        APP_SERVER_PORT: port,
+        APP_SERVER_HOST: '127.0.0.1',
+        APP_PUBLIC_ORIGIN: state.origin,
+      },
+      detached: true,
+      stdio: ['ignore', log, log],
+    },
+  );
+  child.unref();
+  if (!child.pid) throw new Error('The test server could not restart.');
+  const restarted = { ...state, pid: child.pid };
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    const response = await fetch(`${state.baseURL}/login`).catch(() => null);
+    if (response?.ok) {
+      await waitForDemo(state.baseURL, state.origin, deadline);
+      return restarted;
+    }
+    await sleep(500);
+  }
+  throw new Error('The test server did not recover after a crash.');
 }

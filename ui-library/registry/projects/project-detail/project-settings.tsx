@@ -206,7 +206,9 @@ export function ProjectResourceList({
                       </span>
                     )}
                     {index === 0 ? (
-                      <Badge variant='secondary'>{words.primary}</Badge>
+                      <Badge data-size='sm' variant='secondary'>
+                        {words.primary}
+                      </Badge>
                     ) : null}
                   </p>
                   {resource.detail ? (

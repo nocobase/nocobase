@@ -1,6 +1,13 @@
 // Loads and runs the CLI. The oclif configuration is synthesized here rather than read from package.json, so the same
 // code runs from `src/` (Node strips the types) and from the compiled `dist/`.
-import { Config, Errors, flush, run, type Command } from '@oclif/core';
+import {
+  Config,
+  Errors,
+  flush,
+  run,
+  settings,
+  type Command,
+} from '@oclif/core';
 import type { Interfaces } from '@oclif/core';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -15,6 +22,7 @@ import {
   setGlobalFlags,
 } from './lib/globals.ts';
 import { UsageError } from './lib/command.ts';
+import { hasStudioSkill } from './skills.ts';
 
 /** A line whose global flags cannot be read: answered as any invalid usage is. */
 async function refuseLine(
@@ -68,7 +76,18 @@ function pjson(
       dirname: config.bin,
       topicSeparator: ' ',
       additionalHelpFlags: ['-h'],
-      topics: { ...STATIC_TOPICS, ...topics },
+      topics: {
+        ...STATIC_TOPICS,
+        ...(hasStudioSkill(config)
+          ? {
+              skills: {
+                description:
+                  'Install and inspect the packaged nb-studio-cli Skill.',
+              },
+            }
+          : {}),
+        ...topics,
+      },
       commands: {
         strategy: 'explicit',
         target: `${root}/commands.${extension}`,
@@ -108,6 +127,9 @@ export async function runAppCli(
     process.env.NO_COLOR = '1';
     process.env.FORCE_COLOR = '0';
   }
+  // `pjson` names the `.ts` or `.js` entries itself. Left on, oclif registers tsx under NODE_ENV=development or test
+  // when a tsconfig.json sits beside the sources, which makes every cold start about half again as slow.
+  settings.enableAutoTranspile = false;
   defineCommands(config, options.commands);
   setOriginalArgv(line);
   argv = line;

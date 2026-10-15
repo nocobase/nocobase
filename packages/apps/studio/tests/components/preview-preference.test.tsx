@@ -113,4 +113,32 @@ describe('the preview preference field', () => {
     );
     client.clear();
   });
+  it('reads a failed label again at the slow pace, not every few seconds', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      request.mockResolvedValue({
+        data: {
+          ...data,
+          labels: [
+            {
+              pullRequestId: 'pr',
+              failed: true,
+              present: null,
+              managed: false,
+            },
+          ],
+        },
+      });
+      const client = mount();
+      await screen.findByRole('status');
+      const calls = request.mock.calls.length;
+      await vi.advanceTimersByTimeAsync(20_000);
+      expect(request).toHaveBeenCalledTimes(calls);
+      await vi.advanceTimersByTimeAsync(11_000);
+      expect(request.mock.calls.length).toBeGreaterThan(calls);
+      client.clear();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

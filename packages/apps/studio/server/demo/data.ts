@@ -54,7 +54,6 @@ export interface DemoAgent {
   readonly model: string;
   /** What it is good at: the project manager hands it work by this. */
   readonly description: string;
-  readonly skills: readonly string[];
 }
 
 /** Which discovered agents the project manager runs with. */
@@ -123,6 +122,7 @@ export interface DemoIssue {
   readonly parent?: string;
   readonly title: string;
   readonly status: string;
+  readonly needsYou?: string;
   readonly priority: string;
   readonly owner: string;
   readonly executor?: string;
@@ -213,6 +213,7 @@ export const DEMO_PROJECTS: readonly DemoProject[] = [
     members: ['admin', 'lisa', 'wendy', 'chloe'],
     start: -20,
     due: 25,
+    skills: ['frontend-components', 'commit-messages'],
   },
   {
     name: 'Mobile App',
@@ -295,7 +296,6 @@ export const DEMO_AGENTS: readonly DemoAgent[] = [
     model: 'claude-opus-5-5',
     description:
       'Designs, architecture, hard investigations and reviews of important changes.',
-    skills: ['code-review'],
   },
   {
     key: 'sonnet',
@@ -303,7 +303,6 @@ export const DEMO_AGENTS: readonly DemoAgent[] = [
     model: 'claude-sonnet-5',
     description:
       'Frontend pages and components (React, Tailwind, i18n), well-scoped fixes and tests.',
-    skills: ['frontend-components', 'commit-messages'],
   },
   {
     key: 'gpt',
@@ -311,7 +310,6 @@ export const DEMO_AGENTS: readonly DemoAgent[] = [
     model: 'gpt-6.1-sol',
     description:
       'Larger implementations, changes across packages and refactoring.',
-    skills: ['commit-messages'],
   },
 ];
 
@@ -461,6 +459,8 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     project: 'Studio Platform',
     title: 'Issue list stutters when scrolling past 2,000 issues',
     status: 'in_review',
+    needsYou:
+      'Please review scrolling performance and rows with varying heights.',
     priority: 'urgent',
     owner: 'admin',
     executor: 'leo',
@@ -554,6 +554,8 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     project: 'Studio Platform',
     title: 'Rate-limit the API so scripts cannot overload it',
     status: 'blocked',
+    needsYou:
+      'Please decide the authentication approach so API rate limiting can proceed.',
     priority: 'high',
     owner: 'zach',
     executor: 'zach',
@@ -740,6 +742,8 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     project: 'Website Redesign',
     title: 'Pull customer stories from the CMS',
     status: 'in_review',
+    needsYou:
+      'Please review the CMS integration and its fallback when fetching fails.',
     priority: 'medium',
     owner: 'lisa',
     executor: 'leo',
@@ -806,6 +810,7 @@ export const DEMO_ISSUES: readonly DemoIssue[] = [
     project: 'Mobile App',
     title: 'Connect the push notification service',
     status: 'blocked',
+    needsYou: 'Please confirm when the backend push service can be scheduled.',
     priority: 'medium',
     owner: 'wendy',
     executor: 'zach',

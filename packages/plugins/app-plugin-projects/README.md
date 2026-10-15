@@ -94,6 +94,7 @@ issueId)` says where firing it would take one issue without moving it (for a con
   finished) or that are among the ids given (whatever their status), with `truncated` past the limit, and
   `subscriptions.followedBy(conn, userId, issueIds)` those of them a person follows. An application's board of work joins its own records to issues with
   them, without a query per issue.
+- **Hierarchy reads**: `issueQueries.hierarchy(viewer, query)` returns the complete independently authorized live issue scope, filtered matching IDs and internal dependency-wait facts before paging. It is an uncapped input for application-owned grouping, never a substitute for authorization. `hierarchyItems(viewer, ids)` hydrates at most 100 independently reauthorized rows with visible child/dependency counts; callers must replace raw parent IDs at unreadable boundaries. Applications own attention policy, grouping and continuation consistency. No new task statuses or persistence are required.
 - **Operation plans** (`shared/plans.ts`, `server/domains/plans/`): a short list of changes (create or update an
   issue, comment, add or remove a dependency, create a project; 1–50 rows, later rows may refer to what earlier ones
   create) that one person, the decider, reviews and executes as a whole. Creating, editing and retrying a plan
@@ -249,7 +250,7 @@ wording helpers. It routes a project's page the same way, as a child of the plug
 visibility (`useProjectMembership`), working directories (`useProjectResources`, `useResourceValidation`), deleting it
 (`useDeleteProject`), and the progress, numbers and permission helpers. The pages are behind the `pm-my-issues`, `pm-issues` and `pm-projects` page grants. They hide
 what the server would refuse (`client/lib/permissions.ts` mirrors its rules); the server still checks every request.
-Open pages refresh when the server announces a change on the `pm:changes` realtime topic.
+Open pages refresh when the server announces a change on the `pm:changes` realtime topic: once for the events of a moment, naming the issues that changed when no change moved an issue between lists (`issueIds`), so a page refreshes only what it shows of them (`announcedIssueIds`, `changedIssueSegments` and `isIssueRead` in `client/kit`).
 
 ## Layout
 
@@ -275,3 +276,7 @@ pnpm --filter @nocobase/app-plugin-projects check
 When renewing an invitation, deleted projects are ignored if at least one selected project remains. The inviter must still be authorized to invite into every remaining project. If all originally selected projects were deleted, renewal is rejected.
 
 Invitation emails use `notificationService.sendTransient()` so credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication. Failures retain safe status/category diagnostics without raw provider messages. The inviter can generate and privately deliver a new link if delivery fails. Historical notification snapshots are not rewritten.
+
+## Structured issue progress
+
+`Issue` exposes nullable text `needsYou` and `next`. `PATCH /api/projects/issues/{issueId}` and `issue.update` plan rows accept them in the same transaction as `statusKey`. Both fields are optional for people, agents, plans and system events. Omitted needsYou is retained in Blocked or In review; null, empty or whitespace clears it. Applications may constrain authenticated callers at their request boundary. Leaving these states clears it. Omitted `next` is retained; nonblank text replaces it; null, an empty string or whitespace clears it. Done and Cancelled always clear it. Both fields allow at most 2,000 characters. Progress-only writes advance revision and emit the existing refresh event. System status events share the optional-field validation and clearing rules. The new reversible migration adds the two columns without backfilling comments.

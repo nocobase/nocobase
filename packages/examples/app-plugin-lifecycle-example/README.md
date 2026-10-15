@@ -93,3 +93,27 @@ pnpm --filter @nocobase/app-plugin-lifecycle-example typecheck
 pnpm --filter @nocobase/app-plugin-lifecycle-example test
 pnpm --filter @nocobase/app-plugin-lifecycle-example build
 ```
+
+## Runtime parameter configuration
+
+The **Runtime parameters** page demonstrates code-declared configuration groups with complete immutable revisions and compare-and-swap saves. All example personas can inspect permitted settings; the finance director Zhao can save them. The persona switch is a demonstration mechanism, and every endpoint still requires an authenticated application user. Production applications derive identity and scope from their real authorization policy.
+
+Expense thresholds use a first-submission snapshot: draft previews show current values; submit freezes both thresholds, and returning, withdrawing or resubmitting retains them. Existing pre-contract expense records explicitly stay on code defaults. Ticket reopenDays and simulated notificationPrefix are live values read again per execution and retry; trigger timeouts stay in source. Parameter history shows actual values and sources separately from the effective record preview and displays “Not recorded” where no facts exist.
+
+The shared reviewer group stores simple department/role/user selections. Same-group conditions intersect and separate groups union. The seeded Finance One and Finance Two departments demonstrate precise department matching, scope-limited roles, inactive-user and applicant filtering. The separate snapshot/live reviewer demonstrations persist candidates at submission and use a finite “any candidate may decide” policy; only one concurrent decision succeeds. Snapshot fixes the selection rule, and a later task resolves it against current organization membership. Existing candidates stay fixed. These demonstrations do not change the expense workflow's single-approver semantics or validate a separate approval plugin.
+
+The central page and code-bound diagram entries use the same editor. Click bound expense nodes/transitions or the ticket reopen transition to edit current configuration; unbound entries retain their normal details. Clicking never executes a transition. Read-only users have no save control, and revision conflicts preserve their drafts while showing the current saved revision.
+
+For an embedded form, import `ParameterEditor` and `parameterApi` from this plugin's client entry, pass a group view and the authorized API, and refresh the surrounding record view after save. `boundParameterGroups(description, kind, name)` maps code bindings to stable group keys. These are reusable example exports rather than a mandatory settings page or a workflow editor.
+
+Configuration routes under `/api/lifecycleExample` include `GET /parameterGroups`, `GET/PUT /parameterGroups/{groupId}`, type-specific reviewer reference search and candidate previews, and `GET /parameterHistory/{lifecycle}/{recordId}`. PUT accepts only `{ values, expectedRevision, requestId }`; undeclared fields, incompatible group values and references outside the demo scope fail. New immutable migrations create configuration heads, versions, flat selections, request receipts, snapshots, usage facts and the reviewer demonstration tables.
+
+See the lifecycle package's [parameter contracts](../../libs/lifecycle/docs/parameters.md) and the application's configurable lifecycle parameter Skill for storage, transaction, preview and editor integration details.
+
+## Workflow management integration
+
+The Examples application provides `/workflows/definitions` and `/workflows/executions` to browse the lifecycle and office demonstrations together. Each execution is one lifecycle-managed record, with effect runs shown inside its detail. The history replay colors only recorded states and source/transition/destination pairs; selecting a history step shows the path up to that step, including repeated visits.
+
+Applications can resolve the exported `lifecycleExampleServiceToken` from the Server entry and call `workflowDefinitions()` for the registered workflow names, collections and state fields. The Client entry exports `ProcessDiagram`, `useParameterBindingEditor` and `IdentitySelect` to reuse diagram inspection and the existing permission-checked parameter editing. `ProcessDiagram` accepts `labelNamespace` for workflow-specific state and transition translations; its diagram controls retain the lifecycle example's own translations.
+
+Reviewer references are loaded only for the selected department, role or user type. Enter a name to search the scoped directory; blank searches return no candidates and pages contain at most ten matches. Saved references are resolved individually for display. Active users added to this directory become searchable without updating client code; application user accounts are a separate directory and require an application-owned integration.

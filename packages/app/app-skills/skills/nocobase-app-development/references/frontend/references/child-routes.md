@@ -618,11 +618,12 @@ A page that shows a record whose detail is a page of its own — an orders list'
 - **Group**: only `name`, `navigation` and `children`, with no `componentLoader`. `path` is optional; when present, it becomes the prefix of the child routes' paths; when absent, the group is only a set of entries in the menu.
 - A group renders no business component (the route renderer provides its Outlet), cannot declare `authz`, and carries no page permission of its own: the first page below a group with no page above it declares its own `authz`.
 - Groups can contain groups. A group's `name` must be unique, like a route name.
+- **How a group shows in the menu**: a top-level group is a section, its title a small heading over its entries, which are always shown; use it to sort the menu into areas such as Records or Settings. A group inside another group is a collapsible sub-menu. `NavigationMenu`'s `sections={false}` draws top-level groups as collapsible sub-menus too.
 - **Clickable parent**: a page can also have `navigation` and child pages with `navigation`. In the menu it is then both a link and expandable: the link and the expand button are two separate controls. Choose how the child pages are presented according to [section 3](#3-four-ways-to-present-a-child-route).
 - Pages that should not appear in the menu, such as details and tab content, have no `navigation`. A descendant can still declare `navigation` when its ancestor does not.
 - A path with a parameter cannot have `navigation`.
 - `navigation.order` sets the order among siblings; lower numbers come first.
-- Navigation groups keep their expanded or collapsed state while the navigation tree stays mounted; opening a new page automatically expands its ancestor groups.
+- Collapsible groups keep their expanded or collapsed state while the navigation tree stays mounted; opening a new page automatically expands its ancestor groups.
 
 ## 7. Settings pages
 

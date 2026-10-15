@@ -28,6 +28,7 @@ export type {
   KnowledgeViewProps,
 } from './components/knowledge-view.js';
 export type { KnowledgePageProps } from './pages/knowledge-page.js';
+export type { KnowledgeDirectorySource } from './hooks/use-directory.js';
 export type {
   KnowledgeAccessCell,
   KnowledgeAccessDetails,

@@ -8,8 +8,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { matchPath, matchRoutes, type RouteObject } from 'react-router';
 
 import { EMPTY_ARRAY } from '#lib/constants';
+import { transformNavigation } from '#lib/navigation-transform';
 
 export interface RouteNavigationItem {
+  readonly section?: boolean;
   readonly route: AppClientRegisteredRoute;
   readonly children: readonly RouteNavigationItem[];
 }
@@ -18,9 +20,16 @@ export function buildRouteNavigation(
   routes: readonly AppClientRegisteredRoute[],
   denied: ReadonlySet<string>,
 ): RouteNavigationItem[] {
+  return transformNavigation(visibleRouteNavigation(routes, denied));
+}
+
+function visibleRouteNavigation(
+  routes: readonly AppClientRegisteredRoute[],
+  denied: ReadonlySet<string>,
+): RouteNavigationItem[] {
   return routes.flatMap((route) => {
     if (denied.has(routeKey(route))) return [];
-    const children = buildRouteNavigation(
+    const children = visibleRouteNavigation(
       route.children ?? EMPTY_ARRAY,
       denied,
     );

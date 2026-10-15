@@ -33,6 +33,14 @@ import {
 } from './install.ts';
 import { AppCommand, UsageError } from './lib/command.ts';
 import { ApiClient } from './lib/http.ts';
+import { successEnvelope } from './lib/envelope.ts';
+import {
+  hasStudioSkill,
+  skillsEnvironment,
+  syncInstalledSkills,
+  type SkillsEnvironment,
+  type SkillsSyncResult,
+} from './skills.ts';
 /** How often the hint asks the server. */
 export const HINT_INTERVAL_MS: number = 12 * 60 * 60_000;
 /** How long the hint waits for the server. */
@@ -56,6 +64,8 @@ export interface UpdateEnvironment {
   readonly fetch?: typeof fetch;
   /** The environment npm runs in, and where it is looked for (`findNpm`), for a version installed from npm. */
   readonly env?: NodeJS.ProcessEnv;
+  /** Local Skill installation state; only set for a CLI shipping nb-studio-cli. */
+  readonly skills?: SkillsEnvironment;
 }
 
 /** Who updates the installation `environment` describes. */
@@ -152,6 +162,7 @@ export interface CliUpdateResult {
   readonly updated: boolean;
   /** The version it replaced, kept beside the new one for a rollback. */
   readonly previous?: string;
+  readonly skills?: SkillsSyncResult;
 }
 
 /** Updates a CLI installed alone to the newest version the session's server serves for this platform. */
@@ -206,10 +217,28 @@ export async function updateCli(
     `Updated ${bin} ${environment.running} → ${latest.version}; ${previous ?? 'the previous version'} stays in ` +
       `${path.join(installation.prefix, 'versions')}.`,
   );
+  const versionRoot = path.join(
+    installation.prefix,
+    'versions',
+    latest.version,
+  );
+  const update = updateTargetOf(latest);
+  const skills =
+    environment.skills === undefined
+      ? undefined
+      : await syncInstalledSkills({
+          ...environment.skills,
+          packageRoot:
+            update.kind === 'npm'
+              ? path.join(versionRoot, 'node_modules', update.package)
+              : versionRoot,
+          cliVersion: latest.version,
+        });
   return {
     ...result,
     updated: true,
     ...(previous === undefined ? {} : { previous }),
+    ...(skills === undefined ? {} : { skills }),
   };
 }
 
@@ -233,6 +262,7 @@ export function updateEnvironment(
     bin: config.bin,
     running: config.version ?? OWN_VERSION,
     installation: detectInstallation(own.packageRoot),
+    ...(hasStudioSkill(config) ? { skills: skillsEnvironment(config) } : {}),
     ...(own.product === undefined ? {} : { product: own.product }),
   };
 }
@@ -240,6 +270,13 @@ export function updateEnvironment(
 /** `<bin> update`, for a CLI whose configuration names `selfUpdate`. */
 export function updateCommand(app: AppCliConfig): Command.Class {
   return class Update extends AppCommand {
+    protected override toSuccessJson(result: unknown): unknown {
+      return successEnvelope(
+        this.commandName,
+        result,
+        (result as CliUpdateResult).skills?.warnings ?? [],
+      );
+    }
     static override summary = `Update ${app.bin} to the newest version the server serves.`;
     static override description =
       `Asks the server you are signed in to for the newest ${app.bin} it serves for this platform, downloads it ` +
@@ -270,10 +307,12 @@ export function updateCommand(app: AppCliConfig): Command.Class {
         throw new UsageError(
           `This ${app.bin} belongs to an agent's run; the runner keeps it up to date.`,
         );
-      return updateCli(session, environment, {
+      const result = await updateCli(session, environment, {
         check: flags.check === true,
         log: (line) => this.log(line),
       });
+      for (const warning of result.skills?.warnings ?? []) this.warn(warning);
+      return result;
     }
   };
 }

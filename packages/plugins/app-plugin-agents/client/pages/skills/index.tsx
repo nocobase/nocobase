@@ -94,9 +94,6 @@ export default function SkillsPage(): ReactElement {
               <TableHead className='text-right'>
                 {t('skills.columns.version')}
               </TableHead>
-              <TableHead className='text-right'>
-                {t('skills.columns.agents')}
-              </TableHead>
               <TableHead>{t('skills.columns.updated')}</TableHead>
             </TableRow>
           </TableHeader>
@@ -151,9 +148,6 @@ export default function SkillsPage(): ReactElement {
                 </TableCell>
                 <TableCell className='text-right font-mono text-xs'>
                   v{skill.version}
-                </TableCell>
-                <TableCell className='text-right tabular-nums'>
-                  {skill.agentCount}
                 </TableCell>
                 <TableCell className='text-muted-foreground'>
                   {format.relative(skill.updatedAt)}

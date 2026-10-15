@@ -51,6 +51,13 @@ describe('repository credentials on demand', () => {
     valid.clear();
     issuedFor.clear();
     remote = await startGitHttpServer(served, (repo, password) => {
+      const running = [...server.runs.values()].find(
+        (run) =>
+          run.payload.subject.key === 'PM-9' &&
+          run.start?.workDir !== undefined,
+      );
+      if (running?.start?.workDir !== undefined)
+        expireMarker = path.join(running.start.workDir, 'app', 'expire-now');
       if (expireMarker !== '' && existsSync(expireMarker)) {
         valid.clear();
         rmSync(expireMarker);

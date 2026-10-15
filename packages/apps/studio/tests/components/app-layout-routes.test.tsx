@@ -7,6 +7,22 @@ import { expect, it, vi } from 'vitest';
 
 import { AppLayout } from '../../client/layouts/app-layout.js';
 
+vi.mock('../../client/issues/live/realtime-refresh.js', () => ({
+  useStudioIssueRefresh: () => undefined,
+}));
+
+vi.mock('../../client/inbox/navigation.js', () => ({
+  useInboxNavigation: () => ({ badge: null, label: 'Inbox', hint: 'Inbox' }),
+}));
+
+vi.mock('../../client/issues/groups/my-tasks-navigation.js', () => ({
+  useMyTasksNavigation: () => ({
+    badge: null,
+    label: 'My issues',
+    hint: 'My issues',
+  }),
+}));
+
 // The agents' chat needs services these tests do not provide; the agent-chat block is tested in the UI Library.
 vi.mock(
   '@nocobase/app-plugin-agents/client/chat',

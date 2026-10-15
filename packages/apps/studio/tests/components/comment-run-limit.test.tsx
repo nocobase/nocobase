@@ -73,6 +73,14 @@ async function mount(
 }
 
 describe('continuing an agent comment', () => {
+  it('renders only the continuation control inside a structured waiting-state card', async () => {
+    mocks.request.mockResolvedValue({ data: held });
+    await mount(<IssueCommentRunLimit issue={issue} actionsOnly />);
+    expect(
+      await screen.findByRole('button', { name: 'Continue' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(enUS.issueLive.summary.needsYou)).toBeNull();
+  });
   it('continues the held comment once through its route, then removes the action', async () => {
     let complete!: (value: unknown) => void;
     const posted = new Promise((resolve) => {
@@ -85,9 +93,11 @@ describe('continuing an agent comment', () => {
     const continued = vi.fn();
     await mount(<IssueCommentRunLimit issue={issue} onContinued={continued} />);
     expect(
-      await screen.findByText(enUS.studioAgents.commentRuns.limitReached),
+      await screen.findByText(enUS.issueLive.summary.needsYou),
     ).toBeInTheDocument();
-    expect(mocks.request).toHaveBeenCalledWith({ path: 'issueCommentRuns/i1' });
+    expect(mocks.request).toHaveBeenCalledWith(
+      expect.objectContaining({ path: 'issueCommentRuns/i1' }),
+    );
     const button = screen.getByRole('button', { name: 'Continue' });
     fireEvent.click(button);
     fireEvent.click(button);

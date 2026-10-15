@@ -5,7 +5,13 @@
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { ListFilterIcon, SearchIcon, XIcon } from 'lucide-react';
-import { useId, useState, type ComponentType, type ReactElement } from 'react';
+import {
+  useId,
+  useState,
+  type ComponentType,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -54,7 +60,10 @@ function FilterSelect({
         onChange(next && next !== 'all' ? next : undefined)
       }
     >
-      <SelectTrigger className='w-full md:w-40' aria-label={filter.label}>
+      <SelectTrigger
+        className='w-full md:w-32 md:min-w-20 md:shrink'
+        aria-label={filter.label}
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
@@ -72,10 +81,16 @@ export function IssueToolbar({
   page,
   views,
   fetching,
+  leading,
+  trailing,
 }: {
   readonly page: IssuesPage;
   readonly views: readonly IssueViewOption[];
   readonly fetching: boolean;
+  /** At the start of the row, such as My tasks' tabs. */
+  readonly leading?: ReactNode;
+  /** Before the view switch at the end of the row, such as a project's "Open in the issue list". */
+  readonly trailing?: ReactNode;
 }): ReactElement {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
@@ -91,7 +106,9 @@ export function IssueToolbar({
     toolbarFilters.filter((filter) => filter.value !== undefined).length +
     (searchText.trim() === '' ? 0 : 1);
   return (
-    <div className='flex flex-wrap items-center gap-2'>
+    // From md one row: the search and the filters give way before the view switch drops to a line of its own.
+    <div className='flex flex-wrap items-center gap-2 md:flex-nowrap'>
+      {leading}
       <Button
         variant='outline'
         size='sm'
@@ -114,7 +131,7 @@ export function IssueToolbar({
           expanded ? 'grid' : 'hidden',
         )}
       >
-        <InputGroup className='col-span-2 w-full md:w-64'>
+        <InputGroup className='col-span-2 w-full md:w-44 md:min-w-28 md:shrink'>
           <InputGroupAddon>
             <SearchIcon />
           </InputGroupAddon>
@@ -153,11 +170,14 @@ export function IssueToolbar({
           aria-label={t('issuesPage.loading')}
         />
       ) : null}
+      {trailing ? (
+        <div className='ml-auto flex shrink-0 items-center'>{trailing}</div>
+      ) : null}
       <ToggleGroup
         variant='outline'
         size='sm'
         spacing={0}
-        className='ml-auto'
+        className={cn('shrink-0', !trailing && 'ml-auto')}
         value={[page.view]}
         onValueChange={(values: string[]) => {
           const [next] = values;

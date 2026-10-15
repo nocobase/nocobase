@@ -203,6 +203,10 @@ function storedWorkspace(value: unknown): RunnerWorkspace | null {
       ? { cleanup: WorkspaceCleanupResultSchema.parse(item.cleanup) }
       : {}),
     workDir: item.workDir,
+    ...(typeof item.subjectKey === 'string'
+      ? { subjectKey: item.subjectKey }
+      : {}),
+    ...(isFiniteNumber(item.sizeBytes) ? { sizeBytes: item.sizeBytes } : {}),
     unpushed: item.unpushed === true,
     lastUsedAt: text(item.lastUsedAt) ?? '',
     subjectKind: text(item.subjectKind),
@@ -250,17 +254,28 @@ export function storedUnavailableModels(value: unknown): UnavailableModel[] {
 /** A runner's last workspace report as stored: null when it never reported one. */
 export function storedWorkspaceUsage(
   value: unknown,
+  details = true,
 ): RunnerWorkspaceUsage | null {
   if (value === null || value === undefined) return null;
   const usage = jsonObject(value);
-  if (typeof usage.measuredAt !== 'string') return null;
-  const workspaces = (Array.isArray(usage.workspaces) ? usage.workspaces : [])
+  if (typeof usage.measuredAt !== 'string' && usage.measuredAt !== null)
+    return null;
+  const needsDirectories =
+    details ||
+    !isFiniteNumber(usage.count) ||
+    !isFiniteNumber(usage.unpushedCount);
+  const workspaces = (
+    needsDirectories && Array.isArray(usage.workspaces) ? usage.workspaces : []
+  )
     .map(storedWorkspace)
     .filter((item): item is RunnerWorkspace => item !== null);
   const count = (field: unknown, fallback: number): number =>
     isFiniteNumber(field) ? field : fallback;
   return {
     disk: storedDisk(usage.disk),
+    ...(typeof usage.diskMeasuredAt === 'string'
+      ? { diskMeasuredAt: usage.diskMeasuredAt }
+      : {}),
     count: count(usage.count, workspaces.length),
     unpushedCount: count(
       usage.unpushedCount,
@@ -270,13 +285,14 @@ export function storedWorkspaceUsage(
     ...(isFiniteNumber(usage.intervalMs)
       ? { intervalMs: usage.intervalMs }
       : {}),
-    workspaces,
+    workspaces: details ? workspaces : [],
   };
 }
 
 export function toRunner(
   record: RunnerRecord,
   ownerName: string | null = null,
+  workspaceDetails = true,
 ): Runner {
   return {
     id: record.id,
@@ -297,10 +313,23 @@ export function toRunner(
     slots: Number(record.slots),
     toolSlots: storedToolSlots(record.toolSlots),
     toolLoad: storedToolLoad(record.load),
+    globalFree:
+      typeof jsonObject(record.load).free === 'number'
+        ? Number(jsonObject(record.load).free)
+        : undefined,
+    draining:
+      jsonObject(record.load).draining === 'updatePending'
+        ? 'updatePending'
+        : jsonObject(record.load).draining === 'pruning'
+          ? 'pruning'
+          : undefined,
     acceptJobs: Boolean(record.acceptJobs),
     policy: storedPolicy(record.policy),
     variables: storedVariableNames(record.variables),
-    workspaceUsage: storedWorkspaceUsage(record.workspaceUsage),
+    workspaceUsage: storedWorkspaceUsage(
+      record.workspaceUsage,
+      workspaceDetails,
+    ),
     unavailableModels: storedUnavailableModels(record.unavailableModels),
     lastSeenAt: record.lastSeenAt,
     createdAt: record.createdAt,

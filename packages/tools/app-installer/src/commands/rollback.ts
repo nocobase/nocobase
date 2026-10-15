@@ -1,7 +1,11 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { Flags } from '@oclif/core';
-import { backupHasDatabase, restoreDatabase } from '../lib/backup.ts';
+import {
+  backupHasDatabase,
+  readDatabaseInventory,
+  restoreDatabase,
+} from '../lib/backup.ts';
 import { confirm } from '../lib/confirm.ts';
 import { switchCurrent } from '../lib/current-link.ts';
 import { healthUrl, mountPathOf, readAppEnv } from '../lib/env-file.ts';
@@ -48,7 +52,7 @@ export const ROLLBACK_FLAGS = {
     allowNo: true,
     default: true,
     description:
-      'Restore the SQLite databases backed up before the upgrade, when that upgrade migrated them.',
+      'Restore the SQLite databases backed up before the upgrade, when that upgrade migrated them or repaired checksums.',
   }),
   'health-timeout': Flags.integer({
     default: 180,
@@ -112,7 +116,7 @@ export function defaultRollbackTarget(
 
 /**
  * The backup that holds the databases as they were on `target`, and whether they need restoring: only when the upgrade
- * away from `target` applied migrations.
+ * away from `target` applied migrations or repaired checksums.
  *
  * An interrupted upgrade may have migrated once it moved `current`, and how far it got is unknown, so it counts as
  * migrated from then on; before that it had only stopped the application. An interrupted rollback restores what it set
@@ -138,7 +142,8 @@ export function backupFor(
   );
   return {
     backup: upgrade?.backup,
-    migrated: (upgrade?.migrations ?? 0) > 0,
+    migrated:
+      (upgrade?.migrations ?? 0) > 0 || (upgrade?.checksumRepairs ?? 0) > 0,
   };
 }
 
@@ -227,9 +232,15 @@ export async function rollback(
       backupHasDatabase(layout, backup)
         ? backup
         : undefined;
-    if (flags.restore && migrated && restoreFrom === undefined) {
+    const inventory = readDatabaseInventory(layout, env);
+    const external = [...inventory.external, ...inventory.unresolved];
+    if (flags.restore && migrated && external.length > 0) {
       reporter.warn(
-        `The databases may have been migrated past ${target}, and app-installer holds no copy of them from before (an external database, or a backup that was cut short). Restore them from your own backup if ${target} misbehaves.`,
+        `The external database connections ${external.join(', ')} are not restored, including migration and seed history. Restore them from your own backup before relying on ${target}.`,
+      );
+    } else if (flags.restore && migrated && restoreFrom === undefined) {
+      reporter.warn(
+        `The databases may have been migrated or had their checksums repaired past ${target}, and app-installer holds no copy of them from before (an external database, or a backup that was cut short). Restore them from your own backup if ${target} misbehaves.`,
       );
     }
     await confirm(

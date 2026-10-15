@@ -78,7 +78,7 @@ const detail = {
 } as never;
 
 describe('the issue properties', () => {
-  it('lists the six fixed statuses and moves the issue with a plain change', async () => {
+  it('lists the six fixed statuses and submits owner input with a waiting status', async () => {
     const mutate = vi.fn();
     render(
       <QueryClientProvider client={new QueryClient()}>
@@ -107,6 +107,7 @@ describe('the issue properties', () => {
     await waitFor(() =>
       expect(mutate).toHaveBeenCalledWith({ statusKey: 'blocked' }),
     );
+    expect(document.getElementById('pm-prop-needs-you')).toBeNull();
   });
 
   it('offers the project manager and the members to arrange the work', async () => {

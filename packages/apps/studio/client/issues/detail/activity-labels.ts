@@ -6,6 +6,9 @@ import type { Activity } from '@nocobase/app-plugin-projects/shared/issues';
 
 /** The server's activity actions and the keys of their wording. */
 const ACTION_LABELS: Readonly<Record<string, string>> = {
+  studio_owner_transferred: 'ownerTransferred',
+  studio_owner_accepted: 'ownerAccepted',
+  studio_owner_rejected: 'ownerRejected',
   issue_created: 'created',
   issue_deleted: 'deleted',
   issue_restored: 'restored',
@@ -61,10 +64,23 @@ export function actionLabel(
     key = 'stageActionBlocked';
   else if (action === 'work_skipped')
     key =
-      reason === 'dormant'
-        ? 'workDormant'
-        : reason === 'limited'
-          ? 'workLimited'
-          : 'workBlocked';
+      reason === 'waitingOwner'
+        ? 'waitingOwner'
+        : reason === 'dormant'
+          ? 'workDormant'
+          : reason === 'limited'
+            ? 'workLimited'
+            : 'workBlocked';
   return `activity.actions.${key}`;
+}
+
+/** Handoff activities use Studio's wording rather than the projects plugin's. */
+export function isOwnerHandoffActivity(
+  action: string,
+  details: Activity['details'],
+): boolean {
+  return (
+    action.startsWith('studio_owner_') ||
+    (action === 'work_skipped' && details.reason === 'waitingOwner')
+  );
 }

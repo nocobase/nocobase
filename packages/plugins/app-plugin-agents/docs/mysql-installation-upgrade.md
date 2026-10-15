@@ -1,0 +1,7 @@
+# MySQL installation and directory index upgrade
+
+`agRuns.directoryKey` retains its full 1100-character capacity. The redundant `(directoryKey, status)` index is removed: directory contention queries use the existing `(runnerId, status)` index and compare the complete directory values afterward. No directory values are shortened or rewritten.
+
+The released creation migration `202610020003_ag_create_runs` is corrected because the old index exceeds MySQL's utf8mb4 index budget and prevents fresh installations from reaching any later migration. `202610260001_ag_drop_directory_index` removes that index from existing installations. When the corrected creation migration has already omitted it, the correction is skipped without a history entry so a fresh installation remains reversible. When executed against an old schema, the forward correction is irreversible because restoring that index would invalidate MySQL installations again.
+
+Existing installations must review and acknowledge the changed migration checksum, then apply the forward migration. Follow the [shared upgrade and failed-installation recovery procedure](../../app-plugin-releases/docs/mysql-installation-upgrade.md). When releases is not installed, only the agents creation migration's checksum changes. Checksum repair does not perform schema changes and does not clean up tables left by a previously failed MySQL installation.

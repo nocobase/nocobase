@@ -35,13 +35,26 @@ const bob = () => h.viewer('bob');
 const PM = PROJECT_MANAGER_ID;
 
 /** An open issue nobody executes yet, created by `viewer`. */
-function openIssue(viewer: Viewer, input: Partial<CreateIssueRequest> = {}) {
-  return h.projects.issues.create(viewer, {
+async function openIssue(
+  viewer: Viewer,
+  input: Partial<CreateIssueRequest> = {},
+) {
+  const target = input.statusKey ?? 'in_progress';
+  const issue = await h.projects.issues.create(viewer, {
     title: 'A',
-    statusKey: 'in_progress',
     executor: null,
     ...input,
+    statusKey: target === 'backlog' ? 'backlog' : 'in_progress',
   });
+  return target === issue.statusKey
+    ? issue
+    : h.projects.issues.update(viewer, issue.id, {
+        revision: issue.revision,
+        statusKey: target,
+        ...(target === 'blocked' || target === 'in_review'
+          ? { needsYou: 'Choose how to proceed.' }
+          : {}),
+      });
 }
 
 /** Gives the issue to the project manager. */
@@ -225,7 +238,7 @@ describe('comments reach agents', () => {
     });
   });
 
-  it('appends another person’s comment to the manager working as the owner', async () => {
+  it('isolates another person’s comment from the manager already working as the owner', async () => {
     await h.createAgent();
     const issue = await openIssue(alice());
     await assign(issue);
@@ -234,25 +247,31 @@ describe('comments reach agents', () => {
       content: `${mention(PM)} Use the v2 API.`,
     });
     const work = await runsOf(issue.id);
-    expect(work).toHaveLength(1);
-    const next = work[0];
+    expect(work).toHaveLength(2);
+    const next = work.find((run) => run.id !== payload.run.id)!;
     expect(next).toMatchObject({
-      id: payload.run.id,
-      status: 'dispatched',
+      status: 'queued',
       actorUserId: 'alice',
+      requestedByUserId: 'bob',
+      commentRootRunId: next.id,
     });
     expect(
       (await h.agents.runs.detail(payload.run.id)).inputs.some(
         (input) => input.text === `${mention(PM)} Use the v2 API.`,
       ),
-    ).toBe(true);
+    ).toBe(false);
     expect((await h.agents.runs.detail(next.id)).inputs.at(-1)).toMatchObject({
       type: 'comment',
       text: `${mention(PM)} Use the v2 API.`,
       actor: { id: 'bob' },
     });
-    const workload = await h.agents.runs.workload({ subjectKind: 'issue' });
-    expect(workload.runs.find((run) => run.id === next.id)?.wait).toBeNull();
+    // Compatible team runners can take the new chain after the current work ends, without a personal decision.
+    expect(
+      await h.agents.runs.requests.pendingOn(h.database.connection(), {
+        kind: 'issue',
+        id: issue.id,
+      }),
+    ).toEqual([]);
   });
 
   it('wakes a mentioned agent, and refuses mentioning one that takes no work', async () => {
@@ -785,7 +804,10 @@ describe("an agent's comment", () => {
     await h.projects.comments.create(bob(), issue.id, {
       content: `${mention(worker, 'Worker')} keep going`,
     });
-    expect(await pendingCommentRun(h.projects, alice(), issue.id)).toBeNull();
+    // A new human comment resets the window while the earlier limited input remains available to continue.
+    expect(
+      await pendingCommentRun(h.projects, alice(), issue.id),
+    ).toMatchObject({ maxRuns: 1 });
     const after = await collectRunAttempts(() =>
       h.projects.comments.create(asAgent(coordinator), issue.id, {
         content: `${mention(worker, 'Worker')} once more`,
@@ -836,7 +858,24 @@ describe("an agent's comment", () => {
         started: true,
       }),
     ]);
-    expect(await pendingCommentRun(h.projects, alice(), issue.id)).toBeNull();
+    // A human resets the window without discarding earlier limited comments.
+    expect(
+      await pendingCommentRun(h.projects, alice(), issue.id),
+    ).toMatchObject({ maxRuns: 1, windowHours: 24 });
+    const afterReset = await collectRunAttempts(() =>
+      h.projects.comments.post(
+        { type: 'user', id: 'alice', via: 'agent', trace: { agentId: worker } },
+        issue.id,
+        { content: mention(PM) },
+      ),
+    );
+    expect(afterReset.attempts).toEqual([
+      expect.objectContaining({
+        principalId: PM,
+        triggerType: 'comment',
+        started: true,
+      }),
+    ]);
   });
 
   it('lets a person who may edit the issue continue the held comment once', async () => {
@@ -960,9 +999,9 @@ async function managerRun(
 }
 
 describe('the CLI manifest', () => {
-  it("offers a run what its agent may do within the waking person's permissions", async () => {
+  it("offers a run the running identity's commands regardless of legacy actions", async () => {
     const { token, runId } = await claimedRun({
-      actions: ['pm.issues/view', 'pm.issues/comment', 'pm.issues/edit'],
+      actions: [],
     });
     const manifest = await h.manifest({ runToken: token });
     expect(manifest.identity).toMatchObject({
@@ -972,37 +1011,19 @@ describe('the CLI manifest', () => {
       displayName: 'Coder',
     });
     expect(manifest.identity.actions).toContain('agents.runs/self');
-    expect(manifest.withheld).toContainEqual(
-      expect.objectContaining({
-        id: 'pr:open',
-        reason: 'action',
-        action: 'studio.git/open-pr',
-      }),
+    const ids = manifest.commands.map((command) => command.id);
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        'pr:open',
+        'pr:checks',
+        'issue:comment:add',
+        'issue:create',
+        'project:get',
+      ]),
     );
-    // Opening pull requests and deleting files are actions of their own, which this agent is not given.
-    expect(manifest.commands.map((command) => command.id)).toEqual([
-      'agent:list',
-      'conversation:title:set',
-      'inbox:list',
-      'issue:attachment:download',
-      'issue:attachment:list',
-      'issue:comment:add',
-      'issue:comment:list',
-      'issue:dependency:add',
-      'issue:dependency:remove',
-      'issue:get',
-      'issue:runs',
-      'issue:search',
-      'issue:update',
-      'plan:create',
-      'plan:get',
-      'plan:list',
-      'pr:list',
-      'run:context',
-      'run:events',
-      'run:get',
-      'run:self',
-    ]);
+    expect(ids).not.toContain('pr:merge');
+    expect(ids).not.toContain('project:delete');
+    expect(ids).not.toContain('issue:delete');
     const add = manifest.commands.find(
       (command) => command.id === 'issue:comment:add',
     );
@@ -1041,30 +1062,20 @@ describe('the CLI manifest', () => {
     expect(again.status).toBe(304);
   });
 
-  it("narrows an agent's actions to the waking person's and to what agents may be given", async () => {
+  it('keeps command scope and rechecks the running identity after revocation', async () => {
     const { token } = await claimedRun({
       actions: ['pm.issues/view', 'pm.issues/close', 'pm.projects/delete'],
     });
     const viewOnly = await h.manifest({ runToken: token });
-    expect(viewOnly.commands.map((command) => command.id)).toEqual([
-      'agent:list',
-      'conversation:title:set',
-      'inbox:list',
-      'issue:attachment:download',
-      'issue:attachment:list',
-      'issue:comment:list',
-      'issue:get',
-      'issue:runs',
-      'issue:search',
-      'plan:create',
-      'plan:get',
-      'plan:list',
-      'pr:list',
-      'run:context',
-      'run:events',
-      'run:get',
-      'run:self',
-    ]);
+    expect(viewOnly.commands.map((command) => command.id)).toEqual(
+      expect.arrayContaining([
+        'pr:open',
+        'pr:checks',
+        'issue:comment:add',
+        'issue:create',
+        'project:get',
+      ]),
+    );
     h.roles.set('alice', 'none');
     const manifest = await h.manifest({ runToken: token });
     expect(manifest.commands.map((command) => command.id)).toEqual([
@@ -1163,8 +1174,7 @@ describe('the API as a run', () => {
     const read = await h.request('GET', `/projects/${project.id}`, {
       runToken: token,
     });
-    expect(read.status).toBe(403);
-    expect(read.body.error.reason).toBe('RUN_ACTION_FORBIDDEN');
+    expect(read.status).toBe(200);
     expect(
       (await h.request('GET', `/projects/${project.id}`, { user: 'alice' }))
         .status,
@@ -1297,8 +1307,9 @@ describe('the API as a run', () => {
     ).toHaveLength(2);
   });
 
-  it('refuses uploads without the upload action, keeping no file', async () => {
+  it('refuses uploads after the running identity loses permission, keeping no file', async () => {
     const { token } = await claimedRun();
+    h.roles.set('alice', 'none');
     const form = new FormData();
     form.append(
       'file',
@@ -1350,7 +1361,13 @@ describe('the API as a run', () => {
     const refused = await h.request(
       'PATCH',
       `/projects/issues/${issue.identifier}`,
-      { runToken: token, body: { statusKey: 'in_review' } },
+      {
+        runToken: token,
+        body: {
+          statusKey: 'in_review',
+          needsYou: 'Accept the result or send it back.',
+        },
+      },
     );
     expect(refused.status).toBe(400);
     expect(refused.body.error.reason).toBe('TRANSITION_NOT_ALLOWED');
@@ -1358,23 +1375,164 @@ describe('the API as a run', () => {
     expect(detail.statusKey).toBe('in_progress');
   });
 
+  it('requires owner input only for authenticated manager direct status requests before any write', async () => {
+    const { issue, token } = await managerRun();
+    const patch = (body: Record<string, unknown>) =>
+      h.request('PATCH', `/projects/issues/${issue.id}`, {
+        runToken: token,
+        body,
+      });
+    for (const statusKey of ['blocked', 'in_review']) {
+      const before = await h.projects.issueQueries.detail(alice(), issue.id);
+      const activities = await h.database
+        .connection()
+        .repository('pmActivities')
+        .count();
+      for (const needsYou of [undefined, null, '', ' \n ']) {
+        const result = await patch({
+          statusKey,
+          needsYou,
+          next: 'Do not save',
+        });
+        expect(result.status).toBe(400);
+        expect(JSON.stringify(result.body)).toContain('NEEDS_YOU_REQUIRED');
+      }
+      expect(
+        await h.projects.issueQueries.detail(alice(), issue.id),
+      ).toMatchObject({
+        revision: before.revision,
+        statusKey: before.statusKey,
+        needsYou: before.needsYou,
+        next: before.next,
+      });
+      expect(
+        await h.database.connection().repository('pmActivities').count(),
+      ).toBe(activities);
+      const result = await patch({
+        statusKey,
+        needsYou: '  Decide on the source.\nProvide its URL.  ',
+      });
+      expect(result.status).toBe(200);
+      expect(result.body.data.issue.needsYou).toBe(
+        '  Decide on the source.\nProvide its URL.  ',
+      );
+      expect((await patch({ statusKey })).status).toBe(400);
+      expect(
+        (await patch({ next: 'Continue after the decision.' })).status,
+      ).toBe(200);
+    }
+    expect((await patch({ statusKey: 'blocked' })).status).toBe(400);
+    expect(
+      (await patch({ statusKey: 'blocked', needsYou: 'x'.repeat(2001) }))
+        .status,
+    ).toBe(400);
+    const malformed = await h.request('PATCH', `/projects/issues/${issue.id}`, {
+      runToken: token,
+      raw: '{',
+      headers: { 'content-type': 'application/json' },
+    });
+    expect(malformed.status).toBe(400);
+    expect(JSON.stringify(malformed.body)).toContain('Malformed JSON');
+    const invalid = await h.request('PATCH', `/projects/issues/${issue.id}`, {
+      runToken: 'invalid-run-token',
+      body: { statusKey: 'blocked', needsYou: 'Choose.' },
+    });
+    expect(invalid.status).toBe(401);
+  });
+
+  it('keeps human progress optional and preserves other agents existing status permissions', async () => {
+    const { issue, token } = await claimedRun({ name: 'Project manager' });
+    for (const statusKey of ['blocked', 'in_review']) {
+      const result = await h.request('PATCH', `/projects/issues/${issue.id}`, {
+        user: 'alice',
+        headers: { 'x-agent-id': PM },
+        body: { statusKey },
+      });
+      expect(result.status).toBe(200);
+      expect(result.body.data.issue.needsYou).toBeNull();
+    }
+    await h.request('PATCH', `/projects/issues/${issue.id}`, {
+      user: 'alice',
+      body: { statusKey: 'in_progress' },
+    });
+    // Studio already restricts status moves by non-manager agents; optional progress does not widen their rights.
+    for (const statusKey of ['blocked', 'in_review']) {
+      for (const extra of [{}, { needsYou: 'Choose.' }]) {
+        const result = await h.request(
+          'PATCH',
+          `/projects/issues/${issue.id}`,
+          {
+            runToken: token,
+            headers: { 'x-agent-id': PM, 'x-agent-role': 'project-manager' },
+            body: { statusKey, ...extra },
+          },
+        );
+        expect(result.status).toBe(400);
+        expect(result.body.error.reason).toBe('TRANSITION_NOT_ALLOWED');
+      }
+    }
+    const edited = await h.request('PATCH', `/projects/issues/${issue.id}`, {
+      runToken: token,
+      body: { next: 'Continue the implementation.' },
+    });
+    expect(edited.status).toBe(200);
+    expect(edited.body.data.issue.needsYou).toBeNull();
+  });
+
   it('lets the project manager move the status between the open statuses, never finishing the issue', async () => {
     const { issue, token, runId } = await managerRun();
     const moved = await h.request(
       'PATCH',
       `/projects/issues/${issue.identifier}`,
-      { runToken: token, body: { statusKey: 'in_review' } },
+      {
+        runToken: token,
+        body: {
+          statusKey: 'in_review',
+          needsYou: 'Accept the result or send it back.',
+        },
+      },
     );
     expect(moved.status).toBe(200);
     expect(moved.body.data.issue.statusKey).toBe('in_review');
+    const restoredReview = await h.request(
+      'PATCH',
+      `/projects/issues/${issue.identifier}`,
+      {
+        runToken: token,
+        body: { statusKey: 'in_progress' },
+      },
+    );
+    expect(restoredReview.status).toBe(200);
+    expect(restoredReview.body.data.issue.statusKey).toBe('in_progress');
     // Its own move is no news to its run.
     expect((await h.agents.runs.detail(runId)).inputs).toHaveLength(1);
     const blocked = await h.request(
       'PATCH',
       `/projects/issues/${issue.identifier}`,
-      { runToken: token, body: { statusKey: 'blocked' } },
+      {
+        runToken: token,
+        body: {
+          statusKey: 'blocked',
+          needsYou: 'Which database should the migration target?',
+        },
+      },
     );
     expect(blocked.status).toBe(200);
+    const restoredBlocked = await h.request(
+      'PATCH',
+      `/projects/issues/${issue.identifier}`,
+      {
+        runToken: token,
+        body: { statusKey: 'in_progress' },
+      },
+    );
+    expect(restoredBlocked.status).toBe(200);
+    expect(restoredBlocked.body.data.issue.statusKey).toBe('in_progress');
+    const before = await h.projects.issueQueries.detail(alice(), issue.id);
+    expect(before.activities.at(-1)).toMatchObject({
+      actorType: 'agent',
+      actorId: PM,
+    });
     for (const statusKey of ['done', 'cancelled', 'backlog']) {
       const refused = await h.request(
         'PATCH',
@@ -1382,12 +1540,112 @@ describe('the API as a run', () => {
         { runToken: token, body: { statusKey } },
       );
       expect(refused.status).toBeGreaterThanOrEqual(400);
+      const after = await h.projects.issueQueries.detail(alice(), issue.id);
+      expect(after.statusKey).toBe(before.statusKey);
+      expect(after.revision).toBe(before.revision);
+      expect(after.activities).toEqual(before.activities);
     }
     const detail = await h.projects.issueQueries.detail(alice(), issue.id);
-    expect(detail.statusKey).toBe('blocked');
+    expect(detail.statusKey).toBe('in_progress');
   });
 
-  it('updates an issue, but not its owner', async () => {
+  it.each(['blocked', 'in_review'])(
+    'restores a manager run claimed while %s',
+    async (statusKey) => {
+      const { issue, token } = await managerRun({ statusKey });
+      const moved = await h.request(
+        'PATCH',
+        `/projects/issues/${issue.identifier}`,
+        {
+          runToken: token,
+          body: { statusKey: 'in_progress' },
+        },
+      );
+      expect(moved.status).toBe(200);
+      expect(moved.body.data.issue.statusKey).toBe('in_progress');
+    },
+  );
+
+  it.each(['blocked', 'in_review'])(
+    'refuses worker recovery from %s without side effects',
+    async (statusKey) => {
+      const { issue, token } = await claimedRun({}, { statusKey });
+      const before = await h.projects.issueQueries.detail(alice(), issue.id);
+      const refused = await h.request(
+        'PATCH',
+        `/projects/issues/${issue.identifier}`,
+        {
+          runToken: token,
+          body: { statusKey: 'in_progress' },
+        },
+      );
+      expect(refused.status).toBe(400);
+      expect(refused.body.error.reason).toBe('TRANSITION_NOT_ALLOWED');
+      const after = await h.projects.issueQueries.detail(alice(), issue.id);
+      expect(after.statusKey).toBe(before.statusKey);
+      expect(after.revision).toBe(before.revision);
+      expect(after.activities).toEqual(before.activities);
+    },
+  );
+
+  it('refuses recovery on an invisible object and after revocation', async () => {
+    const { issue, token } = await managerRun({ statusKey: 'blocked' });
+    const before = await h.projects.issueQueries.detail(alice(), issue.id);
+    const hiddenProject = await h.projects.projects.create(bob(), {
+      name: 'Secret',
+      visibility: 'members',
+    });
+    const hidden = await openIssue(bob(), {
+      title: 'Secret',
+      projectId: hiddenProject.id,
+      statusKey: 'blocked',
+    });
+    const hiddenBefore = await h.projects.issueQueries.detail(bob(), hidden.id);
+    expect(
+      (
+        await h.request('PATCH', `/projects/issues/${hidden.identifier}`, {
+          runToken: token,
+          body: { statusKey: 'in_progress' },
+        })
+      ).status,
+    ).toBe(404);
+    h.roles.set('alice', 'none');
+    expect(
+      (
+        await h.request('PATCH', `/projects/issues/${issue.identifier}`, {
+          runToken: token,
+          body: { statusKey: 'in_progress' },
+        })
+      ).status,
+    ).toBe(403);
+    h.roles.set('alice', 'member');
+    const after = await h.projects.issueQueries.detail(alice(), issue.id);
+    expect(after.statusKey).toBe(before.statusKey);
+    expect(after.revision).toBe(before.revision);
+    expect(after.activities).toEqual(before.activities);
+    expect(await h.projects.issueQueries.detail(bob(), hidden.id)).toEqual(
+      hiddenBefore,
+    );
+  });
+
+  it.each(['done', 'cancelled'])(
+    'still lets an authorized person move to %s',
+    async (statusKey) => {
+      const issue = await openIssue(alice(), { statusKey: 'in_review' });
+      const moved = await h.request(
+        'PATCH',
+        `/projects/issues/${issue.identifier}`,
+        {
+          user: 'alice',
+          body: { revision: issue.revision, statusKey },
+        },
+      );
+      expect(moved.status).toBe(200);
+      expect(moved.body.data.issue.statusKey).toBe(statusKey);
+    },
+  );
+
+  it('checks the running identity for edits and owner changes without the legacy action list', async () => {
     const { issue, token } = await claimedRun();
     const response = await h.request('PATCH', `/projects/issues/${issue.id}`, {
       runToken: token,
@@ -1402,7 +1660,7 @@ describe('the API as a run', () => {
       runToken: token,
       body: { ownerUserId: 'bob' },
     });
-    expect(owner.status).toBe(403);
+    expect(owner.status).toBe(200);
   });
 
   it("returns the run's context", async () => {
@@ -1486,7 +1744,7 @@ describe('claims and endings', () => {
     expect(system).toContain(
       [
         `- Answer the step you were handed once, when you finish, in the thread of the comment that handed it to you (${reply}). People and the project manager read the comments, not your terminal.`,
-        `- Files on issue ${key} and its comments are listed in the context with their ids: save one with \`nb-studio issue attachment download <file-id>\`.`,
+        `- Files on issue ${key} and its comments are listed in the context with their ids: save one with \`nb-studio issue attachment download <file-id>\`. To show a screenshot, a log or another file, add \`--attach <path>\` (repeatable) to the comment and name the file in its text; never attach secrets or personal data.`,
         "- Do not change the issue's status.",
         '- When you are done, or need a person, say so in a comment and end your turn. Do not wait for an answer: new comments reach you as new input.',
         '',
@@ -1515,6 +1773,7 @@ describe('claims and endings', () => {
         branch: `agent/${issue.identifier}`,
         path: 'web',
         initPrompt: 'Run pnpm install.',
+        initializeIfEmpty: true,
       },
     ]);
     expect(payload.workspace.env).toEqual([

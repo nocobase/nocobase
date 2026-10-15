@@ -6,7 +6,7 @@ import { PAGES } from '../../shared/pages';
 describe('the role editor’s page groups', () => {
   it('follow the sidebar’s sections and order', () => {
     expect(PAGE_GROUPS).toEqual([
-      { title: null, pages: ['reports', 'pm-my-issues'] },
+      { title: null, pages: ['pm-my-issues', 'reports'] },
       {
         title: 'navigation.development',
         pages: ['pm-issues', 'pm-projects', 'knowledge'],

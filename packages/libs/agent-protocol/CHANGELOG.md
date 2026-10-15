@@ -1,5 +1,30 @@
 # @nocobase/agent-protocol
 
+## 0.1.0-beta.8
+
+### Patch Changes
+
+- 8e4cf26: Recover runners and agent-session bridges after a protocol upgrade. Heartbeat answers now carry the server's runner protocol (`protocolVersion`), and a runner that speaks an older protocol while no newer version is offered logs what it speaks, what the application needs and how to update, instead of looking up to date. A bridge refused for its protocol now receives the protocols the application speaks in the error's `metadata`; `acp start` then updates the CLI as `update` does and exits non-zero so its launchd, systemd or Startup service starts it again on the new version, and when no update helps it still exits non-zero after a pause rather than stopping with success. A computer whose bridge was refused as too old is shown on My agents with the commands to update it.
+- f36da62: Keep a runner claiming work while it collects working directories. Collection no longer measures every directory's size by reading every file, which on runners with many directories took tens of minutes per round and held all claims meanwhile; only pruning the shared pnpm store still holds claims. Routine collection now runs an hour after the previous round ended (`WORKSPACE_REPORT_INTERVAL_MS`), still at once when the disk runs low, and the runner logs each round's start and duration. Workspace diagnostics show a directory's size only when a runner reported one.
+
+## 0.1.0-beta.7
+
+### Minor Changes
+
+- ddfe1b1: Add `RunWorkspace.key` and `RunWorkspace.readOnly` to claims, `ToolCapabilities.modelsSource` to tool reports, and the `AGENT_NOT_ENABLED` error code.
+- a2cf036: Interrupt agent runs for runner updates after stopping tools and preserving local continuation references. Requeue upgrade interruptions without consuming failure attempts or notifying project managers, retain task inputs, and report draining capacity and reasons in runner and queue views.
+
+### Patch Changes
+
+- 10e261b: Use a private linked Git worktree per run and save local continuation after stopping its tools. Fast-forward the resume reference, retain divergent heads as separately listed saved references, and preserve the directory on cleanup failure. Keep Codex state outside disposable worktrees. Other tools start fresh when their code directory changes; legacy sessions and clones are not migrated. Distinguish private local branches from task push targets and retain older runner compatibility.
+- ee24e95: Clean idle build artifacts before pushed workspaces when disk space is low, pause new work until heartbeats detect recovery, and report disk-full failures for reassignment without counting a project-manager step failure. Show current disk capacity and workspace size, type and push diagnostics.
+
+  Retry interrupted removal of verified pushed attempt directories from GC or the next run, stop their remaining processes before deleting remnants, and retain cleanup failure reasons without blocking later tasks. Preserve unpublished or uncommitted work for recovery.
+
+  Verify the actual checkout branch and HEAD before retrying removal, report disk exhaustion even when local preservation metadata or events cannot be written, and continue safe pressure cleanup when diagnostic cache writes fail.
+
+- 4748117: Allow the project manager to use an idle fallback after a configurable queue delay, exclude runners that cannot honor its workspace, and show selection and waiting reasons. Persist queue episodes through retries and restarts, withdraw unclaimed manager delegations after a configurable timeout, reliably report their cause in the dispatch thread, and publish identity-aware immediate capacity in each manager roster.
+
 ## 0.1.0-beta.6
 
 ### Patch Changes

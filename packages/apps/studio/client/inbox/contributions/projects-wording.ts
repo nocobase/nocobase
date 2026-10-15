@@ -45,8 +45,12 @@ export function useParamsOf(): (
         t(key, { ns, defaultValue: fallback });
       return {
         ...params,
-        ...(params.agentName ? { agentName: translate(params.agentName) } : {}),
-        ...(params.actorName ? { actorName: translate(params.actorName) } : {}),
+        ...(params.agentName && !entry.notice?.data?.agentDatabaseName
+          ? { agentName: translate(params.agentName) }
+          : {}),
+        ...(params.actorName && !entry.notice?.data?.actorDatabaseName
+          ? { actorName: translate(params.actorName) }
+          : {}),
       };
     },
     [t],
@@ -179,6 +183,10 @@ export function useEntryText(): (
 
     let sentence: string | null = null;
     switch (notice.type) {
+      case 'owner_handoff':
+      case 'owner_handoff_rejected':
+        sentence = t(`inbox.body.${notice.type}`);
+        break;
       case 'status_changed': {
         const from = status(params.from);
         if (from && to)
@@ -281,7 +289,7 @@ export function useEntryText(): (
         sentence = `${t('inbox.body.comment_runs_limited', {
           limit: params.limit ?? '',
           windowHours: params.windowHours ?? '',
-          agentName: params.agentName ?? '',
+          agentName: params.agentName ?? t('inbox.anAgent'),
         })} ${t('studioAgents.commentRuns.continueInIssue')}`;
         break;
       case 'commented':

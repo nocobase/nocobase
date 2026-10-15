@@ -132,18 +132,12 @@ export default function ExternalCrmPage(): ReactElement {
         title={t('externalCrm.title')}
         actions={
           <div className='flex flex-wrap items-center gap-2'>
-            <Badge
-              variant='outline'
-              className='gap-1.5 px-3 py-1 text-xs font-medium shadow-2xs'
-            >
+            <Badge variant='outline' className='gap-1.5 shadow-2xs'>
               <Lock className='size-3 text-amber-500' />
               <span>{t('externalCrm.readOnly')}</span>
             </Badge>
             {customers.data && (
-              <Badge
-                variant='secondary'
-                className='gap-1.5 px-3 py-1 text-xs font-medium shadow-2xs'
-              >
+              <Badge variant='secondary' className='gap-1.5 shadow-2xs'>
                 <Users className='size-3 text-primary' />
                 <span>
                   {t('externalCrm.customers', { count: customers.data.data })}
@@ -331,7 +325,7 @@ export default function ExternalCrmPage(): ReactElement {
                     <TableCell>
                       <Badge
                         variant={isPaid ? 'default' : 'secondary'}
-                        className={`font-medium text-xs capitalize ${
+                        className={`capitalize ${
                           isPaid
                             ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
                             : isShipped

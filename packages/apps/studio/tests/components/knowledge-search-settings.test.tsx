@@ -5,7 +5,7 @@
  * saves on its own over the latest settings.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router';
@@ -16,6 +16,8 @@ import {
   type KnowledgeSearchConfig,
   type KnowledgeSearchSettings,
 } from '../../shared/knowledge';
+
+const notifications = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 
 const api = {
   knowledgeSearch: vi.fn<() => Promise<KnowledgeSearchConfig>>(),
@@ -30,7 +32,7 @@ vi.mock('../../client/access/api', async (importOriginal) => ({
   useStudioApi: () => api,
 }));
 vi.mock('../../client/access/notify', () => ({
-  useNotify: () => ({ success: vi.fn(), error: vi.fn() }),
+  useNotify: () => notifications,
 }));
 vi.mock('@nocobase/i18n/client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@nocobase/i18n/client')>()),
@@ -44,10 +46,11 @@ vi.mock('@nocobase/i18n/client', async (importOriginal) => ({
 const { default: KnowledgeSearchSettingsPage } =
   await import('../../client/pages/config/knowledge-search');
 
-const wrap = (ui: ReactElement) => (
-  <QueryClientProvider
-    client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-  >
+const wrap = (
+  ui: ReactElement,
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+) => (
+  <QueryClientProvider client={client}>
     <MemoryRouter>{ui}</MemoryRouter>
   </QueryClientProvider>
 );
@@ -90,6 +93,8 @@ function config(
 }
 
 beforeEach(() => {
+  notifications.success.mockClear();
+  notifications.error.mockClear();
   api.knowledgeSearch.mockReset();
   api.updateKnowledgeSearch.mockReset();
   api.updateKnowledgeSearch.mockImplementation((settings) =>
@@ -355,5 +360,135 @@ describe('the knowledge search settings page', () => {
     expect(
       await screen.findByText(/knowledge\.searchSettings\.store\.restart/u),
     ).toBeInTheDocument();
+  });
+});
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<T>((yes, no) => {
+    resolve = yes;
+    reject = no;
+  });
+  return { promise, resolve, reject };
+}
+
+const searchKey = ['studio', 'knowledge', 'search'];
+const saveButton = (name: string) =>
+  section(name).getByRole('button', { name: 'knowledge.searchSettings.save' });
+async function editBoth() {
+  await screen.findByText('knowledge.searchSettings.recall.title');
+  for (const [id, value] of [
+    ['kb-search-recall-limit', '21'],
+    ['kb-search-chunking-target', '1300'],
+  ]) {
+    const input = document.getElementById(id!)!;
+    await userEvent.clear(input);
+    await userEvent.type(input, value!);
+  }
+}
+
+describe('coordinating knowledge settings saves', () => {
+  it.each([
+    ['recall', 'chunking'],
+    ['chunking', 'recall'],
+  ])('preserves both queued saves: %s then %s', async (first, second) => {
+    api.knowledgeSearch.mockResolvedValue(config());
+    const pending = deferred<KnowledgeSearchConfig>();
+    api.updateKnowledgeSearch.mockImplementationOnce(() => pending.promise);
+    render(wrap(<KnowledgeSearchSettingsPage />));
+    await editBoth();
+    await userEvent.click(saveButton(first));
+    await userEvent.click(saveButton(second));
+    expect(api.updateKnowledgeSearch).toHaveBeenCalledTimes(1);
+    await act(async () =>
+      pending.resolve(
+        config({ settings: api.updateKnowledgeSearch.mock.calls[0]![0] }),
+      ),
+    );
+    await waitFor(() =>
+      expect(api.updateKnowledgeSearch).toHaveBeenCalledTimes(2),
+    );
+    expect(api.updateKnowledgeSearch.mock.calls[1]![0]).toEqual({
+      ...DEFAULT_KNOWLEDGE_SEARCH,
+      recall: { ...DEFAULT_KNOWLEDGE_SEARCH.recall, limit: 21 },
+      chunking: { ...DEFAULT_KNOWLEDGE_SEARCH.chunking, target: 1300 },
+    });
+    await waitFor(() => expect(saveButton(second)).toBeDisabled());
+  });
+
+  it('releases the queue after failure and keeps the failed draft when another section succeeds', async () => {
+    api.knowledgeSearch.mockResolvedValue(config());
+    const pending = deferred<KnowledgeSearchConfig>();
+    api.updateKnowledgeSearch.mockImplementationOnce(() => pending.promise);
+    render(wrap(<KnowledgeSearchSettingsPage />));
+    await editBoth();
+    await userEvent.click(saveButton('recall'));
+    await userEvent.click(saveButton('chunking'));
+    await act(async () => pending.reject(new Error('Save failed')));
+    await waitFor(() =>
+      expect(api.updateKnowledgeSearch).toHaveBeenCalledTimes(2),
+    );
+    await waitFor(() => expect(saveButton('chunking')).toBeDisabled());
+    expect(document.getElementById('kb-search-recall-limit')).toHaveValue(21);
+    expect(saveButton('recall')).toBeEnabled();
+    expect(api.updateKnowledgeSearch.mock.calls[1]![0].recall.limit).toBe(20);
+    expect(notifications.error).toHaveBeenCalledOnce();
+    expect(notifications.success).toHaveBeenCalledOnce();
+    await userEvent.click(saveButton('recall'));
+    await waitFor(() =>
+      expect(api.updateKnowledgeSearch).toHaveBeenCalledTimes(3),
+    );
+    expect(api.updateKnowledgeSearch.mock.calls[2]![0].chunking.target).toBe(
+      1300,
+    );
+  });
+
+  it.each(['before', 'during'])(
+    'discards a stale read started %s a save',
+    async (when) => {
+      const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+      api.knowledgeSearch.mockResolvedValue(config());
+      const stale = deferred<KnowledgeSearchConfig>();
+      const pending = deferred<KnowledgeSearchConfig>();
+      api.updateKnowledgeSearch.mockImplementationOnce(() => pending.promise);
+      render(wrap(<KnowledgeSearchSettingsPage />, client));
+      await editBoth();
+      api.knowledgeSearch.mockImplementationOnce(() => stale.promise);
+      const refetch = () => client.refetchQueries({ queryKey: searchKey });
+      if (when === 'before') void refetch();
+      await userEvent.click(saveButton('recall'));
+      if (when === 'during') void refetch();
+      await act(async () =>
+        pending.resolve(
+          config({ settings: api.updateKnowledgeSearch.mock.calls[0]![0] }),
+        ),
+      );
+      await waitFor(() => expect(saveButton('recall')).toBeDisabled());
+      await act(async () => stale.resolve(config()));
+      expect(
+        client.getQueryData<KnowledgeSearchConfig>(searchKey)?.settings.recall
+          .limit,
+      ).toBe(21);
+      await userEvent.click(saveButton('chunking'));
+      await waitFor(() =>
+        expect(api.updateKnowledgeSearch).toHaveBeenCalledTimes(2),
+      );
+      expect(api.updateKnowledgeSearch.mock.calls[1]![0].recall.limit).toBe(21);
+    },
+  );
+
+  it('keeps read-only fields disabled and provides no save actions', async () => {
+    api.knowledgeSearch.mockResolvedValue(config({ canManage: false }));
+    render(wrap(<KnowledgeSearchSettingsPage />));
+    await screen.findByText('knowledge.searchSettings.recall.title');
+    expect(document.getElementById('kb-search-recall-limit')).toBeDisabled();
+    expect(document.getElementById('kb-search-chunking-target')).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: 'knowledge.searchSettings.save' }),
+    ).not.toBeInTheDocument();
+    expect(api.updateKnowledgeSearch).not.toHaveBeenCalled();
   });
 });

@@ -13,6 +13,7 @@ import type {
 } from '@nocobase/agent-protocol';
 import type { DatabaseConnection, Repository } from '@nocobase/db';
 
+import { transactionRead } from '../transaction-read.js';
 import type {
   Run,
   RunExecutionSnapshot,
@@ -26,6 +27,7 @@ import {
 } from '../../kernel/values.js';
 
 export interface RunRecord {
+  readonly revision: number;
   readonly id: string;
   readonly agentId: string;
   readonly agentType: string;
@@ -45,6 +47,10 @@ export interface RunRecord {
   readonly subjectId: string;
   readonly threadScope: string;
   readonly freshSession?: boolean;
+  /** Server-managed authorization for runs caused by one comment, never independent events. */
+  readonly commentRootRunId?: string | null;
+  readonly commentExecution?: 'owner' | 'requester' | null;
+  readonly commentOwnerKey?: string | null;
   readonly actorUserId: string;
   /** Null only on a run older than the column that no backfill reached; read as the actor then. */
   readonly requestedByUserId?: string | null;
@@ -53,6 +59,7 @@ export interface RunRecord {
   readonly requires: readonly unknown[];
   readonly acceptsInput: boolean;
   readonly availableAt: string | null;
+  readonly queueEnteredAt?: string | null;
   readonly leaseExpiresAt: string | null;
   readonly dispatchedAt: string | null;
   readonly startedAt: string | null;
@@ -252,6 +259,9 @@ export function toRun(record: RunRecord): Run {
     parentRunId: record.parentRunId ?? null,
     subject: { kind: record.subjectKind, id: record.subjectId },
     threadScope: record.threadScope,
+    commentRootRunId: record.commentRootRunId ?? null,
+    commentExecution: record.commentExecution ?? null,
+    commentOwnerKey: record.commentOwnerKey ?? null,
     actorUserId: record.actorUserId,
     requestedByUserId: record.requestedByUserId ?? record.actorUserId,
     confirmedByUserId: record.confirmedByUserId ?? null,
@@ -259,6 +269,7 @@ export function toRun(record: RunRecord): Run {
     requires: stringArray(record.requires) as RunnerFeature[],
     acceptsInput: Boolean(record.acceptsInput),
     availableAt: record.availableAt,
+    queueEnteredAt: record.queueEnteredAt ?? record.createdAt,
     leaseExpiresAt: record.leaseExpiresAt,
     dispatchedAt: record.dispatchedAt,
     startedAt: record.startedAt,
@@ -464,6 +475,8 @@ export async function inputsOnSince(
   }));
 }
 
+const summaryRead = transactionRead<string | null>();
+
 /** The summary of the newest completed run of an agent on a subject, other than `exceptRunId`. */
 export async function lastSummary(
   conn: DatabaseConnection,
@@ -474,19 +487,28 @@ export async function lastSummary(
   },
   exceptRunId: string,
 ): Promise<string | null> {
-  const records = await runsRepo(conn).findMany({
-    filter: (f) =>
-      f.and([
-        f.string('agentId').eq(key.agentId),
-        f.string('subjectKind').eq(key.subjectKind),
-        f.string('subjectId').eq(key.subjectId),
-        f.string('status').eq('completed'),
-        f.string('id').ne(exceptRunId),
-      ]),
-    sort: (sort) => [sort.field('finishedAt').desc(), sort.field('id').desc()],
-    limit: 5,
-  });
-  return records.find((record) => record.summary)?.summary ?? null;
+  return summaryRead(
+    conn,
+    JSON.stringify([key.agentId, key.subjectKind, key.subjectId, exceptRunId]),
+    async () => {
+      const records = await runsRepo(conn).findMany({
+        filter: (f) =>
+          f.and([
+            f.string('agentId').eq(key.agentId),
+            f.string('subjectKind').eq(key.subjectKind),
+            f.string('subjectId').eq(key.subjectId),
+            f.string('status').eq('completed'),
+            f.string('id').ne(exceptRunId),
+          ]),
+        sort: (sort) => [
+          sort.field('finishedAt').desc(),
+          sort.field('id').desc(),
+        ],
+        limit: 5,
+      });
+      return records.find((record) => record.summary)?.summary ?? null;
+    },
+  );
 }
 
 /** Per agent, the runs it has not finished (queued or held). */

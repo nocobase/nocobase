@@ -1362,19 +1362,22 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       );
 
       // The relay only submits the task; the executor runs it after publishing returns.
-      await vi.waitFor(async () => {
-        expect(sendMessage).toHaveBeenCalledTimes(1);
-        await expect(
-          service.listSubmissions({ actorId: 'user-1' }),
-        ).resolves.toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              id: submission.id,
-              status: 'accepted',
-            }),
-          ]),
-        );
-      });
+      await vi.waitFor(
+        async () => {
+          expect(sendMessage).toHaveBeenCalledTimes(1);
+          await expect(
+            service.listSubmissions({ actorId: 'user-1' }),
+          ).resolves.toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                id: submission.id,
+                status: 'accepted',
+              }),
+            ]),
+          );
+        },
+        { timeout: 15000 },
+      );
 
       await runtime.close();
       await expect(

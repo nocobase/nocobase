@@ -116,4 +116,4 @@ If the Skills are not loaded but the user wants to keep working in this session 
 | A warning that the Skills could not be synchronized  | Run `pnpm nocobase skills sync` in the application.                                                          |
 | `pnpm dev` or `pnpm start` says it is not configured | Run `pnpm nocobase config init --json`, then `pnpm nocobase config check --json`, and follow the result.     |
 
-The full guide: https://github.com/nocobase/nocobase/blob/v3-develop/docs/docs/en/get-started/create-app-with-agent.md
+For an application walkthrough, see https://github.com/nocobase/nocobase/blob/v3-develop/docs/docs/en/capabilities/quick-start.md.

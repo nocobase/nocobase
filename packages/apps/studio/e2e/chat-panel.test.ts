@@ -196,9 +196,7 @@ test('phone history switches back to the conversation without horizontal overflo
   const title = `Chat panel phone ${unique()}`;
   await api.patch(`agents/conversations/${conversation.id}`, { title });
   await open(page, '/issues/PM-1');
-  await page
-    .getByRole('button', { name: '在面板中继续编辑', exact: true })
-    .click();
+  await page.keyboard.press('Control+j');
   const panel = page.getByRole('dialog', { name: 'Agent 对话' });
   await panel.getByRole('button', { name: '对话历史', exact: true }).click();
   await expect(panel.getByRole('list', { name: '对话历史' })).toBeVisible();
@@ -226,9 +224,7 @@ test('new conversation keeps page context and supports IME through size changes'
   page,
 }) => {
   await open(page, '/issues/PM-1');
-  await page
-    .getByRole('button', { name: '在面板中继续编辑', exact: true })
-    .click();
+  await page.keyboard.press('Control+j');
   const panel = page.getByTestId('chat-panel');
   await panel.getByRole('button', { name: '新对话', exact: true }).click();
   const chips = panel.getByTestId('chat-context-chips');
@@ -265,9 +261,7 @@ test('the reused history keeps its failure, empty and search states beside the c
   page,
 }) => {
   await open(page, '/issues/PM-1');
-  await page
-    .getByRole('button', { name: '在面板中继续编辑', exact: true })
-    .click();
+  await page.keyboard.press('Control+j');
   let failing = true;
   await page.route(/\/api\/agents\/conversations(?:\?|$)/u, async (route) => {
     await route.fulfill({

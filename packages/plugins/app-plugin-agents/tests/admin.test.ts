@@ -12,6 +12,57 @@ describe('admin API', () => {
     await h?.close();
   });
 
+  it('lists workspace totals and loads directory diagnostics only for an authorized detail request', async () => {
+    h = await createHarness();
+    const runner = await h.registerRunner({ ownerUserId: 'alice' });
+    const directory = {
+      workDir: '/work/PM-396',
+      subjectKey: 'PM-396',
+      lastUsedAt: h.clock.now().toISOString(),
+      unpushed: true,
+      sizeBytes: 321,
+    };
+    const report = await h.request('POST', '/agents/runners/workspaces', {
+      runnerKey: runner.key,
+      body: {
+        workspaces: [],
+        reportId: 'summary-report',
+        directories: [directory],
+        disk: { freeBytes: 500, totalBytes: 1000, minFreeBytes: 100 },
+      },
+    });
+    expect(report.status).toBe(200);
+    const list = await h.request('GET', '/agents/runners', { user: 'alice' });
+    expect(list.status).toBe(200);
+    expect(list.body.data[0].workspaceUsage).toMatchObject({
+      count: 1,
+      unpushedCount: 1,
+      measuredAt: h.clock.now().toISOString(),
+    });
+    expect(list.body.data[0].workspaceUsage).not.toHaveProperty('workspaces');
+    const detail = await h.request(
+      'GET',
+      `/agents/runners/${runner.runnerId}`,
+      { user: 'alice' },
+    );
+    expect(detail.body.data.workspaceUsage.workspaces).toEqual([
+      expect.objectContaining(directory),
+    ]);
+    const redacted = await h.request(
+      'GET',
+      `/agents/runners/${runner.runnerId}`,
+      { user: 'bob', can: ['agents.runners/read'] },
+    );
+    expect(redacted.body.data.workspaceUsage.workspaces).toEqual([]);
+    expect(
+      (
+        await h.request('GET', `/agents/runners/${runner.runnerId}`, {
+          user: 'charlie',
+        })
+      ).status,
+    ).toBe(404);
+  });
+
   it('lets anyone signed in read agents, and only a manager of agents change them', async () => {
     h = await createHarness();
     expect((await h.request('GET', '/agents')).status).toBe(401);
@@ -1101,10 +1152,8 @@ describe('admin API', () => {
       user: 'bob',
       can: ['agents.agents/read'],
     });
-    expect(detail.body.data.attachments).toEqual([
-      { scope: 'agent', scopeId: agentId, name: 'Coder' },
-    ]);
-    expect(detail.body.data.agentCount).toBe(1);
+    expect(detail.body.data.attachments).toEqual([]);
+    expect(detail.body.data).not.toHaveProperty('agentCount');
     expect(
       (
         await h.request('DELETE', `/agents/skills/${id}`, {
@@ -1113,6 +1162,6 @@ describe('admin API', () => {
         })
       ).status,
     ).toBe(204);
-    expect((await h.services.agents.get(agentId)).skillIds).toEqual([]);
+    expect(await h.services.agents.get(agentId)).not.toHaveProperty('skillIds');
   });
 });

@@ -7,6 +7,14 @@ description: Use the `nb-studio` command line to work in NocoBase Studio — iss
 
 `nb-studio` ships no business commands: every command is one Studio API route, offered to whoever calls according to their identity and permissions. So never guess a command from memory: ask `nb-studio` what exists for you.
 
+## Install this Skill on your own machine
+
+After installing the CLI, run `nb-studio skills install` for detected Claude Code and Codex tools, or choose with `nb-studio skills install --tool all` (`claude` and `codex` are also available separately). This local command works offline without a login. Preview with `nb-studio skills install --dry-run --json`; compare installed contents with `nb-studio skills status --json`.
+
+Claude Code's personal copy goes under `<CLAUDE_CONFIG_DIR or ~/.claude>/skills/nb-studio-cli`. Codex's copy goes under `~/.agents/skills/nb-studio-cli`, following the [official user Skill directory](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills). `CODEX_HOME` helps detect Codex and locates legacy copies for status, but does not move the new target. Installation does not create, migrate or delete a legacy copy and preserves neighboring Skills.
+
+`nb-studio update` synchronizes registered copies from the new CLI package; synchronization failures warn while leaving the CLI upgrade successful. Manual unregistered copies prompt an installation reminder. After an npm global upgrade or another external upgrade, run `nb-studio skills install` again. The runner already supplies this Skill to its runs: do not install it inside a run; read-only status remains available.
+
 ## Who you are
 
 - Inside a run's working directory (a `.nb-studio/run.json` at or above it) `nb-studio` acts as the run: it presents the run's token and can do what the agent is given. You never need a key or `nb-studio login` there, and must not pass any credential on the command line.
@@ -29,11 +37,13 @@ description: Use the `nb-studio` command line to work in NocoBase Studio — iss
 
 ## Common work
 
+In a writable run, the worktree's initial target may be a same-repository linked pull request branch. You may switch or create branches and push any branch of that repository with `git push origin HEAD:refs/heads/<branch>`; never force push or rewrite already-pushed history. `nb-studio pr open` without `--head` uses the branch rule (`agent/<KEY>` by default), so after starting on a linked pull request's branch or switching, pass the published branch with `--head <branch>`. Use `nb-studio pr link` and `nb-studio pr unlink` to manage issue associations; inspect each command's `--help` for its current arguments and permissions. Read-only runs still change, commit and push nothing.
+
 ```bash
 nb-studio issue search --q "login" --json
 nb-studio issue get PM-12 --json
 nb-studio issue comment add PM-12 --content-file report.md
-nb-studio issue update PM-12 --status in_review
+nb-studio issue update PM-12 --status in_review --needs-you "Review the result and accept it or send it back."
 nb-studio issue attachment download <file-id>
 nb-studio conversation attachment download <file-id>
 nb-studio pr open --issue PM-12 --title "Fix the login redirect"
@@ -48,6 +58,8 @@ nb-studio app deploy my-app --release <release>
 ```
 
 Check each with `nb-studio docs <command>` before relying on its flags: they follow the server's version.
+
+Issue progress flags are optional for people and other agents. In Studio, an authenticated project-manager run must submit a nonblank `--needs-you` (or its file form) with every direct `--status blocked` or `--status in_review` update, including the same status or switching between them. This is enforced by the shared API, including JSON `--file` input; stored text cannot substitute for this submission. Updating only `--next` does not trigger it. Omitted fields are retained while waiting; explicit null/blank clears them. Leaving waiting states clears needsYou, and Done/Cancelled clear next.
 
 ## From CI
 

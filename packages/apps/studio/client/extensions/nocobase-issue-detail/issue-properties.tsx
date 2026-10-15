@@ -41,7 +41,9 @@ import {
   type IssueDetailLabels,
 } from './labels.js';
 
-const CARD = 'space-y-3 rounded-lg border bg-card p-4 text-card-foreground';
+/** A card on a wide screen; on a phone a full-width section. */
+const CARD =
+  'space-y-3 rounded-lg border bg-card p-4 text-card-foreground max-md:rounded-none max-md:border-x-0 max-md:border-y-0';
 
 export interface PaletteColor {
   readonly value: string;

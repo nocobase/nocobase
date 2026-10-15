@@ -39,7 +39,7 @@ for generic collection CRUD; the plugin's tables are only written through its AP
   (`issueDetailChildRoutes`).
   The settings pages (issue prefix, labels) are exported from
   `@nocobase/app-plugin-projects/client/config` for the App to route under its own settings page, and shared page
-  components from `@nocobase/app-plugin-projects/client/kit`. Changes are announced on the realtime topic `pm:changes`.
+  components from `@nocobase/app-plugin-projects/client/kit`. Changes are announced on the realtime topic `pm:changes`, naming the changed issues in `issueIds` when they can; refresh only those issues' reads then.
 
 The NocoBase UI Library presents these headless entries; install an item rather than building the page from scratch, and read its example (`pnpm exec shadcn view @nocobase/<item>-demo`) first. `project-detail` is a block for a project's page, `issue-detail` a block for an issue's page, and `issue-table`, `kanban` and `comment-thread` the components for the issue list, the board and an issue's activity. For agents working on issues, `agent-queue` (a block) and `agent-run-history` (a component) take the runs of `@nocobase/app-plugin-agents`. Each is installed with `yes n | pnpm exec shadcn add @nocobase/<item>` and is presentational: map the hooks' data to its props and its callbacks to the hooks' mutations.
 

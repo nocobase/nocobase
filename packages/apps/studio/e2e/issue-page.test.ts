@@ -9,6 +9,8 @@ import {
 } from './support/fixtures.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
 
+test.use({ isolatedStudio: true });
+
 test.describe('issue page', () => {
   let me: { userId: string };
   let issue: Issue;
@@ -64,6 +66,7 @@ test.describe('issue page', () => {
     page,
     api,
     browser,
+    studio,
     context,
   }) => {
     test.setTimeout(120_000);
@@ -73,7 +76,7 @@ test.describe('issue page', () => {
       email: `issue-layout-${suffix}@example.com`,
       password: 'issue-layout-e2e-password',
     };
-    const admin = await apiAs(browser, 'admin');
+    const admin = await apiAs(browser, 'admin', studio);
     try {
       await admin.api.post('users', {
         ...user,
@@ -149,6 +152,11 @@ test.describe('issue page', () => {
       },
     );
     await open(page, `/issues/${issue.identifier}`);
+    // The runs on the activity line are system records, folded under "Conversation only".
+    await page
+      .getByTestId('issue-feed')
+      .getByRole('button', { name: '全部', exact: true })
+      .click();
     const history = page.locator('[data-slot="agent-run-history"]');
     const aside = page.locator('[data-slot="issue-detail-layout"] aside');
     await expect(history).toHaveCount(1);
@@ -180,7 +188,7 @@ test.describe('issue page', () => {
       );
       await expect(layout.locator(':scope > div')).toHaveCSS(
         'flex-direction',
-        available >= 1024 ? 'row' : 'column',
+        available >= 896 ? 'row' : 'column',
       );
       await page.evaluate(
         `(() => { const scroller = document.querySelector('[data-slot="route-child-page"] > div'); scroller.scrollTop = 0; })()`,
@@ -203,7 +211,7 @@ test.describe('issue page', () => {
         (element) =>
           (element as unknown as { clientWidth: number }).clientWidth,
       ));
-    for (const available of [1023, 1024, 1025])
+    for (const available of [895, 896, 897, 1023])
       await check(available + inset, false);
     await expect(aside.locator(':scope > div')).toHaveCSS('position', 'static');
     await history
@@ -221,9 +229,7 @@ test.describe('issue page', () => {
       path: 'storage/ui-workflow/issue-runs/screenshots/history-bottom.png',
     });
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page
-      .getByRole('button', { name: '在面板中继续编辑', exact: true })
-      .click();
+    await page.keyboard.press('Control+j');
     await expect(page.getByTestId('chat-panel')).toBeVisible();
     await check(1280, true);
     await page
@@ -426,6 +432,11 @@ test.describe('issue page', () => {
     page.on('framenavigated', (frame) => {
       if (frame === page.mainFrame()) navigations.push(frame.url());
     });
+    // Runs are system records, folded under "Conversation only".
+    await page
+      .getByTestId('issue-feed')
+      .getByRole('button', { name: '全部', exact: true })
+      .click();
     // A person's mention wakes the runner's agent.
     await runner.wake(issue);
     const running = await runner.start(issue.identifier);
@@ -501,17 +512,22 @@ test.describe('issue page', () => {
     page,
     api,
     browser,
+    studio,
     context,
   }) => {
     test.setTimeout(120_000);
-    const admin = await apiAs(browser, 'admin');
+    const admin = await apiAs(browser, 'admin', studio);
     const suffix = unique();
     const triggerUser = {
       email: `identity-trigger-${suffix}@example.com`,
       password: 'identity-trigger-e2e-password',
     };
     const triggerName = `Identity trigger ${suffix}`;
-    const runner = new FakeRunner(admin.api, `owner-identity-${unique()}`);
+    const runner = new FakeRunner(
+      admin.api,
+      `owner-identity-${unique()}`,
+      true,
+    );
     const settings = await admin.api.get<{
       firstChoiceAgentId: string | null;
       fallbackAgentId: string | null;

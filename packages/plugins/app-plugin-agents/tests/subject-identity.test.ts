@@ -129,6 +129,21 @@ describe('subject-selected execution identity', () => {
   it('abandons a stale prepared candidate when identity changes at the claim boundary', async () => {
     const { enqueue, setOwner } = await setup();
     const result = await enqueue();
+    const context = h.services.subjects.get('owned')!.context;
+    const assemble = context.assemble.bind(context);
+    const preparedFor: string[] = [];
+    const assembledFor: string[] = [];
+    context.prepare = async (run) => {
+      // Permission preparation must read the repaired identity outside the claim transaction.
+      await h.services.tx.read().repository('agAgents').findMany();
+      preparedFor.push(run.actorUserId);
+      return new Set([run.actorUserId]);
+    };
+    context.assemble = async (conn, claimContext, prepared) => {
+      expect(prepared).toEqual(new Set([claimContext.run.actorUserId]));
+      assembledFor.push(claimContext.run.actorUserId);
+      return assemble(conn, claimContext);
+    };
     let reached!: () => void;
     let resume!: () => void;
     const prepared = new Promise<void>((resolve) => {
@@ -157,6 +172,8 @@ describe('subject-selected execution identity', () => {
       resume();
     }
     expect(await claiming).toEqual([]);
+    expect(preparedFor).toEqual(['owner']);
+    expect(assembledFor).toEqual([]);
     expect(await h.services.runs.get(result.runId!)).toMatchObject({
       actorUserId: 'bob',
       status: 'queued',
@@ -166,6 +183,8 @@ describe('subject-selected execution identity', () => {
       ownerUserId: 'bob',
     });
     expect((await claim(h, bob))[0].run.id).toBe(result.runId);
+    expect(preparedFor).toEqual(['owner', 'bob']);
+    expect(assembledFor).toEqual(['bob']);
   });
 
   it('refuses an absent owner and cancels queued work rather than falling back', async () => {

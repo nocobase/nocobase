@@ -38,6 +38,42 @@ nb-studio project create <name>
 nb-studio project create "Mobile app" --lead <user>
 ```
 
+## project default-skills get
+
+Get the default skills for new projects
+
+An empty list by default. Existing projects keep their own attachments. Requires agents.agents read or manage.
+
+```bash
+nb-studio project default-skills get
+```
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key).
+
+**Request:** `GET /api/projectDefaultSkills` (`projectDefaultSkillsGet`)
+
+## project default-skills set
+
+Set the default skills for new projects
+
+Validates skill ids and replaces the defaults. An empty array clears them. Only projects created afterwards copy this list, within their creation transaction. Requires agents.agents manage.
+
+```bash
+nb-studio project default-skills set --skills <string[]>
+```
+
+| Flag       | Type     | Description            |
+| ---------- | -------- | ---------------------- |
+| `--skills` | string[] | (required; repeatable) |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key).
+
+**Request:** `PUT /api/projectDefaultSkills` (`projectDefaultSkillsSet`)
+
 ## project delete
 
 Delete a project

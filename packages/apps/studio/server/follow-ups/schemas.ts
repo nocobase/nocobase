@@ -5,11 +5,13 @@ import {
   FOLLOW_UPS_MAX,
   OWNED_PER_STATUS_MAX,
   UNREAD_MAX,
+  type FollowingState,
   type FollowingView,
   type FollowUpIssue,
   type FollowUpsView,
 } from '../../shared/follow-ups.js';
 import { IssueProgressSchema } from '../agents/manager/schemas.js';
+import { idList } from '../http/input.js';
 
 export const FollowUpIssueSchema: z.ZodType<FollowUpIssue> = z
   .object({
@@ -80,3 +82,30 @@ export const FollowingInputSchema = z.strictObject({
 export const FollowingViewSchema: z.ZodType<FollowingView> = z
   .object({ issueIds: z.array(z.string()) })
   .meta({ ref: 'StudioFollowing' });
+
+/** The most issues one `GET /followUps/issues` reads. */
+export const FOLLOW_UP_ROWS_MAX = 100;
+
+export const FollowUpRowsQuery = z.object({
+  issueIds: idList(FOLLOW_UP_ROWS_MAX).meta({
+    description: `Comma-separated issue IDs, at most ${FOLLOW_UP_ROWS_MAX}.`,
+  }),
+});
+
+export const FollowUpRowsMeta = z.object({
+  total: z.number().int(),
+});
+
+export const FollowingStateSchema: z.ZodType<FollowingState> = z
+  .object({
+    issueIds: z.array(z.string()).meta({
+      description:
+        'The followed issues in order: the chosen ones, or by default the caller’s blocked and in-review issues, newest first.',
+    }),
+    max: z.number().int().meta({ description: 'The most issues one follows.' }),
+    stored: z.boolean().meta({
+      description:
+        'Whether the caller chose them; until then `issueIds` is the default list.',
+    }),
+  })
+  .meta({ ref: 'StudioFollowingState' });

@@ -49,6 +49,14 @@ export async function runsHeldByTool(
   conn: DatabaseConnection,
   runnerId: string,
 ): Promise<Partial<Record<AgentTool, number>>> {
+  return (await runsHeldSnapshot(conn, runnerId)).byTool;
+}
+
+/** Total occupancy includes runs whose tool has not been recorded. */
+export async function runsHeldSnapshot(
+  conn: DatabaseConnection,
+  runnerId: string,
+): Promise<{ runs: number; byTool: Partial<Record<AgentTool, number>> }> {
   const held = await runsRepo(conn).findMany({
     filter: (f) =>
       f.and([
@@ -61,7 +69,7 @@ export async function runsHeldByTool(
     const tool = run.tool as AgentTool | null;
     if (tool) counts[tool] = (counts[tool] ?? 0) + 1;
   }
-  return counts;
+  return { runs: held.length, byTool: counts };
 }
 
 /** How many of a runner's latest runs its page shows. */

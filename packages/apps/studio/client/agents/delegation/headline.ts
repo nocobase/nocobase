@@ -20,7 +20,10 @@ export function delegationHeadline(
   const agent = params.agentName ?? '';
   return t(`studioAgents.delegation.events.${event}`, {
     identifier: params.identifier ?? '',
-    agent: key && ns ? t(key, { ns, defaultValue: agent }) : agent,
+    agent:
+      key && ns && key !== 'studioAgents.projectManager.name'
+        ? t(key, { ns, defaultValue: agent })
+        : agent,
     status: params.status ?? '',
   });
 }

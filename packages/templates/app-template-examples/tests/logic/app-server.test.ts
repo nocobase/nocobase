@@ -1,6 +1,7 @@
 import { createApp } from '../../server/app.js';
 import authConfig from '../../server/config/auth.js';
 // @vitest-environment node
+import { workflowRoutes } from '../../server/routes/workflows.js';
 import { articlesRoutes } from '../../server/routes/articles.ts';
 import { analyticsRoutes } from '../../server/routes/analytics.ts';
 import { externalCrmRoutes } from '../../server/routes/external-crm.ts';
@@ -337,6 +338,7 @@ describe('app server', () => {
         // This composition fixture deliberately omits authentication/authorization plugins.
         routes: appRuntime.routes.filter(
           (route) =>
+            route !== workflowRoutes &&
             route !== articlesRoutes &&
             route !== analyticsRoutes &&
             route !== externalCrmRoutes &&

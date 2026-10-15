@@ -249,7 +249,10 @@ describe('an agent run calling Studio’s API', () => {
   it('is refused moving the issue: only the project manager does', async () => {
     const moved = await call('PATCH', `/projects/issues/${identifier}`, {
       runToken: token,
-      body: { statusKey: 'in_review' },
+      body: {
+        statusKey: 'in_review',
+        needsYou: 'Please review the completed work.',
+      },
     });
     expect(moved.status).toBeGreaterThanOrEqual(400);
     expect(moved.status).toBeLessThan(500);
@@ -334,7 +337,7 @@ describe('an agent run calling Studio’s API', () => {
         'issue:update',
       ]),
     );
-    expect(ids).not.toContain('report:metrics');
+    expect(ids).toContain('report:metrics');
     expect(ids).not.toContain('app:create');
     expect(ids).not.toContain('label:list');
   });

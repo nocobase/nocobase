@@ -8,7 +8,7 @@ import { canEditIssues } from '@nocobase/app-plugin-projects/client/issues';
 import { useViewer } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { TriangleAlertIcon } from 'lucide-react';
 import { useRef, type ReactElement } from 'react';
 
@@ -17,18 +17,17 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useNotify } from '../../access/notify.js';
 
-interface PendingRun {
-  readonly token: string;
-  readonly maxRuns: number;
-  readonly windowHours: number;
-}
+import { usePendingCommentRun } from './use-pending-comment-run.js';
 
 export function IssueCommentRunLimit({
   issue,
   onContinued,
+  actionsOnly = false,
 }: {
   readonly issue: IssueDetail;
   readonly onContinued?: () => void;
+  /** Waiting-state cards already display the structured request; keep only the continuation control there. */
+  readonly actionsOnly?: boolean;
 }): ReactElement | null {
   const api = useApiClient();
   const viewer = useViewer();
@@ -39,13 +38,7 @@ export function IssueCommentRunLimit({
   const allowed = canEditIssues(viewer) && viewer?.userId === issue.ownerUserId;
   const key = ['studio', 'commentRunLimit', issue.id, issue.revision];
   const path = `issueCommentRuns/${encodeURIComponent(issue.id)}`;
-  const pending = useQuery({
-    queryKey: key,
-    enabled: allowed,
-    queryFn: async () =>
-      (await api.request<{ data: PendingRun | null }>({ path })).data,
-    retry: false,
-  });
+  const pending = usePendingCommentRun(issue);
   const continuation = useMutation({
     mutationFn: (token: string) =>
       api.request({
@@ -75,15 +68,36 @@ export function IssueCommentRunLimit({
           queryKey: ['studio', 'commentRunLimit', issue.id],
         }),
         queryClient.invalidateQueries({ queryKey: ['pm', 'issue'] }),
+        queryClient.invalidateQueries({ queryKey: ['pm', 'issues'] }),
+        queryClient.invalidateQueries({
+          queryKey: ['studio', 'issueProgress'],
+        }),
       ]);
     },
   });
   const held = pending.data;
   if (!allowed || !held) return null;
+  const button = (
+    <Button
+      size='sm'
+      disabled={continuation.isPending}
+      onClick={() => {
+        if (continuingRef.current) return;
+        continuingRef.current = true;
+        continuation.mutate(held.token);
+      }}
+    >
+      {continuation.isPending ? <Spinner /> : null}
+      {t('studioAgents.commentRuns.continue')}
+    </Button>
+  );
+  if (actionsOnly) return button;
   return (
     <Alert>
       <TriangleAlertIcon />
-      <AlertTitle>{t('studioAgents.commentRuns.limitReached')}</AlertTitle>
+      <AlertTitle data-testid='issue-needs-you'>
+        {t('issueLive.summary.needsYou')}
+      </AlertTitle>
       <AlertDescription>
         <p>
           {t('studioAgents.commentRuns.continueHint', {
@@ -91,18 +105,7 @@ export function IssueCommentRunLimit({
             windowHours: held.windowHours,
           })}
         </p>
-        <Button
-          size='sm'
-          disabled={continuation.isPending}
-          onClick={() => {
-            if (continuingRef.current) return;
-            continuingRef.current = true;
-            continuation.mutate(held.token);
-          }}
-        >
-          {continuation.isPending ? <Spinner /> : null}
-          {t('studioAgents.commentRuns.continue')}
-        </Button>
+        {button}
       </AlertDescription>
     </Alert>
   );

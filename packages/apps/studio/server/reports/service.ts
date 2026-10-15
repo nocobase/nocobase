@@ -16,9 +16,11 @@ import type { DatabaseConnection } from '@nocobase/db';
 
 import {
   AGENTS_GROUP_BY,
+  type DashboardAgents,
   type DashboardAttention,
+  type DashboardDelivery,
   type DashboardPeriod,
-  type DashboardReport,
+  type DashboardProjects,
   METRIC_TARGETS,
   USAGE_GROUP_BYS,
   type MetricStatus,
@@ -28,7 +30,12 @@ import {
   type UsageQuery,
   type UsageReport,
 } from '../../shared/reports.js';
-import { dashboardAttention, dashboardReport } from './dashboard.js';
+import {
+  dashboardAgents,
+  dashboardAttention,
+  dashboardDelivery,
+  dashboardProjects,
+} from './dashboard.js';
 import { decisionFigures } from './decisions.js';
 import {
   issueFigures,
@@ -41,11 +48,19 @@ const DAY_MS = 24 * 3600 * 1000;
 export interface StudioReports {
   usage(caller: ReportCaller, query: UsageQuery): Promise<UsageReport>;
   metrics(caller: ReportCaller, query: MetricsQuery): Promise<MetricsReport>;
-  /** The last `days` days up to today against the `days` before them, by day and by project (`dashboard.ts`). */
-  dashboard(
+  /** The dashboard's panels over the last `days` days up to today against the `days` before them (`dashboard.ts`). */
+  delivery(
     caller: ReportCaller,
     days: DashboardPeriod,
-  ): Promise<DashboardReport>;
+  ): Promise<DashboardDelivery>;
+  agentPerformance(
+    caller: ReportCaller,
+    days: DashboardPeriod,
+  ): Promise<DashboardAgents>;
+  projectProgress(
+    caller: ReportCaller,
+    days: DashboardPeriod,
+  ): Promise<DashboardProjects>;
   /** The exceptions now: blocked and overdue issues, pull requests waiting for review, runs that just failed. */
   attention(caller: ReportCaller): Promise<DashboardAttention>;
 }
@@ -126,7 +141,11 @@ export function createStudioReports(deps: {
       return { ...report, groupBy };
     },
 
-    dashboard: (caller, days) => dashboardReport(deps, caller, days),
+    delivery: (caller, days) => dashboardDelivery(deps, caller, days),
+
+    agentPerformance: (caller, days) => dashboardAgents(deps, caller, days),
+
+    projectProgress: (caller, days) => dashboardProjects(deps, caller, days),
 
     attention: (caller) => dashboardAttention(deps, caller),
 

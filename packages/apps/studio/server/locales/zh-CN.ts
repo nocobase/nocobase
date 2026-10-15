@@ -7,6 +7,13 @@ const zhCN: AppServerResource = {
       none: '手册：无影响',
     },
   },
+  taskWaits: {
+    accept: '等你验收',
+    answer: '等你回复',
+    plan: '等你确认方案',
+    takeOver: '等你接手',
+    failed: '运行失败',
+  },
   ci: {
     taskTitle: '接入部署：{{repo}}',
   },

@@ -143,16 +143,23 @@ const PRIORITY_ICON: Readonly<
   none: (props) => <SignalZeroIcon {...props} />,
 };
 
+/**
+ * An issue's status. In the table's column it is the default badge; `size='sm'` is the small one, beside a title or on
+ * a card.
+ */
 export function IssueStatusBadge({
   status,
+  size,
   className,
 }: {
   readonly status: NonNullable<IssueTableRow['status']>;
+  readonly size?: 'sm';
   readonly className?: string;
 }): ReactElement {
   return (
     <Badge
       variant='secondary'
+      data-size={size}
       className={cn(issueColorClass[status.color], className)}
     >
       <span
@@ -459,6 +466,7 @@ export function IssueTable({
                     <span className='flex shrink-0 gap-1 max-md:hidden'>
                       {row.labels.slice(0, 3).map((label) => (
                         <Badge
+                          data-size='sm'
                           key={label.id}
                           variant='secondary'
                           className={issueColorClass[label.color]}

@@ -224,6 +224,9 @@ describe('failed-run card lifecycle over committed runs and the real inbox', () 
       await h.projects.issues.update(h.viewer('alice'), issue.id, {
         revision: issue.revision,
         statusKey,
+        ...(statusKey === 'blocked' || statusKey === 'in_review'
+          ? { needsYou: 'Please review the requested work.' }
+          : {}),
       });
       const { runId } = await failedRun(issue.id, undefined, true);
       await reconcileFailedRunCards(h.agents, h.projects, inbox);

@@ -25,6 +25,8 @@ export interface IssueRecord {
   readonly title: string;
   readonly description: string;
   readonly statusKey: string;
+  readonly needsYou: string | null;
+  readonly next: string | null;
   readonly priority: Priority;
   /** `PRIORITIES` index of `priority`, kept by the writes below. */
   readonly priorityRank: number;
@@ -91,6 +93,8 @@ const FIELDS = [
   'title',
   'description',
   'statusKey',
+  'needsYou',
+  'next',
   'priority',
   'ownerUserId',
   'executorType',
@@ -123,6 +127,20 @@ export function toIssue(record: IssueRecord): Issue {
         ? { type: executorType, id: executorId }
         : null,
   };
+}
+
+/** Complete authorized projections without owner, executor, project or label hydration. */
+export async function hierarchyRecords(
+  conn: DatabaseConnection,
+  filter: RepositoryFilter<IssueRecord>,
+): Promise<Issue[]> {
+  const rows = await issues(conn).findMany({
+    filter,
+    select: (select) => select.fields(...FIELDS),
+  });
+  return rows.map((row) =>
+    toIssue({ ...row, priorityRank: 0, deletedById: null }),
+  );
 }
 
 function toRow(

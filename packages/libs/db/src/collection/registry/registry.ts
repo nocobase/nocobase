@@ -8,6 +8,7 @@ import { CollectionResolutionError } from '../resolver/errors.js';
 import type { CollectionResolutionResult } from '../resolver/types.js';
 import type { CollectionMetadataStore } from '../../metadata/document-store.js';
 import type { StoredCollectionMetadata } from '../../metadata/document.js';
+import { invalidateMetadataNamingSnapshot } from '../../metadata/internal/naming-snapshot.js';
 import type {
   CollectionMetadataInvalidation,
   CollectionMetadataInvalidator,
@@ -246,6 +247,7 @@ export class CollectionRegistry
   }
 
   invalidateAll(): void {
+    invalidateMetadataNamingSnapshot(this.options.metadataStore);
     this.generation += 1;
     this.collectionGenerations.clear();
     this.cache.clear();

@@ -48,12 +48,16 @@ Changes the agents the project manager runs with (enabled agents; the first choi
 nb-studio project-manager update
 ```
 
-| Flag                  | Type    | Description                                                                                                      |
-| --------------------- | ------- | ---------------------------------------------------------------------------------------------------------------- |
-| `--first-choice`      | string  | The enabled agent whose tool and model the project manager runs with.                                            |
-| `--fallback`          | string  | The enabled agent it runs with when no runner can take the first choice’s work; null for none.                   |
-| `--principles`        | string  | The allocation principles; null (or the built-in text) restores the built-in ones. (or --principles-file <path>) |
-| `--comment-run-limit` | integer | How many runs agents’ comments may start on one issue within 24 hours before its owner is asked to continue.     |
+| Flag                                 | Type    | Description                                                                                                                                           |
+| ------------------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--name`                             | string  | The persisted project manager name, 1–200 characters after trimming; independent of the viewer’s language.                                            |
+| `--description`                      | string  | The persisted description, at most 10,000 characters; null, an empty string or whitespace clears it. (or --description-file <path>)                   |
+| `--delegation-queue-timeout-seconds` | integer | Seconds a manager-delegated step may remain queued before withdrawal and an automatic reply (default 600); changes apply on the next sweep.           |
+| `--fallback-after-seconds`           | integer | Seconds the first choice may wait in the runnable queue before an idle fallback can claim it (default 120).                                           |
+| `--first-choice`                     | string  | The enabled agent whose tool and model the project manager runs with.                                                                                 |
+| `--fallback`                         | string  | The enabled agent it runs with after the first choice queue delay, or immediately when no compatible runner can take the first choice; null for none. |
+| `--principles`                       | string  | The allocation principles; null (or the built-in text) restores the built-in ones. (or --principles-file <path>)                                      |
+| `--comment-run-limit`                | integer | How many runs agents’ comments may start on one issue within 24 hours before its owner is asked to continue.                                          |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
