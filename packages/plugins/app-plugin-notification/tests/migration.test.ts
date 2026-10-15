@@ -143,13 +143,16 @@ describe('notification database migration', () => {
           nullable: true,
         }),
       ]),
-      constraints: expect.arrayContaining([
-        expect.objectContaining({
-          name: 'notification_dispatch_idempotency_unique',
-          type: 'unique',
-          fields: ['idempotencyKey'],
-        }),
-      ]),
+      [connection.capabilities.partialIndexes ? 'indexes' : 'constraints']:
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: 'notification_dispatch_idempotency_unique',
+            ...(connection.capabilities.partialIndexes
+              ? { db: expect.objectContaining({ unique: true }) }
+              : { type: 'unique' }),
+            fields: ['idempotencyKey'],
+          }),
+        ]),
     });
     await expect(
       connection.collections.get('notificationDeliveries'),
