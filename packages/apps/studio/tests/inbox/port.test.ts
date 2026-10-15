@@ -5,6 +5,11 @@
  * coming in (`server/releases/inbox.ts`).
  */
 import path from 'node:path';
+import { createRequire } from 'node:module';
+import {
+  DatabaseInAppStore,
+  type InAppMessage,
+} from '@nocobase/app-plugin-notification-in-app/server';
 
 import type {
   NotificationSendInput,
@@ -40,6 +45,12 @@ import {
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 
+const IN_APP_ROOT = path.dirname(
+  createRequire(import.meta.url).resolve(
+    '@nocobase/app-plugin-notification-in-app/package.json',
+  ),
+);
+let store: DatabaseInAppStore;
 let databases: ProvisionedTestDatabases;
 let testDatabase: TestDatabase;
 let database: DatabaseManager;
@@ -49,15 +60,27 @@ let announced: string[];
 let next = 0;
 
 const notifications = {
-  send(input: NotificationSendInput<never>) {
+  async send(input: NotificationSendInput<never>) {
     sent.push(input);
-    return Promise.resolve({
-      notificationId: `n${(next += 1)}`,
+    const notificationId = `n${(next += 1)}`;
+    const message = (input.messages as Record<string, InAppMessage>).inbox;
+    for (const userId of new Set(
+      typeof message.to === 'string' ? [message.to] : message.to,
+    ))
+      await store.deliver({
+        notificationId,
+        deliveryId: `${notificationId}:${userId}`,
+        userId,
+        message,
+        createdAt: new Date().toISOString(),
+      });
+    return {
+      notificationId,
       idempotencyKey: input.idempotencyKey,
       deduplicated: false,
       status: 'pending',
       deliveries: [],
-    });
+    };
   },
 } as unknown as NotificationService;
 
@@ -85,12 +108,17 @@ beforeEach(async () => {
   testDatabase = await databases.open({
     migrations: [
       {
+        directory: path.join(IN_APP_ROOT, 'database/migrations'),
+        packageName: '@nocobase/app-plugin-notification-in-app',
+      },
+      {
         directory: path.join(ROOT, 'database/main/migrations'),
         packageName: 'studio',
       },
     ],
   });
   database = testDatabase.database;
+  store = new DatabaseInAppStore(database);
   sent = [];
   announced = [];
   next = 0;

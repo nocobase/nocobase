@@ -1324,6 +1324,16 @@ describe('push credentials on demand', () => {
   it('keeps a long run pushing: a token near its expiry is replaced by a fresh one', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     const { payload } = await claimed();
+    const started = await h.runner(
+      RUNNER_ROUTES.start,
+      payload.run.id as string,
+      {
+        workDir: '/tmp/push-credentials',
+        adapter: { kind: 'claude' },
+        acceptsInput: true,
+      },
+    );
+    expect(started.status).toBe(200);
     const first = await ask(payload);
     // 45 minutes in: the kept token has less than 30 minutes left, so it is not handed out again.
     vi.setSystemTime(Date.now() + 45 * 60 * 1000);

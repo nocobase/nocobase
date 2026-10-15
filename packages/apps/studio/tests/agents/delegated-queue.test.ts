@@ -443,7 +443,7 @@ describe('manager delegated queue timeout', () => {
       .query.updateTable('agRuns')
       .set({
         maxAttempts: 3,
-        leaseExpiresAt: new Date(Date.now() - 1000).toISOString(),
+        dispatchedAt: new Date(Date.now() - 300_000).toISOString(),
       })
       .where('id', '=', run.id)
       .execute();
