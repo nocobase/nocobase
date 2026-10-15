@@ -150,14 +150,13 @@ export function WorkspaceDiagnostics({
                         : 'runtimes.workspaces.working',
                     )}
                   </p>
-                  <p>
-                    {t('runtimes.workspaces.size', {
-                      value:
-                        workspace.sizeBytes === undefined
-                          ? t('runtimes.workspaces.sizeUnknown')
-                          : bytes(workspace.sizeBytes),
-                    })}
-                  </p>
+                  {workspace.sizeBytes === undefined ? null : (
+                    <p>
+                      {t('runtimes.workspaces.size', {
+                        value: bytes(workspace.sizeBytes),
+                      })}
+                    </p>
+                  )}
                   <p>
                     {t(
                       workspace.workDir.includes('.readonly-')

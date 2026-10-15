@@ -7,7 +7,6 @@ const runtimesEnUS = {
       working: 'Type: Working directory',
       readOnly: 'Type: Read-only copy',
       size: 'Size: {{value}}',
-      sizeUnknown: 'Unknown',
       pushed: 'Push state: Clean, no unpushed work',
       unpushed: 'Push state: Uncommitted, unpushed or unverified work',
       notApplicable: 'Push state: Not applicable',
