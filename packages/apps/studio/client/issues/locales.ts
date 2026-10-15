@@ -106,6 +106,12 @@ export const issuesEnUS = {
     dropped: 'Dropped {item} into {column}',
     cancelled: 'Cancelled moving {item}',
   } satisfies KanbanLabels,
+  /** An unfolded queued issue's exact reason on the Agent queue (`agent-view.tsx`). */
+  agentWait: {
+    loading: 'Checking why it waits…',
+    failed: 'Could not check why it waits.',
+    gone: 'No longer queued.',
+  },
   agentQueue: {
     summary: {
       running: 'Running',
@@ -147,6 +153,8 @@ export const issuesEnUS = {
       blockedBy: 'Blocked by {issues}',
       blockedCount: 'Blocked by {count} issues',
       waited: 'Queued {duration}',
+      showWhy: 'Why it waits',
+      hideWhy: 'Hide why it waits',
     },
     wait: {
       kinds: {
@@ -283,6 +291,11 @@ export const issuesZhCN: IssuesWording = {
     dropped: '{item} 已放入 {column}',
     cancelled: '已取消移动 {item}',
   },
+  agentWait: {
+    loading: '正在检查等待原因…',
+    failed: '无法检查等待原因。',
+    gone: '已不在排队。',
+  },
   agentQueue: {
     summary: {
       running: '运行中',
@@ -324,6 +337,8 @@ export const issuesZhCN: IssuesWording = {
       blockedBy: '被 {issues} 阻塞',
       blockedCount: '被 {count} 个任务阻塞',
       waited: '已排队 {duration}',
+      showWhy: '等待原因',
+      hideWhy: '收起等待原因',
     },
     wait: {
       kinds: {

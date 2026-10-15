@@ -61,6 +61,7 @@ board failed-run decide <run> [--action! --user] -> POST /api/failedRuns/{runId}
 board get [--q --project --label --owner --executor --involves-user-id] -> GET /api/agentBoard (person)
 board issue-work [--issue-ids!] -> POST /api/agentBoard/issueWork (person)
 board start <issue> -> POST /api/agentBoard/issues/{issueId}/start (person)
+board wait <issue> <agent> -> GET /api/agentBoard/issues/{issueId}/agents/{agentId}/wait (person)
 build ci configure <repo> [--method --app --target --workflow-files --agent-id --file] -> POST /api/repositoryDeployments/{resourceId}/ci/configure (person)
 build ci connection <repo> -> GET /api/repositoryDeployments/{resourceId}/ci/connection (person)
 build ci environments -> GET /api/repositoryDeployments/ciWorkflows/environments (person)

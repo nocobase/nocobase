@@ -1,9 +1,15 @@
+/**
+ * Which of the issues a view shows an agent is working on now (`POST /api/agentBoard/issueWork`), one query per view.
+ * It reads again when an announcement names a shown issue (the projects plugin's changes, the runs on issues), or names
+ * none; a burst of them once, never while the page is hidden (`../agents/board/coalesce.ts`). It polls every
+ * `ISSUE_AGENT_WORK_POLL_MS` as a fallback.
+ */
 import {
   realtimeClientToken,
   useApiClient,
   useService,
+  type RealtimeClient,
 } from '@nocobase/app-client';
-import { RUNNERS_TOPIC } from '@nocobase/app-plugin-agents/shared/realtime';
 import type { IssueListItem } from '@nocobase/app-plugin-projects/shared/issues';
 import { announcedIssueIds } from '@nocobase/app-plugin-projects/client/kit';
 import { PM_REALTIME_TOPIC } from '@nocobase/app-plugin-projects/shared/realtime';
@@ -13,9 +19,47 @@ import {
   ISSUE_AGENT_WORK_BATCH,
   type IssueAgentWork,
 } from '../../shared/issue-agent-work.js';
+import {
+  STUDIO_ISSUE_RUNS_TOPIC,
+  type StudioIssueRunsEvent,
+} from '../../shared/issue-runs.js';
+import {
+  coalescedRefresh,
+  type CoalescedRefresh,
+} from '../agents/board/coalesce.js';
 
-export const ISSUE_AGENT_WORK_POLL_MS = 10_000;
-const workKeys = ['studio', 'issue-agent-work'] as const;
+export const ISSUE_AGENT_WORK_POLL_MS = 60_000;
+/** How long a burst of announcements is gathered before the work is read again. */
+export const ISSUE_AGENT_WORK_COALESCE_MS = 1_000;
+export const issueWorkKeys = ['studio', 'issue-agent-work'] as const;
+
+/** Reads the work again when an announcement names a shown issue, or names none. */
+export function subscribeIssueWorkRefresh(
+  realtime: Pick<RealtimeClient, 'subscribe' | 'onOpen'>,
+  shown: () => ReadonlySet<string>,
+  refresh: CoalescedRefresh,
+): () => void {
+  const concerns = (named: ReadonlySet<string> | null) =>
+    !named || [...shown()].some((id) => named.has(id));
+  const stops = [
+    realtime.subscribe<unknown>(PM_REALTIME_TOPIC, (event) => {
+      if (concerns(announcedIssueIds(event?.payload))) refresh.request();
+    }),
+    realtime.subscribe<StudioIssueRunsEvent>(
+      STUDIO_ISSUE_RUNS_TOPIC,
+      (event) => {
+        const ids = event?.payload?.issueIds;
+        if (concerns(Array.isArray(ids) ? new Set(ids) : null))
+          refresh.request();
+      },
+    ),
+    realtime.onOpen(refresh.request),
+  ];
+  return () => {
+    refresh.stop();
+    for (const stop of stops) stop?.();
+  };
+}
 
 /** One query per view, including every loaded page, partitioned into bounded requests. */
 export function useIssueAgentWork(
@@ -44,38 +88,21 @@ export function useIssueAgentWork(
   }, [identity]);
 
   useEffect(() => {
-    let timer: number | undefined;
-    const refresh = () => {
-      if (document.visibilityState === 'hidden') return;
-      window.clearTimeout(timer);
-      timer = window.setTimeout(
-        () => void client.invalidateQueries({ queryKey: workKeys }),
-        300,
-      );
-    };
-    const visibility = () => {
-      setVisible(document.visibilityState !== 'hidden');
-      refresh();
-    };
+    const visibility = () => setVisible(document.visibilityState !== 'hidden');
     document.addEventListener('visibilitychange', visibility);
-    const stops = [
-      realtime.subscribe<unknown>(PM_REALTIME_TOPIC, (event) => {
-        const named = announcedIssueIds(event?.payload);
-        if (named && ![...shownRef.current].some((id) => named.has(id))) return;
-        refresh();
-      }),
-      realtime.subscribe<unknown>(RUNNERS_TOPIC, refresh),
-      realtime.onOpen(refresh),
-    ];
+    const stop = subscribeIssueWorkRefresh(
+      realtime,
+      () => shownRef.current,
+      coalescedRefresh(client, issueWorkKeys, ISSUE_AGENT_WORK_COALESCE_MS),
+    );
     return () => {
-      window.clearTimeout(timer);
       document.removeEventListener('visibilitychange', visibility);
-      for (const stop of stops) stop?.();
+      stop();
     };
   }, [realtime, client]);
 
   const query = useQuery({
-    queryKey: [...workKeys, scope, identity],
+    queryKey: [...issueWorkKeys, scope, identity],
     enabled: visible && pairs.length > 0,
     queryFn: async ({ signal }) => {
       const statuses: IssueAgentWork[] = [];

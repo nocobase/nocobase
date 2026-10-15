@@ -56,6 +56,9 @@ export interface AgentQueueLabels {
     readonly blockedCount: string;
     /** `{duration}`. */
     readonly waited: string;
+    /** The toggle that unfolds the exact reason a queued item waits, and folds it again. */
+    readonly showWhy: string;
+    readonly hideWhy: string;
   };
   readonly wait: {
     readonly kinds: Readonly<Record<AgentQueueWaitKind, string>>;
@@ -125,6 +128,8 @@ export const defaultAgentQueueLabels: AgentQueueLabels = {
     blockedBy: 'Blocked by {issues}',
     blockedCount: 'Blocked by {count} issues',
     waited: 'Queued {duration}',
+    showWhy: 'Why it waits',
+    hideWhy: 'Hide why it waits',
   },
   wait: {
     kinds: {
