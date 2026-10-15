@@ -56,13 +56,10 @@ const Query = z.object({
   projectId: z.string().optional(),
   ownerUserId: z.string().optional(),
   executorId: z.string().optional(),
-  involvesUserId: z
-    .string()
-    .optional()
-    .meta({
-      description:
-        'Owned by this user or executed by them as a person, each task once.',
-    }),
+  involvesUserId: z.string().optional().meta({
+    description:
+      'Owned by this user or executed by them as a person, each task once.',
+  }),
   labelId: z.string().optional(),
   sort: z.enum(['updated', 'created', 'number', 'priority']).optional(),
   direction: z.enum(['asc', 'desc']).optional(),
