@@ -8,7 +8,8 @@ import { useToaster } from '@nocobase/app-client';
 import { pmKeys, usePmApi } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueFilters } from '@nocobase/app-plugin-projects/client/issues';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useQueryClient } from '@tanstack/react-query';
+import { skipToken, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type {
@@ -19,7 +20,7 @@ import type {
 import { useNotify } from '../../access/notify.js';
 import { useFollowIssue } from '../../follow-ups/api.js';
 import { useIssueAgentWork } from '../use-agent-work.js';
-import { taskGroupKeys, useTaskGroups } from './api.js';
+import { groupQuery, taskGroupKeys, useTaskGroups } from './api.js';
 import {
   findItem,
   keepPlacement,
@@ -77,32 +78,61 @@ export function useTaskList({
   const [pages, setPages] = useState<Partial<Record<TaskGroupId, number>>>({});
   const query = useTaskGroups({ filters, mode: 'split', follow, pages });
   const folded = useFoldedGroups(pageKey);
-  const [sticky, setSticky] = useState<Placement | null>(null);
+  const scope = JSON.stringify([pageKey, groupQuery(filters, { follow })]);
+  const [retained, setRetained] = useState<{
+    scope: string;
+    placement: Placement | null;
+  }>({ scope, placement: null });
+  const saved = retained.placement;
+  const sticky =
+    retained.scope === scope &&
+    saved &&
+    (selectedParam === saved.id ||
+      selectedParam === saved.item.issue.identifier) &&
+    (!query.data || query.data.following.includes(saved.id) === saved.followed)
+      ? saved
+      : null;
+  // Observe the detail pane's existing cache only. This observer never starts a request or a poll.
+  const detail = useQuery<IssueDetail>({
+    queryKey: pmKeys.issue(sticky?.id ?? ''),
+    queryFn: skipToken,
+  });
   const raw = useMemo(() => listGroups(query.data?.groups ?? []), [query.data]);
-  const groups = useMemo(() => keepPlacement(raw, sticky), [raw, sticky]);
+  const groups = useMemo(
+    () => keepPlacement(raw, sticky, detail.data),
+    [raw, sticky, detail.data],
+  );
   const order = useMemo(
     () => visibleOrder(groups, folded.isFolded),
     [groups, folded.isFolded],
   );
   const selected = findItem(groups, selectedParam);
   const selectedId = selected?.issue.id ?? null;
-  // A task selected another way than from the list (the address, the toast's next task) keeps its place too.
+  // A changed query or URL selection releases the old snapshot before the next list is rendered.
   if (
-    selectedId &&
-    (sticky?.id !== selectedId || sticky.followed !== selected?.followed)
+    retained.scope !== scope ||
+    (saved && !sticky) ||
+    (selectedId &&
+      (sticky?.id !== selectedId || sticky.followed !== selected?.followed))
   ) {
-    const placement = placementOf(groups, selectedId);
-    // eslint-disable-next-line @eslint-react/set-state-in-effect -- Adjusts state while rendering a new selection, React's pattern for state derived from a changed prop; no effect runs here.
-    if (placement) setSticky(placement);
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- Adjusts state during rendering when the query or selection changes; no effect runs here.
+    setRetained({
+      scope,
+      placement: selectedId ? placementOf(groups, selectedId) : null,
+    });
   }
 
   const select = useCallback(
     (id: string | null) => {
       // The task handled before moves to its new group now; the newly selected one keeps its place from here.
-      setSticky(id ? placementOf(groups, id) : null);
+      setRetained({
+        scope,
+        placement:
+          id === sticky?.id ? sticky : id ? placementOf(raw, id) : null,
+      });
       onSelect(id);
     },
-    [groups, onSelect],
+    [raw, sticky, onSelect, scope],
   );
 
   // Nothing selected yet: the first task in the list.
@@ -242,6 +272,6 @@ export function useTaskList({
     loadMore,
     working,
     empty:
-      Boolean(query.data) && raw.every((group) => group.items.length === 0),
+      Boolean(query.data) && groups.every((group) => group.items.length === 0),
   };
 }
