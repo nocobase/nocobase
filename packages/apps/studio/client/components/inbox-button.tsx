@@ -77,7 +77,7 @@ export function InboxButton({
               // On the inbox itself: filled and outlined in the text color, apart from the plain buttons beside it.
               current
                 ? 'border-foreground/40 bg-accent text-foreground hover:bg-accent'
-                : 'border-border/70 bg-background/60 text-foreground hover:bg-muted',
+                : 'border-border bg-background/60 text-foreground hover:bg-muted',
               className,
             )}
             data-testid={`${idPrefix}-button`}

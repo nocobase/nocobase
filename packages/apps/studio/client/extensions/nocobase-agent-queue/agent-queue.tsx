@@ -910,7 +910,7 @@ export function AgentQueue({
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-          <div className='min-h-0 flex-1 overflow-x-auto'>
+          <div className='scroll-shown min-h-0 flex-1 overflow-x-auto'>
             <div className='flex h-full min-h-0 gap-3'>
               {lanes.map((lane) => (
                 <Lane

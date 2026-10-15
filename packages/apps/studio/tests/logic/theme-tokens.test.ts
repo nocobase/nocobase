@@ -42,6 +42,7 @@ const colors = [
   'muted-foreground',
   'accent',
   'accent-foreground',
+  'hover',
   'destructive',
   'border',
   'input',
