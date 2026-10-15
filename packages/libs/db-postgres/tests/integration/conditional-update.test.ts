@@ -1,4 +1,4 @@
-import { rawRows } from '@nocobase/db';
+import { rawRows, type DatabaseConnection } from '@nocobase/db';
 import { describeIntegrationDatabases } from '@nocobase/db-testkit';
 import type { Knex } from 'knex';
 import { expect, it } from 'vitest';
@@ -6,6 +6,96 @@ import { expect, it } from 'vitest';
 describeIntegrationDatabases(
   'PostgreSQL conditional update identities',
   (context) => {
+    it.each([false, true])(
+      'rolls back statement-trigger writes on failed updates (caller transaction: %s)',
+      async (transactional) => {
+        await context.builder.createCollection('triggerItems', (c) => {
+          c.string('id').primary().notNull();
+          c.string('name').notNull();
+          c.integer('version').notNull();
+          c.optimisticLock('version');
+        });
+        await context.builder.createCollection('updateAudit', (c) => {
+          c.string('id').primary().notNull();
+        });
+        const table = context.table('triggerItems');
+        const audit = context.table('updateAudit');
+        const fn = context.identifier('auditUpdate');
+        await context.database.repository('triggerItems').createOne({
+          values: { id: 'A', name: 'before' },
+        });
+        await context.db.raw(
+          `create function ??() returns trigger language plpgsql as $$
+            begin
+              insert into ${context.db.ref(audit).toQuery()} values ('statement');
+              insert into ${context.db.ref(table).toQuery()} values ('createdByTrigger', 'trigger', 1);
+              return null;
+            end
+          $$`,
+          [fn],
+        );
+        try {
+          await context.db.raw(
+            'create trigger audit_update after update on ?? for each statement execute function ??()',
+            [table, fn],
+          );
+          const attempt = async (connection: DatabaseConnection) => {
+            const repository = connection.repository('triggerItems');
+            await connection
+              .repository('updateAudit')
+              .createOne({ values: { id: 'earlier' } });
+            for (const scenario of [
+              {
+                filter: { id: 'A' },
+                code: 'VERSION_CONFLICT',
+                retryable: true,
+              },
+              { filter: { id: 'createdByTrigger' }, code: 'RECORD_NOT_FOUND' },
+              {
+                filter: { id: 'A', name: 'outside' },
+                code: 'RECORD_NOT_FOUND',
+              },
+            ]) {
+              await expect(
+                repository.updateOne({
+                  filter: scenario.filter,
+                  ifVersion: 999,
+                  values: { name: 'changed' },
+                }),
+              ).rejects.toMatchObject({
+                code: scenario.code,
+                ...(scenario.retryable ? { retryable: true } : {}),
+              });
+              expect(
+                await connection.repository('updateAudit').findMany(),
+              ).toEqual([{ id: 'earlier' }]);
+            }
+          };
+          if (transactional)
+            await context.database.transaction(attempt, context.spec.name);
+          else await attempt(context.connection);
+          expect(await context.db(audit).select('*')).toEqual([
+            { id: 'earlier' },
+          ]);
+          expect(await context.db(table).select('*')).toEqual([
+            { id: 'A', name: 'before', version: 1 },
+          ]);
+          // A successful update must still commit the same trigger's write.
+          await context.database.repository('triggerItems').updateOne({
+            filter: { id: 'A' },
+            ifVersion: 1,
+            values: { name: 'success' },
+          });
+          expect(await context.db(audit).select('*').orderBy('id')).toEqual([
+            { id: 'earlier' },
+            { id: 'statement' },
+          ]);
+        } finally {
+          await context.db.raw('drop function ??() cascade', [fn]);
+        }
+      },
+    );
+
     it.each([1, 2])(
       'rejects different operator-class equality with second row version %s',
       async (secondVersion) => {

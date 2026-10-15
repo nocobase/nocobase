@@ -12,13 +12,13 @@ describeIntegrationDatabases(
       const table = context.table('indexItems');
       const index = context.identifier('itemIdentity');
       const bounds =
-        "(partition p1 values less than ('M'), partition p2 values less than (maxvalue))";
+        '(partition p1 values less than (100), partition p2 values less than (maxvalue))';
       const partitioning =
         kind === 'local' || kind === 'subpartitioned'
           ? ` partition by range ("id")${kind === 'subpartitioned' ? ' subpartition by hash ("id") subpartitions 2' : ''} ${bounds}`
           : '';
       await context.db.raw(
-        `create table ?? ("id" varchar2(64) not null, "name" varchar2(64) not null)${partitioning}`,
+        `create table ?? ("id" number(10) not null, "name" varchar2(64) not null)${partitioning}`,
         [table],
       );
       await context.builder.alterCollection('indexItems', (c) =>
@@ -34,7 +34,7 @@ describeIntegrationDatabases(
         `create unique index ?? on ?? ("id")${indexPartitioning}`,
         [index, table],
       );
-      await context.db(table).insert({ id: 'A', name: 'before', version: 1 });
+      await context.db(table).insert({ id: 1, name: 'before', version: 1 });
       context.connection.collections.invalidate();
       return {
         table,
@@ -72,11 +72,11 @@ describeIntegrationDatabases(
         );
         await expect(
           repository.updateOne({
-            filter: { id: 'A' },
+            filter: { id: 1 },
             values: { name: 'ordinary' },
           }),
         ).resolves.toMatchObject({
-          record: { id: 'A', name: 'ordinary', version: 1 },
+          record: { id: '1', name: 'ordinary', version: 1 },
         });
         await context.builder.alterCollection('indexItems', (c) =>
           c.optimisticLock('version'),
@@ -91,12 +91,12 @@ describeIntegrationDatabases(
         try {
           await expect(
             repository.updateOne({
-              filter: { id: 'A' },
+              filter: { id: 1 },
               ifVersion: 1,
               values: { name: 'optimistic' },
             }),
           ).resolves.toMatchObject({
-            record: { id: 'A', name: 'optimistic', version: 2 },
+            record: { id: '1', name: 'optimistic', version: 2 },
             version: 2,
           });
         } finally {
@@ -144,13 +144,14 @@ describeIntegrationDatabases(
         );
         await expect(
           repository.updateOne({
-            filter: { id: 'A' },
+            filter: { id: 1 },
             values: { name: 'must not change' },
           }),
         ).rejects.toMatchObject({ code: 'INVALID_UNIQUE_SELECTOR' });
-        expect(await repository.findOne({ filter: { id: 'A' } })).toMatchObject(
-          { name: 'before', version: 1 },
-        );
+        expect(await repository.findOne({ filter: { id: 1 } })).toMatchObject({
+          name: 'before',
+          version: 1,
+        });
         await context.db.raw(
           part
             ? `alter index ?? rebuild ${level} ??`
@@ -160,10 +161,10 @@ describeIntegrationDatabases(
         context.connection.collections.invalidate();
         await expect(
           repository.updateOne({
-            filter: { id: 'A' },
+            filter: { id: 1 },
             values: { name: 'rebuilt' },
           }),
-        ).resolves.toMatchObject({ record: { id: 'A', name: 'rebuilt' } });
+        ).resolves.toMatchObject({ record: { id: '1', name: 'rebuilt' } });
       },
     );
   },

@@ -56,7 +56,7 @@ describeIntegrationDatabases(
 
     async function fixture() {
       await context.builder.createCollection('optimisticItems', (c) => {
-        c.string('id').primary().notNull();
+        c.integer('id').primary().notNull();
         c.string('tenantId').notNull();
         c.string('code').notNull();
         c.unique(['tenantId', 'code']);
@@ -65,14 +65,27 @@ describeIntegrationDatabases(
         c.integer('revisionCounter').notNull();
         c.optimisticLock('revisionCounter');
       });
-      const repository = context.database.repository('optimisticItems');
-      await repository.createMany({
-        values: [
-          { id: 'A', tenantId: 'T1', code: 'one', name: 'First', amount: 10 },
-          { id: 'B', tenantId: 'T1', code: 'two', name: 'Second', amount: 20 },
-        ],
-      });
-      return repository;
+      // Numeric identities have session-independent equality. Seed explicit IDs
+      // below Repository validation because some engines generate integer keys.
+      await context.db(context.table('optimisticItems')).insert([
+        {
+          id: 1,
+          tenant_id: 'T1',
+          code: 'one',
+          name: 'First',
+          amount: 10,
+          revision_counter: 1,
+        },
+        {
+          id: 2,
+          tenant_id: 'T1',
+          code: 'two',
+          name: 'Second',
+          amount: 20,
+          revision_counter: 1,
+        },
+      ]);
+      return context.database.repository('optimisticItems');
     }
 
     function businessStatements(statements: readonly string[]) {
@@ -138,7 +151,7 @@ describeIntegrationDatabases(
       const repository = await fixture();
       const { result, statements } = await captureSql(context, () =>
         repository.updateOne({
-          filter: { id: 'A', tenantId: 'T1' },
+          filter: { id: 1, tenantId: 'T1' },
           ifVersion: 1,
           values: { name: 'Changed', amount: (value) => value.increment(4) },
           select: (s) => s.fields('name', 'amount'),
@@ -175,7 +188,7 @@ describeIntegrationDatabases(
           values: { name: 'Must not change' },
         }),
       ).rejects.toMatchObject({ code: 'RECORD_NOT_FOUND' });
-      expect(await repository.findOne({ filter: { id: 'A' } })).toMatchObject({
+      expect(await repository.findOne({ filter: { id: 1 } })).toMatchObject({
         name: 'Changed',
         revisionCounter: 2,
       });
@@ -185,8 +198,8 @@ describeIntegrationDatabases(
       'optimizes a complete composite %s identity',
       async (kind) => {
         await context.builder.createCollection('optimisticItems', (c) => {
-          c.string('tenantId').notNull();
-          c.string('code').notNull();
+          c.integer('tenantId').notNull();
+          c.integer('code').notNull();
           if (kind === 'primary') c.primary(['tenantId', 'code']);
           else c.unique(['tenantId', 'code']);
           c.string('name').notNull();
@@ -195,17 +208,17 @@ describeIntegrationDatabases(
         });
         const repository = context.database.repository('optimisticItems');
         await repository.createOne({
-          values: { tenantId: 'T1', code: 'one', name: 'First' },
+          values: { tenantId: 1, code: 1, name: 'First' },
         });
         const { result, statements } = await captureSql(context, () =>
           repository.updateOne({
-            filter: { tenantId: 'T1', code: 'one' },
+            filter: { tenantId: 1, code: 1 },
             ifVersion: 1,
             values: { name: 'Changed' },
           }),
         );
         expect(result).toMatchObject({
-          record: { tenantId: 'T1', code: 'one', name: 'Changed', version: 2 },
+          record: { tenantId: 1, code: 1, name: 'Changed', version: 2 },
           version: 2,
         });
         expect(businessStatements(statements)).toHaveLength(2);
@@ -215,25 +228,25 @@ describeIntegrationDatabases(
     it('rejects stale versions without changing scalar or atomic values', async () => {
       const repository = await fixture();
       await repository.updateOne({
-        filter: { id: 'A' },
+        filter: { id: 1 },
         ifVersion: 1,
         values: { name: 'Winner' },
       });
       await expect(
         repository.updateOne({
-          filter: { id: 'A' },
+          filter: { id: 1 },
           ifVersion: 1,
           values: { name: 'Stale', amount: (value) => value.increment(100) },
         }),
       ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
-      expect(await repository.findOne({ filter: { id: 'A' } })).toMatchObject({
+      expect(await repository.findOne({ filter: { id: 1 } })).toMatchObject({
         name: 'Winner',
         amount: 10,
         revisionCounter: 2,
       });
       await expect(
         repository.updateOne({
-          filter: { id: 'missing' },
+          filter: { id: 999 },
           ifVersion: 1,
           values: { name: 'Missing' },
         }),
@@ -243,12 +256,12 @@ describeIntegrationDatabases(
     it('rejects empty values and increments once for unchanged values', async () => {
       const repository = await fixture();
       await expect(
-        repository.updateOne({ filter: { id: 'A' }, ifVersion: 1, values: {} }),
+        repository.updateOne({ filter: { id: 1 }, ifVersion: 1, values: {} }),
       ).rejects.toMatchObject({ code: 'INVALID_MUTATION' });
       for (const ifVersion of [1, 2]) {
         const values = { name: 'First' };
         const { result, statements } = await captureSql(context, () =>
-          repository.updateOne({ filter: { id: 'A' }, ifVersion, values }),
+          repository.updateOne({ filter: { id: 1 }, ifVersion, values }),
         );
         expect(result.version).toBe(ifVersion + 1);
         expect(businessStatements(statements)).toHaveLength(2);
@@ -260,14 +273,14 @@ describeIntegrationDatabases(
       await expect(
         context.database.transaction(async (connection) => {
           await connection.repository('optimisticItems').updateOne({
-            filter: { id: 'A' },
+            filter: { id: 1 },
             ifVersion: 1,
             values: { amount: 99 },
           });
           throw new Error('Abort the transaction');
         }, context.spec.name),
       ).rejects.toThrow('Abort the transaction');
-      expect(await repository.findOne({ filter: { id: 'A' } })).toMatchObject({
+      expect(await repository.findOne({ filter: { id: 1 } })).toMatchObject({
         amount: 10,
         revisionCounter: 1,
       });
@@ -276,7 +289,7 @@ describeIntegrationDatabases(
     it('rejects multiple matches even when only one row has the requested version', async () => {
       const repository = await fixture();
       await repository.updateOne({
-        filter: { id: 'A' },
+        filter: { id: 1 },
         ifVersion: 1,
         values: { name: 'First' },
       });
@@ -289,12 +302,12 @@ describeIntegrationDatabases(
       ).rejects.toMatchObject({ code: 'MULTIPLE_RECORDS_MATCHED' });
       await expect(
         repository.updateOne({
-          filter: (f) => f.or([f.string('id').eq('A'), f.string('id').eq('B')]),
+          filter: (f) => f.or([f.number('id').eq(1), f.number('id').eq(2)]),
           ifVersion: 1,
           values: { name: 'Changed' },
         }),
       ).rejects.toMatchObject({ code: 'MULTIPLE_RECORDS_MATCHED' });
-      expect(await repository.findOne({ filter: { id: 'B' } })).toMatchObject({
+      expect(await repository.findOne({ filter: { id: 2 } })).toMatchObject({
         name: 'Second',
         revisionCounter: 1,
       });
@@ -304,7 +317,7 @@ describeIntegrationDatabases(
       const repository = await fixture();
       await expect(
         repository.updateOne({
-          filter: { id: 'A' },
+          filter: { id: 1 },
           ifVersion: '1',
           values: { name: 'Changed' },
         }),
@@ -317,7 +330,7 @@ describeIntegrationDatabases(
         repository.updateOne({
           filter: (f) =>
             f.and([
-              f.string('id').eq('A'),
+              f.number('id').eq(1),
               f.or([f.string('name').eq('First'), f.number('amount').gt(100)]),
             ]),
           ifVersion: 1,
@@ -329,7 +342,7 @@ describeIntegrationDatabases(
         repository.updateOne({
           filter: (f) =>
             f.and([
-              f.string('id').eq('A'),
+              f.number('id').eq(1),
               f.or([f.string('name').eq('First'), f.number('amount').gt(100)]),
             ]),
           ifVersion: 2,
@@ -346,7 +359,7 @@ describeIntegrationDatabases(
         values: { code: 'new' },
       });
       expect(result).toMatchObject({
-        record: { id: 'A', code: 'new' },
+        record: { id: 1, code: 'new' },
         version: 2,
       });
     });
@@ -367,7 +380,7 @@ describeIntegrationDatabases(
       );
       try {
         await repository.updateOne({
-          filter: { id: 'A' },
+          filter: { id: 1 },
           ifVersion: 1,
           values: { name: 'Observed' },
         });
@@ -375,22 +388,21 @@ describeIntegrationDatabases(
         expect(seen.batches[0]).toMatchObject([
           {
             operation: 'updateOne',
-            changes: [
-              { key: { id: 'A' }, fields: ['name', 'revisionCounter'] },
-            ],
+            changes: [{ key: { id: 1 }, fields: ['name', 'revisionCounter'] }],
           },
         ]);
         reject = true;
         await expect(
           repository.updateOne({
-            filter: { id: 'A' },
+            filter: { id: 1 },
             ifVersion: 2,
             values: { name: 'Rejected' },
           }),
         ).rejects.toThrow('Rejected by listener');
-        expect(await repository.findOne({ filter: { id: 'A' } })).toMatchObject(
-          { name: 'Observed', revisionCounter: 2 },
-        );
+        expect(await repository.findOne({ filter: { id: 1 } })).toMatchObject({
+          name: 'Observed',
+          revisionCounter: 2,
+        });
         expect(seen.batches).toHaveLength(1);
       } finally {
         off();

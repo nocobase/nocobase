@@ -109,6 +109,12 @@ interface LockedMutationRecord {
   readonly unique: UniqueSelector;
 }
 
+class ConditionalUpdateMiss extends Error {
+  constructor() {
+    super('Conditional update did not affect a record.');
+  }
+}
+
 type PhysicalWriteRecord = Record<string, RepositoryRecord[string] | Knex.Raw>;
 
 interface GroupByOutput {
@@ -722,11 +728,28 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         : undefined;
     // A failed post-write invariant must roll back this call even if the
     // caller catches the error and commits its surrounding transaction.
-    return unique
-      ? this.inSavepoint((adapter) =>
-          adapter.executeConditionalUpdateOne(plan, unique),
-        )
-      : this.inTransaction((adapter) => adapter.executeUpdateOne(plan));
+    if (!unique)
+      return this.inTransaction((adapter) => adapter.executeUpdateOne(plan));
+    try {
+      return await this.inSavepoint((adapter) =>
+        adapter.executeConditionalUpdateOne(plan, unique),
+      );
+    } catch (error) {
+      if (!(error instanceof ConditionalUpdateMiss)) throw error;
+      // Diagnose only after rollback: a statement trigger may have inserted or
+      // removed the very row being diagnosed. Keep the complete original filter
+      // so an invisible row still answers exactly like a missing one.
+      return this.inTransaction(async (adapter) => {
+        // A repeatable-read snapshot may predate rows the UPDATE already saw.
+        const current = await adapter.lockByFilter(
+          plan.collection,
+          plan.filter,
+        );
+        return current === 'missing' || current === 'multiple'
+          ? current
+          : 'conflict';
+      });
+    }
   }
 
   private async executeConditionalUpdateOne(
@@ -761,14 +784,8 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       );
     }
     if (count === 0) {
-      // An invisible row must answer exactly like a missing one, even when
-      // the caller supplied a stale version. Never diagnose by key alone.
-      // A caller's repeatable-read snapshot may predate an insertion or
-      // deletion that the UPDATE already saw. Diagnose against current rows.
-      const current = await this.lockByFilter(plan.collection, plan.filter);
-      return current === 'missing' || current === 'multiple'
-        ? current
-        : 'conflict';
+      // Even a zero-row UPDATE can write through statement-level triggers.
+      throw new ConditionalUpdateMiss();
     }
     if (
       plan.scopeCheck &&

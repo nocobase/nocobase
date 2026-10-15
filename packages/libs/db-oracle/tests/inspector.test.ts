@@ -29,6 +29,67 @@ describe('oracle schema inspector', () => {
     ]);
   });
 
+  it.each([
+    ['VARCHAR2', 'USING_NLS_COMP', false],
+    ['VARCHAR2', 'USING_NLS_SORT', false],
+    ['NVARCHAR2', 'USING_NLS_SORT_CS', false],
+    ['CHAR', null, false],
+    ['NCHAR', 'BINARY', true],
+    ['VARCHAR2', 'BINARY', true],
+    ['NUMBER', null, true],
+    [null, null, false],
+  ] as const)(
+    'preserves index comparison safety for %s with collation %s',
+    async (dataType, collation, compatible) => {
+      const raw = vi
+        .fn()
+        .mockResolvedValueOnce([{ schema_name: 'APP' }])
+        .mockResolvedValueOnce([
+          { schema_name: 'APP', table_name: 'ITEMS', object_kind: 'TABLE' },
+        ])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          {
+            index_name: 'ITEM_KEY',
+            uniqueness: 'UNIQUE',
+            index_type: 'NORMAL',
+            valid: 1,
+            column_position: 1,
+            column_name: 'ID',
+            data_type: dataType,
+            collation,
+            column_expression: null,
+            descend: 'ASC',
+            constraint_name: null,
+            constraint_type: null,
+          },
+        ]);
+      const inspector = new OracleSchemaInspector({
+        connectionName: 'main',
+        resolveClient: async () => ({ raw }) as never,
+      });
+      const collection = await inspector.getPhysicalCollection({
+        tableName: 'ITEMS',
+      });
+      expect(collection?.indexes).toEqual([
+        expect.objectContaining({
+          name: 'ITEM_KEY',
+          unique: true,
+          valid: true,
+          keys: [
+            {
+              columnName: 'ID',
+              order: 'asc',
+              ...(compatible ? {} : { columnEquality: false }),
+            },
+          ],
+        }),
+      ]);
+    },
+  );
+
   it('normalizes Oracle temporal and floating point types', () => {
     expect(
       normalizePhysicalDataType(oracleTypes, 'TIMESTAMP(9) WITH TIME ZONE'),

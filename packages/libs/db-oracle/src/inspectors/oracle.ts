@@ -119,6 +119,8 @@ interface OracleIndexRow {
   readonly valid: number;
   readonly column_position: number;
   readonly column_name: string | null;
+  readonly data_type: string | null;
+  readonly collation: string | null;
   readonly column_expression: string | null;
   readonly descend: 'ASC' | 'DESC';
   readonly constraint_name: string | null;
@@ -639,6 +641,8 @@ export class OracleSchemaInspector extends BaseSchemaInspector {
             end as valid,
             ic.column_position,
             ic.column_name,
+            tc.data_type,
+            tc.collation,
             ie.column_expression,
             ic.descend,
             c.constraint_name,
@@ -646,6 +650,9 @@ export class OracleSchemaInspector extends BaseSchemaInspector {
           from user_indexes i
           join user_ind_columns ic
             on ic.index_name = i.index_name
+          left join user_tab_cols tc
+            on tc.table_name = ic.table_name
+            and tc.column_name = ic.column_name
           left join user_ind_expressions ie
             on ie.index_name = ic.index_name
             and ie.column_position = ic.column_position
@@ -938,7 +945,17 @@ function oracleCheckConstraint(
 function oracleIndexKey(row: OracleIndexRow): PhysicalIndexKey {
   const order = row.descend === 'DESC' ? 'desc' : 'asc';
   const expression = optionalString(row.column_expression);
+  // Session-dependent collations can broaden WHERE equality without changing
+  // the index's uniqueness. Never cache a proof from the inspecting session.
+  const columnEquality =
+    typeof row.data_type === 'string' &&
+    (!/^(N?VARCHAR2?|N?CHAR|LONG|N?CLOB)$/i.test(row.data_type) ||
+      row.collation === 'BINARY');
   return expression
     ? { expression, order }
-    : { columnName: row.column_name as string, order };
+    : {
+        columnName: row.column_name as string,
+        order,
+        ...(columnEquality ? {} : { columnEquality: false }),
+      };
 }
