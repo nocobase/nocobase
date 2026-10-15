@@ -43,5 +43,7 @@ export interface OrganizeRequest {
   readonly projectId?: string;
   /** Text the page extracted from uploaded files. */
   readonly files?: readonly { readonly name: string; readonly text: string }[];
+  /** Selected source images, copied to chat attachments after ownership validation. */
+  readonly imageFileIds?: readonly string[];
   readonly clientId?: string;
 }

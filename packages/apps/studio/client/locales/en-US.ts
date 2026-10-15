@@ -1384,6 +1384,14 @@ const enUS = {
         'You cannot invoke this agent. Ask an administrator to check your access.',
       chatUnavailable:
         'Chat is unavailable. Ask an administrator to enable chat before organizing with an agent.',
+      retained:
+        'Your requirements and source files are kept in this tab until cleared, tasks are created, or you sign out. A refresh discards this draft.',
+      returnToEdit: 'Return to edit requirements',
+      clearDraft: 'Discard saved input',
+      stillRunning:
+        'This conversation is still running. Wait for it to finish or stop it in chat before organizing again.',
+      imageFailed:
+        'Could not prepare every image. Use your own PNG or JPEG files and retry. Your requirements and files are kept.',
       filesOnly: 'The requirements are in the files below.',
       conversationTitle: 'Organize: {{text}}',
     },

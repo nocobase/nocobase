@@ -196,13 +196,14 @@ Starts a conversation with an agent that organizes the text and files into issue
 nb-studio intake organize --text <string>
 ```
 
-| Flag        | Type   | Description                       |
-| ----------- | ------ | --------------------------------- |
-| `--text`    | string | (required; or --text-file <path>) |
-| `--title`   | string |                                   |
-| `--agent`   | string |                                   |
-| `--project` | string |                                   |
-| `--files`   | json   |                                   |
+| Flag               | Type     | Description                       |
+| ------------------ | -------- | --------------------------------- |
+| `--text`           | string   | (required; or --text-file <path>) |
+| `--title`          | string   |                                   |
+| `--agent`          | string   |                                   |
+| `--project`        | string   |                                   |
+| `--files`          | json     |                                   |
+| `--image-file-ids` | string[] | (repeatable)                      |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

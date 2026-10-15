@@ -7,6 +7,7 @@
  */
 import {
   useAgentText,
+  useChatApi,
   useChatAgents,
   useChatPanel,
 } from '@nocobase/app-plugin-agents/client/chat';
@@ -33,6 +34,7 @@ import {
   intakeUnavailableReason,
   type OrganizeRequest,
 } from '../../shared/intake.js';
+import { useIntakeRecovery } from './intake-recovery.js';
 import { chosenAgent } from '../pages/home/model.js';
 import { fitIntake, intakeTitleText } from './intake-text.js';
 
@@ -55,7 +57,11 @@ export function Organize({
   const agentText = useAgentText();
   const pickerLabels = useAgentPickerLabels();
   const agents = useChatAgents(panel.available);
-  const [picked, setPicked] = useState<string | null>(null);
+  const recovery = useIntakeRecovery();
+  const chatApi = useChatApi();
+  const [picked, setPicked] = useState<string | null>(
+    recovery?.agentId ?? null,
+  );
   const agentList = agents.data ?? [];
   const agent = chosenAgent(agentList, picked);
   const startingRef = useRef(false);
@@ -79,6 +85,10 @@ export function Organize({
         return t('pmChat.intake.noRunner');
       case 'INTAKE_AGENT_UNAVAILABLE':
         return t('pmChat.intake.agentUnavailable');
+      case 'INTAKE_STILL_RUNNING':
+        return t('pmChat.intake.stillRunning');
+      case 'INTAKE_IMAGE_FAILED':
+        return t('pmChat.intake.imageFailed');
       case 'INTAKE_TOO_LONG':
         return t('pmChat.intake.tooLong');
       case 'UNAUTHENTICATED':
@@ -100,15 +110,30 @@ export function Organize({
     setStarting(true);
     setFailure(null);
     try {
+      if (recovery?.handoff) {
+        const previous = await chatApi.conversation(
+          recovery.handoff.conversationId,
+        );
+        if (controller.signal.aborted) return;
+        if (
+          previous.run &&
+          !['completed', 'failed', 'cancelled'].includes(previous.run.status)
+        ) {
+          setFailure('INTAKE_STILL_RUNNING');
+          return;
+        }
+      }
       const read = fileIds.length > 0 ? await plans.intakeTexts(fileIds) : null;
       if (controller.signal.aborted) return;
       // Extraction reports failures and truncation in a successful response. Check each selected file before sending.
       const unread: string[] = [];
+      const imageFileIds: string[] = [];
       const documents: { name: string; text: string }[] = [];
       for (const id of fileIds) {
         const outcome = read?.files.find((file) => file.fileId === id);
         const document = read?.documents.find((file) => file.fileId === id);
-        if (outcome?.state === 'read' && document?.text.trim())
+        if (outcome?.state === 'image') imageFileIds.push(id);
+        else if (outcome?.state === 'read' && document?.text.trim())
           documents.push({ name: document.filename, text: document.text });
         else unread.push(outcome?.filename ?? document?.filename ?? id);
       }
@@ -126,9 +151,13 @@ export function Organize({
       }
       const request: OrganizeRequest = {
         text: fitted.text,
+        ...(imageFileIds.length ? { imageFileIds } : {}),
         title: t('pmChat.intake.conversationTitle', {
           text:
-            intakeTitleText(text, TITLE_CHARS) || (documents[0]?.name ?? ''),
+            intakeTitleText(text, TITLE_CHARS) ||
+            documents[0]?.name ||
+            read?.files.find((file) => file.fileId === fileIds[0])?.filename ||
+            '',
         }),
         ...(agent ? { agentId: agent.id } : {}),
         ...(projectId ? { projectId } : {}),
@@ -156,6 +185,10 @@ export function Organize({
         setFailure('RUN_NOT_STARTED');
         return;
       }
+      recovery?.setHandoff({
+        conversationId: result.conversation.id,
+        returnTo: `${location.pathname}${location.search}${location.hash}`,
+      });
       panel.openChat({ conversationId: result.conversation.id, view: 'chat' });
       // The projects plugin owns the overlay; its slot does not export a close handle.
       await navigate(
@@ -202,7 +235,10 @@ export function Organize({
             id='intake-agent-picker'
             agents={agentList}
             value={agent?.id ?? null}
-            onSelect={setPicked}
+            onSelect={(id) => {
+              setPicked(id);
+              recovery?.setAgentId(id);
+            }}
             agentName={(item) => agentText.name(item)}
             labels={pickerLabels}
             showHint

@@ -30,11 +30,15 @@ vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
   useApiClient: () => mocks.api,
 }));
-vi.mock('@nocobase/app-plugin-projects/client/kit', () => ({
+vi.mock('@nocobase/app-plugin-projects/client/kit', async (original) => ({
+  ...(await original<
+    typeof import('@nocobase/app-plugin-projects/client/kit')
+  >()),
   usePlanApi: () => mocks.plans,
 }));
 vi.mock('@nocobase/app-plugin-agents/client/chat', () => ({
   useChatPanel: () => mocks.panel,
+  useChatApi: () => ({ conversation: vi.fn() }),
   useChatAgents: () => ({ data: mocks.agents }),
   useAgentText: () => ({ name: (agent: { name: string }) => agent.name }),
   AgentAvatar: () => null,
@@ -102,6 +106,28 @@ beforeEach(() => {
 });
 
 describe('intake handoff', () => {
+  it('sends only selected images alongside complete text documents', async () => {
+    mocks.plans.intakeTexts.mockResolvedValue({
+      documents: [
+        { fileId: 'notes', filename: 'notes.txt', text: 'Text detail' },
+      ],
+      files: [
+        { fileId: 'second', filename: 'second.jpg', state: 'image' },
+        { fileId: 'removed', filename: 'removed.png', state: 'image' },
+        { fileId: 'notes', filename: 'notes.txt', state: 'read' },
+        { fileId: 'first', filename: 'first.png', state: 'image' },
+      ],
+    });
+    await show('en-US', ['first', 'notes', 'second']);
+    fireEvent.click(
+      screen.getByRole('button', { name: enUS.pmChat.intake.organize }),
+    );
+    await waitFor(() => expect(mocks.api.request).toHaveBeenCalledOnce());
+    expect(mocks.api.request.mock.calls[0][0].json).toMatchObject({
+      imageFileIds: ['first', 'second'],
+      files: [{ name: 'notes.txt', text: 'Text detail' }],
+    });
+  });
   it('passes every selected attachment body into the AI message, excluding a removed file', async () => {
     const documents = [
       {
@@ -138,15 +164,7 @@ describe('intake handoff', () => {
     expect(message).not.toContain('removed.txt');
   });
 
-  it.each([
-    'failed',
-    'truncated',
-    'skipped',
-    'empty',
-    'image',
-    'unsupported',
-    'legacy',
-  ])(
+  it.each(['failed', 'truncated', 'skipped', 'empty', 'unsupported', 'legacy'])(
     'does not silently send an extraction result with state %s',
     async (state) => {
       mocks.plans.intakeTexts.mockResolvedValue({
