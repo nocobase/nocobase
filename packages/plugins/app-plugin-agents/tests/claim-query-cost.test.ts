@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHarness, skillMd, type Harness } from './harness.js';
+import { agentsRepo } from '../server/core/agents/agent.store.js';
+import { inputsRepo, runsRepo } from '../server/core/runs/run.store.js';
 
 interface QueryEvents {
   on(
@@ -25,11 +27,55 @@ describe('claim query cost', () => {
     async ({ count, skillCount }) => {
       h = await createHarness();
       h.scopes = [{ scope: 'team', scopeId: 'team' }];
-      for (let index = 1; index < count; index += 1) {
+      if (count > 1) {
         const excluded = await h.createAgent({
           modelEntries: [{ tool: 'codex', model: null }],
         });
-        await h.enqueue(excluded, `excluded-${index}`);
+        const excludedRun = await h.enqueue(excluded, 'excluded-1');
+        const conn = h.database.connection();
+        await runsRepo(conn).updateMany({
+          filter: { id: excludedRun },
+          values: { priority: 1 },
+        });
+        const agent = (await agentsRepo(conn).findOne({
+          filter: { id: excluded },
+        }))!;
+        const run = (await runsRepo(conn).findOne({
+          filter: { id: excludedRun },
+        }))!;
+        const inputs = await inputsRepo(conn).findMany({
+          filter: { runId: excludedRun },
+        });
+        // Batch fixture setup outside the measured window, preserving full queued records.
+        const copies = Array.from(
+          { length: count - 2 },
+          (_, index) => index + 2,
+        );
+        if (copies.length > 0) {
+          await agentsRepo(conn).createMany({
+            values: copies.map((index) => ({
+              ...agent,
+              id: `excluded-agent-${index}`,
+            })),
+          });
+          await runsRepo(conn).createMany({
+            values: copies.map((index) => ({
+              ...run,
+              id: `excluded-run-${index}`,
+              agentId: `excluded-agent-${index}`,
+              subjectId: `excluded-${index}`,
+            })),
+          });
+          await inputsRepo(conn).createMany({
+            values: copies.flatMap((index) =>
+              inputs.map((input) => ({
+                ...input,
+                id: `${input.id}-${index}`,
+                runId: `excluded-run-${index}`,
+              })),
+            ),
+          });
+        }
       }
       const skillIds: string[] = [];
       for (let index = 0; index < skillCount; index += 1)
