@@ -10,7 +10,7 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertCircleIcon, SaveIcon } from 'lucide-react';
-import { useContext, useState, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 
 import type {
   SkillDetail,
@@ -29,9 +29,6 @@ import { Spinner } from '../../../components/ui/spinner.js';
 import { useAgentsApi } from '../../../hooks/use-agents-api.js';
 import { useNotify } from '../../../hooks/use-notify.js';
 import { isRevisionConflict } from '../../../lib/revision.js';
-import { SkillSettingsContext } from '../../../lib/skill-settings-context.js';
-import { SkillMountToggle } from '../../../lib/skill-settings.js';
-import { useSetting } from '../../../hooks/use-access.js';
 import { draftOf, filesInput, SKILL_MD } from '../workbench/model.js';
 import { DiscardDialog } from '../workbench/discard-dialog.js';
 import { SkillWorkbench } from '../workbench/skill-workbench.js';
@@ -73,8 +70,6 @@ export function SkillEditor({
   const queryClient = useQueryClient();
   const state = useWorkbench(draftOf(skill));
   const [note, setNote] = useState('');
-  const canManage = useSetting('agents.agents', 'manage');
-  const extra = useContext(SkillSettingsContext);
   const [conflict, setConflict] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [refused, setRefused] = useState<{
@@ -161,19 +156,6 @@ export function SkillEditor({
           </Button>
         </div>
       </div>
-      {canManage ? (
-        <div className='flex flex-col gap-4 rounded-lg border p-4'>
-          <SkillMountToggle
-            skillId={skill.id}
-            queryKey={agentsKeys.scopeSkills('global', 'default')}
-            load={() => api.scopeSkills('global', 'default')}
-            save={(ids) => api.setScopeSkills('global', 'default', ids)}
-            title={t('skills.globalMount')}
-            description={t('skills.globalMountDescription')}
-          />
-          {extra ? <extra.Settings skillId={skill.id} /> : null}
-        </div>
-      ) : null}
       {conflict ? (
         <Alert variant='destructive'>
           <AlertCircleIcon />

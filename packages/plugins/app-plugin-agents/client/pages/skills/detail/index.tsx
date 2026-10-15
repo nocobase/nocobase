@@ -14,7 +14,7 @@ import {
   TerminalIcon,
   Trash2Icon,
 } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import { useContext, useState, type ReactElement } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import type { SkillDetail } from '../../../../shared/skills.js';
@@ -44,6 +44,8 @@ import {
   useVocabulary,
 } from '../../../hooks/use-vocabulary.js';
 import { useAgentsApi } from '../../../hooks/use-agents-api.js';
+import { SkillSettingsContext } from '../../../lib/skill-settings-context.js';
+import { SkillMountToggle } from '../../../lib/skill-settings.js';
 import { useNotify } from '../../../hooks/use-notify.js';
 import { saveBlob } from '../../../lib/download.js';
 import { ImportSkillButton } from '../import-button.js';
@@ -205,7 +207,7 @@ function SkillBody({
       ) : (
         <SkillFiles skill={skill} />
       )}
-      <SkillAttachments skill={skill} />
+      <SkillAttachments skill={skill} canManage={canDelete} />
       <SkillVersions skill={skill} canEdit={canEdit} />
       <AlertDialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
         <AlertDialogContent>
@@ -266,14 +268,31 @@ function SkillFacts({
 /** Every target, with application-provided names and links respecting visibility. */
 function SkillAttachments({
   skill,
+  canManage,
 }: {
   readonly skill: SkillDetail;
+  readonly canManage: boolean;
 }): ReactElement {
   const { t } = useTranslation();
   const text = useText();
   const vocabulary = useVocabulary();
+  const api = useAgentsApi();
+  const extra = useContext(SkillSettingsContext);
   return (
     <AgSection id='ag-skill-attachments' title={t('skills.attachments')}>
+      {canManage ? (
+        <div className='mb-4 flex flex-col gap-4 rounded-lg border p-4'>
+          <SkillMountToggle
+            skillId={skill.id}
+            queryKey={agentsKeys.scopeSkills('global', 'default')}
+            load={() => api.scopeSkills('global', 'default')}
+            save={(ids) => api.setScopeSkills('global', 'default', ids)}
+            title={t('skills.globalMount')}
+            description={t('skills.globalMountDescription')}
+          />
+          {extra ? <extra.Settings skillId={skill.id} /> : null}
+        </div>
+      ) : null}
       {skill.attachments.length > 0 ? (
         <ul className='flex flex-col gap-2 text-sm'>
           {skill.attachments.map((item) => (

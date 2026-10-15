@@ -255,10 +255,10 @@ describe('skill pages', () => {
       '/skills/:skillId',
       '/skills/s1',
     );
-    fireEvent.click(await screen.findByRole('button', { name: 'skills.edit' }));
     const toggle = await screen.findByRole('switch', {
       name: 'skills.globalMount',
     });
+    expect(screen.queryByTestId('skill-editor')).toBeNull();
     await waitFor(() => expect(toggle).toBeEnabled());
     fireEvent.click(toggle);
     await waitFor(() => expect(toggle).toBeChecked());
@@ -266,7 +266,6 @@ describe('skill pages', () => {
     expect(callsTo('agents/skills/s1', 'PATCH')).toHaveLength(0);
     page.unmount();
     renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
-    fireEvent.click(await screen.findByRole('button', { name: 'skills.edit' }));
     const reloaded = await screen.findByRole('switch', {
       name: 'skills.globalMount',
     });
@@ -282,6 +281,15 @@ describe('skill pages', () => {
     expect(ids).toEqual(['other']);
   });
 
+  it('keeps mount controls available to managers when the skill has no mounts', async () => {
+    current = { ...current, attachments: [] };
+    renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
+    expect(await screen.findByText('skills.noAttachments')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('switch', { name: 'skills.globalMount' }),
+    ).toBeInTheDocument();
+  });
+
   it('does not grant global settings to someone allowed to edit only their own skill', async () => {
     granted.delete('agents.agents/manage');
     granted.add('agents.agents/edit');
@@ -295,6 +303,9 @@ describe('skill pages', () => {
   it('checks the front matter as it is typed, adds files from the tree and saves a new version', async () => {
     renderRoute(<SkillDetailPage />, '/skills/:skillId', '/skills/s1');
     fireEvent.click(await screen.findByRole('button', { name: 'skills.edit' }));
+    expect(
+      within(screen.getByTestId('skill-editor')).queryByRole('switch'),
+    ).toBeNull();
     const save = () =>
       screen.getByRole('button', { name: 'skills.saveVersion' });
 
