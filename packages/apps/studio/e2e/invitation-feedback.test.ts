@@ -20,7 +20,7 @@ test('invitation creation and resend explain missing email configuration and kee
   await dialog
     .getByRole('button', { name: '复制邀请链接', exact: true })
     .click();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+  expect(await page.evaluate<string>('navigator.clipboard.readText()')).toBe(
     original,
   );
   await dialog.getByRole('button', { name: '完成', exact: true }).click();
@@ -38,7 +38,7 @@ test('invitation creation and resend explain missing email configuration and kee
   await dialog
     .getByRole('button', { name: '复制邀请链接', exact: true })
     .click();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+  expect(await page.evaluate<string>('navigator.clipboard.readText()')).toBe(
     renewed,
   );
 });
