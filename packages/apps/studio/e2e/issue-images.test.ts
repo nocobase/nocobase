@@ -194,7 +194,7 @@ test('the first agent run downloads and opens an image attached at creation', as
   const file = (
     (await uploaded.json()) as { data: { id: string; contentUrl: string } }
   ).data;
-  const runner = new FakeRunner(api, `Image reader ${unique()}`);
+  const runner = new FakeRunner(api, `Image reader ${unique()}`, true);
   await api.patch('projectManager', {
     firstChoiceAgentId: await runner.agent(),
     fallbackAgentId: null,
