@@ -108,12 +108,13 @@ export function useTaskList({
   );
   const selected = findItem(groups, selectedParam);
   const selectedId = selected?.issue.id ?? null;
-  // A changed query or URL selection releases the old snapshot before the next list is rendered.
+  // Compare the saved snapshot, not sticky: an optimistic follow change can disable retention before the row updates.
+  // Re-saving that unchanged row while sticky is null would never converge.
   if (
     retained.scope !== scope ||
-    (saved && !sticky) ||
-    (selectedId &&
-      (sticky?.id !== selectedId || sticky.followed !== selected?.followed))
+    (selectedId
+      ? saved?.id !== selectedId || saved.followed !== selected?.followed
+      : saved !== null)
   ) {
     // eslint-disable-next-line @eslint-react/set-state-in-effect -- Adjusts state during rendering when the query or selection changes; no effect runs here.
     setRetained({
