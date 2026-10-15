@@ -20,6 +20,7 @@ for (const statusKey of ['done', 'cancelled']) {
   }) => {
     const admin = await apiAs(browser, 'admin', studio);
     const settings = await admin.api.get<{
+      name: string;
       firstChoiceAgentId: string | null;
       fallbackAgentId: string | null;
     }>('projectManager');
@@ -64,9 +65,15 @@ for (const statusKey of ['done', 'cancelled']) {
               )) as typeof globalThis.setTimeout;
       });
       const me = await api.get<{ userId: string }>('projects/me');
-      const runner = new FakeRunner(admin.api, `inbox-terminal-${unique()}`);
+      // Project manager runs require the runner's existing workspace-key feature.
+      const runner = new FakeRunner(
+        admin.api,
+        `inbox-terminal-${unique()}`,
+        true,
+      );
       const agent = await runner.agent();
       await admin.api.patch('projectManager', {
+        name: 'Project manager',
         firstChoiceAgentId: agent,
         fallbackAgentId: null,
       });
@@ -127,6 +134,7 @@ for (const statusKey of ['done', 'cancelled']) {
       });
       await open(page, '/inbox');
       await expect.poll(() => subscribed).toBe(true);
+      await page.getByRole('tab', { name: /^To decide/ }).click();
       const item = page
         .getByRole('button', { name: new RegExp(issue.identifier) })
         .first();
@@ -166,6 +174,7 @@ for (const statusKey of ['done', 'cancelled']) {
       });
     } finally {
       await admin.api.patch('projectManager', {
+        name: settings.name,
         firstChoiceAgentId: settings.firstChoiceAgentId,
         fallbackAgentId: settings.fallbackAgentId,
       });
