@@ -440,7 +440,9 @@ describe('client', () => {
         'Enter whole minutes from 1 to 1440, or leave it empty.',
       ),
     ).toBeNull();
-    expect(within(dialog).queryByText('stops after 60 min unvisited')).toBeNull();
+    expect(
+      within(dialog).queryByText('stops after 60 min unvisited'),
+    ).toBeNull();
     expect(
       within(dialog).getByText(enUS.ui.policy.customTimerHint),
     ).toBeInTheDocument();
