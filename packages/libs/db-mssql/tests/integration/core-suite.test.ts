@@ -14,6 +14,7 @@ declare global {
 }
 
 installDatabaseIntegrationAdapter(mssqlDialectIntegrationAdapter);
+await import('./conditional-update.test.js');
 await import('./reset-managed-schema.test.js');
 await import('./test-provisioner.test.js');
 await import('./request-ownership.test.js');

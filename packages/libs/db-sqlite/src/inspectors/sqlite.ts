@@ -76,6 +76,7 @@ interface SqliteIndexRow extends SqliteIndexListRow {
   readonly key_seqno: number | null;
   readonly key_name: string | null;
   readonly key_desc: 0 | 1 | null;
+  readonly key_coll: string | null;
 }
 
 interface SqliteForeignKeyRow {
@@ -147,7 +148,10 @@ export class SqliteSchemaInspector extends BaseSchemaInspector {
       });
     }
 
-    const indexResult = await this.readIndexes(knex, row.name);
+    // PRAGMA exposes index collations but not column collations. Without a
+    // COLLATE clause columns use BINARY; otherwise compatibility is unknown.
+    const binaryColumns = Boolean(row.sql && !/\bcollate\b/i.test(row.sql));
+    const indexResult = await this.readIndexes(knex, row.name, binaryColumns);
     warnings.push(...indexResult.warnings);
     const foreignKeys = await this.readForeignKeys(knex, row.name);
     const checkConstraints =
@@ -278,6 +282,7 @@ export class SqliteSchemaInspector extends BaseSchemaInspector {
   private async readIndexes(
     knex: Knex,
     tableName: string,
+    binaryColumns: boolean,
   ): Promise<{
     indexes: PhysicalIndexSchema[];
     uniqueConstraints: PhysicalUniqueConstraintSchema[];
@@ -290,7 +295,7 @@ export class SqliteSchemaInspector extends BaseSchemaInspector {
       await knex.raw(
         `
         select il.*, s.sql, xi.seqno as key_seqno,
-          xi.name as key_name, xi.desc as key_desc
+          xi.name as key_name, xi.desc as key_desc, xi.coll as key_coll
         from pragma_index_list(?) as il
         left join sqlite_schema as s on s.type = 'index' and s.name = il.name
         left join pragma_index_xinfo(il.name) as xi on xi.key = 1
@@ -323,6 +328,9 @@ export class SqliteSchemaInspector extends BaseSchemaInspector {
           return {
             columnName: key.key_name,
             order: key.key_desc === 1 ? 'desc' : 'asc',
+            ...(binaryColumns && key.key_coll === 'BINARY'
+              ? {}
+              : { columnEquality: false }),
           };
         }
         const expression = parsed.keys[key.key_seqno!];
@@ -351,6 +359,7 @@ export class SqliteSchemaInspector extends BaseSchemaInspector {
         keys,
         unique: index.unique === 1,
         backsConstraint: constraintKind ? { kind: constraintKind } : undefined,
+        ...(index.partial === 1 ? { partial: true } : {}),
         predicate: index.partial === 1 ? parsed.predicate : undefined,
       });
       if (index.partial === 1 && !parsed.predicate) {
