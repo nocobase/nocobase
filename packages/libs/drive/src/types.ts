@@ -19,19 +19,38 @@ export interface S3DriveDiskConfig {
   forcePathStyle: boolean;
   supportsACL: boolean;
   encryption?: string;
+  credentials: {
+    accessKeyId?: string;
+    secretAccessKey?: string;
+  };
+  visibility: DriveVisibility;
+}
+
+export interface OssDriveDiskConfig {
+  driver: 'oss';
+  region: string;
+  bucket: string;
+  internal?: boolean;
+  domain?: string;
+  visibility: DriveVisibility;
+  supportsACL?: boolean;
   credentials:
     | {
-        accessKeyId?: string;
-        secretAccessKey?: string;
+        accessKeyId: string;
+        accessKeySecret: string;
+        provider?: never;
+        roleName?: never;
       }
     | {
         provider: 'aliyun-ecs-ram-role';
         roleName?: string;
+        accessKeyId?: never;
+        accessKeySecret?: never;
       };
-  visibility: DriveVisibility;
 }
 
-export type AppDriveDiskConfig = FsDriveDiskConfig | S3DriveDiskConfig;
+export type AppDriveDiskConfig =
+  FsDriveDiskConfig | S3DriveDiskConfig | OssDriveDiskConfig;
 
 export interface AppDriveConfig {
   default: string;

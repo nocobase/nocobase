@@ -1,29 +1,65 @@
-# File storage (S3 / Aliyun OSS)
+# Aliyun OSS storage
 
-Applications running on Aliyun ECS can use the instance's RAM role for OSS without storing access keys in `config.yml`. Bind a RAM role to the ECS instance and allow `oss:ListObjects` on the target bucket and `oss:GetObject`, `oss:PutObject`, and `oss:DeleteObject` on its objects. If ACL operations are enabled, also allow `oss:GetObjectAcl` and `oss:PutObjectAcl`.
+The native `oss` driver uses the official `ali-oss` server SDK over HTTPS with V4 authorization. It supports uploads (including streams), downloads, metadata, existence checks, deletion, copy/move, paginated recursive or directory listings, public URLs, signed upload/download URLs and object ACLs. Existing `fs` and `s3` configuration is unchanged; the AWS default credential chain applies only to S3.
 
-Add the following Drive configuration, replacing the bucket and region with your own:
+## Configure a disk
+
+Bind a RAM role to the ECS instance and replace the bucket and region below:
 
 ```yaml
 drive:
   default: oss
   disks:
     oss:
-      driver: s3
+      driver: oss
+      region: oss-cn-hangzhou
       bucket: your-bucket
-      region: cn-hangzhou
-      endpoint: https://s3.oss-cn-hangzhou.aliyuncs.com
-      forcePathStyle: false
-      supportsACL: false
+      internal: false
       visibility: private
+      supportsACL: false
       credentials:
         provider: aliyun-ecs-ram-role
+        # roleName: your-role
 ```
 
-The role name is discovered automatically. To select it explicitly, add `roleName: your-role` under `credentials`. The provider uses only the hardened metadata mode: the runtime, including a container, must reach `http://100.100.100.200` and obtain a metadata token. A container or ACK deployment does not necessarily have this access; check its network and instance metadata settings. See [ECS instance metadata](https://www.alibabacloud.com/help/en/ecs/user-guide/view-instance-metadata).
+The role is discovered automatically unless `roleName` is provided. Only hardened metadata mode is supported: the runtime, including containers, must reach `http://100.100.100.200` and obtain a metadata token. A container or ACK deployment does not necessarily have this access; check its network and instance metadata settings. See [ECS instance metadata](https://www.alibabacloud.com/help/en/ecs/user-guide/view-instance-metadata).
 
-Use the S3-compatible OSS endpoint, with the same region as the bucket. The example uses virtual-host addressing (`your-bucket.s3.oss-cn-hangzhou.aliyuncs.com`). For access within the same region's private network, use `https://s3.oss-cn-hangzhou-internal.aliyuncs.com`. The endpoint must also be reachable by clients using signed URLs; internal URLs are unsuitable for external clients. Before using public endpoints, check the account and region's domain restrictions in [Alibaba Cloud's AWS SDK access guide](https://www.alibabacloud.com/help/en/oss/developer-reference/use-aws-sdks-to-access-oss), including the custom-domain requirement for affected mainland China accounts.
+Alternatively, replace the entire `credentials` object with long-lived keys. Supply secrets through your deployment configuration; do not commit them:
 
-The example disables object ACL operations and relies on bucket policies for access control. For a standalone Host, put the same disk object (the contents of `oss` above) under `host.artifact`; for the releases plugin, use `releases.artifact`.
+```yaml
+credentials:
+  accessKeyId: your-access-key-id
+  accessKeySecret: your-access-key-secret
+```
 
-The AWS SDK caches temporary credentials and refreshes them on demand near expiration; no background task is needed. A signed upload or download URL stops working when its signing credentials expire, even if its configured URL lifetime is longer. Refreshing credentials does not extend an existing URL's lifetime. Existing static access-key configurations and the AWS default credential chain remain available when no provider is specified; an unsupported or empty provider fails when the disk is created.
+Exactly one credentials source is required. Mixing keys with a provider, unknown providers, empty keys or an empty explicit role name fails when the disk is created. There is no fallback. The secret field for OSS is `accessKeySecret`; S3 retains `secretAccessKey`.
+
+For a standalone Host, put the same disk object (the contents of `oss` above) under `host.artifact`; for the releases plugin, use `releases.artifact`. No new environment variable mappings are added.
+
+## Permissions and visibility
+
+Grant `oss:ListObjects` on `acs:oss:*:*:your-bucket` and `oss:GetObject`, `oss:PutObject`, and `oss:DeleteObject` on `acs:oss:*:*:your-bucket/*`, limited to the paths the application needs. Copy requires source read and destination write access; move also requires source deletion. See [OSS RAM policies](https://www.alibabacloud.com/help/en/oss/user-guide/common-examples-of-ram-policies).
+
+The example disables object ACL operations and relies on bucket policy. With `supportsACL: false`, visibility reads return the configured `visibility`, and setting visibility is a no-op. If omitted or `true`, additionally grant `oss:GetObjectAcl`, `oss:PutObjectAcl`, and `oss:GetBucketAcl`. `public` maps to `public-read`, `private` to `private`; inherited object ACLs are resolved through the bucket ACL. Copy preserves source effective visibility unless overridden. A public URL does not grant access to a private object.
+
+Write options support `visibility`, `contentType`, `contentLanguage`, `contentEncoding`, `contentDisposition`, `cacheControl`, and `contentLength`. OSS-specific `meta` and `headers` supply metadata and headers; AWS-specific options are not translated. Copy preserves metadata by default; supplying replacement metadata or content headers follows OSS replacement semantics. Move is copy followed by delete without a transaction; if deletion fails, both objects can remain.
+
+## Network and domains
+
+`region` includes the `oss-` prefix and must match the bucket. With `internal: false` (default), operations and links use `https://your-bucket.oss-cn-hangzhou.aliyuncs.com`. With `internal: true`, both use `https://your-bucket.oss-cn-hangzhou-internal.aliyuncs.com`, requiring access to that region's OSS private network. Internal links cannot be used by external clients.
+
+Optional `domain: https://files.example.com` overrides operation and link hosts, taking priority over `internal`. It must be an HTTPS origin without a path, query or credentials, bound to the selected bucket in OSS with a valid certificate. The SDK signs for that domain directly; hosts are never substituted after signing. When switching buckets at runtime, ensure a custom domain is bound to the new bucket as well, or use another disk. Check [custom domain configuration](https://www.alibabacloud.com/help/en/oss/user-guide/map-custom-domain-names-5) and account/region public endpoint restrictions. Use a public disk or reachable custom domain for external links.
+
+Flydrive retains its existing file-key validation. The OSS adapter encodes keys when building links and copy requests; do not pre-encode keys.
+
+## Refresh and signed links
+
+Instance credentials are held only in memory per driver. Each operation or signature checks the cache, refreshing on demand when at most five minutes remain. Concurrent refreshes share one resolution; the entire credential set is installed into a new SDK client. Failed refreshes fail the operation; the next operation can retry. There is no background polling, persistence or SDK interval-based refresh. Metadata recovery allows three attempts, one second per HTTP request including its body, and 100/200 ms retry delays; a 401 permits at most one token renewal per resolution. Errors exclude response bodies and secrets.
+
+Signed upload/download links default to 30 minutes. `expiresIn` accepts seconds or durations such as `30mins` or `2 hours`; lifetimes are capped at seven days and the signing STS credentials' remaining lifetime, rounded down to seconds. Refreshing does not extend existing links. Download `contentType` and `contentDisposition` override response headers; upload `contentType` must match the client's actual Content-Type. Treat signed URLs as secrets; never log complete URLs or tokens.
+
+Cached operations add no metadata requests. Normal first acquisition takes three (two with an explicit role), refresh takes two (one with an explicit role), and metadata-token renewal adds one. Ordinary file operations take one OSS request; ACL inheritance and copying can add ACL reads, moving adds deletion, and listing/deletion are paginated. Public URL generation is local; signing is local after any needed refresh.
+
+## Verification limits
+
+Automated tests use simulated metadata and OSS transport with the real official SDK request/signing chain, independently verified V4 signatures, credential changes after refresh, operations, streams, pagination, ACL and domains. Real ECS/OSS remains unverified. Before production use, validate file operations and signed uploads/downloads on an ECS instance bound to the intended role, repeat after STS refresh, and check links from their intended network. Record results without credentials or complete signed URLs.

@@ -5,7 +5,7 @@ import { S3Driver } from 'flydrive/drivers/s3';
 import type { S3DriverOptions } from 'flydrive/drivers/s3/types';
 import type { DriverContract } from 'flydrive/types';
 
-import { createAliyunEcsRamRoleProvider } from './credentials/aliyun-ecs-ram-role.js';
+import { createOssDriver } from './oss.js';
 import type {
   AppDriveConfig,
   AppDriveDiskConfig,
@@ -47,6 +47,10 @@ function createDriver(disk: AppDriveDiskConfig): DriverContract {
     return createFsDriver(disk);
   }
 
+  if (disk.driver === 'oss') {
+    return createOssDriver(disk);
+  }
+
   return createS3Driver(disk);
 }
 
@@ -83,12 +87,6 @@ function createS3Driver(disk: S3DriveDiskConfig): DriverContract {
 function createS3Credentials(
   disk: S3DriveDiskConfig,
 ): S3ClientConfig['credentials'] {
-  if ('provider' in disk.credentials) {
-    if (disk.credentials.provider !== 'aliyun-ecs-ram-role') {
-      throw new Error('Unsupported S3 credentials provider.');
-    }
-    return createAliyunEcsRamRoleProvider(disk.credentials.roleName);
-  }
   const { accessKeyId, secretAccessKey } = disk.credentials;
   if (!accessKeyId || !secretAccessKey) {
     return undefined;

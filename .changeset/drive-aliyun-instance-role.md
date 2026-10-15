@@ -1,5 +1,6 @@
 ---
 '@nocobase/drive': minor
+'@nocobase/app-host': patch
 ---
 
-Support Aliyun ECS RAM roles for S3 storage with temporary credentials, automatic on-demand refresh, and bounded metadata recovery. Configure `credentials.provider: aliyun-ecs-ram-role` without storing access keys. Validated with simulated metadata and the real SDK signing chain; real ECS/OSS verification remains a follow-up.
+Add a native Aliyun OSS drive using the official server SDK, with access keys or ECS RAM role credentials, on-demand refresh, V4 signed URLs, file operations and ACL support. Allow OSS artifact storage in standalone App Hosts. S3 configuration and credential behavior remain unchanged. Validated with simulated metadata and the real OSS SDK request/signing chain; real ECS/OSS verification remains a follow-up.
