@@ -5,6 +5,7 @@
  * manager, and merging from Studio, against a GitHub stand-in.
  */
 import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
+import type { NotificationService } from '@nocobase/app-plugin-notification/server';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -42,6 +43,10 @@ import {
   createBridgeHarness,
   type BridgeHarness,
 } from '../agents/bridge-harness.js';
+import {
+  createStudioInbox,
+  type StudioInbox,
+} from '../../server/inbox/service.js';
 
 const REPO = 'acme/studio';
 const PR_URL = (number: number) => `https://github.com/${REPO}/pull/${number}`;
@@ -178,6 +183,35 @@ describe('pull requests', () => {
 
   it('keeps GitHub merge facts after late closed, open and incomplete merged REST snapshots', async () => {
     const notices: string[] = [];
+    const notificationIds: string[] = [];
+    let inbox: StudioInbox;
+    await h.close();
+    h = await createBridgeHarness({
+      inboxPort(database) {
+        inbox = createStudioInbox({
+          database,
+          notifications: () =>
+            ({
+              async send(input) {
+                const notificationId = `notification-${notificationIds.length + 1}`;
+                notificationIds.push(notificationId);
+                return {
+                  notificationId,
+                  idempotencyKey: input.idempotencyKey,
+                  deduplicated: false,
+                  status: 'pending',
+                  deliveries: [],
+                };
+              },
+            }) as unknown as NotificationService,
+          channel: 'inbox',
+          announce: () => undefined,
+        });
+        return inbox;
+      },
+    });
+    for (const id of ['alice', 'bob']) await h.addUser(id);
+    h.roles.set('bob', 'admin');
     h.projects.events.on('notice.planned', (event) => {
       if (event.notice.type === 'pr_merged') notices.push(event.notice.key);
     });
@@ -214,9 +248,14 @@ describe('pull requests', () => {
         mergedManually: false,
       });
     }
-    expect(
-      h.port.settled.filter((ref) => ref.outcome === 'merged'),
-    ).toHaveLength(1);
+    await expect
+      .poll(async () => {
+        const cards = await inbox.notices('alice', notificationIds);
+        return cards.filter(
+          (card) => card.decisionKey === `pr:${pr.id}:${issue.id}`,
+        );
+      })
+      .toEqual([expect.objectContaining({ outcome: 'merged' })]);
     expect(
       (
         await h.projects.issueQueries.activities(alice(), issue.id, {})
