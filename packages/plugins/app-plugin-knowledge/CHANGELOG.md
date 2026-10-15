@@ -1,5 +1,25 @@
 # @nocobase/app-plugin-knowledge
 
+## 0.1.0-beta.4
+
+### Minor Changes
+
+- ff9d41b: Show an authorized project and shared system knowledge directory with lazy trees, accurate document counts, global search, explicit creation targets, and complete permission-filtered pending reviews. Preserve single-space views, existing links and archive workflows, with consistent creation parents/permissions and per-space search diagnostic targets.
+
+### Patch Changes
+
+- Updated dependencies [69e212c]
+- Updated dependencies [943a9a8]
+- Updated dependencies [943a9a8]
+- Updated dependencies [1cd749c]
+- Updated dependencies [bdb0581]
+- Updated dependencies [9b946f4]
+  - @nocobase/app-server@2.0.0-beta.7
+  - @nocobase/db@1.0.0-beta.20
+  - @nocobase/app-plugin-authentication@2.0.0-beta.9
+  - @nocobase/app-plugin-file@1.0.0-beta.23
+  - @nocobase/app-plugin-authorization@1.0.0-beta.27
+
 ## 0.1.0-beta.3
 
 ### Patch Changes

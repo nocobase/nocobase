@@ -1,5 +1,19 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.22
+
+### Patch Changes
+
+- 69e212c: Move KingbaseES, Dameng and OceanBase driver ownership to NocoBase Pro while preserving optional peer dependencies, automatic loading and CLI configuration support. Install the selected driver through the Pro registry in the application's production dependencies and rebuild deployments; explicit driver registration remains optional. Test fixtures resolve external dialect provisioners from the consuming project.
+- Updated dependencies [69e212c]
+- Updated dependencies [943a9a8]
+- Updated dependencies [943a9a8]
+- Updated dependencies [1cd749c]
+- Updated dependencies [bdb0581]
+- Updated dependencies [9b946f4]
+  - @nocobase/app-server@2.0.0-beta.7
+  - @nocobase/db@1.0.0-beta.20
+
 ## 1.0.0-beta.21
 
 ### Patch Changes
