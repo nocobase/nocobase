@@ -5,9 +5,6 @@
 '@nocobase/db-mysql': minor
 '@nocobase/db-oracle': minor
 '@nocobase/db-mssql': minor
-'@nocobase/db-kingbase': patch
-'@nocobase/db-oceanbase': minor
-'@nocobase/db-dameng': patch
 '@nocobase/app-server': minor
 '@nocobase/app-plugin-notification': patch
 ---

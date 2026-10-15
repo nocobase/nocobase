@@ -335,6 +335,8 @@ overrides:
   langchain>zod: 3.25.76
   openai>zod: 3.25.76
 
+pnpmfileChecksum: sha256-0JdvRfpZDHbDvG6vvKsL0AZCa2llweCqo/UZBOCGJGw=
+
 importers:
 
   .:
@@ -914,21 +916,12 @@ importers:
       '@nocobase/api-client':
         specifier: workspace:*
         version: link:../../libs/api-client
-      '@nocobase/db-dameng':
-        specifier: workspace:*
-        version: link:../../libs/db-dameng
-      '@nocobase/db-kingbase':
-        specifier: workspace:*
-        version: link:../../libs/db-kingbase
       '@nocobase/db-mssql':
         specifier: workspace:*
         version: link:../../libs/db-mssql
       '@nocobase/db-mysql':
         specifier: workspace:*
         version: link:../../libs/db-mysql
-      '@nocobase/db-oceanbase':
-        specifier: workspace:*
-        version: link:../../libs/db-oceanbase
       '@nocobase/db-oracle':
         specifier: workspace:*
         version: link:../../libs/db-oracle
@@ -2783,80 +2776,6 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
-  packages/libs/db-dameng:
-    dependencies:
-      dmdb:
-        specifier: ^1.0.52452
-        version: 1.0.52452
-      knex:
-        specifier: 'catalog:'
-        version: 3.3.0(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)(tedious@20.0.0)
-      knex-dm:
-        specifier: ^1.0.52452
-        version: 1.0.52452(knex@3.3.0(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)(tedious@20.0.0))
-    devDependencies:
-      '@nocobase/db':
-        specifier: workspace:*
-        version: link:../db
-      '@nocobase/db-testkit':
-        specifier: workspace:*
-        version: link:../db-testkit
-      '@nocobase/dev-config':
-        specifier: workspace:*
-        version: link:../../tools/dev-config
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.13.3
-      eslint:
-        specifier: 'catalog:'
-        version: 10.8.1(jiti@2.7.0)
-      tsx:
-        specifier: 'catalog:'
-        version: 4.23.12
-      typescript:
-        specifier: 'catalog:'
-        version: 6.0.3
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
-
-  packages/libs/db-kingbase:
-    dependencies:
-      knex:
-        specifier: 'catalog:'
-        version: 3.3.0(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)(tedious@20.0.0)
-      pg:
-        specifier: ^8.23.0
-        version: 8.23.0
-      pg-query-stream:
-        specifier: ^4.14.0
-        version: 4.17.0(pg@8.23.0)
-    devDependencies:
-      '@nocobase/db':
-        specifier: workspace:*
-        version: link:../db
-      '@nocobase/db-testkit':
-        specifier: workspace:*
-        version: link:../db-testkit
-      '@nocobase/dev-config':
-        specifier: workspace:*
-        version: link:../../tools/dev-config
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.13.3
-      eslint:
-        specifier: 'catalog:'
-        version: 10.8.1(jiti@2.7.0)
-      tsx:
-        specifier: 'catalog:'
-        version: 4.23.12
-      typescript:
-        specifier: 'catalog:'
-        version: 6.0.3
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
-
   packages/libs/db-mssql:
     dependencies:
       knex:
@@ -2892,40 +2811,6 @@ importers:
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
   packages/libs/db-mysql:
-    dependencies:
-      knex:
-        specifier: 'catalog:'
-        version: 3.3.0(mysql2@3.23.3(@types/node@24.13.3))(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)
-      mysql2:
-        specifier: ^3.23.3
-        version: 3.23.3(@types/node@24.13.3)
-    devDependencies:
-      '@nocobase/db':
-        specifier: workspace:*
-        version: link:../db
-      '@nocobase/db-testkit':
-        specifier: workspace:*
-        version: link:../db-testkit
-      '@nocobase/dev-config':
-        specifier: workspace:*
-        version: link:../../tools/dev-config
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.13.3
-      eslint:
-        specifier: 'catalog:'
-        version: 10.8.1(jiti@2.7.0)
-      tsx:
-        specifier: 'catalog:'
-        version: 4.23.12
-      typescript:
-        specifier: 'catalog:'
-        version: 6.0.3
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
-
-  packages/libs/db-oceanbase:
     dependencies:
       knex:
         specifier: 'catalog:'
@@ -3065,25 +2950,20 @@ importers:
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
   packages/libs/db-testing:
+    dependencies:
+      import-meta-resolve:
+        specifier: ^4.2.0
+        version: 4.2.0
     devDependencies:
       '@nocobase/db':
         specifier: workspace:*
         version: link:../db
-      '@nocobase/db-dameng':
-        specifier: workspace:*
-        version: link:../db-dameng
-      '@nocobase/db-kingbase':
-        specifier: workspace:*
-        version: link:../db-kingbase
       '@nocobase/db-mssql':
         specifier: workspace:*
         version: link:../db-mssql
       '@nocobase/db-mysql':
         specifier: workspace:*
         version: link:../db-mysql
-      '@nocobase/db-oceanbase':
-        specifier: workspace:*
-        version: link:../db-oceanbase
       '@nocobase/db-oracle':
         specifier: workspace:*
         version: link:../db-oracle
@@ -6204,21 +6084,12 @@ importers:
 
   packages/tools/app-testing:
     dependencies:
-      '@nocobase/db-dameng':
-        specifier: workspace:^
-        version: link:../../libs/db-dameng
-      '@nocobase/db-kingbase':
-        specifier: workspace:^
-        version: link:../../libs/db-kingbase
       '@nocobase/db-mssql':
         specifier: workspace:^
         version: link:../../libs/db-mssql
       '@nocobase/db-mysql':
         specifier: workspace:^
         version: link:../../libs/db-mysql
-      '@nocobase/db-oceanbase':
-        specifier: workspace:^
-        version: link:../../libs/db-oceanbase
       '@nocobase/db-oracle':
         specifier: workspace:^
         version: link:../../libs/db-oracle
@@ -11651,18 +11522,6 @@ packages:
     resolution: {integrity: sha512-WkrWp9GR4KXfKGYzOLmTuGVi1UWFfws377n9cc55/tb6DuqyF6pcQ5AbiHEshaDpY9v6oaSr2XCDidGmMwdzIA==}
     engines: {node: '>=8'}
 
-  dmdb@1.0.52452:
-    resolution: {integrity: sha512-X1NHOxcTEZs2JdkmiK+MWHNlrUf8Q4BWM/yHXEIUKX1tzoVVeDRavCb7oKymrWkHGk9VXUGNg52yKJzTQXvNlA==}
-    engines: {node: '>= 12'}
-    peerDependencies:
-      snappy: ^7.2.0
-      snappyjs: ^0.7.0
-    peerDependenciesMeta:
-      snappy:
-        optional: true
-      snappyjs:
-        optional: true
-
   docker-modem@5.0.7:
     resolution: {integrity: sha512-XJgGhoR/CLpqshm4d3L7rzH6t8NgDFUIIpztYlLHIApeJjMZKYJMz2zxPsYxnejq5h3ELYSw/RBsi3t5h7gNTA==}
     engines: {node: '>= 8.0'}
@@ -12787,10 +12646,6 @@ packages:
     resolution: {integrity: sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==}
     engines: {node: '>=0.10.0'}
 
-  iconv-lite@0.5.2:
-    resolution: {integrity: sha512-kERHXvpSaB4aU3eANwidg79K8FlrN77m8G9V+0vOR3HYaRifrlwMEpT7ZBJqLSEIHnEgJTHcWK82wwLwwKwtag==}
-    engines: {node: '>=0.10.0'}
-
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
     engines: {node: '>=0.10.0'}
@@ -13355,12 +13210,6 @@ packages:
   kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
     engines: {node: '>=6'}
-
-  knex-dm@1.0.52452:
-    resolution: {integrity: sha512-AwXMTcF0dyXTC5FM3RyHB5NRyQFJ9gnUB9ihQb8EkOV6yPter7w2dfYDsCycqaHme6Mo93M/TQSM5x52jcxUWA==}
-    engines: {node: '>=16'}
-    peerDependencies:
-      knex: ^3.1.0
 
   knex@3.3.0:
     resolution: {integrity: sha512-LgWl031hNuLv9Lhxdd9093zULa2aNcoP04Bk29e5NidgRcEr/T0rAr2WYi4BhjTiCDoQiRU56meUE5rppLKZzQ==}
@@ -22681,10 +22530,6 @@ snapshots:
     dependencies:
       path-type: 4.0.0
 
-  dmdb@1.0.52452:
-    dependencies:
-      iconv-lite: 0.5.2
-
   docker-modem@5.0.7(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
@@ -24360,10 +24205,6 @@ snapshots:
     dependencies:
       safer-buffer: 2.1.2
 
-  iconv-lite@0.5.2:
-    dependencies:
-      safer-buffer: 2.1.2
-
   iconv-lite@0.6.3:
     dependencies:
       safer-buffer: 2.1.2
@@ -24910,15 +24751,6 @@ snapshots:
   kleur@3.0.3: {}
 
   kleur@4.1.5: {}
-
-  knex-dm@1.0.52452(knex@3.3.0(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)(tedious@20.0.0)):
-    dependencies:
-      dmdb: 1.0.52452
-      knex: 3.3.0(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)(tedious@20.0.0)
-      lodash: 4.18.1
-    transitivePeerDependencies:
-      - snappy
-      - snappyjs
 
   knex@3.3.0(better-sqlite3@13.0.3)(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0):
     dependencies:

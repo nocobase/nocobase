@@ -205,10 +205,10 @@ test('git selection covers additions, deletion, renames in and out, and unusual 
     path.join(repo.cwd, 'packages/libs/db-postgres/move-out.ts'),
     path.join(repo.cwd, 'docs/moved-out.ts'),
   );
-  repo.write('packages/libs/db-kingbase/placeholder.ts');
+  repo.write('packages/libs/db-mssql/placeholder.ts');
   renameSync(
     path.join(repo.cwd, 'docs/move-in.ts'),
-    path.join(repo.cwd, 'packages/libs/db-kingbase/moved-in.ts'),
+    path.join(repo.cwd, 'packages/libs/db-mssql/moved-in.ts'),
   );
   repo.write('packages/libs/db-sqlite/空 格\nfile.ts');
   const headSha = repo.commit();
@@ -216,7 +216,7 @@ test('git selection covers additions, deletion, renames in and out, and unusual 
     'sqlite',
     'postgres',
     'mysql',
-    'kingbase',
+    'mssql',
   ]);
 });
 

@@ -126,6 +126,31 @@ describe('runConfigInit', () => {
     ]);
   });
 
+  it.each([
+    ['kingbase', 54321],
+    ['dameng', 5236],
+    ['oceanbase', 2881],
+  ] as const)(
+    'configures an installed %s driver without explicit registration',
+    async (dialect, port) => {
+      const { rootDir } = await createApplication({ drivers: [dialect] });
+      const result = await runConfigInit({ rootDir, dialect, environment: {} });
+      const config = parse(await readFile(result.configFile, 'utf8'));
+      expect(config.database.connections.main).toMatchObject({
+        dialect,
+        port,
+        schemaManagement: 'managed',
+      });
+      expect(config.database.drivers).toBeUndefined();
+      if (dialect === 'kingbase')
+        expect(config.database.connections.main.schema).toBe('public');
+      if (dialect === 'dameng') {
+        expect(config.database.connections.main.schema).toBeTruthy();
+        expect(config.database.connections.main.database).toBeUndefined();
+      }
+    },
+  );
+
   it('applies the selected dialect and leaves the other connections alone', async () => {
     const { rootDir } = await createApplication({
       drivers: ['sqlite', 'postgres'],
