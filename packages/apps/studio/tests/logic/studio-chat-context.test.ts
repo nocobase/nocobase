@@ -14,7 +14,7 @@ describe('bounded Studio location', () => {
   it.each([
     '/issues/12/runs/r1',
     '/projects/1/issues/12/runs/r1',
-    '/my-issues/owned/12/runs/r1',
+    '/my-issues/12/runs/r1',
   ])('prioritizes the deepest run in %s', (route) => {
     const result = studioContext(
       {

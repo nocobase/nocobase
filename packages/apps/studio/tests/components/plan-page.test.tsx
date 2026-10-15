@@ -109,7 +109,7 @@ function Where(): ReactElement {
   return <output data-testid='where'>{pathname + search}</output>;
 }
 
-function MyIssuesTab(): ReactElement {
+function MyIssuesList(): ReactElement {
   const { search } = useLocation();
   return (
     <IssueParentOutlet
@@ -117,10 +117,10 @@ function MyIssuesTab(): ReactElement {
         levels: [
           {
             label: 'My issues',
-            to: { pathname: '/my-issues/owned', search },
+            to: { pathname: '/my-issues', search },
           },
         ],
-        path: '/my-issues/owned',
+        path: '/my-issues',
         search,
       }}
     />
@@ -138,8 +138,8 @@ function renderAt(path: string): void {
         <Routes>
           <Route path='/issues/plans/:planId' element={<PlanPage />} />
           <Route path='/issues/:issueId/plans/:planId' element={<PlanPage />} />
-          {/* An issue opened over a tab of My issues: the tab declares itself to what opens over it. */}
-          <Route path='/my-issues/owned' element={<MyIssuesTab />}>
+          {/* An issue opened over My issues: the list declares itself to what opens over it. */}
+          <Route path='/my-issues' element={<MyIssuesList />}>
             <Route path=':issueId/plans/:planId' element={<PlanPage />} />
           </Route>
           <Route path='*' element={null} />
@@ -178,10 +178,10 @@ describe('plan links', () => {
     ).toBeNull();
     expect(
       issueBeneathPlan({
-        pathname: '/my-issues/owned/PM-12/plans/p1',
+        pathname: '/my-issues/PM-12/plans/p1',
         search: '?q=a',
       }),
-    ).toEqual({ pathname: '/my-issues/owned/PM-12', search: '?q=a' });
+    ).toEqual({ pathname: '/my-issues/PM-12', search: '?q=a' });
   });
 });
 
@@ -200,10 +200,10 @@ describe('the plan page', () => {
   });
 
   it('over an issue opened from My issues: trails through that list and returns to the issue under it', () => {
-    renderAt('/my-issues/owned/PM-12/plans/p1?q=export');
+    renderAt('/my-issues/PM-12/plans/p1?q=export');
     expect(levels()).toEqual(['My issues', 'PM-12', 'Assign the executor']);
     fireEvent.click(within(trail()).getByRole('link', { name: 'PM-12' }));
-    expect(where()).toBe('/my-issues/owned/PM-12?q=export');
+    expect(where()).toBe('/my-issues/PM-12?q=export');
   });
 
   it('on its own: trails through the issue it is about, linking to that issue rather than the list', () => {

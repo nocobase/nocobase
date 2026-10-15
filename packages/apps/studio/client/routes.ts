@@ -59,9 +59,9 @@ function renamed(
 /**
  * An issue's covering page (`pages/issues/detail`) with the plugin's "New sub-issue" dialog (`issueDetailChildRoutes`),
  * a plan over it and a run's transcript, declared under each list that opens issues: `/issues` (no `owner`, the
- * issue's own address), the tabs of `/my-issues` and a project's Issues tab, so the issue page's trail and Back follow
+ * issue's own address), `/my-issues` and a project's Issues tab, so the issue page's trail and Back follow
  * the list it was opened from and survive a refresh (`issues/detail/issue-parent.tsx`). Route names are unique, so
- * under another list each name is prefixed with `owner`: `pm-my-issues-owned-issue-detail`.
+ * under another list each name is prefixed with `owner`: `pm-my-issues-issue-detail`.
  */
 function issueDetailRoute(owner?: string): AppClientRouteDefinition {
   const name = (base: string): string =>
@@ -241,8 +241,19 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     breadcrumb: { title: 'navigation.followUps' },
     componentLoader: () => import('./pages/follow-ups/index.js'),
   },
+  ...(['owned', 'executing'] as const).map((role) => ({
+    name: `pm-my-issues-legacy-${role}`,
+    path: `/my-issues/${role}`,
+    auth: 'required' as const,
+    authz: {
+      resource: { type: 'page' as const, id: 'pm-my-issues' },
+      action: 'access',
+    },
+    componentLoader: () => import('./pages/my-issues/legacy.js'),
+    children: [issueDetailRoute(`pm-my-issues-legacy-${role}`)],
+  })),
   {
-    // The issues the viewer owns or executes (`pages/my-issues`), the list by default; `owned` and `executing` tabs.
+    // The issues the viewer owns or executes (`pages/my-issues`), one merged list.
     name: 'pm-my-issues',
     path: '/my-issues',
     auth: 'required',
@@ -254,20 +265,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     },
     breadcrumb: { title: 'navigation.myIssues' },
     componentLoader: () => import('./pages/my-issues/index.js'),
-    children: [
-      {
-        name: 'pm-my-issues-owned',
-        path: 'owned',
-        componentLoader: () => import('./pages/my-issues/owned.js'),
-        children: [issueDetailRoute('pm-my-issues-owned')],
-      },
-      {
-        name: 'pm-my-issues-executing',
-        path: 'executing',
-        componentLoader: () => import('./pages/my-issues/executing.js'),
-        children: [issueDetailRoute('pm-my-issues-executing')],
-      },
-    ],
+    children: [issueDetailRoute('pm-my-issues')],
   },
   {
     name: 'development',

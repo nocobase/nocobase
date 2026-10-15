@@ -87,7 +87,10 @@ export function useTaskList({
   const selected = findItem(groups, selectedParam);
   const selectedId = selected?.issue.id ?? null;
   // A task selected another way than from the list (the address, the toast's next task) keeps its place too.
-  if (selectedId && sticky?.id !== selectedId) {
+  if (
+    selectedId &&
+    (sticky?.id !== selectedId || sticky.followed !== selected?.followed)
+  ) {
     const placement = placementOf(groups, selectedId);
     // eslint-disable-next-line @eslint-react/set-state-in-effect -- Adjusts state while rendering a new selection, React's pattern for state derived from a changed prop; no effect runs here.
     if (placement) setSticky(placement);

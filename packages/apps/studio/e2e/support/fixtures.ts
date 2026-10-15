@@ -64,7 +64,7 @@ export const url = (path: string, target = server): string =>
   `${target.baseURL}${path.startsWith('/') ? path : `/${path}`}`;
 
 /**
- * Matches Studio's home, My tasks (`/my-issues/owned`), and the given query; the task its split view selects by itself
+ * Matches Studio's home, My tasks (`/my-issues`), and the given query; the task its split view selects by itself
  * (`issue`) is left out.
  */
 export const atHome =
@@ -74,7 +74,7 @@ export const atHome =
     params.delete('issue');
     const rest = params.toString();
     return (
-      address.pathname === new URL(url('/my-issues/owned')).pathname &&
+      address.pathname === new URL(url('/my-issues')).pathname &&
       (rest ? `?${rest}` : '') === search
     );
   };

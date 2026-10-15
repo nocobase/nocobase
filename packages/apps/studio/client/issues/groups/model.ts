@@ -20,6 +20,7 @@ export interface Placement {
   readonly id: string;
   readonly group: TaskGroupId;
   readonly index: number;
+  readonly followed: boolean;
 }
 
 export function listGroups(pages: readonly TaskGroupPage[]): ListGroup[] {
@@ -37,7 +38,13 @@ export function placementOf(
 ): Placement | null {
   for (const group of groups) {
     const index = group.items.findIndex((item) => item.issue.id === id);
-    if (index >= 0) return { id, group: group.group, index };
+    if (index >= 0)
+      return {
+        id,
+        group: group.group,
+        index,
+        followed: group.items[index].followed,
+      };
   }
   return null;
 }
@@ -53,17 +60,16 @@ export function keepPlacement(
 ): ListGroup[] {
   if (!sticky) return [...groups];
   const now = placementOf(groups, sticky.id);
-  // Following or unfollowing moves it at once: the person asked for exactly that.
-  if (
-    !now ||
-    now.group === sticky.group ||
-    now.group === 'follow' ||
-    sticky.group === 'follow'
-  )
-    return [...groups];
+  if (!now) return [...groups];
   const item = groups
     .find((group) => group.group === now.group)!
     .items.find((entry) => entry.issue.id === sticky.id)!;
+  // Only an actual follow preference change moves it immediately; status updates keep its placement.
+  if (
+    item.followed !== sticky.followed ||
+    (now.group === sticky.group && now.index === sticky.index)
+  )
+    return [...groups];
   const result = groups.map((group) =>
     group.group === now.group
       ? {

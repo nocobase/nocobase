@@ -1,3 +1,4 @@
+import { AgentWorkMark } from '../agent-work-mark.js';
 /**
  * The grouped task list of the split view and the phone (`split-view.tsx`, `phone-list.tsx`): each group a card whose
  * heading folds it and stays at the top while the list scrolls, "Waiting for you" the one warm card, then a row per task
@@ -133,14 +134,8 @@ export function TaskLine({
   if (wait) bits.push(<WaitChip key='wait' reason={wait} quiet />);
   else if (workingAgent)
     bits.push(
-      <span key='working' className='inline-flex min-w-0 items-center gap-1.5'>
-        <span
-          aria-hidden
-          className='size-1.5 shrink-0 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400'
-        />
-        <span className='truncate'>
-          {t('taskGroups.row.working', { name: workingAgent })}
-        </span>
+      <span key='working' className='min-w-0 truncate'>
+        <AgentWorkMark name={workingAgent} />
       </span>,
     );
   else if (issue.statusKey === 'blocked' && issue.blockedCount > 0)

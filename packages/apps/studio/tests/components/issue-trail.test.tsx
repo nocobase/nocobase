@@ -83,12 +83,12 @@ function Shell({
         <Routes>
           <Route path='/issues/:issueId' element={page} />
           <Route
-            path='/my-issues/owned'
+            path='/my-issues'
             element={
               <ListPage
-                path='/my-issues/owned'
+                path='/my-issues'
                 levels={(search) => [
-                  { label: 'My issues', to: `/my-issues/owned${search}` },
+                  { label: 'My issues', to: `/my-issues${search}` },
                 ]}
               />
             }
@@ -163,15 +163,15 @@ describe('IssueTrail', () => {
     expect(where()).toBe('/issues');
   });
 
-  it('leads an issue opened from My issues back to the tab, and its parent over the same tab', () => {
+  it('leads an issue opened from My issues back to the list, and its parent over the same list', () => {
     renderTrail({ identifier: 'PM-2', parent: PARENT }, [
-      '/my-issues/owned/i2?q=board',
+      '/my-issues/i2?q=board',
     ]);
     expect(levels()).toEqual(['My issues', 'PM-1', 'PM-2']);
     follow('PM-1');
-    expect(where()).toBe('/my-issues/owned/i1?q=board');
+    expect(where()).toBe('/my-issues/i1?q=board');
     follow('My issues');
-    expect(where()).toBe('/my-issues/owned?q=board');
+    expect(where()).toBe('/my-issues?q=board');
   });
 
   it("leads an issue opened from a project's Issues tab through the project", () => {
@@ -194,11 +194,11 @@ describe('IssueTrail', () => {
   });
 
   it('leads the identifier to the issue over the same list under a page beneath it by default', () => {
-    renderTrail({ identifier: 'PM-2', parent: null }, ['/my-issues/owned/i2'], {
+    renderTrail({ identifier: 'PM-2', parent: null }, ['/my-issues/i2'], {
       current: 'Plan',
     });
     expect(levels()).toEqual(['My issues', 'PM-2', 'Plan']);
     follow('PM-2');
-    expect(where()).toBe('/my-issues/owned/PM-2');
+    expect(where()).toBe('/my-issues/PM-2');
   });
 });

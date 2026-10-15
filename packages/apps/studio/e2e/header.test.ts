@@ -195,7 +195,7 @@ test.describe('back-office settings', () => {
       // The catch-all route sends it to the application's root, with or without the trailing slash.
       await expect
         .poll(() => new URL(page.url()).pathname)
-        .toBe(new URL(url('/my-issues/owned')).pathname);
+        .toBe(new URL(url('/my-issues')).pathname);
       await expect(
         page.getByRole('heading', { name: '我的任务', level: 1 }),
       ).toBeVisible();

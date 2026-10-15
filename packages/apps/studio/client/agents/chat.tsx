@@ -140,7 +140,7 @@ const intakeAgentSlot: IntakeAgentSlotFill = { Organize };
 // An issue's page at its own address and under the other lists that open it (`issueDetailRoute` in `routes.ts`).
 const ISSUE_PATHS = [
   '/issues/:issueId/*',
-  '/my-issues/:tab/:issueId/*',
+  '/my-issues/:issueId/*',
   '/projects/:projectId/issues/:issueId/*',
 ];
 const PROJECT_PATHS = ['/projects/:projectId/*'];

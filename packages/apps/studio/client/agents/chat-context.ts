@@ -29,7 +29,7 @@ function routeObject(path: string): PageContextRef | null {
   if (/\/plans\/[^/]+/u.test(path)) return null;
   const run = path.match(/\/runs\/([^/]+)/u);
   if (run) return { kind: 'run', id: run[1] ?? '' };
-  const issue = path.match(/\/(?:issues|my-issues\/[^/]+)\/([^/]+)/u);
+  const issue = path.match(/\/(?:issues|my-issues)\/([^/]+)/u);
   if (
     issue &&
     !['new', 'new-issue', 'intake', 'plans'].includes(issue[1] ?? '')

@@ -83,6 +83,7 @@ export interface AgentBoardQuery {
   readonly labelId?: string;
   readonly ownerUserId?: string;
   readonly executorId?: string;
+  readonly involvesUserId?: string;
 }
 
 /** A run on the issue as far as the viewer may see it: the details are left out of a run that does not involve them. */

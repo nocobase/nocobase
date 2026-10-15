@@ -224,14 +224,14 @@ The plugin seeds no roles: the application that assembles it seeds its own (the 
 
 | Path                                  | What it shows                                               |
 | ------------------------------------- | ----------------------------------------------------------- |
-| `/my-issues/owned`, `executing`       | The viewer's issues, as owner or executor                   |
+| `/my-issues`                          | The viewer's owned or executed issues, each once            |
 | `/issues` (`?view=board` or `list`)   | Every visible issue; filters, search and order in the URL   |
 | `/issues/new` (`?tab=ai` or `manual`) | The New issue dialog: AI draft (intake) or one issue        |
 | `/issues/new?tab=ai&job=:id`          | The AI draft tab following a request to AI                  |
 | `/issues/:id`, `/issues/plans/:id`    | One issue, by id or identifier; one plan, by its id         |
 | `/projects`, `/projects/new`          | Projects; a new one (a project's page is the application's) |
 
-As the old NocoProject had it, My issues has "I own" and "I execute" only, and the New issue dialog opens on its "AI
+My tasks combines owned and executed issues, and the New issue dialog opens on its "AI
 draft" tab (the last tab used is remembered in the browser): requirements typed or uploaded are split into a draft of
 issues, edited row by row and created together, after which the dialog closes. Its manual tab asks when the issue
 starts: "Start now" (`in_progress`) or "Later" (`backlog`), and preselects the default executor. Nothing asks "Start
