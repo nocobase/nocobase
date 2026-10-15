@@ -937,15 +937,10 @@ export function createGitFlow(deps: GitFlowDeps): GitFlow {
       const port = deps.inbox();
       if (!port) return;
       const conn = deps.projects().tx.read();
+      // Merged and closed pull requests settled their cards when stored; the sweep below only resolves leftovers.
       for (const { pr } of await pullRequestsOfIssue(conn, issueId))
-        await settleMergeCards(
-          port,
-          pr.id,
-          [issueId],
-          pr.state === 'merged' || pr.state === 'closed'
-            ? pr.state
-            : 'withdrawn',
-        );
+        if (pr.state === 'open')
+          await settleMergeCards(port, pr.id, [issueId], 'withdrawn');
       await settleIssueMergeCards(conn, port, issueId);
     },
   };

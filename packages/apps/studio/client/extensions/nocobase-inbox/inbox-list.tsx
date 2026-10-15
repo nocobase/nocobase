@@ -342,6 +342,7 @@ export function InboxList({
                       : t('inbox.views.all', { defaultValue: 'All' })}
                   {count > 0 || value !== 'all' ? (
                     <Badge
+                      data-size='sm'
                       variant={value === 'todo' ? 'outline' : 'secondary'}
                       className='h-4 px-1.5 tabular-nums'
                       aria-label={

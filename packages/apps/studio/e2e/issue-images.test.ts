@@ -87,7 +87,8 @@ test('pasted screenshots survive issue creation and description edits', async ({
     exact: true,
   });
   await expect(detailEditor.locator('img[src]')).toHaveCount(2);
-  await detailEditor.click();
+  // Click the text's corner: the theme's spacing can put an image at the editor's centre, and a click there selects it.
+  await detailEditor.click({ position: { x: 4, y: 4 } });
   await page.keyboard.press('ControlOrMeta+End');
   await page.keyboard.type(' Verified after reopening.');
   if (output)

@@ -82,7 +82,7 @@ describe('application shell', () => {
       within(appNav()).getByRole('link', { name: 'Home' }),
     ).toHaveAttribute('data-active');
     expect(within(appNav()).getByRole('link', { name: 'Home' })).toHaveClass(
-      'data-active:bg-sidebar-accent',
+      'data-active:bg-sidebar-primary',
       'focus-visible:ring-2',
     );
     // The account menu exposes user details in its panel without a native tooltip.

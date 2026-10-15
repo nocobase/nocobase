@@ -79,7 +79,9 @@ export function Steps({
             >
               <span className='min-w-0 flex-1 truncate'>{step.title}</span>
               {step.state ? (
-                <Badge variant='secondary'>{step.state}</Badge>
+                <Badge data-size='sm' variant='secondary'>
+                  {step.state}
+                </Badge>
               ) : null}
               <ChevronRightIcon
                 className='size-4 shrink-0 text-muted-foreground'

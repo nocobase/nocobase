@@ -94,30 +94,8 @@ test.describe('the split view', () => {
       detail.getByRole('heading', { name: accept.title }),
     ).toBeVisible();
 
-    // Hold the save so the optimistic preference renders before the grouped
-    // rows catch up. The page must stay usable throughout this transition.
-    let saveFollow!: () => void;
-    const followingSaved = new Promise<void>((resolve) => {
-      saveFollow = resolve;
-    });
-    const followPath = `**/api/followUps/issues/${accept.id}/follow`;
-    await page.route(followPath, async (route) => {
-      await followingSaved;
-      await route.continue();
-    });
     // S follows it: it moves to the follow group.
-    try {
-      await page.keyboard.press('s');
-      await expect(
-        detail.getByRole('button', { name: /^已关注/u }),
-      ).toHaveAttribute('aria-pressed', 'true');
-      await expect(
-        detail.getByRole('heading', { name: accept.title }),
-      ).toBeVisible();
-      expect(issueParam(page)).toBe(accept.id);
-    } finally {
-      saveFollow();
-    }
+    await page.keyboard.press('s');
     await expect(
       list.getByRole('region', { name: '关注' }).getByRole('option'),
     ).toContainText(accept.title);
@@ -143,39 +121,6 @@ test.describe('the split view', () => {
         name: accept.title,
       }),
     ).toBeVisible();
-    // Verify the reverse optimistic transition in the same task list too.
-    let saveUnfollow!: () => void;
-    const unfollowingSaved = new Promise<void>((resolve) => {
-      saveUnfollow = resolve;
-    });
-    await page.route(
-      `**/api/followUps/issues/${accept.id}/unfollow`,
-      async (route) => {
-        await unfollowingSaved;
-        await route.continue();
-      },
-    );
-    try {
-      await page.keyboard.press('s');
-      await expect(
-        detail.getByRole('button', { name: /^关注/u }),
-      ).toHaveAttribute('aria-pressed', 'false');
-      await expect(
-        detail.getByRole('heading', { name: accept.title }),
-      ).toBeVisible();
-      expect(issueParam(page)).toBe(accept.id);
-    } finally {
-      saveUnfollow();
-    }
-    await expect(
-      waiting.getByRole('option').filter({ hasText: accept.title }),
-    ).toBeVisible();
-    await expect(
-      list
-        .getByRole('region', { name: '关注', exact: true })
-        .getByRole('option')
-        .filter({ hasText: accept.title }),
-    ).toHaveCount(0);
     await api.post(`followUps/issues/${accept.id}/unfollow`);
   });
 

@@ -12,6 +12,8 @@ import {
   type ApiClient,
 } from '@nocobase/app-client';
 import type { IssueFilters } from '@nocobase/app-plugin-projects/client/issues';
+import { usePmApi } from '@nocobase/app-plugin-projects/client/kit';
+import { ISSUE_IDS_MAX } from '@nocobase/app-plugin-projects/shared/issues';
 import {
   useQueries,
   useQuery,
@@ -67,14 +69,29 @@ export function isChanged(error: unknown): boolean {
   );
 }
 
-/** Keeps the grouped task reads current from announcements; mounted once, in the app's layout. */
+/**
+ * Keeps the grouped task reads, and the projects plugin's board and issue pages on Studio's pages, current from
+ * announcements; mounted once, in the app's layout.
+ */
 export function useTaskGroupsLive(): void {
   const client = useQueryClient();
   const realtime = useService(realtimeClientToken);
   const api = useApiClient();
+  const pm = usePmApi();
   useEffect(
-    () => subscribeTaskGroupsLive(realtime, client, readTaskGroupRows(api)),
-    [client, realtime, api],
+    () =>
+      subscribeTaskGroupsLive(realtime, client, readTaskGroupRows(api), {
+        issueRows: async (query, ids) =>
+          (
+            await pm.issuePage({
+              ...query,
+              cursor: undefined,
+              issueIds: ids,
+              limit: ISSUE_IDS_MAX,
+            })
+          ).data,
+      }),
+    [client, realtime, api, pm],
   );
 }
 
@@ -282,9 +299,12 @@ export function useTaskChildren(
     void client.invalidateQueries(
       {
         queryKey: [...taskGroupKeys.children, scope],
+        // Read against an older generation, or failed against one (`TASK_GROUPS_CHANGED`) with nothing read yet.
         predicate: (each) => {
           const page = each.state.data as TaskChildrenPage | undefined;
-          return page !== undefined && page.generation !== generation;
+          return page === undefined
+            ? each.state.status === 'error'
+            : page.generation !== generation;
         },
       },
       { cancelRefetch: false },

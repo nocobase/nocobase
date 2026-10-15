@@ -80,6 +80,7 @@ export function WebhookSection({
           {t('studioGit.webhook.title')}
         </span>
         <Badge
+          data-size='sm'
           variant='outline'
           className={cn(
             'gap-1',

@@ -321,11 +321,12 @@ function HostRow({
                   {` (${authorization.email})`}
                 </span>
               </span>
-              <Badge variant='secondary'>
+              <Badge data-size='sm' variant='secondary'>
                 {t(`studioGit.personal.method.${authorization.method}`)}
               </Badge>
               {expiry === 'expired' ? (
                 <Badge
+                  data-size='sm'
                   variant='destructive'
                   data-expiry={expiry}
                   title={t('studioGit.personal.expiredHint')}
@@ -334,6 +335,7 @@ function HostRow({
                 </Badge>
               ) : expiry && authorization.expiresAt ? (
                 <Badge
+                  data-size='sm'
                   variant='outline'
                   data-expiry={expiry}
                   className={

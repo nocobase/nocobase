@@ -3,7 +3,13 @@ import { I18nProvider } from '@nocobase/i18n/client';
 import locales from '../../client/locales/index.js';
 import { themePresets } from '../../client/theme/theme-presets';
 import { initializeTheme } from '../../client/theme/theme-preferences';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -32,6 +38,15 @@ function renderClientConfig(
   document.head.append(element);
 }
 
+/**
+ * Opens the appearance popover from the keyboard. Its trigger opens on hover, and a pointer press landing more than
+ * Base UI's 500 ms patient-click threshold after that, as on a loaded runner, closes it again.
+ */
+async function openAppearance(name = 'Appearance'): Promise<void> {
+  act(() => screen.getByRole('button', { name }).focus());
+  await userEvent.keyboard('{Enter}');
+}
+
 describe('app client theme', () => {
   it.each([
     ['en-US', 'Appearance', 'Spacious'],
@@ -53,13 +68,29 @@ describe('app client theme', () => {
           </AppThemeProvider>
         </I18nProvider>,
       );
-      await userEvent.click(screen.getByRole('button', { name: appearance }));
-      const option = screen.getByRole('radio', { name: label });
+      await openAppearance(appearance);
+      const option = await screen.findByRole('radio', { name: label });
       await userEvent.click(option);
       expect(option).toBeChecked();
       expect(localStorage.getItem('nocobase:crm:theme:preset')).toBe('default');
     },
   );
+
+  it('changes presets with arrow keys and returns focus on Escape', async () => {
+    render(
+      <AppThemeProvider>
+        <ThemeSettings />
+      </AppThemeProvider>,
+    );
+    await openAppearance();
+    const compact = await screen.findByRole('radio', { name: 'Compact' });
+    act(() => compact.focus());
+    await userEvent.keyboard('{ArrowRight}');
+    expect(screen.getByRole('radio', { name: 'Default' })).toBeChecked();
+    expect(localStorage.getItem('nocobase:crm:theme:preset')).toBe('default');
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByRole('button', { name: 'Appearance' })).toHaveFocus();
+  });
 
   it('falls back from the removed Ant Design preset without changing mode', async () => {
     localStorage.setItem('nocobase:crm:theme:preset', 'ant-design');
@@ -69,11 +100,11 @@ describe('app client theme', () => {
         <ThemeSettings />
       </AppThemeProvider>,
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Appearance' }));
+    await openAppearance();
     expect(
       screen.queryByRole('radio', { name: 'Ant-design' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Compact' })).toBeChecked();
+    expect(await screen.findByRole('radio', { name: 'Compact' })).toBeChecked();
     expect(document.documentElement).toHaveAttribute('data-theme', 'compact');
     expect(document.documentElement).toHaveClass('light');
   });
@@ -84,12 +115,14 @@ describe('app client theme', () => {
         <ThemeSettings />
       </AppThemeProvider>,
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Appearance' }));
+    await openAppearance();
     expect(
       screen.queryByRole('radio', { name: 'Ocean' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Compact' })).toBeChecked();
-    expect(screen.getByRole('radio', { name: 'Default' })).toBeInTheDocument();
+    expect(await screen.findByRole('radio', { name: 'Compact' })).toBeChecked();
+    expect(
+      await screen.findByRole('radio', { name: 'Default' }),
+    ).toBeInTheDocument();
     expect(document.documentElement).toHaveAttribute('data-theme', 'compact');
   });
 
@@ -185,9 +218,9 @@ describe('app client theme', () => {
           <ThemeSettings />
         </AppThemeProvider>,
       );
-      await userEvent.click(screen.getByRole('button', { name: 'Appearance' }));
+      await openAppearance();
       expect(
-        screen.getByRole('radio', {
+        await screen.findByRole('radio', {
           name: expected === 'compact' ? 'Compact' : 'Default',
         }),
       ).toBeChecked();
@@ -301,14 +334,14 @@ describe('app client theme', () => {
       </AppThemeProvider>,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'Appearance' }));
+    await openAppearance();
     await userEvent.click(
       await screen.findByRole('radio', { name: 'Compact' }),
     );
     expect(document.documentElement).toHaveAttribute('data-theme', 'compact');
     expect(document.documentElement).toHaveClass('dark');
     expect(localStorage.getItem('nocobase:crm:theme:preset')).toBe('compact');
-    await userEvent.click(screen.getByRole('radio', { name: 'Light' }));
+    await userEvent.click(await screen.findByRole('radio', { name: 'Light' }));
     expect(document.documentElement).toHaveClass('light');
     expect(document.documentElement).toHaveAttribute('data-theme', 'compact');
     fireEvent(
@@ -362,9 +395,11 @@ describe('app client theme', () => {
         <ThemeSettings />
       </AppThemeProvider>,
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Appearance' }));
-    await userEvent.click(screen.getByRole('radio', { name: 'Default' }));
-    await userEvent.click(screen.getByRole('radio', { name: 'Light' }));
+    await openAppearance();
+    await userEvent.click(
+      await screen.findByRole('radio', { name: 'Default' }),
+    );
+    await userEvent.click(await screen.findByRole('radio', { name: 'Light' }));
     expect(document.documentElement).toHaveAttribute('data-theme', 'default');
     expect(document.documentElement).toHaveClass('light');
   });
@@ -375,8 +410,10 @@ describe('app client theme', () => {
         <ThemeSettings />
       </AppThemeProvider>,
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Appearance' }));
-    await userEvent.click(screen.getByRole('radio', { name: 'Default' }));
+    await openAppearance();
+    await userEvent.click(
+      await screen.findByRole('radio', { name: 'Default' }),
+    );
     fireEvent(
       window,
       new StorageEvent('storage', {
@@ -401,7 +438,7 @@ describe('app client theme', () => {
       }),
     );
     await waitFor(() => expect(document.documentElement).toHaveClass('dark'));
-    expect(screen.getByRole('radio', { name: 'System' })).toBeChecked();
+    expect(await screen.findByRole('radio', { name: 'System' })).toBeChecked();
   });
 });
 

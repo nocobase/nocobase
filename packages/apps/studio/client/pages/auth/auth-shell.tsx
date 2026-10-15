@@ -276,7 +276,7 @@ function EventBody({
     case 'release':
       return (
         <div className='flex items-center gap-2'>
-          <Badge variant='outline' className='gap-1'>
+          <Badge data-size='sm' variant='outline' className='gap-1'>
             <Rocket aria-hidden='true' />
             v1.4.0
           </Badge>
@@ -358,7 +358,7 @@ function ActivityTimeline(): ReactElement {
   return (
     <div className='flex min-h-0 flex-1 flex-col gap-8 px-10 py-12'>
       <header className='space-y-3'>
-        <Badge variant='outline' className='gap-1.5'>
+        <Badge data-size='sm' variant='outline' className='gap-1.5'>
           <span className='relative flex size-1.5'>
             <span className='absolute inset-0 animate-ping rounded-full bg-primary opacity-60 motion-reduce:animate-none' />
             <span className='relative size-1.5 rounded-full bg-primary' />

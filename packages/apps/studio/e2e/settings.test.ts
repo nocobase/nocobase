@@ -140,6 +140,10 @@ test.describe('settings', () => {
       .getByRole('region', { name: '标签' })
       .getByRole('row', { name: new RegExp(`^${renamed} `) });
     await expect(renamedRow).toBeVisible();
+    // The rename's toast sits bottom right, and the theme's taller rows can put this row under it; a pointer resting
+    // on a toast keeps it open, so move the pointer away and let it close.
+    await page.mouse.move(0, 0);
+    await expect(page.locator('[data-slot="toast"]')).toHaveCount(0);
 
     await renamedRow.getByRole('button', { name: `${renamed} 的操作` }).click();
     await page.getByRole('menuitem', { name: '删除标签' }).click();

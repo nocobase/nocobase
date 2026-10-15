@@ -402,7 +402,9 @@ export function TemplateRepoChoice({
           <LayoutTemplateIcon className='size-4 text-muted-foreground' />
           <span className='font-mono'>{value}</span>
           {chosen?.private ? (
-            <Badge variant='outline'>{words.private}</Badge>
+            <Badge data-size='sm' variant='outline'>
+              {words.private}
+            </Badge>
           ) : null}
           {chosenCheck?.state === 'checking' ? (
             <Loader2Icon
@@ -518,7 +520,9 @@ export function TemplateRepoChoice({
                         </span>
                       </span>
                       {repo.private ? (
-                        <Badge variant='outline'>{words.private}</Badge>
+                        <Badge data-size='sm' variant='outline'>
+                          {words.private}
+                        </Badge>
                       ) : null}
                     </CommandItem>
                   ))}

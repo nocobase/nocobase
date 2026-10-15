@@ -266,7 +266,7 @@ export function KanbanProvider<T extends KanbanItem, C extends KanbanColumn>({
       >
         <div
           className={cn(
-            'flex size-full min-h-0 gap-3 overflow-x-auto',
+            'scroll-shown flex size-full min-h-0 gap-3 overflow-x-auto',
             className,
           )}
         >

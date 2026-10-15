@@ -177,6 +177,7 @@ function SourceTitle({
       })}
       {connection.demo ? (
         <Badge
+          data-size='sm'
           variant='secondary'
           data-git-demo
           title={t('studioGit.connections.demoHint')}
@@ -345,7 +346,7 @@ function SourceCard({
         <CardHeader>
           <CardTitle className='flex flex-wrap items-center gap-2'>
             <SourceTitle connection={connection} name={connection.name} />
-            <Badge variant='outline'>
+            <Badge data-size='sm' variant='outline'>
               {t('studioGit.connections.kind.token')}
             </Badge>
           </CardTitle>
@@ -412,8 +413,10 @@ function SourceCard({
       <CardHeader>
         <CardTitle className='flex flex-wrap items-center gap-2'>
           <SourceTitle connection={lead} name={lead.name} />
-          <Badge variant='outline'>{t('studioGit.connections.kind.app')}</Badge>
-          <Badge variant='secondary'>
+          <Badge data-size='sm' variant='outline'>
+            {t('studioGit.connections.kind.app')}
+          </Badge>
+          <Badge data-size='sm' variant='secondary'>
             {t('studioGit.connections.installations', {
               count: installations.length,
             })}
@@ -645,6 +648,7 @@ function StateBadge({
   const { t } = useTranslation();
   return (
     <Badge
+      data-size='sm'
       variant='outline'
       data-state={state}
       title={t(`studioGit.connections.stateHint.${state}`)}

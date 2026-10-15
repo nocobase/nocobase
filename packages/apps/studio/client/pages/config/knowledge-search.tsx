@@ -249,7 +249,7 @@ function StatusCard({
           icon={<CircleCheck className='size-4' />}
           label={t('knowledge.searchSettings.status.keyword')}
           state={
-            <Badge variant='secondary'>
+            <Badge data-size='sm' variant='secondary'>
               {t('knowledge.searchSettings.status.available')}
             </Badge>
           }
@@ -261,6 +261,7 @@ function StatusCard({
           label={t('knowledge.searchSettings.status.semantic')}
           state={
             <Badge
+              data-size='sm'
               variant={
                 state === 'available'
                   ? 'secondary'

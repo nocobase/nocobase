@@ -1,15 +1,15 @@
 import { Check, Monitor, Moon, Palette, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useTranslation } from '@nocobase/i18n/client';
-import type { ReactElement } from 'react';
+import { useId, type ReactElement } from 'react';
 import { Button } from '@/components/ui/button';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
   PopoverTitle,
 } from '@/components/ui/popover';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from 'cn';
 import { useThemePreset } from './theme-context';
 import { themePresets } from './theme-presets';
@@ -24,6 +24,7 @@ export function ThemeSettings(): ReactElement {
   const { theme, setTheme } = useTheme();
   const { preset, setPreset } = useThemePreset();
   const { t } = useTranslation();
+  const id = useId();
   const title = t('appearance.title', { defaultValue: 'Appearance' });
   return (
     <Popover>
@@ -34,12 +35,12 @@ export function ThemeSettings(): ReactElement {
           <Button
             aria-label={title}
             size='icon'
-            variant='ghost'
-            className='text-muted-foreground hover:text-foreground'
+            variant='outline'
+            className='size-10 rounded-xl border-border bg-background/60 hover:bg-accent/50'
           />
         }
       >
-        <Palette aria-hidden='true' />
+        <Palette aria-hidden='true' className='size-5' />
       </PopoverTrigger>
       {/* Keep the panel width independent of density; its content still uses theme tokens. */}
       <PopoverContent
@@ -57,8 +58,10 @@ export function ThemeSettings(): ReactElement {
             {t('appearance.mode', { defaultValue: 'Color mode' })}
           </legend>
           <RadioGroup
-            value={theme ?? null}
-            onValueChange={(mode) => setTheme(String(mode))}
+            name={id + '-mode'}
+            value={theme}
+            onValueChange={(value) => setTheme(String(value))}
+            aria-label={t('appearance.mode', { defaultValue: 'Color mode' })}
             className='grid-cols-3 gap-1 rounded-lg bg-muted/70 p-1'
           >
             {COLOR_MODES.map(({ id: mode, icon: ModeIcon }) => {
@@ -67,13 +70,15 @@ export function ThemeSettings(): ReactElement {
                 <label
                   key={mode}
                   className={cn(
-                    'relative flex min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors select-none has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring',
+                    'relative flex min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors select-none',
                     isSelected
                       ? 'bg-background text-foreground shadow-xs'
                       : 'text-muted-foreground hover:bg-background/40 hover:text-foreground',
                   )}
                 >
-                  <RadioGroupItem value={mode} className='sr-only' />
+                  {/* `absolute` over the primitive's `relative`, which would keep
+                      the hidden radio in the row and push the words aside. */}
+                  <RadioGroupItem value={mode} className='absolute sr-only' />
                   <ModeIcon aria-hidden='true' className='size-3.5 shrink-0' />
                   <span className='whitespace-nowrap'>
                     {t('appearance.' + mode, {
@@ -91,8 +96,13 @@ export function ThemeSettings(): ReactElement {
             {t('appearance.preset', { defaultValue: 'Theme' })}
           </legend>
           <RadioGroup
+            name={id + '-preset'}
             value={preset}
-            onValueChange={(next) => setPreset(next as typeof preset)}
+            onValueChange={(value) => {
+              const selected = themePresets.find((item) => item.id === value);
+              if (selected) setPreset(selected.id);
+            }}
+            aria-label={t('appearance.preset', { defaultValue: 'Theme' })}
             className='grid-cols-2 gap-2.5'
           >
             {themePresets.map((item) => {
@@ -101,18 +111,21 @@ export function ThemeSettings(): ReactElement {
                 <label
                   key={item.id}
                   className={cn(
-                    'group relative flex cursor-pointer flex-col rounded-xl border p-2 text-left transition-all select-none has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring',
+                    'group relative flex cursor-pointer flex-col rounded-xl border p-2 text-left transition-all select-none',
                     isSelected
                       ? 'border-primary ring-2 ring-primary/20 bg-primary/5 shadow-xs'
-                      : 'border-border/70 hover:border-border hover:bg-muted/30',
+                      : 'border-border hover:bg-muted/30',
                   )}
                 >
-                  <RadioGroupItem value={item.id} className='sr-only' />
+                  <RadioGroupItem
+                    value={item.id}
+                    className='absolute sr-only'
+                  />
                   <div className='mb-2 h-16 w-full'>
                     <div
                       aria-hidden='true'
                       data-theme={item.id}
-                      className='theme-preview relative flex h-full overflow-hidden rounded-lg border border-border/80 bg-background shadow-2xs'
+                      className='theme-preview relative flex h-full overflow-hidden rounded-lg border border-border bg-background shadow-2xs'
                     >
                       {/* Mini Sidebar */}
                       <div className='flex w-6 flex-col gap-1 border-r border-sidebar-border/50 bg-sidebar p-1'>

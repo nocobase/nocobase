@@ -144,22 +144,6 @@ export function useFollowIssue(
           ),
         });
       }
-      // The task lists hand their `following` to the follow star: shown at once there too, read back on settling.
-      for (const list of client
-        .getQueryCache()
-        .findAll({ queryKey: taskGroupKeys.lists }))
-        client.setQueryData<TaskGroups>(list.queryKey, (groups) =>
-          groups
-            ? {
-                ...groups,
-                following: follow
-                  ? groups.following.includes(issueId)
-                    ? groups.following
-                    : [...groups.following, issueId]
-                  : groups.following.filter((id) => id !== issueId),
-              }
-            : groups,
-        );
       return { previous, previousFollowing };
     },
     onError: (error, _variables, context) => {

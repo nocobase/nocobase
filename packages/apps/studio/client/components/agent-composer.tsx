@@ -280,6 +280,7 @@ export function ComposerContextChips({
             data-chip={chip.key}
           >
             <Badge
+              data-size='sm'
               variant='secondary'
               data-tone={pinned ? 'blue' : 'grey'}
               className={cn(
