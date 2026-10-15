@@ -1,5 +1,25 @@
 # @nocobase/db
 
+## 1.0.0-beta.20
+
+### Patch Changes
+
+- 69e212c: Move KingbaseES, Dameng and OceanBase driver ownership to NocoBase Pro while preserving optional peer dependencies, automatic loading and CLI configuration support. Install the selected driver through the Pro registry in the application's production dependencies and rebuild deployments; explicit driver registration remains optional. Test fixtures resolve external dialect provisioners from the consuming project.
+- 943a9a8: Fix MySQL installation of the agents and releases plugins by removing the unused directory/status index and limiting archive artifact keys to 172 characters while preserving full-value uniqueness. Add a Collection builder inspection method and forward migrations to converge existing installations without truncating data; oversized legacy artifact keys stop the upgrade before any column or index change. Rebuild the existing artifact-key unique index within the migration transaction on SQL Server so indexed legacy columns can be shortened while retaining uniqueness, nullable behavior and the actual index name under custom naming configurations.
+
+  This fix edits the released migrations `202610020003_ag_create_runs` and `202610020001_rel_create_tables` because their oversized indexes prevent fresh MySQL installations from reaching a later repair migration. Existing installations should expect checksum warnings on the next `nocobase db apply`; installations using `onChecksumMismatch: error` stop instead. After reviewing these exact changes, use `nocobase db repair --dry-run` and then `nocobase db repair` to acknowledge the new checksums, followed by `nocobase db apply` to perform the forward schema changes. Repairing checksums alone does not upgrade the schema. The forward corrections are irreversible because restoring the old indexes would make MySQL installations invalid again. See the plugins' `docs/mysql-installation-upgrade.md` for the upgrade and failed-installation recovery procedure.
+
+- 943a9a8: Preserve compiler-generated index and constraint names in standalone Collection Builder definitions so inspection reflects subsequent drops and recreations. Keep existing names across Collection renames and honor naming overrides without modifying caller inputs or dry-run state.
+- 9b946f4: Reuse validated Collection naming metadata across database transactions after checking a transactional version marker, avoiding repeated full metadata reads while preserving transaction-local physical schema inspection, savepoint isolation, and cache invalidation.
+
+  Keep transaction read views out of the shared cache, revoke cache reuse for transactions spanning explicit invalidation, and preserve metadata conflict errors for concurrent insertions across a parent transaction and its nested savepoints. Check current metadata revisions even when a supplied transaction retains an older repeatable-read snapshot.
+
+  Keep locking revision reads at the top SQL level so metadata writes also work on Oracle.
+
+  Limit cache table name prefixes by UTF-8 bytes so multibyte custom metadata table names initialize correctly on PostgreSQL.
+
+  Document and verify the Database Explorer initialization boundary for metadata and cache-version bookkeeping tables.
+
 ## 1.0.0-beta.19
 
 ### Patch Changes

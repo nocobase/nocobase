@@ -143,6 +143,7 @@ export async function blockedCounts(
   conn: DatabaseConnection,
   catalogs: Catalogs,
   issues: readonly Issue[],
+  readableIds?: ReadonlySet<string>,
 ): Promise<Map<string, number>> {
   const counts = new Map<string, number>(issues.map((issue) => [issue.id, 0]));
   if (issues.length === 0) return counts;
@@ -170,7 +171,12 @@ export async function blockedCounts(
   };
   for (const edge of edges) {
     const target = targets.get(edge.dependsOnIssueId);
-    if (target && target.id !== edge.issueId && (await isOpen(target)))
+    if (
+      target &&
+      (!readableIds || readableIds.has(target.id)) &&
+      target.id !== edge.issueId &&
+      (await isOpen(target))
+    )
       counts.set(edge.issueId, (counts.get(edge.issueId) ?? 0) + 1);
   }
   const staged = issues.filter(
@@ -183,7 +189,10 @@ export async function blockedCounts(
     );
     for (const issue of staged)
       for (const sibling of earlierSiblings(issue, siblings))
-        if (await isOpen(sibling))
+        if (
+          (!readableIds || readableIds.has(sibling.id)) &&
+          (await isOpen(sibling))
+        )
           counts.set(issue.id, (counts.get(issue.id) ?? 0) + 1);
   }
   return counts;

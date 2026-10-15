@@ -15,7 +15,7 @@ import { cn } from 'cn';
 
 import type {
   DashboardProject,
-  DashboardReport,
+  DashboardProjects,
 } from '../../../shared/reports.js';
 import {
   formatDuration,
@@ -25,6 +25,7 @@ import {
 } from './model.js';
 import {
   CardEmpty,
+  CardError,
   DashboardCard,
   ListSkeleton,
   ViewAllLink,
@@ -34,7 +35,7 @@ import { useFormatLocale } from './use-format-locale.js';
 export function ByProject({
   report,
 }: {
-  readonly report: UseQueryResult<DashboardReport>;
+  readonly report: UseQueryResult<DashboardProjects>;
 }): ReactElement | null {
   const { t } = useTranslation();
   const locale = useFormatLocale();
@@ -119,8 +120,6 @@ export function ByProject({
     [t, locale],
   );
   const data = report.data;
-  // The headline figures show a failure once for the whole report.
-  if (report.isError && !data) return null;
   if (data && !data.subjects) return null;
   return (
     <DashboardCard
@@ -129,7 +128,14 @@ export function ByProject({
       action={<ViewAllLink to='/projects' />}
     >
       {!data ? (
-        <ListSkeleton rows={4} />
+        report.isError ? (
+          <CardError
+            error={report.error}
+            onRetry={() => void report.refetch()}
+          />
+        ) : (
+          <ListSkeleton rows={4} />
+        )
       ) : data.projects.length === 0 ? (
         <CardEmpty
           icon={FolderKanbanIcon}

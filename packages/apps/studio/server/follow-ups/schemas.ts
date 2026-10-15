@@ -103,5 +103,9 @@ export const FollowingStateSchema: z.ZodType<FollowingState> = z
         'The followed issues in order: the chosen ones, or by default the caller’s blocked and in-review issues, newest first.',
     }),
     max: z.number().int().meta({ description: 'The most issues one follows.' }),
+    stored: z.boolean().meta({
+      description:
+        'Whether the caller chose them; until then `issueIds` is the default list.',
+    }),
   })
   .meta({ ref: 'StudioFollowingState' });

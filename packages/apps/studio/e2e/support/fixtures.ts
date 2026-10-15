@@ -63,12 +63,21 @@ const requestServers = new WeakMap<APIRequestContext, ServerState>();
 export const url = (path: string, target = server): string =>
   `${target.baseURL}${path.startsWith('/') ? path : `/${path}`}`;
 
-/** Matches Studio's default inbox page and the given query. */
-export const atInbox =
+/**
+ * Matches Studio's home, My tasks (`/my-issues/owned`), and the given query; the task its split view selects by itself
+ * (`issue`) is left out.
+ */
+export const atHome =
   (search = '') =>
-  (address: URL): boolean =>
-    address.pathname === new URL(url('/inbox')).pathname &&
-    address.search === search;
+  (address: URL): boolean => {
+    const params = new URLSearchParams(address.search);
+    params.delete('issue');
+    const rest = params.toString();
+    return (
+      address.pathname === new URL(url('/my-issues/owned')).pathname &&
+      (rest ? `?${rest}` : '') === search
+    );
+  };
 
 /**
  * Better Auth and the API refuse a write without the application's own Origin. Each call takes a connection of its

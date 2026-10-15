@@ -14,6 +14,7 @@ import { useMemo, useRef, type FocusEvent, type ReactElement } from 'react';
 
 import { PendingAttachments } from '@/components/attachment-list';
 import { CommentComposer } from '@/components/comment-thread';
+import type { ComposerSession } from '@/components/composer-session';
 
 import { useIssuePageWording } from '../detail/labels.js';
 import { MentionMembersLoadError } from '../detail/mention-members-load-error.js';
@@ -21,8 +22,11 @@ import { useIssueConversation } from './conversation-state.js';
 
 export function IssueComposer({
   foldable = false,
+  session,
   className,
 }: {
+  /** Keeps the draft's text outside the composer, one per task (the split view's `useTaskDraft`). */
+  readonly session?: ComposerSession;
   /** Starts as a slim bar that opens the composer when tapped, and folds again once sent or left empty; for a phone. */
   readonly foldable?: boolean;
   readonly className?: string;
@@ -113,6 +117,7 @@ export function IssueComposer({
           replyTo ? (replyTo.authorName ?? appT('common.unknown')) : null
         }
         onCancelReply={() => setReplyTo(null)}
+        {...(session ? { session } : {})}
         {...(modes ? { modes } : {})}
         onMentionSearch={conversation.searchMentions}
         mentionSearchRevision={conversation.mentionSearchRevision}

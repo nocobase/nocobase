@@ -16,6 +16,7 @@ const enUS = {
     sessionNotFound: 'This session does not exist, or it is not yours.',
   },
   list: {
+    expand: 'Show sessions',
     label: 'Sessions',
     title: 'My agents',
     archived: 'Archived',
@@ -67,6 +68,7 @@ const enUS = {
     left: '{{keys}} left in {{status}}',
     separator: ', ',
     comma: ', ',
+    waiting: 'Needs you {{count}}',
     unknown: 'Unknown',
   },
   newSession: {
@@ -125,6 +127,7 @@ const enUS = {
     noProject: 'No project',
   },
   session: {
+    info: 'Session info',
     archived: 'This session is archived. Restore it to continue.',
     offline: '{{computer}} is offline',
     offlineBody:

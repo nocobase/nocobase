@@ -43,6 +43,14 @@ vi.mock('../../client/layouts/components/user-menu.js', () => ({
 vi.mock('../../client/inbox/navigation.js', () => ({
   useInboxNavigation: () => ({ badge: null, label: 'Inbox', hint: 'Inbox' }),
 }));
+// My tasks' count needs the API and realtime too.
+vi.mock('../../client/issues/groups/my-tasks-navigation.js', () => ({
+  useMyTasksNavigation: () => ({
+    badge: null,
+    label: 'My issues',
+    hint: 'My issues',
+  }),
+}));
 vi.mock('../../client/routing/route-navigation.js', async (importOriginal) => ({
   ...(await importOriginal<
     typeof import('../../client/routing/route-navigation.js')

@@ -37,12 +37,12 @@ Use the published `beta` channel unless the user specifies an exact version. An 
 
 A project is source code someone changes, created by `nocobase-create-app` and developed locally; an installation is a built NocoBase that only runs, made by this Skill, usually in production. Settle the route before installing anything:
 
-| The user asks to                                   | Route                                                                                                      |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Install, create or try NocoBase, to develop with   | The `nocobase-create-app` Skill                                                                            |
-| Deploy an application to production or a server    | This Skill, `--archive`, from the application's deployment archive                                         |
-| Install, deploy or try Studio as a running service | This Skill and [the Studio reference](references/studio.md), using `--app studio`                          |
-| Run it with Docker                                 | The deployment documentation, https://github.com/nocobase/nocobase/tree/v3-develop/docs/docs/en/deployment |
+| The user asks to                                   | Route                                                                             |
+| -------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Install, create or try NocoBase, to develop with   | The `nocobase-create-app` Skill                                                   |
+| Deploy an application to production or a server    | This Skill, `--archive`, from the application's deployment archive                |
+| Install, deploy or try Studio as a running service | This Skill and [the Studio reference](references/studio.md), using `--app studio` |
+| Run it with Docker                                 | The application's `nocobase-deployment` Skill and Docker configuration            |
 
 - "Install NocoBase on this server" with no project and no archive is not settled yet. Running the user's own application means creating it locally with `nocobase-create-app`, building its archive, and installing that here with `--archive`. Do not create a project on the server and run it with `pnpm dev`: that is development mode, not a deployment.
 - An `installer.json` whose `source.kind` is `template` belongs to the legacy Hub installation route, not Studio. Use its compatible installer; a version that reports `STATE_UNSUPPORTED` cannot manage it. Do not convert it to Studio by replacing its archive or state.
