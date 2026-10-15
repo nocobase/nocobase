@@ -54,7 +54,16 @@ export function RuntimePolicyFields({
   readonly onTimerModesChange?: (modes: NonNullable<typeof timerModes>) => void;
 }): ReactElement {
   const { t } = useTranslation(ACCESS_NAMESPACE);
-  const parsed = parsePolicyDraft(value);
+  const effectiveValue = timerModes
+    ? {
+        ...value,
+        idleStopMinutes:
+          timerModes.idle === 'inherit' ? '' : value.idleStopMinutes,
+        dormantAfterHours:
+          timerModes.dormant === 'inherit' ? '' : value.dormantAfterHours,
+      }
+    : value;
+  const parsed = parsePolicyDraft(effectiveValue);
   const items = (['eager', 'onDemand'] as const).map((activation) => ({
     value: activation,
     label: t(`ui.policy.activation.${activation}`),
@@ -105,7 +114,9 @@ export function RuntimePolicyFields({
             <InputGroupInput
               id='rel-policy-idle'
               inputMode='numeric'
-              value={value.idleStopMinutes}
+              value={
+                timerModes?.idle === 'inherit' ? '' : value.idleStopMinutes
+              }
               placeholder={t('ui.policy.neverIdle')}
               disabled={timerModes?.idle === 'inherit'}
               aria-invalid={parsed.errors?.idle ? true : undefined}
@@ -144,7 +155,9 @@ export function RuntimePolicyFields({
             <InputGroupInput
               id='rel-policy-dormant'
               inputMode='decimal'
-              value={value.dormantAfterHours}
+              value={
+                timerModes?.dormant === 'inherit' ? '' : value.dormantAfterHours
+              }
               placeholder={t('ui.policy.neverDormant')}
               disabled={timerModes?.dormant === 'inherit'}
               aria-invalid={parsed.errors?.dormant ? true : undefined}
@@ -168,6 +181,9 @@ export function RuntimePolicyFields({
       <FieldDescription>
         {supported ? t('ui.policy.timersHint') : t('ui.policy.unsupported')}
       </FieldDescription>
+      {timerModes ? (
+        <FieldDescription>{t('ui.policy.customTimerHint')}</FieldDescription>
+      ) : null}
     </FieldGroup>
   );
 }

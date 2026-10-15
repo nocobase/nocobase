@@ -77,7 +77,14 @@ export default function NewAppPage(): ReactElement {
   }>({ idle: 'inherit', dormant: 'inherit' });
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
-  const parsedPolicy = parsePolicyDraft(policy);
+  const effectivePolicyDraft = {
+    ...policy,
+    idleStopMinutes:
+      timerModes.idle === 'inherit' ? '' : policy.idleStopMinutes,
+    dormantAfterHours:
+      timerModes.dormant === 'inherit' ? '' : policy.dormantAfterHours,
+  };
+  const parsedPolicy = parsePolicyDraft(effectivePolicyDraft);
   const labelsValid = labelRowErrors(labels).size === 0;
   const labelCount = countLabels(labels);
   const advancedSummary = [

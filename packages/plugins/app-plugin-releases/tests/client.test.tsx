@@ -286,6 +286,11 @@ describe('client', () => {
     let dialog = await screen.findByRole('dialog');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(
+      sent.filter(
+        (item) => item.method === 'POST' && item.path === 'releases/apps',
+      ),
+    ).toHaveLength(0);
     fireEvent.click(await screen.findByRole('link', { name: 'Create app' }));
     dialog = await screen.findByRole('dialog');
     // The list stays behind the dialog.
@@ -404,6 +409,41 @@ describe('client', () => {
     fireEvent.pointerDown(option, { pointerType: 'mouse' });
     fireEvent.mouseUp(option);
     fireEvent.click(option);
+    fireEvent.change(
+      within(dialog).getByLabelText('Hibernate when unvisited for'),
+      {
+        target: { value: '0.5' },
+      },
+    );
+    fireEvent.change(within(dialog).getByLabelText('Stop when unvisited for'), {
+      target: { value: '60' },
+    });
+    expect(
+      within(dialog).getByText('Hibernation must come after the stop.'),
+    ).toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText('Stop when unvisited for'), {
+      target: { value: 'not a number' },
+    });
+    fireEvent.click(idleMode);
+    option = await screen.findByRole('option', {
+      name: 'Use environment default',
+    });
+    fireEvent.pointerDown(option, { pointerType: 'mouse' });
+    fireEvent.mouseUp(option);
+    fireEvent.click(option);
+
+    expect(
+      within(dialog).getByLabelText('Stop when unvisited for'),
+    ).toHaveValue('');
+    expect(
+      within(dialog).queryByText(
+        'Enter whole minutes from 1 to 1440, or leave it empty.',
+      ),
+    ).toBeNull();
+    expect(within(dialog).queryByText('stops after 60 min unvisited')).toBeNull();
+    expect(
+      within(dialog).getByText(enUS.ui.policy.customTimerHint),
+    ).toBeInTheDocument();
 
     const createButton = within(dialog).getByRole('button', {
       name: 'Create app',
@@ -414,19 +454,24 @@ describe('client', () => {
     expect(within(dialog).getByLabelText('App ID')).toHaveValue('shop');
     expect(
       within(dialog).getByLabelText('Stop when unvisited for'),
-    ).toHaveValue('10');
+    ).toHaveValue('');
     expect(
       within(dialog).getByLabelText('Hibernate when unvisited for'),
-    ).toHaveValue('');
+    ).toHaveValue('0.5');
     fireEvent.click(createButton);
     await screen.findByTestId('where');
     const create = sent.find(
       (item) => item.method === 'POST' && item.path === 'releases/apps',
     );
     expect(create?.json).toMatchObject({
-      idleStopMinutes: 10,
-      dormantAfterHours: null,
+      dormantAfterHours: 0.5,
     });
+    expect(create?.json).not.toHaveProperty('idleStopMinutes');
+    expect(
+      sent.filter(
+        (item) => item.method === 'POST' && item.path === 'releases/apps',
+      ),
+    ).toHaveLength(2);
   });
 
   it("shows an operator through the application's component, else by id", () => {

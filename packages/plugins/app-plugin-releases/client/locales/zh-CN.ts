@@ -75,6 +75,7 @@ const zhCN: typeof enUS = {
         inherit: '使用环境默认值',
         custom: '设置自定义值',
       },
+      customTimerHint: '自定义值留空会关闭该计时器，不会使用环境默认值。',
       idleSummary: '{{minutes}} 分钟无访问后停止',
       dormantSummary: '{{hours}} 小时无访问后休眠',
       timersHint:
