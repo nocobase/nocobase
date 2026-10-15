@@ -1,7 +1,9 @@
+import { realtimeClientToken } from '@nocobase/app-client';
+import { useState } from 'react';
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import plugin from '../../client/plugin.js';
 import { AgentSessionsConfigContext } from '../../client/config.js';
@@ -62,6 +64,13 @@ describe('new-session composer', () => {
       </QueryClientProvider>,
       {
         plugins: [plugin({ routes: false })],
+        services: (app) => {
+          vi.spyOn(
+            app.container.resolve(realtimeClientToken),
+            'connected',
+            'get',
+          ).mockReturnValue(true);
+        },
         namespace: '@nocobase/app-plugin-agent-sessions',
         fetch: answerApi(({ path }) => {
           if (path === 'agentSessions/computers')
@@ -105,6 +114,13 @@ describe('new-session composer', () => {
       </QueryClientProvider>,
       {
         plugins: [plugin({ routes: false })],
+        services: (app) => {
+          vi.spyOn(
+            app.container.resolve(realtimeClientToken),
+            'connected',
+            'get',
+          ).mockReturnValue(true);
+        },
         namespace: '@nocobase/app-plugin-agent-sessions',
         fetch: answerApi(({ path }) => {
           if (path === 'agentSessions/computers')
@@ -158,6 +174,13 @@ describe('new-session composer', () => {
       </QueryClientProvider>,
       {
         plugins: [plugin({ routes: false })],
+        services: (app) => {
+          vi.spyOn(
+            app.container.resolve(realtimeClientToken),
+            'connected',
+            'get',
+          ).mockReturnValue(true);
+        },
         namespace: '@nocobase/app-plugin-agent-sessions',
         fetch: answerApi(({ path }) => {
           if (path === 'agentSessions/computers')
@@ -184,7 +207,8 @@ describe('new-session composer', () => {
     expect(
       screen.getByRole('button', { name: 'Fresh computer' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('textbox')).toBeDisabled();
+    expect(screen.getByRole('textbox')).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
     expect(screen.queryByText('Initial model')).toBeNull();
     expect(requests).toEqual(['agentSessions/computers/fresh/discoverChoices']);
     fireEvent.click(screen.getByRole('button', { name: 'Fresh computer' }));
@@ -211,6 +235,13 @@ describe('new-session composer', () => {
       </QueryClientProvider>,
       {
         plugins: [plugin({ routes: false })],
+        services: (app) => {
+          vi.spyOn(
+            app.container.resolve(realtimeClientToken),
+            'connected',
+            'get',
+          ).mockReturnValue(true);
+        },
         namespace: '@nocobase/app-plugin-agent-sessions',
         fetch: answerApi(({ path, method, json }) => {
           if (path === 'agentSessions/computers')
@@ -232,7 +263,8 @@ describe('new-session composer', () => {
       },
     );
     await screen.findByText('Loading settings…');
-    expect(screen.getByRole('textbox')).toBeDisabled();
+    expect(screen.getByRole('textbox')).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
     await waitFor(() => expect(discovered).toHaveLength(1));
     await act(async () => discovered[0]!.resolve({ data: choices }));
     await screen.findByText('Reasoning: High');
@@ -246,7 +278,8 @@ describe('new-session composer', () => {
       cwd: '/work',
       settings: { model: 'chosen' },
     });
-    expect(screen.getByRole('textbox')).toBeDisabled();
+    expect(screen.getByRole('textbox')).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
     await act(async () =>
       discovered[1]!.resolve({
         data: {
@@ -278,4 +311,66 @@ describe('new-session composer', () => {
     ).not.toBeNull();
     await act(async () => finishCreate?.({ data: { id: 'new-session' } }));
   });
+});
+
+it('retains a pending first send across navigation and does not let a second mounted composer submit it', async () => {
+  let finish: ((value: unknown) => void) | undefined;
+  let creates = 0;
+  function Menu() {
+    const [shown, setShown] = useState(true);
+    return (
+      <>
+        <button onClick={() => setShown(!shown)}>Navigate</button>
+        {shown && <NewSession />}
+      </>
+    );
+  }
+  await renderWithApp(
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      <Menu />
+    </QueryClientProvider>,
+    {
+      namespace: '@nocobase/app-plugin-agent-sessions',
+      plugins: [plugin({ routes: false })],
+      services: (app) => {
+        vi.spyOn(
+          app.container.resolve(realtimeClientToken),
+          'connected',
+          'get',
+        ).mockReturnValue(true);
+      },
+      fetch: answerApi(({ path, method }) => {
+        if (path === 'agentSessions/computers') return { data: [computer] };
+        if (path.endsWith('/discoverChoices')) return { data: choices };
+        if (path === 'agentSessions/sessions' && method === 'POST') {
+          creates++;
+          return new Promise((resolve) => {
+            finish = resolve;
+          });
+        }
+        return { data: [], meta: {} };
+      }),
+    },
+  );
+  await screen.findByText('Initial model');
+  fireEvent.change(screen.getByRole('textbox'), {
+    target: { value: 'Only submit once' },
+  });
+  fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+  await waitFor(() => expect(creates).toBe(1));
+  fireEvent.click(screen.getByText('Navigate'));
+  fireEvent.click(screen.getByText('Navigate'));
+  expect(screen.getByRole('textbox')).toHaveValue('Only submit once');
+  expect(screen.getByRole('textbox')).toBeDisabled();
+  expect(screen.getByText('Sending…')).toBeInTheDocument();
+  fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+  expect(creates).toBe(1);
+  await act(async () => {
+    finish?.({ data: { id: 'created' } });
+  });
+  await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue(''));
 });

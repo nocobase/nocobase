@@ -1,4 +1,5 @@
 import { BRIDGE_PROTOCOL_VERSION } from '@nocobase/acp-bridge/protocol';
+import { randomUUID } from 'node:crypto';
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import {
   findApiDocumentSchemaProblems,
@@ -96,6 +97,71 @@ const computer = {
 };
 
 describe('the agent sessions routes', () => {
+  test('validates submission IDs, protects confirmation ownership and hides internal metadata', async ({
+    database,
+  }) => {
+    const router = await mount(database);
+    const registered = await call(router, 'POST', '/bridge/register', 'u1', {
+      protocol: BRIDGE_PROTOCOL_VERSION,
+      computerId: null,
+      bridgeStartedAt: 'one',
+      computer,
+    });
+    const {
+      data: { computerId },
+    } = await registered.json();
+    const input = {
+      computerId,
+      agentId: 'codex',
+      cwd: '/home/zhou',
+      content: [{ type: 'text', text: 'Hello' }],
+      submissionId: randomUUID(),
+    };
+    expect(
+      (await call(router, 'POST', '/sessions', undefined, input)).status,
+    ).toBe(401);
+    expect(
+      (
+        await call(router, 'POST', '/sessions', 'u1', {
+          ...input,
+          submissionId: 'invalid',
+        })
+      ).status,
+    ).toBe(400);
+    const first = await call(router, 'POST', '/sessions', 'u1', input);
+    expect(first.status).toBe(201);
+    const { data: session } = await first.json();
+    const repeated = await call(router, 'POST', '/sessions', 'u1', input);
+    expect((await repeated.json()).data.id).toBe(session.id);
+    const stranger = await call(router, 'POST', '/sessions', 'u2', input);
+    expect(stranger.status).toBe(409);
+    expect(JSON.stringify(await stranger.json())).not.toContain(session.id);
+    const prompt = { content: input.content, submissionId: randomUUID() };
+    const route = `/sessions/${session.id}/prompt`;
+    const sent = await call(router, 'POST', route, 'u1', prompt);
+    const confirmation = await sent.json();
+    expect(sent.status).toBe(200);
+    expect(
+      await (await call(router, 'POST', route, 'u1', prompt)).json(),
+    ).toEqual(confirmation);
+    const conflict = await call(router, 'POST', route, 'u1', {
+      ...prompt,
+      content: [{ type: 'text', text: 'Changed' }],
+    });
+    expect(conflict.status).toBe(409);
+    expect((await conflict.json()).error.reason).toBe(
+      'AGENT_SESSIONS_SUBMISSION_CONFLICT',
+    );
+    const transcript = await call(
+      router,
+      'GET',
+      `/sessions/${session.id}/events`,
+      'u1',
+    );
+    expect(JSON.stringify(await transcript.json())).not.toContain(
+      '_submission',
+    );
+  });
   test('discovers through authenticated owned routes with validated input and a correlated bridge reply', async ({
     database,
   }) => {
