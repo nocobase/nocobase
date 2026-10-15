@@ -12,9 +12,9 @@ An issue’s own file, by its uploader or by whoever may moderate comments on th
 nb-studio attachment delete <file>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `file`   |             |
+| Argument | Description                |
+| -------- | -------------------------- |
+| `file`   | The attachment identifier. |
 
 | Flag    | Type    | Description                                 |
 | ------- | ------- | ------------------------------------------- |
@@ -36,9 +36,9 @@ Readable by whoever sees its issue; an upload attached to nothing by its uploade
 nb-studio attachment get <file>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `file`   |             |
+| Argument | Description                |
+| -------- | -------------------------- |
+| `file`   | The attachment identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -56,9 +56,9 @@ Needs `upload` on `pm.attachments`. One file as the `file` field of a multipart 
 nb-studio attachment upload --file <path>
 ```
 
-| Flag     | Type | Description |
-| -------- | ---- | ----------- |
-| `--file` | path | (required)  |
+| Flag     | Type | Description                    |
+| -------- | ---- | ------------------------------ |
+| `--file` | path | The file to upload. (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

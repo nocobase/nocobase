@@ -28,9 +28,9 @@ Wakes the project manager on an open issue it executes, as the current issue own
 nb-studio project-manager start <issue>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

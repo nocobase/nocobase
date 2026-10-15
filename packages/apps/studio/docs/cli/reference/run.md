@@ -12,9 +12,9 @@ The brief the run's latest attempt was given. The caller sees the runs they star
 nb-studio run brief <run>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `run`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `run`    | The run identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -32,9 +32,9 @@ A queued run is cancelled at once; a held one is asked to stop. Whoever started 
 nb-studio run cancel <run>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `run`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `run`    | The run identifier. |
 
 | Flag    | Type    | Description                                |
 | ------- | ------- | ------------------------------------------ |
@@ -132,14 +132,14 @@ Newest first, a page at a time. The caller sees the runs they started or own, an
 nb-studio run list
 ```
 
-| Flag             | Type                                                                | Description  |
-| ---------------- | ------------------------------------------------------------------- | ------------ |
-| `--subject-kind` | string                                                              |              |
-| `--subject`      | string                                                              |              |
-| `--agent`        | string                                                              |              |
-| `--status`       | queued \| dispatched \| running \| completed \| failed \| cancelled |              |
-| `--limit`        | integer                                                             | (default 50) |
-| `--page-token`   | string                                                              |              |
+| Flag             | Type                                                                | Description                                           |
+| ---------------- | ------------------------------------------------------------------- | ----------------------------------------------------- |
+| `--subject-kind` | string                                                              | The kind of subject.                                  |
+| `--subject`      | string                                                              | The subject identifier.                               |
+| `--agent`        | string                                                              | The agent identifier.                                 |
+| `--status`       | queued \| dispatched \| running \| completed \| failed \| cancelled | The status to set or filter by.                       |
+| `--limit`        | integer                                                             | The maximum number of records to return. (default 50) |
+| `--page-token`   | string                                                              | The continuation token returned by the previous page. |
 
 **Output:** A list (table columns: `id`, `agentId`, `subject.kind`, `subject.id`, `status`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -164,9 +164,9 @@ Runs the work as the request's responsible, who must still be able to wake the a
 nb-studio run request confirm <request>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `request` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `request` | The request identifier. |
 
 | Flag    | Type    | Description                                        |
 | ------- | ------- | -------------------------------------------------- |
@@ -188,9 +188,9 @@ With the input as it was asked, in full: what confirming it runs. For the person
 nb-studio run request get <request>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `request` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `request` | The request identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -211,12 +211,12 @@ nb-studio run request list
 | Flag             | Type                                                                   | Description                                                                                                                  |
 | ---------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `--role`         | responsible \| requester                                               | `responsible`: the requests the caller answers for (to confirm); `requester`: the ones the caller asked. Both when left out. |
-| `--status`       | pending \| confirmed \| rejected \| withdrawn \| expired \| superseded |                                                                                                                              |
-| `--subject-kind` | string                                                                 |                                                                                                                              |
-| `--subject`      | string                                                                 |                                                                                                                              |
-| `--agent`        | string                                                                 |                                                                                                                              |
-| `--limit`        | integer                                                                | (default 50)                                                                                                                 |
-| `--page-token`   | string                                                                 |                                                                                                                              |
+| `--status`       | pending \| confirmed \| rejected \| withdrawn \| expired \| superseded | The status to set or filter by.                                                                                              |
+| `--subject-kind` | string                                                                 | The kind of subject.                                                                                                         |
+| `--subject`      | string                                                                 | The subject identifier.                                                                                                      |
+| `--agent`        | string                                                                 | The agent identifier.                                                                                                        |
+| `--limit`        | integer                                                                | The maximum number of records to return. (default 50)                                                                        |
+| `--page-token`   | string                                                                 | The continuation token returned by the previous page.                                                                        |
 
 **Output:** A list (table columns: `id`, `agentName`, `subject.kind`, `subject.id`, `requestedByName`, `responsibleName`, `status`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -241,9 +241,9 @@ Declines the work; only the request's responsible may. A personal runner rejecti
 nb-studio run request reject <request>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `request` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `request` | The request identifier. |
 
 | Flag     | Type   | Description                    |
 | -------- | ------ | ------------------------------ |
@@ -265,9 +265,9 @@ The person who asked runs the work as themselves now, without waiting for confir
 nb-studio run request run-as-me <request>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `request` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `request` | The request identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -285,9 +285,9 @@ Takes the request back; only the person who asked may.
 nb-studio run request withdraw <request>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `request` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `request` | The request identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -305,9 +305,9 @@ Queues a new run with the same input once. Whoever started or owns it, or a mana
 nb-studio run retry <run>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `run`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `run`    | The run identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -341,10 +341,10 @@ The next run on the subject starts in a fresh working directory. Whoever started
 nb-studio run workspace reset <kind> <subject>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `kind`    |             |
-| `subject` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `kind`    | The kind of subject.    |
+| `subject` | The subject identifier. |
 
 | Flag    | Type    | Description                                                                                |
 | ------- | ------- | ------------------------------------------------------------------------------------------ |

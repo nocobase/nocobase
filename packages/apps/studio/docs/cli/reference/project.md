@@ -12,19 +12,19 @@ Needs `create` on `pm.projects`. The caller becomes a member and, unless `leadUs
 nb-studio project create <name>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `name`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `name`   | The name to display. |
 
-| Flag            | Type                                                       | Description                    |
-| --------------- | ---------------------------------------------------------- | ------------------------------ |
-| `--description` | string                                                     | (or --description-file <path>) |
-| `--visibility`  | everyone \| members                                        |                                |
-| `--status`      | planned \| in_progress \| paused \| completed \| cancelled |                                |
-| `--priority`    | urgent \| high \| medium \| low \| none                    |                                |
-| `--lead`        | string                                                     |                                |
-| `--start-date`  | string                                                     |                                |
-| `--due-date`    | string                                                     |                                |
+| Flag            | Type                                                       | Description                                                 |
+| --------------- | ---------------------------------------------------------- | ----------------------------------------------------------- |
+| `--description` | string                                                     | A description of the record. (or --description-file <path>) |
+| `--visibility`  | everyone \| members                                        | Who may see this project.                                   |
+| `--status`      | planned \| in_progress \| paused \| completed \| cancelled | The status to set or filter by.                             |
+| `--priority`    | urgent \| high \| medium \| low \| none                    | The priority to assign.                                     |
+| `--lead`        | string                                                     | The lead user identifier.                                   |
+| `--start-date`  | string                                                     | The planned start date.                                     |
+| `--due-date`    | string                                                     | The planned due date.                                       |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -64,9 +64,9 @@ Validates skill ids and replaces the defaults. An empty array clears them. Only 
 nb-studio project default-skills set --skills <string[]>
 ```
 
-| Flag       | Type     | Description            |
-| ---------- | -------- | ---------------------- |
-| `--skills` | string[] | (required; repeatable) |
+| Flag       | Type     | Description                                         |
+| ---------- | -------- | --------------------------------------------------- |
+| `--skills` | string[] | Skill identifiers to attach. (required; repeatable) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -84,9 +84,9 @@ Needs `delete` on `pm.projects`. Its issues are kept, without a project.
 nb-studio project delete <project>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `project` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `project` | The project identifier. |
 
 | Flag    | Type    | Description                                                                            |
 | ------- | ------- | -------------------------------------------------------------------------------------- |
@@ -108,9 +108,9 @@ With its members and working directories.
 nb-studio project get <project>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `project` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `project` | The project identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -128,10 +128,10 @@ Needs `invite` on the `pm.members` settings item, or leading a project: a lead i
 nb-studio project invitation create --email <string[]>
 ```
 
-| Flag        | Type     | Description            |
-| ----------- | -------- | ---------------------- |
-| `--email`   | string[] | (required; repeatable) |
-| `--project` | string[] | (repeatable)           |
+| Flag        | Type     | Description                                           |
+| ----------- | -------- | ----------------------------------------------------- |
+| `--email`   | string[] | The email addresses to invite. (required; repeatable) |
+| `--project` | string[] | Projects the invited members may join. (repeatable)   |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -171,9 +171,9 @@ Needs `invite` on the `pm.members` settings item, or leading a project: a lead i
 nb-studio project invitation resend <invitation>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `invitation` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `invitation` | The invitation identifier. |
 
 | Flag           | Type    | Description                                                                                                |
 | -------------- | ------- | ---------------------------------------------------------------------------------------------------------- |
@@ -195,9 +195,9 @@ Needs `invite` on the `pm.members` settings item, or leading a project: a lead i
 nb-studio project invitation revoke <invitation>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `invitation` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `invitation` | The invitation identifier. |
 
 | Flag    | Type    | Description                                                               |
 | ------- | ------- | ------------------------------------------------------------------------- |
@@ -235,18 +235,18 @@ For whoever manages the project. Adds a working directory as the New project wiz
 nb-studio project location add <project>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `project` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `project` | The project identifier. |
 
 | Flag                 | Type                                       | Description                                                                                                                                                                                                                                                             |
 | -------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--code-location`    | newRepo \| existingRepo \| runnerDirectory |                                                                                                                                                                                                                                                                         |
-| `--init-agent`       | string                                     |                                                                                                                                                                                                                                                                         |
-| `--new-repo`         | json                                       |                                                                                                                                                                                                                                                                         |
+| `--code-location`    | newRepo \| existingRepo \| runnerDirectory | The code location where the project will be developed.                                                                                                                                                                                                                  |
+| `--init-agent`       | string                                     | The init agent identifier.                                                                                                                                                                                                                                              |
+| `--new-repo`         | json                                       | Repository settings for a new project.                                                                                                                                                                                                                                  |
 | `--existing-repo`    | json                                       | Picked through a connection (`connectionId`, `repoId`, `fullName`), or given by its clone URL alone.                                                                                                                                                                    |
-| `--runner-directory` | json                                       |                                                                                                                                                                                                                                                                         |
-| `--label`            | string                                     |                                                                                                                                                                                                                                                                         |
+| `--runner-directory` | json                                       | The working directory on the runner.                                                                                                                                                                                                                                    |
+| `--label`            | string                                     | A label for this resource.                                                                                                                                                                                                                                              |
 | `--deploy`           | json                                       | A repository’s "Deploy & previews" choices: the Apps they need are created and linked once it is added.                                                                                                                                                                 |
 | `--ci`               | json                                       | A "Configure CI" run carried out once the repository is added: a new repository’s workflows are committed once it is initialized, an existing one’s proposed in a pull request, an agent’s issue created (`POST /api/repositoryDeployments/{resourceId}/ci/configure`). |
 | `--file`             | path                                       | The request body as a JSON object; the flags override its fields.                                                                                                                                                                                                       |
@@ -273,10 +273,10 @@ Needs `manage` on the project: its lead, or a wider scope. Answers the member ad
 nb-studio project member add <project> <user>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `project` |             |
-| `user`    |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `project` | The project identifier. |
+| `user`    | The user identifier.    |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -317,10 +317,10 @@ Needs `manage` on the project: its lead, or a wider scope.
 nb-studio project member remove <project> <user>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `project` |             |
-| `user`    |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `project` | The project identifier. |
+| `user`    | The user identifier.    |
 
 | Flag    | Type    | Description                                                    |
 | ------- | ------- | -------------------------------------------------------------- |
@@ -342,20 +342,20 @@ Needs `manage` on the project: its lead, or a wider scope. A `gitRepo` needs `ur
 nb-studio project resource add <project> --type <string>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `project` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `project` | The project identifier. |
 
-| Flag            | Type                 | Description                    |
-| --------------- | -------------------- | ------------------------------ |
-| `--type`        | gitRepo \| directory | (required)                     |
-| `--url`         | string               |                                |
-| `--default-ref` | string               |                                |
-| `--binding`     | json                 |                                |
-| `--runner`      | string               |                                |
-| `--path`        | string               |                                |
-| `--label`       | string               |                                |
-| `--init-prompt` | string               | (or --init-prompt-file <path>) |
+| Flag            | Type                 | Description                                                               |
+| --------------- | -------------------- | ------------------------------------------------------------------------- |
+| `--type`        | gitRepo \| directory | The type of relationship or record. (required)                            |
+| `--url`         | string               | The resource URL.                                                         |
+| `--default-ref` | string               | The default Git branch or revision.                                       |
+| `--binding`     | json                 | The resource binding configuration.                                       |
+| `--runner`      | string               | The runner identifier.                                                    |
+| `--path`        | string               | The path on the runner.                                                   |
+| `--label`       | string               | A label for this resource.                                                |
+| `--init-prompt` | string               | Instructions for initializing the project. (or --init-prompt-file <path>) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -380,10 +380,10 @@ Needs `manage` on the project: its lead, or a wider scope.
 nb-studio project resource remove <project> <resource>
 ```
 
-| Argument   | Description |
-| ---------- | ----------- |
-| `project`  |             |
-| `resource` |             |
+| Argument   | Description              |
+| ---------- | ------------------------ |
+| `project`  | The project identifier.  |
+| `resource` | The resource identifier. |
 
 | Flag    | Type    | Description                                                               |
 | ------- | ------- | ------------------------------------------------------------------------- |
@@ -405,21 +405,21 @@ Needs `manage` on the project: its lead, or a wider scope. Its type does not cha
 nb-studio project resource update <project> <resource>
 ```
 
-| Argument   | Description |
-| ---------- | ----------- |
-| `project`  |             |
-| `resource` |             |
+| Argument   | Description              |
+| ---------- | ------------------------ |
+| `project`  | The project identifier.  |
+| `resource` | The resource identifier. |
 
-| Flag            | Type    | Description                    |
-| --------------- | ------- | ------------------------------ |
-| `--url`         | string  |                                |
-| `--default-ref` | string  |                                |
-| `--binding`     | json    |                                |
-| `--runner`      | string  |                                |
-| `--path`        | string  |                                |
-| `--label`       | string  |                                |
-| `--init-prompt` | string  | (or --init-prompt-file <path>) |
-| `--position`    | integer |                                |
+| Flag            | Type    | Description                                                               |
+| --------------- | ------- | ------------------------------------------------------------------------- |
+| `--url`         | string  | The resource URL.                                                         |
+| `--default-ref` | string  | The default Git branch or revision.                                       |
+| `--binding`     | json    | The resource binding configuration.                                       |
+| `--runner`      | string  | The runner identifier.                                                    |
+| `--path`        | string  | The path on the runner.                                                   |
+| `--label`       | string  | A label for this resource.                                                |
+| `--init-prompt` | string  | Instructions for initializing the project. (or --init-prompt-file <path>) |
+| `--position`    | integer | The resource’s position in the ordered list.                              |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -453,9 +453,9 @@ Needs `update` on the `pm.general` settings item. A new issue prefix applies to 
 nb-studio project settings update
 ```
 
-| Flag             | Type   | Description |
-| ---------------- | ------ | ----------- |
-| `--issue-prefix` | string |             |
+| Flag             | Type   | Description                                |
+| ---------------- | ------ | ------------------------------------------ |
+| `--issue-prefix` | string | The prefix used for new issue identifiers. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -481,15 +481,15 @@ nb-studio project setup create
 
 | Flag                 | Type                                               | Description                                                                                                                                                                                                                                                             |
 | -------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--name`             | string                                             |                                                                                                                                                                                                                                                                         |
-| `--description`      | string                                             |                                                                                                                                                                                                                                                                         |
-| `--workflow`         | string                                             |                                                                                                                                                                                                                                                                         |
-| `--code-location`    | newRepo \| existingRepo \| runnerDirectory \| none |                                                                                                                                                                                                                                                                         |
-| `--init-agent`       | string                                             |                                                                                                                                                                                                                                                                         |
-| `--new-repo`         | json                                               |                                                                                                                                                                                                                                                                         |
+| `--name`             | string                                             | The name to display.                                                                                                                                                                                                                                                    |
+| `--description`      | string                                             | A description of the record.                                                                                                                                                                                                                                            |
+| `--workflow`         | string                                             | The workflow identifier.                                                                                                                                                                                                                                                |
+| `--code-location`    | newRepo \| existingRepo \| runnerDirectory \| none | The code location where the project will be developed.                                                                                                                                                                                                                  |
+| `--init-agent`       | string                                             | The init agent identifier.                                                                                                                                                                                                                                              |
+| `--new-repo`         | json                                               | Repository settings for a new project.                                                                                                                                                                                                                                  |
 | `--existing-repo`    | json                                               | Picked through a connection (`connectionId`, `repoId`, `fullName`), or given by its clone URL alone.                                                                                                                                                                    |
-| `--runner-directory` | json                                               |                                                                                                                                                                                                                                                                         |
-| `--label`            | string                                             |                                                                                                                                                                                                                                                                         |
+| `--runner-directory` | json                                               | The working directory on the runner.                                                                                                                                                                                                                                    |
+| `--label`            | string                                             | A label for this resource.                                                                                                                                                                                                                                              |
 | `--deploy`           | json                                               | A repository’s "Deploy & previews" choices: the Apps they need are created and linked once it is added.                                                                                                                                                                 |
 | `--ci`               | json                                               | A "Configure CI" run carried out once the repository is added: a new repository’s workflows are committed once it is initialized, an existing one’s proposed in a pull request, an agent’s issue created (`POST /api/repositoryDeployments/{resourceId}/ci/configure`). |
 | `--file`             | path                                               | The request body as a JSON object; the flags override its fields.                                                                                                                                                                                                       |
@@ -517,9 +517,9 @@ For whoever sees the project. `data` is null for a project without an initializa
 nb-studio project setup get <project>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `project` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `project` | The project identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -537,9 +537,9 @@ For whoever manages the project.
 nb-studio project setup retry <project>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `project` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `project` | The project identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -557,20 +557,20 @@ Needs `manage` on the project: its lead, or a wider scope.
 nb-studio project update <project>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `project` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `project` | The project identifier. |
 
-| Flag            | Type                                                       | Description                    |
-| --------------- | ---------------------------------------------------------- | ------------------------------ |
-| `--name`        | string                                                     |                                |
-| `--description` | string                                                     | (or --description-file <path>) |
-| `--visibility`  | everyone \| members                                        |                                |
-| `--status`      | planned \| in_progress \| paused \| completed \| cancelled |                                |
-| `--priority`    | urgent \| high \| medium \| low \| none                    |                                |
-| `--lead`        | string                                                     |                                |
-| `--start-date`  | string                                                     |                                |
-| `--due-date`    | string                                                     |                                |
+| Flag            | Type                                                       | Description                                                 |
+| --------------- | ---------------------------------------------------------- | ----------------------------------------------------------- |
+| `--name`        | string                                                     | The name to display.                                        |
+| `--description` | string                                                     | A description of the record. (or --description-file <path>) |
+| `--visibility`  | everyone \| members                                        | Who may see this project.                                   |
+| `--status`      | planned \| in_progress \| paused \| completed \| cancelled | The status to set or filter by.                             |
+| `--priority`    | urgent \| high \| medium \| low \| none                    | The priority to assign.                                     |
+| `--lead`        | string                                                     | The lead user identifier.                                   |
+| `--start-date`  | string                                                     | The planned start date.                                     |
+| `--due-date`    | string                                                     | The planned due date.                                       |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

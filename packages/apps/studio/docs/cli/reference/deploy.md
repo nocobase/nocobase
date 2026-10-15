@@ -44,10 +44,10 @@ Requires the `view` or the `deploy` action on the App, so CI holding only a depl
 nb-studio deploy get <app> <deployment>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `app`        |             |
-| `deployment` |             |
+| Argument     | Description                 |
+| ------------ | --------------------------- |
+| `app`        | The application identifier. |
+| `deployment` | The deployment identifier.  |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -65,14 +65,14 @@ Requires the `view` action on the App.
 nb-studio deploy list <app>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
-| Flag      | Type    | Description  |
-| --------- | ------- | ------------ |
-| `--page`  | integer | (default 1)  |
-| `--limit` | integer | (default 20) |
+| Flag      | Type    | Description                                           |
+| --------- | ------- | ----------------------------------------------------- |
+| `--page`  | integer | The page number, starting at 1. (default 1)           |
+| `--limit` | integer | The maximum number of records to return. (default 20) |
 
 **Output:** A list (table columns: `id`, `kind`, `status`, `phase`, `release.version`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -90,20 +90,20 @@ Requires the `read-logs` action on the App. Read like the App logs: one bounded 
 nb-studio deploy logs <app> <deployment>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `app`        |             |
-| `deployment` |             |
+| Argument     | Description                 |
+| ------------ | --------------------------- |
+| `app`        | The application identifier. |
+| `deployment` | The deployment identifier.  |
 
-| Flag           | Type                                             | Description |
-| -------------- | ------------------------------------------------ | ----------- |
-| `--page-token` | string                                           |             |
-| `--level`      | trace \| debug \| info \| warn \| error \| fatal |             |
-| `--source`     | string                                           |             |
-| `--search`     | string                                           |             |
-| `--since`      | string                                           |             |
-| `--until`      | string                                           |             |
-| `--from-start` | boolean                                          |             |
+| Flag           | Type                                             | Description                                           |
+| -------------- | ------------------------------------------------ | ----------------------------------------------------- |
+| `--page-token` | string                                           | The continuation token returned by the previous page. |
+| `--level`      | trace \| debug \| info \| warn \| error \| fatal | The log severity to filter by.                        |
+| `--source`     | string                                           | The source context associated with this record.       |
+| `--search`     | string                                           | Text to search for.                                   |
+| `--since`      | string                                           | Return logs at or after this timestamp.               |
+| `--until`      | string                                           | Return logs before this timestamp.                    |
+| `--from-start` | boolean                                          | Read from the beginning rather than the latest logs.  |
 
 **Output:** A list (table columns: `time`, `level`, `msg`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -121,13 +121,13 @@ Only for the person the suggestion was sent to, after a deployment of the App no
 nb-studio deploy reopen-suggestion decide <app> --action <string>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
-| Flag       | Type              | Description |
-| ---------- | ----------------- | ----------- |
-| `--action` | reopen \| dismiss | (required)  |
+| Flag       | Type              | Description                       |
+| ---------- | ----------------- | --------------------------------- |
+| `--action` | reopen \| dismiss | The decision to apply. (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -151,16 +151,16 @@ Requires the `deploy` action on the App. Asks for `releaseId` to be deployed, or
 nb-studio deploy request <app>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
-| Flag            | Type   | Description                           |
-| --------------- | ------ | ------------------------------------- |
-| `--release`     | string |                                       |
-| `--rollback-to` | string |                                       |
-| `--note`        | string | (or --note-file <path>)               |
-| `--label`       | json   | A label (key=value); repeat for more. |
+| Flag            | Type   | Description                                            |
+| --------------- | ------ | ------------------------------------------------------ |
+| `--release`     | string | The release identifier to deploy.                      |
+| `--rollback-to` | string | The deployment to restore.                             |
+| `--note`        | string | A note explaining this change. (or --note-file <path>) |
+| `--label`       | json   | A label (key=value); repeat for more.                  |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -184,13 +184,13 @@ One of the environment’s approvers (with none named, a person holding `deploy-
 nb-studio deploy request approve <request>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `request` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `request` | The request identifier. |
 
 | Flag        | Type    | Description                                               |
 | ----------- | ------- | --------------------------------------------------------- |
-| `--note`    | string  | (or --note-file <path>)                                   |
+| `--note`    | string  | A note explaining this change. (or --note-file <path>)    |
 | `--confirm` | string  | The App ID again, for a protected environment.            |
 | `--yes`     | boolean | Go ahead without asking “Approve and deploy the release?” |
 
@@ -216,9 +216,9 @@ The requester, or a caller who may decide it.
 nb-studio deploy request cancel <request>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `request` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `request` | The request identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -236,9 +236,9 @@ The caller must be able to view the App or decide the request.
 nb-studio deploy request get <request>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `request` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `request` | The request identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -256,13 +256,13 @@ Any signed-in caller; lists the requests on Apps they may view or requests they 
 nb-studio deploy request list
 ```
 
-| Flag            | Type                                                               | Description  |
-| --------------- | ------------------------------------------------------------------ | ------------ |
-| `--page`        | integer                                                            | (default 1)  |
-| `--limit`       | integer                                                            | (default 20) |
-| `--app`         | string                                                             |              |
-| `--status`      | pending \| approved \| rejected \| cancelled \| deployed \| failed |              |
-| `--awaiting-me` | boolean                                                            |              |
+| Flag            | Type                                                               | Description                                           |
+| --------------- | ------------------------------------------------------------------ | ----------------------------------------------------- |
+| `--page`        | integer                                                            | The page number, starting at 1. (default 1)           |
+| `--limit`       | integer                                                            | The maximum number of records to return. (default 20) |
+| `--app`         | string                                                             | The application identifier.                           |
+| `--status`      | pending \| approved \| rejected \| cancelled \| deployed \| failed | The status to set or filter by.                       |
+| `--awaiting-me` | boolean                                                            | Only requests waiting for the caller’s approval.      |
 
 **Output:** A list (table columns: `id`, `appId`, `environmentId`, `kind`, `status`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -286,13 +286,13 @@ One of the environment’s approvers, a person other than the requester.
 nb-studio deploy request reject <request>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `request` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `request` | The request identifier. |
 
-| Flag     | Type   | Description             |
-| -------- | ------ | ----------------------- |
-| `--note` | string | (or --note-file <path>) |
+| Flag     | Type   | Description                                            |
+| -------- | ------ | ------------------------------------------------------ |
+| `--note` | string | A note explaining this change. (or --note-file <path>) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -310,9 +310,9 @@ For whoever sees the project: what runs on each staging and production App of it
 nb-studio deploy status <project>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `project` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `project` | The project identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

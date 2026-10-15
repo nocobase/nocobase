@@ -28,9 +28,9 @@ For people only: a scoped API key or an organization’s API key is refused (403
 nb-studio intake ai cancel <job>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `job`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `job`    | The job identifier. |
 
 | Flag    | Type    | Description                                         |
 | ------- | ------- | --------------------------------------------------- |
@@ -52,9 +52,9 @@ For people only: a scoped API key or an organization’s API key is refused (403
 nb-studio intake ai get <job>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `job`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `job`    | The job identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -72,15 +72,15 @@ For people only: a scoped API key or an organization’s API key is refused (403
 nb-studio intake ai start --mode <string>
 ```
 
-| Flag            | Type                         | Description                                                               |
-| --------------- | ---------------------------- | ------------------------------------------------------------------------- |
-| `--mode`        | split \| revise \| breakdown | (required)                                                                |
-| `--text`        | string                       | (or --text-file <path>)                                                   |
-| `--project`     | string                       |                                                                           |
-| `--plan`        | string                       |                                                                           |
-| `--instruction` | string                       | (or --instruction-file <path>)                                            |
-| `--issue`       | string                       |                                                                           |
-| `--file`        | path                         | A file whose text goes with it (repeatable). (uploaded first, repeatable) |
+| Flag            | Type                         | Description                                                                 |
+| --------------- | ---------------------------- | --------------------------------------------------------------------------- |
+| `--mode`        | split \| revise \| breakdown | The processing mode to use. (required)                                      |
+| `--text`        | string                       | The source text to process. (or --text-file <path>)                         |
+| `--project`     | string                       | The project identifier.                                                     |
+| `--plan`        | string                       | The plan identifier.                                                        |
+| `--instruction` | string                       | Instructions for organizing the source text. (or --instruction-file <path>) |
+| `--issue`       | string                       | The issue identifier.                                                       |
+| `--file`        | path                         | A file whose text goes with it (repeatable). (uploaded first, repeatable)   |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -152,9 +152,9 @@ For people only: a scoped API key or an organization’s API key is refused (403
 nb-studio intake file delete <file>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `file`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `file`   | The file identifier. |
 
 | Flag    | Type    | Description                                        |
 | ------- | ------- | -------------------------------------------------- |
@@ -176,9 +176,9 @@ For people only: a scoped API key or an organization’s API key is refused (403
 nb-studio intake file upload --file <path>
 ```
 
-| Flag     | Type | Description |
-| -------- | ---- | ----------- |
-| `--file` | path | (required)  |
+| Flag     | Type | Description                    |
+| -------- | ---- | ------------------------------ |
+| `--file` | path | The file to upload. (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -196,13 +196,13 @@ Starts a conversation with an agent that organizes the text and files into issue
 nb-studio intake organize --text <string>
 ```
 
-| Flag        | Type   | Description                       |
-| ----------- | ------ | --------------------------------- |
-| `--text`    | string | (required; or --text-file <path>) |
-| `--title`   | string |                                   |
-| `--agent`   | string |                                   |
-| `--project` | string |                                   |
-| `--files`   | json   |                                   |
+| Flag        | Type   | Description                                                                |
+| ----------- | ------ | -------------------------------------------------------------------------- |
+| `--text`    | string | The source text to organize into issues. (required; or --text-file <path>) |
+| `--title`   | string | The intake conversation title.                                             |
+| `--agent`   | string | The agent to organize this intake.                                         |
+| `--project` | string | The destination project identifier.                                        |
+| `--files`   | json   | Files to include, with their names and extracted text.                     |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -228,8 +228,8 @@ nb-studio intake split
 
 | Flag        | Type   | Description                                                               |
 | ----------- | ------ | ------------------------------------------------------------------------- |
-| `--text`    | string | (or --text-file <path>)                                                   |
-| `--project` | string |                                                                           |
+| `--text`    | string | The source text to process. (or --text-file <path>)                       |
+| `--project` | string | The project identifier.                                                   |
 | `--file`    | path   | A file whose text goes with it (repeatable). (uploaded first, repeatable) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.

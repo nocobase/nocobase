@@ -28,9 +28,9 @@ What a run of the agent would be sent now in a scenario, rendered on a made-up s
 nb-studio agent brief <agent>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `agent`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `agent`  | The agent identifier. |
 
 | Flag         | Type   | Description                                                                                                                                  |
 | ------------ | ------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -81,9 +81,9 @@ An agent as the Agent page shows it. An application’s own agent, such as a pro
 nb-studio agent get <agent>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `agent`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `agent`  | The agent identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -101,15 +101,15 @@ The changes to the agent's configuration, newest first; `afterRevision` reads on
 nb-studio agent history <agent>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `agent`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `agent`  | The agent identifier. |
 
-| Flag           | Type    | Description  |
-| -------------- | ------- | ------------ |
-| `--after`      | integer |              |
-| `--limit`      | integer | (default 50) |
-| `--page-token` | string  |              |
+| Flag           | Type    | Description                                           |
+| -------------- | ------- | ----------------------------------------------------- |
+| `--after`      | integer | Return history after this revision.                   |
+| `--limit`      | integer | The maximum number of records to return. (default 50) |
+| `--page-token` | string  | The continuation token returned by the previous page. |
 
 **Output:** A list (table columns: `revision`, `action`, `actorName`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -173,16 +173,16 @@ Writes what an agent discovered from runners is good at, its default reasoning e
 nb-studio agent update <agent> --expected-revision <integer>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `agent`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `agent`  | The agent identifier. |
 
 | Flag                  | Type    | Description                                                                                                      |
 | --------------------- | ------- | ---------------------------------------------------------------------------------------------------------------- |
 | `--good-at`           | string  | What it is good at: the project manager hands it work by this. Required to enable it. (or --good-at-file <path>) |
 | `--effort`            | string  | Its default reasoning effort, one of its tool's; null for the tool's default.                                    |
 | `--enabled`           | boolean | Offer it work, or stop offering it.                                                                              |
-| `--expected-revision` | integer | (required)                                                                                                       |
+| `--expected-revision` | integer | The revision last read; reject if the record has changed. (required)                                             |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

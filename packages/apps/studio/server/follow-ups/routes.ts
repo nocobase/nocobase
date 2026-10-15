@@ -52,7 +52,9 @@ import { FOLLOW_UPS_MAX } from '../../shared/follow-ups.js';
 import { createFollowUps } from './service.js';
 
 const tags = ['Studio'];
-const Params = z.object({ issueId: z.string().min(1) });
+const Params = z.object({
+  issueId: z.string().min(1).describe('The issue identifier.'),
+});
 const IssueParams = z.object({
   issueId: z
     .string()

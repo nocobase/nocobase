@@ -17,13 +17,19 @@ import { CI_STATES } from '../../shared/releases.js';
 import { CiRunInput } from '../builds/ci-run-schemas.js';
 import { DeploySettingsInput } from '../releases/schemas.js';
 
-export const ProjectParams = z.object({ projectId: z.string().min(1) });
+export const ProjectParams = z.object({
+  projectId: z.string().min(1).describe('The project identifier.'),
+});
 
 const prompt = z.string().nullable().optional();
 
 /** Where a working directory is and what comes with it, a new project's or one added to a project. */
 const codeLocationFields = {
-  initAgentId: z.string().nullable().optional(),
+  initAgentId: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The init agent identifier.'),
   newRepo: z
     .strictObject({
       connectionId: z.string(),
@@ -62,7 +68,8 @@ const codeLocationFields = {
           }),
       ]),
     })
-    .optional(),
+    .optional()
+    .describe('Repository settings for a new project.'),
   existingRepo: z
     .strictObject({
       connectionId: z.string().nullable().optional(),
@@ -83,8 +90,13 @@ const codeLocationFields = {
       path: z.string(),
       initPrompt: prompt,
     })
-    .optional(),
-  label: z.string().nullable().optional(),
+    .optional()
+    .describe('The working directory on the runner.'),
+  label: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('A label for this resource.'),
   deploy: DeploySettingsInput.nullable().optional().meta({
     description:
       'A repository’s "Deploy & previews" choices: the Apps they need are created and linked once it is added.',
@@ -96,15 +108,27 @@ const codeLocationFields = {
 };
 
 export const NewProjectInput = z.strictObject({
-  name: z.string(),
-  description: z.string().nullable().optional(),
-  workflowId: z.string().nullable().optional(),
-  codeLocation: z.enum(CODE_LOCATIONS),
+  name: z.string().describe('The name to display.'),
+  description: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('A description of the record.'),
+  workflowId: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The workflow identifier.'),
+  codeLocation: z
+    .enum(CODE_LOCATIONS)
+    .describe('The code location where the project will be developed.'),
   ...codeLocationFields,
 });
 
 export const AddCodeLocationInput = z.strictObject({
-  codeLocation: z.enum(['newRepo', 'existingRepo', 'runnerDirectory']),
+  codeLocation: z
+    .enum(['newRepo', 'existingRepo', 'runnerDirectory'])
+    .describe('The code location where the project will be developed.'),
   ...codeLocationFields,
 });
 
@@ -181,7 +205,7 @@ const codeLocationResultFields = {
     description: 'The working directory, when the code lives somewhere.',
   }),
   repo: z.object({ fullName: z.string(), url: z.string() }).nullable(),
-  initIssueId: z.string().nullable(),
+  initIssueId: z.string().nullable().describe('The init issue identifier.'),
   initIssueIdentifier: z.string().nullable(),
   init: ProjectInitSchema.nullable(),
   apps: z

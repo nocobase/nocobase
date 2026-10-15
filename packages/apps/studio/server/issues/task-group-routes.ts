@@ -51,12 +51,12 @@ import { createTaskGroups } from './task-groups.js';
 const tags = ['Studio'];
 
 const Query = z.object({
-  q: z.string().max(500).optional(),
-  statusKey: z.string().optional(),
-  projectId: z.string().optional(),
-  ownerUserId: z.string().optional(),
-  executorId: z.string().optional(),
-  labelId: z.string().optional(),
+  q: z.string().max(500).optional().describe('Text to search for.'),
+  statusKey: z.string().optional().describe('Filter by issue status key.'),
+  projectId: z.string().optional().describe('The project identifier.'),
+  ownerUserId: z.string().optional().describe('The owner user identifier.'),
+  executorId: z.string().optional().describe('The executor identifier.'),
+  labelId: z.string().optional().describe('The label identifier.'),
   sort: z.enum(['updated', 'created', 'number', 'priority']).optional(),
   direction: z.enum(['asc', 'desc']).optional(),
   mode: z.enum(['split', 'table']).optional().meta({
@@ -67,7 +67,7 @@ const Query = z.object({
     description:
       '`all`: the follow group holds every followed task the search matches, beyond the other filters.',
   }),
-  group: z.enum(TASK_GROUP_IDS).optional(),
+  group: z.enum(TASK_GROUP_IDS).optional().describe('The API key scope group.'),
   generation: z.string().optional().meta({
     description:
       'The generation of the first response; required with a cursor.',

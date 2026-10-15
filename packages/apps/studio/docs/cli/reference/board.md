@@ -12,14 +12,14 @@ Retries the run, hands the issue to a person or cancels; the issue’s owner or 
 nb-studio board failed-run decide <run> --action <string>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `run`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `run`    | The run identifier. |
 
-| Flag       | Type                        | Description |
-| ---------- | --------------------------- | ----------- |
-| `--action` | retry \| reassign \| cancel | (required)  |
-| `--user`   | string                      |             |
+| Flag       | Type                        | Description                       |
+| ---------- | --------------------------- | --------------------------------- |
+| `--action` | retry \| reassign \| cancel | The decision to apply. (required) |
+| `--user`   | string                      | The user identifier.              |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -44,13 +44,13 @@ The issues agents are involved in that the caller may see, by section, with the 
 nb-studio board get
 ```
 
-| Flag         | Type   | Description |
-| ------------ | ------ | ----------- |
-| `--q`        | string |             |
-| `--project`  | string |             |
-| `--label`    | string |             |
-| `--owner`    | string |             |
-| `--executor` | string |             |
+| Flag         | Type   | Description                |
+| ------------ | ------ | -------------------------- |
+| `--q`        | string | Text to search for.        |
+| `--project`  | string | The project identifier.    |
+| `--label`    | string | The label identifier.      |
+| `--owner`    | string | The owner user identifier. |
+| `--executor` | string | The executor identifier.   |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -74,9 +74,9 @@ At most 100 issue IDs. Only visible issues with an agent executor are returned. 
 nb-studio board issue-work --issue-ids <string[]>
 ```
 
-| Flag          | Type     | Description            |
-| ------------- | -------- | ---------------------- |
-| `--issue-ids` | string[] | (required; repeatable) |
+| Flag          | Type     | Description                                                                       |
+| ------------- | -------- | --------------------------------------------------------------------------------- |
+| `--issue-ids` | string[] | The issue identifiers whose agent work should be returned. (required; repeatable) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -94,9 +94,9 @@ Needs a caller who sees the issue and may edit issues; nothing starts in backlog
 nb-studio board start <issue>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

@@ -28,6 +28,8 @@ import type {
 } from '@nocobase/app-plugin-agents/server/tokens';
 import { grantableToAgents } from '../../access/action-policy.js';
 import { narrowedProjectPermissions } from '../../access/key-scope.js';
+import { projectPermissionsOf } from '../../access/service.js';
+import type { Permissions as StudioPermissions } from '../../../shared/access.js';
 import { CALLER_ACTIONS, DERIVED_ACTIONS } from '../capabilities.js';
 import { askerActor, type AskerLookup } from '../conversation/acting.js';
 import { INTAKE_SUBJECT } from '../intake/subject.js';
@@ -69,6 +71,9 @@ export function translated(error: unknown): unknown {
 }
 
 export interface PermissionSource {
+  manifestPermissions?(
+    identity: CallerIdentity,
+  ): Promise<{ permissions: Permissions; settings: readonly string[] }>;
   /** What `identity` may do in projects, already narrowed for a run. */
   permissionsOf(identity: CallerIdentity): Promise<Permissions>;
   viewerOf(identity: CallerIdentity): Promise<Viewer>;
@@ -77,11 +82,14 @@ export interface PermissionSource {
 export function createPermissionSource(
   access: () => Pick<ProjectsAccess, 'permissionsOfUser'> | undefined,
   askerOf: AskerLookup = () => Promise.resolve(null),
+  manifestSource?: (userId: string) => Promise<StudioPermissions>,
 ): PermissionSource {
   async function permissionsOf(identity: CallerIdentity): Promise<Permissions> {
     const of = access()?.permissionsOfUser;
     if (!of) return { scopes: noAbilities(), settings: noSettings() };
-    const owner = await of(identity.userId);
+    return narrow(identity, await of(identity.userId));
+  }
+  function narrow(identity: CallerIdentity, owner: Permissions): Permissions {
     // A person on the CLI with a scoped API key (or an organization's API key) holds no more than the key's scope.
     const base = identity.keyScope
       ? narrowedProjectPermissions(owner, identity.keyScope)
@@ -99,6 +107,33 @@ export function createPermissionSource(
     return { scopes, settings: noSettings() };
   }
   return {
+    ...(manifestSource
+      ? {
+          async manifestPermissions(identity: CallerIdentity) {
+            // Replace the projects-only read with the same access snapshot before projection; never read it twice.
+            const snapshot = await manifestSource(identity.userId);
+            return {
+              permissions: narrow(identity, projectPermissionsOf(snapshot)),
+              settings:
+                identity.kind === 'run'
+                  ? []
+                  : Object.entries(snapshot.settings)
+                      .filter(([key, held]) => {
+                        if (!held) return false;
+                        const slash = key.lastIndexOf('/');
+                        return (
+                          !identity.keyScope ||
+                          identity.keyScope.allows(
+                            { type: 'settings', id: key.slice(0, slash) },
+                            key.slice(slash + 1),
+                          )
+                        );
+                      })
+                      .map(([key]) => key),
+            };
+          },
+        }
+      : {}),
     permissionsOf,
     async viewerOf(identity) {
       const asker = await askerOf(identity);
@@ -141,29 +176,43 @@ export function createActionGate(
   source: PermissionSource,
   more: readonly ActionSource[] = [],
 ): ActionGate {
+  async function allowedOf(
+    identity: CallerIdentity,
+    { scopes }: Permissions,
+  ): Promise<ReadonlySet<string>> {
+    const allowed = new Set(
+      Object.entries(scopes)
+        .filter(([, scope]) => scope !== 'none')
+        .map(([key]) => key),
+    );
+    if (isIntakeRun(identity)) {
+      allowed.add(INTAKE_PROPOSE_ACTION);
+      return allowed;
+    }
+    for (const extra of more)
+      for (const key of await extra(identity)) allowed.add(key);
+    for (const key of CALLER_ACTIONS) allowed.add(key);
+    for (const [derived, base] of Object.entries(DERIVED_ACTIONS)) {
+      if (allowed.has(base)) allowed.add(derived);
+    }
+    return allowed;
+  }
   return {
+    ...(source.manifestPermissions
+      ? {
+          async manifestPermissions(identity: CallerIdentity) {
+            const snapshot = await source.manifestPermissions!(identity);
+            return {
+              actions: await allowedOf(identity, snapshot.permissions),
+              settings: snapshot.settings,
+            };
+          },
+        }
+      : {}),
     // A consulted agent only reads, and proposes plans the person confirms in their conversation.
     consultable: (action) => action === PLANS_USE_ACTION,
     async allowed(identity) {
-      const { scopes } = await source.permissionsOf(identity);
-      const allowed = new Set(
-        Object.entries(scopes)
-          .filter(([, scope]) => scope !== 'none')
-          .map(([key]) => key),
-      );
-      if (isIntakeRun(identity)) {
-        allowed.add(INTAKE_PROPOSE_ACTION);
-        return allowed;
-      }
-      for (const extra of more)
-        for (const key of await extra(identity)) allowed.add(key);
-      for (const key of CALLER_ACTIONS) allowed.add(key);
-      // Derived actions inherit the running identity's base permission.
-      for (const [derived, base] of Object.entries(DERIVED_ACTIONS)) {
-        if (!allowed.has(base)) continue;
-        allowed.add(derived);
-      }
-      return allowed;
+      return allowedOf(identity, await source.permissionsOf(identity));
     },
   };
 }

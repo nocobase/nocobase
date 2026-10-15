@@ -12,10 +12,10 @@ Requires the `configure` action on the App. People only.
 nb-studio release config-template <app> <release>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `app`     |             |
-| `release` |             |
+| Argument  | Description                       |
+| --------- | --------------------------------- |
+| `app`     | The application identifier.       |
+| `release` | The release identifier to deploy. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -33,10 +33,10 @@ Requires the `view` action on the App.
 nb-studio release get <app> <release>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `app`     |             |
-| `release` |             |
+| Argument  | Description                       |
+| --------- | --------------------------------- |
+| `app`     | The application identifier.       |
+| `release` | The release identifier to deploy. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -54,19 +54,19 @@ Requires the `upload` action on the App. Registers an OCI image CI built and pus
 nb-studio release image <app> --version <string> --ref <string> --digest <string>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
 | Flag          | Type    | Description                                                                                               |
 | ------------- | ------- | --------------------------------------------------------------------------------------------------------- |
 | `--deploy`    | boolean | Deploy it once registered; the answer then names the deployment (`deploymentId`).                         |
-| `--version`   | string  | (required)                                                                                                |
-| `--ref`       | string  | (required)                                                                                                |
-| `--digest`    | string  | (required)                                                                                                |
-| `--platform`  | string  |                                                                                                           |
-| `--commit`    | string  |                                                                                                           |
-| `--build`     | string  |                                                                                                           |
+| `--version`   | string  | The release version label. (required)                                                                     |
+| `--ref`       | string  | The image reference or Git revision. (required)                                                           |
+| `--digest`    | string  | The immutable container image digest. (required)                                                          |
+| `--platform`  | string  | The container image platform.                                                                             |
+| `--commit`    | string  | The source Git commit.                                                                                    |
+| `--build`     | string  | Build metadata for the image.                                                                             |
 | `--label`     | json    | A label (key=value); repeat for more.                                                                     |
 | `--variables` | json    | The build’s variables manifest; pass `--variables-file dist/variables.json`. (or --variables-file <path>) |
 
@@ -92,15 +92,15 @@ Requires the `view` action on the App. `label=key=value` (repeatable) filters by
 nb-studio release list <app>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
-| Flag      | Type    | Description                           |
-| --------- | ------- | ------------------------------------- |
-| `--page`  | integer | (default 1)                           |
-| `--limit` | integer | (default 20)                          |
-| `--label` | json    | A label (key=value); repeat for more. |
+| Flag      | Type    | Description                                           |
+| --------- | ------- | ----------------------------------------------------- |
+| `--page`  | integer | The page number, starting at 1. (default 1)           |
+| `--limit` | integer | The maximum number of records to return. (default 20) |
+| `--label` | json    | A label (key=value); repeat for more.                 |
 
 **Output:** A list (table columns: `id`, `version`, `createdAt`, `createdVia`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -118,9 +118,9 @@ For whoever sees the project: its finished issues not in production yet.
 nb-studio release pending <project>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `project` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `project` | The project identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -154,15 +154,15 @@ Requires the `view` action on this App and `upload` on `toAppId`. Copies the rel
 nb-studio release promote <app> <release> --to <string>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `app`     |             |
-| `release` |             |
+| Argument  | Description                       |
+| --------- | --------------------------------- |
+| `app`     | The application identifier.       |
+| `release` | The release identifier to deploy. |
 
-| Flag      | Type   | Description                           |
-| --------- | ------ | ------------------------------------- |
-| `--to`    | string | (required)                            |
-| `--label` | json   | A label (key=value); repeat for more. |
+| Flag      | Type   | Description                                        |
+| --------- | ------ | -------------------------------------------------- |
+| `--to`    | string | The destination application identifier. (required) |
+| `--label` | json   | A label (key=value); repeat for more.              |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -180,10 +180,10 @@ Requires the `upload` action on the App.
 nb-studio release update <app> <release> --label <json>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `app`     |             |
-| `release` |             |
+| Argument  | Description                       |
+| --------- | --------------------------------- |
+| `app`     | The application identifier.       |
+| `release` | The release identifier to deploy. |
 
 | Flag      | Type | Description                                                            |
 | --------- | ---- | ---------------------------------------------------------------------- |
@@ -207,7 +207,7 @@ nb-studio release upload --app <string> --file <path>
 
 | Flag           | Type   | Description                                                                                                                                                                                                                                                 |
 | -------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--app`        | string | The App the build is of, which `nb-studio app ensure` makes; `<app>-pr-<number>` for a pull request’s preview by convention. (required)                                                                                                                     |
+| `--app`        | string | The application identifier. (required)                                                                                                                                                                                                                      |
 | `--sha`        | string | The full commit hash the archive is built from; it must belong to the repository. (required; default from pull_request.head.sha of $GITHUB_EVENT_PATH or $GITHUB_SHA or $CI_MERGE_REQUEST_SOURCE_BRANCH_SHA or $CI_COMMIT_SHA)                              |
 | `--repository` | string | The repository the commit is verified in, as `owner/repo`; when none is named, the one the App was recorded or made for, else the one whose CI key the credential is. A CI key may name only its own. (default from $GITHUB_REPOSITORY or $CI_PROJECT_PATH) |
 | `--file`       | path   | The archive CI built (`dist.tar.gz`). (required; streamed to an upload ticket, at most 268435456 bytes)                                                                                                                                                     |
@@ -234,10 +234,10 @@ Requires the `view` action on the App. The variables the build declared (`dist/v
 nb-studio release variables <app> <release>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `app`     |             |
-| `release` |             |
+| Argument  | Description                       |
+| --------- | --------------------------------- |
+| `app`     | The application identifier.       |
+| `release` | The release identifier to deploy. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

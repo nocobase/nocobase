@@ -12,13 +12,13 @@ Requires both the `create` and the `assign-role` actions. A role scope marked `r
 nb-studio user create --name <string> --email <string> --password <string>
 ```
 
-| Flag            | Type   | Description |
-| --------------- | ------ | ----------- |
-| `--name`        | string | (required)  |
-| `--username`    | string |             |
-| `--email`       | string | (required)  |
-| `--password`    | string | (required)  |
-| `--role-scopes` | json   |             |
+| Flag            | Type   | Description                          |
+| --------------- | ------ | ------------------------------------ |
+| `--name`        | string | The name to display. (required)      |
+| `--username`    | string | The username used to sign in.        |
+| `--email`       | string | The user’s email address. (required) |
+| `--password`    | string | The password to set. (required)      |
+| `--role-scopes` | json   | Role assignments grouped by scope.   |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -42,9 +42,9 @@ Requires `confirm=true`.
 nb-studio user delete <user> --confirm <string>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `user`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `user`   | The user identifier. |
 
 | Flag        | Type   | Description                                      |
 | ----------- | ------ | ------------------------------------------------ |
@@ -72,9 +72,9 @@ A disabled user can no longer sign in.
 nb-studio user disable <user>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `user`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `user`   | The user identifier. |
 
 | Flag    | Type    | Description                                                                  |
 | ------- | ------- | ---------------------------------------------------------------------------- |
@@ -94,9 +94,9 @@ Enable a user
 nb-studio user enable <user>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `user`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `user`   | The user identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -114,10 +114,10 @@ Requires the `invite` action, and `assign-role` as well when `roleScopes` is giv
 nb-studio user invitation create --emails <string[]>
 ```
 
-| Flag            | Type     | Description            |
-| --------------- | -------- | ---------------------- |
-| `--emails`      | string[] | (required; repeatable) |
-| `--role-scopes` | json     |                        |
+| Flag            | Type     | Description                                           |
+| --------------- | -------- | ----------------------------------------------------- |
+| `--emails`      | string[] | The email addresses to invite. (required; repeatable) |
+| `--role-scopes` | json     | Role assignments grouped by scope.                    |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -139,9 +139,9 @@ Revoke an invitation
 nb-studio user invitation delete <invitation>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `invitation` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `invitation` | The invitation identifier. |
 
 | Flag    | Type    | Description                                                               |
 | ------- | ------- | ------------------------------------------------------------------------- |
@@ -177,9 +177,9 @@ Send an invitation again
 nb-studio user invitation resend <invitation>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `invitation` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `invitation` | The invitation identifier. |
 
 | Flag           | Type    | Description                                                                                                |
 | -------------- | ------- | ---------------------------------------------------------------------------------------------------------- |
@@ -201,14 +201,14 @@ List users
 nb-studio user list
 ```
 
-| Flag           | Type                | Description |
-| -------------- | ------------------- | ----------- |
-| `--page`       | integer             |             |
-| `--limit`      | integer             |             |
-| `--q`          | string              |             |
-| `--status`     | enabled \| disabled |             |
-| `--role-scope` | string              |             |
-| `--role`       | string              |             |
+| Flag           | Type                | Description                              |
+| -------------- | ------------------- | ---------------------------------------- |
+| `--page`       | integer             | The page number, starting at 1.          |
+| `--limit`      | integer             | The maximum number of records to return. |
+| `--q`          | string              | Text to search for.                      |
+| `--status`     | enabled \| disabled | The status to set or filter by.          |
+| `--role-scope` | string              | Filter by role scope.                    |
+| `--role`       | string              | Filter by role key.                      |
 
 **Output:** A list (table columns: `id`, `name`, `email`, `disabledAt`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -238,9 +238,9 @@ Remove one of my preferences
 nb-studio user preference delete <key>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `key`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `key`    | The preference key. |
 
 **Output:** Nothing; prints `Done.`.
 
@@ -272,13 +272,13 @@ Set one of my preferences
 nb-studio user preference set <key> --value <json>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `key`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `key`    | The preference key. |
 
-| Flag      | Type | Description |
-| --------- | ---- | ----------- |
-| `--value` | json | (required)  |
+| Flag      | Type | Description                    |
+| --------- | ---- | ------------------------------ |
+| `--value` | json | The value to store. (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -314,13 +314,13 @@ Reset a user's password
 nb-studio user reset-password <user> --password <string>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `user`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `user`   | The user identifier. |
 
-| Flag         | Type   | Description |
-| ------------ | ------ | ----------- |
-| `--password` | string | (required)  |
+| Flag         | Type   | Description                     |
+| ------------ | ------ | ------------------------------- |
+| `--password` | string | The password to set. (required) |
 
 **Output:** Nothing; prints `Done.`.
 
@@ -336,9 +336,9 @@ Sign a user out of every session
 nb-studio user revoke-sessions <user>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `user`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `user`   | The user identifier. |
 
 | Flag    | Type    | Description                                                    |
 | ------- | ------- | -------------------------------------------------------------- |
@@ -360,14 +360,14 @@ A `single` scope takes one role; a `multiple` scope takes a list without duplica
 nb-studio user role-scope set <user> <scope> --value <json>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `user`   |             |
-| `scope`  |             |
+| Argument | Description                |
+| -------- | -------------------------- |
+| `user`   | The user identifier.       |
+| `scope`  | The role scope identifier. |
 
-| Flag      | Type | Description |
-| --------- | ---- | ----------- |
-| `--value` | json | (required)  |
+| Flag      | Type | Description                    |
+| --------- | ---- | ------------------------------ |
+| `--value` | json | The value to store. (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -385,15 +385,15 @@ Changes name, username or email. `username: null` removes the username.
 nb-studio user update <user>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `user`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `user`   | The user identifier. |
 
-| Flag         | Type   | Description |
-| ------------ | ------ | ----------- |
-| `--name`     | string |             |
-| `--username` | string |             |
-| `--email`    | string |             |
+| Flag         | Type   | Description                   |
+| ------------ | ------ | ----------------------------- |
+| `--name`     | string | The name to display.          |
+| `--username` | string | The username used to sign in. |
+| `--email`    | string | The user’s email address.     |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

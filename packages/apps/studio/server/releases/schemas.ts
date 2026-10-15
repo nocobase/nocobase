@@ -28,13 +28,13 @@ export const DeploySettingsInput: z.ZodType<DeploySettings> = z
   .strictObject({
     previewEnvironmentId: environmentId(
       'Where pull requests are previewed: an environment that runs uploaded archives and is not protected; null for no previews.',
-    ),
+    ).describe('The preview environment identifier.'),
     stagingEnvironmentId: environmentId(
       'The staging environment, built from the default branch; null for none.',
-    ),
+    ).describe('The staging environment identifier.'),
     productionEnvironmentId: environmentId(
       'The production environment, built from tags; null for none.',
-    ),
+    ).describe('The production environment identifier.'),
     configureCi: z.boolean().meta({
       description:
         'Whether Studio sets the repository’s CI up by itself: an API key limited to its Apps written as a repository secret, and the workflow committed or proposed in a pull request (`GET …/ci`).',
@@ -55,8 +55,19 @@ export const AppRepositoriesQuery = z.object({
 });
 
 export const RepositoryBuildsQuery = z.object({
-  page: z.coerce.number().int().min(1).optional(),
-  pageSize: z.coerce.number().int().min(1).max(50).optional(),
+  page: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .optional()
+    .describe('The page number, starting at 1.'),
+  pageSize: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .optional()
+    .describe('The maximum number of records to return.'),
 });
 
 export const RepositoryBuildsMeta = z.object({
@@ -70,20 +81,24 @@ export const RepositoryBuildsMeta = z.object({
 
 /** The complete set of links: which Apps exist and what they run is the service's to check (`links.ts`). */
 export const SaveRepositoryDeploymentInput = z.strictObject({
-  apps: z.array(
-    z.strictObject({
-      appId: z.string(),
-      role: z.enum(APP_ROLES).nullable().optional(),
-      previewEnvironmentId: z.string().nullable().optional(),
-    }),
-  ),
+  apps: z
+    .array(
+      z.strictObject({
+        appId: z.string(),
+        role: z.enum(APP_ROLES).nullable().optional(),
+        previewEnvironmentId: z.string().nullable().optional(),
+      }),
+    )
+    .describe('The applications deployed from this repository.'),
   plan: DeploySettingsInput.optional().meta({
     description:
       'The simple choices: the Apps they need are created and linked, and a role they leave out is unlinked.',
   }),
 });
 
-export const AppParams = z.object({ appId: z.string().min(1).max(128) });
+export const AppParams = z.object({
+  appId: z.string().min(1).max(128).describe('The application identifier.'),
+});
 
 // --- Responses -----------------------------------------------------------------------------------------------------
 

@@ -41,9 +41,9 @@ The live previews of the pull requests linked to issues the caller may see, each
 nb-studio preview list
 ```
 
-| Flag        | Type   | Description |
-| ----------- | ------ | ----------- |
-| `--project` | string |             |
+| Flag        | Type   | Description             |
+| ----------- | ------ | ----------------------- |
+| `--project` | string | The project identifier. |
 
 **Output:** A list (table columns: `identifier`, `appId`, `status`, `runtime.state`, `url`, `deployedSha`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -93,7 +93,7 @@ nb-studio preview preference set --not-required
 | Flag             | Type    | Description                                                                          |
 | ---------------- | ------- | ------------------------------------------------------------------------------------ |
 | `--issue`        | string  | The issue, by identifier (PM-12) or id; in a run on an issue, that issue by default. |
-| `--not-required` | boolean | (required)                                                                           |
+| `--not-required` | boolean | Whether this issue can be accepted without a preview. (required)                     |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -111,10 +111,10 @@ For whoever may edit the issue. Deploys the build of the preview’s head again 
 nb-studio preview retry <issue> <app>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `issue`  | The issue identifier.       |
+| `app`    | The application identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

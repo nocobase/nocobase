@@ -1,6 +1,7 @@
 // @vitest-environment node
 import assert from 'node:assert/strict';
 import { test } from 'vitest';
+import { format } from 'prettier';
 
 import {
   commandSection,
@@ -116,4 +117,33 @@ test('repeatable enum flags stay within one Markdown table cell', () => {
   );
   assert.ok(section.includes('| `--type` | text \\| input | (repeatable) |'));
   assert.ok(!section.includes('text \\\\| input'));
+});
+
+test('kind and attribution enums keep one escape after Markdown formatting', async () => {
+  const section = commandSection(
+    {
+      ...comment,
+      parameters: ['kind', 'attribution'].map((name) => ({
+        name,
+        field: name,
+        in: 'body',
+        type: 'string',
+        required: false,
+        enum: name === 'kind' ? ['app', 'token'] : ['withAgent', 'meOnly'],
+        description: 'Choose the policy to use.',
+      })),
+    },
+    'nb-studio',
+  );
+  const formatted = await format(section, { parser: 'markdown' });
+  for (const name of ['kind', 'attribution']) {
+    const row = formatted
+      .split('\n')
+      .find((line) => line.includes(`\`--${name}\``));
+    assert.ok(row);
+    const values = name === 'kind' ? ['app', 'token'] : ['withAgent', 'meOnly'];
+    assert.ok(row.includes(values.join(' \\| ')));
+    assert.ok(!row.includes(values.join(' \\\\| ')));
+    assert.equal(row.split(/(?<!\\)\|/u).length, 5);
+  }
 });

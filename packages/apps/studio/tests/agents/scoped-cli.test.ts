@@ -14,7 +14,7 @@ import {
   type Permissions,
   type Scope,
 } from '@nocobase/app-plugin-projects/shared/access';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { registerStudioKeyScopes } from '../../server/access/key-scopes.js';
 import { testCatalog } from '../access/registry.js';
@@ -54,6 +54,46 @@ function scoped(
 }
 
 describe('the CLI gateway with a scoped API key', () => {
+  it('reuses one access snapshot for manifest actions and all settings, bounded by credential', async () => {
+    const read = vi.fn(async () => ({
+      ...everything,
+      settings: {
+        ...everything.settings,
+        'agents.agents/read': true,
+        'agents.runners/manage': true,
+      },
+    }));
+    const projectRead = vi.fn(async () => everything);
+    const source = createPermissionSource(
+      () => ({ permissionsOfUser: projectRead }),
+      undefined,
+      read,
+    );
+    const gate = createActionGate(source);
+    const user = {
+      kind: 'user',
+      userId: 'alice',
+      displayName: 'Alice',
+    } as const;
+    const admin = await gate.manifestPermissions!(user);
+    expect(admin.settings).toContain('agents.agents/read');
+    expect(admin.actions).not.toContain('agents.agents/read');
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(projectRead).not.toHaveBeenCalled();
+    expect(
+      (
+        await gate.manifestPermissions!(
+          scoped({ 'projects.issues': { level: 'read' } }),
+        )
+      ).settings,
+    ).toEqual([]);
+    expect(
+      (await gate.manifestPermissions!({ ...user, kind: 'run' })).settings,
+    ).toEqual([]);
+    read.mockResolvedValueOnce({ ...everything, settings: noSettings() });
+    expect((await gate.manifestPermissions!(user)).settings).toEqual([]);
+    expect(projectRead).not.toHaveBeenCalled();
+  });
   const source = createPermissionSource(() => ({
     permissionsOfUser: () => Promise.resolve(everything),
   }));

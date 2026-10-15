@@ -135,44 +135,66 @@ export interface Paging {
 }
 
 export const AgentParams: z.ZodType<{ agentId: string }> = z.object({
-  agentId: id,
+  agentId: id.describe('The agent identifier.'),
 });
 export const RunParams: z.ZodType<{ runId: string }> = z.object({
-  runId: id,
+  runId: id.describe('The run identifier.'),
 });
 export const SkillParams: z.ZodType<{ skillId: string }> = z.object({
-  skillId: id,
+  skillId: id.describe('The skill identifier.'),
 });
 export const SkillVersionParams: z.ZodType<{
   skillId: string;
   version: number;
-}> = z.object({ skillId: id, version: z.coerce.number().int().min(1) });
+}> = z.object({
+  skillId: id.describe('The skill identifier.'),
+  version: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .describe('The version to read or restore.'),
+});
 export const ScopeParams: z.ZodType<{ scopeKind: string; scopeId: string }> =
-  z.object({ scopeKind: id, scopeId: id });
+  z.object({ scopeKind: id, scopeId: id.describe('The scope identifier.') });
 export const VariableParams: z.ZodType<{
   scopeKind: string;
   scopeId: string;
   variableName: string;
-}> = z.object({ scopeKind: id, scopeId: id, variableName: id });
+}> = z.object({
+  scopeKind: id,
+  scopeId: id.describe('The scope identifier.'),
+  variableName: id.describe('The variable name.'),
+});
 export const WorkspaceParams: z.ZodType<{
   subjectKind: string;
   subjectId: string;
-}> = z.object({ subjectKind: id, subjectId: id });
+}> = z.object({
+  subjectKind: id.describe('The kind of subject.'),
+  subjectId: id.describe('The subject identifier.'),
+});
 export const ConversationParams: z.ZodType<{ conversationId: string }> =
-  z.object({ conversationId: id });
+  z.object({ conversationId: id.describe('The conversation identifier.') });
 export const ServiceParams: z.ZodType<{ serviceName: string }> = z.object({
-  serviceName: id,
+  serviceName: id.describe('The configured model service name.'),
 });
 export const RunnerParams: z.ZodType<{ runnerId: string }> = z.object({
-  runnerId: id,
+  runnerId: id.describe('The runner identifier.'),
 });
-export const JobParams: z.ZodType<{ jobId: string }> = z.object({ jobId: id });
+export const JobParams: z.ZodType<{ jobId: string }> = z.object({
+  jobId: id.describe('The job identifier.'),
+});
 export const RunSkillParams: z.ZodType<{ runId: string; slug: string }> =
-  z.object({ runId: id, slug: id });
+  z.object({
+    runId: id.describe('The run identifier.'),
+    slug: id.describe('The document’s stable URL slug.'),
+  });
 export const RunMountParams: z.ZodType<{ runId: string; name: string }> =
-  z.object({ runId: id, name: id });
+  z.object({
+    runId: id.describe('The run identifier.'),
+    name: id.describe('The name to display.'),
+  });
 export const CommandParams: z.ZodType<{ commandId: string }> = z.object({
-  commandId: id,
+  commandId: id.describe('The command identifier.'),
 });
 export const DistTargetParams: z.ZodType<{ product: string; target: string }> =
   z.object({ product: id, target: id });
@@ -180,7 +202,11 @@ export const DistFileParams: z.ZodType<{
   product: string;
   version: string;
   file: string;
-}> = z.object({ product: id, version: id, file: id });
+}> = z.object({
+  product: id,
+  version: id.describe('The version to read or restore.'),
+  file: id.describe('The file to upload.'),
+});
 
 export const AgentListQuery: z.ZodType<{ includeArchived?: boolean }> =
   z.object({ includeArchived: queryBoolean.optional() });
@@ -188,9 +214,18 @@ export const AgentListQuery: z.ZodType<{ includeArchived?: boolean }> =
 export const AgentHistoryQuery: z.ZodType<
   Paging & { readonly afterRevision?: number | undefined }
 > = z.object({
-  afterRevision: z.coerce.number().int().min(0).optional(),
-  pageSize: pageSize(50, 100),
-  pageToken,
+  afterRevision: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe('Return history after this revision.'),
+  pageSize: pageSize(50, 100).describe(
+    'The maximum number of records to return.',
+  ),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 export const PreviewBriefQuery: z.ZodType<{
@@ -203,8 +238,12 @@ export const PreviewBriefQuery: z.ZodType<{
 });
 
 export const AuditListQuery: z.ZodType<Paging> = z.object({
-  pageSize: pageSize(50, 100),
-  pageToken,
+  pageSize: pageSize(50, 100).describe(
+    'The maximum number of records to return.',
+  ),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 export const RunListQuery: z.ZodType<
@@ -215,12 +254,19 @@ export const RunListQuery: z.ZodType<
     readonly status?: RunStatus | undefined;
   }
 > = z.object({
-  subjectKind: id.optional(),
-  subjectId: id.optional(),
-  agentId: id.optional(),
-  status: z.enum(RUN_STATUSES).optional(),
-  pageSize: pageSize(50, 100),
-  pageToken,
+  subjectKind: id.optional().describe('The kind of subject.'),
+  subjectId: id.optional().describe('The subject identifier.'),
+  agentId: id.optional().describe('The agent identifier.'),
+  status: z
+    .enum(RUN_STATUSES)
+    .optional()
+    .describe('The status to set or filter by.'),
+  pageSize: pageSize(50, 100).describe(
+    'The maximum number of records to return.',
+  ),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 /**
@@ -233,7 +279,12 @@ export const RunEventsQuery: z.ZodType<
     readonly type?: RunEventType[] | undefined;
   }
 > = z.object({
-  after: z.coerce.number().int().min(0).optional(),
+  after: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe('Return messages after this cursor.'),
   // Hono represents one query value as a string and repeated values as an array.
   type: z
     .preprocess(
@@ -247,8 +298,12 @@ export const RunEventsQuery: z.ZodType<
       description:
         'Only these raw event types (repeat for more). Omit to read every type.',
     }),
-  pageSize: pageSize(500, 1000),
-  pageToken,
+  pageSize: pageSize(500, 1000).describe(
+    'The maximum number of records to return.',
+  ),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 export const UsageQuerySchema: z.ZodType<{
@@ -260,12 +315,25 @@ export const UsageQuerySchema: z.ZodType<{
   userId?: string | undefined;
   series?: boolean | undefined;
 }> = z.object({
-  from: z.string().min(1).max(40).optional(),
-  to: z.string().min(1).max(40).optional(),
-  groupBy: z.enum(USAGE_GROUP_BYS).default('agent'),
-  groupId: id.optional(),
-  agentId: id.optional(),
-  userId: id.optional(),
+  from: z
+    .string()
+    .min(1)
+    .max(40)
+    .optional()
+    .describe('The beginning of the reporting period.'),
+  to: z
+    .string()
+    .min(1)
+    .max(40)
+    .optional()
+    .describe('The end of the reporting period.'),
+  groupBy: z
+    .enum(USAGE_GROUP_BYS)
+    .default('agent')
+    .describe('The dimension to group usage by.'),
+  groupId: id.optional().describe('The group identifier.'),
+  agentId: id.optional().describe('The agent identifier.'),
+  userId: id.optional().describe('The user identifier.'),
   series: queryBoolean.optional().meta({
     description:
       'Also break each day of `daily` down by the `groupBy` key (`daily[].series`).',
@@ -276,8 +344,18 @@ export const ModelUsageQuery: z.ZodType<{
   from?: string | undefined;
   to?: string | undefined;
 }> = z.object({
-  from: z.string().min(1).max(40).optional(),
-  to: z.string().min(1).max(40).optional(),
+  from: z
+    .string()
+    .min(1)
+    .max(40)
+    .optional()
+    .describe('The beginning of the reporting period.'),
+  to: z
+    .string()
+    .min(1)
+    .max(40)
+    .optional()
+    .describe('The end of the reporting period.'),
 });
 
 export const ConversationListQuerySchema: z.ZodType<
@@ -288,25 +366,48 @@ export const ConversationListQuerySchema: z.ZodType<
     readonly source?: string | undefined;
   }
 > = z.object({
-  q: z.string().max(200).optional(),
-  archived: z.enum(['true', 'false', 'all']).optional(),
-  agentId: id.optional(),
-  source: z.string().regex(CONVERSATION_SOURCE_PATTERN).optional(),
-  pageSize: pageSize(30, 100),
-  pageToken,
+  q: z.string().max(200).optional().describe('Text to search for.'),
+  archived: z
+    .enum(['true', 'false', 'all'])
+    .optional()
+    .describe('Filter by archive state.'),
+  agentId: id.optional().describe('The agent identifier.'),
+  source: z
+    .string()
+    .regex(CONVERSATION_SOURCE_PATTERN)
+    .optional()
+    .describe('The source context associated with this record.'),
+  pageSize: pageSize(30, 100).describe(
+    'The maximum number of records to return.',
+  ),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 /** Messages, newest page first; `after` reads what arrived since a `seq`. Up to 200 for a whole short chat. */
 export const MessageListQuerySchema: z.ZodType<
   Paging & { readonly after?: number | undefined }
 > = z.object({
-  after: z.coerce.number().int().min(0).optional(),
-  pageSize: pageSize(50, 200),
-  pageToken,
+  after: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe('Return messages after this cursor.'),
+  pageSize: pageSize(50, 200).describe(
+    'The maximum number of records to return.',
+  ),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 export const ModelCatalogQuery: z.ZodType<{ kind: ModelKind }> = z.object({
-  kind: z.enum(MODEL_KINDS).default('chat'),
+  kind: z
+    .enum(MODEL_KINDS)
+    .default('chat')
+    .describe('The model capability: chat, embedding, or rerank.'),
 });
 
 export const ClaimQuery: z.ZodType<{ wait?: boolean | undefined }> = z.object({
@@ -344,31 +445,47 @@ export const VariableValueInput: z.ZodType<{
 });
 
 export const SkillRestoreInput: z.ZodType<{ expectedRevision: number }> =
-  z.strictObject({ expectedRevision: z.number().int().min(1) });
+  z.strictObject({
+    expectedRevision: z
+      .number()
+      .int()
+      .min(1)
+      .describe('The revision last read; reject if the record has changed.'),
+  });
 
 export const RunnerPatchInput: z.ZodType<RunnerPatch> = z
   .strictObject({
-    name: z.string().trim().min(1).max(200),
-    trust: z.enum(RUNNER_TRUST),
-    slots: z.number().int().min(1).max(64),
+    name: z.string().trim().min(1).max(200).describe('The name to display.'),
+    trust: z.enum(RUNNER_TRUST).describe('The runner trust level.'),
+    slots: z
+      .number()
+      .int()
+      .min(1)
+      .max(64)
+      .describe('The maximum number of concurrent runs.'),
     toolSlots: ToolSlotsSchema.nullable().meta({
       description:
         'How many runs of each coding tool it may hold at once, beside `slots`; null, or a tool left out, for no limit of its own.',
     }),
-    enabledTools: z.array(AgentToolSchema).max(AGENT_TOOLS.length).nullable(),
-    acceptJobs: z.boolean(),
+    enabledTools: z
+      .array(AgentToolSchema)
+      .max(AGENT_TOOLS.length)
+      .nullable()
+      .describe('The agent tools this runner accepts.'),
+    acceptJobs: z.boolean().describe('Whether the runner accepts new work.'),
   })
   .partial();
 
 export const RegistrationTokenInputSchema: z.ZodType<RegistrationTokenInput> =
   z.strictObject({
-    trust: z.enum(RUNNER_TRUST).optional(),
+    trust: z.enum(RUNNER_TRUST).optional().describe('The runner trust level.'),
     enabledTools: z
       .array(AgentToolSchema)
       .min(1)
       .max(AGENT_TOOLS.length)
       .nullable()
-      .optional(),
+      .optional()
+      .describe('The agent tools this runner accepts.'),
     slots: z.number().int().min(1).max(64).nullable().optional().meta({
       description:
         "How many runs at once the runner takes; omitted or null leaves it to the runner. A runner's own `--slots` overrides it.",
@@ -1358,7 +1475,7 @@ export const ChatAttachmentContentQuery: z.ZodType<{ download: boolean }> =
   });
 
 export const ChatAttachmentParams: z.ZodType<{ attachmentId: string }> =
-  z.object({ attachmentId: id });
+  z.object({ attachmentId: id.describe('The attachment identifier.') });
 
 const messageObject = z.object({
   id: z.string(),
@@ -1652,7 +1769,7 @@ export const RunContextSchema: z.ZodType<Readonly<Record<string, unknown>>> = z
 
 // Run requests: work someone asked of an agent on a subject another person answers for.
 export const RunRequestParams: z.ZodType<{ requestId: string }> = z.object({
-  requestId: id,
+  requestId: id.describe('The request identifier.'),
 });
 
 export const RunRequestListQuery: z.ZodType<
@@ -1668,12 +1785,19 @@ export const RunRequestListQuery: z.ZodType<
     description:
       '`responsible`: the requests the caller answers for (to confirm); `requester`: the ones the caller asked. Both when left out.',
   }),
-  status: z.enum(RUN_REQUEST_STATUSES).optional(),
-  subjectKind: id.optional(),
-  subjectId: id.optional(),
-  agentId: id.optional(),
-  pageSize: pageSize(50, 200),
-  pageToken,
+  status: z
+    .enum(RUN_REQUEST_STATUSES)
+    .optional()
+    .describe('The status to set or filter by.'),
+  subjectKind: id.optional().describe('The kind of subject.'),
+  subjectId: id.optional().describe('The subject identifier.'),
+  agentId: id.optional().describe('The agent identifier.'),
+  pageSize: pageSize(50, 200).describe(
+    'The maximum number of records to return.',
+  ),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 export const RunRequestRejectInput: z.ZodType<{ note?: string | undefined }> =

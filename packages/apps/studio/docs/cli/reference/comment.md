@@ -12,9 +12,9 @@ By its author, or by whoever may moderate comments on the issue. Its files go wi
 nb-studio comment delete <comment>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `comment` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `comment` | The comment identifier. |
 
 | Flag    | Type    | Description                                                  |
 | ------- | ------- | ------------------------------------------------------------ |
@@ -36,10 +36,10 @@ Answers the comment’s reactions after the change.
 nb-studio comment react <comment> <emoji>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `comment` |             |
-| `emoji`   |             |
+| Argument  | Description                          |
+| --------- | ------------------------------------ |
+| `comment` | The comment identifier.              |
+| `emoji`   | The emoji reaction to add or remove. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -63,9 +63,9 @@ On a thread’s root comment; needs `comment` on the issue.
 nb-studio comment resolve <comment>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `comment` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `comment` | The comment identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -83,10 +83,10 @@ Answers the comment’s reactions after the change.
 nb-studio comment unreact <comment> <emoji>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `comment` |             |
-| `emoji`   |             |
+| Argument  | Description                          |
+| --------- | ------------------------------------ |
+| `comment` | The comment identifier.              |
+| `emoji`   | The emoji reaction to add or remove. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -104,9 +104,9 @@ On a thread’s root comment; needs `comment` on the issue.
 nb-studio comment unresolve <comment>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `comment` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `comment` | The comment identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -124,13 +124,13 @@ By its author.
 nb-studio comment update <comment> --content <string>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `comment` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `comment` | The comment identifier. |
 
-| Flag        | Type   | Description                          |
-| ----------- | ------ | ------------------------------------ |
-| `--content` | string | (required; or --content-file <path>) |
+| Flag        | Type   | Description                                                |
+| ----------- | ------ | ---------------------------------------------------------- |
+| `--content` | string | The Markdown content. (required; or --content-file <path>) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

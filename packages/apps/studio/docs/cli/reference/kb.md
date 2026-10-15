@@ -14,7 +14,7 @@ nb-studio kb chunking get --scope <string>
 
 | Flag      | Type   | Description                                                                                                         |
 | --------- | ------ | ------------------------------------------------------------------------------------------------------------------- |
-| `--scope` | string | (required)                                                                                                          |
+| `--scope` | string | The registered knowledge space kind. (required)                                                                     |
 | `--owner` | string | What the space belongs to within `--scope`, such as the project’s id; none for a scope with one space. (default "") |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -35,7 +35,7 @@ nb-studio kb chunking set
 
 | Flag         | Type   | Description                                                                                                         |
 | ------------ | ------ | ------------------------------------------------------------------------------------------------------------------- |
-| `--scope`    | string |                                                                                                                     |
+| `--scope`    | string | The registered knowledge space kind.                                                                                |
 | `--owner`    | string | What the space belongs to within `--scope`, such as the project’s id; none for a scope with one space. (default "") |
 | `--override` | json   | The space’s own chunking; null follows the application’s default.                                                   |
 | `--file`     | path   | The request body as a JSON object; the flags override its fields.                                                   |
@@ -62,9 +62,9 @@ With where that access comes from.
 nb-studio kb doc access get <doc>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `doc`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `doc`    | The doc identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -82,9 +82,9 @@ Requires `edit`. Takes the entry out of the tree and search; one already archive
 nb-studio kb doc archive <doc>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `doc`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `doc`    | The doc identifier. |
 
 | Flag    | Type    | Description                                                                                   |
 | ------- | ------- | --------------------------------------------------------------------------------------------- |
@@ -108,14 +108,14 @@ nb-studio kb doc create --scope <string> --title <string>
 
 | Flag        | Type              | Description                                                                                                         |
 | ----------- | ----------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `--scope`   | string            | (required)                                                                                                          |
+| `--scope`   | string            | The registered knowledge space kind. (required)                                                                     |
 | `--owner`   | string            | What the space belongs to within `--scope`, such as the project’s id; none for a scope with one space. (default "") |
-| `--kind`    | article \| folder |                                                                                                                     |
-| `--parent`  | string            |                                                                                                                     |
-| `--title`   | string            | (required)                                                                                                          |
-| `--slug`    | string            |                                                                                                                     |
-| `--summary` | string            |                                                                                                                     |
-| `--content` | string            | (or --content-file <path>)                                                                                          |
+| `--kind`    | article \| folder | The kind of record to use.                                                                                          |
+| `--parent`  | string            | The parent identifier.                                                                                              |
+| `--title`   | string            | The display title. (required)                                                                                       |
+| `--slug`    | string            | The document’s stable URL slug.                                                                                     |
+| `--summary` | string            | A short summary for discovery.                                                                                      |
+| `--content` | string            | The Markdown content. (or --content-file <path>)                                                                    |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -139,9 +139,9 @@ Its sections at the current version: headings, lines and length, and with semant
 nb-studio kb doc index <doc>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `doc`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `doc`    | The doc identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -159,14 +159,14 @@ Requires `edit` on the document and on where it goes. `parentId: null` moves it 
 nb-studio kb doc move <doc> --parent <string>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `doc`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `doc`    | The doc identifier. |
 
-| Flag           | Type    | Description |
-| -------------- | ------- | ----------- |
-| `--parent`     | string  | (required)  |
-| `--sort-order` | integer |             |
+| Flag           | Type    | Description                           |
+| -------------- | ------- | ------------------------------------- |
+| `--parent`     | string  | The parent identifier. (required)     |
+| `--sort-order` | integer | The position among sibling documents. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -184,9 +184,9 @@ Requires `manage`. The mode, the entries, what it inherits and the subject types
 nb-studio kb doc permission get <doc>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `doc`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `doc`    | The doc identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -204,14 +204,14 @@ Requires `manage`, checked before the body is read. `inherit` adds the entries t
 nb-studio kb doc permission set <doc>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `doc`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `doc`    | The doc identifier. |
 
 | Flag        | Type              | Description                                                       |
 | ----------- | ----------------- | ----------------------------------------------------------------- |
-| `--mode`    | inherit \| custom |                                                                   |
-| `--entries` | json              |                                                                   |
+| `--mode`    | inherit \| custom | The processing mode to use.                                       |
+| `--entries` | json              | Permission entries to apply.                                      |
 | `--file`    | path              | The request body as a JSON object; the flags override its fields. |
 | `--yes`     | boolean           | Go ahead without asking “Replace the document's permissions?”     |
 
@@ -237,9 +237,9 @@ Requires `edit`. Queues its sections for embedding again, the failed ones includ
 nb-studio kb doc reindex <doc>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `doc`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `doc`    | The doc identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -257,13 +257,13 @@ Requires `edit`. For a version whose extraction failed: the current one unless `
 nb-studio kb doc reparse <doc>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `doc`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `doc`    | The doc identifier. |
 
-| Flag        | Type    | Description |
-| ----------- | ------- | ----------- |
-| `--version` | integer |             |
+| Flag        | Type    | Description                     |
+| ----------- | ------- | ------------------------------- |
+| `--version` | integer | The version to read or restore. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -281,15 +281,15 @@ Requires `edit`. A multipart body of one `file`, `expectedVersion` (the current 
 nb-studio kb doc replace-file <doc> --file <path>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `doc`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `doc`    | The doc identifier. |
 
 | Flag                 | Type    | Description                                    |
 | -------------------- | ------- | ---------------------------------------------- |
-| `--file`             | path    | The file. (required)                           |
+| `--file`             | path    | The file to upload. (required)                 |
 | `--expected-version` | integer | The version read; the current one when absent. |
-| `--note`             | string  |                                                |
+| `--note`             | string  | A note explaining this change.                 |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -307,9 +307,9 @@ Requires `edit`. Under a parent still archived, or gone, it comes back at the to
 nb-studio kb doc restore <doc>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `doc`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `doc`    | The doc identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -327,17 +327,17 @@ Requires `edit`. Written against `expectedVersion`, the version read. A file ent
 nb-studio kb doc update <doc> --expected-version <integer>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `doc`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `doc`    | The doc identifier. |
 
-| Flag                 | Type    | Description                |
-| -------------------- | ------- | -------------------------- |
-| `--expected-version` | integer | (required)                 |
-| `--title`            | string  |                            |
-| `--summary`          | string  |                            |
-| `--content`          | string  | (or --content-file <path>) |
-| `--note`             | string  |                            |
+| Flag                 | Type    | Description                                                          |
+| -------------------- | ------- | -------------------------------------------------------------------- |
+| `--expected-version` | integer | The document version last read; reject if it has changed. (required) |
+| `--title`            | string  | The display title.                                                   |
+| `--summary`          | string  | A short summary for discovery.                                       |
+| `--content`          | string  | The Markdown content. (or --content-file <path>)                     |
+| `--note`             | string  | A note explaining this change.                                       |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -363,13 +363,13 @@ nb-studio kb doc upload --file <path> --scope <string>
 
 | Flag        | Type   | Description                                                                                                         |
 | ----------- | ------ | ------------------------------------------------------------------------------------------------------------------- |
-| `--file`    | path   | The file. (required)                                                                                                |
-| `--scope`   | string | (required)                                                                                                          |
+| `--file`    | path   | The file to upload. (required)                                                                                      |
+| `--scope`   | string | The registered knowledge space kind. (required)                                                                     |
 | `--owner`   | string | What the space belongs to within `--scope`, such as the project’s id; none for a scope with one space. (default "") |
-| `--parent`  | string |                                                                                                                     |
+| `--parent`  | string | The parent identifier.                                                                                              |
 | `--title`   | string | The entry's title; the file's name when absent.                                                                     |
-| `--slug`    | string |                                                                                                                     |
-| `--summary` | string |                                                                                                                     |
+| `--slug`    | string | The document’s stable URL slug.                                                                                     |
+| `--summary` | string | A short summary for discovery.                                                                                      |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -393,9 +393,9 @@ Requires `edit`. Records that the current version was checked, and by whom. No n
 nb-studio kb doc verify <doc>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `doc`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `doc`    | The doc identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -413,10 +413,10 @@ With its content.
 nb-studio kb doc version get <doc> <version>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `doc`     |             |
-| `version` |             |
+| Argument  | Description                     |
+| --------- | ------------------------------- |
+| `doc`     | The doc identifier.             |
+| `version` | The version to read or restore. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -434,14 +434,14 @@ Newest first, without their content.
 nb-studio kb doc version list <doc>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `doc`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `doc`    | The doc identifier. |
 
-| Flag      | Type    | Description  |
-| --------- | ------- | ------------ |
-| `--page`  | integer | (default 1)  |
-| `--limit` | integer | (default 20) |
+| Flag      | Type    | Description                                           |
+| --------- | ------- | ----------------------------------------------------- |
+| `--page`  | integer | The page number, starting at 1. (default 1)           |
+| `--limit` | integer | The maximum number of records to return. (default 20) |
 
 **Output:** A list (table columns: `version`, `title`, `author.name`, `note`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -465,7 +465,7 @@ nb-studio kb download <doc>
 
 | Flag        | Type    | Description                                                                                                                            |
 | ----------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `--version` | integer | An older version instead of the current one.                                                                                           |
+| `--version` | integer | The version to read or restore.                                                                                                        |
 | `--project` | string  | A project's id: read its knowledge too. A run on an issue reads its project's without it, and a conversation the projects it is about. |
 | `--out`     | path    | Where to save the file, or a directory to save it in.                                                                                  |
 
@@ -520,14 +520,14 @@ Requires `edit` where the proposal applies. Applies it as the document's next ve
 nb-studio kb proposal accept <proposal>
 ```
 
-| Argument   | Description |
-| ---------- | ----------- |
-| `proposal` |             |
+| Argument   | Description              |
+| ---------- | ------------------------ |
+| `proposal` | The proposal identifier. |
 
-| Flag              | Type    | Description |
-| ----------------- | ------- | ----------- |
-| `--comment`       | string  |             |
-| `--confirm-stale` | boolean |             |
+| Flag              | Type    | Description                                                     |
+| ----------------- | ------- | --------------------------------------------------------------- |
+| `--comment`       | string  | The reason for accepting or rejecting the proposal.             |
+| `--confirm-stale` | boolean | Confirm applying a proposal based on an older document version. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -551,9 +551,9 @@ Download the file of a proposal
 nb-studio kb proposal download <proposal>
 ```
 
-| Argument   | Description |
-| ---------- | ----------- |
-| `proposal` |             |
+| Argument   | Description              |
+| ---------- | ------------------------ |
+| `proposal` | The proposal identifier. |
 
 | Flag    | Type | Description                                           |
 | ------- | ---- | ----------------------------------------------------- |
@@ -575,9 +575,9 @@ With the content at its base version and now, for the diffs a stale proposal sho
 nb-studio kb proposal get <proposal>
 ```
 
-| Argument   | Description |
-| ---------- | ----------- |
-| `proposal` |             |
+| Argument   | Description              |
+| ---------- | ------------------------ |
+| `proposal` | The proposal identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -597,13 +597,13 @@ nb-studio kb proposal list
 
 | Flag          | Type                                         | Description                                                                                                         |
 | ------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `--status`    | pending \| accepted \| rejected \| withdrawn | (default "pending")                                                                                                 |
-| `--scope`     | string                                       |                                                                                                                     |
+| `--status`    | pending \| accepted \| rejected \| withdrawn | The status to set or filter by. (default "pending")                                                                 |
+| `--scope`     | string                                       | The registered knowledge space kind.                                                                                |
 | `--owner`     | string                                       | What the space belongs to within `--scope`, such as the project’s id; none for a scope with one space. (default "") |
-| `--doc`       | string                                       |                                                                                                                     |
-| `--decidable` | boolean                                      |                                                                                                                     |
-| `--page`      | integer                                      | (default 1)                                                                                                         |
-| `--limit`     | integer                                      | (default 20)                                                                                                        |
+| `--doc`       | string                                       | The doc identifier.                                                                                                 |
+| `--decidable` | boolean                                      | Only proposals the caller may decide.                                                                               |
+| `--page`      | integer                                      | The page number, starting at 1. (default 1)                                                                         |
+| `--limit`     | integer                                      | The maximum number of records to return. (default 20)                                                               |
 
 **Output:** A list (table columns: `id`, `kind`, `status`, `docTitle`, `proposer.name`, `reason`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -627,13 +627,13 @@ Requires `edit` where the proposal applies. The same content from the same sourc
 nb-studio kb proposal reject <proposal>
 ```
 
-| Argument   | Description |
-| ---------- | ----------- |
-| `proposal` |             |
+| Argument   | Description              |
+| ---------- | ------------------------ |
+| `proposal` | The proposal identifier. |
 
 | Flag        | Type    | Description                                                                              |
 | ----------- | ------- | ---------------------------------------------------------------------------------------- |
-| `--comment` | string  |                                                                                          |
+| `--comment` | string  | The reason for accepting or rejecting the proposal.                                      |
 | `--yes`     | boolean | Go ahead without asking “Reject the proposal? The same content is refused from then on.” |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -652,9 +652,9 @@ For the person it was made for, or the actor that made it.
 nb-studio kb proposal withdraw <proposal>
 ```
 
-| Argument   | Description |
-| ---------- | ----------- |
-| `proposal` |             |
+| Argument   | Description              |
+| ---------- | ------------------------ |
+| `proposal` | The proposal identifier. |
 
 | Flag    | Type    | Description                                      |
 | ------- | ------- | ------------------------------------------------ |
@@ -684,7 +684,7 @@ nb-studio kb propose --reason <string>
 | `--parent`  | string            | A new document’s parent (slug or id).                                                                                                                             |
 | `--space`   | project \| system | Where a new document goes without a parent: the project read (default) or the system.                                                                             |
 | `--content` | string            | The whole new Markdown content. (or --content-file <path>)                                                                                                        |
-| `--summary` | string            | A one-line summary.                                                                                                                                               |
+| `--summary` | string            | A short summary for discovery.                                                                                                                                    |
 | `--reason`  | string            | Why it should change, for the person deciding (at most 500 characters). (required)                                                                                |
 | `--project` | string            | A project's id: read its knowledge too. A run on an issue reads its project's without it, and a conversation the projects it is about.                            |
 | `--verify`  | boolean           | With `doc`: the document still holds; nothing in it changes.                                                                                                      |
@@ -720,7 +720,7 @@ nb-studio kb read <doc>
 
 | Flag        | Type    | Description                                                                                                                            |
 | ----------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `--version` | integer | An older version instead of the current one.                                                                                           |
+| `--version` | integer | The version to read or restore.                                                                                                        |
 | `--project` | string  | A project's id: read its knowledge too. A run on an issue reads its project's without it, and a conversation the projects it is about. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -793,15 +793,15 @@ Needs `studio.knowledgeSearch` `manage`. Changing the embedding model builds a n
 nb-studio kb settings set
 ```
 
-| Flag              | Type     | Description                                                                   |
-| ----------------- | -------- | ----------------------------------------------------------------------------- |
-| `--embedding`     | json     |                                                                               |
-| `--rerank`        | json     |                                                                               |
-| `--context-model` | json     |                                                                               |
-| `--contextual`    | string[] | (repeatable)                                                                  |
-| `--chunking`      | json     | (default {"headingDepth":3,"target":1200,"max":2000})                         |
-| `--recall`        | json     | (default {"limit":20,"minScore":0,"keywordWeight":0.5,"rerankCandidates":50}) |
-| `--file`          | path     | The request body as a JSON object; the flags override its fields.             |
+| Flag              | Type     | Description                                                                                                       |
+| ----------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
+| `--embedding`     | json     | The embedding model configuration.                                                                                |
+| `--rerank`        | json     | The reranking model configuration.                                                                                |
+| `--context-model` | json     | The model used to generate retrieval context.                                                                     |
+| `--contextual`    | string[] | Enable contextual retrieval. (repeatable)                                                                         |
+| `--chunking`      | json     | The document chunking configuration. (default {"headingDepth":3,"target":1200,"max":2000})                        |
+| `--recall`        | json     | The retrieval recall configuration. (default {"limit":20,"minScore":0,"keywordWeight":0.5,"rerankCandidates":50}) |
+| `--file`          | path     | The request body as a JSON object; the flags override its fields.                                                 |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -827,11 +827,11 @@ nb-studio kb subject list --scope <string>
 
 | Flag      | Type    | Description                                                                                                         |
 | --------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
-| `--scope` | string  | (required)                                                                                                          |
+| `--scope` | string  | The registered knowledge space kind. (required)                                                                     |
 | `--owner` | string  | What the space belongs to within `--scope`, such as the project’s id; none for a scope with one space. (default "") |
-| `--q`     | string  | (default "")                                                                                                        |
-| `--type`  | string  |                                                                                                                     |
-| `--limit` | integer | (default 20)                                                                                                        |
+| `--q`     | string  | Text to search for. (default "")                                                                                    |
+| `--type`  | string  | The type of relationship or record.                                                                                 |
+| `--limit` | integer | The maximum number of records to return. (default 20)                                                               |
 
 **Output:** A list (table columns: `type`, `id`, `label`, `hint`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -881,7 +881,7 @@ nb-studio kb upload --reason <string> --file <path>
 | `--title`   | string            | A new file's title; its name when absent.                                                                                              |
 | `--parent`  | string            | A new file's folder or document (slug or id).                                                                                          |
 | `--space`   | project \| system | Where a new document goes without a parent: the project read (default) or the system.                                                  |
-| `--summary` | string            | A one-line summary.                                                                                                                    |
+| `--summary` | string            | A short summary for discovery.                                                                                                         |
 | `--reason`  | string            | Why it belongs in the knowledge base, for the person deciding (at most 500 characters). (required)                                     |
 | `--project` | string            | A project's id: read its knowledge too. A run on an issue reads its project's without it, and a conversation the projects it is about. |
 | `--file`    | path              | The file to propose. (required; streamed to an upload ticket, at most 104857600 bytes)                                                 |

@@ -12,10 +12,10 @@ Asks a model of a saved model service for a short answer. Needs `agents.agents` 
 nb-studio model check --service <string> --model <string>
 ```
 
-| Flag        | Type   | Description |
-| ----------- | ------ | ----------- |
-| `--service` | string | (required)  |
-| `--model`   | string | (required)  |
+| Flag        | Type   | Description                                 |
+| ----------- | ------ | ------------------------------------------- |
+| `--service` | string | The model service to use. (required)        |
+| `--model`   | string | The provider’s model identifier. (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -39,9 +39,9 @@ The enabled model services and their models of one kind (`chat` by default), for
 nb-studio model list
 ```
 
-| Flag     | Type                        | Description      |
-| -------- | --------------------------- | ---------------- |
-| `--kind` | chat \| embedding \| rerank | (default "chat") |
+| Flag     | Type                        | Description                                                        |
+| -------- | --------------------------- | ------------------------------------------------------------------ |
+| `--kind` | chat \| embedding \| rerank | The model capability: chat, embedding, or rerank. (default "chat") |
 
 **Output:** A list (table columns: `name`, `title`, `provider`, `models`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -77,8 +77,8 @@ nb-studio model price set
 
 | Flag              | Type                              | Description                                                                    |
 | ----------------- | --------------------------------- | ------------------------------------------------------------------------------ |
-| `--prices`        | json                              |                                                                                |
-| `--subscriptions` | claude \| codex \| opencode \| pi | (repeatable)                                                                   |
+| `--prices`        | json                              | Per-model pricing entries.                                                     |
+| `--subscriptions` | claude \| codex \| opencode \| pi | Coding tools covered by a subscription. (repeatable)                           |
 | `--file`          | path                              | The request body as a JSON object; the flags override its fields.              |
 | `--yes`           | boolean                           | Go ahead without asking “Replace the whole price table and the subscriptions?” |
 
@@ -104,10 +104,10 @@ The model calls made outside runs (embeddings, reranking, utility texts), over `
 nb-studio model usage
 ```
 
-| Flag     | Type   | Description |
-| -------- | ------ | ----------- |
-| `--from` | string |             |
-| `--to`   | string |             |
+| Flag     | Type   | Description                            |
+| -------- | ------ | -------------------------------------- |
+| `--from` | string | The beginning of the reporting period. |
+| `--to`   | string | The end of the reporting period.       |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

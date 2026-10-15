@@ -42,7 +42,10 @@ const recall = {
 };
 
 const fields = {
-  contextual: z.array(z.string().trim().min(1).max(200)).max(1000),
+  contextual: z
+    .array(z.string().trim().min(1).max(200))
+    .max(1000)
+    .describe('Enable contextual retrieval.'),
 };
 
 /** The stored settings, read leniently. */
@@ -61,9 +64,18 @@ export const KnowledgeSearchSettingsInput: z.ZodType<
   KnowledgeSearchSettings,
   unknown
 > = z.strictObject({
-  embedding: z.strictObject(modelRef).nullable(),
-  rerank: z.strictObject(modelRef).nullable(),
-  contextModel: z.strictObject(modelRef).nullable(),
+  embedding: z
+    .strictObject(modelRef)
+    .nullable()
+    .describe('The embedding model configuration.'),
+  rerank: z
+    .strictObject(modelRef)
+    .nullable()
+    .describe('The reranking model configuration.'),
+  contextModel: z
+    .strictObject(modelRef)
+    .nullable()
+    .describe('The model used to generate retrieval context.'),
   ...fields,
   chunking: z
     .strictObject(chunking)
@@ -71,8 +83,12 @@ export const KnowledgeSearchSettingsInput: z.ZodType<
       message: 'The target must not be more than the limit.',
       path: ['target'],
     })
-    .default(DEFAULT_KNOWLEDGE_SEARCH.chunking),
-  recall: z.strictObject(recall).default(DEFAULT_KNOWLEDGE_SEARCH.recall),
+    .default(DEFAULT_KNOWLEDGE_SEARCH.chunking)
+    .describe('The document chunking configuration.'),
+  recall: z
+    .strictObject(recall)
+    .default(DEFAULT_KNOWLEDGE_SEARCH.recall)
+    .describe('The retrieval recall configuration.'),
 });
 
 /** A stored value as settings, the defaults filling what is missing or unreadable. */

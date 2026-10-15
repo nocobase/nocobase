@@ -340,6 +340,12 @@ export function connectProjects(
       container.has(projectsAccessToken)
         ? container.resolve(projectsAccessToken)
         : undefined,
+    ...(container.has(studioAccessToken)
+      ? {
+          manifestPermissions: (userId: string) =>
+            container.resolve(studioAccessToken).permissionsOfUser(userId),
+        }
+      : {}),
     catalog: () =>
       container.has(studioAccessToken)
         ? container.resolve(studioAccessToken).catalog()

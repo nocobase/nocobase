@@ -58,13 +58,13 @@ Needs `pm.members` `assign`; only an owner grants or revokes `owner`, and the la
 nb-studio access member update <user> --roles <string[]>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `user`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `user`   | The user identifier. |
 
-| Flag      | Type     | Description            |
-| --------- | -------- | ---------------------- |
-| `--roles` | string[] | (required; repeatable) |
+| Flag      | Type     | Description                                               |
+| --------- | -------- | --------------------------------------------------------- |
+| `--roles` | string[] | Role keys to assign to the member. (required; repeatable) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -88,13 +88,13 @@ Needs a signed-in session (every API key is refused) and `studio.apiKeys` `manag
 nb-studio access org-key create
 ```
 
-| Flag                | Type    | Description                                                       |
-| ------------------- | ------- | ----------------------------------------------------------------- |
-| `--name`            | string  |                                                                   |
-| `--description`     | string  |                                                                   |
-| `--expires-in-days` | integer |                                                                   |
-| `--scope`           | json    |                                                                   |
-| `--file`            | path    | The request body as a JSON object; the flags override its fields. |
+| Flag                | Type    | Description                                                           |
+| ------------------- | ------- | --------------------------------------------------------------------- |
+| `--name`            | string  | The name to display.                                                  |
+| `--description`     | string  | A description of the record.                                          |
+| `--expires-in-days` | integer | The number of days until the key expires; null means no expiry.       |
+| `--scope`           | json    | The permission scope; a key can never exceed its owner’s permissions. |
+| `--file`            | path    | The request body as a JSON object; the flags override its fields.     |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -118,9 +118,9 @@ Needs a signed-in session (every API key is refused) and `studio.apiKeys` `manag
 nb-studio access org-key delete <key>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `key`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `key`    | The key identifier. |
 
 | Flag    | Type    | Description                                                                |
 | ------- | ------- | -------------------------------------------------------------------------- |
@@ -142,9 +142,9 @@ Needs a signed-in session (every API key is refused) and `studio.apiKeys` `manag
 nb-studio access org-key disable <key>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `key`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `key`    | The key identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -162,9 +162,9 @@ Needs a signed-in session (every API key is refused) and `studio.apiKeys` `manag
 nb-studio access org-key enable <key>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `key`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `key`    | The key identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -182,9 +182,9 @@ Needs a signed-in session (every API key is refused) and `studio.apiKeys` `read`
 nb-studio access org-key events <key>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `key`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `key`    | The key identifier. |
 
 **Output:** A list (table columns: `createdAt`, `action`, `actor.name`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -202,9 +202,9 @@ Needs a signed-in session (every API key is refused) and `studio.apiKeys` `read`
 nb-studio access org-key get <key>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `key`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `key`    | The key identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -238,9 +238,9 @@ Needs a signed-in session (every API key is refused) and `studio.apiKeys` `manag
 nb-studio access org-key rotate <key>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `key`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `key`    | The key identifier. |
 
 | Flag    | Type    | Description                                                              |
 | ------- | ------- | ------------------------------------------------------------------------ |
@@ -278,14 +278,14 @@ Needs a signed-in session (every API key is refused) and `studio.apiKeys` `manag
 nb-studio access org-key scope set <key>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `key`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `key`    | The key identifier. |
 
-| Flag      | Type | Description                                                       |
-| --------- | ---- | ----------------------------------------------------------------- |
-| `--scope` | json |                                                                   |
-| `--file`  | path | The request body as a JSON object; the flags override its fields. |
+| Flag      | Type | Description                                                           |
+| --------- | ---- | --------------------------------------------------------------------- |
+| `--scope` | json | The permission scope; a key can never exceed its owner’s permissions. |
+| `--file`  | path | The request body as a JSON object; the flags override its fields.     |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -303,14 +303,14 @@ Needs a signed-in session (every API key is refused) and `studio.apiKeys` `manag
 nb-studio access org-key update <key>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `key`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `key`    | The key identifier. |
 
-| Flag            | Type   | Description |
-| --------------- | ------ | ----------- |
-| `--name`        | string |             |
-| `--description` | string |             |
+| Flag            | Type   | Description                  |
+| --------------- | ------ | ---------------------------- |
+| `--name`        | string | The name to display.         |
+| `--description` | string | A description of the record. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -330,10 +330,10 @@ nb-studio access role create
 
 | Flag          | Type     | Description                                                       |
 | ------------- | -------- | ----------------------------------------------------------------- |
-| `--title`     | string   |                                                                   |
-| `--pages`     | string[] | (repeatable)                                                      |
-| `--settings`  | json     |                                                                   |
-| `--abilities` | json     |                                                                   |
+| `--title`     | string   | The display title.                                                |
+| `--pages`     | string[] | Page identifiers the role may open. (repeatable)                  |
+| `--settings`  | json     | Settings permission keys granted to the role.                     |
+| `--abilities` | json     | Business action keys and their granted scope levels.              |
 | `--file`      | path     | The request body as a JSON object; the flags override its fields. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -358,9 +358,9 @@ Needs `pm.members` `define-roles`. Built-in roles are not deleted (403 `ROLE_BUI
 nb-studio access role delete <role>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `role`   |             |
+| Argument | Description   |
+| -------- | ------------- |
+| `role`   | The role key. |
 
 | Flag    | Type    | Description                                                                  |
 | ------- | ------- | ---------------------------------------------------------------------------- |
@@ -382,9 +382,9 @@ Needs `pm.members` `read`.
 nb-studio access role get <role>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `role`   |             |
+| Argument | Description   |
+| -------- | ------------- |
+| `role`   | The role key. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -418,16 +418,16 @@ Needs `pm.members` `define-roles`. A field left out keeps what the role grants n
 nb-studio access role update <role>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `role`   |             |
+| Argument | Description   |
+| -------- | ------------- |
+| `role`   | The role key. |
 
 | Flag          | Type     | Description                                                       |
 | ------------- | -------- | ----------------------------------------------------------------- |
-| `--title`     | string   |                                                                   |
-| `--pages`     | string[] | (repeatable)                                                      |
-| `--settings`  | json     |                                                                   |
-| `--abilities` | json     |                                                                   |
+| `--title`     | string   | The display title.                                                |
+| `--pages`     | string[] | Page identifiers the role may open. (repeatable)                  |
+| `--settings`  | json     | Settings permission keys granted to the role.                     |
+| `--abilities` | json     | Business action keys and their granted scope levels.              |
 | `--file`      | path     | The request body as a JSON object; the flags override its fields. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -462,9 +462,9 @@ Needs `pm.general` `update`.
 nb-studio access settings set --default-role <string>
 ```
 
-| Flag             | Type   | Description |
-| ---------------- | ------ | ----------- |
-| `--default-role` | string | (required)  |
+| Flag             | Type   | Description                                                                      |
+| ---------------- | ------ | -------------------------------------------------------------------------------- |
+| `--default-role` | string | The role assigned to new members; null disables automatic assignment. (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

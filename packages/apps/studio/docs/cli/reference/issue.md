@@ -12,14 +12,14 @@ Older activities, cursor-paged from the issue’s `activitiesNextCursor`. `issue
 nb-studio issue activity list <issue>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
-| Flag           | Type    | Description  |
-| -------------- | ------- | ------------ |
-| `--limit`      | integer | (default 20) |
-| `--page-token` | string  |              |
+| Flag           | Type    | Description                                           |
+| -------------- | ------- | ----------------------------------------------------- |
+| `--limit`      | integer | The maximum number of records to return. (default 20) |
+| `--page-token` | string  | The continuation token returned by the previous page. |
 
 **Output:** A list (table columns: `createdAt`, `actorName`, `action`, `via`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -37,13 +37,13 @@ Needs `upload` on `pm.attachments` and `edit` on the issue. One file as the `fil
 nb-studio issue attachment add <issue> --file <path>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
-| Flag     | Type | Description |
-| -------- | ---- | ----------- |
-| `--file` | path | (required)  |
+| Flag     | Type | Description                    |
+| -------- | ---- | ------------------------------ |
+| `--file` | path | The file to upload. (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -91,9 +91,9 @@ The issue’s own files, oldest first; with `comments=true`, then the files of i
 nb-studio issue attachment list <issue>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
 | Flag         | Type    | Description              |
 | ------------ | ------- | ------------------------ |
@@ -115,9 +115,9 @@ Needs `comment` on the issue, and `upload` on `pm.attachments` to send `attachme
 nb-studio issue comment add <issue> --content <string>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
 | Flag         | Type   | Description                                                                                                                                 |
 | ------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -147,14 +147,14 @@ A page of threads, the newest page first and each page oldest first; a thread is
 nb-studio issue comment list <issue>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
 | Flag           | Type    | Description                                                                                                       |
 | -------------- | ------- | ----------------------------------------------------------------------------------------------------------------- |
-| `--limit`      | integer | (default 20)                                                                                                      |
-| `--page-token` | string  |                                                                                                                   |
+| `--limit`      | integer | The maximum number of records to return. (default 20)                                                             |
+| `--page-token` | string  | The continuation token returned by the previous page.                                                             |
 | `--since`      | string  | RFC 3339. Only threads with a comment written after it, each with its root and only the replies written after it. |
 
 **Output:** A list (table columns: `root.id`, `root.authorName`, `root.createdAt`, `root.content`, `replies.length`); with `--json`, `result.data` is the array and `result.meta` the paging.
@@ -175,22 +175,22 @@ nb-studio issue create
 
 | Flag               | Type                                    | Description                                                                                                    |
 | ------------------ | --------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `--title`          | string                                  |                                                                                                                |
+| `--title`          | string                                  | The display title.                                                                                             |
 | `--attachment-ids` | string[]                                | The caller's unattached uploads; requires attachment upload permission. Bound before work starts. (repeatable) |
-| `--description`    | string                                  | (or --description-file <path>)                                                                                 |
+| `--description`    | string                                  | A description of the record. (or --description-file <path>)                                                    |
 | `--status`         | string                                  | The status it starts in: in_progress (start now) or backlog (nothing starts, the default).                     |
-| `--priority`       | urgent \| high \| medium \| low \| none |                                                                                                                |
-| `--owner`          | string                                  |                                                                                                                |
-| `--executor`       | json                                    |                                                                                                                |
-| `--parent`         | string                                  |                                                                                                                |
-| `--stage`          | integer                                 |                                                                                                                |
-| `--project`        | string                                  |                                                                                                                |
-| `--start-date`     | string                                  |                                                                                                                |
-| `--due-date`       | string                                  |                                                                                                                |
-| `--label`          | string[]                                | (repeatable)                                                                                                   |
-| `--start`          | boolean                                 |                                                                                                                |
-| `--blocked-by`     | string[]                                | (repeatable)                                                                                                   |
-| `--project-setup`  | boolean                                 |                                                                                                                |
+| `--priority`       | urgent \| high \| medium \| low \| none | The priority to assign.                                                                                        |
+| `--owner`          | string                                  | The owner user identifier.                                                                                     |
+| `--executor`       | json                                    | The executor identity, with type and id; null clears it.                                                       |
+| `--parent`         | string                                  | The parent issue identifier.                                                                                   |
+| `--stage`          | integer                                 | The workflow stage to assign.                                                                                  |
+| `--project`        | string                                  | The project identifier.                                                                                        |
+| `--start-date`     | string                                  | The planned start date.                                                                                        |
+| `--due-date`       | string                                  | The planned due date.                                                                                          |
+| `--label`          | string[]                                | Label identifiers to assign. (repeatable)                                                                      |
+| `--start`          | boolean                                 | Start work after saving the issue.                                                                             |
+| `--blocked-by`     | string[]                                | Identifiers of issues that must finish first. (repeatable)                                                     |
+| `--project-setup`  | boolean                                 | Project setup to create when starting this issue.                                                              |
 | `--file`           | path                                    | The request body as a JSON object; the flags override its fields.                                              |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -215,9 +215,9 @@ Needs `delete` on `pm.issues`. The issue moves to the deleted list and can be re
 nb-studio issue delete <issue>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
 | Flag    | Type    | Description                                                                           |
 | ------- | ------- | ------------------------------------------------------------------------------------- |
@@ -241,12 +241,12 @@ nb-studio issue dependency add <issue> <dependsOn>
 
 | Argument    | Description                                  |
 | ----------- | -------------------------------------------- |
-| `issue`     |                                              |
+| `issue`     | The issue identifier.                        |
 | `dependsOn` | The issue it waits for, by identifier or id. |
 
-| Flag     | Type                   | Description |
-| -------- | ---------------------- | ----------- |
-| `--type` | blockedBy \| relatedTo |             |
+| Flag     | Type                   | Description                         |
+| -------- | ---------------------- | ----------------------------------- |
+| `--type` | blockedBy \| relatedTo | The type of relationship or record. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -266,12 +266,12 @@ nb-studio issue dependency remove <issue> <dependsOn>
 
 | Argument    | Description                                  |
 | ----------- | -------------------------------------------- |
-| `issue`     |                                              |
+| `issue`     | The issue identifier.                        |
 | `dependsOn` | The issue it waits for, by identifier or id. |
 
-| Flag     | Type                   | Description |
-| -------- | ---------------------- | ----------- |
-| `--type` | blockedBy \| relatedTo |             |
+| Flag     | Type                   | Description                         |
+| -------- | ---------------------- | ----------------------------------- |
+| `--type` | blockedBy \| relatedTo | The type of relationship or record. |
 
 **Output:** Nothing; prints `Done.`.
 
@@ -311,9 +311,9 @@ The issue with its newest activities and comment threads, files, sub-issues and 
 nb-studio issue get <issue>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -331,9 +331,9 @@ Only the current owner in person, with issue editing permission, may decide the 
 nb-studio issue handoff accept <issue>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -349,9 +349,9 @@ Get an issue owner handoff
 nb-studio issue handoff get <issue>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -369,9 +369,9 @@ Only the current owner in person, with issue editing permission, may decide the 
 nb-studio issue handoff reject <issue>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -389,9 +389,9 @@ What the issue waits for now, worked out by the system: an agent working on it o
 nb-studio issue progress <issue>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -409,9 +409,9 @@ Needs `delete` on `pm.issues`. `issueId` is an id or an identifier such as `PM-1
 nb-studio issue restore <issue>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -440,10 +440,10 @@ nb-studio issue runs [<issue>]
 | -------- | -------------------------------------------------------------------------------------------------- |
 | `issue`  | The issue, by identifier (PM-12) or id; an agent's run on an issue defaults to its own. (optional) |
 
-| Flag           | Type    | Description                                |
-| -------------- | ------- | ------------------------------------------ |
-| `--limit`      | integer | At most this many runs (100). (default 20) |
-| `--page-token` | string  |                                            |
+| Flag           | Type    | Description                                           |
+| -------------- | ------- | ----------------------------------------------------- |
+| `--limit`      | integer | At most this many runs (100). (default 20)            |
+| `--page-token` | string  | The continuation token returned by the previous page. |
 
 **Output:** A list (table columns: `id`, `agent`, `status`, `trigger`, `createdAt`, `summary`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -470,17 +470,17 @@ nb-studio issue search
 
 | Flag           | Type    | Description                                                             |
 | -------------- | ------- | ----------------------------------------------------------------------- |
-| `--status`     | string  |                                                                         |
-| `--project`    | string  |                                                                         |
-| `--owner`      | string  |                                                                         |
-| `--executor`   | string  |                                                                         |
-| `--label`      | string  |                                                                         |
+| `--status`     | string  | Filter by issue status key.                                             |
+| `--project`    | string  | The project identifier.                                                 |
+| `--owner`      | string  | The owner user identifier.                                              |
+| `--executor`   | string  | The executor identifier.                                                |
+| `--label`      | string  | The label identifier.                                                   |
 | `--parent`     | string  | A parent issue, by identifier (PM-12) or id; none for top-level issues. |
-| `--q`          | string  |                                                                         |
-| `--deleted`    | boolean |                                                                         |
-| `--order-by`   | string  |                                                                         |
-| `--limit`      | integer | (default 20)                                                            |
-| `--page-token` | string  |                                                                         |
+| `--q`          | string  | Text to search for.                                                     |
+| `--deleted`    | boolean | Whether to include deleted records.                                     |
+| `--order-by`   | string  | The field and direction to sort by.                                     |
+| `--limit`      | integer | The maximum number of records to return. (default 20)                   |
+| `--page-token` | string  | The continuation token returned by the previous page.                   |
 
 **Output:** A list (table columns: `identifier`, `title`, `statusKey`, `owner.name`, `executorName`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -527,9 +527,9 @@ Subscribing brings the issue’s comments and status changes to the inbox. `issu
 nb-studio issue subscribe <issue>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -547,9 +547,9 @@ Subscribing brings the issue’s comments and status changes to the inbox. `issu
 nb-studio issue unsubscribe <issue>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -567,27 +567,27 @@ Needs `edit` on the issue; closing it and changing its owner need `close` and `c
 nb-studio issue update <issue>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `issue`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `issue`  | The issue identifier. |
 
 | Flag            | Type                                    | Description                                                                                                                                                                                                                                             |
 | --------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--needs-you`   | string                                  | Optional decision or input for the owner. Omit to retain; null or whitespace clears it. Cleared outside blocked or in_review. Studio requires nonblank input only for authenticated project-manager direct status updates. (or --needs-you-file <path>) |
 | `--next`        | string                                  | The next step. Omit to retain; null or whitespace clears it. Terminal statuses clear it. (or --next-file <path>)                                                                                                                                        |
-| `--title`       | string                                  |                                                                                                                                                                                                                                                         |
-| `--description` | string                                  | (or --description-file <path>)                                                                                                                                                                                                                          |
+| `--title`       | string                                  | The display title.                                                                                                                                                                                                                                      |
+| `--description` | string                                  | A description of the record. (or --description-file <path>)                                                                                                                                                                                             |
 | `--status`      | string                                  | Move it to this status: backlog, in_progress, blocked, in_review, done or cancelled.                                                                                                                                                                    |
-| `--priority`    | urgent \| high \| medium \| low \| none |                                                                                                                                                                                                                                                         |
-| `--owner`       | string                                  |                                                                                                                                                                                                                                                         |
-| `--executor`    | json                                    |                                                                                                                                                                                                                                                         |
-| `--parent`      | string                                  |                                                                                                                                                                                                                                                         |
-| `--stage`       | integer                                 |                                                                                                                                                                                                                                                         |
-| `--project`     | string                                  |                                                                                                                                                                                                                                                         |
-| `--start-date`  | string                                  |                                                                                                                                                                                                                                                         |
-| `--due-date`    | string                                  |                                                                                                                                                                                                                                                         |
-| `--label`       | string[]                                | (repeatable)                                                                                                                                                                                                                                            |
-| `--start`       | boolean                                 |                                                                                                                                                                                                                                                         |
+| `--priority`    | urgent \| high \| medium \| low \| none | The priority to assign.                                                                                                                                                                                                                                 |
+| `--owner`       | string                                  | The owner user identifier.                                                                                                                                                                                                                              |
+| `--executor`    | json                                    | The executor identity, with type and id; null clears it.                                                                                                                                                                                                |
+| `--parent`      | string                                  | The parent issue identifier.                                                                                                                                                                                                                            |
+| `--stage`       | integer                                 | The workflow stage to assign.                                                                                                                                                                                                                           |
+| `--project`     | string                                  | The project identifier.                                                                                                                                                                                                                                 |
+| `--start-date`  | string                                  | The planned start date.                                                                                                                                                                                                                                 |
+| `--due-date`    | string                                  | The planned due date.                                                                                                                                                                                                                                   |
+| `--label`       | string[]                                | Label identifiers to assign. (repeatable)                                                                                                                                                                                                               |
+| `--start`       | boolean                                 | Start work after saving the issue.                                                                                                                                                                                                                      |
 | `--file`        | path                                    | The request body as a JSON object; the flags override its fields.                                                                                                                                                                                       |
 
 **Output:** One record, field by field; with `--json`, `result.data`.

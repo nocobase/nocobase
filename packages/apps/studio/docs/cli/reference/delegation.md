@@ -10,9 +10,9 @@ Get a delegation
 nb-studio delegation get <delegation>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `delegation` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `delegation` | The delegation identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -56,9 +56,9 @@ With `followed: false` the conversation hears no more of the issue: no cards, no
 nb-studio delegation update <delegation> --followed
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `delegation` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `delegation` | The delegation identifier. |
 
 | Flag         | Type    | Description                                                                                                    |
 | ------------ | ------- | -------------------------------------------------------------------------------------------------------------- |

@@ -17,10 +17,10 @@ nb-studio variable audit list <kind> <scope>
 | `kind`   | The scope kind: `agent`, `workdir`, or one the application registers.            |
 | `scope`  | The scope: an agent id, a working directory id, or the id the application gives. |
 
-| Flag           | Type    | Description  |
-| -------------- | ------- | ------------ |
-| `--limit`      | integer | (default 50) |
-| `--page-token` | string  |              |
+| Flag           | Type    | Description                                           |
+| -------------- | ------- | ----------------------------------------------------- |
+| `--limit`      | integer | The maximum number of records to return. (default 50) |
+| `--page-token` | string  | The continuation token returned by the previous page. |
 
 **Output:** A list (table columns: `at`, `action`, `names`, `userName`, `runId`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -42,7 +42,7 @@ nb-studio variable delete <kind> <scope> <name>
 | -------- | -------------------------------------------------------------------------------- |
 | `kind`   | The scope kind: `agent`, `workdir`, or one the application registers.            |
 | `scope`  | The scope: an agent id, a working directory id, or the id the application gives. |
-| `name`   |                                                                                  |
+| `name`   | The variable name.                                                               |
 
 | Flag    | Type    | Description                                     |
 | ------- | ------- | ----------------------------------------------- |
@@ -120,7 +120,7 @@ nb-studio variable set <kind> <scope> <name>
 | -------- | -------------------------------------------------------------------------------- |
 | `kind`   | The scope kind: `agent`, `workdir`, or one the application registers.            |
 | `scope`  | The scope: an agent id, a working directory id, or the id the application gives. |
-| `name`   |                                                                                  |
+| `name`   | The variable name.                                                               |
 
 | Flag                  | Type    | Description                                                                                                         |
 | --------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |

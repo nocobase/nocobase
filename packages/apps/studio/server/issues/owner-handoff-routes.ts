@@ -24,7 +24,9 @@ import { callerOfRequest } from '../agents/run-principal.js';
 import { studioError, studioErrorHandler } from '../http/errors.js';
 import { createOwnerHandoffApi } from './owner-handoff-api.js';
 
-const Params = z.object({ issueId: z.string().min(1) });
+const Params = z.object({
+  issueId: z.string().min(1).describe('The issue identifier.'),
+});
 const Input = z.strictObject({ notificationKey: z.string().uuid() });
 const Handoff = z.object({
   issueId: z.string(),

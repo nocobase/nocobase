@@ -238,6 +238,17 @@ describe('Studio’s command manifest', () => {
   it('offers a person every Studio area, and nothing Studio does not serve', async () => {
     const manifest = await manifestOf({ cookie });
     expect(manifest.identity.kind).toBe('person');
+    expect(manifest.identity.settings).toEqual(
+      expect.arrayContaining([
+        'agents.agents/read',
+        'agents.runners/manage',
+        'agents.services/manage',
+        'rel.environments/manage',
+        'studio.git/manage',
+        'studio.apiKeys/manage',
+      ]),
+    );
+    expect(manifest.identity.actions).not.toContain('agents.runners/read');
     expect(
       manifest.commands
         .find((command) => command.id === 'issue:update')
@@ -246,14 +257,63 @@ describe('Studio’s command manifest', () => {
     const lines = manifest.commands.map(line);
     expect(lines.join('\n')).toMatchSnapshot();
     for (const command of manifest.commands) {
+      for (const parameter of command.parameters)
+        expect(parameter.description).toBeTruthy();
       expect(command.path).not.toMatch(/\/api\/auth\//u);
       expect(command.id).not.toMatch(/^authentication:/u);
     }
   });
 
+  it('shows only a member’s settings and the settings allowed by a restricted API key', async () => {
+    const created = await request('/users', {
+      method: 'POST',
+      headers: { cookie, origin: 'http://localhost' },
+      body: JSON.stringify({
+        name: 'Member',
+        username: 'climember',
+        email: 'climember@example.test',
+        password: 'member-test-password',
+        roleScopes: { studio: ['contributor'] },
+      }),
+    });
+    expect(created.status).toBe(201);
+    const signed = await request('/auth/sign-in/username', {
+      method: 'POST',
+      body: JSON.stringify({
+        username: 'climember',
+        password: 'member-test-password',
+      }),
+    });
+    expect(signed.status).toBe(200);
+    const memberCookie = signed.headers
+      .getSetCookie()
+      .map((header) => header.split(';')[0])
+      .join('; ');
+    const member = await manifestOf({ cookie: memberCookie });
+    expect(member.identity.settings).not.toContain('agents.runners/manage');
+    expect(member.identity.settings).not.toContain('studio.apiKeys/manage');
+    const key = await request('/apiKeys', {
+      method: 'POST',
+      headers: { cookie, origin: 'http://localhost' },
+      body: JSON.stringify({
+        name: 'read-issues',
+        expiresInDays: null,
+        scope: { groups: { 'projects.issues': { level: 'read' } } },
+      }),
+    });
+    expect(key.status).toBe(201);
+    const secret = ((await key.json()) as { data: { secret: string } }).data
+      .secret;
+    const restricted = await manifestOf({ 'x-api-key': secret });
+    expect(restricted.identity.settings).toEqual([]);
+    expect(restricted.identity.actions).toContain('pm.issues/view');
+    expect(restricted.identity.actions).not.toContain('pm.issues/delete');
+  });
+
   it('offers a run what its agent may do, on the routes that take a run token', async () => {
     const manifest = await manifestOf({ [HEADERS.runToken]: token });
     expect(manifest.identity.kind).toBe('run');
+    expect(manifest.identity.settings).toEqual([]);
     for (const decision of ['get', 'accept', 'reject']) {
       expect(
         manifest.commands.some(

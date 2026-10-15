@@ -121,6 +121,9 @@ export interface StudioAgentsDeps {
   readonly manager?: ProjectManager;
   /** The application's roles; without them no command with a business action is offered. */
   readonly access: () => Pick<ProjectsAccess, 'permissionsOfUser'> | undefined;
+  readonly manifestPermissions?: (
+    userId: string,
+  ) => Promise<import('../../shared/access.js').Permissions>;
   /** What the plugins registered with the authorization plugin, which the agent editor offers from; none without. */
   readonly catalog?: () => Catalog | undefined;
   /**
@@ -174,7 +177,11 @@ export function bindStudioAgents(deps: StudioAgentsDeps): () => Promise<void> {
   const onError =
     deps.onError ?? ((message, error) => console.error(message, error));
   const askerOf = createAskerLookup(agents);
-  const permissions = createPermissionSource(deps.access, askerOf);
+  const permissions = createPermissionSource(
+    deps.access,
+    askerOf,
+    deps.manifestPermissions,
+  );
   const viewerOf = (userId: string) =>
     permissions.viewerOf({ kind: 'user', userId, displayName: userId });
   const work = createAgentWork({ agents, projects: deps.projects, viewerOf });

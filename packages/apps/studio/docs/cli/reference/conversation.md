@@ -42,9 +42,9 @@ One file as the `file` field of a multipart body, at most 20971520 bytes. It is 
 nb-studio conversation attachment upload --file <path>
 ```
 
-| Flag     | Type | Description |
-| -------- | ---- | ----------- |
-| `--file` | path | (required)  |
+| Flag     | Type | Description                                         |
+| -------- | ---- | --------------------------------------------------- |
+| `--file` | path | The file to upload for the conversation. (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -62,11 +62,11 @@ With the given enabled agent, or the caller's default chat agent when none is na
 nb-studio conversation create
 ```
 
-| Flag       | Type   | Description |
-| ---------- | ------ | ----------- |
-| `--agent`  | string |             |
-| `--title`  | string |             |
-| `--source` | string |             |
+| Flag       | Type   | Description                                           |
+| ---------- | ------ | ----------------------------------------------------- |
+| `--agent`  | string | The agent to start the conversation with.             |
+| `--title`  | string | The conversation title.                               |
+| `--source` | string | The source context associated with this conversation. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -84,9 +84,9 @@ Continues the conversation with the default chat agent while its own agent canno
 nb-studio conversation fallback <conversation>
 ```
 
-| Argument       | Description |
-| -------------- | ----------- |
-| `conversation` |             |
+| Argument       | Description                  |
+| -------------- | ---------------------------- |
+| `conversation` | The conversation identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -102,9 +102,9 @@ Get a conversation
 nb-studio conversation get <conversation>
 ```
 
-| Argument       | Description |
-| -------------- | ----------- |
-| `conversation` |             |
+| Argument       | Description                  |
+| -------------- | ---------------------------- |
+| `conversation` | The conversation identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -122,14 +122,14 @@ The conversations the caller started, newest message first, a page at a time; a 
 nb-studio conversation list
 ```
 
-| Flag           | Type                 | Description  |
-| -------------- | -------------------- | ------------ |
-| `--query`      | string               |              |
-| `--archived`   | true \| false \| all |              |
-| `--agent`      | string               |              |
-| `--source`     | string               |              |
-| `--limit`      | integer              | (default 30) |
-| `--page-token` | string               |              |
+| Flag           | Type                 | Description                                           |
+| -------------- | -------------------- | ----------------------------------------------------- |
+| `--query`      | string               | Text to search for.                                   |
+| `--archived`   | true \| false \| all | Filter by archive state.                              |
+| `--agent`      | string               | The agent identifier.                                 |
+| `--source`     | string               | The source context associated with this record.       |
+| `--limit`      | integer              | The maximum number of records to return. (default 30) |
+| `--page-token` | string               | The continuation token returned by the previous page. |
 
 **Output:** A list (table columns: `id`, `title`, `agent.name`, `lastMessageAt`, `read`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -147,15 +147,15 @@ Newest page first, each page in order; `after` reads only what arrived since a `
 nb-studio conversation message list <conversation>
 ```
 
-| Argument       | Description |
-| -------------- | ----------- |
-| `conversation` |             |
+| Argument       | Description                  |
+| -------------- | ---------------------------- |
+| `conversation` | The conversation identifier. |
 
-| Flag           | Type    | Description  |
-| -------------- | ------- | ------------ |
-| `--after`      | integer |              |
-| `--limit`      | integer | (default 50) |
-| `--page-token` | string  |              |
+| Flag           | Type    | Description                                           |
+| -------------- | ------- | ----------------------------------------------------- |
+| `--after`      | integer | Return messages after this cursor.                    |
+| `--limit`      | integer | The maximum number of records to return. (default 50) |
+| `--page-token` | string  | The continuation token returned by the previous page. |
 
 **Output:** A list (table columns: `seq`, `role`, `content.content`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -173,9 +173,9 @@ Adds the caller's message and hands it to the conversation's agent: a new run, o
 nb-studio conversation message send <conversation> --content <string>
 ```
 
-| Argument       | Description |
-| -------------- | ----------- |
-| `conversation` |             |
+| Argument       | Description                  |
+| -------------- | ---------------------------- |
+| `conversation` | The conversation identifier. |
 
 | Flag        | Type   | Description                                                                              |
 | ----------- | ------ | ---------------------------------------------------------------------------------------- |
@@ -219,9 +219,9 @@ Sets the caller's own default chat agent.
 nb-studio conversation preferences update
 ```
 
-| Flag              | Type   | Description |
-| ----------------- | ------ | ----------- |
-| `--default-agent` | string |             |
+| Flag              | Type   | Description                   |
+| ----------------- | ------ | ----------------------------- |
+| `--default-agent` | string | The default agent identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -239,9 +239,9 @@ Gives the conversation back to the agent it fell back from.
 nb-studio conversation restore <conversation>
 ```
 
-| Argument       | Description |
-| -------------- | ----------- |
-| `conversation` |             |
+| Argument       | Description                  |
+| -------------- | ---------------------------- |
+| `conversation` | The conversation identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -273,9 +273,9 @@ Sets the team's default chat agent, an enabled agent. Needs `agents.agents` mana
 nb-studio conversation settings update
 ```
 
-| Flag              | Type   | Description |
-| ----------------- | ------ | ----------- |
-| `--default-agent` | string |             |
+| Flag              | Type   | Description                   |
+| ----------------- | ------ | ----------------------------- |
+| `--default-agent` | string | The default agent identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -293,9 +293,9 @@ Cancels the run answering in the conversation, if any.
 nb-studio conversation stop <conversation>
 ```
 
-| Argument       | Description |
-| -------------- | ----------- |
-| `conversation` |             |
+| Argument       | Description                  |
+| -------------- | ---------------------------- |
+| `conversation` | The conversation identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -337,14 +337,14 @@ Rename or archive a conversation
 nb-studio conversation update <conversation>
 ```
 
-| Argument       | Description |
-| -------------- | ----------- |
-| `conversation` |             |
+| Argument       | Description                  |
+| -------------- | ---------------------------- |
+| `conversation` | The conversation identifier. |
 
-| Flag         | Type    | Description |
-| ------------ | ------- | ----------- |
-| `--title`    | string  |             |
-| `--archived` | boolean |             |
+| Flag         | Type    | Description                          |
+| ------------ | ------- | ------------------------------------ |
+| `--title`    | string  | The conversation title.              |
+| `--archived` | boolean | Whether to archive the conversation. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

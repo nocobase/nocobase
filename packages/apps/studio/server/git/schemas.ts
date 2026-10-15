@@ -36,25 +36,35 @@ import {
 } from '../../shared/git.js';
 import { idList } from '../http/input.js';
 
-export const ConnectionParams = z.object({ connectionId: z.string().min(1) });
-
-export const RepositoryParams = ConnectionParams.extend({
-  owner: z.string().min(1),
-  name: z.string().min(1),
+export const ConnectionParams = z.object({
+  connectionId: z.string().min(1).describe('The connection identifier.'),
 });
 
-export const ProjectParams = z.object({ projectId: z.string().min(1) });
+export const RepositoryParams = ConnectionParams.extend({
+  owner: z.string().min(1).describe('The repository owner or organization.'),
+  name: z.string().min(1).describe('The repository name on the code host.'),
+});
 
-export const ResourceParams = z.object({ resourceId: z.string().min(1) });
+export const ProjectParams = z.object({
+  projectId: z.string().min(1).describe('The project identifier.'),
+});
 
-export const IssueParams = z.object({ issueId: z.string().min(1) });
+export const ResourceParams = z.object({
+  resourceId: z.string().min(1).describe('The resource identifier.'),
+});
+
+export const IssueParams = z.object({
+  issueId: z.string().min(1).describe('The issue identifier.'),
+});
 
 export const PullRequestParams = z.object({
-  pullRequestId: z.string().min(1),
+  pullRequestId: z.string().min(1).describe('The pull request identifier.'),
 });
 
 /** The issue a pull request route acts through: a pull request may be linked to several. */
-export const PullRequestIssueQuery = z.object({ issueId: z.string().min(1) });
+export const PullRequestIssueQuery = z.object({
+  issueId: z.string().min(1).describe('The issue identifier.'),
+});
 
 /** The host's own page number, as an opaque token. */
 const pageToken = z
@@ -63,38 +73,75 @@ const pageToken = z
   .optional();
 
 export const RepositoryListQuery = z.object({
-  q: z.string().max(200).optional(),
-  pageToken,
+  q: z.string().max(200).optional().describe('Text to search for.'),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 export const TemplateRepositoryListQuery = z.object({
-  q: z.string().max(200).optional(),
-  pageToken,
+  q: z.string().max(200).optional().describe('Text to search for.'),
+  pageToken: pageToken.describe(
+    'The continuation token returned by the previous page.',
+  ),
 });
 
 const nullableText = z.string().nullable().optional();
 
 export const SaveConnectionInput = z.strictObject({
-  provider: z.enum(GIT_PROVIDERS).optional(),
-  kind: z.enum(['app', 'token']).optional(),
-  sameAppAs: z.string().min(1).optional(),
-  name: z.string().optional(),
-  webUrl: z.string().optional(),
-  account: nullableText,
-  appId: nullableText,
-  installationId: nullableText,
-  clientId: nullableText,
-  privateKey: nullableText,
-  clientSecret: nullableText,
-  token: nullableText,
-  webhookSecret: nullableText,
-  allowPersonalTokens: z.boolean().optional(),
+  provider: z
+    .enum(GIT_PROVIDERS)
+    .optional()
+    .describe('The provider implementation to use.'),
+  kind: z
+    .enum(['app', 'token'])
+    .optional()
+    .describe(
+      'How the connection authenticates: app credentials or a personal access token.',
+    ),
+  sameAppAs: z
+    .string()
+    .min(1)
+    .optional()
+    .describe('The connection whose app credentials are shared.'),
+  name: z.string().optional().describe('The name to display.'),
+  webUrl: z
+    .string()
+    .optional()
+    .describe('The code host’s web URL; required for a self-hosted provider.'),
+  account: nullableText.describe(
+    'The account or organization on the code host.',
+  ),
+  appId: nullableText.describe('The application identifier.'),
+  installationId: nullableText.describe(
+    'The code host app installation identifier.',
+  ),
+  clientId: nullableText.describe('The OAuth client identifier.'),
+  privateKey: nullableText.describe('The app private key in PEM format.'),
+  clientSecret: nullableText.describe('The OAuth client secret.'),
+  token: nullableText.describe('The personal access token.'),
+  webhookSecret: nullableText.describe(
+    'The secret used to verify webhook signatures.',
+  ),
+  allowPersonalTokens: z
+    .boolean()
+    .optional()
+    .describe(
+      'Allow members to authorize this connection with their own tokens.',
+    ),
 });
 
 export const StartAppManifestInput = z.strictObject({
-  provider: z.enum(GIT_PROVIDERS).optional(),
+  provider: z
+    .enum(GIT_PROVIDERS)
+    .optional()
+    .describe('The provider implementation to use.'),
   organization: z.string().max(39).nullable().optional(),
-  webUrl: z.string().max(255).optional(),
+  webUrl: z
+    .string()
+    .max(255)
+    .optional()
+    .describe('The code host’s web URL; required for a self-hosted provider.'),
 });
 
 export const AppManifestCallbackQuery = z.object({
@@ -109,22 +156,41 @@ export const AppSetupQuery = z.object({
 });
 
 export const PollDeviceFlowInput = z.strictObject({
-  handle: z.string().min(1).max(4000),
+  handle: z
+    .string()
+    .min(1)
+    .max(4000)
+    .describe(
+      'The handle returned when starting the device authorization flow.',
+    ),
 });
 
 /** A personal access token; what it may be is the connections' to say. */
-export const PersonalTokenInput = z.strictObject({ token: z.string() });
+export const PersonalTokenInput = z.strictObject({
+  token: z.string().describe('The personal access token.'),
+});
 
 export const CreateRepositoryInput = z.strictObject({
-  owner: z.string().optional(),
-  name: z.string(),
-  private: z.boolean(),
-  description: z.string().nullable().optional(),
-  empty: z.boolean().optional(),
+  owner: z
+    .string()
+    .optional()
+    .describe('The repository owner or organization.'),
+  name: z.string().describe('The repository name on the code host.'),
+  private: z.boolean().describe('Create a private repository.'),
+  description: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('A description of the record.'),
+  empty: z.boolean().optional().describe('Create without initial files.'),
 });
 
 export const ProjectSettingsInput = z.strictObject({
-  attribution: z.enum(COMMIT_ATTRIBUTIONS),
+  attribution: z
+    .enum(COMMIT_ATTRIBUTIONS)
+    .describe(
+      'Whether commits name the requester with the agent as co-author (withAgent), or the requester alone (meOnly).',
+    ),
 });
 
 const issueId = z.string().min(1).optional().meta({
@@ -132,16 +198,18 @@ const issueId = z.string().min(1).optional().meta({
     'The issue, by id or identifier (PM-12); an agent’s run on an issue leaves it out for its own.',
 });
 
-export const PullRequestListQuery = z.object({ issueId });
+export const PullRequestListQuery = z.object({
+  issueId: issueId.describe('The issue identifier.'),
+});
 
 export const LinkPullRequestInput = z.strictObject({
-  issueId,
-  url: z.string().min(1),
+  issueId: issueId.describe('The issue identifier.'),
+  url: z.string().min(1).describe('The resource URL.'),
 });
 
 export const OpenPullRequestInput = z.strictObject({
-  issueId,
-  title: z.string().min(1),
+  issueId: issueId.describe('The issue identifier.'),
+  title: z.string().min(1).describe('The display title.'),
   body: z.string().optional(),
   repo: z
     .string()
@@ -159,11 +227,13 @@ export const OpenPullRequestInput = z.strictObject({
 });
 
 export const UpdatePullRequestInput = z.strictObject({
-  autoCompleteDisabled: z.boolean(),
+  autoCompleteDisabled: z
+    .boolean()
+    .describe('Disable automatic completion of this pull request.'),
 });
 
 export const EditPullRequestInput = z.strictObject({
-  title: z.string().min(1).optional(),
+  title: z.string().min(1).optional().describe('The display title.'),
   body: z.string().optional(),
   base: z.string().min(1).optional().meta({
     description: 'The branch to merge into.',
@@ -187,7 +257,13 @@ export const ClosePullRequestInput = z.strictObject({
 });
 
 export const MergeInput = z.strictObject({
-  expectedHeadSha: z.string().trim().min(1),
+  expectedHeadSha: z
+    .string()
+    .trim()
+    .min(1)
+    .describe(
+      'The expected pull request head commit; reject if it has changed.',
+    ),
   force: z.boolean().optional().meta({
     description:
       'Merge although required checks failed (`ciFailed`, nothing else blocking), for a manager of the issue’s project. The code host’s branch protection still applies.',
@@ -201,11 +277,27 @@ export const MergeInput = z.strictObject({
 export const MarksQuery = z.object({ issueIds: idList(MARKS_MAX) });
 
 export const UpdateRepositoryInput = z.strictObject({
-  webhookSecret: z.string().nullable().optional(),
-  wakeOnChecks: z.boolean().optional(),
-  wakeOnChecksPassed: z.boolean().optional(),
-  wakeOnConflict: z.boolean().optional(),
-  branchRules: z.array(z.string()).optional(),
+  webhookSecret: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The secret used to verify webhook signatures.'),
+  wakeOnChecks: z
+    .boolean()
+    .optional()
+    .describe('Wake the agent when required checks fail.'),
+  wakeOnChecksPassed: z
+    .boolean()
+    .optional()
+    .describe('Wake the agent when required checks pass.'),
+  wakeOnConflict: z
+    .boolean()
+    .optional()
+    .describe('Wake the agent when the pull request has merge conflicts.'),
+  branchRules: z
+    .array(z.string())
+    .optional()
+    .describe('Branch rules for issue work and pull request targets.'),
   referenceChecks: z.array(z.string()).optional().meta({
     description:
       'Check names only for information: their failures neither wake the agent nor block merging.',
@@ -221,7 +313,7 @@ export const OAuthCallbackQuery = z.object({
 });
 
 export const RepositoryWebhookParams = z.object({
-  repositoryId: z.string().min(1),
+  repositoryId: z.string().min(1).describe('The repository identifier.'),
 });
 
 // --- Responses -----------------------------------------------------------------------------------------------------

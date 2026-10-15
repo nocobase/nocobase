@@ -139,7 +139,9 @@ const version = z.coerce
   .optional()
   .meta({ description: 'An older version instead of the current one.' });
 
-export const KbScopeQuery = z.object({ projectId });
+export const KbScopeQuery = z.object({
+  projectId: projectId.describe('The project identifier.'),
+});
 
 export const KbListQuery = z.object({
   q: z.string().optional().meta({
@@ -150,12 +152,15 @@ export const KbListQuery = z.object({
     .string()
     .optional()
     .meta({ description: "Only this document's children (slug or id)." }),
-  projectId,
+  projectId: projectId.describe('The project identifier.'),
 });
 
 export const KbDocParams = z.object({ doc: docRef });
 
-export const KbVersionQuery = z.object({ version, projectId });
+export const KbVersionQuery = z.object({
+  version: version.describe('The version to read or restore.'),
+  projectId: projectId.describe('The project identifier.'),
+});
 
 export const KbSearchQuery = z.object({
   q: z
@@ -169,7 +174,7 @@ export const KbSearchQuery = z.object({
     .max(100)
     .default(20)
     .meta({ description: 'At most this many hits.' }),
-  projectId,
+  projectId: projectId.describe('The project identifier.'),
 });
 
 const space = z.enum(['project', 'system']).optional().meta({
@@ -200,9 +205,9 @@ const proposeFields = {
     .string()
     .optional()
     .meta({ description: 'The whole new Markdown content.' }),
-  summary,
+  summary: summary.describe('A short summary for discovery.'),
   reason,
-  projectId,
+  projectId: projectId.describe('The project identifier.'),
 };
 
 export const KbProposeBody = z.strictObject({
@@ -235,12 +240,12 @@ export const KbUploadBody = z.strictObject({
     .optional()
     .meta({ description: "A new file's folder or document (slug or id)." }),
   space,
-  summary,
+  summary: summary.describe('A short summary for discovery.'),
   reason: z.string().meta({
     description:
       'Why it belongs in the knowledge base, for the person deciding (at most 500 characters).',
   }),
-  projectId,
+  projectId: projectId.describe('The project identifier.'),
 });
 
 export const KbListItemSchema: z.ZodType<KbListItem> = z

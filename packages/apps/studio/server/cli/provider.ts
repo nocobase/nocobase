@@ -43,7 +43,7 @@ export const STUDIO_CLI_DESCRIPTION: CliDescription = {
   title: 'Studio',
   notes: [
     'Sign in with `nb-studio login`; in CI set `NB_STUDIO_SERVER` and `NB_STUDIO_API_KEY`. Inside an agent run the CLI acts as the run.',
-    '`nb-studio whoami` shows who you act as, your actions, and which commands need an action you lack.',
+    '`nb-studio whoami` shows who you act as, business actions, settings permissions, and which commands need an action you lack. `agents.runs/self` is only held by run tokens, not granted by a person’s role.',
     'What only the web page does (Settings › …) is listed in the nb-studio-cli Skill under "UI-only tasks".',
   ],
 };

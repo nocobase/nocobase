@@ -348,10 +348,15 @@ const IssueRunsQuery = z.object({
     .max(RUNS_LIMIT.max)
     .default(RUNS_LIMIT.default)
     .meta({ description: `At most this many runs (${RUNS_LIMIT.max}).` }),
-  pageToken: z.string().optional(),
+  pageToken: z
+    .string()
+    .optional()
+    .describe('The continuation token returned by the previous page.'),
 });
 
-const RunParams = z.object({ runId: z.string().min(1) });
+const RunParams = z.object({
+  runId: z.string().min(1).describe('The run identifier.'),
+});
 
 const RunEventsQuery = z.object({
   type: z

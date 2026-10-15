@@ -12,9 +12,9 @@ Requires the `rel.environments` `read` setting. Tries the stored settings and pu
 nb-studio registry check <registry>
 ```
 
-| Argument   | Description |
-| ---------- | ----------- |
-| `registry` |             |
+| Argument   | Description              |
+| ---------- | ------------------------ |
+| `registry` | The registry identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -32,17 +32,17 @@ Requires the `rel.environments` `manage` setting. The pull password is write-onl
 nb-studio registry create [<registry>]
 ```
 
-| Argument   | Description |
-| ---------- | ----------- |
-| `registry` | (optional)  |
+| Argument   | Description                       |
+| ---------- | --------------------------------- |
+| `registry` | The record identifier. (optional) |
 
 | Flag               | Type   | Description                                                       |
 | ------------------ | ------ | ----------------------------------------------------------------- |
-| `--name`           | string |                                                                   |
-| `--url`            | string |                                                                   |
-| `--namespace`      | string |                                                                   |
-| `--pull-username`  | string |                                                                   |
-| `--secret-changes` | json   |                                                                   |
+| `--name`           | string | The name to display.                                              |
+| `--url`            | string | The resource URL.                                                 |
+| `--namespace`      | string | The container registry namespace.                                 |
+| `--pull-username`  | string | The username used to pull container images.                       |
+| `--secret-changes` | json   | Secret values to set or remove.                                   |
 | `--file`           | path   | The request body as a JSON object; the flags override its fields. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -67,9 +67,9 @@ Requires the `rel.environments` `manage` setting.
 nb-studio registry delete <registry>
 ```
 
-| Argument   | Description |
-| ---------- | ----------- |
-| `registry` |             |
+| Argument   | Description              |
+| ---------- | ------------------------ |
+| `registry` | The registry identifier. |
 
 | Flag    | Type    | Description                                          |
 | ------- | ------- | ---------------------------------------------------- |
@@ -91,9 +91,9 @@ Requires the `rel.environments` `read` setting.
 nb-studio registry get <registry>
 ```
 
-| Argument   | Description |
-| ---------- | ----------- |
-| `registry` |             |
+| Argument   | Description              |
+| ---------- | ------------------------ |
+| `registry` | The registry identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -127,17 +127,17 @@ Requires the `rel.environments` `manage` setting.
 nb-studio registry update <registry>
 ```
 
-| Argument   | Description |
-| ---------- | ----------- |
-| `registry` |             |
+| Argument   | Description              |
+| ---------- | ------------------------ |
+| `registry` | The registry identifier. |
 
 | Flag               | Type   | Description                                                       |
 | ------------------ | ------ | ----------------------------------------------------------------- |
-| `--name`           | string |                                                                   |
-| `--url`            | string |                                                                   |
-| `--namespace`      | string |                                                                   |
-| `--pull-username`  | string |                                                                   |
-| `--secret-changes` | json   |                                                                   |
+| `--name`           | string | The name to display.                                              |
+| `--url`            | string | The resource URL.                                                 |
+| `--namespace`      | string | The container registry namespace.                                 |
+| `--pull-username`  | string | The username used to pull container images.                       |
+| `--secret-changes` | json   | Secret values to set or remove.                                   |
 | `--file`           | path   | The request body as a JSON object; the flags override its fields. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.

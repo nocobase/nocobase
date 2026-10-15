@@ -14,10 +14,10 @@ nb-studio plan create
 
 | Flag            | Type   | Description                                                                                                                                                                    |
 | --------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--title`       | string |                                                                                                                                                                                |
-| `--description` | string |                                                                                                                                                                                |
+| `--title`       | string | The display title.                                                                                                                                                             |
+| `--description` | string | A description of the record.                                                                                                                                                   |
 | `--source`      | json   | Where the plan comes from; a newer open plan with the same `key` replaces this one. Required, except from an agent in a conversation, whose plans come from that conversation. |
-| `--rows`        | json   |                                                                                                                                                                                |
+| `--rows`        | json   | The operations in the plan, in execution order.                                                                                                                                |
 | `--file`        | path   | The request body as a JSON object; the flags override its fields.                                                                                                              |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -42,13 +42,13 @@ For people only: a scoped API key or an organization’s API key is refused (403
 nb-studio plan execute <plan> --revision <integer>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `plan`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `plan`   | The plan identifier. |
 
-| Flag         | Type    | Description |
-| ------------ | ------- | ----------- |
-| `--revision` | integer | (required)  |
+| Flag         | Type    | Description                                                          |
+| ------------ | ------- | -------------------------------------------------------------------- |
+| `--revision` | integer | The revision last read; reject if the record has changed. (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -72,9 +72,9 @@ For people, and for an agent’s run in a person’s conversation (its run token
 nb-studio plan get <plan>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `plan`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `plan`   | The plan identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -94,13 +94,13 @@ nb-studio plan list
 
 | Flag            | Type                                                                                       | Description                                                                               |
 | --------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| `--status`      | open \| pending \| executing \| executed \| failed \| stale \| voided \| expired \| undone |                                                                                           |
-| `--source-kind` | string                                                                                     |                                                                                           |
-| `--source-key`  | string                                                                                     |                                                                                           |
-| `--issue`       | string                                                                                     |                                                                                           |
+| `--status`      | open \| pending \| executing \| executed \| failed \| stale \| voided \| expired \| undone | The status to set or filter by.                                                           |
+| `--source-kind` | string                                                                                     | The kind of source to filter by.                                                          |
+| `--source-key`  | string                                                                                     | The source identifier to filter by.                                                       |
+| `--issue`       | string                                                                                     | The issue identifier.                                                                     |
 | `--all`         | boolean                                                                                    | From an agent in a conversation: every plan of the person rather than the conversation’s. |
-| `--limit`       | integer                                                                                    | (default 20)                                                                              |
-| `--page-token`  | string                                                                                     |                                                                                           |
+| `--limit`       | integer                                                                                    | The maximum number of records to return. (default 20)                                     |
+| `--page-token`  | string                                                                                     | The continuation token returned by the previous page.                                     |
 
 **Output:** A list (table columns: `id`, `status`, `title`, `source.kind`, `expiresAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -126,10 +126,10 @@ nb-studio plan rehearse
 
 | Flag            | Type   | Description                                                       |
 | --------------- | ------ | ----------------------------------------------------------------- |
-| `--title`       | string |                                                                   |
-| `--description` | string |                                                                   |
-| `--source`      | json   |                                                                   |
-| `--rows`        | json   |                                                                   |
+| `--title`       | string | The display title.                                                |
+| `--description` | string | A description of the record.                                      |
+| `--source`      | json   | The source context associated with this record.                   |
+| `--rows`        | json   | The operations in the plan, in execution order.                   |
 | `--file`        | path   | The request body as a JSON object; the flags override its fields. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -154,13 +154,13 @@ For people only: a scoped API key or an organization’s API key is refused (403
 nb-studio plan retry <plan> --revision <integer>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `plan`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `plan`   | The plan identifier. |
 
-| Flag         | Type    | Description |
-| ------------ | ------- | ----------- |
-| `--revision` | integer | (required)  |
+| Flag         | Type    | Description                                                          |
+| ------------ | ------- | -------------------------------------------------------------------- |
+| `--revision` | integer | The revision last read; reject if the record has changed. (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -178,13 +178,13 @@ For people only: a scoped API key or an organization’s API key is refused (403
 nb-studio plan undo <plan>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `plan`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `plan`   | The plan identifier. |
 
 | Flag        | Type    | Description                                         |
 | ----------- | ------- | --------------------------------------------------- |
-| `--dry-run` | boolean |                                                     |
+| `--dry-run` | boolean | Preview the changes without applying them.          |
 | `--yes`     | boolean | Go ahead without asking “Undo this plan’s changes?” |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -210,16 +210,16 @@ For people only: a scoped API key or an organization’s API key is refused (403
 nb-studio plan update <plan>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `plan`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `plan`   | The plan identifier. |
 
 | Flag            | Type    | Description                                                       |
 | --------------- | ------- | ----------------------------------------------------------------- |
-| `--revision`    | integer |                                                                   |
-| `--title`       | string  |                                                                   |
-| `--description` | string  |                                                                   |
-| `--rows`        | json    |                                                                   |
+| `--revision`    | integer | The revision last read; reject if the record has changed.         |
+| `--title`       | string  | The display title.                                                |
+| `--description` | string  | A description of the record.                                      |
+| `--rows`        | json    | The operations in the plan, in execution order.                   |
 | `--file`        | path    | The request body as a JSON object; the flags override its fields. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -244,14 +244,14 @@ For people only: a scoped API key or an organization’s API key is refused (403
 nb-studio plan void <plan> --revision <integer>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `plan`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `plan`   | The plan identifier. |
 
-| Flag         | Type    | Description                                                       |
-| ------------ | ------- | ----------------------------------------------------------------- |
-| `--revision` | integer | (required)                                                        |
-| `--yes`      | boolean | Go ahead without asking “Void this plan? Nothing in it will run.” |
+| Flag         | Type    | Description                                                          |
+| ------------ | ------- | -------------------------------------------------------------------- |
+| `--revision` | integer | The revision last read; reject if the record has changed. (required) |
+| `--yes`      | boolean | Go ahead without asking “Void this plan? Nothing in it will run.”    |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

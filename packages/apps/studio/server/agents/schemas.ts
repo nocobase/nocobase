@@ -6,7 +6,10 @@ import {
 } from '../../shared/issue-agent-work.js';
 
 export const IssueAgentWorkInput = z.object({
-  issueIds: z.array(z.string().min(1).max(100)).max(ISSUE_AGENT_WORK_BATCH),
+  issueIds: z
+    .array(z.string().min(1).max(100))
+    .max(ISSUE_AGENT_WORK_BATCH)
+    .describe('The issue identifiers whose agent work should be returned.'),
 });
 export const IssueAgentWorkSchema: z.ZodType<IssueAgentWork> = z.object({
   issueId: z.string(),
@@ -24,15 +27,19 @@ import type { Delegation } from '../../shared/delegations.js';
 import type { FailedRunResult } from './failed-runs.js';
 import { RUN_FAILED_ACTIONS } from './notices.js';
 
-export const IssueParams = z.object({ issueId: z.string().min(1) });
+export const IssueParams = z.object({
+  issueId: z.string().min(1).describe('The issue identifier.'),
+});
 
-export const RunParams = z.object({ runId: z.string().min(1) });
+export const RunParams = z.object({
+  runId: z.string().min(1).describe('The run identifier.'),
+});
 
 export const DecideFailedRunInput = z
   .strictObject({
-    action: z.enum(RUN_FAILED_ACTIONS),
+    action: z.enum(RUN_FAILED_ACTIONS).describe('The decision to apply.'),
     /** For `reassign`: the person who takes the issue over. */
-    userId: z.string().min(1).optional(),
+    userId: z.string().min(1).optional().describe('The user identifier.'),
   })
   .refine((input) => input.action !== 'reassign' || input.userId, {
     path: ['userId'],
@@ -46,11 +53,11 @@ const filter = z
   .optional();
 
 export const AgentBoardQuery = z.object({
-  q: filter,
-  projectId: filter,
-  labelId: filter,
-  ownerUserId: filter,
-  executorId: filter,
+  q: filter.describe('Text to search for.'),
+  projectId: filter.describe('The project identifier.'),
+  labelId: filter.describe('The label identifier.'),
+  ownerUserId: filter.describe('The owner user identifier.'),
+  executorId: filter.describe('The executor identifier.'),
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -264,7 +271,9 @@ export const IntakeDraftsDeliveredSchema = z.object({
   }),
 });
 
-export const DelegationParams = z.object({ delegationId: z.string().min(1) });
+export const DelegationParams = z.object({
+  delegationId: z.string().min(1).describe('The delegation identifier.'),
+});
 
 export const DelegationListQuery = z.object({
   conversationId: z.string().min(1).meta({

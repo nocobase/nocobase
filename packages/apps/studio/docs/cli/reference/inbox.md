@@ -12,9 +12,9 @@ Reads and changes only the signed-in user's inbox; another user's message answer
 nb-studio inbox delete <message>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `message` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `message` | The message identifier. |
 
 | Flag    | Type    | Description                                                   |
 | ------- | ------- | ------------------------------------------------------------- |
@@ -36,11 +36,11 @@ Decisions waiting on the caller and news, newest first, with what each is about.
 nb-studio inbox list
 ```
 
-| Flag           | Type    | Description        |
-| -------------- | ------- | ------------------ |
-| `--unread`     | boolean | Only unread items. |
-| `--limit`      | integer | (default 20)       |
-| `--page-token` | string  |                    |
+| Flag           | Type    | Description                                           |
+| -------------- | ------- | ----------------------------------------------------- |
+| `--unread`     | boolean | Only unread items.                                    |
+| `--limit`      | integer | The maximum number of records to return. (default 20) |
+| `--page-token` | string  | The continuation token returned by the previous page. |
 
 **Output:** A list (table columns: `id`, `kind`, `pending`, `issue`, `title`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -80,9 +80,9 @@ Reads and changes only the signed-in user's inbox; another user's message answer
 nb-studio inbox mark-read <message>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `message` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `message` | The message identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -100,9 +100,9 @@ Reads and changes only the signed-in user's inbox; another user's message answer
 nb-studio inbox mark-unread <message>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `message` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `message` | The message identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -150,9 +150,9 @@ Newest first, with their in-app items; `subject=<type>:<id>` keeps those about o
 nb-studio inbox waiting
 ```
 
-| Flag        | Type   | Description |
-| ----------- | ------ | ----------- |
-| `--subject` | string |             |
+| Flag        | Type   | Description               |
+| ----------- | ------ | ------------------------- |
+| `--subject` | string | The subject to filter by. |
 
 **Output:** A list (table columns: `item.id`, `notice.type`, `notice.subject.label`, `item.title`, `item.createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 

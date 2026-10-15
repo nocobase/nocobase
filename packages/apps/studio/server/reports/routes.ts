@@ -56,7 +56,8 @@ const DashboardQuery = z.object({
         (DASHBOARD_PERIODS as readonly number[]).includes(days),
       `days is one of ${DASHBOARD_PERIODS.join(', ')}.`,
     )
-    .default(30),
+    .default(30)
+    .describe('The number of days in the reporting period.'),
 });
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/u;
@@ -71,12 +72,15 @@ const MetricsQuery = z.object({
     .regex(DAY, 'A day, YYYY-MM-DD.')
     .optional()
     .meta({ description: 'The last day, YYYY-MM-DD (UTC); today by default.' }),
-  projectId: z.string().min(1).optional(),
+  projectId: z.string().min(1).optional().describe('The project identifier.'),
 });
 
 const UsageQuery = MetricsQuery.extend({
-  groupBy: z.enum(USAGE_GROUP_BYS).default('agent'),
-  agentId: z.string().min(1).optional(),
+  groupBy: z
+    .enum(USAGE_GROUP_BYS)
+    .default('agent')
+    .describe('The dimension to group usage by.'),
+  agentId: z.string().min(1).optional().describe('The agent identifier.'),
   userId: z.string().min(1).optional().meta({
     description: 'Only the runs this person started (their user id).',
   }),

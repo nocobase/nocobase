@@ -12,13 +12,13 @@ Takes a signed-in session: a request made with any API key is refused (`403`). T
 nb-studio api-key create
 ```
 
-| Flag                | Type    | Description                                                       |
-| ------------------- | ------- | ----------------------------------------------------------------- |
-| `--name`            | string  |                                                                   |
-| `--description`     | string  |                                                                   |
-| `--expires-in-days` | integer |                                                                   |
-| `--scope`           | json    |                                                                   |
-| `--file`            | path    | The request body as a JSON object; the flags override its fields. |
+| Flag                | Type    | Description                                                           |
+| ------------------- | ------- | --------------------------------------------------------------------- |
+| `--name`            | string  | The name to display.                                                  |
+| `--description`     | string  | A description of the record.                                          |
+| `--expires-in-days` | integer | The number of days until the key expires; null means no expiry.       |
+| `--scope`           | json    | The permission scope; a key can never exceed its owner’s permissions. |
+| `--file`            | path    | The request body as a JSON object; the flags override its fields.     |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -43,9 +43,9 @@ Takes a signed-in session: a request made with any API key is refused (`403`).
 nb-studio api-key delete <key>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `key`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `key`    | The key identifier. |
 
 | Flag    | Type    | Description                                                                |
 | ------- | ------- | -------------------------------------------------------------------------- |
@@ -83,9 +83,9 @@ Takes a signed-in session: a request made with any API key is refused (`403`). R
 nb-studio api-key rotate <key>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `key`    |             |
+| Argument | Description         |
+| -------- | ------------------- |
+| `key`    | The key identifier. |
 
 | Flag    | Type    | Description                                                              |
 | ------- | ------- | ------------------------------------------------------------------------ |
@@ -107,14 +107,14 @@ Takes a signed-in session: a request made with any API key is refused (`403`). B
 nb-studio api-key scope-objects <group>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `group`  |             |
+| Argument | Description              |
+| -------- | ------------------------ |
+| `group`  | The API key scope group. |
 
-| Flag   | Type   | Description |
-| ------ | ------ | ----------- |
-| `--q`  | string |             |
-| `--id` | json   |             |
+| Flag   | Type   | Description            |
+| ------ | ------ | ---------------------- |
+| `--q`  | string | Text to search for.    |
+| `--id` | json   | The record identifier. |
 
 **Output:** A list (table columns: `id`, `title`, `description`); with `--json`, `result.data` is the array and `result.meta` the paging.
 

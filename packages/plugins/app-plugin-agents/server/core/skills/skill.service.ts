@@ -99,8 +99,11 @@ const contentField = z.string().meta({
 });
 
 export const SkillInputSchema: z.ZodType<SkillInput> = z.strictObject({
-  content: contentField,
-  files: z.array(FileSchema).optional(),
+  content: contentField.describe('The Markdown content.'),
+  files: z
+    .array(FileSchema)
+    .optional()
+    .describe('The files to include, with their relative paths and content.'),
 });
 
 function revisionConflict(current: number): Error {
@@ -112,21 +115,54 @@ function revisionConflict(current: number): Error {
 }
 
 export const SkillSaveSchema: z.ZodType<SkillSave> = z.strictObject({
-  content: contentField,
-  files: z.array(FileSchema),
-  note: z.string().trim().max(500).nullable().optional(),
-  expectedRevision: z.number().int().min(1),
+  content: contentField.describe('The Markdown content.'),
+  files: z
+    .array(FileSchema)
+    .describe('The files to include, with their relative paths and content.'),
+  note: z
+    .string()
+    .trim()
+    .max(500)
+    .nullable()
+    .optional()
+    .describe('A note explaining this change.'),
+  expectedRevision: z
+    .number()
+    .int()
+    .min(1)
+    .describe('The revision last read; reject if the record has changed.'),
 });
 
 export const SkillImportSchema: z.ZodType<SkillImport> = z.strictObject({
   archive: z.string().regex(HASH),
-  skillId: z.string().min(1).max(64).optional(),
-  expectedRevision: z.number().int().min(1).optional(),
-  note: z.string().trim().max(500).nullable().optional(),
+  skillId: z
+    .string()
+    .min(1)
+    .max(64)
+    .optional()
+    .describe('The skill identifier.'),
+  expectedRevision: z
+    .number()
+    .int()
+    .min(1)
+    .optional()
+    .describe('The revision last read; reject if the record has changed.'),
+  note: z
+    .string()
+    .trim()
+    .max(500)
+    .nullable()
+    .optional()
+    .describe('A note explaining this change.'),
 });
 
 export const SkillIdsSchema: z.ZodType<{ readonly skillIds: string[] }> =
-  z.strictObject({ skillIds: z.array(z.string().min(1).max(64)).max(100) });
+  z.strictObject({
+    skillIds: z
+      .array(z.string().min(1).max(64))
+      .max(100)
+      .describe('Skill identifiers to attach.'),
+  });
 
 /** A scope and its id: where skills are attached. */
 export interface SkillTarget {

@@ -27,27 +27,49 @@ import {
 } from '../../shared/access.js';
 import { PAGES } from '../../shared/pages.js';
 
-export const RoleParams = z.object({ roleKey: z.string().min(1) });
-
-export const MemberParams = z.object({ userId: z.string().min(1) });
-
-export const KeyParams = z.object({ keyId: z.string().min(1) });
-
-export const SaveRoleInput = z.strictObject({
-  title: z.string().optional(),
-  pages: z.array(z.string()).optional(),
-  settings: z.record(z.string(), z.boolean()).optional(),
-  abilities: z.record(z.string(), z.string()).optional(),
+export const RoleParams = z.object({
+  roleKey: z.string().min(1).describe('The role key.'),
 });
 
-export const CreateRoleInput = SaveRoleInput.extend({ title: z.string() });
+export const MemberParams = z.object({
+  userId: z.string().min(1).describe('The user identifier.'),
+});
+
+export const KeyParams = z.object({
+  keyId: z.string().min(1).describe('The key identifier.'),
+});
+
+export const SaveRoleInput = z.strictObject({
+  title: z.string().optional().describe('The display title.'),
+  pages: z
+    .array(z.string())
+    .optional()
+    .describe('Page identifiers the role may open.'),
+  settings: z
+    .record(z.string(), z.boolean())
+    .optional()
+    .describe('Settings permission keys granted to the role.'),
+  abilities: z
+    .record(z.string(), z.string())
+    .optional()
+    .describe('Business action keys and their granted scope levels.'),
+});
+
+export const CreateRoleInput = SaveRoleInput.extend({
+  title: z.string().describe('The display title.'),
+});
 
 export const UpdateMemberInput = z.strictObject({
-  roles: z.array(z.string()),
+  roles: z.array(z.string()).describe('Role keys to assign to the member.'),
 });
 
 export const AccessSettingsInput = z.strictObject({
-  defaultRole: z.string().nullable(),
+  defaultRole: z
+    .string()
+    .nullable()
+    .describe(
+      'The role assigned to new members; null disables automatic assignment.',
+    ),
 });
 
 export const KeyScopeInputSchema: z.ZodType<KeyScopeInput> = z.strictObject({
@@ -63,19 +85,37 @@ export const KeyScopeInputSchema: z.ZodType<KeyScopeInput> = z.strictObject({
 });
 
 export const CreateOrgKeyInput = z.strictObject({
-  name: z.string(),
-  description: z.string().nullable().optional(),
-  expiresInDays: z.number().int().nullable(),
-  scope: KeyScopeInputSchema,
+  name: z.string().describe('The name to display.'),
+  description: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('A description of the record.'),
+  expiresInDays: z
+    .number()
+    .int()
+    .nullable()
+    .describe(
+      'The number of days until the key expires; null means no expiry.',
+    ),
+  scope: KeyScopeInputSchema.describe(
+    'The permission scope; a key can never exceed its owner’s permissions.',
+  ),
 });
 
 export const UpdateOrgKeyInput = z.strictObject({
-  name: z.string().optional(),
-  description: z.string().nullable().optional(),
+  name: z.string().optional().describe('The name to display.'),
+  description: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('A description of the record.'),
 });
 
 export const SetOrgKeyScopeInput = z.strictObject({
-  scope: KeyScopeInputSchema,
+  scope: KeyScopeInputSchema.describe(
+    'The permission scope; a key can never exceed its owner’s permissions.',
+  ),
 });
 
 // ---------------------------------------------------------------------------------------------------------------------

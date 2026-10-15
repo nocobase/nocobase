@@ -30,6 +30,8 @@ export interface WhoamiResult {
     readonly name?: string;
   };
   readonly actions: readonly string[];
+  /** Settings permissions; absent when the server does not provide them. */
+  readonly settings?: readonly string[];
   readonly commands: number;
   /** The commands that need an action the caller does not hold, with that action. */
   readonly missing: readonly {
@@ -56,7 +58,8 @@ export function whoamiCommand(app: AppCliConfig): Command.Class {
         : `with ${app.envPrefix}_API_KEY set it acts with that key; `) +
       `anywhere else it acts as the profile \`${app.bin} login\` signed in. Shows the server, the user, when the ` +
       "session expires (or the key's name), the business actions held, and how many commands need an action you " +
-      'lack (--missing lists them).';
+      'lack (--missing lists them). Settings permissions are shown separately. ' +
+      'agents.runs/self is only granted to run tokens, not by assigning a role to a person.';
     static override flags = {
       missing: Flags.boolean({
         description:
@@ -127,6 +130,9 @@ export function whoamiCommand(app: AppCliConfig): Command.Class {
         `Actions  ${actions.length === 0 ? '(none)' : actions.join(', ')}`,
       );
       this.log(
+        `Settings ${identity.settings === undefined ? '(not provided)' : identity.settings.length === 0 ? '(none)' : identity.settings.join(', ')}`,
+      );
+      this.log(
         `Commands ${manifest.commands.length} offered` +
           (missing.length > 0
             ? `; ${missing.length} need an action you do not hold${flags.missing ? ':' : ` (\`${app.bin} whoami --missing\` lists them)`}`
@@ -142,7 +148,9 @@ export function whoamiCommand(app: AppCliConfig): Command.Class {
         for (const [action, commands] of [...byAction].sort(([a], [b]) =>
           a.localeCompare(b),
         ))
-          this.log(`  ${action}: ${commands.join(', ')}`);
+          this.log(
+            `  ${action}${action === 'agents.runs/self' ? ' (run tokens only; not granted by a person’s role)' : ''}: ${commands.join(', ')}`,
+          );
       }
       return {
         server: session.server,
@@ -163,6 +171,9 @@ export function whoamiCommand(app: AppCliConfig): Command.Class {
             }
           : {}),
         actions,
+        ...(identity.settings === undefined
+          ? {}
+          : { settings: identity.settings }),
         commands: manifest.commands.length,
         missing,
       };

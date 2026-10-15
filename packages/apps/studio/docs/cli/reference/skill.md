@@ -38,9 +38,9 @@ nb-studio skill attachment set <kind> <scope> --skills <string[]>
 | `kind`   | The scope kind: `global`, `workdir`, or one the application registers.                    |
 | `scope`  | The scope: `default` for global, a working directory id, or the id the application gives. |
 
-| Flag       | Type     | Description            |
-| ---------- | -------- | ---------------------- |
-| `--skills` | string[] | (required; repeatable) |
+| Flag       | Type     | Description                                         |
+| ---------- | -------- | --------------------------------------------------- |
+| `--skills` | string[] | Skill identifiers to attach. (required; repeatable) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -66,11 +66,11 @@ Named and described by its SKILL.md front matter, checked against the Agent Skil
 nb-studio skill create
 ```
 
-| Flag        | Type   | Description                                                                                                                                                                                                                                                                          |
-| ----------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--content` | string | SKILL.md: YAML front matter with `name` (the skill's directory: 1–64 lower-case letters, digits and single hyphens) and `description` (1–1024 characters), optionally `license`, `compatibility`, `metadata` and `allowed-tools`, then the Markdown body. (or --content-file <path>) |
-| `--files`   | json   |                                                                                                                                                                                                                                                                                      |
-| `--file`    | path   | The request body as a JSON object; the flags override its fields.                                                                                                                                                                                                                    |
+| Flag        | Type   | Description                                                       |
+| ----------- | ------ | ----------------------------------------------------------------- |
+| `--content` | string | The Markdown content. (or --content-file <path>)                  |
+| `--files`   | json   | The files to include, with their relative paths and content.      |
+| `--file`    | path   | The request body as a JSON object; the flags override its fields. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -94,9 +94,9 @@ Needs `agents.agents` manage.
 nb-studio skill delete <skill>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `skill`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `skill`  | The skill identifier. |
 
 | Flag    | Type    | Description                                                   |
 | ------- | ------- | ------------------------------------------------------------- |
@@ -118,9 +118,9 @@ A version (the current one by default) as a zip in the Agent Skills layout: `<sl
 nb-studio skill export <skill>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `skill`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `skill`  | The skill identifier. |
 
 | Flag        | Type    | Description                                           |
 | ----------- | ------- | ----------------------------------------------------- |
@@ -149,10 +149,10 @@ One file of a version, as it is stored, named by its path's last part. Needs `ag
 nb-studio skill file get <skill> <version> --path <string>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `skill`   |             |
-| `version` |             |
+| Argument  | Description                     |
+| --------- | ------------------------------- |
+| `skill`   | The skill identifier.           |
+| `version` | The version to read or restore. |
 
 | Flag     | Type   | Description                                                  |
 | -------- | ------ | ------------------------------------------------------------ |
@@ -181,9 +181,9 @@ Its body, files and where it is attached, with whether the caller may edit it. N
 nb-studio skill get <skill>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `skill`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `skill`  | The skill identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -204,8 +204,8 @@ nb-studio skill import
 | Flag         | Type    | Description                                                                                                                                                             |
 | ------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--skill`    | string  | Import as a new version of this skill instead of a new skill.                                                                                                           |
-| `--revision` | integer |                                                                                                                                                                         |
-| `--note`     | string  |                                                                                                                                                                         |
+| `--revision` | integer | The revision last read; reject if the record has changed.                                                                                                               |
+| `--note`     | string  | A note explaining this change.                                                                                                                                          |
 | `--archive`  | path    | The zip: SKILL.md (with `name` and `description` in its front matter) at its root or in a single top folder named as `name`, beside the skill's files. (uploaded first) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -247,17 +247,17 @@ Saves a new version with everything it holds, its SKILL.md checked as a new skil
 nb-studio skill update <skill>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `skill`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `skill`  | The skill identifier. |
 
-| Flag         | Type    | Description                                                                                                                                                                                                                                                                          |
-| ------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--content`  | string  | SKILL.md: YAML front matter with `name` (the skill's directory: 1–64 lower-case letters, digits and single hyphens) and `description` (1–1024 characters), optionally `license`, `compatibility`, `metadata` and `allowed-tools`, then the Markdown body. (or --content-file <path>) |
-| `--files`    | json    |                                                                                                                                                                                                                                                                                      |
-| `--note`     | string  |                                                                                                                                                                                                                                                                                      |
-| `--revision` | integer |                                                                                                                                                                                                                                                                                      |
-| `--file`     | path    | The request body as a JSON object; the flags override its fields.                                                                                                                                                                                                                    |
+| Flag         | Type    | Description                                                       |
+| ------------ | ------- | ----------------------------------------------------------------- |
+| `--content`  | string  | The Markdown content. (or --content-file <path>)                  |
+| `--files`    | json    | The files to include, with their relative paths and content.      |
+| `--note`     | string  | A note explaining this change.                                    |
+| `--revision` | integer | The revision last read; reject if the record has changed.         |
+| `--file`     | path    | The request body as a JSON object; the flags override its fields. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -301,10 +301,10 @@ Needs `agents.agents` read.
 nb-studio skill version get <skill> <version>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `skill`   |             |
-| `version` |             |
+| Argument  | Description                     |
+| --------- | ------------------------------- |
+| `skill`   | The skill identifier.           |
+| `version` | The version to read or restore. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -322,9 +322,9 @@ Newest first. Needs `agents.agents` read.
 nb-studio skill version list <skill>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `skill`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `skill`  | The skill identifier. |
 
 **Output:** A list (table columns: `version`, `name`, `note`, `createdByName`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -342,15 +342,15 @@ The version becomes current again, as a new version. Its creator (at the related
 nb-studio skill version restore <skill> <version> --revision <integer>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `skill`   |             |
-| `version` |             |
+| Argument  | Description                     |
+| --------- | ------------------------------- |
+| `skill`   | The skill identifier.           |
+| `version` | The version to read or restore. |
 
-| Flag         | Type    | Description                                                  |
-| ------------ | ------- | ------------------------------------------------------------ |
-| `--revision` | integer | (required)                                                   |
-| `--yes`      | boolean | Go ahead without asking “Make this version the current one?” |
+| Flag         | Type    | Description                                                          |
+| ------------ | ------- | -------------------------------------------------------------------- |
+| `--revision` | integer | The revision last read; reject if the record has changed. (required) |
+| `--yes`      | boolean | Go ahead without asking “Make this version the current one?”         |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

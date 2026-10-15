@@ -159,7 +159,9 @@ export const CiConnectionSchema: z.ZodType<CiConnectionView> = z
   .meta({ ref: 'StudioCiConnection' });
 
 export const GenerateCiWorkflowInput = z.strictObject({
-  app: CiAppSchema,
+  app: CiAppSchema.describe(
+    'The application whose workflows should be generated.',
+  ),
   target: CiTargetSchema.optional().meta({
     description: 'Pull requests to the `preview` environment when left out.',
   }),

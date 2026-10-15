@@ -24,7 +24,8 @@ export const WaitingQuery = z.object({
       const at = value.indexOf(':');
       return { type: value.slice(0, at), id: value.slice(at + 1) };
     })
-    .optional(),
+    .optional()
+    .describe('The subject to filter by.'),
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -93,8 +94,19 @@ export const ItemsQuery = z.object({
   unread: z.enum(['true', 'false']).optional().meta({
     description: 'Only unread items.',
   }),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
-  pageToken: z.string().min(1).max(512).optional(),
+  pageSize: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(20)
+    .describe('The maximum number of records to return.'),
+  pageToken: z
+    .string()
+    .min(1)
+    .max(512)
+    .optional()
+    .describe('The continuation token returned by the previous page.'),
 });
 
 export const InboxItemSchema: z.ZodType<InboxItemView> = z

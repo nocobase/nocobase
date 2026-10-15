@@ -12,9 +12,9 @@ Deletes a revoked runner; its past runs keep its id.
 nb-studio runtime delete <runtime>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `runtime` |             |
+| Argument  | Description            |
+| --------- | ---------------------- |
+| `runtime` | The runner identifier. |
 
 | Flag    | Type    | Description                                    |
 | ------- | ------- | ---------------------------------------------- |
@@ -36,9 +36,9 @@ Includes directory diagnostics in workspaceUsage.workspaces for callers allowed 
 nb-studio runtime get <runtime>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `runtime` |             |
+| Argument  | Description            |
+| --------- | ---------------------- |
+| `runtime` | The runner identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -72,9 +72,9 @@ Revokes the runner and its keys; the runs and jobs it held go back to the queue.
 nb-studio runtime revoke <runtime>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `runtime` |             |
+| Argument  | Description            |
+| --------- | ---------------------- |
+| `runtime` | The runner identifier. |
 
 | Flag    | Type    | Description                                                                                  |
 | ------- | ------- | -------------------------------------------------------------------------------------------- |
@@ -96,9 +96,9 @@ Its latest runs whatever their status, newest first, without the link of a priva
 nb-studio runtime runs <runtime>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `runtime` |             |
+| Argument  | Description            |
+| --------- | ---------------------- |
+| `runtime` | The runner identifier. |
 
 **Output:** A list (table columns: `id`, `title`, `status`, `createdAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -118,8 +118,8 @@ nb-studio runtime token create
 
 | Flag              | Type                              | Description                                                                                                                                                          |
 | ----------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--trust`         | team \| ownerOnly                 |                                                                                                                                                                      |
-| `--enabled-tools` | claude \| codex \| opencode \| pi | (repeatable)                                                                                                                                                         |
+| `--trust`         | team \| ownerOnly                 | The runner trust level.                                                                                                                                              |
+| `--enabled-tools` | claude \| codex \| opencode \| pi | The agent tools this runner accepts. (repeatable)                                                                                                                    |
 | `--slots`         | integer                           | How many runs at once the runner takes; omitted or null leaves it to the runner. A runner's own `--slots` overrides it.                                              |
 | `--tool-slots`    | json                              | How many runs of each coding tool the runner takes at once; omitted or null for no limits per tool. A runner's own limits per tool (`--slots claude=2`) override it. |
 
@@ -145,18 +145,18 @@ Its owner's alone, a manager of runners (`agents.runners` manage) included; a ru
 nb-studio runtime update <runtime>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `runtime` |             |
+| Argument  | Description            |
+| --------- | ---------------------- |
+| `runtime` | The runner identifier. |
 
 | Flag              | Type                              | Description                                                                                                               |
 | ----------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `--name`          | string                            |                                                                                                                           |
-| `--trust`         | team \| ownerOnly                 |                                                                                                                           |
-| `--slots`         | integer                           |                                                                                                                           |
+| `--name`          | string                            | The name to display.                                                                                                      |
+| `--trust`         | team \| ownerOnly                 | The runner trust level.                                                                                                   |
+| `--slots`         | integer                           | The maximum number of concurrent runs.                                                                                    |
 | `--tool-slots`    | json                              | How many runs of each coding tool it may hold at once, beside `slots`; null, or a tool left out, for no limit of its own. |
-| `--enabled-tools` | claude \| codex \| opencode \| pi | (repeatable)                                                                                                              |
-| `--accept-jobs`   | boolean                           |                                                                                                                           |
+| `--enabled-tools` | claude \| codex \| opencode \| pi | The agent tools this runner accepts. (repeatable)                                                                         |
+| `--accept-jobs`   | boolean                           | Whether the runner accepts new work.                                                                                      |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -174,9 +174,9 @@ Its runs as the caller may see them, then its jobs, while they are dispatched or
 nb-studio runtime work <runtime>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `runtime` |             |
+| Argument  | Description            |
+| --------- | ---------------------- |
+| `runtime` | The runner identifier. |
 
 **Output:** A list (table columns: `id`, `kind`, `title`, `status`, `startedAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 

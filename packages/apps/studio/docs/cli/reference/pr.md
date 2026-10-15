@@ -224,7 +224,7 @@ nb-studio pr merge <issue> <pr> --expected-head <string>
 
 | Flag              | Type    | Description                                                                                                        |
 | ----------------- | ------- | ------------------------------------------------------------------------------------------------------------------ |
-| `--expected-head` | string  | (required)                                                                                                         |
+| `--expected-head` | string  | The expected pull request head commit; reject if it has changed. (required)                                        |
 | `--force`         | boolean | Merge although required checks failed (a manager of the project only); needs --reason.                             |
 | `--reason`        | string  | Why a forced merge is safe; commented on the pull request with the failed checks and kept in the issue’s activity. |
 | `--yes`           | boolean | Go ahead without asking “Squash-merge this pull request?”                                                          |
@@ -388,9 +388,9 @@ nb-studio pr update <issue> <pr> --auto-complete-disabled
 | `issue`  | The issue the pull request is linked to (`PM-12`, or its id). |
 | `pr`     | The pull request’s id in Studio (`pr list`).                  |
 
-| Flag                       | Type    | Description |
-| -------------------------- | ------- | ----------- |
-| `--auto-complete-disabled` | boolean | (required)  |
+| Flag                       | Type    | Description                                                   |
+| -------------------------- | ------- | ------------------------------------------------------------- |
+| `--auto-complete-disabled` | boolean | Disable automatic completion of this pull request. (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

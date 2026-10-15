@@ -12,13 +12,13 @@ Needs `update` on the `pm.labels` settings item.
 nb-studio label create <name>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `name`   |             |
+| Argument | Description          |
+| -------- | -------------------- |
+| `name`   | The name to display. |
 
-| Flag      | Type                                                       | Description |
-| --------- | ---------------------------------------------------------- | ----------- |
-| `--color` | gray \| red \| orange \| yellow \| green \| blue \| purple |             |
+| Flag      | Type                                                       | Description      |
+| --------- | ---------------------------------------------------------- | ---------------- |
+| `--color` | gray \| red \| orange \| yellow \| green \| blue \| purple | The label color. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -42,9 +42,9 @@ Needs `update` on the `pm.labels` settings item.
 nb-studio label delete <label>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `label`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `label`  | The label identifier. |
 
 | Flag    | Type    | Description                                                  |
 | ------- | ------- | ------------------------------------------------------------ |
@@ -80,14 +80,14 @@ Needs `update` on the `pm.labels` settings item.
 nb-studio label update <label>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `label`  |             |
+| Argument | Description           |
+| -------- | --------------------- |
+| `label`  | The label identifier. |
 
-| Flag      | Type                                                       | Description |
-| --------- | ---------------------------------------------------------- | ----------- |
-| `--name`  | string                                                     |             |
-| `--color` | gray \| red \| orange \| yellow \| green \| blue \| purple |             |
+| Flag      | Type                                                       | Description          |
+| --------- | ---------------------------------------------------------- | -------------------- |
+| `--name`  | string                                                     | The name to display. |
+| `--color` | gray \| red \| orange \| yellow \| green \| blue \| purple | The label color.     |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

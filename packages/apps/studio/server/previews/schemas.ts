@@ -17,18 +17,24 @@ import {
 import { BuildSchema } from '../builds/schemas.js';
 import { idList } from '../http/input.js';
 
-export const IssueParams = z.object({ issueId: z.string().min(1) });
-
-export const IssueAppParams = IssueParams.extend({
-  appId: z.string().min(1),
+export const IssueParams = z.object({
+  issueId: z.string().min(1).describe('The issue identifier.'),
 });
 
-export const ProjectParams = z.object({ projectId: z.string().min(1) });
+export const IssueAppParams = IssueParams.extend({
+  appId: z.string().min(1).describe('The application identifier.'),
+});
 
-export const AppParams = z.object({ appId: z.string().min(1) });
+export const ProjectParams = z.object({
+  projectId: z.string().min(1).describe('The project identifier.'),
+});
+
+export const AppParams = z.object({
+  appId: z.string().min(1).describe('The application identifier.'),
+});
 
 export const PreviewListQuery = z.object({
-  projectId: z.string().min(1).optional(),
+  projectId: z.string().min(1).optional().describe('The project identifier.'),
 });
 
 const issueId = z.string().min(1).optional().meta({
@@ -42,7 +48,7 @@ const appId = z.string().min(1).optional().meta({
 });
 
 export const PreviewStatusQuery = z.object({
-  issueId,
+  issueId: issueId.describe('The issue identifier.'),
   adminPassword: z.enum(['true', 'false']).optional().meta({
     description:
       '`true` answers the first administrator’s password too, for a person who may edit the issue (the issue page). Never to a run.',
@@ -50,28 +56,33 @@ export const PreviewStatusQuery = z.object({
 });
 
 export const PreviewLogsQuery = z.object({
-  issueId,
-  appId,
+  issueId: issueId.describe('The issue identifier.'),
+  appId: appId.describe('The application identifier.'),
   pageToken: z.string().min(1).optional().meta({
     description: 'Read on from a previous `meta.nextPageToken`.',
   }),
 });
 
 export const PreviewPreferenceInput = z.strictObject({
-  issueId,
-  notRequired: z.boolean(),
+  issueId: issueId.describe('The issue identifier.'),
+  notRequired: z
+    .boolean()
+    .describe('Whether this issue can be accepted without a preview.'),
 });
 
-export const PreviewDownInput = z.strictObject({ issueId, appId });
+export const PreviewDownInput = z.strictObject({
+  issueId: issueId.describe('The issue identifier.'),
+  appId: appId.describe('The application identifier.'),
+});
 
 export const PreviewRetryInput = z.strictObject({
-  issueId: z.string().min(1),
-  appId: z.string().min(1),
+  issueId: z.string().min(1).describe('The issue identifier.'),
+  appId: z.string().min(1).describe('The application identifier.'),
 });
 
 export const PreviewVariablesInput: z.ZodType<PreviewVariablesBody> =
   z.strictObject({
-    issueId: z.string().min(1),
+    issueId: z.string().min(1).describe('The issue identifier.'),
     appId: z.string().min(1).meta({
       description:
         'The preview’s own App, or the linked App it previews when the issue has one preview of it.',
@@ -92,7 +103,7 @@ export const PreviewVariablesInput: z.ZodType<PreviewVariablesBody> =
 export const IssueIdsQuery = z.object({ issueIds: idList(200) });
 
 export const DecideReopenInput = z.strictObject({
-  action: z.enum(['reopen', 'dismiss']),
+  action: z.enum(['reopen', 'dismiss']).describe('The decision to apply.'),
 });
 
 // --- Responses -----------------------------------------------------------------------------------------------------

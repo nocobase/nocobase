@@ -12,9 +12,9 @@ Requires the `configure` action on the App. People only. Secret values are maske
 nb-studio app config get <app>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -32,14 +32,14 @@ Requires the `configure` action on the App. People only. Saves the running deplo
 nb-studio app config set <app> --content <string>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
 | Flag               | Type   | Description                                                      |
 | ------------------ | ------ | ---------------------------------------------------------------- |
 | `--content`        | string | The configuration, as YAML. (required; or --content-file <path>) |
-| `--secret-changes` | json   |                                                                  |
+| `--secret-changes` | json   | Secret values to set or remove.                                  |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -57,20 +57,20 @@ Requires the `create` action on every App.
 nb-studio app create <app> --name <string> --env <string>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description            |
+| -------- | ---------------------- |
+| `app`    | The record identifier. |
 
-| Flag                    | Type              | Description                                          |
-| ----------------------- | ----------------- | ---------------------------------------------------- |
-| `--name`                | string            | (required)                                           |
-| `--env`                 | string            | (required)                                           |
-| `--description`         | string            |                                                      |
-| `--label`               | json              | A label (key=value); repeat for more.                |
-| `--preview-of`          | string            | Makes it a preview App of that App, removed with it. |
-| `--activation`          | eager \| onDemand |                                                      |
-| `--idle-stop-minutes`   | number            |                                                      |
-| `--dormant-after-hours` | number            |                                                      |
+| Flag                    | Type              | Description                                                              |
+| ----------------------- | ----------------- | ------------------------------------------------------------------------ |
+| `--name`                | string            | The name to display. (required)                                          |
+| `--env`                 | string            | The environment identifier. (required)                                   |
+| `--description`         | string            | A description of the record.                                             |
+| `--label`               | json              | A label (key=value); repeat for more.                                    |
+| `--preview-of`          | string            | Makes it a preview App of that App, removed with it.                     |
+| `--activation`          | eager \| onDemand | The policy for starting the application.                                 |
+| `--idle-stop-minutes`   | number            | Minutes without activity before stopping; null disables idle stopping.   |
+| `--dormant-after-hours` | number            | Hours without activity before marking the app dormant; null disables it. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -94,9 +94,9 @@ Requires the `delete` action on the App. People only. Removes the App with its r
 nb-studio app delete <app>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
 | Flag        | Type    | Description                                             |
 | ----------- | ------- | ------------------------------------------------------- |
@@ -119,15 +119,15 @@ Requires the `deploy` action on the App. A protected environment is deployed onl
 nb-studio app deploy <app> --release <string>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
 | Flag        | Type    | Description                                                              |
 | ----------- | ------- | ------------------------------------------------------------------------ |
 | `--wait`    | boolean | Wait up to 100 seconds for the deployment to finish, and answer it then. |
-| `--release` | string  | (required)                                                               |
-| `--config`  | json    |                                                                          |
+| `--release` | string  | The release identifier to deploy. (required)                             |
+| `--config`  | json    | Configuration values for the selected environment or application.        |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -151,9 +151,9 @@ Idempotent: makes the App in the environment when it is missing, and does nothin
 nb-studio app ensure <app> --environment <string>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
 | Flag            | Type   | Description                                                                                                                                                                                            |
 | --------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -183,9 +183,9 @@ Requires the `view` action on the App. The variables its release declares and th
 nb-studio app env list <app>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
 | Flag        | Type   | Description                                                                               |
 | ----------- | ------ | ----------------------------------------------------------------------------------------- |
@@ -207,11 +207,11 @@ Requires the `configure` action on the App. People only. It reaches the App with
 nb-studio app env set <app> <name> <value>
 ```
 
-| Argument | Description                |
-| -------- | -------------------------- |
-| `app`    |                            |
-| `name`   |                            |
-| `value`  | The value; at most 64 KiB. |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
+| `name`   | The name to display.        |
+| `value`  | The value; at most 64 KiB.  |
 
 | Flag       | Type    | Description                                                                                       |
 | ---------- | ------- | ------------------------------------------------------------------------------------------------- |
@@ -240,10 +240,10 @@ Requires the `configure` action on the App. People only. Removes the App’s val
 nb-studio app env unset <app> <name>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
-| `name`   |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
+| `name`   | The name to display.        |
 
 **Output:** Nothing; prints `Done.`.
 
@@ -261,9 +261,9 @@ Requires the `view` action on the App. The answer includes `allowed`, what the c
 nb-studio app get <app>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -281,13 +281,13 @@ Requires the `view` action; lists the Apps it reaches. `q` searches, `label=key=
 nb-studio app list
 ```
 
-| Flag       | Type    | Description                           |
-| ---------- | ------- | ------------------------------------- |
-| `--page`   | integer | (default 1)                           |
-| `--limit`  | integer | (default 20)                          |
-| `--search` | string  |                                       |
-| `--env`    | string  |                                       |
-| `--label`  | json    | A label (key=value); repeat for more. |
+| Flag       | Type    | Description                                           |
+| ---------- | ------- | ----------------------------------------------------- |
+| `--page`   | integer | The page number, starting at 1. (default 1)           |
+| `--limit`  | integer | The maximum number of records to return. (default 20) |
+| `--search` | string  | Text to search for.                                   |
+| `--env`    | string  | The environment identifier.                           |
+| `--label`  | json    | A label (key=value); repeat for more.                 |
 
 **Output:** A list (table columns: `app.id`, `app.name`, `environment.name`, `runtime.state`, `currentVersion`, `url`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -305,19 +305,19 @@ Requires the `read-logs` action on the App. Not a stream: each read returns one 
 nb-studio app logs <app>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
-| Flag           | Type                                             | Description |
-| -------------- | ------------------------------------------------ | ----------- |
-| `--page-token` | string                                           |             |
-| `--level`      | trace \| debug \| info \| warn \| error \| fatal |             |
-| `--source`     | string                                           |             |
-| `--search`     | string                                           |             |
-| `--since`      | string                                           |             |
-| `--until`      | string                                           |             |
-| `--from-start` | boolean                                          |             |
+| Flag           | Type                                             | Description                                           |
+| -------------- | ------------------------------------------------ | ----------------------------------------------------- |
+| `--page-token` | string                                           | The continuation token returned by the previous page. |
+| `--level`      | trace \| debug \| info \| warn \| error \| fatal | The log severity to filter by.                        |
+| `--source`     | string                                           | The source context associated with this record.       |
+| `--search`     | string                                           | Text to search for.                                   |
+| `--since`      | string                                           | Return logs at or after this timestamp.               |
+| `--until`      | string                                           | Return logs before this timestamp.                    |
+| `--from-start` | boolean                                          | Read from the beginning rather than the latest logs.  |
 
 **Output:** A list (table columns: `time`, `level`, `msg`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -335,9 +335,9 @@ Requires the `operate` action on the App.
 nb-studio app restart <app>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -355,13 +355,13 @@ Requires the `deploy` action on the App. Deploys again the release of an earlier
 nb-studio app rollback <app> --deployment <string>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
-| Flag           | Type   | Description |
-| -------------- | ------ | ----------- |
-| `--deployment` | string | (required)  |
+| Flag           | Type   | Description                           |
+| -------------- | ------ | ------------------------------------- |
+| `--deployment` | string | The deployment identifier. (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -379,9 +379,9 @@ Requires the `operate` action on the App.
 nb-studio app start <app>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -399,9 +399,9 @@ Requires the `operate` action on the App.
 nb-studio app stop <app>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -419,18 +419,18 @@ Requires the `configure` action on the App. People only: agents and keys are ref
 nb-studio app update <app>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `app`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `app`    | The application identifier. |
 
-| Flag                    | Type              | Description                           |
-| ----------------------- | ----------------- | ------------------------------------- |
-| `--name`                | string            |                                       |
-| `--description`         | string            |                                       |
-| `--label`               | json              | A label (key=value); repeat for more. |
-| `--activation`          | eager \| onDemand |                                       |
-| `--idle-stop-minutes`   | number            |                                       |
-| `--dormant-after-hours` | number            |                                       |
+| Flag                    | Type              | Description                                                              |
+| ----------------------- | ----------------- | ------------------------------------------------------------------------ |
+| `--name`                | string            | The name to display.                                                     |
+| `--description`         | string            | A description of the record.                                             |
+| `--label`               | json              | A label (key=value); repeat for more.                                    |
+| `--activation`          | eager \| onDemand | The policy for starting the application.                                 |
+| `--idle-stop-minutes`   | number            | Minutes without activity before stopping; null disables idle stopping.   |
+| `--dormant-after-hours` | number            | Hours without activity before marking the app dormant; null disables it. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 

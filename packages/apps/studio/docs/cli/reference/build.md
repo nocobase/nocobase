@@ -187,7 +187,7 @@ nb-studio build ci workflows
 
 | Flag               | Type    | Description                                                                                               |
 | ------------------ | ------- | --------------------------------------------------------------------------------------------------------- |
-| `--app`            | json    |                                                                                                           |
+| `--app`            | json    | The application whose workflows should be generated.                                                      |
 | `--target`         | json    | Pull requests to the `preview` environment when left out.                                                 |
 | `--default-branch` | string  | The repository’s default branch, which a branch target builds when it names none; `main` when left out.   |
 | `--managed`        | boolean | Whether Studio keeps the key (a run Studio carries out); otherwise the header says how to add it by hand. |
@@ -219,10 +219,10 @@ nb-studio build list <repo>
 | -------- | ---------------------------------------------------------------------- |
 | `repo`   | The repository as `owner/repo`, among the projects the caller may see. |
 
-| Flag          | Type    | Description |
-| ------------- | ------- | ----------- |
-| `--page`      | integer |             |
-| `--page-size` | integer |             |
+| Flag          | Type    | Description                              |
+| ------------- | ------- | ---------------------------------------- |
+| `--page`      | integer | The page number, starting at 1.          |
+| `--page-size` | integer | The maximum number of records to return. |
 
 **Output:** A list (table columns: `reportedAt`, `appId`, `purpose`, `sha`, `state`, `logsUrl`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -292,7 +292,7 @@ nb-studio build repo set <repo>
 
 | Flag     | Type | Description                                                                                           |
 | -------- | ---- | ----------------------------------------------------------------------------------------------------- |
-| `--apps` | json |                                                                                                       |
+| `--apps` | json | The applications deployed from this repository.                                                       |
 | `--plan` | json | The simple choices: the Apps they need are created and linked, and a role they leave out is unlinked. |
 | `--file` | path | The request body as a JSON object; the flags override its fields.                                     |
 
@@ -320,7 +320,7 @@ nb-studio build status --app <string> --state <string>
 
 | Flag           | Type                                      | Description                                                                                                                                                                                                                                                 |
 | -------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--app`        | string                                    | The App the build is of, which `nb-studio app ensure` makes; `<app>-pr-<number>` for a pull request’s preview by convention. (required)                                                                                                                     |
+| `--app`        | string                                    | The application identifier. (required)                                                                                                                                                                                                                      |
 | `--sha`        | string                                    | The full commit hash the archive is built from; it must belong to the repository. (required; default from pull_request.head.sha of $GITHUB_EVENT_PATH or $GITHUB_SHA or $CI_MERGE_REQUEST_SOURCE_BRANCH_SHA or $CI_COMMIT_SHA)                              |
 | `--repository` | string                                    | The repository the commit is verified in, as `owner/repo`; when none is named, the one the App was recorded or made for, else the one whose CI key the credential is. A CI key may name only its own. (default from $GITHUB_REPOSITORY or $CI_PROJECT_PATH) |
 | `--state`      | queued \| building \| failed \| succeeded | Where the build stands. (required)                                                                                                                                                                                                                          |

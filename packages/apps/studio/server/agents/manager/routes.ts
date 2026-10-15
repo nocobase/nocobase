@@ -48,8 +48,12 @@ import { studioProjectManagerToken } from './token.js';
 import { IssueProgressSchema, ProjectManagerViewSchema } from './schemas.js';
 
 const tags = ['Studio'];
-const Params = z.object({ issueId: z.string().min(1) });
-const Input = z.object({ token: z.string().uuid() });
+const Params = z.object({
+  issueId: z.string().min(1).describe('The issue identifier.'),
+});
+const Input = z.object({
+  token: z.string().uuid(),
+});
 const PendingComment = z
   .object({
     token: z.string(),

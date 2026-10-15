@@ -12,9 +12,9 @@ Requires the `rel.environments` `read` setting. Runs the driver check against th
 nb-studio env check <env>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `env`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `env`    | The environment identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -32,25 +32,25 @@ Requires the `rel.environments` `manage` setting. Credentials are write-only and
 nb-studio env create [<env>]
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `env`    | (optional)  |
+| Argument | Description                       |
+| -------- | --------------------------------- |
+| `env`    | The record identifier. (optional) |
 
 | Flag                            | Type     | Description                                                                                        |
 | ------------------------------- | -------- | -------------------------------------------------------------------------------------------------- |
-| `--name`                        | string   |                                                                                                    |
-| `--config`                      | json     |                                                                                                    |
-| `--secret`                      | json     |                                                                                                    |
-| `--secret-changes`              | json     |                                                                                                    |
-| `--url`                         | string   |                                                                                                    |
+| `--name`                        | string   | The name to display.                                                                               |
+| `--config`                      | json     | Configuration values for the selected environment or application.                                  |
+| `--secret`                      | json     | Secret configuration values.                                                                       |
+| `--secret-changes`              | json     | Secret values to set or remove.                                                                    |
+| `--url`                         | string   | The public URL applications in this environment use.                                               |
 | `--protected`                   | boolean  | Every deployment goes through a deployment request an approver approves; nothing deploys directly. |
-| `--approvers`                   | string[] | (repeatable)                                                                                       |
-| `--max-apps`                    | number   |                                                                                                    |
-| `--default-idle-stop-minutes`   | number   |                                                                                                    |
-| `--default-dormant-after-hours` | number   |                                                                                                    |
-| `--registry`                    | string   |                                                                                                    |
+| `--approvers`                   | string[] | Users who may approve deployments to this environment. (repeatable)                                |
+| `--max-apps`                    | number   | The maximum number of applications in this environment; null means unlimited.                      |
+| `--default-idle-stop-minutes`   | number   | Default idle stop timeout in minutes for applications.                                             |
+| `--default-dormant-after-hours` | number   | Default dormant timeout in hours for applications.                                                 |
+| `--registry`                    | string   | The registry identifier.                                                                           |
 | `--sample-data-on-first-deploy` | boolean  | An App’s first deployment here loads its sample data (`APP_SAMPLE_DATA=true`).                     |
-| `--driver`                      | string   |                                                                                                    |
+| `--driver`                      | string   | The environment driver configuration.                                                              |
 | `--file`                        | path     | The request body as a JSON object; the flags override its fields.                                  |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -76,9 +76,9 @@ Requires the `rel.environments` `manage` setting.
 nb-studio env delete <env>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `env`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `env`    | The environment identifier. |
 
 | Flag    | Type    | Description                                       |
 | ------- | ------- | ------------------------------------------------- |
@@ -116,9 +116,9 @@ Requires the `rel.environments` `read` setting, access to the Apps page, or the 
 nb-studio env get <env>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `env`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `env`    | The environment identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -152,25 +152,25 @@ Requires the `rel.environments` `manage` setting.
 nb-studio env update <env>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `env`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `env`    | The environment identifier. |
 
 | Flag                            | Type     | Description                                                                                        |
 | ------------------------------- | -------- | -------------------------------------------------------------------------------------------------- |
-| `--name`                        | string   |                                                                                                    |
-| `--config`                      | json     |                                                                                                    |
-| `--secret`                      | json     |                                                                                                    |
-| `--secret-changes`              | json     |                                                                                                    |
-| `--url`                         | string   |                                                                                                    |
+| `--name`                        | string   | The name to display.                                                                               |
+| `--config`                      | json     | Configuration values for the selected environment or application.                                  |
+| `--secret`                      | json     | Secret configuration values.                                                                       |
+| `--secret-changes`              | json     | Secret values to set or remove.                                                                    |
+| `--url`                         | string   | The public URL applications in this environment use.                                               |
 | `--protected`                   | boolean  | Every deployment goes through a deployment request an approver approves; nothing deploys directly. |
-| `--approvers`                   | string[] | (repeatable)                                                                                       |
-| `--max-apps`                    | number   |                                                                                                    |
-| `--default-idle-stop-minutes`   | number   |                                                                                                    |
-| `--default-dormant-after-hours` | number   |                                                                                                    |
-| `--registry`                    | string   |                                                                                                    |
+| `--approvers`                   | string[] | Users who may approve deployments to this environment. (repeatable)                                |
+| `--max-apps`                    | number   | The maximum number of applications in this environment; null means unlimited.                      |
+| `--default-idle-stop-minutes`   | number   | Default idle stop timeout in minutes for applications.                                             |
+| `--default-dormant-after-hours` | number   | Default dormant timeout in hours for applications.                                                 |
+| `--registry`                    | string   | The registry identifier.                                                                           |
 | `--sample-data-on-first-deploy` | boolean  | An App’s first deployment here loads its sample data (`APP_SAMPLE_DATA=true`).                     |
-| `--driver`                      | string   |                                                                                                    |
+| `--driver`                      | string   | The environment driver configuration.                                                              |
 | `--file`                        | path     | The request body as a JSON object; the flags override its fields.                                  |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -189,9 +189,9 @@ Requires the `rel.environments` `read` setting. The variables the most recent bu
 nb-studio env var declared <env>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `env`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `env`    | The environment identifier. |
 
 **Output:** A list (table columns: `name`, `required`, `set`, `apps`, `missingIn`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -209,9 +209,9 @@ Requires the `rel.environments` `read` setting. Every App of the environment get
 nb-studio env var list <env>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `env`    |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `env`    | The environment identifier. |
 
 **Output:** A list (table columns: `name`, `secret`, `value`, `updatedAt`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -229,16 +229,16 @@ Requires the `rel.environments` `manage` setting. Every App of the environment g
 nb-studio env var set <env> <name> <value>
 ```
 
-| Argument | Description                |
-| -------- | -------------------------- |
-| `env`    |                            |
-| `name`   |                            |
-| `value`  | The value; at most 64 KiB. |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `env`    | The environment identifier. |
+| `name`   | The name to display.        |
+| `value`  | The value; at most 64 KiB.  |
 
 | Flag            | Type    | Description                                                                                                      |
 | --------------- | ------- | ---------------------------------------------------------------------------------------------------------------- |
 | `--secret`      | boolean | Never shown again once set. Inferred from the name when left out (`…_PASSWORD`, `…_SECRET`, `…_TOKEN`, `…_KEY`). |
-| `--description` | string  |                                                                                                                  |
+| `--description` | string  | A description of the record.                                                                                     |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -263,10 +263,10 @@ Requires the `rel.environments` `manage` setting.
 nb-studio env var unset <env> <name>
 ```
 
-| Argument | Description |
-| -------- | ----------- |
-| `env`    |             |
-| `name`   |             |
+| Argument | Description                 |
+| -------- | --------------------------- |
+| `env`    | The environment identifier. |
+| `name`   | The name to display.        |
 
 **Output:** Nothing; prints `Done.`.
 

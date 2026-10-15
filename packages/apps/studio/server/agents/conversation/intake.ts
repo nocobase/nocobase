@@ -69,10 +69,25 @@ export const OrganizeRequestSchema: z.ZodType<OrganizeRequest> = z.strictObject(
     text: z
       .string()
       .min(1)
-      .max(MESSAGE_CONTENT_MAX * 2),
-    title: z.string().max(400).optional(),
-    agentId: z.string().min(1).max(64).optional(),
-    projectId: z.string().min(1).max(64).optional(),
+      .max(MESSAGE_CONTENT_MAX * 2)
+      .describe('The source text to organize into issues.'),
+    title: z
+      .string()
+      .max(400)
+      .optional()
+      .describe('The intake conversation title.'),
+    agentId: z
+      .string()
+      .min(1)
+      .max(64)
+      .optional()
+      .describe('The agent to organize this intake.'),
+    projectId: z
+      .string()
+      .min(1)
+      .max(64)
+      .optional()
+      .describe('The destination project identifier.'),
     files: z
       .array(
         z.strictObject({
@@ -81,7 +96,8 @@ export const OrganizeRequestSchema: z.ZodType<OrganizeRequest> = z.strictObject(
         }),
       )
       .max(INTAKE_FILES_MAX)
-      .optional(),
+      .optional()
+      .describe('Files to include, with their names and extracted text.'),
     clientId: z.string().min(1).max(100).optional(),
   },
 );

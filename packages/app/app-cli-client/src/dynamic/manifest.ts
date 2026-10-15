@@ -124,6 +124,7 @@ export const CliManifestSchema: z.ZodType<CliManifest> = z.object({
   version: z.number().int(),
   etag: z.string().min(1),
   identity: z.object({
+    settings: z.array(z.string()).optional(),
     kind: Identity,
     userId: z.string(),
     displayName: z.string(),

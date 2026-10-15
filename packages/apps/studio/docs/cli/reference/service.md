@@ -12,15 +12,15 @@ Asks a model for a short answer (an embedding, a ranking) over a connection bein
 nb-studio service check --model <string>
 ```
 
-| Flag           | Type                                                                                                        | Description |
-| -------------- | ----------------------------------------------------------------------------------------------------------- | ----------- |
-| `--service`    | string                                                                                                      |             |
-| `--provider`   | openai \| anthropic \| google \| deepseek \| alibaba \| moonshotai \| ollama \| cohere \| openai-compatible |             |
-| `--base-url`   | string                                                                                                      |             |
-| `--api-key`    | string                                                                                                      |             |
-| `--model`      | string                                                                                                      | (required)  |
-| `--kind`       | chat \| embedding \| rerank                                                                                 |             |
-| `--dimensions` | integer                                                                                                     |             |
+| Flag           | Type                                                                                                        | Description                                       |
+| -------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `--service`    | string                                                                                                      | The configured model service name.                |
+| `--provider`   | openai \| anthropic \| google \| deepseek \| alibaba \| moonshotai \| ollama \| cohere \| openai-compatible | The provider implementation to use.               |
+| `--base-url`   | string                                                                                                      | The provider’s API base URL.                      |
+| `--api-key`    | string                                                                                                      | The provider API key.                             |
+| `--model`      | string                                                                                                      | The provider’s model identifier. (required)       |
+| `--kind`       | chat \| embedding \| rerank                                                                                 | The model capability: chat, embedding, or rerank. |
+| `--dimensions` | integer                                                                                                     | The embedding vector dimensions.                  |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -40,12 +40,12 @@ nb-studio service create
 
 | Flag         | Type                                                                                                        | Description                                                       |
 | ------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `--title`    | string                                                                                                      |                                                                   |
-| `--provider` | openai \| anthropic \| google \| deepseek \| alibaba \| moonshotai \| ollama \| cohere \| openai-compatible |                                                                   |
-| `--base-url` | string                                                                                                      |                                                                   |
-| `--api-key`  | string                                                                                                      |                                                                   |
-| `--models`   | json                                                                                                        |                                                                   |
-| `--enabled`  | boolean                                                                                                     |                                                                   |
+| `--title`    | string                                                                                                      | The display title.                                                |
+| `--provider` | openai \| anthropic \| google \| deepseek \| alibaba \| moonshotai \| ollama \| cohere \| openai-compatible | The provider implementation to use.                               |
+| `--base-url` | string                                                                                                      | The provider’s API base URL.                                      |
+| `--api-key`  | string                                                                                                      | The provider API key.                                             |
+| `--models`   | json                                                                                                        | The models this service offers.                                   |
+| `--enabled`  | boolean                                                                                                     | Whether the service is enabled.                                   |
 | `--file`     | path                                                                                                        | The request body as a JSON object; the flags override its fields. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -70,9 +70,9 @@ Needs `agents.services` manage.
 nb-studio service delete <service>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `service` |             |
+| Argument  | Description                        |
+| --------- | ---------------------------------- |
+| `service` | The configured model service name. |
 
 | Flag    | Type    | Description                                                                          |
 | ------- | ------- | ------------------------------------------------------------------------------------ |
@@ -94,12 +94,12 @@ Asks the provider for its models over a connection being edited, or a saved serv
 nb-studio service discover
 ```
 
-| Flag         | Type                                                                                                        | Description |
-| ------------ | ----------------------------------------------------------------------------------------------------------- | ----------- |
-| `--service`  | string                                                                                                      |             |
-| `--provider` | openai \| anthropic \| google \| deepseek \| alibaba \| moonshotai \| ollama \| cohere \| openai-compatible |             |
-| `--base-url` | string                                                                                                      |             |
-| `--api-key`  | string                                                                                                      |             |
+| Flag         | Type                                                                                                        | Description                         |
+| ------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `--service`  | string                                                                                                      | The configured model service name.  |
+| `--provider` | openai \| anthropic \| google \| deepseek \| alibaba \| moonshotai \| ollama \| cohere \| openai-compatible | The provider implementation to use. |
+| `--base-url` | string                                                                                                      | The provider’s API base URL.        |
+| `--api-key`  | string                                                                                                      | The provider API key.               |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -133,17 +133,17 @@ Needs `agents.services` manage. An omitted key keeps the stored one; `null` remo
 nb-studio service update <service>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `service` |             |
+| Argument  | Description                        |
+| --------- | ---------------------------------- |
+| `service` | The configured model service name. |
 
 | Flag         | Type    | Description                                                       |
 | ------------ | ------- | ----------------------------------------------------------------- |
-| `--title`    | string  |                                                                   |
-| `--base-url` | string  |                                                                   |
-| `--api-key`  | string  |                                                                   |
-| `--models`   | json    |                                                                   |
-| `--enabled`  | boolean |                                                                   |
+| `--title`    | string  | The display title.                                                |
+| `--base-url` | string  | The provider’s API base URL.                                      |
+| `--api-key`  | string  | The provider API key.                                             |
+| `--models`   | json    | The models this service offers.                                   |
+| `--enabled`  | boolean | Whether the service is enabled.                                   |
 | `--file`     | path    | The request body as a JSON object; the flags override its fields. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.

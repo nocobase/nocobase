@@ -12,9 +12,9 @@ The last `days` days up to today (UTC), against the days before them: run succes
 nb-studio report agents
 ```
 
-| Flag     | Type   | Description  |
-| -------- | ------ | ------------ |
-| `--days` | number | (default 30) |
+| Flag     | Type   | Description                                              |
+| -------- | ------ | -------------------------------------------------------- |
+| `--days` | number | The number of days in the reporting period. (default 30) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -54,9 +54,9 @@ The last `days` days up to today (UTC), against the days before them: issues com
 nb-studio report delivery
 ```
 
-| Flag     | Type   | Description  |
-| -------- | ------ | ------------ |
-| `--days` | number | (default 30) |
+| Flag     | Type   | Description                                              |
+| -------- | ------ | -------------------------------------------------------- |
+| `--days` | number | The number of days in the reporting period. (default 30) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -102,9 +102,9 @@ Every project the caller may see but cancelled ones: its live issues now, done a
 nb-studio report projects
 ```
 
-| Flag     | Type   | Description  |
-| -------- | ------ | ------------ |
-| `--days` | number | (default 30) |
+| Flag     | Type   | Description                                              |
+| -------- | ------ | -------------------------------------------------------- |
+| `--days` | number | The number of days in the reporting period. (default 30) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -133,7 +133,7 @@ nb-studio report usage
 | `--from`     | string                                                              | The first day, YYYY-MM-DD (UTC); 30 days before `to` by default. |
 | `--to`       | string                                                              | The last day, YYYY-MM-DD (UTC); today by default.                |
 | `--project`  | string                                                              | Only this project's issues and runs (its id).                    |
-| `--group-by` | agent \| person \| project \| issue \| day \| model \| tool \| type | (default "agent")                                                |
+| `--group-by` | agent \| person \| project \| issue \| day \| model \| tool \| type | The dimension to group usage by. (default "agent")               |
 | `--agent`    | string                                                              | Only this agent's runs (its id).                                 |
 | `--user`     | string                                                              | Only the runs this person started (their user id).               |
 

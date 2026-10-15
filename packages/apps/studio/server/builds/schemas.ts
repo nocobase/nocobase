@@ -13,9 +13,13 @@ import type {
 
 const dateTime = () => z.string().meta({ format: 'date-time' });
 
-export const BuildParams = z.object({ buildId: z.string().min(1) });
+export const BuildParams = z.object({
+  buildId: z.string().min(1).describe('The build identifier.'),
+});
 
-export const EnsureParams = z.object({ appId: z.string().min(1) });
+export const EnsureParams = z.object({
+  appId: z.string().min(1).describe('The application identifier.'),
+});
 
 export const BuildSchema: z.ZodType<BuildView> = z
   .object({
@@ -169,7 +173,7 @@ interface BuildKeyBody {
 }
 
 export const CreateUploadTicketInput: z.ZodType<BuildKeyBody> = z.strictObject({
-  appId: appIdField,
+  appId: appIdField.describe('The application identifier.'),
   sha: shaField,
   repository: repositoryField,
 });
@@ -181,7 +185,7 @@ export const ReportBuildInput: z.ZodType<
     message?: string;
   }
 > = z.strictObject({
-  appId: appIdField,
+  appId: appIdField.describe('The application identifier.'),
   sha: shaField,
   repository: repositoryField,
   state: z.enum(BUILD_STATES).meta({ description: 'Where the build stands.' }),

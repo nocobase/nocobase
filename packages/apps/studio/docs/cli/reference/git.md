@@ -10,9 +10,9 @@ Forget the caller’s authorization
 nb-studio git authorization delete <connection>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `connection` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `connection` | The connection identifier. |
 
 | Flag    | Type    | Description                                                             |
 | ------- | ------- | ----------------------------------------------------------------------- |
@@ -50,13 +50,13 @@ Asks the host once whether the caller entered the code, and stores the authoriza
 nb-studio git authorization poll <connection> --handle <string>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `connection` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `connection` | The connection identifier. |
 
-| Flag       | Type   | Description |
-| ---------- | ------ | ----------- |
-| `--handle` | string | (required)  |
+| Flag       | Type   | Description                                                                 |
+| ---------- | ------ | --------------------------------------------------------------------------- |
+| `--handle` | string | The handle returned when starting the device authorization flow. (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -74,9 +74,9 @@ Answers the code the caller enters on the host; poll `pollDeviceFlow` with `hand
 nb-studio git authorization start <connection>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `connection` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `connection` | The connection identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -100,13 +100,13 @@ Checks the token by calling the host as it, then stores it as the caller’s aut
 nb-studio git authorization use-token <connection> --token <string>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `connection` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `connection` | The connection identifier. |
 
-| Flag      | Type   | Description |
-| --------- | ------ | ----------- |
-| `--token` | string | (required)  |
+| Flag      | Type   | Description                           |
+| --------- | ------ | ------------------------------------- |
+| `--token` | string | The personal access token. (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -124,22 +124,22 @@ For whoever manages the connections. `sameAppAs` adds another installation of an
 nb-studio git connection create
 ```
 
-| Flag                      | Type         | Description                    |
-| ------------------------- | ------------ | ------------------------------ |
-| `--provider`              | github       |                                |
-| `--kind`                  | app \| token |                                |
-| `--same-app-as`           | string       |                                |
-| `--name`                  | string       |                                |
-| `--web-url`               | string       |                                |
-| `--account`               | string       |                                |
-| `--app-id`                | string       |                                |
-| `--installation-id`       | string       |                                |
-| `--client-id`             | string       |                                |
-| `--private-key`           | string       | (or --private-key-file <path>) |
-| `--client-secret`         | string       |                                |
-| `--token`                 | string       |                                |
-| `--webhook-secret`        | string       |                                |
-| `--allow-personal-tokens` | boolean      |                                |
+| Flag                      | Type         | Description                                                                   |
+| ------------------------- | ------------ | ----------------------------------------------------------------------------- |
+| `--provider`              | github       | The provider implementation to use.                                           |
+| `--kind`                  | app \| token | How the connection authenticates: app credentials or a personal access token. |
+| `--same-app-as`           | string       | The connection whose app credentials are shared.                              |
+| `--name`                  | string       | The name to display.                                                          |
+| `--web-url`               | string       | The code host’s web URL; required for a self-hosted provider.                 |
+| `--account`               | string       | The account or organization on the code host.                                 |
+| `--app-id`                | string       | The application identifier.                                                   |
+| `--installation-id`       | string       | The code host app installation identifier.                                    |
+| `--client-id`             | string       | The OAuth client identifier.                                                  |
+| `--private-key`           | string       | The app private key in PEM format. (or --private-key-file <path>)             |
+| `--client-secret`         | string       | The OAuth client secret.                                                      |
+| `--token`                 | string       | The personal access token.                                                    |
+| `--webhook-secret`        | string       | The secret used to verify webhook signatures.                                 |
+| `--allow-personal-tokens` | boolean      | Allow members to authorize this connection with their own tokens.             |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -163,9 +163,9 @@ For whoever manages the connections. Everyone’s authorization of it goes too.
 nb-studio git connection delete <connection>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `connection` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `connection` | The connection identifier. |
 
 | Flag    | Type    | Description                                                                                |
 | ------- | ------- | ------------------------------------------------------------------------------------------ |
@@ -203,9 +203,9 @@ For whoever may read the git settings; read live from the code host.
 nb-studio git connection reach <connection>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `connection` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `connection` | The connection identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -223,26 +223,26 @@ For whoever manages the connections. A credential left out stays; null removes i
 nb-studio git connection update <connection>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `connection` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `connection` | The connection identifier. |
 
-| Flag                      | Type         | Description                    |
-| ------------------------- | ------------ | ------------------------------ |
-| `--provider`              | github       |                                |
-| `--kind`                  | app \| token |                                |
-| `--same-app-as`           | string       |                                |
-| `--name`                  | string       |                                |
-| `--web-url`               | string       |                                |
-| `--account`               | string       |                                |
-| `--app-id`                | string       |                                |
-| `--installation-id`       | string       |                                |
-| `--client-id`             | string       |                                |
-| `--private-key`           | string       | (or --private-key-file <path>) |
-| `--client-secret`         | string       |                                |
-| `--token`                 | string       |                                |
-| `--webhook-secret`        | string       |                                |
-| `--allow-personal-tokens` | boolean      |                                |
+| Flag                      | Type         | Description                                                                   |
+| ------------------------- | ------------ | ----------------------------------------------------------------------------- |
+| `--provider`              | github       | The provider implementation to use.                                           |
+| `--kind`                  | app \| token | How the connection authenticates: app credentials or a personal access token. |
+| `--same-app-as`           | string       | The connection whose app credentials are shared.                              |
+| `--name`                  | string       | The name to display.                                                          |
+| `--web-url`               | string       | The code host’s web URL; required for a self-hosted provider.                 |
+| `--account`               | string       | The account or organization on the code host.                                 |
+| `--app-id`                | string       | The application identifier.                                                   |
+| `--installation-id`       | string       | The code host app installation identifier.                                    |
+| `--client-id`             | string       | The OAuth client identifier.                                                  |
+| `--private-key`           | string       | The app private key in PEM format. (or --private-key-file <path>)             |
+| `--client-secret`         | string       | The OAuth client secret.                                                      |
+| `--token`                 | string       | The personal access token.                                                    |
+| `--webhook-secret`        | string       | The secret used to verify webhook signatures.                                 |
+| `--allow-personal-tokens` | boolean      | Allow members to authorize this connection with their own tokens.             |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -260,9 +260,9 @@ For whoever may read the git settings: the projects’ working directories that 
 nb-studio git connection usage <connection>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `connection` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `connection` | The connection identifier. |
 
 **Output:** A list (table columns: `repo`, `projectName`, `resourceId`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -280,9 +280,9 @@ For whoever sees the project.
 nb-studio git project get <project>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `project` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `project` | The project identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -300,13 +300,13 @@ For the project’s managers.
 nb-studio git project set <project> --attribution <string>
 ```
 
-| Argument  | Description |
-| --------- | ----------- |
-| `project` |             |
+| Argument  | Description             |
+| --------- | ----------------------- |
+| `project` | The project identifier. |
 
-| Flag            | Type                | Description |
-| --------------- | ------------------- | ----------- |
-| `--attribution` | withAgent \| meOnly | (required)  |
+| Flag            | Type                | Description                                                                                                             |
+| --------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `--attribution` | withAgent \| meOnly | Whether commits name the requester with the agent as co-author (withAgent), or the requester alone (meOnly). (required) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -324,17 +324,17 @@ For whoever manages a project or the connections. `empty` creates it without an 
 nb-studio git repo create <connection> --name <string> --private
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `connection` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `connection` | The connection identifier. |
 
-| Flag            | Type    | Description |
-| --------------- | ------- | ----------- |
-| `--owner`       | string  |             |
-| `--name`        | string  | (required)  |
-| `--private`     | boolean | (required)  |
-| `--description` | string  |             |
-| `--empty`       | boolean |             |
+| Flag            | Type    | Description                                      |
+| --------------- | ------- | ------------------------------------------------ |
+| `--owner`       | string  | The repository owner or organization.            |
+| `--name`        | string  | The repository name on the code host. (required) |
+| `--private`     | boolean | Create a private repository. (required)          |
+| `--description` | string  | A description of the record.                     |
+| `--empty`       | boolean | Create without initial files.                    |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -358,14 +358,14 @@ For whoever manages a project or the connections; read live from the code host, 
 nb-studio git repo list <connection>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `connection` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `connection` | The connection identifier. |
 
-| Flag           | Type   | Description |
-| -------------- | ------ | ----------- |
-| `--search`     | string |             |
-| `--page-token` | string |             |
+| Flag           | Type   | Description                                           |
+| -------------- | ------ | ----------------------------------------------------- |
+| `--search`     | string | Text to search for.                                   |
+| `--page-token` | string | The continuation token returned by the previous page. |
 
 **Output:** A list (table columns: `fullName`, `private`, `defaultBranch`, `webUrl`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -383,9 +383,9 @@ For whoever sees the project. The webhook secret is never sent back.
 nb-studio git resource get <resource>
 ```
 
-| Argument   | Description |
-| ---------- | ----------- |
-| `resource` |             |
+| Argument   | Description              |
+| ---------- | ------------------------ |
+| `resource` | The resource identifier. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -403,17 +403,17 @@ For the project’s managers. `webhookSecret: null` removes the secret; left out
 nb-studio git resource update <resource>
 ```
 
-| Argument   | Description |
-| ---------- | ----------- |
-| `resource` |             |
+| Argument   | Description              |
+| ---------- | ------------------------ |
+| `resource` | The resource identifier. |
 
 | Flag                      | Type     | Description                                                                                             |
 | ------------------------- | -------- | ------------------------------------------------------------------------------------------------------- |
-| `--webhook-secret`        | string   |                                                                                                         |
-| `--wake-on-checks`        | boolean  |                                                                                                         |
-| `--wake-on-checks-passed` | boolean  |                                                                                                         |
-| `--wake-on-conflict`      | boolean  |                                                                                                         |
-| `--branch-rules`          | string[] | (repeatable)                                                                                            |
+| `--webhook-secret`        | string   | The secret used to verify webhook signatures.                                                           |
+| `--wake-on-checks`        | boolean  | Wake the agent when required checks fail.                                                               |
+| `--wake-on-checks-passed` | boolean  | Wake the agent when required checks pass.                                                               |
+| `--wake-on-conflict`      | boolean  | Wake the agent when the pull request has merge conflicts.                                               |
+| `--branch-rules`          | string[] | Branch rules for issue work and pull request targets. (repeatable)                                      |
 | `--reference-checks`      | string[] | Check names only for information: their failures neither wake the agent nor block merging. (repeatable) |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
@@ -448,11 +448,11 @@ For whoever may create projects or link repositories: the repository read throug
 nb-studio git template get <connection> <owner> <name>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `connection` |             |
-| `owner`      |             |
-| `name`       |             |
+| Argument     | Description                           |
+| ------------ | ------------------------------------- |
+| `connection` | The connection identifier.            |
+| `owner`      | The repository owner or organization. |
+| `name`       | The repository name on the code host. |
 
 **Output:** One record, field by field; with `--json`, `result.data`.
 
@@ -470,14 +470,14 @@ For whoever may create projects or link repositories; read live from the code ho
 nb-studio git template list <connection>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `connection` |             |
+| Argument     | Description                |
+| ------------ | -------------------------- |
+| `connection` | The connection identifier. |
 
-| Flag           | Type   | Description |
-| -------------- | ------ | ----------- |
-| `--search`     | string |             |
-| `--page-token` | string |             |
+| Flag           | Type   | Description                                           |
+| -------------- | ------ | ----------------------------------------------------- |
+| `--search`     | string | Text to search for.                                   |
+| `--page-token` | string | The continuation token returned by the previous page. |
 
 **Output:** A list (table columns: `fullName`, `private`, `defaultBranch`, `description`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
@@ -495,11 +495,11 @@ For whoever may create projects or link repositories; read through the connectio
 nb-studio git workflow list <connection> <owner> <name>
 ```
 
-| Argument     | Description |
-| ------------ | ----------- |
-| `connection` |             |
-| `owner`      |             |
-| `name`       |             |
+| Argument     | Description                           |
+| ------------ | ------------------------------------- |
+| `connection` | The connection identifier.            |
+| `owner`      | The repository owner or organization. |
+| `name`       | The repository name on the code host. |
 
 **Output:** A list (table columns: `id`, `name`, `path`, `state`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
