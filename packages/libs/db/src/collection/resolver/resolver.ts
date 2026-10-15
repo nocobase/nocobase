@@ -22,8 +22,10 @@ import type {
   PhysicalForeignKeySchema,
   PhysicalIndexKey,
   PhysicalIndexSchema,
+  PhysicalPrimaryKeySchema,
   PhysicalReferentialAction,
   PhysicalSchemaAspect,
+  PhysicalUniqueConstraintSchema,
 } from '../../schema/inspector/types.js';
 import {
   CollectionResolutionError,
@@ -583,20 +585,26 @@ function indexUsesColumnEquality(index: PhysicalIndexSchema): boolean {
 function constraintIndexOptions(
   input: CollectionResolutionInput,
   kind: 'primaryKey' | 'unique',
-  physicalFields: readonly string[],
-  valid?: boolean,
+  constraint: PhysicalPrimaryKeySchema | PhysicalUniqueConstraintSchema,
 ): { columnEquality?: false; valid?: false } | undefined {
-  const indexes = input.physical.indexes.filter(
-    (index) =>
-      index.backsConstraint?.kind === kind &&
-      index.keys.length === physicalFields.length &&
-      index.keys.every(
-        (key, offset) => key.columnName === physicalFields[offset],
-      ),
-  );
+  const indexes = input.physical.indexes.filter((index) => {
+    const reference = index.backsConstraint;
+    if (reference?.kind !== kind) return false;
+    // A named backing index can reorder constraint columns or contain extra keys.
+    if (constraint.name !== undefined && reference.name !== undefined)
+      return reference.name === constraint.name;
+    // Some inspectors omit constraint names; key order still does not identify a constraint.
+    return (
+      index.keys.length === constraint.columns.length &&
+      constraint.columns.every((column) =>
+        index.keys.some((key) => key.columnName === column),
+      )
+    );
+  });
   const incompatible = indexes.some((index) => !indexUsesColumnEquality(index));
   const invalid =
-    valid === false || indexes.some((index) => index.valid === false);
+    constraint.valid === false ||
+    indexes.some((index) => index.valid === false);
   return incompatible || invalid
     ? {
         ...(incompatible ? { columnEquality: false } : {}),
@@ -631,8 +639,7 @@ function resolveConstraints(
           db: constraintIndexOptions(
             input,
             'primaryKey',
-            input.physical.primaryKey.columns,
-            input.physical.primaryKey.valid,
+            input.physical.primaryKey,
           ),
         }),
       );
@@ -659,12 +666,7 @@ function resolveConstraints(
             constraint.deferrable,
             constraint.initiallyDeferred,
           ),
-          db: constraintIndexOptions(
-            input,
-            'unique',
-            constraint.columns,
-            constraint.valid,
-          ),
+          db: constraintIndexOptions(input, 'unique', constraint),
         }),
       );
     }

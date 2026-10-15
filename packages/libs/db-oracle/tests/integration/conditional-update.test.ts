@@ -142,6 +142,121 @@ describeIntegrationDatabases(
   },
 );
 
+describeIntegrationDatabases('Oracle constraint backing indexes', (context) => {
+  it.each(
+    (['primary', 'unique'] as const).flatMap((kind) =>
+      [false, true].flatMap((extended) =>
+        [false, true].map((character) => ({ kind, extended, character })),
+      ),
+    ),
+  )(
+    'preserves $kind safety with reordered keys (extra key=$extended, character=$character)',
+    async ({ kind, extended, character }) => {
+      await context.builder.createCollection('backedItems', (c) => {
+        c.integer('tenant').notNull();
+        if (character) c.string('id').notNull();
+        else c.integer('id').notNull();
+        c.integer('extra').notNull();
+        c.string('name').notNull();
+        c.integer('version').notNull();
+        c.optimisticLock('version');
+      });
+      const table = context.table('backedItems');
+      const index = context.identifier('backingIndex');
+      const constraint = context.identifier('backedConstraint');
+      await context.db.raw(
+        `create ${extended ? '' : 'unique '}index ?? on ?? ("id", "tenant"${extended ? ', "extra"' : ''})`,
+        [index, table],
+      );
+      await context.db.raw(
+        `alter table ?? add constraint ?? ${kind === 'primary' ? 'primary key' : 'unique'} ("tenant", "id") using index ??`,
+        [table, constraint, index],
+      );
+      context.connection.collections.invalidate();
+      const rows = [
+        {
+          tenant: 1,
+          id: character ? 'key' : 1,
+          extra: 1,
+          name: 'first',
+          version: 1,
+        },
+        {
+          tenant: 1,
+          id: character ? 'KEY' : 2,
+          extra: 2,
+          name: 'second',
+          version: 2,
+        },
+      ];
+      for (const row of rows) await context.db(table).insert(row);
+      const definition =
+        await context.connection.collections.get('backedItems');
+      const statements: string[] = [];
+      const listener = ({ sql }: { sql: string }) => {
+        if (/^(select|update)\b/i.test(sql) && sql.includes(table))
+          statements.push(sql);
+      };
+      let outcome: unknown;
+      await context.database.transaction(async (connection) => {
+        const client = await connection.client<Knex>();
+        await client.raw(
+          'alter session set nls_comp = LINGUISTIC nls_sort = BINARY_CI',
+        );
+        try {
+          const repository = connection.repository('backedItems');
+          const filter = { tenant: 1, id: character ? 'key' : 1 };
+          expect(await repository.findMany({ filter })).toHaveLength(
+            character ? 2 : 1,
+          );
+          context.db.on('query', listener);
+          try {
+            outcome = await repository.updateOne({
+              filter,
+              ifVersion: 1,
+              values: { name: 'changed' },
+            });
+          } catch (error) {
+            // Commit the caller transaction so a rejected call cannot hide persisted writes.
+            outcome = error;
+          } finally {
+            context.db.off('query', listener);
+          }
+        } finally {
+          await client.raw(
+            'alter session set nls_comp = BINARY nls_sort = BINARY',
+          );
+        }
+      }, context.spec.name);
+      if (character) {
+        expect(outcome).toMatchObject({ code: 'MULTIPLE_RECORDS_MATCHED' });
+        expect(statements.some((sql) => /^update\b/i.test(sql))).toBe(false);
+        expect(definition?.constraints).toContainEqual(
+          expect.objectContaining({
+            type: kind,
+            name: constraint,
+            db: { columnEquality: false },
+          }),
+        );
+        expect(await context.db(table).select('*').orderBy('extra')).toEqual(
+          rows,
+        );
+      } else {
+        expect(outcome).toMatchObject({
+          record: { ...rows[0], name: 'changed', version: 2 },
+          version: 2,
+        });
+        expect(statements).toHaveLength(2);
+        expect(statements[0]).toMatch(/^update\b/i);
+        expect(await context.db(table).select('*').orderBy('extra')).toEqual([
+          { ...rows[0], name: 'changed', version: 2 },
+          rows[1],
+        ]);
+      }
+    },
+  );
+});
+
 describeIntegrationDatabases('Oracle binary identities', (context) => {
   it('keeps explicit binary character keys eligible under linguistic session settings', async ({
     skip,

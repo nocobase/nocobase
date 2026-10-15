@@ -13,6 +13,95 @@ import type {
 } from '../../../src/schema/inspector/types.js';
 
 describe('CollectionResolver', () => {
+  describe.each(['primaryKey', 'unique'] as const)(
+    '%s backing index identity',
+    (kind) => {
+      it.each([
+        { referenceName: 'constraint_key', keys: ['id', 'tenant'] },
+        { referenceName: 'constraint_key', keys: ['id', 'tenant', 'extra'] },
+        { referenceName: undefined, keys: ['id', 'tenant'] },
+      ])(
+        'preserves safety metadata with $keys and name=$referenceName',
+        ({ referenceName, keys }) => {
+          const constraint = {
+            name: 'constraint_key',
+            columns: ['tenant', 'id'],
+          };
+          const result = resolveCollection({
+            physical: physicalCollection({
+              columns: [
+                column('tenant', 1),
+                column('id', 2),
+                column('extra', 3),
+              ],
+              ...(kind === 'primaryKey'
+                ? { primaryKey: constraint }
+                : { uniqueConstraints: [constraint] }),
+              indexes: [
+                {
+                  name: 'backing_index',
+                  keys: keys.map((columnName) => ({
+                    columnName,
+                    columnEquality: false,
+                  })),
+                  unique: keys.length === 2,
+                  valid: false,
+                  backsConstraint: { kind, name: referenceName },
+                },
+              ],
+            }),
+            context: emptyContext(),
+          });
+          expect(result.collection.constraints).toContainEqual(
+            expect.objectContaining({
+              type: kind === 'primaryKey' ? 'primary' : 'unique',
+              name: constraint.name,
+              fields: ['tenant', 'id'],
+              db: { columnEquality: false, valid: false },
+            }),
+          );
+        },
+      );
+    },
+  );
+
+  it('keeps safety metadata on the named constraint when two constraints use the same columns', () => {
+    const result = resolveCollection({
+      physical: physicalCollection({
+        columns: [column('id', 1)],
+        uniqueConstraints: [
+          { name: 'safe_key', columns: ['id'] },
+          { name: 'unsafe_key', columns: ['id'] },
+        ],
+        indexes: [
+          {
+            name: 'safe_index',
+            keys: [{ columnName: 'id' }],
+            unique: true,
+            backsConstraint: { kind: 'unique', name: 'safe_key' },
+          },
+          {
+            name: 'unsafe_index',
+            keys: [{ columnName: 'id', columnEquality: false }],
+            unique: true,
+            valid: false,
+            backsConstraint: { kind: 'unique', name: 'unsafe_key' },
+          },
+        ],
+      }),
+      context: emptyContext(),
+    });
+    expect(result.collection.constraints).toEqual([
+      { type: 'unique', name: 'safe_key', fields: ['id'] },
+      {
+        type: 'unique',
+        name: 'unsafe_key',
+        fields: ['id'],
+        db: { columnEquality: false, valid: false },
+      },
+    ]);
+  });
+
   it.each(['primaryKey', 'unique'] as const)(
     'preserves invalid %s backing indexes',
     (kind) => {
