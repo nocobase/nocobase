@@ -16,7 +16,7 @@
 import { z } from 'zod';
 
 /** How often a runner reports its working directories, unless the application asks for another interval. */
-export const WORKSPACE_REPORT_INTERVAL_MS: number = 10 * 60_000;
+export const WORKSPACE_REPORT_INTERVAL_MS: number = 60 * 60_000;
 
 /** The most working directories one report may carry. */
 export const MAX_WORKSPACES_PER_REPORT: number = 1000;

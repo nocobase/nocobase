@@ -23,6 +23,7 @@ import {
   UploadIcon,
 } from 'lucide-react';
 import {
+  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -71,6 +72,8 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from 'cn';
 
+import { IssueSectionInTabContext } from './section-context.js';
+
 import { IssueCard, type IssueCardLink } from '@/components/issue-card';
 import {
   IssueStatusBadge,
@@ -97,6 +100,8 @@ import {
 export interface IssueDetailStatus {
   readonly name: string;
   readonly color: IssueTableColor;
+  /** The status's key: drawn as its shape rather than a dot. */
+  readonly key?: string;
 }
 
 /** Draws a link; a plain anchor by default, a router link in an application. */
@@ -178,15 +183,27 @@ export function IssueSection({
   children,
   ...props
 }: IssueSectionProps): ReactElement {
+  const inTab = useContext(IssueSectionInTabContext);
   return (
     <section
       {...(typeof title === 'string' ? { 'aria-label': title } : {})}
       {...props}
-      className={cn('flex flex-col gap-3 border-t pt-6', className)}
+      className={cn(
+        'flex flex-col gap-3',
+        !inTab && 'border-t pt-6',
+        className,
+      )}
       data-slot='issue-section'
     >
-      <div className='flex min-h-8 flex-wrap items-center gap-x-2 gap-y-1'>
-        <div className='flex min-w-0 items-center gap-2'>
+      <div
+        className={cn(
+          'flex flex-wrap items-center gap-x-2 gap-y-1',
+          inTab ? 'empty:hidden' : 'min-h-8',
+        )}
+      >
+        <div
+          className={cn('flex min-w-0 items-center gap-2', inTab && 'sr-only')}
+        >
           {icon ? (
             <span
               className='flex shrink-0 text-muted-foreground [&_svg]:size-4'

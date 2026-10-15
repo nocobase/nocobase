@@ -1,7 +1,9 @@
 /**
- * The dashboard's figures (`GET reports/dashboard`) and its exceptions (`GET reports/attention`), over what the person
- * may see. The issue side comes from the projects plugin's reports (`flow`, `projects`, `attention`), the run side from
- * the agents plugin's (`runFigures`, `runRecords`), the pull requests from Studio's own git tables. Every metric is
+ * The dashboard's panels, each its own request: delivery (`GET reports/delivery`), the agents' performance
+ * (`GET reports/agents`), the projects (`GET reports/projects`) and the exceptions (`GET reports/attention`), over what
+ * the person may see. The issue side comes from the projects plugin's reports (`flow`, `projects`, `attention`), the
+ * run side from the agents plugin's (`usage`, `runRecords`), the pull requests from Studio's own git tables. Each reads
+ * a fixed number of queries whatever the number of issues and runs. Every metric is
  * defined where its field is declared, in `shared/reports.ts`; what is computed here only follows those definitions.
  */
 import type {
@@ -11,7 +13,6 @@ import type {
 import type {
   Costs,
   ReportRun,
-  RunFigures,
 } from '@nocobase/app-plugin-agents/shared/reports';
 import type {
   AgentBlock,
@@ -25,15 +26,18 @@ import {
   ATTENTION_LIMIT,
   BUCKET_DAYS,
   REVIEW_WAIT_DAYS,
+  type AgentFigures,
   type AttentionPullRequest,
   type AttentionRun,
+  type DashboardAgents,
   type DashboardAttention,
   type DashboardBucket,
-  type DashboardDay,
-  type DashboardFigures,
+  type DashboardDelivery,
   type DashboardPeriod,
   type DashboardProject,
-  type DashboardReport,
+  type DashboardProjects,
+  type DashboardRunDay,
+  type DeliveryFigures,
 } from '../../shared/reports.js';
 import { ISSUE_SUBJECT } from '../agents/catalog/triggers.js';
 import { AGENT_KIND } from '../agents/tx.js';
@@ -109,50 +113,69 @@ export function interventions(
   return result;
 }
 
-/** One period's figures from its issue flow (null without the projects plugin) and its runs. */
-export function periodFigures(
+/** One period's delivery figures from its issue flow (null without the projects plugin) and the cost of its usage. */
+export function deliveryFigures(
   flow: IssueFlow | null,
-  figures: Pick<
-    RunFigures,
-    | 'runs'
-    | 'completedRuns'
-    | 'failedRuns'
-    | 'claimLatencyP50Ms'
-    | 'estimatedCost'
-  >,
-  runs: readonly ReportRun[],
-  runsOnAgentIssues: number,
-): DashboardFigures {
+  estimatedCost: Costs | null,
+): DeliveryFigures {
   const completed = flow?.completed ?? [];
   const byAgent = completed.filter((issue) => issue.byAgent);
-  const cycles = completed.flatMap((issue) =>
-    issue.startedAt
-      ? [Math.max(0, Date.parse(issue.doneAt) - Date.parse(issue.startedAt))]
-      : [],
-  );
+  return {
+    completed: completed.length,
+    cycleTimeP50Ms: median(completed.flatMap(cycleOf)),
+    agentShare: flow ? ratio(byAgent.length, completed.length) : null,
+    costPerIssue: perItem(estimatedCost, completed.length),
+  };
+}
+
+/** Started → completed of a completed issue that was started. */
+const cycleOf = (issue: {
+  readonly doneAt: string;
+  readonly startedAt: string | null;
+}): number[] =>
+  issue.startedAt
+    ? [Math.max(0, Date.parse(issue.doneAt) - Date.parse(issue.startedAt))]
+    : [];
+
+/**
+ * One period's agent figures from its issue flow (null without the projects plugin), the runs queued in it and the
+ * number of runs on the agent-executed issues completed in it.
+ */
+export function agentFigures(
+  flow: IssueFlow | null,
+  runs: readonly ReportRun[],
+  runsOnAgentIssues: number,
+): AgentFigures {
+  const byAgent = (flow?.completed ?? []).filter((issue) => issue.byAgent);
   const sentBack = new Set(
     (flow?.returned ?? [])
       .filter((issue) => issue.byAgent)
       .map((issue) => issue.id),
   );
+  const completedRuns = runs.filter((run) => run.status === 'completed').length;
+  const failedRuns = runs.filter((run) => run.status === 'failed').length;
   const ended = runs.filter(
     (run) => run.subjectKind === ISSUE_SUBJECT && ENDED.has(run.status),
   );
   const intervened = interventions(ended, flow?.agentBlocks ?? []);
   return {
-    completed: completed.length,
-    cycleTimeP50Ms: median(cycles),
-    agentShare: flow ? ratio(byAgent.length, completed.length) : null,
-    costPerIssue: perItem(figures.estimatedCost, completed.length),
-    runs: figures.runs,
-    successRate: ratio(
-      figures.completedRuns,
-      figures.completedRuns + figures.failedRuns,
-    ),
+    runs: runs.length,
+    successRate: ratio(completedRuns, completedRuns + failedRuns),
     reworkRate: flow ? ratio(sentBack.size, byAgent.length) : null,
     runsPerIssue: flow ? ratio(runsOnAgentIssues, byAgent.length) : null,
     interventionRate: ratio(intervened.size, ended.length),
-    queueWaitP50Ms: figures.claimLatencyP50Ms,
+    queueWaitP50Ms: median(
+      runs.flatMap((run) =>
+        run.dispatchedAt
+          ? [
+              Math.max(
+                0,
+                Date.parse(run.dispatchedAt) - Date.parse(run.createdAt),
+              ),
+            ]
+          : [],
+      ),
+    ),
   };
 }
 
@@ -165,119 +188,182 @@ export function reportCurrency(costs: readonly (Costs | null)[]): string {
   return 'USD';
 }
 
-/** Every day of the period: completions and their cycle times by the day completed, runs and cost by their day. */
-export function periodDays(
-  flow: IssueFlow | null,
-  daily: RunFigures['daily'],
-  currency: string,
-): DashboardDay[] {
-  const byDay = new Map<
-    string,
-    { agents: number; cycles: number[]; n: number }
-  >();
-  for (const issue of flow?.completed ?? []) {
-    const day = issue.doneAt.slice(0, 10);
-    const entry = byDay.get(day) ?? { agents: 0, cycles: [], n: 0 };
-    entry.n += 1;
-    if (issue.byAgent) entry.agents += 1;
-    if (issue.startedAt)
-      entry.cycles.push(
-        Math.max(0, Date.parse(issue.doneAt) - Date.parse(issue.startedAt)),
-      );
-    byDay.set(day, entry);
-  }
-  return daily.map((point) => {
-    const done = byDay.get(point.day);
-    return {
-      day: point.day,
-      completed: done?.n ?? 0,
-      completedByAgents: done?.agents ?? 0,
-      cycleTimeP50Ms: median(done?.cycles ?? []),
-      cost:
-        (point.onlineCost?.[currency] ?? 0) +
-        (point.runnerCost?.[currency] ?? 0),
-      runsCompleted: point.completed,
-      runsFailed: point.failed,
-      runsCancelled: point.cancelled,
-      runsOpen: point.open,
-    };
-  });
+/** Every day from `from` to `to` (`YYYY-MM-DD`, both inclusive). */
+export function daysOf(from: string, to: string): string[] {
+  const days: string[] = [];
+  for (
+    let at = Date.parse(`${from}T00:00:00Z`);
+    at <= Date.parse(`${to}T00:00:00Z`);
+    at += DAY_MS
+  )
+    days.push(new Date(at).toISOString().slice(0, 10));
+  return days;
 }
 
-/** The period in stretches of `size` days, the last ending on the period's last day (`BUCKET_DAYS`). */
+/** Every day of the period with the runs queued that day, by how they ended so far. */
+export function runDays(
+  days: readonly string[],
+  runs: readonly ReportRun[],
+): DashboardRunDay[] {
+  const byDay = new Map(
+    days.map((day) => [
+      day,
+      { runsCompleted: 0, runsFailed: 0, runsCancelled: 0, runsOpen: 0 },
+    ]),
+  );
+  for (const run of runs) {
+    const entry = byDay.get(run.createdAt.slice(0, 10));
+    if (!entry) continue;
+    if (run.status === 'completed') entry.runsCompleted += 1;
+    else if (run.status === 'failed') entry.runsFailed += 1;
+    else if (run.status === 'cancelled') entry.runsCancelled += 1;
+    else entry.runsOpen += 1;
+  }
+  return days.map((day) => ({
+    day,
+    ...(byDay.get(day) ?? {
+      runsCompleted: 0,
+      runsFailed: 0,
+      runsCancelled: 0,
+      runsOpen: 0,
+    }),
+  }));
+}
+
+/**
+ * The period in stretches of `size` days, the last ending on the period's last day (`BUCKET_DAYS`): the issues
+ * completed in each and the cost of the usage reported in it (`cost`, by day, in the report's currency).
+ */
 export function periodBuckets(
   flow: IssueFlow | null,
-  days: readonly DashboardDay[],
+  days: readonly string[],
+  cost: ReadonlyMap<string, number>,
   size: number,
 ): DashboardBucket[] {
   const buckets: DashboardBucket[] = [];
   for (let end = days.length; end > 0; end -= size) {
     const stretch = days.slice(Math.max(0, end - size), end);
-    const from = stretch[0]?.day ?? '';
-    const to = stretch.at(-1)?.day ?? '';
+    const from = stretch[0] ?? '';
+    const to = stretch.at(-1) ?? '';
     const done = (flow?.completed ?? []).filter((issue) => {
       const day = issue.doneAt.slice(0, 10);
       return day >= from && day <= to;
     });
-    const cost = stretch.reduce((sum, day) => sum + day.cost, 0);
+    const spent = stretch.reduce((sum, day) => sum + (cost.get(day) ?? 0), 0);
     buckets.unshift({
       from,
       to,
       completed: done.length,
-      cycleTimeP50Ms: median(
-        done.flatMap((issue) =>
-          issue.startedAt
-            ? [
-                Math.max(
-                  0,
-                  Date.parse(issue.doneAt) - Date.parse(issue.startedAt),
-                ),
-              ]
-            : [],
-        ),
-      ),
+      cycleTimeP50Ms: median(done.flatMap(cycleOf)),
       agentShare: ratio(
         done.filter((issue) => issue.byAgent).length,
         done.length,
       ),
       costPerIssue:
-        done.length > 0 && cost > 0
-          ? Math.round((cost / done.length) * 1e6) / 1e6
+        done.length > 0 && spent > 0
+          ? Math.round((spent / done.length) * 1e6) / 1e6
           : null,
     });
   }
   return buckets;
 }
 
-export async function dashboardReport(
+/** The last `days` days up to today and the `days` before them, as UTC days. */
+function periodsOf(
   deps: DashboardDeps,
-  caller: ReportCaller,
   days: DashboardPeriod,
-): Promise<DashboardReport> {
-  const { agents } = deps;
-  const today = agents.clock.now().toISOString().slice(0, 10);
+): {
+  readonly current: { readonly from: string; readonly to: string };
+  readonly previous: { readonly from: string; readonly to: string };
+} {
+  const today = deps.agents.clock.now().toISOString().slice(0, 10);
   const dayBefore = (count: number) =>
     new Date(Date.parse(`${today}T00:00:00Z`) - count * DAY_MS)
       .toISOString()
       .slice(0, 10);
-  const projects = deps.projects();
-  const viewer = projects ? await deps.viewerOf(caller.userId) : null;
+  return {
+    current: { from: dayBefore(days - 1), to: today },
+    previous: { from: dayBefore(2 * days - 1), to: dayBefore(days) },
+  };
+}
 
-  const period = async (from: string, to: string) => {
-    const range = agents.reporting.range({ from, to });
-    const flow =
-      projects && viewer
-        ? await projects.reports.flow(viewer, {
-            from: range.start,
-            to: range.end,
-            agentKind: AGENT_KIND,
-          })
-        : null;
-    const figures = await agents.reporting.runFigures(caller, {
-      ...range,
-      groupId: null,
+/** The issue flow of a period over what the viewer may see; null without the projects plugin. */
+async function flowOf(
+  deps: DashboardDeps,
+  caller: ReportCaller,
+  period: { readonly from: string; readonly to: string },
+): Promise<IssueFlow | null> {
+  const projects = deps.projects();
+  if (!projects) return null;
+  const range = deps.agents.reporting.range(period);
+  return projects.reports.flow(await deps.viewerOf(caller.userId), {
+    from: range.start,
+    to: range.end,
+    agentKind: AGENT_KIND,
+  });
+}
+
+/** `GET reports/delivery`: issues completed, how fast, the agents' share and the cost per issue, over the period. */
+export async function dashboardDelivery(
+  deps: DashboardDeps,
+  caller: ReportCaller,
+  days: DashboardPeriod,
+): Promise<DashboardDelivery> {
+  const periods = periodsOf(deps, days);
+  const period = async (dates: {
+    readonly from: string;
+    readonly to: string;
+  }) => {
+    const flow = await flowOf(deps, caller, dates);
+    // The usage reported in the period, by day: its total and each day's cost.
+    const usage = await deps.agents.reporting.usage(caller, {
+      ...dates,
+      groupBy: 'day',
     });
-    const runs = await agents.reporting.runRecords(caller, {
+    return { flow, usage };
+  };
+  const current = await period(periods.current);
+  const previous = await period(periods.previous);
+  const currency = reportCurrency([
+    current.usage.totals.cost,
+    previous.usage.totals.cost,
+  ]);
+  return {
+    days,
+    from: periods.current.from,
+    to: periods.current.to,
+    subjects: current.flow !== null,
+    currency,
+    current: deliveryFigures(current.flow, current.usage.totals.cost),
+    previous: deliveryFigures(previous.flow, previous.usage.totals.cost),
+    buckets: periodBuckets(
+      current.flow,
+      daysOf(periods.current.from, periods.current.to),
+      new Map(
+        current.usage.daily.map((point) => [
+          point.day,
+          point.cost?.[currency] ?? 0,
+        ]),
+      ),
+      BUCKET_DAYS[days],
+    ),
+  };
+}
+
+/** `GET reports/agents`: how the agents' runs went over the period, and the runs queued each day. */
+export async function dashboardAgents(
+  deps: DashboardDeps,
+  caller: ReportCaller,
+  days: DashboardPeriod,
+): Promise<DashboardAgents> {
+  const periods = periodsOf(deps, days);
+  const period = async (dates: {
+    readonly from: string;
+    readonly to: string;
+  }) => {
+    const flow = await flowOf(deps, caller, dates);
+    const range = deps.agents.reporting.range(dates);
+    const runs = await deps.agents.reporting.runRecords(caller, {
       start: range.start,
       end: range.end,
       groupId: null,
@@ -285,67 +371,75 @@ export async function dashboardReport(
     const agentIssues = (flow?.completed ?? [])
       .filter((issue) => issue.byAgent)
       .map((issue) => issue.id);
-    const onAgentIssues = await agents.reporting.runRecords(caller, {
+    const onAgentIssues = await deps.agents.reporting.runRecords(caller, {
       subjects: { kind: ISSUE_SUBJECT, ids: agentIssues },
       groupId: null,
     });
     return {
       flow,
-      figures,
-      result: periodFigures(flow, figures, runs, onAgentIssues.length),
+      runs,
+      figures: agentFigures(flow, runs, onAgentIssues.length),
     };
   };
-  const current = await period(dayBefore(days - 1), today);
-  const previous = await period(dayBefore(2 * days - 1), dayBefore(days));
-  const currency = reportCurrency([
-    current.figures.estimatedCost,
-    previous.figures.estimatedCost,
-  ]);
-
-  const rows: DashboardProject[] = [];
-  if (projects && viewer) {
-    const done = new Map<string, number[]>();
-    const count = new Map<string, number>();
-    for (const issue of current.flow?.completed ?? []) {
-      if (!issue.projectId) continue;
-      count.set(issue.projectId, (count.get(issue.projectId) ?? 0) + 1);
-      if (issue.startedAt)
-        done.set(issue.projectId, [
-          ...(done.get(issue.projectId) ?? []),
-          Math.max(0, Date.parse(issue.doneAt) - Date.parse(issue.startedAt)),
-        ]);
-    }
-    for (const project of await projects.reports.projects(viewer))
-      rows.push({
-        id: project.id,
-        name: project.name,
-        total: project.total,
-        done: project.done,
-        completed: count.get(project.id) ?? 0,
-        cycleTimeP50Ms: median(done.get(project.id) ?? []),
-        blocked: project.blocked,
-      });
-    rows.sort(
-      (a, b) =>
-        b.completed - a.completed ||
-        b.total - b.done - (a.total - a.done) ||
-        a.name.localeCompare(b.name),
-    );
-  }
-
-  const daily = periodDays(current.flow, current.figures.daily, currency);
+  const current = await period(periods.current);
+  const previous = await period(periods.previous);
   return {
     days,
-    from: dayBefore(days - 1),
-    to: today,
+    from: periods.current.from,
+    to: periods.current.to,
     subjects: current.flow !== null,
-    currency,
-    current: current.result,
-    previous: previous.result,
-    daily,
-    buckets: periodBuckets(current.flow, daily, BUCKET_DAYS[days]),
-    projects: rows,
+    current: current.figures,
+    previous: previous.figures,
+    daily: runDays(
+      daysOf(periods.current.from, periods.current.to),
+      current.runs,
+    ),
   };
+}
+
+/** `GET reports/projects`: every project the viewer may see, with what it completed in the period. */
+export async function dashboardProjects(
+  deps: DashboardDeps,
+  caller: ReportCaller,
+  days: DashboardPeriod,
+): Promise<DashboardProjects> {
+  const periods = periodsOf(deps, days);
+  const base = {
+    days,
+    from: periods.current.from,
+    to: periods.current.to,
+  };
+  const projects = deps.projects();
+  if (!projects) return { ...base, subjects: false, projects: [] };
+  const flow = await flowOf(deps, caller, periods.current);
+  const done = new Map<string, number[]>();
+  const count = new Map<string, number>();
+  for (const issue of flow?.completed ?? []) {
+    if (!issue.projectId) continue;
+    count.set(issue.projectId, (count.get(issue.projectId) ?? 0) + 1);
+    done.set(issue.projectId, [
+      ...(done.get(issue.projectId) ?? []),
+      ...cycleOf(issue),
+    ]);
+  }
+  const rows: DashboardProject[] = (
+    await projects.reports.projects(await deps.viewerOf(caller.userId))
+  ).map((project) => ({
+    id: project.id,
+    name: project.name,
+    total: project.total,
+    done: project.done,
+    completed: count.get(project.id) ?? 0,
+    cycleTimeP50Ms: median(done.get(project.id) ?? []),
+    blocked: project.blocked,
+  }));
+  rows.sort(
+    (a, b) =>
+      b.completed - a.completed ||
+      b.total - b.done - (a.total - a.done) ||
+      a.name.localeCompare(b.name),
+  );
+  return { ...base, subjects: true, projects: rows };
 }
 
 type Row = Record<string, unknown>;

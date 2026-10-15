@@ -126,8 +126,7 @@ import {
   createRunnerView,
   createSweeper,
   resolveAgentCli,
-  runsHeldBy,
-  runsHeldByTool,
+  runsHeldSnapshot,
   openCounts,
   type AgentCli,
   type Availability,
@@ -326,7 +325,7 @@ export function createAgents(deps: AgentsDeps): Agents {
 
   const people = createPeople();
   const dist = createDistService(deps.dist);
-  const slots = createSlots(runsHeldBy, runsHeldByTool);
+  const slots = createSlots(runsHeldSnapshot);
   const runners = createRunnerService({
     tx,
     ids,
@@ -457,6 +456,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     repoAccess,
     dist,
     slotsUsed: (conn, runnerId) => slots.used(conn, runnerId),
+    slotsHeld: (conn, runnerId) => slots.held(conn, runnerId),
     ...transitions,
     tx,
     ids,

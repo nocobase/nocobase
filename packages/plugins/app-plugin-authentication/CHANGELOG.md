@@ -1,5 +1,19 @@
 # @nocobase/app-plugin-authentication
 
+## 2.0.0-beta.9
+
+### Patch Changes
+
+- bdb0581: A public realtime topic can be defined with `authenticated: true` (`defineTopic` and `registerTopic` of `@nocobase/app-server/realtime`): subscribing without a signed-in principal is then refused with `AUTHENTICATION_REQUIRED`, as for a user topic, and publishing skips connections without one. The projects plugin's `pm:changes`, the agents plugin's `agents:runners` and Studio's `studio:issues:runs`, whose announcements name records by id, now reach signed-in connections only. The authentication plugin opens the realtime connection again when the signed-in person changes, so a page signed in without a reload receives these topics and user topics.
+- Updated dependencies [69e212c]
+- Updated dependencies [943a9a8]
+- Updated dependencies [943a9a8]
+- Updated dependencies [1cd749c]
+- Updated dependencies [bdb0581]
+- Updated dependencies [9b946f4]
+  - @nocobase/app-server@2.0.0-beta.7
+  - @nocobase/db@1.0.0-beta.20
+
 ## 2.0.0-beta.8
 
 ### Minor Changes

@@ -1,4 +1,8 @@
 import {
+  createAppSidebarPreferenceStore,
+  SidebarPreferenceProvider,
+} from '../../client/layouts/use-sidebar-preference.js';
+import {
   apiClientToken,
   ClientApplicationContext,
   type ClientApplication,
@@ -305,7 +309,11 @@ function renderApplication(
       <AuthenticationProvider>
         <MemoryRouter initialEntries={[initialEntry]}>
           <AppThemeProvider>
-            <AppRouter clientRoutes={clientRoutes} />
+            <SidebarPreferenceProvider
+              value={createAppSidebarPreferenceStore('/main')}
+            >
+              <AppRouter clientRoutes={clientRoutes} />
+            </SidebarPreferenceProvider>
           </AppThemeProvider>
         </MemoryRouter>
       </AuthenticationProvider>

@@ -36,7 +36,7 @@ pnpm nocobase config check
 pnpm dev
 ```
 
-Open the application URL printed in the terminal and sign in with the administrator account configured during initialization. An Agent can also complete these steps for you; see [Create an application](../get-started/create-app.md).
+Open the application URL printed in the terminal and sign in with the administrator account configured during initialization. An Agent can also complete these steps for you using the installed `nocobase-create-app` Skill.
 
 ## 2. Build the business with one prompt
 

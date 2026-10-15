@@ -13,7 +13,7 @@
  */
 import type { NotificationService } from '@nocobase/app-plugin-notification/server';
 import type { InAppStore } from '@nocobase/app-plugin-notification-in-app/server';
-import type { DatabaseManager } from '@nocobase/db';
+import type { DatabaseManager, DatabaseConnection } from '@nocobase/db';
 
 import {
   INBOX_WAITING_MAX,
@@ -77,6 +77,12 @@ const COLUMNS = [
 ] as const;
 
 export interface StudioInbox extends StudioInboxPort {
+  /** Uncapped safe decision summaries for already authorized issue IDs; never includes notice data or recipients. */
+  taskDecisions(
+    issueIds: readonly string[],
+    viewerUserId: string,
+    connection?: DatabaseConnection,
+  ): Promise<TaskDecisionSummary[]>;
   /** What Studio knows about the caller's items among `notificationIds`; unknown ids are left out. */
   notices(
     userId: string,
@@ -109,6 +115,12 @@ export interface StudioInbox extends StudioInboxPort {
     afterKey?: string,
     subject?: { readonly type: string; readonly id: string },
   ): Promise<OpenDecision[]>;
+}
+
+export interface TaskDecisionSummary {
+  readonly issueId: string;
+  readonly type: 'agent_blocked' | 'run_failed_final';
+  readonly waitingForViewer: boolean;
 }
 
 /** A decision that still waits (`StudioInbox.openDecisions`). */
@@ -300,6 +312,35 @@ export function createStudioInbox(deps: StudioInboxDependencies): StudioInbox {
   }
 
   return {
+    async taskDecisions(issueIds, viewerUserId, connection) {
+      const summaries = new Map<string, TaskDecisionSummary>();
+      for (let at = 0; at < issueIds.length; at += 100) {
+        const rows = await (connection?.query ?? table())
+          .selectFrom(TABLE)
+          .select(['subjectId', 'type', 'userId'])
+          .distinct()
+          .where('source', '=', 'projects')
+          .where('subjectType', '=', 'issue')
+          .where('subjectId', 'in', issueIds.slice(at, at + 100))
+          .where('kind', '=', 'decision')
+          .where('resolvedAt', 'is', null)
+          .where('type', 'in', ['agent_blocked', 'run_failed_final'])
+          .execute();
+        for (const row of rows) {
+          const issueId = String(row.subjectId);
+          const type = row.type as TaskDecisionSummary['type'];
+          const key = `${issueId}:${type}`;
+          summaries.set(key, {
+            issueId,
+            type,
+            waitingForViewer:
+              summaries.get(key)?.waitingForViewer === true ||
+              row.userId === viewerUserId,
+          });
+        }
+      }
+      return [...summaries.values()];
+    },
     async send(input) {
       const notice = checkInboxSend(input);
       const service = deps.notifications();

@@ -1,6 +1,5 @@
 ---
 '@nocobase/db': patch
-'@nocobase/db-dameng': patch
 '@nocobase/db-mssql': patch
 '@nocobase/db-mysql': patch
 '@nocobase/db-oracle': patch

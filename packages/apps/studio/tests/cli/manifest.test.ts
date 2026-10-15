@@ -254,6 +254,19 @@ describe('Studio’s command manifest', () => {
   it('offers a run what its agent may do, on the routes that take a run token', async () => {
     const manifest = await manifestOf({ [HEADERS.runToken]: token });
     expect(manifest.identity.kind).toBe('run');
+    for (const decision of ['get', 'accept', 'reject']) {
+      expect(
+        manifest.commands.some(
+          (command) => command.id === `issue:handoff:${decision}`,
+        ),
+      ).toBe(false);
+      expect(manifest.withheld).toContainEqual(
+        expect.objectContaining({
+          id: `issue:handoff:${decision}`,
+          reason: 'identity',
+        }),
+      );
+    }
     expect(
       manifest.commands
         .find((command) => command.id === 'issue:update')

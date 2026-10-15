@@ -30,6 +30,8 @@ nb-studio runtime delete <runtime>
 
 Get a runner
 
+Includes directory diagnostics in workspaceUsage.workspaces for callers allowed to see the machine; other callers receive an empty directory array and the same totals.
+
 ```bash
 nb-studio runtime get <runtime>
 ```
@@ -48,13 +50,13 @@ nb-studio runtime get <runtime>
 
 List runners
 
-Every runner for a reader of runners or of agents (`agents.runners` or `agents.agents` read); otherwise the caller's own.
+Every runner for a reader of runners or of agents (`agents.runners` or `agents.agents` read); otherwise the caller's own. Workspace usage contains totals only; use runtime get (GET /agents/runners/:runnerId) for directory diagnostics.
 
 ```bash
 nb-studio runtime list
 ```
 
-**Output:** A list (table columns: `id`, `name`, `status`, `ownerName`, `trust`, `activeRuns`); with `--json`, `result.data` is the array and `result.meta` the paging.
+**Output:** A list (table columns: `id`, `name`, `status`, `ownerName`, `trust`, `activeRuns`, `workspaceUsage.count`, `workspaceUsage.unpushedCount`, `workspaceUsage.disk.freeBytes`); with `--json`, `result.data` is the array and `result.meta` the paging.
 
 **Who:** People (a sign-in or an API key).
 
