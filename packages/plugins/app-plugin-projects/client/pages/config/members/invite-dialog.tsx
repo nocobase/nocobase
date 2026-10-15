@@ -231,6 +231,17 @@ function InviteForm({
   );
 }
 
+export function invitationEmailError(
+  t: (key: string) => string,
+  result: InvitationResult,
+): string {
+  if (result.emailError === 'Email not sent: no email channel configured')
+    return t('invitations.outcome.noEmailChannel');
+  if (result.emailError === 'Email not sent: email delivery failed')
+    return t('invitations.outcome.deliveryFailed');
+  return t('invitations.outcome.notSent');
+}
+
 function outcomeLabel(
   t: (key: string) => string,
   result: InvitationResult,
@@ -268,6 +279,14 @@ export function InviteResults({
               {linkOnly ? t('invitations.linkReady') : outcomeLabel(t, result)}
             </PmTag>
           </div>
+          {!linkOnly &&
+          result.outcome === 'invited' &&
+          !result.emailSent &&
+          result.emailError ? (
+            <p className='text-sm text-muted-foreground'>
+              {invitationEmailError(t, result)}
+            </p>
+          ) : null}
           {result.inviteUrl ? <CopyLink url={result.inviteUrl} /> : null}
         </li>
       ))}

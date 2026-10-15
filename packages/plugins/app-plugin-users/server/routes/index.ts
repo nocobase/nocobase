@@ -139,6 +139,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
             'outcome',
             'invitationId',
             'emailSent',
+            'emailError',
             'inviteUrl',
           ],
           examples: ['user invitation create --emails ann@example.com'],

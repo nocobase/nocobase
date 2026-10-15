@@ -216,7 +216,7 @@ export function createInvitationManager(
                 emailError:
                   emailError === NO_EMAIL_CHANNEL_MESSAGE
                     ? emailError
-                    : '邮件未发送：邮件发送失败',
+                    : 'Email not sent: email delivery failed',
               }
             : {}),
           ...(isOpen ? { inviteUrl: `${base}/invite/${token}` } : {}),

@@ -18,7 +18,7 @@ description: '介绍站内信、邮件、飞书和钉钉通知，演示站内信
 
 ## 用户邀请邮件
 
-用户邀请邮件也通过通知渠道发送。Users 插件默认使用 `system-email`；需要在 `notification.channels.system-email` 中配置并启用 SMTP 等邮件服务。模板的 `config.example.yml` 提供了 SMTP 配置示例。未配置可用渠道时，创建邀请仍会成功，但结果会包含「邮件未发送：未配置邮件渠道」和邀请链接，供有权限的邀请人手动转发。
+用户邀请邮件也通过通知渠道发送。Users 插件默认使用 `system-email`；需要在 `notification.channels.system-email` 中配置并启用 SMTP 等邮件服务。模板的 `config.example.yml` 提供了 SMTP 配置示例。未配置可用渠道时，创建邀请仍会成功，但结果会包含 `emailError: "Email not sent: no email channel configured"` 和邀请链接，供有权限的邀请人手动转发。Studio 中文界面显示「邮件未发送：未配置邮件渠道」。
 
 ## 示例：发送站内信通知
 

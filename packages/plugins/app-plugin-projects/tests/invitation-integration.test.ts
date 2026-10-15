@@ -23,6 +23,61 @@ import type { ProjectDetail } from '../shared/projects.js';
 
 const test = createAppTest({ createServer: createInvitationServer });
 
+for (const channel of ['missing', 'disabled', 'enabled'] as const) {
+  const channelTest = createAppTest({
+    createServer: createInvitationServer,
+    config:
+      channel === 'missing'
+        ? { users: { invitations: { emailChannel: 'unconfigured' } } }
+        : {
+            notification: {
+              channels: { 'system-email': { enabled: channel === 'enabled' } },
+            },
+          },
+  });
+  channelTest(
+    `preserves delivery feedback and manual links on create and resend with a ${channel} channel`,
+    async ({ testApp }) => {
+      const admin = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+      const email = `${channel}-channel@example.test`;
+      const { results } = await readData<{ results: InvitationResult[] }>(
+        await admin.fetch('/projects/invitations', post({ emails: [email] })),
+        201,
+      );
+      const users = testApp.application.container.resolve(
+        userManagementServiceToken,
+      );
+      const pending = (await users.listInvitations()).find(
+        (row) => row.email === email,
+      );
+      if (!pending) throw new Error('Missing invitation');
+      const resent = await readData<InvitationResult>(
+        await admin.fetch(
+          `/projects/invitations/${pending.id}/resend`,
+          post({}),
+        ),
+      );
+      for (const result of [results[0], resent]) {
+        expect(result).toMatchObject({
+          email,
+          emailSent: channel === 'enabled',
+          inviteUrl: expect.stringContaining('/main/invite/'),
+        });
+        expect(result?.emailError).toBe(
+          channel === 'enabled'
+            ? undefined
+            : 'Email not sent: no email channel configured',
+        );
+      }
+      expect(resent.inviteUrl).not.toBe(results[0]?.inviteUrl);
+      const mailbox = testApp.application.container.resolve(
+        invitationMailboxToken,
+      );
+      expect(mailbox.messages.has(email)).toBe(channel === 'enabled');
+    },
+  );
+}
+
 function post(body: unknown): RequestInit {
   return {
     method: 'POST',

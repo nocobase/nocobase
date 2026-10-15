@@ -271,7 +271,7 @@ describe('user invitations', () => {
     expect(result).toMatchObject({
       outcome: 'invited',
       emailSent: false,
-      emailError: '邮件未发送：邮件发送失败',
+      emailError: 'Email not sent: email delivery failed',
     });
     expect(result).toHaveProperty(
       'inviteUrl',
@@ -299,7 +299,7 @@ describe('user invitations', () => {
     expect(result).toMatchObject({
       outcome: 'invited',
       emailSent: false,
-      emailError: '邮件未发送：未配置邮件渠道',
+      emailError: 'Email not sent: no email channel configured',
       inviteUrl: expect.stringContaining(`${ORIGIN}/main/invite/`),
     });
   });

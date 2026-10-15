@@ -805,7 +805,14 @@ describe('@nocobase/app-plugin-users API routes', () => {
       manifest.commands.find(
         (command) => command.id === 'user:invitation:create',
       )?.output.columns,
-    ).toEqual(['email', 'outcome', 'invitationId', 'emailSent', 'inviteUrl']);
+    ).toEqual([
+      'email',
+      'outcome',
+      'invitationId',
+      'emailSent',
+      'emailError',
+      'inviteUrl',
+    ]);
     const acceptResponses =
       document.paths?.['/api/users/invitations/accept']?.post?.responses;
     expect(Object.keys(acceptResponses ?? {})).toEqual(

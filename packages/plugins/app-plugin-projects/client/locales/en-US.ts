@@ -355,6 +355,8 @@ const pages = {
       added: 'Has an account — added to the projects',
       alreadyMember: 'Already a member',
       notSent: 'Email not sent',
+      noEmailChannel: 'Email not sent: no email channel configured',
+      deliveryFailed: 'Email not sent: email delivery failed',
       sent: 'Email sent',
     },
     pending: 'Waiting',

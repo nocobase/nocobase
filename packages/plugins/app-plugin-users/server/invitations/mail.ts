@@ -21,7 +21,8 @@ export interface InvitationMailer {
 }
 
 /** Used when no channel is configured: delivery fails; authorized inviters can deliver the link themselves. */
-export const NO_EMAIL_CHANNEL_MESSAGE = '邮件未发送：未配置邮件渠道';
+export const NO_EMAIL_CHANNEL_MESSAGE =
+  'Email not sent: no email channel configured';
 
 export const unconfiguredMailer: InvitationMailer = {
   send: () => Promise.reject(new Error(NO_EMAIL_CHANNEL_MESSAGE)),
