@@ -18,6 +18,7 @@ import {
   createTestDatabase,
   type TestDatabase,
 } from '@nocobase/app-testing/server';
+import { createTestI18nRuntime } from '@nocobase/i18n/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import enUS from '../../client/locales/en-US.ts';
@@ -27,9 +28,12 @@ import { STUDIO_NAMESPACE, type CatalogText } from '../../shared/access.ts';
 import { PAGES } from '../../shared/pages.ts';
 import { ACTION_POLICIES } from '../../server/access/action-policy.ts';
 import { readCatalog, type Catalog } from '../../server/access/catalog.ts';
+import { translateCatalog } from '../../server/access/localize.ts';
 import { registerStudioKeyScopes } from '../../server/access/key-scopes.ts';
 import { agentActionOptions } from '../../server/agents/capabilities.ts';
 import { registerAccess } from './registry.ts';
+import studioEnUS from '../../server/locales/en-US.ts';
+import studioZhCN from '../../server/locales/zh-CN.ts';
 
 const require = createRequire(import.meta.url);
 const pluginFile = async (name: string, file: string) =>
@@ -87,6 +91,13 @@ beforeAll(async () => {
 });
 afterAll(() => testDatabase.destroy());
 
+function localeModule(enUSResource: unknown, zhCNResource: unknown) {
+  return {
+    'en-US': () => Promise.resolve({ default: enUSResource }),
+    'zh-CN': () => Promise.resolve({ default: zhCNResource }),
+  };
+}
+
 /** The keys of `texts` some locale of their namespace does not word. */
 function untranslated(texts: readonly (CatalogText | undefined)[]): string[] {
   return texts.flatMap((text) => {
@@ -102,6 +113,70 @@ function untranslated(texts: readonly (CatalogText | undefined)[]): string[] {
 }
 
 describe('the catalog', () => {
+  it.each([
+    ['en-US', 'Knowledge', 'System and projects I can see'],
+    ['zh-CN', '知识', '系统和我能查看的项目的'],
+  ] as const)(
+    'returns the complete real catalog as readable text for %s callers',
+    async (locale, knowledgeTitle, relatedLabel) => {
+      const [knowledgeServerEnUS, knowledgeServerZhCN] = await Promise.all([
+        pluginFile(knowledge.ACCESS_NAMESPACE, 'server/locales/en-US.ts'),
+        pluginFile(knowledge.ACCESS_NAMESPACE, 'server/locales/zh-CN.ts'),
+      ]);
+      const namespaces = Object.fromEntries(
+        [...locales.entries()]
+          .filter(([namespace]) => namespace !== STUDIO_NAMESPACE)
+          .map(([namespace, resources]) => [
+            namespace,
+            localeModule(resources[0], resources[1]),
+          ]),
+      );
+      namespaces[knowledge.ACCESS_NAMESPACE] = localeModule(
+        knowledgeServerEnUS,
+        knowledgeServerZhCN,
+      );
+      const runtime = await createTestI18nRuntime({
+        application: {
+          namespace: STUDIO_NAMESPACE,
+          resources: localeModule(studioEnUS, studioZhCN),
+        },
+        namespaces,
+        locale,
+      });
+      const t = runtime.getFixedT(STUDIO_NAMESPACE, locale);
+      const localized = translateCatalog(t, {
+        businesses: catalog.businesses,
+        settings: catalog.settings,
+      });
+      const text = [
+        ...localized.businesses.flatMap((business) => [
+          business.title,
+          business.description,
+          business.section?.title,
+          ...business.actions.flatMap((action) => [
+            action.title,
+            action.description,
+            ...action.levels.flatMap((level) => [
+              level.title,
+              level.label,
+              level.description,
+            ]),
+          ]),
+        ]),
+        ...localized.settings.flatMap((item) => [
+          item.title,
+          item.description,
+          item.section?.title,
+          ...item.actions.map((action) => action.title),
+        ]),
+      ].filter((value): value is string => typeof value === 'string');
+
+      expect(text).toContain(knowledgeTitle);
+      expect(text).toContain(relatedLabel);
+      expect(text.some((value) => /^(access|roles)\./.test(value))).toBe(false);
+    },
+  );
+
   it('lists the plugins’ businesses in order, each action at the levels its records allow', () => {
     expect(catalog.businesses.map(({ type, id }) => `${type}:${id}`)).toEqual([
       'pm:pm.projects',

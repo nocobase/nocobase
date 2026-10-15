@@ -41,7 +41,11 @@ import { Hono, type Context, type MiddlewareHandler } from 'hono';
 
 import { studioError, studioErrorHandler } from '../http/errors.js';
 import { boundedList } from '../http/input.js';
-import { translateCatalog, translateRole } from './localize.js';
+import {
+  translateCatalog,
+  translateKeyScopeOptions,
+  translateRole,
+} from './localize.js';
 import {
   AccessCatalogSchema,
   AccessMeSchema,
@@ -474,7 +478,13 @@ export const accessRoutes: AppApiRouteContribution<Application> =
         cli: { command: 'access org-key scope-options' },
         responses: { 200: dataResponse(KeyScopeOptionsSchema) },
       }),
-      async (c) => c.json({ data: await apiKeys().scopeOptions(viewer(c)) }),
+      async (c) =>
+        c.json({
+          data: translateKeyScopeOptions(
+            getRequestTranslator(c),
+            await apiKeys().scopeOptions(viewer(c)),
+          ),
+        }),
     );
     keys.post(
       '/',

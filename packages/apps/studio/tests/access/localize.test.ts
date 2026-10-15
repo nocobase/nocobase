@@ -1,11 +1,13 @@
 // @vitest-environment node
 import { createTestI18nRuntime } from '@nocobase/i18n/testing';
+import type { KeyScopeOptions } from '@nocobase/app-plugin-api-keys/shared/scopes';
 import { describe, expect, it } from 'vitest';
 
 import enUS from '../../server/locales/en-US.js';
 import zhCN from '../../server/locales/zh-CN.js';
 import {
   translateCatalog,
+  translateKeyScopeOptions,
   translateRole,
 } from '../../server/access/localize.js';
 import { STUDIO_NAMESPACE, type Role } from '../../shared/access.js';
@@ -86,4 +88,69 @@ describe('localized access responses', () => {
     expect(localized.settings[0]?.title).toBe('API 密钥');
     expect(localized.settings[0]?.actions[0]?.title).toBe('Read access');
   });
+
+  it.each([
+    ['en-US', 'Knowledge search', 'Ones I created or in projects I can see'],
+    ['zh-CN', '知识库检索', '我创建的或我能查看的项目里的'],
+  ] as const)(
+    'translates organization key scope options in %s without changing their shape',
+    async (locale, groupTitle, presetTitle) => {
+      const t = await translator(locale);
+      const options: KeyScopeOptions = {
+        groups: [
+          {
+            id: 'knowledge.read',
+            category: 'business',
+            title: { key: 'roles.items.knowledgeSearch', ns: STUDIO_NAMESPACE },
+            description: {
+              key: 'roles.related.knowledgeSeenHint',
+              ns: STUDIO_NAMESPACE,
+            },
+            levels: ['read'],
+            access: {},
+            held: { read: true },
+            objects: {
+              business: 'kb.knowledge',
+              title: {
+                key: 'roles.related.knowledgeLed',
+                ns: STUDIO_NAMESPACE,
+              },
+            },
+          },
+        ],
+        presets: [
+          {
+            id: 'projects',
+            title: { key: 'roles.related.appsSeen', ns: STUDIO_NAMESPACE },
+            description: {
+              key: 'roles.related.appsSeenHint',
+              ns: STUDIO_NAMESPACE,
+            },
+            groups: {},
+            expiresInDays: null,
+          },
+        ],
+        maxScopedKeyDays: null,
+        defaultExpiresInDays: 30,
+      };
+      const localized = translateKeyScopeOptions(t, options);
+      expect(localized.groups[0]?.title).toBe(groupTitle);
+      expect(localized.groups[0]?.description).toBe(
+        locale === 'en-US'
+          ? 'The system knowledge, and the spaces of projects I can see'
+          : '系统知识，以及我能查看的项目的知识空间',
+      );
+      expect(localized.groups[0]?.objects?.title).toBe(
+        locale === 'en-US' ? 'Projects I lead' : '我负责的项目的',
+      );
+      expect(localized.presets[0]?.title).toBe(presetTitle);
+      expect(localized.presets[0]?.description).toBe(
+        locale === 'en-US'
+          ? 'Apps I created, Apps linked to projects I can see, and previews of issues I can see'
+          : '我创建的应用、关联到我能查看的项目的应用，以及我能查看的任务的预览应用',
+      );
+      expect(localized.groups[0]?.held).toEqual({ read: true });
+      expect(localized.groups[0]?.access).toEqual({});
+    },
+  );
 });

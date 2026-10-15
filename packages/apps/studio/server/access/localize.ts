@@ -1,4 +1,8 @@
 import type { Translator } from '@nocobase/i18n';
+import type {
+  KeyScopeOptions,
+  LocalizedText,
+} from '@nocobase/app-plugin-api-keys/shared/scopes';
 
 import type { AccessCatalog, CatalogText, Role } from '../../shared/access.js';
 
@@ -6,11 +10,37 @@ type LocalizedRole = Omit<Role, 'title'> & { title: string };
 
 function translateText(
   t: Translator,
-  text: CatalogText,
+  text: CatalogText | LocalizedText,
   fallback?: string,
 ): string {
   if (typeof text === 'string') return text;
   return t(text.key, { ns: text.ns, defaultValue: fallback ?? text.key });
+}
+
+export function translateKeyScopeOptions(
+  t: Translator,
+  options: KeyScopeOptions,
+): KeyScopeOptions {
+  return {
+    ...options,
+    groups: options.groups.map((group) => ({
+      ...group,
+      title: translateText(t, group.title),
+      description: group.description
+        ? translateText(t, group.description)
+        : null,
+      objects: group.objects
+        ? { ...group.objects, title: translateText(t, group.objects.title) }
+        : null,
+    })),
+    presets: options.presets.map((preset) => ({
+      ...preset,
+      title: translateText(t, preset.title),
+      description: preset.description
+        ? translateText(t, preset.description)
+        : null,
+    })),
+  };
 }
 
 export function translateRole(t: Translator, role: Role): LocalizedRole {

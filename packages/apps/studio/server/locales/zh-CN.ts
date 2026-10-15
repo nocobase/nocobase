@@ -23,6 +23,18 @@ const zhCN: AppServerResource = {
     admin: '管理员',
     contributor: '成员',
     owner: '所有者',
+    related: {
+      knowledgeSeen: '系统和我能查看的项目的',
+      knowledgeSeenHint: '系统知识，以及我能查看的项目的知识空间',
+      knowledgeLed: '我负责的项目的',
+      knowledgeLedHint: '我负责的项目的知识空间；系统知识需要“全部”',
+      appsSeen: '我创建的或我能查看的项目里的',
+      appsSeenHint:
+        '我创建的应用、关联到我能查看的项目的应用，以及我能查看的任务的预览应用',
+      appsLed: '我创建的或我负责的项目里的',
+      appsLedHint:
+        '我创建的应用、关联到我负责的项目的应用，以及我能编辑的任务的预览应用',
+    },
     capabilities: {
       apiKeys: {
         read: '查看组织的 API 密钥',

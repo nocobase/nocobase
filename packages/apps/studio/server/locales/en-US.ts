@@ -31,6 +31,20 @@ const enUS = {
     admin: 'Admin',
     contributor: 'Member',
     owner: 'Owner',
+    related: {
+      knowledgeSeen: 'System and projects I can see',
+      knowledgeSeenHint:
+        'The system knowledge, and the spaces of projects I can see',
+      knowledgeLed: 'Projects I lead',
+      knowledgeLedHint:
+        'The spaces of projects I lead; the system knowledge needs All',
+      appsSeen: 'Ones I created or in projects I can see',
+      appsSeenHint:
+        'Apps I created, Apps linked to projects I can see, and previews of issues I can see',
+      appsLed: 'Ones I created or in projects I lead',
+      appsLedHint:
+        'Apps I created, Apps linked to projects I lead, and previews of issues I can edit',
+    },
     capabilities: {
       apiKeys: {
         read: 'See the organization’s API keys',
