@@ -58,26 +58,48 @@ function RoleBody({
   const roleError = useRoleError();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const saved = draftOf(role);
+  const [baseline, setBaseline] = useState(role);
+  const saved = draftOf(baseline);
   const [draft, setDraft] = useState<RoleDraft>(saved);
   const [title, setTitle] = useState(() => roleTitle(t, role));
+  const [previousRole, setPreviousRole] = useState(role);
   const readOnly = !canDefine || !role.editable;
   const dirty =
-    !sameDraft(draft, saved) || (!role.builtIn && title !== roleTitle(t, role));
+    !sameDraft(draft, saved) ||
+    (!role.builtIn && title !== roleTitle(t, baseline));
 
   const save = useMutation({
-    mutationFn: () =>
+    mutationFn: (submitted: { title: string; draft: RoleDraft }) =>
       api.updateRole(role.key, {
         // Built-in roles keep their translated title; only custom roles are renamed here.
-        ...(role.builtIn ? {} : { title }),
-        ...requestOf(draft),
+        ...(role.builtIn ? {} : { title: submitted.title }),
+        ...requestOf(submitted.draft),
       }),
-    onSuccess: () => {
-      notify.success(t('roles.saved', { name: title.trim() }));
+    onSuccess: (updated, submitted) => {
+      setBaseline(updated);
+      setTitle((current) =>
+        current === submitted.title ? roleTitle(t, updated) : current,
+      );
+      setDraft((current) =>
+        sameDraft(current, submitted.draft) ? draftOf(updated) : current,
+      );
+      queryClient.setQueryData<Role[]>(studioKeys.roles, (roles) =>
+        roles?.map((item) => (item.key === updated.key ? updated : item)),
+      );
+      notify.success(t('roles.saved', { name: roleTitle(t, updated) }));
       void queryClient.invalidateQueries({ queryKey: studioKeys.roles });
     },
     onError: roleError,
   });
+  if (previousRole !== role) {
+    setPreviousRole(role);
+    // A pending write may already be visible to GET. Its response coordinates the editable values instead.
+    if (!save.isPending) {
+      if (sameDraft(draft, saved)) setDraft(draftOf(role));
+      if (title === roleTitle(t, baseline)) setTitle(roleTitle(t, role));
+    }
+    setBaseline(role);
+  }
   const duplicate = useMutation({
     mutationFn: () =>
       api.createRole({
@@ -124,14 +146,14 @@ function RoleBody({
                     disabled={!dirty || save.isPending}
                     onClick={() => {
                       setDraft(saved);
-                      setTitle(roleTitle(t, role));
+                      setTitle(roleTitle(t, baseline));
                     }}
                   >
                     {t('roles.discard')}
                   </Button>
                   <Button
                     disabled={!dirty || !title.trim() || save.isPending}
-                    onClick={() => save.mutate()}
+                    onClick={() => save.mutate({ title, draft })}
                   >
                     {t('roles.save')}
                   </Button>
@@ -228,7 +250,7 @@ export default function RoleDetailPage(): ReactElement {
   else
     body = (
       <RoleBody
-        key={`${role.key}:${JSON.stringify(requestOf(draftOf(role)))}`}
+        key={role.key}
         catalog={catalog.data}
         role={role}
         canDefine={canUseSetting(viewer, 'pm.members', 'define-roles')}
