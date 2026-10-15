@@ -1,18 +1,26 @@
-/** Real application consent decisions, using isolated demo people and runner protocol clients. */
+/** Consent decisions own their server: concurrent tests may change the shared manager's model choices. */
+import type { Browser, Page } from '@playwright/test';
 import {
   Api,
   apiAs,
   expect,
-  open,
   signIn,
   test,
   unique,
 } from './support/fixtures.ts';
+import type { ServerState } from './support/server.ts';
 import { FakeRunner, type Issue } from './support/runner.ts';
 import type { IssueProgress } from '../shared/project-manager.ts';
+import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import type { RunDetail } from '@nocobase/app-plugin-agents/shared/runs';
 
-test.use({ user: 'admin', locale: 'en-US', trace: 'off' });
+test.use({
+  user: 'admin',
+  locale: 'en-US',
+  trace: 'off',
+  isolatedStudio: true,
+});
+test.setTimeout(240_000);
 
 test.beforeEach(async ({ api, context }) => {
   // Keep the owner's preferences and personal runner identity private to each case.
@@ -28,13 +36,13 @@ test.beforeEach(async ({ api, context }) => {
   await signIn(context, owner);
 });
 
-async function createRequester(browser: import('@playwright/test').Browser) {
+async function createRequester(browser: Browser, studio: ServerState) {
   // Preferences persist on the account; never change the demo person used by parallel sign-in tests.
   const credentials = {
     email: `consent-requester-${unique()}@example.com`,
     password: 'consent-e2e-password',
   };
-  const admin = await apiAs(browser, 'admin');
+  const admin = await apiAs(browser, 'admin', studio);
   try {
     await admin.api.post('users', {
       ...credentials,
@@ -51,14 +59,22 @@ test('comment work shares the decision card and runs only on an authorized ident
   page,
   api,
   browser,
+  studio,
 }) => {
-  test.setTimeout(240_000);
+  const open = async (target: Page, route: string) => {
+    await target.goto(`${studio.baseURL}${route}`);
+    await target.waitForLoadState('networkidle');
+  };
   const requesterContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     locale: 'en-US',
   });
-  await signIn(requesterContext, await createRequester(browser));
-  const requester = new Api(requesterContext.request);
+  await signIn(
+    requesterContext,
+    await createRequester(browser, studio),
+    studio,
+  );
+  const requester = new Api(requesterContext.request, studio);
   const requesterPage = await requesterContext.newPage();
   await requester.patch('users/me/preferences', { locale: 'en-US' });
   await api.patch('users/me/preferences', { locale: 'en-US' });
@@ -169,6 +185,29 @@ test('comment work shares the decision card and runs only on an authorized ident
       card.getByRole('button', { name: 'Confirm', exact: true }),
     ).toBeVisible();
     await shot('owner-consent-original');
+    for (const statusKey of ['blocked', 'in_review']) {
+      const needsYou =
+        'Confirm the recovery decision. Review the personal runner request separately.';
+      await api.patch(`projects/issues/${personalIssue.id}`, {
+        statusKey,
+        needsYou,
+        next: 'Continue after the owner decisions.',
+      });
+      await expect(card.getByTestId('issue-needs-you')).toContainText(needsYou);
+      await expect(
+        card.getByRole('button', { name: 'Confirm', exact: true }),
+      ).toBeVisible();
+      await expect(
+        card.getByRole('button', { name: 'Reject', exact: true }),
+      ).toBeVisible();
+      await expect(card).not.toContainText(original);
+      await expect(page.getByTestId('issue-feed')).toContainText(original);
+    }
+    await api.patch(`projects/issues/${personalIssue.id}`, {
+      statusKey: 'in_progress',
+    });
+    await expect(card.getByText(original)).toBeVisible();
+
     await open(requesterPage, `/issues/${personalIssue.identifier}`);
     await expect(
       requesterPage.getByText(
@@ -212,6 +251,16 @@ test('comment work shares the decision card and runs only on an authorized ident
     await laptop.complete(
       personalRun.runId,
       'The owner confirmed this isolated comment chain.',
+    );
+
+    // Returning to In progress legitimately queues the owner's main run; settle it before checking denied comment work.
+    const resumed = await laptop.start(personalIssue.identifier);
+    expect(
+      (await api.get<RunDetail>(`agents/runs/${resumed.runId}`)).actorUserId,
+    ).toBe(owner.userId);
+    await laptop.complete(
+      resumed.runId,
+      'The owner resumed work after the structured decisions.',
     );
 
     const rejectedIssue = await make(
@@ -305,14 +354,22 @@ test('owner delegation needs no extra consent and Run as me preserves both comme
   page,
   api,
   browser,
+  studio,
 }) => {
-  test.setTimeout(240_000);
+  const open = async (target: Page, route: string) => {
+    await target.goto(`${studio.baseURL}${route}`);
+    await target.waitForLoadState('networkidle');
+  };
   const requesterContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     locale: 'en-US',
   });
-  await signIn(requesterContext, await createRequester(browser));
-  const requester = new Api(requesterContext.request);
+  await signIn(
+    requesterContext,
+    await createRequester(browser, studio),
+    studio,
+  );
+  const requester = new Api(requesterContext.request, studio);
   const requesterPage = await requesterContext.newPage();
   await requester.patch('users/me/preferences', { locale: 'en-US' });
   await api.patch('users/me/preferences', { locale: 'en-US' });
@@ -375,7 +432,7 @@ test('owner delegation needs no extra consent and Run as me preserves both comme
       { content: 'Please delegate my isolated delivery to the worker.' },
     );
     const managerTurn = await ownerManager.start(ownIssue.identifier);
-    await api.post(
+    const delegation = await api.post<{ comment: { id: string } }>(
       `projects/issues/${ownIssue.id}/comments`,
       {
         content: `[@Worker](mention://agent/${worker.id}) implement the owner’s next step without another confirmation.`,
@@ -402,6 +459,35 @@ test('owner delegation needs no extra consent and Run as me preserves both comme
     ).toHaveCount(0);
     await shot('owner-delegation-no-consent');
     await ownerWorker.complete(workerTurn.runId, 'Done.');
+    // Terminal wakeups belong to this delegation and must be consumed before testing another issue's consent.
+    const continuation = await ownerManager.start(ownIssue.identifier);
+    const resumed = await api.get<RunDetail>(
+      `agents/runs/${continuation.runId}`,
+    );
+    expect(resumed.subject).toEqual({ kind: 'issue', id: ownIssue.id });
+    expect(resumed.agentId).toBe('studio-project-manager');
+    expect(resumed.actorUserId).toBe(owner.userId);
+    expect(resumed.inputs).toHaveLength(1);
+    expect(resumed.inputs[0]).toMatchObject({
+      type: 'signal',
+      payload: {
+        trigger: 'stepEnded',
+        runId: workerTurn.runId,
+        status: 'completed',
+      },
+    });
+    const ownThreads = await api.get<IssueDetail['threads']>(
+      `projects/issues/${ownIssue.id}/comments`,
+    );
+    const reports = ownThreads
+      .flatMap((thread) => [thread.root, ...thread.replies])
+      .filter((comment) => comment.authorId === worker.id);
+    expect(reports).toHaveLength(1);
+    expect(reports[0]).toMatchObject({
+      parentId: delegation.comment.id,
+      rootId: source.comment.id,
+    });
+    await ownerManager.complete(continuation.runId, 'Done.');
 
     const authorManager = new FakeRunner(
       requester,

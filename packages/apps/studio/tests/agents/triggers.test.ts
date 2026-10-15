@@ -30,6 +30,9 @@ async function update(
   const current = await h.projects.issueQueries.detail(alice(), issue.id);
   return h.projects.issues.update(alice(), issue.id, {
     revision: current.revision,
+    ...(patch.statusKey === 'blocked' || patch.statusKey === 'in_review'
+      ? { needsYou: 'Choose how to proceed.' }
+      : {}),
     ...patch,
   });
 }
@@ -362,7 +365,10 @@ describe("a person's move of an open issue", () => {
       `/projects/issues/${issue.identifier}`,
       {
         runToken: payload.cli.credential.content.token as string,
-        body: { statusKey: 'blocked' },
+        body: {
+          statusKey: 'blocked',
+          needsYou: 'Which database should the migration target?',
+        },
       },
     );
     expect(moved.status).toBe(200);

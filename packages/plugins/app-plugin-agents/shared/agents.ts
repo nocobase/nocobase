@@ -101,8 +101,6 @@ export interface Agent {
   readonly actions: readonly string[];
   /** In conversations: whether it asks before every change or only before larger ones. */
   readonly confirmChanges: ConfirmChanges;
-  /** The skills attached to the agent, in the skill library. */
-  readonly skillIds: readonly string[];
   readonly maxConcurrentRuns: number;
   readonly maxAttempts: number;
   /** Overrides of the default tool policy (`DEFAULT_TOOL_POLICY`). */

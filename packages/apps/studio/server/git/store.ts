@@ -320,10 +320,12 @@ export async function reposToPoll(
 // --- Pull requests -------------------------------------------------------------------------------------------------
 
 export interface SignalState {
-  /** `<kind>@<headSha>` of the signal last reported. */
+  /** Kind, head and exact conclusion identity. */
   readonly key: string;
-  /** How many heads in a row it was reported for. */
+  /** Consecutive failure conclusions; per-issue delivery budgets live in `counts`. */
   readonly count: number;
+  readonly delivered?: Readonly<Record<string, string>>;
+  readonly counts?: Readonly<Record<string, number>>;
 }
 
 export type Signals = Readonly<
