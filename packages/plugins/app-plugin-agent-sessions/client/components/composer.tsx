@@ -64,6 +64,8 @@ export interface ComposerProps {
   /** The keys it takes, under the box. */
   readonly hints?: boolean;
   readonly autoFocus?: boolean;
+  /** A deliberate draft edit, including adding an image before its asynchronous read. */
+  readonly onEdit?: () => void;
   readonly onSend: (
     content: PromptContent[],
     interrupt: boolean,
@@ -109,6 +111,7 @@ export function Composer({
   hints,
   autoFocus,
   onSend,
+  onEdit,
 }: ComposerProps): ReactElement {
   const { t } = useTranslation();
   const [text, setText] = useSessionMemory(draftKey && `text:${draftKey}`, '');
@@ -176,6 +179,7 @@ export function Composer({
   const empty = !text.trim() && images.length === 0;
 
   const type = (next: string, at: number): void => {
+    onEdit?.();
     setText(next);
     setCaret(at);
     setHighlight(0);
@@ -245,21 +249,20 @@ export function Composer({
   };
 
   const addFiles = async (list: Iterable<File>): Promise<void> => {
-    const read = await Promise.all(
-      [...list]
-        .filter(
-          (file) =>
-            file.type.startsWith('image/') && file.size <= MAX_IMAGE_BYTES,
-        )
-        .map(async (file): Promise<Pending> => ({
-          id: crypto.randomUUID(),
-          type: 'image',
-          mimeType: file.type,
-          data: await base64(file),
-        })),
+    const files = [...list].filter(
+      (file) => file.type.startsWith('image/') && file.size <= MAX_IMAGE_BYTES,
     );
-    if (read.length > 0)
-      setImages((current) => [...current, ...read].slice(0, 10));
+    if (files.length === 0) return;
+    onEdit?.();
+    const read = await Promise.all(
+      files.map(async (file): Promise<Pending> => ({
+        id: crypto.randomUUID(),
+        type: 'image',
+        mimeType: file.type,
+        data: await base64(file),
+      })),
+    );
+    setImages((current) => [...current, ...read].slice(0, 10));
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
@@ -376,11 +379,12 @@ export function Composer({
                 <button
                   type='button'
                   aria-label={t('composer.removeImage')}
-                  onClick={() =>
+                  onClick={() => {
+                    onEdit?.();
                     setImages((current) =>
                       current.filter((other) => other.id !== image.id),
-                    )
-                  }
+                    );
+                  }}
                   className='bg-card text-muted-foreground hover:text-foreground absolute -top-1.5 -right-1.5 rounded-full border p-0.5'
                 >
                   <XIcon className='size-3.5' />
@@ -398,6 +402,7 @@ export function Composer({
           placeholder={placeholder}
           aria-label={placeholder}
           onChange={(event) => {
+            onEdit?.();
             setText(event.target.value);
             setCaret(event.target.selectionStart);
             setHighlight(0);

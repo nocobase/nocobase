@@ -35,10 +35,11 @@ function Probe(): ReactElement {
   const [agentId, setAgentId] = useState('codex');
   const [cwd, setCwd] = useState('/work');
   const [online, setOnline] = useState(true);
+  const [deferred, setDeferred] = useState(false);
   const [sent, setSent] = useState('');
   const discovery = useChoiceDiscovery(
     JSON.stringify([computerId, agentId, cwd]),
-    { computerId, agentId, cwd, enabled: online },
+    { computerId, agentId, cwd, enabled: online, deferred },
   );
   return (
     <>
@@ -54,6 +55,7 @@ function Probe(): ReactElement {
         Folder
       </button>
       <button onClick={() => setOnline(!online)}>Connection</button>
+      <button onClick={() => setDeferred(!deferred)}>Defer</button>
       <button onClick={discovery.retry}>Retry</button>
       <button onClick={discovery.reset}>Defaults</button>
       <button
@@ -149,6 +151,27 @@ async function setup() {
 }
 
 describe('choice discovery', () => {
+  it('defers new work without aborting a shared request or expiring its valid result', async () => {
+    const { requests, answer, signals } = await setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Defer' }));
+    expect(signals[0]?.aborted).toBe(false);
+    expect(requests).toHaveLength(1);
+    await answer(0, { data: choice('First') });
+    await screen.findByRole('button', { name: 'First' });
+    expect(
+      screen.getByRole('button', { name: 'Send', exact: true }),
+    ).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Defer' }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Send', exact: true }),
+      ).not.toBeDisabled(),
+    );
+    expect(requests).toHaveLength(1);
+    expect(signals[0]?.aborted).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Send', exact: true }));
+    await screen.findByText('Sent');
+  });
   it('can recover removed settings with fresh defaults rather than reuse the older default cache', async () => {
     const { requests, answer } = await setup();
     await answer(0, { data: choice('First') });

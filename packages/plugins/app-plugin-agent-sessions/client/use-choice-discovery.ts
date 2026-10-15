@@ -44,6 +44,8 @@ export function useChoiceDiscovery(
     readonly agentId: string;
     readonly cwd: string;
     readonly enabled: boolean;
+    /** Wait for new-session intent without invalidating cache or cancelling shared work. */
+    readonly deferred?: boolean;
   },
 ): ChoiceDiscovery {
   const api = useApiClient();
@@ -62,10 +64,10 @@ export function useChoiceDiscovery(
     key: string;
     result: DiscoveredChoices;
   }>();
-  const { computerId, agentId, cwd, enabled } = target;
+  const { computerId, agentId, cwd, enabled, deferred = false } = target;
   const query = useQuery({
     queryKey: [...discoveryKey, key, settings],
-    enabled: enabled && connected,
+    enabled: enabled && connected && !deferred,
     staleTime: DISCOVERY_CACHE_MS,
     retry: false,
     refetchOnWindowFocus: true,
@@ -142,6 +144,7 @@ export function useChoiceDiscovery(
   }, [client, enabled, key, settings, query.dataUpdatedAt, query.isError]);
 
   const fresh =
+    !deferred &&
     enabled &&
     connected &&
     !query.isFetching &&
@@ -150,7 +153,8 @@ export function useChoiceDiscovery(
   const displayed =
     enabled && previous?.key === key ? previous.result : undefined;
   return {
-    loading: enabled && connected && (query.isPending || query.isFetching),
+    loading:
+      enabled && connected && (deferred || query.isPending || query.isFetching),
     result: fresh ? query.data : undefined,
     displayed,
     settings,
@@ -169,6 +173,7 @@ export function useChoiceDiscovery(
         settings,
       ]);
       return Boolean(
+        !deferred &&
         enabled &&
         realtime.connected &&
         // Cache writes precede React Query's batched render notifications.

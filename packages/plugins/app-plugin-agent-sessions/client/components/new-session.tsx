@@ -72,7 +72,14 @@ interface Choice {
   readonly projectId?: string | undefined;
 }
 
-export function NewSession(): ReactElement {
+export function NewSession({
+  onStart,
+  deferDiscovery = false,
+}: {
+  readonly onStart?: () => void;
+  /** Ordinary entry may still open history; do not initialize an unused agent. */
+  readonly deferDiscovery?: boolean;
+}): ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const toaster = useToaster();
@@ -137,6 +144,7 @@ export function NewSession(): ReactElement {
       agentId: agent?.id ?? '',
       cwd,
       enabled: Boolean(computer?.online && agent && cwd),
+      deferred: deferDiscovery,
     },
   );
   const offered = discovery.displayed?.choices;
@@ -148,9 +156,37 @@ export function NewSession(): ReactElement {
   );
   const ready = Boolean(computer?.online && agent && cwd && discovery.result);
 
+  const begin = (): void => {
+    if (sendingRef.current || creating) return;
+
+    // Keep the current folder when late history offers a different recent folder.
+    if (
+      computer &&
+      agent &&
+      cwd &&
+      (choice.computerId !== computer.id ||
+        choice.agentId !== agent.id ||
+        choice.cwd !== cwd)
+    )
+      setChoice({
+        ...choice,
+        computerId: computer.id,
+        agentId: agent.id,
+        cwd,
+      });
+    onStart?.();
+  };
+
   const pick = (next: Choice): void => {
     if (sendingRef.current || creating) return;
-    const merged = { ...choice, ...next };
+    onStart?.();
+    const merged = {
+      ...choice,
+      computerId: computer?.id,
+      agentId: agent?.id,
+      cwd,
+      ...next,
+    };
     setChoice(merged);
     try {
       localStorage.setItem(REMEMBERED, JSON.stringify(merged));
@@ -203,7 +239,13 @@ export function NewSession(): ReactElement {
   }
 
   return (
-    <div className='flex h-full min-h-0'>
+    <div
+      className='flex h-full min-h-0'
+      onFocusCapture={(event) => {
+        if (event.target.closest('button, [role="button"], [role="combobox"]'))
+          begin();
+      }}
+    >
       <div className='min-w-0 flex-1 overflow-y-auto'>
         <div className='mx-auto flex max-w-[720px] flex-col gap-4 px-4 pt-3 pb-10 sm:px-6 sm:pt-24'>
           <BackLink />
@@ -221,6 +263,7 @@ export function NewSession(): ReactElement {
           <Composer
             large
             draftKey='new-session'
+            onEdit={begin}
             autoFocus
             placeholder={t('newSession.placeholder')}
             sendDisabled={!ready}
@@ -328,7 +371,10 @@ export function NewSession(): ReactElement {
                   values={values}
                   disabled={creating || !computer?.online}
                   loading={discovery.loading}
-                  onChoose={discovery.choose}
+                  onChoose={(id, value) => {
+                    pick({});
+                    discovery.choose(id, value);
+                  }}
                 />
                 <span role='status' className='text-muted-foreground text-xs'>
                   {computer?.outdatedBridge && !computer.online
@@ -351,10 +397,24 @@ export function NewSession(): ReactElement {
                 </span>
                 {discovery.error && (
                   <>
-                    <Button variant='ghost' size='sm' onClick={discovery.retry}>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={() => {
+                        pick({});
+                        discovery.retry();
+                      }}
+                    >
                       {t('newSession.settingsRetry')}
                     </Button>
-                    <Button variant='ghost' size='sm' onClick={discovery.reset}>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={() => {
+                        pick({});
+                        discovery.reset();
+                      }}
+                    >
                       {t('newSession.settingsReset')}
                     </Button>
                   </>
@@ -362,6 +422,7 @@ export function NewSession(): ReactElement {
               </>
             }
             onSend={async (content, _interrupt, mentions) => {
+              onStart?.();
               if (
                 !computer ||
                 !agent ||
