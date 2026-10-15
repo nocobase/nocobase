@@ -308,6 +308,12 @@ export function createChatRoutes(
         {
           data: await (async () => {
             const request = context.req.valid('json');
+            const title =
+              request.title === undefined
+                ? undefined
+                : cleanTitle(request.title);
+            if (title && title.length > CONVERSATION_TITLE_MAX)
+              throw invalid('The conversation title is too long.');
             if (request.agentId && request.agentId !== 'online')
               throw invalid(
                 'Runner profiles cannot configure OnlineAgent. Select an OnlineAgent configuration.',
@@ -324,13 +330,7 @@ export function createChatRoutes(
                 ...request.config,
                 selectedModel: request.selectedModel,
                 source: request.source ?? 'panel',
-                title:
-                  request.title === undefined
-                    ? undefined
-                    : cleanTitle(request.title).text.slice(
-                        0,
-                        CONVERSATION_TITLE_MAX,
-                      ),
+                title: title?.text || undefined,
               },
             );
             return conversations.get(me(context), agent.sessionId);

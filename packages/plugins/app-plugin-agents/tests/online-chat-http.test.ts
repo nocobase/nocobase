@@ -147,6 +147,10 @@ async function fixture() {
 it('uses the original API for authenticated SDK tools, cached first receive, safe history and continued input', async () => {
   const f = await fixture();
   expect((await f.request('/conversations', 'POST', {}, '')).status).toBe(401);
+  expect(
+    (await f.request('/conversations', 'POST', { title: 'x'.repeat(201) }))
+      .status,
+  ).toBe(400);
   const created = await f.request('/conversations', 'POST', {
     config: { tool: ['business'] },
     title: 'Fixture chat',
