@@ -421,6 +421,24 @@ export async function liveChildren(
   return rows.map((row) => toIssue(row as IssueRecord));
 }
 
+/** Every live sub-issue in a stage that is not in one of `finishedKeys`, of any parent. */
+export async function unfinishedStagedChildren(
+  conn: DatabaseConnection,
+  finishedKeys: readonly string[],
+): Promise<Issue[]> {
+  const rows = await issues(conn).findMany({
+    filter: (f) =>
+      f.and([
+        f.string('parentIssueId').ne(null),
+        f.number('stage').ne(null),
+        f.date('deletedAt').empty(),
+        ...finishedKeys.map((key) => f.string('statusKey').ne(key)),
+      ]),
+    select: (select) => select.fields(...FIELDS),
+  });
+  return rows.map((row) => toIssue(row as IssueRecord));
+}
+
 /** How many live sub-issues each of `ids` has; issues without any are left out. */
 export async function childCounts(
   conn: DatabaseConnection,
