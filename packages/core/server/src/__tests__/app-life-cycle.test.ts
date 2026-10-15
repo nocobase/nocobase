@@ -8,10 +8,12 @@
  */
 
 import { vi } from 'vitest';
+import { Snowflake } from '@nocobase/snowflake-id';
 import Application, { ApplicationOptions } from '../application';
 import { createAppProxy } from '../helper';
 import Plugin from '../plugin';
 import { AddPresetError } from '../plugin-manager';
+import { WorkerIdAllocator } from '../worker-id-allocator';
 import { mockServer } from '@nocobase/test';
 
 describe('application life cycle', () => {
@@ -21,6 +23,39 @@ describe('application life cycle', () => {
     if (app) {
       await app.destroy();
     }
+    vi.restoreAllMocks();
+  });
+
+  describe('snowflake id generator', () => {
+    // `parse` only reads the layout constants, so a throwaway instance decodes ids from any generator.
+    const decode = (id: number | BigInt) => new Snowflake().parse(Number(id));
+
+    it('should keep the generator on the worker id the app currently holds', async () => {
+      let nextWorkerId = 20;
+      vi.spyOn(WorkerIdAllocator.prototype, 'getWorkerId').mockImplementation(async () => nextWorkerId++);
+
+      app = mockServer({ skipSupervisor: true });
+      await app.load();
+      const firstWorkerId = app.instanceId;
+
+      await app.reload();
+      const secondWorkerId = app.instanceId;
+      expect(secondWorkerId).not.toBe(firstWorkerId);
+
+      // Reload re-allocates the worker id, so ids minted afterwards must carry the new one. Keeping the old one makes
+      // this process write under a worker id it released, which another replica is then free to take.
+      expect(decode(app.snowflakeIdGenerator.generate()).workerId).toBe(secondWorkerId);
+    });
+
+    it('should honor an explicitly configured worker id of 0', async () => {
+      vi.spyOn(WorkerIdAllocator.prototype, 'getWorkerId').mockResolvedValue(7);
+
+      app = mockServer({ instanceId: 0, skipSupervisor: true });
+      await app.load();
+
+      expect(app.instanceId).toBe(0);
+      expect(decode(app.snowflakeIdGenerator.generate()).workerId).toBe(0);
+    });
   });
 
   describe('reInitEvents', () => {
