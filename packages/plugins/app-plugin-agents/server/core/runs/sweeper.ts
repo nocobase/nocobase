@@ -54,6 +54,7 @@ export interface Sweeper {
 }
 
 export interface SweeperDeps extends TransitionDeps {
+  readonly reconcileCommentQueue?: () => Promise<void>;
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -119,6 +120,7 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
 
   return {
     async sweep() {
+      await deps.reconcileCommentQueue?.();
       const now = clock.now();
       const counts = { requeued: 0, failed: 0, cancelled: 0 };
 

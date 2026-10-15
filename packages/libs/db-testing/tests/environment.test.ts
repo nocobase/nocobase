@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import {
   createTestDatabase,
   loadTestDatabaseProvisioner,
@@ -50,4 +53,34 @@ describe('testDatabaseCapabilities', () => {
       await testDatabase.destroy();
     }
   });
+});
+
+it('loads an external driver from the consuming project without a peer dependency', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'external-db-provisioner-'));
+  const packageDir = path.join(
+    root,
+    'node_modules/@nocobase/db-externalfixture',
+  );
+  mkdirSync(packageDir, { recursive: true });
+  writeFileSync(
+    path.join(packageDir, 'package.json'),
+    JSON.stringify({
+      name: '@nocobase/db-externalfixture',
+      type: 'module',
+      exports: { './testing': { import: './testing.js' } },
+    }),
+  );
+  writeFileSync(
+    path.join(packageDir, 'testing.js'),
+    "export const testDatabaseProvisioner = { dialect: 'externalfixture' };\n",
+  );
+  const cwd = vi.spyOn(process, 'cwd').mockReturnValue(root);
+  try {
+    await expect(
+      loadTestDatabaseProvisioner('externalfixture'),
+    ).resolves.toMatchObject({ dialect: 'externalfixture' });
+  } finally {
+    cwd.mockRestore();
+    rmSync(root, { recursive: true, force: true });
+  }
 });

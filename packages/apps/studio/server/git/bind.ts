@@ -59,7 +59,7 @@ export interface StudioGitBindDeps {
   readonly now?: () => Date;
   readonly onError?: (message: string, error: unknown) => void;
   /** Something about a pull request was stored (`GitFlowDeps.onChanged`). */
-  readonly onChanged?: () => void;
+  readonly onChanged?: (pullRequestId: string) => void;
 }
 
 export function bindStudioGit(deps: StudioGitBindDeps): {
@@ -110,6 +110,7 @@ export function bindStudioGit(deps: StudioGitBindDeps): {
     ...(deps.webhookUrl ? { webhookUrl: deps.webhookUrl } : {}),
     ...(deps.pollSeconds ? { pollSeconds: deps.pollSeconds } : {}),
     ...(deps.now ? { now: deps.now } : {}),
+    ...(deps.onChanged ? { onLabelChanged: deps.onChanged } : {}),
   });
   if (deps.noticeRules)
     releases.push(deps.noticeRules.add(prMergedRule(deps.projects)));

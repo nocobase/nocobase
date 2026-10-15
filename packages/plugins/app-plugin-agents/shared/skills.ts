@@ -6,12 +6,18 @@
  * older one can be compared and restored (as a new version). A file's bytes are stored once per content, by their
  * SHA-256, whichever versions and skills hold them; a version lists its files by that hash.
  *
- * Skills are attached to agents, and as defaults to a working directory (`workdir`) or to a scope the application
- * registers: a run gets the agent's skills and the defaults of its subject's scopes and of the directories it works in.
+ * Skills are team defaults (`global/default`), defaults of application scopes, or working directories (`workdir`).
+ * A run merges them in that order; a later target overrides a shared slug. Legacy agent attachments are ignored.
  */
 
-/** `agent`, `workdir` or a scope key the application registered. */
+/** `global`, `workdir` or a scope key the application registered. */
 export type SkillScope = string;
+
+/** The team defaults, always the lowest priority skill target. */
+export const GLOBAL_SKILL_TARGET = {
+  scope: 'global',
+  scopeId: 'default',
+} as const;
 
 export interface Skill {
   readonly id: string;
@@ -34,7 +40,7 @@ export interface Skill {
   readonly scriptCount: number;
   /** Their paths. */
   readonly scripts: readonly string[];
-  readonly agentCount: number;
+
   readonly createdById: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;

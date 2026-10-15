@@ -19,7 +19,7 @@ Run the least that covers the change, one suite at a time, and let CI cover the 
 | `packages/libs/db-<dialect>/` — adapter, SQL, catalog inspection, driver options                       | that dialect only                                                    |
 | `packages/libs/db-testkit/tests/integration/` — a shared contract every dialect loads                  | `sqlite`, then one Docker-backed dialect such as `postgres`          |
 | `packages/libs/db-testkit/src/` — runner, loader, adapter contract, profile                            | `sqlite`, then one Docker-backed dialect: the harness itself changed |
-| `packages/libs/db/src/` under `query/`, `schema/`, `repository/`, `metadata/`, `migration/`, `json.ts` | `sqlite`, then `postgres`, `mysql`, `kingbase`, one after another    |
+| `packages/libs/db/src/` under `query/`, `schema/`, `repository/`, `metadata/`, `migration/`, `json.ts` | `sqlite`, then `postgres`, `mysql`, one after another                |
 | `packages/libs/db/src/` elsewhere — `naming/`, types, tokens                                           | unit tests only; no integration suite                                |
 | A dialect-specific defect reported against one database                                                | that dialect, with `--test-file` narrowed to the failing contract    |
 
@@ -59,6 +59,8 @@ Arguments after the standalone `--` reach every filtered package's `test` script
 
 ## Commands that silently run less than they appear to
 
-- `pnpm --filter @nocobase/db test:integration` does nothing useful: `@nocobase/db` has no integration script. It used to forward to each dialect and read as a full run while only running SQLite. Always name the dialect package, and for full verification run the eight suites one after another.
+- `pnpm --filter @nocobase/db test:integration` does nothing useful: `@nocobase/db` has no integration script. It used to forward to each dialect and read as a full run while only running SQLite. Always name the dialect package, and for full verification run the five OSS suites one after another.
 - Dropping the standalone `--` leaves `--test-file` unconsumed by the runner and silently runs the whole shared suite.
 - `pnpm -r test` excludes `**/tests/integration/**` in every `db-*` package, so it reports success having executed no integration test at all.
+
+Commercial dialect suites (KingbaseES, Dameng and OceanBase) live in `nocobase/nocobase3-pro`. Run them there with the same package-scoped commands; they load the shared contracts from its pinned `vendor/nocobase3` checkout.

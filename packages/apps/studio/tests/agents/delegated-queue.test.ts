@@ -1,3 +1,4 @@
+import { createAgentWork } from '../../server/agents/work.js';
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
@@ -8,11 +9,26 @@ import {
   managerDelegation,
 } from '../../server/agents/delegated-queue.js';
 import {
-  drainRunReports,
+  drainRunReports as drainReports,
   stageRunReport,
 } from '../../server/agents/run-report.js';
 import { issueProgress } from '../../server/agents/manager/progress.js';
 import { commentGuardId } from '../../server/agents/comment-guard.js';
+
+function drainRunReports(
+  agents: BridgeHarness['agents'],
+  projects: BridgeHarness['projects'],
+  now = new Date(),
+  authorize?: Parameters<typeof drainReports>[3],
+) {
+  return drainReports(
+    agents,
+    projects,
+    now,
+    authorize,
+    createAgentWork({ agents, projects: () => projects }),
+  );
+}
 
 let h: BridgeHarness;
 beforeEach(async () => {
@@ -86,9 +102,18 @@ describe('manager delegated queue timeout', () => {
     expect(
       await rule(h.database.connection(), run, new Date(entered + 600_000)),
     ).toMatchObject({ reason: 'delegatedQueueTimeout' });
-    await h.projects.comments.create(manager(), issue.id, {
-      content: `[@Worker](mention://agent/${worker}) additional context`,
-    });
+    await h.projects.comments.create(
+      {
+        ...manager(),
+        actor: {
+          type: 'agent',
+          id: PROJECT_MANAGER_ID,
+          trace: { runId: run.id },
+        },
+      },
+      issue.id,
+      { content: `[@Worker](mention://agent/${worker}) additional context` },
+    );
     const allInputs = (await h.agents.runs.detail(run.id)).inputs;
     const later = allInputs.at(-1)!;
     await h.database
@@ -542,7 +567,7 @@ describe('manager delegated queue timeout', () => {
     await h.projects.tx.run(async (tx) => stageRunReport(tx.conn, ended));
     await drainRunReports(h.agents, h.projects);
     expect(await pending(run.id)).toMatchObject({
-      status: 'done',
+      status: 'pending',
       lastError: null,
     });
     expect(
@@ -559,7 +584,7 @@ describe('manager delegated queue timeout', () => {
       )
       .findOne({ filter: { id: commentGuardId(issue.id) } });
     expect(held?.pendingToken).toBeTruthy();
-    expect(JSON.stringify(held?.ruleConfig)).toContain('Queued too long');
+    expect(JSON.stringify(held?.ruleConfig)).toContain('stepEnded');
     expect(
       (
         await issueProgress(
@@ -583,10 +608,14 @@ describe('manager delegated queue timeout', () => {
       )
     )[0]!;
     expect(
-      (await h.agents.runs.detail(managerRun.id)).inputs.some((input) =>
-        input.text.includes('Queued too long'),
+      (await h.agents.runs.detail(managerRun.id)).inputs.some(
+        (input) =>
+          (input.payload as { trigger?: string; runId?: string }).trigger ===
+            'stepEnded' &&
+          (input.payload as { runId?: string }).runId === run.id,
       ),
     ).toBe(true);
+    expect(await pending(run.id)).toMatchObject({ status: 'done' });
   });
   it('leaves already claimed work alone and rejects late runner output after a withdrawal', async () => {
     const { run } = await dispatch();

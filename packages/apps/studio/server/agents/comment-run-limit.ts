@@ -94,7 +94,7 @@ export async function pendingCommentRun(
   readonly maxRuns: number;
   readonly windowHours: number;
 } | null> {
-  const issue = await projects.issueQueries.detail(viewer, issueId);
+  const issue = await projects.issueQueries.visible(viewer, issueId);
   if (!mayContinue(viewer) || viewer.userId !== issue.ownerUserId) return null;
   if (await ownerHandoffWaiting(projects.tx.read(), issue)) return null;
   const guard = await commentGuards(projects.tx.read()).findOne({

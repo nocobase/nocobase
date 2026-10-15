@@ -43,6 +43,23 @@ export const ProjectManagerViewSchema: z.ZodType<ProjectManagerView> = z
 
 export const IssueProgressSchema: z.ZodType<IssueProgress> = z
   .object({
+    personalRunnerRequests: z
+      .array(
+        z.object({
+          id: z.string(),
+          status: z.enum(['pending', 'rejected']),
+          requestedBy: z.object({ id: z.string(), name: z.string() }),
+          commentId: z.string(),
+          commentText: z.string(),
+          canDecide: z.boolean(),
+          canRunAsMe: z.boolean(),
+        }),
+      )
+      .optional()
+      .meta({
+        description:
+          'Personal runner consent requests visible to the issue owner or their original requester.',
+      }),
     waiting: z
       .object({
         reason: z.enum([
@@ -161,16 +178,15 @@ export const IssueProgressSchema: z.ZodType<IssueProgress> = z
     pullRequest: z
       .object({ number: z.number().int(), url: z.string().nullable() })
       .nullable(),
-    question: z.string().nullable().meta({
-      description:
-        'The Needs you line from the manager comment at the transition to Blocked.',
+    needsYou: z.string().nullable().meta({
+      description: 'The structured decision or input required from the owner.',
     }),
-    blockedComment: z
-      .object({ id: z.string(), content: z.string() })
-      .nullable()
-      .optional(),
+    explanationCommentId: z.string().nullable().meta({
+      description:
+        'The latest undeleted project manager comment, independent of the status transition.',
+    }),
     next: z.string().nullable().meta({
-      description: 'The project manager’s latest "Next" line.',
+      description: 'The structured next step.',
     }),
     handOver: z.boolean().meta({
       description:

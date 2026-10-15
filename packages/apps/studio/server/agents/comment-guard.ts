@@ -28,6 +28,10 @@ export const COMMENT_RUNS_NOTICE_KIND = 'agent.commentRuns';
  * whom it would have woken and why (`mention`, `reply`), and the limit it reached.
  */
 export interface HeldCommentWake {
+  readonly signal?: {
+    readonly trigger: string;
+    readonly payload: Record<string, unknown>;
+  };
   readonly pendingWakes?: readonly Omit<HeldCommentWake, 'pendingWakes'>[];
   readonly commentId: string;
   readonly parentId: string | null;

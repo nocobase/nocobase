@@ -410,6 +410,8 @@ const pages = {
     briefDescription: 'What the agent was told when this run was last claimed.',
     briefOf: 'Attempt {{attempt}}, claimed {{time}}',
     briefUnavailable: 'No full prompt is available for this run.',
+    processDataCleared:
+      'Run process data has been cleared under the retention policy.',
     briefFailed: 'Could not load the full prompt',
     workspaceReset: {
       button: 'Clean working directory',

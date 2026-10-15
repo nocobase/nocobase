@@ -1,9 +1,11 @@
 // `<bin> acp start` as a per-user service that starts at login and starts again when it fails: a launchd agent on
 // macOS, a systemd user unit on Linux, and on Windows a script in the Startup folder that runs it without a window. The
 // service runs `acp start --service`, which stops for good, exiting 0, when the application no longer accepts the
-// computer, rather than failing again and again. It gets the installing shell's PATH, the CLI's own variables, proxy and
-// CA variables and the `--pass-env` names with their values now, since a service reads no shell configuration; its
-// files are readable by their owner only. Each plan lists the file it writes and the commands it runs.
+// computer, rather than failing again and again. Refused for its protocol, it updates the CLI and exits non-zero, so
+// the service starts it again on the new version (or, when no update helped, tries again a few minutes later). It gets
+// the installing shell's PATH, the CLI's own variables, proxy and CA variables and the `--pass-env` names with their
+// values now, since a service reads no shell configuration; its files are readable by their owner only. Each plan
+// lists the file it writes and the commands it runs.
 import { execFile, spawn } from 'node:child_process';
 import { chmod, mkdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';

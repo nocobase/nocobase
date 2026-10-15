@@ -349,10 +349,11 @@ describe('installer.json', () => {
     );
   });
 
-  it('reads back what it wrote', async () => {
+  it.each([1, 2] as const)('reads state format %s', async (schemaVersion) => {
     const layout = layoutOf(root);
-    await writeState(layout, state);
-    expect(await readState(layout)).toEqual(state);
+    const versioned = { ...state, schemaVersion };
+    await writeState(layout, versioned);
+    expect(await readState(layout)).toEqual(versioned);
   });
 
   it('reports a root without installer.json as not installed', async () => {
@@ -366,7 +367,7 @@ describe('installer.json', () => {
     const layout = layoutOf(root);
     await writeFile(
       layout.stateFile,
-      JSON.stringify({ ...state, schemaVersion: 2 }),
+      JSON.stringify({ ...state, schemaVersion: 3 }),
     );
     await expect(readState(layout)).rejects.toMatchObject({
       code: 'STATE_UNSUPPORTED',

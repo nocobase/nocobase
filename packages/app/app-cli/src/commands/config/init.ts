@@ -68,6 +68,7 @@ export default class AppConfigInit extends AppCommand {
     try {
       outcome = await runConfigInit({
         rootDir: this.rootDir,
+        onNotice: (message) => this.warn(message),
         dialect: flags.dialect,
         // Not an appPath(): like APP_CONFIG_FILE, a relative --config names a path inside the application.
         configPath: flags.config,

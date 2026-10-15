@@ -128,3 +128,5 @@ server {
 ```
 
 `proxy_pass` appends no path, so the application's `/crm` prefix is preserved; `Upgrade` and `Connection` support WebSocket. When several applications share one domain, each uses one `location /crm/` forwarding to its own port. Run `nginx -t` to check the configuration before reloading.
+
+KingbaseES, Dameng and OceanBase drivers are NocoBase Pro commercial packages requiring the appropriate commercial license and authenticated access to the private package registry. Install the selected package in the application’s production dependencies, then configure its dialect and connection settings. Automatic loading and `config init --dialect` remain supported; explicit registration in `database.drivers` is optional and takes precedence.

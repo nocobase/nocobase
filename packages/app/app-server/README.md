@@ -16,6 +16,10 @@ Background work goes to the jobs service above by default; queues are for what i
 
 Plugins resolve `queueServiceToken`, register backend factories in `register()`, register handlers with `consumer(queue).consume()` in `boot()`, publish after setup, and await their unregister functions in `shutdown()` before releasing what the handlers use. Without `queue.default`, queues run on the built-in memory configuration, which warns outside `develop` and `development`. A `queue` section in the former `connections`/`worker`/`jobs` format is ignored with one warning. See the [queue package guide](../../libs/queue/README.md) for configuration keys, delivery, retries, cancellation and shutdown.
 
+## Realtime topics
+
+`realtimeServiceToken` from `@nocobase/app-server/realtime` is the application's WebSocket topic service; browsers connect at `/ws`, signed in or not, and subscribe through `realtimeClientToken` of `@nocobase/app-client`. A server defines each topic it publishes with `defineTopic(name, { audience })`. A `user` topic is published to one person with `publishFor(userId, payload)` and requires an authenticated connection. A `public` topic reaches every subscriber, anonymous connections included, unless it is defined with `authenticated: true`: then subscribing without a signed-in principal is refused with `AUTHENTICATION_REQUIRED`, as for a `user` topic, and publishing skips connections without one. Use `authenticated: true` for any public payload that names records, even only by id; a payload says what changed, never content, and the page reads the record through the API, which checks access.
+
 ## Standalone proxy
 
 `defineStandaloneServer()` accepts an optional `proxy: ({ application }) => ({ match, target })` factory, evaluated after application startup. `match(pathname)` chooses requests before the application's public base path adapter; `target()` returns the current upstream HTTP(S) origin or `null`. Both `create()` and `start()` configure this boundary. Applications without a proxy retain their normal routing.

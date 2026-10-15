@@ -5,6 +5,7 @@ import {
   apiAs,
   expect,
   open,
+  server,
   signIn,
   test as base,
   unique,
@@ -14,6 +15,11 @@ import {
 // Keep account preferences private, including when other files change the shared administrator's language.
 const test = base.extend<{ roleCleanup: string[] }>({
   context: async ({ context, browser }, use) => {
+    // Studio does not configure user deletion. Only the owned database can remove these accounts at teardown.
+    if (!server.owned)
+      throw new Error(
+        'Role navigation tests require the throwaway e2e database; unset NB_STUDIO_E2E_URL.',
+      );
     const admin = await apiAs(browser, 'admin');
     const suffix = unique();
     const credentials = {
@@ -36,7 +42,10 @@ const test = base.extend<{ roleCleanup: string[] }>({
       await use(context);
     } finally {
       try {
-        await admin.api.delete(`users/${user.id}?confirm=true`);
+        const disabled = await admin.api.post<{ disabledAt: string | null }>(
+          `users/${user.id}/disable`,
+        );
+        expect(disabled.disabledAt).toEqual(expect.any(String));
       } finally {
         await admin.close();
       }

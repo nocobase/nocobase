@@ -4,8 +4,11 @@ import type {
   AttachmentLocator,
   ImapFolderCursor,
   ImapSyncCursor,
+  ImapVerifyFolder,
+  ImapVerifyState,
   MessageLocator,
 } from './types.js';
+import { MAX_IMAP_PROVIDER_ID_LENGTH } from './constants.js';
 
 export const MAX_IMAP_UID = 0xffff_ffff;
 
@@ -17,7 +20,7 @@ export function folderCursor(
     uidNext === undefined ||
     !Number.isSafeInteger(uidNext) ||
     uidNext < 1 ||
-    uidNext > MAX_IMAP_UID
+    uidNext > MAX_IMAP_UID + 1
   ) {
     throw Object.assign(
       new Error('The IMAP server returned an invalid UIDNEXT.'),
@@ -53,7 +56,11 @@ export function parseSyncCursor(
   const parsed: unknown = JSON.parse(value);
   if (!parsed || typeof parsed !== 'object')
     throw new Error('Invalid IMAP sync cursor.');
-  const record = parsed as { version?: unknown; folders?: unknown };
+  const record = parsed as {
+    version?: unknown;
+    folders?: unknown;
+    verify?: unknown;
+  };
   if (
     record.version !== 1 ||
     !record.folders ||
@@ -68,7 +75,49 @@ export function parseSyncCursor(
     }
     folders[path] = value;
   }
-  return { version: 1, folders };
+  if (record.verify === undefined) return { version: 1, folders };
+  if (!isVerifyState(record.verify))
+    throw new Error('Invalid IMAP sync cursor.');
+  return { version: 1, folders, verify: record.verify };
+}
+
+function isVerifyState(value: unknown): value is ImapVerifyState {
+  if (!value || typeof value !== 'object') return false;
+  const record = value as {
+    attempts?: unknown;
+    folders?: unknown;
+    excluded?: unknown;
+  };
+  if (
+    record.excluded !== undefined &&
+    (!Array.isArray(record.excluded) ||
+      !record.excluded.every((value) => typeof value === 'string'))
+  )
+    return false;
+  if (!Number.isSafeInteger(record.attempts) || (record.attempts as number) < 0)
+    return false;
+  if (record.folders === undefined) return true;
+  if (!record.folders || typeof record.folders !== 'object') return false;
+  return Object.values(record.folders).every(
+    (folder: unknown) =>
+      isImapFolderCursor(folder) &&
+      typeof (folder as Partial<ImapVerifyFolder>).uids === 'string' &&
+      /^[\d:,]*$/.test((folder as ImapVerifyFolder).uids),
+  );
+}
+
+/** Compress a UID set into sorted IMAP ranges; equal sets give equal strings. */
+export function compressUids(uids: Iterable<number>): string {
+  const sorted = [...new Set(uids)].sort((left, right) => left - right);
+  const ranges: string[] = [];
+  for (let index = 0; index < sorted.length;) {
+    let end = index;
+    while (end + 1 < sorted.length && sorted[end + 1] === sorted[end] + 1)
+      end += 1;
+    ranges.push(rangeFor(sorted[index], sorted[end]));
+    index = end + 1;
+  }
+  return ranges.join(',');
 }
 
 function isImapFolderCursor(value: unknown): value is ImapFolderCursor {
@@ -78,7 +127,7 @@ function isImapFolderCursor(value: unknown): value is ImapFolderCursor {
     isUidValidity(record.uidValidity) &&
     Number.isSafeInteger(record.uidNext) &&
     (record.uidNext as number) >= 1 &&
-    (record.uidNext as number) <= MAX_IMAP_UID
+    (record.uidNext as number) <= MAX_IMAP_UID + 1
   );
 }
 
@@ -151,6 +200,24 @@ export function rangeFor(start: number, end: number): string {
 
 export function encodeMessageLocator(locator: MessageLocator): string {
   return `imap:${Buffer.from(JSON.stringify(locator)).toString('base64url')}`;
+}
+
+/**
+ * Location identity of one copy. A locator too long for providerMessageId
+ * names the persisted location row instead; reads resolve it to its tuple.
+ */
+export function encodeCopyLocator(
+  locator: MessageLocator,
+  locationId: string,
+): string {
+  const value = encodeMessageLocator({
+    folder: locator.folder,
+    uidValidity: locator.uidValidity,
+    uid: locator.uid,
+  });
+  return value.length <= MAX_IMAP_PROVIDER_ID_LENGTH
+    ? value
+    : `imap-loc:${locationId}`;
 }
 
 export function encodeAttachmentLocator(locator: AttachmentLocator): string {
