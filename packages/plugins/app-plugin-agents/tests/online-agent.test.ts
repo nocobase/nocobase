@@ -15,6 +15,7 @@ import { createSessionManager } from '../server/online-agent/sessions.js';
 import {
   OnlineAgentConfigurer,
   type Context,
+  type ToolContext,
 } from '../server/online-agent/config.js';
 import { createChatAttachments } from '../server/core/conversations/attachments.js';
 import { MemoryOnlineAgentStreamManager } from '../server/online-agent/streams.js';
@@ -308,7 +309,7 @@ describe('OnlineAgent service slice', () => {
               type: 'tool-result',
               toolCallId: 'call',
               toolName: 'wait',
-              output: { type: 'json', value: 'stopped' },
+              output: { type: 'text', value: 'stopped' },
             },
           ],
         },
@@ -335,7 +336,7 @@ describe('OnlineAgent service slice', () => {
       );
     expect(
       (await f.sessions.load('alice', agent.sessionId)).call,
-    ).toMatchObject({ outcome: 'cancelled', requiresEffectReview: true });
+    ).toMatchObject({ outcome: 'cancelled' });
     await expect(
       f.service.realtime(context('bob'), { sessionId: agent.sessionId }),
     ).rejects.toThrow('not found');
@@ -894,5 +895,136 @@ it.each(['success', 'error', 'stream'] as const)(
     expect(execute).toHaveBeenCalledTimes(1);
     expect(model.doStreamCalls).toHaveLength(1);
     expect(await agent.receive()).toBeNull();
+  },
+);
+
+it.each([false, true])(
+  'persists converted business outputs with cancellation=%s and permits the next round',
+  async (cancel) => {
+    const entered = deferred();
+    const release = deferred();
+    let signal!: AbortSignal;
+    let step = 0;
+    const model = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: streamed(
+          step++ === 0
+            ? [
+                {
+                  type: 'tool-call',
+                  toolCallId: 'dated',
+                  toolName: 'dated',
+                  input: '{"key":"private-input"}',
+                },
+                finish('tool-calls'),
+              ]
+            : text('Done'),
+        ),
+      }),
+    });
+    const f = await fixture(model);
+    const execute = vi.fn(
+      async (_input: { key: string }, options: { context: ToolContext }) => {
+        signal = options.context.signal;
+        entered.resolve();
+        await release.promise;
+        return { value: 'private-result', at: new Date(0) };
+      },
+    );
+    const toModelOutput = vi.fn(
+      async ({
+        toolCallId,
+        input,
+        output,
+      }: {
+        toolCallId: string;
+        input: { key: string };
+        output: { value: string; at: Date };
+      }) => ({
+        type: 'json' as const,
+        value: {
+          call: toolCallId,
+          key: input.key,
+          value: output.value,
+          at: output.at.toISOString(),
+        },
+      }),
+    );
+    f.service.configurer.registerTool('dated', {
+      version: '1',
+      definition: {
+        inputSchema: z.object({ key: z.string() }),
+        execute,
+        toModelOutput,
+      },
+    });
+    const agent = await f.service.realtime(context(), { tool: ['dated'] });
+    const save = vi
+      .spyOn(f.sessions, 'save')
+      .mockRejectedValueOnce(new Error('Save unavailable'));
+    await agent.send([{ role: 'user', content: 'Run' }]);
+    await entered.promise;
+    const stopping = cancel ? agent.abort() : undefined;
+    if (cancel) await vi.waitFor(() => expect(signal.aborted).toBe(true));
+    release.resolve();
+    if (stopping) await stopping;
+    else
+      await vi.waitFor(() =>
+        expect(
+          f.errors.some(
+            (error) =>
+              error instanceof Error && error.message === 'Save unavailable',
+          ),
+        ).toBe(true),
+      );
+    await agent.retryFinalization();
+    await settle(agent);
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(toModelOutput).toHaveBeenCalled();
+    if (cancel) expect(toModelOutput).toHaveBeenCalledTimes(1);
+    const rows = await h.database
+      .connection()
+      .repository('agConversationMessages')
+      .findMany({ filter: { conversationId: agent.sessionId } });
+    const messages = rows.flatMap((row) =>
+      row.content.original?.message
+        ? [decode(row.content.original.message) as ModelMessage]
+        : [],
+    );
+    const result = messages.find((message) => message.role === 'tool');
+    expect(result).toMatchObject({
+      role: 'tool',
+      content: [
+        {
+          type: 'tool-result',
+          output: {
+            type: 'json',
+            value: {
+              call: 'dated',
+              key: 'private-input',
+              value: 'private-result',
+              at: '1970-01-01T00:00:00.000Z',
+            },
+          },
+        },
+      ],
+    });
+    expect(
+      JSON.stringify(messages.map((message) => project(message))),
+    ).not.toContain('private');
+    if (cancel)
+      expect(await agent.history()).toEqual([{ role: 'user', content: 'Run' }]);
+    expect(await agent.status()).toBe('idle');
+    const conversions = toModelOutput.mock.calls.length;
+    await agent.send([{ role: 'user', content: 'Continue' }]);
+    await settle(agent);
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(toModelOutput).toHaveBeenCalledTimes(conversions);
+    expect(model.doStreamCalls).toHaveLength(cancel ? 2 : 3);
+    if (cancel)
+      expect(JSON.stringify(model.doStreamCalls[1].prompt)).not.toContain(
+        'private',
+      );
   },
 );

@@ -415,6 +415,7 @@ export class OnlineAgentService {
     }
     const toolEvidence = new Map<string, ModelMessage[]>();
     const toolCompletions = new Map<string, () => void>();
+    const convertToolEvidence = new Map<string, () => Promise<void>>();
     let writer: Writer | undefined;
     let response: ModelMessage[] = [];
     let partial = '';
@@ -465,19 +466,35 @@ export class OnlineAgentService {
         onToolExecutionEnd: ({ toolCall, toolOutput }) => {
           const { toolCallId, toolName } = toolCall;
           const evidence = toolEvidence.get(toolCallId)!;
-          evidence.push({
-            role: 'tool',
-            content: [
-              {
-                type: 'tool-result',
-                toolCallId,
-                toolName,
-                output:
-                  toolOutput.type === 'tool-error'
-                    ? { type: 'error-text', value: String(toolOutput.error) }
-                    : { type: 'json', value: toolOutput.output as Json },
-              },
-            ],
+          convertToolEvidence.set(toolCallId, async () => {
+            const converter = tools[toolName]?.toModelOutput;
+            const output =
+              toolOutput.type === 'tool-error'
+                ? {
+                    type: 'error-text' as const,
+                    value:
+                      toolOutput.error instanceof Error
+                        ? toolOutput.error.message
+                        : String(toolOutput.error),
+                  }
+                : converter
+                  ? await converter({
+                      toolCallId,
+                      input: toolCall.input,
+                      output: toolOutput.output,
+                    })
+                  : typeof toolOutput.output === 'string'
+                    ? { type: 'text' as const, value: toolOutput.output }
+                    : {
+                        type: 'json' as const,
+                        value: JSON.parse(
+                          JSON.stringify(toolOutput.output) ?? 'null',
+                        ) as Json,
+                      };
+            evidence[1] = {
+              role: 'tool',
+              content: [{ type: 'tool-result', toolCallId, toolName, output }],
+            };
           });
           toolCompletions.get(toolCallId)!();
         },
@@ -550,28 +567,37 @@ export class OnlineAgentService {
           : [],
       ),
     );
-    const evidence = [...toolEvidence.entries()].flatMap(
-      ([callId, messages]) => (canonicalCalls.has(callId) ? [] : messages),
-    );
-    const items: {
-      id: string;
-      message: ModelMessage | null;
-      excludedFromHistory?: boolean;
-    }[] = response.map((message) => ({
-      id: this.deps.ids.next(),
-      message: message,
-    }));
-    items.push(
-      ...evidence.map((message) => ({
-        id: this.deps.ids.next(),
-        message,
-        excludedFromHistory: true,
-      })),
-    );
-    if (partial) items.push({ id: this.deps.ids.next(), message: null });
+    let items:
+      | {
+          id: string;
+          message: ModelMessage | null;
+          excludedFromHistory?: boolean;
+        }[]
+      | undefined;
     let saved: number | undefined;
     let sealed = false;
     execution.finalize = async () => {
+      if (!items) {
+        // Convert only unfinished exchanges: completed steps already use the SDK
+        // projection. Cache converted evidence across persistence retries.
+        for (const [callId, convert] of convertToolEvidence)
+          if (!canonicalCalls.has(callId)) await convert();
+        const evidence = [...toolEvidence.entries()].flatMap(
+          ([callId, messages]) => (canonicalCalls.has(callId) ? [] : messages),
+        );
+        items = response.map((message) => ({
+          id: this.deps.ids.next(),
+          message,
+        }));
+        items.push(
+          ...evidence.map((message) => ({
+            id: this.deps.ids.next(),
+            message,
+            excludedFromHistory: true,
+          })),
+        );
+        if (partial) items.push({ id: this.deps.ids.next(), message: null });
+      }
       if (saved === undefined)
         saved = await this.deps.sessions.save(
           context.user.id,
@@ -584,7 +610,10 @@ export class OnlineAgentService {
             actorId: context.user.id,
             state: 'running',
             outcome,
-            ...(outcome !== 'completed' && pending.length
+            ...(outcome !== 'completed' &&
+            [...toolEvidence.keys()].some(
+              (callId) => !convertToolEvidence.has(callId),
+            )
               ? { requiresEffectReview: true }
               : {}),
             ...(result === undefined ? {} : { result }),
