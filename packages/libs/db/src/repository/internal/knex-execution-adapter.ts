@@ -763,12 +763,12 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     if (count === 0) {
       // An invisible row must answer exactly like a missing one, even when
       // the caller supplied a stale version. Never diagnose by key alone.
-      const current = await this.findOne({
-        collection: plan.collection,
-        fields: unique.fields,
-        filter: plan.filter,
-      });
-      return current ? 'conflict' : 'missing';
+      // A caller's repeatable-read snapshot may predate an insertion or
+      // deletion that the UPDATE already saw. Diagnose against current rows.
+      const current = await this.lockByFilter(plan.collection, plan.filter);
+      return current === 'missing' || current === 'multiple'
+        ? current
+        : 'conflict';
     }
     if (
       plan.scopeCheck &&

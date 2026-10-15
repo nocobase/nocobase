@@ -158,7 +158,7 @@ describeIntegrationDatabases(
       expect(sql.join('\n')).not.toMatch(/for update/i);
     });
 
-    it('uses a complete composite unique key and preserves additional conditions', async () => {
+    it('preserves the primary identity when filtering by a secondary composite key', async () => {
       const repository = await fixture();
       const { statements } = await captureSql(context, () =>
         repository.updateOne({
@@ -167,7 +167,7 @@ describeIntegrationDatabases(
           values: { name: 'Changed' },
         }),
       );
-      expect(businessStatements(statements)).toHaveLength(2);
+      expect(businessStatements(statements)).toHaveLength(4);
       await expect(
         repository.updateOne({
           filter: { tenantId: 'T1', code: 'one', name: 'First' },
@@ -180,6 +180,37 @@ describeIntegrationDatabases(
         revisionCounter: 2,
       });
     });
+
+    it.each(['primary', 'unique'] as const)(
+      'optimizes a complete composite %s identity',
+      async (kind) => {
+        await context.builder.createCollection('optimisticItems', (c) => {
+          c.string('tenantId').notNull();
+          c.string('code').notNull();
+          if (kind === 'primary') c.primary(['tenantId', 'code']);
+          else c.unique(['tenantId', 'code']);
+          c.string('name').notNull();
+          c.integer('version').notNull();
+          c.optimisticLock('version');
+        });
+        const repository = context.database.repository('optimisticItems');
+        await repository.createOne({
+          values: { tenantId: 'T1', code: 'one', name: 'First' },
+        });
+        const { result, statements } = await captureSql(context, () =>
+          repository.updateOne({
+            filter: { tenantId: 'T1', code: 'one' },
+            ifVersion: 1,
+            values: { name: 'Changed' },
+          }),
+        );
+        expect(result).toMatchObject({
+          record: { tenantId: 'T1', code: 'one', name: 'Changed', version: 2 },
+          version: 2,
+        });
+        expect(businessStatements(statements)).toHaveLength(2);
+      },
+    );
 
     it('rejects stale versions without changing scalar or atomic values', async () => {
       const repository = await fixture();

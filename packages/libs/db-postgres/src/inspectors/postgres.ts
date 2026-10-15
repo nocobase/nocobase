@@ -119,6 +119,7 @@ interface PostgresIndexRow {
   readonly attribute_numbers: string;
   readonly options: string;
   readonly collation_oids: string;
+  readonly column_equalities: boolean[];
   readonly constraint_name: string | null;
   readonly constraint_type: 'p' | 'u' | null;
 }
@@ -494,6 +495,20 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
             i.indkey::text as attribute_numbers,
             i.indoption::text as options,
             i.indcollation::text as collation_oids,
+            array(
+              select coalesce(opc.opcdefault and (
+                opc.opcintype = a.atttypid or (
+                  a.atttypid = 'pg_catalog.varchar'::regtype and
+                  opc.opcintype = 'pg_catalog.text'::regtype
+                )
+              ), false)
+              from unnest(i.indclass) with ordinality as classes(oid, position)
+              join pg_catalog.pg_opclass opc on opc.oid = classes.oid
+              left join pg_catalog.pg_attribute a
+                on a.attrelid = i.indrelid
+                and a.attnum = i.indkey[(classes.position - 1)::integer]
+              order by classes.position
+            ) as column_equalities,
             con.conname as constraint_name,
             con.contype as constraint_type
           from pg_catalog.pg_index i
@@ -542,8 +557,10 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
             columnName,
             order,
             nulls,
-            ...(indexCollations[position] ===
-            columnCollations.get(attributeNumber)
+            // A default class for a different type (e.g. text_ops on citext)
+            // does not prove compatibility with the column's equality.
+            ...(row.column_equalities[position] === true &&
+            indexCollations[position] === columnCollations.get(attributeNumber)
               ? {}
               : { columnEquality: false }),
           });

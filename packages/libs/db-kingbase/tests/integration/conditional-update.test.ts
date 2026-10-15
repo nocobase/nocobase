@@ -5,6 +5,39 @@ import { expect, it } from 'vitest';
 describeIntegrationDatabases(
   'Kingbase conditional update identities',
   (context) => {
+    it('keeps non-default operator classes out of conditional identities', async () => {
+      const table = context.table('opclassItems');
+      await context.db.raw(
+        'create table ?? (code text not null, name varchar(64) not null, version integer not null)',
+        [table],
+      );
+      await context.db.raw(
+        'create unique index ?? on ?? (code text_pattern_ops)',
+        [context.table('opclassUnique'), table],
+      );
+      await context.builder.alterCollection('opclassItems', (c) =>
+        c.optimisticLock('version'),
+      );
+      const collection =
+        await context.connection.collections.get('opclassItems');
+      expect(collection?.constraints).toContainEqual(
+        expect.objectContaining({
+          type: 'unique',
+          fields: ['code'],
+          db: { columnEquality: false },
+        }),
+      );
+      const repository = context.database.repository('opclassItems');
+      await repository.createOne({ values: { code: 'key', name: 'before' } });
+      expect(
+        await repository.updateOne({
+          filter: { code: 'key' },
+          ifVersion: 1,
+          values: { name: 'after' },
+        }),
+      ).toMatchObject({ record: { code: 'key', name: 'after', version: 2 } });
+    });
+
     it.each([1, 2])(
       'rejects an invalid unique index with second row version %s',
       async (secondVersion) => {

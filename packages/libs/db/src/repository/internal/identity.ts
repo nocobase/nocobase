@@ -12,7 +12,9 @@ import type {
 } from '../types.js';
 
 /**
- * A non-null unique key required by the filter and unchanged by the write.
+ * The record selector's preferred key, required by the filter and unchanged
+ * by the write. Never substitute a secondary key for the original identity:
+ * a trigger can reassign that key while leaving the primary key unchanged.
  * Only equalities under AND are mandatory; a key inside OR proves nothing.
  * Relational filters retain the read-before-write path, as do keys compared
  * with a different collation or updated by this mutation.
@@ -56,22 +58,23 @@ export function unchangedFilterSelector(
         : [],
     ),
   );
-  const constraint = identityConstraints(collection).find(
-    (candidate) =>
-      !candidate.deferrable &&
-      candidate.db?.valid !== false &&
-      candidate.db?.columnEquality !== false &&
-      candidate.fields.every(
-        (field) =>
-          equalities.has(field) &&
-          !Object.hasOwn(values, field) &&
-          !indirectlyWritten.has(field) &&
-          collection.fields?.find((definition) => definition.name === field)?.db
-            ?.generated === undefined &&
-          field !== collection.optimisticLock?.field,
-      ),
-  );
-  if (!constraint) return undefined;
+  const constraint = identityConstraints(collection)[0];
+  if (
+    !constraint ||
+    constraint.deferrable ||
+    constraint.db?.valid === false ||
+    constraint.db?.columnEquality === false ||
+    !constraint.fields.every(
+      (field) =>
+        equalities.has(field) &&
+        !Object.hasOwn(values, field) &&
+        !indirectlyWritten.has(field) &&
+        collection.fields?.find((definition) => definition.name === field)?.db
+          ?.generated === undefined &&
+        field !== collection.optimisticLock?.field,
+    )
+  )
+    return undefined;
   return {
     kind: 'unique',
     fields: [...constraint.fields],

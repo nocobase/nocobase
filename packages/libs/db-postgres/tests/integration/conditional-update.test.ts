@@ -7,6 +7,59 @@ describeIntegrationDatabases(
   'PostgreSQL conditional update identities',
   (context) => {
     it.each([1, 2])(
+      'rejects different operator-class equality with second row version %s',
+      async (secondVersion) => {
+        await context.db.raw('create extension if not exists citext');
+        const table = context.table('opclassItems');
+        const index = context.table('opclassUnique');
+        await context.db.raw(
+          'create table ?? (id varchar(64) not null, code citext not null, name varchar(64) not null, version integer not null)',
+          [table],
+        );
+        await context.db.raw('create unique index ?? on ?? (code text_ops)', [
+          index,
+          table,
+        ]);
+        await context.builder.alterCollection('opclassItems', (c) =>
+          c.optimisticLock('version'),
+        );
+        const repository = context.database.repository('opclassItems');
+        await repository.createMany({
+          values: [
+            { id: 'A', code: 'key', name: 'first' },
+            { id: 'B', code: 'KEY', name: 'second' },
+          ],
+        });
+        await context
+          .db(table)
+          .where({ id: 'B' })
+          .update({ version: secondVersion });
+        const collection =
+          await context.connection.collections.get('opclassItems');
+        expect(collection?.constraints).toContainEqual(
+          expect.objectContaining({
+            type: 'unique',
+            fields: ['code'],
+            db: { columnEquality: false },
+          }),
+        );
+        await expect(
+          repository.updateOne({
+            filter: { code: 'key' },
+            ifVersion: 1,
+            values: { name: 'changed' },
+          }),
+        ).rejects.toMatchObject({ code: 'MULTIPLE_RECORDS_MATCHED' });
+        expect(
+          await repository.findMany({ sort: (s) => s.field('id').asc() }),
+        ).toEqual([
+          { id: 'A', code: 'key', name: 'first', version: 1 },
+          { id: 'B', code: 'KEY', name: 'second', version: secondVersion },
+        ]);
+      },
+    );
+
+    it.each([1, 2])(
       'rejects an invalid unique index with second row version %s',
       async (secondVersion) => {
         await context.builder.createCollection('invalidIndexItems', (c) => {

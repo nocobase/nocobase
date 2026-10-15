@@ -77,14 +77,14 @@ describe('Conditional update identity', () => {
       } else {
         expect(selected).toMatchObject({ fields: ['id'], values: { id: 'A' } });
       }
-      // A different, stable key can still qualify even if another field cascades.
+      // A secondary key must not replace the original record selector.
       expect(
         unchangedFilterSelector(
           definition,
           and(eq('id', 'A'), eq('tenantId', 'T'), eq('code', 'C')),
           {},
         ),
-      ).toMatchObject({ fields: selected ? ['id'] : ['tenantId', 'code'] });
+      ).toEqual(selected);
     },
   );
 
@@ -136,7 +136,28 @@ describe('Conditional update identity', () => {
     },
   );
 
+  it('requires the preferred identity rather than substituting a secondary key', () => {
+    expect(
+      unchangedFilterSelector(
+        collection,
+        and(eq('tenantId', 'T1'), eq('code', 'A')),
+        {},
+      ),
+    ).toBeUndefined();
+    expect(
+      unchangedFilterSelector(
+        collection,
+        and(eq('id', 'A'), eq('tenantId', 'T1'), eq('code', 'A')),
+        { id: 'B' },
+      ),
+    ).toBeUndefined();
+  });
+
   it('requires every component of a non-null unconditional key', () => {
+    const collection: CollectionDefinition = {
+      name: 'items',
+      constraints: [{ type: 'unique', fields: ['tenantId', 'code'] }],
+    };
     expect(
       unchangedFilterSelector(collection, and(eq('tenantId', 'T1')), {}),
     ).toBeUndefined();
@@ -230,7 +251,7 @@ describe('Conditional update identity', () => {
     const filter = and(eq('id', 'A'), eq('tenantId', 'T1'), eq('code', 'one'));
     expect(
       unchangedFilterSelector(collection, filter, { id: 'B' }),
-    ).toMatchObject({ fields: ['tenantId', 'code'] });
+    ).toBeUndefined();
     expect(
       unchangedFilterSelector(collection, filter, { id: 'B', code: 'two' }),
     ).toBeUndefined();
