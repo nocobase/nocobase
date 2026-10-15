@@ -720,11 +720,13 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       Number.isSafeInteger(plan.ifVersion)
         ? unchangedFilterSelector(plan.collection, plan.filter, plan.values)
         : undefined;
-    return this.inTransaction((adapter) =>
-      unique
-        ? adapter.executeConditionalUpdateOne(plan, unique)
-        : adapter.executeUpdateOne(plan),
-    );
+    // A failed post-write invariant must roll back this call even if the
+    // caller catches the error and commits its surrounding transaction.
+    return unique
+      ? this.inSavepoint((adapter) =>
+          adapter.executeConditionalUpdateOne(plan, unique),
+        )
+      : this.inTransaction((adapter) => adapter.executeUpdateOne(plan));
   }
 
   private async executeConditionalUpdateOne(
@@ -750,7 +752,15 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     );
     applyVersion(query, plan.collection, plan.ifVersion);
     incrementVersion(query, plan.collection);
-    if (affectedCount(await query) === 0) {
+    const count = affectedCount(await query);
+    if (count > 1) {
+      throw new RepositoryError(
+        'MULTIPLE_RECORDS_MATCHED',
+        'Repository filter matched multiple records.',
+        { collection: plan.collection.name, path: ['filter'] },
+      );
+    }
+    if (count === 0) {
       // An invisible row must answer exactly like a missing one, even when
       // the caller supplied a stale version. Never diagnose by key alone.
       const current = await this.findOne({
@@ -783,13 +793,18 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       select: plan.select,
       filter: uniqueFilter(unique),
     });
-    return record
-      ? {
-          record,
-          createdTargets: [],
-          version: versionOf(plan.collection, record),
-        }
-      : 'missing';
+    if (!record) {
+      throw new RepositoryError(
+        'RECORD_NOT_FOUND',
+        'Updated Repository record could not be reloaded.',
+        { collection: plan.collection.name },
+      );
+    }
+    return {
+      record,
+      createdTargets: [],
+      version: versionOf(plan.collection, record),
+    };
   }
 
   private async executeUpdateOne(

@@ -44,14 +44,28 @@ export function unchangedFilterSelector(
     }
   };
   visit(filter.root);
+  // Referential actions can reach this row through self-references or a
+  // cycle through other tables, even without a Repository relation write.
+  const indirectlyWritten = new Set(
+    (collection.constraints ?? []).flatMap((candidate) =>
+      candidate.type === 'foreignKey' &&
+      (candidate.onUpdate === 'cascade' ||
+        candidate.onUpdate === 'set null' ||
+        candidate.onUpdate === 'set default')
+        ? candidate.fields
+        : [],
+    ),
+  );
   const constraint = identityConstraints(collection).find(
     (candidate) =>
       !candidate.deferrable &&
+      candidate.db?.valid !== false &&
       candidate.db?.columnEquality !== false &&
       candidate.fields.every(
         (field) =>
           equalities.has(field) &&
           !Object.hasOwn(values, field) &&
+          !indirectlyWritten.has(field) &&
           collection.fields?.find((definition) => definition.name === field)?.db
             ?.generated === undefined &&
           field !== collection.optimisticLock?.field,

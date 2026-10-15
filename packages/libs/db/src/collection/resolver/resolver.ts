@@ -158,9 +158,13 @@ function addUniqueIndexConstraints(
   for (const index of indexes) {
     if (
       index.db?.unique !== true ||
+      index.db?.valid === false ||
       !index.fields?.length ||
       index.expressions?.length ||
-      index.predicate ||
+      ((index.predicate ||
+        index.db?.partial === true ||
+        index.db?.predicate !== undefined) &&
+        index.db?.predicateSatisfiedByNonNullKeys !== true) ||
       constraints.some(
         (constraint) =>
           constraint.type === 'unique' &&
@@ -575,21 +579,28 @@ function indexUsesColumnEquality(index: PhysicalIndexSchema): boolean {
   return index.keys.every((key) => key.columnEquality !== false);
 }
 
-function constraintComparisonOptions(
+function constraintIndexOptions(
   input: CollectionResolutionInput,
   kind: 'primaryKey' | 'unique',
   physicalFields: readonly string[],
-): { columnEquality: false } | undefined {
-  return input.physical.indexes.some(
+  valid?: boolean,
+): { columnEquality?: false; valid?: false } | undefined {
+  const indexes = input.physical.indexes.filter(
     (index) =>
       index.backsConstraint?.kind === kind &&
       index.keys.length === physicalFields.length &&
       index.keys.every(
         (key, offset) => key.columnName === physicalFields[offset],
-      ) &&
-      !indexUsesColumnEquality(index),
-  )
-    ? { columnEquality: false }
+      ),
+  );
+  const incompatible = indexes.some((index) => !indexUsesColumnEquality(index));
+  const invalid =
+    valid === false || indexes.some((index) => index.valid === false);
+  return incompatible || invalid
+    ? {
+        ...(incompatible ? { columnEquality: false } : {}),
+        ...(invalid ? { valid: false } : {}),
+      }
     : undefined;
 }
 
@@ -616,10 +627,11 @@ function resolveConstraints(
             input.physical.primaryKey.deferrable,
             input.physical.primaryKey.initiallyDeferred,
           ),
-          db: constraintComparisonOptions(
+          db: constraintIndexOptions(
             input,
             'primaryKey',
             input.physical.primaryKey.columns,
+            input.physical.primaryKey.valid,
           ),
         }),
       );
@@ -646,7 +658,12 @@ function resolveConstraints(
             constraint.deferrable,
             constraint.initiallyDeferred,
           ),
-          db: constraintComparisonOptions(input, 'unique', constraint.columns),
+          db: constraintIndexOptions(
+            input,
+            'unique',
+            constraint.columns,
+            constraint.valid,
+          ),
         }),
       );
     }
@@ -847,11 +864,14 @@ function resolveIndex(
     order: Object.keys(order).length > 0 ? order : undefined,
     db: pruneUndefined({
       unique: physical.unique,
+      valid: physical.valid,
       columnEquality: indexUsesColumnEquality(physical) ? undefined : false,
       keys,
       includeFields:
         includeFields && includeFields.length > 0 ? includeFields : undefined,
       predicate: physical.predicate,
+      partial: physical.partial,
+      predicateSatisfiedByNonNullKeys: physical.predicateSatisfiedByNonNullKeys,
     }),
   });
 }

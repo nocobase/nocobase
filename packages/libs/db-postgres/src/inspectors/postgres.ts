@@ -110,6 +110,7 @@ interface PostgresIndexRow {
   readonly index_oid: string | number;
   readonly index_name: string;
   readonly unique: boolean;
+  readonly valid: boolean;
   readonly primary: boolean;
   readonly method: string;
   readonly predicate: string | null;
@@ -484,6 +485,7 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
             i.indexrelid as index_oid,
             ic.relname as index_name,
             i.indisunique as unique,
+            (i.indisvalid and i.indisready) as valid,
             i.indisprimary as primary,
             am.amname as method,
             pg_catalog.pg_get_expr(i.indpred, i.indrelid) as predicate,
@@ -564,6 +566,7 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
         keys,
         includeColumns: includeColumns.length > 0 ? includeColumns : undefined,
         unique: row.unique,
+        valid: row.valid,
         backsConstraint:
           row.constraint_type === 'p' || row.constraint_type === 'u'
             ? {

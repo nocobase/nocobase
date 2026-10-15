@@ -92,6 +92,8 @@ interface DamengConstraintRow {
   readonly delete_rule: string | null;
   readonly deferrable: string | null;
   readonly deferred: string | null;
+  readonly status: string;
+  readonly validated: string;
   readonly search_condition: string | null;
 }
 
@@ -99,6 +101,7 @@ interface DamengIndexRow {
   readonly index_name: string;
   readonly uniqueness: string;
   readonly index_type: string;
+  readonly status: string;
   readonly column_position: number;
   readonly column_name: string | null;
   readonly descend: string | null;
@@ -116,6 +119,7 @@ interface GroupedConstraint {
   readonly onDelete?: string;
   readonly deferrable: boolean;
   readonly initiallyDeferred: boolean;
+  readonly valid: boolean;
   readonly checkExpression?: string;
 }
 
@@ -205,6 +209,8 @@ export class DamengSchemaInspector extends BaseSchemaInspector {
               c.delete_rule,
               c.deferrable,
               c.deferred,
+              c.status,
+              c.validated,
               c.search_condition
             from user_constraints c
             left join user_cons_columns cc
@@ -233,6 +239,7 @@ export class DamengSchemaInspector extends BaseSchemaInspector {
               i.index_name,
               i.uniqueness,
               i.index_type,
+              i.status,
               ic.column_position,
               ic.column_name,
               ic.descend,
@@ -323,6 +330,7 @@ export class DamengSchemaInspector extends BaseSchemaInspector {
             columns: primary.columns,
             deferrable: primary.deferrable,
             initiallyDeferred: primary.initiallyDeferred,
+            valid: primary.valid,
           }
         : undefined,
       uniqueConstraints: constraints
@@ -332,6 +340,7 @@ export class DamengSchemaInspector extends BaseSchemaInspector {
           columns: item.columns,
           deferrable: item.deferrable,
           initiallyDeferred: item.initiallyDeferred,
+          valid: item.valid,
         })),
       indexes,
       foreignKeys: constraints
@@ -549,6 +558,8 @@ function groupConstraints(
       onDelete: optionalString(sorted[0].delete_rule),
       deferrable: sorted[0].deferrable === 'DEFERRABLE',
       initiallyDeferred: sorted[0].deferred === 'DEFERRED',
+      valid:
+        sorted[0].status === 'ENABLED' && sorted[0].validated === 'VALIDATED',
       checkExpression: optionalString(sorted[0].search_condition),
     };
   });
@@ -578,6 +589,7 @@ function readIndexes(
           : [],
       ),
     unique: entries[0].uniqueness.toUpperCase() === 'UNIQUE',
+    valid: entries[0].status === 'VALID',
     backsConstraint:
       entries[0].constraint_type === 'P' || entries[0].constraint_type === 'U'
         ? {

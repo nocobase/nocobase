@@ -13,6 +13,61 @@ import type {
 } from '../../../src/schema/inspector/types.js';
 
 describe('CollectionResolver', () => {
+  it.each(['primaryKey', 'unique'] as const)(
+    'preserves invalid %s backing indexes',
+    (kind) => {
+      const result = resolveCollection({
+        physical: physicalCollection({
+          columns: [column('id', 1)],
+          ...(kind === 'primaryKey'
+            ? { primaryKey: { columns: ['id'] } }
+            : { uniqueConstraints: [{ columns: ['id'] }] }),
+          indexes: [
+            {
+              name: 'key',
+              keys: [{ columnName: 'id' }],
+              unique: true,
+              valid: false,
+              backsConstraint: { kind },
+            },
+          ],
+        }),
+        context: emptyContext(),
+      });
+      expect(result.collection.constraints).toContainEqual(
+        expect.objectContaining({
+          type: kind === 'primaryKey' ? 'primary' : 'unique',
+          fields: ['id'],
+          db: { valid: false },
+        }),
+      );
+    },
+  );
+
+  it.each([true, false])(
+    'only promotes valid=%s indexes whose predicate is implied by non-null keys',
+    (valid) => {
+      const result = resolveCollection({
+        physical: physicalCollection({
+          columns: [column('id', 1)],
+          indexes: [
+            {
+              name: 'key',
+              keys: [{ columnName: 'id' }],
+              unique: true,
+              valid,
+              partial: true,
+              predicate: 'id IS NOT NULL',
+              predicateSatisfiedByNonNullKeys: true,
+            },
+          ],
+        }),
+        context: emptyContext(),
+      });
+      expect(result.collection.constraints).toHaveLength(valid ? 1 : 0);
+    },
+  );
+
   it.each([false, 'immediate', 'deferred'] as const)(
     'preserves %s primary key deferrability',
     (deferrable) => {
@@ -170,6 +225,34 @@ describe('CollectionResolver', () => {
       mode: 'index',
     });
   });
+
+  it.each([{ predicate: 'active = 1' }, { partial: true }, { valid: false }])(
+    'does not promote a restricted unique index: %j',
+    (facts) => {
+      const result = resolveCollection({
+        physical: physicalCollection({
+          tableName: 'users',
+          columns: [column('id', 1), column('email', 2)],
+          primaryKey: { columns: ['id'] },
+          indexes: [
+            {
+              name: 'users_email_unique',
+              keys: [{ columnName: 'email' }],
+              unique: true,
+              ...facts,
+            },
+          ],
+        }),
+        context: emptyContext(),
+      });
+      expect(result.collection.constraints).toEqual([
+        { type: 'primary', fields: ['id'] },
+      ]);
+      expect(result.collection.indexes).toMatchObject([
+        { name: 'users_email_unique', db: { unique: true, ...facts } },
+      ]);
+    },
+  );
 
   it('merges valid optimistic lock metadata into a resolved table Collection', () => {
     const result = resolveCollection({

@@ -27,6 +27,67 @@ const and = (...items: FilterNode[]): FilterAst => ({
 });
 
 describe('Conditional update identity', () => {
+  it('does not trust a disabled or unvalidated constraint', () => {
+    expect(
+      unchangedFilterSelector(
+        {
+          ...collection,
+          constraints: [
+            { type: 'primary', fields: ['id'], db: { valid: false } },
+          ],
+        },
+        and(eq('id', 'A')),
+        {},
+      ),
+    ).toBeUndefined();
+  });
+  it.each([
+    undefined,
+    'no action',
+    'restrict',
+    'cascade',
+    'set null',
+    'set default',
+  ] as const)(
+    'accounts for the %s update action on a locating field',
+    (onUpdate) => {
+      const definition: CollectionDefinition = {
+        ...collection,
+        constraints: [
+          ...collection.constraints!,
+          {
+            type: 'foreignKey',
+            fields: ['id'],
+            references: { collection: 'parents', fields: ['id'] },
+            onUpdate,
+          },
+        ],
+      };
+      const selected = unchangedFilterSelector(
+        definition,
+        and(eq('id', 'A')),
+        {},
+      );
+      if (
+        onUpdate === 'cascade' ||
+        onUpdate === 'set null' ||
+        onUpdate === 'set default'
+      ) {
+        expect(selected).toBeUndefined();
+      } else {
+        expect(selected).toMatchObject({ fields: ['id'], values: { id: 'A' } });
+      }
+      // A different, stable key can still qualify even if another field cascades.
+      expect(
+        unchangedFilterSelector(
+          definition,
+          and(eq('id', 'A'), eq('tenantId', 'T'), eq('code', 'C')),
+          {},
+        ),
+      ).toMatchObject({ fields: selected ? ['id'] : ['tenantId', 'code'] });
+    },
+  );
+
   it('does not locate updates through generated fields or incompatible comparisons', () => {
     const filter = and(eq('id', 'A'));
     expect(

@@ -4,6 +4,124 @@ import { expect, it } from 'vitest';
 describeIntegrationDatabases(
   'SQLite conditional update identities',
   (context) => {
+    it.each([false, true])(
+      'returns a cascaded locating key with caller transaction %s',
+      async (transactional) => {
+        await context.builder.createCollection('cascadeItems', (c) => {
+          c.string('id').primary().notNull();
+          c.string('code').notNull();
+          c.unique(['code']);
+          c.string('parentCode').notNull();
+          c.unique(['parentCode']);
+          c.foreignKey(['parentCode'], {
+            references: { collection: 'cascadeItems', fields: ['code'] },
+            onUpdate: 'cascade',
+          });
+          c.integer('version').notNull();
+          c.optimisticLock('version');
+        });
+        const repository = context.database.repository('cascadeItems');
+        await repository.createOne({
+          values: { id: 'A', code: 'old', parentCode: 'old' },
+        });
+        const update = (connection: typeof context.connection) =>
+          connection.repository('cascadeItems').updateOne({
+            filter: { parentCode: 'old' },
+            ifVersion: 1,
+            values: { code: 'new' },
+          });
+        const result = transactional
+          ? await context.database.transaction(update, context.spec.name)
+          : await update(context.connection);
+        expect(result).toMatchObject({
+          record: { id: 'A', code: 'new', parentCode: 'new', version: 2 },
+          version: 2,
+        });
+        expect(await repository.findOne({ filter: { id: 'A' } })).toEqual(
+          result.record,
+        );
+      },
+    );
+
+    it.each([
+      ['missing', false],
+      ['missing', true],
+      ['multiple', false],
+      ['multiple', true],
+    ] as const)(
+      'rolls back a post-write %s invariant failure with caller transaction %s',
+      async (failure, transactional) => {
+        await context.builder.createCollection('changedIdentityItems', (c) => {
+          c.string('id').primary().notNull();
+          c.string('code').notNull();
+          c.string('name').notNull();
+          c.integer('version').notNull();
+          c.optimisticLock('version');
+        });
+        const table = context.table('changedIdentityItems');
+        const index = context.table('changedCodeUnique');
+        await context.db.raw('create unique index ?? on ?? (code)', [
+          index,
+          table,
+        ]);
+        context.connection.collections.invalidate();
+        const repository = context.database.repository('changedIdentityItems');
+        await repository.createMany({
+          values: [
+            { id: 'A', code: 'old', name: 'first' },
+            { id: 'B', code: 'other', name: 'second' },
+          ],
+        });
+        if (failure === 'missing') {
+          // A trigger is not represented in Collection metadata and can change the key.
+          await context.db.raw(
+            "create trigger ?? after update of name on ?? begin update ?? set code = 'moved' where id = new.id; end",
+            [context.table('moveCode'), table, table],
+          );
+        } else {
+          // Keep cached metadata to exercise the invariant after external schema drift.
+          await context.db.raw('drop index ??', [index]);
+          await context.db(table).where({ id: 'B' }).update({ code: 'old' });
+        }
+        const before = await repository.findMany({
+          sort: (s) => s.field('id').asc(),
+        });
+        const update = async (connection: typeof context.connection) => {
+          await expect(
+            connection.repository('changedIdentityItems').updateOne({
+              filter: { code: 'old' },
+              ifVersion: 1,
+              values: { name: 'changed' },
+            }),
+          ).rejects.toMatchObject({
+            code:
+              failure === 'missing'
+                ? 'RECORD_NOT_FOUND'
+                : 'MULTIPLE_RECORDS_MATCHED',
+          });
+        };
+        if (transactional) {
+          await context.database.transaction(async (connection) => {
+            await connection.repository('changedIdentityItems').createOne({
+              values: { id: 'C', code: 'control', name: 'caller write' },
+            });
+            await update(connection);
+          }, context.spec.name);
+          before.push({
+            id: 'C',
+            code: 'control',
+            name: 'caller write',
+            version: 1,
+          });
+        } else {
+          await update(context.connection);
+        }
+        expect(
+          await repository.findMany({ sort: (s) => s.field('id').asc() }),
+        ).toEqual(before);
+      },
+    );
+
     it.each(['primary', 'unique', 'index'] as const)(
       'rejects multiple matches when a %s key uses different comparisons',
       async (kind) => {

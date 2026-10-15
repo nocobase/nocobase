@@ -6,6 +6,54 @@ import { collectEvents } from '../events/fixture.js';
 describeIntegrationDatabases(
   'Repository conditional optimistic updates',
   (context) => {
+    it('does not infer global uniqueness from a partial unique index', async ({
+      skip,
+    }) => {
+      if (!context.connection.capabilities.partialIndexes) skip();
+      await context.builder.createCollection('partialItems', (c) => {
+        c.string('id').primary().notNull();
+        c.string('code').notNull();
+        c.integer('active');
+        c.unique(['code'], { predicate: { active: { $notNull: true } } });
+        c.string('name').notNull();
+        c.integer('version').notNull();
+        c.optimisticLock('version');
+      });
+      const repository = context.database.repository('partialItems');
+      await repository.createMany({
+        values: [
+          { id: 'A', code: 'same', active: null, name: 'first' },
+          { id: 'B', code: 'same', active: null, name: 'second' },
+        ],
+      });
+      const definition =
+        await context.connection.collections.get('partialItems');
+      expect(definition?.constraints).not.toContainEqual(
+        expect.objectContaining({ type: 'unique', fields: ['code'] }),
+      );
+      for (const version of [1, 2]) {
+        if (version === 2)
+          await repository.updateOne({
+            filter: { id: 'B' },
+            ifVersion: 1,
+            values: { name: 'second' },
+          });
+        await expect(
+          repository.updateOne({
+            filter: { code: 'same' },
+            ifVersion: 1,
+            values: { name: 'changed' },
+          }),
+        ).rejects.toMatchObject({ code: 'MULTIPLE_RECORDS_MATCHED' });
+        expect(
+          await repository.findMany({ sort: (s) => s.field('id').asc() }),
+        ).toEqual([
+          { id: 'A', code: 'same', active: null, name: 'first', version: 1 },
+          { id: 'B', code: 'same', active: null, name: 'second', version },
+        ]);
+      }
+    });
+
     async function fixture() {
       await context.builder.createCollection('optimisticItems', (c) => {
         c.string('id').primary().notNull();

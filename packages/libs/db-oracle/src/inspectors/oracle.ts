@@ -107,6 +107,8 @@ interface OracleConstraintRow {
   readonly delete_rule: string | null;
   readonly deferrable: 'DEFERRABLE' | 'NOT DEFERRABLE';
   readonly deferred: 'DEFERRED' | 'IMMEDIATE';
+  readonly status: string;
+  readonly validated: string;
   readonly search_condition: string | null;
 }
 
@@ -114,6 +116,7 @@ interface OracleIndexRow {
   readonly index_name: string;
   readonly uniqueness: 'UNIQUE' | 'NONUNIQUE';
   readonly index_type: string;
+  readonly status: string;
   readonly column_position: number;
   readonly column_name: string | null;
   readonly column_expression: string | null;
@@ -145,6 +148,7 @@ interface GroupedOracleConstraint {
   readonly onDelete?: string;
   readonly deferrable: boolean;
   readonly initiallyDeferred: boolean;
+  readonly valid: boolean;
   readonly checkExpression?: string;
 }
 
@@ -309,6 +313,7 @@ export class OracleSchemaInspector extends BaseSchemaInspector {
             columns: primary.columns,
             deferrable: primary.deferrable,
             initiallyDeferred: primary.initiallyDeferred,
+            valid: primary.valid,
           }
         : undefined,
       uniqueConstraints: constraints
@@ -574,6 +579,8 @@ export class OracleSchemaInspector extends BaseSchemaInspector {
             c.delete_rule,
             c.deferrable,
             c.deferred,
+            c.status,
+            c.validated,
             c.search_condition_vc as search_condition
           from user_constraints c
           join user_cons_columns cc
@@ -610,6 +617,7 @@ export class OracleSchemaInspector extends BaseSchemaInspector {
             i.index_name,
             i.uniqueness,
             i.index_type,
+            i.status,
             ic.column_position,
             ic.column_name,
             ie.column_expression,
@@ -644,6 +652,7 @@ export class OracleSchemaInspector extends BaseSchemaInspector {
         .sort((left, right) => left.column_position - right.column_position)
         .map(oracleIndexKey),
       unique: entries[0].uniqueness === 'UNIQUE',
+      valid: entries[0].status === 'VALID',
       backsConstraint:
         entries[0].constraint_type === 'P' || entries[0].constraint_type === 'U'
           ? {
@@ -847,6 +856,8 @@ function groupOracleConstraints(
       onDelete: optionalString(sorted[0].delete_rule),
       deferrable: sorted[0].deferrable === 'DEFERRABLE',
       initiallyDeferred: sorted[0].deferred === 'DEFERRED',
+      valid:
+        sorted[0].status === 'ENABLED' && sorted[0].validated === 'VALIDATED',
       checkExpression: optionalString(sorted[0].search_condition),
     };
   });
@@ -874,6 +885,7 @@ function oracleUniqueConstraint(
     columns: constraint.columns,
     deferrable: constraint.deferrable,
     initiallyDeferred: constraint.initiallyDeferred,
+    valid: constraint.valid,
   };
 }
 

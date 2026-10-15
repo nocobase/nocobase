@@ -345,6 +345,7 @@ export class SqliteSchemaInspector extends BaseSchemaInspector {
         keys,
         unique: index.unique === 1,
         backsConstraint: constraintKind ? { kind: constraintKind } : undefined,
+        ...(index.partial === 1 ? { partial: true } : {}),
         predicate: index.partial === 1 ? parsed.predicate : undefined,
       });
       if (index.partial === 1 && !parsed.predicate) {

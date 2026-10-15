@@ -107,6 +107,8 @@ export interface PhysicalPrimaryKeySchema {
   readonly columns: readonly string[];
   readonly deferrable?: boolean;
   readonly initiallyDeferred?: boolean;
+  /** False when the constraint is disabled or not validated for existing rows. */
+  readonly valid?: boolean;
 }
 
 export interface PhysicalUniqueConstraintSchema {
@@ -114,6 +116,8 @@ export interface PhysicalUniqueConstraintSchema {
   readonly columns: readonly string[];
   readonly deferrable?: boolean;
   readonly initiallyDeferred?: boolean;
+  /** False when the constraint is disabled or not validated for existing rows. */
+  readonly valid?: boolean;
 }
 
 export type PhysicalIndexKey = (
@@ -142,9 +146,15 @@ export interface PhysicalIndexSchema {
   readonly keys: readonly PhysicalIndexKey[];
   readonly includeColumns?: readonly string[];
   readonly unique: boolean;
+  /** False when the index is incomplete or is not maintained for writes. */
+  readonly valid?: boolean;
   readonly backsConstraint?: PhysicalIndexConstraintReference;
   readonly method?: string;
+  /** True even when a partial index's predicate could not be inspected. */
+  readonly partial?: boolean;
   readonly predicate?: string;
+  /** True when every row with non-null index keys necessarily satisfies the predicate. */
+  readonly predicateSatisfiedByNonNullKeys?: boolean;
 }
 
 export type PhysicalReferentialAction =
