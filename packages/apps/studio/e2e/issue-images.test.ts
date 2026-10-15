@@ -39,7 +39,7 @@ test('pasted screenshots survive issue creation and description edits', async ({
   await open(page, '/issues');
   const screenshot = (await page.screenshot()).toString('base64');
   await open(page, '/issues/new?tab=manual');
-  const dialog = page.getByRole('dialog');
+  const dialog = page.getByRole('dialog', { name: 'New issue', exact: true });
   await dialog
     .getByRole('textbox', { name: 'Title', exact: true })
     .fill(`Pasted screenshot ${unique()}`);
@@ -51,11 +51,11 @@ test('pasted screenshots survive issue creation and description edits', async ({
   await page.keyboard.type('Screenshot from the running application: ');
   const paste = () => editor.evaluate(pasteImage, screenshot);
   await paste();
-  await expect(editor.locator('img')).toHaveCount(1);
+  await expect(editor.locator('img[src]')).toHaveCount(1);
   await expect
     .poll(() =>
       editor
-        .locator('img')
+        .locator('img[src]')
         .evaluateAll((images) =>
           images.every(
             (image) =>
@@ -67,7 +67,7 @@ test('pasted screenshots survive issue creation and description edits', async ({
   await page.keyboard.press('End');
   await page.keyboard.type(' Another view: ');
   await paste();
-  await expect(editor.locator('img')).toHaveCount(2);
+  await expect(editor.locator('img[src]')).toHaveCount(2);
   const output = process.env.NB_STUDIO_IMAGE_SCREENSHOT_DIR;
   if (output) {
     mkdirSync(output, { recursive: true });
@@ -86,7 +86,7 @@ test('pasted screenshots survive issue creation and description edits', async ({
     name: 'Description',
     exact: true,
   });
-  await expect(detailEditor.locator('img')).toHaveCount(2);
+  await expect(detailEditor.locator('img[src]')).toHaveCount(2);
   await detailEditor.click();
   await page.keyboard.press('ControlOrMeta+End');
   await page.keyboard.type(' Verified after reopening.');
@@ -102,7 +102,7 @@ test('pasted screenshots survive issue creation and description edits', async ({
   await expect(
     page
       .getByRole('textbox', { name: 'Description', exact: true })
-      .locator('img'),
+      .locator('img[src]'),
   ).toHaveCount(2);
 });
 
@@ -115,7 +115,7 @@ test('upload failures can be retried and pending uploads can be cancelled', asyn
     'theme.mode': 'light',
   });
   await open(page, '/issues/new?tab=manual');
-  const dialog = page.getByRole('dialog');
+  const dialog = page.getByRole('dialog', { name: 'New issue', exact: true });
   const editor = dialog.getByRole('textbox', {
     name: 'Description',
     exact: true,
@@ -131,7 +131,9 @@ test('upload failures can be retried and pending uploads can be cancelled', asyn
     route.abort('failed'),
   );
   await paste();
-  await expect(page.getByText(/Unable to upload/)).toBeVisible();
+  await expect(
+    page.getByLabel('Notifications').getByText(/Unable to upload/),
+  ).toBeVisible();
   const output = process.env.NB_STUDIO_IMAGE_SCREENSHOT_DIR;
   if (output) {
     mkdirSync(output, { recursive: true });
@@ -142,10 +144,10 @@ test('upload failures can be retried and pending uploads can be cancelled', asyn
   await expect(
     dialog.getByRole('button', { name: 'Create and start', exact: true }),
   ).toBeEnabled();
-  await expect(editor.locator('img')).toHaveCount(0);
+  await expect(editor.locator('img[src]')).toHaveCount(0);
   await page.unroute('**/api/projects/attachments');
   await paste();
-  await expect(editor.locator('img')).toHaveCount(1);
+  await expect(editor.locator('img[src]')).toHaveCount(1);
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
@@ -193,13 +195,16 @@ test('the first agent run downloads and opens an image attached at creation', as
     (await uploaded.json()) as { data: { id: string; contentUrl: string } }
   ).data;
   const runner = new FakeRunner(api, `Image reader ${unique()}`);
-  const agentId = await runner.agent();
+  await api.patch('projectManager', {
+    firstChoiceAgentId: await runner.agent(),
+    fallbackAgentId: null,
+  });
   const issue = await api.post<{ id: string; identifier: string }>(
     'projects/issues',
     {
       title: `Read screenshot ${unique()}`,
       statusKey: 'in_progress',
-      executor: { type: 'agent', id: agentId },
+      executor: { type: 'agent', id: 'studio-project-manager' },
       attachmentIds: [file.id],
       description: `![Screenshot](${file.contentUrl})`,
     },
@@ -229,7 +234,7 @@ test('the first agent run downloads and opens an image attached at creation', as
     await expect
       .poll(() =>
         page
-          .locator('img')
+          .locator('img[src]')
           .evaluate(
             (image) =>
               (image as unknown as { naturalWidth: number }).naturalWidth,

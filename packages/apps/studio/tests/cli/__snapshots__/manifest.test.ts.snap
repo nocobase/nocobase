@@ -169,7 +169,7 @@ issue attachment download <file> -> GET /api/projects/attachments/{attachmentId}
 issue attachment list <issue> [--comments] -> GET /api/projects/issues/{issueId}/attachments (person,run) pm.issues/view
 issue comment add <issue> [--content! --reply-to --attach] -> POST /api/projects/issues/{issueId}/comments (person,run) pm.issues/comment
 issue comment list <issue> [--limit --page-token --since] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
-issue create [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
+issue create [--title --attachment-ids --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
 issue delete <issue> -> DELETE /api/projects/issues/{issueId} (person,run) pm.issues/delete confirm
 issue dependency add <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/dependencies (person,run) pm.issues/edit
 issue dependency remove <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/removeDependency (person,run) pm.issues/edit
@@ -388,7 +388,7 @@ issue attachment download <file> -> GET /api/projects/attachments/{attachmentId}
 issue attachment list <issue> [--comments] -> GET /api/projects/issues/{issueId}/attachments (person,run) pm.issues/view
 issue comment add <issue> [--content! --reply-to --attach] -> POST /api/projects/issues/{issueId}/comments (person,run) pm.issues/comment
 issue comment list <issue> [--limit --page-token --since] -> GET /api/projects/issues/{issueId}/comments (person,run) pm.issues/view
-issue create [--title --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
+issue create [--title --attachment-ids --description --status --priority --owner --executor --parent --stage --project --start-date --due-date --label --start --blocked-by --project-setup --file] -> POST /api/projects/issues (person,run) pm.issues/create
 issue delete <issue> -> DELETE /api/projects/issues/{issueId} (person,run) pm.issues/delete confirm
 issue dependency add <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/dependencies (person,run) pm.issues/edit
 issue dependency remove <issue> <dependsOn> [--type] -> POST /api/projects/issues/{issueId}/removeDependency (person,run) pm.issues/edit
