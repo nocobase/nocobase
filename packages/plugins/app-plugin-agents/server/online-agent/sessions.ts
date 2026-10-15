@@ -1,0 +1,357 @@
+import { isDeepStrictEqual } from 'node:util';
+import type { ModelMessage } from 'ai';
+import type { DatabaseConnection } from '@nocobase/db';
+import type { Config } from './config.js';
+import { content, restore, type Json, type Outcome } from './codec.js';
+import type { TxRunner } from '../kernel/tx.js';
+import type { IdSource } from '../kernel/ids.js';
+import { asJson, jsonObject } from '../kernel/values.js';
+import { conflict, invalid, notFound } from '../kernel/errors.js';
+import {
+  lockConversation,
+  conversationsRepo,
+  messagesRepo,
+  findConversation,
+  preferencesRepo,
+  settingsRepo,
+  type ConversationRecord,
+} from '../core/conversations/conversation.store.js';
+import type { ChatAttachmentLinks } from '../core/conversations/attachments.js';
+import type { ModelRef } from '../../shared/models.js';
+
+export type Call = {
+  actorId: string;
+  state: 'running' | 'idle';
+  outcome?: Outcome;
+  closing?: boolean;
+  result?: Json;
+  error?: string;
+  requiresEffectReview?: boolean;
+};
+export type Session = {
+  id: string;
+  kind: 'realtime' | 'background';
+  config: Config;
+  model: ModelRef;
+  call: Call | null;
+  lastSeq: number;
+};
+type Metadata = {
+  version: 1;
+  kind: Session['kind'];
+  config: Config;
+  call: Call | null;
+};
+
+function metadata(row: ConversationRecord): Metadata {
+  const found = jsonObject(row.metadata).onlineAgent as Metadata | undefined;
+  if (!found || found.version !== 1)
+    throw invalid(
+      'This historical conversation has not been switched to OnlineAgent.',
+    );
+  if ('permissions' in found.config)
+    throw invalid(
+      'Permission-restricted configuration is not supported in PR1.',
+    );
+  return found;
+}
+function session(row: ConversationRecord): Session {
+  const value = metadata(row);
+  if (!row.model || !row.modelService)
+    throw invalid('Select a valid chat model.');
+  return {
+    id: row.id,
+    ...value,
+    lastSeq: Number(row.lastSeq),
+    model: { model: row.model, modelService: row.modelService },
+  };
+}
+
+export interface SessionManager {
+  defaults(userId: string): Promise<{ scope?: string[]; model?: ModelRef }>;
+  create(
+    userId: string,
+    kind: Session['kind'],
+    config: Config,
+    model: ModelRef,
+  ): Promise<string>;
+  load(userId: string, id: string): Promise<Session>;
+  history(userId: string, id: string): Promise<ModelMessage[]>;
+  accept(
+    userId: string,
+    id: string,
+    config: Config,
+    model: ModelRef,
+    items: { id: string; message: ModelMessage; attachments?: string[] }[],
+  ): Promise<number>;
+  save(
+    userId: string,
+    id: string,
+    items: { id: string; message: ModelMessage | null; partial?: string }[],
+    call: Call,
+  ): Promise<number>;
+  finish(userId: string, id: string): Promise<void>;
+}
+
+export function createSessionManager(deps: {
+  tx: TxRunner;
+  ids: IdSource;
+  attachments: ChatAttachmentLinks;
+  now(): string;
+  measure?: (phase: string, durationMs: number) => void;
+}): SessionManager {
+  const owned = async (
+    conn: DatabaseConnection,
+    userId: string,
+    id: string,
+    lock = false,
+  ) => {
+    const row = lock
+      ? await lockConversation(conn, id, deps.now())
+      : await findConversation(conn, id);
+    if (!row || row.userId !== userId) throw notFound('Conversation');
+    return row;
+  };
+  const write = async <T>(
+    userId: string,
+    id: string,
+    phase: string,
+    change: (conn: DatabaseConnection, row: ConversationRecord) => Promise<T>,
+  ) => {
+    let start: number | undefined;
+    try {
+      return await deps.tx.run(async ({ conn, emit }) => {
+        start = performance.now();
+        const row = await owned(conn, userId, id, true);
+        const result = await change(conn, row);
+        emit({ type: 'conversation.changed', conversationId: id, userId });
+        return result;
+      });
+    } finally {
+      // Includes lock acquisition and commit: a conservative upper bound on lock ownership.
+      if (start !== undefined) deps.measure?.(phase, performance.now() - start);
+    }
+  };
+  const saveMetadata = (
+    conn: DatabaseConnection,
+    row: ConversationRecord,
+    value: Metadata,
+    extra: Record<string, unknown> = {},
+  ) =>
+    conversationsRepo(conn).updateMany({
+      filter: { id: row.id },
+      values: {
+        metadata: asJson({ ...jsonObject(row.metadata), onlineAgent: value }),
+        ...extra,
+      },
+    });
+  const append = async (
+    conn: DatabaseConnection,
+    row: ConversationRecord,
+    items: {
+      id: string;
+      message: ModelMessage | null;
+      partial?: string;
+      attachments?: string[];
+    }[],
+    outcome: Outcome,
+  ) => {
+    let seq = Number(row.lastSeq);
+    const now = deps.now();
+    for (const item of items) {
+      const files = await deps.attachments.attach(
+        conn,
+        row.userId,
+        { conversationId: row.id, messageId: item.id },
+        item.attachments ?? [],
+      );
+      const payload = content(item.message, outcome, item.partial);
+      await messagesRepo(conn).createOne({
+        values: {
+          id: item.id,
+          conversationId: row.id,
+          seq: ++seq,
+          role: item.message?.role ?? 'assistant',
+          content: asJson(payload),
+          searchText: payload.content,
+          toolCalls: null,
+          attachments: files.length ? asJson(files) : null,
+          workContext: null,
+          metadata: asJson({}),
+          runId: null,
+          runEventSeq: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+    }
+    return seq;
+  };
+  return {
+    async defaults(userId: string) {
+      const conn = deps.tx.read();
+      const [personal, system] = await Promise.all([
+        preferencesRepo(conn).findOne({ filter: { userId } }),
+        settingsRepo(conn).findOne({ filter: { key: 'chat' } }),
+      ]);
+      return {
+        ...jsonObject(jsonObject(system?.value).onlineAgent),
+        ...jsonObject(personal?.onlineAgent),
+      };
+    },
+    async create(
+      userId: string,
+      kind: Session['kind'],
+      config: Config,
+      model: ModelRef,
+    ) {
+      const id = deps.ids.next();
+      const now = deps.now();
+      await deps.tx.run(async ({ conn, emit }) => {
+        await conversationsRepo(conn).createOne({
+          values: {
+            id,
+            userId,
+            agentId: null,
+            mode: 'online',
+            modelService: model.modelService,
+            model: model.model,
+            fallbackFromAgentId: null,
+            title: null,
+            titleSource: 'auto',
+            category: 'chat',
+            source: 'chat',
+            read: true,
+            thread: 0,
+            lastSeq: 0,
+            syncRunId: null,
+            syncSeq: 0,
+            lastMessageAt: now,
+            archivedAt: null,
+            lockedAt: null,
+            createdAt: now,
+            updatedAt: now,
+            metadata: asJson({
+              onlineAgent: { version: 1, kind, config, call: null },
+            }),
+          },
+        });
+        emit({ type: 'conversation.changed', conversationId: id, userId });
+      });
+      return id;
+    },
+    async load(userId: string, id: string) {
+      return session(await owned(deps.tx.read(), userId, id));
+    },
+    async history(userId: string, id: string): Promise<ModelMessage[]> {
+      await owned(deps.tx.read(), userId, id);
+      const rows = await messagesRepo(deps.tx.read()).findMany({
+        filter: { conversationId: id },
+        sort: (sort) => sort.field('seq').asc(),
+      });
+      return rows.flatMap((row) => {
+        const value = restore(row.content, row.role);
+        return value ? [value] : [];
+      });
+    },
+    accept(
+      userId: string,
+      id: string,
+      config: Config,
+      model: ModelRef,
+      items: { id: string; message: ModelMessage; attachments?: string[] }[],
+    ) {
+      return write(userId, id, 'accept', async (conn, row) => {
+        const value = metadata(row);
+        if (
+          value.call?.state === 'running' ||
+          value.call?.closing ||
+          value.call?.requiresEffectReview
+        )
+          throw conflict(
+            'This conversation is busy or its previous execution needs review.',
+          );
+        if (row.archivedAt || row.syncRunId)
+          throw conflict('This conversation cannot accept input.');
+        const lastSeq = await append(conn, row, items, 'completed');
+        await saveMetadata(
+          conn,
+          row,
+          { ...value, config, call: { actorId: userId, state: 'running' } },
+          {
+            modelService: model.modelService,
+            model: model.model,
+            lastSeq,
+            lastMessageAt: deps.now(),
+            updatedAt: deps.now(),
+          },
+        );
+        return lastSeq;
+      });
+    },
+    save(
+      userId: string,
+      id: string,
+      items: { id: string; message: ModelMessage | null; partial?: string }[],
+      call: Call,
+    ) {
+      return write(userId, id, 'save', async (conn, row) => {
+        const value = metadata(row);
+        // Stable response ids allow a commit-unknown retry to verify, rather than append twice.
+        const existing = items.length
+          ? await messagesRepo(conn).findMany({
+              filter: (f) =>
+                f.and([
+                  f.string('conversationId').eq(id),
+                  f.or(items.map((item) => f.string('id').eq(item.id))),
+                ]),
+            })
+          : [];
+        if (existing.length && existing.length !== items.length)
+          throw conflict('Incomplete response persistence.');
+        if (
+          existing.length &&
+          items.some((item) => {
+            const saved = existing.find((row) => row.id === item.id);
+            return (
+              !saved ||
+              !isDeepStrictEqual(
+                saved.content,
+                content(item.message, call.outcome ?? 'failed', item.partial),
+              )
+            );
+          })
+        )
+          throw conflict(
+            'The saved response differs from the finalization retry.',
+          );
+        const lastSeq = existing.length
+          ? Number(row.lastSeq)
+          : await append(conn, row, items, call.outcome ?? 'failed');
+        await saveMetadata(
+          conn,
+          row,
+          { ...value, call: { ...call, closing: true } },
+          {
+            lastSeq,
+            read: false,
+            lastMessageAt: deps.now(),
+            updatedAt: deps.now(),
+          },
+        );
+        return lastSeq;
+      });
+    },
+    finish(userId: string, id: string) {
+      return write(userId, id, 'finish', async (conn, row) => {
+        const value = metadata(row);
+        if (!value.call) throw conflict('No execution is being finalized.');
+        const { closing: _closing, ...call } = value.call;
+        await saveMetadata(conn, row, {
+          ...value,
+          call: { ...call, state: 'idle' },
+        });
+      });
+    },
+  };
+}

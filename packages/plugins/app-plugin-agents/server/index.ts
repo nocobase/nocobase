@@ -4,3 +4,5 @@ export {
   registerBusinesses,
   registerSettings,
 } from './providers/authorization.js';
+
+export * from './online-agent/index.js';

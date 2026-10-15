@@ -120,6 +120,7 @@
     "dist",
     "README.md",
     "CHANGELOG.md",
+    "docs",
     "skills"
   ],
   "publishConfig": {

@@ -98,6 +98,7 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     this.app.container.singleton(agentsToken, (resolver) => {
       const config = this.app.config.get<AgentsConfig>('agents');
       return createAgents({
+        resolver,
         retryBaseDelayMs: retryBaseDelayMs(config?.runs?.retryBaseDelayMs),
         runRetentionDays: () =>
           runRetentionDays(
@@ -236,9 +237,15 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
   }
 
   public override async shutdown(): Promise<void> {
-    for (const release of this.releases.splice(0)) release();
-    await this.stoppingVectors;
-    this.stoppingVectors = undefined;
+    try {
+      await this.app.container
+        .resolveIfCreated(agentsToken)
+        ?.onlineAgent.shutdown();
+    } finally {
+      for (const release of this.releases.splice(0)) release();
+      await this.stoppingVectors;
+      this.stoppingVectors = undefined;
+    }
   }
 
   /** Tells open pages what changed; they fetch the details through the API, which checks access. */

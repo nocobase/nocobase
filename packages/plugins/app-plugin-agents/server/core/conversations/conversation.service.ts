@@ -53,7 +53,7 @@ import {
   ProtocolError,
 } from '../../kernel/errors.js';
 import type { IdSource } from '../../kernel/ids.js';
-import { asJson } from '../../kernel/values.js';
+import { asJson, jsonObject } from '../../kernel/values.js';
 import type { People } from '../../kernel/people.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import type { AgentService } from '../agents/index.js';
@@ -238,11 +238,17 @@ function noticeText(
   }
 }
 
+function legacyAgentId(record: ConversationRecord): string {
+  if (!record.agentId)
+    throw invalid('Use the OnlineAgent service for this conversation.');
+  return record.agentId;
+}
+
 function refOf(record: ConversationRecord): ConversationRef {
   return {
     id: record.id,
     userId: record.userId,
-    agentId: record.agentId,
+    agentId: legacyAgentId(record),
     title: record.title,
     source: record.source,
   };
@@ -271,6 +277,8 @@ export function createConversationService(
   ): Promise<ConversationRecord> {
     const record = await findConversation(conn, id);
     if (!record || record.userId !== userId) throw notFound('Conversation');
+    if (jsonObject(record.metadata).onlineAgent)
+      throw invalid('Use the OnlineAgent service for this conversation.');
     return record;
   }
 
@@ -280,8 +288,11 @@ export function createConversationService(
     userId: string,
     id: string,
   ): Promise<ConversationRecord> {
-    await owned(unit.conn, userId, id);
-    return (await lockConversation(unit.conn, id, now()))!;
+    const record = (await lockConversation(unit.conn, id, now()))!;
+    if (!record || record.userId !== userId) throw notFound('Conversation');
+    if (jsonObject(record.metadata).onlineAgent)
+      throw invalid('Use the OnlineAgent service for this conversation.');
+    return record;
   }
 
   function agentRef(id: string, agent: Agent | null): ConversationAgent {
@@ -321,7 +332,10 @@ export function createConversationService(
       category: record.category,
       source: record.source,
       mode: record.mode,
-      agent: agentRef(record.agentId, agents.get(record.agentId) ?? null),
+      agent: agentRef(
+        legacyAgentId(record),
+        record.agentId ? (agents.get(record.agentId) ?? null) : null,
+      ),
       fallbackFrom: record.fallbackFromAgentId
         ? agentRef(
             record.fallbackFromAgentId,
@@ -391,7 +405,8 @@ export function createConversationService(
     conn: DatabaseConnection,
     record: ConversationRecord,
   ): Promise<Agent | null> {
-    if (record.fallbackFromAgentId) return null;
+    if (record.fallbackFromAgentId || jsonObject(record.metadata).onlineAgent)
+      return null;
     const system = await systemDefault(conn, record.userId);
     if (
       system &&
@@ -407,7 +422,7 @@ export function createConversationService(
     record: ConversationRecord,
   ): Promise<ConversationDetail> {
     const [summary] = await summaries(conn, [record]);
-    const agent = await findAgent(conn, record.agentId);
+    const agent = record.agentId ? await findAgent(conn, record.agentId) : null;
     const fallbackFrom = record.fallbackFromAgentId
       ? await findAgent(conn, record.fallbackFromAgentId)
       : null;
@@ -504,7 +519,9 @@ export function createConversationService(
     record: ConversationRecord,
     messages: readonly MessageRecord[],
   ): Promise<SendMessageResult['run']> {
-    const agent = await findAgent(unit.conn, record.agentId);
+    const agent = record.agentId
+      ? await findAgent(unit.conn, record.agentId)
+      : null;
     if (!wakeable(agent, record.userId, deps.agents.mayInvoke)) return null;
     const name = await nameOf(unit.conn, record.userId);
     let result: SendMessageResult['run'] = null;
@@ -1023,6 +1040,7 @@ export function createConversationService(
         filter: (f) =>
           f.and([
             f.string('userId').eq(userId),
+            f.string('agentId').notEmpty(),
             ...(query.archived === 'all'
               ? []
               : [
@@ -1321,7 +1339,7 @@ export function createConversationService(
         await rebind(unit, record, current, record.agentId, {
           code: 'switchedToDefault',
           agentId: target.id,
-          fromAgentId: record.agentId,
+          fromAgentId: legacyAgentId(record),
         });
       });
       return detail(userId, id);
@@ -1352,7 +1370,7 @@ export function createConversationService(
         await rebind(unit, record, current, null, {
           code: 'switchedBack',
           agentId: own.id,
-          fromAgentId: record.agentId,
+          fromAgentId: legacyAgentId(record),
         });
       });
       return detail(userId, id);
@@ -1415,9 +1433,13 @@ export function createConversationService(
     async deliver(outer, conversationId, news) {
       const record = await lockConversation(outer.conn, conversationId, now());
       if (!record) return null;
+      if (jsonObject(record.metadata).onlineAgent)
+        throw invalid('Use OnlineAgent business tools for this conversation.');
       await notice(outer, record, news.notice);
       if (!news.input) return null;
-      const agent = await findAgent(outer.conn, record.agentId);
+      const agent = record.agentId
+        ? await findAgent(outer.conn, record.agentId)
+        : null;
       if (!wakeable(agent, record.userId, deps.agents.mayInvoke)) return null;
       const enqueued = queuedRun(
         await deps.runs.enqueue(

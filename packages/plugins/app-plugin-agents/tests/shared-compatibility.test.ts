@@ -1,3 +1,8 @@
+import {
+  OnlineAgentConfigurer,
+  type Definition,
+  type ToolContext,
+} from '../server/online-agent/config.js';
 import { expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
 
@@ -133,4 +138,29 @@ it('lets applications guard a pending request and report a queued run', async ()
       },
     ),
   ).toEqual({ started: false, requestId: 'pending-request' });
+});
+
+it('preserves SDK tool input, output and execution context generics', () => {
+  const configurer = new OnlineAgentConfigurer();
+  const definition: Definition<
+    { value: number },
+    { doubled: number },
+    ToolContext
+  > = {
+    inputSchema: z.object({ value: z.number() }),
+    execute: (input, options) => {
+      expectTypeOf(input).toEqualTypeOf<{ value: number }>();
+      expectTypeOf(options.context).toEqualTypeOf<ToolContext>();
+      expectTypeOf(options.abortSignal).toEqualTypeOf<
+        AbortSignal | undefined
+      >();
+      expectTypeOf(options.toolCallId).toEqualTypeOf<string>();
+      return { doubled: input.value * 2 };
+    },
+  };
+  configurer.registerTool('typed', { version: '1', definition });
+  configurer.registerTool('factory', {
+    version: '1',
+    definition: () => definition,
+  });
 });

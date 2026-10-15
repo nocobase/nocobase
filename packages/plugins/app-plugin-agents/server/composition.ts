@@ -1,3 +1,7 @@
+import type { ServiceResolver } from '@nocobase/service-provider';
+import { OnlineAgentService } from './online-agent/service.js';
+import { createSessionManager } from './online-agent/sessions.js';
+import { languageModel } from './online/providers.js';
 /**
  * The one place the plugin's services are assembled from their dependencies. The provider binds the result to
  * `agentsToken`; tests call it directly against a real database.
@@ -143,6 +147,7 @@ import {
 } from './core/runs/index.js';
 
 export interface AgentsDeps {
+  readonly resolver?: ServiceResolver;
   readonly runRetentionDays?: () => number;
   /** The first back-off of a failed run attempt (`agents.runs.retryBaseDelayMs`); 30 seconds when left out. */
   readonly retryBaseDelayMs?: number;
@@ -185,6 +190,7 @@ export interface AgentsDeps {
 }
 
 export interface Agents {
+  readonly onlineAgent: OnlineAgentService;
   readonly events: AgentsEventBus;
   readonly tx: TxRunner;
   readonly clock: Clock;
@@ -526,6 +532,26 @@ export function createAgents(deps: AgentsDeps): Agents {
         disk: () => 'local',
       }),
   });
+  const onlineAgent = new OnlineAgentService({
+    sessions: createSessionManager({
+      tx,
+      ids,
+      attachments: chatAttachments.links,
+      now: () => clock.now().toISOString(),
+    }),
+    ids,
+    resolver: deps.resolver,
+    model: async (ref, sessionId) =>
+      languageModel(
+        await modelServices.connectionFor(ref),
+        ref.model,
+        sessionId,
+      ),
+    defaultModel: async () =>
+      (await modelServices.catalog()).defaultModel ?? null,
+    onError: (error) =>
+      onError('OnlineAgent execution or finalization failed.', error),
+  });
   const conversations = createConversationService({
     tx,
     ids,
@@ -644,6 +670,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     conversations,
     chatAttachments: chatAttachments.service,
     chat,
+    onlineAgent,
     models: {
       services: modelServices,
       gateway,
