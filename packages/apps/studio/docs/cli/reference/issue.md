@@ -320,6 +320,64 @@ nb-studio issue get <issue>
 
 **Request:** `GET /api/projects/issues/{issueId}` (`projectsGetIssue`)
 
+## issue handoff accept
+
+Accept an issue owner handoff
+
+Only the current owner in person, with issue editing permission, may decide the current handoff. Rejection keeps the issue paused. The CLI reads the current handoff once to supply notificationKey automatically. A missing handoff stops the command; a stale notification returns a conflict with a refresh hint and is never retried.
+
+```bash
+nb-studio issue handoff accept <issue>
+```
+
+| Argument | Description |
+| -------- | ----------- |
+| `issue`  |             |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key); needs the action `pm.issues/edit`.
+
+**Request:** `POST /api/issueOwnerHandoffs/{issueId}/accept` (`issueOwnerHandoffAccept`)
+
+## issue handoff get
+
+Get an issue owner handoff
+
+```bash
+nb-studio issue handoff get <issue>
+```
+
+| Argument | Description |
+| -------- | ----------- |
+| `issue`  |             |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key); needs the action `pm.issues/view`.
+
+**Request:** `GET /api/issueOwnerHandoffs/{issueId}` (`issueOwnerHandoffGet`)
+
+## issue handoff reject
+
+Reject an issue owner handoff
+
+Only the current owner in person, with issue editing permission, may decide the current handoff. Rejection keeps the issue paused. The CLI reads the current handoff once to supply notificationKey automatically. A missing handoff stops the command; a stale notification returns a conflict with a refresh hint and is never retried.
+
+```bash
+nb-studio issue handoff reject <issue>
+```
+
+| Argument | Description |
+| -------- | ----------- |
+| `issue`  |             |
+
+**Output:** One record, field by field; with `--json`, `result.data`.
+
+**Who:** People (a sign-in or an API key); needs the action `pm.issues/edit`.
+
+**Request:** `POST /api/issueOwnerHandoffs/{issueId}/reject` (`issueOwnerHandoffReject`)
+
 ## issue progress
 
 Get what an issue waits for
