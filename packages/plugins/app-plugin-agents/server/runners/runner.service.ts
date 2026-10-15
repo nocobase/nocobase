@@ -95,7 +95,7 @@ export interface RunnerService {
     },
   ): Promise<Runner>;
   heartbeat(runner: Runner, request: HeartbeatRequest): Promise<Runner>;
-  list(): Promise<Runner[]>;
+  list(options?: { readonly workspaceDetails?: boolean }): Promise<Runner[]>;
   /** 404 when absent. */
   get(id: string): Promise<Runner>;
   update(id: string, patch: RunnerPatch): Promise<Runner>;
@@ -556,7 +556,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         return reported;
       }),
 
-    list: async () => {
+    list: async (options) => {
       const conn = tx.read();
       const records = await runnersRepo(conn).findMany({
         sort: (sort) => [sort.field('name').asc(), sort.field('id').asc()],
@@ -570,6 +570,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         toRunner(
           record,
           record.ownerUserId ? (names.get(record.ownerUserId) ?? null) : null,
+          options?.workspaceDetails ?? true,
         ),
       );
     },

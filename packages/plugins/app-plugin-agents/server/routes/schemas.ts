@@ -86,8 +86,8 @@ import {
   type RunnerRecentRun,
   type RunnerPatch,
   type RunnerSummary,
+  type RunnerListItem,
   type RunnerWorkspace,
-  type RunnerWorkspaceUsage,
 } from '../../shared/runners.js';
 import {
   RUN_REQUEST_STATUSES,
@@ -1468,7 +1468,7 @@ const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
   }),
 });
 
-const RunnerWorkspaceUsageSchema: z.ZodType<RunnerWorkspaceUsage> = z
+const RunnerWorkspaceUsageSchema = z
   .object({
     disk: z
       .object({
@@ -1552,7 +1552,7 @@ export const RunnerSchema: z.ZodType<Runner> = runnerObject.meta({
   ref: 'AgentsRunner',
 });
 
-export const RunnerSummarySchema: z.ZodType<RunnerSummary> = runnerObject
+const runnerSummaryObject = runnerObject
   .extend({
     hostname: z.string().nullable().meta({
       description:
@@ -1584,6 +1584,18 @@ export const RunnerSummarySchema: z.ZodType<RunnerSummary> = runnerObject
     }),
   })
   .meta({ ref: 'AgentsRunnerSummary' });
+
+export const RunnerSummarySchema: z.ZodType<RunnerSummary> =
+  runnerSummaryObject;
+export const RunnerListItemSchema: z.ZodType<RunnerListItem> =
+  runnerSummaryObject
+    .extend({
+      workspaceUsage: RunnerWorkspaceUsageSchema.omit({ workspaces: true })
+        .meta({ ref: 'AgentsRunnerWorkspaceTotals' })
+        .nullable()
+        .optional(),
+    })
+    .meta({ ref: 'AgentsRunnerListItem' });
 
 export const RunnerRecentRunSchema: z.ZodType<RunnerRecentRun> = z
   .object({
