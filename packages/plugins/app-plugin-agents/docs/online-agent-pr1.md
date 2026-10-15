@@ -1,6 +1,6 @@
 # OnlineAgent PR1 implementation
 
-This is the first internal service slice of PM-438's single draft PR. It must not be merged as the complete PR1. The service is assembled once as `agentsToken.onlineAgent`; the existing chat HTTP routes and UI still use their current contracts until their coordinated cutover. New service sessions are excluded from the legacy conversation list, and legacy mutation routes explicitly reject them. No production switch or data migration has been authorized.
+This is the service and original-chat integration of PM-438's single draft PR. It must not be merged as the complete PR1: business-specific Ask agent, Organize and plan actions remain the next internal step. The service is assembled once as `agentsToken.onlineAgent`; the original chat HTTP resources and shared Studio/Registry client now use it. Conversation lists include OnlineAgent sessions, while historical conversations remain readable without adopting or replaying their unknown execution effects. No production switch or data migration has been authorized.
 
 ## Confirmed scope
 
@@ -46,7 +46,7 @@ Set `PM438_SQL_REPORT` to a file path when running the focused test to record ac
 
 The repair sample keeps the two-tool execution at 19/24/12 physical statements across its three transactions. A cancelled tool saves two internal evidence rows in one terminal batch (19/21/12 statements); successful abort no longer repeats the final 12-statement marker-clear transaction. In that sample the measured lock ownership upper bounds were 33.57/53.36/15.93 ms for two tools and 27.83/33.02/22.32 ms for cancellation. No model-override or facade-consumption query, write or lock is added, and no per-message conversation lookup or summary update is introduced.
 
-Remaining acceptance includes production HTTP authorization/OpenAPI and unique-client integration, real browser and external-provider demonstrations, dialect concurrency verification, and final review of migration order against the latest target before merge. No merge, deployment or production data action is part of this slice.
+Remaining PR1 acceptance includes complete business-entry integration and independent review of the integrated application. External-provider demonstrations, production business authorization and multi-dialect contention remain unverified by the isolated SDK/SQLite and browser fixtures. Migration order must be rechecked against the latest target before merge. No merge, deployment or production data action is part of this slice.
 
 The cancellation output-conversion repair adds no database reads, writes, locks or transactions per request, poll or Runner claim. It changes in-memory evidence conversion before the existing terminal batch; the recorded SQL organization above is unchanged.
 
