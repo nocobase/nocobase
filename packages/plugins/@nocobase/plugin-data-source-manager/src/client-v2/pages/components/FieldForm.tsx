@@ -26,6 +26,7 @@ import type { DragEndEvent, DraggableAttributes, DraggableSyntheticListeners } f
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
+  AutoComplete,
   Button,
   Checkbox,
   Col,
@@ -763,11 +764,14 @@ export function resolveForeignKeyCollectionName(options: {
 }
 
 /**
- * Options for the foreign key select: existing columns of the owning collection that are able to store a reference.
+ * Existing columns of the owning collection that are able to store a reference.
  */
-export function getForeignKeyFieldOptions(fields: Array<Record<string, any>> | undefined, t: (key: string) => string) {
+export function getForeignKeyFieldOptions(
+  fields: Array<{ name: string; type?: string; title?: string; uiSchema?: { title?: string } }> | undefined,
+  t: (key: string) => string,
+) {
   return (fields || [])
-    .filter((field) => foreignKeyStorageTypes.has(field?.type))
+    .filter((field) => field?.type && foreignKeyStorageTypes.has(field.type))
     .map((field) => ({
       value: field.name,
       label: compileLegacyTemplate(field.uiSchema?.title || field.title || field.name, t),
@@ -1470,6 +1474,36 @@ function FieldConfigurePropertyItem(props: {
           formats={formats}
           options={normalizeSchemaEnum(schema?.enum, t)}
           picker={picker}
+        />
+      </Form.Item>
+    );
+  }
+
+  if (component === 'ForeignKey' && context.createMainOnly && getCollectionTemplate(collection) !== 'view') {
+    const options = getForeignKeyFieldOptions(foreignKeyFields, t);
+    return (
+      <Form.Item
+        name={namePath}
+        label={title}
+        tooltip={tooltip}
+        rules={[
+          { required: !!schema?.required },
+          {
+            validator: (_, value: string | undefined) => {
+              if (!value || options.some((option) => option.value === value) || fieldNamePattern.test(value)) {
+                return Promise.resolve();
+              }
+              return Promise.reject(new Error(t(fieldNameDescription)));
+            },
+          },
+        ]}
+      >
+        <AutoComplete
+          {...componentProps}
+          disabled={disabled}
+          options={options}
+          filterOption={filterConfigureSelectOption}
+          allowClear
         />
       </Form.Item>
     );
