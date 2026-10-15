@@ -42,6 +42,18 @@ export function roleTitle(t: Translate, role: Role): string {
   return accessTitle(t, role.title, role.key);
 }
 
+/** Reserve the localized copy marker within the server's 100 UTF-16-unit title limit. */
+export function copyRoleTitle(t: Translate, name: string): string {
+  const budget = 100 - t('roles.copyOf', { name: '' }).length;
+  let shortened = '';
+  // Iterating code points keeps a surrogate pair intact at the truncation boundary.
+  for (const character of name) {
+    if (shortened.length + character.length > budget) break;
+    shortened += character;
+  }
+  return t('roles.copyOf', { name: shortened }).trim();
+}
+
 /** The roles `userId` holds directly, in list order. */
 export function rolesOf(roles: readonly Role[], userId: string): string[] {
   return roles
