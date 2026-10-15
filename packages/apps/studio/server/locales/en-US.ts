@@ -24,6 +24,39 @@ const enUS = {
         'Review the change and merge its pull request: the issue moves to Done once it is merged (check any required checklist items first). Or move it back to In progress with a comment.',
     },
   },
+  navigation: {
+    config: 'Settings',
+  },
+  roles: {
+    admin: 'Admin',
+    contributor: 'Member',
+    owner: 'Owner',
+    capabilities: {
+      apiKeys: {
+        read: 'See the organization’s API keys',
+        manage:
+          'Create, change, rotate and delete the organization’s API keys, within one’s own permissions',
+      },
+      git: {
+        read: 'See the connections to code hosts',
+        manage: 'Add, change and remove connections to code hosts',
+      },
+      personalApiKeys: {
+        create: 'Create API keys of one’s own',
+      },
+      knowledgeSearch: {
+        read: 'See how the knowledge base is searched',
+        manage:
+          'Choose the knowledge base’s embedding, rerank and context models and its thresholds',
+      },
+    },
+    items: {
+      apiKeys: 'API keys',
+      git: 'Git connections',
+      knowledgeSearch: 'Knowledge search',
+      personalApiKeys: 'Personal API keys',
+    },
+  },
 };
 
 export type AppServerResource = LocaleResource<typeof enUS>;

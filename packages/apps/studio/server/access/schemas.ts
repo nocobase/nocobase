@@ -17,13 +17,10 @@ import {
   type AccessCatalog,
   type AccessMe,
   type AccessSettings,
-  type CatalogText,
   type CreatedOrgApiKey,
   type MemberWithRoles,
   type OrgApiKey,
   type OrgApiKeyEvent,
-  type Role,
-  type RoleTitle,
 } from '../../shared/access.js';
 import { PAGES } from '../../shared/pages.js';
 
@@ -84,16 +81,14 @@ export const SetOrgKeyScopeInput = z.strictObject({
 
 const dateTime = () => z.string().meta({ format: 'date-time' });
 
-const RoleTitleSchema: z.ZodType<RoleTitle> = z
-  .union([z.string(), z.object({ key: z.string(), ns: z.string() })])
-  .meta({
-    description: 'Plain text, or an i18n key in a namespace.',
-  });
+const RoleTitleSchema = z.string().meta({
+  description: 'The role title in the caller’s language.',
+});
 
-export const RoleSchema: z.ZodType<Role> = z
+export const RoleSchema = z
   .object({
     key: z.string(),
-    title: RoleTitleSchema.nullable(),
+    title: RoleTitleSchema,
     builtIn: z.boolean(),
     editable: z.boolean().meta({
       description: 'Whether its grants may be changed (not `owner`).',
@@ -114,10 +109,7 @@ export const RoleSchema: z.ZodType<Role> = z
   })
   .meta({ ref: 'StudioRole' });
 
-const CatalogTextSchema: z.ZodType<CatalogText> = z.union([
-  z.string(),
-  z.object({ key: z.string(), ns: z.string() }),
-]);
+const CatalogTextSchema = z.string();
 
 const CatalogSectionSchema = z.object({
   name: z.string(),

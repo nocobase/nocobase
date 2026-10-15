@@ -36,10 +36,12 @@ import {
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import type { AuthorizationIdentity } from '@nocobase/authorization/core';
+import { getRequestTranslator } from '@nocobase/i18n/server';
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 
 import { studioError, studioErrorHandler } from '../http/errors.js';
 import { boundedList } from '../http/input.js';
+import { translateCatalog, translateRole } from './localize.js';
 import {
   AccessCatalogSchema,
   AccessMeSchema,
@@ -157,7 +159,12 @@ export const accessRoutes: AppApiRouteContribution<Application> =
       }),
       (c) => {
         const { businesses, settings: items } = access.catalog();
-        return c.json({ data: { businesses, settings: items } });
+        return c.json({
+          data: translateCatalog(getRequestTranslator(c), {
+            businesses,
+            settings: items,
+          }),
+        });
       },
     );
     settings.get(
@@ -174,7 +181,13 @@ export const accessRoutes: AppApiRouteContribution<Application> =
         description: 'Needs `pm.members` `read`.',
         responses: { 200: listResponse(RoleSchema), ...apiErrorResponses },
       }),
-      async (c) => c.json(boundedList(await roles.list(viewer(c)))),
+      async (c) => {
+        const t = getRequestTranslator(c);
+        const items = (await roles.list(viewer(c))).map((role) =>
+          translateRole(t, role),
+        );
+        return c.json(boundedList(items));
+      },
     );
     settings.post(
       '/roles',
@@ -201,7 +214,12 @@ export const accessRoutes: AppApiRouteContribution<Application> =
       apiValidator('json', CreateRoleInput),
       async (c) =>
         c.json(
-          { data: await roles.create(viewer(c), c.req.valid('json')) },
+          {
+            data: translateRole(
+              getRequestTranslator(c),
+              await roles.create(viewer(c), c.req.valid('json')),
+            ),
+          },
           201,
         ),
     );
@@ -224,10 +242,10 @@ export const accessRoutes: AppApiRouteContribution<Application> =
         },
       }),
       apiValidator('param', RoleParams),
-      async (c) =>
-        c.json({
-          data: await roles.get(viewer(c), c.req.valid('param').roleKey),
-        }),
+      async (c) => {
+        const role = await roles.get(viewer(c), c.req.valid('param').roleKey);
+        return c.json({ data: translateRole(getRequestTranslator(c), role) });
+      },
     );
     settings.patch(
       '/roles/:roleKey',
@@ -257,10 +275,13 @@ export const accessRoutes: AppApiRouteContribution<Application> =
       apiValidator('json', SaveRoleInput),
       async (c) =>
         c.json({
-          data: await roles.update(
-            viewer(c),
-            c.req.valid('param').roleKey,
-            c.req.valid('json'),
+          data: translateRole(
+            getRequestTranslator(c),
+            await roles.update(
+              viewer(c),
+              c.req.valid('param').roleKey,
+              c.req.valid('json'),
+            ),
           ),
         }),
     );
