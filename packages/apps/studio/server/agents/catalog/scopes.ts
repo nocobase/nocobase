@@ -8,6 +8,7 @@ import type {
   ScopeKind,
 } from '@nocobase/app-plugin-agents/server/tokens';
 import type { Projects } from '@nocobase/app-plugin-projects/server/tokens';
+import type { KeyScope } from '@nocobase/authorization/core';
 
 import { STUDIO_NAMESPACE } from '../../../shared/access.js';
 import type { PermissionSource } from '../commands/permissions.js';
@@ -21,6 +22,38 @@ export function studioScopes(deps: {
   readonly projects: () => Pick<Projects, 'projects'>;
   readonly permissions: Pick<PermissionSource, 'viewerOf'>;
 }): ScopeKind[] {
+  const describe =
+    (target: 'project' | 'workdir') =>
+    async (ids: readonly string[], userId: string, keyScope?: KeyScope) => {
+      const viewer = await deps.permissions.viewerOf({
+        kind: 'user',
+        userId,
+        displayName: userId,
+        ...(keyScope ? { keyScope } : {}),
+      });
+      const projectIds = keyScope?.objects('pm.projects') ?? 'all';
+      const names = await deps.projects().projects.targetNames(
+        {
+          ...viewer,
+          ...(projectIds === 'all' ? {} : { projectIds }),
+        },
+        target,
+        ids,
+      );
+      return new Map(
+        [...names].map(([id, item]) => [
+          id,
+          {
+            name: item.name,
+            ...(target === 'project'
+              ? {
+                  href: `/projects/${encodeURIComponent(item.projectId)}/settings`,
+                }
+              : {}),
+          },
+        ]),
+      );
+    };
   async function accessTo(
     userId: string,
     target: { projectId: string } | { resourceId: string },
@@ -39,12 +72,14 @@ export function studioScopes(deps: {
       title: text('studioAgents.scopes.project'),
       description: text('studioAgents.scopes.projectDescription'),
       access: (scopeId, userId) => accessTo(userId, { projectId: scopeId }),
+      describe: describe('project'),
     },
     {
       key: 'workdir',
       title: text('studioAgents.scopes.workdir'),
       description: text('studioAgents.scopes.workdirDescription'),
       access: (scopeId, userId) => accessTo(userId, { resourceId: scopeId }),
+      describe: describe('workdir'),
     },
   ];
 }

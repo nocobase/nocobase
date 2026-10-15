@@ -1,3 +1,4 @@
+import { ComputerSetup } from './pages/home/agent-setup.js';
 import { agentSessionsRoute } from '@nocobase/app-plugin-agent-sessions/client';
 
 import { SessionTaskPanel } from './agents/session-task-panel-lazy.js';
@@ -163,7 +164,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     // My tasks. A session is its owner's alone, which its API checks, so the page needs no grant.
     ...agentSessionsRoute({
       cli: 'nb-studio',
-      install: 'npm install -g @nocobase/studio-cli',
+      connectPrompt: ComputerSetup,
       // A session's tasks open beside the conversation, in the split view's task detail.
       linkPanels: { issue: SessionTaskPanel },
     }),

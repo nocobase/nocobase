@@ -5,7 +5,7 @@ description: Plan, build, deploy, verify, upgrade, and troubleshoot NocoBase 3 a
 
 # NocoBase production deployment
 
-Use this Skill to execute a complete deployment workflow. Read the application's `AGENTS.md`, the `.agents/rules/` files it indexes for building and deployment, and `README.MD` before changing files or running stateful commands: the README documents this application's build targets, archive layout and configuration variables. The Deployment section of the NocoBase 3 documentation is the reference for command details and platform-specific examples; in the nocobase3 source repository it is `docs/docs/<lang>/deployment/`.
+Use this Skill to execute a complete deployment workflow. Read the application's `AGENTS.md`, the `.agents/rules/` files it indexes for building and deployment, and `README.MD` before changing files or running stateful commands: the README documents this application's build targets, archive layout and configuration variables.
 
 Do not treat a process being healthy as proof that the application is usable. A deployment is complete only after the database, configuration, application behavior, and persistence checks below have evidence.
 

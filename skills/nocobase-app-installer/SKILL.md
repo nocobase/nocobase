@@ -39,7 +39,7 @@ A project is source code someone changes, created by `nocobase-create-app` and d
 | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Install, create or try NocoBase, to develop with         | The `nocobase-create-app` Skill                                                                             |
 | Deploy an application to production or a server          | This Skill, `--archive`, from the application's deployment archive                                          |
-| Run it with Docker                                       | The deployment documentation, https://github.com/nocobase/nocobase/tree/v3-develop/docs/docs/en/deployment  |
+| Run it with Docker                                       | The application's `nocobase-deployment` Skill and Docker configuration                                     |
 
 - "Install NocoBase on this server" with no project and no archive is not settled yet. Running the user's own application means creating it locally with `nocobase-create-app`, building its archive, and installing that here with `--archive`. Do not create a project on the server and run it with `pnpm dev`: that is development mode, not a deployment.
 - An `installer.json` whose `source.kind` is `template` was installed from the published Hub template by an earlier app-installer. The current one refuses it with `STATE_UNSUPPORTED`; leave it to the app-installer version that installed it.

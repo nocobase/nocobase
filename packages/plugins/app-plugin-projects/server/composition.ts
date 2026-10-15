@@ -251,6 +251,7 @@ export function createProjects(deps: ProjectsDeps): Projects {
     statuses,
     triggers,
     relations: () => subtasks.relations,
+    attachments: () => attachments.links,
   });
   const subtasks: SubtaskService = createSubtaskService({
     tx,

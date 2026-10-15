@@ -64,17 +64,22 @@ export function cliInstallLine(server: string, token: string): string {
 
 /**
  * The prompt a person pastes into their coding agent: install the CLI, sign in once they confirm the code, then learn
- * the commands and use them rather than the HTTP API. Interpolated without escaping: it is copied, never rendered as
+ * the commands and use them rather than the HTTP API. Computer setup appends connection instructions to the same common text. Interpolated without escaping: it is copied, never rendered as
  * HTML.
  */
 export function agentSetupPrompt(
   t: (key: string, options: Record<string, unknown>) => string,
   server: string,
   token: string,
+  { purpose = 'local' }: { readonly purpose?: 'local' | 'computer' } = {},
 ): string {
-  return t('home.agentSetup.prompt', {
+  const options = {
     server,
     install: cliInstallLine(server, token),
     interpolation: { escapeValue: false },
-  });
+  };
+  const common = t('home.agentSetup.prompt', options);
+  return purpose === 'computer'
+    ? `${common}\n${t('home.agentSetup.computerPrompt', options)}`
+    : common;
 }

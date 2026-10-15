@@ -86,6 +86,59 @@ describe('sqlite schema inspector', () => {
     });
   });
 
+  it('inspects composite, expression, partial and automatic indexes in one read', async () => {
+    const client = knex({
+      client: 'better-sqlite3',
+      connection: { filename: ':memory:' },
+      useNullAsDefault: true,
+    });
+    try {
+      await client.raw(
+        'create table items (tenant integer, code text, label text, primary key (tenant, code), unique (label)) without rowid',
+      );
+      await client.raw(
+        'create index items_label on items (lower(label) desc, tenant asc) where label is not null',
+      );
+      const inspector = new SqliteSchemaInspector({
+        connectionName: 'main',
+        resolveClient: async () => client,
+      });
+      const statements: string[] = [];
+      client.on('query', (query: { sql: string }) =>
+        statements.push(query.sql),
+      );
+      const collection = await inspector.getPhysicalCollection({
+        tableName: 'items',
+      });
+      expect(
+        statements.filter((sql) => sql.includes('pragma_index')),
+      ).toHaveLength(1);
+      expect(collection?.primaryKey?.columns).toEqual(['tenant', 'code']);
+      expect(collection?.uniqueConstraints).toEqual([{ columns: ['label'] }]);
+      expect(collection?.indexes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: 'items_label',
+            keys: [
+              { expression: 'lower(label)', order: 'desc' },
+              { columnName: 'tenant', order: 'asc' },
+            ],
+            predicate: 'label is not null',
+          }),
+          expect.objectContaining({
+            backsConstraint: { kind: 'primaryKey' },
+            keys: [
+              { columnName: 'tenant', order: 'asc' },
+              { columnName: 'code', order: 'asc' },
+            ],
+          }),
+        ]),
+      );
+    } finally {
+      await client.destroy();
+    }
+  });
+
   it('normalizes SQLite-specific physical types', () => {
     expect(normalizePhysicalDataType(sqliteTypes, 'TIMESTAMP(3)')).toBe(
       'datetime',

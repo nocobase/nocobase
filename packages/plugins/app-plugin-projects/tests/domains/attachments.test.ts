@@ -324,3 +324,86 @@ describe('the purge', () => {
     ).toBe('OK');
   });
 });
+
+describe('attachments on issue creation', () => {
+  it('binds the creator uploads and makes their bytes readable with the issue', async () => {
+    const file = await h.services.attachments.upload(alice(), png());
+    const issue = await h.services.issues.create(alice(), {
+      title: 'Pasted screenshot',
+      statusKey: 'in_progress',
+      attachmentIds: [file.id],
+      description: `![shot](${file.contentUrl})`,
+    });
+    expect(await h.services.attachments.list(alice(), issue.id)).toMatchObject([
+      { id: file.id, issueId: issue.id, commentId: null },
+    ]);
+    expect(
+      new Uint8Array(
+        await new Response(
+          (await h.services.attachments.content(alice(), file.id)).body,
+        ).arrayBuffer(),
+      ),
+    ).toEqual(new Uint8Array([137, 80, 78, 71]));
+  });
+
+  it('requires upload permission again, without affecting text-only creation', async () => {
+    const file = await h.services.attachments.upload(alice(), png());
+    expect(
+      await codeOf(
+        h.services.issues.create(withoutUpload(alice()), {
+          title: 'Denied',
+          attachmentIds: [file.id],
+        }),
+      ),
+    ).toBe('FORBIDDEN');
+    expect(
+      (await h.services.attachments.get(alice(), file.id)).issueId,
+    ).toBeNull();
+    expect(
+      await codeOf(
+        h.services.issues.create(withoutUpload(alice()), {
+          title: 'Text only',
+        }),
+      ),
+    ).toBe('OK');
+  });
+
+  it('rejects another uploader and already attached files, rolling back all links', async () => {
+    const own = await h.services.attachments.upload(alice(), png());
+    const other = await h.services.attachments.upload(bob(), png());
+    expect(
+      await codeOf(
+        h.services.issues.create(alice(), {
+          title: 'Forged',
+          attachmentIds: [own.id, other.id],
+        }),
+      ),
+    ).toBe('INVALID_ATTACHMENT');
+    expect(
+      (await h.services.attachments.get(alice(), own.id)).issueId,
+    ).toBeNull();
+    await h.services.issues.create(alice(), {
+      title: 'First',
+      attachmentIds: [own.id],
+    });
+    expect(
+      await codeOf(
+        h.services.issues.create(alice(), {
+          title: 'Reused',
+          attachmentIds: [own.id],
+        }),
+      ),
+    ).toBe('INVALID_ATTACHMENT');
+  });
+
+  it('rejects more than the attachment limit', async () => {
+    expect(
+      await codeOf(
+        h.services.issues.create(alice(), {
+          title: 'Too many',
+          attachmentIds: Array.from({ length: 11 }, (_, i) => String(i)),
+        }),
+      ),
+    ).toBe('INVALID_FIELD');
+  });
+});

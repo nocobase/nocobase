@@ -122,6 +122,31 @@ async function createMember(
   return { userId: body.data.id, email };
 }
 
+describe('member management permission boundaries', () => {
+  it('refuses role creation by anonymous and unpermitted callers', async () => {
+    const server = await startApp();
+    const adminCookie = await signInAsAdmin(server);
+    const { email } = await createMember(server, adminCookie);
+    const signedIn = await apiRequest(server, '/auth/sign-in/email', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email, password: 'OldPassword123!' }),
+    });
+    expect(signedIn.status).toBe(200);
+    for (const [cookie, status] of [
+      ['', 401],
+      [cookieOf(signedIn), 403],
+    ] as const) {
+      const response = await apiRequest(server, '/access/roles', {
+        method: 'POST',
+        headers: { cookie, 'content-type': 'application/json' },
+        body: JSON.stringify({ title: 'Synthetic copy' }),
+      });
+      expect(response.status).toBe(status);
+    }
+  });
+});
+
 describe('resetting a member’s password through the real application', () => {
   it('lets an authorized administrator reset a member’s password, revoking the member’s session and the old password', async () => {
     const server = await startApp();

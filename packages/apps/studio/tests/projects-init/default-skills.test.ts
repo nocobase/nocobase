@@ -1,4 +1,5 @@
 import { writeFileSync } from 'node:fs';
+import type { KeyScope } from '@nocobase/authorization/core';
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -32,6 +33,84 @@ const createSkill = () =>
   });
 
 describe('new project default skills', () => {
+  it('offers the settings commands to a non-root manager without unsupported business actions', async () => {
+    const manifest = await h.manifest({ user: 'alice' });
+    for (const id of [
+      'project:default-skills:get',
+      'project:default-skills:set',
+    ]) {
+      const command = manifest.commands.find((item) => item.id === id);
+      expect(command).toBeDefined();
+      expect(command?.action).toBeUndefined();
+    }
+  });
+
+  it('resolves visible project and working-directory names in batches and hides private targets', async () => {
+    const project = await h.projects.projects.create(h.viewer('alice'), {
+      name: 'Private project',
+      visibility: 'members',
+    });
+    const resource = await h.projects.projects.addResource(
+      h.viewer('alice'),
+      project.id,
+      {
+        type: 'gitRepo',
+        url: 'https://example.com/team/backend.git',
+        label: 'Backend directory',
+      },
+    );
+    const projectScope = h.agents.scopes.get('project')!;
+    const workdirScope = h.agents.scopes.get('workdir')!;
+    const client = await h.database.connection().client<{
+      on(event: string, listener: (query: { sql: string }) => void): void;
+      off(event: string, listener: (query: { sql: string }) => void): void;
+    }>();
+    const statements: string[] = [];
+    const capture = ({ sql }: { sql: string }) => {
+      statements.push(sql);
+    };
+    client.on('query', capture);
+    expect(
+      (await projectScope.describe!([project.id, 'missing'], 'alice')).get(
+        project.id,
+      ),
+    ).toEqual({
+      name: 'Private project',
+      href: `/projects/${project.id}/settings`,
+    });
+    expect(
+      (await workdirScope.describe!([resource.id], 'alice')).get(resource.id),
+    ).toEqual({ name: 'Backend directory' });
+    client.off('query', capture);
+    expect(statements).toHaveLength(3);
+    expect(statements.every((sql) => /^\s*select\b/iu.test(sql))).toBe(true);
+    const keyScope: KeyScope = {
+      keyId: 'test-settings-only',
+      permissions: null,
+      allows: (resource) => resource.type === 'settings',
+      objects: () => 'all',
+    };
+    expect(
+      (await projectScope.describe!([project.id], 'alice', keyScope)).size,
+    ).toBe(0);
+    expect(
+      (await workdirScope.describe!([resource.id], 'alice', keyScope)).size,
+    ).toBe(0);
+    const limited: KeyScope = {
+      ...keyScope,
+      allows: () => true,
+      objects: () => [],
+    };
+    expect(
+      (await projectScope.describe!([project.id], 'alice', limited)).size,
+    ).toBe(0);
+    expect(
+      (await workdirScope.describe!([resource.id], 'alice', limited)).size,
+    ).toBe(0);
+    await h.addUser('bob');
+    expect((await projectScope.describe!([project.id], 'bob')).size).toBe(0);
+    expect((await workdirScope.describe!([resource.id], 'bob')).size).toBe(0);
+  });
   it('protects configuration routes and validates replacements atomically', async () => {
     const path = '/projectDefaultSkills';
     expect((await h.request('GET', path)).status).toBe(401);

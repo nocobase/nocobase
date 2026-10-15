@@ -2,6 +2,7 @@ import type { AgentSessionsResource } from './en-US.js';
 
 const zhCN: AgentSessionsResource = {
   errors: {
+    submissionConflict: '该提交 ID 已用于另一项请求。',
     discoveryFailed: '无法加载智能体设置。请检查此电脑上的智能体后重试。',
     authenticationRequired: '请先登录。',
     computerNotFound: '你的账号下没有这台电脑。',

@@ -139,3 +139,5 @@ export {
 } from './api/changed-issues.js';
 export { usePmApi } from './hooks/use-pm-api.js';
 export { useApiKeyActors } from './hooks/use-api-key-actors.js';
+
+export { PmDescriptionImage } from './components/pm-description-image.js';

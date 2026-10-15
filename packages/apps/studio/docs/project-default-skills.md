@@ -1,6 +1,6 @@
 # Default skills for new projects
 
-Studio stores the project default skill IDs in `studioSettings.projectDefaultSkills`, using the existing settings table. The missing setting is an empty list. There is no built-in team list, schema migration or settings page.
+Studio stores the project default skill IDs in `studioSettings.projectDefaultSkills`, using the existing settings table. The missing setting is an empty list. Administrators can toggle automatic attachment to new projects in each skill's editor. This setting saves immediately, independently of the skill's content version, and retains every other configured skill. There is no built-in team list or schema migration.
 
 Use `nb-studio project default-skills get` to read the list and `nb-studio project default-skills set --skills <id>,<id>` to replace it. Pass `--file defaults.json` with `{ "skillIds": [] }` to clear it. Reading requires `agents.agents` read or manage; writing requires manage. IDs must exist, duplicates are removed in order, and at most 100 IDs are accepted. Invalid replacements leave the previous configuration intact.
 

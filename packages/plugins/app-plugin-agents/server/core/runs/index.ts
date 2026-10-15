@@ -116,5 +116,6 @@ export {
   createRunnerView,
   runsHeldBy,
   runsHeldByTool,
+  runsHeldSnapshot,
   type RunnerView,
 } from './runner-view.js';

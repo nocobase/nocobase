@@ -102,6 +102,7 @@ export interface Activity {
 }
 
 export interface IssueDetail extends IssueListItem {
+  readonly progress?: Record<string, unknown> | null;
   readonly parent: IssueRef | null;
   /** The fixed statuses, in order. */
   readonly statuses: readonly StatusDefinition[];
@@ -179,6 +180,8 @@ export interface IssueListQuery {
 }
 
 export interface CreateIssueRequest {
+  /** The creator's unattached uploads, bound before work starts. */
+  readonly attachmentIds?: readonly string[];
   readonly title: string;
   readonly description?: string;
   /** `in_progress` (start now) or `backlog` (later, the default; `START_STATUSES`). */

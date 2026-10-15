@@ -282,14 +282,22 @@ const zhCN: AppResource = {
         '1. `nb-studio` 需要 Node.js 24 或更高版本及 npm：先用 `node --version` 检查，缺少或版本过低时先征得我同意再安装；然后运行 `{{install}}` 安装 `nb-studio`；\n' +
         '2. 运行 `nb-studio login --server {{server}}`，把它显示的登录地址和验证码告诉我，等待我在浏览器中确认登录；\n' +
         '3. 登录成功后运行 `nb-studio whoami` 确认身份和权限，再运行 `nb-studio docs` 了解可用命令；\n' +
-        '4. 之后按我的要求通过 `nb-studio` 操作，不要直接调用 HTTP 接口。',
+        '4. 运行 `nb-studio skills install`，为编程 Agent 安装 CLI skill；\n' +
+        '5. 之后按我的要求通过 `nb-studio` 操作，不要直接调用 HTTP 接口。',
+      computerTitle: '连接你的电脑',
+      computerDescription:
+        '将下面的配置指令发给要连接的电脑上的编程 Agent（如 Claude Code、Codex）。',
+      computerPrompt:
+        '6. 运行 `nb-studio acp service install` 让这台电脑保持在线；临时连接可改用 `nb-studio acp start`；\n' +
+        '7. 默认允许访问整个用户目录，可以在「我的电脑」中修改允许的目录；\n' +
+        '8. 请我在 Studio 中确认这台电脑已在线。',
       promptLabel: '发送给 Coding Agent 的配置指令',
       preparing: '正在生成配置指令',
       identity:
         'Coding Agent 将通过 CLI 以你的身份操作，操作范围受你的 Studio 权限限制。登录需要你在浏览器中确认。',
       expiry: '配置指令中的安装链接 30 分钟内有效，过期后请重新生成。',
       runtime:
-        '要让 Studio 将任务派发到你的电脑执行，请前往「Agent 团队 › 运行环境 › 添加运行环境」安装并注册 Runner。',
+        '本地编程 Agent 通过 CLI 管理 Studio；「我的 Agent」连接你的电脑进行交互会话；Runner 执行 Studio 派发的任务，可在「Agent 团队 › 运行环境 › 添加运行环境」注册。',
       regenerate: '重新生成配置指令',
       copy: '复制配置指令',
       copied: '已复制配置指令',
@@ -1036,6 +1044,9 @@ const zhCN: AppResource = {
     unknown: '未知',
   },
   studioAgents: {
+    newProjectSkill: '新项目自动挂载',
+    newProjectSkillDescription:
+      '立即保存，仅影响之后创建的项目；已有项目的挂载不变。',
     principalKinds: { agent: 'Agent' },
     templateMessages: {
       inReview:

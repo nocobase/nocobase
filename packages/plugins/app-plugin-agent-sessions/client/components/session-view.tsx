@@ -3,9 +3,10 @@
  * choices, and beside it that work in detail, where the session runs and what it has used. A session whose computer is
  * offline, or that is archived, reads as before and takes no new messages.
  */
-import { useToaster } from '@nocobase/app-client';
+import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
+import { useIsMutating } from '@tanstack/react-query';
 import {
   AlertTriangleIcon,
   ArchiveIcon,
@@ -73,6 +74,8 @@ import { AgentBadge } from './agent-badge.js';
 import { BackLink } from './back-link.js';
 import { ChoiceMenus } from './choice-menus.js';
 import { Composer } from './composer.js';
+import { useSubmission } from '../use-submission.js';
+import { SubmissionNotice } from './submission-notice.js';
 import { useLinkPanel } from './link-panel.js';
 import { LinkBar } from './link-bar.js';
 import { LinkName } from './link-name.js';
@@ -206,6 +209,14 @@ function Conversation({
   const { t, i18n } = useTranslation();
   const toaster = useToaster();
   const prompt = usePrompt(session.id);
+  const submission = useSubmission<{
+    content: PromptContent[];
+    mentions: Mention[];
+  }>(`session:${session.id}`, `session:${session.id}`, (input) =>
+    prompt.mutateAsync(input),
+  );
+  const sending =
+    useIsMutating({ mutationKey: ['agentSessions', 'prompt', session.id] }) > 0;
   const cancel = useCancel(session.id);
   const answer = useAnswer(session.id);
   const decide = useDecideLinks(session.id);
@@ -286,10 +297,15 @@ function Conversation({
   ): Promise<void> => {
     try {
       if (interrupt && session.running) await cancel.mutateAsync();
-      await prompt.mutateAsync({ content, mentions });
+      await submission.send({ content, mentions });
       pinnedRef.current = true;
     } catch (error) {
-      fail(error);
+      if (error instanceof ApiClientError && error.status < 500) fail(error);
+      else
+        void toaster.show({
+          type: 'error',
+          title: t('composer.sendUnconfirmed'),
+        });
       throw error;
     }
   };
@@ -400,6 +416,12 @@ function Conversation({
         </div>
       </div>
       <div className='mx-auto w-full max-w-[760px] px-3 pt-2 pb-3 sm:px-6 sm:pb-4'>
+        <SubmissionNotice
+          pending={submission.pending}
+          sending={sending}
+          retry={submission.retry}
+          edit={submission.edit}
+        />
         <Composer
           compact
           hints
@@ -414,9 +436,10 @@ function Conversation({
                   ? t('composer.busy')
                   : t('composer.placeholder')
           }
-          disabled={!writable}
+          disabled={!writable || submission.pending}
           busy={session.running}
-          sending={prompt.isPending}
+          sending={sending}
+          draftKey={`session:${session.id}`}
           commands={session.state?.commands}
           mentions={{ projectId: session.project?.id ?? null }}
           toolbar={
@@ -486,7 +509,7 @@ function Header({
                 setRenaming(false);
               }
             }}
-            className='h-9 max-w-md'
+            className='h-9 min-w-0 max-w-md flex-1'
             aria-label={t('session.rename')}
           />
         ) : (
@@ -501,13 +524,13 @@ function Header({
           </h2>
         )}
         {session.waiting ? (
-          <span className='max-md:sr-only inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-amber-800 dark:text-amber-300'>
+          <span className='max-md:sr-only inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-amber-800 dark:text-amber-300'>
             <span className='size-2 rounded-full bg-amber-400' />
             {t('session.asking')}
           </span>
         ) : (
           session.running && (
-            <span className='max-md:sr-only text-primary inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium'>
+            <span className='max-md:sr-only text-primary inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium whitespace-nowrap'>
               <span className='bg-primary size-2 animate-pulse rounded-full' />
               {t('session.answering')}
             </span>
@@ -583,33 +606,41 @@ function Header({
           collapsed && 'max-md:hidden',
         )}
       >
-        <MetaChip>
+        <MetaChip
+          title={[agentName(session, computer), mode]
+            .filter(Boolean)
+            .join(' · ')}
+        >
           <AgentBadge
             agentId={session.agentId}
             name={agentName(session, computer)}
           />
-          {agentName(session, computer)}
-          {mode && <span className='text-muted-foreground'>{mode}</span>}
+          <span className='truncate'>{agentName(session, computer)}</span>
+          {mode && (
+            <span className='text-muted-foreground truncate'>{mode}</span>
+          )}
         </MetaChip>
         {session.project && (
-          <MetaChip>
-            <FolderKanbanIcon className='size-4' />
-            {session.project.name}
+          <MetaChip shrink title={session.project.name}>
+            <FolderKanbanIcon className='size-4 shrink-0' />
+            <span className='truncate'>{session.project.name}</span>
           </MetaChip>
         )}
-        <MetaChip>
-          <LaptopIcon className='size-4' />
-          {computer?.name ?? t('session.removedComputer')}
+        <MetaChip shrink title={computer?.name ?? t('session.removedComputer')}>
+          <LaptopIcon className='size-4 shrink-0' />
+          <span className='truncate'>
+            {computer?.name ?? t('session.removedComputer')}
+          </span>
           <span
             className={cn(
-              'size-2 rounded-full',
+              'size-2 shrink-0 rounded-full',
               session.computerOnline
                 ? 'bg-emerald-500'
                 : 'border-muted-foreground border-[1.5px]',
             )}
           />
         </MetaChip>
-        <MetaChip shrink>
+        <MetaChip shrink title={session.cwd}>
           <FolderIcon className='size-4 shrink-0' />
           <code className='truncate'>
             {displayPath(session.cwd, computer?.home ?? null)}
@@ -637,18 +668,21 @@ function Header({
 }
 
 function MetaChip({
+  title,
   shrink,
   children,
 }: {
+  readonly title: string;
   /** Gives way when the row is narrow, its text cut short. */
   readonly shrink?: boolean;
   readonly children: ReactNode;
 }): ReactElement {
   return (
     <span
+      title={title}
       className={cn(
         'bg-card inline-flex h-7.5 max-w-full items-center gap-1.5 overflow-hidden rounded-full border px-2.5 text-xs whitespace-nowrap',
-        shrink ? 'min-w-0' : 'shrink-0',
+        shrink ? 'min-w-0' : 'max-w-40 shrink-0',
       )}
     >
       {children}
@@ -815,10 +849,13 @@ function Details({
         )}
       </DetailSection>
       <DetailSection title={t('session.about')}>
-        <dl className='grid grid-cols-[4rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-xs'>
+        <dl className='grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-2 text-xs [&>dt]:whitespace-nowrap [&>dd]:min-w-0 [&>dd]:break-words'>
           <dt className='text-muted-foreground'>{t('session.computer')}</dt>
           <dd className='flex min-w-0 items-center gap-1.5'>
-            <span className='truncate'>
+            <span
+              className='truncate'
+              title={computer?.name ?? t('session.removedComputer')}
+            >
               {computer?.name ?? t('session.removedComputer')}
             </span>
             <span
