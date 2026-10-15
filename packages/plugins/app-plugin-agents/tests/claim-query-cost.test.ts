@@ -35,7 +35,7 @@ describe('claim query cost', () => {
         const conn = h.database.connection();
         await runsRepo(conn).updateMany({
           filter: { id: excludedRun },
-          values: { priority: 1 },
+          values: { priority: -1 },
         });
         const agent = (await agentsRepo(conn).findOne({
           filter: { id: excluded },
@@ -104,6 +104,17 @@ describe('claim query cost', () => {
         null,
       );
       const runId = await h.enqueue(agentId, 'selected');
+      const queued = await runsRepo(h.database.connection()).findMany({
+        filter: { status: 'queued' },
+        sort: (sort) => [
+          sort.field('priority').asc(),
+          sort.field('createdAt').asc(),
+          sort.field('id').asc(),
+        ],
+      });
+      expect(queued).toHaveLength(count);
+      expect(new Set(queued.map((run) => run.agentId)).size).toBe(count);
+      expect(queued.at(-1)?.id).toBe(runId);
       const registered = await h.registerRunner();
       const runner = await h.services.runners.authenticate(registered.key, {
         touch: false,
