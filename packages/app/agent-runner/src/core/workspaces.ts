@@ -3,7 +3,7 @@
 // and unpushed work. Routine retention and application decisions never waive that protection.
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { readdir, readFile, stat, statfs, lstat } from 'node:fs/promises';
+import { readdir, readFile, stat, statfs } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { RunnerPaths } from '../lib/home.ts';
@@ -47,7 +47,6 @@ export interface WorkspaceEntry {
   readonly lastRunId?: string;
   readonly lastUsedAt: string;
   unpushed: boolean;
-  sizeBytes?: number;
   reportId?: string;
   decision?: WorkspaceDecision;
   cleanup?: WorkspaceCleanupResult;
@@ -179,7 +178,7 @@ async function recordCheck(
   }
 }
 
-/** Every working directory, checked. */
+/** Every working directory, checked. Sizes are not measured: walking every file of every directory takes minutes. */
 export async function scanWorkspaces(
   paths: RunnerPaths,
   options: {
@@ -191,10 +190,7 @@ export async function scanWorkspaces(
   const entries: WorkspaceEntry[] = [];
   for (const { workDir, meta } of await listWorkspaceDirs(paths)) {
     try {
-      const entry = await inspectWorkspace(paths, workDir, meta, options);
-      const size = await directorySize(workDir).catch(() => undefined);
-      if (size !== undefined) entry.sizeBytes = size;
-      entries.push(entry);
+      entries.push(await inspectWorkspace(paths, workDir, meta, options));
     } catch (error) {
       options.log?.(
         `workspaces: inspection failed; retained ${workDir}: ${String(error)}`,
@@ -202,18 +198,6 @@ export async function scanWorkspaces(
     }
   }
   return entries;
-}
-
-/** Low-frequency diagnostics only; never follow symlinks into unmanaged resources. */
-async function directorySize(root: string): Promise<number> {
-  let size = 0;
-  for (const entry of await readdir(root, { withFileTypes: true })) {
-    const child = path.join(root, entry.name);
-    if (entry.isSymbolicLink()) continue;
-    if (entry.isDirectory()) size += await directorySize(child);
-    else size += (await lstat(child)).size;
-  }
-  return size;
 }
 
 /** Free and total bytes of a file system, as `statfs` reports them for a path on it. */
@@ -288,7 +272,6 @@ export function workspacesRequest(
       runId: entry.lastRunId!,
       workDir: entry.workDir,
       unpushed: entry.unpushed,
-      ...(entry.sizeBytes === undefined ? {} : { sizeBytes: entry.sizeBytes }),
       lastUsedAt: entry.lastUsedAt,
     }));
   const reportId = decisions ? randomUUID() : undefined;
@@ -303,9 +286,6 @@ export function workspacesRequest(
         subjectKey: entry.subjectKey,
         lastUsedAt: entry.lastUsedAt,
         unpushed: entry.unpushed,
-        ...(entry.sizeBytes === undefined
-          ? {}
-          : { sizeBytes: entry.sizeBytes }),
         ...(entry.lastRunId === undefined ? {} : { runId: entry.lastRunId }),
         ...(entry.cleanup === undefined ? {} : { cleanup: entry.cleanup }),
       };

@@ -15,8 +15,10 @@
 //   claims rotate across them without waiting, starting each round with the application after the one that last had
 //   work, and a round that found nothing waits a few seconds.
 //
-// - collect working directories, every 10 minutes: the retention rules, then a report to every application whose
-//   heartbeat answer accepts one, removing what it says is over and what is over the owner's limit (workspaces.ts).
+// - collect working directories, an hour after the last collection ended (sooner when an application asks, at once when
+//   the disk runs low): the retention rules, then a report to every application whose heartbeat answer accepts one,
+//   removing what it says is over and what is over the owner's limit (workspaces.ts). Claims go on meanwhile; only a
+//   due prune of the shared store holds them.
 //
 // A revoked runner key ends that application's loops; the daemon stops when no application is left.
 //
@@ -236,6 +238,8 @@ export class RunnerDaemon {
   private gcTimer: NodeJS.Timeout | undefined;
   private lastCollect = 0;
   private collecting: Promise<void> | undefined;
+  /** A collection waits for outstanding claims to finish before pruning the store; new claims wait meanwhile. */
+  private holdingForPrune = false;
   private claimLoop: Promise<void> | undefined;
   private stopped: Promise<void> | undefined;
   /** Where the next round of claims starts, with several applications. */
@@ -515,7 +519,7 @@ export class RunnerDaemon {
     };
   }
 
-  /** How often working directories are collected: every 10 minutes, or sooner when an application asks. */
+  /** How long after a collection the next one starts: `WORKSPACE_REPORT_INTERVAL_MS`, or sooner when an application asks. */
   private get collectIntervalMs(): number {
     return Math.min(
       this.timings.collectIntervalMs ?? WORKSPACE_REPORT_INTERVAL_MS,
@@ -534,13 +538,10 @@ export class RunnerDaemon {
    */
   collectGarbage(): Promise<void> {
     this.collecting ??= (async () => {
-      this.lastCollect = Date.now();
       const { paths, log } = this.options;
+      const startedAt = Date.now();
+      log('gc: collection started');
       try {
-        if (this.claimsInFlight > 0)
-          await new Promise<void>((resolve) => {
-            this.claimsDrained = resolve;
-          });
         const settings = await readSettings(paths);
         const reporters = new Map<
           string,
@@ -597,13 +598,37 @@ export class RunnerDaemon {
         );
       }
       try {
-        await this.pruneStore();
+        await this.pruneAfterCollection();
       } finally {
+        this.lastCollect = Date.now();
+        log(`gc: collection finished in ${this.lastCollect - startedAt} ms`);
         this.collecting = undefined;
+        // Space it recovered may let claims resume.
         this.slotFreed?.();
       }
     })();
     return this.collecting;
+  }
+
+  /** Prunes a due store once outstanding claims have started their workers, holding new claims only for that. */
+  private async pruneAfterCollection(): Promise<void> {
+    if (
+      !this.pruneDue ||
+      this.supervisor.size > 0 ||
+      Date.now() < this.pruneRetryAt
+    )
+      return;
+    this.holdingForPrune = true;
+    try {
+      if (this.claimsInFlight > 0)
+        await new Promise<void>((resolve) => {
+          this.claimsDrained = resolve;
+        });
+      await this.pruneStore();
+    } finally {
+      this.holdingForPrune = false;
+      this.slotFreed?.();
+    }
   }
 
   /**
@@ -900,7 +925,7 @@ export class RunnerDaemon {
     if (
       this.pendingUpdate ||
       this.pruning ||
-      this.collecting ||
+      this.holdingForPrune ||
       this.diskPaused ||
       this.stopping.signal.aborted
     )
@@ -910,7 +935,7 @@ export class RunnerDaemon {
       this.options.paths.workRoot,
     );
     if (
-      this.collecting ||
+      this.holdingForPrune ||
       this.pendingUpdate ||
       this.pruning ||
       this.diskPaused ||
@@ -1055,7 +1080,7 @@ export class RunnerDaemon {
         this.slots - this.supervisor.size <= 0 ||
         this.pendingUpdate ||
         this.pruning ||
-        this.collecting ||
+        this.holdingForPrune ||
         this.diskPaused
       ) {
         await new Promise<void>((resolve) => {
