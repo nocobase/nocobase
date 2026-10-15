@@ -6,7 +6,20 @@
  */
 import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  DatabaseInAppStore,
+  type InAppMessage,
+} from '@nocobase/app-plugin-notification-in-app/server';
+import type {
+  NotificationSendInput,
+  NotificationService,
+} from '@nocobase/app-plugin-notification/server';
+
+import {
+  createStudioInbox,
+  type StudioInbox,
+} from '../../server/inbox/service.js';
 
 import {
   GIT_INBOX_SOURCE,
@@ -177,6 +190,53 @@ describe('pull requests', () => {
   const repoWithToken = () => connectedRepo(h, REPO);
 
   it('keeps GitHub merge facts after late closed, open and incomplete merged REST snapshots', async () => {
+    await h.close();
+    let inbox!: StudioInbox;
+    let store!: DatabaseInAppStore;
+    const announce = vi.fn();
+    h = await createBridgeHarness({
+      inApp: true,
+      inboxPort(database) {
+        store = new DatabaseInAppStore(database);
+        let nextNotification = 0;
+        // Only the notification sender is a stand-in; delivery and settlement use the real inbox.
+        const notifications = {
+          async send(input: NotificationSendInput<never>) {
+            const notificationId = `merge-${++nextNotification}`;
+            const message = (input.messages as Record<string, InAppMessage>)
+              .inbox;
+            for (const userId of new Set(
+              typeof message.to === 'string' ? [message.to] : message.to,
+            )) {
+              await store.deliver({
+                notificationId,
+                deliveryId: `${notificationId}:${userId}`,
+                userId,
+                message,
+                createdAt: new Date().toISOString(),
+              });
+            }
+            return {
+              notificationId,
+              idempotencyKey: input.idempotencyKey,
+              deduplicated: false,
+              status: 'completed',
+              deliveries: [],
+            };
+          },
+        } as unknown as NotificationService;
+        inbox = createStudioInbox({
+          database,
+          channel: 'inbox',
+          inApp: () => store,
+          notifications: () => notifications,
+          announce,
+        });
+        return inbox;
+      },
+    });
+    for (const id of ['alice', 'bob']) await h.addUser(id);
+    h.roles.set('bob', 'admin');
     const notices: string[] = [];
     h.projects.events.on('notice.planned', (event) => {
       if (event.notice.type === 'pr_merged') notices.push(event.notice.key);
@@ -189,6 +249,9 @@ describe('pull requests', () => {
     });
     await h.git.pollRepo(repo);
     const pr = (await h.git.list(alice(), issue.id)).data[0]!;
+    expect(await inbox.pending('alice')).toBe(1);
+    expect(await inbox.waitingFor('alice')).toHaveLength(1);
+    announce.mockClear();
     h.github.merge(REPO, 91, 'bob');
     await h.git.refresh(alice(), issue.id, pr.id);
     const merged = (await findPullRequestById(h.projects.tx.read(), pr.id))!;
@@ -214,9 +277,37 @@ describe('pull requests', () => {
         mergedManually: false,
       });
     }
-    expect(
-      h.port.settled.filter((ref) => ref.outcome === 'merged'),
-    ).toHaveLength(1);
+    const decisions = () =>
+      h.projects.tx
+        .read()
+        .query.selectFrom('studioInboxNotices')
+        .selectAll()
+        .where('source', '=', GIT_INBOX_SOURCE)
+        .where('decisionKey', '=', `pr:${pr.id}:${issue.id}`)
+        .execute();
+    const settled = await decisions();
+    expect(settled).toHaveLength(1);
+    expect(settled[0]).toMatchObject({
+      userId: 'alice',
+      kind: 'decision',
+      outcome: 'merged',
+      resolvedAt: expect.anything(),
+    });
+    expect(await store.list({ userId: 'alice' })).toHaveLength(1);
+    expect(await inbox.pending('alice')).toBe(0);
+    expect(await inbox.waitingFor('alice')).toHaveLength(0);
+    expect(announce).toHaveBeenCalledExactlyOnceWith('alice');
+
+    await inbox.resolve({
+      source: GIT_INBOX_SOURCE,
+      decisionKey: `pr:${pr.id}:${issue.id}`,
+      outcome: 'merged',
+    });
+    expect(await decisions()).toEqual(settled);
+    expect(await store.list({ userId: 'alice' })).toHaveLength(1);
+    expect(await inbox.pending('alice')).toBe(0);
+    expect(await inbox.waitingFor('alice')).toHaveLength(0);
+    expect(announce).toHaveBeenCalledExactlyOnceWith('alice');
     expect(
       (
         await h.projects.issueQueries.activities(alice(), issue.id, {})
