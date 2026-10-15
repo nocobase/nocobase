@@ -68,7 +68,7 @@ const labels = () => h.github.pull(REPO, 1).labels?.map((label) => label.name);
 
 describe('preview labels after the last issue is unlinked', () => {
   it.each(['closed', 'merged'] as const)(
-    'stores the %s state and stops reading or changing its labels',
+    'stores the %s state and stops changing its labels while reconfirming recent closures',
     async (state) => {
       const { repo, issue, pr } = await setup();
       await unlink(issue.id, pr.id);
@@ -101,14 +101,25 @@ describe('preview labels after the last issue is unlinked', () => {
 
       const after = h.github.requests.length;
       for (let tick = 0; tick < 3; tick++) await h.git.pollRepo(repo);
+      const reads = h.github.requests.slice(after);
       expect(
-        h.github.requests
-          .slice(after)
-          .filter(
-            (request) =>
-              request.path.startsWith(`/repos/${REPO}/pulls/1`) ||
-              request.path.startsWith(`/repos/${REPO}/issues/1/labels`),
-          ),
+        reads.filter((request) =>
+          request.path.startsWith(`/repos/${REPO}/issues/1/labels`),
+        ),
+      ).toEqual([]);
+      const confirmations = reads.filter(
+        (request) => request.path === `/repos/${REPO}/pulls/1`,
+      );
+      expect(confirmations).toHaveLength(state === 'closed' ? 3 : 0);
+      expect(
+        confirmations.every(
+          (request) => request.method === 'GET' && !request.conditional,
+        ),
+      ).toBe(true);
+      expect(
+        reads.filter((request) =>
+          /\/commits\/|\/check-runs/u.test(request.path),
+        ),
       ).toEqual([]);
       expect(labels()).toEqual(['keep-me', 'no-preview']);
       expect(

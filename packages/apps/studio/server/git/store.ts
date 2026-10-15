@@ -27,6 +27,9 @@ export const LINKS = 'studioIssuePullRequests';
 export const SUGGESTIONS = 'studioPullRequestSuggestions';
 export const DELIVERIES = 'studioGitWebhookDeliveries';
 
+/** Closed snapshots may briefly omit GitHub's merge facts. Never extend this window on a refresh. */
+export const CLOSED_CONFIRMATION_MS = 60 * 60 * 1000;
+
 type Row = Record<string, unknown>;
 
 const str = (value: unknown): string | null =>
@@ -268,30 +271,46 @@ export async function updateRepo(
 }
 
 /**
- * The repositories to poll: those reached through a connection, and those with a linked pull request still open (a
- * public one read without a credential).
+ * The repositories to poll: those reached through a connection, and those with a linked pull request still open or
+ * recently closed (a public one read without a credential).
  */
 export async function reposToPoll(
   conn: DatabaseConnection,
+  at = new Date(),
 ): Promise<RepoRow[]> {
+  const since = new Date(at.getTime() - CLOSED_CONFIRMATION_MS);
   const withToken = await conn.query
     .selectFrom(REPOS)
     .selectAll()
     .where('connectionId', 'is not', null)
     .execute();
   const linked = await linkedIds(conn);
-  const open =
+  const watched =
     linked.length === 0
       ? []
       : await conn.query
           .selectFrom(PULL_REQUESTS)
           .select('repoId')
-          .where('state', '=', 'open')
+          .where((eb) =>
+            eb.or([
+              eb('state', '=', 'open'),
+              eb.and([
+                eb('state', '=', 'closed'),
+                eb.or([
+                  eb('closedAt', '>=', since),
+                  eb.and([
+                    eb('closedAt', 'is', null),
+                    eb('createdAt', '>=', since),
+                  ]),
+                ]),
+              ]),
+            ]),
+          )
           .where('id', 'in', linked)
           .distinct()
           .execute();
   const ids = new Set(withToken.map((row) => String(row.id)));
-  const extra = open
+  const extra = watched
     .map((row) => String(row.repoId))
     .filter((id) => !ids.has(id));
   const more =
@@ -505,9 +524,31 @@ export async function openPullRequestsOf(
   return withRepos(conn, rows);
 }
 
+/** Closed pull requests still within their fixed confirmation window; includes unlinked preview records. */
+export async function recentlyClosedPullRequestsOf(
+  conn: DatabaseConnection,
+  repoId: string,
+  at = new Date(),
+): Promise<Pick<PullRequestRow, 'number'>[]> {
+  const since = new Date(at.getTime() - CLOSED_CONFIRMATION_MS);
+  const rows = await conn.query
+    .selectFrom(PULL_REQUESTS)
+    .select('number')
+    .where('repoId', '=', repoId)
+    .where('state', '=', 'closed')
+    .where((eb) =>
+      eb.or([
+        eb('closedAt', '>=', since),
+        eb.and([eb('closedAt', 'is', null), eb('createdAt', '>=', since)]),
+      ]),
+    )
+    .execute();
+  return rows.map((row) => ({ number: Number(row.number) }));
+}
+
 /**
- * Inserts or refreshes a pull request from a snapshot; answers it with the row it replaced. A row a person marked
- * merged stays merged whatever GitHub says until GitHub says merged too.
+ * Inserts or refreshes a pull request from a snapshot; answers it with the row it replaced. Confirmed merges survive
+ * late or incomplete snapshots, whether confirmed by GitHub or a person.
  */
 export async function upsertPullRequest(
   conn: DatabaseConnection,
@@ -517,9 +558,7 @@ export async function upsertPullRequest(
 ): Promise<{ pr: PullRequestRow; previous: PullRequestRow | null }> {
   const previous = await findPullRequest(conn, repoId, snapshot.number);
   const keepMerged =
-    previous?.state === 'merged' &&
-    previous.mergedManually &&
-    snapshot.state !== 'merged';
+    previous?.state === 'merged' && snapshot.state !== 'merged';
   const headMoved =
     !!previous && !!snapshot.headSha && previous.headSha !== snapshot.headSha;
   const now = new Date();
@@ -536,8 +575,13 @@ export async function upsertPullRequest(
       ? {}
       : {
           state: snapshot.state,
-          mergedAt: snapshot.mergedAt ? new Date(snapshot.mergedAt) : null,
-          mergedByLogin: snapshot.mergedByLogin,
+          mergedAt: snapshot.mergedAt
+            ? new Date(snapshot.mergedAt)
+            : previous?.mergedAt
+              ? new Date(previous.mergedAt)
+              : null,
+          mergedByLogin:
+            snapshot.mergedByLogin ?? previous?.mergedByLogin ?? null,
           // A read without it (a 304 refill, Studio's own fallback) keeps the one already known.
           mergeCommitSha:
             snapshot.state === 'merged'

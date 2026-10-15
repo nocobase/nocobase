@@ -6,7 +6,8 @@
  */
 import { RUNNER_ROUTES } from '@nocobase/agent-protocol';
 import type { Issue } from '@nocobase/app-plugin-projects/shared/issues';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { Knex } from 'knex';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   GIT_INBOX_SOURCE,
@@ -29,6 +30,9 @@ import {
 import {
   findPullRequestById,
   findRepoById,
+  reposToPoll,
+  recentlyClosedPullRequestsOf,
+  updatePullRequest,
   updateRepo,
 } from '../../server/git/store.js';
 import { issueKeyOfBranch } from '../../shared/git.js';
@@ -175,6 +179,190 @@ describe('pull requests', () => {
   }
 
   const repoWithToken = () => connectedRepo(h, REPO);
+
+  it('keeps confirmed merge facts after late closed and open REST snapshots', async () => {
+    const notices: string[] = [];
+    h.projects.events.on('notice.planned', (event) => {
+      if (event.notice.type === 'pr_merged') notices.push(event.notice.key);
+    });
+    const { issue } = await reviewIssue();
+    const repo = await repoWithToken();
+    h.github.addPull(REPO, {
+      number: 91,
+      head: { ref: `agent/${issue.identifier}`, sha: 'a1' },
+    });
+    await h.git.pollRepo(repo);
+    const pr = (await h.git.list(alice(), issue.id)).data[0]!;
+    h.github.merge(REPO, 91, 'bob');
+    await h.git.refresh(alice(), issue.id, pr.id);
+    const merged = await findPullRequestById(h.projects.tx.read(), pr.id);
+    for (const state of ['closed', 'open'] as const) {
+      Object.assign(h.github.pull(REPO, 91), {
+        state,
+        merged: false,
+        merged_at: null,
+        merged_by: null,
+        merge_commit_sha: null,
+      });
+      await h.git.refresh(alice(), issue.id, pr.id);
+      expect(
+        await findPullRequestById(h.projects.tx.read(), pr.id),
+      ).toMatchObject({
+        state: 'merged',
+        mergedAt: merged!.mergedAt,
+        mergeCommitSha: merged!.mergeCommitSha,
+        mergedByLogin: 'bob',
+        mergedByUserId: 'bob',
+      });
+    }
+    expect(
+      h.port.settled.filter((ref) => ref.outcome === 'merged'),
+    ).toHaveLength(1);
+    expect(
+      (
+        await h.projects.issueQueries.activities(alice(), issue.id, {})
+      ).data.filter(
+        (entry) =>
+          entry.action === 'status_changed' &&
+          (entry.details as { to?: string }).to === 'done',
+      ),
+    ).toHaveLength(1);
+    await expect.poll(() => notices.length).toBe(1);
+    // A record corrupted by an older deployment may already have completed the issue. Repairing it reuses the same
+    // notification idempotency key and must not add another status activity.
+    await updatePullRequest(h.projects.tx.read(), pr.id, {
+      state: 'closed',
+      mergedAt: null,
+      mergeCommitSha: null,
+    });
+    h.github.merge(REPO, 91, 'bob');
+    await h.git.refresh(alice(), issue.id, pr.id);
+    await expect.poll(() => notices.length).toBe(2);
+    expect(new Set(notices).size).toBe(1);
+    expect(
+      (
+        await h.projects.issueQueries.activities(alice(), issue.id, {})
+      ).data.filter(
+        (entry) =>
+          entry.action === 'status_changed' &&
+          (entry.details as { to?: string }).to === 'done',
+      ),
+    ).toHaveLength(1);
+  });
+
+  it('reconfirms an incomplete closure despite a cached repository list, without CI or duplicate merge handling', async () => {
+    const { issue } = await reviewIssue();
+    const repo = await repoWithToken();
+    h.github.addPull(REPO, {
+      number: 92,
+      head: { ref: `agent/${issue.identifier}`, sha: 'a1' },
+    });
+    await h.git.pollRepo(repo);
+    const pr = (await h.git.list(alice(), issue.id)).data[0]!;
+    h.github.pull(REPO, 92).state = 'closed';
+    await h.git.pollRepo(repo);
+    expect((await h.git.list(alice(), issue.id)).data[0]!.state).toBe('closed');
+    expect(h.port.settled).toContainEqual({
+      decisionKey: `pr:${pr.id}:${issue.id}`,
+      outcome: 'closed',
+    });
+    // Prime the list validator, then change only the single-PR response. The list must still answer 304.
+    await h.git.pollRepo((await findRepoById(h.projects.tx.read(), repo.id))!);
+    const cached = (await findRepoById(h.projects.tx.read(), repo.id))!;
+    h.github.merge(REPO, 92, 'bob');
+    const list = vi
+      .spyOn(h.github.platform, 'listPullRequests')
+      .mockResolvedValueOnce({ notModified: true });
+    const before = h.github.requests.length;
+    await h.git.pollRepo(cached);
+    const reads = h.github.requests.slice(before);
+    expect(list).toHaveBeenCalledWith(expect.anything(), REPO, cached.listEtag);
+    list.mockRestore();
+    expect(
+      reads.filter((read) => read.path.endsWith('/pulls/92')),
+    ).toMatchObject([{ conditional: false, status: 200 }]);
+    expect(
+      reads.some((read) => /\/commits\/|\/check-runs/u.test(read.path)),
+    ).toBe(false);
+    const fixed = (await h.git.list(alice(), issue.id)).data[0]!;
+    expect(fixed).toMatchObject({
+      state: 'merged',
+      mergeCommitSha: h.github.pull(REPO, 92).merge_commit_sha,
+    });
+    expect((await detail(issue)).statusKey).toBe('done');
+    await h.git.refresh(alice(), issue.id, pr.id);
+    await h.git.pollRepo(cached);
+    expect(
+      h.port.settled.filter((ref) => ref.outcome === 'merged'),
+    ).toHaveLength(1);
+  });
+
+  it('rechecks real closures without rewriting them, stops at the fixed window and polls anonymous closed-only repositories', async () => {
+    const { issue } = await reviewIssue();
+    h.github.addPull(REPO, { number: 93 });
+    const { pullRequest: pr } = await h.git.link(
+      alice(),
+      issue.id,
+      PR_URL(93),
+      { type: 'user', id: 'alice' },
+    );
+    const conn = h.projects.tx.read();
+    const repo = (await findRepoById(
+      conn,
+      (await findPullRequestById(conn, pr.id))!.repoId,
+    ))!;
+    h.github.pull(REPO, 93).state = 'closed';
+    await h.git.pollRepo(repo);
+    const closed = await findPullRequestById(conn, pr.id);
+    expect((await reposToPoll(conn)).map((row) => row.id)).toContain(repo.id);
+    const before = h.github.requests.length;
+    const client = await conn.client<Knex>();
+    const queries: string[] = [];
+    const record = (query: { sql: string }) => queries.push(query.sql);
+    client.on('query', record);
+    try {
+      expect(await recentlyClosedPullRequestsOf(conn, repo.id)).toEqual([
+        { number: 93 },
+      ]);
+      expect(queries).toHaveLength(1);
+      queries.length = 0;
+      await h.git.pollRepo(repo);
+    } finally {
+      client.off('query', record);
+    }
+    expect(
+      queries.filter((sql) => /^update .*studio_pull_requests/iu.test(sql)),
+    ).toEqual([]);
+    expect(h.github.requests.slice(before)).toMatchObject([
+      { path: `/repos/${REPO}/pulls/93`, conditional: false },
+    ]);
+    expect(await findPullRequestById(conn, pr.id)).toEqual(closed);
+    await updatePullRequest(conn, pr.id, {
+      closedAt: new Date(Date.now() - 3600001),
+      createdAt: new Date(),
+    });
+    expect(await recentlyClosedPullRequestsOf(conn, repo.id)).toEqual([]);
+    await updatePullRequest(conn, pr.id, { closedAt: null });
+    expect(await recentlyClosedPullRequestsOf(conn, repo.id)).toEqual([
+      { number: 93 },
+    ]);
+    // Missing closedAt falls back to creation time, never the latest snapshot time.
+    await updatePullRequest(conn, pr.id, {
+      closedAt: null,
+      createdAt: new Date(Date.now() - 3600001),
+    });
+    expect(await recentlyClosedPullRequestsOf(conn, repo.id)).toEqual([]);
+    expect((await reposToPoll(conn)).map((row) => row.id)).not.toContain(
+      repo.id,
+    );
+    const expired = h.github.requests.length;
+    await h.git.pollRepo(repo);
+    expect(h.github.requests).toHaveLength(expired);
+    await updatePullRequest(conn, pr.id, { closedAt: new Date() });
+    h.github.pull(REPO, 93).state = 'open';
+    await h.git.pollRepo(repo);
+    expect((await findPullRequestById(conn, pr.id))!.state).toBe('open');
+  });
 
   it('links a pull request by hand and asks the owner to merge it', async () => {
     const { issue } = await reviewIssue();

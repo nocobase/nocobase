@@ -30,6 +30,7 @@ import {
 import type { ProjectsNotices } from '@nocobase/app-plugin-projects/server/tokens';
 
 import { createProjectsNotices } from '../../server/inbox/projects.js';
+import { settleMergeCards } from '../../server/git/cards.js';
 import {
   createStudioInbox,
   type StudioInbox,
@@ -104,6 +105,60 @@ beforeEach(async () => {
 afterEach(() => testDatabase.destroy());
 
 describe('inbox', () => {
+  it('corrects only closed Git merge cards, once, without sending another notification', async () => {
+    const ref = { source: 'git', decisionKey: 'pr:pr1:i1' };
+    for (const [index, source, type, outcome, key] of [
+      [0, 'git', 'pr_merge_requested', 'closed', ref.decisionKey],
+      [1, 'git', 'pr_merge_requested', 'withdrawn', ref.decisionKey],
+      [2, 'git', 'other', 'closed', ref.decisionKey],
+      [3, 'projects', 'pr_merge_requested', 'closed', ref.decisionKey],
+      [4, 'git', 'pr_merge_requested', 'closed', 'pr:other:i1'],
+    ] as const) {
+      await inbox.send({
+        key: `card:${index}`,
+        source,
+        type,
+        kind: 'decision',
+        decisionKey: key,
+        userIds: ['lead'],
+        title: 'Merge requested',
+        body: '',
+      });
+      // Set up independent historical outcomes, including several stays in review.
+      await database
+        .connection()
+        .query.updateTable('studioInboxNotices')
+        .set({ resolvedAt: new Date(), outcome })
+        .where('notificationId', '=', `n${index + 1}`)
+        .execute();
+    }
+    announced = [];
+    await settleMergeCards(inbox, 'pr1', ['i1'], 'merged');
+    expect(
+      (await inbox.notices('lead', ['n1', 'n2', 'n3', 'n4', 'n5'])).map(
+        (row) => row.outcome,
+      ),
+    ).toEqual(['merged', 'withdrawn', 'closed', 'closed', 'closed']);
+    expect(announced).toEqual(['lead']);
+    announced = [];
+    await inbox.resolve({
+      ...ref,
+      outcome: 'merged',
+      correctClosedMerge: true,
+    });
+    expect(announced).toEqual([]);
+    expect(sent).toHaveLength(5);
+    await inbox.resolve({
+      source: 'projects',
+      decisionKey: ref.decisionKey,
+      outcome: 'merged',
+      correctClosedMerge: true,
+    });
+    expect(await inbox.notices('lead', ['n4'])).toMatchObject([
+      { outcome: 'closed' },
+    ]);
+  });
+
   it('sends a notice through the in-app channel and records it for each recipient', async () => {
     await projects.send(decision(['lead', 'admin', 'lead']));
     expect(sent).toEqual([
