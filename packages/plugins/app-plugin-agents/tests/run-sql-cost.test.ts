@@ -44,13 +44,6 @@ it('measures the existing lifecycle SQL on a warm migrated database', async () =
             rollbacks: queries.filter((q) => /^rollback/i.test(q)).length,
             locks: queries.filter((q) => /for update|for share/i.test(q))
               .length,
-            metadataReads: queries.filter(
-              (q) =>
-                /^\s*select/i.test(q) &&
-                /sqlite_schema|__nocobase_collection_metadata|pragma_|information_schema|pg_catalog/i.test(
-                  q,
-                ),
-            ).length,
             sql: queries,
           }) + '\n',
         );
