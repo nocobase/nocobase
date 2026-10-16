@@ -83,6 +83,8 @@ export const shengsuanyunProviderOptions = createProviderOptions(
   },
 );
 
+export const opperProviderOptions = createProviderOptions(createModelSettingsForm(openAICompletionFields));
+
 export const ollamaProviderOptions = createProviderOptions(createModelSettingsForm(ollamaCompletionFields), {
   ProviderSettingsForm: EmptyProviderSettingsForm,
 });
@@ -101,6 +103,7 @@ export const builtinLLMProviderOptions: Array<[string, LLMProviderOptions]> = [
   ['mistral', mistralProviderOptions],
   ['orcarouter', orcarouterProviderOptions],
   ['shengsuanyun', shengsuanyunProviderOptions],
+  ['opper', opperProviderOptions],
 ];
 
 const builtinLLMProviderModelOptionFields = new Map<string, OptionField[]>([
@@ -117,6 +120,7 @@ const builtinLLMProviderModelOptionFields = new Map<string, OptionField[]>([
   ['mistral', mistralCompletionFields],
   ['orcarouter', orcaRouterCompletionFields],
   ['shengsuanyun', shengSuanYunCompletionFields],
+  ['opper', openAICompletionFields],
 ]);
 
 export const getBuiltinLLMProviderModelOptionFields = (provider?: string): OptionField[] =>
