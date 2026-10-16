@@ -165,6 +165,9 @@ ignoredOptionalDependencies:
   # The Claude Agent SDK's platform packages each carry a bundled Claude Code binary. The runner (`nocobase-runner`)
   # runs the `claude` it finds on PATH instead.
   - '@anthropic-ai/claude-agent-sdk-*'
+  # Codex's platform packages, which @agentclientprotocol/codex-acp brings for the ACP bridge's adapter bundle; the
+  # bundled adapter runs the `codex` it finds on PATH.
+  - '@openai/codex-*'
 
 # Reports a dependency whose install script was skipped as a warning instead of failing the install.
 # allowBuilds decides the packages known today; this keeps a newly introduced transitive dependency

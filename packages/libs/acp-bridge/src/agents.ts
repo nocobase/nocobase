@@ -4,11 +4,18 @@
  * or the ACP adapter for it. Sessions run with the agent's full access, as they would in its own terminal: the person
  * is the one asking, on their own computer. An agent offering a mode for that opens in it (`modes`); one offering
  * none has what it asks permission for allowed by the bridge (`allowAll`).
+ *
+ * The adapters for Codex and Claude Code ship with this package, bundled into `dist/adapters/` by
+ * `scripts/build-adapters.mjs`, and run with the Node.js running the bridge against the agent installed here, so a
+ * session does not wait for npx. An adapter installed on PATH comes after them unless `NOCOBASE_ACP_ADAPTERS` is
+ * `installed`, and npx fetches one only when neither can run.
  */
+import { execFile } from 'node:child_process';
 import { constants } from 'node:fs';
 import { access, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export interface AgentLauncher {
   /** The program's name, found in `dirs` or on PATH; on Windows, with one of PATHEXT's extensions. */
@@ -18,6 +25,16 @@ export interface AgentLauncher {
   readonly dirs?: readonly string[];
   /** Another program this launcher needs, such as the agent itself for an adapter fetched with npx. */
   readonly requires?: string;
+  /**
+   * The launcher is an adapter bundled with this package: `command` is its file in `dist/adapters/`, run by Node.js,
+   * and the agent it `requires`, at least `minVersion`, is named to it in the environment variable `variable`.
+   * `batchFiles` says the adapter can start an agent that is a Windows batch file, as npm installs agents.
+   */
+  readonly bundled?: {
+    readonly variable: string;
+    readonly minVersion: string;
+    readonly batchFiles?: boolean;
+  };
 }
 
 export interface AgentSpec {
@@ -52,12 +69,30 @@ function npx(pkg: string, requires: string): AgentLauncher {
   return { command: 'npx', args: ['--yes', pkg], requires };
 }
 
+/**
+ * The ACP adapter bundled as `file`, which runs the agent `requires` that it finds in `variable`. The adapter is
+ * built against `minVersion` of the agent and may not drive an older one.
+ */
+function bundled(
+  file: string,
+  requires: string,
+  bundle: NonNullable<AgentLauncher['bundled']>,
+): AgentLauncher {
+  return { command: file, args: [], requires, bundled: bundle };
+}
+
 /** The agents the bridge offers, the most used first. */
 export const AGENTS: readonly AgentSpec[] = [
   {
     id: 'codex',
     name: 'Codex',
     launchers: [
+      // codex-acp starts Codex with cross-spawn, which runs npm's `codex.cmd` on Windows.
+      bundled('codex-acp.mjs', 'codex', {
+        variable: 'CODEX_PATH',
+        minVersion: '0.160.1',
+        batchFiles: true,
+      }),
       program('codex-acp'),
       npx('@agentclientprotocol/codex-acp@2.2.2', 'codex'),
     ],
@@ -68,6 +103,10 @@ export const AGENTS: readonly AgentSpec[] = [
     id: 'claude',
     name: 'Claude Code',
     launchers: [
+      bundled('claude-agent-acp.mjs', 'claude', {
+        variable: 'CLAUDE_CODE_EXECUTABLE',
+        minVersion: '2.1.200',
+      }),
       program('claude-agent-acp'),
       npx('@agentclientprotocol/claude-agent-acp@0.89.1', 'claude'),
     ],
@@ -208,20 +247,50 @@ export interface ResolvedAgent {
   /** The absolute path of the program to run. */
   readonly command: string;
   readonly args: readonly string[];
+  /** Environment this launcher adds, over the agent's own. */
+  readonly env?: Readonly<Record<string, string>>;
 }
+
+export interface ResolveOptions {
+  /** Where the bundled adapters are: this package's `dist/adapters/` by default. */
+  readonly adapters?: string;
+  /** The Node.js that runs a bundled adapter: the one running the bridge by default. */
+  readonly node?: string;
+  /** Told why a bundled adapter is passed over for an agent it cannot drive. */
+  readonly log?: (message: string) => void;
+}
+
+/** This package's bundled adapters, from `src/` in a source checkout and from `dist/` once built. */
+const ADAPTERS_DIR = fileURLToPath(
+  new URL('../dist/adapters/', import.meta.url),
+);
 
 /** How to start `spec` here, or undefined when none of its launchers can run. */
 export async function resolveAgent(
   spec: AgentSpec,
   env: NodeJS.ProcessEnv = process.env,
   platform: NodeJS.Platform = process.platform,
+  options: ResolveOptions = {},
 ): Promise<ResolvedAgent | undefined> {
-  for (const launcher of spec.launchers) {
-    if (
-      launcher.requires &&
-      !(await findProgram(launcher.requires, [], env, platform))
-    )
+  const preferInstalled =
+    variable(env, 'NOCOBASE_ACP_ADAPTERS', platform) === 'installed';
+  for (const launcher of ordered(spec.launchers, preferInstalled)) {
+    const requires = launcher.requires
+      ? await findProgram(launcher.requires, [], env, platform)
+      : undefined;
+    if (launcher.requires && !requires) continue;
+    if (launcher.bundled) {
+      const resolved = await resolveBundled(
+        spec,
+        launcher.command,
+        launcher.bundled,
+        requires!,
+        platform,
+        options,
+      );
+      if (resolved) return resolved;
       continue;
+    }
     const command = await findProgram(
       launcher.command,
       launcher.dirs ?? [],
@@ -231,6 +300,108 @@ export async function resolveAgent(
     if (command) return { spec, command, args: launcher.args };
   }
   return undefined;
+}
+
+/** The launchers to try, with an adapter installed on PATH before the bundled one when the person prefers it. */
+function ordered(
+  launchers: readonly AgentLauncher[],
+  preferInstalled: boolean,
+): readonly AgentLauncher[] {
+  if (!preferInstalled) return launchers;
+  const rank = (launcher: AgentLauncher): number =>
+    launcher.bundled ? 1 : launcher.requires ? 2 : 0;
+  return [...launchers].sort((a, b) => rank(a) - rank(b));
+}
+
+async function resolveBundled(
+  spec: AgentSpec,
+  adapter: string,
+  bundle: NonNullable<AgentLauncher['bundled']>,
+  agent: string,
+  platform: NodeJS.Platform,
+  options: ResolveOptions,
+): Promise<ResolvedAgent | undefined> {
+  const file = path.join(options.adapters ?? ADAPTERS_DIR, adapter);
+  if (!(await exists(file))) return undefined;
+  const batch = platform === 'win32' && BATCH_FILE.test(agent);
+  if (batch && !bundle.batchFiles) return undefined;
+  const version = await agentVersion(agent, batch);
+  if (!version || compareVersions(version, bundle.minVersion) < 0) {
+    const note = `${spec.name} at ${agent} ${version ? `is version ${version}` : 'did not report its version'}; the adapter bundled with this bridge needs ${bundle.minVersion} or newer, so ${spec.name} starts another way.`;
+    // The bridge looks for agents every minute: say it once for each version found.
+    if (!noted.has(note)) {
+      noted.add(note);
+      options.log?.(note);
+    }
+    return undefined;
+  }
+  return {
+    spec,
+    command: options.node ?? process.execPath,
+    args: [file],
+    env: { [bundle.variable]: agent },
+  };
+}
+
+const BATCH_FILE = /\.(?:cmd|bat)$/iu;
+const VERSION_TIMEOUT_MS = 10_000;
+const noted = new Set<string>();
+/** Versions already read, by program, while the program is unchanged; one that could not be read is asked again. */
+const versions = new Map<
+  string,
+  { readonly modified: number; readonly version: Promise<string | undefined> }
+>();
+
+/**
+ * The version the program at `file` prints for `--version`, or undefined when it prints none. A Windows batch file
+ * (`batch`) runs only through cmd.exe.
+ */
+async function agentVersion(
+  file: string,
+  batch = false,
+): Promise<string | undefined> {
+  let modified: number;
+  try {
+    modified = (await stat(file)).mtimeMs;
+  } catch {
+    return undefined;
+  }
+  const known = versions.get(file);
+  if (known?.modified === modified) return known.version;
+  const version = new Promise<string | undefined>((resolve) => {
+    execFile(
+      batch ? `"${file}"` : file,
+      ['--version'],
+      { timeout: VERSION_TIMEOUT_MS, windowsHide: true, shell: batch },
+      (error, stdout) =>
+        resolve(error ? undefined : /\d+\.\d+\.\d+/u.exec(String(stdout))?.[0]),
+    );
+  });
+  versions.set(file, { modified, version });
+  void version.then((read) => {
+    if (read === undefined && versions.get(file)?.version === version)
+      versions.delete(file);
+  });
+  return version;
+}
+
+/** Compares two `major.minor.patch` versions. */
+export function compareVersions(a: string, b: string): number {
+  const left = a.split('.').map(Number);
+  const right = b.split('.').map(Number);
+  for (let index = 0; index < 3; index += 1) {
+    const difference = (left[index] ?? 0) - (right[index] ?? 0);
+    if (difference !== 0) return difference;
+  }
+  return 0;
+}
+
+async function exists(file: string): Promise<boolean> {
+  try {
+    return (await stat(file)).isFile();
+  } catch {
+    return false;
+  }
 }
 
 /**

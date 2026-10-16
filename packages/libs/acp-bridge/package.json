@@ -41,7 +41,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node ./scripts/build-adapters.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "lint": "eslint . --max-warnings 0",
@@ -56,8 +56,11 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@agentclientprotocol/claude-agent-acp": "0.89.1",
+    "@agentclientprotocol/codex-acp": "2.2.2",
     "@nocobase/dev-config": "workspace:*",
     "@types/node": "catalog:",
+    "esbuild": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",

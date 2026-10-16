@@ -140,7 +140,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
   const found = new Map<string, ResolvedAgent | undefined>();
   const scan = async (): Promise<void> => {
     for (const spec of AGENTS) {
-      const resolved = await resolveAgent(spec, env);
+      const resolved = await resolveAgent(spec, env, process.platform, { log });
       if (signal.aborted) return;
       found.set(spec.id, resolved);
       agents.set(
@@ -272,7 +272,9 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       throw new Error(
         `This version of ${options.client.name} cannot run the agent "${agentId}".`,
       );
-    const resolved = found.get(agentId) ?? (await resolveAgent(spec, env));
+    const resolved =
+      found.get(agentId) ??
+      (await resolveAgent(spec, env, process.platform, { log }));
     if (!resolved)
       throw new Error(`${spec.name} is not installed on this computer.`);
     found.set(agentId, resolved);

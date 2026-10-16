@@ -1,4 +1,11 @@
-import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -6,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   AGENTS,
+  compareVersions,
   findProgram,
   resolveAgent,
   variable,
@@ -22,12 +30,17 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-async function file(name: string, mode = 0o755): Promise<string> {
+async function file(name: string, mode = 0o755, content = ''): Promise<string> {
   const full = path.join(root, name);
   await mkdir(path.dirname(full), { recursive: true });
-  await writeFile(full, '');
+  await writeFile(full, content);
   await chmod(full, mode);
   return full;
+}
+
+/** An agent that prints `version` for `--version`, as Claude Code and Codex do. */
+function agent(name: string, version: string): Promise<string> {
+  return file(name, 0o755, `#!/bin/sh\necho "${version} (Agent)"\n`);
 }
 
 const ADAPTER: AgentSpec = {
@@ -109,6 +122,130 @@ describe('resolveAgent', () => {
     });
   });
 
+  describe('with a bundled adapter', () => {
+    const BUNDLED: AgentSpec = {
+      ...ADAPTER,
+      launchers: [
+        {
+          command: 'adapter.mjs',
+          args: [],
+          requires: 'agent',
+          bundled: { variable: 'AGENT_PATH', minVersion: '2.1.0' },
+        },
+        ...ADAPTER.launchers,
+      ],
+    };
+
+    it('runs it with Node.js against the agent installed here', async () => {
+      const adapter = await file('adapters/adapter.mjs', 0o644);
+      const installed = await agent('bin/agent', '2.1.3');
+      await file('bin/adapter-acp');
+      await expect(
+        resolveAgent(BUNDLED, { PATH: path.join(root, 'bin') }, 'linux', {
+          adapters: path.join(root, 'adapters'),
+          node: '/opt/node',
+        }),
+      ).resolves.toEqual({
+        spec: BUNDLED,
+        command: '/opt/node',
+        args: [adapter],
+        env: { AGENT_PATH: installed },
+      });
+    });
+
+    it('passes over it for an agent older than it needs, saying so once', async () => {
+      await file('adapters/adapter.mjs', 0o644);
+      await agent('bin/agent', '2.0.9');
+      const npx = await file('bin/npx');
+      const log: string[] = [];
+      const options = {
+        adapters: path.join(root, 'adapters'),
+        log: (line: string) => log.push(line),
+      };
+      const env = { PATH: path.join(root, 'bin') };
+      for (let round = 0; round < 2; round += 1)
+        await expect(
+          resolveAgent(BUNDLED, env, 'linux', options),
+        ).resolves.toEqual({
+          spec: BUNDLED,
+          command: npx,
+          args: ['--yes', 'adapter@1'],
+        });
+      expect(log).toHaveLength(1);
+      expect(log[0]).toContain('is version 2.0.9');
+    });
+
+    it('passes over it when it was not built', async () => {
+      await agent('bin/agent', '2.1.3');
+      const npx = await file('bin/npx');
+      await expect(
+        resolveAgent(BUNDLED, { PATH: path.join(root, 'bin') }, 'linux', {
+          adapters: path.join(root, 'adapters'),
+        }),
+      ).resolves.toMatchObject({ command: npx });
+    });
+
+    it('comes after an installed adapter when the person prefers theirs, and before npx', async () => {
+      await file('adapters/adapter.mjs', 0o644);
+      await agent('bin/agent', '2.1.3');
+      await file('bin/npx');
+      const env = {
+        PATH: path.join(root, 'bin'),
+        NOCOBASE_ACP_ADAPTERS: 'installed',
+      };
+      const options = {
+        adapters: path.join(root, 'adapters'),
+        node: '/opt/node',
+      };
+      await expect(
+        resolveAgent(BUNDLED, env, 'linux', options),
+      ).resolves.toMatchObject({
+        command: '/opt/node',
+      });
+      const own = await file('bin/adapter-acp');
+      await expect(
+        resolveAgent(BUNDLED, env, 'linux', options),
+      ).resolves.toMatchObject({
+        command: own,
+      });
+    });
+
+    it('on Windows, passes over it for an agent that is a batch file it cannot start', async () => {
+      await file('adapters/adapter.mjs', 0o644);
+      // Windows paths cannot be opened here, so the PATH entry is relative and the files are named as Windows joins them.
+      await file('bin\\agent.cmd', 0o644);
+      await file('bin\\npx.cmd', 0o644);
+      const cwd = process.cwd();
+      process.chdir(root);
+      try {
+        await expect(
+          resolveAgent(BUNDLED, { Path: 'bin' }, 'win32', {
+            adapters: path.join(root, 'adapters'),
+          }),
+        ).resolves.toMatchObject({ command: 'bin\\npx.cmd' });
+      } finally {
+        process.chdir(cwd);
+      }
+    });
+  });
+
+  it('bundles the same adapter versions that npx fetches when the bundled ones cannot run', async () => {
+    const manifest = JSON.parse(
+      await readFile(new URL('../package.json', import.meta.url), 'utf8'),
+    ) as { devDependencies: Record<string, string> };
+    for (const spec of AGENTS) {
+      if (!spec.launchers.some((launcher) => launcher.bundled)) continue;
+      const fetched = spec.launchers
+        .find((launcher) => launcher.command === 'npx')
+        ?.args.at(-1);
+      expect(fetched).toBeDefined();
+      const at = fetched!.lastIndexOf('@');
+      expect(manifest.devDependencies[fetched!.slice(0, at)]).toBe(
+        fetched!.slice(at + 1),
+      );
+    }
+  });
+
   it('knows every agent by an id the application accepts, with a way to sign in', () => {
     const ids = AGENTS.map((spec) => spec.id);
     expect(new Set(ids).size).toBe(ids.length);
@@ -119,5 +256,14 @@ describe('resolveAgent', () => {
       // Full access comes from a mode the agent offers, or from the bridge allowing what it asks.
       expect(Boolean(spec.modes?.length) || spec.allowAll === true).toBe(true);
     }
+  });
+});
+
+describe('compareVersions', () => {
+  it('orders versions by their numbers', () => {
+    expect(compareVersions('2.1.200', '2.1.200')).toBe(0);
+    expect(compareVersions('2.1.99', '2.1.200')).toBeLessThan(0);
+    expect(compareVersions('0.162.1', '0.160.1')).toBeGreaterThan(0);
+    expect(compareVersions('1.0.0', '0.999.999')).toBeGreaterThan(0);
   });
 });
