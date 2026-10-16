@@ -2173,6 +2173,7 @@
     "rag.knowledgeBase.knowledgeBaseType": "Type",
     "rag.knowledgeBase.knowledgeBaseType.external": "External",
     "rag.knowledgeBase.knowledgeBaseType.local": "Local",
+    "rag.knowledgeBase.knowledgeBaseType.local.tag": "ローカル",
     "rag.knowledgeBase.knowledgeBaseType.readonly": "Readonly",
     "rag.knowledgeBase.name": "Name",
     "rag.knowledgeBase.storageId": "File storage",

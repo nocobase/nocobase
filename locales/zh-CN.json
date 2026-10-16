@@ -2131,6 +2131,7 @@
     "rag.knowledgeBase.knowledgeBaseType": "类型",
     "rag.knowledgeBase.knowledgeBaseType.external": "外部知识库",
     "rag.knowledgeBase.knowledgeBaseType.local": "本地知识库",
+    "rag.knowledgeBase.knowledgeBaseType.local.tag": "本地",
     "rag.knowledgeBase.knowledgeBaseType.readonly": "只读知识库",
     "rag.knowledgeBase.name": "名称",
     "rag.knowledgeBase.storageId": "文件存储",
