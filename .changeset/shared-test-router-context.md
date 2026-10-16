@@ -2,4 +2,4 @@
 "@nocobase/dev-config": patch
 ---
 
-Transform installed app-testing client helpers and the app-client navigation guard in React tests so their MemoryRouter shares the application's router context. Add a published JavaScript helper regression and repair registry installation fixtures and revision expectations used by CI.
+Keep React tests on Node 24's package export conditions and the native react-router instance so installed test helpers, navigation guards, and plugins share Router and application contexts. Cover published JavaScript boundaries with a regression and repair registry installation fixtures and revision expectations used by CI.

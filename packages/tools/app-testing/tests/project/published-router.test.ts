@@ -71,7 +71,7 @@ it('shares router context with installed test helpers and the application naviga
       JSON.stringify({
         name: '@nocobase/app-client',
         type: 'module',
-        exports: { '.': './dist/navigation-guard-provider.js' },
+        exports: { '.': './dist/index.js' },
       }),
     );
     // Transpile the actual runtime boundary: an invented useLocation probe alone
@@ -79,6 +79,7 @@ it('shares router context with installed test helpers and the application naviga
     for (const file of [
       'navigation-guard-provider.tsx',
       'navigation-guard.ts',
+      'application-context.ts',
     ]) {
       const source = await readFile(
         path.resolve(packageRoot, '../../app/app-client/src', file),
@@ -97,6 +98,24 @@ it('shares router context with installed test helpers and the application naviga
         output.outputText,
       );
     }
+    await writeFile(
+      path.join(client, 'dist/index.js'),
+      "export {NavigationGuardProvider} from './navigation-guard-provider.js'; export {ClientApplicationContext} from './application-context.js';",
+    );
+    const plugin = path.join(root, 'node_modules/installed-client-plugin');
+    await mkdir(plugin, { recursive: true });
+    await writeFile(
+      path.join(plugin, 'package.json'),
+      JSON.stringify({
+        name: 'installed-client-plugin',
+        type: 'module',
+        exports: './index.js',
+      }),
+    );
+    await writeFile(
+      path.join(plugin, 'index.js'),
+      `import {createElement, useContext} from 'react'; import {ClientApplicationContext} from '@nocobase/app-client'; export const PluginProbe = () => createElement('span', null, useContext(ClientApplicationContext)?.name ?? 'missing application context');`,
+    );
     await writeFile(path.join(root, 'package.json'), '{"type":"module"}');
     await writeFile(
       path.join(root, 'vitest.config.ts'),
@@ -108,13 +127,16 @@ it('shares router context with installed test helpers and the application naviga
       import {createElement} from 'react';
       import {render, screen} from '@testing-library/react';
       import {TestRouter} from '@nocobase/app-testing/client';
-      import {NavigationGuardProvider} from '@nocobase/app-client';
+      import {NavigationGuardProvider, ClientApplicationContext} from '@nocobase/app-client';
+      import {PluginProbe} from 'installed-client-plugin';
       import {useLocation} from 'react-router';
       import {expect, it} from 'vitest';
       it('reads the same router', () => {
         const Probe = () => createElement('span', null, useLocation().pathname);
         render(createElement(TestRouter, {initialEntries:['/settings/users']}, createElement(NavigationGuardProvider, null, createElement(Probe))));
         expect(screen.getByText('/settings/users')).toBeTruthy();
+        render(createElement(ClientApplicationContext.Provider, {value:{name:'shared application'}}, createElement(PluginProbe)));
+        expect(screen.getByText('shared application')).toBeTruthy();
       });
     `,
     );

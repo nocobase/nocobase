@@ -10,6 +10,8 @@ const reactSetupFile: string = fileURLToPath(
 );
 const reactConfig: ViteUserConfig = {
   plugins: [react()],
+  // Match native Node 24 package exports instead of selecting a separate module entry.
+  resolve: { conditions: ['node', 'module-sync'] },
   test: {
     environment: 'jsdom',
     exclude: ['**/node_modules/**', '**/dist/**', '**/build/**'],
@@ -18,17 +20,8 @@ const reactConfig: ViteUserConfig = {
     hookTimeout: sharedHookTimeout,
     server: {
       deps: {
-        // Refine's React Router bindings are loaded by Node unless inlined, and Node hands them a different copy of
-        // react-router than the one a test and the application import, so `useLocation()` inside Refine finds no
-        // router under a test's `MemoryRouter`. Inlined, they resolve react-router the way the rest of the test does.
-        inline: [
-          /@refinedev\/react-router/u,
-          // Published app-testing helpers own the MemoryRouter around the page. Transform
-          // their client entry too, so it shares the page's router context just as workspace sources do.
-          /@nocobase\/app-testing\/(?:dist\/)?src\/client\//u,
-          // The client runtime also consumes router contexts in its navigation guard.
-          /@nocobase\/app-client\//u,
-        ],
+        // Router contexts must keep one identity across installed runtime and test helpers.
+        external: [/react-router(?:\/|$)/u],
       },
     },
   },
