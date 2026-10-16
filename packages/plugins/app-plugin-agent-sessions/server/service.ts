@@ -160,6 +160,8 @@ const REPLY_WAIT_MS = 10_000;
 const REPLY_CHECK_MS = 250;
 /** How many records a `#` search offers. */
 const MENTION_LIMIT = 10;
+/** At most this many sessions are looked up for one record (`listSessions` with `linked`). */
+const MAX_LINKED_SESSIONS = 200;
 
 export class AgentSessionsService {
   readonly #database: DatabaseManager;
@@ -689,8 +691,23 @@ export class AgentSessionsService {
       readonly archived: boolean;
       readonly pageSize: number;
       readonly pageToken?: string | undefined;
+      /** Only the sessions tied to this record, as `<kind>:<refId>`. */
+      readonly linked?: string | undefined;
     },
   ): Promise<SessionPage> {
+    let tied: readonly string[] | undefined;
+    if (query.linked !== undefined) {
+      const at = query.linked.indexOf(':');
+      const rows = await links(this.#conn()).findMany({
+        filter: {
+          kind: query.linked.slice(0, at),
+          refId: query.linked.slice(at + 1),
+        },
+        limit: MAX_LINKED_SESSIONS,
+      });
+      tied = [...new Set(rows.map((row) => row.sessionId))];
+      if (tied.length === 0) return { sessions: [] };
+    }
     const rows = await sessions(this.#conn()).findMany({
       filter: (f) =>
         f.and([
@@ -698,6 +715,7 @@ export class AgentSessionsService {
           query.archived
             ? f.date('archivedAt').notEmpty()
             : f.date('archivedAt').empty(),
+          ...(tied ? [f.or(tied.map((id) => f.string('id').eq(id)))] : []),
         ]),
       sort: (sort) => [
         sort.field('lastActivityAt').desc(),

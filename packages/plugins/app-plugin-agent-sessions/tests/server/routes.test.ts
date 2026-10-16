@@ -519,3 +519,47 @@ test('session work authenticates its owner and returns an empty session without 
   expect(own.status).toBe(200);
   expect(await own.json()).toEqual({ data: [] });
 });
+
+test('lists the sessions tied to one record, the viewer’s own only, and refuses a malformed record', async ({
+  database,
+}) => {
+  const router = await mount(database);
+  const service = new AgentSessionsService({ database });
+  const { computerId } = await service.register('u1', {
+    protocol: BRIDGE_PROTOCOL_VERSION,
+    computerId: null,
+    computer: {
+      name: 'Laptop',
+      platform: 'linux',
+      arch: 'x64',
+      host: 'test',
+      roots: ['/workspace'],
+      agents: [{ id: 'codex', name: 'Codex', version: 'test' }],
+    },
+  });
+  await service.createSession(
+    { userId: 'u1' },
+    {
+      computerId,
+      agentId: 'codex',
+      cwd: '/workspace',
+      content: [{ type: 'text', text: 'Plan' }],
+    },
+  );
+  const path = '/sessions?linked=issue:7';
+  expect((await call(router, 'GET', path)).status).toBe(401);
+  for (const linked of ['issue', ':7', 'issue:', 'issue:7 8', '1issue:7'])
+    expect(
+      (
+        await call(
+          router,
+          'GET',
+          `/sessions?linked=${encodeURIComponent(linked)}`,
+          'u1',
+        )
+      ).status,
+    ).toBe(400);
+  const none = await call(router, 'GET', path, 'u1');
+  expect(none.status).toBe(200);
+  expect((await none.json()).data).toEqual([]);
+});
