@@ -25,10 +25,11 @@ export function handleLinkNavigation(options: {
   openInNewWindow?: boolean;
   router: { navigate: (to: string, options?: { replace?: boolean }) => void };
   isExternalLink: boolean;
+  replace?: boolean;
   setLocationHref?: (url: string) => void;
   openWindow?: (url?: string, target?: string) => Window | null;
 }) {
-  const { link, openInNewWindow, router, isExternalLink } = options;
+  const { link, openInNewWindow, router, isExternalLink, replace = false } = options;
   const setLocationHref = options.setLocationHref ?? ((url: string) => (window.location.href = url));
   const openWindow = options.openWindow ?? ((url?: string, target?: string) => window.open(url, target));
 
@@ -44,7 +45,8 @@ export function handleLinkNavigation(options: {
 
   // 该辅助方法仅负责导航，是否关闭弹窗由调用方按场景决定；
   // 在弹窗上下文中，错误的关闭时机会把新路由回滚为原页面。
-  router.navigate(link, { replace: true });
+  // 默认 push 新的历史记录，保证浏览器/手机右滑返回能逐级回退；仅在需要丢弃当前弹窗路由时由调用方传 replace。
+  router.navigate(link, { replace });
 }
 
 /**
