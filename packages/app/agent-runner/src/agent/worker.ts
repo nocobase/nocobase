@@ -186,7 +186,7 @@ export function workspaceNotes(options: {
         dir.repo === undefined
           ? `- ${dir.dir}${name}: a directory used in place, not a checkout; there is no branch to push, so leave version control to the people who own it.`
           : options.readOnly === true
-            ? `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (a read-only copy: change, commit and push nothing).`
+            ? `- ${dir.dir}${name}: ${dir.repo.url}, branch ${dir.repo.branch} from ${dir.repo.defaultBranch} (a read-only copy: change no tracked file, commit and push nothing).`
             : `- ${dir.dir}${name}: ${dir.repo.url}, starting target branch ${dir.repo.branch} from ${dir.repo.defaultBranch}, local branch ${dir.repo.localBranch ?? dir.repo.branch}. You may switch or create branches and push any branch of this repository with git push origin HEAD:refs/heads/<branch> (initial target: git push origin HEAD:refs/heads/${dir.repo.branch}). Never rewrite already-pushed history or force push. Use ${options.cli} pr open --head <branch>, pr link and pr unlink to manage pull requests; check their --help for arguments.`,
       );
     }
@@ -194,7 +194,7 @@ export function workspaceNotes(options: {
       for (const warning of dir.repo?.warnings ?? []) lines.push(warning);
     if (options.readOnly === true)
       lines.push(
-        'This step only reads: another run may be changing the same branch in its own checkout at the same time. Read and run checks here, but change, commit and push nothing; the runner pushes nothing from this checkout.',
+        'This step only reads: another run may be changing the same branch in its own checkout at the same time. Change no tracked file, commit and push nothing; the runner pushes nothing from this checkout. You may still prepare the checkout to run things here: initialize submodules, install dependencies, build, start the application and run checks.',
       );
     for (const dir of dirs) {
       if (dir.repo?.initializing)
