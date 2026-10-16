@@ -170,7 +170,7 @@ Legacy application-owned guidance, when present
 
 An application from before `@nocobase/app-cli` took over the whole command line depends on `@nocobase/nb3-cli` and, usually, `@nocobase/app-tools`. Neither is published any more, so the upgrade has to move to the new layout in one step; there is no compatibility period.
 
-1. In `package.json`, remove `@nocobase/nb3-cli` and `@nocobase/app-tools`, keep `@nocobase/app-cli` in `dependencies` at the target template's range, and add the development tools it expects the application to provide to `devDependencies` — `typescript`, `tsx`, `vite`, `prettier`, `tar`, `@refinedev/cli`, `tsc-alias` and `@nocobase/dev-config`, taking the target template's ranges.
+1. In `package.json`, remove `@nocobase/nb3-cli` and `@nocobase/app-tools`, keep `@nocobase/app-cli` in `dependencies` at the target template's range, and add the development tools it expects the application to provide to `devDependencies` — `typescript`, `tsx`, `vite`, `prettier`, `tar`, `tsc-alias` and `@nocobase/dev-config`, taking the target template's ranges.
 2. Replace `scripts` with the target template's: `postinstall`, `dev`, `build` and `start` run `nocobase …`, and the quality scripts stay. Delete the command aliases (`config:*`, `db:*`, `migrate`, `seed`, `collections:generate`, `plugin:*`, `package:remove`, `skills:sync`, `upload`, `deploy`, `server:deps:*`, `nocobase`); each is now `pnpm nocobase <topic> <command>`. Keep scripts the user added that are not aliases, and ask before dropping one they redefined.
 3. If the application published to a Hub (it had `upload` and `deploy`), those commands have no replacement; see [Hub publishing](#hub-publishing).
 4. Delete `scripts/dev.mjs`, `scripts/build.mjs`, `scripts/start.mjs` and `scripts/server-deps.mjs`, and `cli/index.ts`. Compare any locally modified script first and move application-specific behavior into a plugin build or dev hook.
@@ -220,6 +220,18 @@ The release that stops shipping `DataTable` and `DatePicker` shows their files a
 
 1. Search the application for imports of each file and primitive and of each package before removing any of them, as [step 5](../SKILL.md#5-check-what-the-diff-cannot-show) describes. A file something still imports stays as application-owned code, together with the primitives and packages it needs; nothing about it has to change. Remove only what nothing imports.
 2. Keep the `dataTable` and `datePicker` keys in the locale files; the target template keeps them.
+
+## Refine removed from the client runtime
+
+The release in which `@nocobase/app-client` 4 drops Refine removes `app.refine`, `app.refineConfig` and the `AppClientRefine*` types, and `@nocobase/i18n/client` drops `createRefineI18nProvider`. The application shell no longer mounts `<Refine>`; `AppClientProviders` mounts the application's TanStack Query cache instead, with the defaults Refine gave it, so pages and plugins that call `useQuery` or `useQueryClient()` keep working without a provider of their own. `nocobase build` runs `vite build` for the client where it ran `refine build`. Every application generated before this release carries a call the new types reject, so `pnpm typecheck`, and with it `pnpm build`, fails until it is removed.
+
+Make these changes together, before the [Finish step](../SKILL.md#8-finish) installs dependencies:
+
+1. In `client/service-provider.ts`, delete `this.app.refine.setOptions({ title: { text: title } })`; the `document.title` lines beside it are what set the title and stay. An application from the Examples template also deletes the `this.app.refine.addResources([...])` call. `grep -rn "app\.refine\|refineConfig\|AppClientRefine\|createRefineI18nProvider" client/ tests/` lists any other call: a resource, option or provider set this way was never read by anything but Refine, so the call goes without a replacement. A test asserting `app.refineConfig.options?.title` asserts `document.title` instead, as the target's `tests/components/app-title.test.tsx` does.
+2. In `package.json`, remove `@refinedev/cli`, `@refinedev/core`, `@refinedev/react-hook-form`, `@refinedev/react-router` and `@refinedev/react-table` from `devDependencies`, and take the target's range for `@tanstack/react-query`. Remove `<Refine>` from any test fixture that wraps a component in it, such as `tests/fixtures/theme-tokens.tsx`.
+3. Search for imports from `@refinedev/` in `client/` before removing the packages. An application that adopted Refine's data hooks with a data provider of its own keeps those packages, and mounts `<Refine>` itself in an `application`-layer entry of `client/react-providers.ts`, passing `options={{ reactQuery: { clientConfig: app.queryClient } }}` with `app` from `useClientApplication()` so Refine shares the application's cache instead of creating a second one.
+
+After the Finish step, run `pnpm typecheck`, `pnpm test` and `pnpm build`, then open a page that loads data and, when the application has one, the inbox.
 
 ## Hub publishing
 

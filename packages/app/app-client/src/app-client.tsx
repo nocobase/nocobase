@@ -1,5 +1,4 @@
-import { Refine } from '@refinedev/core';
-import routerProvider from '@refinedev/react-router';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { type ReactElement, type ReactNode } from 'react';
 import { BrowserRouter } from 'react-router';
 
@@ -15,13 +14,10 @@ export interface AppClientRootProps {
 
 export function AppClientRoot({ app }: AppClientRootProps): ReactElement {
   const config = app.renderConfig;
-  const refine = app.refineConfig;
-  const configuredChildren =
-    refine.children === undefined ? config.routes : refine.children;
 
   return (
     <BrowserRouter basename={normalizeAppClientBasename(config.basename)}>
-      <AppClientProviders app={app}>{configuredChildren}</AppClientProviders>
+      <AppClientProviders app={app}>{config.routes}</AppClientProviders>
     </BrowserRouter>
   );
 }
@@ -32,7 +28,7 @@ export interface AppClientProvidersProps {
 }
 
 /**
- * Everything `AppClientRoot` mounts inside its router: the application, its React providers and Refine, around
+ * Everything `AppClientRoot` mounts inside its router: the application, its query cache and its React providers, around
  * `children` in place of the routes. It needs a router above it. A test renders a page in it under a router of its own,
  * so the page reads the services, translations and toaster it reads in the running application.
  */
@@ -40,28 +36,20 @@ export function AppClientProviders({
   app,
   children,
 }: AppClientProvidersProps): ReactElement {
-  const config = app.renderConfig;
-  const refine = app.refineConfig;
-  const configuredRouterProvider = refine.routerProvider ?? routerProvider;
-  const reactProviders = config.reactProviders ?? [];
+  const reactProviders = app.renderConfig.reactProviders ?? [];
   const content = reactProviders.reduceRight<ReactNode>(
     (inner, ReactProvider) => <ReactProvider>{inner}</ReactProvider>,
-    <Refine
-      {...refine}
-      routerProvider={configuredRouterProvider}
-      options={{
-        syncWithLocation: true,
-        disableTelemetry: true,
-        ...refine.options,
-      }}
-    >
-      {children}
-    </Refine>,
+    children,
   );
 
+  // The query cache sits outside the React providers so that they, and not only the pages, can read it.
   return (
     <ClientApplicationContext.Provider value={app}>
-      <NavigationGuardProvider>{content}</NavigationGuardProvider>
+      <NavigationGuardProvider>
+        <QueryClientProvider client={app.queryClient}>
+          {content}
+        </QueryClientProvider>
+      </NavigationGuardProvider>
     </ClientApplicationContext.Provider>
   );
 }

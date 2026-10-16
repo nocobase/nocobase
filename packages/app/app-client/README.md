@@ -1,9 +1,6 @@
 # @nocobase/app-client
 
-Browser application runtime for NocoBase v3. It provides the stateful
-`ClientApplication`, application-scoped services, static Client plugin
-composition, Refine integration, React tree composition, routes, locale
-resources, and public runtime configuration.
+Browser application runtime for NocoBase v3. It provides the stateful `ClientApplication`, application-scoped services, the application's query cache, static Client plugin composition, React tree composition, routes, locale resources, and public runtime configuration.
 
 ## Architecture
 
@@ -16,16 +13,13 @@ public HTML config + static declarations
           ├── config
           ├── ServiceContainer
           ├── ServiceProviders
-          ├── Refine configuration
+          ├── query cache
           └── React render configuration
                     ↓
           start() → host render()
 ```
 
-The Client and Server use the same explicit `serviceProviders` term for
-application services and lifecycle. Client React tree contributions are named
-`reactProviders`, so they cannot be confused with ServiceProviders or with
-Refine properties such as `authProvider` and `dataProvider`.
+The Client and Server use the same explicit `serviceProviders` term for application services and lifecycle. Client React tree contributions are named `reactProviders`, so they cannot be confused with ServiceProviders.
 
 ## Application runtime declaration
 
@@ -84,12 +78,12 @@ root.render(<AppClientRoot app={app} />);
 ```
 
 `app.start()` performs the complete ServiceProvider lifecycle and finalizes the
-Refine and render configuration. The Browser host owns the React root and
+render configuration. The Browser host owns the React root and
 renders `AppClientRoot` only after startup succeeds. During disposal, the host
 unmounts its React root and `app.shutdown()` shuts down providers in reverse
 order.
 
-`AppClientRoot` is a `BrowserRouter` around `AppClientProviders`, which mounts the application, its React providers and Refine around the routes. A test renders a page in `AppClientProviders` under a router of its own; `renderWithApp()` from `@nocobase/app-testing/client` does that for a started test application.
+`AppClientRoot` is a `BrowserRouter` around `AppClientProviders`, which mounts the application, its query cache and its React providers around the routes. A test renders a page in `AppClientProviders` under a router of its own; `renderWithApp()` from `@nocobase/app-testing/client` does that for a started test application.
 
 `new ClientApplication({ runtime, createRenderConfig, fetch })` sends the API client's requests through `fetch` instead of the global one. Production leaves it out; a test passes a server it runs in process. `resolveAppRuntime(definition, { i18n })` likewise runs the application on the i18n runtime it is given instead of building one from the locales; a test passes a strict one.
 
@@ -103,8 +97,7 @@ An application owns:
 - ServiceProvider instances and lifecycle state;
 - the HTTP API client binding under `apiClientToken`;
 - the WebSocket client binding under `realtimeClientToken`;
-- mutable `app.refine` setters during Provider lifecycle;
-- finalized `app.refineConfig` after startup;
+- the TanStack Query cache `app.queryClient`, also bound under `queryClientToken`;
 - finalized React render configuration consumed by `AppClientRoot`.
 
 The application owns a separate lazy realtime service under `realtimeClientToken`. By default,
@@ -120,11 +113,11 @@ Create an application directly when the default helper is sufficient:
 import { createApp } from '@nocobase/app-client';
 
 const app = createApp(runtime, (application) => {
-  const { runtime, refineConfig } = application;
+  const { runtime } = application;
   return {
     basename: runtime.basename,
     reactProviders: runtime.reactProviders.map(({ component }) => component),
-    routes: createRoutes(runtime.routes, refineConfig),
+    routes: createRoutes(runtime.routes),
   };
 });
 ```
@@ -171,10 +164,6 @@ export class AuditServiceProvider extends ServiceProvider<ClientApplication> {
     );
   }
 
-  public override async boot(): Promise<void> {
-    this.app.refine.setLiveProvider(createLiveProvider());
-  }
-
   public override async shutdown(): Promise<void> {
     await this.app.container.resolve(auditToken).close();
   }
@@ -186,16 +175,17 @@ The lifecycle order inside `app.start()` is:
 ```text
 register all
 → boot all
-→ finalize Refine and render configuration
+→ finalize render configuration
 → validate authenticated-route prerequisites and Runtime
 → start all
 → ready all
 ```
 
 Startup failure triggers reverse cleanup for providers that entered lifecycle.
-Async hooks retain the owning Provider context, so `this.app.refine` remains
-valid across `await` while the hook is running. Outside Provider lifecycle,
-read the finalized `app.refineConfig` instead of mutating `app.refine`.
+
+## Query cache
+
+`AppClientProviders` provides `app.queryClient` through TanStack Query's `QueryClientProvider`, outside the React providers, so pages, plugins and React providers that call `useQueryClient()`, `useQuery()` or `useMutation()` share one cache per application without mounting a provider of their own. Code outside React resolves it as `queryClientToken`, for example to invalidate queries when a realtime event announces a change. The cache does not refetch when the window regains focus, and a query whose key changes keeps showing the previous data until the new data arrives. `app.shutdown()` clears it. `@tanstack/react-query` is a peer dependency: a plugin that uses it declares it as a peer too, so it reads the application's copy and therefore its cache.
 
 React components and custom Hooks can obtain the application's HTTP client with `useApiClient()`:
 
@@ -316,7 +306,7 @@ React Providers are ordered outer-to-inner by layer and explicit `before`/`after
 constraints. Their components render only when the Browser host renders
 `AppClientRoot` for a started application. Use a
 Wrapper for React Context or tree-local UI behavior; use a ServiceProvider for
-application services, Container bindings, Refine setup, connections, listeners,
+application services, Container bindings, connections, listeners,
 and lifecycle cleanup.
 
 ## Routes and locale resources
@@ -421,6 +411,6 @@ plugins that consume the changed fields.
 
 ## Authorization
 
-Application authorization is provided by `@nocobase/app-plugin-authorization/client`. Use `useCan` for reactive visibility checks and `useAuthorizationClient` or `authorizationClientToken` for the current application client. `AppClientRefineConfig` excludes `accessControlProvider`, and the Refine registry has no `setAccessControlProvider` setter.
+Application authorization is provided by `@nocobase/app-plugin-authorization/client`. Use `useCan` for reactive visibility checks and `useAuthorizationClient` or `authorizationClientToken` for the current application client.
 
 Client route authentication uses `auth: 'required' | 'guest' | 'optional'`. Authorization uses `authz: 'skip' | 'unrestricted' | { resource: { type, id }, action }`. Declare it on the first page of every path. A nested page that omits it inherits the effective value of its nearest ancestor page, through any number of groups and levels, and a child that declares its own value overrides it for its subtree. A first page that omits it never stops the application: protected pages (`auth: 'required'`) default to `'unrestricted'`, which admits only identities with unrestricted access such as root and hides the page from everyone else's menus, while `guest` and `optional` pages default to `'skip'`. Development builds log one warning per defaulted page naming its id, path and default; production logs nothing. `'unrestricted'` may also be declared explicitly for a root-only page, and it is never offered as a grant. `'skip'` applies only to the current page and does not bypass parent guards. Route groups cannot declare `authz`. Malformed values, the removed `access` field and string resource declarations are rejected.

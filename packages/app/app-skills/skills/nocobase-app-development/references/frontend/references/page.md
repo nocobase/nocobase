@@ -272,7 +272,7 @@ Write `navigation` on the route. The application sidebar reads its menu entries 
 - Pages that should not appear in the menu (details, tab content and so on) have no `navigation`. When such a page is open, the menu highlights the nearest ancestor that has a menu entry.
 - **A path with a parameter (`:projectId`) cannot have `navigation`**; registration raises an error, because a menu entry must point to a fixed URL (wildcards are rejected on every route, [section 1](#1-declare-the-route)).
 - Navigation group: write only `name`, `navigation` and `children`, without `componentLoader`. For groups and clickable parents, see [`child-routes.md`](child-routes.md).
-- Do not change the shell (`client/layouts/`) or the ServiceProvider to add a menu entry, and do not add a Refine resource for a menu. Refine resources produce no menu entries (see ["Loading data in a component" in `api.md`](api.md#loading-data-in-a-component) for what they are for); the home page entry is declared in the routes as well.
+- Do not change the shell (`client/layouts/`) or the ServiceProvider to add a menu entry; the home page entry is declared in the routes as well.
 - A new page with a menu entry usually touches four places: `client/routes.ts`, the page component, `client/locales/` and, for an App page that requires sign-in, the page grant list in `tests/logic/client-routes.test.ts` ([section 12](#12-update-the-route-test)).
 
 ### A count beside an entry

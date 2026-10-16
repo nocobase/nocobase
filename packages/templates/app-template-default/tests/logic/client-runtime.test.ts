@@ -1,8 +1,12 @@
 import { createApp } from '../../client/app.js';
 import { ServiceProvider } from '@nocobase/service-provider';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { ClientApplication, toasterToken } from '@nocobase/app-client';
+import {
+  ClientApplication,
+  queryClientToken,
+  toasterToken,
+} from '@nocobase/app-client';
 import {
   createAppClientConfig,
   defineAppClientRenderConfig,
@@ -47,19 +51,13 @@ describe('app client runtime', () => {
     expect(calls).toEqual([]);
   });
 
-  it('runs provider lifecycle and exposes Refine config through ClientApplication', async () => {
-    const authProvider = {
-      check: vi.fn(),
-      getIdentity: vi.fn(),
-      login: vi.fn(),
-      logout: vi.fn(),
-      onError: vi.fn(),
-    };
+  it('runs provider lifecycle with the application query cache registered', async () => {
+    const seen: unknown[] = [];
     class Provider extends ServiceProvider<ClientApplicationType> {
       public readonly name: string = '@example/provider';
 
       public override boot(): Promise<void> {
-        this.app.refine.setAuthProvider(authProvider);
+        seen.push(this.app.services.resolve(queryClientToken));
         return Promise.resolve();
       }
     }
@@ -77,7 +75,7 @@ describe('app client runtime', () => {
     });
 
     await app.start();
-    expect(app.refineConfig.authProvider).toBe(authProvider);
+    expect(seen).toEqual([app.queryClient]);
     await app.shutdown();
   });
 
@@ -90,16 +88,12 @@ describe('app client runtime', () => {
     expect(app).toBeInstanceOf(ClientApplication);
     await expect(app.start()).resolves.toBeUndefined();
     expect(app.config.get('app.title')).toBe('Configured application');
-    expect(app.refineConfig.options?.title).toEqual({
-      text: 'Configured application',
-    });
     // Plugins and pages report through the registered toaster, and the mounted Toaster renders what it forwards.
     // Without either half, toasts disappear.
     expect(app.services.has(toasterToken)).toBe(true);
     expect(runtime.reactProviders).toContainEqual(
       expect.objectContaining({ name: 'toaster', layer: 'application' }),
     );
-    expect(app.refineConfig.resources ?? []).toEqual([]);
     await app.shutdown();
   });
 

@@ -1,6 +1,6 @@
 # NocoBase 3 Application
 
-A full-stack NocoBase 3 application. The server runs on `@nocobase/app-server` and the browser client is React with Refine, shadcn/ui, and Tailwind CSS.
+A full-stack NocoBase 3 application. The server runs on `@nocobase/app-server` and the browser client is React with shadcn/ui and Tailwind CSS.
 
 You own everything in this directory. Add pages, API routes, database tables, and business logic directly here — this is your application's source code, not a framework you extend from the outside.
 

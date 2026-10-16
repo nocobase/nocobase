@@ -6,12 +6,12 @@ This package provides only the mechanism: namespaces, resource loading, locale r
 
 ## Entry points
 
-| Entry                    | Contents                                                                           |
-| ------------------------ | ---------------------------------------------------------------------------------- |
-| `@nocobase/i18n`         | Isomorphic core: the i18next instance, namespace registry, locale resolution       |
-| `@nocobase/i18n/client`  | React bindings: `I18nProvider`, `NamespaceScope`, `useTranslation`, Refine adapter |
-| `@nocobase/i18n/server`  | Node bindings: request middleware, request translator, `AppI18nError`              |
-| `@nocobase/i18n/testing` | Component tests: `createTestI18nRuntime`, `TestI18nProvider`                       |
+| Entry                    | Contents                                                                     |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| `@nocobase/i18n`         | Isomorphic core: the i18next instance, namespace registry, locale resolution |
+| `@nocobase/i18n/client`  | React bindings: `I18nProvider`, `NamespaceScope`, `useTranslation`           |
+| `@nocobase/i18n/server`  | Node bindings: request middleware, request translator, `AppI18nError`        |
+| `@nocobase/i18n/testing` | Component tests: `createTestI18nRuntime`, `TestI18nProvider`                 |
 
 The core depends on `i18next`; `/client` depends on `react-i18next` with `react` as a peer; `/server` takes `hono` as a peer. The entries are separate so a browser build never reaches `/server` and Node never reaches `/client`.
 

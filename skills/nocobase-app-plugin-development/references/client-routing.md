@@ -104,7 +104,7 @@ Opening the exact parent URL redirects with replace to the business default when
 
 Use `useResolvedPath('.')` and `matchPath({ path: parentPath.pathname, end: true }, location.pathname)` to identify the exact parent entry. Do not infer it from an absent Outlet, a path prefix, or an invented route `index` field. Read the plugin-focused [Service, Context, and routed Tabs examples](./client-examples.md) for a complete two-Tab page with authorization loading, query preservation, plugin-owned shadcn primitives, and a behavior test. The [child routes and Tabs implementation](client-child-routes.md) covers broader child presentation patterns using plugin-owned component copies. Follow the [component copy workflow](client-components.md#copy-page-and-route-components-into-the-plugin) before using those examples.
 
-For full navigation, breadcrumb, and page access contracts, read [pages, routes, and menus](client-pages-and-routes.md). Keep the declarations in the plugin's `client/routes.ts`. Refine resources support CRUD and do not create sidebar entries.
+For full navigation, breadcrumb, and page access contracts, read [pages, routes, and menus](client-pages-and-routes.md). Keep the declarations in the plugin's `client/routes.ts`.
 
 ## Route dialogs and drawers
 

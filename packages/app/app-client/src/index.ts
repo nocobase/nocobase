@@ -13,6 +13,7 @@ export {
   type AppClientRootProps,
 } from './app-client.js';
 export { ClientApplicationContext } from './application-context.js';
+export { queryClientToken } from './query-client.js';
 export { resolveAppBase, resolveAppUrl, resolveAssetUrl } from './client.js';
 export {
   ApiClientError,
@@ -72,7 +73,6 @@ export {
   type AppClientConfigValue,
   type AppClientPublicConfig,
   type AppClientReactProvider,
-  type AppClientRefineConfig,
   type AppClientRenderConfig,
 } from './config.js';
 export type {
@@ -111,9 +111,6 @@ export type {
   AppClientReactProviderDefinition,
   AppClientReactProviderLayer,
   AppClientReactProviders,
-  AppClientRefineRegistry,
-  AppClientRefineSetterValue,
-  AppClientRefineSetters,
   AppClientRegisteredReactProvider,
   AppClientRegisteredRoute,
   AppClientRegisteredServiceProvider,

@@ -4,7 +4,7 @@ Use these examples when the shorter Client references do not show enough impleme
 
 ## Application-scoped Client service with typed options
 
-This example registers one lazy service, configures a Refine resource during `boot()`, subscribes only after Client startup has finalized its render configuration, and releases the subscription during reverse shutdown. It resolves the host Realtime Client instead of opening a second connection.
+This example registers one lazy service, subscribes only after Client startup has finalized its render configuration, and releases the subscription during reverse shutdown. It resolves the host Realtime Client instead of opening a second connection.
 
 ```ts
 // client/audit-feed.ts
@@ -81,7 +81,7 @@ export class RealtimeAuditFeed implements AuditFeed {
 }
 ```
 
-The Provider constructor receives the exact options stored by `defineClientPlugin()`. Refine mutation is valid only while a Provider lifecycle hook owns the current contribution context; code outside those hooks reads `app.refineConfig` instead.
+The Provider constructor receives the exact options stored by `defineClientPlugin()`.
 
 ```ts
 // client/service-provider.ts
@@ -115,11 +115,6 @@ export class AuditLogClientServiceProvider extends ServiceProvider<ClientApplica
           this.context.options.topic ?? 'audit-log:created',
         ),
     );
-  }
-
-  public override boot(): Promise<void> {
-    this.app.refine.addResources([{ name: 'audit-logs', list: '/audit-logs' }]);
-    return Promise.resolve();
   }
 
   public override async start(): Promise<void> {
