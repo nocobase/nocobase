@@ -29,8 +29,8 @@ export interface LinkPanelProps {
 export interface AgentSessionsRouteOptions {
   /** The application's command line, whose `acp start` connects a computer, such as `nb-studio`. */
   readonly cli: string;
-  /** How people install that command line, such as `npm install -g @nocobase/studio-cli`; left out when unknown. */
-  readonly install?: string;
+  /** Application-owned setup trigger and dialog; omitted to show the default command checklist. */
+  readonly connectPrompt?: ComponentType;
   /**
    * The panel each kind of record opens in, by kind. A record of a kind with a panel opens beside the conversation,
    * named in the address as `?<kind>=<refId>`; any other opens where its application shows it (`href`).
@@ -40,7 +40,7 @@ export interface AgentSessionsRouteOptions {
 
 export interface AgentSessionsSettings {
   readonly cli: string;
-  readonly install: string | null;
+  readonly connectPrompt: ComponentType | null;
   readonly linkPanels: Readonly<Record<string, ComponentType<LinkPanelProps>>>;
 }
 

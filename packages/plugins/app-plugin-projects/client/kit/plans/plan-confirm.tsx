@@ -49,8 +49,8 @@ export function usePlanConfirm(): PlanConfirm {
         if (!open) setAsking(null);
       }}
     >
-      <AlertDialogContent>
-        <AlertDialogHeader>
+      <AlertDialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col'>
+        <AlertDialogHeader className='shrink-0'>
           <AlertDialogTitle>
             {asking?.kind === 'void'
               ? t('plans.voidTitle')
@@ -63,7 +63,10 @@ export function usePlanConfirm(): PlanConfirm {
           </AlertDialogDescription>
         </AlertDialogHeader>
         {asking?.kind === 'execute' ? (
-          <ul className='space-y-1.5 text-sm' data-testid='plan-risky-rows'>
+          <ul
+            className='min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-y-contain text-sm'
+            data-testid='plan-risky-rows'
+          >
             {asking.risky.map((view) => (
               <li key={view.row.id} className='space-y-1'>
                 <p className='wrap-anywhere'>
@@ -83,7 +86,7 @@ export function usePlanConfirm(): PlanConfirm {
             ))}
           </ul>
         ) : null}
-        <AlertDialogFooter>
+        <AlertDialogFooter className='shrink-0'>
           <AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
           <AlertDialogAction
             variant={asking?.kind === 'void' ? 'destructive' : 'default'}

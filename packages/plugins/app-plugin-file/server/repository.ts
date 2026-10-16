@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 import type {
+  DatabaseConnection,
   DatabaseManager,
   Repository,
   RepositoryPolicy,
@@ -24,6 +25,8 @@ type AppDriveManager =
 
 export interface FileRepositoryOptions {
   readonly connection?: string;
+  /** Enclose file rows in the caller's transaction; remove uploaded objects on rollback. */
+  readonly transaction?: DatabaseConnection;
   readonly disk: string;
   readonly accessPath: string;
   /**
@@ -131,10 +134,11 @@ export class ServerFileRepositoryManager {
     if (!collection || !options.disk)
       throw new Error('collection and disk are required.');
     const accessPath = normalizeAccessPath(options.accessPath);
-    const repository = this.database.repository<FileRecord>(
-      collection,
-      options.connection,
-    );
+    const connection =
+      options.transaction ?? this.database.connection(options.connection);
+    const repository = options.transaction
+      ? options.transaction.repository<FileRecord>(collection)
+      : this.database.repository<FileRecord>(collection, options.connection);
     // Only the upload path is bound. The Repository this manager hands back is
     // the plugin's server-side API, used by application code that is already
     // trusted the way a `db.repository()` call is; binding it would restrict
@@ -145,9 +149,7 @@ export class ServerFileRepositoryManager {
       uploadPolicy(options.policy),
     ) as ScopedRepository<FileRecord>;
     const validateCollection = async (): Promise<void> => {
-      const definition = await this.database
-        .connection(options.connection)
-        .collections.get(collection);
+      const definition = await connection.collections.get(collection);
       const fail = (field: string, reason: string): never => {
         throw new FileRepositoryError(
           'INVALID_FILE_COLLECTION',
@@ -224,9 +226,7 @@ export class ServerFileRepositoryManager {
           'Stored file size does not match the uploaded file.',
         );
       const now = new Date().toISOString();
-      const definition = await this.database
-        .connection(options.connection)
-        .collections.get(collection);
+      const definition = await connection.collections.get(collection);
       const timestamp = (name: string): string =>
         definition?.fields?.find((field) => field.name === name)?.type ===
         'datetime'
@@ -249,6 +249,8 @@ export class ServerFileRepositoryManager {
       cause: unknown,
       databaseAttempted: boolean,
     ): Promise<never> => {
+      // The caller must let its transaction roll back; its callback owns object cleanup too.
+      if (options.transaction) throw cause;
       if (databaseAttempted) {
         // A lost commit acknowledgement must never delete an object a record now owns.
         try {
@@ -283,6 +285,19 @@ export class ServerFileRepositoryManager {
         );
       throw cause;
     };
+    const cleanAfterRollback = async (
+      owned: readonly string[],
+    ): Promise<void> => {
+      // Verify through the root connection: a lost commit acknowledgement must retain committed objects.
+      const committed = this.database.repository<FileRecord>(
+        collection,
+        connection.name,
+      );
+      for (const key of owned) {
+        if (!(await committed.exists({ filter: { key, disk: options.disk } })))
+          await this.drive.use(options.disk).delete(key);
+      }
+    };
     const operations: FileOperations = {
       validateCollection,
       getUrl,
@@ -316,6 +331,9 @@ export class ServerFileRepositoryManager {
             'Exactly one File is required.',
           );
         const owned: string[] = [];
+        options.transaction?.afterRollback(async () => {
+          await cleanAfterRollback(owned);
+        });
         let result: UploadOneResult;
         let databaseAttempted = false;
         try {
@@ -345,6 +363,9 @@ export class ServerFileRepositoryManager {
             'At least one File is required.',
           );
         const owned: string[] = [];
+        options.transaction?.afterRollback(async () => {
+          await cleanAfterRollback(owned);
+        });
         let result: UploadManyResult;
         let databaseAttempted = false;
         try {

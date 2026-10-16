@@ -20,14 +20,15 @@ export function domainOf(type: string): PmChangeDomain {
 }
 
 /**
- * Events that may move an issue into or out of a list a page shows: created, deleted, restored, given to someone else
- * or moved to another status.
+ * Events that may move an issue into or out of a list a page shows: created, deleted, restored, given to someone else,
+ * moved to another status, or moved to another project, parent or executor.
  */
 function movesLists(event: AnnouncedEvent): boolean {
   if (
     event.type === 'issue.created' ||
     event.type === 'issue.deleted' ||
-    event.type === 'issue.restored'
+    event.type === 'issue.restored' ||
+    (event.type === 'issue.changed' && event.moved === true)
   )
     return true;
   return (
@@ -43,6 +44,7 @@ export interface AnnouncedEvent {
   readonly type: string;
   readonly issueId?: unknown;
   readonly changes?: unknown;
+  readonly moved?: unknown;
 }
 
 export interface ChangeAnnouncer {

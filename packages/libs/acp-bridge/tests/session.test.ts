@@ -43,6 +43,10 @@ function start(
   agent: ResolvedAgent = FAKE,
   env: NodeJS.ProcessEnv = process.env,
   discoverySignal?: AbortSignal,
+  prepareSession?: (
+    agentId: string,
+    sessionId: string,
+  ) => Promise<NodeJS.ProcessEnv>,
 ): {
   session: BridgeSession;
   events: BridgeEvent[];
@@ -57,14 +61,13 @@ function start(
     cwd: root,
     acpSessionId: null,
     settings: {},
-    tools: null,
     ...target,
   };
   const session = new BridgeSession(full, {
     client: { name: 'test', version: '0.0.0' },
-    server: 'https://studio.example.com/app/',
     env,
     discoverySignal,
+    prepareSession,
     roots: [root],
     resolve: () => Promise.resolve(agent),
     emit: (event) => events.push(event),
@@ -394,20 +397,50 @@ describe('BridgeSession', () => {
     expect(session.state?.acpSessionId).toBe('s-earlier');
   });
 
-  it('gives the agent the application’s tools under the address the bridge talks to', async () => {
-    const { session, events, target } = start({
-      tools: { name: 'studio', path: '/mcp/agent-sessions', token: 't0k' },
+  it('prepares the shared Skill before new and restored sessions, and stops on a preparation failure', async () => {
+    const calls: string[] = [];
+    const prepare = async (agentId: string, sessionId: string) => {
+      calls.push(`${agentId}:${sessionId}`);
+      return { NB_STUDIO_PROFILE: 'owner', NB_STUDIO_AGENT_SESSION: sessionId };
+    };
+    for (const acpSessionId of [null, 's-earlier']) {
+      const { session, events, target } = start(
+        { acpSessionId },
+        FAKE,
+        process.env,
+        undefined,
+        prepare,
+      );
+      prompt(session, target, 'p1', 'session-env');
+      await until(events, ended('p1'));
+      expect(JSON.parse(texts(events)[0]!)).toEqual({
+        profile: 'owner',
+        sessionId: 'session-1',
+        mcpServers: [],
+      });
+    }
+    expect(calls).toEqual(['fake:session-1', 'fake:session-1']);
+    const { session, events, target } = start(
+      {},
+      FAKE,
+      process.env,
+      undefined,
+      async () => {
+        throw new Error('Install the shared Skill first.');
+      },
+    );
+    prompt(session, target, 'p2', 'hi');
+    await expect(until(events, ended('p2'))).resolves.toMatchObject({
+      error: 'Install the shared Skill first.',
     });
+    expect(texts(events)).toEqual([]);
+  });
+
+  it('opens a session with no MCP servers', async () => {
+    const { session, events, target } = start();
     prompt(session, target, 'p1', 'mcp');
     await until(events, ended('p1'));
-    expect(JSON.parse(texts(events)[0]!)).toEqual([
-      {
-        type: 'http',
-        name: 'studio',
-        url: 'https://studio.example.com/app/mcp/agent-sessions',
-        headers: [{ name: 'authorization', value: 'Bearer t0k' }],
-      },
-    ]);
+    expect(JSON.parse(texts(events)[0]!)).toEqual([]);
   });
 
   it('refuses a directory outside the computer’s roots', async () => {

@@ -11,6 +11,54 @@ afterEach(async () => {
 const ADMIN = ['agents.agents/manage'];
 
 describe('team default skills', () => {
+  it('resolves attachment display information only on the detail route and in scope batches', async () => {
+    h = await createHarness();
+    const batches: string[][] = [];
+    h.services.scopes.register({
+      key: 'project',
+      title: 'Project',
+      access: async () => ({ visible: true, manage: true }),
+      describe: async (ids, userId) => {
+        batches.push([...ids]);
+        return new Map(
+          userId === 'alice'
+            ? [['p1', { name: 'Project one', href: '/projects/p1/settings' }]]
+            : [],
+        );
+      },
+    });
+    const skill = await h.services.skills.create('alice', {
+      content: skillMd('named-attachments', 'Rules.'),
+    });
+    for (const scopeId of ['p1', 'p2'])
+      await h.services.skills.attach({ scope: 'project', scopeId }, [skill.id]);
+    expect(batches).toEqual([]);
+    const result = await h.request('GET', `/agents/skills/${skill.id}`, {
+      user: 'alice',
+      can: ['agents.agents/read'],
+    });
+    expect(result.status).toBe(200);
+    expect(result.body.data.attachments).toEqual([
+      {
+        scope: 'project',
+        scopeId: 'p1',
+        name: 'Project one',
+        href: '/projects/p1/settings',
+      },
+      { scope: 'project', scopeId: 'p2', name: null },
+    ]);
+    expect(batches).toEqual([['p1', 'p2']]);
+    const hidden = await h.request('GET', `/agents/skills/${skill.id}`, {
+      user: 'bob',
+      can: ['agents.agents/read'],
+    });
+    expect(
+      hidden.body.data.attachments.every(
+        (item: { name: string | null; href?: string }) =>
+          item.name === null && item.href === undefined,
+      ),
+    ).toBe(true);
+  });
   it('allows only managers to replace global default and never enables global variables or agent skills', async () => {
     h = await createHarness();
     const skill = await h.services.skills.create('alice', {

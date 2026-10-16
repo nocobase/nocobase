@@ -72,6 +72,42 @@ describe('profiles', () => {
     expect((await readUserConfig(options()))?.profile).toBe('b');
   });
 
+  it('pins session reads to a stored profile despite run and environment credentials', async () => {
+    home = tempDir();
+    await saveUserConfig(
+      'https://owner.example',
+      'owner-key',
+      options({ profile: 'owner' }),
+    );
+    await saveUserConfig(
+      'https://other.example',
+      'other-key',
+      options({ profile: 'other' }),
+    );
+    expect(
+      await readUserConfig(
+        options({
+          profile: 'owner',
+          profileOnly: true,
+          env: {
+            ACME_API_KEY: 'unrelated-key',
+            ACME_SERVER: 'https://unrelated.example',
+            ACME_PROFILE: 'other',
+            AGENT_RUN_CREDENTIALS: '/missing/run.json',
+          },
+        }),
+      ),
+    ).toMatchObject({
+      server: 'https://owner.example',
+      key: 'owner-key',
+      profile: 'owner',
+    });
+    await removeProfile('owner', options());
+    await expect(
+      readUserConfig(options({ profile: 'owner', profileOnly: true })),
+    ).rejects.toThrow('There is no profile owner');
+  });
+
   it('acts with ACME_API_KEY and ACME_SERVER without signing in', async () => {
     home = tempDir();
     const env = { ACME_API_KEY: 'ci-key', ACME_SERVER: 'ci.example:3000/' };

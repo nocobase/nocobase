@@ -72,6 +72,8 @@ const enUS = {
     unknown: 'Unknown',
   },
   newSession: {
+    sendUnconfirmed:
+      'Send was not confirmed. Use Retry original submission to recover its confirmation.',
     settingsOutdated:
       'This computer\'s command line is too old for this application. Update it there, as "My computers" shows.',
     settingsOffline:
@@ -79,6 +81,7 @@ const enUS = {
     settingsLoading: 'Loading settings…',
     settingsFailed: 'Could not load agent settings.',
     settingsRetry: 'Retry settings',
+    settingsReset: 'Use agent defaults',
     settingsUnsupported:
       'This agent does not expose settings. Its defaults will be used.',
     settingsEmpty:
@@ -158,6 +161,13 @@ const enUS = {
     recordBody: 'The full record is kept here, and only you can see it.',
   },
   composer: {
+    unconfirmed:
+      'Delivery is unconfirmed. Retry the original submission, or edit as a new message (the original may already have arrived).',
+    retrySubmission: 'Retry original submission',
+    editAsNew: 'Edit as new message',
+    sendUnconfirmed:
+      'Send was not confirmed. Use Retry original submission to recover its confirmation.',
+    sending: 'Sending…',
     expand: 'Expand input',
     collapse: 'Collapse input',
     placeholder: 'Reply, or ask for the next thing…',
@@ -288,7 +298,6 @@ const enUS = {
       agent: 'Install a coding agent and sign in to it',
       agentHint:
         'Codex, Claude Code, Gemini CLI, GitHub Copilot, Cursor, Qwen Code, Kimi CLI and more: sign in with its own command. Use the strongest model you can.',
-      install: 'Install the command line',
       login: 'Sign in with your account',
       start: 'Keep this computer connected',
       startHint:
