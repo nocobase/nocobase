@@ -55,7 +55,6 @@ describe('asset URLs in the application build', () => {
     'uses the compiled asset base while keeping API URLs on the runtime mount (%s)',
     async (cdn) => {
       vi.stubEnv('CDN_BASE_URL', cdn);
-      vi.stubEnv('AGENT_ANNOTATIONS_ENABLED', 'false');
       // The same build must work when the deployment chooses a different mount path.
       vi.stubEnv('APP_BASE_PATH', '/build-machine');
       const result = await build({
