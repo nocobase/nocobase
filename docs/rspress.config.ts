@@ -20,6 +20,7 @@ const lang = process.env.DOCS_LANG || 'en';
 const base = process.env.DOCS_BASE || lang === 'en' ? '/' : `/${lang}/`;
 const checkDeadLinks = process.env.CHECK_DEAD_LINKS !== 'false';
 const docsAiApiUrl = process.env.DOCS_AI_API_URL || '';
+const siteOrigin = 'https://v2.docs.nocobase.com';
 const rspressI18nAliases: Readonly<Record<string, string>> = {
   cn: 'zh',
 };
@@ -109,7 +110,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Progress',
     docsAiLoading: 'Searching the official documentation…',
     docsAiProgressSubmitted:
-      'Question submitted; limiting search to docs.nocobase.com',
+      'Question submitted; limiting search to v2.docs.nocobase.com',
     docsAiProgressCallingModel: 'Calling DeepSeek',
     docsAiProgressParsingCitations:
       'Response received; parsing official documentation references',
@@ -138,7 +139,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiQuestionLabel: '你的问题',
     docsAiProgress: '处理进度',
     docsAiLoading: '正在检索官方文档…',
-    docsAiProgressSubmitted: '问题已提交，正在限定搜索 docs.nocobase.com',
+    docsAiProgressSubmitted: '问题已提交，正在限定搜索 v2.docs.nocobase.com',
     docsAiProgressCallingModel: '正在调用 DeepSeek',
     docsAiProgressParsingCitations: '已收到回答，正在解析官方文档引用',
     docsAiProgressVerifyingSources: '正在验证官方文档页面',
@@ -166,7 +167,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: '処理状況',
     docsAiLoading: '公式ドキュメントを検索しています…',
     docsAiProgressSubmitted:
-      '質問を送信しました。docs.nocobase.com 内を検索しています',
+      '質問を送信しました。v2.docs.nocobase.com 内を検索しています',
     docsAiProgressCallingModel: 'DeepSeek を呼び出しています',
     docsAiProgressParsingCitations:
       '回答を受信しました。公式ドキュメントの参照を解析しています',
@@ -196,7 +197,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Progreso',
     docsAiLoading: 'Buscando en la documentación oficial…',
     docsAiProgressSubmitted:
-      'Pregunta enviada; buscando solo en docs.nocobase.com',
+      'Pregunta enviada; buscando solo en v2.docs.nocobase.com',
     docsAiProgressCallingModel: 'Consultando DeepSeek',
     docsAiProgressParsingCitations:
       'Respuesta recibida; analizando las referencias oficiales',
@@ -227,7 +228,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Progresso',
     docsAiLoading: 'Pesquisando na documentação oficial…',
     docsAiProgressSubmitted:
-      'Pergunta enviada; pesquisando apenas em docs.nocobase.com',
+      'Pergunta enviada; pesquisando apenas em v2.docs.nocobase.com',
     docsAiProgressCallingModel: 'Consultando o DeepSeek',
     docsAiProgressParsingCitations:
       'Resposta recebida; analisando as referências oficiais',
@@ -258,7 +259,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Fortschritt',
     docsAiLoading: 'Offizielle Dokumentation wird durchsucht…',
     docsAiProgressSubmitted:
-      'Frage gesendet; Suche auf docs.nocobase.com beschränkt',
+      'Frage gesendet; Suche auf v2.docs.nocobase.com beschränkt',
     docsAiProgressCallingModel: 'DeepSeek wird aufgerufen',
     docsAiProgressParsingCitations:
       'Antwort erhalten; offizielle Verweise werden ausgewertet',
@@ -289,7 +290,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Progression',
     docsAiLoading: 'Recherche dans la documentation officielle…',
     docsAiProgressSubmitted:
-      'Question envoyée ; recherche limitée à docs.nocobase.com',
+      'Question envoyée ; recherche limitée à v2.docs.nocobase.com',
     docsAiProgressCallingModel: 'Interrogation de DeepSeek',
     docsAiProgressParsingCitations:
       'Réponse reçue ; analyse des références officielles',
@@ -321,7 +322,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Ход выполнения',
     docsAiLoading: 'Поиск в официальной документации…',
     docsAiProgressSubmitted:
-      'Вопрос отправлен; поиск ограничен сайтом docs.nocobase.com',
+      'Вопрос отправлен; поиск ограничен сайтом v2.docs.nocobase.com',
     docsAiProgressCallingModel: 'Обращение к DeepSeek',
     docsAiProgressParsingCitations:
       'Ответ получен; разбор ссылок на официальную документацию',
@@ -351,7 +352,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Progres',
     docsAiLoading: 'Mencari di dokumentasi resmi…',
     docsAiProgressSubmitted:
-      'Pertanyaan dikirim; pencarian dibatasi ke docs.nocobase.com',
+      'Pertanyaan dikirim; pencarian dibatasi ke v2.docs.nocobase.com',
     docsAiProgressCallingModel: 'Menghubungi DeepSeek',
     docsAiProgressParsingCitations:
       'Jawaban diterima; mengurai referensi dokumentasi resmi',
@@ -382,7 +383,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Tiến trình',
     docsAiLoading: 'Đang tìm kiếm trong tài liệu chính thức…',
     docsAiProgressSubmitted:
-      'Đã gửi câu hỏi; chỉ tìm kiếm trên docs.nocobase.com',
+      'Đã gửi câu hỏi; chỉ tìm kiếm trên v2.docs.nocobase.com',
     docsAiProgressCallingModel: 'Đang gọi DeepSeek',
     docsAiProgressParsingCitations:
       'Đã nhận câu trả lời; đang phân tích nguồn tài liệu chính thức',
@@ -466,7 +467,7 @@ function sitemap(): RspressPlugin {
         return;
       }
 
-      const baseDomain = 'https://docs.nocobase.com';
+      const baseDomain = siteOrigin;
 
       const urlEntries = Array.from(routes)
         .sort()
@@ -537,23 +538,23 @@ export default defineConfig({
       const canonicalRoute =
         crossRefCanonicalMap?.[route.routePath] || route.routePath;
       if (lang !== 'en') {
-        return `<link rel="canonical" href="https://docs.nocobase.com/${lang}${canonicalRoute}" />`;
+        return `<link rel="canonical" href="${siteOrigin}/${lang}${canonicalRoute}" />`;
       }
-      return `<link rel="canonical" href="https://docs.nocobase.com${canonicalRoute}" />`;
+      return `<link rel="canonical" href="${siteOrigin}${canonicalRoute}" />`;
     },
     (route) => {
       const links = [];
       links.push(
         ...indexLanguages.map((language) => {
           if (language === 'en') {
-            return `<link rel="alternate" hreflang="en-US" href="https://docs.nocobase.com${route.routePath}" />`;
+            return `<link rel="alternate" hreflang="en-US" href="${siteOrigin}${route.routePath}" />`;
           }
           const hreflang = langMap[language as keyof typeof langMap];
-          return `<link rel="alternate" hreflang="${hreflang}" href="https://docs.nocobase.com/${language}${route.routePath}" />`;
+          return `<link rel="alternate" hreflang="${hreflang}" href="${siteOrigin}/${language}${route.routePath}" />`;
         }),
       );
       links.push(
-        `<link rel="alternate" hreflang="x-default" href="https://docs.nocobase.com${route.routePath}" />`,
+        `<link rel="alternate" hreflang="x-default" href="${siteOrigin}${route.routePath}" />`,
       );
       return links.join('\n');
     },

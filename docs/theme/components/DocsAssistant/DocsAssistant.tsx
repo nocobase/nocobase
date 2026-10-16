@@ -476,7 +476,7 @@ function isOfficialDocsUrl(value?: string): boolean {
   }
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' && url.hostname === 'docs.nocobase.com';
+    return url.protocol === 'https:' && url.hostname === 'v2.docs.nocobase.com';
   } catch {
     return false;
   }

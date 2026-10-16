@@ -17,7 +17,7 @@ yarn docs build --lang=en --check-dead-links
 
 ## Documentation AI assistant
 
-The documentation assistant calls an independent Rust backend from the `docs-ai-service` repository. The backend searches and verifies live pages under `docs.nocobase.com`; the documentation build does not generate a local AI index.
+The documentation assistant calls an independent Rust backend from the `docs-ai-service` repository. The backend searches and verifies live pages under `v2.docs.nocobase.com`; the documentation build does not generate a local AI index.
 
 For local Chinese development, start the backend, then restart Rspress with the backend URL defined at build time:
 
