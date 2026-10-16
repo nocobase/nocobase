@@ -1246,6 +1246,8 @@ export function createConversationService(
           (agent.source !== 'runner' || runnerConfig.agentId !== agent.id)
         )
           throw invalid('Select a callable Runner agent.');
+        if (runnerConfig && !(await canAnswer(unit.conn, agent, userId)))
+          throw conflict('This agent has no available execution environment.');
         const title =
           request.title === undefined
             ? null

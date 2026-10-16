@@ -573,17 +573,30 @@ it('preserves directory defaults, personal eligibility and offline reasons, and 
     online: false,
     reason: 'othersPersonal',
   });
-  const offline = await h.services.onlineAgent.realtime(context('bob'), {
-    agentId: first,
-  });
   await expect(
-    offline.send([{ role: 'user', content: 'Offline' }]),
+    h.services.onlineAgent.realtime(context('bob'), { agentId: first }),
   ).rejects.toThrow('available execution');
-  expect(await offline.history()).toEqual([]);
-  for (const agentId of [hidden, 'missing'])
+  expect(
+    (
+      await h.request('POST', '/agents/conversations', {
+        user: 'bob',
+        body: { agentId: first },
+      })
+    ).status,
+  ).toBe(409);
+  for (const agentId of [hidden, 'missing']) {
     await expect(
       h.services.onlineAgent.realtime(context(), { agentId }),
     ).rejects.toThrow();
+    expect(
+      (
+        await h.request('POST', '/agents/conversations', {
+          user: 'alice',
+          body: { agentId },
+        })
+      ).status,
+    ).not.toBe(201);
+  }
   const catalog = await h.request('GET', '/agents/chatAgents', {
     user: 'alice',
   });
