@@ -9,7 +9,13 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { createDepartment, destroyDepartment, updateDepartment, type DepartmentResource } from '../api';
+import {
+  buildDepartmentPayload,
+  createDepartment,
+  destroyDepartment,
+  updateDepartment,
+  type DepartmentResource,
+} from '../api';
 
 function makeResource(): DepartmentResource {
   return {
@@ -20,6 +26,35 @@ function makeResource(): DepartmentResource {
 }
 
 describe('department request helpers', () => {
+  it('builds owner payloads only when requested', () => {
+    expect(
+      buildDepartmentPayload({
+        title: 'Engineering',
+        parentId: null,
+        ownerIds: [1],
+      }),
+    ).toEqual({
+      title: 'Engineering',
+      parent: null,
+      roles: [],
+    });
+    expect(
+      buildDepartmentPayload(
+        {
+          title: 'Engineering',
+          parentId: null,
+          ownerIds: [1],
+        },
+        true,
+      ),
+    ).toEqual({
+      title: 'Engineering',
+      parent: null,
+      roles: [],
+      owners: [{ id: 1 }],
+    });
+  });
+
   it('fires resource.create on create submit', async () => {
     const resource = makeResource();
 
@@ -86,5 +121,18 @@ describe('department request helpers', () => {
     await destroyDepartment(resource, { id: 987654321 });
 
     expect(resource.destroy).toHaveBeenCalledWith({ filterByTk: 987654321 });
+  });
+
+  it('throws when edit or delete is requested without a department id', async () => {
+    const resource = makeResource();
+
+    await expect(updateDepartment(resource, { id: undefined as never }, { title: 'No id' })).rejects.toThrow(
+      'Edit mode requires department.id',
+    );
+    await expect(destroyDepartment(resource, { id: undefined as never })).rejects.toThrow(
+      'Delete mode requires department.id',
+    );
+    expect(resource.update).not.toHaveBeenCalled();
+    expect(resource.destroy).not.toHaveBeenCalled();
   });
 });
