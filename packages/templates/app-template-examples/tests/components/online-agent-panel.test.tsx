@@ -342,20 +342,44 @@ it('keeps Stop available independently of the model catalog', async () => {
     ),
   );
 });
-it.each(['empty', 'failed'])('lets an available Runner send when the native catalog is %s', async (phase) => {
-  if (phase === 'failed') host.catalog.mockRejectedValue(new Error('Native catalog unavailable'));
-  const request = host.request.getMockImplementation()!;
-  host.request.mockImplementation(async (input) => input.path === 'agents/chatAgents' ? {
-    data: [{ ...agent, id: 'runner-fixture', name: 'Runner fixture', availability: { online: true, reason: null, onlineRunners: 1 } }], meta: {},
-  } : request(input));
-  await setup();
-  await act(async () => panel.selectConversation(null, 'runner-fixture'));
-  await waitFor(() => expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent('Runner fixture'));
-  const textarea = screen.getByTestId('chat-composer').querySelector('textarea')!;
-  fireEvent.change(textarea, { target: { value: 'Runner draft' } });
-  expect(screen.getByTestId('chat-send')).toBeEnabled();
-  expect(screen.queryByText('No chat model configured')).not.toBeInTheDocument();
-});
+it.each(['empty', 'failed'])(
+  'lets an available Runner send when the native catalog is %s',
+  async (phase) => {
+    if (phase === 'failed')
+      host.catalog.mockRejectedValue(new Error('Native catalog unavailable'));
+    const request = host.request.getMockImplementation()!;
+    host.request.mockImplementation(async (input) =>
+      input.path === 'agents/chatAgents'
+        ? {
+            data: [
+              {
+                ...agent,
+                id: 'runner-fixture',
+                name: 'Runner fixture',
+                availability: { online: true, reason: null, onlineRunners: 1 },
+              },
+            ],
+            meta: {},
+          }
+        : request(input),
+    );
+    await setup();
+    await act(async () => panel.selectConversation(null, 'runner-fixture'));
+    await waitFor(() =>
+      expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent(
+        'Runner fixture',
+      ),
+    );
+    const textarea = screen
+      .getByTestId('chat-composer')
+      .querySelector('textarea')!;
+    fireEvent.change(textarea, { target: { value: 'Runner draft' } });
+    expect(screen.getByTestId('chat-send')).toBeEnabled();
+    expect(
+      screen.queryByText('No chat model configured'),
+    ).not.toBeInTheDocument();
+  },
+);
 
 it('preserves the same composer across phone close/reopen and desktop breakpoint transitions', async () => {
   let mobile = true;
