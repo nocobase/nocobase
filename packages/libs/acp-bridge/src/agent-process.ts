@@ -33,7 +33,7 @@ export interface AgentProcessOptions {
   readonly initializeTimeoutMs?: number;
 }
 
-/** Long enough for an adapter that npx fetches on first use. */
+/** Long enough for an adapter that npx fetches on first use, when no managed one can run. */
 const INITIALIZE_TIMEOUT_MS = 120_000;
 const STOP_GRACE_MS = 3_000;
 const STDERR_TAIL = 4_000;
@@ -223,7 +223,7 @@ function startProgram(
 ): ChildProcessByStdio<Writable, Readable, Readable> {
   const common = {
     cwd: options.cwd,
-    env: { ...options.env, ...agent.spec.env },
+    env: { ...options.env, ...agent.spec.env, ...agent.env },
     stdio: ['pipe', 'pipe', 'pipe'] as ['pipe', 'pipe', 'pipe'],
   };
   if (!windows)

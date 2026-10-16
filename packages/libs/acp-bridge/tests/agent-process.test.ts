@@ -6,6 +6,7 @@ import {
   setTimeout as realTimeout,
   clearTimeout as clearRealTimeout,
 } from 'node:timers';
+import * as acp from '@agentclientprotocol/sdk';
 import { expect, it, vi } from 'vitest';
 import { AgentProcess } from '../src/agent-process.js';
 
@@ -190,3 +191,41 @@ it.skipIf(process.platform === 'win32').each(['on-stop', 'before-stop'])(
   },
   15_000,
 );
+
+it('runs the agent with the environment its launcher adds, over the agent’s own', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'launcher-env-'));
+  const log = path.join(root, 'trace');
+  try {
+    const agent = await AgentProcess.start(
+      {
+        spec: {
+          id: 'fake',
+          name: 'Fake',
+          launchers: [],
+          signIn: 'fake login',
+          env: { FAKE_LOG: path.join(root, 'ignored') },
+        },
+        command: process.execPath,
+        args: [path.join(import.meta.dirname, 'fixtures/fake-agent.mjs')],
+        env: { FAKE_LOG: log },
+      },
+      {
+        cwd: root,
+        env: process.env,
+        client: { name: 'test', version: '0.0.0' },
+        handlers: {
+          update: () => {},
+          permission: async () => ({ outcome: { outcome: 'cancelled' } }),
+        },
+      },
+    );
+    await agent.agent.request(acp.methods.agent.session.new, {
+      cwd: root,
+      mcpServers: [],
+    });
+    await agent.stop();
+    expect(await readFile(log, 'utf8')).toContain('"method":"new"');
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
