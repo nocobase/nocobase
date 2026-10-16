@@ -666,7 +666,10 @@ function RoutesTable({ layout }: { layout: RouteLayoutConfig }) {
         url: '/desktopRoutes:list',
         method: 'get',
         params: {
-          filter: createDesktopRouteLayoutPermissionFilter(layout.uid),
+          filter: {
+            ...createDesktopRouteLayoutPermissionFilter(layout.uid),
+            type: { $ne: 'page' },
+          },
           paginate: false,
           sort: 'sort',
           tree: true,
