@@ -3,6 +3,7 @@
  * A capability module's overview: static markup (`pages*.json`) with a scenario picker driven by
  * `interactions.mjs`. Only this module's scenarios and prompts are embedded in the page.
  */
+import { getImage } from 'astro:assets';
 import type { LanguageLink } from '../../lib/language-menu.ts';
 import cnHome from '../FullHome/data.json';
 import enHome from '../FullHome/data.en.json';
@@ -33,23 +34,34 @@ interface Scenario {
 }
 
 // Screenshots referenced by name in the markup and the scenarios. They live with the Chinese pages' assets, which
-// carry the English screenshots too; Vite fingerprints them like any other asset.
-const assets = import.meta.glob<string>(
+// carry the English screenshots too. Going through `getImage` gives them the same output file the Markdown pages use
+// for the same screenshot, and only the ones a page references are published.
+const assets = import.meta.glob<ImageMetadata>(
   '../../../docs/cn/capabilities/assets/*.{png,jpg,jpeg,svg}',
-  {
-    eager: true,
-    query: '?url',
-    import: 'default',
-  },
+  { eager: true, import: 'default' },
 );
-const imageUrl = (file: string) =>
-  assets[`../../../docs/cn/capabilities/assets/${file}`];
+const imageUrls = new Map<string, string>();
+async function imageUrl(file: string): Promise<string | undefined> {
+  const source = assets[`../../../docs/cn/capabilities/assets/${file}`];
+  if (!source) return undefined;
+  if (!imageUrls.has(file))
+    imageUrls.set(file, (await getImage({ src: source })).src);
+  return imageUrls.get(file);
+}
+
+const referenced = [
+  ...new Set([
+    ...[...page.markup.matchAll(/assets\/([^"\s]+)/g)].map(([, file]) => file),
+    ...page.scenarios.flatMap(({ image }) => (image ? [image] : [])),
+  ]),
+];
+for (const file of referenced) await imageUrl(file);
 
 const markup =
   headerMarkup(language, languageLinks) +
   page.markup.replace(
     /assets\/([^"\s]+)/g,
-    (source, file: string) => imageUrl(file) ?? source,
+    (source, file: string) => imageUrls.get(file) ?? source,
   );
 const library = home.promptLibrary[
   page.promptKey as keyof typeof home.promptLibrary
@@ -58,7 +70,7 @@ const scenarios = page.scenarios.map((scenario) => ({
   ...scenario,
   label: library[scenario.id].label,
   prompt: library[scenario.id].text,
-  image: scenario.image ? imageUrl(scenario.image) : undefined,
+  image: scenario.image ? imageUrls.get(scenario.image) : undefined,
 }));
 const data = JSON.stringify(scenarios).replace(/</g, '\\u003c');
 ---
