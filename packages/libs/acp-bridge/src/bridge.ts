@@ -49,6 +49,11 @@ export interface BridgeOptions {
   readonly client: { readonly name: string; readonly version: string };
   /** Where the bridge keeps this computer's id and key for the server, readable by its owner only. */
   readonly stateFile: string;
+  /**
+   * Where the bridge installs the ACP adapters it manages (Codex's and Claude Code's), once for each version:
+   * `adapters/` beside `stateFile` by default.
+   */
+  readonly adapters?: string;
   /** The computer's name; its host name by default. */
   readonly name?: string;
   /** The directories sessions may work in; the home directory by default. */
@@ -139,9 +144,22 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
 
   const agents = new Map<string, AgentInfo>();
   const found = new Map<string, ResolvedAgent | undefined>();
-  const scan = async (): Promise<void> => {
+  const resolveOptions = {
+    adapters:
+      options.adapters ??
+      path.join(path.dirname(options.stateFile), 'adapters'),
+    log,
+  };
+  /**
+   * Resolves every agent. A managed adapter not installed yet starts installing, and the agent is found another way
+   * meanwhile, unless `waitForInstall`: the scan before the bridge connects does not wait, the later ones do.
+   */
+  const scan = async (waitForInstall: boolean): Promise<void> => {
     for (const spec of AGENTS) {
-      const resolved = await resolveAgent(spec, env, process.platform, { log });
+      const resolved = await resolveAgent(spec, env, process.platform, {
+        ...resolveOptions,
+        waitForInstall,
+      });
       if (signal.aborted) return;
       found.set(spec.id, resolved);
       agents.set(
@@ -221,7 +239,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     }
   };
 
-  await scan();
+  await scan(false);
   const computerId = await connect();
   if (computerId === undefined) return;
   log(
@@ -232,7 +250,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
   const refresh = (): void => {
     if (probing || signal.aborted) return;
     probing = (async () => {
-      await scan();
+      await scan(true);
       const infos = await probeAgents(
         AGENTS,
         found,
@@ -314,9 +332,16 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       throw new Error(
         `This version of ${options.client.name} cannot run the agent "${agentId}".`,
       );
+    // An agent that has a managed adapter but was found another way is resolved again, waiting for its install.
+    const known = found.get(agentId);
     const resolved =
-      found.get(agentId) ??
-      (await resolveAgent(spec, env, process.platform, { log }));
+      known &&
+      (known.managed || !spec.launchers.some((launcher) => launcher.managed))
+        ? known
+        : await resolveAgent(spec, env, process.platform, {
+            ...resolveOptions,
+            waitForInstall: true,
+          });
     if (!resolved)
       throw new Error(`${spec.name} is not installed on this computer.`);
     found.set(agentId, resolved);

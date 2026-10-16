@@ -112,8 +112,8 @@ The bridge offers the agents installed on the computer, each run as its own prog
 
 | Agent          | Started as                                                                                        | Full access                                                         |
 | -------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Codex          | `codex-acp`, else `npx @agentclientprotocol/codex-acp` beside an installed `codex`                | Mode `agent-full-access`                                            |
-| Claude Code    | `claude-agent-acp`, else `npx @agentclientprotocol/claude-agent-acp` beside an installed `claude` | Mode `bypassPermissions`                                            |
+| Codex          | `codex-acp`, installed once by the bridge, else on PATH, else `npx`, next to an installed `codex` | Mode `agent-full-access`                                            |
+| Claude Code    | `claude-agent-acp`, installed once by the bridge, else on PATH, else `npx`, beside `claude`       | Mode `bypassPermissions`                                            |
 | Gemini CLI     | `gemini --acp`                                                                                    | Mode `yolo`                                                         |
 | GitHub Copilot | `copilot --acp`                                                                                   | The bridge allows what it asks                                      |
 | Cursor         | `cursor-agent acp`                                                                                | The bridge allows what it asks                                      |
