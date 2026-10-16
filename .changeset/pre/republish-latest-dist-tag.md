@@ -79,8 +79,6 @@
 '@nocobase/service-provider': patch
 '@nocobase/session': patch
 '@nocobase/snowflake': patch
-'@nocobase/studio': patch
-'@nocobase/studio-cli': patch
 ---
 
 Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.

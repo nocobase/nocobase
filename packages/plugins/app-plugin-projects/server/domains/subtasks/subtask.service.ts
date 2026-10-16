@@ -41,6 +41,7 @@ import {
   blockedCounts,
   blockersOf,
   blockersOfMany,
+  blockedAmong,
   catalogsFor,
   type Catalogs,
 } from './subtask.blocking.js';
@@ -99,7 +100,7 @@ export interface SubtaskService {
     issueIds: readonly string[],
   ): Promise<Map<string, Blocker[]>>;
   readonly relations: IssueRelations;
-  readonly extras: Pick<IssueExtras, 'relations' | 'listCounts'>;
+  readonly extras: Pick<IssueExtras, 'relations' | 'listCounts' | 'blockedIds'>;
 }
 
 export interface SubtaskDeps extends ReleaseDeps {
@@ -567,6 +568,10 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
           | 'blockers'
           | 'hiddenBlockerCount'
         >;
+      },
+
+      blockedIds(conn, issues) {
+        return blockedAmong(conn, deps.statuses.catalog(), issues);
       },
 
       async listCounts(conn, issues, readableIds) {

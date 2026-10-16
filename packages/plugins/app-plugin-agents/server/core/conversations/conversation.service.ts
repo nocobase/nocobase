@@ -1260,6 +1260,9 @@ export function createConversationService(
       });
       return sendMessage(userId, conversation.id, {
         content: request.text,
+        ...(request.attachmentIds
+          ? { attachmentIds: request.attachmentIds }
+          : {}),
         ...(request.context ? { context: request.context } : {}),
         ...(request.clientId ? { clientId: request.clientId } : {}),
       });

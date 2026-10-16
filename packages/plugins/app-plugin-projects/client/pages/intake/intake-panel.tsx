@@ -39,6 +39,7 @@ import { Spinner } from '../../components/ui/spinner.js';
 import { Textarea } from '../../components/ui/textarea.js';
 import { useNotify } from '../../hooks/use-notify.js';
 import { usePmApi } from '../../hooks/use-pm-api.js';
+import { emptyIntakeDraft, useIntakeDraft } from '../../kit/intake-draft.js';
 import { IntakeAgentSlot } from '../../kit/page-slots.js';
 import { planKeys, usePlanApi } from '../../kit/plans/api.js';
 import {
@@ -112,9 +113,15 @@ export function IntakePanel({
   const queryClient = useQueryClient();
   const mutations = usePlanMutations();
   const [params, setParams] = useSearchParams();
-  const [text, setText] = useState('');
+  const [input, setInput] = useIntakeDraft();
+  const text = input.text;
+  const setText = (text: string) =>
+    setInput((current) => ({ ...current, text }));
   const presetProjectId = usePresetProjectId();
-  const [projectId, setProjectId] = useState<string | null>(presetProjectId);
+  const projectId =
+    input.projectId === undefined ? presetProjectId : input.projectId;
+  const setProjectId = (projectId: string | null) =>
+    setInput((current) => ({ ...current, projectId }));
   const uploads = useIntakeUploads();
   const [split, setSplit] = useState<IntakeSplitResult | null>(null);
   const [splitting, setSplitting] = useState(false);
@@ -327,6 +334,8 @@ export function IntakePanel({
 
   const executed = (next: Plan) => {
     if (next.status !== 'executed') return;
+    setInput(emptyIntakeDraft());
+    uploads.clear();
     onCreated(next);
   };
 

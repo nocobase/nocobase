@@ -188,6 +188,19 @@ describe('install script', () => {
   });
 
   it('refuses missing arguments and a bad token, installing nothing', async () => {
+    const missingServer = await install([
+      '--runner',
+      '--token',
+      'unused',
+      '--prefix',
+      path.join(root, 'missing-server'),
+    ]);
+    expect(missingServer.code).toBe(2);
+    expect(missingServer.stderr).toContain('--runner requires --server <url>');
+    expect(missingServer.stderr).toContain(
+      '--runner --server <server> --token',
+    );
+    expect(existsSync(path.join(root, 'missing-server'))).toBe(false);
     expect((await install(['--server', base])).code).toBe(2);
     const prefix = path.join(root, 'refused');
     const refused = await install([

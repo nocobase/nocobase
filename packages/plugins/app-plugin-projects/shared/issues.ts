@@ -154,12 +154,22 @@ export const ISSUE_SORTS = [
 ] as const;
 export type IssueSort = (typeof ISSUE_SORTS)[number];
 
+/** The most issues one list request names by id (`IssueListQuery.issueIds`). */
+export const ISSUE_IDS_MAX = 100;
+
 /**
  * The issues a service lists. `GET /api/projects/issues` takes the same filters, `deleted=true`, `orderBy` (such as
  * `updatedAt desc`; see `server/routes/schemas.ts`) for `sort` and `direction`, and `pageSize` and `pageToken` for
  * `limit` and `cursor`. `GET /api/projects/issues/board` takes the filters and `pageSize` per column.
  */
 export interface IssueListQuery {
+  /**
+   * Only these issues (at most `ISSUE_IDS_MAX`), still within the other filters: a page refreshes the rows an
+   * announcement named without reading the whole list. `issueIds` on the API, comma-separated.
+   */
+  readonly issueIds?: readonly string[];
+  /** Owned by this person or executed by them as a user, each issue once. */
+  readonly involvesUserId?: string;
   readonly statusKey?: string;
   readonly projectId?: string;
   readonly ownerUserId?: string;
