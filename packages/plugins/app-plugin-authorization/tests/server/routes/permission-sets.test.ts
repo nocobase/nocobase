@@ -530,7 +530,7 @@ describe('protected Permission Sets', () => {
   });
 });
 
-describe('the subject types the root Permission Set accepts', () => {
+describe('persisted Permission Sets and root subjects', () => {
   let testDatabase: TestDatabase;
   let database: DatabaseManager;
   let router: Hono;
@@ -554,6 +554,52 @@ describe('the subject types the root Permission Set accepts', () => {
 
   afterEach(async () => {
     await testDatabase.destroy();
+  });
+
+  it('persists native user action grants across reloads and selectively revokes one action', async () => {
+    const actions = ['read', 'invite', 'delete', 'reset-password'];
+    const grants = (allowed: readonly string[]) => [
+      {
+        resource: { type: 'user', id: '*' },
+        actions: allowed.map((action) => ({ action })),
+      },
+    ];
+    const created = await router.request(
+      PATH,
+      json('POST', { key: 'user-operators', grants: grants(actions) }),
+    );
+    expect(created.status).toBe(201);
+    expect(
+      (
+        await router.request(
+          `${PATH}/user-operators/assignments`,
+          json('POST', { subject: { type: 'user', id: 'alice' } }),
+        )
+      ).status,
+    ).toBe(201);
+    const reloaded = createAppAuthorization({
+      connection: database.connection(),
+    });
+    expect(await reloaded.permissionSets.get('user-operators')).toMatchObject({
+      grants: grants(actions),
+    });
+    const retained = actions.filter((action) => action !== 'delete');
+    expect(
+      (
+        await router.request(
+          `${PATH}/user-operators`,
+          json('PATCH', { grants: grants(retained) }),
+        )
+      ).status,
+    ).toBe(200);
+    const saved = await router.request(`${PATH}/user-operators`);
+    expect(await saved.json()).toMatchObject({
+      data: { grants: grants(retained) },
+    });
+    const after = createAppAuthorization({ connection: database.connection() });
+    expect(await after.permissionSets.get('user-operators')).toMatchObject({
+      grants: grants(retained),
+    });
   });
 
   it('refuses the audience that would make every signed-in user unrestricted, and reports the restriction on the root set alone', async () => {

@@ -146,6 +146,12 @@ function RoleEditor(): ReactElement {
                     { name: 'read', title: { key: 'settings.readUsers' } },
                     { name: 'create', title: { key: 'settings.createUsers' } },
                     { name: 'update', title: { key: 'settings.updateUsers' } },
+                    { name: 'invite', title: { key: 'settings.inviteUsers' } },
+                    { name: 'delete', title: { key: 'settings.deleteUsers' } },
+                    {
+                      name: 'reset-password',
+                      title: { key: 'settings.resetUserPassword' },
+                    },
                     { name: 'disable', title: { key: 'settings.disable' } },
                     { name: 'enable', title: { key: 'settings.enable' } },
                     {

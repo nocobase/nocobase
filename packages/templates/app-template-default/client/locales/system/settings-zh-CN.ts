@@ -5,6 +5,9 @@ const settings = {
   readUsers: '查看用户',
   createUsers: '创建用户',
   updateUsers: '编辑用户',
+  inviteUsers: '邀请用户',
+  deleteUsers: '删除用户',
+  resetUserPassword: '重置密码',
   assignRole: '分配角色',
 
   assignedRoles: '已分配角色',

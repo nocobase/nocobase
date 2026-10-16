@@ -5,6 +5,9 @@ const settings = {
   readUsers: 'View users',
   createUsers: 'Create users',
   updateUsers: 'Edit users',
+  inviteUsers: 'Invite users',
+  deleteUsers: 'Delete users',
+  resetUserPassword: 'Reset password',
   assignRole: 'Assign roles',
 
   assignedRoles: 'Assigned roles',
