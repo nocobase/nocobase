@@ -351,7 +351,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [plugins, studio 1/2, studio 2/2, others]
+        shard: [plugins, others]
     steps:
       - name: Check out workflow code
         uses: actions/checkout@v4

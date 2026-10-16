@@ -1,5 +1,4 @@
 ---
-"@nocobase/studio": patch
 "@nocobase/agent-protocol": patch
 "@nocobase/agent-runner": patch
 ---
