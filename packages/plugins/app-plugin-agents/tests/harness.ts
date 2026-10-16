@@ -298,6 +298,7 @@ export async function createHarness(
     /** `null` for an application without secrets keys. */
     readonly secrets?: SecretsService | null;
     readonly dist?: DistConfig;
+    readonly retryBaseDelayMs?: number;
   } = {},
 ): Promise<Harness> {
   const { database, drop } = await openDatabase();
@@ -328,6 +329,9 @@ export async function createHarness(
     app: { id: 'acme', name: 'Acme' },
     skillDisk: () => disk,
     ...(options.dist ? { dist: options.dist } : {}),
+    ...(options.retryBaseDelayMs === undefined
+      ? {}
+      : { retryBaseDelayMs: options.retryBaseDelayMs }),
     ...(options.secrets === null
       ? {}
       : { secrets: options.secrets ?? testSecrets() }),
