@@ -10,7 +10,8 @@ export function useSubmission<T extends object>(
   write: (input: T & { submissionId: string }) => Promise<unknown>,
 ): {
   readonly pending: boolean;
-  readonly send: (input: T) => Promise<void>;
+  /** Sends `input` as a new submission, with `submissionId` when the caller chose it beforehand. */
+  readonly send: (input: T, submissionId?: string) => Promise<void>;
   readonly retry: () => Promise<void>;
   readonly edit: () => void;
 } {
@@ -34,8 +35,8 @@ export function useSubmission<T extends object>(
   };
   return {
     pending: pending !== null,
-    send: (input: T) =>
-      execute(structuredClone({ ...input, submissionId: crypto.randomUUID() })),
+    send: (input: T, submissionId = crypto.randomUUID()) =>
+      execute(structuredClone({ ...input, submissionId })),
     retry: async () => {
       if (!pending) return;
       await execute(pending);

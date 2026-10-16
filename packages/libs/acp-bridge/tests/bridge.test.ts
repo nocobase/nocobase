@@ -233,6 +233,95 @@ describe('runBridge', () => {
     }
   });
 
+  it('hands the agent a discovery started for a new session to that session’s first prompt', async () => {
+    vi.spyOn(agents, 'resolveAgent').mockImplementation(async (spec) =>
+      spec.id === 'opencode'
+        ? {
+            spec: { ...spec, modes: ['full'] },
+            command: process.execPath,
+            args: [path.join(import.meta.dirname, 'fixtures/fake-agent.mjs')],
+          }
+        : undefined,
+    );
+    const original = AgentProcess.start;
+    let started = 0;
+    vi.spyOn(AgentProcess, 'start').mockImplementation(
+      async (resolved, options) => {
+        // Probes initialize on a shorter budget; sessions and discoveries do not.
+        if (options.initializeTimeoutMs !== 30_000) started += 1;
+        return original(resolved, options);
+      },
+    );
+    answer = (request) => ({
+      data: request.path.endsWith('/report')
+        ? { open: true }
+        : request.path.endsWith('/register')
+          ? { computerId: 'c1', key: 'k1' }
+          : {},
+    });
+    const prepared: string[] = [];
+    const { runBridge } = await import('../src/bridge.js');
+    const stop = new AbortController();
+    commands.push({
+      type: 'discoverChoices',
+      requestId: 'r1',
+      agentId: 'opencode',
+      cwd: root,
+      settings: {},
+      sessionId: 's1',
+    });
+    const done = runBridge({
+      server: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+      headers: { authorization: 'Bearer person' },
+      client: { name: 'test', version: '0.0.0' },
+      stateFile: path.join(root, 'state.json'),
+      env: { PATH: '' },
+      prepareSession: async (_agentId, sessionId) => {
+        prepared.push(sessionId);
+        return {};
+      },
+      signal: stop.signal,
+      log: () => undefined,
+    });
+    const reports = (): Record<string, unknown>[] =>
+      seen
+        .filter((request) => request.path.endsWith('/report'))
+        .map((request) => request.body);
+    try {
+      await until(() =>
+        seen.some((request) => request.body.requestId === 'r1'),
+      );
+      commands.push({
+        type: 'prompt',
+        session: {
+          id: 's1',
+          agentId: 'opencode',
+          cwd: root,
+          acpSessionId: null,
+          settings: {},
+        },
+        promptId: 'p1',
+        content: [{ type: 'text', text: 'hi' }],
+      });
+      await until(() =>
+        reports().some((body) =>
+          JSON.stringify(body.events).includes('"turnEnded"'),
+        ),
+      );
+      expect(started).toBe(1);
+      expect(prepared).toEqual(['s1']);
+      expect(
+        reports()
+          .map((body) => body.startup)
+          .filter((startup) => startup !== undefined)
+          .at(-1),
+      ).toBeNull();
+    } finally {
+      stop.abort();
+      await done;
+    }
+  });
+
   it('reprobes existing paths and changed paths, recovers failures and retries registration without overlapping', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     let command: string | undefined;

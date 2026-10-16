@@ -404,6 +404,8 @@ export class AgentSessionsService {
       readonly agentId: string;
       readonly cwd: string;
       readonly settings: Readonly<Record<string, string>>;
+      /** The new session a first message sent with these choices creates: its bridge keeps the agent for it. */
+      readonly sessionId?: string | undefined;
     },
     signal?: AbortSignal,
   ): Promise<DiscoveredChoices> {
@@ -433,6 +435,7 @@ export class AgentSessionsService {
         agentId: input.agentId,
         cwd: paths.resolve(input.cwd),
         settings: input.settings,
+        ...(input.sessionId ? { sessionId: input.sessionId } : {}),
       },
       this.#iso(),
     );
@@ -557,6 +560,7 @@ export class AgentSessionsService {
         return this.#append(conn, locked, [notice], at, {
           running: false,
           pendingPermissions: 0,
+          startup: null,
         });
       });
       if (changed) this.#changed(changed);
@@ -648,6 +652,8 @@ export class AgentSessionsService {
         pendingPermissions: pending,
         reportedBatch: request.batch,
         bridgeStartedAt: request.bridgeStartedAt,
+        // Older bridges do not say: the session then shows no startup.
+        ...(request.startup === undefined ? {} : { startup: request.startup }),
         ...(request.state
           ? {
               state: redactor.value(request.state),
@@ -792,6 +798,7 @@ export class AgentSessionsService {
             firstMessage: redactor.text(firstLine(input.content)),
             acpSessionId: null,
             state: null,
+            startup: null,
             settings,
             toldWork: null,
             toldInstructions: null,

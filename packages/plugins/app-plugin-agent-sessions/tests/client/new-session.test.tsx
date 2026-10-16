@@ -303,10 +303,12 @@ describe('new-session composer', () => {
       await screen.findByRole('menuitemradio', { name: 'Chosen model' }),
     );
     await waitFor(() => expect(discovered).toHaveLength(2));
+    // Discovery names the session the message creates, so the computer keeps the agent it starts for it.
     expect(discovered[1]!.input).toEqual({
       agentId: 'codex',
       cwd: '/work',
       settings: { model: 'chosen' },
+      sessionId: (discovered[0]!.input as { sessionId: string }).sessionId,
     });
     expect(screen.getByRole('textbox')).not.toBeDisabled();
     await act(async () =>
@@ -333,6 +335,7 @@ describe('new-session composer', () => {
         cwd: '/work',
         settings: { model: 'chosen', effort: 'high' },
         content: [{ type: 'text', text: 'First message' }],
+        submissionId: (discovered[1]!.input as { sessionId: string }).sessionId,
       }),
     );
     expect(
@@ -342,6 +345,7 @@ describe('new-session composer', () => {
   });
   it('sends before discovery answers, with only the settings the person chose', async () => {
     let creation: unknown;
+    const discoveries: unknown[] = [];
     await renderWithApp(
       <QueryClientProvider
         client={
@@ -364,7 +368,10 @@ describe('new-session composer', () => {
           if (path === 'agentSessions/computers')
             return { data: [computer], meta: { total: 1 } };
           // The agent is still starting: discovery has not answered when the message goes.
-          if (path.endsWith('/discoverChoices')) return new Promise(() => {});
+          if (path.endsWith('/discoverChoices')) {
+            discoveries.push(json);
+            return new Promise(() => {});
+          }
           if (path === 'agentSessions/projects') return { data: [] };
           if (path === 'agentSessions/sessions' && method === 'POST') {
             creation = json;
@@ -388,8 +395,13 @@ describe('new-session composer', () => {
         cwd: '/work',
         settings: {},
         content: [{ type: 'text', text: 'First message' }],
+        // The session is created with the id its discovery named, so it takes over that agent.
+        submissionId: (discoveries[0] as { sessionId: string }).sessionId,
       }),
     );
+    // While the page is still shown, the next draft does not discover and start another agent.
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(discoveries).toHaveLength(1);
   });
 });
 

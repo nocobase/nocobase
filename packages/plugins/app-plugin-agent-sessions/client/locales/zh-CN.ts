@@ -122,6 +122,11 @@ const zhCN: AgentSessionsResource = {
     offlineBody:
       '对话记录和任务都保存在这里，可以照常查看。电脑重新上线后，会自动接上原来的会话。',
     working: 'Agent 正在工作…',
+    startup: {
+      starting: '正在你的电脑上启动 Agent…',
+      opening: '正在打开会话…',
+      configuring: '正在应用设置…',
+    },
     answering: '回复中',
     asking: '等你审批',
     stop: '停止',

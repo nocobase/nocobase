@@ -410,7 +410,9 @@ function Conversation({
                   />
                 ))}
               </span>
-              {t('session.working')}
+              {session.startup
+                ? t(`session.startup.${session.startup}`)
+                : t('session.working')}
             </p>
           )}
         </div>
