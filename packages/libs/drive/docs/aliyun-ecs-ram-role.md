@@ -17,6 +17,7 @@ drive:
       internal: false
       visibility: private
       supportsACL: false
+      timeout: 600000
       credentials:
         provider: aliyun-ecs-ram-role
         # roleName: your-role
@@ -35,6 +36,10 @@ credentials:
 Exactly one credentials source is required. Mixing keys with a provider, unknown providers, empty keys or an empty explicit role name fails when the disk is created. There is no fallback. The secret field for OSS is `accessKeySecret`; S3 retains `secretAccessKey`.
 
 For a standalone Host, put the same disk object (the contents of `oss` above) under `host.artifact`; for the releases plugin, use `releases.artifact`. No new environment variable mappings are added.
+
+## Transfer timeout
+
+`timeout` sets the SDK request timeout in milliseconds for OSS operations, including `put`, `putStream`, `get` and `getBytes`. It defaults to `600000` (10 minutes), instead of the SDK default of 60 seconds. Use an integer from `1` to `2147483647`; strings, zero, negative values and fractions are rejected when creating the disk. Choose a larger value for large files or slow connections: uploads and buffered downloads must complete within the request timeout, even while data is flowing. Refreshed clients and disks derived with `bucket()` retain this setting. It does not change signed URL lifetimes or the separate one-second metadata HTTP timeout. Uploads remain single requests; multipart upload is not added.
 
 ## Permissions and visibility
 

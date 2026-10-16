@@ -84,6 +84,15 @@ class OssDriver implements DriverContract {
   constructor(config: OssDriveDiskConfig) {
     if (!/^oss-[a-z0-9-]+$/.test(config.region) || !nonempty(config.bucket))
       throw new Error('OSS requires a region (oss-<region>) and bucket.');
+    if (
+      config.timeout !== undefined &&
+      (!Number.isInteger(config.timeout) ||
+        config.timeout < 1 ||
+        config.timeout > 2147483647)
+    )
+      throw new Error(
+        'OSS timeout must be an integer from 1 to 2147483647 milliseconds.',
+      );
     if (config.domain) {
       const domain = new URL(config.domain);
       if (
@@ -129,6 +138,7 @@ class OssDriver implements DriverContract {
     return new OSSClient({
       region: this.#config.region,
       bucket: this.#config.bucket,
+      timeout: this.#config.timeout ?? 600000,
       internal: this.#config.internal,
       secure: true,
       authorizationV4: true,

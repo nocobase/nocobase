@@ -1,4 +1,5 @@
 import { createHash, createHmac } from 'node:crypto';
+import { Readable } from 'node:stream';
 
 import { afterEach, expect, it, vi } from 'vitest';
 
@@ -51,106 +52,114 @@ it.each([undefined, 'test-role'])(
   },
 );
 
-it('refreshes actual SDK requests and upload/download signatures, merges concurrent refreshes and recovers', async () => {
-  vi.useFakeTimers({ toFake: ['Date'] });
-  const started = Date.now();
-  let generation = 1;
-  let invalid = false;
-  let reads = 0;
-  const metadata = vi.fn(async (_url: string, options: RequestInit) => {
-    if (options.method === 'PUT') return new Response('test-metadata-token');
-    reads++;
-    return Response.json({
-      Code: 'Success',
-      AccessKeyId: `test-key-${generation}`,
-      AccessKeySecret: `test-secret-${generation}`,
-      SecurityToken: `test-token-${generation}`,
-      Expiration: invalid
-        ? 'invalid'
-        : new Date(Date.now() + 3600000).toISOString(),
+it.each([undefined, 900000])(
+  'preserves timeout %s while refreshing SDK requests and signatures, merging concurrent refreshes and recovering',
+  async (timeout) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const started = Date.now();
+    let generation = 1;
+    let invalid = false;
+    let reads = 0;
+    const metadata = vi.fn(async (_url: string, options: RequestInit) => {
+      if (options.method === 'PUT') return new Response('test-metadata-token');
+      reads++;
+      return Response.json({
+        Code: 'Success',
+        AccessKeyId: `test-key-${generation}`,
+        AccessKeySecret: `test-secret-${generation}`,
+        SecurityToken: `test-token-${generation}`,
+        Expiration: invalid
+          ? 'invalid'
+          : new Date(Date.now() + 3600000).toISOString(),
+      });
     });
-  });
-  vi.stubGlobal('fetch', metadata);
-  const transport = mockTransport((_url, options) =>
-    reply(options.method === 'GET' ? 'hello' : ''),
-  );
-  const storage = disk({
-    credentials: { provider: 'aliyun-ecs-ram-role', roleName: 'test-role' },
-  });
-  async function check(expected: number) {
+    vi.stubGlobal('fetch', metadata);
+    const transport = mockTransport(async (_url, options) => {
+      if (options.stream) for await (const chunk of options.stream) void chunk;
+      return reply(options.method === 'GET' ? 'hello' : '');
+    });
+    const storage = disk({
+      timeout,
+      credentials: { provider: 'aliyun-ecs-ram-role', roleName: 'test-role' },
+    });
+    async function check(expected: number) {
+      await Promise.all([
+        storage.put('file.txt', 'hello'),
+        storage.putStream('stream.txt', Readable.from(['hello'])),
+        storage.get('file.txt'),
+        storage.getBytes('file.txt'),
+      ]);
+      for (const [value, options] of transport.mock.calls.splice(0)) {
+        expect(options.timeout).toBe(timeout ?? 600000);
+        const headers = Object.fromEntries(
+          Object.entries(options.headers).map(([key, value]) => [
+            key.toLowerCase(),
+            String(value),
+          ]),
+        );
+        expect(headers.authorization).toContain(
+          `Credential=test-key-${expected}/`,
+        );
+        expect(headers['x-oss-security-token']).toBe(`test-token-${expected}`);
+        const signature = headers.authorization.split('Signature=')[1];
+        verifySignature(
+          new URL(value),
+          options.method,
+          headers,
+          signature,
+          `test-secret-${expected}`,
+        );
+      }
+      for (const method of ['GET', 'PUT'] as const) {
+        const url = new URL(
+          method === 'GET'
+            ? await storage.getSignedUrl('file.txt', {
+                contentDisposition: 'attachment; filename="hello.txt"',
+              })
+            : await storage.getSignedUploadUrl('file.txt', {
+                contentType: 'text/plain',
+              }),
+        );
+        expect(url.searchParams.get('x-oss-credential')).toContain(
+          `test-key-${expected}/`,
+        );
+        expect(url.searchParams.get('x-oss-security-token')).toBe(
+          `test-token-${expected}`,
+        );
+        const signature = url.searchParams.get('x-oss-signature')!;
+        url.searchParams.delete('x-oss-signature');
+        verifySignature(
+          url,
+          method,
+          method === 'PUT' ? { 'content-type': 'text/plain' } : {},
+          signature,
+          `test-secret-${expected}`,
+        );
+      }
+    }
+    await check(1);
+    expect(reads).toBe(1);
+    await check(1);
+    expect(reads).toBe(1);
+    vi.setSystemTime(started + 56 * 60000);
+    invalid = true;
     await Promise.all([
-      storage.put('file.txt', 'hello'),
-      storage.get('file.txt'),
+      expect(storage.driver.get('file.txt')).rejects.toThrow('Expiration'),
+      expect(storage.driver.getSignedUploadUrl('file.txt')).rejects.toThrow(
+        'Expiration',
+      ),
     ]);
-    for (const [value, options] of transport.mock.calls.splice(0)) {
-      const headers = Object.fromEntries(
-        Object.entries(options.headers).map(([key, value]) => [
-          key.toLowerCase(),
-          String(value),
-        ]),
-      );
-      expect(headers.authorization).toContain(
-        `Credential=test-key-${expected}/`,
-      );
-      expect(headers['x-oss-security-token']).toBe(`test-token-${expected}`);
-      const signature = headers.authorization.split('Signature=')[1];
-      verifySignature(
-        new URL(value),
-        options.method,
-        headers,
-        signature,
-        `test-secret-${expected}`,
-      );
-    }
-    for (const method of ['GET', 'PUT'] as const) {
-      const url = new URL(
-        method === 'GET'
-          ? await storage.getSignedUrl('file.txt', {
-              contentDisposition: 'attachment; filename="hello.txt"',
-            })
-          : await storage.getSignedUploadUrl('file.txt', {
-              contentType: 'text/plain',
-            }),
-      );
-      expect(url.searchParams.get('x-oss-credential')).toContain(
-        `test-key-${expected}/`,
-      );
-      expect(url.searchParams.get('x-oss-security-token')).toBe(
-        `test-token-${expected}`,
-      );
-      const signature = url.searchParams.get('x-oss-signature')!;
-      url.searchParams.delete('x-oss-signature');
-      verifySignature(
-        url,
-        method,
-        method === 'PUT' ? { 'content-type': 'text/plain' } : {},
-        signature,
-        `test-secret-${expected}`,
-      );
-    }
-  }
-  await check(1);
-  expect(reads).toBe(1);
-  await check(1);
-  expect(reads).toBe(1);
-  vi.setSystemTime(started + 56 * 60000);
-  invalid = true;
-  await Promise.all([
-    expect(storage.driver.get('file.txt')).rejects.toThrow('Expiration'),
-    expect(storage.driver.getSignedUploadUrl('file.txt')).rejects.toThrow(
-      'Expiration',
-    ),
-  ]);
-  expect(transport).not.toHaveBeenCalled();
-  invalid = false;
-  generation = 2;
-  await check(2);
-  expect(reads).toBe(3);
-  vi.setSystemTime(started + 112 * 60000);
-  generation = 3;
-  await check(3);
-  expect(reads).toBe(4);
-});
+    expect(transport).not.toHaveBeenCalled();
+    invalid = false;
+    generation = 2;
+    await check(2);
+    expect(reads).toBe(3);
+    vi.setSystemTime(started + 112 * 60000);
+    generation = 3;
+    await check(3);
+    expect(reads).toBe(4);
+  },
+);
 
 it('caps signed lifetimes at STS expiration and seven days and rejects invalid lifetimes', async () => {
   vi.stubGlobal(

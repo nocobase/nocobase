@@ -17,6 +17,7 @@ drive:
       internal: false
       visibility: private
       supportsACL: false
+      timeout: 600000
       credentials:
         provider: aliyun-ecs-ram-role
         # roleName: your-role
@@ -35,6 +36,10 @@ credentials:
 凭证来源必须二选一；混用密钥与 provider、未知 provider、空密钥、显式空角色名都会在创建磁盘时报错，不回退其他来源。OSS 的密钥字段是 `accessKeySecret`，S3 保留 `secretAccessKey`。
 
 独立 Host 将同一磁盘对象（上述 `oss` 内的内容）放在 `host.artifact`；发布插件放在 `releases.artifact`。本次不增加环境变量映射。
+
+## 传输超时
+
+`timeout` 以毫秒设置 OSS SDK 请求超时，适用于 `put`、`putStream`、`get`、`getBytes` 等操作，默认 `600000`（十分钟），替代 SDK 默认的六十秒。合法输入为 `1` 到 `2147483647` 的整数；字符串、零、负值及小数会在创建磁盘时报错。大文件或慢速网络应按需增大：上传和缓冲下载必须在请求超时内完成，即使持续有数据传输也受此限制。刷新凭证后创建的客户端及通过 `bucket()` 派生的磁盘均保留此设置。它不改变签名链接有效期，也不影响独立的一秒元数据 HTTP 超时。上传仍使用单次请求，本次未增加分片上传。
 
 ## 权限和可见性
 

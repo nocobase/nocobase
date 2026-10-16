@@ -6,6 +6,43 @@ import { acl, config, disk, mockTransport, reply } from './helpers/oss.js';
 
 afterEach(() => vi.restoreAllMocks());
 
+it.each([undefined, 900000, 1, 2147483647])(
+  'passes timeout %s through the SDK for uploads, downloads and derived buckets',
+  async (timeout) => {
+    const transport = mockTransport(async (_url, options) => {
+      if (options.stream) for await (const chunk of options.stream) void chunk;
+      return reply('hello');
+    });
+    const storage = disk({ timeout });
+    for (const target of [
+      storage.driver,
+      storage.driver.bucket('other-bucket'),
+    ]) {
+      await target.put('file.txt', 'hello');
+      await target.putStream('stream.txt', Readable.from(['hello']));
+      expect(await target.get('file.txt')).toBe('hello');
+      expect(await target.getBytes('file.txt')).toEqual(Buffer.from('hello'));
+      for await (const chunk of await target.getStream('file.txt')) void chunk;
+    }
+    expect(transport).toHaveBeenCalledTimes(10);
+    expect(transport.mock.calls.map(([, options]) => options.timeout)).toEqual(
+      Array(10).fill(timeout ?? 600000),
+    );
+    expect(new URL(transport.mock.calls[5][0]).hostname).toBe(
+      'other-bucket.oss-cn-hangzhou.aliyuncs.com',
+    );
+  },
+);
+
+it.each([0, -1, 1.5, NaN, Infinity, 2147483648, '600000', null])(
+  'rejects invalid timeout %s when creating a disk',
+  (timeout) => {
+    expect(() => disk({ timeout } as Partial<typeof config>)).toThrow(
+      'OSS timeout must be an integer from 1 to 2147483647 milliseconds.',
+    );
+  },
+);
+
 it('streams without a known length and rejects source stream failures', async () => {
   const transport = mockTransport(async (_url, options) => {
     if (options.stream) for await (const chunk of options.stream) void chunk;

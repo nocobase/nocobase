@@ -32,6 +32,8 @@ export interface OssDriveDiskConfig {
   bucket: string;
   internal?: boolean;
   domain?: string;
+  /** OSS request timeout in milliseconds; defaults to 600000 (10 minutes). */
+  timeout?: number;
   visibility: DriveVisibility;
   supportsACL?: boolean;
   credentials:

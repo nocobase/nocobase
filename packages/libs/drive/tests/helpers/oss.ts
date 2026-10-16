@@ -12,6 +12,7 @@ const require = createRequire(import.meta.url);
 const sdkRequire = createRequire(require.resolve('ali-oss'));
 
 export interface RequestOptions {
+  timeout: number;
   method: string;
   headers: Record<string, string>;
   content?: Buffer | string;
