@@ -1,6 +1,6 @@
 // Runs the daemon as a per-user service: a launchd agent on macOS, a systemd user unit on Linux. The service runs
-// `nocobase-runner start --foreground` (the installation's `current` launcher, or this Node and this entry), restarts it
-// whenever it exits, which is also how a self-update takes effect, and writes its output to the daemon log. Each plan
+// `nocobase-runner service run` through the current launcher, restarts on unexpected failure or self-update, and
+// leaves daemon log rotation and permanent authentication stops to that launcher. Each plan
 // lists the file it writes and the commands it runs, so `--dry-run` can show them. The service gets the installing
 // shell's PATH, proxy and CA variables and `--pass-env` names (`serviceEnvironment`), and its file is readable by its
 // owner only. Installing again replaces the service in place. A label other than the default lets a second runner (a
@@ -12,6 +12,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 
 import { CA_ENV, forbidden, PROXY_ENV } from '../agent/env.ts';
+import { EXIT_CODES } from '../protocol/index.ts';
 import type { RunnerPaths } from '../lib/home.ts';
 
 const run = promisify(execFile);
@@ -104,7 +105,7 @@ export interface ServiceOptions {
 export function servicePlan(options: ServiceOptions): ServicePlan {
   const platform = options.platform ?? process.platform;
   const home = options.home ?? os.homedir();
-  const args = [...options.command, 'start', '--foreground'];
+  const args = [...options.command, 'service', 'run'];
   const env = options.env ?? process.env;
   const label = options.label ?? LAUNCHD_LABEL;
   if (!SERVICE_LABEL_PATTERN.test(label))
@@ -142,13 +143,16 @@ ${Object.entries(environment)
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
-  <true/>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
   <key>ThrottleInterval</key>
-  <integer>10</integer>
+  <integer>60</integer>
   <key>StandardOutPath</key>
-  <string>${xml(options.paths.daemonLog)}</string>
+  <string>/dev/null</string>
   <key>StandardErrorPath</key>
-  <string>${xml(options.paths.daemonLog)}</string>
+  <string>/dev/null</string>
 </dict>
 </plist>
 `;
@@ -169,14 +173,19 @@ ${Object.entries(environment)
     const content = `[Unit]
 Description=NocoBase runner
 After=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Service]
 ExecStart=${args.map(systemdQuote).join(' ')}
 ${Object.entries(environment)
   .map(([key, value]) => systemdEnvironment(key, value))
   .join('\n')}
-Restart=always
-RestartSec=10
+Restart=on-failure
+RestartPreventExitStatus=${EXIT_CODES.auth}
+RestartSec=60
+StandardOutput=null
+StandardError=journal
 KillMode=mixed
 
 [Install]
@@ -237,4 +246,25 @@ export async function uninstallService(plan: ServicePlan): Promise<void> {
     await run(command, args).catch(() => undefined);
   }
   await rm(plan.file, { force: true });
+}
+
+/** Restart an installed service without rewriting its captured environment or definition. */
+export async function restartService(
+  label: string,
+  platform: NodeJS.Platform = process.platform,
+): Promise<void> {
+  if (!SERVICE_LABEL_PATTERN.test(label))
+    throw new Error(`Not a service label: ${label}`);
+  if (platform === 'darwin')
+    await run('launchctl', [
+      'kickstart',
+      '-k',
+      `gui/${process.getuid?.() ?? 501}/${label}`,
+    ]);
+  else if (platform === 'linux')
+    await run('systemctl', ['--user', 'restart', systemdUnit(label)]);
+  else
+    throw new Error(
+      `Running the runner as a service is not supported on ${platform}.`,
+    );
 }

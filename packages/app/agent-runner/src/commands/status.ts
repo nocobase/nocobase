@@ -1,6 +1,10 @@
 import { RunnerCommand } from '../lib/command.ts';
 import type { AgentTools } from '../agent/runner-tools.ts';
-import { readConnections, readSettings } from '../lib/config.ts';
+import {
+  readConnections,
+  readSettings,
+  type AppRegistration,
+} from '../lib/config.ts';
 import { formatToolSlots } from '../lib/slots.ts';
 import type { ToolSlots } from '../protocol/index.ts';
 import { readDaemonPid } from '../core/loop.ts';
@@ -20,6 +24,7 @@ interface RunnerStatus {
     server: string;
     runnerId: string;
     cli: Record<string, string>;
+    revoked?: AppRegistration['revoked'];
   }[];
   running: boolean;
   pid?: number;
@@ -52,6 +57,9 @@ export default class Status extends RunnerCommand {
       server: registration.server,
       runnerId: registration.runnerId,
       cli: registration.cli,
+      ...(registration.revoked === undefined
+        ? {}
+        : { revoked: registration.revoked }),
     }));
     this.log(`Runner   ${settings.name}`);
     this.log(
@@ -67,7 +75,7 @@ export default class Status extends RunnerCommand {
       this.log(`Not registered. Run \`${runnerCommandLine('register')}\`.`);
     for (const app of apps)
       this.log(
-        `App      ${app.name || app.key} at ${app.server} as ${app.runnerId}`,
+        `App      ${app.name || app.key} at ${app.server} as ${app.runnerId}${app.revoked === undefined ? '' : ` — revoked at ${app.revoked.at} (${app.revoked.reason}); run ${runnerCommandLine('register')} to register again`}`,
       );
     this.log(
       `Daemon   ${daemon === undefined ? 'stopped' : `running (pid ${daemon.pid}, since ${daemon.startedAt})`}`,
