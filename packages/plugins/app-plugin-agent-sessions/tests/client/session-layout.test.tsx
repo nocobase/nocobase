@@ -383,10 +383,16 @@ describe('session mobile layout', () => {
     expect(requests.mock.calls.some(([call]) => call.method === 'POST')).toBe(
       false,
     );
-    requests.mockImplementation(({ method }) =>
-      method === 'POST' ? new Response(null, { status: 500 }) : { data: [] },
+    const read = requests.getMockImplementation()!;
+    requests.mockImplementation((call) =>
+      call.method === 'POST' ? new Response(null, { status: 500 }) : read(call),
     );
     fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    await screen.findByRole('button', { name: 'Retry original submission' });
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Edit as new message' }),
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', { name: 'Send' }).hasAttribute('disabled'),
