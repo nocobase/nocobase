@@ -1,8 +1,13 @@
 import { isDeepStrictEqual } from 'node:util';
 import type { ModelMessage } from 'ai';
 import type { DatabaseConnection } from '@nocobase/db';
-import type { Config } from './config.js';
-import { content, restore, type Json, type Outcome } from './codec.js';
+import type { OnlineAgentConfig } from './config.js';
+import {
+  content,
+  restore,
+  type OnlineAgentJson,
+  type OnlineAgentOutcome,
+} from './codec.js';
 import type { TxRunner } from '../kernel/tx.js';
 import type { IdSource } from '../kernel/ids.js';
 import { asJson, jsonObject } from '../kernel/values.js';
@@ -19,32 +24,33 @@ import {
 import type { ChatAttachmentLinks } from '../core/conversations/attachments.js';
 import type { ModelRef } from '../../shared/models.js';
 
-export type Call = {
+export type OnlineAgentCall = {
   actorId: string;
   state: 'running' | 'idle';
-  outcome?: Outcome;
+  outcome?: OnlineAgentOutcome;
   closing?: boolean;
-  result?: Json;
+  result?: OnlineAgentJson;
   error?: string;
   requiresEffectReview?: boolean;
 };
-export type Session = {
+export type OnlineAgentSession = {
   id: string;
   kind: 'realtime' | 'background';
-  config: Config;
+  config: OnlineAgentConfig;
   model: ModelRef;
-  call: Call | null;
+  call: OnlineAgentCall | null;
   lastSeq: number;
 };
-type Metadata = {
+type OnlineAgentMetadata = {
   version: 1;
-  kind: Session['kind'];
-  config: Config;
-  call: Call | null;
+  kind: OnlineAgentSession['kind'];
+  config: OnlineAgentConfig;
+  call: OnlineAgentCall | null;
 };
 
-function metadata(row: ConversationRecord): Metadata {
-  const found = jsonObject(row.metadata).onlineAgent as Metadata | undefined;
+function metadata(row: ConversationRecord): OnlineAgentMetadata {
+  const found = jsonObject(row.metadata).onlineAgent as
+    OnlineAgentMetadata | undefined;
   if (!found || found.version !== 1)
     throw invalid(
       'This historical conversation has not been switched to OnlineAgent.',
@@ -55,7 +61,7 @@ function metadata(row: ConversationRecord): Metadata {
     );
   return found;
 }
-function session(row: ConversationRecord): Session {
+function session(row: ConversationRecord): OnlineAgentSession {
   const value = metadata(row);
   if (!row.model || !row.modelService)
     throw invalid('Select a valid chat model.');
@@ -67,27 +73,27 @@ function session(row: ConversationRecord): Session {
   };
 }
 
-export interface SessionManager {
+export interface OnlineAgentSessionManager {
   defaults(userId: string): Promise<{ scope?: string[]; model?: ModelRef }>;
   create(
     userId: string,
-    kind: Session['kind'],
-    config: Config,
+    kind: OnlineAgentSession['kind'],
+    config: OnlineAgentConfig,
     model: ModelRef,
     info?: { source?: string; title?: string },
   ): Promise<string>;
-  load(userId: string, id: string): Promise<Session>;
+  load(userId: string, id: string): Promise<OnlineAgentSession>;
   configure(
     userId: string,
     id: string,
-    config: Config,
+    config: OnlineAgentConfig,
     model: ModelRef,
   ): Promise<void>;
   history(userId: string, id: string): Promise<ModelMessage[]>;
   accept(
     userId: string,
     id: string,
-    config: Config,
+    config: OnlineAgentConfig,
     model: ModelRef,
     items: {
       id: string;
@@ -106,7 +112,7 @@ export interface SessionManager {
       excludedFromHistory?: boolean;
       partial?: string;
     }[],
-    call: Call,
+    call: OnlineAgentCall,
   ): Promise<number>;
   finish(userId: string, id: string): Promise<void>;
 }
@@ -117,7 +123,7 @@ export function createSessionManager(deps: {
   attachments: ChatAttachmentLinks;
   now(): string;
   measure?: (phase: string, durationMs: number) => void;
-}): SessionManager {
+}): OnlineAgentSessionManager {
   const owned = async (
     conn: DatabaseConnection,
     userId: string,
@@ -153,7 +159,7 @@ export function createSessionManager(deps: {
   const saveMetadata = (
     conn: DatabaseConnection,
     row: ConversationRecord,
-    value: Metadata,
+    value: OnlineAgentMetadata,
     extra: Record<string, unknown> = {},
   ) =>
     conversationsRepo(conn).updateMany({
@@ -175,7 +181,7 @@ export function createSessionManager(deps: {
       clientId?: string;
       workContext?: import('../../shared/conversations.js').ResolvedPageContext;
     }[],
-    outcome: Outcome,
+    outcome: OnlineAgentOutcome,
   ) => {
     let seq = Number(row.lastSeq);
     const now = deps.now();
@@ -197,7 +203,11 @@ export function createSessionManager(deps: {
           id: item.id,
           conversationId: row.id,
           seq: ++seq,
-          role: item.message?.role ?? 'assistant',
+          // The column is a display role; the SDK role remains in content.original.
+          role:
+            item.message?.role === 'tool'
+              ? 'system'
+              : (item.message?.role ?? 'assistant'),
           content: asJson(payload),
           searchText: payload.content,
           toolCalls: null,
@@ -227,8 +237,8 @@ export function createSessionManager(deps: {
     },
     async create(
       userId: string,
-      kind: Session['kind'],
-      config: Config,
+      kind: OnlineAgentSession['kind'],
+      config: OnlineAgentConfig,
       model: ModelRef,
       info?: { source?: string; title?: string },
     ) {
@@ -239,7 +249,6 @@ export function createSessionManager(deps: {
           values: {
             id,
             userId,
-            agentId: null,
             mode: 'online',
             modelService: model.modelService,
             model: model.model,
@@ -305,7 +314,7 @@ export function createSessionManager(deps: {
     accept(
       userId: string,
       id: string,
-      config: Config,
+      config: OnlineAgentConfig,
       model: ModelRef,
       items: {
         id: string;
@@ -361,7 +370,7 @@ export function createSessionManager(deps: {
         excludedFromHistory?: boolean;
         partial?: string;
       }[],
-      call: Call,
+      call: OnlineAgentCall,
     ) {
       return write(userId, id, 'save', async (conn, row) => {
         const value = metadata(row);

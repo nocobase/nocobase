@@ -13,26 +13,34 @@ import type { IdSource } from '../kernel/ids.js';
 import type { ModelRef } from '../../shared/models.js';
 import {
   OnlineAgentConfigurer,
-  type Context,
-  type Config,
-  type Options,
-  type ToolContext,
+  type OnlineAgentContext,
+  type OnlineAgentConfig,
+  type OnlineAgentOptions,
+  type OnlineAgentToolContext,
 } from './config.js';
-import { jsonSafe, project, type Json, type Outcome } from './codec.js';
-import type { Session, SessionManager } from './sessions.js';
 import {
-  MemoryOnlineAgentStreamManager,
-  type StreamManager,
-  type Writer,
+  jsonSafe,
+  project,
+  type OnlineAgentJson,
+  type OnlineAgentOutcome,
+} from './codec.js';
+import type {
+  OnlineAgentSession,
+  OnlineAgentSessionManager,
+} from './sessions.js';
+import {
+  OnlineAgentMemoryStreamManager,
+  type OnlineAgentStreamManager,
+  type OnlineAgentStreamWriter,
 } from './streams.js';
 
-type Acceptance = {
+type OnlineAgentAcceptance = {
   promise: Promise<number>;
   resolve(seq: number): void;
   reject(error: unknown): void;
 };
 
-function acceptance(): Acceptance {
+function acceptance(): OnlineAgentAcceptance {
   let resolve!: (seq: number) => void;
   let reject!: (error: unknown) => void;
   const promise = new Promise<number>((done, failed) => {
@@ -42,18 +50,20 @@ function acceptance(): Acceptance {
   return { promise, resolve, reject };
 }
 
-type Execution = {
+type OnlineAgentExecution = {
   abort: AbortController;
   task?: Promise<void>;
   finalize?: () => Promise<void>;
   finalizing?: Promise<void>;
 };
 
-export interface Agent {
+export interface OnlineAgent {
   readonly sessionId: string;
   status(): Promise<'running' | 'idle'>;
   history(): Promise<ModelMessage[]>;
-  receive(): Promise<ReadableStream<import('./streams.js').Event> | null>;
+  receive(): Promise<ReadableStream<
+    import('./streams.js').OnlineAgentStreamEvent
+  > | null>;
   abort(): Promise<void>;
   retryFinalization(): Promise<void>;
   send(
@@ -62,35 +72,35 @@ export interface Agent {
       attachmentIds?: string[][];
       clientId?: string;
       workContext?: import('../../shared/conversations.js').ResolvedPageContext;
-      overrides?: Options;
+      overrides?: OnlineAgentOptions;
       selectedModel?: ModelRef;
     },
   ): Promise<number>;
   run(
     messages: ModelMessage[],
     schema?: ZodType,
-    input?: { overrides?: Options; selectedModel?: ModelRef },
+    input?: { overrides?: OnlineAgentOptions; selectedModel?: ModelRef },
   ): Promise<void>;
-  get(): Promise<Json>;
+  get(): Promise<OnlineAgentJson>;
 }
 export class OnlineAgentService {
   readonly configurer: OnlineAgentConfigurer = new OnlineAgentConfigurer();
   private stopping = false;
-  private active = new Map<string, Execution>();
+  private active = new Map<string, OnlineAgentExecution>();
   private gates = new Map<string, Promise<unknown>>();
-  readonly streams: StreamManager;
+  readonly streams: OnlineAgentStreamManager;
   constructor(
     private deps: {
-      sessions: SessionManager;
+      sessions: OnlineAgentSessionManager;
       ids: IdSource;
       resolver?: ServiceResolver;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       defaultModel(): Promise<ModelRef | null>;
-      streams?: StreamManager;
+      streams?: OnlineAgentStreamManager;
       onError(error: unknown): void;
     },
   ) {
-    this.streams = deps.streams ?? new MemoryOnlineAgentStreamManager();
+    this.streams = deps.streams ?? new OnlineAgentMemoryStreamManager();
   }
   async shutdown(): Promise<void> {
     this.stopping = true;
@@ -106,9 +116,9 @@ export class OnlineAgentService {
       result.status === 'rejected' ? [result.reason as unknown] : [],
     );
     if (failures.length)
-      throw new AggregateError(
-        failures,
+      console.warn(
         'OnlineAgent finalization failed during shutdown.',
+        new AggregateError(failures),
       );
   }
 
@@ -123,9 +133,9 @@ export class OnlineAgentService {
     }
   }
   private async open(
-    context: Context,
-    kind: Session['kind'],
-    options: Options & {
+    context: OnlineAgentContext,
+    kind: OnlineAgentSession['kind'],
+    options: OnlineAgentOptions & {
       sessionId?: string;
       selectedModel?: ModelRef;
       source?: string;
@@ -235,7 +245,7 @@ export class OnlineAgentService {
           attachmentIds?: string[][];
           clientId?: string;
           workContext?: import('../../shared/conversations.js').ResolvedPageContext;
-          overrides?: Options;
+          overrides?: OnlineAgentOptions;
           selectedModel?: ModelRef;
         },
       ) => {
@@ -251,7 +261,7 @@ export class OnlineAgentService {
       run: async (
         messages: ModelMessage[],
         schema?: ZodType,
-        input?: { overrides?: Options; selectedModel?: ModelRef },
+        input?: { overrides?: OnlineAgentOptions; selectedModel?: ModelRef },
       ) => {
         await this.start(
           context,
@@ -267,7 +277,7 @@ export class OnlineAgentService {
         requestedOverrides = undefined;
         requestedModel = undefined;
       },
-      get: async (): Promise<Json> => {
+      get: async (): Promise<OnlineAgentJson> => {
         const row = await this.deps.sessions.load(userId, sessionId);
         if (
           (await status()) !== 'idle' ||
@@ -280,11 +290,11 @@ export class OnlineAgentService {
     };
   }
   async configure(
-    context: Context,
+    context: OnlineAgentContext,
     id: string,
-    options: Options,
+    options: OnlineAgentOptions,
     selectedModel?: ModelRef,
-  ): Promise<Config & { selectedModel: ModelRef }> {
+  ): Promise<OnlineAgentConfig & { selectedModel: ModelRef }> {
     await this.realtime(context, { sessionId: id });
     return this.gate(id, async () => {
       if (this.active.has(id)) throw conflict('This conversation is busy.');
@@ -307,33 +317,33 @@ export class OnlineAgentService {
     });
   }
   async configuration(
-    context: Context,
+    context: OnlineAgentContext,
     id: string,
-  ): Promise<Config & { selectedModel: ModelRef }> {
+  ): Promise<OnlineAgentConfig & { selectedModel: ModelRef }> {
     await this.realtime(context, { sessionId: id });
     const session = await this.deps.sessions.load(context.user.id, id);
     return { ...session.config, selectedModel: session.model };
   }
   realtime(
-    context: Context,
-    options: Options & {
+    context: OnlineAgentContext,
+    options: OnlineAgentOptions & {
       sessionId?: string;
       selectedModel?: ModelRef;
       source?: string;
       title?: string;
     } = {},
-  ): Promise<Agent> {
+  ): Promise<OnlineAgent> {
     return this.open(context, 'realtime', options);
   }
   background(
-    context: Context,
-    options: Options & {
+    context: OnlineAgentContext,
+    options: OnlineAgentOptions & {
       sessionId?: string;
       selectedModel?: ModelRef;
       source?: string;
       title?: string;
     } = {},
-  ): Promise<Agent> {
+  ): Promise<OnlineAgent> {
     return this.open(context, 'background', options);
   }
   private firstModel(models: string[]): ModelRef {
@@ -350,7 +360,7 @@ export class OnlineAgentService {
     if (!allowed.includes(`${model.modelService}/${model.model}`))
       throw invalid('The selected model is outside this configuration.');
   }
-  private finish(execution: Execution) {
+  private finish(execution: OnlineAgentExecution) {
     if (!execution.finalizing)
       execution.finalizing = execution.finalize?.().finally(() => {
         execution.finalizing = undefined;
@@ -358,14 +368,14 @@ export class OnlineAgentService {
     return execution.finalizing;
   }
   private async start(
-    context: Context,
+    context: OnlineAgentContext,
     id: string,
     messages: ModelMessage[],
     input?: {
       attachmentIds?: string[][];
       clientId?: string;
       workContext?: import('../../shared/conversations.js').ResolvedPageContext;
-      overrides?: Options;
+      overrides?: OnlineAgentOptions;
       selectedModel?: ModelRef;
     },
     schema?: ZodType,
@@ -374,7 +384,7 @@ export class OnlineAgentService {
       throw invalid('Input must contain user messages.');
     messages.forEach((message) => encode(message));
     if (this.stopping) throw conflict('OnlineAgent is stopping.');
-    const execution: Execution = { abort: new AbortController() };
+    const execution: OnlineAgentExecution = { abort: new AbortController() };
     const accepted = acceptance();
     await this.gate(id, async () => {
       if (this.stopping) throw conflict('OnlineAgent is stopping.');
@@ -394,7 +404,7 @@ export class OnlineAgentService {
   }
 
   private async prepareAndExecute(
-    context: Context,
+    context: OnlineAgentContext,
     id: string,
     messages: ModelMessage[],
     input:
@@ -402,21 +412,21 @@ export class OnlineAgentService {
           attachmentIds?: string[][];
           clientId?: string;
           workContext?: import('../../shared/conversations.js').ResolvedPageContext;
-          overrides?: Options;
+          overrides?: OnlineAgentOptions;
           selectedModel?: ModelRef;
         }
       | undefined,
     schema: ZodType | undefined,
-    execution: Execution,
-    accepted: Acceptance,
+    execution: OnlineAgentExecution,
+    accepted: OnlineAgentAcceptance,
   ): Promise<void> {
-    let session: Session;
-    let config: Session['config'];
+    let session: OnlineAgentSession;
+    let config: OnlineAgentSession['config'];
     let model: LanguageModel;
     let history: ModelMessage[];
     let afterSeq: number;
     const pending: Promise<unknown>[] = [];
-    let boundContext: ToolContext;
+    let boundContext: OnlineAgentToolContext;
     let tools: ReturnType<OnlineAgentConfigurer['bind']>;
     try {
       session = await this.deps.sessions.load(context.user.id, id);
@@ -482,12 +492,12 @@ export class OnlineAgentService {
     const toolEvidence = new Map<string, ModelMessage[]>();
     const toolCompletions = new Map<string, () => void>();
     const convertToolEvidence = new Map<string, () => Promise<void>>();
-    let writer: Writer | undefined;
+    let writer: OnlineAgentStreamWriter | undefined;
     let response: ModelMessage[] = [];
     let partial = '';
     let publishedLength = 0;
-    let outcome: Outcome = 'completed';
-    let result: Json | undefined;
+    let outcome: OnlineAgentOutcome = 'completed';
+    let result: OnlineAgentJson | undefined;
     let sdkStopped: Promise<void> | undefined;
     try {
       if (session.kind === 'realtime')
@@ -559,7 +569,7 @@ export class OnlineAgentService {
                         type: 'json' as const,
                         value: JSON.parse(
                           JSON.stringify(toolOutput.output) ?? 'null',
-                        ) as Json,
+                        ) as OnlineAgentJson,
                       };
             evidence[1] = {
               role: 'tool',

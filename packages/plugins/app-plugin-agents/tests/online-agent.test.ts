@@ -14,11 +14,11 @@ import { OnlineAgentService } from '../server/online-agent/service.js';
 import { createSessionManager } from '../server/online-agent/sessions.js';
 import {
   OnlineAgentConfigurer,
-  type Context,
-  type ToolContext,
+  type OnlineAgentContext,
+  type OnlineAgentToolContext,
 } from '../server/online-agent/config.js';
 import { createChatAttachments } from '../server/core/conversations/attachments.js';
-import { MemoryOnlineAgentStreamManager } from '../server/online-agent/streams.js';
+import { OnlineAgentMemoryStreamManager } from '../server/online-agent/streams.js';
 import {
   content,
   decode,
@@ -28,7 +28,7 @@ import {
 } from '../server/online-agent/codec.js';
 
 const ref = { modelService: 'fixture', model: 'chat' };
-const context = (id = 'alice'): Context => ({
+const context = (id = 'alice'): OnlineAgentContext => ({
   user: { id },
   credentials: { kind: 'fixture-session', userId: id },
   authorization: {
@@ -70,7 +70,7 @@ afterEach(async () => h?.close());
 
 async function fixture(
   model: MockLanguageModelV4,
-  streams = new MemoryOnlineAgentStreamManager(),
+  streams = new OnlineAgentMemoryStreamManager(),
 ) {
   h = await createHarness();
   let counter = 0;
@@ -143,9 +143,9 @@ describe('OnlineAgent service slice', () => {
     });
     const f = await fixture(model);
     const token = createServiceToken<{
-      read(value: number, actor: ToolContext): number;
+      read(value: number, actor: OnlineAgentToolContext): number;
     }>('fixture-business');
-    const read = vi.fn((value: number, actor: ToolContext) => {
+    const read = vi.fn((value: number, actor: OnlineAgentToolContext) => {
       expect(actor.user.id).toBe('alice');
       expect(actor.credentials).toEqual(context().credentials);
       expect(actor.sessionId).toBe(agent.sessionId);
@@ -181,6 +181,31 @@ describe('OnlineAgent service slice', () => {
         .repository('agConversationMessages')
         .count({ filter: { conversationId: agent.sessionId } }),
     ).toBe(6);
+    const stored = await h.database
+      .connection()
+      .repository('agConversationMessages')
+      .findMany({
+        filter: { conversationId: agent.sessionId },
+        sort: (sort) => [sort.field('seq').asc()],
+      });
+    expect(stored.map((row) => row.role)).toEqual([
+      'user',
+      'assistant',
+      'system',
+      'assistant',
+      'system',
+      'assistant',
+    ]);
+    const publicHistory = await h.services.conversations.messages(
+      'alice',
+      agent.sessionId,
+      {},
+    );
+    expect(publicHistory.items.map((item) => item.role)).toEqual(
+      stored.map((row) => row.role),
+    );
+    expect(JSON.stringify(publicHistory)).not.toContain('private-signature');
+    expect(JSON.stringify(publicHistory)).not.toContain('toolCallId');
     expect(read).toHaveBeenCalledTimes(2);
     expect(step).toBe(3);
     expect(f.errors).toEqual([]);
@@ -350,7 +375,7 @@ describe('OnlineAgent service slice', () => {
     const model = new MockLanguageModelV4({
       doStream: async () => ({ stream: streamed(text('Saved once')) }),
     });
-    const streams = new MemoryOnlineAgentStreamManager();
+    const streams = new OnlineAgentMemoryStreamManager();
     const f = await fixture(model, streams);
     const save = vi
       .spyOn(f.sessions, 'save')
@@ -490,7 +515,7 @@ it('resolves scope order and explicit overrides, rejects unsupported requirement
 });
 
 it('replays the first cache before live events, disconnects without stopping execution and isolates old writers', async () => {
-  const streams = new MemoryOnlineAgentStreamManager();
+  const streams = new OnlineAgentMemoryStreamManager();
   const writer = await streams.open('s', 1);
   await writer.publish(0, project(null, 'First'));
   const reader = (await streams.receive('s'))!.getReader();
@@ -541,6 +566,12 @@ it('commits all inputs and attachment links atomically and rolls them back on a 
         .findOne({ filter: { id: attachment.id } })
     )?.conversationId,
   ).toBeNull();
+  await expect(
+    first.send([{ role: 'user', content: 'Duplicate upload' }], {
+      attachmentIds: [[attachment.id, attachment.id]],
+    }),
+  ).rejects.toThrow('distinct attachments');
+  expect(await first.history()).toEqual([]);
   await second.send([{ role: 'user', content: 'Use the upload' }], {
     attachmentIds: [[attachment.id]],
   });
@@ -641,7 +672,9 @@ it('caches a shared factory while binding distinct users to streaming tool execu
       _input: object,
       {
         context: actor,
-      }: { context: import('../server/online-agent/config.js').ToolContext },
+      }: {
+        context: import('../server/online-agent/config.js').OnlineAgentToolContext;
+      },
     ) {
       actors.push(actor.user.id);
       expect(actor.authorization.identity.principal?.id).toBe(actor.user.id);
@@ -774,7 +807,7 @@ it.each(['realtime', 'background'] as const)(
     });
     const provider = vi.fn(() => ({
       systemPromptTemplate: {
-        template: (ctx: Context) => `${ctx.systemPrompt}:once`,
+        template: (ctx: OnlineAgentContext) => `${ctx.systemPrompt}:once`,
       },
     }));
     f.service.configurer.registerOnlineAgentScope('change', provider);
@@ -928,7 +961,10 @@ it.each([false, true])(
     });
     const f = await fixture(model);
     const execute = vi.fn(
-      async (_input: { key: string }, options: { context: ToolContext }) => {
+      async (
+        _input: { key: string },
+        options: { context: OnlineAgentToolContext },
+      ) => {
         signal = options.context.signal;
         entered.resolve();
         await release.promise;
@@ -1032,3 +1068,83 @@ it.each([false, true])(
       );
   },
 );
+
+it('keeps default and empty historical agent IDs readable without an OnlineAgent guard', async () => {
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({ stream: streamed(text('Done')) }),
+    }),
+  );
+  const online = await f.service.realtime(context());
+  const repository = h.database.connection().repository('agConversations');
+  const row = await repository.findOne({ filter: { id: online.sessionId } });
+  expect(row?.agentId).toBe('0');
+  for (const agentId of ['', '0', 'missing-agent']) {
+    await repository.updateMany({
+      filter: { id: online.sessionId },
+      values: { agentId, metadata: null },
+    });
+    const detail = await h.services.conversations.get(
+      'alice',
+      online.sessionId,
+    );
+    expect(detail.agent).toMatchObject({ id: agentId, name: null });
+    await expect(
+      f.service.realtime(context(), { sessionId: online.sessionId }),
+    ).rejects.toThrow('historical conversation');
+  }
+});
+
+it('warns on failed shutdown finalization, drains other executions and preserves explicit retry', async () => {
+  const entered = deferred();
+  const release = deferred();
+  const model = new MockLanguageModelV4({
+    doStream: async () => {
+      entered.resolve();
+      await release.promise;
+      return { stream: streamed(text('Done')) };
+    },
+  });
+  const f = await fixture(model);
+  const first = await f.service.realtime(context());
+  const second = await f.service.realtime(context());
+  const original = f.sessions.save.bind(f.sessions);
+  const failure = new Error('Shutdown persistence unavailable');
+  const save = vi.spyOn(f.sessions, 'save').mockImplementation((...args) => {
+    if (args[1] === first.sessionId) return Promise.reject(failure);
+    return original(...args);
+  });
+  // send acknowledges SDK creation; the fixture delays its model request instead of admission.
+  const sends = Promise.all([
+    first.send([{ role: 'user', content: 'First' }]),
+    second.send([{ role: 'user', content: 'Second' }]),
+  ]);
+  await entered.promise;
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    let completed = false;
+    const shutdown = f.service.shutdown().then(() => {
+      completed = true;
+    });
+    await Promise.resolve();
+    expect(completed).toBe(false);
+    release.resolve();
+    await sends;
+    await expect(shutdown).resolves.toBeUndefined();
+    expect(warn).toHaveBeenCalledWith(
+      'OnlineAgent finalization failed during shutdown.',
+      expect.objectContaining({ errors: [failure] }),
+    );
+    expect(await first.status()).toBe('running');
+    expect(await second.status()).toBe('idle');
+    await expect(first.abort()).rejects.toThrow(failure.message);
+    save.mockRestore();
+    await first.retryFinalization();
+    expect(await first.status()).toBe('idle');
+    expect(model.doStreamCalls).toHaveLength(2);
+    await expect(f.service.realtime(context())).rejects.toThrow('stopping');
+  } finally {
+    release.resolve();
+    warn.mockRestore();
+  }
+});

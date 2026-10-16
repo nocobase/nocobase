@@ -32,12 +32,37 @@ describeMigration('202610270001_ag_online_agent', {
     });
     await expectCollection('agConversations').toHaveField('agentId', {
       type: 'string',
-      nullable: true,
+      nullable: false,
     });
     await expectCollection('agChatPreferences').toHaveField('onlineAgent', {
       type: 'json',
       nullable: true,
     });
+    const values = {
+      id: 'online-default',
+      userId: 'alice',
+      mode: 'online',
+      titleSource: 'auto',
+      category: 'chat',
+      source: 'chat',
+      lastMessageAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    // Use Query so this verifies the database default, independently of Repository default insertion.
+    await connection.query
+      .insertInto('agConversations')
+      .values(values)
+      .execute();
+    expect(
+      await connection
+        .repository('agConversations')
+        .findOne({ filter: { id: values.id } }),
+    ).toMatchObject({ agentId: '0' });
+    await connection.query
+      .deleteFrom('agConversations')
+      .where('id', '=', values.id)
+      .execute();
     const row = await connection
       .repository('agConversations')
       .findOne({ filter: { id: 'legacy-online' } });

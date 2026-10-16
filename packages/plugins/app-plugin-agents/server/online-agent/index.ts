@@ -1,22 +1,17 @@
-export { OnlineAgentService } from './service.js';
+export { type OnlineAgent, OnlineAgentService } from './service.js';
 export {
   OnlineAgentConfigurer,
-  type Context,
-  type ToolContext,
-  type Scope,
-  type ScopeProvider,
-  type Options,
-  type Config,
-  type Definition,
+  type OnlineAgentContext,
+  type OnlineAgentToolContext,
+  type OnlineAgentScope,
+  type OnlineAgentScopeProvider,
+  type OnlineAgentOptions,
+  type OnlineAgentConfig,
+  type OnlineAgentToolDefinition,
 } from './config.js';
 export {
-  createSessionManager,
-  type SessionManager,
-  type Session,
-} from './sessions.js';
-export {
-  MemoryOnlineAgentStreamManager,
-  type StreamManager,
-  type Writer,
-  type Event,
+  OnlineAgentMemoryStreamManager,
+  type OnlineAgentStreamManager,
+  type OnlineAgentStreamWriter,
+  type OnlineAgentStreamEvent,
 } from './streams.js';

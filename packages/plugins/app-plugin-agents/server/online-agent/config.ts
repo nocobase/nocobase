@@ -3,53 +3,63 @@ import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import type { ZodObject } from 'zod';
 import { invalid } from '../kernel/errors.js';
-import { jsonSafe, type Json } from './codec.js';
+import { jsonSafe, type OnlineAgentJson } from './codec.js';
 
-export type Context = Readonly<{
+export type OnlineAgentContext = Readonly<{
   user: { id: string };
   authorization: AuthorizationContext;
   /** Full entry credentials remain in memory and are passed to the business service unchanged. */
   credentials: unknown;
-  business?: Json;
-  variable?: Json;
+  business?: OnlineAgentJson;
+  variable?: OnlineAgentJson;
   systemPrompt?: string;
 }>;
-export type ToolContext = Context & {
+export type OnlineAgentToolContext = OnlineAgentContext & {
   /** The executing session, supplied by the runtime rather than model or page input. */
   readonly sessionId: string;
   readonly signal: AbortSignal;
 };
-export type Scope = {
+export type OnlineAgentScope = {
   systemPromptTemplate?:
-    string | { variableSchema?: ZodObject; template(context: Context): string };
-  context?: { variable?: Json; systemPrompt?: string };
+    | string
+    | {
+        variableSchema?: ZodObject;
+        template(context: OnlineAgentContext): string;
+      };
+  context?: { variable?: OnlineAgentJson; systemPrompt?: string };
   tool?: string[];
   model?: string[];
   thinking?: string;
   permissions?: never;
 };
-export type ScopeProvider = (context: Context) => Scope | Promise<Scope>;
-export type Options = Scope & { scope?: string[] };
-export type Config = {
+export type OnlineAgentScopeProvider = (
+  context: OnlineAgentContext,
+) => OnlineAgentScope | Promise<OnlineAgentScope>;
+export type OnlineAgentOptions = OnlineAgentScope & { scope?: string[] };
+export type OnlineAgentConfig = {
   scope: string[];
   systemPrompt: string;
-  variable?: Json;
+  variable?: OnlineAgentJson;
   tool: string[];
   toolVersions: Record<string, string>;
   model: string[];
   thinking?: string;
 };
-export type Definition<I, O, C = ToolContext> = Tool<I, O, C> & {
+export type OnlineAgentToolDefinition<I, O, C = OnlineAgentToolContext> = Tool<
+  I,
+  O,
+  C
+> & {
   execute: NonNullable<Tool<I, O, C>['execute']>;
   permissions?: never;
   needsApproval?: never;
 };
 
-type Registered = {
+type OnlineAgentRegisteredTool = {
   version: string;
   resolve(
     resolver?: ServiceResolver,
-  ): Definition<unknown, unknown, ToolContext>;
+  ): OnlineAgentToolDefinition<unknown, unknown, OnlineAgentToolContext>;
 };
 
 function supported(value: object) {
@@ -66,11 +76,16 @@ function supported(value: object) {
 }
 
 export class OnlineAgentConfigurer {
-  private globals: (Scope | ScopeProvider)[] = [];
-  private scopes = new Map<string, (Scope | ScopeProvider)[]>();
-  private tools = new Map<string, Registered>();
+  private globals: (OnlineAgentScope | OnlineAgentScopeProvider)[] = [];
+  private scopes = new Map<
+    string,
+    (OnlineAgentScope | OnlineAgentScopeProvider)[]
+  >();
+  private tools = new Map<string, OnlineAgentRegisteredTool>();
 
-  registerOnlineAgentGlobalScope(...scope: (Scope | ScopeProvider)[]): void {
+  registerOnlineAgentGlobalScope(
+    ...scope: (OnlineAgentScope | OnlineAgentScopeProvider)[]
+  ): void {
     scope.forEach((item) => {
       if (typeof item !== 'function') supported(item);
     });
@@ -79,7 +94,7 @@ export class OnlineAgentConfigurer {
 
   registerOnlineAgentScope(
     name: string,
-    ...scope: (Scope | ScopeProvider)[]
+    ...scope: (OnlineAgentScope | OnlineAgentScopeProvider)[]
   ): void {
     if (this.scopes.has(name))
       throw invalid(`Scope ${name} is already registered.`);
@@ -89,13 +104,13 @@ export class OnlineAgentConfigurer {
     this.scopes.set(name, scope);
   }
 
-  registerTool<I, O, C = ToolContext>(
+  registerTool<I, O, C = OnlineAgentToolContext>(
     name: string,
     options: {
       version: string;
       definition:
-        | Definition<I, O, C>
-        | ((resolver: ServiceResolver) => Definition<I, O, C>);
+        | OnlineAgentToolDefinition<I, O, C>
+        | ((resolver: ServiceResolver) => OnlineAgentToolDefinition<I, O, C>);
     },
   ): void {
     if (
@@ -105,7 +120,7 @@ export class OnlineAgentConfigurer {
     )
       throw invalid(`Invalid or duplicate tool ${name}.`);
     if (typeof options.definition !== 'function') supported(options.definition);
-    let resolved: Definition<I, O, C> | undefined;
+    let resolved: OnlineAgentToolDefinition<I, O, C> | undefined;
     this.tools.set(name, {
       version: options.version,
       resolve: (resolver) => {
@@ -124,19 +139,23 @@ export class OnlineAgentConfigurer {
           resolved = definition;
           Object.freeze(resolved);
         }
-        return resolved as unknown as Definition<unknown, unknown, ToolContext>;
+        return resolved as unknown as OnlineAgentToolDefinition<
+          unknown,
+          unknown,
+          OnlineAgentToolContext
+        >;
       },
     });
   }
 
   async resolve(
-    context: Context,
-    options: Options,
-    previous?: Config,
+    context: OnlineAgentContext,
+    options: OnlineAgentOptions,
+    previous?: OnlineAgentConfig,
     fallbackModels: string[] = [],
-  ): Promise<Config> {
+  ): Promise<OnlineAgentConfig> {
     supported(options);
-    const result: Config = previous
+    const result: OnlineAgentConfig = previous
       ? structuredClone(previous)
       : {
           scope: [],
@@ -145,7 +164,9 @@ export class OnlineAgentConfigurer {
           toolVersions: {},
           model: [...fallbackModels],
         };
-    const layers: (Scope | ScopeProvider)[] = previous ? [] : [...this.globals];
+    const layers: (OnlineAgentScope | OnlineAgentScopeProvider)[] = previous
+      ? []
+      : [...this.globals];
     for (const name of options.scope ?? []) {
       const found = this.scopes.get(name);
       if (!found) throw invalid(`Scope ${name} is not registered.`);
@@ -153,7 +174,7 @@ export class OnlineAgentConfigurer {
     }
     layers.push(options);
     for (const layer of layers) {
-      const current: Context = {
+      const current: OnlineAgentContext = {
         ...context,
         variable: result.variable,
         systemPrompt: result.systemPrompt,
@@ -194,11 +215,11 @@ export class OnlineAgentConfigurer {
   }
 
   bind(
-    config: Config,
-    context: ToolContext,
+    config: OnlineAgentConfig,
+    context: OnlineAgentToolContext,
     resolver: ServiceResolver | undefined,
     track: (task: Promise<unknown>) => void = () => {},
-  ): Record<string, Tool<unknown, unknown, ToolContext>> {
+  ): Record<string, Tool<unknown, unknown, OnlineAgentToolContext>> {
     return Object.fromEntries(
       config.tool.map((name) => {
         const registered = this.tools.get(name);
@@ -235,7 +256,7 @@ export class OnlineAgentConfigurer {
             track(task);
             return task;
           },
-        } as Tool<unknown, unknown, ToolContext>;
+        } as Tool<unknown, unknown, OnlineAgentToolContext>;
         return [name, bound];
       }),
     );

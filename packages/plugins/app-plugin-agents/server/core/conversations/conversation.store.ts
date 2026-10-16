@@ -29,7 +29,7 @@ import {
 export interface ConversationRecord {
   readonly id: string;
   readonly userId: string;
-  readonly agentId: string | null;
+  readonly agentId: string;
   readonly metadata?: JsonColumn;
   readonly mode: ConversationMode;
   readonly fallbackFromAgentId: string | null;
@@ -55,7 +55,7 @@ export interface MessageRecord {
   readonly id: string;
   readonly conversationId: string;
   readonly seq: number;
-  readonly role: MessageRole | 'tool';
+  readonly role: MessageRole;
   readonly content: JsonColumn;
   readonly searchText: string;
   readonly toolCalls: JsonColumn;
@@ -298,7 +298,7 @@ export function toMessage(
     id: record.id,
     conversationId: record.conversationId,
     seq: Number(record.seq),
-    role: record.role === 'tool' ? 'system' : record.role,
+    role: record.role,
     content: contentOf(record.content),
     toolCalls: listOrNull(record.toolCalls),
     attachments:

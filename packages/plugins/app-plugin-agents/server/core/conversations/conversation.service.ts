@@ -238,17 +238,11 @@ function noticeText(
   }
 }
 
-function legacyAgentId(record: ConversationRecord): string {
-  if (!record.agentId)
-    throw invalid('Use the OnlineAgent service for this conversation.');
-  return record.agentId;
-}
-
 function refOf(record: ConversationRecord): ConversationRef {
   return {
     id: record.id,
     userId: record.userId,
-    agentId: legacyAgentId(record),
+    agentId: record.agentId,
     title: record.title,
     source: record.source,
   };
@@ -359,7 +353,7 @@ export function createConversationService(
             archived: false,
           }
         : agentRef(
-            legacyAgentId(record),
+            record.agentId,
             record.agentId ? (agents.get(record.agentId) ?? null) : null,
           ),
       fallbackFrom: record.fallbackFromAgentId
@@ -1084,7 +1078,7 @@ export function createConversationService(
             ...(query.agentId
               ? [
                   query.agentId === 'online'
-                    ? f.string('agentId').empty()
+                    ? f.string('agentId').eq('0')
                     : f.string('agentId').eq(query.agentId),
                 ]
               : []),
@@ -1378,7 +1372,7 @@ export function createConversationService(
         await rebind(unit, record, current, record.agentId, {
           code: 'switchedToDefault',
           agentId: target.id,
-          fromAgentId: legacyAgentId(record),
+          fromAgentId: record.agentId,
         });
       });
       return detail(userId, id);
@@ -1409,7 +1403,7 @@ export function createConversationService(
         await rebind(unit, record, current, null, {
           code: 'switchedBack',
           agentId: own.id,
-          fromAgentId: legacyAgentId(record),
+          fromAgentId: record.agentId,
         });
       });
       return detail(userId, id);

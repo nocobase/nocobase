@@ -1,10 +1,17 @@
-import type { ToolContext as PublicToolContext } from '@nocobase/app-plugin-agents/server/online-agent';
+import type {
+  OnlineAgentToolContext as PublicToolContext,
+  OnlineAgent,
+} from '@nocobase/app-plugin-agents/server/online-agent';
 import {
   OnlineAgentConfigurer,
-  type Definition,
-  type ToolContext,
+  type OnlineAgentToolDefinition,
+  type OnlineAgentToolContext,
 } from '../server/online-agent/config.js';
 import { expect, expectTypeOf, it } from 'vitest';
+import {
+  OnlineAgentService as PublicOnlineAgentService,
+  OnlineAgentConfigurer as PublicOnlineAgentConfigurer,
+} from '@nocobase/app-plugin-agents/server';
 import { z } from 'zod';
 
 import { VariableSchema } from '../server/routes/schemas.js';
@@ -143,15 +150,15 @@ it('lets applications guard a pending request and report a queued run', async ()
 
 it('preserves SDK tool input, output and execution context generics', () => {
   const configurer = new OnlineAgentConfigurer();
-  const definition: Definition<
+  const definition: OnlineAgentToolDefinition<
     { value: number },
     { doubled: number },
-    ToolContext
+    OnlineAgentToolContext
   > = {
     inputSchema: z.object({ value: z.number() }),
     execute: (input, options) => {
       expectTypeOf(input).toEqualTypeOf<{ value: number }>();
-      expectTypeOf(options.context).toEqualTypeOf<ToolContext>();
+      expectTypeOf(options.context).toEqualTypeOf<OnlineAgentToolContext>();
       expectTypeOf(options.abortSignal).toEqualTypeOf<
         AbortSignal | undefined
       >();
@@ -169,3 +176,10 @@ it('preserves SDK tool input, output and execution context generics', () => {
 const businessSession = (context: PublicToolContext): string =>
   context.sessionId;
 void businessSession;
+
+it('exposes the shared service and configurer through the public server entry', () => {
+  expect(PublicOnlineAgentConfigurer).toBe(OnlineAgentConfigurer);
+  expectTypeOf<
+    Awaited<ReturnType<PublicOnlineAgentService['realtime']>>
+  >().toEqualTypeOf<OnlineAgent>();
+});

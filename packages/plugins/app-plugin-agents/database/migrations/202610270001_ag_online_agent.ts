@@ -12,7 +12,8 @@ const migration: MigrationDefinition = defineMigration({
       collection.alterField('agentId', {
         type: 'string',
         length: 64,
-        nullable: true,
+        nullable: false,
+        defaultValue: '0',
       });
     });
     await builder.alterCollection('agChatPreferences', (collection) => {
@@ -39,6 +40,7 @@ const migration: MigrationDefinition = defineMigration({
         type: 'string',
         length: 64,
         nullable: false,
+        defaultValue: undefined,
       });
     });
   },

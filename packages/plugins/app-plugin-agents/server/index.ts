@@ -5,4 +5,7 @@ export {
   registerSettings,
 } from './providers/authorization.js';
 
-export * from './online-agent/index.js';
+export {
+  OnlineAgentService,
+  OnlineAgentConfigurer,
+} from './online-agent/index.js';

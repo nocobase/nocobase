@@ -1,14 +1,19 @@
 import type { ModelMessage } from 'ai';
 import { invalid } from '../kernel/errors.js';
 
-export type Json =
-  null | boolean | number | string | Json[] | { [key: string]: Json };
+export type OnlineAgentJson =
+  | null
+  | boolean
+  | number
+  | string
+  | OnlineAgentJson[]
+  | { [key: string]: OnlineAgentJson };
 
 /** Tagged nodes avoid confusing an ordinary tool object's keys with codec markers. */
-type Node =
+type OnlineAgentCodecNode =
   | ['json', null | boolean | number | string]
-  | ['array', Node[]]
-  | ['object', [string, Node][]]
+  | ['array', OnlineAgentCodecNode[]]
+  | ['object', [string, OnlineAgentCodecNode][]]
   | ['bytes', string]
   | ['arrayBuffer', string]
   | ['url', string];
@@ -16,7 +21,7 @@ type Node =
 export function encode(
   value: unknown,
   seen: Set<object> = new Set<object>(),
-): Node {
+): OnlineAgentCodecNode {
   if (value === null || typeof value === 'string' || typeof value === 'boolean')
     return ['json', value];
   if (typeof value === 'number' && Number.isFinite(value))
@@ -48,7 +53,7 @@ export function encode(
   }
 }
 
-export function decode(node: Node): unknown {
+export function decode(node: OnlineAgentCodecNode): unknown {
   switch (node[0]) {
     case 'json':
       return node[1];
@@ -67,11 +72,11 @@ export function decode(node: Node): unknown {
   }
 }
 
-export function jsonSafe(value: unknown): Json {
+export function jsonSafe(value: unknown): OnlineAgentJson {
   const visit = (
     item: unknown,
     seen: Set<object> = new Set<object>(),
-  ): Json => {
+  ): OnlineAgentJson => {
     if (item === null || typeof item === 'boolean' || typeof item === 'string')
       return item;
     if (typeof item === 'number' && Number.isFinite(item)) return item;
@@ -97,14 +102,14 @@ export function jsonSafe(value: unknown): Json {
   return visit(value);
 }
 
-export type Outcome = 'completed' | 'cancelled' | 'failed';
-export type Original = {
+export type OnlineAgentOutcome = 'completed' | 'cancelled' | 'failed';
+export type OnlineAgentOriginal = {
   version: 1;
-  message: Node | null;
-  outcome: Outcome;
+  message: OnlineAgentCodecNode | null;
+  outcome: OnlineAgentOutcome;
   excludedFromHistory?: boolean;
 };
-export type PublicItem = {
+export type OnlineAgentPublicItem = {
   role: 'user' | 'assistant' | 'notice';
   parts: { type: 'text'; text: string }[];
 };
@@ -113,7 +118,7 @@ export type PublicItem = {
 export function project(
   message: ModelMessage | null,
   partial = '',
-): PublicItem {
+): OnlineAgentPublicItem {
   const role =
     message?.role === 'user'
       ? 'user'
@@ -135,10 +140,10 @@ export function project(
 
 export function content(
   message: ModelMessage | null,
-  outcome: Outcome = 'completed',
+  outcome: OnlineAgentOutcome = 'completed',
   partial: string = '',
   excludedFromHistory = false,
-): { type: string; content: string; original: Original } {
+): { type: string; content: string; original: OnlineAgentOriginal } {
   const view = project(message, partial);
   return {
     type: 'text',
@@ -148,12 +153,12 @@ export function content(
       message: message ? encode(message) : null,
       outcome,
       ...(excludedFromHistory ? { excludedFromHistory: true } : {}),
-    } satisfies Original,
+    } satisfies OnlineAgentOriginal,
   };
 }
 
 export function restore(value: unknown, role: string): ModelMessage | null {
-  const row = value as { content?: string; original?: Original };
+  const row = value as { content?: string; original?: OnlineAgentOriginal };
   if (row.original) {
     if (row.original.version !== 1)
       throw invalid('Unsupported message format.');

@@ -1,36 +1,36 @@
 import { conflict } from '../kernel/errors.js';
-import type { PublicItem, Outcome } from './codec.js';
+import type { OnlineAgentPublicItem, OnlineAgentOutcome } from './codec.js';
 
-export type Event =
+export type OnlineAgentStreamEvent =
   | {
       type: 'part';
       boundary: { afterSeq: number };
       messageIndex: number;
-      item: PublicItem;
+      item: OnlineAgentPublicItem;
     }
   | {
       type: 'saved';
       boundary: { afterSeq: number };
       lastSeq: number;
       status: 'idle';
-      outcome: Outcome;
+      outcome: OnlineAgentOutcome;
     };
-export interface Writer {
-  publish(messageIndex: number, item: PublicItem): Promise<void>;
-  finish(outcome: Outcome, lastSeq: number): Promise<void>;
+export interface OnlineAgentStreamWriter {
+  publish(messageIndex: number, item: OnlineAgentPublicItem): Promise<void>;
+  finish(outcome: OnlineAgentOutcome, lastSeq: number): Promise<void>;
 }
-export interface StreamManager {
-  open(id: string, afterSeq: number): Promise<Writer>;
-  receive(id: string): Promise<ReadableStream<Event> | null>;
+export interface OnlineAgentStreamManager {
+  open(id: string, afterSeq: number): Promise<OnlineAgentStreamWriter>;
+  receive(id: string): Promise<ReadableStream<OnlineAgentStreamEvent> | null>;
 }
 
 /** Cache and listener attachment are synchronous so the first subscription has no replay gap. */
-export class MemoryOnlineAgentStreamManager implements StreamManager {
+export class OnlineAgentMemoryStreamManager implements OnlineAgentStreamManager {
   private channels = new Map<
     string,
     {
-      events: Event[];
-      listeners: Set<ReadableStreamDefaultController<Event>>;
+      events: OnlineAgentStreamEvent[];
+      listeners: Set<ReadableStreamDefaultController<OnlineAgentStreamEvent>>;
       bytes: number;
     }
   >();
@@ -39,19 +39,21 @@ export class MemoryOnlineAgentStreamManager implements StreamManager {
     private limit: number = 4 * 1024 * 1024,
     private totalLimit: number = 32 * 1024 * 1024,
   ) {}
-  async open(id: string, afterSeq: number): Promise<Writer> {
+  async open(id: string, afterSeq: number): Promise<OnlineAgentStreamWriter> {
     if (this.channels.size >= 1024)
       throw new Error('OnlineAgent channel limit exceeded.');
     if (this.channels.has(id))
       throw conflict('This conversation already has an open stream.');
     const channel = {
-      events: [] as Event[],
-      listeners: new Set<ReadableStreamDefaultController<Event>>(),
+      events: [] as OnlineAgentStreamEvent[],
+      listeners: new Set<
+        ReadableStreamDefaultController<OnlineAgentStreamEvent>
+      >(),
       bytes: 0,
     };
     this.channels.set(id, channel);
     let finished: string | null = null;
-    const deliver = (event: Event) => {
+    const deliver = (event: OnlineAgentStreamEvent) => {
       for (const listener of channel.listeners) {
         if ((listener.desiredSize ?? 0) <= 0) {
           listener.error(new Error('The stream consumer is too slow.'));
@@ -62,7 +64,7 @@ export class MemoryOnlineAgentStreamManager implements StreamManager {
     return {
       publish: async (messageIndex, item) => {
         if (finished !== null) throw conflict('This stream is closed.');
-        const event: Event = {
+        const event: OnlineAgentStreamEvent = {
           type: 'part',
           boundary: { afterSeq },
           messageIndex,
@@ -105,13 +107,15 @@ export class MemoryOnlineAgentStreamManager implements StreamManager {
       },
     };
   }
-  async receive(id: string): Promise<ReadableStream<Event> | null> {
+  async receive(
+    id: string,
+  ): Promise<ReadableStream<OnlineAgentStreamEvent> | null> {
     const channel = this.channels.get(id);
     if (!channel) return null;
     if (channel.listeners.size >= 64)
       throw new Error('OnlineAgent subscriber limit exceeded.');
-    let subscriber: ReadableStreamDefaultController<Event>;
-    return new ReadableStream<Event>(
+    let subscriber: ReadableStreamDefaultController<OnlineAgentStreamEvent>;
+    return new ReadableStream<OnlineAgentStreamEvent>(
       {
         start(controller) {
           subscriber = controller;
