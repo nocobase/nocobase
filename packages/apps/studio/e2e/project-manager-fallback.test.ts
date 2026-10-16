@@ -17,7 +17,7 @@ import type { IssueProgress } from '../shared/project-manager.js';
 test.use({ user: 'admin' });
 test.setTimeout(240_000);
 
-/** Opens an issue and returns its summary, expanded: at phone width it starts collapsed, which hides the Now line. */
+/** Opens an issue and returns its summary. */
 async function openSummary(
   page: Page,
   identifier: string,
@@ -27,10 +27,6 @@ async function openSummary(
   const summary = page.getByRole('region', {
     name: locale === 'en-US' ? 'Summary' : '摘要',
   });
-  const expand = summary.getByRole('button', {
-    name: locale === 'en-US' ? 'Expand summary' : '展开摘要',
-  });
-  if (await expand.isVisible()) await expand.click();
   return summary;
 }
 

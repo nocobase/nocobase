@@ -62,26 +62,20 @@ describe('live issue summaries', () => {
       const unsubscribe = observer.subscribe(() => {});
       return { observer, unsubscribe };
     };
-    // Follow-ups uses the entity id; the standalone route can use the identifier.
+    // The task lists use the entity id; the standalone route can use the identifier.
     const details = ['issue-331', 'PM-331'].map((id) =>
       observe(pmKeys.issue(id), () => ({ statusKey })),
     );
     const threads = ['issue-331', 'PM-331'].map((id) =>
       observe([...pmKeys.issue(id), 'threads'], () => ({ content })),
     );
-    const following = observe(['studio', 'followUps'], () => ({
-      issues: [{ id: 'issue-331' }],
-      following: [],
-      statusKey,
-      running,
-    }));
     const progress = observe(['studio', 'issueProgress', 'issue-331'], () => ({
       running,
     }));
     const runs = observe(['studio', 'issue-runs', 'issue-331'], () => ({
       running,
     }));
-    const queries = [...details, ...threads, following, progress, runs];
+    const queries = [...details, ...threads, progress, runs];
     const emit = () =>
       listeners.get(PM_REALTIME_TOPIC)?.({
         type: 'event',
@@ -106,12 +100,6 @@ describe('live issue summaries', () => {
           expect(observer.getCurrentResult().data).toEqual({
             statusKey: 'in_progress',
           });
-        expect(following.observer.getCurrentResult().data).toEqual({
-          issues: [{ id: 'issue-331' }],
-          following: [],
-          statusKey: 'in_progress',
-          running: false,
-        });
       });
       content = 'A new comment confirms the disk was restored.';
       emit();
@@ -133,12 +121,6 @@ describe('live issue summaries', () => {
             expect(observer.getCurrentResult().data).toEqual({
               running: active,
             });
-          expect(following.observer.getCurrentResult().data).toEqual({
-            issues: [{ id: 'issue-331' }],
-            following: [],
-            statusKey: 'in_progress',
-            running: active,
-          });
         });
       }
     } finally {
@@ -187,21 +169,20 @@ describe('live issue summaries', () => {
       ['studio', 'ownerHandoff'],
     ])
       expect(invalidateQueries).toHaveBeenCalledWith({ queryKey });
-    for (const queryKey of [
-      ['studio', 'followUps'],
-      ['studio', 'following'],
-    ])
-      expect(invalidateQueries).toHaveBeenCalledWith({ queryKey, exact: true });
-    expect(invalidateQueries).toHaveBeenCalledTimes(7);
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['studio', 'following'],
+      exact: true,
+    });
+    expect(invalidateQueries).toHaveBeenCalledTimes(6);
     // The inbox changes nothing the viewer follows; a reconnect may have missed anything.
     emit(STUDIO_INBOX_TOPIC, { kind: 'studio.inbox.changed' });
-    expect(invalidateQueries).toHaveBeenCalledTimes(13);
+    expect(invalidateQueries).toHaveBeenCalledTimes(11);
     expect(invalidateQueries).not.toHaveBeenLastCalledWith({
       queryKey: ['studio', 'following'],
       exact: true,
     });
     opened();
-    expect(invalidateQueries).toHaveBeenCalledTimes(20);
+    expect(invalidateQueries).toHaveBeenCalledTimes(17);
     stop();
     for (const unsubscribe of stops) expect(unsubscribe).toHaveBeenCalledOnce();
   });
@@ -247,29 +228,23 @@ describe('live issue summaries', () => {
       observe(['studio', 'ownerHandoff', 'issue-331'], {}),
       observe(pmKeys.issue('PM-9'), { id: 'issue-9' }),
       observe(['studio', 'issueProgress', 'issue-9', 'r1'], {}),
-      observe(['studio', 'followUps'], {
-        following: [],
-        issues: [{ id: 'issue-331' }],
-      }),
     ];
     const count = (key: readonly unknown[]) =>
       reads.get(JSON.stringify(key)) ?? 0;
     try {
-      await waitFor(() => expect(reads.size).toBe(7));
+      await waitFor(() => expect(reads.size).toBe(6));
       emit(['issue-331']);
       await waitFor(() => {
         expect(count(pmKeys.issue('PM-331'))).toBe(2);
         expect(count([...pmKeys.issue('PM-331'), 'threads'])).toBe(2);
         expect(count(['studio', 'issueProgress', 'issue-331', 'r1'])).toBe(2);
         expect(count(['studio', 'ownerHandoff', 'issue-331'])).toBe(2);
-        expect(count(['studio', 'followUps'])).toBe(2);
       });
       // An issue nothing here shows refreshes nothing.
       emit(['issue-elsewhere']);
       await new Promise((resolve) => setTimeout(resolve, 20));
       expect(count(pmKeys.issue('PM-9'))).toBe(1);
       expect(count(['studio', 'issueProgress', 'issue-9', 'r1'])).toBe(1);
-      expect(count(['studio', 'followUps'])).toBe(2);
       expect(count(pmKeys.issue('PM-331'))).toBe(2);
       // A run on an issue refreshes what is shown of that issue.
       listeners.get(STUDIO_ISSUE_RUNS_TOPIC)?.({
@@ -283,7 +258,6 @@ describe('live issue summaries', () => {
       );
       expect(count(pmKeys.issue('PM-9'))).toBe(2);
       expect(count(pmKeys.issue('PM-331'))).toBe(2);
-      expect(count(['studio', 'followUps'])).toBe(2);
     } finally {
       stop();
       for (const unsubscribe of stops) unsubscribe();

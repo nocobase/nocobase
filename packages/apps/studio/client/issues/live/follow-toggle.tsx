@@ -1,5 +1,5 @@
 /**
- * The star that adds an issue to "My follow-ups" or takes it off (`POST /api/followUps/issues/:issueId/follow` or
+ * The star that adds an issue to the task lists' follow group or takes it off (`POST /api/followUps/issues/:issueId/follow` or
  * `/unfollow`), reading only what the viewer follows (`GET /api/followUps/following`). Only at the stored bound, which
  * nobody meets in use, is an unfollowed issue's star held, with the reason as its hint.
  */
@@ -12,7 +12,7 @@ import { cn } from 'cn';
 
 import { FOLLOW_UPS_MAX } from '../../../shared/follow-ups.js';
 import { useNotify } from '../../access/notify.js';
-import { useFollowIssue, useFollowing } from '../../follow-ups/api.js';
+import { useFollowIssue, useFollowing } from './following.js';
 
 /** What the star shows: followed, or held because the list is full. */
 function followState(
@@ -26,30 +26,22 @@ function followState(
 
 export function FollowToggle({
   issueId,
-  defaults = false,
   className,
   ...props
 }: {
   readonly issueId: string;
-  /**
-   * Counts "My follow-ups"' default list (the viewer's blocked and in-review issues) as followed until they choose, as
-   * that page shows it; elsewhere only what they chose is followed.
-   */
-  readonly defaults?: boolean;
   /** What the viewer chose to follow, where the page has read it already (the task lists'); read here otherwise. */
   readonly following?: readonly string[] | undefined;
   readonly className?: string;
 }): ReactElement {
   const { t } = useTranslation();
   const notify = useNotify();
-  const known = defaults ? undefined : props.following;
+  const known = props.following;
   const read = useFollowing(known === undefined);
   const followIssue = useFollowIssue((error) =>
     notify.error(error, t('issueLive.follow.saveFailed')),
   );
-  const listed =
-    known ??
-    (read.data && (defaults || read.data.stored) ? read.data.issueIds : []);
+  const listed = known ?? (read.data?.stored ? read.data.issueIds : []);
   // The list's copy is read back once the change is saved; until then the star shows the change it is making.
   const pending = followIssue.isPending ? followIssue.variables : undefined;
   const following =

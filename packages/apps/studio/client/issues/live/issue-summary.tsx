@@ -1,11 +1,12 @@
 import { Link, useSearchParams } from 'react-router';
 import { usePendingCommentRun } from '../detail/use-pending-comment-run.js';
 /**
- * What an issue is at now, on the issue page (pinned above its feed) and on "My follow-ups": a title row (key, status,
- * title, the page's `actions`, and "Collapse summary" when `collapsible`), then its pull request with checks and
- * conflicts, the "Now" line with "Start" and the hand-over (`../detail/issue-progress.tsx`), what the viewer has to do
- * when it waits for them: the complete structured request, its latest explanation link, and
- * Reply, Merge, View changes and Send back (to In progress).
+ * What an issue is at now, at the top of the task detail (`../groups/detail-pane.tsx`): the title, renamed in place,
+ * then its pull request with checks and conflicts, the "Now" line with "Start" and the hand-over
+ * (`../detail/issue-progress.tsx`), and what the viewer has to do when it waits for them: the complete structured
+ * request, its latest explanation link, and Reply, Merge, Accept, View changes and Send back (to In progress). With
+ * `pinnedBar`, once it has scrolled away a one-line bar (status, title and what waits, with its action) stays at the
+ * top of the scrolling area.
  */
 import {
   canCloseIssue,
@@ -24,7 +25,6 @@ import { useTranslation } from '@nocobase/i18n/client';
 import {
   CheckIcon,
   ChevronDownIcon,
-  ChevronUpIcon,
   ExternalLinkIcon,
   MessageSquareIcon,
   PencilIcon,
@@ -77,27 +77,17 @@ export function IssueSummary({
   issue,
   update,
   progressFallback,
-  actions,
-  collapsible = false,
-  defaultCollapsed = false,
   pinnedBar = false,
   pinnedBarClassName,
   headingLevel = 2,
   rename,
   runsBase,
-  statusControl,
-  meta = true,
   className,
 }: {
   readonly issue: IssueDetail;
   readonly update: IssueUpdate;
   /** What "Now" says until the server answers, such as an overview's copy. */
   readonly progressFallback?: IssueProgress | null;
-  /** On the second row, such as the follow star. */
-  readonly actions?: ReactNode;
-  readonly collapsible?: boolean;
-  /** Starts as the one-line bar, as on a phone. */
-  readonly defaultCollapsed?: boolean;
   /** Pins the one-line bar to the top once the summary has scrolled away. */
   readonly pinnedBar?: boolean;
   /** The pinned bar's frame, such as a margin that cancels its parent's gap. */
@@ -107,10 +97,6 @@ export function IssueSummary({
   readonly rename?: SummaryRename;
   /** Where the live run's record opens from, such as `/issues/PM-12`; the issue's own path by default. */
   readonly runsBase?: string;
-  /** Takes the status badge's place, such as a menu that changes the status (the split view). */
-  readonly statusControl?: ReactNode;
-  /** The key, status and actions row under the title; off where the frame shows them, as the split view's top row does. */
-  readonly meta?: boolean;
   /** The summary's frame. */
   readonly className?: string;
 }): ReactElement {
@@ -119,7 +105,6 @@ export function IssueSummary({
   const viewer = useViewer();
   const ref = useRef<HTMLElement>(null);
   const away = useOutOfView(ref);
-  const [folded, setFolded] = useState<boolean | null>(null);
   const mark = usePullRequestMark(issue.id).data;
   const pullRequests = useIssuePullRequests(issue.id).data;
   const progress = useIssueProgress(issue.id, progressFallback).data;
@@ -129,17 +114,13 @@ export function IssueSummary({
     { owned, statusKey: issue.statusKey, progress: progress ?? null },
     mark,
   );
-  const collapsed = collapsible && (folded ?? defaultCollapsed);
   const checks =
     mark && mark.state === 'open' && mark.ciState
       ? t(`issueLive.summary.checks.${mark.ciState}`)
       : null;
-  // From the pinned bar: open the summary and bring it into view.
+  // From the pinned bar: bring the whole summary back into view.
   const showWhole = useCallback(() => {
-    setFolded(false);
-    requestAnimationFrame(() =>
-      ref.current?.scrollIntoView({ block: 'start' }),
-    );
+    ref.current?.scrollIntoView({ block: 'start' });
   }, []);
   return (
     <>
@@ -155,14 +136,12 @@ export function IssueSummary({
               data-testid='issue-summary-bar'
             >
               <SummaryBar
-                pinned
-                Title={Title}
                 issue={issue}
                 update={update}
                 progress={progress ?? null}
                 ask={ask}
                 pullRequests={pullRequests}
-                expand={<ToggleSummary open={false} onClick={showWhole} />}
+                expand={<ShowSummary onClick={showWhole} />}
               />
             </div>
           ) : null}
@@ -172,84 +151,36 @@ export function IssueSummary({
         ref={ref}
         aria-label={t('issueLive.summary.label')}
         data-testid='issue-summary'
-        data-collapsed={collapsed ? '' : undefined}
-        className={cn(
-          'flex flex-col',
-          collapsed ? 'gap-2' : 'gap-3',
-          className,
-        )}
+        className={cn('flex flex-col gap-3', className)}
       >
-        {collapsed ? (
-          <SummaryBar
-            pinned={false}
-            Title={Title}
-            issue={issue}
-            update={update}
-            progress={progress ?? null}
-            ask={ask}
-            pullRequests={pullRequests}
-            expand={
-              collapsible ? (
-                <ToggleSummary open={false} onClick={() => setFolded(false)} />
-              ) : null
-            }
-          />
-        ) : (
-          <>
-            <SummaryTitle
-              title={issue.title}
-              Title={Title}
-              {...(rename ? { rename } : {})}
-            />
-            {/* Key and status, then the actions as icon buttons on a phone, all on one row. */}
-            <div
-              className={cn(
-                'flex min-w-0 flex-wrap items-center gap-2',
-                !meta && 'hidden',
-              )}
-            >
-              <span className='flex items-center gap-2'>
-                {statusControl ?? (
-                  <>
-                    <span className='font-mono text-sm text-muted-foreground'>
-                      {issue.identifier}
-                    </span>
-                    <StatusPill statusKey={issue.statusKey} />
-                  </>
-                )}
-              </span>
-              <span className='ml-auto flex flex-wrap items-center gap-1.5 max-md:[&_[data-slot=button]]:h-8 max-md:[&_[data-slot=button]]:px-2'>
-                {actions}
-                {collapsible ? (
-                  <ToggleSummary open onClick={() => setFolded(true)} />
-                ) : null}
-              </span>
-            </div>
-            <IssueProgressLine
+        <SummaryTitle
+          title={issue.title}
+          Title={Title}
+          {...(rename ? { rename } : {})}
+        />
+        <IssueProgressLine
+          issue={issue}
+          starting={update.isPending}
+          onStart={() => update.mutate({ statusKey: IN_PROGRESS_STATUS })}
+          {...(runsBase ? { runsBase } : {})}
+        />
+        <NeedsYouCard
+          issue={issue}
+          update={update}
+          ask={ask}
+          progress={progress ?? null}
+          checks={checks}
+          conflict={Boolean(mark?.conflict)}
+          pullRequests={pullRequests}
+          fallback={
+            <PullRequestLine
               issue={issue}
-              starting={update.isPending}
-              onStart={() => update.mutate({ statusKey: IN_PROGRESS_STATUS })}
-              {...(runsBase ? { runsBase } : {})}
-            />
-            <NeedsYouCard
-              issue={issue}
-              update={update}
-              ask={ask}
-              progress={progress ?? null}
+              pullRequests={pullRequests}
               checks={checks}
               conflict={Boolean(mark?.conflict)}
-              pullRequests={pullRequests}
-              fallback={
-                <PullRequestLine
-                  issue={issue}
-                  pullRequests={pullRequests}
-                  checks={checks}
-                  conflict={Boolean(mark?.conflict)}
-                />
-              }
             />
-          </>
-        )}
+          }
+        />
       </section>
     </>
   );
@@ -280,33 +211,23 @@ function AcceptButton({
   );
 }
 
-/** Opens or folds the summary. */
-function ToggleSummary({
-  open,
+/** Brings the whole summary back into view, from its pinned bar. */
+function ShowSummary({
   onClick,
 }: {
-  readonly open: boolean;
   readonly onClick: () => void;
 }): ReactElement {
   const { t } = useTranslation();
   return (
-    <Button size='sm' variant='ghost' aria-expanded={open} onClick={onClick}>
-      {open ? (
-        <ChevronUpIcon data-icon='inline-start' />
-      ) : (
-        <ChevronDownIcon data-icon='inline-start' />
-      )}
-      <span className='max-md:sr-only'>
-        {open ? t('issueLive.summary.collapse') : t('issueLive.summary.expand')}
-      </span>
+    <Button size='sm' variant='ghost' onClick={onClick}>
+      <ChevronDownIcon data-icon='inline-start' />
+      <span className='max-md:sr-only'>{t('issueLive.summary.expand')}</span>
     </Button>
   );
 }
 
 /** The one-line bar: status, title, what waits for the viewer, and the way to the whole summary. */
 function SummaryBar({
-  pinned,
-  Title,
   issue,
   update,
   progress,
@@ -314,9 +235,6 @@ function SummaryBar({
   pullRequests,
   expand,
 }: {
-  /** The copy pinned at the top, whose title is not a heading again. */
-  readonly pinned: boolean;
-  readonly Title: 'h1' | 'h2';
   readonly issue: IssueDetail;
   readonly update: IssueUpdate;
   readonly progress: IssueProgress | null;
@@ -324,16 +242,13 @@ function SummaryBar({
   readonly pullRequests: IssuePullRequests | undefined;
   readonly expand: ReactNode;
 }): ReactElement {
-  const titleClass =
-    'min-w-0 flex-1 basis-32 truncate text-base leading-snug font-semibold';
   return (
     <div className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5'>
       <StatusPill statusKey={issue.statusKey} />
-      {pinned ? (
-        <span className={titleClass}>{issue.title}</span>
-      ) : (
-        <Title className={titleClass}>{issue.title}</Title>
-      )}
+      {/* A copy of the title, which is not a heading again. */}
+      <span className='min-w-0 flex-1 basis-32 truncate text-base leading-snug font-semibold'>
+        {issue.title}
+      </span>
       <NeedsYou
         issue={issue}
         update={update}

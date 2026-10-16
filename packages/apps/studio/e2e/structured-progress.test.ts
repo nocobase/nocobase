@@ -246,61 +246,7 @@ test('structured requests survive later explanations and locate their latest com
         path: path.join(captures, 'pm352-in-review-detail.png'),
         fullPage: true,
       });
-    await api.put('followUps/following', {
-      issueIds: created.map((issue) => issue.id),
-    });
-    await open(page, `/follow-ups?issue=${blocked.issue.identifier}`);
-    const rail = page.getByTestId('follow-ups-following');
-    const row = rail.locator(`[data-issue="${blocked.issue.identifier}"]`);
-    await expect(row).toContainText(needsYou);
-    await row.getByText(blocked.issue.title, { exact: true }).click();
-    const activity = page.getByTestId('follow-ups-activity');
-    await expect(activity.getByTestId('issue-needs-you')).toContainText(
-      needsYou,
-    );
-    await expect(activity).toContainText(
-      'Dispatch the next step after recovery confirmation.',
-    );
-    await expect(page.getByTestId('follow-ups-following')).toContainText(
-      reviewNeeds,
-    );
-    const panelSummary = activity.getByTestId('issue-summary');
-    const followTarget = activity.locator(
-      `[data-comment-id="${final.comment.id}"]`,
-    );
-    await page.setViewportSize({ width: 1440, height: 480 });
-    await panelSummary.scrollIntoViewIfNeeded();
-    await expect(followTarget).not.toBeInViewport();
-    const followBefore = await followTarget.boundingBox();
-    await panelSummary
-      .getByRole('link', {
-        name: 'View the project manager’s latest explanation',
-      })
-      .click();
-    await expect(followTarget).toBeInViewport();
-    await expect(followTarget).toHaveClass(/ring-primary/u);
-    const followAfter = await followTarget.boundingBox();
-    expect(followAfter!.y).toBeLessThan(followBefore!.y);
-    records.push({
-      kind: 'follow-ups',
-      url: page.url(),
-      comment: final.comment.id,
-      beforeClickY: followBefore!.y,
-      afterClickY: followAfter!.y,
-      highlighted: true,
-    });
-    if (captures)
-      await page.screenshot({
-        path: path.join(captures, 'pm352-follow-ups-explanation.png'),
-        fullPage: true,
-      });
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await panelSummary.scrollIntoViewIfNeeded();
     if (captures) {
-      await page.screenshot({
-        path: path.join(captures, 'pm352-my-follow-ups.png'),
-        fullPage: true,
-      });
       writeFileSync(
         path.join(captures, 'pm352-browser-record.json'),
         JSON.stringify(
@@ -308,7 +254,6 @@ test('structured requests survive later explanations and locate their latest com
             head: process.env.PM352_HEAD,
             entry: studio.baseURL,
             records,
-            followUps: page.url(),
             deletedCommentLinkRefreshed: true,
             fieldOnlyRefresh: true,
           },

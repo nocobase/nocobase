@@ -18,7 +18,7 @@ import type {
   TaskGroups,
 } from '../../../shared/task-groups.js';
 import { useNotify } from '../../access/notify.js';
-import { useFollowIssue } from '../../follow-ups/api.js';
+import { useFollowIssue } from '../live/following.js';
 import { useIssueAgentWork } from '../use-agent-work.js';
 import { groupQuery, taskGroupKeys, useTaskGroups } from './api.js';
 import {

@@ -86,7 +86,7 @@ describe('app client routes', () => {
     ).toEqual([]);
   });
 
-  it('orders My tasks, My agents, Dashboard and My follow-ups without a Home entry, followed by the existing sections; the inbox is in the header', () => {
+  it('orders My tasks, My agents and Dashboard without a Home entry, followed by the existing sections; the inbox is in the header', () => {
     const menu = (routes: readonly AppClientRegisteredRoute[]) =>
       routes.flatMap((route) =>
         route.navigation ? [route.navigation.title] : [],
@@ -96,7 +96,6 @@ describe('app client routes', () => {
       'navigation.myIssues',
       'navigation.agentSessions',
       'navigation.dashboard',
-      'navigation.followUps',
       'navigation.development',
       'navigation.releases',
       'navigation.agentTeam',
@@ -165,6 +164,8 @@ describe('app client routes', () => {
       { name: 'account', authorizedAs: null },
       { name: 'account-category', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
+      // Old My follow-ups links lead to My tasks, behind its grant.
+      { name: 'follow-ups', authorizedAs: 'pm-my-issues' },
       { name: 'pm-my-issues-legacy-owned', authorizedAs: 'pm-my-issues' },
       {
         name: 'pm-my-issues-legacy-owned-issue-detail',
@@ -212,8 +213,6 @@ describe('app client routes', () => {
       { name: 'agent-sessions-session', authorizedAs: null },
       // The dashboard, behind the reports grant its figures' API checks too.
       { name: 'dashboard', authorizedAs: 'reports' },
-      // My follow-ups opens with My issues' grant.
-      { name: 'follow-ups', authorizedAs: 'pm-my-issues' },
       { name: 'pm-issues', authorizedAs: 'pm-issues' },
       { name: 'pm-issue-new', authorizedAs: 'pm-issues' },
       { name: 'pm-plan', authorizedAs: 'pm-issues' },

@@ -32,7 +32,7 @@ const inMenuOrder = (
 /**
  * The grantable pages grouped and ordered as the sidebar shows them: the top entries, then each section in turn.
  * Sections without such a page (Settings, whose tabs are settings items) are left out, and a page behind several
- * entries (My issues' grant also opens My follow-ups) is listed once, where it first appears.
+ * entries is listed once, where it first appears.
  */
 export function pageGroupsOf(
   contributions: readonly AppClientRouteContribution[],

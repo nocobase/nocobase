@@ -1,6 +1,6 @@
 /**
- * What an issue says about itself on the issue pages and "My follow-ups": what the viewer has to do when it waits for
- * them, and what is going on otherwise.
+ * What an issue says about itself in the task detail: what the viewer has to do when it waits for them, and what is
+ * going on otherwise.
  */
 import type { FollowUpIssue } from '../../../shared/follow-ups.js';
 import { GIT_INBOX_SOURCE, PR_MERGE_REQUESTED } from '../../../shared/git.js';

@@ -47,7 +47,7 @@ test.use({
   navigationTimeout: 30_000,
 });
 
-test('structured owner request, latest explanation, matching follow-ups and live resume', async ({
+test('structured owner request, latest explanation and live resume', async ({
   page,
   api,
   browser,
@@ -280,40 +280,27 @@ test('structured owner request, latest explanation, matching follow-ups and live
           );
       })
       .toBe(true);
-    await open(page, '/follow-ups', studio);
-    const rail = page.getByTestId('follow-ups-following');
-    const mine = page.getByTestId('follow-ups-mine');
-    await mine.getByRole('button', { name: /^Blocked\b/u }).click();
-    await mine.getByRole('button', { name: /^In progress\b/u }).click();
-    const ownedRow = mine.locator(`[data-issue="${issue.identifier}"]`);
-    const panel = page.getByTestId('follow-ups-activity');
-    const standalone = await page.context().newPage();
-    await open(standalone, `/issues/${issue.identifier}`, studio);
-    const standaloneSummary = standalone.getByTestId('issue-summary');
+    // The issue's page, live: the summary's link to the explanation, then the status, comments and the manager's run
+    // arriving through the live channel before any polling interval.
+    await open(page, `/issues/${issue.identifier}`, studio);
+    const liveSummary = page.getByTestId('issue-summary');
     // The status is the top row's menu on the issue's page.
-    const standaloneStatus = standalone.getByTestId('task-status-menu');
-    await expect(standaloneStatus).toContainText('Blocked');
-    await expect(rail).toContainText(
-      'Needs you: Restore the execution machine.',
+    const liveStatus = page.getByTestId('task-status-menu');
+    await expect(liveStatus).toContainText('Blocked');
+    await expect(liveSummary).toContainText(
+      'Restore the execution machine. Verify the recovered disk capacity.',
     );
-    await expect(rail).toContainText('Verify the recovered disk capacity.');
-    await expect(ownedRow.getByText('Blocked', { exact: true })).toBeVisible();
-    await expect(ownedRow).toContainText(
-      'Needs you: Restore the execution machine.',
-    );
-    const panelSummary = panel.getByTestId('issue-summary');
-    await panelSummary
+    await liveSummary
       .getByRole('link', {
         name: 'View the project manager’s latest explanation',
       })
       .click();
-    await expect(page).not.toHaveURL(/comment=/u);
-    const focusedExplanation = panel.locator(
+    const focusedExplanation = page.locator(
       `[data-comment-id="${explanation.comment.id}"]`,
     );
     await expect(focusedExplanation).toBeInViewport();
     await expect(focusedExplanation).toHaveClass(/ring-2/u);
-    await test.info().attach('follow-ups-explanation-location.json', {
+    await test.info().attach('issue-explanation-location.json', {
       body: JSON.stringify({
         entryURL: page.url(),
         issue: issue.identifier,
@@ -322,94 +309,32 @@ test('structured owner request, latest explanation, matching follow-ups and live
       }),
       contentType: 'application/json',
     });
-    await shot('blocked-follow-ups-explanation');
-    await panelSummary.scrollIntoViewIfNeeded();
-    await expect(panelSummary).toContainText(
-      'Restore the execution machine. Verify the recovered disk capacity.',
-    );
-    await shot('blocked-follow-ups');
-    // Changes arrive through the live channel before either overview or progress polling interval.
+    await shot('blocked-explanation');
     await api.patch(`projects/issues/${issue.id}`, {
       revision: (await current(issue)).revision,
       statusKey: 'in_progress',
     });
-    await expect(rail).not.toContainText('Restore the execution machine.', {
+    await expect(liveStatus.filter({ hasText: 'In progress' })).toBeVisible({
       timeout: 3000,
     });
-    await expect(
-      rail.locator(
-        `[data-issue="${issue.identifier}"] [data-status-shape="started"]`,
-      ),
-    ).toBeVisible({ timeout: 3000 });
-    await expect(
-      panel
-        .getByTestId('issue-summary')
-        .getByText('In progress', { exact: true }),
-    ).toBeVisible({ timeout: 3000 });
-    await expect(
-      ownedRow.getByText('In progress', { exact: true }),
-    ).toBeVisible({ timeout: 3000 });
-    await expect(
-      standaloneStatus.filter({ hasText: 'In progress' }),
-    ).toBeVisible({ timeout: 3000 });
-    await expect(panel.getByTestId('issue-needs-you')).toHaveCount(0);
-    await expect(standalone.getByTestId('issue-needs-you')).toHaveCount(0);
-    await shot('resumed-follow-ups-fixed');
-    await standalone.screenshot({
-      path: test.info().outputPath('pm342-resumed-detail-fixed.png'),
-      fullPage: true,
-    });
+    await expect(page.getByTestId('issue-needs-you')).toHaveCount(0);
+    await shot('resumed-fixed');
     const confirmation =
       'Realtime confirmation: the execution disk is restored.';
     await api.post(`projects/issues/${issue.id}/comments`, {
       content: confirmation,
     });
-    await expect(panel.getByText(confirmation, { exact: true })).toBeVisible({
+    await expect(page.getByText(confirmation, { exact: true })).toBeVisible({
       timeout: 3000,
     });
-    await expect(
-      standalone.getByText(confirmation, { exact: true }),
-    ).toBeVisible({ timeout: 3000 });
-    await shot('comment-follow-ups-fixed');
-    await standalone.screenshot({
-      path: test.info().outputPath('pm342-comment-detail-fixed.png'),
-      fullPage: true,
-    });
+    await shot('comment-fixed');
     const resumedRun = await runner.start(issue.identifier);
-    await expect(rail).toContainText(managerWorking, {
-      timeout: 8000,
-    });
-    await expect(panel.getByTestId('issue-summary')).toContainText(
-      managerWorking,
-      { timeout: 3000 },
-    );
-    await expect(ownedRow).toContainText(managerWorking, {
-      timeout: 3000,
-    });
-    await expect(standaloneSummary).toContainText(managerWorking, {
-      timeout: 3000,
-    });
-    await expect(
-      panel
-        .getByTestId('issue-summary')
-        .getByText('In progress', { exact: true }),
-    ).toBeVisible();
-    await shot('running-follow-ups-fixed');
+    await expect(liveSummary).toContainText(managerWorking, { timeout: 8000 });
+    await shot('running-fixed');
     await runner.complete(resumedRun.runId, 'The execution disk is ready.');
-    await expect(rail).not.toContainText(managerWorking, {
+    await expect(liveSummary).not.toContainText(managerWorking, {
       timeout: 8000,
     });
-    await expect(panel.getByTestId('issue-summary')).not.toContainText(
-      managerWorking,
-      { timeout: 3000 },
-    );
-    await expect(ownedRow).not.toContainText(managerWorking, {
-      timeout: 3000,
-    });
-    await expect(standaloneSummary).not.toContainText(managerWorking, {
-      timeout: 3000,
-    });
-    await standalone.close();
     await open(page, `/issues/${issue.identifier}`, studio);
     await expect(page.getByTestId('issue-needs-you')).toHaveCount(0);
     await expect(page.locator('[data-decision="agent_blocked"]')).toHaveCount(

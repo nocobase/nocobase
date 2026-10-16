@@ -1,6 +1,7 @@
 /**
- * `/api/followUps`, the "My follow-ups" page's data (`service.ts`, `shared/follow-ups.ts`): what the caller owns and
- * follows, what they follow, and when they last looked at an issue. Every route is the signed-in person's own and needs
+ * `/api/followUps` (`service.ts`, `shared/follow-ups.ts`): what the caller owns and follows (the overview `nb-studio
+ * follow-up list` reads; the My follow-ups page that showed it was removed), what they follow, and when they last looked
+ * at an issue. Every route is the signed-in person's own and needs
  * `pm.issues` view; a scoped API key and a run are refused, as for the person's other preferences.
  *
  * - `GET /followUps`: the overview.

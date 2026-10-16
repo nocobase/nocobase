@@ -1,6 +1,5 @@
 /**
- * The wording of what the issue page and "My follow-ups" share (`client/issues/live/`), under `issueLive` in the
- * application's locales.
+ * The wording of the task detail's live parts (`client/issues/live/`), under `issueLive` in the application's locales.
  */
 export const issueLiveEnUS = {
   personalRunner: {
@@ -14,7 +13,6 @@ export const issueLiveEnUS = {
   },
   summary: {
     label: 'Summary',
-    collapse: 'Collapse summary',
     expand: 'Expand summary',
     open: 'Open issue',
     checks: {
@@ -90,7 +88,6 @@ export const issueLiveZhCN: typeof issueLiveEnUS = {
   },
   summary: {
     label: '摘要',
-    collapse: '收起摘要',
     expand: '展开摘要',
     open: '打开任务',
     checks: {

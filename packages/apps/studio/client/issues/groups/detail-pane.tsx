@@ -112,7 +112,7 @@ import { EmbeddedRuns } from '../../agents/embedded-runs.js';
 import { IssueRunPanel, IssueRunRow } from '../../agents/issue-runs.js';
 import { chatItemOf } from '../../agents/chat-items.js';
 import { useIssuePullRequests } from '../../git/api.js';
-import { useMarkSeen } from '../../follow-ups/api.js';
+import { useMarkSeen } from '../live/following.js';
 import { useLiveIssue } from '../../pages/issues/detail/use-live-issue.js';
 import {
   IssueCodeAddButton,
@@ -334,8 +334,6 @@ function LiveTask({
                       issue={detail}
                       update={update}
                       runsBase={props.issuePath}
-                      // The key and the status menu are in the top row.
-                      meta={false}
                       // Once the summary has scrolled away, its one-line bar stays at the top of the detail.
                       pinnedBar
                       pinnedBarClassName='-mb-4'

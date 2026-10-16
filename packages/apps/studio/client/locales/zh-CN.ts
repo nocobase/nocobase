@@ -1,5 +1,4 @@
 import { accountSettingsZhCN, preferencesZhCN } from '../account/locales.js';
-import { followUpsZhCN } from '../follow-ups/locales.js';
 import type { AppResource } from './en-US.js';
 import { gitZhCN } from '../git/locales.js';
 import { knowledgeZhCN } from '../knowledge/locales.js';
@@ -474,7 +473,6 @@ const zhCN: AppResource = {
   navigation: {
     inbox: '收件箱',
     myIssues: '我的任务',
-    followUps: '我的跟进',
     development: '开发',
     issues: '任务',
     projects: '项目',
@@ -1295,7 +1293,6 @@ const zhCN: AppResource = {
   knowledge: knowledgeZhCN,
   issuesPage: issuesZhCN,
   taskGroups: taskGroupsZhCN,
-  followUps: followUpsZhCN,
   issueLive: issueLiveZhCN,
   projectPage: projectPageZhCN,
   // A repository's "Deployment" (`client/releases/ci-setup`).

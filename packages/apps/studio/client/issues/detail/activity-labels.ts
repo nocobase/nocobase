@@ -1,6 +1,6 @@
 /**
  * The projects plugin's wording of an issue's activities, by action: the issue page's activity line
- * (`activity-row.tsx`) and "My follow-ups" (`../../follow-ups/issue-panel.tsx`) say a change the same way.
+ * (`activity-row.tsx`) say a change the same way.
  */
 import type { Activity } from '@nocobase/app-plugin-projects/shared/issues';
 

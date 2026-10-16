@@ -1,7 +1,7 @@
 // @vitest-environment node
 /**
- * An issue's activity told by what it means (`client/issues/live/feed.ts`), what "My follow-ups" lists
- * (`client/follow-ups/model.ts`) and what an issue asks of the viewer (`client/issues/live/summary-model.ts`).
+ * An issue's activity told by what it means (`client/issues/live/feed.ts`) and what an issue asks of the viewer
+ * (`client/issues/live/summary-model.ts`).
  */
 import type { CommentThread } from '@nocobase/app-plugin-projects/client/issues';
 import type { Activity } from '@nocobase/app-plugin-projects/shared/issues';
@@ -13,13 +13,12 @@ import {
   mentionedAgents,
   reviewVerdict,
 } from '../../client/issues/live/feed.js';
-import { followedIssues, ownedRows } from '../../client/follow-ups/model.js';
 import {
   askOf,
   nowLine,
   pullRequestLabel,
 } from '../../client/issues/live/summary-model.js';
-import type { FollowUpIssue, FollowUpsView } from '../../shared/follow-ups.js';
+import type { FollowUpIssue } from '../../shared/follow-ups.js';
 import type { IssuePullRequest } from '../../shared/git.js';
 import { PROJECT_MANAGER_ID } from '../../shared/project-manager.js';
 
@@ -222,68 +221,7 @@ function issue(overrides: Partial<FollowUpIssue>): FollowUpIssue {
   };
 }
 
-describe('what the page lists', () => {
-  const view: FollowUpsView = {
-    following: ['f', 'b1'],
-    followingStored: true,
-    counts: { in_review: 1, blocked: 1, in_progress: 2, backlog: 1 },
-    truncated: false,
-    issues: [
-      issue({
-        id: 'p1',
-        identifier: 'WEB-3',
-        statusKey: 'in_progress',
-        lastActivityAt: at(5),
-      }),
-      issue({
-        id: 'b1',
-        identifier: 'WEB-4',
-        statusKey: 'blocked',
-        lastActivityAt: at(1),
-        title: 'Mail adapter',
-      }),
-      issue({
-        id: 'r1',
-        identifier: 'WEB-5',
-        statusKey: 'in_review',
-        lastActivityAt: at(2),
-      }),
-      issue({
-        id: 'p2',
-        identifier: 'WEB-6',
-        statusKey: 'in_progress',
-        lastActivityAt: at(9),
-      }),
-      issue({ id: 'k1', identifier: 'WEB-7', statusKey: 'backlog' }),
-      issue({ id: 'f', identifier: 'WEB-8', owned: false, followed: true }),
-    ],
-  };
-
-  it('orders the selected statuses by what needs the viewer first, then by activity', () => {
-    expect(
-      ownedRows(view, ['in_progress', 'blocked', 'in_review'], '').map(
-        (row) => row.id,
-      ),
-    ).toEqual(['r1', 'b1', 'p2', 'p1']);
-    expect(ownedRows(view, ['in_review'], '').map((row) => row.id)).toEqual([
-      'r1',
-    ]);
-    // None selected reads as every status; issues the viewer does not own never appear.
-    expect(ownedRows(view, [], '').map((row) => row.id)).toEqual([
-      'r1',
-      'b1',
-      'p2',
-      'p1',
-      'k1',
-    ]);
-    expect(ownedRows(view, [], 'mail').map((row) => row.id)).toEqual(['b1']);
-    expect(ownedRows(view, [], 'web-6').map((row) => row.id)).toEqual(['p2']);
-  });
-
-  it('keeps the followed issues in the order chosen', () => {
-    expect(followedIssues(view).map((row) => row.id)).toEqual(['f', 'b1']);
-  });
-
+describe('what an issue asks of the viewer', () => {
   it('asks the owner to accept or answer, and says what is going on otherwise', () => {
     const mark = { label: 'nocobase/nocobase#10662', state: 'open' } as const;
     expect(pullRequestLabel(mark)).toBe('PR #10662');

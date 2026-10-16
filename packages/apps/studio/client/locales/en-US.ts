@@ -1,5 +1,4 @@
 import { accountSettingsEnUS, preferencesEnUS } from '../account/locales.js';
-import { followUpsEnUS } from '../follow-ups/locales.js';
 import type { LocaleResource } from '@nocobase/i18n';
 import { gitEnUS } from '../git/locales.js';
 import { knowledgeEnUS } from '../knowledge/locales.js';
@@ -513,7 +512,6 @@ const enUS = {
   navigation: {
     inbox: 'Inbox',
     myIssues: 'My issues',
-    followUps: 'My follow-ups',
     development: 'Development',
     issues: 'Issues',
     projects: 'Projects',
@@ -1416,7 +1414,6 @@ const enUS = {
   knowledge: knowledgeEnUS,
   issuesPage: issuesEnUS,
   taskGroups: taskGroupsEnUS,
-  followUps: followUpsEnUS,
   issueLive: issueLiveEnUS,
   projectPage: projectPageEnUS,
   // A repository's "Deployment" (`client/releases/ci-setup`).
