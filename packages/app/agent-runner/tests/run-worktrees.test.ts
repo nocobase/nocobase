@@ -24,6 +24,7 @@ import {
   clearContinuations,
   continuationWorkDir,
   retryWorkspaceRemoval,
+  updateContinuationState,
 } from '../src/core/run-worktrees.ts';
 import { git, makeRemote, removeDir, tempDir } from './helpers.ts';
 
@@ -483,6 +484,84 @@ describe('per-attempt worktrees', () => {
       ).toBe(true);
     },
   );
+
+  it('removes the recovery attempt, continuation state and sessions of an ended task whatever they hold', async () => {
+    const a = await start('ended-recovery');
+    writeFileSync(path.join(a.repo.dir, 'proposal.md'), 'scratch');
+    git(['add', 'proposal.md'], a.repo.dir);
+    git([...COMMIT, 'commit', '-m', 'unpublished'], a.repo.dir);
+    writeFileSync(path.join(a.repo.dir, 'progress.md'), 'scratch');
+    const meta = (await readWorkspaceMeta(paths, a.workDir))!;
+    await writeWorkspaceMeta(paths, a.workDir, {
+      ...meta,
+      recoveryRequired: true,
+      recoveryReason: 'Saving failed; retain the original worktree.',
+    });
+    const session = path.join(paths.workRoot, '.sessions', 'a'.repeat(64));
+    await fsPromises.mkdir(path.join(session, 'codex-home'), {
+      recursive: true,
+    });
+    await updateContinuationState(paths, 'app', 'PM-300', (state) => ({
+      ...state,
+      sessionKeys: ['a'.repeat(64)],
+    }));
+    const state = continuationWorkDir(paths, 'app', 'PM-300');
+    const reporters = new Map([
+      [
+        'app',
+        (request: { workspaces: readonly { runId: string }[] }) =>
+          Promise.resolve({
+            remove: request.workspaces.map((item) => item.runId),
+            keep: [],
+          }),
+      ],
+    ]);
+    const result = await collectWorkspaces({ paths, reporters });
+    expect(result.removed.map((item) => item.workDir).sort()).toEqual(
+      [a.workDir, state].sort(),
+    );
+    expect(existsSync(a.workDir)).toBe(false);
+    expect(existsSync(state)).toBe(false);
+    expect(existsSync(session)).toBe(false);
+    expect(await readWorkspaceMeta(paths, a.workDir)).toBeUndefined();
+    expect(
+      git(['for-each-ref', '--format=%(refname)'], a.repo.cache),
+    ).not.toMatch(/runner-run-|refs\/runner\//u);
+  });
+
+  it('keeps an attempt and its sessions while a run holds the attempt, even when the task ended', async () => {
+    const a = await start('ended-busy');
+    writeFileSync(path.join(a.repo.dir, 'proposal.md'), 'scratch');
+    const session = path.join(paths.workRoot, '.sessions', 'a'.repeat(64));
+    await fsPromises.mkdir(session, { recursive: true });
+    await updateContinuationState(paths, 'app', 'PM-300', (state) => ({
+      ...state,
+      sessionKeys: ['a'.repeat(64)],
+    }));
+    const reporters = new Map([
+      [
+        'app',
+        (request: { workspaces: readonly { runId: string }[] }) =>
+          Promise.resolve({
+            remove: request.workspaces.map((item) => item.runId),
+            keep: [],
+          }),
+      ],
+    ]);
+    const lock = await acquireLock(`${a.workDir}.lock`);
+    try {
+      const result = await collectWorkspaces({ paths, reporters });
+      expect(result.removed).toEqual([]);
+      expect(result.kept.map((item) => item.reason).sort()).toEqual([
+        'inUse',
+        'inUse',
+      ]);
+    } finally {
+      await lock.release();
+    }
+    expect(existsSync(path.join(a.repo.dir, 'proposal.md'))).toBe(true);
+    expect(existsSync(session)).toBe(true);
+  });
 
   it('starts two unmarked writers and keeps divergent heads visible without merging', async () => {
     const [a, b] = await Promise.all([start('a'), start('b')]);
