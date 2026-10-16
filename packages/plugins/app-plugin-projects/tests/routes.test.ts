@@ -28,6 +28,7 @@ import {
 } from '../server/routes/schemas.js';
 import {
   projectsAccessToken,
+  projectsIssueSessionToken,
   projectsDelegatedWritesToken,
   projectsRequestActorToken,
   projectsToken,
@@ -547,6 +548,28 @@ describe('issues over HTTP', () => {
     ).toBe(400);
     expect(
       (await call('/issues?orderBy=title', { role: 'member' })).status,
+    ).toBe(400);
+    // Some issues by id, within the other filters; too many ids are refused.
+    const ids = (await (
+      await call('/issues?orderBy=number%20asc', { role: 'member' })
+    ).json()) as { data: { id: string; identifier: string }[] };
+    const named = (await (
+      await call(
+        `/issues?issueIds=${ids.data[0]!.id},${ids.data[2]!.id},unknown`,
+        { role: 'member' },
+      )
+    ).json()) as { data: { identifier: string }[] };
+    expect(named.data.map((issue) => issue.identifier).sort()).toEqual([
+      'PM-1',
+      'PM-3',
+    ]);
+    expect(
+      (
+        await call(
+          `/issues?issueIds=${Array.from({ length: 101 }, (_, n) => `i${n}`).join(',')}`,
+          { role: 'member' },
+        )
+      ).status,
     ).toBe(400);
     const board = (await (
       await call('/issues/board', { role: 'member' })
@@ -1762,4 +1785,102 @@ describe('the API document', () => {
     const parsed = IssueDetailSchema.safeParse((await issue.json()).data);
     expect(parsed.error).toBeUndefined();
   });
+});
+
+describe('CLI session issue integration', () => {
+  it('keeps ordinary creation unchanged and rejects a session context without integration', async () => {
+    const created = await call('/issues', {
+      role: 'admin',
+      method: 'POST',
+      body: JSON.stringify({ title: 'Ordinary task' }),
+    });
+    expect(created.status).toBe(201);
+    const refused = await call('/issues', {
+      role: 'admin',
+      method: 'POST',
+      headers: { 'x-nb-agent-session': 'foreign' },
+      body: JSON.stringify({ title: 'Refused' }),
+    });
+    expect(refused.status).toBe(403);
+  });
+
+  it.each([false, true])(
+    'defaults the project, links only successful creation and adds progress (delegated=%s)',
+    async (delegated) => {
+      const project = await h.services.projects.create(h.viewer('alice'), {
+        name: 'Session project',
+      });
+      const link = vi.fn(async (_id: string) => {});
+      const context = vi.fn(
+        async (
+          viewer: import('../server/tokens.js').Viewer,
+          sessionId: string,
+        ) => {
+          if (sessionId !== 'own' || viewer.userId !== 'alice')
+            throw new ApiError({
+              status: 'PERMISSION_DENIED',
+              reason: 'SESSION_CONTEXT_REFUSED',
+              domain: 'agentSessions',
+              message: 'Session refused.',
+            });
+          return { projectId: project.id, link };
+        },
+      );
+      container.instance(projectsIssueSessionToken, {
+        creationContext: context,
+        progress: async () => ({
+          agent: 'Sol',
+          waitingFor: { reason: 'review' },
+          pullRequest: 'https://example.test/pull/1',
+        }),
+      });
+      if (delegated)
+        container.instance(projectsDelegatedWritesToken, {
+          covers: () => true,
+          write: async (viewer, request) => ({
+            plan: await h.services.plans.create(
+              viewer,
+              {
+                title: request.title,
+                source: { kind: 'test' },
+                rows: request.rows,
+              },
+              { execute: true },
+            ),
+            meta: {},
+          }),
+        });
+      const create = (sessionId: string, role = 'admin', extra = {}) =>
+        call('/issues', {
+          role,
+          method: 'POST',
+          headers: { 'x-nb-agent-session': sessionId },
+          body: JSON.stringify({ title: 'Session task', ...extra }),
+        });
+      expect((await create('foreign')).status).toBe(403);
+      expect(link).not.toHaveBeenCalled();
+      const made = await create('own');
+      expect(made.status).toBe(201);
+      const body = await made.json();
+      expect(body.data).toMatchObject({
+        projectId: project.id,
+        statusKey: 'backlog',
+      });
+      expect(link).toHaveBeenCalledExactlyOnceWith(body.data.id);
+      const detail = await call(`/issues/${body.data.id}`, { role: 'admin' });
+      expect(await detail.json()).toMatchObject({
+        data: {
+          progress: {
+            agent: 'Sol',
+            waitingFor: { reason: 'review' },
+            pullRequest: 'https://example.test/pull/1',
+          },
+        },
+      });
+      link.mockClear();
+      const forbidden = await create('own', 'none');
+      expect(forbidden.status).not.toBe(201);
+      expect(link).not.toHaveBeenCalled();
+    },
+  );
 });

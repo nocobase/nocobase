@@ -30,8 +30,6 @@ import {
 
 export interface SessionContext {
   readonly client: acp.Implementation;
-  /** The application's address, with any base path, that the application's tools are reached under. */
-  readonly server: string;
   readonly env: NodeJS.ProcessEnv;
   /** The directories sessions may work in. */
   readonly roots: readonly string[];
@@ -41,6 +39,9 @@ export interface SessionContext {
   readonly stateChanged: () => void;
   /** Discovery cannot grant tool permissions and is bounded by the bridge's shutdown/timeout signal. */
   readonly discoverySignal?: AbortSignal | undefined;
+  readonly prepareSession?:
+    | ((agentId: string, sessionId: string) => Promise<NodeJS.ProcessEnv>)
+    | undefined;
 }
 
 /** How long a permission request waits for a person before it is declined. */
@@ -255,9 +256,13 @@ export class BridgeSession {
     const target = this.#target;
     const resolved = await this.#context.resolve(target.agentId);
     const cwd = await this.#workDir(target.cwd);
+    const sessionEnv =
+      !this.#context.discoverySignal && this.#context.prepareSession
+        ? await this.#context.prepareSession(target.agentId, target.id)
+        : {};
     const agent = await AgentProcess.start(resolved, {
       cwd,
-      env: this.#context.env,
+      env: { ...this.#context.env, ...sessionEnv },
       client: this.#context.client,
       handlers: {
         update: (notification) => this.#update(notification),
@@ -266,23 +271,7 @@ export class BridgeSession {
       signal: this.#context.discoverySignal,
     });
     try {
-      const mcpServers: acp.McpServer[] =
-        target.tools &&
-        agent.initialize.agentCapabilities?.mcpCapabilities?.http
-          ? [
-              {
-                type: 'http',
-                name: target.tools.name,
-                url: `${this.#context.server.replace(/\/+$/u, '')}${target.tools.path}`,
-                headers: [
-                  {
-                    name: 'authorization',
-                    value: `Bearer ${target.tools.token}`,
-                  },
-                ],
-              },
-            ]
-          : [];
+      const mcpServers: acp.McpServer[] = [];
       let opened = this.#acpSessionId
         ? await this.#continue(agent, this.#acpSessionId, cwd, mcpServers)
         : undefined;

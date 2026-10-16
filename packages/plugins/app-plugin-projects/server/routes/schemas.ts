@@ -51,6 +51,7 @@ import type {
   InvitationResult,
 } from '../../shared/invitations.js';
 import {
+  ISSUE_IDS_MAX,
   type Activity,
   type CreateIssueRequest,
   type Executor,
@@ -319,6 +320,29 @@ function sortOf(value: string | undefined): {
 }
 
 const issueFilters = {
+  issueIds: z
+    .string()
+    .optional()
+    .transform((value) =>
+      value === undefined
+        ? undefined
+        : [
+            ...new Set(
+              value
+                .split(',')
+                .map((id) => id.trim())
+                .filter(Boolean),
+            ),
+          ],
+    )
+    .pipe(z.array(z.string().max(64)).max(ISSUE_IDS_MAX).optional())
+    .meta({
+      description: `Only these issues, comma-separated ids, at most ${ISSUE_IDS_MAX}; the other filters still apply.`,
+    }),
+  involvesUserId: text.meta({
+    description:
+      'Owned by this user or executed by them as a person, each issue once.',
+  }),
   statusKey: text,
   projectId: text,
   ownerUserId: text,
@@ -332,6 +356,8 @@ const issueFilters = {
 };
 
 type IssueFilterInput = {
+  issueIds?: string[] | undefined;
+  involvesUserId?: string | undefined;
   statusKey?: string | undefined;
   projectId?: string | undefined;
   ownerUserId?: string | undefined;
@@ -989,6 +1015,7 @@ export const IssueDependencySchema: z.ZodType<IssueDependency> = z
   .meta({ ref: 'ProjectsIssueDependency' });
 
 export const IssueDetailSchema: z.ZodType<IssueDetail> = z.object({
+  progress: z.record(z.string(), z.unknown()).nullable().optional(),
   ...issueListItemShape,
   parent: z
     .object({ id: z.string(), identifier: z.string(), title: z.string() })
@@ -1469,3 +1496,9 @@ export const singleFileBody: OpenAPIV3_1.RequestBodyObject = {
     },
   },
 };
+
+/** Context supplied by the session bridge, never an authentication credential. */
+export const IssueSessionHeader: z.ZodType<{ 'x-nb-agent-session'?: string }> =
+  z.object({
+    'x-nb-agent-session': z.string().min(1).max(200).optional(),
+  });

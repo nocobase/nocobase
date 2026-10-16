@@ -89,9 +89,10 @@ const ORDER_FIELDS: Readonly<Record<IssueSort, string>> = {
 
 /** The list query as URL parameters: the filters, `orderBy`, and a page of `ISSUE_PAGE_LIMIT.default` issues. */
 function issueQuery(query: IssueListQuery): Query {
-  const { sort, direction, cursor, limit, ...filters } = query;
+  const { sort, direction, cursor, limit, issueIds, ...filters } = query;
   return present({
     ...filters,
+    issueIds: issueIds?.join(','),
     orderBy: `${ORDER_FIELDS[sort ?? 'updated']} ${direction ?? 'desc'}`,
     pageSize: limit ?? ISSUE_PAGE_LIMIT.default,
     pageToken: cursor,

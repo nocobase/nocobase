@@ -79,7 +79,11 @@ export function whoamiCommand(app: AppCliConfig): Command.Class {
           ? await readUserConfig({
               paths: this.paths,
               config: app,
-              profile: globalFlags().profile,
+              profile: session.profile ?? globalFlags().profile,
+              profileOnly: Boolean(
+                app.envPrefix &&
+                process.env[`${app.envPrefix}_AGENT_SESSION`] !== undefined,
+              ),
             })
           : undefined;
       let expiresAt: string | undefined;

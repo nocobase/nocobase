@@ -16,6 +16,7 @@ import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import { COMMANDS, defineCommands } from '../src/commands.ts';
 import {
   installSkills,
+  prepareSessionSkill,
   skillsStatus,
   syncInstalledSkills,
   type SkillsEnvironment,
@@ -704,4 +705,25 @@ describe('Skill synchronization and filesystem boundaries', () => {
       'current instructions',
     );
   });
+});
+
+it('prepares missing or stale session Skills and refuses unsupported agents', async () => {
+  const environment = fixture();
+  await prepareSessionSkill(environment, 'codex');
+  let status = await skillsStatus(environment);
+  expect(
+    status.targets.some((target) => target.tool === 'codex' && target.upToDate),
+  ).toBe(true);
+  writeFileSync(
+    path.join(environment.packageRoot, 'skills/nb-studio-cli/SKILL.md'),
+    'updated session instructions',
+  );
+  await prepareSessionSkill(environment, 'codex');
+  status = await skillsStatus(environment);
+  expect(
+    status.targets.some((target) => target.tool === 'codex' && target.upToDate),
+  ).toBe(true);
+  await expect(prepareSessionSkill(environment, 'opencode')).rejects.toThrow(
+    'not supported for opencode',
+  );
 });
