@@ -190,10 +190,12 @@ export type UseWorkflowVariableOptions = {
   fieldNames?: { label?: string; value?: string; children?: string };
   appends?: string[] | null;
   depth?: number;
+  /** Resolve variables upstream of this node instead of the node being edited. */
+  node?: { key: string };
   /**
    * Include the `$scopes` root. Scope providers (loop / parallel) building
-   * their own local variables must disable this when they call back into the
-   * workflow aggregator, otherwise the scope chain recursively nests itself.
+   * their own local variables must disable this or pass their own `node` to
+   * restrict recursion to enclosing scopes.
    */
   includeScopes?: boolean;
 };
@@ -206,7 +208,8 @@ export type UseWorkflowVariableOptions = {
 function useNodeResultScope(options: UseWorkflowVariableOptions): MetaTreeNode | null {
   const flowEngine = useFlowEngine();
   const plugin = useWorkflowPlugin();
-  const current = useNodeContext();
+  const contextNode = useNodeContext();
+  const current = options.node ?? contextNode;
   const upstreams = useAvailableUpstreams(current);
 
   const children: MetaTreeNode[] = [];
@@ -342,7 +345,8 @@ function useSystemScope(): MetaTreeNode | null {
 function useScopeVariablesScope(options: UseWorkflowVariableOptions): MetaTreeNode | null {
   const flowEngine = useFlowEngine();
   const plugin = useWorkflowPlugin();
-  const current = useNodeContext();
+  const contextNode = useNodeContext();
+  const current = options.node ?? contextNode;
   const scopes = useUpstreamScopes(current);
 
   if (options.includeScopes === false) {
@@ -414,7 +418,8 @@ export function useWorkflowVariableOptions(options: UseWorkflowVariableOptions =
   const system = useSystemScope();
   const env = useEnvScope();
 
-  const current = useNodeContext();
+  const contextNode = useNodeContext();
+  const current = options.node ?? contextNode;
   const variableSourceWorkflow = useWorkflowVariableSourceContext();
   const currentWorkflow = useCurrentWorkflowContext();
   const canvasWorkflow = useFlowContext().workflow;
