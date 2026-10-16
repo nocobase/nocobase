@@ -4,6 +4,7 @@ import {
 } from '../../client/layouts/use-sidebar-preference.js';
 import {
   apiClientToken,
+  realtimeClientToken,
   ClientApplicationContext,
   type ClientApplication,
   createAppClientConfig,
@@ -291,6 +292,10 @@ function renderApplication(
   };
   const registered = new Map<unknown, unknown>([
     [apiClientToken, apiClient],
+    [
+      realtimeClientToken,
+      { subscribe: vi.fn(() => vi.fn()), onOpen: vi.fn(() => vi.fn()) },
+    ],
     [authenticationClientToken, authClient],
     [authorizationClientToken, authorizationClient],
   ]);
