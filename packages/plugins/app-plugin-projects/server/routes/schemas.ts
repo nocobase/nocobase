@@ -463,6 +463,10 @@ export const UpdateIssueBody: z.ZodType<UpdateIssueInput> = z.strictObject({
     description:
       'The next step. Omit to retain; null or whitespace clears it. Terminal statuses clear it.',
   }),
+  acceptance: z.string().nullable().optional().meta({
+    description:
+      'What the owner checks to accept the work, Markdown: the acceptance criteria, the screenshots or how to see the result, and where to try it. Omit to retain; null or whitespace clears it. Cleared outside in_review.',
+  }),
   revision: z.number().int().optional().meta({
     description:
       'The revision the change is based on; left out, the change applies to the issue as it is now.',
@@ -946,6 +950,10 @@ const issueShape = {
   needsYou: z.string().nullable().meta({
     description:
       'The decision or input required from the owner; null outside Blocked and In review, or on historical issues.',
+  }),
+  acceptance: z.string().nullable().meta({
+    description:
+      'What the owner checks to accept the work, Markdown; null outside In review.',
   }),
   next: z.string().nullable().meta({
     description:

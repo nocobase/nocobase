@@ -56,6 +56,57 @@ describe('structured issue progress', () => {
     },
   );
 
+  it('keeps an acceptance list while In review only, and clears it on leaving', async () => {
+    const viewer = h.viewer('alice');
+    let issue = await h.services.issues.create(viewer, {
+      title: 'Acceptance',
+      statusKey: 'in_progress',
+    });
+    const list = '### Acceptance criteria\n\n- [ ] Export only Studio\n';
+    // Outside In review an acceptance list is not kept.
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      acceptance: list,
+    });
+    expect(issue.acceptance).toBeNull();
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      statusKey: 'in_review',
+      needsYou: 'Check the export and accept it.',
+      acceptance: list,
+    });
+    expect(issue.acceptance).toBe(list);
+    // Omitted, it stays; whitespace clears it.
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      next: 'Await acceptance.',
+    });
+    expect(issue.acceptance).toBe(list);
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      acceptance: '  ',
+    });
+    expect(issue.acceptance).toBeNull();
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      acceptance: list,
+    });
+    // Sent back, the list goes with the status.
+    issue = await h.services.issues.update(viewer, issue.id, {
+      revision: issue.revision,
+      statusKey: 'in_progress',
+    });
+    expect(issue.acceptance).toBeNull();
+    await expect(
+      h.services.issues.update(viewer, issue.id, {
+        revision: issue.revision,
+        statusKey: 'in_review',
+        needsYou: 'Accept it.',
+        acceptance: 'x'.repeat(20_001),
+      }),
+    ).rejects.toThrow();
+  });
+
   it.each(['blocked', 'in_review'])(
     'allows an application-authorized agent to omit progress for %s',
     async (statusKey) => {

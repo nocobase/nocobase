@@ -312,10 +312,12 @@ export function createIssueRoutes(deps: {
           description: { contentFile: true },
           needsYou: { name: 'needs-you', contentFile: true },
           next: { contentFile: true },
+          acceptance: { contentFile: true },
         },
         action: 'pm.issues/edit',
         examples: [
           'issue update PM-12 --status in_review --needs-you "Review the change and accept it or send it back."',
+          'issue update PM-12 --status in_review --needs-you "Check the export filter and accept it." --acceptance-file acceptance.md',
           'issue update PM-12 --file change.json',
         ],
       }),
