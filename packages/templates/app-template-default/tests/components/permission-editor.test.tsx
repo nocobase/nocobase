@@ -372,7 +372,7 @@ it('keeps multiple inline scopes independently named and editable', async () => 
   expect(change).toHaveBeenCalledExactlyOnceWith('attachments', 'all');
 });
 
-it('merges a single resource heading and keeps one category count with an explicit bulk label', async () => {
+it('keeps the category heading consistent for a single resource and labels bulk selection explicitly', async () => {
   const batch = vi.fn();
   render(
     <PermissionEditor
@@ -407,7 +407,9 @@ it('merges a single resource heading and keeps one category count with an explic
       onLevelChange={vi.fn()}
     />,
   );
-  expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
+  expect(
+    screen.getByRole('heading', { level: 2, name: 'Users' }),
+  ).toBeInTheDocument();
   expect(screen.getAllByText('1/2')).toHaveLength(1);
   expect(
     screen.getByRole('checkbox', {

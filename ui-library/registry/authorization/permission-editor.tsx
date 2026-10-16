@@ -357,8 +357,6 @@ export function PermissionEditor({
               const original =
                 sections.find((item) => item.id === section.id) ?? section;
               const singleResource = original.groups.length === 1;
-              const redundantTitle =
-                singleResource && original.groups[0]?.title === section.title;
               const keys = [
                 ...new Set(
                   original.groups
@@ -387,9 +385,7 @@ export function PermissionEditor({
                   aria-label={section.title}
                   className='flex flex-col gap-3 p-3 @lg:p-4'
                 >
-                  {(filtering || !redundantTitle) && (
-                    <h2 className='text-sm font-semibold'>{section.title}</h2>
-                  )}
+                  <h2 className='text-sm font-semibold'>{section.title}</h2>
                   <div className='divide-y rounded-lg border'>
                     {section.groups.map((group) => {
                       const selectable = group.rows.filter(
