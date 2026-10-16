@@ -32,7 +32,7 @@ export function cliEnv(
   // The keychain stays off: a test never writes to the real one (tests/secrets.test.ts covers it with fakes).
   return {
     ...process.env,
-    // A packaged test uses only its own synthetic run credential.
+    // A caller may explicitly supply a synthetic run file in extra; never inherit the runner's pointer.
     [RUN_CREDENTIALS_ENV]: undefined,
     ACME_HOME: home,
     ACME_KEYCHAIN: 'off',

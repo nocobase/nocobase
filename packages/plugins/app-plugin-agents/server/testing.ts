@@ -7,6 +7,7 @@
 import path from 'node:path';
 
 export { createAgents, type AgentsDeps } from './composition.js';
+export { createCallerGate } from './core/callers/index.js';
 export { runCredentialResolver } from './cli/run-credential.js';
 export {
   bindCliSurface,

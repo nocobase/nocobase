@@ -618,6 +618,43 @@ const person: CliCaller = {
 };
 
 describe('GET /api/cli/manifest', () => {
+  it('adds optional denial evidence and changes the etag when the evidence changes', async () => {
+    let permissionReason = 'ACTOR_LACKS_ACTION';
+    const app = createApp((cli) => {
+      cli.addCaller(() => ({
+        ...person,
+        actions: new Set<string>(),
+        actingFor: { userId: 'u1', name: 'Ada' },
+        explain: async () => ({
+          permissionReason,
+          requiredAction: 'tracker.issues/edit',
+        }),
+      }));
+    });
+    await app.start();
+    const request = () =>
+      app.fetch(new Request('http://localhost/api/cli/manifest'));
+    const first = (await (await request()).json()) as { data: any };
+    expect(first.data.identity.actingFor).toEqual({
+      userId: 'u1',
+      name: 'Ada',
+    });
+    expect(
+      first.data.withheld.find(
+        (command: any) => command.id === 'issue:comment:add',
+      ),
+    ).toMatchObject({
+      action: 'tracker.issues/comment',
+      requiredAction: 'tracker.issues/edit',
+      permissionReason: 'ACTOR_LACKS_ACTION',
+    });
+    permissionReason = 'READ_ONLY_RUN';
+    const second = (await (await request()).json()) as { data: any };
+    expect(second.data.etag).not.toBe(first.data.etag);
+    expect(second.data.commands).toEqual(first.data.commands);
+    await app.shutdown();
+  });
+
   it('answers 404 when no caller resolver is registered', async () => {
     const app = createApp();
     await app.start();

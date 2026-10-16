@@ -80,8 +80,6 @@ describe('changed files', () => {
     await expect(changed(many)).rejects.toThrow(/3 files changed/u);
     removeDir(work);
     work = tempDir('acme-changed-none-');
-    await expect(changed(work)).rejects.toThrow(
-      /no \.changed-files-fixture\/knowledge directory/u,
-    );
+    await expect(changed(work)).rejects.toThrow(`no ${spec.dir} directory`);
   });
 });

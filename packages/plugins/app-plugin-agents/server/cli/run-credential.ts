@@ -64,6 +64,10 @@ export function runIdentityOf(
     kind: 'run',
     userId: run.run.actorUserId,
     displayName: agent.name,
+    actingFor: {
+      userId: run.run.actorUserId,
+      name: auth?.user?.name || auth?.user?.email || run.run.actorUserId,
+    },
     run,
     agent,
   };

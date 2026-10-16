@@ -683,6 +683,7 @@ export function cliManifestOf(
     userId: caller.userId,
     displayName: caller.displayName,
     ...(caller.runId ? { runId: caller.runId } : {}),
+    ...(caller.actingFor ? { actingFor: caller.actingFor } : {}),
     actions: [...(caller.actions ?? [])].sort(),
   };
   const offered: CliCommand[] = [];

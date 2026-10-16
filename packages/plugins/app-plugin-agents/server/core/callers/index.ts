@@ -31,6 +31,8 @@ export interface CallerIdentity {
   /** The person whose permissions bound the caller: the caller, or for a run the person who woke the agent. */
   readonly userId: string;
   readonly displayName: string;
+  /** The authenticated person behind a run; its displayName still names the agent. */
+  readonly actingFor?: { readonly userId: string; readonly name: string };
   /** For a run. */
   readonly run?: RunTokenIdentity;
   readonly agent?: Agent;
@@ -41,9 +43,22 @@ export interface CallerIdentity {
   readonly keyScope?: KeyScope;
 }
 
+export interface ActionDenial {
+  readonly permissionReason:
+    | 'ACTOR_LACKS_ACTION'
+    | 'AGENT_NOT_GIVEN'
+    | 'NOT_FOR_AGENTS'
+    | 'READ_ONLY_RUN'
+    | 'NO_ACTION_DECLARED'
+    | 'UNKNOWN';
+  readonly requiredAction?: string;
+}
+
 export interface ActionGate {
   /** The business actions `identity` may perform now. */
   allowed(identity: CallerIdentity): Promise<ReadonlySet<string>>;
+  /** Explains a denied action without changing what is allowed. */
+  explain?(identity: CallerIdentity, action: string): Promise<ActionDenial>;
   /**
    * Whether a consultation's run, which only reads, keeps an action that is not a reading one (`isReadingAction`):
    * proposing something the person confirms, say. None when absent.
@@ -67,6 +82,7 @@ export interface CallerGate {
   set(gate: ActionGate): () => void;
   /** The business actions `identity` holds now: the gate's, and the plugin's universal ones. */
   allowed(identity: CallerIdentity): Promise<ReadonlySet<string>>;
+  explain?(identity: CallerIdentity, action: string): Promise<ActionDenial>;
   /**
    * What `identity` could do were it not a consultation kept to reading: the reach of a plan a consulted agent proposes,
    * which the person confirms. The same as `allowed` for every other caller.
@@ -105,6 +121,20 @@ export function createCallerGate(): CallerGate {
         identity,
         new Set(current ? await current.allowed(identity) : []),
       );
+    },
+    async explain(identity, action) {
+      if (!action) return { permissionReason: 'NO_ACTION_DECLARED' };
+      if ((await this.allowed(identity)).has(action))
+        return { permissionReason: 'UNKNOWN', requiredAction: action };
+      if (
+        isConsultation(identity) &&
+        !isReadingAction(action) &&
+        current?.consultable?.(action) !== true
+      )
+        return { permissionReason: 'READ_ONLY_RUN', requiredAction: action };
+      return current?.explain
+        ? current.explain(identity, action)
+        : { permissionReason: 'UNKNOWN', requiredAction: action };
     },
   };
 }

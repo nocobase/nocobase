@@ -15,6 +15,7 @@ export {
   CLI_IDENTITIES,
   CLI_MANIFEST_VERSION,
   cliRoute,
+  type CliActionDenial,
   type CliCaller,
   type CliChangedFilesOptions,
   type CliCommand,

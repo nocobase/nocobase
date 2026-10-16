@@ -128,6 +128,7 @@ export const CliManifestSchema: z.ZodType<CliManifest> = z.object({
     userId: z.string(),
     displayName: z.string(),
     runId: z.string().optional(),
+    actingFor: z.object({ userId: z.string(), name: z.string() }).optional(),
     actions: z.array(z.string()).optional(),
   }),
   commands: z.array(CliCommandSchema),
@@ -139,6 +140,8 @@ export const CliManifestSchema: z.ZodType<CliManifest> = z.object({
         reason: z.enum(['identity', 'action']),
         identities: z.array(Identity),
         action: z.string().optional(),
+        requiredAction: z.string().optional(),
+        permissionReason: z.string().optional(),
       }),
     )
     .optional(),

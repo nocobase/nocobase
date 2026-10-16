@@ -367,7 +367,7 @@ describe('signing in, profiles and the global flags', () => {
     expect(json(needs.stdout).error).toMatchObject({
       code: 'ACTION_REQUIRED',
       message:
-        '`acme issue delete` needs the action pm.issues/delete, which you do not hold.',
+        '`acme issue delete` was refused; it needs pm.issues/delete. The reason is unknown.',
     });
     const runOnly = await cli(['run', 'self'], env, { cwd: home });
     expect(runOnly.code).toBe(3);

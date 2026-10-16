@@ -66,28 +66,64 @@ export function withheldCommand(
     if (!found) continue;
     const typed = `${bin} ${found.id.split(':').join(' ')}`;
     const run = manifest.identity.kind === 'run';
-    if (found.reason === 'action')
+    if (found.reason === 'action') {
+      const required = found.requiredAction ?? found.action;
+      const actor = manifest.identity.actingFor;
+      const who = actor
+        ? `${actor.name} (${actor.userId})`
+        : manifest.identity.userId;
+      const reasons: Record<string, { cause: string; next: string }> = {
+        ACTOR_LACKS_ACTION: {
+          cause: `The run identity ${who} does not hold ${required}.`,
+          next: `Ask someone with role management permission in ${displayName} (Settings › Roles) to grant ${required} to ${who}, or a role containing it. Continue after authorization.`,
+        },
+        AGENT_NOT_GIVEN: {
+          cause: `The agent configuration does not include ${required}.`,
+          next: `Ask someone who manages agents in ${displayName} to check the configuration for ${required}, or ask a person to perform the operation.`,
+        },
+        NOT_FOR_AGENTS: {
+          cause: 'This action is not available to agents.',
+          next: 'Ask a person authorized for this action to perform the operation.',
+        },
+        READ_ONLY_RUN: {
+          cause:
+            'This run is restricted to reading and its permitted proposals.',
+          next: 'Ask an authorized person to perform the operation or confirm a supported proposal.',
+        },
+        NO_ACTION_DECLARED: {
+          cause: 'The route declares no action for a run.',
+          next: 'Ask the application maintainer to check the route declaration.',
+        },
+      };
+      const explanation = found.permissionReason
+        ? reasons[found.permissionReason]
+        : undefined;
       return new CliCommandError(
         'ACTION_REQUIRED',
-        run
-          ? `\`${typed}\` needs the action ${found.action}, which this run's agent is not given.`
-          : `\`${typed}\` needs the action ${found.action}, which you do not hold.`,
+        `\`${typed}\` was refused; it needs ${required}. ${explanation?.cause ?? 'The reason is unknown.'}`,
         {
           exit: EXIT_CODES.auth,
           suggestions: [
             {
-              message: run
-                ? `Ask whoever configures the agent to give it ${found.action}, or a person to do it.`
-                : `Ask whoever manages permissions in ${displayName} for ${found.action}.`,
+              message:
+                explanation?.next ??
+                `Ask the application maintainer to investigate this refusal for ${who}; no permission cause was supplied.`,
             },
             {
               message: 'See who you act as and the actions you hold.',
               run: { command: bin, args: ['whoami'] },
             },
           ],
-          details: { command: found.id, action: found.action },
+          details: {
+            command: found.id,
+            action: found.action,
+            requiredAction: required,
+            permissionReason: found.permissionReason ?? 'UNKNOWN',
+            ...(actor ? { actingFor: actor } : {}),
+          },
         },
       );
+    }
     return new CliCommandError(
       'IDENTITY_MISMATCH',
       run
