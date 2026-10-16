@@ -161,32 +161,39 @@ describe('FlowDiagram', () => {
     await waitFor(() => expect(actualSize).toHaveTextContent('100%'));
   });
 
-  it('sizes the full graph including outer routes to the container width', async () => {
-    const layout = vi
-      .spyOn(layoutModule, 'layoutFlowDiagram')
-      .mockResolvedValue({
-        width: 400,
-        height: 1200,
-        nodes: [{ id: 'a', label: '', x: 20, y: 20, width: 200, height: 64 }],
-        edges: [],
+  it.each([
+    { minZoom: 0.1, expected: '900px' },
+    { minZoom: 0.8, expected: '1104px' },
+  ])(
+    'sizes the full routed graph at minimum zoom $minZoom',
+    async ({ minZoom, expected }) => {
+      const layout = vi
+        .spyOn(layoutModule, 'layoutFlowDiagram')
+        .mockResolvedValue({
+          width: 400,
+          height: 1200,
+          nodes: [{ id: 'a', label: '', x: 20, y: 20, width: 200, height: 64 }],
+          edges: [],
+        });
+      render(
+        <TestI18nProvider runtime={runtime}>
+          <FlowDiagram
+            nodes={[graph.nodes[0]!]}
+            edges={[]}
+            autoHeight
+            ariaLabel='Tall process'
+            initialMinZoom={minZoom}
+          />
+        </TestI18nProvider>,
+      );
+      await screen.findByTestId('rf__node-a');
+      // Width has 24 canvas pixels of padding per side; height reserves 144 pixels for canvas controls and includes outer routes.
+      expect(screen.getByLabelText('Tall process')).toHaveStyle({
+        height: expected,
       });
-    render(
-      <TestI18nProvider runtime={runtime}>
-        <FlowDiagram
-          nodes={[graph.nodes[0]!]}
-          edges={[]}
-          autoHeight
-          ariaLabel='Tall process'
-        />
-      </TestI18nProvider>,
-    );
-    await screen.findByTestId('rf__node-a');
-    // Width has 24 canvas pixels of padding per side; height reserves 144 pixels for canvas controls and includes outer routes.
-    expect(screen.getByLabelText('Tall process')).toHaveStyle({
-      height: '900px',
-    });
-    layout.mockRestore();
-  });
+      layout.mockRestore();
+    },
+  );
 
   it('shows a translated layout failure and reports its cause', async () => {
     const onLayoutError = vi.fn();
@@ -251,4 +258,39 @@ describe('FlowDiagram', () => {
     expect(screen.getByTestId('rf__node-new')).toHaveTextContent('New state');
     layout.mockRestore();
   });
+});
+
+it('composes policy descriptions and explicit node actions without changing execution status', async () => {
+  const configure = vi.fn();
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <FlowDiagram
+        {...graph}
+        nodes={graph.nodes.map((node) => ({
+          ...node,
+          width: 264,
+          height: 144,
+        }))}
+        ariaLabel='Configurable definition'
+        initialMinZoom={0.8}
+        showMiniMap
+        nodeDescription={(node) =>
+          node.id === 'b' ? 'Direct supervisor' : null
+        }
+        nodeActions={(node) =>
+          node.id === 'b' ? (
+            <button onClick={configure}>Configure supervisor</button>
+          ) : null
+        }
+      />
+    </TestI18nProvider>,
+  );
+  expect(await screen.findByText('Direct supervisor')).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Configure supervisor' }));
+  expect(configure).toHaveBeenCalledOnce();
+  expect(
+    screen.getByTestId('rf__node-b').querySelector('[data-execution-state]'),
+  ).toHaveAttribute('data-execution-state', 'pending');
+  expect(screen.getByTestId('rf__edge-submit')).not.toHaveClass('animated');
+  expect(screen.getByLabelText('Diagram overview')).toBeInTheDocument();
 });

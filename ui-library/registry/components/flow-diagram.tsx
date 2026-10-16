@@ -9,6 +9,7 @@ import {
 } from 'react';
 import {
   Background,
+  MiniMap,
   Panel,
   useReactFlow,
   useViewport,
@@ -58,14 +59,17 @@ type DiagramNode = Node<{
   item: FlowDiagramNode;
   direction: FlowDiagramDirection;
   content: ReactNode;
+  actions?: ReactNode;
+  description?: ReactNode;
 }>;
 type DiagramEdge = Edge<{
   points: readonly FlowDiagramPoint[];
   labelPosition?: FlowDiagramPoint;
 }>;
 
-function DiagramState({ data }: NodeProps<DiagramNode>): ReactElement {
+function DiagramState({ data, id }: NodeProps<DiagramNode>): ReactElement {
   const { t } = useTranslation();
+  const flow = useReactFlow();
   const Icon =
     data.item.kind === 'initial'
       ? PlayIcon
@@ -84,6 +88,29 @@ function DiagramState({ data }: NodeProps<DiagramNode>): ReactElement {
           : t('flowDiagram.state', { defaultValue: 'State' });
   return (
     <div
+      onFocusCapture={(event) => {
+        // Readable initial zoom can put controls outside the viewport. Keyboard
+        // focus brings their owning node into view without changing the zoom.
+        const bounds = event.currentTarget.getBoundingClientRect();
+        const canvas = event.currentTarget
+          .closest('.react-flow')
+          ?.getBoundingClientRect();
+        const node = flow.getNode(id);
+        if (
+          canvas &&
+          node &&
+          (bounds.left < canvas.left ||
+            bounds.right > canvas.right ||
+            bounds.top < canvas.top ||
+            bounds.bottom > canvas.bottom)
+        ) {
+          void flow.setCenter(
+            node.position.x + (node.width ?? 232) / 2,
+            node.position.y + (node.height ?? 104) / 2,
+            { zoom: flow.getZoom() },
+          );
+        }
+      }}
       data-execution-state={
         data.item.highlighted
           ? 'current'
@@ -134,8 +161,13 @@ function DiagramState({ data }: NodeProps<DiagramNode>): ReactElement {
             >
               <Icon className='size-4' />
             </div>
-            <div className='line-clamp-2 min-w-0 font-semibold leading-snug'>
-              {data.content}
+            <div className='flex min-w-0 flex-col gap-2 leading-snug'>
+              <div className='line-clamp-2 font-semibold'>{data.content}</div>
+              {data.description && (
+                <div className='text-xs text-muted-foreground'>
+                  {data.description}
+                </div>
+              )}
             </div>
           </div>
           <div className='flex min-h-8 shrink-0 items-center justify-between gap-2 border-t border-border/60 bg-muted/35 px-4 text-xs text-muted-foreground'>
@@ -151,12 +183,15 @@ function DiagramState({ data }: NodeProps<DiagramNode>): ReactElement {
               )}
               {state}
             </span>
-            {data.item.configurable && (
-              <span className='inline-flex items-center gap-1 rounded-md border border-border bg-card px-1.5 py-0.5 text-card-foreground'>
-                <Settings2Icon className='size-3' aria-hidden />
-                {t('flowDiagram.configurable', { defaultValue: 'Parameters' })}
-              </span>
-            )}
+            {data.actions ??
+              (data.item.configurable && (
+                <span className='inline-flex items-center gap-1 rounded-md border border-border bg-card px-1.5 py-0.5 text-card-foreground'>
+                  <Settings2Icon className='size-3' aria-hidden />
+                  {t('flowDiagram.configurable', {
+                    defaultValue: 'Parameters',
+                  })}
+                </span>
+              ))}
           </div>
         </>
       )}
@@ -241,6 +276,13 @@ export interface FlowDiagramProps extends FlowDiagramGraph {
   readonly className?: string;
   readonly style?: CSSProperties;
   readonly ariaLabel: string;
+  /** Interactive controls shown in the node footer. */
+  readonly nodeActions?: (node: FlowDiagramNode) => ReactNode;
+  /** Supporting content below the node title; provide sufficient fixed node dimensions. */
+  readonly nodeDescription?: (node: FlowDiagramNode) => ReactNode;
+  /** Initial fit prioritizes legibility; the Fit control still shows the entire graph. */
+  readonly initialMinZoom?: number;
+  readonly showMiniMap?: boolean;
   readonly renderNode?: (node: FlowDiagramNode) => ReactNode;
   readonly onNodeClick?: (node: FlowDiagramNode) => void;
   readonly onEdgeClick?: (edge: FlowDiagramEdge) => void;
@@ -257,6 +299,10 @@ export function FlowDiagram({
   style,
   ariaLabel,
   renderNode,
+  nodeActions,
+  nodeDescription,
+  initialMinZoom = 0.1,
+  showMiniMap = false,
   onNodeClick,
   onEdgeClick,
   onLayoutError,
@@ -361,10 +407,12 @@ export function FlowDiagram({
             item,
             direction,
             content: renderNode ? renderNode(item) : item.label,
+            actions: nodeActions?.(item),
+            description: nodeDescription?.(item),
           },
         };
       }),
-    [layout, nodes, direction, renderNode],
+    [layout, nodes, direction, renderNode, nodeActions, nodeDescription],
   );
   const placedEdges = useMemo<DiagramEdge[]>(
     () =>
@@ -398,7 +446,11 @@ export function FlowDiagram({
   );
   const zoom =
     layout && width
-      ? Math.max(0.1, Math.min(1, (width - 48) / Math.max(1, layout.width)))
+      ? Math.max(
+          0.1,
+          initialMinZoom,
+          Math.min(1, (width - 48) / Math.max(1, layout.width)),
+        )
       : 1;
   // Reserve room above and below the graph for the canvas chrome.
   const height = layout ? Math.max(320, layout.height * zoom + 144) : 320;
@@ -452,7 +504,11 @@ export function FlowDiagram({
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView={!autoHeight}
-          fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
+          fitViewOptions={{
+            padding: 0.2,
+            minZoom: initialMinZoom,
+            maxZoom: 1,
+          }}
           defaultViewport={
             autoHeight
               ? {
@@ -462,6 +518,9 @@ export function FlowDiagram({
                 }
               : undefined
           }
+          // A full-height process is read by scrolling the page, not wheel-zooming the canvas.
+          zoomOnScroll={!autoHeight}
+          preventScrolling={!autoHeight}
           minZoom={0.1}
           maxZoom={2}
           nodesDraggable={false}
@@ -486,6 +545,23 @@ export function FlowDiagram({
           }}
         >
           <Background color='var(--border)' gap={24} size={1.5} />
+          {showMiniMap && (
+            <MiniMap
+              pannable
+              zoomable
+              ariaLabel={t('flowDiagram.overview', {
+                defaultValue: 'Diagram overview',
+              })}
+              nodeColor='var(--muted-foreground)'
+              maskColor='color-mix(in srgb, var(--background) 75%, transparent)'
+              style={{
+                background: 'var(--card)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+              }}
+              className='hidden sm:block'
+            />
+          )}
           <Panel position='top-left' className='pointer-events-none!'>
             <div className='inline-flex items-center gap-3 rounded-lg border bg-card/95 px-3 py-2 text-xs text-muted-foreground shadow-xs'>
               <span className='inline-flex items-center gap-1.5'>
@@ -504,7 +580,7 @@ export function FlowDiagram({
               </span>
             </div>
           </Panel>
-          <DiagramToolbar />
+          <DiagramToolbar top={autoHeight} />
         </ReactFlow>
       )}
     </div>
@@ -512,7 +588,11 @@ export function FlowDiagram({
 }
 
 /** View controls belong inside React Flow so they always use this canvas's viewport. */
-function DiagramToolbar(): ReactElement {
+function DiagramToolbar({
+  top = false,
+}: {
+  readonly top?: boolean;
+}): ReactElement {
   const { t } = useTranslation();
   const flow = useReactFlow();
   const { zoom } = useViewport();
@@ -538,7 +618,7 @@ function DiagramToolbar(): ReactElement {
   ];
   return (
     <Panel
-      position='bottom-left'
+      position={top ? 'top-right' : 'bottom-left'}
       className='max-sm:top-12! max-sm:bottom-auto!'
     >
       <div className='flex items-center gap-1 rounded-xl border bg-card/95 p-1.5 shadow-md'>

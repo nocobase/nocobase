@@ -323,6 +323,7 @@ const enUS = {
     withdraw: 'Withdraw',
   },
   flowDiagram: {
+    overview: 'Diagram overview',
     actualSize: 'Actual size',
     states: 'States',
     transitions: 'Transitions',

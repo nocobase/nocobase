@@ -315,6 +315,7 @@ const zhCN: LifecycleExampleResource = {
     withdraw: '撤回',
   },
   flowDiagram: {
+    overview: '流程缩略导航',
     actualSize: '实际大小',
     states: '状态',
     transitions: '转移',
