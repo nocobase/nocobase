@@ -67,6 +67,7 @@ export function AgentDialog({
       }}
     >
       <DialogContent
+        className='flex max-h-[calc(100dvh-2rem)] flex-col'
         data-testid='agent-dialog'
         finalFocus={() =>
           document.querySelector<HTMLButtonElement>(
@@ -197,7 +198,7 @@ function AgentForm({
 
   return (
     <>
-      <DialogHeader>
+      <DialogHeader className='shrink-0'>
         <DialogTitle>
           {t(enabling ? 'agents.enable.title' : 'agents.edit.title', {
             name: agent.name,
@@ -211,6 +212,7 @@ function AgentForm({
       </DialogHeader>
       <form
         id='agent-dialog-form'
+        className='-mx-4 min-h-0 flex-1 overflow-y-auto px-4 pb-1'
         onSubmit={(event) => {
           event.preventDefault();
           setSubmitted(true);
@@ -297,7 +299,7 @@ function AgentForm({
           ) : null}
         </FieldGroup>
       </form>
-      <DialogFooter>
+      <DialogFooter className='shrink-0'>
         <Button variant='outline' type='button' onClick={onClose}>
           {t('actions.cancel')}
         </Button>
