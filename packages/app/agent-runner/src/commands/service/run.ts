@@ -24,6 +24,7 @@ export default class ServiceRun extends RunnerCommand {
           ...(flags.slots === undefined ? [] : ['--slots', flags.slots]),
         ],
         log,
+        paths: this.paths,
       });
       process.exit(code);
     } catch (error) {

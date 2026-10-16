@@ -9,6 +9,7 @@ import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { RotatingLog, runService } from '../src/core/service-runner.ts';
 import { servicePlan, installService } from '../src/core/service.ts';
+import { launcherPidPath } from '../src/core/launcher.ts';
 import { runnerPaths } from '../src/lib/home.ts';
 import { removeDir, tempDir } from './helpers.ts';
 
@@ -25,7 +26,9 @@ describe('service launch policy', () => {
       for (const code of [0, 3, 75]) {
         const log = logFor();
         const waits: number[] = [];
+        const paths = runnerPaths(`${log.file}.home`, root);
         const exit = await runService({
+          paths,
           command: command(
             `console.log('exit ${code}'); process.exit(${code})`,
           ),
@@ -37,6 +40,7 @@ describe('service launch policy', () => {
         });
         expect(exit).toBe(code === 3 && platform === 'darwin' ? 0 : code);
         expect(waits).toEqual([]);
+        expect(existsSync(launcherPidPath(paths))).toBe(false);
         expect(readFileSync(log.file, 'utf8')).toBe(`exit ${code}\n`);
       }
     },

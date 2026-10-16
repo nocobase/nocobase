@@ -16,6 +16,8 @@ import {
 import path from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 
+import { ensureHome, type RunnerPaths } from '../lib/home.ts';
+import { claimLauncher } from './launcher.ts';
 import { EXIT_CODES } from '../protocol/index.ts';
 import { RESTART_EXIT_CODE } from './update.ts';
 
@@ -68,6 +70,7 @@ export class RotatingLog {
 
 export interface ServiceRunnerOptions {
   command: string[];
+  paths?: RunnerPaths;
   log: RotatingLog;
   env?: NodeJS.ProcessEnv;
   platform?: NodeJS.Platform;
@@ -98,6 +101,12 @@ export async function runService(
     stopping.abort();
     child?.kill('SIGTERM');
   };
+  // The stop command asks the launcher to force its child; abort retries before killing that child.
+  const forceStop = (): void => {
+    stopping.abort();
+    child?.kill('SIGKILL');
+  };
+  process.on('SIGUSR2', forceStop);
   process.on('SIGTERM', stop);
   process.on('SIGINT', stop);
   options.signal?.addEventListener('abort', stop);
@@ -105,7 +114,12 @@ export async function runService(
   const message = (text: string): void =>
     log.write(`${new Date().toISOString()} ${text}\n`);
   let failures = 0;
+  let release: (() => void) | undefined;
   try {
+    if (options.paths !== undefined) {
+      await ensureHome(options.paths);
+      release = await claimLauncher(options.paths);
+    }
     while (!stopping.signal.aborted) {
       const started = now();
       const code = await new Promise<number>((resolve) => {
@@ -150,6 +164,8 @@ export async function runService(
     }
     return 0;
   } finally {
+    release?.();
+    process.off('SIGUSR2', forceStop);
     process.off('SIGTERM', stop);
     process.off('SIGINT', stop);
     options.signal?.removeEventListener('abort', stop);

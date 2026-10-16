@@ -14,6 +14,7 @@ import { runnerCommandLine } from '../host.ts';
 import { EXIT_CODES } from '../protocol/index.ts';
 import { readDaemonPid, RunnerDaemon } from '../core/loop.ts';
 import { killLeftovers } from '../core/process-tree.ts';
+import { readLauncherPid } from '../core/launcher.ts';
 import { SERVICE_ENV } from '../core/service.ts';
 import type { Timings } from '../core/supervisor.ts';
 
@@ -89,6 +90,16 @@ export default class Start extends RunnerCommand {
         EXIT_CODES.auth,
       );
     }
+    const launcher = await readLauncherPid(paths);
+    // A supervised foreground child belongs to this launcher; every other start must wait for it to stop.
+    if (
+      launcher !== undefined &&
+      !(flags.foreground && launcher.pid === process.ppid)
+    )
+      throw new UsageError(
+        `The runner launcher is already running (pid ${launcher.pid}).`,
+        EXIT_CODES.conflict,
+      );
     let settings = await readSettings(paths);
     settings = await rememberPassEnv(settings, flags['pass-env'], paths);
     const running = await readDaemonPid(paths);
