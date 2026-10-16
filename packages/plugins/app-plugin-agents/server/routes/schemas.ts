@@ -867,6 +867,10 @@ export const RunExecutionSnapshotSchema: z.ZodType<RunExecutionSnapshot> = z
     dispatchedAt: dateTime,
     finishedAt: dateTime.nullable(),
     failureReason: z.string().nullable(),
+    failureSource: z.literal('sweeper').optional().meta({
+      description:
+        'The server reclaimed this pre-start attempt; absent on runner-reported failures.',
+    }),
   })
   .meta({ ref: 'AgentsRunExecutionSnapshot' });
 const runObject = z.object({
