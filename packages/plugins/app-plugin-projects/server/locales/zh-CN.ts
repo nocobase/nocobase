@@ -20,7 +20,7 @@ const zhCN: ProjectsResource = {
   },
   status: {
     backlog: '待规划',
-    blocked: '待确定',
+    blocked: '阻塞中',
     cancelled: '已取消',
     done: '已完成',
     in_progress: '进行中',

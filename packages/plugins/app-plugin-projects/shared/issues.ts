@@ -39,6 +39,8 @@ export interface Issue {
   readonly needsYou: string | null;
   /** The next step; independent of comments. */
   readonly next: string | null;
+  /** What the owner checks to accept the work, Markdown; null outside In review. */
+  readonly acceptance: string | null;
   readonly priority: Priority;
   /** The accountable person; never empty. */
   readonly ownerUserId: string;
@@ -230,6 +232,8 @@ export interface UpdateIssueRequest {
   readonly needsYou?: string | null;
   /** Omitted: keep; null or whitespace: clear. Terminal statuses always clear it. */
   readonly next?: string | null;
+  /** What the owner checks to accept the work, Markdown: omit to retain; null or whitespace clears it. Cleared outside In review. */
+  readonly acceptance?: string | null;
   readonly priority?: Priority;
   readonly ownerUserId?: string;
   readonly executor?: Executor | null;
@@ -249,5 +253,8 @@ export interface UpdateIssueRequest {
 export const ISSUE_TITLE_MAX = 500;
 export const ISSUE_DESCRIPTION_MAX = 200_000;
 export const ISSUE_PROGRESS_MAX = 2_000;
+
+/** The longest acceptance list an issue keeps. */
+export const ISSUE_ACCEPTANCE_MAX = 20_000;
 export const ISSUE_PAGE_LIMIT = { default: 50, max: 100 } as const;
 export const ACTIVITY_PAGE_LIMIT = { default: 50, max: 200 } as const;
