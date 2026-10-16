@@ -29,6 +29,36 @@ import {
 } from '../server/tokens.js';
 
 describe('@nocobase/app-plugin-users API routes', () => {
+  it.each(['anonymous', 'forbidden', 'allowed'] as const)(
+    'guards latest user reads for %s callers',
+    async (mode) => {
+      const service = userService();
+      const router = await apiRoutes.createRouter(
+        createApplication(mode, service),
+      );
+      const response = await router.request('/users/user-1');
+      expect(response.status).toBe(
+        mode === 'anonymous' ? 401 : mode === 'forbidden' ? 403 : 200,
+      );
+      if (mode === 'allowed') {
+        expect(service.get).toHaveBeenCalledExactlyOnceWith('user-1');
+        expect(await response.json()).toMatchObject({
+          data: { id: 'user-1', name: 'Alice' },
+        });
+      } else expect(service.get).not.toHaveBeenCalled();
+    },
+  );
+  it('returns a missing latest user as 404', async () => {
+    const service = userService();
+    vi.mocked(service.get).mockRejectedValue(
+      new UserManagementError('USER_NOT_FOUND', 'Unknown user', 404),
+    );
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service),
+    );
+    expect((await router.request('/users/missing')).status).toBe(404);
+  });
+
   it.each([
     { canCreateUsers: false, canAssignRoles: true },
     { canCreateUsers: true, canAssignRoles: false },
@@ -838,6 +868,7 @@ describe('@nocobase/app-plugin-users API routes', () => {
         'usersDeleteUser',
         'usersDisableUser',
         'usersEnableUser',
+        'usersGetUser',
         'usersInviteUsers',
         'usersListInvitations',
         'usersListMyPreferences',
@@ -940,6 +971,7 @@ function userService(): UserManagementService {
     roleScopes: { hub: 'hub-viewer' },
   } as const;
   return {
+    get: vi.fn(() => Promise.resolve(user)),
     options: vi.fn(() => Promise.resolve({ roleScopes: [] })),
     list: vi.fn(() =>
       Promise.resolve({ items: [user], total: 1, page: 1, pageSize: 20 }),

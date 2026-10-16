@@ -33,6 +33,8 @@ export interface ListAdministratedUsersInput {
   readonly userIds?: readonly string[];
   /** Which accounts to list: people (the default), service accounts, or both. */
   readonly kind?: UserKind | 'all';
+  readonly sort?: 'name';
+  readonly order?: 'asc' | 'desc';
 }
 
 export interface CreateServiceAccountInput {
@@ -191,7 +193,14 @@ class DefaultUserAdministrationService implements UserAdministrationService {
       select: (select) => select.fields(...userColumns),
       // `createdAt` alone is not a total order, so a shared timestamp could
       // drop or repeat a row across pages; `id` breaks the tie.
-      sort: (sort) => [sort.field('createdAt').desc(), sort.field('id').asc()],
+      sort: (sort) => [
+        input.sort === 'name'
+          ? input.order === 'desc'
+            ? sort.field('name').desc()
+            : sort.field('name').asc()
+          : sort.field('createdAt').desc(),
+        sort.field('id').asc(),
+      ],
       limit: pageSize,
       offset: (page - 1) * pageSize,
     });

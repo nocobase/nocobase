@@ -378,7 +378,10 @@ export function createPermissionSetHandler(
             );
         }
       return context.json({
-        data: summarize(api, await api.update(key, input)),
+        data: summarize(
+          api,
+          await api.update(key, input, changes.expectedRevision),
+        ),
       });
     },
   );

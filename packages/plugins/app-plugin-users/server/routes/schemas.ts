@@ -24,6 +24,8 @@ export const ListUsersQuery: z.ZodObject<
   {
     page: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
     pageSize: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
+    sort: z.ZodOptional<z.ZodEnum<{ name: 'name' }>>;
+    order: z.ZodOptional<z.ZodEnum<{ asc: 'asc'; desc: 'desc' }>>;
     q: z.ZodOptional<z.ZodString>;
     status: z.ZodOptional<
       z.ZodEnum<{ enabled: 'enabled'; disabled: 'disabled' }>
@@ -35,6 +37,8 @@ export const ListUsersQuery: z.ZodObject<
 > = z.object({
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().optional(),
+  sort: z.enum(['name']).optional(),
+  order: z.enum(['asc', 'desc']).optional(),
   q: z.string().optional(),
   status: z.enum(['enabled', 'disabled']).optional(),
   roleScope: z.string().min(1).optional(),

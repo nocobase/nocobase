@@ -654,7 +654,7 @@
       "description": "Usage example of @nocobase/flow-diagram with branches, a cycle, self-transition, parallel edges and inspection callbacks.",
       "categories": ["diagrams"],
       "registryDependencies": ["@nocobase/flow-diagram"],
-      "dependencies": [],
+      "dependencies": ["lucide-react@^0.487.0"],
       "files": [
         {
           "path": "components/flow-diagram.tsx",

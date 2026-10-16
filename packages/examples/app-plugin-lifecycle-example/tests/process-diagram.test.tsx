@@ -86,11 +86,11 @@ describe('example process diagram', () => {
       fireEvent.click(ending);
       expect(screen.queryByRole('status')).not.toBeInTheDocument();
       const previous = screen.getByTestId('rf__node-new');
-      expect(previous).not.toHaveTextContent(resources.diagramStatus.visited);
+      expect(previous).toHaveTextContent(resources.flowDiagram.visited);
       expect(
         previous.querySelector('[data-execution-state="visited"]'),
       ).not.toBeNull();
-      expect(current).toHaveTextContent(resources.diagramStatus.current);
+      expect(current).toHaveTextContent(resources.flowDiagram.current);
       expect(screen.getByTestId('rf__node-closed')).not.toHaveTextContent(
         resources.diagramStatus.visited,
       );
@@ -109,10 +109,10 @@ describe('example process diagram', () => {
         resources.diagramStatus.visited,
       );
       expect(screen.getByTestId('rf__node-open')).not.toHaveTextContent(
-        resources.diagramStatus.current,
+        resources.flowDiagram.current,
       );
       expect(screen.getByTestId('rf__node-closed')).toHaveTextContent(
-        resources.diagramStatus.current,
+        resources.flowDiagram.current,
       );
     },
   );

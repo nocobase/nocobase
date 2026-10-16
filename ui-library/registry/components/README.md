@@ -87,13 +87,25 @@ The overlays' close button names itself with `useTranslation()` from `@nocobase/
 
 `page-container`, `page-header` and `route-child-page` render no text of their own.
 
-| Key                    | English                                      | Chinese                     |
-| ---------------------- | -------------------------------------------- | --------------------------- |
-| `flowDiagram.empty`    | No states to display.                        | 暂无可展示的状态。          |
-| `flowDiagram.loading`  | Laying out diagram…                          | 正在布局流程图…             |
-| `flowDiagram.failed`   | Unable to lay out this diagram.              | 无法布局此流程图。          |
-| `flowDiagram.nodeHelp` | Press Enter or Space to select a state.      | 按 Enter 或空格键选择状态。 |
-| `flowDiagram.edgeHelp` | Press Enter or Space to select a transition. | 按 Enter 或空格键选择转移。 |
+| Key                        | English                                      | Chinese                     |
+| -------------------------- | -------------------------------------------- | --------------------------- |
+| `flowDiagram.empty`        | No states to display.                        | 暂无可展示的状态。          |
+| `flowDiagram.loading`      | Laying out diagram…                          | 正在布局流程图…             |
+| `flowDiagram.failed`       | Unable to lay out this diagram.              | 无法布局此流程图。          |
+| `flowDiagram.nodeHelp`     | Press Enter or Space to select a state.      | 按 Enter 或空格键选择状态。 |
+| `flowDiagram.edgeHelp`     | Press Enter or Space to select a transition. | 按 Enter 或空格键选择转移。 |
+| `flowDiagram.current`      | Current                                      | 当前                        |
+| `flowDiagram.visited`      | Visited                                      | 已经过                      |
+| `flowDiagram.initial`      | Initial                                      | 初始状态                    |
+| `flowDiagram.final`        | Final                                        | 终止状态                    |
+| `flowDiagram.state`        | State                                        | 状态                        |
+| `flowDiagram.zoomOut`      | Zoom out                                     | 缩小                        |
+| `flowDiagram.zoomIn`       | Zoom in                                      | 放大                        |
+| `flowDiagram.configurable` | Parameters                                   | 可配置参数                  |
+| `flowDiagram.actualSize`   | Actual size                                  | 实际大小                    |
+| `flowDiagram.states`       | States                                       | 状态                        |
+| `flowDiagram.transitions`  | Transitions                                  | 转移                        |
+| `flowDiagram.fit`          | Fit to view                                  | 适应画布                    |
 
 ## In a plugin
 
@@ -168,6 +180,6 @@ const EXTENSIONS = [Timestamp];
 
 Install `@nocobase/flow-diagram` for a read-only React Flow canvas with ELK layered layout and orthogonal edge routing. Import `FlowDiagram` from `#components/flow-diagram`; `flow-layout.ts` supplies the graph types and `layoutFlowDiagram()` for callers that need layout data separately. It handles cycles, self-loops and parallel edges. Nodes and edges each need unique ids, and every edge endpoint must name an existing node. Invalid graphs report a translated error and call `onLayoutError` when provided.
 
-Pass `nodes`, `edges`, `ariaLabel`, and optionally `direction` (`RIGHT` or `DOWN`), `renderNode`, `onNodeClick` and `onEdgeClick`. The component imports React Flow's stylesheet. Its default height is `h-96`; override with `className` or `style` for a bounded canvas, or use `autoHeight` to expand to the full graph at the available width. Prefer `direction="DOWN" autoHeight` for detailed lifecycle diagrams in a page, so a wide graph is not reduced to an unreadable strip. Automatic sizing includes routed edges and labels outside the node bounds. Nodes default to 200×64 canvas units, a deliberate fixed canvas size independent of zoom; customize `width`/`height` for richer content. Node labels wrap within their fixed dimensions. Edge labels reserve at most 320 canvas units; shorten long labels and show full details outside the canvas. Highlight changes preserve the viewport; topology, dimensions, direction or edge label changes rerun layout and fit the graph. Clicking opens consumer-owned details; it never changes graph data.
+Pass `nodes`, `edges`, `ariaLabel`, and optionally `direction` (`RIGHT` or `DOWN`), `renderNode`, `onNodeClick` and `onEdgeClick`. The component imports React Flow's stylesheet. Its default height is `h-96`; override with `className` or `style` for a bounded canvas, or use `autoHeight` to expand to the full graph at the available width. Prefer `direction="DOWN" autoHeight` for detailed lifecycle diagrams in a page, so a wide graph is not reduced to an unreadable strip. Automatic sizing includes routed edges and labels outside the node bounds, with reserved space for the graph summary and viewport toolbar. On narrow screens the toolbar stays at the top; clicking the zoom percentage returns to actual size for reading and panning through large diagrams. Node cards separate their title, type and execution status; current transitions use a moving dashed line that respects reduced-motion preferences. The canvas summary counts inspectable states and transitions only. Set `configurable` only for genuine parameter bindings: nodes show a badge and edge labels include the translated Parameters caption. The lifecycle adapter projects both state and transition bindings automatically. Nodes default to 232×104 canvas units, a deliberate fixed canvas size independent of zoom; customize `width`/`height` for richer content. Node labels wrap within their fixed dimensions. Edge labels reserve at most 320 canvas units; shorten long labels and show full details outside the canvas. Highlight changes preserve the viewport; topology, dimensions, direction or edge label changes rerun layout and fit the graph. Clicking opens consumer-owned details; it never changes graph data.
 
 Nodes and edges accept `visited` for execution history and `highlighted` for the current node or available edges. Highlights use the application `--primary` token; current nodes have a stronger fill and ring, visited nodes a light fill. Ordinary edges use a subdued neutral stroke with inline labels. Defaults follow the application theme in light and dark mode. ELK can reorder ports to reduce crossings. Mark visual annotations `decorative` to remove selection and keyboard focus. For lifecycle descriptions, use `@nocobase/lifecycle-diagram` to project states, transitions, actual history and optional end markers.

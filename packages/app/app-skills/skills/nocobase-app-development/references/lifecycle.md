@@ -2,7 +2,7 @@
 
 Use `@nocobase/lifecycle` when a business record moves through stages that developers define in source: an expense report, a ticket, a contract, an order, a leave request. The record keeps its state in one of its own fields, every change is a transition declared in a definition, and the work a transition owes outside the database — mail, payments, calls to other systems — runs as effects after the transaction commits. There is no separate process instance, so the state is never kept in two places.
 
-Administrators can adjust code-declared business parameters without editing workflow structure. For configurable approval departments, reviewer choices, thresholds, snapshot/live reads and optional configuration editors, read [configurable lifecycle parameters](lifecycle-parameters.md).
+Administrators can adjust code-declared business parameters without editing workflow structure. Proactively declare suitable approval departments, reviewer choices and thresholds as business parameters, even without an explicit configurability request. For declarations, snapshot/live reads and shared configuration editors, read [configurable lifecycle parameters](lifecycle-parameters.md).
 
 ## Choose it or something else
 
@@ -16,11 +16,11 @@ Administrators can adjust code-declared business parameters without editing work
 
 A parent and its children can each have a lifecycle and point at each other by foreign key, such as a document and the tasks it distributes; a child's last transition can move the parent on in the same transaction.
 
-## Ask about the process UI
+## Include process administration automatically
 
-When developing a lifecycle, ask whether the user wants to display a flowchart or a related process interface, unless they have already stated their preference. For example, ask in the user's language: “Would you like this process to include a flowchart or a process interface showing its current state, available actions and history? If yes, we can render it with the flow diagram components from our UI Library.”
+Implement [the system settings delivery contract](system-settings.md) with every lifecycle: a directory of the application's real definitions, a definition diagram, supported parameter configuration and authorized execution history. Do not ask the user whether to include these administration surfaces. Use `@nocobase/lifecycle-diagram` for definitions and actual record progress, with the standard `@nocobase/flow-diagram` canvas beneath it. Respect an explicit request to omit the interface.
 
-If the user chooses yes, use the UI Library's `@nocobase/lifecycle-diagram` to render the lifecycle definition and record progress; `@nocobase/flow-diagram` is available for generic process graphs. Follow [the diagram integration guidance](#draw-an-interactive-lifecycle-diagram) and [the frontend workflow](frontend/ui-workflow.md) for the surrounding process interface. Respect separate preferences: a user may want state, action buttons and history without a diagram. If they decline both a diagram and a process interface, continue implementing the lifecycle without adding either.
+The business record's page may show a diagram, state/actions/history, or a compact summary according to the task. This choice does not remove its administration entry. Preserve record-level permissions and source-owned structure; a definition diagram never fires a transition. Follow [diagram integration](#draw-an-interactive-lifecycle-diagram) and the [frontend workflow](frontend/ui-workflow.md).
 
 ## Rules that are never broken
 
@@ -439,7 +439,7 @@ The installed package's README lists its entries; the full guide, design notes a
 
 ## Draw an interactive lifecycle diagram
 
-When building a process page whose configurable business parameters relate to nodes or transitions, prefer an entry on the corresponding diagram element that opens a parameter-editing dialog. Map the clicked state's or transition's stable name through code-declared parameter bindings and open the same editor used by the settings page or embedded form, if present. A bound entry can expose several groups; unbound entries keep their ordinary details. Read [configurable lifecycle parameters](lifecycle-parameters.md#optional-user-interfaces) for the working example, authorization, CAS conflicts and current-versus-historical values.
+When building a process page whose configurable business parameters relate to nodes or transitions, provide an entry on the corresponding diagram element that opens a parameter-editing dialog. Map the clicked state's or transition's stable name through code-declared parameter bindings and open the same editor used by the settings page or embedded form, if present. A bound entry can expose several groups; unbound entries keep their ordinary details. Read [configurable lifecycle parameters](lifecycle-parameters.md#default-configuration-interfaces) for the working example, authorization, CAS conflicts and current-versus-historical values.
 
 When a page needs a lifecycle diagram, use the UI Library's `@nocobase/lifecycle-diagram` component (React Flow + ELK) instead of building a canvas or turning Mermaid source into an interactive view. Read `pnpm exec shadcn view @nocobase/lifecycle-diagram-demo`, then install with `yes n | pnpm exec shadcn add @nocobase/lifecycle-diagram` and format the created files. It includes `@nocobase/flow-diagram`, which is also available alone for a generic directed graph. Follow [the UI Library guidance](frontend/references/styling.md#3-use-shadcn) and its [offline catalog](frontend/references/ui-library.md) for discovery and installation.
 

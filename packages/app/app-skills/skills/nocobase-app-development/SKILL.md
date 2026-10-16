@@ -69,7 +69,13 @@ curl -H "x-api-key: <key>" http://127.0.0.1:13000/main/api/swagger
 
 Replace `/main` with the application's `APP_BASE_PATH`. Swagger UI for people is at `<APP_BASE_PATH>/api/swagger/docs`. Reading either needs a signed-in session or an API key, which a signed-in user creates with `POST <APP_BASE_PATH>/api/apiKeys`; without one the routes answer `401`, and an application with no access check registered, such as one without the authentication plugin, answers `404`. Ask the user for a key rather than creating one yourself. [HTTP API design](references/http-api.md#api-documentation) explains how to read the document and how a new route declares itself in it.
 
+## Include administration by default
+
+For every application feature, apply [system settings delivery](references/system-settings.md): keep a newly created, Home-only application free of settings; as the application develops beyond that basic shell, reconcile the template's prepared Users and Roles and permissions routes and the management surfaces for each capability actually used. Inspect this on every build or iteration, enable missing routes once and preserve already enabled pages, including workflow definitions, diagrams, configuration and authorized execution history. When building process rules, proactively declare appropriate thresholds and reviewer choices as validated, authorized business parameters and provide bound click-to-edit entries; the user need not ask for configurability. The real execution must consume the saved values. This is part of implementing the feature, not a separate user request.
+
 ## Frontend work
+
+For business lists, reuse the template-provided `DataTable` and companions from `#components/data-table`, backed by the supported TanStack Table v8 dependency. Use its controlled manual mode for server paging/sorting. Do not replace it with an agent-written table engine when a dependency version is incompatible; inspect and repair the dependency first. See [tables](references/frontend/references/table.md).
 
 Before writing or changing anything under `client/` — pages, components, styles, copy — read [the frontend workflow](references/frontend/ui-workflow.md). It decides whether the change takes the full workflow (a design file reviewed once, then an independent acceptance review), a theme change (tokens and presets, verified with the theme tests and a browser check) or a quick change (edit directly, then the static checks, the related tests and one look at the changed element in the browser), and which parts of [the UI guidelines](references/frontend/ui-guidelines.md) and [the frontend handbook](references/frontend/frontend-dev.md) to read at each step.
 

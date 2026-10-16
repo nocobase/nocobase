@@ -128,6 +128,39 @@ describe('FlowDiagram', () => {
     observer.disconnect();
   });
 
+  it('identifies transition-bound parameters while preserving the clicked business edge', async () => {
+    const edge = { ...graph.edges[0]!, configurable: true };
+    const onEdgeClick = vi.fn();
+    render(
+      <TestI18nProvider runtime={runtime}>
+        <FlowDiagram
+          nodes={graph.nodes}
+          edges={[edge]}
+          ariaLabel='Configurable process'
+          onEdgeClick={onEdgeClick}
+        />
+      </TestI18nProvider>,
+    );
+    const element = await screen.findByTestId('rf__edge-submit');
+    expect(element).toHaveTextContent('Submit · Parameters');
+    fireEvent.click(element);
+    expect(onEdgeClick).toHaveBeenCalledWith(edge);
+  });
+
+  it('restores a readable actual-size viewport after zooming out', async () => {
+    render(
+      <TestI18nProvider runtime={runtime}>
+        <FlowDiagram {...graph} ariaLabel='Zoomable process' />
+      </TestI18nProvider>,
+    );
+    await screen.findByTestId('rf__node-a');
+    const actualSize = screen.getByRole('button', { name: 'Actual size' });
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }));
+    await waitFor(() => expect(actualSize).not.toHaveTextContent('100%'));
+    fireEvent.click(actualSize);
+    await waitFor(() => expect(actualSize).toHaveTextContent('100%'));
+  });
+
   it('sizes the full graph including outer routes to the container width', async () => {
     const layout = vi
       .spyOn(layoutModule, 'layoutFlowDiagram')
@@ -148,9 +181,9 @@ describe('FlowDiagram', () => {
       </TestI18nProvider>,
     );
     await screen.findByTestId('rf__node-a');
-    // 24 canvas pixels of padding on each side; height includes all layout routes, not just nodes.
+    // Width has 24 canvas pixels of padding per side; height reserves 144 pixels for canvas controls and includes outer routes.
     expect(screen.getByLabelText('Tall process')).toHaveStyle({
-      height: '804px',
+      height: '900px',
     });
     layout.mockRestore();
   });

@@ -136,7 +136,7 @@ The /device page where a signed-in person approves or denies the sign-in of a CL
 
 ### permission-editor
 
-A role's permissions as collapsible sections of switch rows under optional subheadings, each row reaching a level picked in a fixed right column. Use it for a role editor. Presentational: map the business actions and levels @nocobase/app-plugin-authorization registers to sections of rows.
+A compact permission workspace with category navigation, search, enabled filtering and controlled scope rows.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/permission-editor`
