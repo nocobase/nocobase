@@ -102,10 +102,7 @@ it('shares router context with installed test helpers and the application naviga
       path.join(client, 'dist/index.js'),
       "export { NavigationGuardProvider } from './navigation-guard-provider.js';\nexport { ClientApplicationContext } from './application-context.js';\nexport const fixtureToken = Symbol('fixture-service');\n",
     );
-    const plugin = path.join(
-      root,
-      'node_modules/installed-client-plugin',
-    );
+    const plugin = path.join(root, 'node_modules/installed-client-plugin');
     await mkdir(path.join(plugin, 'dist/client'), { recursive: true });
     await writeFile(
       path.join(plugin, 'package.json'),
