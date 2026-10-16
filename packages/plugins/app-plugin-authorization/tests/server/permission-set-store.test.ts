@@ -10,6 +10,8 @@ import { defineDatabasePermission } from '../../server/database/builders.js';
 import { DatabasePermissionSetStore } from '../../server/stores/permission-sets.js';
 import { createAppAuthorization } from '../../server/authorization.js';
 import type { DatabaseManager } from '@nocobase/db';
+import type { Knex } from 'knex';
+import { writeFileSync } from 'node:fs';
 import {
   createTestDatabase,
   type TestDatabase,
@@ -169,6 +171,100 @@ describe('authorization plugin database stores', () => {
     ).toHaveLength(1);
     expect(notifications).toEqual([]);
     await authorization.permissionSets.delete(key);
+  });
+
+  it('rolls back writes made by bound replacement validation', async () => {
+    const authorization = createAppAuthorization({
+      database,
+      connection: database.connection(),
+    });
+    const key = 'replacement-validation-rollback';
+    await authorization.permissionSets.create({ key, grants: [] });
+    await expect(
+      database.transaction(async (connection) => {
+        const sets = authorization.permissionSets.withTransaction(connection);
+        await sets.replaceSubjectAssignments({
+          subject: { type: 'user', id: 'validation-target' },
+          managedPermissionSets: [key],
+          permissionSets: [key],
+          async beforeReplace() {
+            await sets.create({ key: `${key}-temporary`, grants: [] });
+            throw new Error('validation denied');
+          },
+        });
+      }),
+    ).rejects.toThrow('validation denied');
+    expect(
+      await authorization.permissionSets.get(`${key}-temporary`),
+    ).toBeUndefined();
+    expect(await authorization.permissionSets.listAssignments(key)).toEqual([]);
+    await authorization.permissionSets.delete(key);
+  });
+
+  it('adds no database operations for an empty bound validation callback', async () => {
+    const authorization = createAuthorization({
+      plugins: [
+        permissionSetsPlugin({
+          store: new DatabasePermissionSetStore(() => database.connection()),
+          rootSet: 'validation-cost',
+        }),
+      ],
+    });
+    await authorization.permissionSets.create({
+      key: 'validation-cost',
+      grants: [],
+    });
+    const client = await database.connection().client<Knex>();
+    const counts = async (validate: boolean) => {
+      const queries: string[] = [];
+      const record = (query: { sql: string }) => {
+        queries.push(query.sql);
+      };
+      client.on('query', record);
+      try {
+        await database.transaction(async (connection) => {
+          await authorization.permissionSets
+            .withTransaction(connection)
+            .replaceSubjectAssignments({
+              subject: { type: 'user', id: 'validation-cost-target' },
+              managedPermissionSets: [],
+              permissionSets: [],
+              ...(validate ? { beforeReplace: async () => {} } : {}),
+            });
+        });
+      } finally {
+        client.off('query', record);
+      }
+      return {
+        reads: queries.filter((sql) => /^select\b/i.test(sql.trim())).length,
+        writes: queries.filter((sql) =>
+          /^(insert|update|delete)\b/i.test(sql.trim()),
+        ).length,
+        locks: queries.filter((sql) =>
+          /for update|^update .*authorization.*permission.*sets/i.test(
+            sql.trim(),
+          ),
+        ).length,
+        begins: queries.filter((sql) => /^begin\b/i.test(sql.trim())).length,
+        commits: queries.filter((sql) => /^commit\b/i.test(sql.trim())).length,
+      };
+    };
+    // Warm metadata resolution before comparing the same request twice.
+    await counts(false);
+    const baseline = await counts(false);
+    const validated = await counts(true);
+    expect(validated).toEqual(baseline);
+    const costOutput = process.env.NOCOBASE_TEST_REPLACEMENT_COST_OUTPUT;
+    if (costOutput)
+      writeFileSync(
+        costOutput,
+        JSON.stringify(
+          { dialect: database.connection().dialect, baseline, validated },
+          null,
+          2,
+        ),
+      );
+    await authorization.permissionSets.delete('validation-cost');
   });
 
   it('persists Permission Sets independently from database access rules', async () => {

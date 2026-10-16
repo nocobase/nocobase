@@ -227,6 +227,8 @@ export const ManagedUserSchema: z.ZodType = z
 
 export const UsersPageMeta: z.ZodType = z
   .object({
+    systemAdministratorCount: z.number().int().optional(),
+    message: z.string().optional(),
     page: z.number().int(),
     pageSize: z.number().int(),
     total: z

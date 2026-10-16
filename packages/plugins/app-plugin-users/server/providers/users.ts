@@ -15,6 +15,7 @@ import { ServiceProvider } from '@nocobase/service-provider';
 import {
   type UsersConfig,
   userManagementServiceToken,
+  userManagementPolicyToken,
   userPreferencesServiceToken,
   userRoleScopeRegistryToken,
 } from '../tokens.js';
@@ -46,6 +47,20 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
   private releaseSubjectType?: () => void;
 
   public override register(): void {
+    this.app.container.singleton(userManagementPolicyToken, () => {
+      let policy: import('../tokens.js').UserManagementPolicy | undefined;
+      return {
+        current: () => policy,
+        register(value: import('../tokens.js').UserManagementPolicy) {
+          if (policy)
+            throw new Error('A user management policy is already registered');
+          policy = value;
+          return () => {
+            if (policy === value) policy = undefined;
+          };
+        },
+      };
+    });
     this.app.container.singleton(userRoleScopeRegistryToken, () =>
       createUserRoleScopeRegistry(),
     );
@@ -74,6 +89,7 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
         },
         users: resolver.resolve(userAdministrationServiceToken),
         roleScopes: resolver.resolve(userRoleScopeRegistryToken),
+        policy: () => resolver.resolve(userManagementPolicyToken).current(),
         ...(permissionSets === undefined ? {} : { permissionSets }),
         onRoleScopesChanged: (userId) =>
           permissionSets?.notifyAssignmentsChanged({
