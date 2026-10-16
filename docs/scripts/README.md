@@ -1,20 +1,21 @@
 # 文档校对脚本
 
-NocoBase 文档站维护 `cn / en / ja / es / pt / de / fr / ru / id / vi` 共 10 个语言版本，路径都在 `docs/docs/<lang>/`，文件树和侧边栏结构必须保持一致。这套脚本以 cn 作为基准，校对其他语言是否对齐，并兼带翻译膨胀检测。
+NocoBase 3 文档站目前维护 `cn` 和 `en` 两个语言版本，路径都在 `docs/docs/<lang>/`，文件树和侧边栏结构必须保持一致。这套脚本以 cn 作为基准，校对其他语言是否对齐，并兼带翻译膨胀检测。以后新增语言时，脚本会自动把新目录纳入对齐范围。
 
 ## 脚本一览
 
-| 脚本                       | 检查内容                                                                                     | 退出码       | 是否会改文件                  |
-| -------------------------- | -------------------------------------------------------------------------------------------- | ------------ | ----------------------------- |
-| `check-tree-alignment.mjs` | 各语言文件树是否对齐 cn                                                                      | 不齐 = 1     | 否                            |
-| `check-meta-alignment.mjs` | 各语言 `_meta.json` 侧边栏的 link/name 集合是否对齐 cn                                       | 不齐 = 1     | 否                            |
-| `check-nav-alignment.mjs`  | 各语言 `_nav.json` 顶部导航条目数和 link 是否对齐 cn                                         | 不齐 = 1     | 否                            |
-| `check-home-alignment.mjs` | 各语言首页 `index.md` frontmatter 的 hero.actions / features / items 结构和 link 是否对齐 cn | 不齐 = 1     | 否                            |
-| `check-bloated-files.mjs`  | 翻译膨胀（巨型单行 / 超大文件，会让 rspress 编译卡死）                                       | 有膨胀 = 1   | 否                            |
-| `check-i18n-coverage.mjs`  | **本 PR 内** cn `.md`/`.mdx` 改动是否同步到了其他 9 个语言（单向检查）                       | 有未同步 = 1 | 否                            |
-| `normalize-doc-links.mjs`  | `_meta.json` 侧边栏 link 字段可解析；自动修 missingSlash / explicitIndex / extraSlash        | 有未解析 = 1 | `--write` 时会改 `_meta.json` |
+| 脚本                       | 检查内容                                                                              | 退出码       | 是否会改文件                  |
+| -------------------------- | ------------------------------------------------------------------------------------- | ------------ | ----------------------------- |
+| `check-tree-alignment.mjs` | 各语言文件树是否对齐 cn                                                               | 不齐 = 1     | 否                            |
+| `check-meta-alignment.mjs` | 各语言 `_meta.json` 侧边栏的 link/name 集合是否对齐 cn                                | 不齐 = 1     | 否                            |
+| `check-nav-alignment.mjs`  | 各语言 `_nav.json` 顶部导航条目数和 link 是否对齐 cn                                  | 不齐 = 1     | 否                            |
+| `check-bloated-files.mjs`  | 翻译膨胀（巨型单行 / 超大文件，会拖垮站点构建）                                       | 有膨胀 = 1   | 否                            |
+| `check-i18n-coverage.mjs`  | **本 PR 内** cn `.md`/`.mdx` 改动是否同步到了其他语言（单向检查）                     | 有未同步 = 1 | 否                            |
+| `normalize-doc-links.mjs`  | `_meta.json` 侧边栏 link 字段可解析；自动修 missingSlash / explicitIndex / extraSlash | 有未解析 = 1 | `--write` 时会改 `_meta.json` |
 
-前六个脚本都用 cn 作基准，只读不写，看「结构对不对齐」或「内容修改有没有跟」。`normalize-doc-links.mjs` 不依赖 cn 基准，每个语言独立校对自己的 `_meta.json`，且 `--write` 会自动修可纠正项。Markdown 链接的死链交给 rspress 内置 `checkDeadLinks`（build 时强制），不在这套脚本里。
+前五个脚本都用 cn 作基准，只读不写，看「结构对不对齐」或「内容修改有没有跟」。`normalize-doc-links.mjs` 不依赖 cn 基准，每个语言独立校对自己的 `_meta.json`，且 `--write` 会自动修可纠正项。Markdown 链接的死链由站点构建负责：构建结束后会检查产物里每个站内链接和 Markdown 页面的锚点，有死链就让构建失败（`src/integrations/html.ts`），不在这套脚本里。
+
+`deploy-cdn.mjs` 不是校对脚本，是发布流程的一部分：把 CDN 回源规则切到刚上传的版本目录，见 `.github/workflows/v3-docs.yml`。
 
 ## 用法
 
@@ -25,7 +26,6 @@ NocoBase 文档站维护 `cn / en / ja / es / pt / de / fr / ru / id / vi` 共 1
 node docs/scripts/check-tree-alignment.mjs
 node docs/scripts/check-meta-alignment.mjs
 node docs/scripts/check-nav-alignment.mjs
-node docs/scripts/check-home-alignment.mjs
 node docs/scripts/check-bloated-files.mjs
 
 # 或从 docs/ 目录跑（CI 一般在这里跑）
@@ -89,12 +89,11 @@ gh pr edit <pr-number> --add-label skip-i18n-check
 
 ## 依赖
 
-- `check-home-alignment.mjs` 用 `js-yaml` 解析 frontmatter，按 cwd 链路找它的 `node_modules`：先看 `<cwd>/node_modules`，再看 `<cwd>/docs/node_modules`，覆盖「从 repo root 跑」和「从 docs/ 跑」两种场景。它是本包显式声明的 devDependency，`pnpm install` 之后就在 `docs/node_modules` 里，无需手动安装。
-- 其他五个脚本仅用 Node 内置模块（`fs` / `path`），零依赖。
+校对脚本只用 Node 内置模块（`fs` / `path`），零依赖。
 
 ## 平台兼容
 
-六个脚本路径处理统一用 `path.posix.join` 拼相对路径，CRLF / LF 都能解析。Windows、macOS、Linux 都能跑，输出里的相对路径统一是正斜杠。
+校对脚本路径处理统一用 `path.posix.join` 拼相对路径，CRLF / LF 都能解析。Windows、macOS、Linux 都能跑，输出里的相对路径统一是正斜杠。
 
 ## 暂不维护的语言
 

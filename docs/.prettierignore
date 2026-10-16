@@ -3,11 +3,6 @@ package-lock.json
 pnpm-lock.yaml
 yarn.lock
 
-# Vendored from @rspress/core's ejectable theme. These are upstream's files, kept byte-for-byte so that `diff` against
-# the new upstream copy is the whole of a Rspress upgrade. Formatting them to this repository's settings would rewrite
-# every one on the first run and turn that diff into noise, so they are not ours to format.
-theme/components/Nav/
-theme/components/NavHamburger/
-theme/components/NavScreen/
-theme/components/Search/
-theme/components/HomeHero/
+# Build output and Astro's generated types
+dist/
+.astro/

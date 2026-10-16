@@ -3,8 +3,6 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
-  renameSync,
-  symlinkSync,
   utimesSync,
   writeFileSync,
 } from 'node:fs';
@@ -24,7 +22,6 @@ import {
   gcWorkspaces,
   markWorkspaceEnded,
   reportRepos,
-  SUBMODULES_PENDING,
   subjectWorkDir,
   markDirsPrepared,
   listSubmodules,
@@ -693,8 +690,22 @@ describe('checkout', () => {
     });
     afterEach(() => vi.unstubAllEnvs());
 
+    /** What an agent runs in its checkout: the runner initializes no submodule. */
+    const initByAgent = (dir: string): string =>
+      git(
+        [
+          'submodule',
+          'update',
+          '--init',
+          '--recursive',
+          '--checkout',
+          '--quiet',
+        ],
+        dir,
+      );
+
     it.each(['rebase', 'merge', 'checkout', 'none'])(
-      'pushes and resumes after initialization copies the %s submodule update policy',
+      'pushes and resumes after an agent initialization copies the %s submodule update policy',
       async (update) => {
         const seed = path.join(root, 'origin-repo-seed');
         git(
@@ -718,6 +729,7 @@ describe('checkout', () => {
         };
         const work = await checkout(options);
         const entry = work.repos[0]!;
+        initByAgent(entry.dir);
         expect(
           git(['config', '--get', 'submodule.vendor/sub.update'], entry.dir),
         ).toBe(update);
@@ -768,6 +780,7 @@ describe('checkout', () => {
       };
       const work = await checkout(options);
       const entry = work.repos[0]!;
+      initByAgent(entry.dir);
       const marker = path.join(root, 'submodule-update-executed');
       git(
         ['config', 'submodule.vendor/sub.update', `!touch '${marker}'`],
@@ -795,53 +808,6 @@ describe('checkout', () => {
       );
     });
 
-    it('keeps pending submodule preparation state outside writable clone metadata', async () => {
-      const options = {
-        paths,
-        appKey: 'app',
-        subjectKey: 'submodule-pending-boundary',
-        dirs: [repo('submodule-pending-boundary')],
-      };
-      const work = await checkout(options);
-      const entry = work.repos[0]!;
-      const child = path.join(entry.dir, 'vendor/sub');
-      git(
-        [
-          ...COMMIT,
-          'commit',
-          '-q',
-          '--allow-empty',
-          '-m',
-          'agent submodule work',
-        ],
-        child,
-      );
-      const head = git(['rev-parse', 'HEAD'], child);
-      const localPending = path.join(entry.gitDir, SUBMODULES_PENDING);
-      writeFileSync(
-        localPending,
-        JSON.stringify({ all: true, paths: ['vendor/sub'] }),
-      );
-      await work.release();
-      const resumed = await checkout(options);
-      expect(git(['rev-parse', 'HEAD'], child)).toBe(head);
-      git(
-        ['submodule', 'deinit', '--quiet', '--force', 'vendor/sub'],
-        entry.dir,
-      );
-      await resumed.release();
-
-      const target = path.join(root, 'pending-target');
-      writeFileSync(target, 'keep');
-      symlinkSync(target, localPending + '.link');
-      // Move the planted symlink over the writable legacy record.
-      renameSync(localPending + '.link', localPending);
-      const initialized = await checkout(options);
-      expect(existsSync(path.join(child, 'README.md'))).toBe(true);
-      expect(readFileSync(target, 'utf8')).toBe('keep');
-      await initialized.release();
-    });
-
     it('rejects unsafe submodule config before launching any child Git on resume', async () => {
       const options = {
         paths,
@@ -851,6 +817,7 @@ describe('checkout', () => {
       };
       const work = await checkout(options);
       const entry = work.repos[0]!;
+      initByAgent(entry.dir);
       const child = path.join(entry.dir, 'vendor/sub');
       const childConfig = path.join(entry.gitDir, 'modules/vendor/sub/config');
       const marker = path.join(root, 'submodule-helper-executed');
@@ -872,7 +839,7 @@ describe('checkout', () => {
       expect(existsSync(marker)).toBe(false);
     });
 
-    it('initializes them in a new clone, with their metadata in its own git directory', async () => {
+    it('leaves them uninitialized in a new clone, for the agent to initialize into its own git directory', async () => {
       const work = await checkout({
         paths,
         appKey: 'app',
@@ -881,12 +848,17 @@ describe('checkout', () => {
       });
       const dir = path.join(work.workDir, 'app');
       const gitDir = work.repos[0]!.gitDir;
-      expect(existsSync(path.join(dir, 'vendor/sub/README.md'))).toBe(true);
       expect(gitDir).toBe(path.join(dir, '.git'));
+      expect(existsSync(path.join(dir, 'vendor/sub/README.md'))).toBe(false);
+      expect(existsSync(path.join(gitDir, 'modules'))).toBe(false);
+      expect(work.repos[0]!.submodules).toEqual([]);
+
+      initByAgent(dir);
+      expect(existsSync(path.join(dir, 'vendor/sub/README.md'))).toBe(true);
       expect(
         git(['rev-parse', '--absolute-git-dir'], path.join(dir, 'vendor/sub')),
       ).toBe(path.join(gitDir, 'modules', 'vendor', 'sub'));
-      expect(work.repos[0]!.submodules).toEqual([path.join(dir, 'vendor/sub')]);
+      expect(await listSubmodules(dir)).toEqual([path.join(dir, 'vendor/sub')]);
       await work.release();
     });
 
@@ -916,13 +888,14 @@ describe('checkout', () => {
       });
       try {
         const dir = work.repos[0]!.dir;
+        initByAgent(dir);
         const expected = [
           path.join(dir, 'vendor/sub'),
           path.join(dir, 'vendor/sub space'),
           path.join(dir, 'vendor/sub space/nested/child space'),
           path.join(dir, 'vendor/not initialized'),
         ];
-        expect([...work.repos[0]!.submodules].sort()).toEqual(
+        expect((await listSubmodules(dir)).sort()).toEqual(
           [...expected].sort(),
         );
         expect(
@@ -949,41 +922,33 @@ describe('checkout', () => {
       }
     });
 
-    it('initializes only the missing ones when a clone is resumed, keeping where the agent moved the others', async () => {
-      const first = await checkout({
+    it('leaves the submodules an agent initialized, or did not, alone when a clone is resumed', async () => {
+      const options = {
         paths,
         appKey: 'app',
         subjectKey: 'submodule-resume',
         dirs: [repo('submodule-resume')],
-      });
+      };
+      const first = await checkout(options);
       const dir = path.join(first.workDir, 'app');
       const subDir = path.join(dir, 'vendor/sub');
+      initByAgent(dir);
       git([...COMMIT, 'commit', '-q', '--allow-empty', '-m', 'moved'], subDir);
       const moved = git(['rev-parse', 'HEAD'], subDir);
       await first.release();
 
-      const second = await checkout({
-        paths,
-        appKey: 'app',
-        subjectKey: 'submodule-resume',
-        dirs: [repo('submodule-resume')],
-      });
+      const second = await checkout(options);
       expect(git(['rev-parse', 'HEAD'], subDir)).toBe(moved);
+      expect(second.repos[0]!.submodules).toEqual([subDir]);
       git(['submodule', 'deinit', '--quiet', '--force', 'vendor/sub'], dir);
-      expect(existsSync(path.join(subDir, 'README.md'))).toBe(false);
       await second.release();
 
-      const third = await checkout({
-        paths,
-        appKey: 'app',
-        subjectKey: 'submodule-resume',
-        dirs: [repo('submodule-resume')],
-      });
-      expect(existsSync(path.join(subDir, 'README.md'))).toBe(true);
+      const third = await checkout(options);
+      expect(existsSync(path.join(subDir, 'README.md'))).toBe(false);
       await third.release();
     });
 
-    it('fails the preparation when a submodule cannot be fetched', async () => {
+    it('prepares a clone whose submodule cannot be fetched, without fetching it', async () => {
       const seed = path.join(root, 'origin-repo-seed');
       git(
         [
@@ -998,14 +963,14 @@ describe('checkout', () => {
       git(['add', '.gitmodules'], seed);
       git(['-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'gone'], seed);
       publishSeed(root);
-      await expect(
-        checkout({
-          paths,
-          appKey: 'app',
-          subjectKey: 'submodule-failure',
-          dirs: [repo('submodule-failure')],
-        }),
-      ).rejects.toThrow(/initializing its submodules failed: .*vendor\/sub/s);
+      const work = await checkout({
+        paths,
+        appKey: 'app',
+        subjectKey: 'submodule-failure',
+        dirs: [repo('submodule-failure')],
+      });
+      expect(work.repos[0]!.submodules).toEqual([]);
+      await work.release();
     });
 
     it('gives each subject a git directory of its own, apart from the shared cache', async () => {

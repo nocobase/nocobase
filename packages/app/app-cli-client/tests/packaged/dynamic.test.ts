@@ -9,6 +9,7 @@ import {
   RUN_CREDENTIALS_ENV,
 } from '@nocobase/agent-protocol';
 import { createHash } from 'node:crypto';
+import { spawn } from 'node:child_process';
 import { Hono } from 'hono';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
@@ -16,7 +17,7 @@ import path from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { CliCommand, CliManifest } from '@nocobase/app-cli-client';
-import { cli, cliEnv, removeDir, tempDir } from './helpers.ts';
+import { BIN, cli, cliEnv, removeDir, tempDir } from './helpers.ts';
 
 /** The standard error body. */
 const failure = (
@@ -381,6 +382,21 @@ class ManifestServer {
         seen.json = await c.req.json();
       this.seen.push(seen);
       const { path: route, method } = seen;
+      if (route === '/api/projects/issues/large')
+        return c.json({
+          data: Array.from({ length: 20000 }, (_, i) => ({
+            id: i,
+            title: 'x'.repeat(90),
+            statusKey: 'todo',
+          })),
+        });
+      if (route === '/api/projects/issues/nested')
+        return c.json({
+          data: {
+            content: { nested: 'x'.repeat(200) },
+            other: 'y'.repeat(100),
+          },
+        });
       const ticket = /^\/api\/releases\/apps\/([^/]+)\/uploadTickets$/u.exec(
         route,
       );
@@ -501,6 +517,65 @@ describe('business commands from the manifest', () => {
       removeDir(home);
       removeDir(work);
     };
+  });
+
+  it('offers typo suggestions in text and JSON without executing a request', async () => {
+    const text = await cli(['issue', 'commnet', 'list'], env);
+    expect(text.code).toBe(4);
+    expect(text.stderr).toContain('Did you mean issue comment list?');
+    const json = await cli(['issue', 'commnet', 'list', '--json'], env);
+    expect(json.code).toBe(4);
+    expect(JSON.parse(json.stdout).error.suggestions[0].run.args).toEqual([
+      'issue',
+      'comment',
+      'list',
+      '--help',
+    ]);
+    expect(server.seen).toEqual([]);
+  });
+
+  it('hints once for truncated text, with complete JSON and no quiet output', async () => {
+    const text = await cli(['issue', 'get', 'nested'], env);
+    expect(text.code).toBe(0);
+    expect(text.stdout.match(/Use --json/gu)).toHaveLength(1);
+    const json = await cli(['issue', 'get', 'nested', '--json'], env);
+    expect(JSON.parse(json.stdout).result.data.content.nested).toHaveLength(
+      200,
+    );
+    expect(json.stdout).not.toContain('Use --json');
+    const quiet = await cli(['issue', 'get', 'nested', '--quiet'], env);
+    expect(quiet.stdout).toBe('');
+  });
+
+  it('finishes a large packaged output when head closes the pipe early', async () => {
+    const full = await cli(['issue', 'get', 'large', '--json'], env);
+    expect(full.code).toBe(0);
+    expect(JSON.parse(full.stdout).result.data).toHaveLength(20000);
+    const child = spawn(
+      process.execPath,
+      [BIN, 'issue', 'get', 'large', '--json'],
+      { env },
+    );
+    const head = spawn('head', ['-n', '1']);
+    child.stdout.pipe(head.stdin);
+    // The reader closes intentionally; this forwarding stream must tolerate that close too.
+    head.stdin.on('error', () => {
+      child.stdout.destroy();
+    });
+    head.on('close', () => {
+      child.stdout.destroy();
+    });
+    let stderr = '';
+    child.stderr.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+    head.stdout.resume();
+    child.stdin.end();
+    const code = await new Promise<number | null>((resolve) =>
+      child.on('close', resolve),
+    );
+    expect(code).toBe(0);
+    expect(stderr).not.toMatch(/unsettled|EPIPE|Warning/iu);
   });
 
   it('sends a request command to its route, reading a flag from a file, and prints the envelope', async () => {

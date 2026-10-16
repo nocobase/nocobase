@@ -600,12 +600,8 @@ function Header({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div
-        className={cn(
-          'flex min-w-0 flex-nowrap items-center gap-1.5 overflow-x-auto [scrollbar-width:none] md:overflow-visible',
-          collapsed && 'max-md:hidden',
-        )}
-      >
+      {/* Where the session runs: on a phone only in the details, which list the same. */}
+      <div className='flex min-w-0 flex-nowrap items-center gap-1.5 overflow-visible max-md:hidden'>
         <MetaChip
           title={[agentName(session, computer), mode]
             .filter(Boolean)
@@ -651,7 +647,13 @@ function Header({
         type='button'
         aria-expanded={details}
         onClick={onShowDetails}
-        className='hover:bg-muted focus-visible:ring-ring flex min-w-0 items-center gap-2 rounded-md px-1 py-1 text-left text-xs focus-visible:ring-2'
+        className={cn(
+          'hover:bg-muted focus-visible:ring-ring flex min-w-0 items-center gap-2 rounded-md px-1 py-1 text-left text-xs focus-visible:ring-2',
+          // The open details list the same work; on a phone the line stays one row, cut short.
+          details && 'md:hidden',
+          'max-md:overflow-hidden max-md:whitespace-nowrap',
+          collapsed && 'max-md:hidden',
+        )}
       >
         <ListChecksIcon className='size-4 shrink-0' aria-hidden />
         <span className='shrink-0 font-medium'>
@@ -660,7 +662,7 @@ function Header({
         {session.links.length === 0 ? (
           <span className='text-muted-foreground'>{t('links.none')}</span>
         ) : (
-          <Legend session={session} />
+          <Legend session={session} nowrap />
         )}
       </button>
     </header>
@@ -792,26 +794,30 @@ function Details({
               <LinkBar links={session.links} className='h-2.5 w-full' />
               <Legend session={session} nowrap />
             </div>
-            <ul className='flex flex-col gap-2'>
+            {/* One list, a row per record as the task lists draw them: the title with its status, the key below. */}
+            <ul className='bg-card divide-y overflow-hidden rounded-lg border'>
               {session.links.map((link) => (
                 <li
                   key={`${link.kind}:${link.refId}`}
-                  className='bg-card flex flex-col gap-1.5 rounded-lg border px-3 py-2.5'
+                  className='flex flex-col gap-1 px-3 py-2'
                 >
-                  {/* The title on its own line; below, the key, and the status at the right, as every card has it. */}
-                  <LinkName link={link} title className='font-medium' />
                   <div className='flex min-w-0 items-center gap-2'>
-                    {link.key && (
-                      <span className='text-muted-foreground font-mono text-xs'>
-                        {link.key}
-                      </span>
-                    )}
+                    <LinkName
+                      link={link}
+                      title
+                      className='min-w-0 flex-1 truncate font-medium'
+                    />
                     {link.status && (
-                      <span className='ml-auto'>
+                      <span className='shrink-0'>
                         <StatusPill status={link.status} compact />
                       </span>
                     )}
                   </div>
+                  {link.key && (
+                    <span className='text-muted-foreground font-mono text-xs'>
+                      {link.key}
+                    </span>
+                  )}
                   {link.startable && session.archivedAt === null && (
                     <div className='text-muted-foreground flex items-center gap-2 text-[11px]'>
                       {t('links.notStarted')}
@@ -1039,7 +1045,7 @@ function Banner({
   return (
     <div
       className={cn(
-        'mx-4 mt-3 flex items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-[13px] sm:mx-5',
+        'mx-4 mt-3 flex items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-[13px] sm:mx-5 max-md:mt-2 max-md:items-center max-md:py-1.5',
         warning
           ? 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200'
           : 'bg-card',
@@ -1047,11 +1053,12 @@ function Banner({
     >
       <span className='mt-0.5'>{icon}</span>
       <div className='min-w-0'>
-        <p>
+        <p className='max-md:truncate'>
           <span className='font-semibold'>{title}</span>
           {meta && <span className='opacity-80'> · {meta}</span>}
         </p>
-        {body && <p className='mt-0.5 opacity-80'>{body}</p>}
+        {/* A phone keeps the one line; the explanation is for a wider screen. */}
+        {body && <p className='mt-0.5 opacity-80 max-md:hidden'>{body}</p>}
       </div>
     </div>
   );

@@ -2,7 +2,9 @@
  * A run: one attempt by one agent to work on one subject, and everything a runner receives when it claims one.
  *
  * Lifecycle: `queued → dispatched → running → completed | failed | cancelled`. A claim moves a run to `dispatched`
- * under a lease; `start` moves it to `running`. A run whose lease expires, whose runner goes offline, or that fails for
+ * with a five-minute start window while its runner stays online; `start` moves it to `running` under the renewable
+ * execution lease. Pre-start timeouts or runtime loss requeue without consuming failures. A running run whose lease
+ * expires, whose runner goes offline, or that fails for
  * a retryable reason goes back to `queued` while attempts remain. Input that arrives while a run is `dispatched` or
  * `running` is added to that run and reported by `lease` and `status`.
  */

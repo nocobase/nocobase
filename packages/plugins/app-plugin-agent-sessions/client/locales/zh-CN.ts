@@ -25,8 +25,8 @@ const zhCN: AgentSessionsResource = {
     filter: '显示',
     filters: {
       all: '全部',
-      waiting_one: '等我确认 {{count}}',
-      waiting_other: '等我确认 {{count}}',
+      waiting_one: '等你确认 {{count}}',
+      waiting_other: '等你确认 {{count}}',
       active_one: '进行中 {{count}}',
       active_other: '进行中 {{count}}',
     },

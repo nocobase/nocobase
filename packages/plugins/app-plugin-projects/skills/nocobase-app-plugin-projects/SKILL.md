@@ -69,7 +69,9 @@ grants from before roles moved to the App; the App converts them (for example, `
   People move an issue between any two statuses; a principal of another kind only along its kind's `moves`, and only
   when its `mayMove` agrees; anything else is 400 `TRANSITION_NOT_ALLOWED`. Entering `blocked` or `in_review` records
   `owner_notified` and sends an `owner_notified` notice, unless the owner moved it. `PATCH /api/projects/issues/{issueId}`
-  answers 200 `{ data: { issue } }`.
+  answers 200 `{ data: { issue } }`. An issue's nullable Markdown `acceptance` is its delivery report, ending with the
+  acceptance criteria; it is written with the move to `in_review`, kept across later status changes, and replaced by the
+  next delivery.
 - Another plugin registers status events through `projectsStatusEventsToken` (`StatusEventTypes.add({ key, from, to })`,
   a dotted key such as `acme.merged`, the statuses it moves an issue out of and the one it moves it to) and fires one
   with `projects.statusEvents.fire({ event, issueIds, actor?, note?, details? }, tx?)`. Each issue in one of `from`
