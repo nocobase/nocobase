@@ -1,4 +1,4 @@
-import { Calendar, ClipboardList, Database, Inbox, Stamp } from 'lucide-react';
+import { ClipboardList, Database, Inbox, Stamp } from 'lucide-react';
 import {
   defineAppRoutes,
   type AppClientRouteContribution,
@@ -37,15 +37,6 @@ const routes: readonly AppClientRouteContribution[] = [
           navigation: { title: 'navigation.tasks', icon: ClipboardList },
           breadcrumb: { title: 'navigation.tasks' },
           componentLoader: () => import('./pages/tasks.js'),
-        },
-        {
-          name: 'officeFlowsConfiguration',
-          path: '/office-flows/configuration',
-          auth: 'required',
-          authz: 'skip',
-          navigation: { title: 'navigation.configuration', icon: Calendar },
-          breadcrumb: { title: 'navigation.configuration' },
-          componentLoader: () => import('./pages/configuration.js'),
         },
       ],
     },

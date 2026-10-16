@@ -6,6 +6,7 @@ import {
   PanelsTopLeft,
   Plug,
   Workflow,
+  Settings,
 } from 'lucide-react';
 import {
   defineAppRoutes,
@@ -14,11 +15,24 @@ import {
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
   {
+    name: 'systemManagement',
+    children: [],
+    navigation: {
+      title: 'workflows.systemManagement',
+      icon: Settings,
+      order: 100,
+    },
+    breadcrumb: { title: 'workflows.systemManagement' },
+  },
+  {
     name: 'workflows',
-    parent: '@nocobase/app-plugin-lifecycle-example:lifecycleExample',
+    parent: 'systemManagement',
     path: '/workflows',
     auth: 'required',
-    authz: 'skip',
+    authz: {
+      resource: { type: 'settings', id: 'workflow-management' },
+      action: 'read',
+    },
     navigation: { title: 'workflows.title', icon: Workflow },
     breadcrumb: { title: 'workflows.title' },
     componentLoader: () => import('./pages/workflows/index.js'),
@@ -26,29 +40,37 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       {
         name: 'workflowDefinitions',
         path: 'definitions',
-        authz: 'skip',
         breadcrumb: { title: 'workflows.definitions' },
         componentLoader: () => import('./pages/workflows/definitions.js'),
         children: [
           {
             name: 'workflowDefinition',
             path: ':workflowId',
-            authz: 'skip',
             componentLoader: () => import('./pages/workflows/definition.js'),
+            children: [
+              {
+                name: 'workflowParameters',
+                path: 'parameters',
+                authz: {
+                  resource: { type: 'settings', id: 'workflow-management' },
+                  action: 'update',
+                },
+                componentLoader: () =>
+                  import('./pages/workflows/parameters.js'),
+              },
+            ],
           },
         ],
       },
       {
         name: 'workflowExecutions',
         path: 'executions',
-        authz: 'skip',
         breadcrumb: { title: 'workflows.executions' },
         componentLoader: () => import('./pages/workflows/executions.js'),
         children: [
           {
             name: 'workflowExecution',
             path: ':workflowId/:recordId',
-            authz: 'skip',
             componentLoader: () => import('./pages/workflows/execution.js'),
           },
         ],

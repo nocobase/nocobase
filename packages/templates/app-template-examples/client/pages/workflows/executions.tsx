@@ -1,3 +1,4 @@
+import { useMatch } from 'react-router';
 import { Badge } from '#components/ui/badge';
 import { Empty, EmptyDescription } from '#components/ui/empty';
 import { ArrowDown, ArrowUp } from 'lucide-react';
@@ -5,6 +6,8 @@ import type { ReactElement } from 'react';
 import { Link, Outlet, useLocation, useSearchParams } from 'react-router';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Button } from '#components/ui/button';
+import { Input } from '#components/ui/input';
+import { useUrlSearch } from '#hooks/use-url-search';
 import {
   Table,
   TableBody,
@@ -13,13 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from '#components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#components/ui/select';
 import type {
   WorkflowSummary,
   WorkflowExecutionPage,
@@ -28,10 +24,23 @@ import { DataState } from './shared.js';
 import { useWorkflowData, useWorkflowLabels, workflowDate } from './hooks.js';
 
 export default function ExecutionsPage(): ReactElement {
+  const detail = useMatch({
+    path: '/workflows/executions/:workflowId/:recordId',
+    end: false,
+  });
   const { t, i18n } = useTranslation();
   const labels = useWorkflowLabels();
   const location = useLocation();
   const [search, setSearch] = useSearchParams();
+  const nameFilter = useUrlSearch({
+    param: 'name',
+    resetParams: ['page', 'workflowId'],
+  });
+  const normalizedName = nameFilter.search;
+  const catalog = useWorkflowData<{ data: readonly WorkflowSummary[] }>(
+    'workflows/definitions',
+  );
+  const workflows = catalog.data?.data ?? [];
   const order = search.get('order') === 'oldest' ? 'oldest' : 'newest';
   const workflowId = search.get('workflowId') ?? '';
   const rawPage = Number(search.get('page') ?? 1);
@@ -42,10 +51,8 @@ export default function ExecutionsPage(): ReactElement {
     pageSize: '20',
     ...(order === 'oldest' ? { order } : {}),
     ...(workflowId ? { workflowId } : {}),
+    ...(normalizedName ? { q: normalizedName } : {}),
   }).toString();
-  const catalog = useWorkflowData<{ data: readonly WorkflowSummary[] }>(
-    'workflows/definitions',
-  );
   const request = useWorkflowData<WorkflowExecutionPage>(
     'workflows/executions',
     query,
@@ -55,47 +62,35 @@ export default function ExecutionsPage(): ReactElement {
     params.set('page', String(next));
     setSearch(params);
   };
-  const workflows = catalog.data?.data ?? [];
-  const options = [
-    { value: '', label: t('workflows.all') },
-    ...workflows.map((workflow) => ({
-      value: workflow.id,
-      label: labels.title(workflow),
-    })),
-  ];
   const total = request.data?.meta.total ?? 0;
+  const selectedWorkflow = workflows.find((item) => item.id === workflowId);
+  if (detail) return <Outlet />;
   return (
     <section className='flex flex-col gap-4'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
         <div className='flex flex-wrap items-center gap-2'>
-          <Select
-            items={options}
-            value={workflowId}
-            onValueChange={(value) => {
-              const params = new URLSearchParams(search);
-              params.delete('page');
-              if (typeof value === 'string' && value)
-                params.set('workflowId', value);
-              else params.delete('workflowId');
-              setSearch(params);
-            }}
-          >
-            <SelectTrigger
-              aria-label={t('workflows.filter')}
-              className='max-w-full min-w-52'
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className='w-max max-w-[calc(100vw-2rem)] [&_[data-slot=select-item]]:whitespace-normal'>
-              {options.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Input
+            type='search'
+            className='w-full sm:w-72'
+            aria-label={t('workflows.filterByName')}
+            placeholder={t('workflows.filterByName')}
+            {...nameFilter.inputProps}
+          />
           {workflowId && (
-            <Button variant='ghost' onClick={() => setSearch({})}>
+            <Badge variant='secondary'>
+              {selectedWorkflow ? labels.title(selectedWorkflow) : workflowId}
+            </Badge>
+          )}
+          {(workflowId || nameFilter.text) && (
+            <Button
+              variant='ghost'
+              onClick={() =>
+                nameFilter.clear((params) => {
+                  params.delete('workflowId');
+                  params.delete('page');
+                })
+              }
+            >
               {t('workflows.clear')}
             </Button>
           )}
@@ -118,13 +113,10 @@ export default function ExecutionsPage(): ReactElement {
           <TableHeader>
             <TableRow className='bg-muted/40 hover:bg-muted/40'>
               <TableHead className='px-3 text-muted-foreground'>
-                {t('workflows.workflow')}
-              </TableHead>
-              <TableHead className='px-3 text-muted-foreground'>
                 {t('workflows.record')}
               </TableHead>
               <TableHead className='px-3 text-muted-foreground'>
-                {t('workflows.recordTitle')}
+                {t('workflows.workflow')}
               </TableHead>
               <TableHead className='px-3 text-muted-foreground'>
                 {t('workflows.state')}
@@ -162,18 +154,7 @@ export default function ExecutionsPage(): ReactElement {
                 <TableRow key={`${execution.workflowId}:${execution.recordId}`}>
                   <TableCell className='px-3'>
                     <Link
-                      className='text-primary hover:underline'
-                      to={{
-                        pathname: `/workflows/definitions/${execution.workflowId}`,
-                        search: location.search,
-                      }}
-                    >
-                      {workflow ? labels.title(workflow) : execution.workflowId}
-                    </Link>
-                  </TableCell>
-                  <TableCell className='px-3'>
-                    <Link
-                      className='text-primary underline-offset-4 hover:underline'
+                      className='underline-offset-4 hover:underline'
                       to={{
                         pathname: `/workflows/executions/${execution.workflowId}/${execution.recordId}`,
                         search: location.search,
@@ -182,11 +163,16 @@ export default function ExecutionsPage(): ReactElement {
                       #{execution.recordId}
                     </Link>
                   </TableCell>
-                  <TableCell
-                    className='max-w-64 truncate px-3'
-                    title={execution.title}
-                  >
-                    {execution.title}
+                  <TableCell className='px-3'>
+                    <Link
+                      className='hover:underline'
+                      to={{
+                        pathname: `/workflows/definitions/${execution.workflowId}`,
+                        search: location.search,
+                      }}
+                    >
+                      {workflow ? labels.title(workflow) : execution.workflowId}
+                    </Link>
                   </TableCell>
                   <TableCell className='px-3'>
                     <Badge variant='secondary'>
@@ -204,11 +190,11 @@ export default function ExecutionsPage(): ReactElement {
             })}
             {request.data?.data.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5}>
+                <TableCell colSpan={4}>
                   <Empty>
                     <EmptyDescription>
                       {t(
-                        workflowId
+                        workflowId || normalizedName
                           ? 'workflows.noResults'
                           : 'workflows.noExecutions',
                       )}

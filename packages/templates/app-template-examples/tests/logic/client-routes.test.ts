@@ -77,11 +77,27 @@ describe('app client routes', () => {
       { name: 'numeric-examples', authorizedAs: 'numeric-examples' },
       { name: 'i18n-examples', authorizedAs: 'i18n-examples' },
       { name: 'external-crm', authorizedAs: 'external-crm' },
-      { name: 'workflows', authorizedAs: null },
-      { name: 'workflowDefinitions', authorizedAs: null },
-      { name: 'workflowDefinition', authorizedAs: null },
-      { name: 'workflowExecutions', authorizedAs: null },
-      { name: 'workflowExecution', authorizedAs: null },
+      { name: 'workflows', authorizedAs: 'settings:workflow-management' },
+      {
+        name: 'workflowDefinitions',
+        authorizedAs: 'settings:workflow-management',
+      },
+      {
+        name: 'workflowDefinition',
+        authorizedAs: 'settings:workflow-management',
+      },
+      {
+        name: 'workflowParameters',
+        authorizedAs: 'settings:workflow-management',
+      },
+      {
+        name: 'workflowExecutions',
+        authorizedAs: 'settings:workflow-management',
+      },
+      {
+        name: 'workflowExecution',
+        authorizedAs: 'settings:workflow-management',
+      },
     ]);
   });
 });
