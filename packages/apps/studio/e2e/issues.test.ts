@@ -149,12 +149,12 @@ test.describe('issues', () => {
       .getByRole('rowgroup')
       .last()
       .getByRole('row');
-    // The follow group's heading, then one group holding the one matching task.
+    // Nothing followed, so no follow group: one group holding the one matching task.
     const headings = rows.filter({
       has: page.getByRole('button', { name: /^(折叠|展开)/ }),
     });
-    await expect(headings).toHaveCount(2);
-    await expect(headings.nth(1)).toContainText(/1$/u);
+    await expect(headings).toHaveCount(1);
+    await expect(headings.nth(0)).toContainText(/1$/u);
     // The demo task is done, whose group starts folded.
     await page.getByRole('button', { name: '展开已完成' }).click();
     const parent = rows.filter({
