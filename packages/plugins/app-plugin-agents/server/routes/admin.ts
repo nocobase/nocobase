@@ -72,6 +72,7 @@ import {
   encodePageToken,
 } from '../kernel/http.js';
 import { WORKDIR_TITLE } from '../kernel/scopes.js';
+import type { KeyScope } from '@nocobase/authorization/core';
 import { tags } from './openapi.js';
 import {
   AgentActionOptionSchema,
@@ -168,6 +169,7 @@ const revisionConflict = (what: string): ApiResponseObject =>
 /** Who is asking, what the settings items allow them, and how far their business actions reach. */
 export interface AdminCaller {
   readonly userId: string;
+  readonly keyScope?: KeyScope;
   can(item: SettingsItem, action: SettingsAction): Promise<boolean>;
   /** Whether a page grant (`PAGES`) opens the page for the caller. */
   opens(page: Page): Promise<boolean>;
@@ -294,8 +296,15 @@ export function createAdminRoutes(
     const allowed = services.scopes
       .keys()
       .filter((key) => withAgent || key !== 'agent');
-    if (!allowed.includes(scope) || !scopeId) throw notFound('Scope');
     const who = caller(context);
+    if (!withAgent && scope === 'global') {
+      if (scopeId !== 'default') throw notFound('Scope');
+      const manage = await who.can('agents.agents', 'manage');
+      if (!manage && !(await who.can('agents.agents', 'read')))
+        throw notFound('Scope');
+      return { scope, scopeId, manage };
+    }
+    if (!allowed.includes(scope) || !scopeId) throw notFound('Scope');
     if (scope === 'agent') {
       await services.agents.get(scopeId);
       const manage = await who.can('agents.agents', 'manage');
@@ -411,6 +420,70 @@ export function createAdminRoutes(
     }),
     async (context) => {
       const data = await services.people.list(services.tx.read());
+      return context.json({ data, meta: { total: data.length } });
+    },
+  );
+
+  router.put(
+    '/discoveryPreferences',
+    scoped,
+    can('agents.agents', 'manage'),
+    describeRoute({
+      tags,
+      summary: 'Ignore or restore discovery groups',
+      operationId: 'agentsSetDiscoveryPreferences',
+      ...cliRoute({ command: 'agent discovery set', bodyFile: 'input' }),
+      description:
+        'Shared administrator preferences. Only pending groups can be changed. Batches are atomic and checked against each group revision. Reports do not reset preferences.',
+      responses: {
+        200: listResponse(
+          z.object({
+            key: z.string(),
+            ignored: z.boolean(),
+            revision: z.number().int(),
+          }),
+        ),
+        400: apiErrorResponse(400, 'The group contains a non-pending agent.'),
+        409: apiErrorResponse(409, 'The discovery group changed.'),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator(
+      'json',
+      z.strictObject({
+        groups: z
+          .array(
+            z.strictObject({
+              key: z
+                .string()
+                .min(1)
+                .max(256)
+                .meta({ description: 'The discoveryKey from the agent list.' }),
+              expectedRevision: z.number().int().min(0).meta({
+                description: 'The discoveryRevision from the agent list.',
+              }),
+            }),
+          )
+          .min(1)
+          .max(256)
+          .refine(
+            (groups) =>
+              new Set(groups.map((group) => group.key)).size === groups.length,
+            'Groups must be unique.',
+          )
+          .meta({
+            description:
+              'Unique pending discovery groups to update atomically.',
+          }),
+        ignored: z.boolean().meta({
+          description:
+            'True to ignore pending discoveries; false to restore them without enabling.',
+        }),
+      }),
+    ),
+    async (context) => {
+      const { groups, ignored } = context.req.valid('json');
+      const data = await services.agents.setIgnored(groups, ignored);
       return context.json({ data, meta: { total: data.length } });
     },
   );
@@ -704,8 +777,30 @@ export function createAdminRoutes(
     id: string,
   ): Promise<SkillView> => {
     const skill = await services.skills.get(id);
+    const names = new Map<
+      string,
+      ReadonlyMap<string, { readonly name: string; readonly href?: string }>
+    >();
+    for (const scope of new Set(skill.attachments.map((item) => item.scope))) {
+      const kind = services.scopes.get(scope);
+      if (kind?.describe)
+        names.set(
+          scope,
+          await kind.describe(
+            skill.attachments
+              .filter((item) => item.scope === scope)
+              .map((item) => item.scopeId),
+            caller(context).userId,
+            caller(context).keyScope,
+          ),
+        );
+    }
     return {
       ...skill,
+      attachments: skill.attachments.map((item) => ({
+        ...item,
+        ...names.get(item.scope)?.get(item.scopeId),
+      })),
       canEdit: await mayEdit(caller(context), skill.createdById),
     };
   };
@@ -722,7 +817,7 @@ export function createAdminRoutes(
       operationId: 'agentsListSkills',
       ...cliRoute({
         command: 'skill list',
-        columns: ['id', 'name', 'version', 'agentCount', 'updatedAt'],
+        columns: ['id', 'name', 'version', 'updatedAt'],
       }),
       description: 'The skill library. Needs `agents.agents` read.',
       responses: { 200: listResponse(SkillSchema), ...apiErrorResponses },
@@ -1194,17 +1289,17 @@ export function createAdminRoutes(
           scopeKind: {
             name: 'kind',
             description:
-              'The scope kind: `agent`, `workdir`, or one the application registers.',
+              'The scope kind: `global`, `workdir`, or one the application registers.',
           },
           scopeId: {
             name: 'scope',
             description:
-              'The scope: an agent id, a working directory id, or the id the application gives.',
+              'The scope: `default` for global, a working directory id, or the id the application gives.',
           },
         },
       }),
       description:
-        "The skills every run working in the scope gets (a working directory, or a scope the application registers; an agent's own skills are its `skillIds`).",
+        'The skills every run gets: global default, then application scopes, then working directories; later scopes override the same slug. Global reads require agents.agents read or manage.',
       responses: {
         200: dataResponse(SkillAttachmentsSchema),
         404: noScope,
@@ -1233,21 +1328,23 @@ export function createAdminRoutes(
           scopeKind: {
             name: 'kind',
             description:
-              'The scope kind: `agent`, `workdir`, or one the application registers.',
+              'The scope kind: `global`, `workdir`, or one the application registers.',
           },
           scopeId: {
             name: 'scope',
             description:
-              'The scope: an agent id, a working directory id, or the id the application gives.',
+              'The scope: `default` for global, a working directory id, or the id the application gives.',
           },
           skillIds: { name: 'skills' },
         },
         examples: [
+          'skill attachment set global default --skills <skill>,<skill>',
+          'skill attachment set global default --file empty-skills.json',
           'skill attachment set workdir <workdir> --skills <skill>,<skill>',
         ],
       }),
       description:
-        'Makes `skillIds` the skills attached to the scope. Needs the right to change the scope.',
+        'Makes `skillIds` the skills attached to the scope. Global accepts only default and requires agents.agents manage; other scopes need the right to change that scope. An empty skillIds array clears attachments. Agent attachments are refused.',
       responses: {
         200: dataResponse(SkillAttachmentsSchema),
         400: apiErrorResponse(

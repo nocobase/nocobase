@@ -13,7 +13,7 @@ import {
   ACTIVITY_PAGE_LIMIT,
   ISSUE_PAGE_LIMIT,
   type ActivityPage,
-  type BoardColumn,
+  type Issue,
   type IssueBoard,
   type IssueDetail,
   type IssueListItem,
@@ -38,8 +38,10 @@ import {
 } from './issue.access.js';
 import {
   findIssue,
+  findIssueRefs,
   findIssueRow,
   findIssueRows,
+  hierarchyRecords,
   priorityRank,
   statusesOf,
   type IssueRecord,
@@ -48,14 +50,32 @@ import {
 import type { KindRegistry } from '../../kernel/kinds.js';
 import { isTerminal, type IssueExtras, type StatusService } from './ports.js';
 import { FIXED_STATUSES } from '../../../shared/statuses.js';
+import { oneOf } from '../../kernel/db.js';
 
 export interface IssueQueries {
   /** The fixed statuses, in order. */
   statuses(): StatusDefinition[];
   page(viewer: Viewer, query: IssueListQuery): Promise<IssuePage>;
+  /** Complete live authorized hierarchy and filter matches; no list-page or matching cap. */
+  hierarchy(viewer: Viewer, query: IssueListQuery): Promise<IssueHierarchy>;
+  /**
+   * Hydrates a bounded set of IDs (at most `HIERARCHY_ITEMS_MAX`) after independently rechecking visibility, in a fixed
+   * number of queries. `readableIds`, the ids `hierarchy` answered for the same viewer, saves reading them again for the
+   * sub-task counts.
+   */
+  hierarchyItems(
+    viewer: Viewer,
+    ids: readonly string[],
+    readableIds?: ReadonlySet<string>,
+  ): Promise<IssueListItem[]>;
   /** A page per status column; with `statusKey`, that column only, continuing from `cursor`. */
   board(viewer: Viewer, query: IssueListQuery): Promise<IssueBoard>;
   detail(viewer: Viewer, idOrKey: string): Promise<IssueDetail>;
+  /**
+   * The issue itself, 404 unless it exists and the viewer may see it: the visibility `detail` checks, without reading
+   * what the issue page shows around it (activities, threads, files, relations).
+   */
+  visible(viewer: Viewer, idOrKey: string): Promise<Issue>;
   /**
    * The viewer's issues narrowed by the list's filters (`query`; its order and cursor are ignored) that an executor of
    * `scope.executorType` works on, unless finished (done or closed), or that are among `scope.issueIds`, whatever their
@@ -74,6 +94,13 @@ export interface IssueQueries {
   ): Promise<ActivityPage>;
 }
 
+export interface IssueHierarchy {
+  readonly issues: readonly Issue[];
+  readonly matchingIds: readonly string[];
+  /** Internal workflow dependency facts, including unreadable blockers; never expose their identities. */
+  readonly blockedIds: ReadonlySet<string>;
+}
+
 /** Which issues `IssueQueries.matching` gathers besides the list's filters. */
 export interface IssueMatchScope {
   /** Issues an executor of this kind works on, unless finished. */
@@ -88,6 +115,9 @@ export interface IssueMatches {
   /** More issues matched than the limit allowed. */
   readonly truncated: boolean;
 }
+
+/** The most issues `IssueQueries.hierarchyItems` hydrates at once. */
+export const HIERARCHY_ITEMS_MAX = 500;
 
 /** The most issues `IssueQueries.matching` answers. */
 export const MATCHING_LIMIT = 500;
@@ -113,8 +143,19 @@ function listFilter(viewer: Viewer, query: IssueListQuery) {
     const nodes: FilterNode[] = [
       query.deleted ? deletedIssues(f, viewer) : visibleIssues(f, viewer),
     ];
+    if (query.issueIds) nodes.push(oneOf(f, 'id', query.issueIds));
     if (query.statusKey) nodes.push(f.string('statusKey').eq(query.statusKey));
     if (query.projectId) nodes.push(f.string('projectId').eq(query.projectId));
+    if (query.involvesUserId)
+      nodes.push(
+        f.or([
+          f.string('ownerUserId').eq(query.involvesUserId),
+          f.and([
+            f.string('executorType').eq('user'),
+            f.string('executorId').eq(query.involvesUserId),
+          ]),
+        ]),
+      );
     if (query.ownerUserId)
       nodes.push(f.string('ownerUserId').eq(query.ownerUserId));
     if (query.executorId)
@@ -141,6 +182,26 @@ function listFilter(viewer: Viewer, query: IssueListQuery) {
   };
 }
 
+/**
+ * The list's filters as a test of an issue already read, when they are all exact matches on its own fields (no search
+ * text, no label); null otherwise, and the filters are read from the database.
+ */
+function exactMatcher(
+  query: IssueListQuery,
+): ((issue: Issue) => boolean) | null {
+  if (query.q?.trim() || query.labelId || query.parentIssueId || query.issueIds)
+    return null;
+  return (issue) =>
+    (!query.statusKey || issue.statusKey === query.statusKey) &&
+    (!query.projectId || issue.projectId === query.projectId) &&
+    (!query.involvesUserId ||
+      issue.ownerUserId === query.involvesUserId ||
+      (issue.executor?.type === 'user' &&
+        issue.executor.id === query.involvesUserId)) &&
+    (!query.ownerUserId || issue.ownerUserId === query.ownerUserId) &&
+    (!query.executorId || issue.executor?.id === query.executorId);
+}
+
 function cursorOf(
   cursor: string | undefined,
   order: Order,
@@ -157,12 +218,13 @@ async function listItems(
   deps: QueryDeps,
   conn: DatabaseConnection,
   rows: readonly IssueRow[],
+  readableIds?: ReadonlySet<string>,
 ): Promise<IssueListItem[]> {
   const name = await deps.kinds.nameAll(
     conn,
     rows.flatMap((row) => (row.executor ? [row.executor] : [])),
   );
-  const counts = await deps.extras().listCounts(conn, rows);
+  const counts = await deps.extras().listCounts(conn, rows, readableIds);
   return rows.map(({ ownerName, ...row }) => ({
     ...row,
     owner: { id: row.ownerUserId, name: ownerName },
@@ -174,13 +236,11 @@ async function listItems(
   }));
 }
 
-async function page(
-  deps: QueryDeps,
-  conn: DatabaseConnection,
-  viewer: Viewer,
-  query: IssueListQuery,
-  limit: number,
-): Promise<IssuePage> {
+/** The sort field and direction a list query orders by. */
+function orderOf(query: IssueListQuery): {
+  readonly order: Order;
+  readonly direction: 'asc' | 'desc';
+} {
   const order: Order =
     query.sort === 'created'
       ? 'createdAt'
@@ -194,21 +254,94 @@ async function page(
     order === 'priorityRank'
       ? query.direction !== 'asc'
       : query.direction === 'asc';
+  return { order, direction: ascending ? 'asc' : 'desc' };
+}
+
+const cursorFieldsOf =
+  (order: Order) =>
+  (
+    row: Pick<Issue, 'id' | 'priority' | 'createdAt' | 'updatedAt' | 'number'>,
+  ) => ({
+    [order]: order === 'priorityRank' ? priorityRank(row.priority) : row[order],
+    id: row.id,
+  });
+
+async function page(
+  deps: QueryDeps,
+  conn: DatabaseConnection,
+  viewer: Viewer,
+  query: IssueListQuery,
+  limit: number,
+): Promise<IssuePage> {
+  const { order, direction } = orderOf(query);
   const rows = await findIssueRows(conn, {
     filter: listFilter(viewer, query),
     order,
-    direction: ascending ? 'asc' : 'desc',
+    direction,
     limit: limit + 1,
     ...(query.cursor ? { cursor: cursorOf(query.cursor, order) } : {}),
   });
-  const result = pageOf(rows, limit, (row) => ({
-    [order]: order === 'priorityRank' ? priorityRank(row.priority) : row[order],
-    id: row.id,
-  }));
+  const result = pageOf(rows, limit, cursorFieldsOf(order));
   return {
     data: await listItems(deps, conn, result.rows),
     nextCursor: result.nextCursor,
   };
+}
+
+/**
+ * The first page of each of `statusKeys`, in a fixed number of reads whatever the number of issues: the ids of each
+ * column in its order, then the rows of every column at once, and what the rows show beside them at once.
+ */
+async function columnPages(
+  deps: QueryDeps,
+  conn: DatabaseConnection,
+  viewer: Viewer,
+  query: IssueListQuery,
+  statusKeys: readonly string[],
+  limit: number,
+): Promise<Map<string, IssuePage>> {
+  const { order, direction } = orderOf(query);
+  const refs = new Map<
+    string,
+    { readonly ids: string[]; readonly nextCursor: string | null }
+  >();
+  for (const statusKey of statusKeys) {
+    const found = await findIssueRefs(conn, {
+      filter: listFilter(viewer, { ...query, statusKey, cursor: undefined }),
+      order,
+      direction,
+      limit: limit + 1,
+    });
+    const result = pageOf(found, limit, cursorFieldsOf(order));
+    refs.set(statusKey, {
+      ids: result.rows.map((row) => row.id),
+      nextCursor: result.nextCursor,
+    });
+  }
+  const ids = [...refs.values()].flatMap((column) => column.ids);
+  const rows =
+    ids.length > 0
+      ? await findIssueRows(conn, {
+          filter: (f) => f.or(ids.map((id) => f.string('id').eq(id))),
+          order: 'number',
+          limit: ids.length,
+        })
+      : [];
+  const items = new Map(
+    (await listItems(deps, conn, rows)).map((item) => [item.id, item]),
+  );
+  return new Map(
+    [...refs].map(([statusKey, column]) => [
+      statusKey,
+      {
+        data: column.ids.flatMap((id) => {
+          const item = items.get(id);
+          return item ? [item] : [];
+        }),
+        nextCursor: column.nextCursor,
+      },
+    ]),
+  );
 }
 
 /** An unknown status some issue is still in gets a plain column of its own. */
@@ -218,6 +351,50 @@ function unknownStatus(key: string): StatusDefinition {
 
 export function createIssueQueries(deps: QueryDeps): IssueQueries {
   return {
+    async hierarchy(viewer, query) {
+      const conn = deps.tx.read();
+      const issues = await hierarchyRecords(conn, (f) =>
+        visibleIssues(f, viewer),
+      );
+      const exact = exactMatcher(query);
+      const matches = exact
+        ? issues.filter(exact)
+        : await hierarchyRecords(
+            conn,
+            listFilter(viewer, { ...query, deleted: false }),
+          );
+      return {
+        issues,
+        matchingIds: matches.map((issue) => issue.id),
+        blockedIds: await deps.extras().blockedIds(conn, issues),
+      };
+    },
+    async hierarchyItems(viewer, ids, readableIds) {
+      if (ids.length === 0) return [];
+      if (ids.length > HIERARCHY_ITEMS_MAX)
+        throw new Error(
+          `Hierarchy hydration accepts at most ${HIERARCHY_ITEMS_MAX} tasks.`,
+        );
+      const conn = deps.tx.read();
+      const rows = await findIssueRows(conn, {
+        filter: (f) =>
+          f.and([
+            visibleIssues(f, viewer),
+            f.or(ids.map((id) => f.string('id').eq(id))),
+          ]),
+        order: 'number',
+        direction: 'asc',
+        limit: ids.length,
+      });
+      const readable =
+        readableIds ??
+        new Set(
+          (await hierarchyRecords(conn, (f) => visibleIssues(f, viewer))).map(
+            (issue) => issue.id,
+          ),
+        );
+      return listItems(deps, conn, rows, readable);
+    },
     statuses() {
       return [...deps.statuses.catalog().statuses];
     },
@@ -269,22 +446,25 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
       for (const key of await statusesOf(conn, listFilter(viewer, query)))
         if (!statuses.some((status) => status.key === key))
           statuses.push(unknownStatus(key));
-      const columns: BoardColumn[] = [];
-      for (const status of statuses) {
-        const column = await page(
-          deps,
-          conn,
-          viewer,
-          { ...query, statusKey: status.key, cursor: undefined },
-          limit,
-        );
-        columns.push({
+      const pages = await columnPages(
+        deps,
+        conn,
+        viewer,
+        query,
+        statuses.map((status) => status.key),
+        limit,
+      );
+      return {
+        columns: statuses.map((status) => ({
           status,
-          issues: column.data,
-          nextCursor: column.nextCursor,
-        });
-      }
-      return { columns };
+          issues: pages.get(status.key)?.data ?? [],
+          nextCursor: pages.get(status.key)?.nextCursor ?? null,
+        })),
+      };
+    },
+
+    visible(viewer, idOrKey) {
+      return requireVisible(deps.tx.read(), viewer, idOrKey);
     },
 
     async detail(viewer, idOrKey) {

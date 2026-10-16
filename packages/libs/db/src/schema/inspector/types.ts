@@ -105,6 +105,10 @@ export interface PhysicalColumnSchema {
 export interface PhysicalPrimaryKeySchema {
   readonly name?: string;
   readonly columns: readonly string[];
+  readonly deferrable?: boolean;
+  readonly initiallyDeferred?: boolean;
+  /** False when the constraint is disabled or not validated for existing rows. */
+  readonly valid?: boolean;
 }
 
 export interface PhysicalUniqueConstraintSchema {
@@ -112,6 +116,8 @@ export interface PhysicalUniqueConstraintSchema {
   readonly columns: readonly string[];
   readonly deferrable?: boolean;
   readonly initiallyDeferred?: boolean;
+  /** False when the constraint is disabled or not validated for existing rows. */
+  readonly valid?: boolean;
 }
 
 export type PhysicalIndexKey = (
@@ -126,6 +132,8 @@ export type PhysicalIndexKey = (
 ) & {
   readonly order?: 'asc' | 'desc';
   readonly nulls?: 'first' | 'last';
+  /** False when equality on the source column is not known to imply equality under this key's comparisons. */
+  readonly columnEquality?: boolean;
 };
 
 export interface PhysicalIndexConstraintReference {
@@ -138,9 +146,18 @@ export interface PhysicalIndexSchema {
   readonly keys: readonly PhysicalIndexKey[];
   readonly includeColumns?: readonly string[];
   readonly unique: boolean;
+  /** False when the index is incomplete or is not maintained for writes. */
+  readonly valid?: boolean;
+  /** A single backing relationship, retained for compatibility with existing inspectors. */
   readonly backsConstraint?: PhysicalIndexConstraintReference;
+  /** Complete backing relationships when an index supports multiple constraints; takes precedence over backsConstraint. */
+  readonly backsConstraints?: readonly PhysicalIndexConstraintReference[];
   readonly method?: string;
+  /** True even when a partial index's predicate could not be inspected. */
+  readonly partial?: boolean;
   readonly predicate?: string;
+  /** True when every row with non-null index keys necessarily satisfies the predicate. */
+  readonly predicateSatisfiedByNonNullKeys?: boolean;
 }
 
 export type PhysicalReferentialAction =
@@ -191,6 +208,8 @@ export interface PhysicalSchemaInspection {
 export interface PhysicalCollectionSchema extends PhysicalCollectionSummary {
   /** SQLite STRICT table status; undefined for views or unknown status. */
   readonly strict?: boolean;
+  /** Traditional inheritance children are queried with this table but not covered by its unique keys. */
+  readonly hasInheritedChildren?: boolean;
   readonly viewDefinition?: string;
   readonly columns: readonly PhysicalColumnSchema[];
   readonly primaryKey?: PhysicalPrimaryKeySchema;

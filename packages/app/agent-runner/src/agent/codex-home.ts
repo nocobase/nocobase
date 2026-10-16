@@ -1,4 +1,4 @@
-// Codex's state directory for one workspace (`CODEX_HOME`), `<workDir>/.nocobase-runner/codex-home`: its sessions,
+// Codex's state directory (`CODEX_HOME`) is outside disposable attempt worktrees: its sessions,
 // history and logs stay with the task, so runs on the same subject can resume their thread, while the login and the
 // person's settings come from the real `~/.codex` through links to `auth.json` and `config.toml`.
 import { existsSync, lstatSync } from 'node:fs';

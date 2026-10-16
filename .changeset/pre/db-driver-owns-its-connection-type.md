@@ -5,9 +5,6 @@
 '@nocobase/db-mysql': patch
 '@nocobase/db-oracle': patch
 '@nocobase/db-mssql': patch
-'@nocobase/db-kingbase': patch
-'@nocobase/db-oceanbase': patch
-'@nocobase/db-dameng': patch
 ---
 
 Let a driver declare the connection shape its hooks receive.

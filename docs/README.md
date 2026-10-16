@@ -9,7 +9,7 @@ pnpm --filter @nocobase/docs build
 
 ## `--lang`
 
-Each language is built as a separate site: `en` is served from `/` and every other language from `/<lang>/`. The language is selected by `--lang` or by the `DOCS_LANG` environment variable, defaulting to `en`.
+Each language is built as a separate site: `en` is served from `/`, Simplified Chinese (`cn`) from `/zh-CN/`, and every other language from `/<lang>/`. Chinese source files remain in `docs/cn/`, and its build output goes to `dist/zh-CN/`. The Chinese build also generates compatibility pages under `dist/cn/` that redirect old page URLs to `/zh-CN/`, preserving query strings and fragments. The language is selected by `--lang` or by the `DOCS_LANG` environment variable, defaulting to `en`.
 
 ```bash
 pnpm --filter @nocobase/docs dev --lang=cn

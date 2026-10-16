@@ -4,7 +4,7 @@
  * sets the gate (`CallerGate.set`); the command manifest offers a caller only the commands whose action it holds, and
  * the application bounds a run's requests by the same answer.
  *
- * A run holds the actions of the person who woke the agent that the agent is configured with; a person holds their
+ * A run's effective actions come from the host gate and its running identity's permissions; a person holds their
  * own, kept to the scope of the API key they call with. Without a gate, a caller holds only the plugin's own
  * universal actions: `AGENTS_VIEW_ACTION`, and `RUN_SELF_ACTION` for a run.
  *

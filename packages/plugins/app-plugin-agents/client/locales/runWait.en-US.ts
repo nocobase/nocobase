@@ -4,19 +4,30 @@
  */
 const runWaitEnUS = {
   runWait: {
+    capacity:
+      'Slots used here {{used}}/{{limit}}; {{detail}}; reported free across apps {{reportedFree}}',
     reasons: {
+      updatePending: 'Runner waiting for update; new work is paused',
+      pruning: 'Runner cleaning shared store; new work is paused',
+      toolNotInstalled: 'No connected runner has this tool installed',
+      incompatible:
+        'Connected runners do not support this workload; upgrade required',
+      restricted: 'Runner policy, directory, or variable restrictions',
+      unknown: 'Workload eligibility is not established',
+
       agentArchived: 'The agent is archived',
       delayed: 'Scheduled for {{until}}',
       noRunnerOnline: 'No runtime online',
       runnersOffline: 'Its runtimes are offline',
-      toolUnavailable: 'No runtime has {{tool}} signed in',
-      noSharedRunner: 'Only other people’s runtimes are online',
+      toolUnavailable:
+        'Tool not signed in, disabled, or requested model unavailable ({{tool}})',
+      noSharedRunner: 'Only other people’s personal runners are online',
       missingFeatures: 'No runtime supports {{features}}',
       secretsNotAllowed:
         'Needs a team runtime: {{variables}} is for team runtimes only',
       sameWorkActive: 'After the run already on it',
       concurrencyFull: 'Concurrency full ({{active}}/{{limit}})',
-      runnersBusy: 'Every fitting runtime is busy',
+      runnersBusy: 'Compatible runners are full',
       toolSlotsFull: '{{tool}} slots full ({{used}}/{{limit}})',
       setupRetrying: 'Preparing it failed; retrying: {{detail}}',
       next: 'Next for a free runtime',

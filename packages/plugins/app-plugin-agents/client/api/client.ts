@@ -36,6 +36,7 @@ import type {
   RunnerPatch,
   RunnerRecentRun,
   RunnerSummary,
+  RunnerListItem,
 } from '../../shared/runners.js';
 import type { Run, RunDetail, RunEventPage } from '../../shared/runs.js';
 import type {
@@ -171,6 +172,13 @@ export class AgentsApi {
   }
 
   /** Every agent discovered from runners, as the Agent page shows it to the caller. */
+  public setIgnored(
+    groups: readonly { key: string; expectedRevision: number }[],
+    ignored: boolean,
+  ): Promise<unknown> {
+    return this.send('discoveryPreferences', 'PUT', { groups, ignored });
+  }
+
   public agents(): Promise<AgentView[]> {
     return this.list('');
   }
@@ -216,8 +224,12 @@ export class AgentsApi {
 
   // Runners
 
-  public runners(): Promise<RunnerSummary[]> {
+  public runners(): Promise<RunnerListItem[]> {
     return this.runnersApi.runners();
+  }
+
+  public runner(runnerId: string): Promise<RunnerSummary> {
+    return this.runnersApi.runner(runnerId);
   }
 
   /** A runner's latest runs, newest first. */

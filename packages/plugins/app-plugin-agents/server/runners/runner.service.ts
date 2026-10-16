@@ -31,14 +31,16 @@ import {
   type UpgradeRequired,
 } from '@nocobase/agent-protocol';
 
-import type { DatabaseConnection } from '@nocobase/db';
+import type { DatabaseConnection, RepositoryFilter } from '@nocobase/db';
 
 import { normalizeModel } from '../../shared/model-catalog.js';
 import type {
   RegistrationToken,
   RegistrationTokenInput,
+  RegistrationTokenSummary,
   Runner,
   RunnerPatch,
+  RunnerWorkspaceDisk,
   UnavailableModel,
 } from '../../shared/runners.js';
 import { later, type Clock } from '../kernel/clock.js';
@@ -66,6 +68,7 @@ import {
   storedToolLoad,
   storedToolSlots,
   toRunner,
+  type RegistrationTokenRecord,
 } from './runner.store.js';
 
 /** How long a registration token stays usable. */
@@ -76,6 +79,11 @@ export interface RunnerService {
     createdById: string | null,
     input: RegistrationTokenInput,
   ): Promise<RegistrationToken>;
+  listRegistrationTokens(options: {
+    readonly createdById?: string;
+    readonly page: number;
+    readonly pageSize: number;
+  }): Promise<{ data: RegistrationTokenSummary[]; total: number }>;
   /** Registers a runner of any protocol; one this application does not serve starts `upgrade_required`. */
   register(request: RegisterRequest): Promise<RegisterResponse>;
   /** Whether `token` is a registration token that can still be used; using it is left to `register`. */
@@ -94,7 +102,7 @@ export interface RunnerService {
     },
   ): Promise<Runner>;
   heartbeat(runner: Runner, request: HeartbeatRequest): Promise<Runner>;
-  list(): Promise<Runner[]>;
+  list(options?: { readonly workspaceDetails?: boolean }): Promise<Runner[]>;
   /** 404 when absent. */
   get(id: string): Promise<Runner>;
   update(id: string, patch: RunnerPatch): Promise<Runner>;
@@ -182,6 +190,34 @@ function liveStatus(protocolVersion: number): 'online' | 'upgrade_required' {
   return isProtocolSupported(protocolVersion) ? 'online' : 'upgrade_required';
 }
 
+/** Free space has to move this much before a heartbeat's disk sample is announced. */
+const DISK_NOTICE_BYTES = 1024 ** 3;
+
+/**
+ * Whether a heartbeat's disk sample is worth announcing (`runner.changed`): one appears or goes, its size or threshold
+ * changes, free space crosses the threshold, or it moves by `DISK_NOTICE_BYTES`. Every heartbeat samples the disk, and
+ * each announcement wakes every waiting claim and refreshes every open runtimes page.
+ */
+export function diskMoved(
+  previous: RunnerWorkspaceDisk | null,
+  next: {
+    readonly freeBytes: number;
+    readonly totalBytes: number;
+    readonly minFreeBytes?: number | null;
+  } | null,
+): boolean {
+  if (!previous || !next) return previous !== next;
+  const threshold = next.minFreeBytes ?? null;
+  const low = (disk: { freeBytes: number }, min: number | null): boolean =>
+    min !== null && disk.freeBytes < min;
+  return (
+    previous.totalBytes !== next.totalBytes ||
+    previous.minFreeBytes !== threshold ||
+    low(previous, previous.minFreeBytes) !== low(next, threshold) ||
+    Math.abs(previous.freeBytes - next.freeBytes) >= DISK_NOTICE_BYTES
+  );
+}
+
 export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
   const { tx, ids, clock } = deps;
 
@@ -223,7 +259,118 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
     return runner;
   };
 
+  async function authenticate(
+    key: string,
+    options: NonNullable<Parameters<RunnerService['authenticate']>[1]> = {},
+    unit?: Tx,
+  ): Promise<Runner> {
+    const conn = unit?.conn ?? tx.read();
+    const emit = unit?.emit ?? (() => {});
+    const credential = key
+      ? await credentialsRepo(conn).findOne({
+          filter: { keyHash: hashCredential(key) },
+        })
+      : undefined;
+    if (!credential)
+      throw new ProtocolError(
+        'RUNNER_KEY_INVALID',
+        'The runner key is not valid. Register the runner again.',
+      );
+    const record = await runnersRepo(conn).findOne({
+      filter: { id: credential.runnerId },
+    });
+    if (credential.revokedAt || !record || record.status === 'revoked')
+      throw new ProtocolError(
+        'RUNNER_REVOKED',
+        'This runner was revoked. Register it again to use it.',
+      );
+    if (
+      record.ownerUserId &&
+      (await deps.people?.inactive(conn, [record.ownerUserId]))?.has(
+        record.ownerUserId,
+      )
+    )
+      throw new ProtocolError(
+        'RUNNER_OWNER_DISABLED',
+        "This runner's owner can no longer sign in, so the runner cannot work until their account is enabled again.",
+      );
+    if (options.touch === false) return toRunner(record);
+    const protocolVersion =
+      options.protocolVersion ?? Number(record.protocolVersion);
+    const status = liveStatus(protocolVersion);
+    const changed =
+      record.status !== status ||
+      Number(record.protocolVersion) !== protocolVersion;
+    if (changed && !unit)
+      return tx.run((transaction) => authenticate(key, options, transaction));
+    const now = clock.now().toISOString();
+    await runnersRepo(conn).updateMany({
+      filter: { id: record.id },
+      values: {
+        lastSeenAt: now,
+        ...(changed ? { status, protocolVersion } : {}),
+      },
+    });
+    await credentialsRepo(conn).updateMany({
+      filter: { id: credential.id },
+      values: { lastUsedAt: now },
+    });
+    const runner = toRunner({
+      ...record,
+      lastSeenAt: now,
+      status,
+      protocolVersion,
+    });
+    if (changed) emit({ type: 'runner.changed', runnerId: record.id });
+    if (status === 'upgrade_required' && record.status !== status)
+      await noticeUpgrade(emit, runner);
+    // It was told to upgrade (it last spoke a protocol not served) and now speaks one that is: the notice is over.
+    if (
+      status === 'online' &&
+      !isProtocolSupported(Number(record.protocolVersion))
+    )
+      emit({
+        type: 'notice.cleared',
+        notice: {
+          type: 'runner_upgrade_required',
+          subject: { kind: 'runner', id: runner.id, label: runner.name },
+        },
+      });
+    return runner;
+  }
+
   return {
+    listRegistrationTokens: async (options) => {
+      const filter: RepositoryFilter<RegistrationTokenRecord> = (f) =>
+        f.and([
+          f.date('usedAt').empty(),
+          f.date('expiresAt').after(clock.now()),
+          ...(options.createdById === undefined
+            ? []
+            : [f.string('createdById').eq(options.createdById)]),
+        ]);
+      const repo = registrationTokensRepo(tx.read());
+      const records = await repo.findMany({
+        filter,
+        sort: (sort) => sort.field('id').desc(),
+        limit: options.pageSize,
+        offset: (options.page - 1) * options.pageSize,
+      });
+      const total = await repo.count({ filter });
+      return {
+        data: records.map((record) => ({
+          id: record.id,
+          createdById: record.createdById,
+          trust: record.trust,
+          enabledTools: storedToolChoice(record.enabledTools),
+          slots: record.slots,
+          toolSlots: storedToolSlots(record.toolSlots),
+          createdAt: record.createdAt,
+          expiresAt: record.expiresAt,
+        })),
+        total,
+      };
+    },
     createRegistrationToken: (createdById, input) =>
       tx.run(async ({ conn }) => {
         const now = clock.now();
@@ -288,6 +435,33 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         if (claimed.updatedCount !== 1) throw invalidToken;
 
         const runnerId = ids.next();
+        // Host names are self-reported: they must never authorize revoking another person's machine.
+        const previous = await runnersRepo(conn).findMany({
+          filter: (f) =>
+            f.and([
+              f.string('name').eq(request.name),
+              f.string('hostname').eq(request.hostname),
+              token.createdById === null
+                ? f.string('ownerUserId').empty()
+                : f.string('ownerUserId').eq(token.createdById),
+              f.string('status').ne('revoked'),
+            ]),
+        });
+        for (const runner of previous) {
+          await runnersRepo(conn).updateMany({
+            filter: { id: runner.id },
+            values: { status: 'revoked', updatedAt: nowText },
+          });
+          await credentialsRepo(conn).updateMany({
+            filter: (f) =>
+              f.and([
+                f.string('runnerId').eq(runner.id),
+                f.date('revokedAt').empty(),
+              ]),
+            values: { revokedAt: nowText },
+          });
+          emit({ type: 'runner.changed', runnerId: runner.id });
+        }
         // The runner's explicit `--slots`, else the token's, else 1.
         const slots =
           request.slots ?? (token.slots === null ? 1 : Number(token.slots));
@@ -370,76 +544,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
       );
     },
 
-    authenticate: (key, options = {}) =>
-      tx.run(async ({ conn, emit }) => {
-        const credential = key
-          ? await credentialsRepo(conn).findOne({
-              filter: { keyHash: hashCredential(key) },
-            })
-          : undefined;
-        if (!credential)
-          throw new ProtocolError(
-            'RUNNER_KEY_INVALID',
-            'The runner key is not valid. Register the runner again.',
-          );
-        const record = await runnersRepo(conn).findOne({
-          filter: { id: credential.runnerId },
-        });
-        if (credential.revokedAt || !record || record.status === 'revoked')
-          throw new ProtocolError(
-            'RUNNER_REVOKED',
-            'This runner was revoked. Register it again to use it.',
-          );
-        if (
-          record.ownerUserId &&
-          (await deps.people?.inactive(conn, [record.ownerUserId]))?.has(
-            record.ownerUserId,
-          )
-        )
-          throw new ProtocolError(
-            'RUNNER_OWNER_DISABLED',
-            "This runner's owner can no longer sign in, so the runner cannot work until their account is enabled again.",
-          );
-        if (options.touch === false) return toRunner(record);
-        const protocolVersion =
-          options.protocolVersion ?? Number(record.protocolVersion);
-        const status = liveStatus(protocolVersion);
-        const now = clock.now().toISOString();
-        await runnersRepo(conn).updateMany({
-          filter: { id: record.id },
-          values: { lastSeenAt: now, status, protocolVersion },
-        });
-        await credentialsRepo(conn).updateMany({
-          filter: { id: credential.id },
-          values: { lastUsedAt: now },
-        });
-        const runner = toRunner({
-          ...record,
-          lastSeenAt: now,
-          status,
-          protocolVersion,
-        });
-        if (
-          record.status !== status ||
-          Number(record.protocolVersion) !== protocolVersion
-        )
-          emit({ type: 'runner.changed', runnerId: record.id });
-        if (status === 'upgrade_required' && record.status !== status)
-          await noticeUpgrade(emit, runner);
-        // It was told to upgrade (it last spoke a protocol not served) and now speaks one that is: the notice is over.
-        if (
-          status === 'online' &&
-          !isProtocolSupported(Number(record.protocolVersion))
-        )
-          emit({
-            type: 'notice.cleared',
-            notice: {
-              type: 'runner_upgrade_required',
-              subject: { kind: 'runner', id: runner.id, label: runner.name },
-            },
-          });
-        return runner;
-      }),
+    authenticate,
 
     heartbeat: (runner, request) =>
       tx.run(async (unit) => {
@@ -452,7 +557,10 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         );
         const marks = runner.unavailableModels ?? [];
         const kept = keptMarks(marks, tools);
+        const workspaceUsage = (await require(conn, runner.id)).workspaceUsage;
         const changed =
+          (request.disk !== undefined &&
+            diskMoved(workspaceUsage?.disk ?? null, request.disk)) ||
           kept.length !== marks.length ||
           runner.version !== request.version ||
           runner.product !== (request.product ?? null) ||
@@ -475,7 +583,34 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
               ? { unavailableModels: asJson(kept) }
               : {}),
             // What it holds per tool across every application: read for why a run waits, so it changes nothing else.
-            load: asJson(storedToolLoad(request.load.tools ?? null)),
+            load: asJson({
+              ...storedToolLoad(request.load.tools ?? null),
+              free: request.load.free,
+              slots: request.load.slots,
+              ...(request.load.draining
+                ? { draining: request.load.draining }
+                : {}),
+            }),
+            ...(request.disk === undefined
+              ? {}
+              : {
+                  workspaceUsage: asJson({
+                    ...(workspaceUsage ?? {
+                      measuredAt: null,
+                      count: 0,
+                      unpushedCount: 0,
+                      workspaces: [],
+                    }),
+                    disk:
+                      request.disk === null
+                        ? null
+                        : {
+                            ...request.disk,
+                            minFreeBytes: request.disk.minFreeBytes ?? null,
+                          },
+                    diskMeasuredAt: now,
+                  }),
+                }),
             lastSeenAt: now,
             updatedAt: changed ? now : runner.updatedAt,
           },
@@ -486,7 +621,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         return reported;
       }),
 
-    list: async () => {
+    list: async (options) => {
       const conn = tx.read();
       const records = await runnersRepo(conn).findMany({
         sort: (sort) => [sort.field('name').asc(), sort.field('id').asc()],
@@ -500,6 +635,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         toRunner(
           record,
           record.ownerUserId ? (names.get(record.ownerUserId) ?? null) : null,
+          options?.workspaceDetails ?? true,
         ),
       );
     },
@@ -582,7 +718,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         if (runner.status !== 'revoked')
           throw precondition(
             'RUNNER_NOT_REVOKED',
-            'Revoke the runner before deleting it.',
+            `Revoke the runner before deleting it: run runtime revoke ${id}, then runtime delete ${id}.`,
           );
         await credentialsRepo(conn).deleteMany({
           filter: (f) => f.string('runnerId').eq(id),

@@ -1,3 +1,4 @@
+export { SkillIdsSchema } from './core/skills/skill.service.js';
 import type { AuthorizationIdentity } from '@nocobase/authorization/core';
 import {
   createServiceToken,
@@ -8,6 +9,10 @@ import type { BusinessKey, Scope } from '../shared/access.js';
 import type { Agents } from './composition.js';
 
 export type { Agents } from './composition.js';
+export type {
+  ModelSelectionPolicies,
+  ModelSelectionPolicy,
+} from './core/runs/selection.js';
 export type { AgentDefaults, AgentService } from './core/agents/index.js';
 export { runnerAgentId } from './core/agents/index.js';
 export type {

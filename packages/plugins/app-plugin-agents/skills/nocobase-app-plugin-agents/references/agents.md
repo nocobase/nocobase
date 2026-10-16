@@ -9,6 +9,12 @@ Nobody creates an agent. Each coding tool and model a runner reports signed in b
 - Disabling an agent withdraws its queued runs and announces `agent.removed` (`reason` `disabled`); the App lets go of the work it gave the agent. Work for an agent that is not enabled is refused with `AGENT_NOT_ENABLED`.
 - Anyone signed in reads the agents (`GET /api/agents`, `agent list-all`); `GET /api/agents/agentNames` names every agent there has been, for runs that name a removed one.
 
+## Discovery management
+
+The page defaults to enabled agents. New discoveries are collapsed, grouped by tool and known catalog model, and searchable by model or provider; unknown provider-qualified models are kept separate. The enable dialog chooses an original provider candidate without changing its ID or execution model. Opening an enabled group exposes the other provider candidates, and disabled agents remain accessible.
+
+Administrators ignore pending groups individually or in an atomic batch through `PUT /api/agents/discoveryPreferences` (`agent discovery set --input <file>`). Read `discoveryKey`, `discoveryRevision` and `ignored` from `GET /api/agents`, then send unique groups with their expected revision and `ignored: true` or `false`. Preferences survive reports and restarts, including new providers in the same group. Restoring returns pending discoveries without enabling them. Enabled groups cannot be ignored; stale revisions conflict with concurrent enabling. See `docs/runner-agents.md` for the body and migration.
+
 ## Where an agent can run
 
 `GET /api/agents` answers, per caller, how many team and personal runners online have the agent's tool signed in with its model, whether only personal runners have it (`personalOnly`: they take their owners' work only), and `unusable`, why the caller's work cannot start now: `pending`, `disabled`, `unreported` (no runner reported it for 14 days), `notConfigured`, `noRunner` or `othersPersonal`. The roster (`GET /api/agents/available`, `agent list`, `Agents.roster`) lists the enabled agents reported recently with whether each would take the caller's work now. A run that fails `modelUnavailable` marks that tool and model unavailable on its runner until the runner reports the tool's models differently.

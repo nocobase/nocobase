@@ -104,12 +104,21 @@ export interface IssueExtras {
   listCounts(
     conn: DatabaseConnection,
     issues: readonly Issue[],
+    readableIds?: ReadonlySet<string>,
   ): Promise<
     Map<
       string,
       { readonly subtaskCount: number; readonly blockedCount: number }
     >
   >;
+  /**
+   * Of `issues`, those waiting for at least one unfinished issue, whoever may read it, in a fixed number of queries
+   * whatever their count.
+   */
+  blockedIds(
+    conn: DatabaseConnection,
+    issues: readonly Issue[],
+  ): Promise<Set<string>>;
 }
 
 /** A comment someone wrote, as the triggers see it. */

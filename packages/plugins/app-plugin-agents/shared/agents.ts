@@ -101,8 +101,6 @@ export interface Agent {
   readonly actions: readonly string[];
   /** In conversations: whether it asks before every change or only before larger ones. */
   readonly confirmChanges: ConfirmChanges;
-  /** The skills attached to the agent, in the skill library. */
-  readonly skillIds: readonly string[];
   readonly maxConcurrentRuns: number;
   readonly maxAttempts: number;
   /** Overrides of the default tool policy (`DEFAULT_TOOL_POLICY`). */
@@ -149,6 +147,9 @@ export interface AgentRunners {
 
 /** An agent as the Agent page lists it (`GET /api/agents`), for the caller. */
 export interface AgentView extends Agent {
+  readonly discoveryKey?: string;
+  readonly discoveryRevision?: number;
+  readonly ignored?: boolean;
   /** Its default reasoning effort: its first entry's. */
   readonly effort: string | null;
   /** The efforts its tool takes, weakest first; empty for an application's own agent. */
@@ -177,6 +178,7 @@ export interface AgentName {
 
 /** An agent the caller may give work to: what it is good at, and whether it can take work now. */
 export interface AvailableAgent {
+  readonly runners?: AgentRunners;
   readonly id: string;
   readonly name: string;
   /** Its description. */

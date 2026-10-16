@@ -20,7 +20,7 @@ export function initializeHomepage(root, lang = 'cn') {
   const content = lang === 'cn' ? chinese : english;
   const { icons, data, capabilityIcons, promptLibrary } = content;
   const capabilityHref = (id) =>
-    (lang === 'cn' ? '/cn' : '') + '/capabilities/' + id + '/';
+    (lang === 'cn' ? '/zh-CN' : '') + '/capabilities/' + id + '/';
   const dialog = root.querySelector('dialog');
   const editor = root.querySelector('#prompt-editor');
   const tablist = root.querySelector('.prompt-tabs');

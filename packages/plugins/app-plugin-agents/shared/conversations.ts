@@ -370,6 +370,8 @@ export type ConsultationState = (typeof CONSULTATION_STATES)[number];
  * The consulted agent's own run (`runId`) has its transcript and usage.
  */
 export interface ConsultationNotice {
+  /** Display-only marker: the requested subject could not be resolved; agentName is a historical snapshot. */
+  readonly identitySnapshot?: boolean;
   readonly code: 'consultation';
   /** The tool call: one card per call. */
   readonly callId: string;
@@ -629,6 +631,8 @@ export interface SendMessageResult {
  * `CreateConversationRequest`). The text is at most `MESSAGE_CONTENT_MAX` characters: 400 `INVALID_REQUEST` otherwise.
  */
 export interface StartConversationRequest {
+  /** The caller's own unattached chat uploads for the first message. */
+  readonly attachmentIds?: readonly string[];
   readonly source: Exclude<ConversationSource, 'panel'>;
   readonly text: string;
   readonly agentId?: string;

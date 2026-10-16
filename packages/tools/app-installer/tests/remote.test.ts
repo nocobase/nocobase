@@ -14,6 +14,7 @@ import { InstallerError } from '../src/lib/errors.ts';
 import { installerCommandLine } from '../src/lib/invocation.ts';
 import { fileURLToPath } from 'node:url';
 import { createPm2 } from '../src/lib/pm2.ts';
+import { archiveFor, createWorld, tempDir } from './harness.ts';
 
 vi.mock('../src/lib/offline-bundle.ts', () => ({
   createOfflineBundle: async (file: string) =>
@@ -34,6 +35,48 @@ afterEach(() => {
 });
 
 describe('SSH transport', () => {
+  it.each(['deploy', 'upgrade'])(
+    'forwards checksum plan approval through SSH %s',
+    async (command) => {
+      const temp = tempDir('remote-checksum-');
+      try {
+        const archive = archiveFor(createWorld(), temp.dir, '1.1.0');
+        const token = 'a'.repeat(64);
+        const run = vi
+          .fn<RunCommand>()
+          .mockImplementation(async (_command, args) => ({
+            stdout: args.at(-1)?.includes('remote-entry.js')
+              ? JSON.stringify({
+                  ok: true,
+                  status: 'success',
+                  result: { checksumRepairs: 1 },
+                  warnings: [],
+                })
+              : '',
+            stderr: '',
+          }));
+        const outcome = await runRemote(
+          command,
+          { ...flags, archive, yes: true, 'repair-checksums': token },
+          undefined,
+          ['repair-checksums'],
+          { run, pm2: createPm2(), reporter: reporter() },
+        );
+        expect(outcome.result.checksumRepairs).toBe(1);
+        const execution = run.mock.calls.find((call) =>
+          call[1].at(-1)?.includes('remote-entry.js'),
+        );
+        expect(JSON.parse(execution![2]!.input!)).toMatchObject({
+          command,
+          flags: { yes: true, 'repair-checksums': token },
+          explicit: ['repair-checksums'],
+        });
+      } finally {
+        temp.remove();
+      }
+    },
+  );
+
   it('uses SSH configuration and rejects option or shell injection', () => {
     expect(
       sshArgs({
@@ -348,7 +391,7 @@ describe('SSH transport', () => {
     const run = vi.fn<RunCommand>();
     for (const values of [
       { ...flags, dir: 'relative' },
-      { ...flags, app: 'studio@beta' },
+      { ...flags, app: 'example-app@beta' },
     ])
       await expect(
         runRemote('install', values, undefined, [], {

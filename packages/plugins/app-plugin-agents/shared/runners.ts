@@ -40,6 +40,16 @@ export const RUNNER_STATUSES = [
 
 export type RunnerStatus = (typeof RUNNER_STATUSES)[number];
 
+/**
+ * Optional payload support is established by capabilities, never package versions.
+ * Protocol 9 runners may ignore workspace.key; only its explicit declaration is evidence.
+ */
+export function supportsWorkspaceKey(
+  runner: Pick<Runner, 'features'>,
+): boolean {
+  return runner.features.includes('workspaceKey');
+}
+
 export interface Runner {
   readonly id: string;
   readonly name: string;
@@ -78,6 +88,9 @@ export interface Runner {
    * and could take now, across every application it serves. Null or absent when it reported none (unknown: read as
    * room left).
    */
+  /** Last heartbeat free slots across all applications; absent before a heartbeat. */
+  readonly globalFree?: number;
+  readonly draining?: 'updatePending' | 'pruning';
   readonly toolLoad?: Readonly<Partial<Record<AgentTool, ToolLoad>>> | null;
   /**
    * Its owner (or a manager of runners) lets it take jobs: builds and other steps an application configures, run
@@ -124,6 +137,7 @@ export interface UnavailableModel {
 
 /** A runner's working directories, as it last reported them (`Runner.workspaceUsage`). */
 export interface RunnerWorkspaceUsage {
+  readonly diskMeasuredAt?: string;
   readonly intervalMs?: number;
   /** The disk holding the runner's working directories; null when it did not say. */
   readonly disk: RunnerWorkspaceDisk | null;
@@ -131,8 +145,8 @@ export interface RunnerWorkspaceUsage {
   readonly count: number;
   /** How many of those hold work that was never pushed, and are never removed on the application's word. */
   readonly unpushedCount: number;
-  /** When it reported them. */
-  readonly measuredAt: string;
+  /** When directories were collected; null until the first directory report. */
+  readonly measuredAt: string | null;
   /** This application's, most recently used first. */
   readonly workspaces: readonly RunnerWorkspace[];
 }
@@ -147,6 +161,8 @@ export interface RunnerWorkspaceDisk {
 
 /** One working directory a runner keeps for this application. */
 export interface RunnerWorkspace {
+  readonly subjectKey?: string;
+  readonly sizeBytes?: number;
   readonly decision?: WorkspaceDecision;
   readonly cleanup?: WorkspaceCleanupResult;
   /** The last run that worked in it. */
@@ -240,6 +256,11 @@ export interface RunnerSummary extends Omit<Runner, 'hostname'> {
   readonly offersJobs: boolean;
 }
 
+/** The list carries totals only; fetch a single runner for directory diagnostics. */
+export interface RunnerListItem extends Omit<RunnerSummary, 'workspaceUsage'> {
+  readonly workspaceUsage?: Omit<RunnerWorkspaceUsage, 'workspaces'> | null;
+}
+
 /** What people change about a runner after it registered. */
 export interface RunnerPatch {
   readonly name?: string;
@@ -279,6 +300,15 @@ export interface RegistrationToken {
   /** Absent from tokens made before limits per tool, or built by other code: none. */
   readonly toolSlots?: ToolSlots | null;
   readonly expiresAt: string;
+}
+
+/** Usable token metadata; the secret and its hash are never returned by a list. */
+export interface RegistrationTokenSummary extends Omit<
+  RegistrationToken,
+  'token'
+> {
+  readonly createdById: string | null;
+  readonly createdAt: string;
 }
 
 /**
@@ -386,12 +416,29 @@ export function listedTools(runner: Pick<Runner, 'tools'>): AgentTool[] {
  * no work whatever their slots say.
  */
 export type RunnerActivity =
-  'online' | 'busy' | 'offline' | 'revoked' | 'upgrade_required';
+  | 'online'
+  | 'busy'
+  | 'low_disk'
+  | 'offline'
+  | 'revoked'
+  | 'upgrade_required'
+  | 'updatePending'
+  | 'pruning';
 
 export function runnerActivity(
-  runner: Pick<RunnerSummary, 'status' | 'slots' | 'activeRuns' | 'activeJobs'>,
+  runner: Pick<
+    RunnerListItem,
+    | 'status'
+    | 'slots'
+    | 'activeRuns'
+    | 'activeJobs'
+    | 'workspaceUsage'
+    | 'draining'
+  >,
 ): RunnerActivity {
   if (runner.status !== 'online') return runner.status;
+  if (runner.draining) return runner.draining;
+  if (runnerLowOnDisk(runner)) return 'low_disk';
   return runner.activeRuns + runner.activeJobs >= runner.slots
     ? 'busy'
     : 'online';
@@ -446,14 +493,32 @@ export interface RunnerAgentFit {
  * in and reported here (`runsEntry`), and the owner's local policy lets it in. Whether the runner is online right now is
  * left to the caller.
  */
+/** Shared by admission, availability and the page; does not affect existing leases. */
+export function runnerLowOnDisk(
+  runner: Pick<RunnerListItem, 'workspaceUsage'>,
+): boolean {
+  const disk = runner.workspaceUsage?.disk;
+  return (
+    disk != null &&
+    disk.minFreeBytes !== null &&
+    disk.freeBytes < disk.minFreeBytes
+  );
+}
+
 export function runnerTakesAgent(
   runner: Pick<
     Runner,
-    'id' | 'enabledTools' | 'tools' | 'policy' | 'unavailableModels'
+    | 'id'
+    | 'enabledTools'
+    | 'tools'
+    | 'policy'
+    | 'unavailableModels'
+    | 'workspaceUsage'
   >,
   agent: RunnerAgentFit,
 ): boolean {
   return (
+    !runnerLowOnDisk(runner) &&
     agent.modelEntries.some((entry) => runsEntry(runner, entry)) &&
     policyAllowsAgent(runner.policy, agent)
   );

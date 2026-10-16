@@ -1,11 +1,13 @@
 /**
  * The open runs on one kind of subject as a board of work shows them (`RunService.workload`): the runs held, with the
- * runner and the newest thing each reported, and the runs queued, with their place in the claim order and what holds
- * each, worked out by the claim's own rules (`claim.ts`) without claiming anything.
+ * runner and the newest thing each reported, and the runs queued, with their place in the claim order and why each
+ * waits by the claim's own rules (`claim.ts`), without claiming anything.
  *
- * Bounded reads, none per subject: the open runs of the kind, every queued run (for the claim order), every held run
- * (for the agents' and runners' counts and the busy subjects), the runners, the active jobs, the agents, the open
- * runs' inputs, and the newest event of each held run of the kind (at most one per runner slot).
+ * The list is a fixed number of reads whatever its length: the open runs of the kind, every queued run (for the claim
+ * order), every held run (for the agents' and runners' counts and the busy subjects), the runners, the active jobs,
+ * the agents, the open runs' inputs, and the newest event of each held run (two reads for all of them). A queued row
+ * explains itself from those alone (`explainWait`); the claim's per-run diagnosis of its candidate runners, which
+ * reads more, is one run's detail (`RunService.queueWait`, `readQueueWait`).
  */
 import type { AgentTool, RunnerFeature } from '@nocobase/agent-protocol';
 import type { DatabaseConnection } from '@nocobase/db';
@@ -20,6 +22,7 @@ import {
 import {
   RUN_ACTIVITY_TEXT_MAX,
   type AgentLoad,
+  type ModelSelectionWait,
   type RunActivity,
   type RunWait,
   type Workload,
@@ -164,8 +167,17 @@ export function explainWait(
     return wait('concurrencyFull', {
       params: { active: context.agentActive, limit: agent.maxConcurrentRuns },
     });
+  if (trusted.every((runner) => runner.draining))
+    return wait(
+      trusted.some((runner) => runner.draining === 'updatePending')
+        ? 'updatePending'
+        : 'pruning',
+    );
   const free = trusted.filter(
-    (runner) => (context.runnerUsed.get(runner.id) ?? 0) < runner.slots,
+    (runner) =>
+      !runner.draining &&
+      (runner.globalFree ?? 1) > 0 &&
+      (context.runnerUsed.get(runner.id) ?? 0) < runner.slots,
   );
   if (free.length === 0)
     return wait('runnersBusy', { params: { runners: trusted.length } });
@@ -250,28 +262,34 @@ export interface WorkloadRunners {
   jobsByRunner(conn: DatabaseConnection): Promise<ReadonlyMap<string, number>>;
 }
 
-export async function readWorkload(
+/** What every explanation of the queue reads: the claim order, what each runner and agent holds, the runners and agents. */
+interface QueueState {
+  readonly now: Date;
+  /** Queued runs of every kind, in claim order. */
+  readonly queued: readonly RunRecord[];
+  readonly runners: readonly Runner[];
+  readonly online: readonly Runner[];
+  readonly agents: readonly Agent[];
+  readonly agentById: ReadonlyMap<string, Agent>;
+  readonly runnerUsed: ReadonlyMap<string, number>;
+  readonly runnerToolUsed: ReadonlyMap<
+    string,
+    Partial<Record<AgentTool, number>>
+  >;
+  readonly agentActive: ReadonlyMap<string, number>;
+  readonly busyKeys: ReadonlySet<string>;
+  readonly position: ReadonlyMap<string, number>;
+  readonly agentPosition: ReadonlyMap<string, number>;
+  readonly agentQueued: ReadonlyMap<string, number>;
+}
+
+/** The queue as the claim sees it, in a fixed number of reads. */
+async function readQueueState(
   conn: DatabaseConnection,
   clock: Clock,
   runnerSource: WorkloadRunners,
-  query: WorkloadQuery,
-): Promise<Workload> {
+): Promise<QueueState> {
   const now = clock.now();
-  const limit = Math.min(Math.max(query.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
-  const open = await runsRepo(conn).findMany({
-    filter: (f) =>
-      f.and([
-        f.string('subjectKind').eq(query.subjectKind),
-        f.or(
-          ['queued', ...ACTIVE].map((status) => f.string('status').eq(status)),
-        ),
-      ]),
-    sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
-    limit: limit + 1,
-  });
-  const truncated = open.length > limit;
-  const mine = open.slice(0, limit);
-
   const queued = (
     await runsRepo(conn).findMany({
       filter: { status: 'queued' },
@@ -320,6 +338,210 @@ export async function readWorkload(
     agentQueued.set(run.agentId, count);
     agentPosition.set(run.id, count);
   }
+  return {
+    now,
+    queued,
+    runners,
+    online,
+    agents,
+    agentById,
+    runnerUsed,
+    runnerToolUsed,
+    agentActive,
+    busyKeys,
+    position,
+    agentPosition,
+    agentQueued,
+  };
+}
+
+/** Why a queued run waits by the claim's rules alone, without reading anything more (`explainWait`). */
+function quickWait(
+  record: RunRecord,
+  requires: readonly RunnerFeature[],
+  state: QueueState,
+): Omit<RunWait, 'position' | 'agentPosition'> {
+  return explainWait(
+    { ...record, requires },
+    {
+      now: state.now,
+      agent: state.agentById.get(record.agentId) ?? null,
+      runners: state.online,
+      runnerUsed: state.runnerUsed,
+      runnerToolUsed: state.runnerToolUsed,
+      agentActive: state.agentActive.get(record.agentId) ?? 0,
+      sameWorkActive: state.busyKeys.has(keyOf(record)),
+    },
+  );
+}
+
+const DIAGNOSTIC_CODES: Readonly<Record<string, RunWait['reason']>> = {
+  ready: 'next',
+  busy: 'runnersBusy',
+  updatePending: 'updatePending',
+  pruning: 'pruning',
+  offline: 'noRunnerOnline',
+  incompatible: 'incompatible',
+  restricted: 'restricted',
+  concurrencyFull: 'concurrencyFull',
+  sameWorkActive: 'sameWorkActive',
+  delayed: 'delayed',
+  toolUnavailable: 'toolUnavailable',
+  toolNotInstalled: 'toolNotInstalled',
+  noSharedRunner: 'noSharedRunner',
+  unknown: 'unknown',
+};
+
+/** The quick explanation refined by the claim's own read-only diagnosis of the run's candidates. */
+function refineWait(
+  record: RunRecord,
+  previous: Omit<RunWait, 'position' | 'agentPosition'>,
+  diagnostic: ModelSelectionWait | null,
+  state: QueueState,
+): Omit<RunWait, 'position' | 'agentPosition'> {
+  // Keep the established identity and protected-variable explanation, including its precise parameters.
+  const detailed = [
+    'secretsNotAllowed',
+    'delayed',
+    'agentArchived',
+    'setupRetrying',
+  ].includes(previous.reason);
+  const entry =
+    diagnostic?.entries.find((entry) => entry.reason === 'ready') ??
+    diagnostic?.entries[0];
+  if (!entry || detailed) return previous;
+  const agent = state.agentById.get(record.agentId);
+  const active = state.agentActive.get(record.agentId) ?? 0;
+  const loads = entry.runners.filter(
+    (runner) =>
+      runner.reason === undefined ||
+      runner.reason === 'ready' ||
+      runner.reason === 'busy',
+  );
+  const toolFull =
+    entry.reason === 'busy' &&
+    loads.some((runner) => (runner.used ?? 0) < (runner.limit ?? 0)) &&
+    loads.every(
+      (runner) =>
+        (runner.toolUsed ?? 0) >= (runner.toolLimit ?? 0) ||
+        runner.reportedFree === 0,
+    );
+  return {
+    ...previous,
+    reason:
+      entry.reason === 'ready' && Number(record.claimFailures) > 0
+        ? 'setupRetrying'
+        : toolFull
+          ? 'toolSlotsFull'
+          : DIAGNOSTIC_CODES[entry.reason],
+    params: {
+      blockers: (entry.blockers ?? [])
+        .filter((reason) => reason !== entry.reason)
+        .map((reason) => DIAGNOSTIC_CODES[reason]),
+      tool: entry.tool,
+      ...(entry.reason === 'concurrencyFull'
+        ? { active, limit: agent!.maxConcurrentRuns }
+        : entry.reason === 'busy'
+          ? {
+              used: loads.reduce(
+                (n, runner) =>
+                  n + (toolFull ? (runner.toolUsed ?? 0) : (runner.used ?? 0)),
+                0,
+              ),
+              limit: loads.reduce(
+                (n, runner) =>
+                  n +
+                  (toolFull ? (runner.toolLimit ?? 0) : (runner.limit ?? 0)),
+                0,
+              ),
+              runners: loads.length,
+              reportedFree: loads.map((runner) =>
+                String(runner.reportedTotalFree ?? '—'),
+              ),
+              detail: loads
+                .map(
+                  (runner) =>
+                    `${entry.tool} ${runner.toolUsed}/${runner.toolLimit}${runner.reportedTotalFree === 0 ? '; global free 0' : ''}`,
+                )
+                .join('; '),
+            }
+          : {}),
+    },
+  };
+}
+
+/** The newest activity of each of `runIds` in two reads: the newest sequence of each, then those events. */
+async function newestActivities(
+  conn: DatabaseConnection,
+  runIds: readonly string[],
+): Promise<Map<string, RunActivity>> {
+  const activity = new Map<string, RunActivity>();
+  if (runIds.length === 0) return activity;
+  const newest = await eventsRepo(conn).groupBy({
+    by: ['runId'],
+    aggregate: (aggregate) => ({ seq: aggregate.max('seq') }),
+    filter: (f) =>
+      f.and([
+        f.or(runIds.map((id) => f.string('runId').eq(id))),
+        f.or(ACTIVITY_TYPES.map((type) => f.string('type').eq(type))),
+      ]),
+  });
+  const pairs = newest.flatMap((group) =>
+    group.seq === null || group.seq === undefined
+      ? []
+      : [{ runId: String(group.runId), seq: Number(group.seq) }],
+  );
+  if (pairs.length === 0) return activity;
+  const events = await eventsRepo(conn).findMany({
+    filter: (f) =>
+      f.and([
+        f.or(
+          pairs.map((pair) =>
+            f.and([
+              f.string('runId').eq(pair.runId),
+              f.number('seq').eq(pair.seq),
+            ]),
+          ),
+        ),
+        f.or(ACTIVITY_TYPES.map((type) => f.string('type').eq(type))),
+      ]),
+  });
+  for (const event of events)
+    activity.set(event.runId, {
+      at: iso(event.at) ?? event.at,
+      type: event.type as RunActivity['type'],
+      tool: event.tool,
+      text: cut(event.content ?? event.output),
+    });
+  return activity;
+}
+
+/**
+ * The open runs on one kind of subject, in a fixed number of reads whatever their number. A queued run says why it
+ * waits by the claim's rules alone (`explainWait`); `readQueueWait` gives one run's exact reason.
+ */
+export async function readWorkload(
+  conn: DatabaseConnection,
+  clock: Clock,
+  runnerSource: WorkloadRunners,
+  query: WorkloadQuery,
+): Promise<Workload> {
+  const limit = Math.min(Math.max(query.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
+  const open = await runsRepo(conn).findMany({
+    filter: (f) =>
+      f.and([
+        f.string('subjectKind').eq(query.subjectKind),
+        f.or(
+          ['queued', ...ACTIVE].map((status) => f.string('status').eq(status)),
+        ),
+      ]),
+    sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
+    limit: limit + 1,
+  });
+  const truncated = open.length > limit;
+  const mine = open.slice(0, limit);
+  const state = await readQueueState(conn, clock, runnerSource);
+  const { queued, runners, online, agents, runnerUsed, agentActive } = state;
 
   // The newest input's trigger, per open run.
   const ids = mine.map((run) => run.id);
@@ -336,54 +558,28 @@ export async function readWorkload(
     }
   }
 
-  // The newest activity of each held run: at most one per runner slot.
-  const activity = new Map<string, RunActivity>();
-  for (const run of mine) {
-    if (!ACTIVE.includes(run.status)) continue;
-    const event = await eventsRepo(conn).findOne({
-      filter: (f) =>
-        f.and([
-          f.string('runId').eq(run.id),
-          f.or(ACTIVITY_TYPES.map((type) => f.string('type').eq(type))),
-        ]),
-      sort: (sort) => sort.field('seq').desc(),
-    });
-    if (event)
-      activity.set(run.id, {
-        at: iso(event.at) ?? event.at,
-        type: event.type as RunActivity['type'],
-        tool: event.tool,
-        text: cut(event.content ?? event.output),
-      });
-  }
+  // The newest activity of each held run.
+  const activity = await newestActivities(
+    conn,
+    mine.filter((run) => ACTIVE.includes(run.status)).map((run) => run.id),
+  );
 
   const runnerName = new Map(runners.map((runner) => [runner.id, runner.name]));
   const runs: WorkloadRun[] = mine.map((record) => {
     const run = toRun(record);
-    const isQueued = record.status === 'queued';
     return {
       ...run,
       trigger: triggers.get(run.id) ?? null,
       runnerName: run.runnerId ? (runnerName.get(run.runnerId) ?? null) : null,
       lastActivity: activity.get(run.id) ?? null,
-      wait: isQueued
-        ? {
-            ...explainWait(
-              { ...record, requires: run.requires },
-              {
-                now,
-                agent: agentById.get(run.agentId) ?? null,
-                runners: online,
-                runnerUsed,
-                runnerToolUsed,
-                agentActive: agentActive.get(run.agentId) ?? 0,
-                sameWorkActive: busyKeys.has(keyOf(record)),
-              },
-            ),
-            position: position.get(run.id) ?? null,
-            agentPosition: agentPosition.get(run.id) ?? 1,
-          }
-        : null,
+      wait:
+        record.status === 'queued'
+          ? {
+              ...quickWait(record, run.requires, state),
+              position: state.position.get(run.id) ?? null,
+              agentPosition: state.agentPosition.get(run.id) ?? 1,
+            }
+          : null,
     };
   });
   // Held runs first, the longest-running first; then queued ones in claim order.
@@ -407,7 +603,7 @@ export async function readWorkload(
     loads.push({
       agentId: agent.id,
       active: agentActive.get(agent.id) ?? 0,
-      queued: agentQueued.get(agent.id) ?? 0,
+      queued: state.agentQueued.get(agent.id) ?? 0,
       maxConcurrentRuns: agent.maxConcurrentRuns,
       online:
         agent.status === 'enabled' &&
@@ -432,5 +628,33 @@ export async function readWorkload(
         0,
       ),
     },
+  };
+}
+
+/**
+ * Exactly why one queued run waits: the claim's rules refined by its read-only diagnosis of the run's candidate
+ * runners (`ClaimService.diagnose`). Null when the run does not exist or is not queued.
+ */
+export async function readQueueWait(
+  conn: DatabaseConnection,
+  clock: Clock,
+  runnerSource: WorkloadRunners,
+  runId: string,
+  diagnose?: import('./claim.js').ClaimService['diagnose'],
+): Promise<RunWait | null> {
+  const record = await runsRepo(conn).findOne({ filter: { id: runId } });
+  if (!record || record.status !== 'queued') return null;
+  const state = await readQueueState(conn, clock, runnerSource);
+  const run = toRun(record);
+  const agent = state.agentById.get(run.agentId);
+  const previous = quickWait(record, run.requires, state);
+  const diagnostic =
+    agent?.status === 'enabled' && diagnose
+      ? await diagnose(conn, run, agent)
+      : null;
+  return {
+    ...refineWait(record, previous, diagnostic, state),
+    position: state.position.get(run.id) ?? null,
+    agentPosition: state.agentPosition.get(run.id) ?? 1,
   };
 }

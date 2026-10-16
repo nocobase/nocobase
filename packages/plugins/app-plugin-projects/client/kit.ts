@@ -132,5 +132,18 @@ export { IntakeAgentSlot, PageContextProvider } from './kit/page-slots.js';
 export { useViewer } from './hooks/use-viewer.js';
 export { canManageProject, canUseSetting } from './lib/permissions.js';
 export { pmKeys } from './api/keys.js';
+export {
+  announcedIssueIds,
+  changedIssueSegments,
+  isIssueRead,
+} from './api/changed-issues.js';
 export { usePmApi } from './hooks/use-pm-api.js';
 export { useApiKeyActors } from './hooks/use-api-key-actors.js';
+
+export { PmDescriptionImage } from './components/pm-description-image.js';
+
+export {
+  IntakeDraftProvider,
+  useIntakeDraft,
+  emptyIntakeDraft,
+} from './kit/intake-draft.js';

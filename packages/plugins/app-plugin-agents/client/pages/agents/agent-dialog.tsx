@@ -43,6 +43,7 @@ const DEFAULT_EFFORT = '__default__';
 export interface AgentDialogProps {
   readonly agent: AgentView | null;
   readonly onClose: () => void;
+  readonly candidates?: readonly AgentView[];
 }
 
 /** The catalog's suggestion in the viewer's language: Chinese for a `zh` locale, English otherwise. */
@@ -56,6 +57,7 @@ function suggestionFor(agent: AgentView, language: string): string {
 export function AgentDialog({
   agent,
   onClose,
+  candidates,
 }: AgentDialogProps): ReactElement {
   return (
     <Dialog
@@ -64,12 +66,82 @@ export function AgentDialog({
         if (!open) onClose();
       }}
     >
-      <DialogContent data-testid='agent-dialog'>
+      <DialogContent
+        className='flex max-h-[calc(100dvh-2rem)] flex-col'
+        data-testid='agent-dialog'
+        finalFocus={() =>
+          document.querySelector<HTMLButtonElement>(
+            '[data-testid="agents-discovery-toggle"]',
+          )
+        }
+      >
         {agent ? (
-          <AgentForm key={agent.id} agent={agent} onClose={onClose} />
+          <AgentChoice
+            key={agent.id}
+            agent={agent}
+            candidates={candidates ?? [agent]}
+            onClose={onClose}
+          />
         ) : null}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function AgentChoice({
+  agent,
+  candidates,
+  onClose,
+}: {
+  agent: AgentView;
+  candidates: readonly AgentView[];
+  onClose: () => void;
+}): ReactElement {
+  const { t } = useTranslation();
+  const [target, setTarget] = useState(agent);
+  const [saving, setSaving] = useState(false);
+  return (
+    <>
+      {candidates.length > 1 ? (
+        <Field>
+          <FieldLabel htmlFor='agent-provider'>
+            {t('agents.discovery.provider')}
+          </FieldLabel>
+          <Select
+            disabled={saving}
+            items={candidates.map((candidate) => ({
+              value: candidate.id,
+              label: `${candidate.model} · ${candidate.runners.names.join(', ') || t('agents.where.none')}`,
+            }))}
+            value={target.id}
+            onValueChange={(value) => {
+              const next = candidates.find(
+                (candidate) => candidate.id === value,
+              );
+              if (next) setTarget(next);
+            }}
+          >
+            <SelectTrigger id='agent-provider'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {candidates.map((candidate) => (
+                <SelectItem key={candidate.id} value={candidate.id}>
+                  {candidate.model} ·{' '}
+                  {candidate.runners.names.join(', ') || t('agents.where.none')}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      ) : null}
+      <AgentForm
+        key={target.id}
+        agent={target}
+        onClose={onClose}
+        onSavingChange={setSaving}
+      />
+    </>
   );
 }
 
@@ -77,9 +149,11 @@ export function AgentDialog({
 function AgentForm({
   agent,
   onClose,
+  onSavingChange,
 }: {
   readonly agent: AgentView;
   readonly onClose: () => void;
+  readonly onSavingChange: (saving: boolean) => void;
 }): ReactElement {
   const { t, i18n } = useTranslation();
   const api = useAgentsApi();
@@ -94,6 +168,8 @@ function AgentForm({
   const [submitted, setSubmitted] = useState(false);
 
   const save = useMutation({
+    onMutate: () => onSavingChange(true),
+    onSettled: () => onSavingChange(false),
     mutationFn: (target: AgentView) =>
       api.updateAgent(target.id, {
         description: goodAt.trim() || null,
@@ -122,7 +198,7 @@ function AgentForm({
 
   return (
     <>
-      <DialogHeader>
+      <DialogHeader className='shrink-0'>
         <DialogTitle>
           {t(enabling ? 'agents.enable.title' : 'agents.edit.title', {
             name: agent.name,
@@ -136,6 +212,7 @@ function AgentForm({
       </DialogHeader>
       <form
         id='agent-dialog-form'
+        className='-mx-4 min-h-0 flex-1 overflow-y-auto px-4 pb-1'
         onSubmit={(event) => {
           event.preventDefault();
           setSubmitted(true);
@@ -222,7 +299,7 @@ function AgentForm({
           ) : null}
         </FieldGroup>
       </form>
-      <DialogFooter>
+      <DialogFooter className='shrink-0'>
         <Button variant='outline' type='button' onClick={onClose}>
           {t('actions.cancel')}
         </Button>

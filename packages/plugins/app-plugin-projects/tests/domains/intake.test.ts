@@ -243,8 +243,10 @@ describe('the intake service', () => {
   let h: Harness;
   let intake: IntakeService;
   const stored = new Map<string, Uint8Array>();
+  const unreadable = new Set<string>();
 
   beforeEach(async () => {
+    unreadable.clear();
     h = await createHarness();
     await h.addUser('alice');
     await h.addUser('bob');
@@ -281,7 +283,10 @@ describe('the intake service', () => {
       // Drive's own method name, not a hook.
       // eslint-disable-next-line @eslint-react/no-unnecessary-use-prefix
       use: () => ({
-        getBytes: (key) => Promise.resolve(stored.get(key) ?? new Uint8Array()),
+        getBytes: (key) =>
+          unreadable.has(key)
+            ? Promise.reject(new Error('File storage is unavailable.'))
+            : Promise.resolve(stored.get(key) ?? new Uint8Array()),
         getStream: () => Promise.reject(new Error('Not read as a stream.')),
         delete: (key) => {
           stored.delete(key);
@@ -409,6 +414,102 @@ describe('the intake service', () => {
     ).rejects.toMatchObject({ code: 'INVALID_FILE' });
     const plans = await h.services.plans.list(h.viewer('alice'), {});
     expect(plans.data).toHaveLength(0);
+  });
+
+  it('extracts complete TXT bodies in selected order and excludes a removed upload', async () => {
+    const files = [];
+    for (const n of [1, 2, 3]) {
+      files.push(
+        await intake.upload(
+          h.viewer('alice'),
+          new File(
+            [`PM307-CHECK-${n}: Filter tasks by owner ${n}.`],
+            `notes-${n}.txt`,
+            { type: 'text/plain' },
+          ),
+        ),
+      );
+    }
+    await intake.removeFile(h.viewer('alice'), files[1]!.id);
+    const selected = [files[2]!, files[0]!];
+    const result = await intake.texts(h.viewer('alice'), {
+      fileIds: selected.map((file) => file.id),
+    });
+    expect(result.documents.map((file) => file.text)).toEqual([
+      'PM307-CHECK-3: Filter tasks by owner 3.',
+      'PM307-CHECK-1: Filter tasks by owner 1.',
+    ]);
+    expect(result.files.map((file) => file.state)).toEqual(['read', 'read']);
+    await expect(
+      intake.texts(h.viewer('alice'), { fileIds: [files[1]!.id] }),
+    ).rejects.toMatchObject({ code: 'INVALID_FILE' });
+    expect(await intake.texts(h.viewer('alice'), { fileIds: [] })).toEqual({
+      documents: [],
+      files: [],
+    });
+  });
+
+  it('reports truncation of an ordinary TXT upload before handing it to the browser', async () => {
+    const file = await intake.upload(
+      h.viewer('alice'),
+      new File([`${'x'.repeat(20_000)}PM307-TAIL: Owner filter`], 'notes.txt', {
+        type: 'text/plain',
+      }),
+    );
+    const result = await intake.texts(h.viewer('alice'), {
+      fileIds: [file.id],
+    });
+    expect(result.files).toMatchObject([
+      { fileId: file.id, state: 'truncated', chars: 20_000 },
+    ]);
+    expect(result.documents[0]?.text).not.toContain('PM307-TAIL');
+  });
+
+  it('fully extracts three supported TXT uploads whose combined bodies exceed a chat message', async () => {
+    const files = [];
+    for (const n of [1, 2, 3]) {
+      files.push(
+        await intake.upload(
+          h.viewer('alice'),
+          new File([`${'x'.repeat(19_980)}PM307-END-${n}`], `notes-${n}.txt`, {
+            type: 'text/plain',
+          }),
+        ),
+      );
+    }
+    const result = await intake.texts(h.viewer('alice'), {
+      fileIds: files.map((file) => file.id),
+    });
+    expect(result.files.map((file) => file.state)).toEqual([
+      'read',
+      'read',
+      'read',
+    ]);
+    expect(result.documents.map((file) => file.text.slice(-11))).toEqual([
+      'PM307-END-1',
+      'PM307-END-2',
+      'PM307-END-3',
+    ]);
+    expect(
+      result.documents.reduce((sum, file) => sum + file.text.length, 0),
+    ).toBeGreaterThan(50_000);
+  });
+
+  it('returns a failed reading outcome for a supported TXT whose stored bytes cannot be loaded', async () => {
+    const file = await intake.upload(
+      h.viewer('alice'),
+      new File(['PM307-STORAGE: Owner filter'], 'notes.txt', {
+        type: 'text/plain',
+      }),
+    );
+    unreadable.add(file.id);
+    const result = await intake.texts(h.viewer('alice'), {
+      fileIds: [file.id],
+    });
+    expect(result.documents).toEqual([]);
+    expect(result.files).toMatchObject([
+      { fileId: file.id, filename: 'notes.txt', state: 'failed', chars: 0 },
+    ]);
   });
 
   it('names an issue after a file that gives no text', async () => {

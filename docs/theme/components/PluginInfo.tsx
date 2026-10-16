@@ -1,6 +1,6 @@
 import { useFrontmatter } from '@rspress/core/runtime';
-import { Badge, Link } from '@rspress/core/theme';
-import { transformHref, useLangPrefix } from '../utils';
+import { Badge } from '@rspress/core/theme';
+import { useLangPrefix } from '../utils';
 import {
   EditionLevels,
   EditionLevelsEN,
@@ -72,19 +72,6 @@ export function PluginInfo() {
             <td style={firstTdStyle}>Built-in</td>
             <td style={tdStyle}>
               {frontmatter.builtIn ? <code>Yes</code> : <code>No</code>}
-              {!frontmatter.builtIn && (
-                <Link
-                  target='_blank'
-                  style={{ marginLeft: 4, fontSize: '14px' }}
-                  className='rp-link'
-                  href={transformHref(
-                    `/get-started/install-upgrade-plugins`,
-                    lang,
-                  )}
-                >
-                  How to install plugins?
-                </Link>
-              )}
             </td>
           </tr>
           <tr style={trStyle}>

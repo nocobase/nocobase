@@ -11,11 +11,25 @@ import {
   type ReactElement,
 } from 'react';
 
+import {
+  createAppSidebarPreferenceStore,
+  SidebarPreferenceProvider,
+} from './layouts/use-sidebar-preference.js';
 import { AppRouter } from './routing/app-router.js';
 export function createApp(runtime: AppRuntimeContext): ClientApplication {
   // Outermost, so every provider and page below can translate.
   const AppI18nProvider = ({ children }: PropsWithChildren): ReactElement =>
     createElement(I18nProvider, { runtime: runtime.i18n }, children);
+
+  const sidebarPreference = createAppSidebarPreferenceStore(runtime.basename);
+  const AppSidebarPreferenceProvider = ({
+    children,
+  }: PropsWithChildren): ReactElement =>
+    createElement(
+      SidebarPreferenceProvider,
+      { value: sidebarPreference },
+      children,
+    );
 
   const app = new ClientApplication({
     runtime,
@@ -24,6 +38,7 @@ export function createApp(runtime: AppRuntimeContext): ClientApplication {
         basename: runtime.basename,
         reactProviders: [
           AppI18nProvider,
+          AppSidebarPreferenceProvider,
           ...runtime.reactProviders.map((provider) => provider.component),
         ],
         routes: createElement(AppRouter, {

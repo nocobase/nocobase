@@ -298,6 +298,23 @@ Other points:
 - When loading through a Repository (see "Remote Repository"), the request cannot take a `signal` and cannot be aborted, but still check `controller.signal.aborted` in the callbacks to discard stale results.
 - For the complete list page (search conditions written to the URL, empty and no-results states, the `Spinner` in the toolbar while reloading), see [`table.md`](table.md) and [`example/list-page.md`](example/list-page.md); for loading the latest data before an edit form opens, see [`form.md`](form.md); for the detail drawer, see [`overlay.md`](overlay.md).
 
+## Keeping lists and charts live
+
+When realtime events refresh what a page shows:
+
+- An event that names items refreshes those items: gather the ids of a burst (a few hundred milliseconds), read only those rows, keep one such request in flight, and merge the answer into what the page holds. Read the whole list again only when its membership changed (an item joined or left it, or moved between its groups) or the event names nothing.
+- Do not read a whole list or overview again on every event.
+- Recompute a chart's figures at most every few seconds while it is visible, and not at all while the page is hidden; or update only the figure the event affects.
+- Read nothing for a page that is not shown; read it when it is shown again.
+- A component that needs one small fact reads the small endpoint that answers it, not the list that happens to contain it.
+- Keep realtime subscriptions in one place, such as the page or a hook it owns, rather than one per row or card, and subscribe only to the topics the page shows.
+- When a refresh is triggered while a request for the same data is still in flight, usually let it finish and read once more afterwards rather than aborting it and sending it again; repeated aborts under a stream of events can mean no request ever completes. Aborting is still right when the parameters change or the component unmounts, as above.
+- Skip fetching while the page is hidden (`document.visibilityState`), and refresh once when it becomes visible again.
+- Keep request keys stable: build them from the parameters that decide the data, not from values that change on every render or tick, such as the current time, or each change starts a new request.
+- Be careful with data loaded by components mounted on every page, such as navigation or a header badge: they run on every page and in every open tab, so they usually read a small fact rather than a list.
+
+The server side of these reads is in [server routes](../../server-routes.md#lists-and-statistics-a-fixed-number-of-queries).
+
 ## Error handling
 
 ### ApiClientError

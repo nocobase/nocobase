@@ -32,7 +32,9 @@ React is the other divergence. The upstream copy pins React 18 through a `resolu
 
 ### Content and languages
 
-Only the framework was copied — `docs/docs/` holds the pages this repository writes for itself. The framework carries translations for ten languages (`cn en ja es pt de fr ru id vi`) in `rspress.config.ts` and `theme/locales.ts`, but a language is only built if it has a directory under `docs/docs/`. Today that is `cn` and `en`. Adding a language means creating the directory; the translations are already there.
+The public site contains the homepage, the standalone `nocobase-2-vs-3.mdx` comparison page, and the `capabilities/` documentation in each language. Application development, plugin development, and deployment instructions belong in the relevant Skills and application guidance. Keep the homepage, navigation, and Skill references aligned when removing or moving documentation; `public/` contains downloads used by the capability pages and must retain those assets.
+
+Only the framework was copied — `docs/docs/` holds the pages this repository writes for itself. The framework carries translations for ten languages (`cn en ja es pt de fr ru id vi`) in `rspress.config.ts` and `theme/locales.ts`, but a language is only built if it has a directory under `docs/docs/`. Today that is `cn` and `en`. The `cn` source key maps to the public base `/zh-CN/` and output `dist/zh-CN/` through `docs/shared/languages.ts`; keep source paths and translation keys as `cn`. The Chinese build emits legacy `/cn/` redirect pages for static hosting. Adding a language means creating the directory; the translations are already there.
 
 `cn` is the baseline the structural checks in `check.sh` compare every other language against, so a page added to another language without its `cn` counterpart fails the tree and meta alignment checks.
 

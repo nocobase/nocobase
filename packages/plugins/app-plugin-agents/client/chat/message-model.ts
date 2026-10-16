@@ -4,6 +4,7 @@
  * `metadata.clientId` arrives), and the step line of the run that is answering. An online agent's reply arrives as a
  * draft that grows in place at the same `seq` (`metadata.streaming`): merging by `seq` replaces it with each fetch.
  */
+import type { ConsultationIdentity } from './consultation-identity.js';
 import type { RunEvent } from '@nocobase/agent-protocol';
 
 import type {
@@ -294,7 +295,8 @@ export function stepLineText(t: Translate, line: StepLine): string {
 
 /**
  * A notice in the viewer's language; the English `content` when the code is unknown. News is worded by the
- * application (`newsText`), else read as its English title.
+ * application (`newsText`), else read as its English title. For a loaded consultation, pass `useConsultationIdentity`'s
+ * result to distinguish loading, refusal and a missing subject without exposing a hidden identity.
  */
 export function noticeText(
   t: Translate,
@@ -302,6 +304,7 @@ export function noticeText(
   fallback: string,
   agentName: (agentId: string) => string,
   newsText?: (notice: NewsNotice, t: Translate) => string | null,
+  consultationIdentity?: ConsultationIdentity,
 ): string {
   if (!notice) return fallback;
   switch (notice.code) {
@@ -333,7 +336,24 @@ export function noticeText(
     case 'news':
       return newsText?.(notice, t) ?? notice.title;
     case 'consultation':
-      return t('chat.consultation.title', { name: notice.agentName });
+      if (consultationIdentity?.state === 'unavailable')
+        return t('chat.consultation.unavailableTitle');
+      return t(
+        consultationIdentity?.state === 'snapshot' ||
+          (!consultationIdentity &&
+            (notice.identitySnapshot || !notice.agentId))
+          ? 'chat.consultation.snapshotTitle'
+          : 'chat.consultation.title',
+        {
+          name: consultationIdentity
+            ? consultationIdentity.state === 'loading'
+              ? '…'
+              : consultationIdentity.name
+            : notice.agentId && !notice.identitySnapshot
+              ? agentName(notice.agentId)
+              : notice.agentName,
+        },
+      );
     default:
       return fallback;
   }
