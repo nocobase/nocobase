@@ -314,7 +314,7 @@ it('shows a single page access checkbox without a duplicate access action or res
   );
   expect(screen.getAllByRole('checkbox')).toHaveLength(1);
   expect(screen.queryByText('Access')).not.toBeInTheDocument();
-  expect(screen.getAllByText('1 of 1 enabled')).toHaveLength(1);
+  expect(screen.queryByText('1 of 1 enabled')).not.toBeInTheDocument();
   await userEvent.click(
     screen.getByRole('checkbox', { name: 'Expense registration' }),
   );
@@ -370,4 +370,106 @@ it('keeps multiple inline scopes independently named and editable', async () => 
   );
   await userEvent.click(await screen.findByRole('option', { name: 'All' }));
   expect(change).toHaveBeenCalledExactlyOnceWith('attachments', 'all');
+});
+
+it('merges a single resource heading and keeps one category count with an explicit bulk label', async () => {
+  const batch = vi.fn();
+  render(
+    <PermissionEditor
+      sections={[
+        {
+          id: 'users',
+          title: 'Users',
+          groups: [
+            {
+              id: 'users',
+              title: 'Users',
+              rows: [
+                {
+                  id: 'read',
+                  label: 'View users',
+                  actionKey: 'read',
+                  enabled: true,
+                },
+                {
+                  id: 'edit',
+                  label: 'Edit users',
+                  actionKey: 'update',
+                  enabled: false,
+                },
+              ],
+            },
+          ],
+        },
+      ]}
+      onEnabledChange={vi.fn()}
+      onEnabledBatchChange={batch}
+      onLevelChange={vi.fn()}
+    />,
+  );
+  expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
+  expect(screen.getAllByText('1/2')).toHaveLength(1);
+  expect(
+    screen.getByRole('checkbox', {
+      name: 'Select visible permissions in Users',
+    }),
+  ).toHaveAttribute('aria-checked', 'mixed');
+  await userEvent.click(screen.getByText('All', { selector: 'span' }));
+  expect(batch).toHaveBeenCalledExactlyOnceWith([
+    { id: 'edit', enabled: true },
+  ]);
+});
+
+it('aligns semantic actions across resources without dropping special or filtered actions', async () => {
+  const groups = [
+    {
+      id: 'one',
+      title: 'One',
+      rows: [
+        {
+          id: 'edit-one',
+          actionKey: 'update',
+          label: 'Edit one',
+          enabled: true,
+        },
+        { id: 'read-one', actionKey: 'read', label: 'View one', enabled: true },
+      ],
+    },
+    {
+      id: 'two',
+      title: 'Two',
+      rows: [
+        { id: 'read-two', actionKey: 'read', label: 'View two', enabled: true },
+        {
+          id: 'special',
+          actionKey: 'export',
+          label: 'Export two',
+          enabled: false,
+        },
+      ],
+    },
+  ];
+  const view = render(
+    <PermissionEditor
+      sections={[{ id: 'business', title: 'Business', groups }]}
+      onEnabledChange={vi.fn()}
+      onLevelChange={vi.fn()}
+    />,
+  );
+  const column = (name: string) =>
+    screen
+      .getByRole('checkbox', { name })
+      .closest('[data-slot=permission-row]')!
+      .parentElement!.style.getPropertyValue('--permission-column');
+  expect(column('View one')).toBe(column('View two'));
+  expect(column('Edit one')).not.toBe(column('Export two'));
+  expect(screen.getAllByRole('checkbox')).toHaveLength(4);
+  await userEvent.type(screen.getByRole('textbox'), 'Export');
+  expect(
+    screen.getByRole('checkbox', { name: 'Export two' }),
+  ).toBeInTheDocument();
+  expect(column('Export two')).toBe('3');
+  expect(
+    view.container.querySelectorAll('[data-slot=permission-row]'),
+  ).toHaveLength(1);
 });

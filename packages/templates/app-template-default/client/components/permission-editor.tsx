@@ -4,6 +4,7 @@ import {
   useId,
   useRef,
   useState,
+  type CSSProperties,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -40,6 +41,8 @@ export interface PermissionEditorRow {
   readonly id: string;
   readonly label: string;
   readonly hint?: string | undefined;
+  /** Stable semantic action key for aligning actions across resources. */
+  readonly actionKey?: string | undefined;
   /** Scope-only controls bound to this action; they are not extra permissions. */
   readonly scopes?: readonly PermissionEditorScope[];
   readonly enabled: boolean;
@@ -77,6 +80,7 @@ export interface PermissionEditorLabels {
   readonly empty: string;
   readonly noResults: string;
   readonly navigation: string;
+  readonly selectAll?: string;
   readonly selectVisible?: (groupName: string) => string;
   readonly summary: (enabled: number, total: number) => string;
 }
@@ -101,6 +105,7 @@ const DEFAULT_LABELS: Required<PermissionEditorLabels> = {
   empty: 'No permissions to configure',
   noResults: 'No matching permissions',
   navigation: 'Permission categories',
+  selectAll: 'All',
   selectVisible: (name) => `Select visible permissions in ${name}`,
   summary: (enabled, total) => `${enabled} of ${total} enabled`,
 };
@@ -349,25 +354,42 @@ export function PermissionEditor({
         <div className='min-w-0 flex-1 @container'>
           {visible.length ? (
             visible.map((section) => {
-              const rows = (
-                sections.find((item) => item.id === section.id)?.groups ??
-                section.groups
-              ).flatMap((group) => group.rows);
+              const original =
+                sections.find((item) => item.id === section.id) ?? section;
+              const singleResource = original.groups.length === 1;
+              const redundantTitle =
+                singleResource && original.groups[0]?.title === section.title;
+              const keys = [
+                ...new Set(
+                  original.groups
+                    .flatMap((group) => group.rows.map((row) => row.actionKey))
+                    .filter((key): key is string => Boolean(key)),
+                ),
+              ];
+              const common = ['read', 'create', 'update', 'delete'];
+              const columns = [
+                ...common.filter((key) => keys.includes(key)),
+                ...keys.filter((key) => !common.includes(key)),
+              ];
+              // Dense or unclassified catalogs keep the wrapping layout instead of hiding actions.
+              const aligned =
+                columns.length > 0 &&
+                columns.length <= 7 &&
+                original.groups.every(
+                  (group) =>
+                    group.rows.every((row) => row.actionKey) &&
+                    new Set(group.rows.map((row) => row.actionKey)).size ===
+                      group.rows.length,
+                );
               return (
                 <section
                   key={section.id}
                   aria-label={section.title}
                   className='flex flex-col gap-3 p-3 @lg:p-4'
                 >
-                  <div className='flex flex-wrap items-center justify-between gap-2'>
+                  {(filtering || !redundantTitle) && (
                     <h2 className='text-sm font-semibold'>{section.title}</h2>
-                    <span className='text-xs text-muted-foreground'>
-                      {words.summary(
-                        rows.filter((row) => row.enabled).length,
-                        rows.length,
-                      )}
-                    </span>
-                  </div>
+                  )}
                   <div className='divide-y rounded-lg border'>
                     {section.groups.map((group) => {
                       const selectable = group.rows.filter(
@@ -415,50 +437,70 @@ export function PermissionEditor({
                           className='grid min-w-0 gap-2 p-3 @xl:grid-cols-[minmax(8rem,1fr)_minmax(0,4fr)]'
                           data-slot='permission-resource'
                         >
-                          <div className='flex items-start gap-2 py-1.5'>
-                            {onEnabledBatchChange &&
-                              totalRows.length > 1 &&
-                              selectable.length > 0 && (
-                                <Checkbox
-                                  aria-label={words.selectVisible(
-                                    group.title ?? section.title,
-                                  )}
-                                  checked={
-                                    selectable.length > 0 &&
-                                    enabled === selectable.length
-                                  }
-                                  indeterminate={
-                                    enabled > 0 && enabled < selectable.length
-                                  }
-                                  disabled={readOnly}
-                                  className='mt-0.5'
-                                  onCheckedChange={(checked) => {
-                                    const changes = selectable
-                                      .filter((row) => row.enabled !== checked)
-                                      .map((row) => ({
-                                        id: row.id,
-                                        enabled: checked,
-                                      }));
-                                    if (changes.length) {
-                                      if (enabledOnly && !checked)
-                                        searchRef.current?.focus();
-                                      onEnabledBatchChange(changes);
+                          <div className='flex min-w-0 flex-col justify-center gap-1'>
+                            <h3 className='text-sm font-medium break-words'>
+                              {group.title ?? section.title}
+                            </h3>
+                            {group.hint && (
+                              <p className='text-xs text-muted-foreground'>
+                                {group.hint}
+                              </p>
+                            )}
+                            <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                              {onEnabledBatchChange &&
+                                totalRows.length > 1 &&
+                                selectable.length > 0 && (
+                                  <Checkbox
+                                    aria-label={words.selectVisible(
+                                      group.title ?? section.title,
+                                    )}
+                                    checked={
+                                      selectable.length > 0 &&
+                                      enabled === selectable.length
                                     }
-                                  }}
-                                />
-                              )}
-                            <div className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1'>
-                              <h3 className='text-sm font-medium break-words'>
-                                {group.title ?? section.title}
-                              </h3>
-                              {group.hint && (
-                                <p className='order-last basis-full text-xs text-muted-foreground'>
-                                  {group.hint}
-                                </p>
-                              )}
-                              {totalRows.length > 1 && (
+                                    indeterminate={
+                                      enabled > 0 && enabled < selectable.length
+                                    }
+                                    disabled={readOnly}
+                                    id={`${id}-${section.id}-${group.id}-all`}
+                                    title={words.selectVisible(
+                                      group.title ?? section.title,
+                                    )}
+                                    onCheckedChange={(checked) => {
+                                      const changes = selectable
+                                        .filter(
+                                          (row) => row.enabled !== checked,
+                                        )
+                                        .map((row) => ({
+                                          id: row.id,
+                                          enabled: checked,
+                                        }));
+                                      if (changes.length) {
+                                        if (enabledOnly && !checked)
+                                          searchRef.current?.focus();
+                                        onEnabledBatchChange(changes);
+                                      }
+                                    }}
+                                  />
+                                )}
+                              {onEnabledBatchChange &&
+                                totalRows.length > 1 &&
+                                selectable.length > 0 && (
+                                  <label
+                                    htmlFor={`${id}-${section.id}-${group.id}-all`}
+                                    className='cursor-pointer'
+                                  >
+                                    <span aria-hidden>{words.selectAll}</span>
+                                    <span className='sr-only'>
+                                      {words.selectVisible(
+                                        group.title ?? section.title,
+                                      )}
+                                    </span>
+                                  </label>
+                                )}
+                              {!singleResource && totalRows.length > 1 && (
                                 <span
-                                  className='text-xs text-muted-foreground tabular-nums'
+                                  className='tabular-nums'
                                   aria-label={words.summary(
                                     totalRows.filter((row) => row.enabled)
                                       .length,
@@ -474,21 +516,53 @@ export function PermissionEditor({
                               )}
                             </div>
                           </div>
-                          <div className='flex min-w-0 flex-wrap items-start gap-x-3 gap-y-1'>
-                            {group.rows.map((row) => (
-                              <PermissionRow
+                          <div
+                            className={cn(
+                              'flex min-w-0 flex-wrap items-start gap-x-3 gap-y-1',
+                              aligned &&
+                                '@4xl:grid @4xl:grid-cols-(--permission-columns) @4xl:gap-x-1',
+                            )}
+                            style={
+                              {
+                                '--permission-columns': `repeat(${columns.length}, minmax(0, 1fr))`,
+                              } as CSSProperties
+                            }
+                          >
+                            {(aligned
+                              ? [...group.rows].sort(
+                                  (a, b) =>
+                                    columns.indexOf(a.actionKey ?? '') -
+                                    columns.indexOf(b.actionKey ?? ''),
+                                )
+                              : group.rows
+                            ).map((row) => (
+                              <div
                                 key={row.id}
-                                controlId={`${id}-${row.id}`}
-                                row={row}
-                                readOnly={readOnly}
-                                labels={words}
-                                onEnabledChange={(rowId, on) => {
-                                  if (enabledOnly && !on)
-                                    searchRef.current?.focus();
-                                  onEnabledChange(rowId, on);
-                                }}
-                                onLevelChange={onLevelChange}
-                              />
+                                className={cn(
+                                  'min-w-0',
+                                  aligned &&
+                                    '@4xl:col-start-(--permission-column) @4xl:row-start-1',
+                                )}
+                                style={
+                                  {
+                                    '--permission-column':
+                                      columns.indexOf(row.actionKey ?? '') + 1,
+                                  } as CSSProperties
+                                }
+                              >
+                                <PermissionRow
+                                  controlId={`${id}-${row.id}`}
+                                  row={row}
+                                  readOnly={readOnly}
+                                  labels={words}
+                                  onEnabledChange={(rowId, on) => {
+                                    if (enabledOnly && !on)
+                                      searchRef.current?.focus();
+                                    onEnabledChange(rowId, on);
+                                  }}
+                                  onLevelChange={onLevelChange}
+                                />
+                              </div>
                             ))}
                           </div>
                         </div>

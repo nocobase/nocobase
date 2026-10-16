@@ -335,6 +335,7 @@ function RoleEditor(): ReactElement {
                 sections={sections}
                 readOnly={!allowed || busy}
                 labels={{
+                  selectAll: t('settings.selectAllPermissions'),
                   selectVisible: (name) =>
                     t('settings.selectVisiblePermissions', { name }),
                   levelFor: (name) => t('settings.levelFor', { name }),

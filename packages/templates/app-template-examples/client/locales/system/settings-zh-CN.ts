@@ -87,6 +87,7 @@ const settings = {
   enabledOnly: '仅看已开启',
   noPermissions: '暂无可配置权限',
   permissionCategories: '权限分类',
+  selectAllPermissions: '全选',
   selectVisiblePermissions: '选择“{{name}}”中显示的权限',
   permissionSummary: '已开启 {{enabled}} / {{total}}',
   noRecordScope: '无记录（未授权）',

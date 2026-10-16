@@ -90,6 +90,7 @@ const settings = {
   enabledOnly: 'Enabled only',
   noPermissions: 'No permissions to configure',
   permissionCategories: 'Permission categories',
+  selectAllPermissions: 'All',
   selectVisiblePermissions: 'Select visible permissions in {{name}}',
   permissionSummary: '{{enabled}} of {{total}} enabled',
   noRecordScope: 'No records (not authorized)',

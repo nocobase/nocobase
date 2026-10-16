@@ -80,6 +80,7 @@ export function permissionSections(
             const row = {
               id: permissionRowId(resource, action.name),
               label: text(action.title),
+              actionKey: action.name,
               enabled: Boolean(granted),
             };
             // Scope selectors belong to the action and do not inflate permission counts.

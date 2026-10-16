@@ -23,6 +23,7 @@ const VIEW_OR_MANAGE: readonly PermissionEditorLevel[] = [
 interface DemoRow {
   readonly id: string;
   readonly label: string;
+  readonly actionKey?: string | undefined;
   readonly hint?: string;
   readonly levels?: readonly PermissionEditorLevel[];
   /** A hint per level, for a settings item whose levels mean different things. */
@@ -53,18 +54,21 @@ const CATALOG: readonly {
         rows: [
           {
             id: 'deals-view',
+            actionKey: 'read',
             label: 'View deals',
             hint: 'Open deals and their history',
             levels: OWN_OR_ALL,
           },
           {
             id: 'deals-edit',
+            actionKey: 'update',
             label: 'Edit deals',
             hint: 'Change the amount, stage and close date',
             levels: OWN_OR_ALL,
           },
           {
             id: 'deals-delete',
+            actionKey: 'delete',
             label: 'Delete deals',
             hint: 'Remove a deal for good',
             levels: ALL_ONLY,
@@ -77,11 +81,13 @@ const CATALOG: readonly {
         rows: [
           {
             id: 'contacts-view',
+            actionKey: 'read',
             label: 'View contacts',
             levels: OWN_OR_ALL,
           },
           {
             id: 'contacts-export',
+            actionKey: 'export',
             label: 'Export contacts',
             hint: 'Download contacts as a spreadsheet',
             levels: ALL_ONLY,
@@ -177,6 +183,7 @@ export function PermissionEditorDemo(): ReactElement {
           return {
             id: row.id,
             label: row.label,
+            actionKey: row.actionKey,
             hint: row.hints && level ? row.hints[level] : row.hint,
             enabled: enabled[row.id] ?? false,
             levels: row.levels,
@@ -188,7 +195,7 @@ export function PermissionEditorDemo(): ReactElement {
   );
   return (
     <div className='min-h-svh bg-background p-6 text-foreground'>
-      <div className='mx-auto max-w-3xl'>
+      <div className='mx-auto max-w-6xl'>
         <PermissionEditor
           sections={sections}
           onEnabledBatchChange={(changes) =>
