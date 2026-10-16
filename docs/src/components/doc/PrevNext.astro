@@ -22,7 +22,17 @@ const cn = language === 'cn';
         rel='prev'
       >
         <span class='prev-next__label'>{cn ? '上一页' : 'Previous page'}</span>
-        <span class='prev-next__title'>{prev.text}</span>
+        <span class='prev-next__title'>
+          <svg viewBox='0 0 24 24' width='16' height='16' aria-hidden='true'>
+            <path
+              fill='none'
+              stroke='currentColor'
+              stroke-width='1.5'
+              d='m15 6-6 6 6 6'
+            />
+          </svg>
+          {prev.text}
+        </span>
       </a>
     ) : (
       <span />
@@ -34,7 +44,17 @@ const cn = language === 'cn';
         rel='next'
       >
         <span class='prev-next__label'>{cn ? '下一页' : 'Next page'}</span>
-        <span class='prev-next__title'>{next.text}</span>
+        <span class='prev-next__title'>
+          {next.text}
+          <svg viewBox='0 0 24 24' width='16' height='16' aria-hidden='true'>
+            <path
+              fill='none'
+              stroke='currentColor'
+              stroke-width='1.5'
+              d='m9 6 6 6-6 6'
+            />
+          </svg>
+        </span>
       </a>
     )}
   </nav>
