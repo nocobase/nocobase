@@ -19,7 +19,7 @@ Usage:
 
 What it does:
   - Runs the same structural docs checks used by CI:
-    tree, meta, nav, home, bloated-files
+    tree, meta, nav, bloated-files, deprecated references
   - Runs i18n coverage only when explicitly enabled and changed files are provided
 
 Options:
@@ -96,7 +96,6 @@ fi
 run_node_check "Tree alignment check" "check-tree-alignment.mjs" "${COMMON_ARGS[@]}"
 run_node_check "Meta alignment check" "check-meta-alignment.mjs" "${COMMON_ARGS[@]}"
 run_node_check "Navigation alignment check" "check-nav-alignment.mjs" "${COMMON_ARGS[@]}"
-run_node_check "Home alignment check" "check-home-alignment.mjs" "${COMMON_ARGS[@]}"
 run_node_check "Bloated files check" "check-bloated-files.mjs" "${COMMON_ARGS[@]}"
 run_node_check "Deprecated document reference check" "check-deprecated-doc-refs.mjs" "${COMMON_ARGS[@]}"
 

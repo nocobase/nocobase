@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 
 const supportedExtension =
-  /\.(?:[cm]?[jt]sx?|json5?|jsonc|mdx?|ya?ml|css|scss|less|html)$/u;
+  /\.(?:[cm]?[jt]sx?|json5?|jsonc|mdx?|ya?ml|css|scss|less|html|astro)$/u;
 const mode = process.argv[2];
 
 if (mode !== '--check' && mode !== '--write') {
