@@ -1,8 +1,43 @@
 import type { Locator, Page, TestInfo } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-import { Api, expect, signIn, test, unique, url } from './support/fixtures.ts';
+import {
+  Api,
+  expect,
+  signIn,
+  test as base,
+  unique,
+  url,
+} from './support/fixtures.ts';
 import { FakeRunner } from './support/runner.ts';
+
+// Fixture teardown has a separate budget and preserves the test body's first error.
+const test = base.extend<{ variableProject: { id: string } }>({
+  variableProject: async ({ api }, use, info) => {
+    const project = await api.post<{ id: string }>('projects', {
+      name: `Dialog regression ${unique()}`,
+      visibility: 'members',
+    });
+    try {
+      await use(project);
+    } finally {
+      await api.delete(`projects/${project.id}`);
+      await info.attach('variable-project-cleanup.json', {
+        body: JSON.stringify({ projectId: project.id, deleteSucceeded: true }),
+        contentType: 'application/json',
+      });
+    }
+  },
+});
+
+async function dismissSavedToast(page: Page, name: string): Promise<void> {
+  const saved = page.locator('[data-slot=toast]').filter({
+    has: page.getByText(`Saved ${name}.`, { exact: true }),
+  });
+  await expect(saved).toBeVisible();
+  await saved.getByRole('button', { name: 'Close toast', exact: true }).click();
+  await expect(saved).toBeHidden();
+}
 
 const longValue = '界'.repeat(2730) + 'AA';
 
@@ -102,138 +137,127 @@ test('variable dialog keeps legal long values and its actions reachable', async 
   page,
   api,
   studio,
+  variableProject: project,
 }, info) => {
   await api.patch('users/me/preferences', { locale: 'en-US' });
-  const project = await api.post<{ id: string }>('projects', {
-    name: `Dialog regression ${unique()}`,
-    visibility: 'members',
+  await page.goto(
+    url(`/projects/${project.id}/settings?section=variables`, studio),
+  );
+  await page.getByRole('button', { name: 'Add variable', exact: true }).click();
+  const dialog = page.getByRole('dialog', {
+    name: 'Add environment variable',
+    exact: true,
   });
-  try {
-    await page.goto(
-      url(`/projects/${project.id}/settings?section=variables`, studio),
-    );
-    await page
-      .getByRole('button', { name: 'Add variable', exact: true })
-      .click();
-    const dialog = page.getByRole('dialog', {
-      name: 'Add environment variable',
-      exact: true,
-    });
-    await dialog
-      .getByRole('textbox', { name: 'Name', exact: true })
-      .fill('DIALOG_VALUE');
-    const value = dialog.getByRole('textbox', { name: 'Value', exact: true });
-    await value.fill('short test value');
-    await reachable(page, dialog);
-    await page.screenshot({
-      path: info.outputPath('variable-short-value.png'),
-      mask: [value],
-    });
-    expect(Buffer.byteLength(longValue)).toBe(8192);
-    await value.fill(longValue);
-    await captureLayout(dialog, info, 'variable-layout.json');
-    await page.screenshot({
-      path: info.outputPath('variable-long-value.png'),
-      mask: [dialog.locator('[data-slot=field-group]')],
-    });
-    await reachable(page, dialog);
-    await scrollingBody(dialog);
-    await dialog.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(dialog).toBeHidden();
-    await expect(
-      page.getByRole('cell', { name: 'DIALOG_VALUE', exact: true }),
-    ).toBeVisible();
-    const edit = async (name: string) => {
-      await page
-        .getByRole('button', { name: `Actions for ${name}`, exact: true })
-        .click();
-      await page
-        .getByRole('menuitem', { name: 'Replace value', exact: true })
-        .click();
-      return page.getByRole('dialog', { name: `Replace ${name}`, exact: true });
-    };
-    const replacement = await edit('DIALOG_VALUE');
-    const replacementValue = replacement.getByRole('textbox', {
-      name: 'Value',
-      exact: true,
-    });
-    await expect(replacementValue).toHaveValue('');
-    await replacementValue.fill(longValue + 'A');
-    await replacement
-      .getByRole('button', { name: 'Save', exact: true })
-      .click();
-    await expect(
-      replacement.getByText('The value is larger than 8 KB.', { exact: true }),
-    ).toBeVisible();
-    await expect(replacementValue).toHaveValue(longValue + 'A');
-    await reachable(page, replacement);
-    await replacement
-      .getByRole('button', { name: 'Cancel', exact: true })
-      .click();
-    await page
-      .getByRole('alertdialog')
-      .getByRole('button', { name: 'Keep editing', exact: true })
-      .click();
-    await expect(replacementValue).toHaveValue(longValue + 'A');
-    await replacement
-      .getByRole('button', { name: 'Cancel', exact: true })
-      .click();
-    await page
-      .getByRole('alertdialog')
-      .getByRole('button', { name: 'Discard', exact: true })
-      .click();
-    await expect(replacement).toBeHidden();
-    const name = 'L'.repeat(128);
-    await api.put(`agents/variables/project/${project.id}/${name}`, {
-      value: 'original test value',
-    });
-    await page.reload();
-    await page.setViewportSize({ width: 375, height: 812 });
-    const narrow = await edit(name);
-    await reachable(page, narrow);
-    const narrowValue = narrow.getByRole('textbox', {
-      name: 'Value',
-      exact: true,
-    });
-    await narrowValue.fill(longValue);
-    await reachable(page, narrow);
-    await scrollingBody(narrow);
-    await page.screenshot({
-      path: info.outputPath('variable-narrow-long-name.png'),
-      mask: [narrow.locator('[data-slot=field-group]')],
-    });
-    await narrow.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(narrow).toBeHidden();
-    const blank = await edit(name);
-    await blank.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(blank).toBeHidden();
-    const revealed = await api.post<{ name: string; value: string }[]>(
-      `agents/variables/project/${project.id}/reveal`,
-    );
-    const audits = await api.get<{ action: string }[]>(
-      `agents/variables/project/${project.id}/audits`,
-    );
-    expect(audits.some((item) => item.action === 'set')).toBe(true);
-    expect(audits.some((item) => item.action === 'reveal')).toBe(true);
-    expect(
-      revealed.find((item) => item.name === name)?.value === longValue,
-    ).toBe(true);
-    expect(
-      revealed.find((item) => item.name === 'DIALOG_VALUE')?.value ===
-        longValue,
-    ).toBe(true);
+  await dialog
+    .getByRole('textbox', { name: 'Name', exact: true })
+    .fill('DIALOG_VALUE');
+  const value = dialog.getByRole('textbox', { name: 'Value', exact: true });
+  await value.fill('short test value');
+  await reachable(page, dialog);
+  await page.screenshot({
+    path: info.outputPath('variable-short-value.png'),
+    mask: [value],
+  });
+  expect(Buffer.byteLength(longValue)).toBe(8192);
+  await value.fill(longValue);
+  await captureLayout(dialog, info, 'variable-layout.json');
+  await page.screenshot({
+    path: info.outputPath('variable-long-value.png'),
+    mask: [dialog.locator('[data-slot=field-group]')],
+  });
+  await reachable(page, dialog);
+  await scrollingBody(dialog);
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(
+    page.getByRole('cell', { name: 'DIALOG_VALUE', exact: true }),
+  ).toBeVisible();
+  await dismissSavedToast(page, 'DIALOG_VALUE');
+  const edit = async (name: string) => {
     await page
       .getByRole('button', { name: `Actions for ${name}`, exact: true })
       .click();
     await page
-      .getByRole('menuitem', { name: 'Access log', exact: true })
+      .getByRole('menuitem', { name: 'Replace value', exact: true })
       .click();
-    await expect(
-      page.getByText(`Access log of ${name}`, { exact: true }),
-    ).toBeVisible();
-  } finally {
-    await api.delete(`projects/${project.id}`);
-  }
+    return page.getByRole('dialog', { name: `Replace ${name}`, exact: true });
+  };
+  const replacement = await edit('DIALOG_VALUE');
+  const replacementValue = replacement.getByRole('textbox', {
+    name: 'Value',
+    exact: true,
+  });
+  await expect(replacementValue).toHaveValue('');
+  await replacementValue.fill(longValue + 'A');
+  await replacement.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(
+    replacement.getByText('The value is larger than 8 KB.', { exact: true }),
+  ).toBeVisible();
+  await expect(replacementValue).toHaveValue(longValue + 'A');
+  await reachable(page, replacement);
+  await replacement
+    .getByRole('button', { name: 'Cancel', exact: true })
+    .click();
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: 'Keep editing', exact: true })
+    .click();
+  await expect(replacementValue).toHaveValue(longValue + 'A');
+  await replacement
+    .getByRole('button', { name: 'Cancel', exact: true })
+    .click();
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: 'Discard', exact: true })
+    .click();
+  await expect(replacement).toBeHidden();
+  const name = 'L'.repeat(128);
+  await api.put(`agents/variables/project/${project.id}/${name}`, {
+    value: 'original test value',
+  });
+  await page.reload();
+  await page.setViewportSize({ width: 375, height: 812 });
+  const narrow = await edit(name);
+  await reachable(page, narrow);
+  const narrowValue = narrow.getByRole('textbox', {
+    name: 'Value',
+    exact: true,
+  });
+  await narrowValue.fill(longValue);
+  await reachable(page, narrow);
+  await scrollingBody(narrow);
+  await page.screenshot({
+    path: info.outputPath('variable-narrow-long-name.png'),
+    mask: [narrow.locator('[data-slot=field-group]')],
+  });
+  await narrow.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(narrow).toBeHidden();
+  await dismissSavedToast(page, name);
+  const blank = await edit(name);
+  await blank.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(blank).toBeHidden();
+  await dismissSavedToast(page, name);
+  const revealed = await api.post<{ name: string; value: string }[]>(
+    `agents/variables/project/${project.id}/reveal`,
+  );
+  const audits = await api.get<{ action: string }[]>(
+    `agents/variables/project/${project.id}/audits`,
+  );
+  expect(audits.some((item) => item.action === 'set')).toBe(true);
+  expect(audits.some((item) => item.action === 'reveal')).toBe(true);
+  expect(revealed.find((item) => item.name === name)?.value === longValue).toBe(
+    true,
+  );
+  expect(
+    revealed.find((item) => item.name === 'DIALOG_VALUE')?.value === longValue,
+  ).toBe(true);
+  await page
+    .getByRole('button', { name: `Actions for ${name}`, exact: true })
+    .click();
+  await page.getByRole('menuitem', { name: 'Access log', exact: true }).click();
+  await expect(
+    page.getByText(`Access log of ${name}`, { exact: true }),
+  ).toBeVisible();
 });
 
 test('agent capability dialog keeps long descriptions and its actions reachable', async ({
