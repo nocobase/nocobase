@@ -59,6 +59,14 @@ For notification configuration or sending, follow the notification plugin Skill:
 
 Install, update and customize plugins, and remove a direct NocoBase package, as [plugins](references/plugins.md) describes: `pnpm nocobase plugin register`, `plugin update` and `package remove` keep the manifest, the lockfile, the composition roots and the synchronized Skills consistent, so never hand-edit only one of them.
 
+## Plan system administration when building a complete application
+
+When building a complete application, plan its business pages and administrator-facing configuration together. Check which user management, permission management, organization management, process parameters and business reference data the system needs; include only the capabilities relevant to the requested scope. Identify who administers each capability and who may read or change it, separately from who performs the business work. For a focused feature change, extend the existing administration only where that feature requires it.
+
+Reuse existing management pages and the installed plugins' Skills above. Group applicable administration pages in a consistent Settings or System management navigation group, following [settings pages](references/frontend/references/page.md#5-settings-pages); they use the application's normal layout and explicit permissions. Verify menu visibility, direct page access and server-side read/write authorization for administrators and ordinary users, including read-only administrators where needed. Deliver the applicable pages and initial permission configuration with the business feature rather than leaving administrators without a usable entry point.
+
+For process management, distinguish administrator-adjustable reviewers, departments, thresholds and other [lifecycle parameters](references/lifecycle-parameters.md) from workflow structure, which remains defined in source. Do not assume that a configurable process requires a visual workflow designer.
+
 ## Learn the endpoints from the API document
 
 The running application describes every `/api` endpoint it serves — its own routes, every installed plugin's, the data endpoints and Better Auth's `/api/auth/...` — in an OpenAPI 3.1 document. Before calling an endpoint or building on one, fetch that document instead of reading route sources:
