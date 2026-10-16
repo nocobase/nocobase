@@ -65,6 +65,7 @@ export {
 export {
   DEFAULT_TOOL_POLICY,
   MAX_CLAIM_FAILURES,
+  retryBaseDelayMs,
   retryDelayMs,
   toolPolicyFor,
 } from './policy.js';
