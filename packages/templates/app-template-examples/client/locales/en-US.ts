@@ -106,6 +106,8 @@ const enUS = {
   ...agentChatEnUS,
   onlineAgent: {
     group: 'Agents',
+    agents: 'Agents',
+    runtimes: 'Runtimes',
     models: 'Models',
     openModels: 'Open models',
     checkingModels: 'Checking chat models…',

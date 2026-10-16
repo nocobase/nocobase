@@ -32,6 +32,7 @@ import {
   type ConversationPatch,
   type CreateConversationRequest,
   type MessageAttachment,
+  type OnlineChatConfigSnapshot,
 } from '../../shared/conversations.js';
 import type { Agents } from '../composition.js';
 import {
@@ -77,6 +78,7 @@ const conversationConflict = (when: string) =>
 const MessagePosition = z.object({ before: z.number().int().min(1) });
 
 const ConfigInput = z.strictObject({
+  agentId: z.string().min(1).max(64).optional(),
   scope: z.array(z.string()).optional(),
   model: z.array(z.string()).optional(),
   thinking: z.string().optional(),
@@ -89,8 +91,11 @@ const ConfigInput = z.strictObject({
     })
     .optional(),
 });
-const ConfigOutput = z.object({
-  selectedModel: z.object({ modelService: z.string(), model: z.string() }),
+const ConfigOutput: z.ZodType<OnlineChatConfigSnapshot> = z.object({
+  agentId: z.string().optional(),
+  selectedModel: z
+    .object({ modelService: z.string(), model: z.string() })
+    .nullable(),
   scope: z.array(z.string()),
   model: z.array(z.string()),
   thinking: z.string().optional(),
@@ -314,10 +319,6 @@ export function createChatRoutes(
                 : cleanTitle(request.title);
             if (title && title.length > CONVERSATION_TITLE_MAX)
               throw invalid('The conversation title is too long.');
-            if (request.agentId && request.agentId !== 'online')
-              throw invalid(
-                'Runner profiles cannot configure OnlineAgent. Select an OnlineAgent configuration.',
-              );
             if (
               request.source &&
               request.source !== 'panel' &&
@@ -328,6 +329,7 @@ export function createChatRoutes(
               trusted(context),
               {
                 ...request.config,
+                ...(request.agentId ? { agentId: request.agentId } : {}),
                 selectedModel: request.selectedModel,
                 source: request.source ?? 'panel',
                 title: title?.text || undefined,
@@ -516,7 +518,9 @@ export function createChatRoutes(
             const parts: Exclude<UserModelMessage['content'], string> = [
               { type: 'text', text: request.content },
             ];
-            for (const fileId of request.attachmentIds ?? []) {
+            for (const fileId of agent.backend === 'native'
+              ? (request.attachmentIds ?? [])
+              : []) {
               const file = await services.chatAttachments.content(
                 { userId: me(context) },
                 fileId,
@@ -638,10 +642,11 @@ export function createChatRoutes(
       operationId: 'agentsConversationEvents',
       ...cliRoute(false),
       description:
-        'SSE with cached first output then live public parts. No reconnect or replay after closure. A completed session returns 204; read saved messages.',
+        'SSE with an immutable initial prefix, then native text deltas or canonical Runner message blocks. part replaces a prefix, delta appends, message upserts by canonical ID and sequence, and saved confirms terminal persistence and sealing. No automatic reconnect or replay after closure. When no current stream exists, returns 204; read details then saved messages.',
       responses: {
         200: {
-          description: 'Public SSE events: part or saved.',
+          description:
+            'Public SSE events: part, delta, message or saved. Types are shared with the chat SDK.',
           content: { 'text/event-stream': { schema: { type: 'string' } } },
         },
         204: { description: 'No current stream; read saved history.' },
@@ -745,21 +750,7 @@ export function createChatRoutes(
       },
     }),
     async (context) => {
-      const data = [
-        {
-          id: 'online',
-          name: 'Online agent',
-          description:
-            'Chat with the configured model and registered business tools.',
-          nameText: null,
-          descriptionText: null,
-          avatar: null,
-          isSystemDefault: true,
-          isMyDefault: false,
-          availability: { online: true, reason: null, onlineRunners: 0 },
-          personalOnly: false,
-        },
-      ];
+      const data = await services.onlineAgent.chatAgents(me(context));
       return context.json({ data, meta: { total: data.length } });
     },
   );

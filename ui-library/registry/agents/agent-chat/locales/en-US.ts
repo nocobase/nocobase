@@ -40,6 +40,7 @@ export interface AgentChatLocale {
       readonly agentMissing: string;
       readonly agentArchived: string;
       readonly forbidden: string;
+      readonly noModel: string;
       readonly noRunner: string;
       readonly othersPersonal: string;
       readonly modelUnavailable: string;
@@ -52,6 +53,7 @@ export interface AgentChatLocale {
       readonly agentMissing: string;
       readonly agentArchived: string;
       readonly forbidden: string;
+      readonly noModel: string;
       readonly noRunner: string;
       readonly othersPersonal: string;
       readonly modelUnavailable: string;
@@ -254,6 +256,7 @@ const agentChatEnUS: AgentChatLocale = {
       agentMissing: 'Deleted',
       agentArchived: 'Not enabled',
       forbidden: 'Not available to you',
+      noModel: 'Configure a chat model first',
       noRunner: 'No runner online, cannot be chosen',
       othersPersonal: "Only others' personal runners have it",
       // The reason earlier versions wrote on a notice that their online fallback could not answer.
@@ -267,6 +270,7 @@ const agentChatEnUS: AgentChatLocale = {
       agentMissing: '{{name}} no longer exists',
       agentArchived: '{{name}} is not enabled',
       forbidden: 'You may no longer use {{name}}',
+      noModel: 'Configure a chat model first',
       noRunner: '{{name}} has no runner online right now',
       othersPersonal:
         "Only others' personal runners have {{name}}; connect a runner of your own",

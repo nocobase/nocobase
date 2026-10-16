@@ -184,6 +184,7 @@ export interface ConversationAgent {
 
 /** Why a conversation's agent cannot answer now. */
 export const OFFLINE_REASONS = [
+  'noModel',
   /** The agent was deleted. */
   'agentMissing',
   /** The agent is not enabled. */
@@ -509,7 +510,8 @@ export type OnlineChatJson =
   | OnlineChatJson[]
   | { [key: string]: OnlineChatJson };
 export interface OnlineChatConfigSnapshot {
-  readonly selectedModel: { modelService: string; model: string };
+  readonly agentId?: string;
+  readonly selectedModel: { modelService: string; model: string } | null;
   readonly scope: string[];
   readonly model: string[];
   readonly thinking?: string;
@@ -520,6 +522,7 @@ export interface OnlineChatConfigSnapshot {
 }
 export interface CreateConversationRequest {
   readonly config?: {
+    agentId?: string;
     tool?: string[];
     systemPromptTemplate?: string;
     context?: { variable?: OnlineChatJson; systemPrompt?: string };
@@ -528,7 +531,7 @@ export interface CreateConversationRequest {
     thinking?: string;
   };
   readonly selectedModel?: { modelService: string; model: string };
-  /** Optional OnlineAgent display alias (`online`); Runner profiles are not implicitly converted. */
+  /** Selects the native `online` executor or a callable Runner agent for a new conversation. */
   readonly agentId?: string;
   /** An explicit title (`user`); otherwise the first message gives one. */
   readonly title?: string;

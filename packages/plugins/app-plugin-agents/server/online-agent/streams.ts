@@ -1,22 +1,18 @@
 import { conflict } from '../kernel/errors.js';
-import type { OnlineAgentPublicItem, OnlineAgentOutcome } from './codec.js';
-
-export type OnlineAgentStreamEvent =
-  | {
-      type: 'part';
-      boundary: { afterSeq: number };
-      messageIndex: number;
-      item: OnlineAgentPublicItem;
-    }
-  | {
-      type: 'saved';
-      boundary: { afterSeq: number };
-      lastSeq: number;
-      status: 'idle';
-      outcome: OnlineAgentOutcome;
-    };
+import type {
+  OnlineAgentPublicItem,
+  OnlineAgentOutcome,
+  OnlineAgentStreamEvent,
+} from '../../shared/online-agent.js';
+export type { OnlineAgentStreamEvent } from '../../shared/online-agent.js';
 export interface OnlineAgentStreamWriter {
+  seal(): Promise<void>;
+  discard(error?: Error): Promise<void>;
+  append(messageIndex: number, text: string): Promise<void>;
   publish(messageIndex: number, item: OnlineAgentPublicItem): Promise<void>;
+  message(
+    message: import('../../shared/conversations.js').ConversationMessage,
+  ): Promise<void>;
   finish(outcome: OnlineAgentOutcome, lastSeq: number): Promise<void>;
 }
 export interface OnlineAgentStreamManager {
@@ -29,7 +25,8 @@ export class OnlineAgentMemoryStreamManager implements OnlineAgentStreamManager 
   private channels = new Map<
     string,
     {
-      events: OnlineAgentStreamEvent[];
+      events: Map<string, OnlineAgentStreamEvent>;
+      sizes: Map<string, number>;
       listeners: Set<ReadableStreamDefaultController<OnlineAgentStreamEvent>>;
       bytes: number;
     }
@@ -45,7 +42,8 @@ export class OnlineAgentMemoryStreamManager implements OnlineAgentStreamManager 
     if (this.channels.has(id))
       throw conflict('This conversation already has an open stream.');
     const channel = {
-      events: [] as OnlineAgentStreamEvent[],
+      events: new Map<string, OnlineAgentStreamEvent>(),
+      sizes: new Map<string, number>(),
       listeners: new Set<
         ReadableStreamDefaultController<OnlineAgentStreamEvent>
       >(),
@@ -53,35 +51,123 @@ export class OnlineAgentMemoryStreamManager implements OnlineAgentStreamManager 
     };
     this.channels.set(id, channel);
     let finished: string | null = null;
+    let sealed = false;
+    let discarded = false;
     const deliver = (event: OnlineAgentStreamEvent) => {
       for (const listener of channel.listeners) {
         if ((listener.desiredSize ?? 0) <= 0) {
           listener.error(new Error('The stream consumer is too slow.'));
           channel.listeners.delete(listener);
-        } else listener.enqueue(event);
+        } else listener.enqueue(structuredClone(event));
       }
     };
+    const cache = (
+      key: string,
+      snapshot: OnlineAgentStreamEvent,
+      event: OnlineAgentStreamEvent,
+      retainedSize = Buffer.byteLength(JSON.stringify(snapshot)),
+    ) => {
+      const size = retainedSize - (channel.sizes.get(key) ?? 0);
+      if (
+        channel.bytes + size > this.limit ||
+        this.bytes + size > this.totalLimit
+      )
+        throw new Error('OnlineAgent stream cache limit exceeded.');
+      channel.events.set(key, snapshot);
+      channel.sizes.set(key, retainedSize);
+      channel.bytes += size;
+      this.bytes += size;
+      deliver(event);
+    };
+    const seal = () => {
+      if (sealed) return;
+      sealed = true;
+      if (this.channels.get(id) === channel) this.channels.delete(id);
+      this.bytes -= channel.bytes;
+      channel.events.clear();
+      channel.sizes.clear();
+      channel.bytes = 0;
+    };
     return {
+      seal: async () => {
+        seal();
+      },
+      discard: async (error) => {
+        if (discarded || finished !== null) return;
+        discarded = true;
+        sealed = true;
+        if (this.channels.get(id) === channel) this.channels.delete(id);
+        this.bytes -= channel.bytes;
+        channel.events.clear();
+        channel.sizes.clear();
+        channel.bytes = 0;
+        for (const listener of channel.listeners) {
+          if (error) listener.error(error);
+          else listener.close();
+        }
+        channel.listeners.clear();
+      },
+      append: async (messageIndex, text) => {
+        if (sealed || finished !== null)
+          throw conflict('This stream is closed.');
+        const previous = channel.events.get(String(messageIndex));
+        const prefix =
+          previous?.type === 'part'
+            ? previous.item.parts.map((part) => part.text).join('')
+            : '';
+        // Charge only the new fragment. Do not serialize the growing prefix per token.
+        const retainedSize =
+          (channel.sizes.get(String(messageIndex)) ??
+            Buffer.byteLength(
+              JSON.stringify({
+                type: 'part',
+                boundary: { afterSeq },
+                messageIndex,
+                item: {
+                  role: 'assistant',
+                  parts: [{ type: 'text', text: '' }],
+                },
+              }),
+            )) +
+          Buffer.byteLength(JSON.stringify(text)) -
+          2;
+        cache(
+          String(messageIndex),
+          {
+            type: 'part',
+            boundary: { afterSeq },
+            messageIndex,
+            item: {
+              role: 'assistant',
+              parts: [{ type: 'text', text: prefix + text }],
+            },
+          },
+          { type: 'delta', boundary: { afterSeq }, messageIndex, text },
+          retainedSize,
+        );
+      },
+      message: async (message) => {
+        if (sealed || finished !== null)
+          throw conflict('This stream is closed.');
+        const event: OnlineAgentStreamEvent = {
+          type: 'message',
+          message: structuredClone(message),
+        };
+        cache(`message:${message.id}`, event, event);
+      },
       publish: async (messageIndex, item) => {
-        if (finished !== null) throw conflict('This stream is closed.');
+        if (sealed || finished !== null)
+          throw conflict('This stream is closed.');
         const event: OnlineAgentStreamEvent = {
           type: 'part',
           boundary: { afterSeq },
           messageIndex,
-          item,
+          item: structuredClone(item),
         };
-        const size = Buffer.byteLength(JSON.stringify(event));
-        if (
-          channel.bytes + size > this.limit ||
-          this.bytes + size > this.totalLimit
-        )
-          throw new Error('OnlineAgent stream cache limit exceeded.');
-        channel.events.push(event);
-        channel.bytes += size;
-        this.bytes += size;
-        deliver(event);
+        cache(String(messageIndex), event, event);
       },
       finish: async (outcome, lastSeq) => {
+        if (discarded) return;
         const key = JSON.stringify([outcome, lastSeq]);
         if (finished !== null) {
           if (finished !== key)
@@ -90,6 +176,7 @@ export class OnlineAgentMemoryStreamManager implements OnlineAgentStreamManager 
             );
           return;
         }
+        seal();
         finished = key;
         if (this.channels.get(id) === channel) this.channels.delete(id);
         this.bytes -= channel.bytes;
@@ -102,7 +189,8 @@ export class OnlineAgentMemoryStreamManager implements OnlineAgentStreamManager 
         });
         for (const listener of channel.listeners) listener.close();
         channel.listeners.clear();
-        channel.events = [];
+        channel.events.clear();
+        channel.sizes.clear();
         channel.bytes = 0;
       },
     };
@@ -119,7 +207,8 @@ export class OnlineAgentMemoryStreamManager implements OnlineAgentStreamManager 
       {
         start(controller) {
           subscriber = controller;
-          for (const event of channel.events) controller.enqueue(event);
+          for (const event of channel.events.values())
+            controller.enqueue(structuredClone(event));
           channel.listeners.add(controller);
         },
         cancel() {

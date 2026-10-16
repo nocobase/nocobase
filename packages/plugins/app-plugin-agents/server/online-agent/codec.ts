@@ -102,18 +102,20 @@ export function jsonSafe(value: unknown): OnlineAgentJson {
   return visit(value);
 }
 
-export type OnlineAgentOutcome = 'completed' | 'cancelled' | 'failed';
+export type {
+  OnlineAgentOutcome,
+  OnlineAgentPublicItem,
+} from '../../shared/online-agent.js';
+import type {
+  OnlineAgentOutcome,
+  OnlineAgentPublicItem,
+} from '../../shared/online-agent.js';
 export type OnlineAgentOriginal = {
   version: 1;
   message: OnlineAgentCodecNode | null;
   outcome: OnlineAgentOutcome;
   excludedFromHistory?: boolean;
 };
-export type OnlineAgentPublicItem = {
-  role: 'user' | 'assistant' | 'notice';
-  parts: { type: 'text'; text: string }[];
-};
-
 /** Only user and assistant text is public; tool payloads and provider metadata stay internal. */
 export function project(
   message: ModelMessage | null,

@@ -3,6 +3,8 @@ import {
   SidebarPreferenceProvider,
 } from '../../client/layouts/use-sidebar-preference.js';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
+import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
+import applicationRoutes from '../../client/routes.js';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -52,8 +54,12 @@ const routes: AppClientRegisteredRoute[] = [
   { ...page('Group'), componentLoader: undefined, children: [visible, hidden] },
   { ...page('Empty'), componentLoader: undefined, children: [hidden] },
 ];
-function Menu() {
-  const { items } = useRouteNavigation(routes);
+function Menu({
+  entries = routes,
+}: {
+  readonly entries?: readonly AppClientRegisteredRoute[];
+}) {
+  const { items } = useRouteNavigation(entries);
   return (
     <NavigationMenu
       items={items}
@@ -104,5 +110,56 @@ describe.each(['expanded', 'collapsed', 'mobile'])(
       ).not.toBeInTheDocument();
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
+  },
+);
+
+const agentsRoutes = resolveAppClientContributions([
+  {
+    packageName: '@nocobase/app-template-examples',
+    source: 'application',
+    routes: [
+      {
+        ...applicationRoutes[0],
+        routes: applicationRoutes[0].routes.filter(
+          (route) => route.name === 'agentsNavigation',
+        ),
+      },
+    ],
+  },
+]).routes;
+
+it.each(['agents', 'runtimes', 'agents.services', null])(
+  'shows only the permitted Agents settings entry for %s',
+  async (allowed) => {
+    auth.client.can.mockImplementation(
+      async (requirement) => requirement.resource.id === allowed,
+    );
+    render(
+      <MemoryRouter basename='/example' initialEntries={['/example/']}>
+        <SidebarPreferenceProvider value={sidebarPreference}>
+          <AppSidebarProvider>
+            <Menu entries={agentsRoutes} />
+          </AppSidebarProvider>
+        </SidebarPreferenceProvider>
+      </MemoryRouter>,
+    );
+    if (allowed) {
+      const name = allowed === 'agents.services' ? 'models' : allowed;
+      expect(
+        await screen.findByRole('link', { name: `onlineAgent.${name}` }),
+      ).toHaveAttribute('href', `/example/${name}`);
+    }
+    await waitFor(() => {
+      expect(screen.queryAllByRole('link')).toHaveLength(allowed ? 1 : 0);
+    });
+    for (const name of ['agents', 'runtimes', 'models']) {
+      const resource = name === 'models' ? 'agents.services' : name;
+      if (resource !== allowed)
+        expect(
+          screen.queryByRole('link', { name: `onlineAgent.${name}` }),
+        ).not.toBeInTheDocument();
+    }
+    if (!allowed)
+      expect(screen.queryByText('onlineAgent.group')).not.toBeInTheDocument();
   },
 );

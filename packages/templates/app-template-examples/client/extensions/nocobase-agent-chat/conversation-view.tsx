@@ -215,6 +215,17 @@ function ConversationBody({
     ? null
     : newConversationAgent(agents.data, panel.newAgentId);
 
+  const selectedId = conversation?.agent.id ?? target?.id ?? 'online';
+  const sendAvailability =
+    selectedId === 'online'
+      ? inputAvailability
+      : {
+          canSend:
+            conversation?.availability.online ??
+            target?.availability.online ??
+            false,
+        };
+
   const { selectConversation, resetSource, source, focusComposer } = panel;
   const created = useCallback(
     (detail: ConversationDetail) => {
@@ -448,7 +459,7 @@ function ConversationBody({
                       });
                     }}
                     retryDisabled={
-                      inputAvailability?.canSend === false || running
+                      sendAvailability?.canSend === false || running
                     }
                     onRecoverCreation={
                       chatController.submissions
@@ -459,7 +470,7 @@ function ConversationBody({
                             record.status === 'creationUnknown',
                         )
                         ? () => {
-                            if (inputAvailability?.canSend === false || running)
+                            if (sendAvailability?.canSend === false || running)
                               return;
                             creationObserverRef.current?.();
                             const off = chatController.submissions.onUpdated(
@@ -482,7 +493,7 @@ function ConversationBody({
                         : undefined
                     }
                     onRetry={() => {
-                      if (inputAvailability?.canSend === false || running)
+                      if (sendAvailability?.canSend === false || running)
                         return;
                       send({
                         content: message.content,
@@ -495,7 +506,7 @@ function ConversationBody({
                     }}
                   />
                 ))}
-                {run ? (
+                {run && !conversation?.execution ? (
                   <li>
                     <LiveSteps
                       key={run.id}
@@ -527,12 +538,13 @@ function ConversationBody({
       ) : null}
       <TurnAnnouncer running={running} />
       <div className={page ? cn(PAGE_COLUMN, 'pt-2 pb-4') : undefined}>
-        {inputAvailability?.notice}
+        {sendAvailability?.notice}
         <Composer
           variant={variant}
           disabled={
-            inputAvailability?.canSend === false ||
+            sendAvailability?.canSend === false ||
             running ||
+            Boolean(conversation && !conversation.availability.online) ||
             chatController.submissions.blocked(
               conversationId,
               `registry:${source}:${conversationId ?? 'new'}`,
@@ -549,7 +561,7 @@ function ConversationBody({
             if (conversationId) actions.stop.mutate(conversationId);
           }}
           onSend={(content, context, attachments) => {
-            if (inputAvailability?.canSend === false) return false;
+            if (sendAvailability?.canSend === false) return false;
             const accepted = send({ content, context, attachments });
             if (accepted) focusComposer();
             return accepted;

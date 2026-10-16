@@ -10,7 +10,10 @@ import {
   type ReactNode,
 } from 'react';
 import { useApiClient } from '@nocobase/app-client';
-import type { ConversationMessage } from '../../shared/conversations.js';
+import type {
+  ConversationMessage,
+  ConversationDetail,
+} from '../../shared/conversations.js';
 import { ChatApi } from './api.js';
 import { ChatSubmissions } from './submissions.js';
 import { agentsQueryClient } from '../query.js';
@@ -24,14 +27,7 @@ import {
   type MessagesState,
 } from './message-model.js';
 
-type PublicEvent =
-  | {
-      type: 'part';
-      boundary: { afterSeq: number };
-      messageIndex: number;
-      item: { role: string; parts: { type: 'text'; text: string }[] };
-    }
-  | { type: 'saved'; lastSeq: number };
+import type { OnlineAgentStreamEvent } from '../../shared/online-agent.js';
 export type StreamState = {
   phase: 'connecting' | 'streaming' | 'saved' | 'interrupted';
   items: ConversationMessage[];
@@ -169,8 +165,17 @@ export class ChatController {
           return;
         }
         if (!stream) {
-          this.streams.set(id, { phase: 'saved', items: [] });
           await this.refresh(id);
+          if (!current()) return;
+          if (
+            agentsQueryClient().getQueryData<ConversationDetail>(
+              chatKeys.conversation(id),
+            )?.execution?.status === 'running'
+          )
+            throw new Error(
+              'Execution is still running; refresh saved history to confirm the result.',
+            );
+          this.streams.set(id, { phase: 'saved', items: [] });
           this.publish();
           return;
         }
@@ -196,7 +201,7 @@ export class ChatController {
                 .map((line) => line.slice(5).trimStart())
                 .join('\n');
               if (!data || !current()) continue;
-              const event = JSON.parse(data) as PublicEvent;
+              const event = JSON.parse(data) as OnlineAgentStreamEvent;
               const state = this.streams.get(id)!;
               if (event.type === 'saved') {
                 saved = true;
@@ -206,9 +211,19 @@ export class ChatController {
                   lastSeq: event.lastSeq,
                 });
                 await this.refresh(id);
+              } else if (event.type === 'message') {
+                this.streams.set(id, {
+                  phase: 'streaming',
+                  items: [
+                    ...state.items.filter(
+                      (item) => item.id !== event.message.id,
+                    ),
+                    event.message,
+                  ].sort((a, b) => a.seq - b.seq),
+                });
               } else if (
-                event.type === 'part' &&
-                event.item.role === 'assistant'
+                event.type === 'delta' ||
+                (event.type === 'part' && event.item.role === 'assistant')
               ) {
                 const seq = event.boundary.afterSeq + event.messageIndex + 1;
                 const message: ConversationMessage = {
@@ -218,7 +233,11 @@ export class ChatController {
                   role: 'assistant',
                   content: {
                     type: 'text',
-                    content: event.item.parts.map((part) => part.text).join(''),
+                    content:
+                      event.type === 'part'
+                        ? event.item.parts.map((part) => part.text).join('')
+                        : (state.items.find((item) => item.seq === seq)?.content
+                            .content ?? '') + event.text,
                   },
                   toolCalls: null,
                   attachments: null,
@@ -256,12 +275,21 @@ export class ChatController {
   }
   /** Explicit history refresh never reopens a stream or repeats input. */
   async refresh(id: string): Promise<void> {
-    const [, detail] = await Promise.all([
-      this.loadHistory(id, false, true),
-      this.api.conversation(id),
-    ]);
-    const page = this.history(id).state;
-    if (this.disposed) return;
+    const subscription = this.aborts.get(id);
+    const current = () =>
+      !this.disposed &&
+      this.aborts.get(id) === subscription &&
+      !subscription?.signal.aborted;
+    const detail = await this.api.conversation(id);
+    if (!current()) return;
+    await this.loadHistory(id, false, true);
+    const loaded = this.history(id);
+    if (loaded.error)
+      throw loaded.error instanceof Error
+        ? loaded.error
+        : new Error('Saved history could not be loaded.');
+    const page = loaded.state;
+    if (!current()) return;
     agentsQueryClient().setQueryData(chatKeys.conversation(id), detail);
     this.submissions.observe(id, page.items);
     if (detail.execution?.status === 'idle') {

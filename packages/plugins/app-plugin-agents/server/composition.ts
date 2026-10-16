@@ -1,4 +1,7 @@
+import { RunnerOnlineAgentAdapter } from './online-agent/runner.js';
+import { OnlineAgentMemoryStreamManager } from './online-agent/streams.js';
 import type { ServiceResolver } from '@nocobase/service-provider';
+import type { OnlineAgentRuntime } from './online-agent/realtime.js';
 import { OnlineAgentService } from './online-agent/service.js';
 import { createSessionManager } from './online-agent/sessions.js';
 import { languageModel } from './online/providers.js';
@@ -147,6 +150,7 @@ import {
 } from './core/runs/index.js';
 
 export interface AgentsDeps {
+  readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
   readonly resolver?: ServiceResolver;
   readonly runRetentionDays?: () => number;
   /** The first back-off of a failed run attempt (`agents.runs.retryBaseDelayMs`); 30 seconds when left out. */
@@ -190,7 +194,7 @@ export interface AgentsDeps {
 }
 
 export interface Agents {
-  readonly onlineAgent: OnlineAgentService;
+  readonly onlineAgent: OnlineAgentRuntime;
   readonly events: AgentsEventBus;
   readonly tx: TxRunner;
   readonly clock: Clock;
@@ -532,11 +536,41 @@ export function createAgents(deps: AgentsDeps): Agents {
         disk: () => 'local',
       }),
   });
+  const conversations = createConversationService({
+    measure: deps.measureOnlineAgent,
+    tx,
+    ids,
+    clock,
+    agents,
+    runners,
+    eligibility,
+    runs,
+    people,
+    settings: chat,
+    contextKinds: createPageContextKinds(),
+    attachments: chatAttachments.links,
+    basePath,
+  });
+  const streams = new OnlineAgentMemoryStreamManager();
+  const runnerOnlineAgent = new RunnerOnlineAgentAdapter({
+    measure: deps.measureOnlineAgent,
+    tx,
+    conversations,
+    streams,
+    now: () => clock.now().toISOString(),
+    basePath,
+    onError: (error) =>
+      onError('Runner OnlineAgent synchronization failed.', error),
+  });
   const onlineAgent = new OnlineAgentService({
+    runner: runnerOnlineAgent,
+    chatAgents: (userId) => conversations.chatAgents(userId),
+    streams,
     sessions: createSessionManager({
       tx,
       ids,
       attachments: chatAttachments.links,
+      basePath,
       now: () => clock.now().toISOString(),
     }),
     ids,
@@ -552,20 +586,6 @@ export function createAgents(deps: AgentsDeps): Agents {
     onError: (error) =>
       onError('OnlineAgent execution or finalization failed.', error),
   });
-  const conversations = createConversationService({
-    tx,
-    ids,
-    clock,
-    agents,
-    runners,
-    eligibility,
-    runs,
-    people,
-    settings: chat,
-    contextKinds: createPageContextKinds(),
-    attachments: chatAttachments.links,
-    basePath,
-  });
   subjects.register(conversations.binding);
   registerCoreContextKinds(conversations, agents, runs);
   const gate = createCallerGate();
@@ -578,6 +598,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   // The agent's text in a conversation becomes messages as the runner reports it; the run's end and reading the
   // messages catch up on anything missed here.
   events.on('run.events', (event) => {
+    if (runnerOnlineAgent.notify(event.runId)) return;
     conversations
       .syncRun(event.runId)
       .catch((error: unknown) =>
@@ -589,6 +610,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   });
   // The panel shows whether the agent is working: tell the owner when a conversation's run changes.
   events.on('run.changed', (event) => {
+    runnerOnlineAgent.notify(event.runId);
     runs
       .get(event.runId)
       .then(async (run) => {

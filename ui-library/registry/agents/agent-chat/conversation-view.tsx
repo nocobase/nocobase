@@ -432,7 +432,7 @@ function ConversationBody({
                     }
                   />
                 ))}
-                {run ? (
+                {run && !conversation?.execution ? (
                   <li>
                     <LiveSteps
                       key={run.id}
@@ -468,6 +468,7 @@ function ConversationBody({
           variant={variant}
           disabled={
             running ||
+            Boolean(conversation && !conversation.availability.online) ||
             chatController.submissions.blocked(
               conversationId,
               `registry:${source}:${conversationId ?? 'new'}`,

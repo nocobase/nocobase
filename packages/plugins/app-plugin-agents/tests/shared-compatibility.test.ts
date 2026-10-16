@@ -1,6 +1,6 @@
 import type {
   OnlineAgentToolContext as PublicToolContext,
-  OnlineAgent,
+  OnlineAgentRealtimeSession,
 } from '@nocobase/app-plugin-agents/server/online-agent';
 import {
   OnlineAgentConfigurer,
@@ -181,5 +181,5 @@ it('exposes the shared service and configurer through the public server entry', 
   expect(PublicOnlineAgentConfigurer).toBe(OnlineAgentConfigurer);
   expectTypeOf<
     Awaited<ReturnType<PublicOnlineAgentService['realtime']>>
-  >().toEqualTypeOf<OnlineAgent>();
+  >().toEqualTypeOf<OnlineAgentRealtimeSession>();
 });

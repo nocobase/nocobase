@@ -6,6 +6,12 @@ import {
 } from 'ai';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import type { ZodType } from 'zod';
+import type {
+  OnlineAgentRealtimeService,
+  OnlineAgentRealtimeSession,
+  OnlineAgentRealtimeOptions,
+  OnlineAgentRunnerBackend,
+} from './realtime.js';
 import { reasoningOf } from '../online/gateway.js';
 import { decode, encode } from './codec.js';
 import { conflict, invalid } from '../kernel/errors.js';
@@ -83,7 +89,7 @@ export interface OnlineAgent {
   ): Promise<void>;
   get(): Promise<OnlineAgentJson>;
 }
-export class OnlineAgentService {
+export class OnlineAgentService implements OnlineAgentRealtimeService {
   readonly configurer: OnlineAgentConfigurer = new OnlineAgentConfigurer();
   private stopping = false;
   private active = new Map<string, OnlineAgentExecution>();
@@ -92,6 +98,10 @@ export class OnlineAgentService {
   constructor(
     private deps: {
       sessions: OnlineAgentSessionManager;
+      runner?: OnlineAgentRunnerBackend;
+      chatAgents?(
+        userId: string,
+      ): Promise<import('../../shared/conversations.js').ChatAgent[]>;
       ids: IdSource;
       resolver?: ServiceResolver;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
@@ -104,6 +114,7 @@ export class OnlineAgentService {
   }
   async shutdown(): Promise<void> {
     this.stopping = true;
+    await this.deps.runner?.shutdown();
     const executions = [...this.active.values()];
     executions.forEach((execution) => execution.abort.abort());
     const results = await Promise.allSettled(
@@ -122,6 +133,31 @@ export class OnlineAgentService {
       );
   }
 
+  async chatAgents(
+    userId: string,
+  ): Promise<import('../../shared/conversations.js').ChatAgent[]> {
+    const agents = (await this.deps.chatAgents?.(userId)) ?? [];
+    const model = await this.deps.defaultModel().catch(() => null);
+    return [
+      ...agents,
+      {
+        id: 'online',
+        name: 'Online agent',
+        description: 'Chat with a configured model and registered tools.',
+        nameText: null,
+        descriptionText: null,
+        avatar: null,
+        isSystemDefault: !agents.some((agent) => agent.isSystemDefault),
+        isMyDefault: false,
+        personalOnly: false,
+        availability: {
+          online: Boolean(model),
+          reason: model ? null : 'noModel',
+          onlineRunners: 0,
+        },
+      },
+    ];
+  }
   private async gate<T>(id: string, work: () => Promise<T>): Promise<T> {
     const previous = this.gates.get(id) ?? Promise.resolve();
     const next = previous.catch(() => {}).then(work);
@@ -132,16 +168,7 @@ export class OnlineAgentService {
       if (this.gates.get(id) === next) this.gates.delete(id);
     }
   }
-  private async open(
-    context: OnlineAgentContext,
-    kind: OnlineAgentSession['kind'],
-    options: OnlineAgentOptions & {
-      sessionId?: string;
-      selectedModel?: ModelRef;
-      source?: string;
-      title?: string;
-    },
-  ) {
+  private trusted(context: OnlineAgentContext): void {
     if (
       !context.user.id ||
       !context.authorization ||
@@ -154,19 +181,43 @@ export class OnlineAgentService {
         'A trusted user, authorization and full entry credentials are required.',
       );
     if (this.stopping) throw conflict('OnlineAgent is stopping.');
+  }
+  private async open(
+    context: OnlineAgentContext,
+    kind: OnlineAgentSession['kind'],
+    options: OnlineAgentOptions & {
+      sessionId?: string;
+      selectedModel?: ModelRef;
+      source?: string;
+      title?: string;
+    },
+    prepared?: { config: OnlineAgentConfig; hasModel: boolean },
+  ) {
+    this.trusted(context);
     let id = options.sessionId;
     if (!id) {
       const defaults = await this.deps.sessions.defaults(context.user.id);
-      const fallback =
-        options.selectedModel ??
-        defaults.model ??
-        (await this.deps.defaultModel());
-      const config = await this.configurer.resolve(
-        context,
-        { ...options, scope: options.scope ?? defaults.scope },
-        undefined,
-        fallback ? [`${fallback.modelService}/${fallback.model}`] : [],
-      );
+      const selection =
+        prepared ??
+        (await this.configurer.resolveSelection(
+          context,
+          { ...options, scope: options.scope ?? defaults.scope },
+          undefined,
+          defaults.model
+            ? [`${defaults.model.modelService}/${defaults.model.model}`]
+            : [],
+        ));
+      const { config, hasModel } = selection;
+      if (config.agentId && config.agentId !== 'online')
+        throw invalid('This execution requires a Runner realtime adapter.');
+      if (!hasModel) {
+        const fallback =
+          options.selectedModel ??
+          defaults.model ??
+          (await this.deps.defaultModel());
+        if (fallback)
+          config.model = [`${fallback.modelService}/${fallback.model}`];
+      }
       const model = options.selectedModel ?? this.firstModel(config.model);
       this.validateModel(config.model, model);
       await this.deps.model(model, '');
@@ -181,6 +232,11 @@ export class OnlineAgentService {
     const loaded = await this.deps.sessions.load(context.user.id, id);
     if (loaded.kind !== kind)
       throw invalid('This session has a different execution kind.');
+    if (
+      options.agentId &&
+      options.agentId !== (loaded.config.agentId ?? 'online')
+    )
+      throw conflict('Start a new conversation to choose another agent.');
     const sessionId = id;
     const userId = context.user.id;
     const {
@@ -294,7 +350,23 @@ export class OnlineAgentService {
     id: string,
     options: OnlineAgentOptions,
     selectedModel?: ModelRef,
-  ): Promise<OnlineAgentConfig & { selectedModel: ModelRef }> {
+  ): Promise<OnlineAgentConfig & { selectedModel: ModelRef | null }> {
+    this.trusted(context);
+    const runner = await this.deps.runner?.configuration(context, id);
+    if (runner) {
+      const session = await this.deps.runner!.open(context, runner, {
+        sessionId: id,
+      });
+      if ((await session.status()) === 'running')
+        throw conflict('This conversation is busy.');
+      if (selectedModel)
+        throw invalid('Runner chat does not use a native model.');
+      const config = await this.configurer.resolve(context, options, runner);
+      if (config.agentId !== runner.agentId)
+        throw conflict('Start a new conversation to choose another agent.');
+      await this.deps.runner!.configure(context, id, config, runner);
+      return { ...config, selectedModel: null };
+    }
     await this.realtime(context, { sessionId: id });
     return this.gate(id, async () => {
       if (this.active.has(id)) throw conflict('This conversation is busy.');
@@ -304,6 +376,8 @@ export class OnlineAgentService {
         options,
         session.config,
       );
+      if ((config.agentId ?? 'online') !== (session.config.agentId ?? 'online'))
+        throw conflict('Start a new conversation to choose another agent.');
       const model =
         selectedModel ??
         (options.model !== undefined ||
@@ -319,21 +393,119 @@ export class OnlineAgentService {
   async configuration(
     context: OnlineAgentContext,
     id: string,
-  ): Promise<OnlineAgentConfig & { selectedModel: ModelRef }> {
+  ): Promise<OnlineAgentConfig & { selectedModel: ModelRef | null }> {
+    this.trusted(context);
+    const runner = await this.deps.runner?.configuration(context, id);
+    if (runner) return { ...runner, selectedModel: null };
     await this.realtime(context, { sessionId: id });
     const session = await this.deps.sessions.load(context.user.id, id);
     return { ...session.config, selectedModel: session.model };
   }
-  realtime(
+  async realtime(
     context: OnlineAgentContext,
-    options: OnlineAgentOptions & {
-      sessionId?: string;
-      selectedModel?: ModelRef;
-      source?: string;
-      title?: string;
-    } = {},
-  ): Promise<OnlineAgent> {
-    return this.open(context, 'realtime', options);
+    options: OnlineAgentRealtimeOptions = {},
+  ): Promise<OnlineAgentRealtimeSession> {
+    this.trusted(context);
+    let prepared: { config: OnlineAgentConfig; hasModel: boolean } | undefined;
+    if (options.sessionId) {
+      const binding = await this.deps.runner?.configuration(
+        context,
+        options.sessionId,
+      );
+      if (binding) {
+        if (options.agentId && options.agentId !== binding.agentId)
+          throw conflict('Start a new conversation to choose another agent.');
+        const {
+          sessionId: _id,
+          source: _source,
+          title: _title,
+          selectedModel,
+          ...overrides
+        } = options;
+        if (Object.keys(overrides).length || selectedModel) {
+          const session = await this.deps.runner!.open(context, binding, {
+            sessionId: options.sessionId,
+          });
+          if ((await session.status()) === 'running')
+            throw conflict('This conversation is busy.');
+        }
+        const runner = await this.deps.runner!.open(context, binding, {
+          ...options,
+          selectedModel,
+        });
+        let pendingOptions: OnlineAgentOptions | undefined = Object.keys(
+          overrides,
+        ).length
+          ? overrides
+          : undefined;
+        return {
+          ...runner,
+          send: async (messages, input) => {
+            if (
+              (input?.overrides || pendingOptions) &&
+              (await runner.status()) === 'running'
+            )
+              throw conflict('This conversation is busy.');
+            const current = (await this.deps.runner!.configuration(
+              context,
+              runner.sessionId,
+            ))!;
+            const requested = input?.overrides ?? pendingOptions;
+            const resolved = requested
+              ? await this.configurer.resolve(context, requested, current)
+              : current;
+            if (resolved.agentId !== binding.agentId)
+              throw conflict(
+                'Start a new conversation to choose another agent.',
+              );
+            const opened = await this.deps.runner!.open(
+              context,
+              resolved,
+              {
+                sessionId: runner.sessionId,
+                selectedModel: input?.selectedModel,
+              },
+              current,
+            );
+            const accepted = await opened.send(messages, {
+              ...input,
+              overrides: undefined,
+            });
+            pendingOptions = undefined;
+            return accepted;
+          },
+        };
+      }
+    } else {
+      const defaults = await this.deps.sessions.defaults(context.user.id);
+      // Select the executor before querying any native model service.
+      prepared = await this.configurer.resolveSelection(context, {
+        ...options,
+        scope: options.scope ?? defaults.scope,
+      });
+      if (prepared.config.agentId && prepared.config.agentId !== 'online') {
+        if (!this.deps.runner)
+          throw invalid('Runner realtime execution is unavailable.');
+        const runner = await this.deps.runner.open(
+          context,
+          prepared.config,
+          options,
+        );
+        return this.realtime(context, { sessionId: runner.sessionId });
+      }
+    }
+    const native = await this.open(context, 'realtime', options, prepared);
+    return {
+      sessionId: native.sessionId,
+      backend: 'native',
+      status: native.status,
+      send: native.send,
+      receive: native.receive,
+      abort: native.abort,
+      retryFinalization: native.retryFinalization,
+      history: () =>
+        this.deps.sessions.publicHistory(context.user.id, native.sessionId),
+    };
   }
   background(
     context: OnlineAgentContext,
@@ -389,6 +561,8 @@ export class OnlineAgentService {
     await this.gate(id, async () => {
       if (this.stopping) throw conflict('OnlineAgent is stopping.');
       if (this.active.has(id)) throw conflict('This conversation is busy.');
+      if (this.active.size >= 1024)
+        throw conflict('OnlineAgent execution limit exceeded.');
       this.active.set(id, execution);
       execution.task = this.prepareAndExecute(
         context,
@@ -445,6 +619,8 @@ export class OnlineAgentService {
             session.config,
           )
         : session.config;
+      if ((config.agentId ?? 'online') !== (session.config.agentId ?? 'online'))
+        throw conflict('Start a new conversation to choose another agent.');
       const modelsChanged =
         input?.overrides?.model !== undefined ||
         JSON.stringify(config.model) !== JSON.stringify(session.config.model);
@@ -495,7 +671,6 @@ export class OnlineAgentService {
     let writer: OnlineAgentStreamWriter | undefined;
     let response: ModelMessage[] = [];
     let partial = '';
-    let publishedLength = 0;
     let outcome: OnlineAgentOutcome = 'completed';
     let result: OnlineAgentJson | undefined;
     let sdkStopped: Promise<void> | undefined;
@@ -581,13 +756,7 @@ export class OnlineAgentService {
         onChunk: async ({ chunk }) => {
           if (chunk.type === 'text-delta') {
             partial += chunk.text;
-            if (
-              publishedLength === 0 ||
-              partial.length - publishedLength >= 1024
-            ) {
-              await writer?.publish(response.length, project(null, partial));
-              publishedLength = partial.length;
-            }
+            await writer?.append(response.length, chunk.text);
           }
         },
         onError: ({ error }) => {
@@ -604,7 +773,6 @@ export class OnlineAgentService {
           const first = response.length;
           response.push(...step.response.messages);
           partial = '';
-          publishedLength = 0;
           for (let index = first; index < response.length; index++)
             await writer?.publish(index, project(response[index]));
         },
@@ -656,6 +824,7 @@ export class OnlineAgentService {
       | undefined;
     let saved: number | undefined;
     let sealed = false;
+    let cleared = false;
     execution.finalize = async () => {
       if (!items) {
         // Convert only unfinished exchanges: completed steps already use the SDK
@@ -699,11 +868,15 @@ export class OnlineAgentService {
             ...(result === undefined ? {} : { result }),
           },
         );
+      await writer?.seal();
+      if (!cleared) {
+        await this.deps.sessions.finish(context.user.id, id);
+        cleared = true;
+      }
       if (!sealed) {
         await writer?.finish(outcome, saved);
         sealed = true;
       }
-      await this.deps.sessions.finish(context.user.id, id);
       execution.finalize = undefined;
       if (this.active.get(id) === execution) this.active.delete(id);
     };

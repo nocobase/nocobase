@@ -154,6 +154,7 @@ const AVAILABILITY = [
   'agentMissing',
   'agentArchived',
   'forbidden',
+  'noModel',
   'noRunner',
   'othersPersonal',
 ] as const;

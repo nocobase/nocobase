@@ -109,7 +109,16 @@ async function fixture(
     defaultModel: async () => ref,
     onError: (error) => errors.push(error),
   });
-  return { service, sessions, resolver, errors, measurements, resolveModel };
+  return {
+    service,
+    sessions,
+    resolver,
+    errors,
+    measurements,
+    resolveModel,
+    history: (agent: { sessionId: string }, userId = 'alice') =>
+      sessions.history(userId, agent.sessionId),
+  };
 }
 
 async function settle(
@@ -119,6 +128,46 @@ async function settle(
 }
 
 describe('OnlineAgent service slice', () => {
+  it('delivers A then B before finish and saves the SDK answer exactly once', async () => {
+    let output!: ReadableStreamDefaultController;
+    const model = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: new ReadableStream({
+          start(controller) {
+            output = controller;
+          },
+        }),
+      }),
+    });
+    const f = await fixture(model);
+    const agent = await f.service.realtime(context());
+    await agent.send([{ role: 'user', content: 'Stream' }]);
+    const reader = (await agent.receive())!.getReader();
+    output.enqueue({ type: 'text-start', id: 'a' });
+    output.enqueue({ type: 'text-delta', id: 'a', delta: 'A' });
+    expect((await reader.read()).value).toMatchObject({
+      type: 'delta',
+      text: 'A',
+    });
+    output.enqueue({ type: 'text-delta', id: 'a', delta: 'B' });
+    expect((await reader.read()).value).toMatchObject({
+      type: 'delta',
+      text: 'B',
+    });
+    expect(await agent.status()).toBe('running');
+    output.enqueue({ type: 'text-end', id: 'a' });
+    output.enqueue(finish());
+    output.close();
+    await settle(agent);
+    expect(
+      (await agent.history()).map((message) => message.content.content),
+    ).toEqual(['Stream', 'AB']);
+    expect(await f.history(agent)).toEqual([
+      { role: 'user', content: 'Stream' },
+      expect.objectContaining({ role: 'assistant' }),
+    ]);
+    await reader.cancel();
+  });
   it('runs the real SDK through two injected business tools, preserves complete history and measures SQL', async () => {
     let step = 0;
     const model = new MockLanguageModelV4({
@@ -209,7 +258,7 @@ describe('OnlineAgent service slice', () => {
     expect(read).toHaveBeenCalledTimes(2);
     expect(step).toBe(3);
     expect(f.errors).toEqual([]);
-    const history = await agent.history();
+    const history = await f.history(agent);
     expect(history.map((message) => message.role)).toEqual([
       'user',
       'assistant',
@@ -229,7 +278,7 @@ describe('OnlineAgent service slice', () => {
     const reloaded = await f.service.realtime(context(), {
       sessionId: agent.sessionId,
     });
-    expect(await reloaded.history()).toEqual(history);
+    expect(await f.history(reloaded)).toEqual(history);
     expect(f.measurements.map((item) => item.phase)).toEqual([
       'accept',
       'save',
@@ -345,7 +394,7 @@ describe('OnlineAgent service slice', () => {
       ],
     );
     expect(evidence.map((row) => row.content.content)).toEqual(['', '']);
-    expect(await agent.history()).toEqual([{ role: 'user', content: 'Wait' }]);
+    expect(await f.history(agent)).toEqual([{ role: 'user', content: 'Wait' }]);
     expect(model.doStreamCalls).toHaveLength(1);
     client.off('query', record);
     expect(f.measurements.map((item) => item.phase)).toEqual([
@@ -404,17 +453,17 @@ describe('OnlineAgent service slice', () => {
     await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(1));
     expect(await agent.status()).toBe('running');
     await expect(agent.retryFinalization()).rejects.toThrow(
-      'seal response lost',
+      'marker clear failed',
     );
     await expect(agent.retryFinalization()).rejects.toThrow(
-      'marker clear failed',
+      'seal response lost',
     );
     expect(await agent.status()).toBe('running');
     await agent.retryFinalization();
     expect(clear).toHaveBeenCalledTimes(2);
     expect(await agent.status()).toBe('idle');
     expect(model.doStreamCalls).toHaveLength(1);
-    expect(await agent.history()).toHaveLength(2);
+    expect(await f.history(agent)).toHaveLength(2);
   });
 
   it('returns tool failure to the model, and accepts a repeated ordinary input as a new message', async () => {
@@ -449,13 +498,13 @@ describe('OnlineAgent service slice', () => {
     const agent = await f.service.realtime(context(), { tool: ['fail'] });
     await agent.send([{ role: 'user', content: 'Lookup' }]);
     await settle(agent);
-    expect(JSON.stringify(await agent.history())).toContain(
+    expect(JSON.stringify(await f.history(agent))).toContain(
       'Lookup unavailable',
     );
     await agent.send([{ role: 'user', content: 'Lookup' }]);
     await settle(agent);
     expect(
-      (await agent.history()).filter((message) => message.role === 'user'),
+      (await f.history(agent)).filter((message) => message.role === 'user'),
     ).toHaveLength(2);
     expect(model.doStreamCalls).toHaveLength(3);
   });
@@ -491,14 +540,30 @@ it('round trips provider fields, bytes, URLs and marker-shaped tool data without
 it('resolves scope order and explicit overrides, rejects unsupported requirements and changed tools', async () => {
   const configurer = new OnlineAgentConfigurer();
   configurer.registerOnlineAgentGlobalScope({
+    agentId: 'global-agent',
     systemPromptTemplate: 'Global',
     model: ['fixture/chat'],
   });
   configurer.registerOnlineAgentScope('business', {
+    agentId: 'business-agent',
     systemPromptTemplate: { template: (ctx) => `${ctx.systemPrompt}:business` },
     context: { variable: { value: 1 } },
   });
   const initial = await configurer.resolve(context(), { scope: ['business'] });
+  expect(initial.agentId).toBe('business-agent');
+  configurer.registerOnlineAgentScope('coding', { agentId: 'coding-agent' });
+  expect(
+    (await configurer.resolve(context(), { scope: ['business', 'coding'] }))
+      .agentId,
+  ).toBe('coding-agent');
+  expect(
+    (
+      await configurer.resolve(context(), {
+        scope: ['business', 'coding'],
+        agentId: 'online',
+      })
+    ).agentId,
+  ).toBe('online');
   expect(initial.systemPrompt).toBe('Global:business');
   expect(
     (await configurer.resolve(context(), { model: [] }, initial)).model,
@@ -534,6 +599,29 @@ it('replays the first cache before live events, disconnects without stopping exe
   expect(await streams.receive('s')).not.toBeNull();
   await next.finish('completed', 2);
 });
+it('captures an immutable cumulative prefix, then delivers live increments once within cache limits', async () => {
+  const streams = new OnlineAgentMemoryStreamManager(400);
+  const writer = await streams.open('prefix', 1);
+  await writer.append(0, 'A');
+  await writer.append(0, 'B');
+  const reader = (await streams.receive('prefix'))!.getReader();
+  await writer.append(0, 'C');
+  expect((await reader.read()).value).toMatchObject({
+    type: 'part',
+    item: { parts: [{ text: 'AB' }] },
+  });
+  expect((await reader.read()).value).toMatchObject({
+    type: 'delta',
+    text: 'C',
+  });
+  for (let index = 0; index < 100; index++) await writer.append(0, 'x');
+  // One retained prefix fits; retaining every cumulative snapshot would exhaust the limit.
+  await expect(writer.append(0, 'y'.repeat(400))).rejects.toThrow(
+    'cache limit',
+  );
+  await reader.cancel();
+  await writer.finish('completed', 2);
+});
 
 it('commits all inputs and attachment links atomically and rolls them back on a later failure', async () => {
   const f = await fixture(
@@ -556,7 +644,7 @@ it('commits all inputs and attachment links atomically and rolls them back on a 
       { attachmentIds: [[attachment.id], ['missing-upload']] },
     ),
   ).rejects.toThrow();
-  expect(await first.history()).toEqual([]);
+  expect(await f.history(first)).toEqual([]);
   expect((await f.sessions.load('alice', first.sessionId)).call).toBeNull();
   expect(
     (
@@ -571,7 +659,7 @@ it('commits all inputs and attachment links atomically and rolls them back on a 
       attachmentIds: [[attachment.id, attachment.id]],
     }),
   ).rejects.toThrow('distinct attachments');
-  expect(await first.history()).toEqual([]);
+  expect(await f.history(first)).toEqual([]);
   await second.send([{ role: 'user', content: 'Use the upload' }], {
     attachmentIds: [[attachment.id]],
   });
@@ -581,7 +669,7 @@ it('commits all inputs and attachment links atomically and rolls them back on a 
       attachmentIds: [[attachment.id]],
     }),
   ).rejects.toThrow();
-  expect(await first.history()).toEqual([]);
+  expect(await f.history(first)).toEqual([]);
 });
 
 it('keeps per-user tool context separate and validates background results with the original schema instance', async () => {
@@ -690,8 +778,8 @@ it('caches a shared factory while binding distinct users to streaming tool execu
     const agent = await f.service.realtime(context(id), { tool: ['who'] });
     await agent.send([{ role: 'user', content: id }]);
     await settle(agent);
-    expect(JSON.stringify(await agent.history())).toContain(id);
-    expect(JSON.stringify(await agent.history())).not.toContain(
+    expect(JSON.stringify(await f.history(agent, id))).toContain(id);
+    expect(JSON.stringify(await f.history(agent, id))).not.toContain(
       id === 'alice' ? 'bob' : 'alice',
     );
   }
@@ -716,7 +804,7 @@ it('drains a provider error before finalization and keeps incomplete text out of
   expect((await f.sessions.load('alice', agent.sessionId)).call).toMatchObject({
     outcome: 'failed',
   });
-  expect(await agent.history()).toHaveLength(1);
+  expect(await f.history(agent)).toHaveLength(1);
   const rows = await h.database
     .connection()
     .repository('agConversationMessages')
@@ -816,10 +904,7 @@ it.each(['realtime', 'background'] as const)(
       sessionId: agent.sessionId,
       scope: ['change'],
     });
-    const submit = () =>
-      kind === 'realtime'
-        ? opened.send([{ role: 'user', content: 'Next' }])
-        : opened.run([{ role: 'user', content: 'Next' }]);
+    const submit = () => opened.send([{ role: 'user', content: 'Next' }]);
     const accept = vi
       .spyOn(f.sessions, 'accept')
       .mockRejectedValueOnce(new Error('Admission failed'));
@@ -926,7 +1011,7 @@ it.each(['success', 'error', 'stream'] as const)(
     expect(
       JSON.stringify(messages.map((message) => project(message))),
     ).not.toContain('private');
-    expect(await agent.history()).toEqual([{ role: 'user', content: 'Run' }]);
+    expect(await f.history(agent)).toEqual([{ role: 'user', content: 'Run' }]);
     expect(await agent.status()).toBe('idle');
     await agent.retryFinalization();
     expect(execute).toHaveBeenCalledTimes(1);
@@ -1054,7 +1139,9 @@ it.each([false, true])(
       JSON.stringify(messages.map((message) => project(message))),
     ).not.toContain('private');
     if (cancel)
-      expect(await agent.history()).toEqual([{ role: 'user', content: 'Run' }]);
+      expect(await f.history(agent)).toEqual([
+        { role: 'user', content: 'Run' },
+      ]);
     expect(await agent.status()).toBe('idle');
     const conversions = toModelOutput.mock.calls.length;
     await agent.send([{ role: 'user', content: 'Continue' }]);

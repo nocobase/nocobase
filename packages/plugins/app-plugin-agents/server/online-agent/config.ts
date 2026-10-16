@@ -20,6 +20,7 @@ export type OnlineAgentToolContext = OnlineAgentContext & {
   readonly signal: AbortSignal;
 };
 export type OnlineAgentScope = {
+  agentId?: string;
   systemPromptTemplate?:
     | string
     | {
@@ -37,6 +38,7 @@ export type OnlineAgentScopeProvider = (
 ) => OnlineAgentScope | Promise<OnlineAgentScope>;
 export type OnlineAgentOptions = OnlineAgentScope & { scope?: string[] };
 export type OnlineAgentConfig = {
+  agentId?: string;
   scope: string[];
   systemPrompt: string;
   variable?: OnlineAgentJson;
@@ -154,6 +156,18 @@ export class OnlineAgentConfigurer {
     previous?: OnlineAgentConfig,
     fallbackModels: string[] = [],
   ): Promise<OnlineAgentConfig> {
+    return (
+      await this.resolveSelection(context, options, previous, fallbackModels)
+    ).config;
+  }
+
+  async resolveSelection(
+    context: OnlineAgentContext,
+    options: OnlineAgentOptions,
+    previous?: OnlineAgentConfig,
+    fallbackModels: string[] = [],
+  ): Promise<{ config: OnlineAgentConfig; hasModel: boolean }> {
+    let hasModel = previous !== undefined;
     supported(options);
     const result: OnlineAgentConfig = previous
       ? structuredClone(previous)
@@ -198,8 +212,16 @@ export class OnlineAgentConfigurer {
           systemPrompt: result.systemPrompt,
         });
       }
+      if (scope.agentId !== undefined) {
+        if (typeof scope.agentId !== 'string' || !scope.agentId.trim())
+          throw invalid('Select a valid agentId.');
+        result.agentId = scope.agentId;
+      }
       if (scope.tool !== undefined) result.tool = [...scope.tool];
-      if (scope.model !== undefined) result.model = [...scope.model];
+      if (scope.model !== undefined) {
+        result.model = [...scope.model];
+        hasModel = true;
+      }
       if (scope.thinking !== undefined) result.thinking = scope.thinking;
     }
     if (options.scope !== undefined) result.scope = [...options.scope];
@@ -211,7 +233,7 @@ export class OnlineAgentConfigurer {
       }),
     );
     jsonSafe(result);
-    return result;
+    return { config: result, hasModel };
   }
 
   bind(

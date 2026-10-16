@@ -1,8 +1,14 @@
 import systemSettingsRoutes from './pages/settings/routes.js';
-import { modelsRoute } from '@nocobase/app-plugin-agents/client/routes';
+import {
+  agentsRoute,
+  modelsRoute,
+  runtimesRoute,
+} from '@nocobase/app-plugin-agents/client/routes';
 import {
   BrainCircuit,
   BotMessageSquare,
+  Bot,
+  Server,
   FileText,
   Home,
   Hash,
@@ -74,6 +80,16 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     auth: 'required',
     navigation: { title: 'onlineAgent.group', icon: BotMessageSquare },
     children: [
+      {
+        ...agentsRoute,
+        navigation: { title: 'onlineAgent.agents', icon: Bot },
+        breadcrumb: { title: 'onlineAgent.agents' },
+      },
+      {
+        ...runtimesRoute,
+        navigation: { title: 'onlineAgent.runtimes', icon: Server },
+        breadcrumb: { title: 'onlineAgent.runtimes' },
+      },
       {
         ...modelsRoute,
         navigation: { title: 'onlineAgent.models', icon: BrainCircuit },

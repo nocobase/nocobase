@@ -44,14 +44,42 @@ describe('app client routes', () => {
     }
   });
 
-  it('groups the exported model page under Agents without weakening settings authorization', () => {
+  it('groups the public Agents settings pages without weakening their authorization', () => {
     const group = resolveRoutes().routes.find(
       (route) => route.name === 'agentsNavigation',
     )!;
     expect(group.componentLoader).toBeUndefined();
     expect(group.navigation?.title).toBe('onlineAgent.group');
-    expect(group.children).toHaveLength(1);
-    expect(group.children![0]).toMatchObject({
+    expect(group.children?.map((route) => route.name)).toEqual([
+      'agents',
+      'runtimes',
+      'models',
+    ]);
+    for (const name of ['agents', 'runtimes']) {
+      expect(
+        group.children?.find((route) => route.name === name),
+      ).toMatchObject({
+        name,
+        path: `/${name}`,
+        auth: 'required',
+        navigation: { title: `onlineAgent.${name}` },
+        breadcrumb: { title: `onlineAgent.${name}` },
+        authz: { resource: { type: 'page', id: name }, action: 'access' },
+      });
+    }
+    expect(
+      group.children?.find((route) => route.name === 'runtimes')?.children,
+    ).toEqual([
+      expect.objectContaining({
+        name: 'runtimes-connect',
+        path: '/runtimes/connect',
+        auth: 'required',
+        componentLoader: expect.any(Function),
+      }),
+    ]);
+    expect(
+      group.children?.find((route) => route.name === 'models'),
+    ).toMatchObject({
       name: 'models',
       path: '/models',
       auth: 'required',
@@ -80,6 +108,9 @@ describe('app client routes', () => {
     expect(pageAuthorizations(resolved.routes)).toEqual([
       // The landing page opted out of page authorization, so it is reachable by every signed-in user.
       { name: 'home', authorizedAs: null },
+      { name: 'agents', authorizedAs: 'agents' },
+      { name: 'runtimes', authorizedAs: 'runtimes' },
+      { name: 'runtimes-connect', authorizedAs: 'runtimes' },
       { name: 'models', authorizedAs: 'settings:agents.services' },
       { name: 'inbox', authorizedAs: null },
       { name: 'routeOverlays', authorizedAs: 'routeOverlays' },

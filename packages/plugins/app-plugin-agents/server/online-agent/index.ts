@@ -15,3 +15,13 @@ export {
   type OnlineAgentStreamWriter,
   type OnlineAgentStreamEvent,
 } from './streams.js';
+
+export type {
+  OnlineAgentRuntime,
+  OnlineAgentRealtimeService,
+  OnlineAgentRealtimeSession,
+  OnlineAgentRealtimeOptions,
+  OnlineAgentSendOptions,
+  OnlineAgentRunnerBackend,
+} from './realtime.js';
+export { RunnerOnlineAgentAdapter } from './runner.js';

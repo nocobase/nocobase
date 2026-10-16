@@ -9,6 +9,7 @@ import {
   createSecretsService,
   type SecretsService,
 } from '@nocobase/app-server/secrets';
+import type { AuthorizationContext } from '@nocobase/authorization/core';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
@@ -296,6 +297,7 @@ export function testSecrets(
 export async function createHarness(
   options: {
     /** `null` for an application without secrets keys. */
+    readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
     readonly secrets?: SecretsService | null;
     readonly dist?: DistConfig;
     readonly retryBaseDelayMs?: number;
@@ -321,6 +323,7 @@ export async function createHarness(
   const disk = memoryDisk();
   const chatFiles = memoryChatFiles(database, clock);
   const services = createAgents({
+    measureOnlineAgent: options.measureOnlineAgent,
     database,
     idGenerator,
     chatFiles,
@@ -433,6 +436,13 @@ export async function createHarness(
     );
     context.set('caller', {
       userId: user,
+      onlineContext: {
+        user: { id: user },
+        credentials: { kind: 'test-session', userId: user },
+        authorization: {
+          identity: { principal: { type: 'user', id: user } },
+        } as AuthorizationContext,
+      },
       can: (item: SettingsItem, action: SettingsAction) =>
         Promise.resolve(
           grants.includes(`${item}/${action}`) ||

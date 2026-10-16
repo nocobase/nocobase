@@ -2,7 +2,7 @@ import { createServer, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
 /** A real, local OpenAI-compatible HTTP endpoint; no provider credentials or external traffic. */
-export async function createOnlineAgentModelFixture() {
+export async function createOnlineAgentModelFixture(options: { initialText?: string } = {}) {
   const requests: { messages: unknown[]; stream?: boolean }[] = [];
   const streams: ServerResponse[] = [];
   const chunk = (
@@ -58,7 +58,7 @@ export async function createOnlineAgentModelFixture() {
     });
     streams.push(response);
     chunk(response, { role: 'assistant', content: '' });
-    chunk(response, { content: 'Hello from the local model fixture.' });
+    chunk(response, { content: options.initialText ?? 'Hello from the local model fixture.' });
     // The test explicitly completes or stops each stream; there is no timing-dependent fast completion.
   });
   await new Promise<void>((resolve, reject) => {
@@ -69,6 +69,9 @@ export async function createOnlineAgentModelFixture() {
     url: `http://127.0.0.1:${(server.address() as AddressInfo).port}/v1`,
     requests,
     streams,
+    append(index: number, text: string) {
+      chunk(streams[index]!, { content: text });
+    },
     complete(index: number) {
       const response = streams[index]!;
       chunk(response, {}, 'stop');

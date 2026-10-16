@@ -19,6 +19,7 @@ import {
   findConversation,
   preferencesRepo,
   settingsRepo,
+  toMessage,
   type ConversationRecord,
 } from '../core/conversations/conversation.store.js';
 import type { ChatAttachmentLinks } from '../core/conversations/attachments.js';
@@ -74,6 +75,10 @@ function session(row: ConversationRecord): OnlineAgentSession {
 }
 
 export interface OnlineAgentSessionManager {
+  publicHistory(
+    userId: string,
+    id: string,
+  ): Promise<import('../../shared/conversations.js').ConversationMessage[]>;
   defaults(userId: string): Promise<{ scope?: string[]; model?: ModelRef }>;
   create(
     userId: string,
@@ -119,6 +124,7 @@ export interface OnlineAgentSessionManager {
 
 export function createSessionManager(deps: {
   tx: TxRunner;
+  basePath?: () => string;
   ids: IdSource;
   attachments: ChatAttachmentLinks;
   now(): string;
@@ -299,6 +305,14 @@ export function createSessionManager(deps: {
           },
         );
       });
+    },
+    async publicHistory(userId, id) {
+      await owned(deps.tx.read(), userId, id);
+      const rows = await messagesRepo(deps.tx.read()).findMany({
+        filter: { conversationId: id },
+        sort: (sort) => sort.field('seq').asc(),
+      });
+      return rows.map((row) => toMessage(row, deps.basePath?.() ?? ''));
     },
     async history(userId: string, id: string): Promise<ModelMessage[]> {
       await owned(deps.tx.read(), userId, id);

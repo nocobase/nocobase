@@ -1,6 +1,6 @@
 # OnlineAgent chats and business tools
 
-Use `OnlineAgentService` for SDK conversations that call application services and continue answering with their results, or for lightweight background generation with a Zod-validated result. It runs inside the application process. Coding-tool Runner jobs remain a separate capability. The plugin owns persistence, model selection, execution control and public chat transport; the application owns its business tools, permissions and page composition.
+Use `OnlineAgentService` for SDK conversations that call application services and continue answering with their results, or for lightweight background generation with a Zod-validated result. Native model execution runs inside the application process. Realtime sessions can also select a callable Runner agent through the same service; Runner output arrives as completed text blocks. The plugin owns persistence, model selection, execution control and public chat transport; the application owns its business tools, permissions and page composition.
 
 ## Obtain and configure the shared service
 
@@ -11,7 +11,7 @@ Import the original `agentsToken` from `@nocobase/app-plugin-agents/server/token
 ```ts
 import { agentsToken } from '@nocobase/app-plugin-agents/server/tokens';
 import type {
-  OnlineAgentService,
+  OnlineAgentRuntime,
   OnlineAgentToolContext,
 } from '@nocobase/app-plugin-agents/server/online-agent';
 import type { ServiceResolver, ServiceToken } from '@nocobase/service-provider';
@@ -28,7 +28,7 @@ type InvoiceService = {
 export function configureInvoices(
   resolver: ServiceResolver,
   invoiceToken: ServiceToken<InvoiceService>,
-): OnlineAgentService {
+): OnlineAgentRuntime {
   const online = resolver.resolve(agentsToken).onlineAgent;
   online.configurer.registerTool('read_invoice', {
     version: '1',
@@ -65,12 +65,12 @@ Construct `OnlineAgentContext` from the authenticated user and full trusted entr
 ```ts
 import type {
   OnlineAgentContext,
-  OnlineAgentService,
+  OnlineAgentRuntime,
 } from '@nocobase/app-plugin-agents/server/online-agent';
 import { z } from 'zod';
 
 export async function askInvoice(
-  online: OnlineAgentService,
+  online: OnlineAgentRuntime,
   actor: OnlineAgentContext,
   invoiceId: string,
 ) {
@@ -90,7 +90,7 @@ export async function askInvoice(
 }
 
 export async function classify(
-  online: OnlineAgentService,
+  online: OnlineAgentRuntime,
   actor: OnlineAgentContext,
 ) {
   const job = await online.background(actor);
@@ -116,3 +116,23 @@ Mount one `ChatProvider` from `@nocobase/app-plugin-agents/client/chat`, keyed b
 Ordinary create/send requests have no persistent deduplication. Repeated inputs may execute again after completion; concurrent input receives busy. `clientId` correlates display only. On a timeout or disconnect, show an unknown result and offer explicit history refresh; never silently resend or reconnect. The default stream manager is in-memory and assumes one executing process; changing stream storage alone does not provide distributed execution or restart recovery.
 
 Permission-restricted configuration, tool permission/approval declarations and nonempty Skills execution are rejected. Generic approval/resume, tool-result panels, automatic reconnection and execution environments are unavailable. Original authentication and business authorization always apply. Verify integration with an isolated model requesting the registered tool, a permitted and a denied actor, model continuation, saved-history refresh and stop; do not use real business writes for a smoke test.
+
+## Select a Runner executor
+
+`OnlineAgentRealtimeService` and `OnlineAgentRealtimeSession` are the replaceable public conversation contracts. Realtime `history()` returns public `ConversationMessage[]` for either executor; native background sessions retain their SDK history and structured `run(schema)`/`get()` capabilities. The shared event type is exported from `@nocobase/app-plugin-agents/shared/online-agent`. A `part` replaces the current prefix, a `delta` appends text once at its boundary/message index, and a `message` upserts the canonical Runner message by its actual ID and sequence. Never add the final part as another delta. `saved` follows terminal history and logical sealing; EOF or cancelling a subscription means neither completion nor Stop.
+
+```ts
+online.configurer.registerOnlineAgentScope('coding', {
+  agentId: 'runner-agent-id',
+});
+const chat = await online.realtime(actor, { scope: ['coding'] });
+// Or pass { agentId: 'runner-agent-id' } explicitly.
+await chat.send([{ role: 'user', content: 'Review the selected code.' }]);
+const events = await chat.receive();
+```
+
+`agentId` follows global → ordered scopes → explicit options. Omission or `online` selects native execution. Selection happens before native model lookup. Existing sessions restore their saved executor and configuration without evaluating providers; a different executor requires a new conversation. New creation and each admission check the actual caller, Agent and execution eligibility. Scope never grants authority. `chatAgents` uses the service's per-user directory and retains offline reasons; an offline Agent may be displayed but cannot accept new input until executable.
+
+Runner sessions accept one user message per round. Send authorized files by `attachmentIds`, with text parts only; the HTTP transport reads binary attachment data only for native execution. Prompts, configuration variables, resolved page context and business data are assembled on the server. Native model references, thinking settings, local tools, structured background execution and restricted credentials cannot be mapped to Runner execution and are explicitly refused. Keep native business tools in an explicit `agentId: 'online'` business scope selected by the application's native chat, Ask agent and Organize entries; do not put them in a global layer shared with Runner scopes or silently remove them in an adapter.
+
+Runner admission, files and enqueue share the existing conversation transaction. Queued, dispatched, running, cancelling and terminal-history closing all remain busy. Existing Runner synchronization is the only assistant-history writer; persisted event identity and real conversation message positions handle retransmission, blank events and notices. Notifications trigger coalesced persisted catch-up; only active executions have a one-second read fallback. No-change catch-up takes no write lock. Stop requests reuse Runner cancellation and keep the gate until terminal confirmation; retries remain the same active execution. Closing a browser only unsubscribes. This does not introduce automatic browser reconnection or change Runner claim, lease, retry, spool or adapter protocols.

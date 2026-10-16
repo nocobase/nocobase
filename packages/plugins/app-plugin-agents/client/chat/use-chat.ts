@@ -88,15 +88,21 @@ export function isChatPayload(
 /** The agents the viewer may chat with, with whether each can answer now. */
 export function useChatAgents(enabled = true): UseQueryResult<ChatAgent[]> {
   const api = useChatApi();
-  return useQuery(
+  const query = useQuery(
     {
       queryKey: chatKeys.agents,
       queryFn: () => api.agents(),
       enabled,
       staleTime: 15_000,
+      retry: notRetriedOnClientErrors,
     },
     agentsQueryClient(),
   );
+  const { refetch } = query;
+  useEffect(() => {
+    if (enabled) void refetch({ cancelRefetch: false });
+  }, [enabled, refetch]);
+  return query;
 }
 
 /** One conversation; polled while its run is open. */

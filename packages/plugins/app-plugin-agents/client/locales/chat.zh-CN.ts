@@ -13,6 +13,7 @@ const chatZhCN: ChatLocale = {
       agentMissing: '已删除',
       agentArchived: '未启用',
       forbidden: '你无权使用',
+      noModel: '请先配置聊天模型',
       noRunner: '暂无执行机，选不了',
       othersPersonal: '只有别人的个人执行机能跑',
       modelUnavailable: '模型不可用',

@@ -8,6 +8,8 @@ const zhCN: AppResource = {
   ...agentChatZhCN,
   onlineAgent: {
     group: 'Agents',
+    agents: 'Agent 管理',
+    runtimes: '执行机',
     models: '模型',
     openModels: '打开模型配置',
     checkingModels: '正在检查聊天模型…',

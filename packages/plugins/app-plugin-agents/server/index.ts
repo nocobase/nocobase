@@ -9,3 +9,12 @@ export {
   OnlineAgentService,
   OnlineAgentConfigurer,
 } from './online-agent/index.js';
+
+export type {
+  OnlineAgentRuntime,
+  OnlineAgentRealtimeService,
+  OnlineAgentRealtimeSession,
+  OnlineAgentRealtimeOptions,
+  OnlineAgentSendOptions,
+  OnlineAgentRunnerBackend,
+} from './online-agent/realtime.js';

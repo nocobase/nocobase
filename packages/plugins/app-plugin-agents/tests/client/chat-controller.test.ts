@@ -46,6 +46,56 @@ it('uses one first subscription across views and handles chunked cached output a
   await vi.waitFor(() => expect(f.api.messages).toHaveBeenCalledTimes(1));
   f.controller.dispose();
 });
+it('appends live deltas to the initial prefix and replaces the canonical answer without duplication', async () => {
+  let output!: ReadableStreamDefaultController<Uint8Array>;
+  const f = fixture([]);
+  f.api.events.mockImplementationOnce(
+    async () =>
+      new ReadableStream({
+        start(controller) {
+          output = controller;
+        },
+      }),
+  );
+  f.controller.receive('c1');
+  await vi.waitFor(() => expect(output).toBeDefined());
+  const emit = (event: unknown) =>
+    output.enqueue(
+      new TextEncoder().encode(`data: ${JSON.stringify(event)}\n\n`),
+    );
+  emit({
+    type: 'part',
+    boundary: { afterSeq: 1 },
+    messageIndex: 0,
+    item: { role: 'assistant', parts: [{ type: 'text', text: 'A' }] },
+  });
+  await vi.waitFor(() =>
+    expect(f.controller.state('c1')?.items[0].content.content).toBe('A'),
+  );
+  emit({
+    type: 'delta',
+    boundary: { afterSeq: 1 },
+    messageIndex: 0,
+    text: 'B',
+  });
+  await vi.waitFor(() =>
+    expect(f.controller.state('c1')?.items[0].content.content).toBe('AB'),
+  );
+  expect(f.controller.state('c1')?.phase).toBe('streaming');
+  emit({
+    type: 'part',
+    boundary: { afterSeq: 1 },
+    messageIndex: 0,
+    item: { role: 'assistant', parts: [{ type: 'text', text: 'AB' }] },
+  });
+  emit({ type: 'saved', lastSeq: 2 });
+  output.close();
+  await vi.waitFor(() => expect(f.controller.state('c1')?.phase).toBe('saved'));
+  expect(
+    f.controller.state('c1')?.items.map((item) => item.content.content),
+  ).toEqual(['AB']);
+  f.controller.dispose();
+});
 it('retains disconnected output, never reconnects automatically and only refreshes saved history explicitly', async () => {
   const f = fixture([]);
   f.controller.receive('c1');
@@ -85,5 +135,25 @@ it('shares a canonical history load across views and drops stale identity respon
   resolve({ items: [], lastSeq: 2, nextCursor: null, hasMore: false });
   await Promise.all([first, second]);
   expect(f.controller.history('c1').state.loaded).toBe(false);
+  f.controller.dispose();
+});
+it('does not let an old idle refresh mark the next subscription as saved', async () => {
+  const f = fixture([]);
+  let resolve!: (value: ConversationDetail) => void;
+  f.api.conversation.mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done;
+      }),
+  );
+  const old = f.controller.refresh('c1');
+  f.controller.receive('c1', true);
+  await vi.waitFor(() =>
+    expect(f.controller.state('c1')?.phase).toBe('interrupted'),
+  );
+  resolve({ id: 'c1', execution: { status: 'idle' } } as ConversationDetail);
+  await old;
+  expect(f.controller.state('c1')?.phase).toBe('interrupted');
+  expect(f.api.messages).not.toHaveBeenCalled();
   f.controller.dispose();
 });
