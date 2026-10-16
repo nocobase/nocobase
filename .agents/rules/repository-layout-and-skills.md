@@ -13,7 +13,7 @@ Every published package lives under `packages/`, grouped into seven directories 
 | `packages/plugins/`   | Application plugins that ship as product features, such as `app-plugin-authentication`                                        |
 | `packages/examples/`  | Application plugins that exist to demonstrate a capability, such as `app-plugin-routes-example`                               |
 | `packages/templates/` | Complete applications that `create-app` scaffolds from: `app-template-default` and `app-template-examples`                    |
-| `packages/apps/`      | Complete product applications this repository builds and deploys itself, such as `studio` (NocoBase Studio)                   |
+| `packages/apps/`      | Complete product applications this repository builds and deploys itself; none at present                                      |
 | `packages/tools/`     | Development and build tooling that never ships inside an application, such as `dev-config`, `create-app`, and `create-plugin` |
 
 `packages/README.md` describes each directory in more detail and is the place to look when a new package does not obviously belong to one of them. `pnpm plugin:create` scaffolds into `packages/plugins/`.
