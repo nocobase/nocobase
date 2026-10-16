@@ -2,10 +2,12 @@
  * The grouped task reads behind the issue lists' split view and table (`GET /api/taskGroups`,
  * `server/issues/task-group-routes.ts`). Both views group the same way:
  *
- * 1. `follow`: the tasks the viewer follows (`/api/followUps`), in the order they chose, at most `FOLLOW_UPS_MAX`;
+ * 1. `follow`: the tasks the viewer follows (`/api/followUps`), in the order they chose;
  * 2. `wait`: tasks something waits on the viewer for (`WaitReason`), the longest waiting first;
  * 3. one group per status (`doing`, `review`, `blocked`, `backlog`, `done`), the latest update first. Done lists only
- *    the last `DONE_WINDOW_DAYS` days and cancelled is left out, unless the status filter names it.
+ *    the last `DONE_WINDOW_DAYS` days and cancelled is left out, unless the status filter names it. On the viewer's own
+ *    tasks (My tasks, `involvesUserId` the viewer) the groups say whose turn it is instead: in review and blocked
+ *    tasks that do not wait for the viewer are one group, `others`, waiting on someone else.
  *
  * The split view (`mode=split`) lists the top-level tasks in the scope, plus the sub-tasks that wait for the viewer and
  * those whose parent is outside the scope, each once. The table (`mode=table`) lists task trees: each entry is a tree's
@@ -27,6 +29,7 @@ export const TASK_GROUP_IDS = [
   'follow',
   'wait',
   'doing',
+  'others',
   'review',
   'blocked',
   'backlog',
@@ -37,7 +40,7 @@ export type TaskGroupId = (typeof TASK_GROUP_IDS)[number];
 
 /** The groups that are a status, with the status each holds. */
 export const STATUS_GROUPS: Readonly<
-  Record<Exclude<TaskGroupId, 'follow' | 'wait'>, string>
+  Record<Exclude<TaskGroupId, 'follow' | 'wait' | 'others'>, string>
 > = {
   doing: 'in_progress',
   review: 'in_review',
@@ -99,7 +102,7 @@ export interface TaskGroups {
   /** Which tasks each group holds, and the counts; unchanged by edits that move no task between groups. */
   readonly membership: string;
   readonly mode: TaskGroupMode;
-  /** The groups in order; a status group with nothing in it is left out, `follow` never. */
+  /** The groups in order; a group with nothing in it is left out. */
   readonly groups: readonly TaskGroupPage[];
   /** The ids the viewer follows, in order, whether or not the scope holds them. */
   readonly following: readonly string[];

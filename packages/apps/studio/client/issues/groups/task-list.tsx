@@ -7,7 +7,12 @@ import { AgentWorkMark } from '../agent-work-mark.js';
  */
 import { useViewer } from '@nocobase/app-plugin-projects/client/kit';
 import { useTranslation } from '@nocobase/i18n/client';
-import { BellIcon, ChevronDownIcon, StarIcon } from 'lucide-react';
+import {
+  BellIcon,
+  ChevronDownIcon,
+  HourglassIcon,
+  StarIcon,
+} from 'lucide-react';
 import {
   useRef,
   useState,
@@ -66,7 +71,7 @@ export function WaitChip({
   );
 }
 
-/** A group's icon: a star, a bell, else its status's shape. */
+/** A group's icon: a star, a bell, an hourglass for what waits on others, else its status's shape. */
 export function GroupIcon({
   group,
   className,
@@ -91,6 +96,13 @@ export function GroupIcon({
         className={cn('size-4 text-amber-600 dark:text-amber-400', className)}
       />
     );
+  if (group === 'others')
+    return (
+      <HourglassIcon
+        aria-hidden
+        className={cn('size-4 text-muted-foreground', className)}
+      />
+    );
   return (
     <StatusShapeIcon
       shape={statusShape(STATUS_GROUPS[group])}
@@ -111,6 +123,19 @@ export function TaskLine({
   const { t } = useTranslation();
   const viewer = useViewer();
   const { issue } = item;
+  const wait = item.waits[0];
+  const finished = ['done', 'cancelled'].includes(issue.statusKey);
+  // In review or blocked and not on the viewer: whom it waits for, its owner, unless other tasks hold it.
+  const owner =
+    issue.owner && issue.ownerUserId !== viewer?.userId ? issue.owner : null;
+  const awaits =
+    wait || !owner
+      ? null
+      : issue.statusKey === 'in_review'
+        ? t('taskGroups.row.awaitsAcceptance', { name: owner.name })
+        : issue.statusKey === 'blocked' && issue.blockedCount === 0
+          ? t('taskGroups.row.awaitsReply', { name: owner.name })
+          : null;
   const bits: ReactNode[] = [
     <span key='key' className='font-mono'>
       {issue.identifier}
@@ -122,15 +147,20 @@ export function TaskLine({
         {t('taskGroups.row.inParent', { identifier: item.parent.identifier })}
       </span>,
     );
-  else if (issue.owner && issue.ownerUserId !== viewer?.userId)
+  // The owner is named once: in "waiting for" when it says so.
+  else if (owner && !awaits)
     bits.push(
       <span key='owner' className='truncate'>
-        {t('taskGroups.row.ownedBy', { name: issue.owner.name })}
+        {t('taskGroups.row.ownedBy', { name: owner.name })}
       </span>,
     );
-  const wait = item.waits[0];
-  const finished = ['done', 'cancelled'].includes(issue.statusKey);
   if (wait) bits.push(<WaitChip key='wait' reason={wait} quiet />);
+  else if (awaits)
+    bits.push(
+      <span key='awaits' className='min-w-0 truncate'>
+        {awaits}
+      </span>,
+    );
   else if (workingAgent)
     bits.push(
       <span key='working' className='min-w-0 truncate'>

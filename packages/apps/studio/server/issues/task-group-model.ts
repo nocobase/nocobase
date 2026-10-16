@@ -52,6 +52,11 @@ export interface TaskGroupModelInput {
   readonly statusFilter?: string | undefined;
   /** Every matching task is listed in the split view, sub-tasks included (My tasks' "I execute"). */
   readonly flat?: boolean;
+  /**
+   * The viewer's own tasks (My tasks): in review and blocked tasks that do not wait for the viewer are one group,
+   * `others`, so the groups say whose turn it is rather than repeat the statuses.
+   */
+  readonly byTurn?: boolean;
   readonly sort?: IssueSort | undefined;
   readonly direction?: 'asc' | 'desc' | undefined;
   /** The viewer, permissions and filters, so a generation never answers another query. */
@@ -100,6 +105,7 @@ const ORDER: readonly TaskGroupId[] = [
   'follow',
   'wait',
   'doing',
+  'others',
   'review',
   'blocked',
   'backlog',
@@ -193,8 +199,12 @@ export function createTaskGroupModel(input: TaskGroupModelInput) {
 
   /** The status group a task is listed in, or null when its status is not listed. */
   function statusGroup(issue: GroupIssue): TaskGroupId | null {
-    const group = STATUS_GROUP[issue.statusKey];
-    if (!group) return null;
+    const status = STATUS_GROUP[issue.statusKey];
+    if (!status) return null;
+    const group =
+      input.byTurn && (status === 'review' || status === 'blocked')
+        ? 'others'
+        : status;
     if (input.statusFilter) return group;
     if (group === 'cancelled') return null;
     if (group === 'done' && now - Date.parse(issue.updatedAt) > window)

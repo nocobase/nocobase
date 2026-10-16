@@ -243,6 +243,8 @@ export function createTaskGroups(deps: TaskGroupDeps): TaskGroupService {
       mode: query.mode ?? 'split',
       statusFilter: query.statusKey,
       flat: Boolean(query.executorId || query.involvesUserId),
+      // The viewer's own tasks group by whose turn it is (`others`).
+      byTurn: query.involvesUserId === viewer.userId,
       sort: query.sort,
       direction: query.direction,
       queryIdentity: JSON.stringify([

@@ -1305,7 +1305,7 @@ const zhCN: AppResource = {
   projectManager: {
     title: '项目经理',
     description:
-      '每个任务开始后由它安排：派活、读回复、决定下一步，需要你时移到待确定，做完移到待验收。',
+      '每个任务开始后由它安排：派活、读回复、决定下一步，需要你时移到阻塞中，做完移到待验收。',
     runsWith: '用',
     fallbackLabel: '备选',
     noAgent: '还没有选 Agent',

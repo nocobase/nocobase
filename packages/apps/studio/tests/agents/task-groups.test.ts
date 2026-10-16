@@ -125,6 +125,29 @@ it('groups My tasks by what waits for the owner, then by status', async () => {
   expect(bob.waiting).toBe(0);
 });
 
+it('groups the viewer’s own tasks by whose turn it is', async () => {
+  await create('Accept mine', 'in_review');
+  await create('Bob accepts', 'in_review', {
+    owner: 'bob',
+    executorId: 'alice',
+  });
+  await create('Bob answers', 'blocked', { owner: 'bob', executorId: 'alice' });
+  await create('Working', 'in_progress');
+  const result = await service().read(h.viewer('alice'), {
+    involvesUserId: 'alice',
+  });
+  // In review and blocked tasks that do not wait for the viewer wait for someone else, in one group.
+  expect(groupIds(result)).toEqual(['wait', 'doing', 'others']);
+  expect(titles(result, 'wait')).toEqual(['Accept mine']);
+  expect(titles(result, 'others').sort()).toEqual([
+    'Bob accepts',
+    'Bob answers',
+  ]);
+  // Another person's list, or the team's, still groups by status.
+  const team = await service().read(h.viewer('alice'), {});
+  expect(groupIds(team)).toEqual(['wait', 'doing', 'review', 'blocked']);
+});
+
 it('lists sub-tasks apart only when they wait for the viewer, naming their parent', async () => {
   const parent = await create('Parent', 'in_progress');
   await create('Quiet child', 'in_progress', { parentIssueId: parent.id });

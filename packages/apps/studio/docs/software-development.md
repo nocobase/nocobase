@@ -10,7 +10,7 @@ Every issue moves through six fixed statuses (the projects plugin's `shared/stat
 | --------------------------- | ---------------- | --------- | ----------------------------------------------------------- |
 | Backlog (`backlog`)         | 待规划           | unstarted | Waiting; nothing starts there                               |
 | In progress (`in_progress`) | 进行中           | started   | Being worked on                                             |
-| Blocked (`blocked`)         | 待确定           | started   | Waiting for a person to decide something; its owner is told |
+| Blocked (`blocked`)         | 阻塞中           | started   | Waiting for a person to decide something; its owner is told |
 | In review (`in_review`)     | 待验收           | started   | Ready to be accepted; its owner is told                     |
 | Done (`done`)               | 已完成           | done      | Finished                                                    |
 | Cancelled (`cancelled`)     | 已取消           | closed    | Closed without being done                                   |

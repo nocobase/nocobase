@@ -152,6 +152,7 @@ const GROUP_ORDER: readonly TaskGroupId[] = [
   'follow',
   'wait',
   'doing',
+  'others',
   'review',
   'blocked',
   'backlog',
