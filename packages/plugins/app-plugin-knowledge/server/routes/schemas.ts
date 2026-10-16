@@ -198,7 +198,9 @@ export const CreateDocBody: z.ZodType<CreateKnowledgeDocRequest, unknown> =
     kind: z
       .enum(['article', 'folder'])
       .optional()
-      .describe('The kind of record to use.'),
+      .describe(
+        'Create an article (default) or a folder; upload files separately.',
+      ),
     parentId: z
       .string()
       .nullable()
@@ -245,7 +247,9 @@ export const ReparseBody: z.ZodType<ReparseBody> = z.strictObject({
 export const ProposeBody: z.ZodType<ProposeKnowledgeRequest> = z.strictObject({
   kind: z
     .enum(['update', 'create', 'verify'])
-    .describe('The kind of record to use.'),
+    .describe(
+      'Propose creating a document, updating an existing document, or verifying its current content: create, update, or verify.',
+    ),
   reason: z.string(),
   docId: z.string().optional().describe('The doc identifier.'),
   scope: z.string().optional().describe('The registered knowledge space kind.'),
@@ -327,7 +331,11 @@ export interface ProposeFileFields {
 }
 export const ProposeFileFields: z.ZodType<ProposeFileFields, unknown> =
   z.strictObject({
-    kind: z.enum(['create', 'update']).describe('The kind of record to use.'),
+    kind: z
+      .enum(['create', 'update'])
+      .describe(
+        'Propose creating a file document (create) or replacing an existing file document (update).',
+      ),
     reason: z.string(),
     docId: z.string().optional().describe('The doc identifier.'),
     scope: z
@@ -344,7 +352,11 @@ export const ProposeFileFields: z.ZodType<ProposeFileFields, unknown> =
 
 export const PermissionsBody: z.ZodType<ReplaceKnowledgePermissionsRequest> =
   z.strictObject({
-    mode: z.enum(['inherit', 'custom']).describe('The processing mode to use.'),
+    mode: z
+      .enum(['inherit', 'custom'])
+      .describe(
+        'inherit adds this document’s entries to its parent’s access (the space default at the root); custom uses only its own entries. Space managers always retain manage access.',
+      ),
     entries: z
       .array(
         z.strictObject({

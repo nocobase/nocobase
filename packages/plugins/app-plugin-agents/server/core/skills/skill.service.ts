@@ -99,7 +99,7 @@ const contentField = z.string().meta({
 });
 
 export const SkillInputSchema: z.ZodType<SkillInput> = z.strictObject({
-  content: contentField.describe('The Markdown content.'),
+  content: contentField,
   files: z
     .array(FileSchema)
     .optional()
@@ -115,7 +115,7 @@ function revisionConflict(current: number): Error {
 }
 
 export const SkillSaveSchema: z.ZodType<SkillSave> = z.strictObject({
-  content: contentField.describe('The Markdown content.'),
+  content: contentField,
   files: z
     .array(FileSchema)
     .describe('The files to include, with their relative paths and content.'),
