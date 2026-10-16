@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.27](https://github.com/nocobase/nocobase/compare/v2.2.26...v2.2.27) - 2026-10-16
+
+### 🐛 修复
+
+- **[client-v2]** 修复 v2（移动端）通过链接操作跳转后，右滑/浏览器返回直接退出而非逐级返回的问题 ([#10963](https://github.com/nocobase/nocobase/pull/10963)) by @katherinehhh
+
 ## [v2.2.26](https://github.com/nocobase/nocobase/compare/v2.2.25...v2.2.26) - 2026-10-15
 
 ### 🐛 修复
