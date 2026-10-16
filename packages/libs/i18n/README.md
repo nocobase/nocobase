@@ -339,3 +339,5 @@ it('shows the page title', async () => {
 Keys are suggested, not enforced. A plugin writing an application key is legitimate — the fallback chain exists for it — so the type stays open through `KnownKeys | (string & {})`: known keys complete, unknown ones do not error. `FlattenKeys<T>` turns a nested resource into its dotted paths.
 
 Cross-namespace completion is not possible from a plugin, which cannot know the application's resource type at compile time.
+
+<!-- Quality scope test: i18n. -->
