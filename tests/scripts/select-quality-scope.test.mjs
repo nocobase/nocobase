@@ -25,6 +25,7 @@ import {
   readDevDbPackages,
   readWorkspace,
 } from '../../scripts/select-quality-scope.mjs';
+import { EXEMPTIONS } from '../../scripts/check-cross-package-paths.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const script = path.join(root, 'scripts/select-quality-scope.mjs');
@@ -305,10 +306,7 @@ test('a library many packages depend on selects its dependents and the generated
 
 test('a template change selects the template, its path consumers and the smoke tests it needs', () => {
   const examples = plan('packages/templates/app-template-examples/README.MD');
-  assert.deepEqual(examples.packages, [
-    '@nocobase/app-server',
-    '@nocobase/app-template-examples',
-  ]);
+  assert.deepEqual(examples.packages, ['@nocobase/app-template-examples']);
   assert.equal(examples.runCreateApp, true);
   assert.equal(examples.runAppInstaller, false);
   assert.equal(examples.buildFull, true);
@@ -329,32 +327,58 @@ test('a template change selects the template, its path consumers and the smoke t
 });
 
 test('paths read without a declared dependency select their consumers but not the consumers’ dependents', () => {
-  const scheduler = plan('packages/plugins/app-plugin-scheduler/README.md');
-  assert.ok(scheduler.packages.includes('@nocobase/app-plugin-scheduler'));
-  assert.ok(scheduler.packages.includes('@nocobase/app-cli'));
-  assert.ok(!scheduler.packages.includes('@nocobase/app-cli-client'));
-
   const ui = plan(
     'packages/plugins/app-plugin-agents/client/components/ui/button.tsx',
   );
   assert.ok(ui.packages.includes('@nocobase/app-plugin-agents'));
   assert.ok(ui.packages.includes('@nocobase/app-plugin-notification'));
+  assert.ok(!ui.packages.includes('@nocobase/app-plugin-file'));
+  assert.deepEqual(ui.changedPackages, [
+    '@nocobase/app-plugin-agents',
+    '@nocobase/app-plugin-notification',
+  ]);
 
   const agents = plan('packages/plugins/app-plugin-agents/server/index.ts');
   assert.ok(!agents.packages.includes('@nocobase/app-plugin-notification'));
 
-  const config = plan(
-    'packages/templates/app-template-default/config.example.yml',
+  const template = plan(
+    'packages/templates/app-template-default/client/components/ui/button.tsx',
   );
   for (const name of [
-    '@nocobase/app-cli',
+    '@nocobase/app-template-default',
     '@nocobase/app-plugin-file',
     '@nocobase/app-plugin-notification',
-    '@nocobase/app-plugin-mail',
-    '@nocobase/ui-library',
   ]) {
-    assert.ok(config.packages.includes(name), name);
+    assert.ok(template.packages.includes(name), name);
   }
+});
+
+test('reads declared as dependencies select their readers through the workspace graph', () => {
+  // app-cli's tests read create-plugin, app-client and service-provider; app-server's no longer read a template.
+  for (const file of [
+    'packages/tools/create-plugin/src/lib/scaffold.ts',
+    'packages/app/app-client/src/index.ts',
+    'packages/libs/service-provider/src/index.ts',
+  ]) {
+    assert.ok(plan(file).packages.includes('@nocobase/app-cli'), file);
+  }
+  assert.ok(
+    plan('packages/libs/service-provider/src/index.ts').packages.includes(
+      '@nocobase/db-testkit',
+    ),
+  );
+  // The UI Library website imports the default template's stylesheet.
+  assert.ok(
+    plan(
+      'packages/templates/app-template-default/client/styles.css',
+    ).packages.includes('@nocobase/ui-library'),
+  );
+  // Nothing reads the scheduler plugin or the examples template by path any more.
+  assert.ok(
+    !plan('packages/plugins/app-plugin-scheduler/README.md').packages.includes(
+      '@nocobase/app-cli',
+    ),
+  );
 });
 
 test('a change outside every package selects nothing and skips building', () => {
@@ -404,6 +428,7 @@ test('the workspace is read without installing dependencies', () => {
 });
 
 test('every path dependency names a path and consumers that still exist', () => {
+  const exempted = new Set(EXEMPTIONS.map((entry) => entry.packageName));
   for (const { path: guarded, consumers } of pathDependencies) {
     const absolute = path.join(root, guarded);
     assert.ok(existsSync(absolute), `${guarded} no longer exists`);
@@ -414,6 +439,11 @@ test('every path dependency names a path and consumers that still exist', () => 
     );
     for (const consumer of consumers) {
       assert.ok(workspace.has(consumer), `${consumer} is not a package`);
+      // A read that could be declared belongs in the manifest, not here; only an exempted one needs a mapping.
+      assert.ok(
+        exempted.has(consumer),
+        `${consumer} has no EXEMPTIONS entry in scripts/check-cross-package-paths.mjs`,
+      );
     }
   }
   for (const name of [...createAppPackages, ...appInstallerPackages]) {

@@ -35,7 +35,7 @@
     "test:db": "node --import tsx ./scripts/test-db.mjs",
     "pack:check": "node ./scripts/pack-check.mjs",
     "peers:check": "node ./scripts/check-peer-deps.mjs",
-    "deps:check": "node ./scripts/check-runtime-deps.mjs",
+    "deps:check": "node ./scripts/check-runtime-deps.mjs && node ./scripts/check-cross-package-paths.mjs",
     "db-tests:check": "node ./scripts/check-db-test-portability.mjs",
     "agents:check": "node ./scripts/check-agents-md.mjs",
     "openapi:check": "node ./scripts/check-openapi.mjs",
