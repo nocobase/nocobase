@@ -1,6 +1,6 @@
 # OnlineAgent chats and business tools
 
-Use `OnlineAgentService` for SDK conversations that call application services and continue answering with their results, or for lightweight background generation with a Zod-validated result. Native model execution runs inside the application process. Realtime sessions can also select a callable Runner agent through the same service; Runner output arrives as completed text blocks. The plugin owns persistence, model selection, execution control and public chat transport; the application owns its business tools, permissions and page composition.
+Use `OnlineAgentService` for SDK conversations that call application services and continue answering with their results, or for lightweight background generation with a JSON Schema-constrained result. Native model execution runs inside the application process. Realtime sessions can also select a callable Runner agent through the same service; Runner output arrives as completed text blocks. The plugin owns persistence, model selection, execution control and public chat transport; the application owns its business tools, permissions and page composition.
 
 ## Obtain and configure the shared service
 
@@ -67,7 +67,6 @@ import type {
   OnlineAgentContext,
   OnlineAgentRuntime,
 } from '@nocobase/app-plugin-agents/server/online-agent';
-import { z } from 'zod';
 
 export async function askInvoice(
   online: OnlineAgentRuntime,
@@ -96,14 +95,21 @@ export async function classify(
   const job = await online.background(actor);
   await job.run(
     [{ role: 'user', content: 'Return JSON with category: invoice.' }],
-    z.object({ category: z.string() }),
+    {
+      type: 'object',
+      properties: { category: { type: 'string' } },
+      required: ['category'],
+      additionalProperties: false,
+    },
   );
   // A caller observes status until idle; run acknowledges admission, not completion.
   return job;
 }
 ```
 
-Pass `{ sessionId }` to `realtime`/`background` to load without starting execution. Realtime `send` accepts input for the bound executor; native background `run` saves its input and starts the SDK. `status` includes pending finalization. `get` returns only a successfully persisted background result validated with the original schema instance. Realtime `history` returns public conversation messages. Native background `history` is privileged canonical SDK history for trusted server consumers; it includes tool and provider data and must not be returned directly to browsers. Only successful JSON-safe background results persist.
+Pass `{ sessionId }` to `realtime`/`background` to load without starting execution. Realtime `send` accepts input for the bound executor; native background `run` saves its input and starts the SDK. `status` includes pending finalization. `get` returns only a successfully persisted background result validated against the submitted JSON Schema. Realtime `history` returns public conversation messages. Native background `history` is privileged canonical SDK history for trusted server consumers; it includes tool and provider data and must not be returned directly to browsers. Only successful JSON-safe background results persist.
+
+`run(messages, schema)` requires a plain Draft-07 JSON Schema, not Zod. Browser callers submit the same JSON through an authenticated application-owned API; the server supplies the trusted actor, scopes and tools. The schema is snapshotted and compiled before input admission, passed to the AI SDK through `Output.object({ schema: jsonSchema(...) })`, and used for final server-side validation without coercion, default insertion or property removal. Invalid schemas are rejected before model execution. Only local references are supported; schemas are limited to 64 KiB, 32 nesting levels and 4096 JSON nodes. Patterns use a linear-time RE2 engine; unsupported syntax such as lookaround and backreferences is rejected before admission. Use explicit null types instead of OpenAPI `nullable`. Provider warnings that JSON response formatting is unsupported fail the execution rather than falling back to text.
 
 Use `abort()` for explicit stop: it waits for actual execution and terminal persistence. A save or seal failure keeps the session busy; `retryFinalization()` retries only that closing work and never reruns the model or tools. Application shutdown drains active executions and warns if finalization fails, allowing the application to close. A cancelled incomplete tool exchange is saved as internal evidence and excluded from model replay.
 

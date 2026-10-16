@@ -1,11 +1,14 @@
 import {
   streamText,
   stepCountIs,
+  Output,
+  type JSONSchema7,
+  type Schema,
   type LanguageModel,
   type ModelMessage,
 } from 'ai';
 import type { ServiceResolver } from '@nocobase/service-provider';
-import type { ZodType } from 'zod';
+import { createOutputSchema } from './output.js';
 import type {
   OnlineAgentRealtimeService,
   OnlineAgentRealtimeSession,
@@ -84,7 +87,7 @@ export interface OnlineAgent {
   ): Promise<number>;
   run(
     messages: ModelMessage[],
-    schema?: ZodType,
+    schema: JSONSchema7,
     input?: { overrides?: OnlineAgentOptions; selectedModel?: ModelRef },
   ): Promise<void>;
   get(): Promise<OnlineAgentJson>;
@@ -316,7 +319,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       },
       run: async (
         messages: ModelMessage[],
-        schema?: ZodType,
+        schema: JSONSchema7,
         input?: { overrides?: OnlineAgentOptions; selectedModel?: ModelRef },
       ) => {
         await this.start(
@@ -328,7 +331,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
             overrides: input?.overrides ?? requestedOverrides,
             selectedModel: input?.selectedModel ?? requestedModel,
           },
-          schema,
+          createOutputSchema(schema),
         );
         requestedOverrides = undefined;
         requestedModel = undefined;
@@ -550,7 +553,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       overrides?: OnlineAgentOptions;
       selectedModel?: ModelRef;
     },
-    schema?: ZodType,
+    schema?: Schema<OnlineAgentJson>,
   ): Promise<number> {
     if (!messages.length || messages.some((message) => message.role !== 'user'))
       throw invalid('Input must contain user messages.');
@@ -590,7 +593,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
           selectedModel?: ModelRef;
         }
       | undefined,
-    schema: ZodType | undefined,
+    schema: Schema<OnlineAgentJson> | undefined,
     execution: OnlineAgentExecution,
     accepted: OnlineAgentAcceptance,
   ): Promise<void> {
@@ -680,6 +683,7 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       let sdkFailure: { error: unknown } | undefined;
       const generated = streamText({
         model,
+        output: schema ? Output.object({ schema }) : undefined,
         system:
           config.systemPrompt +
           (context.business
@@ -790,8 +794,16 @@ export class OnlineAgentService implements OnlineAgentRealtimeService {
       else {
         if ((await generated.finishReason) !== 'stop')
           throw new Error('The model stopped before completing its answer.');
-        if (schema)
-          result = jsonSafe(schema.parse(JSON.parse(await generated.text)));
+        if (
+          schema &&
+          (await generated.warnings)?.some(
+            (warning) =>
+              warning.type === 'unsupported' &&
+              warning.feature.startsWith('responseFormat'),
+          )
+        )
+          throw new Error('The model does not support structured output.');
+        if (schema) result = jsonSafe(await generated.output);
         else if (session.kind === 'background')
           result = jsonSafe(await generated.text);
       }

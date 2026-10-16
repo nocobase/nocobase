@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MockLanguageModelV4 } from 'ai/test';
-import type { ModelMessage } from 'ai';
+import type { JSONSchema7, ModelMessage } from 'ai';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import {
   createServiceToken,
@@ -672,27 +672,272 @@ it('commits all inputs and attachment links atomically and rolls them back on a 
   expect(await f.history(first)).toEqual([]);
 });
 
-it('keeps per-user tool context separate and validates background results with the original schema instance', async () => {
+it('passes a frontend JSON Schema to the SDK and persists its validated result', async () => {
   const model = new MockLanguageModelV4({
     doStream: async () => ({ stream: streamed(text('{"count":2}')) }),
   });
   const f = await fixture(model);
-  const schema = z
-    .object({ count: z.number() })
-    .transform(({ count }) => ({ doubled: count * 2 }));
+  const schema: JSONSchema7 = JSON.parse(
+    JSON.stringify({
+      type: 'object',
+      properties: { count: { type: 'integer', minimum: 0 } },
+      required: ['count'],
+      additionalProperties: false,
+    }),
+  );
   const background = await f.service.background(context('bob'));
   await background.run([{ role: 'user', content: 'Count' }], schema);
   await settle(background);
-  expect(await background.get()).toEqual({ doubled: 4 });
+  expect(model.doStreamCalls[0].responseFormat).toEqual({
+    type: 'json',
+    schema,
+  });
+  expect(await background.get()).toEqual({ count: 2 });
   expect(await background.receive()).toBeNull();
-  await background.run(
-    [{ role: 'user', content: 'Invalid schema' }],
-    z.object({ count: z.string() }),
-  );
+  const loaded = await f.service.background(context('bob'), {
+    sessionId: background.sessionId,
+  });
+  expect(await loaded.get()).toEqual({ count: 2 });
+  await expect(
+    f.service.background(context('alice'), {
+      sessionId: background.sessionId,
+    }),
+  ).rejects.toThrow();
+});
+
+it.each([
+  'not JSON',
+  '{"count":"2"}',
+  '{"count":-1}',
+  '{"count":1.5}',
+  '{}',
+  '{"count":2,"extra":true}',
+])('does not persist an invalid structured output: %s', async (answer) => {
+  const model = new MockLanguageModelV4({
+    doStream: async () => ({ stream: streamed(text(answer)) }),
+  });
+  const f = await fixture(model);
+  const background = await f.service.background(context());
+  const schema: JSONSchema7 = {
+    type: 'object',
+    properties: { count: { type: 'integer', minimum: 0, default: 3 } },
+    required: ['count'],
+    additionalProperties: false,
+  };
+  await background.run([{ role: 'user', content: 'Count' }], schema);
   await settle(background);
   await expect(background.get()).rejects.toThrow('No successful');
-  const row = await f.sessions.load('bob', background.sessionId);
-  expect(row.call).toMatchObject({ actorId: 'bob', outcome: 'failed' });
+  const row = await f.sessions.load('alice', background.sessionId);
+  expect(row.call).toMatchObject({ actorId: 'alice', outcome: 'failed' });
+  expect(row.call?.result).toBeUndefined();
+  expect((await background.history()).at(-1)).toMatchObject({
+    role: 'assistant',
+  });
+  expect(f.errors).toHaveLength(1);
+});
+
+it('rejects invalid output schemas before accepting input or calling the model', async () => {
+  const model = new MockLanguageModelV4({
+    doStream: async () => ({ stream: streamed(text('{"count":2}')) }),
+  });
+  const f = await fixture(model);
+  const background = await f.service.background(context());
+  const accept = vi.spyOn(f.sessions, 'accept');
+  for (const schema of [
+    { type: 'object', required: 'count' },
+    { $ref: 'https://example.com/schema.json' },
+    { $schema: 'https://json-schema.org/draft/2020-12/schema' },
+    { $async: true, type: 'object' },
+    { type: 'object', unknownKeyword: true },
+    z.object({ count: z.number() }),
+    undefined,
+  ]) {
+    await expect(
+      background.run(
+        [{ role: 'user', content: 'Count' }],
+        schema as JSONSchema7,
+      ),
+    ).rejects.toThrow();
+  }
+  expect(accept).not.toHaveBeenCalled();
+  expect(model.doStreamCalls).toHaveLength(0);
+  expect(await background.status()).toBe('idle');
+  expect(await background.history()).toEqual([]);
+  await background.run([{ role: 'user', content: 'Count' }], {
+    type: 'object',
+    properties: { count: { type: 'integer' } },
+    required: ['count'],
+  });
+  await settle(background);
+  expect(await background.get()).toEqual({ count: 2 });
+});
+
+it('keeps the JSON Schema through business tool calls and validates the final SDK output', async () => {
+  let step = 0;
+  const model = new MockLanguageModelV4({
+    doStream: async () => ({
+      stream: streamed(
+        step++ === 0
+          ? [
+              {
+                type: 'tool-call',
+                toolCallId: 'count',
+                toolName: 'count',
+                input: '{}',
+              },
+              finish('tool-calls'),
+            ]
+          : text('{"count":2}'),
+      ),
+    }),
+  });
+  const f = await fixture(model);
+  const execute = vi.fn((_input, { context: actor }) => {
+    expect(actor.user.id).toBe('bob');
+    expect(actor.sessionId).toBe(background.sessionId);
+    return { count: 2 };
+  });
+  f.service.configurer.registerTool('count', {
+    version: '1',
+    definition: { inputSchema: z.object({}), execute },
+  });
+  f.service.configurer.registerOnlineAgentGlobalScope({ tool: ['count'] });
+  const background = await f.service.background(context('bob'));
+  const schema: JSONSchema7 = {
+    type: 'object',
+    properties: { count: { type: 'integer' } },
+    required: ['count'],
+    additionalProperties: false,
+  };
+  await background.run([{ role: 'user', content: 'Count' }], schema);
+  await settle(background);
+  expect(await background.get()).toEqual({ count: 2 });
+  expect(execute).toHaveBeenCalledTimes(1);
+  expect(model.doStreamCalls).toHaveLength(2);
+  for (const call of model.doStreamCalls)
+    expect(call.responseFormat).toEqual({ type: 'json', schema });
+  expect((await background.history()).map((message) => message.role)).toEqual([
+    'user',
+    'assistant',
+    'tool',
+    'assistant',
+  ]);
+  expect(f.errors).toEqual([]);
+});
+
+it.each([
+  { type: 'unsupported', feature: 'responseFormat', failed: true },
+  { type: 'unsupported', feature: 'responseFormat (JSON)', failed: true },
+  { type: 'unsupported', feature: 'temperature', failed: false },
+  {
+    type: 'compatibility',
+    feature: 'JSON Schema propertyNames',
+    details: 'Validated locally.',
+    failed: false,
+  },
+] as const)(
+  'handles structured output warning $feature without accepting a downgrade',
+  async ({ failed, ...warning }) => {
+    const model = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: streamed([
+          { type: 'stream-start' as const, warnings: [warning] },
+          ...text('{"count":2}'),
+        ]),
+      }),
+    });
+    const f = await fixture(model);
+    const background = await f.service.background(context());
+    await background.run([{ role: 'user', content: 'Count' }], {
+      type: 'object',
+      properties: { count: { type: 'integer' } },
+      required: ['count'],
+    });
+    await settle(background);
+    if (failed) {
+      await expect(background.get()).rejects.toThrow('No successful');
+      expect(f.errors).toEqual([
+        expect.objectContaining({
+          message: 'The model does not support structured output.',
+        }),
+      ]);
+    } else {
+      expect(await background.get()).toEqual({ count: 2 });
+    }
+  },
+);
+
+it('retries structured result persistence without rerunning the model', async () => {
+  const model = new MockLanguageModelV4({
+    doStream: async () => ({ stream: streamed(text('{"count":2}')) }),
+  });
+  const f = await fixture(model);
+  const background = await f.service.background(context());
+  const save = vi
+    .spyOn(f.sessions, 'save')
+    .mockRejectedValueOnce(new Error('Save unavailable'));
+  const schema: JSONSchema7 = {
+    type: 'object',
+    properties: { count: { type: 'integer' } },
+    required: ['count'],
+  };
+  await background.run([{ role: 'user', content: 'Count' }], schema);
+  await vi.waitFor(() => expect(f.errors).toHaveLength(1));
+  expect(await background.status()).toBe('running');
+  await expect(background.get()).rejects.toThrow('No successful');
+  await background.retryFinalization();
+  expect(await background.status()).toBe('idle');
+  expect(await background.get()).toEqual({ count: 2 });
+  expect(save).toHaveBeenCalledTimes(2);
+  expect(model.doStreamCalls).toHaveLength(1);
+  expect(await background.history()).toHaveLength(2);
+  await background.run([{ role: 'user', content: 'Expect a string instead' }], {
+    type: 'object',
+    properties: { count: { type: 'string' } },
+    required: ['count'],
+  });
+  await settle(background);
+  await expect(background.get()).rejects.toThrow('No successful');
+});
+
+it('cancels incomplete structured generation without saving a result', async () => {
+  const entered = deferred();
+  const model = new MockLanguageModelV4({
+    doStream: async ({ abortSignal }) => ({
+      stream: new ReadableStream({
+        start(controller) {
+          controller.enqueue({ type: 'text-start', id: 'partial' });
+          controller.enqueue({
+            type: 'text-delta',
+            id: 'partial',
+            delta: '{"count":',
+          });
+          abortSignal?.addEventListener(
+            'abort',
+            () => {
+              controller.error(new DOMException('Aborted', 'AbortError'));
+            },
+            { once: true },
+          );
+          entered.resolve();
+        },
+      }),
+    }),
+  });
+  const f = await fixture(model);
+  const background = await f.service.background(context());
+  await background.run([{ role: 'user', content: 'Count' }], {
+    type: 'object',
+    properties: { count: { type: 'integer' } },
+    required: ['count'],
+  });
+  await entered.promise;
+  await background.abort();
+  expect(await background.status()).toBe('idle');
+  await expect(background.get()).rejects.toThrow('No successful');
+  expect(
+    (await f.sessions.load('alice', background.sessionId)).call,
+  ).toMatchObject({ outcome: 'cancelled' });
 });
 
 it('does not evaluate providers on read and persists only explicit idle overrides with the original model columns', async () => {

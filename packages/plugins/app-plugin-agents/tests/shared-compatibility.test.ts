@@ -13,6 +13,7 @@ import {
   OnlineAgentConfigurer as PublicOnlineAgentConfigurer,
 } from '@nocobase/app-plugin-agents/server';
 import { z } from 'zod';
+import type { JSONSchema7, ModelMessage } from 'ai';
 
 import { VariableSchema } from '../server/routes/schemas.js';
 import type {
@@ -182,4 +183,16 @@ it('exposes the shared service and configurer through the public server entry', 
   expectTypeOf<
     Awaited<ReturnType<PublicOnlineAgentService['realtime']>>
   >().toEqualTypeOf<OnlineAgentRealtimeSession>();
+});
+
+it('requires JSON Schema for background run through the public server entry', () => {
+  type Background = Awaited<ReturnType<PublicOnlineAgentService['background']>>;
+  type Run = Background['run'];
+  expectTypeOf<Parameters<Run>[0]>().toEqualTypeOf<ModelMessage[]>();
+  expectTypeOf<Parameters<Run>[1]>().toEqualTypeOf<JSONSchema7>();
+  expectTypeOf<Parameters<Run>>().toExtend<
+    [ModelMessage[], JSONSchema7, ...unknown[]]
+  >();
+  expectTypeOf<z.ZodObject>().not.toExtend<Parameters<Run>[1]>();
+  expectTypeOf<ReturnType<Run>>().toEqualTypeOf<Promise<void>>();
 });
