@@ -590,6 +590,12 @@ importers:
         specifier: 'catalog:'
         version: 2.9.0
     devDependencies:
+      '@nocobase/app-client':
+        specifier: workspace:*
+        version: link:../app-client
+      '@nocobase/create-plugin':
+        specifier: workspace:*
+        version: link:../../tools/create-plugin
       '@nocobase/db-sqlite':
         specifier: workspace:^
         version: link:../../libs/db-sqlite
@@ -599,6 +605,9 @@ importers:
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config
+      '@nocobase/service-provider':
+        specifier: workspace:*
+        version: link:../../libs/service-provider
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -2556,6 +2565,9 @@ importers:
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config
+      '@nocobase/service-provider':
+        specifier: workspace:*
+        version: link:../service-provider
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -6001,6 +6013,9 @@ importers:
       '@nocobase/app-plugin-projects':
         specifier: workspace:^
         version: link:../packages/plugins/app-plugin-projects
+      '@nocobase/app-template-default':
+        specifier: workspace:*
+        version: link:../packages/templates/app-template-default
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../packages/tools/dev-config

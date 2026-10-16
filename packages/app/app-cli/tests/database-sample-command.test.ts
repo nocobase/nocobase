@@ -13,7 +13,7 @@ import { createAppFromRuntime } from '@nocobase/app-server/runtime';
 import { sampleDataToken } from '@nocobase/app-server/sample-data';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ServiceProvider } from '../../../libs/service-provider/src/index.ts';
+import { ServiceProvider } from '@nocobase/service-provider';
 import {
   runDatabaseApplyCommand,
   runDatabaseSampleCommand,

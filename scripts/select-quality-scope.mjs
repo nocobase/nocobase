@@ -29,49 +29,21 @@ export const fullDirectories = [
   'tests/',
 ];
 
-// Files that read another package's sources by relative path rather than through a declared dependency, so the
-// workspace graph does not see the edge. A change under `path` (a directory when it ends with `/`) selects
-// `consumers`, but not their dependents: every such read is in a consumer's tests, test configuration or fixtures (or
-// the UI Library website's styles), so what the consumer publishes does not change. `tests/scripts/select-quality-scope.test.mjs`
-// fails when a path or a consumer no longer exists.
+// The reads of another package's directory that cannot be declared as a dependency, which the workspace graph
+// therefore does not see. A change under `path` (a directory when it ends with `/`) selects `consumers`, but not their
+// dependents: every such read is in a consumer's test configuration, so what the consumer publishes does not change.
+// Every other cross-package read is a declared dependency, which `pnpm deps:check` enforces
+// (`scripts/check-cross-package-paths.mjs`); each consumer here has an entry in that script's `EXEMPTIONS` saying why
+// it cannot declare the package, and `tests/scripts/select-quality-scope.test.mjs` fails when a path, a consumer or
+// that exemption no longer exists.
 export const pathDependencies = [
   {
-    // tests/plugin-development-loop.test.ts scaffolds a plugin with create-plugin's sources and links app-client.
-    path: 'packages/tools/create-plugin/',
-    consumers: ['@nocobase/app-cli'],
-  },
-  {
-    path: 'packages/app/app-client/',
-    consumers: ['@nocobase/app-cli'],
-  },
-  {
-    // tests/plugin-skills-sync.test.ts synchronizes the scheduler plugin's Skills.
-    path: 'packages/plugins/app-plugin-scheduler/',
-    consumers: ['@nocobase/app-cli'],
-  },
-  {
-    // tests/config-file.test.ts parses the default template's example configuration.
-    path: 'packages/templates/app-template-default/config.example.yml',
-    consumers: ['@nocobase/app-cli'],
-  },
-  {
-    // tests/plugins.test.ts resolves the example plugins from the examples template.
-    path: 'packages/templates/app-template-examples/',
-    consumers: ['@nocobase/app-server'],
-  },
-  {
-    path: 'packages/examples/app-plugin-service-provider-example/',
-    consumers: ['@nocobase/app-server'],
-  },
-  {
-    // The Registry tests of file and notification copy the template's components and use its node_modules; mail's
-    // browser fixtures import its client; the UI Library website imports its styles.
+    // The Registry tests of file and notification build their stand-in application from the default template's
+    // shadcn primitives and node_modules; the template depends on both plugins, so neither can declare it.
     path: 'packages/templates/app-template-default/',
     consumers: [
       '@nocobase/app-plugin-file',
       '@nocobase/app-plugin-notification',
-      '@nocobase/app-plugin-mail',
-      '@nocobase/ui-library',
     ],
   },
   {
