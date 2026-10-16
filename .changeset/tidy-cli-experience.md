@@ -1,8 +1,6 @@
 ---
 '@nocobase/app-cli-client': patch
 '@nocobase/app-server': patch
-'@nocobase/studio': patch
-'@nocobase/studio-cli': patch
 '@nocobase/app-plugin-agents': patch
 '@nocobase/app-plugin-api-keys': patch
 '@nocobase/app-plugin-knowledge': patch
