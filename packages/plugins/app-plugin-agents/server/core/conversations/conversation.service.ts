@@ -329,7 +329,10 @@ export function createConversationService(
   ): Promise<ConversationSummary[]> {
     const agents = new Map<string, Agent | null>();
     for (const record of records)
-      for (const id of [record.agentId, record.fallbackFromAgentId])
+      for (const id of [
+        jsonObject(record.metadata).onlineAgent ? null : record.agentId,
+        record.fallbackFromAgentId,
+      ])
         if (id && !agents.has(id)) agents.set(id, await findAgent(conn, id));
     const open = await openRunsOnEach(
       conn,
