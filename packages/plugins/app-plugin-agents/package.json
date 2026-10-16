@@ -114,7 +114,11 @@
       "types": "./cli/index.ts",
       "import": "./cli/index.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./server/online-agent": {
+      "types": "./server/online-agent/index.ts",
+      "import": "./server/online-agent/index.ts"
+    }
   },
   "files": [
     "dist",
@@ -230,7 +234,11 @@
         "types": "./dist/cli/index.d.ts",
         "import": "./dist/cli/index.js"
       },
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./server/online-agent": {
+        "types": "./dist/server/online-agent/index.d.ts",
+        "import": "./dist/server/online-agent/index.js"
+      }
     }
   },
   "scripts": {

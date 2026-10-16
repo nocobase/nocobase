@@ -1,3 +1,4 @@
+import type { ToolContext as PublicToolContext } from '@nocobase/app-plugin-agents/server/online-agent';
 import {
   OnlineAgentConfigurer,
   type Definition,
@@ -164,3 +165,7 @@ it('preserves SDK tool input, output and execution context generics', () => {
     definition: () => definition,
   });
 });
+
+const businessSession = (context: PublicToolContext): string =>
+  context.sessionId;
+void businessSession;
