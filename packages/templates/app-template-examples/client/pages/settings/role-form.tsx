@@ -34,9 +34,11 @@ import { Input } from '#components/ui/input';
 import { Label } from '#components/ui/label';
 import { Badge } from '#components/ui/badge';
 import { ConfirmAction, SettingsError, SettingsLoading } from './shared.js';
+import { configurePermissionScopes } from './permission-filters.js';
 import {
   permissionSections,
-  setPermission,
+  unconfiguredFilter,
+  setPermissions,
   setScope,
   type CatalogResource,
 } from './permissions-model.js';
@@ -76,6 +78,7 @@ function RoleEditor(): ReactElement {
   const [keyDraft, setKeyDraft] = useState<string>();
   const [grantsDraft, setGrantsDraft] = useState<readonly PermissionGrant[]>();
   const [dirty, setDirty] = useState(false);
+  const [editingScope, setEditingScope] = useState<string>();
   const [busy, setBusy] = useState(false);
   const leave = useSettingsLeave(dirty, busy);
   const [error, setError] = useState<unknown>();
@@ -100,6 +103,7 @@ function RoleEditor(): ReactElement {
     const pages: CatalogResource[] = [];
     const collect = (routes: readonly AppClientRegisteredRoute[]) => {
       for (const route of routes) {
+        const pageTitle = route.navigation?.title ?? route.breadcrumb?.title;
         if (
           route.componentLoader &&
           typeof route.authz === 'object' &&
@@ -108,8 +112,8 @@ function RoleEditor(): ReactElement {
           pages.push({
             type: 'page',
             id: route.authz.resource.id,
-            title: route.navigation?.title
-              ? { key: route.navigation.title, ns: route.packageName }
+            title: pageTitle
+              ? { key: pageTitle, ns: route.packageName }
               : route.id,
             actions: [
               {
@@ -187,6 +191,12 @@ function RoleEditor(): ReactElement {
         ?.focus();
       return;
     }
+    const incomplete = unconfiguredFilter(grants);
+    if (incomplete) {
+      setEditingScope(incomplete);
+      return;
+    }
+    setEditingScope(undefined);
     setBusy(true);
     setError(undefined);
     setKeyConflict(false);
@@ -223,7 +233,21 @@ function RoleEditor(): ReactElement {
       setBusy(false);
     }
   };
-  const sections = catalog ? permissionSections(catalog, grants, text) : [];
+  const sections = catalog
+    ? configurePermissionScopes(
+        permissionSections(catalog, grants, text),
+        catalog,
+        grants,
+        (key, fallback) => t(key, { defaultValue: fallback ?? key }),
+        editingScope,
+        setEditingScope,
+        (id, value) => {
+          setGrantsDraft((current) => setScope(current ?? grants, id, value));
+          setDirty(true);
+        },
+        !allowed || busy,
+      )
+    : [];
   return (
     <RouteChildPage>
       <PageContainer>
@@ -311,6 +335,8 @@ function RoleEditor(): ReactElement {
                 sections={sections}
                 readOnly={!allowed || busy}
                 labels={{
+                  selectVisible: (name) =>
+                    t('settings.selectVisiblePermissions', { name }),
                   levelFor: (name) => t('settings.levelFor', { name }),
                   search: t('settings.permissionSearch'),
                   enabledOnly: t('settings.enabledOnly'),
@@ -321,26 +347,30 @@ function RoleEditor(): ReactElement {
                   summary: (enabled, total) =>
                     t('settings.permissionSummary', { enabled, total }),
                 }}
-                onEnabledChange={(id, on) => {
+                onEnabledChange={(id, enabled) => {
                   if (!catalog) return;
-                  const [type, resourceId, action, scope] = JSON.parse(
-                    id,
-                  ) as string[];
-                  if (scope) return;
-                  const resource = catalog.sections
-                    .flatMap((section) =>
-                      section.subsections.flatMap((sub) => sub.resources),
-                    )
-                    .find(
-                      (item) => item.type === type && item.id === resourceId,
-                    );
-                  if (resource) {
-                    setGrantsDraft(setPermission(grants, resource, action, on));
-                    setDirty(true);
-                  }
+                  setGrantsDraft((current) =>
+                    setPermissions(current ?? grants, catalog, [
+                      { id, enabled },
+                    ]),
+                  );
+                  setDirty(true);
+                }}
+                onEnabledBatchChange={(changes) => {
+                  if (!catalog) return;
+                  setGrantsDraft((current) =>
+                    setPermissions(current ?? grants, catalog, changes),
+                  );
+                  setDirty(true);
                 }}
                 onLevelChange={(id, value) => {
-                  setGrantsDraft(setScope(grants, id, value));
+                  if (value === 'customFilter') {
+                    setEditingScope(id);
+                    return;
+                  }
+                  setGrantsDraft((current) =>
+                    setScope(current ?? grants, id, value),
+                  );
                   setDirty(true);
                 }}
               />

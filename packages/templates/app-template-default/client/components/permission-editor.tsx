@@ -1,16 +1,24 @@
 /** A controlled permission workspace. Filtering never changes the caller's draft. */
 import { SearchIcon, ShieldCheckIcon } from 'lucide-react';
-import { useId, useState, type ReactElement, type ReactNode } from 'react';
+import {
+  useId,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { cn } from 'cn';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '#components/ui/select';
+import { Checkbox } from '#components/ui/checkbox';
 import { Switch } from '#components/ui/switch';
 
 export interface PermissionEditorLevel {
@@ -18,11 +26,22 @@ export interface PermissionEditorLevel {
   readonly label: string;
 }
 
+export interface PermissionEditorScope {
+  /** An optional input for parameters of the selected scope. */
+  readonly configuration?: ReactNode;
+  readonly id: string;
+  readonly label: string;
+  readonly levels: readonly PermissionEditorLevel[];
+  readonly level?: string | undefined;
+}
+
 export interface PermissionEditorRow {
-  /** Unique across the editor; also the switch's DOM id. */
+  /** Unique permission identifier supplied unchanged to callbacks. */
   readonly id: string;
   readonly label: string;
   readonly hint?: string | undefined;
+  /** Scope-only controls bound to this action; they are not extra permissions. */
+  readonly scopes?: readonly PermissionEditorScope[];
   readonly enabled: boolean;
   readonly toggleable?: boolean;
   /** The levels a switched-on row can reach. None leaves the right column empty. */
@@ -35,6 +54,9 @@ export interface PermissionEditorGroup {
   readonly id: string;
   /** Rendered as a subheading above the rows; rows without one follow the previous group directly. */
   readonly title?: string | undefined;
+  readonly hint?: string | undefined;
+  /** A page with one access action uses its title as the only checkbox label. */
+  readonly accessOnly?: boolean;
   readonly rows: readonly PermissionEditorRow[];
 }
 
@@ -55,6 +77,7 @@ export interface PermissionEditorLabels {
   readonly empty: string;
   readonly noResults: string;
   readonly navigation: string;
+  readonly selectVisible?: (groupName: string) => string;
   readonly summary: (enabled: number, total: number) => string;
 }
 
@@ -62,11 +85,15 @@ export interface PermissionEditorProps {
   readonly sections: readonly PermissionEditorSection[];
   readonly readOnly?: boolean | undefined;
   readonly onEnabledChange: (rowId: string, enabled: boolean) => void;
+  /** One atomic draft update; when absent, group selection is omitted. */
+  readonly onEnabledBatchChange?: (
+    changes: readonly { id: string; enabled: boolean }[],
+  ) => void;
   readonly onLevelChange: (rowId: string, level: string) => void;
   readonly labels?: Partial<PermissionEditorLabels> | undefined;
 }
 
-const DEFAULT_LABELS: PermissionEditorLabels = {
+const DEFAULT_LABELS: Required<PermissionEditorLabels> = {
   levelFor: (rowLabel) => `How far ${rowLabel} reaches`,
   search: 'Search categories, groups or permissions',
   enabledOnly: 'Enabled only',
@@ -74,6 +101,7 @@ const DEFAULT_LABELS: PermissionEditorLabels = {
   empty: 'No permissions to configure',
   noResults: 'No matching permissions',
   navigation: 'Permission categories',
+  selectVisible: (name) => `Select visible permissions in ${name}`,
   summary: (enabled, total) => `${enabled} of ${total} enabled`,
 };
 
@@ -106,15 +134,21 @@ function LevelControl({
         if (next !== null) onChange(next);
       }}
     >
-      <SelectTrigger size='sm' className='w-full' aria-label={label}>
+      <SelectTrigger
+        size='sm'
+        className='h-6 w-auto max-w-48 gap-1 border-0 bg-muted/50 px-2 text-xs shadow-none'
+        aria-label={label}
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
-        {levels.map((level) => (
-          <SelectItem key={level.value} value={level.value}>
-            {level.label}
-          </SelectItem>
-        ))}
+        <SelectGroup>
+          {levels.map((level) => (
+            <SelectItem key={level.value} value={level.value}>
+              {level.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
       </SelectContent>
     </Select>
   );
@@ -122,12 +156,14 @@ function LevelControl({
 
 function PermissionRow({
   row,
+  controlId,
   readOnly,
   labels,
   onEnabledChange,
   onLevelChange,
 }: {
   readonly row: PermissionEditorRow;
+  readonly controlId: string;
   readonly readOnly: boolean;
   readonly labels: PermissionEditorLabels;
   readonly onEnabledChange: (rowId: string, enabled: boolean) => void;
@@ -136,24 +172,22 @@ function PermissionRow({
   return (
     <div
       data-slot='permission-row'
-      className='grid min-h-12 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 px-3 py-2 @lg:grid-cols-[auto_minmax(0,1fr)_14rem]'
+      className='flex min-w-0 flex-col gap-1 rounded-md px-2 py-1.5'
     >
-      <Switch
-        id={row.id}
-        checked={row.enabled}
-        disabled={readOnly || row.toggleable === false}
-        onCheckedChange={(on) => onEnabledChange(row.id, on)}
-      />
-      <label htmlFor={row.id} className='min-w-0 text-sm'>
-        <span className='block font-medium'>{row.label}</span>
-        {row.hint ? (
-          <span className='block text-xs text-muted-foreground'>
-            {row.hint}
-          </span>
-        ) : null}
-      </label>
-      {/* Below the label in a narrow editor, in its own column once there is room. */}
-      <div className='col-start-2 max-w-56 min-w-0 empty:hidden @lg:col-start-auto @lg:max-w-none @lg:text-right'>
+      <div className='flex min-h-6 min-w-0 flex-wrap items-center gap-2'>
+        <Checkbox
+          id={controlId}
+          checked={row.enabled}
+          disabled={readOnly || row.toggleable === false}
+          onCheckedChange={(on) => onEnabledChange(row.id, on)}
+          aria-describedby={row.hint ? `${controlId}-hint` : undefined}
+        />
+        <label
+          htmlFor={controlId}
+          className='min-w-0 cursor-pointer text-sm leading-5 font-medium break-words'
+        >
+          {row.label}
+        </label>
         {row.enabled && row.levels ? (
           <LevelControl
             label={labels.levelFor(row.label)}
@@ -163,7 +197,33 @@ function PermissionRow({
             onChange={(level) => onLevelChange(row.id, level)}
           />
         ) : null}
+        {row.enabled &&
+          row.scopes?.map((scope) => (
+            <div key={scope.id} className='flex min-w-0 items-center gap-1'>
+              {row.scopes && row.scopes.length > 1 && (
+                <span className='text-xs text-muted-foreground'>
+                  {scope.label}
+                </span>
+              )}
+              <LevelControl
+                label={labels.levelFor(`${row.label} · ${scope.label}`)}
+                levels={scope.levels}
+                value={scope.level ?? ''}
+                disabled={readOnly}
+                onChange={(level) => onLevelChange(scope.id, level)}
+              />
+              {scope.configuration}
+            </div>
+          ))}
       </div>
+      {row.hint && (
+        <span
+          id={`${controlId}-hint`}
+          className='pl-6 text-xs text-muted-foreground'
+        >
+          {row.hint}
+        </span>
+      )}
     </div>
   );
 }
@@ -173,6 +233,7 @@ export function PermissionEditor({
   sections,
   readOnly = false,
   onEnabledChange,
+  onEnabledBatchChange,
   onLevelChange,
   labels,
 }: PermissionEditorProps): ReactElement {
@@ -181,6 +242,7 @@ export function PermissionEditor({
   const [query, setQuery] = useState('');
   const [enabledOnly, setEnabledOnly] = useState(false);
   const id = useId();
+  const searchRef = useRef<HTMLInputElement>(null);
   const active = sections.some((section) => section.id === selected)
     ? selected
     : sections[0]?.id;
@@ -197,9 +259,14 @@ export function PermissionEditor({
             (row) =>
               (!enabledOnly || row.enabled) &&
               (!search ||
-                [section.title, group.title, row.label, row.hint].some((text) =>
-                  text?.toLocaleLowerCase().includes(search),
-                )),
+                [
+                  section.title,
+                  group.title,
+                  group.hint,
+                  row.label,
+                  row.hint,
+                  ...(row.scopes?.map((scope) => scope.label) ?? []),
+                ].some((text) => text?.toLocaleLowerCase().includes(search))),
           ),
         }))
         .filter((group) => group.rows.length),
@@ -214,6 +281,7 @@ export function PermissionEditor({
             className='pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground'
           />
           <Input
+            ref={searchRef}
             className='pl-9'
             value={query}
             aria-label={words.search}
@@ -234,6 +302,7 @@ export function PermissionEditor({
         </label>
         {filtering && (
           <Button
+            type='button'
             variant='ghost'
             size='sm'
             onClick={() => {
@@ -245,15 +314,16 @@ export function PermissionEditor({
           </Button>
         )}
       </div>
-      <div className='flex min-w-0 flex-col @2xl:flex-row'>
+      <div className='flex max-h-128 min-w-0 flex-col overflow-auto @2xl:flex-row'>
         <nav
           aria-label={words.navigation}
-          className='flex shrink-0 gap-1 overflow-x-auto border-b bg-muted/25 p-2 @2xl:w-52 @2xl:flex-col @2xl:border-r @2xl:border-b-0'
+          className='flex shrink-0 gap-1 overflow-x-auto border-b bg-muted/25 p-2 @2xl:sticky @2xl:top-0 @2xl:max-h-128 @2xl:w-48 @2xl:self-start @2xl:flex-col @2xl:border-r @2xl:border-b-0'
         >
           {sections.map((section) => {
             const rows = section.groups.flatMap((group) => group.rows);
             return (
               <Button
+                type='button'
                 key={section.id}
                 variant='ghost'
                 aria-current={section.id === active ? 'page' : undefined}
@@ -279,7 +349,10 @@ export function PermissionEditor({
         <div className='min-w-0 flex-1 @container'>
           {visible.length ? (
             visible.map((section) => {
-              const rows = section.groups.flatMap((group) => group.rows);
+              const rows = (
+                sections.find((item) => item.id === section.id)?.groups ??
+                section.groups
+              ).flatMap((group) => group.rows);
               return (
                 <section
                   key={section.id}
@@ -295,31 +368,132 @@ export function PermissionEditor({
                       )}
                     </span>
                   </div>
-                  <div className='flex flex-col gap-3'>
-                    {section.groups.map((group) => (
-                      <div
-                        key={group.id}
-                        className='overflow-hidden rounded-lg border'
-                      >
-                        {group.title && (
-                          <h3 className='border-b bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground'>
-                            {group.title}
-                          </h3>
-                        )}
-                        <div className='divide-y'>
-                          {group.rows.map((row) => (
+                  <div className='divide-y rounded-lg border'>
+                    {section.groups.map((group) => {
+                      const selectable = group.rows.filter(
+                        (row) => row.toggleable !== false,
+                      );
+                      const enabled = selectable.filter(
+                        (row) => row.enabled,
+                      ).length;
+                      const originalGroup = sections
+                        .find((item) => item.id === section.id)
+                        ?.groups.find((item) => item.id === group.id);
+                      const totalRows = originalGroup?.rows ?? group.rows;
+                      const accessRow =
+                        group.accessOnly && totalRows.length === 1
+                          ? group.rows[0]
+                          : undefined;
+                      if (accessRow)
+                        return (
+                          <div
+                            key={group.id}
+                            className='p-3'
+                            data-slot='permission-resource'
+                          >
                             <PermissionRow
-                              key={row.id}
-                              row={row}
+                              controlId={`${id}-${accessRow.id}`}
+                              row={{
+                                ...accessRow,
+                                label: group.title ?? accessRow.label,
+                                hint: group.hint ?? accessRow.hint,
+                              }}
                               readOnly={readOnly}
                               labels={words}
-                              onEnabledChange={onEnabledChange}
+                              onEnabledChange={(rowId, on) => {
+                                if (enabledOnly && !on)
+                                  searchRef.current?.focus();
+                                onEnabledChange(rowId, on);
+                              }}
                               onLevelChange={onLevelChange}
                             />
-                          ))}
+                          </div>
+                        );
+                      return (
+                        <div
+                          key={group.id}
+                          className='grid min-w-0 gap-2 p-3 @xl:grid-cols-[minmax(8rem,1fr)_minmax(0,4fr)]'
+                          data-slot='permission-resource'
+                        >
+                          <div className='flex items-start gap-2 py-1.5'>
+                            {onEnabledBatchChange &&
+                              totalRows.length > 1 &&
+                              selectable.length > 0 && (
+                                <Checkbox
+                                  aria-label={words.selectVisible(
+                                    group.title ?? section.title,
+                                  )}
+                                  checked={
+                                    selectable.length > 0 &&
+                                    enabled === selectable.length
+                                  }
+                                  indeterminate={
+                                    enabled > 0 && enabled < selectable.length
+                                  }
+                                  disabled={readOnly}
+                                  className='mt-0.5'
+                                  onCheckedChange={(checked) => {
+                                    const changes = selectable
+                                      .filter((row) => row.enabled !== checked)
+                                      .map((row) => ({
+                                        id: row.id,
+                                        enabled: checked,
+                                      }));
+                                    if (changes.length) {
+                                      if (enabledOnly && !checked)
+                                        searchRef.current?.focus();
+                                      onEnabledBatchChange(changes);
+                                    }
+                                  }}
+                                />
+                              )}
+                            <div className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1'>
+                              <h3 className='text-sm font-medium break-words'>
+                                {group.title ?? section.title}
+                              </h3>
+                              {group.hint && (
+                                <p className='order-last basis-full text-xs text-muted-foreground'>
+                                  {group.hint}
+                                </p>
+                              )}
+                              {totalRows.length > 1 && (
+                                <span
+                                  className='text-xs text-muted-foreground tabular-nums'
+                                  aria-label={words.summary(
+                                    totalRows.filter((row) => row.enabled)
+                                      .length,
+                                    totalRows.length,
+                                  )}
+                                >
+                                  {
+                                    totalRows.filter((row) => row.enabled)
+                                      .length
+                                  }
+                                  /{totalRows.length}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className='flex min-w-0 flex-wrap items-start gap-x-3 gap-y-1'>
+                            {group.rows.map((row) => (
+                              <PermissionRow
+                                key={row.id}
+                                controlId={`${id}-${row.id}`}
+                                row={row}
+                                readOnly={readOnly}
+                                labels={words}
+                                onEnabledChange={(rowId, on) => {
+                                  if (enabledOnly && !on)
+                                    searchRef.current?.focus();
+                                  onEnabledChange(rowId, on);
+                                }}
+                                onLevelChange={onLevelChange}
+                              />
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   {section.footer && (
                     <div className='text-xs text-muted-foreground'>

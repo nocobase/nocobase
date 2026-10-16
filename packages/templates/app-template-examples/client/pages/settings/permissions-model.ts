@@ -64,7 +64,12 @@ export function permissionSections(
         subsection.resources.map((resource) => ({
           id: JSON.stringify([subsection.name, resource.type, resource.id]),
           title: text(resource.title),
-          rows: resource.actions.flatMap((action) => {
+          accessOnly:
+            resource.type === 'page' &&
+            resource.actions.length === 1 &&
+            resource.actions[0]?.name === 'access',
+          hint: resource.description ? text(resource.description) : undefined,
+          rows: resource.actions.map((action) => {
             const granted = grants
               .find(
                 (grant) =>
@@ -75,15 +80,12 @@ export function permissionSections(
             const row = {
               id: permissionRowId(resource, action.name),
               label: text(action.title),
-              hint: resource.description
-                ? text(resource.description)
-                : undefined,
               enabled: Boolean(granted),
             };
-            // Each composite scope is independent; editing one never replaces the other scope values.
-            return [
-              row,
-              ...(granted
+            // Scope selectors belong to the action and do not inflate permission counts.
+            return {
+              ...row,
+              scopes: granted
                 ? (resource.dataScopes?.[action.name] ?? []).map((scope) => ({
                     id: JSON.stringify([
                       resource.type,
@@ -91,11 +93,17 @@ export function permissionSections(
                       action.name,
                       scope.key,
                     ]),
-                    label: text(scope.title),
-                    toggleable: false,
-                    enabled: true,
+                    label: text(
+                      typeof scope.title === 'string' &&
+                        scope.title === scope.collection
+                        ? { key: 'settings.recordScope' }
+                        : scope.title,
+                    ),
                     levels: [
-                      { value: '', label: '—' },
+                      {
+                        value: '',
+                        label: text({ key: 'settings.noRecordScope' }),
+                      },
                       ...scope.recordAccess.map((key) => ({
                         value: key,
                         label: text(
@@ -105,20 +113,15 @@ export function permissionSections(
                         ),
                       })),
                     ],
-                    level:
-                      typeof (
-                        granted.policy?.scopes as
-                          Record<string, unknown> | undefined
-                      )?.[scope.key] === 'string'
-                        ? String(
-                            (granted.policy?.scopes as Record<string, unknown>)[
-                              scope.key
-                            ],
-                          )
-                        : '',
+                    level: scopeSelectionKey(
+                      granted.policy?.scopes &&
+                        typeof granted.policy.scopes === 'object'
+                        ? Reflect.get(granted.policy.scopes, scope.key)
+                        : undefined,
+                    ),
                   }))
-                : []),
-            ];
+                : [],
+            };
           }),
         })),
       ),
@@ -129,7 +132,7 @@ export function permissionSections(
 export function setScope(
   grants: readonly PermissionGrant[],
   rowId: string,
-  value: string,
+  value: unknown,
 ): readonly PermissionGrant[] {
   const [type, id, action, scope] = JSON.parse(rowId) as string[];
   return grants.map((grant) =>
@@ -155,4 +158,102 @@ export function setScope(
           ),
         },
   );
+}
+
+/** Fold an explicit edit batch into one draft without replacing unrelated policies. */
+export function setPermissions(
+  grants: readonly PermissionGrant[],
+  catalog: AuthorizationOptionsResponse,
+  changes: readonly { id: string; enabled: boolean }[],
+): readonly PermissionGrant[] {
+  const resources = catalog.sections.flatMap((section) =>
+    section.subsections.flatMap((sub) => sub.resources),
+  );
+  return changes.reduce((current, { id, enabled }) => {
+    const [type, resourceId, action, scope] = JSON.parse(id) as string[];
+    if (scope) return current;
+    const resource = resources.find(
+      (item) => item.type === type && item.id === resourceId,
+    );
+    if (
+      !resource ||
+      !action ||
+      !resource.actions.some((item) => item.name === action)
+    )
+      return current;
+    const existing =
+      current
+        .find(
+          (grant) =>
+            grant.resource.type === type && grant.resource.id === resourceId,
+        )
+        ?.actions.some((item) => item.action === action) ?? false;
+    return existing === enabled
+      ? current
+      : setPermission(current, resource, action, enabled);
+  }, grants);
+}
+
+export function getScopeSelection(
+  grants: readonly PermissionGrant[],
+  rowId: string,
+): unknown {
+  const [type, id, action, scope] = JSON.parse(rowId) as string[];
+  const policy = grants
+    .find((grant) => grant.resource.type === type && grant.resource.id === id)
+    ?.actions.find((entry) => entry.action === action)?.policy;
+  return policy?.scopes && typeof policy.scopes === 'object' && scope
+    ? Reflect.get(policy.scopes, scope)
+    : undefined;
+}
+function scopeSelectionKey(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (
+    value &&
+    typeof value === 'object' &&
+    Reflect.get(value, 'type') === 'recordAccess' &&
+    typeof Reflect.get(value, 'key') === 'string'
+  )
+    return String(Reflect.get(value, 'key'));
+  return '';
+}
+
+/** Legacy bare custom-filter keys require configuration before saving. */
+export function unconfiguredFilter(
+  grants: readonly PermissionGrant[],
+): string | undefined {
+  for (const grant of grants)
+    for (const action of grant.actions) {
+      const scopes = action.policy?.scopes;
+      if (!scopes || typeof scopes !== 'object') continue;
+      for (const [key, value] of Object.entries(scopes)) {
+        if (value === 'customFilter')
+          return JSON.stringify([
+            grant.resource.type,
+            grant.resource.id,
+            action.action,
+            key,
+          ]);
+        if (
+          !value ||
+          typeof value !== 'object' ||
+          Reflect.get(value, 'type') !== 'recordAccess' ||
+          Reflect.get(value, 'key') !== 'customFilter'
+        )
+          continue;
+        const params: unknown = Reflect.get(value, 'params');
+        const filter: unknown =
+          params && typeof params === 'object'
+            ? Reflect.get(params, 'filter')
+            : undefined;
+        if (filter === null || !['object', 'boolean'].includes(typeof filter))
+          return JSON.stringify([
+            grant.resource.type,
+            grant.resource.id,
+            action.action,
+            key,
+          ]);
+      }
+    }
+  return undefined;
 }

@@ -25,7 +25,14 @@ const repository = fileURLToPath(new URL('../../../../', import.meta.url));
 const uiRoot = path.join(repository, 'ui-library');
 const uiRequire = createRequire(path.join(uiRoot, 'package.json'));
 const shadcn = path.join(uiRoot, 'node_modules/shadcn/dist/index.js');
-const primitiveNames = ['button', 'input', 'select', 'switch'];
+const primitiveNames = [
+  'button',
+  'checkbox',
+  'input',
+  'popover',
+  'select',
+  'switch',
+];
 
 interface Manifest {
   name: string;
@@ -137,10 +144,9 @@ async function prepareOfflineMetadata(cache: string): Promise<void> {
       };
       const { name, version } = manifest;
       const resolution = lockfile.packages[`${name}@${version}`]?.resolution;
-      if (!resolution?.integrity)
-        throw new Error(
-          `Installed ${name}@${version} is not in the repository lockfile`,
-        );
+      // A reused local store can retain packages from other branches. They must
+      // not participate in this lockfile's offline dependency resolution.
+      if (!resolution?.integrity) continue;
       const metadata = metadataByName.get(name) ?? {
         name,
         'dist-tags': { latest: version },
@@ -282,6 +288,13 @@ it('installs a real registry item, builds and packs a generated plugin, and load
       if (!categoryEntry?.isDirectory()) continue;
       for (const entry of await readdir(source, { withFileTypes: true })) {
         if (!entry.isDirectory()) continue;
+        // Local tooling may leave empty directories for removed workspace packages.
+        if (
+          !(await readdir(path.join(source, entry.name))).includes(
+            'package.json',
+          )
+        )
+          continue;
         const destination = path.join(root, 'packages', category, entry.name);
         await mkdir(destination, { recursive: true });
         await copyFile(

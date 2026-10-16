@@ -191,6 +191,14 @@ export function PermissionEditorDemo(): ReactElement {
       <div className='mx-auto max-w-3xl'>
         <PermissionEditor
           sections={sections}
+          onEnabledBatchChange={(changes) =>
+            setEnabled((current) => ({
+              ...current,
+              ...Object.fromEntries(
+                changes.map((change) => [change.id, change.enabled]),
+              ),
+            }))
+          }
           onEnabledChange={(id, on) =>
             setEnabled((current) => ({ ...current, [id]: on }))
           }

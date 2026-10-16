@@ -268,7 +268,7 @@ describe('template system settings', () => {
       },
     );
     await user.click(await screen.findByRole('button', { name: /^Settings/ }));
-    const toggle = await screen.findByRole('switch', { name: 'Read files' });
+    const toggle = await screen.findByRole('checkbox', { name: 'Read files' });
     await waitFor(() =>
       expect(toggle).not.toHaveAttribute('aria-disabled', 'true'),
     );

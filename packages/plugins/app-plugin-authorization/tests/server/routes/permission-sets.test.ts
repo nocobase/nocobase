@@ -802,4 +802,98 @@ describe('database write field grants', () => {
       data: { record: { amount: 2 } },
     });
   });
+  it('persists parameterized composite filters and rejects incomplete filters atomically', async () => {
+    const grants = (selection: unknown) => [
+      {
+        resource: { type: 'composite', id: 'test.counters' },
+        actions: [
+          {
+            action: 'edit',
+            policy: { type: 'composite', scopes: { counters: selection } },
+          },
+        ],
+      },
+    ];
+    const configured = {
+      type: 'recordAccess',
+      key: 'customFilter',
+      params: {
+        filter: {
+          kind: 'group',
+          logic: 'and',
+          items: [
+            {
+              kind: 'condition',
+              path: ['amount'],
+              operator: '$gte',
+              value: 10,
+            },
+          ],
+        },
+      },
+    };
+    expect(
+      (
+        await router.request(
+          PATH,
+          json('POST', { key: 'filtered', grants: grants(configured) }),
+        )
+      ).status,
+    ).toBe(201);
+    const before = await (
+      await router.request(`${PATH}/filtered`, json('GET'))
+    ).json();
+    expect(before.data.grants).toEqual(grants(configured));
+    for (const selection of [
+      'customFilter',
+      { ...configured, params: {} },
+      {
+        ...configured,
+        params: { filter: { kind: 'group', logic: 'and', items: [] } },
+      },
+      {
+        ...configured,
+        params: {
+          filter: {
+            kind: 'condition',
+            path: ['unknown'],
+            operator: '$eq',
+            value: 1,
+          },
+        },
+      },
+    ]) {
+      expect(
+        (
+          await router.request(
+            `${PATH}/filtered`,
+            json('PATCH', {
+              grants: grants(selection),
+              expectedRevision: before.data.revision,
+            }),
+          )
+        ).status,
+      ).toBe(400);
+      const after = await (
+        await router.request(`${PATH}/filtered`, json('GET'))
+      ).json();
+      expect(after.data.revision).toBe(before.data.revision);
+      expect(after.data.grants).toEqual(before.data.grants);
+    }
+    expect(
+      (
+        await router.request(
+          `${PATH}/filtered`,
+          json('PATCH', {
+            grants: grants(''),
+            expectedRevision: before.data.revision,
+          }),
+        )
+      ).status,
+    ).toBe(200);
+    const empty = await (
+      await router.request(`${PATH}/filtered`, json('GET'))
+    ).json();
+    expect(empty.data.grants).toEqual(grants(''));
+  });
 });

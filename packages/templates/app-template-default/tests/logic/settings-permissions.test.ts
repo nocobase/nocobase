@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   setPermission,
+  setPermissions,
+  permissionSections,
   setScope,
   type CatalogResource,
 } from '../../client/pages/settings/permissions-model.js';
@@ -70,4 +72,97 @@ describe('settings permission drafts', () => {
     expect(next[0]?.actions[1]).toEqual({ action: 'approve' });
     expect(original[0]?.actions[0]?.policy.scopes.records).toBe('mine');
   });
+});
+
+it('keeps action scopes inline and folds a visible batch without resetting existing policies', () => {
+  const catalog = {
+    sections: [
+      {
+        name: 'business',
+        title: 'Business',
+        subsections: [
+          {
+            name: 'orders',
+            title: 'Orders',
+            resources: [
+              {
+                ...resource,
+                actions: [
+                  ...resource.actions,
+                  { name: 'export', title: 'Export' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    recordAccess: [
+      { key: 'mine', title: 'Mine' },
+      { key: 'all', title: 'All' },
+    ],
+  } as unknown as Parameters<typeof permissionSections>[0];
+  const unrelated = {
+    resource: { type: 'unknown', id: 'legacy' },
+    actions: [{ action: 'custom', policy: { type: 'custom', keep: true } }],
+  };
+  const original = [...setPermission([], resource, 'edit', true), unrelated];
+  const before = JSON.stringify(original);
+  const changed = setPermissions(original, catalog, [
+    { id: JSON.stringify(['composite', 'orders', 'export']), enabled: true },
+    { id: JSON.stringify(['composite', 'orders', 'edit']), enabled: true },
+    {
+      id: JSON.stringify(['composite', 'orders', 'notRegistered']),
+      enabled: true,
+    },
+  ]);
+  expect(changed).toContainEqual(unrelated);
+  expect(changed[0]?.actions).toEqual([
+    ...original[0]!.actions,
+    { action: 'export' },
+  ]);
+  expect(JSON.stringify(original)).toBe(before);
+  const result = permissionSections(catalog, changed, (value) =>
+    typeof value === 'string' ? value : value.key,
+  );
+  expect(result[0]?.groups[0]?.rows).toHaveLength(2);
+  expect(result[0]?.groups[0]?.rows[0]?.scopes?.[0]).toMatchObject({
+    label: 'Records',
+    level: 'mine',
+    id: JSON.stringify(['composite', 'orders', 'edit', 'records']),
+  });
+});
+
+it('replaces a raw collection scope caption with localized data-range text', () => {
+  const scopedResource = {
+    ...resource,
+    dataScopes: {
+      edit: [{ ...resource.dataScopes!.edit![0]!, title: 'orders' }],
+    },
+  };
+  const catalog = {
+    sections: [
+      {
+        name: 's',
+        title: 'Business',
+        subsections: [
+          { name: 'orders', title: 'Orders', resources: [scopedResource] },
+        ],
+      },
+    ],
+    recordAccess: [{ key: 'mine', title: 'Mine' }],
+  } as unknown as Parameters<typeof permissionSections>[0];
+  const result = permissionSections(
+    catalog,
+    setPermission([], scopedResource, 'edit', true),
+    (value) =>
+      typeof value === 'string'
+        ? value
+        : value.key === 'settings.recordScope'
+          ? 'Record scope'
+          : value.key,
+  );
+  expect(result[0]?.groups[0]?.rows[0]?.scopes?.[0]?.label).toBe(
+    'Record scope',
+  );
 });
