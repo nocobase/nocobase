@@ -1,7 +1,8 @@
 /**
  * A new session: which of the viewer's computers, which agent there, which folder and, when the application has
  * projects, which project it works for; the agent's choices; then the first message. Choices are discovered from the
- * installed agent in the selected directory before sending, with the mode the bridge opens sessions in. Folders are chosen
+ * installed agent in the selected directory, with the mode the bridge opens sessions in; the first message does not wait
+ * for them, and a message sent before they arrive carries only the settings the person chose. Folders are chosen
  * by browsing the computer, never typed. The computer, agent, folder and project last used are remembered in this
  * browser. Without a connected computer it says how to connect one.
  */
@@ -162,7 +163,7 @@ export function NewSession({
       discovery.settings[offer.id] ?? offer.currentValue,
     ]),
   );
-  const ready = Boolean(computer?.online && agent && cwd && discovery.result);
+  const ready = Boolean(computer?.online && agent && cwd);
 
   const begin = (): void => {
     if (sendingRef.current || creating) return;
@@ -457,15 +458,24 @@ export function NewSession({
                 !computer ||
                 !agent ||
                 !ready ||
-                !discovery.isCurrent() ||
                 sendingRef.current ||
                 client.isMutating({
                   mutationKey: ['agentSessions', 'createSession'],
                 }) > 0
-              ) {
-                discovery.retry();
-                throw new Error(t('newSession.settingsLoading'));
-              }
+              )
+                throw new Error(t('composer.sending'));
+              // With the choices the agent offers here, send each as shown. Before they arrive, or when they are out of
+              // date, send only what the person chose: the session checks those before its first prompt, and the agent
+              // keeps its own defaults for the rest.
+              const settings =
+                discovery.result && discovery.isCurrent()
+                  ? Object.fromEntries(
+                      offeredChoices(offered).map((offer) => [
+                        offer.id,
+                        values[offer.id] ?? offer.currentValue,
+                      ]),
+                    )
+                  : discovery.settings;
               sendingRef.current = true;
               try {
                 await submission.send({
@@ -473,12 +483,7 @@ export function NewSession({
                   agentId: agent.id,
                   cwd,
                   content,
-                  settings: Object.fromEntries(
-                    offeredChoices(offered).map((offer) => [
-                      offer.id,
-                      values[offer.id] ?? offer.currentValue,
-                    ]),
-                  ),
+                  settings,
                   projectId: project?.id ?? null,
                   mentions,
                 });
