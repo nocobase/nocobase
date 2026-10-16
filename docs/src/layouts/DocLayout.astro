@@ -1,0 +1,158 @@
+---
+/**
+ * A Markdown page: sidebar from `_meta.json`, the rendered body with its title and page actions, the table of
+ * contents from its `##` and `###` headings, and previous and next links that follow the sidebar.
+ */
+import { render } from 'astro:content';
+import { localizePath } from '../../shared/languages.ts';
+import { absoluteUrl } from '../../shared/site.ts';
+import PageActions from '../components/doc/PageActions.astro';
+import PrevNext from '../components/doc/PrevNext.astro';
+import SidebarItems from '../components/doc/SidebarItems.astro';
+import Toc from '../components/doc/Toc.astro';
+import {
+  findPage,
+  getPages,
+  translationsOf,
+  type DocPage,
+} from '../lib/pages.ts';
+import { buildSidebars, flattenLinks, sidebarFor } from '../lib/sidebar.ts';
+import BaseLayout from './BaseLayout.astro';
+import '../styles/doc.css';
+
+interface Props {
+  page: DocPage;
+}
+
+const { page } = Astro.props;
+const pages = await getPages();
+const { Content, headings } = await render(page.entry);
+const sidebar = sidebarFor(buildSidebars(page.language, pages), page.route);
+const sequence = sidebar ? flattenLinks(sidebar.items) : [];
+const position = sequence.findIndex(({ href }) => href === page.path);
+const prev = position > 0 ? sequence[position - 1] : undefined;
+const next = position >= 0 ? sequence[position + 1] : undefined;
+const toc = headings.filter(({ depth }) => depth === 2 || depth === 3);
+const cn = page.language === 'cn';
+
+// Breadcrumbs follow the route: every ancestor that is itself a page, then the page.
+const ancestors = page.route
+  .split('/')
+  .filter(Boolean)
+  .slice(0, -1)
+  .map((_, index, segments) => `/${segments.slice(0, index + 1).join('/')}`)
+  .map((route) => findPage(pages, page.language, route))
+  .filter((ancestor): ancestor is DocPage => Boolean(ancestor));
+const home = findPage(pages, page.language, '/');
+const trail = [...(home ? [home] : []), ...ancestors, page];
+const structuredData = [
+  {
+    '@type': 'TechArticle',
+    headline: page.title,
+    description: page.description,
+    inLanguage: cn ? 'zh-CN' : 'en',
+    url: absoluteUrl(page.path),
+    mainEntityOfPage: absoluteUrl(page.path),
+    isPartOf: {
+      '@type': 'WebSite',
+      name: 'NocoBase',
+      url: absoluteUrl(localizePath(page.language, '/')),
+    },
+  },
+  {
+    '@type': 'BreadcrumbList',
+    itemListElement: trail.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name:
+        item.kind === 'home'
+          ? cn
+            ? 'NocoBase 文档'
+            : 'NocoBase Documentation'
+          : item.title,
+      item: absoluteUrl(item.path),
+    })),
+  },
+];
+const text = cn
+  ? { menu: '菜单', onThisPage: '目录', sidebar: '文档导航' }
+  : { menu: 'Menu', onThisPage: 'On this page', sidebar: 'Documentation' };
+---
+
+<BaseLayout
+  language={page.language}
+  route={page.route}
+  title={page.title}
+  description={page.description}
+  keywords={page.keywords}
+  translations={translationsOf(pages, page.route)}
+  layout='doc'
+  structuredData={structuredData}
+>
+  <div class='doc-layout' data-sidebar={sidebar ? 'true' : 'false'}>
+    <div class='doc-bar'>
+      {sidebar && (
+        <button
+          type='button'
+          class='doc-bar__menu'
+          aria-controls='doc-sidebar'
+          aria-expanded='false'
+        >
+          <svg viewBox='0 0 24 24' width='16' height='16' aria-hidden='true'>
+            <path
+              fill='currentColor'
+              d='M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z'
+            />
+          </svg>
+          {text.menu}
+        </button>
+      )}
+      {toc.length > 0 && (
+        <details class='doc-bar__toc'>
+          <summary>{text.onThisPage}</summary>
+          <Toc headings={toc} />
+        </details>
+      )}
+    </div>
+    {sidebar && (
+      <aside class='doc-sidebar' id='doc-sidebar' aria-label={text.sidebar}>
+        <nav>
+          <SidebarItems
+            items={sidebar.items}
+            current={page.path}
+            path={`${page.language}:${sidebar.root}`}
+          />
+        </nav>
+      </aside>
+    )}
+    <main class='doc-main'>
+      <article class='doc' data-pagefind-body>
+        {page.h1 && <h1 class='doc__title'>{page.h1}</h1>}
+        <PageActions
+          language={page.language}
+          markdownPath={page.markdownPath}
+        />
+        <div class='doc-content'>
+          <Content />
+        </div>
+      </article>
+      <PrevNext language={page.language} prev={prev} next={next} />
+    </main>
+    <aside class='doc-outline' aria-label={text.onThisPage}>
+      {toc.length > 0 && (
+        <div class='doc-outline__inner'>
+          <p class='doc-outline__title'>{text.onThisPage}</p>
+          <Toc headings={toc} />
+        </div>
+      )}
+    </aside>
+  </div>
+  <dialog
+    class='image-viewer'
+    aria-label={cn ? '图片预览' : 'Image preview'}
+  ></dialog>
+</BaseLayout>
+
+<script>
+  import '../scripts/doc-page.ts';
+</script>

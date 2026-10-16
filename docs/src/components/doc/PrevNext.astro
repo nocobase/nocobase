@@ -1,0 +1,41 @@
+---
+interface Props {
+  language: string;
+  prev?: { text: string; href: string };
+  next?: { text: string; href: string };
+}
+
+const { language, prev, next } = Astro.props;
+const cn = language === 'cn';
+---
+
+{(prev || next) && (
+  <nav
+    class='prev-next'
+    aria-label={cn ? '翻页' : 'Pagination'}
+    data-pagefind-ignore
+  >
+    {prev ? (
+      <a
+        class='prev-next__item prev-next__item--prev'
+        href={prev.href}
+        rel='prev'
+      >
+        <span class='prev-next__label'>{cn ? '上一页' : 'Previous page'}</span>
+        <span class='prev-next__title'>{prev.text}</span>
+      </a>
+    ) : (
+      <span />
+    )}
+    {next && (
+      <a
+        class='prev-next__item prev-next__item--next'
+        href={next.href}
+        rel='next'
+      >
+        <span class='prev-next__label'>{cn ? '下一页' : 'Next page'}</span>
+        <span class='prev-next__title'>{next.text}</span>
+      </a>
+    )}
+  </nav>
+)}

@@ -1,0 +1,86 @@
+---
+/**
+ * A capability module's overview: static markup (`pages*.json`) with a scenario picker driven by
+ * `interactions.mjs`. Only this module's scenarios and prompts are embedded in the page.
+ */
+import type { LanguageLink } from '../../lib/language-menu.ts';
+import cnHome from '../FullHome/data.json';
+import enHome from '../FullHome/data.en.json';
+import cnPages from './pages.json';
+import enPages from './pages.en.json';
+import { headerMarkup } from '../SiteHeader/markup.ts';
+import './index.scss';
+
+interface Props {
+  language: string;
+  module: string;
+  languageLinks: LanguageLink[];
+}
+
+const { language, module, languageLinks } = Astro.props;
+const cn = language === 'cn';
+const pages = (cn ? cnPages : enPages) as Record<
+  string,
+  { markup: string; promptKey: string; scenarios: Scenario[] }
+>;
+const home = cn ? cnHome : enHome;
+const page = pages[module];
+
+interface Scenario {
+  id: string;
+  image?: string | null;
+  [key: string]: unknown;
+}
+
+// Screenshots referenced by name in the markup and the scenarios. They live with the Chinese pages' assets, which
+// carry the English screenshots too; Vite fingerprints them like any other asset.
+const assets = import.meta.glob<string>(
+  '../../../docs/cn/capabilities/assets/*.{png,jpg,jpeg,svg}',
+  {
+    eager: true,
+    query: '?url',
+    import: 'default',
+  },
+);
+const imageUrl = (file: string) =>
+  assets[`../../../docs/cn/capabilities/assets/${file}`];
+
+const markup =
+  headerMarkup(language, languageLinks) +
+  page.markup.replace(
+    /assets\/([^"\s]+)/g,
+    (source, file: string) => imageUrl(file) ?? source,
+  );
+const library = home.promptLibrary[
+  page.promptKey as keyof typeof home.promptLibrary
+].prompts as Record<string, { label: string; text: string }>;
+const scenarios = page.scenarios.map((scenario) => ({
+  ...scenario,
+  label: library[scenario.id].label,
+  prompt: library[scenario.id].text,
+  image: scenario.image ? imageUrl(scenario.image) : undefined,
+}));
+const data = JSON.stringify(scenarios).replace(/</g, '\\u003c');
+---
+
+<div
+  class='capability-overview'
+  lang={cn ? 'zh-CN' : 'en'}
+  data-language={language}
+  data-pagefind-body
+  set:html={markup}
+/>
+<script type='application/json' id='capability-overview-data' set:html={data} />
+<script>
+  import '../../scripts/language-menu.ts';
+  import { initializeOverview } from './interactions.mjs';
+
+  const root = document.querySelector<HTMLElement>('.capability-overview');
+  const data = document.getElementById('capability-overview-data');
+  if (root && data)
+    initializeOverview(
+      root,
+      JSON.parse(data.textContent ?? '[]'),
+      root.dataset.language ?? 'en',
+    );
+</script>

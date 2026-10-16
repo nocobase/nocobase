@@ -1,0 +1,93 @@
+---
+/**
+ * Everything a page's `<head>` says about it to search engines and link previews. Every URL here is absolute on
+ * `SITE_ORIGIN` (`DOCS_SITE_ORIGIN`), the same origin `sitemap.xml`, `robots.txt` and `llms.txt` use.
+ */
+import {
+  DEFAULT_LANGUAGE,
+  getLanguage,
+  localizePath,
+} from '../../shared/languages.ts';
+import { absoluteUrl } from '../../shared/site.ts';
+
+interface Props {
+  language: string;
+  /** Language-neutral route with its exact slash shape. */
+  route: string;
+  /** The complete `<title>`, suffix included. */
+  title: string;
+  description?: string;
+  keywords?: string;
+  /** Languages this route exists in; alternates are only declared for these. */
+  translations: string[];
+  noindex?: boolean;
+  /** Extra structured data for this page, merged into one JSON-LD graph. */
+  structuredData?: Record<string, unknown>[];
+}
+
+const {
+  language,
+  route,
+  title,
+  description,
+  keywords,
+  translations,
+  noindex = false,
+  structuredData = [],
+} = Astro.props;
+const current = getLanguage(language);
+const canonical = absoluteUrl(localizePath(language, route));
+const alternates = noindex
+  ? []
+  : translations.map((key) => ({
+      language: getLanguage(key),
+      href: absoluteUrl(localizePath(key, route)),
+    }));
+const defaultAlternate = alternates.find(
+  ({ language: { key } }) => key === DEFAULT_LANGUAGE,
+);
+const ogLocale = (htmlLang: string) => htmlLang.replace('-', '_');
+---
+
+<title>{title}</title>
+{description && <meta name='description' content={description} />}
+{keywords && <meta name='keywords' content={keywords} />}
+<meta name='robots' content={noindex ? 'noindex' : 'index,follow'} />
+{!noindex && <link rel='canonical' href={canonical} />}
+{alternates.map(({ language: alternate, href }) => (
+  <link rel='alternate' hreflang={alternate.hreflang} href={href} />
+))}
+{defaultAlternate && (
+  <link rel='alternate' hreflang='x-default' href={defaultAlternate.href} />
+)}
+<link
+  rel='icon'
+  href='https://www.nocobase.com/images/favicon/apple-touch-icon.png'
+/>
+<meta property='og:type' content='website' />
+<meta property='og:site_name' content={current.siteTitle} />
+<meta property='og:locale' content={ogLocale(current.hreflang)} />
+{alternates
+  .filter(({ language: { key } }) => key !== language)
+  .map(({ language: alternate }) => (
+    <meta
+      property='og:locale:alternate'
+      content={ogLocale(alternate.hreflang)}
+    />
+  ))}
+<meta property='og:title' content={title} />
+{description && <meta property='og:description' content={description} />}
+{!noindex && <meta property='og:url' content={canonical} />}
+<meta name='twitter:card' content='summary' />
+<meta name='twitter:title' content={title} />
+{description && <meta name='twitter:description' content={description} />}
+{structuredData.length > 0 && (
+  <script
+    type='application/ld+json'
+    is:inline
+    set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': structuredData,
+    }).replace(/</g, '\\u003c')}
+  />
+)}
