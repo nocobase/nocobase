@@ -452,4 +452,66 @@ describe('runBridge', () => {
       JSON.parse(await readFile(path.join(root, 'state.json'), 'utf8')),
     ).toEqual({ computerId: 'c1', key: 'new' });
   });
+
+  it('installs managed adapters beside its state without waiting to connect, and runs a session on its managed adapter', async () => {
+    const calls: { id: string; options: agents.ResolveOptions | undefined }[] =
+      [];
+    const fake = path.join(import.meta.dirname, 'fixtures/fake-agent.mjs');
+    vi.spyOn(agents, 'resolveAgent').mockImplementation(
+      async (spec, _env, _platform, options) => {
+        calls.push({ id: spec.id, options });
+        if (spec.id !== 'codex') return undefined;
+        // Installed once something waits for it, which takes a while; until then Codex is found another way.
+        if (!options?.waitForInstall)
+          return { spec, command: process.execPath, args: [fake, 'fallback'] };
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return { spec, command: process.execPath, args: [fake], managed: true };
+      },
+    );
+    const original = AgentProcess.start;
+    const sessions: agents.ResolvedAgent[] = [];
+    vi.spyOn(AgentProcess, 'start').mockImplementation(
+      async (resolved, options) => {
+        if (options.initializeTimeoutMs !== 30_000) sessions.push(resolved);
+        return original(resolved, options);
+      },
+    );
+    answer = (request) => ({
+      data: request.path.endsWith('/report')
+        ? { open: true }
+        : { computerId: 'c1', key: 'k1' },
+    });
+    commands.push({
+      type: 'prompt',
+      session: {
+        id: 's1',
+        agentId: 'codex',
+        cwd: root,
+        acpSessionId: null,
+        settings: {},
+      },
+      promptId: 'p1',
+      content: [{ type: 'text', text: 'hang' }],
+    });
+    const { done, stop } = await run();
+    try {
+      await until(() => registers().length >= 2 && sessions.length > 0);
+      const first = calls.slice(0, agents.AGENTS.length);
+      expect(first.every((call) => !call.options?.waitForInstall)).toBe(true);
+      expect(
+        calls.every(
+          (call) => call.options?.adapters === path.join(root, 'adapters'),
+        ),
+      ).toBe(true);
+      expect(
+        calls
+          .slice(agents.AGENTS.length)
+          .every((call) => call.options?.waitForInstall),
+      ).toBe(true);
+      expect(sessions[0]).toMatchObject({ args: [fake], managed: true });
+    } finally {
+      stop();
+      await done;
+    }
+  });
 });
