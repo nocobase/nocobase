@@ -74,9 +74,8 @@ export function progressValues(
       ? patch.next
       : null;
   if (target === 'done' || target === 'cancelled') values.next = null;
-  // What the owner checks to accept the work belongs to In review alone.
-  if (target !== 'in_review') values.acceptance = null;
-  else if (patch.acceptance !== undefined)
+  // The delivery report outlives the review; only the next one replaces it.
+  if (patch.acceptance !== undefined)
     values.acceptance = optionalText(
       patch.acceptance,
       'acceptance',

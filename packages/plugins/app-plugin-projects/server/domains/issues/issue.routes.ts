@@ -317,7 +317,7 @@ export function createIssueRoutes(deps: {
         action: 'pm.issues/edit',
         examples: [
           'issue update PM-12 --status in_review --needs-you "Review the change and accept it or send it back."',
-          'issue update PM-12 --status in_review --needs-you "Check the export filter and accept it." --acceptance-file acceptance.md',
+          'issue update PM-12 --status in_review --needs-you "Check the export filter and accept it." --acceptance-file report.md',
           'issue update PM-12 --file change.json',
         ],
       }),
