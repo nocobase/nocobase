@@ -83,3 +83,5 @@ pnpm --filter @nocobase/app-plugin-knowledge typecheck
 pnpm --filter @nocobase/app-plugin-knowledge test
 pnpm --filter @nocobase/app-plugin-knowledge build
 ```
+
+<!-- Quality scope test: leaf plugin. -->
