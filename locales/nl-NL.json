@@ -5838,5 +5838,6 @@
     "Webhook event": "Webhook event",
     "When webhook URL is called, the received parameters set up a structured transformation to be used in subsequent nodes.": "When webhook URL is called, the received parameters set up a structured transformation to be used in subsequent nodes.",
     "see in": "see in"
-  }
+  },
+  "rag.knowledgeBase.knowledgeBaseType.local.tag": "local"
 }
