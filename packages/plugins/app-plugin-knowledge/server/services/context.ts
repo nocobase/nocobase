@@ -62,6 +62,20 @@ export type KnowledgeEvent =
       readonly decision: 'accepted' | 'rejected' | 'withdrawn';
       /** Who decided; null when the system did. */
       readonly byUserId: string | null;
+    }
+  /**
+   * A proposal, or a document's version (`proposal.origin` `document`), was sent back for changes: its proposer (the
+   * version's author) is to propose again, with `comment` as what should change. The application wakes it where it
+   * worked (`proposal.sourceKind`/`sourceId`, the run `proposal.runId`) for `byUserId`; the proposal it submits from
+   * the same source replaces this one.
+   */
+  | {
+      readonly type: 'proposal.changesRequested';
+      readonly proposal: ProposalRecord;
+      readonly space: SpaceRef;
+      readonly doc: ProposalDoc | null;
+      readonly comment: string;
+      readonly byUserId: string;
     };
 
 /** What a proposal's events say of its document, for a listener that words a notice without reading the base. */
@@ -86,7 +100,7 @@ export interface KnowledgeTx {
    */
   readonly defaultChunking: KnowledgeChunking;
   emit(event: KnowledgeEvent): void;
-  /** Runs `fn` once the transaction commits; a failure is reported, never thrown. */
+  /** Runs and awaits `fn` once the transaction commits; a failure is reported, never thrown. */
   afterCommit(fn: () => void | Promise<void>): void;
 }
 
@@ -178,9 +192,7 @@ export function createKnowledgeContext(
       for (const event of pending) publish(event);
       for (const task of after)
         try {
-          void Promise.resolve(task()).catch((error: unknown) =>
-            onError('Knowledge work after a commit failed.', error),
-          );
+          await task();
         } catch (error) {
           onError('Knowledge work after a commit failed.', error);
         }

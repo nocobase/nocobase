@@ -42,6 +42,7 @@ import type { KnowledgeFileStore, Uploader } from './storage.js';
 import { filesUnavailable } from './storage.js';
 import {
   filesRepo,
+  proposalsRepo,
   findDoc,
   findDocBySlug,
   findFile,
@@ -461,6 +462,23 @@ export async function discardFile(
   store: KnowledgeFileStore,
   fileId: string,
 ): Promise<void> {
+  const conn = context.read();
+  // Historical duplicates can share an upload. Closing one must not remove bytes still held by a waiting item or a version.
+  if (
+    (await versionsRepo(conn).findOne({ filter: { fileId } })) ||
+    (await proposalsRepo(conn).findOne({
+      filter: (f) =>
+        f.and([
+          f.string('fileId').eq(fileId),
+          f.or([
+            f.string('status').eq('pending'),
+            f.string('status').eq('revising'),
+            f.string('status').eq('accepted'),
+          ]),
+        ]),
+    }))
+  )
+    return;
   const record = await findFile(context.read(), fileId);
   if (!record) return;
   await filesRepo(context.read()).deleteMany({ filter: { id: fileId } });

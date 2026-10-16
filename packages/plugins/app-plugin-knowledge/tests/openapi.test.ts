@@ -53,7 +53,7 @@ describe('knowledge API document', () => {
       ),
     );
     const ids = operations.map((operation) => operation.operationId ?? '');
-    expect(ids).toHaveLength(33);
+    expect(ids).toHaveLength(35);
     expect(new Set(ids).size).toBe(ids.length);
     for (const operation of operations) {
       expect(operation.operationId).toMatch(/^knowledge[A-Z]/u);
@@ -68,6 +68,8 @@ describe('knowledge API document', () => {
         'knowledgeGetDocFile',
         'knowledgeReplaceDocPermissions',
         'knowledgeAcceptProposal',
+        'knowledgeRequestProposalChanges',
+        'knowledgeRequestDocChanges',
         'knowledgeArchiveDoc',
         'knowledgeGetChunking',
         'knowledgeUpdateChunking',

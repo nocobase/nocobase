@@ -174,7 +174,9 @@ export class KnowledgeProvider extends ServiceProvider<AppPluginApplication> {
       });
     this.release = container.resolve(knowledgeToken).events.on((event) => {
       const payload: KnowledgeChanged =
-        event.type === 'proposal.created' || event.type === 'proposal.decided'
+        event.type === 'proposal.created' ||
+        event.type === 'proposal.decided' ||
+        event.type === 'proposal.changesRequested'
           ? {
               kind: 'knowledge.changed',
               proposalId: event.proposal.id,

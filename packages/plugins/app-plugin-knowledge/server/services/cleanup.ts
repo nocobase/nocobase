@@ -1,8 +1,8 @@
 /**
  * Clearing what uploads leave behind: upload tickets past their expiry, and stored files (`kbFiles`) that no version and
- * no pending or accepted proposal names, uploaded longer ago than a grace period (a file is stored before the proposal
- * or version naming it commits, so a young one may still be on its way). Rejecting and withdrawing a proposal delete
- * its file at once; this catches what a failure, a crash or an abandoned upload left. The provider runs it on a timer
+ * no pending, sent back or accepted proposal names, uploaded longer ago than a grace period (a file is stored before the
+ * proposal or version naming it commits, so a young one may still be on its way). Rejecting, withdrawing and replacing a
+ * proposal delete its file at once; this catches what a failure, a crash or an abandoned upload left. The provider runs it on a timer
  * (`knowledge.cleanup`); it is safe to run on several instances at once.
  */
 import type { KnowledgeContext } from './context.js';
@@ -64,6 +64,7 @@ export async function cleanupUploads(
           f.or(ids.map((id) => f.string('fileId').eq(id))),
           f.or([
             f.string('status').eq('pending'),
+            f.string('status').eq('revising'),
             f.string('status').eq('accepted'),
           ]),
         ]),

@@ -16,6 +16,7 @@
  * | `GET /docs/:docId/versions?page=&pageSize=`, `…/:version`   | Its versions, newest first; one with its content             |
  * | `POST /docs/:docId/{move,archive,restore,verify}`           | No new version                                               |
  * | `POST /docs/:docId/replaceFile` (multipart `file`…)         | A file entry's next version: another file                    |
+ * | `POST /docs/:docId/requestChanges` (`edit`)                 | Sends the version an agent wrote back to it, with a comment  |
  * | `GET /docs/:docId/file?version=&download=true`              | A file's bytes (inline for an image, a PDF or text)          |
  * | `POST /docs/:docId/reparse`                                 | Parses a file whose text could not be extracted again        |
  * | `GET /docs/:docId/index`, `POST /docs/:docId/reindex`       | Its sections and their index state; queues them again (`edit`) |
@@ -27,6 +28,7 @@
  * | `POST /proposals/upload` (multipart `file`, `kind`…)        | Proposes a new file, or a replacement                        |
  * | `GET /proposals/:proposalId`, `…/file`                      | One, with its base and current contents; its file            |
  * | `POST /proposals/:proposalId/{accept,reject,withdraw}`      | Decides one (`confirmStale` accepts a stale one)             |
+ * | `POST /proposals/:proposalId/requestChanges`                | Sends one back to its proposer, with a comment               |
  *
  * `createKnowledgeTicketRoutes` serves `POST /knowledge/tickets/:ticketId/redeem` outside the session: the body is a
  * ticket's file and `Authorization: Bearer <token>` its credential (`ProposalService.ticket`).
@@ -101,6 +103,7 @@ import {
   ProposeFileFields,
   ProposeFileForm,
   RejectBody,
+  RequestChangesBody,
   ReparseBody,
   ReplaceFileFields,
   ReplaceFileForm,
@@ -245,6 +248,7 @@ function proposalOfForm(fields: ProposeFileFields): ProposalInput {
     ...(fields.baseVersion !== undefined
       ? { baseVersion: fields.baseVersion }
       : {}),
+    ...(fields.replacesId ? { replacesId: fields.replacesId } : {}),
   };
 }
 
@@ -271,6 +275,7 @@ function proposalOfBody(body: ProposeKnowledgeRequest): ProposalInput {
           ),
         }
       : {}),
+    ...(body.replacesId ? { replacesId: body.replacesId } : {}),
   };
 }
 
@@ -873,6 +878,49 @@ export function createKnowledgeRoutes(
     );
   }
   routes.post(
+    '/docs/:docId/requestChanges',
+    describeRoute({
+      tags,
+      summary: "Send a document's version back to its agent",
+      operationId: 'knowledgeRequestDocChanges',
+      description:
+        'Requires `edit`. Sends the current version, which an actor (an agent) wrote, back to it with what should change: a `revising` proposal of `origin` `document` stands for it, the application wakes the actor where it wrote the version, and the proposal it submits from there replaces it and is reviewed like any other.',
+      responses: {
+        200: dataResponse(
+          KnowledgeProposalSchema,
+          'The proposal standing for the version sent back.',
+        ),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'A person wrote the current version, or the entry is a folder (`NOT_REVISABLE`).',
+        ),
+        404: docNotFoundResponse,
+        409: apiErrorResponse(
+          409,
+          `A proposal from the same source is pending or sent back for the document (\`KNOWLEDGE_PROPOSAL_PENDING\`). ${archived}.`,
+        ),
+      },
+      ...cliRoute({
+        command: 'kb doc request-changes',
+        flags: { docId: { name: 'doc' } },
+        examples: [
+          'kb doc request-changes <doc> --comment "Edit the plugin in place; do not export a patch"',
+        ],
+      }),
+    }),
+    docParam,
+    apiValidator('json', RequestChangesBody),
+    async (c) =>
+      c.json({
+        data: await proposals.requestDocChanges(
+          viewer(c),
+          c.req.valid('param').docId,
+          c.req.valid('json'),
+        ),
+      }),
+  );
+  routes.post(
     '/docs/:docId/replaceFile',
     describeRoute({
       tags,
@@ -1327,14 +1375,14 @@ export function createKnowledgeRoutes(
       summary: 'Accept a proposal',
       operationId: 'knowledgeAcceptProposal',
       description:
-        "Requires `edit` where the proposal applies. Applies it as the document's next version (or a new document), authored by its proposer. A stale `update` is refused unless `confirmStale` is true, which makes its content the next version whole.",
+        "Requires `edit` where the proposal applies and the active group slot. Historical waiting items cannot be accepted; a historical duplicate create whose target exists must be rejected or withdrawn. Applies it as the document's next version (or a new document), authored by its proposer. A stale `update` is refused unless `confirmStale` is true, which makes its content the next version whole.",
       responses: {
         200: dataResponse(KnowledgeProposalSchema, 'The accepted proposal.'),
         ...apiErrorResponses,
         404: proposalNotFoundResponse,
         409: apiErrorResponse(
           409,
-          'It is no longer pending (`KNOWLEDGE_PROPOSAL_DECIDED`), it is stale or its document or file is gone (`KNOWLEDGE_PROPOSAL_STALE`), the document is archived (`KNOWLEDGE_ARCHIVED`), or the slug is taken (`KNOWLEDGE_SLUG_TAKEN`).',
+          'It is no longer pending (`KNOWLEDGE_PROPOSAL_DECIDED`), is waiting behind historical items (`KNOWLEDGE_PROPOSAL_WAITING`), its historical create target exists (`KNOWLEDGE_PROPOSAL_TARGET_EXISTS`), it is stale or its document or file is gone (`KNOWLEDGE_PROPOSAL_STALE`), the document is archived (`KNOWLEDGE_ARCHIVED`), or the slug is taken (`KNOWLEDGE_SLUG_TAKEN`).',
         ),
       },
       ...cliRoute({
@@ -1361,7 +1409,7 @@ export function createKnowledgeRoutes(
       summary: 'Reject a proposal',
       operationId: 'knowledgeRejectProposal',
       description:
-        'Requires `edit` where the proposal applies. The same content from the same source is refused from then on.',
+        'Requires `edit` where the proposal applies, pending or sent back for changes, including historical waiting items. The same content from the same source is refused from then on. Closing the active item hands off to the oldest waiting item without waking an agent.',
       responses: {
         200: dataResponse(KnowledgeProposalSchema, 'The rejected proposal.'),
         ...apiErrorResponses,
@@ -1390,12 +1438,49 @@ export function createKnowledgeRoutes(
       }),
   );
   routes.post(
+    '/proposals/:proposalId/requestChanges',
+    describeRoute({
+      tags,
+      summary: 'Send a proposal back for changes',
+      operationId: 'knowledgeRequestProposalChanges',
+      description:
+        'Requires `edit` where the proposal applies and the active group slot. Historical waiting items and duplicate creates whose target exists cannot be sent back. The proposal waits as `revising` and emits `proposal.changesRequested` for the application to wake its proposer with the comment. Its legal revision from the same source replaces this one (`superseded`) and retains priority over waiting items.',
+      responses: {
+        200: dataResponse(KnowledgeProposalSchema, 'The proposal sent back.'),
+        ...apiErrorResponses,
+        404: proposalNotFoundResponse,
+        409: apiErrorResponse(
+          409,
+          'It is no longer pending (`KNOWLEDGE_PROPOSAL_DECIDED`).',
+        ),
+      },
+      ...cliRoute({
+        command: 'kb proposal request-changes',
+        flags: { proposalId: { name: 'proposal' } },
+        examples: [
+          'kb proposal request-changes <proposal> --comment "Say where the code lives"',
+        ],
+      }),
+    }),
+    proposalParam,
+    apiValidator('json', RequestChangesBody),
+    async (c) =>
+      c.json({
+        data: await proposals.requestChanges(
+          viewer(c),
+          c.req.valid('param').proposalId,
+          c.req.valid('json'),
+        ),
+      }),
+  );
+  routes.post(
     '/proposals/:proposalId/withdraw',
     describeRoute({
       tags,
       summary: 'Withdraw a proposal',
       operationId: 'knowledgeWithdrawProposal',
-      description: 'For the person it was made for, or the actor that made it.',
+      description:
+        'For the person it was made for, or the actor that made it; pending or sent back for changes, including historical waiting items. Closing the active item hands off without waking an agent.',
       responses: {
         200: dataResponse(KnowledgeProposalSchema, 'The withdrawn proposal.'),
         ...apiErrorResponses,

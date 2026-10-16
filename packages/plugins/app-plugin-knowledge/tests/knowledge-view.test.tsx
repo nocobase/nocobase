@@ -840,6 +840,9 @@ describe('the knowledge view', () => {
           authorizedBy: author,
           createdAt: '2026-10-02T00:00:00Z',
           canDecide: true,
+          canReject: true,
+          canAccept: true,
+          canRequestChanges: true,
         },
       ],
     );
@@ -849,6 +852,200 @@ describe('the knowledge view', () => {
     const list = await screen.findByTestId('knowledge-proposals');
     expect(
       await within(list).findByText('Scout on behalf of Ada', { exact: false }),
+    ).toBeInTheDocument();
+  });
+
+  it.each(['waiting', 'targetConflict'] as const)(
+    'limits historical %s proposals to reject and withdraw',
+    async (state) => {
+      const proposal: Partial<KnowledgeProposal> = {
+        id: 'historical',
+        kind: 'create',
+        status: 'pending',
+        ...space,
+        title: 'Historical',
+        docTitle: 'Historical',
+        content: 'Retained',
+        reason: 'Test',
+        proposer: { kind: 'agent', id: 'a1', name: 'Scout' },
+        authorizedBy: author,
+        createdAt: '2026-10-02T00:00:00Z',
+        canDecide: true,
+        canReject: true,
+        canWithdraw: true,
+        coordination: state === 'waiting' ? 'waiting' : 'active',
+        targetConflict: state === 'targetConflict',
+        canAccept: false,
+        canRequestChanges: false,
+        source: null,
+        file: null,
+        replaces: null,
+      };
+      extra = (request) =>
+        request.path === 'knowledge/proposals/historical'
+          ? { data: proposal }
+          : undefined;
+      serve([], [proposal]);
+      show('/?proposal=historical');
+      await screen.findByRole('button', { name: 'Reject' });
+      expect(
+        screen.getByRole('button', { name: 'Withdraw' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Accept' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Send back' })).toBeNull();
+      expect(
+        screen.getAllByText(
+          state === 'waiting'
+            ? /Historical duplicate, waiting/
+            : /The target already exists/,
+        ).length,
+      ).toBeGreaterThan(0);
+    },
+  );
+
+  it('shows no linked feedback or people when the proposal API hides its associated revision', async () => {
+    const proposal: Partial<KnowledgeProposal> = {
+      id: 'hidden',
+      kind: 'update',
+      status: 'accepted',
+      ...space,
+      docId: 'd1',
+      docTitle: 'Public',
+      content: 'Public',
+      reason: 'Test',
+      proposer: author,
+      authorizedBy: author,
+      canDecide: false,
+      createdAt: '2026-10-02T00:00:00Z',
+      replaces: null,
+      replacedContent: null,
+      supersededById: null,
+      source: null,
+      file: null,
+      comment: null,
+    };
+    extra = (request) =>
+      request.path === 'knowledge/proposals/hidden'
+        ? { data: proposal }
+        : undefined;
+    serve([], [proposal]);
+    show('/?proposal=hidden');
+    await screen.findByTestId('knowledge-proposal');
+    expect(screen.queryByTestId('knowledge-proposal-revises')).toBeNull();
+  });
+
+  it('sends a proposal back to its agent with what should change', async () => {
+    const proposal: Partial<KnowledgeProposal> = {
+      id: 'p1',
+      kind: 'update',
+      status: 'pending',
+      ...space,
+      docId: 'd1',
+      docTitle: 'Release flow',
+      title: null,
+      content: 'Export a patch.',
+      baseContent: 'Unknown.',
+      baseVersion: 2,
+      currentVersion: 2,
+      stale: false,
+      reason: 'Learned in PM-54.',
+      proposer: { kind: 'agent', id: 'a1', name: 'Scout' },
+      authorizedBy: author,
+      source: null,
+      decidedBy: null,
+      comment: null,
+      origin: 'proposal',
+      replaces: null,
+      supersededById: null,
+      file: null,
+      createdAt: '2026-10-02T00:00:00Z',
+      canDecide: true,
+      canReject: true,
+      canAccept: true,
+      canRequestChanges: true,
+    };
+    const sent: unknown[] = [];
+    extra = (request) => {
+      if (request.path === 'knowledge/proposals/p1') return { data: proposal };
+      if (request.path === 'knowledge/proposals/p1/requestChanges') {
+        sent.push(request.json);
+        return {
+          data: {
+            ...proposal,
+            status: 'revising',
+            ...(request.json as object),
+          },
+        };
+      }
+      return undefined;
+    };
+    serve([summary('d1', 'Release flow')], [proposal]);
+    show('/?proposal=p1');
+    await press(await screen.findByRole('button', { name: 'Send back' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByText(/Scout is woken with your comment/u),
+    ).toBeInTheDocument();
+    const send = within(dialog).getByRole('button', { name: 'Send' });
+    expect(send).toBeDisabled();
+    fireEvent.change(within(dialog).getByLabelText('What should change'), {
+      target: { value: 'Edit the plugin in place.' },
+    });
+    fireEvent.click(send);
+    await waitFor(() =>
+      expect(sent).toEqual([{ comment: 'Edit the plugin in place.' }]),
+    );
+  });
+
+  it('shows what a revision revises, and the diff from what was sent back', async () => {
+    const revision: Partial<KnowledgeProposal> = {
+      id: 'p2',
+      kind: 'update',
+      status: 'pending',
+      ...space,
+      docId: 'd1',
+      docTitle: 'Release flow',
+      title: null,
+      content: 'Edit the plugin in place.',
+      baseContent: 'Unknown.',
+      replacedContent: 'Export a patch.',
+      baseVersion: 2,
+      currentVersion: 2,
+      stale: false,
+      reason: 'As asked.',
+      proposer: { kind: 'agent', id: 'a1', name: 'Scout' },
+      authorizedBy: author,
+      source: null,
+      decidedBy: null,
+      comment: null,
+      origin: 'proposal',
+      replaces: {
+        proposalId: 'p1',
+        origin: 'proposal',
+        comment: 'Do not export a patch.',
+        requestedBy: { kind: 'user', id: 'lead', name: 'Lin' },
+        requestedAt: '2026-10-02T01:00:00Z',
+      },
+      supersededById: null,
+      file: null,
+      createdAt: '2026-10-02T02:00:00Z',
+      canDecide: true,
+      canReject: true,
+      canAccept: true,
+      canRequestChanges: true,
+    };
+    extra = (request) =>
+      request.path === 'knowledge/proposals/p2'
+        ? { data: revision }
+        : undefined;
+    serve([summary('d1', 'Release flow')], [revision]);
+    show('/?proposal=p2');
+    expect(
+      await screen.findByTestId('knowledge-proposal-revises'),
+    ).toHaveTextContent('A proposal Lin sent back: Do not export a patch.');
+    await press(screen.getByRole('tab', { name: 'Changes' }));
+    expect(
+      await screen.findByText('Changes since the version sent back'),
     ).toBeInTheDocument();
   });
 
