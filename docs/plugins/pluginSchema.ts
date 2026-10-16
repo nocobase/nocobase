@@ -12,6 +12,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { RspressPlugin } from '@rspress/core';
+import { siteOrigin } from '../shared/site';
 
 interface SchemaConfig {
   headline: string;
@@ -74,9 +75,7 @@ function buildScripts(route: string, entry: SchemaEntry): string {
   const { config, chapters, lang, routePrefix } = entry;
   const langMap: Record<string, string> = { cn: 'zh-CN', en: 'en-US', ja: 'ja-JP' };
   const inLanguage = langMap[lang] || 'en-US';
-  const baseUrl = lang === 'en'
-    ? 'https://docs.nocobase.com'
-    : `https://docs.nocobase.com/${lang}`;
+  const baseUrl = lang === 'en' ? siteOrigin : `${siteOrigin}/${lang}`;
 
   const tag = (obj: object) => `<script type="application/ld+json">${JSON.stringify(obj)}</script>`;
 

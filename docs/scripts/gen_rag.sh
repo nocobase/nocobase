@@ -19,9 +19,10 @@ DOCS_ROOT="$(dirname "$SCRIPT_DIR")"
 DOCS_DIR="$DOCS_ROOT/docs"
 DIST_DIR="$DOCS_ROOT/dist/static"
 
-# Domain mapping
-CN_DOMAIN="https://docs.nocobase.com/cn"
-EN_DOMAIN="https://docs.nocobase.com"
+# Domain mapping (override the site origin with DOCS_SITE_ORIGIN)
+EN_DOMAIN="${DOCS_SITE_ORIGIN:-https://v2.docs.nocobase.com}"
+EN_DOMAIN="${EN_DOMAIN%/}"
+CN_DOMAIN="$EN_DOMAIN/cn"
 
 generate_rag() {
     local lang=$1
