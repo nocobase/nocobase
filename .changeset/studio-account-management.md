@@ -1,5 +1,4 @@
 ---
-"@nocobase/studio": minor
 "@nocobase/app-plugin-users": minor
 "@nocobase/app-plugin-authentication": patch
 "@nocobase/app-plugin-authorization": patch
