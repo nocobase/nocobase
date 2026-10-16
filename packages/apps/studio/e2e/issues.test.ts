@@ -267,6 +267,7 @@ test.describe('issues', () => {
         level: 1,
       }),
     ).toBeVisible();
+    await page.getByTestId('task-tab-subs').click();
     const subtasks = page.getByRole('region', { name: /^子任务/ });
     await expect(subtasks.getByRole('listitem')).toHaveCount(3);
     await expect(
@@ -276,7 +277,7 @@ test.describe('issues', () => {
     ).toBeVisible();
     await expect(
       page
-        .getByRole('complementary', { name: '属性' })
+        .getByRole('region', { name: '属性' })
         .getByRole('combobox', { name: '状态' }),
     ).toContainText('进行中');
   });

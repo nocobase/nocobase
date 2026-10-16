@@ -113,7 +113,8 @@ test.describe('the agent chat at phone width', () => {
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('chat-panel')).toBeHidden();
     await open(page, '/issues/PM-1');
-    const phoneBar = page.getByTestId('phone-bar');
+    // The issue's page draws its own row: the task detail's top row.
+    const phoneBar = page.getByTestId('task-detail-top');
     await expect(phoneBar.getByTestId('chat-header-button')).toHaveCount(0);
     await expect(phoneBar.getByRole('button', { name: /导航/ })).toBeVisible();
     await page.keyboard.press('Control+j');

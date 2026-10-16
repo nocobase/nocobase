@@ -24,10 +24,14 @@ test.describe('phone', () => {
       ownerUserId: me.userId,
       start: false,
     });
-    for (const path of ['/follow-ups', `/issues/${issue.identifier}`]) {
+    // My follow-ups draws the phone bar; the issue's page, the task detail's top row.
+    for (const [path, row] of [
+      ['/follow-ups', 'phone-bar'],
+      [`/issues/${issue.identifier}`, 'task-detail-top'],
+    ] as const) {
       await open(page, path);
       await expect(page.getByRole('banner')).toBeHidden();
-      const bar = page.getByTestId('phone-bar').first();
+      const bar = page.getByTestId(row).first();
       await expect(bar).toBeVisible();
       await expect(bar.getByRole('button', { name: '打开导航' })).toBeVisible();
     }
@@ -37,8 +41,7 @@ test.describe('phone', () => {
     // The navigation still opens from the page's own row.
     await open(page, `/issues/${issue.identifier}`);
     await page
-      .getByTestId('phone-bar')
-      .first()
+      .getByTestId('task-detail-top')
       .getByRole('button', { name: '打开导航' })
       .click();
     await expect(
@@ -117,7 +120,7 @@ test.describe('phone', () => {
       await api.delete(`projects/issues/${issue.id}`);
   });
 
-  test('the summary scrolls away to its bar, the composer opens on tap, and the last activity is reachable', async ({
+  test('the summary scrolls away to its bar on My follow-ups, the composer opens on tap, and the last activity is reachable', async ({
     page,
     api,
   }) => {
@@ -136,10 +139,7 @@ test.describe('phone', () => {
       });
     await api.put('followUps/following', { issueIds: [issue.id] });
 
-    for (const path of [
-      `/follow-ups?issue=${issue.id}`,
-      `/issues/${issue.identifier}`,
-    ]) {
+    for (const path of [`/follow-ups?issue=${issue.id}`]) {
       await open(page, path);
       const summary = page.getByTestId('issue-summary');
       // A phone starts with the one-line bar; opening it shows the whole summary, which scrolls with the page.
@@ -171,5 +171,18 @@ test.describe('phone', () => {
         .click({ position: { x: 4, y: 4 } });
       await expect(composer).toHaveAttribute('data-folded', '');
     }
+
+    // The issue's page is the task detail: its summary scrolls with the content, and its comment box is one line
+    // until tapped, below the last activity.
+    await open(page, `/issues/${issue.identifier}`);
+    const folded = page.getByTestId('task-comment-folded');
+    const last = page.locator('[data-comment-id]').filter({ hasText: oldest });
+    await last.scrollIntoViewIfNeeded();
+    await expect(last).toBeVisible();
+    const lastBox = (await last.boundingBox())!;
+    const foldedBox = (await folded.boundingBox())!;
+    expect(lastBox.y + lastBox.height).toBeLessThanOrEqual(foldedBox.y + 1);
+    await folded.click();
+    await expect(page.getByRole('textbox', { name: '评论' })).toBeFocused();
   });
 });

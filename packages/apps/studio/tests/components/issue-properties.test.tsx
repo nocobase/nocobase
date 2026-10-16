@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import type { ReactElement } from 'react';
 
 const NAMES: Readonly<Record<string, string>> = {
   backlog: 'Backlog',
@@ -56,8 +57,30 @@ vi.mock('../../client/projects/init-query.js', () => ({
   useInitExecutorLabel: () => null,
 }));
 
-const { IssuePropertiesCard } =
-  await import('../../client/issues/detail/issue-aside.js');
+const { useIssuePropertyFields } =
+  await import('../../client/issues/detail/issue-property-fields.js');
+const { PropertyRow } =
+  await import('../../client/components/property-fields.js');
+
+/** The fields as the task detail lists them: each label with its control. */
+function IssuePropertiesCard(
+  props: Parameters<typeof useIssuePropertyFields>[0],
+): ReactElement {
+  const { fields } = useIssuePropertyFields(props);
+  return (
+    <>
+      {fields.map((field) => (
+        <PropertyRow
+          key={field.key}
+          label={field.label}
+          {...(field.htmlFor ? { htmlFor: field.htmlFor } : {})}
+        >
+          {field.control}
+        </PropertyRow>
+      ))}
+    </>
+  );
+}
 
 const detail = {
   id: 'i1',

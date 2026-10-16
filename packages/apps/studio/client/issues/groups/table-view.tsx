@@ -92,7 +92,8 @@ export function GroupedTableView({
   readonly pageKey: string;
   readonly follow: 'all' | 'scope';
   readonly issueHref: (id: string) => string;
-  readonly onOpen: (id: string) => void;
+  /** Opens a task's page, with the rows in their order for its previous and next. */
+  readonly onOpen: (id: string, order?: readonly string[]) => void;
   readonly empty: { title: string; description: string; action?: ReactNode };
 }): ReactElement {
   const { t, i18n } = useTranslation();
@@ -395,7 +396,15 @@ export function GroupedTableView({
             )
           }
           rowHref={(row) => issueHref(row.id)}
-          onRowClick={(row) => onOpen(row.id)}
+          onRowClick={(row) =>
+            onOpen(
+              row.id,
+              // The rows as shown, without the tasks drawn only to place others.
+              [...keyed.values()]
+                .filter((item) => !item.context)
+                .map((item) => item.issue.id),
+            )
+          }
           rowClassName={(row) =>
             itemOf(row)?.context
               ? 'text-muted-foreground [&_.font-medium]:font-normal'

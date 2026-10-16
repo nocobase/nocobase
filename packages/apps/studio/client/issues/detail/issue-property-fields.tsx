@@ -1,7 +1,7 @@
 /**
  * The editable properties of an issue, each a label and its control over the projects plugin's headless hooks, in the
- * side column's order: what the issue page's card (`issue-aside.tsx`) and the split view's compact row
- * (`../groups/detail-pane.tsx`) draw.
+ * side column's order: what the task detail (`../groups/detail-pane.tsx`) draws as chips, or as a column of its own
+ * when it is wide.
  */
 import {
   canChangeIssueOwner,
@@ -80,8 +80,8 @@ export interface IssuePropertyField {
 }
 
 /**
- * The editable properties of the issue, in the side column's order: what the issue page's card and the split view's
- * compact row both draw. `idPrefix` keeps the controls' ids apart when both are on one page.
+ * The editable properties of the issue, in the side column's order: what the task detail's chips and its properties
+ * column both draw. `idPrefix` keeps the controls' ids apart when both are on one page.
  */
 export function useIssuePropertyFields({
   detail,

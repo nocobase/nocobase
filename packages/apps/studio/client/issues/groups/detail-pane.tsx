@@ -60,11 +60,13 @@ import {
 } from 'lucide-react';
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type ReactElement,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import { Link, useHref } from 'react-router';
 import { useToaster } from '@nocobase/app-client';
@@ -147,7 +149,7 @@ import { IssueSummary } from '../live/issue-summary.js';
 import { taskDraft } from './drafts.js';
 import type { DetailTab, TaskNav } from './detail-model.js';
 
-export type DetailVariant = 'split' | 'agent' | 'phone';
+export type DetailVariant = 'split' | 'agent' | 'phone' | 'page';
 
 export interface TaskDetailPaneProps {
   readonly issueId: string;
@@ -163,6 +165,12 @@ export interface TaskDetailPaneProps {
   readonly onClose?: () => void;
   /** Before the arrows in the top row, such as "← Session info" or the phone's Back. */
   readonly leading?: ReactNode;
+  /** At the end of the top row, such as the phone's navigation on the issue's own page. */
+  readonly trailing?: ReactNode;
+  /** After the task is deleted; `onClose` without it. */
+  readonly onDeleted?: () => void;
+  /** The title's level: 1 where the detail is the page itself (the issue's own page), 2 beside a list. */
+  readonly headingLevel?: 1 | 2;
   /** Selects another task in the list, such as the parent named at the top. */
   readonly onGoto?: (issueId: string) => void;
   /** At the bottom instead of the comment box, such as the phone's action bar. */
@@ -292,6 +300,8 @@ function LiveTask({
   const shown: DetailTab = tabs.some((item) => item.key === tab) ? tab : 'feed';
 
   const phone = variant === 'phone';
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const wide = useWide(bodyRef) && !phone;
   return (
     <IssueBaseContext.Provider value={props.issuePath}>
       <EmbeddedRuns>
@@ -303,141 +313,158 @@ function LiveTask({
               pageActions={pageActions}
               update={update}
             />
-            <IssueFileDrop
-              {...(main.canUpload ? { onFiles: main.upload } : {})}
-              className='@container/detail min-h-0 flex-1 overflow-y-auto overscroll-y-contain'
-            >
-              <div
-                data-testid='task-detail-scroll'
-                className={cn(
-                  'mx-auto flex w-full max-w-4xl flex-col gap-4 px-6 pt-5 pb-6',
-                  phone && 'px-4 pt-3',
+            {/* The content and its comment box on the left; wide enough, the properties in a column on the right. */}
+            <div ref={bodyRef} className='flex min-h-0 flex-1'>
+              <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
+                <IssueFileDrop
+                  {...(main.canUpload ? { onFiles: main.upload } : {})}
+                  className='@container/detail min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain'
+                >
+                  <div
+                    data-testid='task-detail-scroll'
+                    className={cn(
+                      'mx-auto flex w-full max-w-4xl flex-col gap-4 px-6 pt-5 pb-6',
+                      phone && 'px-4 pt-3',
+                    )}
+                  >
+                    {detail.parent ? (
+                      <ParentLink detail={detail} onGoto={props.onGoto} />
+                    ) : null}
+                    <IssueSummary
+                      issue={detail}
+                      update={update}
+                      runsBase={props.issuePath}
+                      // The key and the status menu are in the top row.
+                      meta={false}
+                      headingLevel={props.headingLevel ?? 2}
+                      {...(canEditIssues(viewer)
+                        ? {
+                            rename: {
+                              onRename: async (title: string) => {
+                                await update.mutateAsync({ title });
+                              },
+                              editLabel: wording.detail.editTitle,
+                              inputLabel: wording.detail.titleLabel,
+                            },
+                          }
+                        : {})}
+                    />
+                    <IssueMarks issue={detail} placement='detail' />
+                    <IssueWaitingSection issue={detail} covered={covered} />
+                    {wide ? null : (
+                      <PropertyChips
+                        detail={detail}
+                        update={update}
+                        pageActions={pageActions}
+                      />
+                    )}
+                    <Tabs
+                      value={shown}
+                      onValueChange={(value) => onTabChange(value as DetailTab)}
+                      className='gap-4'
+                    >
+                      <TabsList
+                        variant='line'
+                        aria-label={t('taskGroups.detail.tabs.label')}
+                        // Only a phone's strip scrolls sideways (and never up and down); beside a list the tabs fit.
+                        className={cn(
+                          'w-full justify-start gap-1 border-b bg-card',
+                          phone &&
+                            'sticky top-0 z-10 overflow-x-auto overflow-y-hidden pb-1',
+                        )}
+                      >
+                        {tabs.map((item) => (
+                          <TabsTrigger
+                            key={item.key}
+                            value={item.key}
+                            className='flex-none px-2'
+                            data-testid={`task-tab-${item.key}`}
+                          >
+                            {t(`taskGroups.detail.tabs.${item.key}`)}
+                            {item.count ? (
+                              <span className='text-xs font-normal text-muted-foreground tabular-nums'>
+                                {item.count}
+                              </span>
+                            ) : null}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                      <TabsContent value='feed'>
+                        <IssueFeed
+                          titleHidden
+                          kindLabels={kindLabels}
+                          runs={runs}
+                          renderRun={(runId) => (
+                            <IssueRunRow issue={detail} runId={runId} />
+                          )}
+                        />
+                      </TabsContent>
+                      <TabsContent value='desc' className='flex flex-col gap-6'>
+                        <IssueDescriptionSection
+                          detail={detail}
+                          update={update}
+                        />
+                        <IssueAddSection detail={detail} state={main}>
+                          <IssueCodeAddButton
+                            issue={detail}
+                            linking={linking}
+                            setLinking={linkFromAddBar}
+                          />
+                        </IssueAddSection>
+                        <IssueFilesSection
+                          detail={detail}
+                          pageActions={pageActions}
+                          state={main}
+                        />
+                        <IssueDependenciesSection
+                          detail={detail}
+                          pageActions={pageActions}
+                          state={main}
+                        />
+                        <IssuePlansSection issue={detail} />
+                        <IssueInitSection issue={detail} />
+                      </TabsContent>
+                      {/* A section under the tab of its name does not repeat its heading or frame. */}
+                      <IssueSectionInTabContext.Provider value>
+                        <TabsContent value='subs'>
+                          <IssueSubtasksSection detail={detail} />
+                        </TabsContent>
+                        <TabsContent value='code'>
+                          <IssueCodeSection
+                            issue={detail}
+                            linking={linking}
+                            setLinking={setLinking}
+                          />
+                        </TabsContent>
+                      </IssueSectionInTabContext.Provider>
+                      <TabsContent
+                        value='runs'
+                        className='[&_[data-slot=agent-run-history]>div:first-child>h2]:sr-only [&_[data-slot=card]]:border-0 [&_[data-slot=card]]:bg-transparent [&_[data-slot=card]]:py-0 [&_[data-slot=card]]:shadow-none [&_[data-slot=card]]:ring-0 [&_[data-slot=card-content]]:px-0'
+                      >
+                        <IssueRunPanel issue={detail} />
+                      </TabsContent>
+                    </Tabs>
+                  </div>
+                </IssueFileDrop>
+                {props.footer ? (
+                  props.footer(detail, update)
+                ) : (
+                  // One line naming the task until opened, the same beside a list and beside a conversation.
+                  <FoldedComposer
+                    identifier={detail.identifier}
+                    issueId={detail.id}
+                    agentHint={variant === 'agent'}
+                  />
                 )}
-              >
-                {detail.parent ? (
-                  <ParentLink detail={detail} onGoto={props.onGoto} />
-                ) : null}
-                <IssueSummary
-                  issue={detail}
-                  update={update}
-                  runsBase={props.issuePath}
-                  // The key and the status menu are in the top row.
-                  meta={false}
-                  headingLevel={2}
-                  {...(canEditIssues(viewer)
-                    ? {
-                        rename: {
-                          onRename: async (title: string) => {
-                            await update.mutateAsync({ title });
-                          },
-                          editLabel: wording.detail.editTitle,
-                          inputLabel: wording.detail.titleLabel,
-                        },
-                      }
-                    : {})}
-                />
-                <IssueMarks issue={detail} placement='detail' />
-                <IssueWaitingSection issue={detail} covered={covered} />
-                <PropertyChips
+              </div>
+              {wide ? (
+                <PropertyAside
                   detail={detail}
                   update={update}
                   pageActions={pageActions}
                 />
-                <Tabs
-                  value={shown}
-                  onValueChange={(value) => onTabChange(value as DetailTab)}
-                  className='gap-4'
-                >
-                  <TabsList
-                    variant='line'
-                    aria-label={t('taskGroups.detail.tabs.label')}
-                    // Only a phone's strip scrolls sideways (and never up and down); beside a list the tabs fit.
-                    className={cn(
-                      'w-full justify-start gap-1 border-b bg-card',
-                      phone &&
-                        'sticky top-0 z-10 overflow-x-auto overflow-y-hidden pb-1',
-                    )}
-                  >
-                    {tabs.map((item) => (
-                      <TabsTrigger
-                        key={item.key}
-                        value={item.key}
-                        className='flex-none px-2'
-                        data-testid={`task-tab-${item.key}`}
-                      >
-                        {t(`taskGroups.detail.tabs.${item.key}`)}
-                        {item.count ? (
-                          <span className='text-xs font-normal text-muted-foreground tabular-nums'>
-                            {item.count}
-                          </span>
-                        ) : null}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  <TabsContent value='feed'>
-                    <IssueFeed
-                      titleHidden
-                      kindLabels={kindLabels}
-                      runs={runs}
-                      renderRun={(runId) => (
-                        <IssueRunRow issue={detail} runId={runId} />
-                      )}
-                    />
-                  </TabsContent>
-                  <TabsContent value='desc' className='flex flex-col gap-6'>
-                    <IssueDescriptionSection detail={detail} update={update} />
-                    <IssueAddSection detail={detail} state={main}>
-                      <IssueCodeAddButton
-                        issue={detail}
-                        linking={linking}
-                        setLinking={linkFromAddBar}
-                      />
-                    </IssueAddSection>
-                    <IssueFilesSection
-                      detail={detail}
-                      pageActions={pageActions}
-                      state={main}
-                    />
-                    <IssueDependenciesSection
-                      detail={detail}
-                      pageActions={pageActions}
-                      state={main}
-                    />
-                    <IssuePlansSection issue={detail} />
-                    <IssueInitSection issue={detail} />
-                  </TabsContent>
-                  {/* A section under the tab of its name does not repeat its heading or frame. */}
-                  <IssueSectionInTabContext.Provider value>
-                    <TabsContent value='subs'>
-                      <IssueSubtasksSection detail={detail} />
-                    </TabsContent>
-                    <TabsContent value='code'>
-                      <IssueCodeSection
-                        issue={detail}
-                        linking={linking}
-                        setLinking={setLinking}
-                      />
-                    </TabsContent>
-                  </IssueSectionInTabContext.Provider>
-                  <TabsContent
-                    value='runs'
-                    className='[&_[data-slot=agent-run-history]>div:first-child>h2]:sr-only [&_[data-slot=card]]:border-0 [&_[data-slot=card]]:bg-transparent [&_[data-slot=card]]:py-0 [&_[data-slot=card]]:shadow-none [&_[data-slot=card]]:ring-0 [&_[data-slot=card-content]]:px-0'
-                  >
-                    <IssueRunPanel issue={detail} />
-                  </TabsContent>
-                </Tabs>
-              </div>
-            </IssueFileDrop>
-            {props.footer ? (
-              props.footer(detail, update)
-            ) : (
-              // One line naming the task until opened, the same beside a list and beside a conversation.
-              <FoldedComposer
-                identifier={detail.identifier}
-                issueId={detail.id}
-                agentHint={variant === 'agent'}
-              />
-            )}
+              ) : null}
+            </div>
           </PaneFrame>
         </IssueConversation>
       </EmbeddedRuns>
@@ -627,7 +654,7 @@ function PropertyChips({
   );
 }
 
-/** "More properties": the remaining fields with their own controls, who is notified, and when the task changed. */
+/** "More properties": the fields the chips leave out, who is notified and when the task changed, in a popover. */
 function MoreProperties({
   detail,
   pageActions,
@@ -637,13 +664,7 @@ function MoreProperties({
   readonly pageActions: IssuePageActions;
   readonly fields: readonly IssuePropertyField[];
 }): ReactElement {
-  const { t, i18n } = useTranslation();
-  const wording = useIssuePageWording();
-  const viewer = useViewer();
-  const [saving, setSaving] = useState(false);
-  const subscribed = detail.subscribers.some(
-    (subscriber) => subscriber.userId === viewer?.userId,
-  );
+  const { t } = useTranslation();
   return (
     <Popover>
       <PopoverTrigger
@@ -660,69 +681,156 @@ function MoreProperties({
         {t('taskGroups.detail.props.more')}
       </PopoverTrigger>
       <PopoverContent align='start' className='w-96 max-w-[calc(100vw-2rem)]'>
-        <div className='flex flex-col gap-3'>
-          {fields.map((field) => (
-            <PropertyRow
-              key={field.key}
-              label={field.label}
-              {...(field.htmlFor ? { htmlFor: field.htmlFor } : {})}
-            >
-              {field.control}
-            </PropertyRow>
-          ))}
-          <PreviewPreferenceField issueId={detail.id} />
-          <div className='border-t' />
-          <PropertyRow label={t('issueLive.notifications.title')}>
-            <div className='flex items-center justify-between gap-2'>
-              {detail.subscribers.length > 0 ? (
-                <PeopleAvatars
-                  people={detail.subscribers.map((subscriber) => ({
-                    id: subscriber.userId,
-                    name: subscriber.name,
-                    detail: wording.t(
-                      `subscribers.reason.${subscriber.reason}`,
-                      { defaultValue: subscriber.reason },
-                    ),
-                  }))}
-                  label={t('issueLive.notifications.title')}
-                />
-              ) : (
-                <span className='text-muted-foreground'>—</span>
-              )}
-              {viewer ? (
-                <Button
-                  variant='outline'
-                  size='xs'
-                  disabled={saving}
-                  data-testid='task-subscribe'
-                  onClick={() => {
-                    setSaving(true);
-                    void pageActions
-                      .setFollowing(!subscribed)
-                      .catch(() => undefined)
-                      .finally(() => setSaving(false));
-                  }}
-                >
-                  {subscribed ? <BellOffIcon /> : <BellIcon />}
-                  {subscribed
-                    ? t('issueLive.notifications.unsubscribe')
-                    : t('issueLive.notifications.subscribe')}
-                </Button>
-              ) : null}
-            </div>
-          </PropertyRow>
-          <PropertyRow label={wording.detail.dates.created}>
-            {dateTime(detail.createdAt, i18n.language)}
-          </PropertyRow>
-          <PropertyRow label={wording.detail.dates.updated}>
-            <span title={dateTime(detail.updatedAt, i18n.language)}>
-              {relativeTime(detail.updatedAt, i18n.language)}
-            </span>
-          </PropertyRow>
-        </div>
+        <PropertyList
+          detail={detail}
+          pageActions={pageActions}
+          fields={fields}
+        />
       </PopoverContent>
     </Popover>
   );
+}
+
+/**
+ * Wide enough, the properties leave the chips for a column of their own beside the content: every field with its
+ * control, the status included, then what "More properties" holds, unfolded.
+ */
+function PropertyAside({
+  detail,
+  update,
+  pageActions,
+}: {
+  readonly detail: IssueDetail;
+  readonly update: IssueUpdate;
+  readonly pageActions: IssuePageActions;
+}): ReactElement {
+  const { t } = useTranslation();
+  const { busy, fields } = useIssuePropertyFields({
+    detail,
+    update,
+    pageActions,
+    // The issue page's own ids, which its side column always had.
+    idPrefix: 'pm-prop',
+  });
+  return (
+    <section
+      aria-label={t('taskGroups.detail.props.label')}
+      data-testid='task-properties-aside'
+      className='w-80 shrink-0 overflow-y-auto overscroll-y-contain border-l px-5 py-5'
+    >
+      <h2 className='mb-4 flex items-center gap-2 text-sm font-semibold'>
+        {t('taskGroups.detail.props.label')}
+        {busy ? (
+          <Loader2Icon
+            className='size-3.5 animate-spin text-muted-foreground'
+            aria-label={t('taskGroups.detail.props.saving')}
+          />
+        ) : null}
+      </h2>
+      {/* Every field, the status among them as in the side column people know, beside the top row's menu. */}
+      <PropertyList detail={detail} pageActions={pageActions} fields={fields} />
+    </section>
+  );
+}
+
+/** Fields with their own controls, then previews, who is notified (with the viewer's own button) and the dates. */
+function PropertyList({
+  detail,
+  pageActions,
+  fields,
+}: {
+  readonly detail: IssueDetail;
+  readonly pageActions: IssuePageActions;
+  readonly fields: readonly IssuePropertyField[];
+}): ReactElement {
+  const { t, i18n } = useTranslation();
+  const wording = useIssuePageWording();
+  const viewer = useViewer();
+  const [saving, setSaving] = useState(false);
+  const subscribed = detail.subscribers.some(
+    (subscriber) => subscriber.userId === viewer?.userId,
+  );
+  return (
+    <div className='flex flex-col gap-3'>
+      {fields.map((field) => (
+        <PropertyRow
+          key={field.key}
+          label={field.label}
+          {...(field.htmlFor ? { htmlFor: field.htmlFor } : {})}
+        >
+          {field.control}
+        </PropertyRow>
+      ))}
+      <PreviewPreferenceField issueId={detail.id} />
+      <div className='border-t' />
+      <PropertyRow label={t('issueLive.notifications.title')}>
+        <div className='flex items-center justify-between gap-2'>
+          {detail.subscribers.length > 0 ? (
+            <PeopleAvatars
+              people={detail.subscribers.map((subscriber) => ({
+                id: subscriber.userId,
+                name: subscriber.name,
+                detail: wording.t(`subscribers.reason.${subscriber.reason}`, {
+                  defaultValue: subscriber.reason,
+                }),
+              }))}
+              label={t('issueLive.notifications.title')}
+            />
+          ) : (
+            <span className='text-muted-foreground'>—</span>
+          )}
+          {viewer ? (
+            <Button
+              variant='outline'
+              size='xs'
+              disabled={saving}
+              data-testid='task-subscribe'
+              onClick={() => {
+                setSaving(true);
+                void pageActions
+                  .setFollowing(!subscribed)
+                  .catch(() => undefined)
+                  .finally(() => setSaving(false));
+              }}
+            >
+              {subscribed ? <BellOffIcon /> : <BellIcon />}
+              {subscribed
+                ? t('issueLive.notifications.unsubscribe')
+                : t('issueLive.notifications.subscribe')}
+            </Button>
+          ) : null}
+        </div>
+      </PropertyRow>
+      <PropertyRow label={wording.detail.dates.created}>
+        {dateTime(detail.createdAt, i18n.language)}
+      </PropertyRow>
+      <PropertyRow label={wording.detail.dates.updated}>
+        <span title={dateTime(detail.updatedAt, i18n.language)}>
+          {relativeTime(detail.updatedAt, i18n.language)}
+        </span>
+      </PropertyRow>
+    </div>
+  );
+}
+
+/** The width from which the properties take a column of their own. */
+const ASIDE_FROM = 1024;
+
+/** Whether the element is at least `ASIDE_FROM` wide, followed as it resizes (the list's divider, the window). */
+function useWide(ref: RefObject<HTMLElement | null>): boolean {
+  const [wide, setWide] = useState(false);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    if (typeof ResizeObserver === 'undefined') return;
+    // The observer reports the first size as it starts observing, before the frame is painted.
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setWide(entry.contentRect.width >= ASIDE_FROM);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+  return wide;
 }
 
 /**
@@ -840,6 +948,8 @@ function PaneTop({
   variant,
   onClose,
   leading,
+  trailing,
+  onDeleted,
   update,
   following,
 }: TaskDetailPaneProps & {
@@ -849,7 +959,8 @@ function PaneTop({
 }): ReactElement {
   const { t } = useTranslation();
   const phone = variant === 'phone';
-  const vertical = variant === 'split';
+  // Beside a list and on a task's page the arrows follow the list up and down (K and J).
+  const vertical = variant === 'split' || variant === 'page';
   const PrevIcon = vertical ? ChevronUpIcon : ChevronLeftIcon;
   const NextIcon = vertical ? ChevronDownIcon : ChevronRightIcon;
   return (
@@ -896,7 +1007,7 @@ function PaneTop({
           ) : null}
         </>
       ) : null}
-      {detail && variant === 'split' ? (
+      {detail && (variant === 'split' || variant === 'page') ? (
         // The key first: always as wide, so it is found at the same place; the project after it, cut when long.
         <span className='ml-2 flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground'>
           <CopyKeyButton identifier={detail.identifier} />
@@ -924,7 +1035,7 @@ function PaneTop({
             // Borderless and quiet beside the title; a narrow panel shows the star alone.
             className={cn(
               'border-transparent bg-transparent font-normal text-muted-foreground shadow-none hover:text-foreground',
-              variant !== 'split' && '[&>span]:sr-only',
+              variant !== 'split' && variant !== 'page' && '[&>span]:sr-only',
             )}
           />
         ) : null}
@@ -935,7 +1046,9 @@ function PaneTop({
             issuePath={issuePath}
             issueSearch={issueSearch}
             phone={phone}
-            {...(onClose ? { onDeleted: onClose } : {})}
+            {...(onDeleted || onClose
+              ? { onDeleted: onDeleted ?? onClose }
+              : {})}
           />
         ) : null}
         {onClose && !phone ? (
@@ -949,6 +1062,7 @@ function PaneTop({
             <XIcon />
           </Button>
         ) : null}
+        {trailing}
       </span>
     </div>
   );

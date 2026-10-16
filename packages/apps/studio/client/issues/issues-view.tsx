@@ -40,6 +40,7 @@ import { IssueBoardView } from './board-view.js';
 import { IssueListView } from './list-view.js';
 import { useMediaQuery } from '@/extensions/nocobase-agent-chat/use-media-query';
 import { PhoneTaskList } from './groups/phone-list.js';
+import { rememberOpenOrder } from './groups/open-order.js';
 import { SplitIssuesView } from './groups/split-view.js';
 import { GroupedTableView } from './groups/table-view.js';
 import { IssueToolbar, type IssueViewOption } from './toolbar.js';
@@ -114,7 +115,10 @@ export function IssuesView({
   const listPath = useResolvedPath('.').pathname.replace(/\/$/u, '');
   const issueHref = (issueId: string) =>
     `${listPath}/${encodeURIComponent(issueId)}${location.search}`;
-  const open = (issueId: string) => void navigate(issueHref(issueId));
+  const open = (issueId: string, order?: readonly string[]) => {
+    if (order) rememberOpenOrder(listPath, order);
+    void navigate(issueHref(issueId));
+  };
   // The selected task replaces the entry and keeps the rest of the address, its fragment included.
   const selectIssue = (issueId: string | null) => {
     const next = new URLSearchParams(location.search);

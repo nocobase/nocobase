@@ -37,6 +37,7 @@ import { isRecoverable } from './api.js';
 import { typingIn } from './keys.js';
 import type { DetailTab } from './detail-model.js';
 import { TaskDetailPane } from './detail-pane.js';
+import { rememberOpenOrder } from './open-order.js';
 import { LIST_WIDTH, useListWidth } from './prefs.js';
 import { TaskGroupCard, TaskRow } from './task-list.js';
 import { useTaskList, type TaskListState } from './use-task-list.js';
@@ -103,6 +104,8 @@ export function SplitIssuesView({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      // A task's page opened over the list covers it (`inert`) and has keys of its own.
+      if (listRef.current?.closest('[inert]')) return;
       if (
         event.defaultPrevented ||
         event.metaKey ||
@@ -135,6 +138,7 @@ export function SplitIssuesView({
         if (target?.closest('button,a') && !target.closest('[role=option]'))
           return;
         event.preventDefault();
+        rememberOpenOrder(listPath, list.order);
         void navigate({
           pathname: issuePath(list.selected.issue.identifier),
           search: location.search,

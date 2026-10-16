@@ -158,6 +158,8 @@ for (const replies of [false, true]) {
       await expect(
         page.getByText(workerReplies[0]!.content, { exact: true }).first(),
       ).toBeVisible();
+      // The execution log is the Runs tab.
+      await page.getByTestId('task-tab-runs').click();
       await expect(
         page
           .getByRole('link', {

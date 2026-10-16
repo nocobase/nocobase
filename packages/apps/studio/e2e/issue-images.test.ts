@@ -79,6 +79,8 @@ test('pasted screenshots survive issue creation and description edits', async ({
   await dialog.getByRole('button', { name: 'Create', exact: true }).click();
   await expect(dialog).toBeHidden();
   await page.reload();
+  // The description is under its own tab on the issue's page.
+  await page.getByTestId('task-tab-desc').click();
   await page
     .getByRole('button', { name: 'Edit description', exact: true })
     .click();
@@ -97,6 +99,8 @@ test('pasted screenshots survive issue creation and description edits', async ({
     });
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await page.reload();
+  // The description is under its own tab on the issue's page.
+  await page.getByTestId('task-tab-desc').click();
   await page
     .getByRole('button', { name: 'Edit description', exact: true })
     .click();

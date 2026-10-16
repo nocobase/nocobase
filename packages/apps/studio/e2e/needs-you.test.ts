@@ -290,9 +290,9 @@ test('structured owner request, latest explanation, matching follow-ups and live
     const standalone = await page.context().newPage();
     await open(standalone, `/issues/${issue.identifier}`, studio);
     const standaloneSummary = standalone.getByTestId('issue-summary');
-    await expect(
-      standaloneSummary.getByText('Blocked', { exact: true }),
-    ).toBeVisible();
+    // The status is the top row's menu on the issue's page.
+    const standaloneStatus = standalone.getByTestId('task-status-menu');
+    await expect(standaloneStatus).toContainText('Blocked');
     await expect(rail).toContainText(
       'Needs you: Restore the execution machine.',
     );
@@ -350,7 +350,7 @@ test('structured owner request, latest explanation, matching follow-ups and live
       ownedRow.getByText('In progress', { exact: true }),
     ).toBeVisible({ timeout: 3000 });
     await expect(
-      standaloneSummary.getByText('In progress', { exact: true }),
+      standaloneStatus.filter({ hasText: 'In progress' }),
     ).toBeVisible({ timeout: 3000 });
     await expect(panel.getByTestId('issue-needs-you')).toHaveCount(0);
     await expect(standalone.getByTestId('issue-needs-you')).toHaveCount(0);

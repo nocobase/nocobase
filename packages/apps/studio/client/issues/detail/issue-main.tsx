@@ -1,12 +1,11 @@
 /**
  * The projects plugin's sections of an issue's main column, drawn with the installed `issue-detail` block and
- * `attachment-list` over the plugin's headless hooks (`client/issues`), in the plugin's words: the header, the
+ * `attachment-list` over the plugin's headless hooks (`client/issues`), in the plugin's words: the
  * description, the add bar under it, the sub-issues, the dependencies and the files. A part with nothing to show renders nothing; the add bar adds its first
  * item. Each checks the viewer's permissions: without `issues/edit` nothing here changes the issue.
  */
 import {
   ATTACHMENT_SIZE_MB,
-  canDeleteIssues,
   canEditIssues,
   groupSubtasksByStage,
   statusTone,
@@ -19,7 +18,6 @@ import { useViewer } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
-  CornerLeftUpIcon,
   Link2Icon,
   ListTreeIcon,
   PaperclipIcon,
@@ -27,13 +25,12 @@ import {
   SparklesIcon,
 } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 
 import {
   IssueAddBar,
   IssueAddButton,
   IssueAttachments,
-  IssueDeleteButton,
   IssueDependencies,
   IssueDescription,
   IssueFilesButton,
@@ -48,7 +45,6 @@ import { attachmentFile, useFilePreviewState } from './files.js';
 import { useDependencyActions } from './dependency-actions.js';
 import { underIssue, useIssueBase } from './issue-base.js';
 import { issueHrefUnder, useIssueParent } from './issue-parent.js';
-import { useIssueTrail } from './issue-trail.js';
 import { useIssuePageWording } from './labels.js';
 import type { IssueMainState } from './main-state.js';
 
@@ -58,69 +54,6 @@ const routerLink: IssueDetailLink = ({ href, className, children }) => (
     {children}
   </Link>
 );
-
-/**
- * The body card's first row: the parent issue, the project and the page's marks (`meta`), then the page's `actions`
- * and "Delete". The title, key and status are the pinned summary's (`../live/issue-summary.tsx`), which renames the
- * issue; the trail by the issue's project and parent goes in the shell header (`issue-trail.ts`).
- */
-export function IssueBodyHeader({
-  detail,
-  actions,
-  pageActions,
-  meta,
-}: {
-  readonly detail: IssueDetail;
-  readonly actions?: ReactNode;
-  readonly pageActions: IssuePageActions;
-  readonly meta?: ReactNode;
-}): ReactElement {
-  const { detail: labels } = useIssuePageWording();
-  const viewer = useViewer();
-  const navigate = useNavigate();
-  const parent = useIssueParent();
-  useIssueTrail(detail);
-  return (
-    <div
-      className='flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground'
-      data-slot='issue-body-header'
-    >
-      {detail.parent ? (
-        <Link
-          to={issueHrefUnder(parent, detail.parent.id)}
-          className='inline-flex max-w-full min-w-0 items-center gap-1.5 hover:text-foreground'
-        >
-          <CornerLeftUpIcon className='size-3.5 shrink-0' aria-hidden='true' />
-          <span className='shrink-0'>{labels.parent}</span>
-          <span className='shrink-0 font-mono'>{detail.parent.identifier}</span>
-          <span className='truncate'>{detail.parent.title}</span>
-        </Link>
-      ) : null}
-      {detail.project ? (
-        <Link
-          to={`/projects/${encodeURIComponent(detail.project.id)}`}
-          className='truncate hover:text-foreground hover:underline'
-        >
-          {detail.project.name}
-        </Link>
-      ) : null}
-      {meta}
-      <span className='ml-auto flex shrink-0 items-center gap-1'>
-        {actions}
-        {canDeleteIssues(viewer) ? (
-          <IssueDeleteButton
-            identifier={detail.identifier}
-            labels={labels}
-            onDelete={async () => {
-              await pageActions.deleteIssue();
-              void navigate('..', { relative: 'path' });
-            }}
-          />
-        ) : null}
-      </span>
-    </div>
-  );
-}
 
 /** The description, editable with `issues/edit`. */
 export function IssueDescriptionSection({

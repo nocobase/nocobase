@@ -43,6 +43,8 @@ test.describe('issue page', () => {
     await expect(scroller).toHaveCSS('overscroll-behavior-x', 'auto');
     await expect(scroller).toHaveCSS('overscroll-behavior-y', 'contain');
 
+    // The description is under its own tab.
+    await page.getByTestId('task-tab-desc').click();
     const block = page.locator('pre').filter({ hasText: code });
     await block.hover();
     await page.mouse.wheel(500, 0);
@@ -152,22 +154,22 @@ test.describe('issue page', () => {
       },
     );
     await open(page, `/issues/${issue.identifier}`);
-    // The runs on the activity line are system records, folded under "Conversation only".
-    await page
-      .getByTestId('issue-feed')
-      .getByRole('button', { name: '全部', exact: true })
-      .click();
     const history = page.locator('[data-slot="agent-run-history"]');
-    const aside = page.locator('[data-slot="issue-detail-layout"] aside');
-    await expect(history).toHaveCount(1);
-    await expect(aside.locator('[data-slot="agent-run-history"]')).toHaveCount(
-      1,
-    );
-    const datesBox = await aside
-      .getByRole('heading', { name: '详情', exact: true })
-      .boundingBox();
-    const historyBox = await history.boundingBox();
-    expect(historyBox?.y).toBeGreaterThan(datesBox!.y);
+    // The execution log is the Runs tab; the runs on the activity line are system records, folded under
+    // "Conversation only".
+    const runsTab = page.getByTestId('task-tab-runs');
+    const showRuns = async () => {
+      await runsTab.click();
+      await expect(history).toHaveCount(1);
+    };
+    const showFeed = async () => {
+      await page.getByTestId('task-tab-feed').click();
+      await page
+        .getByTestId('issue-feed')
+        .getByRole('button', { name: '全部', exact: true })
+        .click();
+    };
+    await showRuns();
     const check = async (width: number, assistant: boolean) => {
       await page.setViewportSize({ width, height: 900 });
       await expect(history).toBeVisible();
@@ -181,58 +183,13 @@ test.describe('issue page', () => {
           return metrics.scrollWidth - metrics.clientWidth;
         }),
       ).toBeLessThanOrEqual(1);
-      const layout = page.locator('[data-slot="issue-detail-layout"]');
-      const available = await layout.evaluate(
-        (element) =>
-          (
-            element as unknown as { getBoundingClientRect(): { width: number } }
-          ).getBoundingClientRect().width,
-      );
-      await expect(layout.locator(':scope > div')).toHaveCSS(
-        'flex-direction',
-        available >= 896 ? 'row' : 'column',
-      );
-      await page.evaluate(
-        `(() => { const scroller = document.querySelector('[data-slot="route-child-page"] > div'); scroller.scrollTop = 0; })()`,
-      );
-      await page.screenshot({
-        path: `storage/ui-workflow/issue-runs/screenshots/page-top-${width}-${assistant ? 'assistant' : 'plain'}.png`,
-      });
-      await page.evaluate(
-        `(() => { const scroller = document.querySelector('[data-slot="route-child-page"] > div'); const dates = document.querySelector('[data-slot="agent-run-history"]'); scroller.scrollTop += dates.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 180; })()`,
-      );
       await page.screenshot({
         path: `storage/ui-workflow/issue-runs/screenshots/history-${width}-${assistant ? 'assistant' : 'plain'}.png`,
       });
     };
-    for (const width of [375, 1280, 1600]) await check(width, false);
-    // Fractional widths: the theme's 0.225rem spacing gives the sidebar 230.4px, which clientWidth would round.
-    const layout = page.locator('[data-slot="issue-detail-layout"]');
-    const inset =
-      1600 -
-      (await layout.evaluate(
-        (element) =>
-          (
-            element as unknown as { getBoundingClientRect(): { width: number } }
-          ).getBoundingClientRect().width,
-      ));
-    for (const available of [895, 896, 897, 1023])
-      await check(Math.ceil(available + inset), false);
-    await expect(aside.locator(':scope > div')).toHaveCSS('position', 'static');
-    await history
-      .getByRole('button', { name: '查看全部 6 条' })
-      .scrollIntoViewIfNeeded();
-    expect(
-      await page
-        .locator('[data-slot="route-child-page"] > div')
-        .evaluate(
-          (element) => (element as unknown as { scrollTop: number }).scrollTop,
-        ),
-    ).toBeGreaterThan(0);
-
-    await page.screenshot({
-      path: 'storage/ui-workflow/issue-runs/screenshots/history-bottom.png',
-    });
+    // Across the width where the properties move between the chips and a column of their own.
+    for (const width of [375, 1200, 1279, 1281, 1600])
+      await check(width, false);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.keyboard.press('Control+j');
     await expect(page.getByTestId('chat-panel')).toBeVisible();
@@ -242,6 +199,7 @@ test.describe('issue page', () => {
       .click();
     await check(1280, true);
     const verifySummaryFocus = async () => {
+      await showFeed();
       for (const trigger of [
         page.locator('a').filter({ has: page.getByTestId('run-live') }),
         page.getByTestId('run-row-sidebar-run-0').getByRole('link'),
@@ -257,6 +215,7 @@ test.describe('issue page', () => {
         ).toBeHidden();
         await expect(trigger).toBeFocused();
       }
+      await showRuns();
     };
     await verifySummaryFocus();
     const link = history.getByRole('link').first();
@@ -292,6 +251,7 @@ test.describe('issue page', () => {
           `localStorage.setItem('nocobase.locale', '${locale}'); localStorage.setItem('nocobase:main:theme:color-scheme', '${mode}');`,
         );
         await page.reload();
+        await runsTab.click();
         await expect(history).toBeVisible();
         await expect(
           history.getByRole('heading', {
@@ -310,6 +270,7 @@ test.describe('issue page', () => {
     }
     hold = true;
     await page.reload();
+    await runsTab.click();
     await expect(
       history.getByRole('status', { name: '正在加载执行记录…' }),
     ).toBeVisible();
@@ -322,6 +283,7 @@ test.describe('issue page', () => {
     for (const code of [500, 403, 404]) {
       status = code;
       await page.reload();
+      await runsTab.click();
       await expect(history.getByRole('alert')).toBeVisible();
       if (code === 500)
         await expect(
@@ -338,6 +300,7 @@ test.describe('issue page', () => {
     status = 200;
     visibleRecords = [];
     await page.reload();
+    await runsTab.click();
     await expect(history.getByText('暂无运行。')).toBeVisible();
     await history.screenshot({
       path: 'storage/ui-workflow/issue-runs/screenshots/empty.png',
@@ -353,6 +316,8 @@ test.describe('issue page', () => {
     ).toBeVisible();
 
     const text = `端到端评论 ${unique()}`;
+    // The comment box is one line naming the task until opened.
+    await page.getByTestId('task-comment-folded').click();
     const editor = page.getByRole('textbox', { name: '评论' });
     await editor.click();
     await editor.pressSequentially(text);
@@ -378,7 +343,9 @@ test.describe('issue page', () => {
     api,
   }) => {
     await open(page, `/issues/${issue.identifier}`);
-    // Attachments are added from the description's Add bar; their section appears with the first one.
+    // Attachments are added from the description's Add bar, under the Description tab; their section appears with
+    // the first one.
+    await page.getByTestId('task-tab-desc').click();
     const chooser = page.waitForEvent('filechooser');
     await page
       .getByRole('group', { name: '添加' })

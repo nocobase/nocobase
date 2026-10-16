@@ -140,6 +140,8 @@ for (const entry of ['issue', 'inbox'] as const) {
         .click();
     } else {
       await open(page, `/issues/${issue.identifier}`);
+      // The pull request is under the Code tab.
+      await page.getByTestId('task-tab-code').click();
     }
     const merge = page.locator('[data-action="merge"]');
     await expect(merge).toBeEnabled();
