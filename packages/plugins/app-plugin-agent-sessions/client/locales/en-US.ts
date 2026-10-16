@@ -184,6 +184,8 @@ const enUS = {
     queue: 'Send after this turn',
     addImage: 'Add images',
     removeImage: 'Remove image',
+    attached: 'Goes with the message',
+    removeAttached: 'Remove {{name}}',
     commands: 'The agent’s commands',
     mentions: 'Mention a task',
     keys: {
@@ -194,6 +196,7 @@ const enUS = {
     },
   },
   choices: { more: 'More options' },
+  panel: { fullScreen: 'Open full page' },
   transcript: {
     image: {
       open: 'Open image preview',

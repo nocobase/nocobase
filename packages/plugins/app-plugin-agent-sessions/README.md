@@ -86,6 +86,32 @@ agentSessionsRoute({ cli: 'acme', linkPanels: { issue: IssuePanel } }),
 
 The open record is in the address as `?<kind>=<refId>`; J and K move among the session's records of that kind and Esc closes it. Below 1600 pixels wide the session list folds to a rail while a record is open.
 
+### In a panel beside other pages
+
+`@nocobase/app-plugin-agent-sessions/client/panel` puts the sessions in a panel the application draws itself, beside whatever page is open. `AgentSessionsPanel` takes the options `agentSessionsRoute` takes, `view` (`{ kind: 'session', sessionId }`, `{ kind: 'new' }` or `{ kind: 'list' }`) with `onViewChange`, the application's own buttons in `actions`, and `onFullScreen`, which opens `/agent-sessions` at the same view and navigates there when left out. The session, the new session and the list are laid out by the panel's width rather than the screen's: below 448 pixels they look as they do on a phone. In the panel a new session starts in place, a session picked in the list opens in place, a session's details open over the conversation, and a record tied to a session opens at its own `href`.
+
+```tsx
+<AgentSessionsPanel
+  cli='acme'
+  view={view}
+  onViewChange={setView}
+  attach={{
+    id: `issue:${issue.id}`,
+    attachments: [
+      {
+        id: issue.id,
+        label: `${issue.key} ${issue.title}`,
+        reference: { kind: 'issue', refId: issue.id },
+      },
+    ],
+    projectId: issue.projectId,
+  }}
+  actions={<CloseButton />}
+/>
+```
+
+`attach` puts what the panel was opened beside in the shown draft, once for each `id`: it shows above the message, where the person can remove it, and goes with the next message sent. An attachment with a `reference` is sent as a `#` mention of that record; one with `text` adds that text to the message, for what cannot be mentioned. `projectId` is the project a new session starts with. `useLinkedSessions(kind, refId)` lists the viewer's sessions tied to a record, the latest activity first (`GET /api/agentSessions/sessions?linked=<kind>:<refId>`), so the application can open the latest one from that record.
+
 ### What the agent knows of the session's work
 
 The records tied to a session, created in it or mentioned in its messages, are what the person means by "the tasks", and the agent is told so. A message carries the list beneath it whenever it changed since the agent was last told, each record with its standing in the person's language and what is new or changed marked, so that an agent coming back to a session a day later learns what happened meanwhile; a message after which nothing changed carries nothing. The `session work` CLI command lists that work with progress from the kind's existing batch resolver. `agentSessions.toldWork` keeps what the agent was last told, and `locale` the interface language supplied with the owner's latest message. Application instructions can be a string or a `(viewer) => string` resolver and are resent when their generated content changes.
