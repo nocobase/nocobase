@@ -1,5 +1,4 @@
 ---
-'@nocobase/studio': patch
 '@nocobase/app-plugin-knowledge': patch
 ---
 
