@@ -40,6 +40,7 @@ const CliParameterSchema = z
     default: z.unknown().optional(),
     alias: z.string().optional(),
     contentFile: z.boolean().optional(),
+    contentFileNonEmpty: z.boolean().optional(),
     prompt: z.boolean().optional(),
     fromEnv: z.string().optional(),
     env: z
