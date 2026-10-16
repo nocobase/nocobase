@@ -456,8 +456,14 @@ function sitemap(): RspressPlugin {
       if (lang !== 'en') {
         return;
       }
-      if (pageData?.routePath) {
-        routes.add(pageData.routePath as string);
+      const routePath = pageData?.routePath as string | undefined;
+      // Cross-module virtual routes are duplicates whose canonical points at the original page; list only canonical pages.
+      // crossRefCanonicalMap is filled in pluginCrossRefSidebar's config hook, which runs before page data is extended.
+      if (
+        routePath &&
+        (crossRefCanonicalMap[routePath] || routePath) === routePath
+      ) {
+        routes.add(routePath);
       }
     },
 
