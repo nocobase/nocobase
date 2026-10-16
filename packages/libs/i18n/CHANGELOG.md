@@ -1,5 +1,7 @@
 # @nocobase/i18n
 
+## 2.0.0-beta
+
 ## 1.0.0-beta.7
 
 ### Patch Changes
