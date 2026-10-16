@@ -1,7 +1,5 @@
 import { Flags, type Interfaces } from '@oclif/core';
 import { spawn } from 'node:child_process';
-import { mkdirSync, openSync, closeSync } from 'node:fs';
-import path from 'node:path';
 
 import { loadAdapters } from '../agent/adapters/registry.ts';
 import { RunnerCommand, UsageError } from '../lib/command.ts';
@@ -61,6 +59,13 @@ export default class Start extends RunnerCommand {
         `stopped ${left.processes} process(es) and ${left.groups} process group(s) left behind`,
       );
     log(`runner exiting (${code})`);
+    if (code === EXIT_CODES.auth)
+      log(
+        `Runner revoked. Run ${runnerCommandLine('register')} to register again.`,
+      );
+    await new Promise<void>((resolve) =>
+      process.stdout.write('', () => resolve()),
+    );
     process.exit(code);
   }
 
@@ -69,7 +74,15 @@ export default class Start extends RunnerCommand {
     const slotsFlag =
       flags.slots === undefined ? {} : parseSlotsFlag(flags.slots);
     const paths = this.paths;
-    const connections = await readConnections(paths);
+    const registered = await readConnections(paths);
+    const connections = registered.filter(
+      (item) => item.registration.revoked === undefined,
+    );
+    if (registered.length > 0 && connections.length === 0)
+      throw new UsageError(
+        `Runner revoked. Run ${runnerCommandLine('register')} to register again.`,
+        EXIT_CODES.auth,
+      );
     if (connections.length === 0) {
       throw new UsageError(
         `This runner is not registered. Run \`${runnerCommandLine('register')}\` first.`,
@@ -88,23 +101,17 @@ export default class Start extends RunnerCommand {
 
     if (!flags.foreground) {
       await ensureHome(paths);
-      mkdirSync(path.dirname(paths.daemonLog), {
-        recursive: true,
-        mode: 0o700,
-      });
-      const fd = openSync(paths.daemonLog, 'a', 0o600);
       const [command = process.execPath, ...args] = selfCommand();
       const child = spawn(
         command,
         [
           ...args,
-          'start',
-          '--foreground',
+          'service',
+          'run',
           ...(flags.slots === undefined ? [] : ['--slots', flags.slots]),
         ],
-        { detached: true, stdio: ['ignore', fd, fd], env: process.env },
+        { detached: true, stdio: 'ignore', env: process.env },
       );
-      closeSync(fd);
       child.unref();
       const deadline = Date.now() + 10_000;
       while (Date.now() < deadline) {

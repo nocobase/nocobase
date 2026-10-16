@@ -46,10 +46,13 @@ export default class Logs extends RunnerCommand {
     if (lines[lines.length - 1] === '') lines.pop();
     for (const line of lines.slice(-flags.lines)) this.log(line);
     if (!flags.follow) return;
+    let inode = statSync(file).ino;
     let offset = statSync(file).size;
     await new Promise<void>((resolve) => {
       watchFile(file, { interval: 500 }, (current) => {
-        if (current.size < offset) offset = 0;
+        if (current.nlink === 0) return;
+        if (current.ino !== inode || current.size < offset) offset = 0;
+        inode = current.ino;
         if (current.size === offset) return;
         createReadStream(file, { start: offset, end: current.size - 1 }).pipe(
           process.stdout,
