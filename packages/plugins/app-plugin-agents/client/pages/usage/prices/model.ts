@@ -128,7 +128,7 @@ export function parseAmount(value: string): number | null {
   return Number.isFinite(number) && number >= 0 ? number : null;
 }
 
-/** An amount as an input shows it: `3`, `0.075`. */
+/** A read-only amount, rounded for display; never use it to initialize editable values. */
 export function amountText(value: number): string {
   return Number.isInteger(value)
     ? String(value)
