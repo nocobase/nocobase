@@ -175,7 +175,14 @@ const readResponseMeta = (response: unknown): Record<string, unknown> => {
     return {};
   }
   const data = response.data;
-  return isRecord(data) ? data : {};
+  if (!isRecord(data)) {
+    return {};
+  }
+  // NocoBase list responses put pagination metadata under response.data.meta.
+  // Returning the whole response body makes meta.count undefined and limits the
+  // controlled table to the current page's row count, so the next-page control
+  // is disabled even when more records exist.
+  return isRecord(data.meta) ? data.meta : data;
 };
 
 const isAIEmployee = (value: unknown): value is SettingsAIEmployee =>
