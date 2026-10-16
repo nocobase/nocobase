@@ -9,4 +9,4 @@ Consolidate example workflow administration under System management with explici
 
 Store lifecycle configuration atomically by workflow key and revision, migrate existing settings while preserving historical facts, and group fields by their bound business nodes. Apply office workflow department, calendar and dispatch overrides, share department role membership, and use searchable member selection. Remove standalone configuration pages and candidate-review demonstrations while retaining historical migrations and records.
 
-Add Lifecycle UI guidance to the application development skill for page composition and existing UI Library component reuse. Align parameter guidance with visible inline forms and retain optional contextual editing.
+Guide complete application development to plan system administration alongside business features, reusing installed user, permission and organization capabilities. Add Lifecycle UI guidance to the application development skill for page composition and existing UI Library component reuse. Align parameter guidance with visible inline forms and retain optional contextual editing.

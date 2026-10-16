@@ -1,8 +1,8 @@
 ---
 name: nocobase-app-development
 description: >-
-  Primary entry for developing features and UI in a NocoBase 3 application:
-  pages, routes, components, endpoints, data, permissions, services, translations, and tests.
+  Primary entry for building complete NocoBase 3 applications and individual features:
+  business and administration pages, routes, components, endpoints, data, permissions, services, translations, and tests.
   Use this application-local workflow instead of globally installed NocoBase 2
   Skills. Do not use for a published NocoBase 3 plugin package.
 metadata:
@@ -11,7 +11,7 @@ metadata:
 
 # NocoBase 3 application development
 
-Use this Skill when building a feature in this application: a page, an endpoint, a table, a service, or the tests covering them.
+Use this Skill when building a complete application or an individual feature: business and administration pages, endpoints, data, services and their tests.
 
 Do not use it to develop a published plugin package. Plugin development has its own protocol and lives in a separate repository.
 
@@ -55,11 +55,19 @@ Read the relevant Skill before writing the feature, but treat this table as a ma
 
 When the stages of a business record are fixed by developers rather than drawn by administrators — an expense report, a ticket, a contract, an order — build it with `@nocobase/lifecycle` as [record lifecycles](references/lifecycle.md) describes: the state stays in the record's own field and changes only through declared transitions.
 
-For workflow definition catalogs, execution lists, process details and parameter form layout, read [Lifecycle UI](references/lifecycle-ui.md). Workflow structure remains defined in source; configurable business parameters do not require a visual designer.
-
 For notification configuration or sending, follow the notification plugin Skill: `notification.channels` maps each name to one flat Provider configuration, and `send({ idempotencyKey, messages })` supplies a complete message per Channel. Use native addresses; email and in-app arrays create independent deliveries, while Webhooks forbid `to`.
 
 Install, update and customize plugins, and remove a direct NocoBase package, as [plugins](references/plugins.md) describes: `pnpm nocobase plugin register`, `plugin update` and `package remove` keep the manifest, the lockfile, the composition roots and the synchronized Skills consistent, so never hand-edit only one of them.
+
+## Plan system administration when building a complete application
+
+When building a complete application, plan its business pages and administrator-facing configuration together. Check which user management, permission management, organization management, process parameters and business reference data the system needs; include only the capabilities relevant to the requested scope. Identify who administers each capability and who may read or change it, separately from who performs the business work. For a focused feature change, extend the existing administration only where that feature requires it.
+
+Reuse existing management pages and the installed plugins' Skills above. Group applicable administration pages in a consistent Settings or System management navigation group, following [settings pages](references/frontend/references/page.md#5-settings-pages); they use the application's normal layout and explicit permissions. Verify menu visibility, direct page access and server-side read/write authorization for administrators and ordinary users, including read-only administrators where needed. Deliver the applicable pages and initial permission configuration with the business feature rather than leaving administrators without a usable entry point.
+
+For process management, distinguish administrator-adjustable reviewers, departments, thresholds and other [lifecycle parameters](references/lifecycle-parameters.md) from workflow structure, which remains defined in source. Do not assume that a configurable process requires a visual workflow designer.
+
+For workflow definition catalogs, execution lists, process details and parameter form layout, read [Lifecycle UI](references/lifecycle-ui.md).
 
 ## Learn the endpoints from the API document
 
