@@ -13,14 +13,14 @@ import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import ts from 'typescript';
 import { expect, it } from 'vitest';
+import { transpileModule, ScriptTarget, ModuleKind, JsxEmit } from 'typescript';
 
 const execute = promisify(execFile);
 const packageRoot = fileURLToPath(new URL('../..', import.meta.url));
 const require = createRequire(import.meta.url);
 
-it('shares router context with an installed app-testing client helper', async () => {
+it('shares router context with installed test helpers and the application navigation guard', async () => {
   const cache = path.join(tmpdir(), 'nocobase-vitest-regressions');
   await mkdir(cache, { recursive: true });
   const root = await mkdtemp(path.join(cache, 'published-router-'));
@@ -74,7 +74,8 @@ it('shares router context with an installed app-testing client helper', async ()
         exports: { '.': './dist/navigation-guard-provider.js' },
       }),
     );
-    // Exercise the real provider across its published JavaScript boundary too.
+    // Transpile the actual runtime boundary: an invented useLocation probe alone
+    // does not cover the installed navigation provider's direct context reads.
     for (const file of [
       'navigation-guard-provider.tsx',
       'navigation-guard.ts',
@@ -83,15 +84,17 @@ it('shares router context with an installed app-testing client helper', async ()
         path.resolve(packageRoot, '../../app/app-client/src', file),
         'utf8',
       );
-      const compiled = ts.transpileModule(source, {
+      const output = transpileModule(source, {
         compilerOptions: {
-          module: ts.ModuleKind.ESNext,
-          jsx: ts.JsxEmit.ReactJSX,
+          target: ScriptTarget.ESNext,
+          module: ModuleKind.ESNext,
+          jsx: JsxEmit.ReactJSX,
         },
+        fileName: file,
       });
       await writeFile(
         path.join(client, 'dist', file.replace(/\.tsx?$/u, '.js')),
-        compiled.outputText,
+        output.outputText,
       );
     }
     await writeFile(path.join(root, 'package.json'), '{"type":"module"}');
@@ -105,8 +108,8 @@ it('shares router context with an installed app-testing client helper', async ()
       import {createElement} from 'react';
       import {render, screen} from '@testing-library/react';
       import {TestRouter} from '@nocobase/app-testing/client';
-      import {useLocation} from 'react-router';
       import {NavigationGuardProvider} from '@nocobase/app-client';
+      import {useLocation} from 'react-router';
       import {expect, it} from 'vitest';
       it('reads the same router', () => {
         const Probe = () => createElement('span', null, useLocation().pathname);

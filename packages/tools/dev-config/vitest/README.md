@@ -35,6 +35,8 @@ every test. Local setup files are merged with the shared setup.
 
 It also inlines `@refinedev/react-router`. Loaded by Node, Refine's router bindings get a different copy of `react-router` than the test and the application import, so an application rendered under a test's `MemoryRouter` fails with "useLocation() may be used only in the context of a <Router> component". A local `server.deps.inline` list is merged with this one.
 
+Installed `@nocobase/app-testing` client helpers and `@nocobase/app-client` are also inlined. The test router and the runtime navigation guard must read the same Router contexts; transforming only the helper leaves the installed runtime on Node's separate copy. This applies to the shared React preset, including generated applications, without changing the Node/server preset.
+
 Both factories set `testTimeout` and `hookTimeout` to 30 seconds, well above
 Vitest's 5-second default. CI runs every package's suite in parallel on one
 shared runner, so a test that finishes in well under a second locally can take
