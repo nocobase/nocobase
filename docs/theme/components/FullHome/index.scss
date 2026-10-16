@@ -184,7 +184,7 @@
   }
   .steps {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .step {
     min-width: 0;
@@ -1354,7 +1354,7 @@
     }
   }
 
-  /* Share content-sized rows so the three command boxes align without fixed heights. */
+  /* Share content-sized rows so the command boxes align without fixed heights. */
   @media (min-width: 1001px) {
     .steps {
       grid-template-rows: auto auto auto auto;
