@@ -103,7 +103,7 @@ export async function classify(
 }
 ```
 
-Pass `{ sessionId }` to `realtime`/`background` to load without starting execution. `send` and `run` save their inputs and start the SDK. `status` includes pending finalization. `get` returns only a successfully persisted background result validated with the original schema instance. `history` is privileged canonical SDK history for trusted server consumers; it includes tool and provider data and must not be returned directly to browsers. Only successful JSON-safe background results persist.
+Pass `{ sessionId }` to `realtime`/`background` to load without starting execution. Realtime `send` accepts input for the bound executor; native background `run` saves its input and starts the SDK. `status` includes pending finalization. `get` returns only a successfully persisted background result validated with the original schema instance. Realtime `history` returns public conversation messages. Native background `history` is privileged canonical SDK history for trusted server consumers; it includes tool and provider data and must not be returned directly to browsers. Only successful JSON-safe background results persist.
 
 Use `abort()` for explicit stop: it waits for actual execution and terminal persistence. A save or seal failure keeps the session busy; `retryFinalization()` retries only that closing work and never reruns the model or tools. Application shutdown drains active executions and warns if finalization fails, allowing the application to close. A cancelled incomplete tool exchange is saved as internal evidence and excluded from model replay.
 
