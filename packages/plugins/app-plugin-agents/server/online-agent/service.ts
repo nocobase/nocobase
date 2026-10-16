@@ -448,6 +448,7 @@ export class OnlineAgentService {
         user: Object.freeze({ ...context.user }),
         variable: config.variable,
         systemPrompt: config.systemPrompt,
+        sessionId: id,
         signal: execution.abort.signal,
       });
       tools = this.configurer.bind(

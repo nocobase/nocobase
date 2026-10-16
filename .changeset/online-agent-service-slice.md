@@ -11,3 +11,5 @@ Recognize no-content streaming responses by HTTP status even when a browser expo
 Resolve Scope/Provider model changes consistently through the configuration API. Let users explicitly permit a new input after an unknown send result, and preserve Registry drafts and files when the shared client refuses a submission.
 
 Let application-provided Organize entries own their availability feedback while retaining default Runner availability hints.
+
+Bind the authoritative execution session ID to each business tool context so applications can associate business proposals with the current chat without trusting model-supplied identifiers.

@@ -143,11 +143,12 @@ describe('OnlineAgent service slice', () => {
     });
     const f = await fixture(model);
     const token = createServiceToken<{
-      read(value: number, actor: Context): number;
+      read(value: number, actor: ToolContext): number;
     }>('fixture-business');
-    const read = vi.fn((value: number, actor: Context) => {
+    const read = vi.fn((value: number, actor: ToolContext) => {
       expect(actor.user.id).toBe('alice');
       expect(actor.credentials).toEqual(context().credentials);
+      expect(actor.sessionId).toBe(agent.sessionId);
       return value * 10;
     });
     f.resolver.instance(token, { read });
@@ -167,7 +168,10 @@ describe('OnlineAgent service slice', () => {
     const sql: string[] = [];
     const record = (query: { sql: string }) => sql.push(query.sql);
     client.on('query', record);
-    const agent = await f.service.realtime(context());
+    const agent = await f.service.realtime({
+      ...context(),
+      business: { sessionId: 'untrusted-other-session' },
+    });
     await agent.send([{ role: 'user', content: 'Read twice.' }]);
     await settle(agent);
     client.off('query', record);

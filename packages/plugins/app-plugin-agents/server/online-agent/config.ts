@@ -14,7 +14,11 @@ export type Context = Readonly<{
   variable?: Json;
   systemPrompt?: string;
 }>;
-export type ToolContext = Context & { readonly signal: AbortSignal };
+export type ToolContext = Context & {
+  /** The executing session, supplied by the runtime rather than model or page input. */
+  readonly sessionId: string;
+  readonly signal: AbortSignal;
+};
 export type Scope = {
   systemPromptTemplate?:
     string | { variableSchema?: ZodObject; template(context: Context): string };
