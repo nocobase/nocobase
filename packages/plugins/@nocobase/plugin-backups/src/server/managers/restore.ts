@@ -21,6 +21,7 @@ import {
   Extractor,
   BACKUP_EXTENSION,
   BACKUPS,
+  ENCRYPTION_FIELD_KEYS_DIRECTORY,
   FILE_ENCRYPTION_SALT,
   getDBVersion,
   PLUGIN_BACKUPS_NAME,
@@ -50,6 +51,26 @@ interface Metadata {
   }>;
 }
 
+interface EncryptionFieldKeysRestoreState {
+  previousPath?: string;
+  restoredPath?: string;
+  previousKeysActive?: boolean;
+  restoreFailed?: boolean;
+}
+
+class RestoreDataError extends Error {
+  encryptionFieldKeysRestore?: EncryptionFieldKeysRestoreState;
+
+  constructor(error: unknown, encryptionFieldKeysRestore?: EncryptionFieldKeysRestoreState) {
+    super(error instanceof Error ? error.message : String(error));
+    this.name = 'RestoreDataError';
+    this.encryptionFieldKeysRestore = encryptionFieldKeysRestore;
+    if (error instanceof Error && error.stack) {
+      this.stack = error.stack;
+    }
+  }
+}
+
 export interface RestoreOptions {
   forceSchemaRestore?: boolean;
   skipDropAllTables?: boolean;
@@ -71,6 +92,7 @@ export class RestoreManager {
   #tempDir: string;
   #uploadDir: string;
   #aesKeyPath: string;
+  #encryptionFieldKeysPath: string;
   constructor(ctx: ResourcerContext, dbOptions?: any) {
     this.ctx = ctx;
     this.#dbAdapter = getDBAdapter(dbOptions || ctx.app.db.options);
@@ -79,6 +101,7 @@ export class RestoreManager {
     this.#tempDir = storagePathJoin('tmp', 'backups', ctx.app.name);
     this.#uploadDir = storagePathJoin('uploads');
     this.#aesKeyPath = storagePathJoin('apps', ctx.app.name, 'aes_key.dat');
+    this.#encryptionFieldKeysPath = storagePathJoin('apps', ctx.app.name, ENCRYPTION_FIELD_KEYS_DIRECTORY);
   }
 
   protected set backupDir(backupDir: string) {
@@ -128,39 +151,72 @@ export class RestoreManager {
   ) {
     await this.#dbAdapter.check('restore');
     const extractedDir = await this.#decompressFiles(filePath, password);
-    const backupFiles = await fsPromises.readdir(extractedDir);
-    const dbFile = backupFiles.find((file) => file === 'data');
-    const metadataFile = backupFiles.find((file) => file === '_metadata.json');
-    const uploadsExist = backupFiles.includes('uploads');
-    if (!dbFile || !metadataFile) {
-      this.ctx.logger.error('Not a valid backup file', { module: BACKUPS });
-      throw new Error(this.#t('Not a valid backup file'));
-    }
-    // check the metadata file
-    const metadata = await this.#parseMetadataFile(path.join(extractedDir, metadataFile), tolerentMode, options);
     try {
-      await this.#restoreDataCLI(extractedDir, dbFile, uploadsExist, metadata, options);
-    } catch (error) {
-      const dbVersion = await getDBVersion(this.ctx.app.db);
-      const restoreClientVersion = await this.#dbAdapter.clientVersion('restore');
-      this.ctx.logger.error(
-        `Error restoring backup: "${error.message}".
-        Database Version: backup[${metadata.database.version}], current[${dbVersion}],
-        Client Version: backup[${metadata.database.backupClientVersion}], restore[${restoreClientVersion}]
-        `,
-        { module: BACKUPS },
-      );
-      if (tolerentMode && error.message.includes('ignored')) {
-        // if the error was ignored by db client
-        this.ctx.logger.warn('Tolerent mode enabled, ignoring the error and continue the upgrade.', {
-          module: BACKUPS,
-        });
-        await this.#restoreFilesAndCleanup(uploadsExist, extractedDir);
-        // await sleep(5000); // wait for the client to show the error message, for debug
-        await this.ctx.app.upgrade();
-      } else if (!skipRevertOnError) {
-        await this.#revertDbRestore();
+      const backupFiles = await fsPromises.readdir(extractedDir);
+      const dbFile = backupFiles.find((file) => file === 'data');
+      const metadataFile = backupFiles.find((file) => file === '_metadata.json');
+      const uploadsExist = backupFiles.includes('uploads');
+      if (!dbFile || !metadataFile) {
+        this.ctx.logger.error('Not a valid backup file', { module: BACKUPS });
+        throw new Error(this.#t('Not a valid backup file'));
       }
+      // check the metadata file
+      const metadata = await this.#parseMetadataFile(path.join(extractedDir, metadataFile), tolerentMode, options);
+      try {
+        await this.#restoreDataCLI(extractedDir, dbFile, uploadsExist, metadata, options);
+      } catch (error) {
+        const restoreError = error instanceof RestoreDataError ? error : new RestoreDataError(error, undefined);
+        await this.#logRestoreError(restoreError, metadata);
+        if (tolerentMode && restoreError.message.includes('ignored')) {
+          // if the error was ignored by db client
+          this.ctx.logger.warn('Tolerent mode enabled, ignoring the error and continue the upgrade.', {
+            module: BACKUPS,
+          });
+          const encryptionFieldKeysRestore = await this.#restoreFilesForTolerentMode(
+            uploadsExist,
+            extractedDir,
+            restoreError.encryptionFieldKeysRestore,
+          );
+          // await sleep(5000); // wait for the client to show the error message, for debug
+          await this.ctx.app.upgrade();
+          await this.#commitEncryptionFieldKeysRestore(encryptionFieldKeysRestore);
+        } else if (!skipRevertOnError) {
+          const databaseReverted = await this.#revertDbRestore();
+          if (databaseReverted) {
+            const encryptionFieldKeysReverted = await this.#rollbackEncryptionFieldKeysRestore(
+              restoreError.encryptionFieldKeysRestore,
+            );
+            if (!encryptionFieldKeysReverted) {
+              throw new RestoreDataError(
+                'Failed to roll back the encryption field keys',
+                restoreError.encryptionFieldKeysRestore,
+              );
+            }
+          } else {
+            const encryptionFieldKeysActivated = await this.#activateRestoredEncryptionFieldKeys(
+              restoreError.encryptionFieldKeysRestore,
+            );
+            if (!encryptionFieldKeysActivated) {
+              throw new RestoreDataError(
+                'Failed to activate the restored encryption field keys',
+                restoreError.encryptionFieldKeysRestore,
+              );
+            }
+          }
+        } else {
+          const encryptionFieldKeysActivated = await this.#activateRestoredEncryptionFieldKeys(
+            restoreError.encryptionFieldKeysRestore,
+          );
+          if (!encryptionFieldKeysActivated) {
+            throw new RestoreDataError(
+              'Failed to activate the restored encryption field keys',
+              restoreError.encryptionFieldKeysRestore,
+            );
+          }
+        }
+      }
+    } finally {
+      await this.#cleanupExtractedDir(extractedDir);
     }
   }
 
@@ -186,6 +242,7 @@ export class RestoreManager {
     options?: RestoreOptions,
   ): Promise<void> {
     const tmpBackupDir = path.join(this.#tempDir, 'before-restore');
+    let encryptionFieldKeysRestore: EncryptionFieldKeysRestoreState | undefined;
     try {
       await fs.mkdir(tmpBackupDir, { recursive: true });
       // ensure the app cleaned before restoring the database
@@ -200,12 +257,15 @@ export class RestoreManager {
       });
       this.ctx.logger.info('Database restored successfully', { module: BACKUPS });
       // copy the uploads directory
-      await this.#restoreFilesAndCleanup(restoreUploads, extractedDir);
+      encryptionFieldKeysRestore = await this.#restoreFilesAndCleanup(restoreUploads, extractedDir);
+      await this.#commitEncryptionFieldKeysRestore(encryptionFieldKeysRestore);
     } catch (error) {
-      this.ctx.logger.error(`Error restoring backup: ${error.message}. Trying to revert the backup process`, {
+      const restoreError =
+        error instanceof RestoreDataError ? error : new RestoreDataError(error, encryptionFieldKeysRestore);
+      this.ctx.logger.error(`Error restoring backup: ${restoreError.message}. Trying to revert the backup process`, {
         module: BACKUPS,
       });
-      throw error;
+      throw restoreError;
     }
   }
 
@@ -232,56 +292,87 @@ export class RestoreManager {
   ): Promise<void> {
     await this.#dbAdapter.check('restore');
     const extractedDir = await this.#decompressFiles(filePath, password);
-    const backupFiles = await fsPromises.readdir(extractedDir);
-    const dbFile = backupFiles.find((file) => file === 'data');
-    const metadataFile = backupFiles.find((file) => file === '_metadata.json');
-    const uploadsExist = backupFiles.includes('uploads');
-    if (!dbFile || !metadataFile) {
-      this.ctx.logger.error('Not a valid backup file', { module: BACKUPS });
-      throw new Error(this.#t('Not a valid backup file'));
-    }
-    // check the metadata file
-    const metadata = await this.#parseMetadataFile(path.join(extractedDir, metadataFile), tolerentMode, options);
-    this.#restoreData(extractedDir, dbFile, uploadsExist, taskId, metadata, options).catch(async (error) => {
-      try {
-        const dbVersion = await getDBVersion(this.ctx.app.db);
-        const restoreClientVersion = await this.#dbAdapter.clientVersion('restore');
-        this.ctx.logger.error(
-          `Error restoring backup: "${error.message}".
-          Database Version: backup[${metadata.database.version}], current[${dbVersion}],
-          Client Version: backup[${metadata.database.backupClientVersion}], restore[${restoreClientVersion}]
-          `,
-          { module: BACKUPS },
-        );
-        if (tolerentMode && error.message.includes('ignored')) {
-          // if the error was ignored by db client
-          this.ctx.logger.warn('Tolerent mode enabled, ignoring the error and continue the upgrade.', {
-            module: BACKUPS,
-          });
-          await this.#restoreFilesAndCleanup(uploadsExist, extractedDir);
-          // await sleep(5000); // wait for the client to show the error message, for debug
-          await this.ctx.app.runCommand('upgrade');
-        } else {
-          if (!tolerentMode && this.#isPostgresLikeDialect(this.#dbAdapter.dbOpts.dialect)) {
-            const backupClientVersion = Number(toMajorVersion(metadata.database.backupClientVersion));
-            const dbServerVersion = Number(toMajorVersion(dbVersion));
-            if (backupClientVersion > 16 && dbServerVersion <= 16) {
-              // pg_dump 17 introduced some incompatible options, give user a friendly message
-              const statusCache = await this.getStatusCache();
-              await statusCache.set(taskId, {
-                message: this.#t('ERROR_PG_DUMP_LT_17'),
-              });
-            }
-          }
-          if (!skipRevertOnError) {
-            await this.#revertDbRestore();
-          }
-          await this.ctx.app.runCommand('upgrade');
-        }
-      } catch (err) {
-        this.ctx.logger.error(`Error handling restore failure: ${err.message}`, { module: BACKUPS });
+    let dbFile: string;
+    let uploadsExist: boolean;
+    let metadata: Metadata;
+    try {
+      const backupFiles = await fsPromises.readdir(extractedDir);
+      const foundDbFile = backupFiles.find((file) => file === 'data');
+      const metadataFile = backupFiles.find((file) => file === '_metadata.json');
+      uploadsExist = backupFiles.includes('uploads');
+      if (!foundDbFile || !metadataFile) {
+        this.ctx.logger.error('Not a valid backup file', { module: BACKUPS });
+        throw new Error(this.#t('Not a valid backup file'));
       }
-    });
+      dbFile = foundDbFile;
+      // check the metadata file
+      metadata = await this.#parseMetadataFile(path.join(extractedDir, metadataFile), tolerentMode, options);
+    } catch (error) {
+      await this.#cleanupExtractedDir(extractedDir);
+      throw error;
+    }
+
+    this.#restoreData(extractedDir, dbFile, uploadsExist, taskId, metadata, options)
+      .catch(async (error) => {
+        const restoreError = error instanceof RestoreDataError ? error : new RestoreDataError(error, undefined);
+        const dbVersion = await this.#logRestoreError(restoreError, metadata);
+        try {
+          if (tolerentMode && restoreError.message.includes('ignored')) {
+            // if the error was ignored by db client
+            this.ctx.logger.warn('Tolerent mode enabled, ignoring the error and continue the upgrade.', {
+              module: BACKUPS,
+            });
+            const encryptionFieldKeysRestore = await this.#restoreFilesForTolerentMode(
+              uploadsExist,
+              extractedDir,
+              restoreError.encryptionFieldKeysRestore,
+            );
+            // await sleep(5000); // wait for the client to show the error message, for debug
+            await this.ctx.app.runCommand('upgrade');
+            await this.#commitEncryptionFieldKeysRestore(encryptionFieldKeysRestore);
+          } else {
+            if (!tolerentMode && dbVersion && this.#isPostgresLikeDialect(this.#dbAdapter.dbOpts.dialect)) {
+              const backupClientVersion = Number(toMajorVersion(metadata.database.backupClientVersion));
+              const dbServerVersion = Number(toMajorVersion(dbVersion));
+              if (backupClientVersion > 16 && dbServerVersion <= 16) {
+                // pg_dump 17 introduced some incompatible options, give user a friendly message
+                const statusCache = await this.getStatusCache();
+                await statusCache.set(taskId, {
+                  message: this.#t('ERROR_PG_DUMP_LT_17'),
+                });
+              }
+            }
+            let databaseReverted = false;
+            if (!skipRevertOnError) {
+              databaseReverted = await this.#revertDbRestore();
+            }
+            if (databaseReverted) {
+              const encryptionFieldKeysReverted = await this.#rollbackEncryptionFieldKeysRestore(
+                restoreError.encryptionFieldKeysRestore,
+              );
+              if (!encryptionFieldKeysReverted) {
+                return;
+              }
+            } else {
+              const encryptionFieldKeysActivated = await this.#activateRestoredEncryptionFieldKeys(
+                restoreError.encryptionFieldKeysRestore,
+              );
+              if (!encryptionFieldKeysActivated) {
+                return;
+              }
+            }
+            await this.ctx.app.runCommand('upgrade');
+          }
+        } catch (err) {
+          this.ctx.logger.error(`Error handling restore failure: ${err.message}`, { module: BACKUPS });
+        }
+      })
+      .finally(async () => {
+        await this.#cleanupExtractedDir(extractedDir);
+      })
+      .catch((error) => {
+        this.ctx.logger.error(`Error finalizing restore: ${error.message}`, { module: BACKUPS });
+      });
   }
 
   async #parseMetadataFile(filePath: string, tolerentMode: boolean, options?: RestoreOptions) {
@@ -389,12 +480,12 @@ export class RestoreManager {
 
   async #decompressFiles(filePath: string, password?: string): Promise<string> {
     const fileBaseName = path.basename(filePath, `.${BACKUP_EXTENSION}`);
-    const outputDir = path.join(this.#tempDir, fileBaseName);
+    await fsPromises.mkdir(this.#tempDir, { recursive: true });
+    const outputDir = await fsPromises.mkdtemp(path.join(this.#tempDir, `${fileBaseName}-`));
     const inputFileStream = fs.createReadStream(filePath);
     let inputStream: Readable | null = null;
 
     try {
-      await fsPromises.mkdir(outputDir, { recursive: true });
       // Assign inputStream within the try block after creating the stream
       inputStream = await this.#createDecryptedStream(inputFileStream, password);
       const extractor = new Extractor({ path: outputDir });
@@ -408,6 +499,7 @@ export class RestoreManager {
       this.ctx.logger.error(`Error decrypting file: ${error.message}. Please confirm your password.`, {
         module: BACKUPS,
       });
+      await this.#cleanupExtractedDir(outputDir);
       throw new Error(this.#t('ERROR_DECRYPTING_PLS_CHECK_PASSWORD', error.message));
     } finally {
       // Ensure input file stream is always closed
@@ -491,6 +583,7 @@ export class RestoreManager {
     this.#notify(RESTORE_STEPS.DATABASE);
     const statusCache = await this.getStatusCache();
     const tmpBackupDir = path.join(this.#tempDir, 'before-restore');
+    let encryptionFieldKeysRestore: EncryptionFieldKeysRestoreState | undefined;
     try {
       await fsPromises.mkdir(tmpBackupDir, { recursive: true });
       await this.#dbAdapter.backup({ dir: tmpBackupDir });
@@ -511,26 +604,46 @@ export class RestoreManager {
       if (restoreUploads) {
         this.#notify(RESTORE_STEPS.UPLOADS);
       }
-      await this.#restoreFilesAndCleanup(restoreUploads, extractedDir);
-    } catch (error) {
+      encryptionFieldKeysRestore = await this.#restoreFilesAndCleanup(restoreUploads, extractedDir);
       await statusCache.set(taskId, {
         inProgress: false,
-        message: error.message,
       });
-      this.ctx.logger.error(`Error restoring backup: ${error.message}. Trying to revert the backup process`, {
+      await this.ctx.app.runCommand('upgrade');
+      await this.#commitEncryptionFieldKeysRestore(encryptionFieldKeysRestore);
+    } catch (error) {
+      const restoreError =
+        error instanceof RestoreDataError ? error : new RestoreDataError(error, encryptionFieldKeysRestore);
+      try {
+        await statusCache.set(taskId, {
+          inProgress: false,
+          message: restoreError.message,
+        });
+      } catch (statusError) {
+        this.ctx.logger.error(`Error updating restore task status: ${statusError.message}`, { module: BACKUPS });
+      }
+      this.ctx.logger.error(`Error restoring backup: ${restoreError.message}. Trying to revert the backup process`, {
         module: BACKUPS,
       });
-      throw error;
+      throw restoreError;
     } finally {
       this.#notify(RESTORE_STEPS.END);
     }
-    await statusCache.set(taskId, {
-      inProgress: false,
-    });
-    await this.ctx.app.runCommand('upgrade');
   }
 
-  async #restoreFilesAndCleanup(restoreUploads: boolean, extractedDir: string) {
+  async #restoreFilesAndCleanup(
+    restoreUploads: boolean,
+    extractedDir: string,
+  ): Promise<EncryptionFieldKeysRestoreState | undefined> {
+    const encryptionFieldKeysRestore = await this.#restoreEncryptionFieldKeys(extractedDir);
+    try {
+      await this.#restoreUploadsAndAesKey(restoreUploads, extractedDir);
+    } catch (error) {
+      throw new RestoreDataError(error, encryptionFieldKeysRestore);
+    }
+    return encryptionFieldKeysRestore;
+  }
+
+  async #restoreUploadsAndAesKey(restoreUploads: boolean, extractedDir: string): Promise<void> {
     if (restoreUploads) {
       const uploadsDir = path.join(extractedDir, 'uploads');
       await fsPromises.mkdir(this.#uploadDir, { recursive: true });
@@ -542,24 +655,385 @@ export class RestoreManager {
     if (await fs.pathExists(aesKeyPath)) {
       await fs.copy(aesKeyPath, this.#aesKeyPath, { overwrite: true });
     }
-    // cleanup the temp directory
-    fs.rm(extractedDir, { recursive: true }).catch((e) => {
-      this.ctx.logger.error(`Error cleaning up the temp directory: ${e.message}`, { module: BACKUPS });
-    });
   }
 
-  async #revertDbRestore() {
+  async #restoreFilesForTolerentMode(
+    restoreUploads: boolean,
+    extractedDir: string,
+    restoreState: EncryptionFieldKeysRestoreState | undefined,
+  ): Promise<EncryptionFieldKeysRestoreState | undefined> {
+    let encryptionFieldKeysRestore = restoreState;
+    if (!encryptionFieldKeysRestore) {
+      try {
+        return await this.#restoreFilesAndCleanup(restoreUploads, extractedDir);
+      } catch (error) {
+        const restoreError = error instanceof RestoreDataError ? error : new RestoreDataError(error, undefined);
+        if (!restoreError.encryptionFieldKeysRestore?.restoreFailed) {
+          throw error;
+        }
+        encryptionFieldKeysRestore = restoreError.encryptionFieldKeysRestore;
+      }
+    }
+
+    if (encryptionFieldKeysRestore.restoreFailed) {
+      const encryptionFieldKeysActivated = await this.#activateRestoredEncryptionFieldKeys(encryptionFieldKeysRestore);
+      if (!encryptionFieldKeysActivated) {
+        throw new RestoreDataError('Failed to activate the restored encryption field keys', encryptionFieldKeysRestore);
+      }
+      try {
+        await this.#restoreUploadsAndAesKey(restoreUploads, extractedDir);
+      } catch (error) {
+        throw new RestoreDataError(error, encryptionFieldKeysRestore);
+      }
+    }
+    return encryptionFieldKeysRestore;
+  }
+
+  async #restoreEncryptionFieldKeys(extractedDir: string): Promise<EncryptionFieldKeysRestoreState | undefined> {
+    const sourcePath = path.join(extractedDir, ENCRYPTION_FIELD_KEYS_DIRECTORY);
+    let sourceStat: fs.Stats;
+    try {
+      sourceStat = await fsPromises.lstat(sourcePath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        // Backups created before encryption field keys were included must keep the current keys.
+        return undefined;
+      }
+      throw new RestoreDataError(error, { restoreFailed: true });
+    }
+    if (!sourceStat.isDirectory()) {
+      throw new RestoreDataError(this.#t('Not a valid backup file'), { restoreFailed: true });
+    }
+
+    let keyEntries: fs.Dirent[];
+    try {
+      keyEntries = (await fsPromises.readdir(sourcePath, { withFileTypes: true }))
+        .filter((entry) => entry.isFile() && path.extname(entry.name) === '.key')
+        .sort((left, right) => left.name.localeCompare(right.name));
+    } catch (error) {
+      throw new RestoreDataError(error, { restoreFailed: true });
+    }
+
+    const parentPath = path.dirname(this.#encryptionFieldKeysPath);
+    let stagingPath: string | undefined;
+    try {
+      await fsPromises.mkdir(parentPath, { recursive: true });
+      stagingPath = await fsPromises.mkdtemp(path.join(parentPath, `.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-`));
+      if (process.platform !== 'win32') {
+        await fsPromises.chmod(stagingPath, 0o700);
+      }
+      for (const entry of keyEntries) {
+        const sourceKeyPath = path.join(sourcePath, entry.name);
+        const stagedKeyPath = path.join(stagingPath, entry.name);
+        await fsPromises.copyFile(sourceKeyPath, stagedKeyPath);
+        if (process.platform !== 'win32') {
+          await fsPromises.chmod(stagedKeyPath, 0o600);
+        }
+      }
+    } catch (error) {
+      await this.#cleanupEncryptionFieldKeysDirectory(stagingPath, 'incomplete staged');
+      throw new RestoreDataError(error, { restoreFailed: true });
+    }
+    if (!stagingPath) {
+      throw new RestoreDataError('Failed to prepare the encryption field keys', { restoreFailed: true });
+    }
+
+    const previousPath = path.join(parentPath, `.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-${crypto.randomUUID()}`);
+    let hadPreviousKeys = false;
+    let previousMoved = false;
+
+    try {
+      try {
+        await fsPromises.lstat(this.#encryptionFieldKeysPath);
+        hadPreviousKeys = true;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          throw new RestoreDataError(error, {
+            restoredPath: stagingPath,
+            previousKeysActive: true,
+            restoreFailed: true,
+          });
+        }
+      }
+
+      if (hadPreviousKeys) {
+        try {
+          await fsPromises.rename(this.#encryptionFieldKeysPath, previousPath);
+          previousMoved = true;
+        } catch (error) {
+          throw new RestoreDataError(error, {
+            restoredPath: stagingPath,
+            previousKeysActive: true,
+            restoreFailed: true,
+          });
+        }
+      }
+
+      try {
+        await fsPromises.rename(stagingPath, this.#encryptionFieldKeysPath);
+      } catch (installError) {
+        if (previousMoved) {
+          try {
+            await fsPromises.rename(previousPath, this.#encryptionFieldKeysPath);
+            previousMoved = false;
+          } catch (rollbackError) {
+            this.ctx.logger.error(
+              `Failed to restore the previous encryption field keys. The keys were preserved at "${previousPath}": ${rollbackError.message}`,
+              { module: BACKUPS },
+            );
+            throw new RestoreDataError(
+              new Error(
+                `Failed to install encryption field keys: ${installError.message}. Failed to restore the previous keys; they were preserved at "${previousPath}": ${rollbackError.message}`,
+              ),
+              {
+                previousPath,
+                restoredPath: stagingPath,
+                restoreFailed: true,
+              },
+            );
+          }
+        }
+        throw new RestoreDataError(installError, {
+          restoredPath: stagingPath,
+          previousKeysActive: hadPreviousKeys,
+          restoreFailed: true,
+        });
+      }
+      return {
+        previousPath: previousMoved ? previousPath : undefined,
+      };
+    } catch (error) {
+      const preserveStagingPath =
+        error instanceof RestoreDataError && error.encryptionFieldKeysRestore?.restoredPath === stagingPath;
+      if (!preserveStagingPath) {
+        await this.#cleanupEncryptionFieldKeysDirectory(stagingPath, 'staged');
+      }
+      throw error instanceof RestoreDataError ? error : new RestoreDataError(error, { restoreFailed: true });
+    }
+  }
+
+  async #commitEncryptionFieldKeysRestore(restoreState: EncryptionFieldKeysRestoreState | undefined): Promise<void> {
+    if (!restoreState?.previousPath) {
+      return;
+    }
+    try {
+      await fsPromises.rm(restoreState.previousPath, {
+        recursive: true,
+        force: true,
+        maxRetries: 3,
+        retryDelay: 100,
+      });
+    } catch (error) {
+      this.ctx.logger.error(
+        `Error cleaning up previous encryption field keys directory "${restoreState.previousPath}": ${error.message}`,
+        { module: BACKUPS },
+      );
+    }
+  }
+
+  async #rollbackEncryptionFieldKeysRestore(
+    restoreState: EncryptionFieldKeysRestoreState | undefined,
+  ): Promise<boolean> {
+    if (!restoreState) {
+      return true;
+    }
+
+    if (restoreState.restoreFailed) {
+      if (!restoreState.previousKeysActive && restoreState.previousPath) {
+        try {
+          await fsPromises.rename(restoreState.previousPath, this.#encryptionFieldKeysPath);
+        } catch (rollbackError) {
+          const restoredKeysLocation = restoreState.restoredPath
+            ? ` The restored keys were preserved at "${restoreState.restoredPath}".`
+            : '';
+          this.ctx.logger.error(
+            `Failed to roll back encryption field keys. The previous keys were preserved at "${restoreState.previousPath}".${restoredKeysLocation} ${rollbackError.message}`,
+            { module: BACKUPS },
+          );
+          return false;
+        }
+      }
+      await this.#cleanupEncryptionFieldKeysDirectory(restoreState.restoredPath, 'staged restored');
+      return true;
+    }
+
+    const parentPath = path.dirname(this.#encryptionFieldKeysPath);
+    const discardedPath = path.join(parentPath, `.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-discarded-${crypto.randomUUID()}`);
+    let installedKeysMoved = false;
+
+    try {
+      await fsPromises.rename(this.#encryptionFieldKeysPath, discardedPath);
+      installedKeysMoved = true;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        const previousKeysLocation = restoreState.previousPath
+          ? ` The previous keys were preserved at "${restoreState.previousPath}".`
+          : '';
+        this.ctx.logger.error(
+          `Failed to remove the restored encryption field keys while rolling back.${previousKeysLocation} ${error.message}`,
+          { module: BACKUPS },
+        );
+        return false;
+      }
+    }
+
+    if (restoreState.previousPath) {
+      try {
+        await fsPromises.rename(restoreState.previousPath, this.#encryptionFieldKeysPath);
+      } catch (rollbackError) {
+        let restoredKeysLocation = installedKeysMoved ? ` The restored keys remain at "${discardedPath}".` : '';
+        if (installedKeysMoved) {
+          try {
+            await fsPromises.rename(discardedPath, this.#encryptionFieldKeysPath);
+            installedKeysMoved = false;
+            restoredKeysLocation = ' The restored keys remain active.';
+          } catch (reinstallError) {
+            restoredKeysLocation = ` The restored keys were preserved at "${discardedPath}" but could not be reinstalled: ${reinstallError.message}.`;
+          }
+        }
+        this.ctx.logger.error(
+          `Failed to roll back encryption field keys. The previous keys were preserved at "${restoreState.previousPath}".${restoredKeysLocation} ${rollbackError.message}`,
+          { module: BACKUPS },
+        );
+        return false;
+      }
+    }
+
+    if (installedKeysMoved) {
+      try {
+        await fsPromises.rm(discardedPath, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+      } catch (error) {
+        this.ctx.logger.error(
+          `Error cleaning up rolled back encryption field keys directory "${discardedPath}": ${error.message}`,
+          { module: BACKUPS },
+        );
+      }
+    }
+    return true;
+  }
+
+  async #activateRestoredEncryptionFieldKeys(
+    restoreState: EncryptionFieldKeysRestoreState | undefined,
+  ): Promise<boolean> {
+    if (!restoreState?.restoreFailed) {
+      return true;
+    }
+    if (!restoreState.restoredPath) {
+      this.ctx.logger.error('Restored encryption field keys are unavailable; stopping the restore process.', {
+        module: BACKUPS,
+      });
+      return false;
+    }
+
+    let previousPath = restoreState.previousPath;
+    let previousKeysMoved = false;
+    if (restoreState.previousKeysActive) {
+      previousPath =
+        previousPath ??
+        path.join(
+          path.dirname(this.#encryptionFieldKeysPath),
+          `.${ENCRYPTION_FIELD_KEYS_DIRECTORY}-previous-${crypto.randomUUID()}`,
+        );
+      try {
+        await fsPromises.rename(this.#encryptionFieldKeysPath, previousPath);
+        previousKeysMoved = true;
+        restoreState.previousPath = previousPath;
+        restoreState.previousKeysActive = false;
+      } catch (error) {
+        this.ctx.logger.error(
+          `Failed to preserve the active encryption field keys at "${previousPath}" before activating the restored keys. The restored keys were preserved at "${restoreState.restoredPath}": ${error.message}`,
+          { module: BACKUPS },
+        );
+        return false;
+      }
+    }
+
+    try {
+      await fsPromises.rename(restoreState.restoredPath, this.#encryptionFieldKeysPath);
+      return true;
+    } catch (activationError) {
+      let previousKeysLocation = previousPath ? ` The previous keys were preserved at "${previousPath}".` : '';
+      if (previousKeysMoved && previousPath) {
+        try {
+          await fsPromises.rename(previousPath, this.#encryptionFieldKeysPath);
+          previousKeysLocation = ' The previous keys remain active.';
+        } catch (rollbackError) {
+          previousKeysLocation = ` The previous keys were preserved at "${previousPath}" but could not be reactivated: ${rollbackError.message}.`;
+        }
+      }
+      this.ctx.logger.error(
+        `Failed to activate the restored encryption field keys. The restored keys were preserved at "${restoreState.restoredPath}".${previousKeysLocation} ${activationError.message}`,
+        { module: BACKUPS },
+      );
+      return false;
+    }
+  }
+
+  async #cleanupEncryptionFieldKeysDirectory(directoryPath: string | undefined, description: string): Promise<void> {
+    if (!directoryPath) {
+      return;
+    }
+    try {
+      await fsPromises.rm(directoryPath, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    } catch (error) {
+      this.ctx.logger.error(
+        `Error cleaning up ${description} encryption field keys directory "${directoryPath}": ${error.message}`,
+        { module: BACKUPS },
+      );
+    }
+  }
+
+  async #cleanupExtractedDir(extractedDir: string): Promise<void> {
+    try {
+      await fsPromises.rm(extractedDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    } catch (error) {
+      this.ctx.logger.error(`Error cleaning up temporary backup directory "${extractedDir}": ${error.message}`, {
+        module: BACKUPS,
+      });
+    }
+  }
+
+  async #logRestoreError(error: Error, metadata: Metadata): Promise<string | undefined> {
+    let dbVersion: string | undefined;
+    let restoreClientVersion: string | undefined;
+    try {
+      dbVersion = await getDBVersion(this.ctx.app.db);
+    } catch (diagnosticError) {
+      this.ctx.logger.error(`Error reading the current database version: ${diagnosticError.message}`, {
+        module: BACKUPS,
+      });
+    }
+    try {
+      restoreClientVersion = await this.#dbAdapter.clientVersion('restore');
+    } catch (diagnosticError) {
+      this.ctx.logger.error(`Error reading the restore client version: ${diagnosticError.message}`, {
+        module: BACKUPS,
+      });
+    }
+    this.ctx.logger.error(
+      `Error restoring backup: "${error.message}".
+      Database Version: backup[${metadata.database.version}], current[${dbVersion ?? 'unknown'}],
+      Client Version: backup[${metadata.database.backupClientVersion}], restore[${restoreClientVersion ?? 'unknown'}]
+      `,
+      { module: BACKUPS },
+    );
+    return dbVersion;
+  }
+
+  async #revertDbRestore(): Promise<boolean> {
     this.ctx.logger.info('Reverting the database restore process', { module: BACKUPS });
     const dbFile = path.join(this.#tempDir, 'before-restore', 'data');
     if (await fs.pathExists(dbFile)) {
       try {
         await this.#dbAdapter.restore({ filePath: dbFile, schema: this.#dbAdapter.dbOpts.schema });
+        return true;
       } catch (error) {
         this.ctx.logger.error('Error reverting the database restore process', { module: BACKUPS });
+        return false;
       }
-    } else {
-      this.ctx.logger.error('Database backup file for revert restore process not found', { module: BACKUPS });
     }
+    this.ctx.logger.error('Database backup file for revert restore process not found', { module: BACKUPS });
+    return false;
   }
 
   async #notify(step: string) {
