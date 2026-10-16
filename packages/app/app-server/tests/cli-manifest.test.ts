@@ -559,6 +559,16 @@ describe('deriveCliCommands', () => {
       actions: [],
     });
     expect(manifest.etag).toMatch(/^[0-9a-f]{32}$/u);
+    const withSettings = deriveCliCommands(document, {
+      ...run,
+      settings: ['settings/z', 'settings/a'],
+    });
+    expect(withSettings.identity.settings).toEqual([
+      'settings/a',
+      'settings/z',
+    ]);
+    expect(withSettings.commands).toEqual(manifest.commands);
+    expect(withSettings.etag).not.toBe(manifest.etag);
   });
 
   it('says why each command a caller is not offered is withheld', async () => {

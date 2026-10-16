@@ -680,6 +680,9 @@ export function cliManifestOf(
   caller: CliCaller,
 ): CliManifest {
   const identity = {
+    ...(caller.settings === undefined
+      ? {}
+      : { settings: [...caller.settings].sort() }),
     kind: caller.kind,
     userId: caller.userId,
     displayName: caller.displayName,
