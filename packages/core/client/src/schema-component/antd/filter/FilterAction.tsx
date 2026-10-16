@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useDirectionalPlacement } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
 import { createForm, Field, Form } from '@formily/core';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
@@ -44,6 +45,7 @@ export type FilterActionProps<T = {}> = ActionProps & {
 };
 
 const InternalFilterAction = React.memo((props: FilterActionProps) => {
+  const placement = useDirectionalPlacement('bottomLeft');
   const field = useField<Field>();
   const [visible, setVisible] = useState(false);
   const { designable, dn } = useDesignable();
@@ -81,7 +83,7 @@ const InternalFilterAction = React.memo((props: FilterActionProps) => {
     <FilterActionContext.Provider value={filterActionContextValue}>
       <Container
         destroyTooltipOnHide
-        placement={'bottomLeft'}
+        placement={placement}
         open={visible}
         onOpenChange={onOpenChange}
         trigger={'click'}

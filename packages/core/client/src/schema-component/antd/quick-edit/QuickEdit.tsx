@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useDirectionalPlacement } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
 // import { FormItem } from '@formily/antd-v5';
 import { IFormItemProps } from '@formily/antd-v5';
@@ -26,6 +27,7 @@ export interface QuickEditProps extends IFormItemProps {
 
 export const Editable = observer(
   (props: QuickEditProps) => {
+    const placement = useDirectionalPlacement('bottomLeft');
     const field: any = useField();
     const containerRef = useRef(null);
     const fieldSchema = useFieldSchema();
@@ -79,7 +81,7 @@ export const Editable = observer(
             </div>
           }
           trigger="click"
-          placement={'bottomLeft'}
+          placement={placement}
           overlayClassName={css`
             padding-top: 0;
             .ant-popover-arrow {

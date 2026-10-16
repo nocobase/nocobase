@@ -8,6 +8,7 @@
  */
 
 export * from './PluginManagerLink';
+import { useDirectionalPlacement } from '@nocobase/flow-engine';
 import { MenuOutlined } from '@ant-design/icons';
 import { useDebounce } from 'ahooks';
 import {
@@ -168,6 +169,7 @@ function BulkEnableButton({ plugins = [] }) {
 }
 
 const LocalPlugins = () => {
+  const placement = useDirectionalPlacement('bottomLeft');
   const { t } = useTranslation();
   const { theme } = useStyles();
   const { data, loading, refresh } = useRequest<TData>({
@@ -321,7 +323,7 @@ const LocalPlugins = () => {
               {!isWide && (
                 <Popover
                   trigger="click"
-                  placement="bottomLeft"
+                  placement={placement}
                   open={categoryOpen}
                   onOpenChange={setCategoryOpen}
                   content={<div style={{ minWidth: 180, maxHeight: '60vh', overflowY: 'auto' }}>{categoryList}</div>}
