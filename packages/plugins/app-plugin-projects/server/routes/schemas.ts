@@ -465,7 +465,7 @@ export const UpdateIssueBody: z.ZodType<UpdateIssueInput> = z.strictObject({
   }),
   acceptance: z.string().nullable().optional().meta({
     description:
-      'What the owner checks to accept the work, Markdown: the acceptance criteria, the screenshots or how to see the result, and where to try it. Omit to retain; null or whitespace clears it. Cleared outside in_review.',
+      "The issue's delivery report, Markdown: how it was, the agreed approach, what changed, how it was checked, open issues and details, ending with the acceptance criteria the owner checks and where. Kept across status changes; the next delivery replaces it. Omit to retain; null or whitespace clears it.",
   }),
   revision: z.number().int().optional().meta({
     description:
@@ -953,7 +953,7 @@ const issueShape = {
   }),
   acceptance: z.string().nullable().meta({
     description:
-      'What the owner checks to accept the work, Markdown; null outside In review.',
+      "The issue's delivery report, Markdown, ending with the acceptance criteria; kept across status changes until the next delivery replaces it, null when none was written.",
   }),
   next: z.string().nullable().meta({
     description:

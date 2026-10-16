@@ -28,7 +28,33 @@ export interface S3DriveDiskConfig {
   visibility: DriveVisibility;
 }
 
-export type AppDriveDiskConfig = FsDriveDiskConfig | S3DriveDiskConfig;
+export interface OssDriveDiskConfig {
+  driver: 'oss';
+  region: string;
+  bucket: string;
+  internal?: boolean;
+  domain?: string;
+  /** OSS request timeout in milliseconds; defaults to 600000 (10 minutes). */
+  timeout?: number;
+  visibility: DriveVisibility;
+  supportsACL?: boolean;
+  credentials:
+    | {
+        accessKeyId: string;
+        accessKeySecret: string;
+        provider?: never;
+        roleName?: never;
+      }
+    | {
+        provider: 'aliyun-ecs-ram-role';
+        roleName?: string;
+        accessKeyId?: never;
+        accessKeySecret?: never;
+      };
+}
+
+export type AppDriveDiskConfig =
+  FsDriveDiskConfig | S3DriveDiskConfig | OssDriveDiskConfig;
 
 export interface AppDriveConfig {
   default: string;
