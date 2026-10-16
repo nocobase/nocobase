@@ -6037,9 +6037,6 @@ importers:
       '@nocobase/lifecycle':
         specifier: workspace:^
         version: link:../packages/libs/lifecycle
-      '@nocobase/service-provider':
-        specifier: workspace:^
-        version: link:../packages/libs/service-provider
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.3(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
