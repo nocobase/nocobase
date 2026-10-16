@@ -13,8 +13,8 @@
     "check:structure": "./check.sh",
     "typecheck": "astro check",
     "test": "vitest run",
-    "lint": "eslint . --max-warnings 0",
-    "lint:fix": "eslint . --fix --max-warnings 0",
+    "lint": "astro sync && eslint . --max-warnings 0",
+    "lint:fix": "astro sync && eslint . --fix --max-warnings 0",
     "format": "prettier --write ."
   },
   "dependencies": {

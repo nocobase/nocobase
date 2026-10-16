@@ -4,7 +4,7 @@ Read this before changing anything under `docs/`.
 
 ## What the site is
 
-`docs/` is the `@nocobase/docs` workspace package: a static site built with plain [Astro](https://astro.build/) (not Starlight), one build for every language. `pnpm --filter @nocobase/docs dev` serves it, `build` writes `docs/dist/`, and `lint`, `typecheck` (`astro check`), `test` (`node --test`) and `check:structure` (`check.sh`) are its checks. The site ships no client-side framework: every page is a static document with a few kilobytes of plain scripts.
+`docs/` is the `@nocobase/docs` workspace package: a static site built with plain [Astro](https://astro.build/) (not Starlight), one build for every language. `pnpm --filter @nocobase/docs dev` serves it, `build` writes `docs/dist/`, and `lint`, `typecheck` (`astro check`), `test` (Vitest) and `check:structure` (`check.sh`) are its checks. `lint` runs `astro sync` first: the type-aware rules need the content collection types Astro generates in `.astro/`, which a fresh checkout does not have. The site ships no client-side framework: every page is a static document with a few kilobytes of plain scripts.
 
 Astro and its integrations are pinned to exact versions that had been published for at least two weeks when they were chosen. Upgrade them deliberately, one release at a time, and rebuild and compare the output (see "Checking a change" below).
 
