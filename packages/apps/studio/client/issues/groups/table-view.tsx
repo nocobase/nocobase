@@ -50,7 +50,6 @@ import type {
   TaskGroupId,
   TaskGroupItem,
 } from '../../../shared/task-groups.js';
-import { FOLLOW_UPS_MAX } from '../../../shared/follow-ups.js';
 import { IssueMarks } from '../issue-marks.js';
 import { issueTableRow } from '../rows.js';
 import { TableCreateStateContext } from '../table-create-state.js';
@@ -304,9 +303,7 @@ export function GroupedTableView({
                 : 'bg-background font-medium text-muted-foreground',
             )}
           >
-            {group.group === 'follow'
-              ? `${group.count}/${FOLLOW_UPS_MAX}`
-              : group.count}
+            {group.count}
           </span>
           <ChevronDownIcon
             aria-hidden
@@ -319,15 +316,6 @@ export function GroupedTableView({
       ),
     });
     if (isFolded) continue;
-    if (group.group === 'follow' && group.data.length === 0)
-      entries.push({
-        key: 'follow-empty',
-        content: (
-          <span className='text-xs text-muted-foreground'>
-            {t('taskGroups.followEmpty')}
-          </span>
-        ),
-      });
     for (const item of group.data) addTree(item, 0, group.group);
     if (group.nextCursor)
       entries.push({

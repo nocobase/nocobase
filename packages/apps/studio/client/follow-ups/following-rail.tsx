@@ -9,7 +9,7 @@ import type { ReactElement } from 'react';
 import { relativeTime } from '@/extensions/nocobase-inbox/model';
 import { cn } from 'cn';
 
-import { FOLLOW_UPS_MAX, type FollowUpIssue } from '../../shared/follow-ups.js';
+import type { FollowUpIssue } from '../../shared/follow-ups.js';
 import { usePullRequestMark } from '../git/api.js';
 import { nowLine } from '../issues/live/summary-model.js';
 import { StatusDot } from '../issues/live/status.js';
@@ -45,10 +45,7 @@ export function FollowingRail({
         id='follow-ups-following'
         className='text-sm font-semibold text-muted-foreground max-md:px-4 max-md:text-[13px] max-md:tracking-wide max-md:uppercase'
       >
-        {t('followUps.following.title', {
-          count: issues.length,
-          max: FOLLOW_UPS_MAX,
-        })}
+        {t('followUps.following.title', { count: issues.length })}
       </h2>
       {issues.length === 0 ? (
         <p className='rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground max-md:mx-4'>

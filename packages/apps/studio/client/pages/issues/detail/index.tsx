@@ -36,13 +36,7 @@ import {
 } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import { useTranslation } from '@nocobase/i18n/client';
-import {
-  useCallback,
-  useMemo,
-  useState,
-  type ReactElement,
-  type ReactNode,
-} from 'react';
+import { useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import { ArrowLeftIcon } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
@@ -74,9 +68,7 @@ import {
   IssueSubtasksSection,
 } from '../../../issues/detail/issue-main.js';
 import { useIssueMainState } from '../../../issues/detail/main-state.js';
-import { useIssueProgress } from '../../../issues/detail/use-issue-progress.js';
-import { usePendingCommentRun } from '../../../issues/detail/use-pending-comment-run.js';
-import { useIssuePullRequests } from '../../../git/api.js';
+import { useSummaryCovered } from '../../../issues/detail/use-summary-covered.js';
 import { IssuePlansSection } from '../../../issues/detail/issue-plans.js';
 import { IssueParentOutlet } from '../../../issues/detail/issue-parent-outlet.js';
 import { useIssueParent } from '../../../issues/detail/issue-parent.js';
@@ -89,13 +81,6 @@ import { IssueComposer } from '../../../issues/live/issue-composer.js';
 import { IssueFeed } from '../../../issues/live/issue-feed.js';
 import { IssueSummary } from '../../../issues/live/issue-summary.js';
 import { PhoneBar } from '../../../layouts/components/phone-bar.js';
-import {
-  handoffWaitsOn,
-  useOwnerHandoffView,
-} from '../../../issues/detail/use-owner-handoff.js';
-import { coveredBySummary } from '../../../issues/live/summary-model.js';
-import type { InboxEntry } from '@/extensions/nocobase-inbox/model';
-import { IN_REVIEW_STATUS } from '@nocobase/app-plugin-projects/shared/statuses';
 import { IssuePageAside } from './aside.js';
 import { useLiveIssue } from './use-live-issue.js';
 
@@ -166,48 +151,11 @@ function IssuePage({
   const update = useIssueUpdate(detail, detailKey);
   const pageActions = useIssuePageActions(detail);
   const runs = useLiveIssue(detail, issueId, detailKey, 0);
-  const progress = useIssueProgress(detail.id).data;
   const main = useIssueMainState(pageActions);
   const narrow = useMediaQuery('(max-width: 767px)');
   const viewer = useViewer();
   // The decisions the summary's "Needs you" card shows are left out of "Waiting for you".
-  const handoff = useOwnerHandoffView(detail.id).data;
-  const pending = usePendingCommentRun(detail).data;
-  const prs = useIssuePullRequests(detail.id).data;
-  const selectedPr = prs?.data.find((pr) => pr.state === 'open') ?? null;
-  const covered = useCallback(
-    (entry: InboxEntry) =>
-      coveredBySummary(entry, {
-        accepting:
-          !progress?.personalRunnerRequests?.some(
-            (request) => request.canDecide,
-          ) &&
-          !handoffWaitsOn(handoff) &&
-          detail.statusKey === IN_REVIEW_STATUS &&
-          Boolean(viewer?.userId) &&
-          viewer?.userId === detail.ownerUserId,
-        handoff: handoffWaitsOn(handoff),
-        notificationKey: handoff?.handoff?.notificationKey,
-        pullRequest: selectedPr,
-        blocked: detail.statusKey === 'blocked',
-        ownerRequest:
-          detail.statusKey === 'blocked' &&
-          viewer?.userId === detail.ownerUserId,
-        continuation: Boolean(pending),
-        personalRequestIds: progress?.personalRunnerRequests
-          ?.filter((request) => request.canDecide)
-          .map((request) => request.id),
-      }),
-    [
-      detail.statusKey,
-      detail.ownerUserId,
-      viewer?.userId,
-      handoff,
-      selectedPr,
-      pending,
-      progress,
-    ],
-  );
+  const covered = useSummaryCovered(detail);
   const [linkingPullRequest, setLinkingPullRequest] = useState(false);
   const linking = {
     linking: linkingPullRequest,

@@ -278,15 +278,7 @@ export function TaskListBody({
             onToggle={() => list.toggleGroup(group.group)}
             phone={phone}
           >
-            {group.items.length === 0 ? (
-              group.group === 'follow' ? (
-                <p className='px-3 py-3 text-xs leading-relaxed text-muted-foreground'>
-                  {phone
-                    ? t('taskGroups.followEmptyPhone')
-                    : t('taskGroups.followEmpty')}
-                </p>
-              ) : null
-            ) : (
+            {group.items.length === 0 ? null : (
               <div className='divide-y'>
                 {group.items.map((item) => (
                   <TaskRow

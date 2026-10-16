@@ -50,6 +50,7 @@ vi.mock('@nocobase/app-plugin-projects/client/issues', () => ({
   useStatusName: () => (_statuses: unknown, key: string) => `status:${key}`,
   useIssueUpdate: () => ({ mutate: mocks.update, isPending: false }),
   canEditIssues: () => true,
+  canCloseIssue: () => true,
 }));
 // The feed and the composer have tests of their own (`issue-feed.test.tsx`).
 vi.mock('../../client/issues/live/conversation.js', () => ({

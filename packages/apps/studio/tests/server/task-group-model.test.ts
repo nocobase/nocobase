@@ -90,15 +90,15 @@ describe('the split view', () => {
     });
   });
 
-  it('keeps the follow group even when empty, in the viewer order', () => {
+  it('lists the follow group in the viewer order, and leaves it out when empty', () => {
     const m = model([issue('a', 'backlog'), issue('b', 'backlog')], {
       followIds: ['b', 'a', 'gone'],
     });
     expect(m.groups[0]).toEqual({ group: 'follow', count: 2 });
     expect(ids(m, 'follow')).toEqual(['b', 'a']);
     expect(model([issue('x', 'backlog')]).groups[0]).toEqual({
-      group: 'follow',
-      count: 0,
+      group: 'backlog',
+      count: 1,
     });
   });
 
@@ -128,7 +128,7 @@ describe('the split view', () => {
       issue('dropped', 'cancelled'),
     ];
     const m = model(issues);
-    expect(m.groups.map((group) => group.group)).toEqual(['follow', 'done']);
+    expect(m.groups.map((group) => group.group)).toEqual(['done']);
     expect(ids(m, 'done')).toEqual(['recent']);
     expect(ids(model(issues, { statusFilter: 'done' }), 'done')).toEqual([
       'recent',
@@ -211,7 +211,6 @@ describe('the table', () => {
       waits: new Map([['leaf', wait(['answer'], hoursAgo(3))]]),
     });
     expect(m.groups).toEqual([
-      { group: 'follow', count: 0 },
       { group: 'wait', count: 1 },
       { group: 'backlog', count: 1 },
     ]);
@@ -226,8 +225,8 @@ describe('the table', () => {
       matchingIds: new Set(['leaf', 'sibling']),
     });
     // The root is outside the scope: the tree goes by its first task in scope.
-    expect(m.groups.map((group) => group.group)).toEqual(['follow', 'blocked']);
-    expect(m.groups[1]!.count).toBe(2);
+    expect(m.groups.map((group) => group.group)).toEqual(['blocked']);
+    expect(m.groups[0]!.count).toBe(2);
     const root = m.group('blocked').data[0]!;
     expect(root).toMatchObject({ id: 'root', context: true });
     const children = m.children('root').data;

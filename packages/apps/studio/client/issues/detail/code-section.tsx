@@ -17,7 +17,9 @@ import {
   Link2Icon,
   RocketIcon,
 } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import { useContext, useState, type ReactElement } from 'react';
+
+import { IssueSectionInTabContext } from '@/extensions/nocobase-issue-detail/section-context';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -185,36 +187,44 @@ function OtherDeploymentsRow({
   issue,
   group,
   previews,
+  expanded,
   onChanged,
 }: {
   readonly issue: IssueDetail;
   readonly group: CodeGroup;
   readonly previews: IssuePreviews | undefined;
+  /** Always unfolded, without the chevron. */
+  readonly expanded: boolean;
   readonly onChanged: (next: IssuePreviews) => void;
 }): ReactElement {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(() => needsAttention(group));
+  const [unfolded, setUnfolded] = useState(() => needsAttention(group));
+  const open = expanded || unfolded;
   const title = t('studioGit.section.unmatched');
   return (
     <li data-studio-code-unmatched>
-      <Collapsible open={open} onOpenChange={setOpen}>
+      <Collapsible open={open} onOpenChange={setUnfolded}>
         <div className='flex flex-wrap items-center gap-x-2 gap-y-1.5 px-3 py-2'>
           <div className='flex min-w-0 flex-1 basis-60 items-center gap-1.5'>
-            <CollapsibleTrigger
-              render={
-                <Button
-                  variant='ghost'
-                  size='icon-xs'
-                  className='group/other -ml-1 shrink-0 text-muted-foreground'
-                  aria-label={t('studioGit.section.details', { label: title })}
+            {expanded ? null : (
+              <CollapsibleTrigger
+                render={
+                  <Button
+                    variant='ghost'
+                    size='icon-xs'
+                    className='group/other -ml-1 shrink-0 text-muted-foreground'
+                    aria-label={t('studioGit.section.details', {
+                      label: title,
+                    })}
+                  />
+                }
+              >
+                <ChevronRightIcon
+                  className='transition-transform group-data-[panel-open]/other:rotate-90'
+                  aria-hidden
                 />
-              }
-            >
-              <ChevronRightIcon
-                className='transition-transform group-data-[panel-open]/other:rotate-90'
-                aria-hidden
-              />
-            </CollapsibleTrigger>
+              </CollapsibleTrigger>
+            )}
             <RocketIcon
               className='size-4 shrink-0 text-muted-foreground'
               aria-hidden
@@ -260,11 +270,18 @@ export function IssueCodeSection({
 } & CodeLinking): ReactElement | null {
   const { t } = useTranslation();
   const code = useIssueCode(issue);
+  // Under the task detail's own Code tab nothing folds: the tab was opened to see it.
+  const expanded = useContext(IssueSectionInTabContext);
   // The search opened from the add bar closes again once there is something to show.
   const searching = linking && code.canLink;
   if (!code.applicable && code.groups.length === 0 && !code.unmatched)
-    return null;
-  if (code.empty && !searching) return null;
+    // A tab opened to see the code says why it has none; on the issue page the section is simply absent.
+    return expanded ? (
+      <p className='text-sm text-muted-foreground'>
+        {t('studioGit.section.noHost')}
+      </p>
+    ) : null;
+  if (code.empty && !searching && !expanded) return null;
   return (
     <IssueSection
       icon={<GitPullRequestIcon />}
@@ -292,6 +309,7 @@ export function IssueCodeSection({
                 canLink={code.canLink}
                 previewUrl={readyPreviewUrl(group)}
                 defaultOpen={needsAttention(group)}
+                expanded={expanded}
               >
                 <GroupDetails
                   issue={issue}
@@ -307,6 +325,7 @@ export function IssueCodeSection({
               issue={issue}
               group={code.unmatched}
               previews={code.previews}
+              expanded={expanded}
               onChanged={code.replace}
             />
           ) : null}

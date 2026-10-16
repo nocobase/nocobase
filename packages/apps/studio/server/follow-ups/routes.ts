@@ -115,7 +115,7 @@ export const followUpsRoutes: AppApiRouteContribution<Application> =
         operationId: 'followUpsGet',
         ...cliRoute({ command: 'follow-up list' }),
         description:
-          'The issues the caller owns that are in review, blocked, in progress or in backlog, and the issues they follow (at most five; by default their blocked and in-review issues, newest first), each with what it waits for now and, for a followed one, how many comments and changes others made since the caller last looked at it. Needs `pm.issues` view.',
+          'The issues the caller owns that are in review, blocked, in progress or in backlog, and the issues they follow (by default their five latest blocked and in-review issues), each with what it waits for now and, for a followed one, how many comments and changes others made since the caller last looked at it. Needs `pm.issues` view.',
         responses: {
           200: dataResponse(FollowUpsViewSchema),
           ...apiErrorResponses,
@@ -178,8 +178,7 @@ export const followUpsRoutes: AppApiRouteContribution<Application> =
         operationId: 'followUpsSetFollowing',
         // Replaces the whole list; the star and the CLI use `follow-up follow` and `unfollow`.
         ...cliRoute(false),
-        description:
-          'Replaces the issues the caller follows, in order, at most five. An issue newly followed counts what happens on it from now on. Needs `pm.issues` view.',
+        description: `Replaces the issues the caller follows, in order, at most ${FOLLOW_UPS_MAX}. An issue newly followed counts what happens on it from now on. Needs \`pm.issues\` view.`,
         responses: {
           200: dataResponse(FollowingViewSchema),
           400: apiErrorResponse(

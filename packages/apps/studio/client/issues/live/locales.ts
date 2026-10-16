@@ -31,6 +31,8 @@ export const issueLiveEnUS = {
     delivery: 'Delivery notes',
     deliveryNone: 'No agent has said what was delivered yet.',
     viewChanges: 'View changes',
+    accept: 'Accept',
+    acceptHint: 'Accept the result and move it to Done.',
     sendBack: 'Send back',
     sendBackHint: 'Move it back to In progress so the work continues.',
     answer: 'Reply',
@@ -62,7 +64,7 @@ export const issueLiveEnUS = {
   },
   follow: {
     follow: 'Follow',
-    following: 'Following · {{count}}/{{max}}',
+    following: 'Following',
     unfollow: 'Stop following',
     full: 'Following {{max}} already',
     fullHint:
@@ -105,6 +107,8 @@ export const issueLiveZhCN: typeof issueLiveEnUS = {
     delivery: '交付说明',
     deliveryNone: '还没有智能体说明交付了什么。',
     viewChanges: '看改动',
+    accept: '验收通过',
+    acceptHint: '接受交付结果，移到已完成。',
     sendBack: '退回修改',
     sendBackHint: '移回进行中，让工作继续。',
     answer: '回复',
@@ -136,7 +140,7 @@ export const issueLiveZhCN: typeof issueLiveEnUS = {
   },
   follow: {
     follow: '关注',
-    following: '已关注 · {{count}}/{{max}}',
+    following: '已关注',
     unfollow: '取消关注',
     full: '关注已满 {{max}} 个',
     fullHint: '你已经关注了 {{max}} 个任务。先取消关注一个，再关注新的。',

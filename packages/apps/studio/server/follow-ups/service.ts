@@ -13,6 +13,7 @@ import type { IssueListItem } from '@nocobase/app-plugin-projects/shared/issues'
 
 import {
   FOLLOW_UP_STATUSES,
+  FOLLOW_UPS_DEFAULT_MAX,
   FOLLOW_UPS_MAX,
   FOLLOWING_PREFERENCE,
   OWNED_PER_STATUS_MAX,
@@ -214,7 +215,7 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
       .flatMap((page) => page.data)
       .filter((issue) => !issue.deletedAt)
       .sort(byActivity)
-      .slice(0, FOLLOW_UPS_MAX)
+      .slice(0, FOLLOW_UPS_DEFAULT_MAX)
       .map((issue) => issue.id);
   }
 
@@ -367,7 +368,7 @@ export function createFollowUps(deps: FollowUpsDeps): FollowUps {
             (issue) =>
               issue.statusKey === 'blocked' || issue.statusKey === 'in_review',
           )
-          .slice(0, FOLLOW_UPS_MAX)
+          .slice(0, FOLLOW_UPS_DEFAULT_MAX)
           .map((issue) => issue.id);
       const others = await visible(
         viewer,

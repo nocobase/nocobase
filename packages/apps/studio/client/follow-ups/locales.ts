@@ -9,7 +9,7 @@ export const followUpsEnUS = {
   live: 'Live',
   countsLabel: 'Your issues by status',
   following: {
-    title: 'Following · {{count}}/{{max}}',
+    title: 'Following · {{count}}',
     empty: 'Nothing followed yet. Star an issue on the right to keep it here.',
     defaults:
       'Showing your blocked and in-review issues until you choose what to follow.',
@@ -51,7 +51,7 @@ export const followUpsZhCN: typeof followUpsEnUS = {
   live: '实时更新',
   countsLabel: '我负责的任务按状态统计',
   following: {
-    title: '关注 · {{count}}/{{max}}',
+    title: '关注 · {{count}}',
     empty: '还没有关注任务。在右侧点星标即可关注。',
     defaults: '你还没选择关注哪些任务，先显示你待确定和待验收的任务。',
     unread_one: '{{count}} 条新动态',

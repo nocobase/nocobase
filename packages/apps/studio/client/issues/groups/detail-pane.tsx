@@ -2,13 +2,17 @@
  * A task's detail beside a list: the split view's right side, "My Agent"'s side panel and the phone's task screen. It
  * shows what the issue page shows, in a narrower frame:
  *
- * - a top row: previous and next with the position in the list (J and K), the project and key, the follow star, the
- *   full page and "More" (copy link, ask the agent, notifications, delete);
- * - the summary of the issue page (`../live/issue-summary.tsx`): the title renamed in place, a status menu, the pull
- *   request and its checks, "Now", and "Needs you" with its actions;
- * - the properties as one row of compact fields;
- * - tabs: activity, description (with files, dependencies and plans), sub-tasks, code and deployments, runs; the tab
- *   stays when the task changes, back to activity where the task has no such tab;
+ * - a top row: previous and next with the position in the list (J and K), then the key (copies the link) and the
+ *   project (opens it), all on the left; on the right what is done to the task: the status menu, the follow star and
+ *   "More" (copy link, ask the agent, notifications, delete);
+ * - the summary of the issue page (`../live/issue-summary.tsx`): the title renamed in place, the pull request and its
+ *   checks, "Now", and "Needs you" with its actions; then Studio's marks and "Waiting for you", the decisions the
+ *   summary does not already hold;
+ * - the properties as one row of chips, each changed in place, and "More properties" for the rest: the start date,
+ *   the stage, previews, who is notified (with the viewer's own subscribe button) and the dates;
+ * - tabs: activity, description (with the add bar, files, dependencies, plans and project setup), sub-tasks, code and
+ *   deployments (unfolded, since the tab was opened to see them), runs; the tab stays when the task changes, back to
+ *   activity where the task has no such tab. Files dropped anywhere on the detail are attached;
  * - the comment box at the bottom, its draft kept per task; "My Agent" folds it to one line, since its page already
  *   has the box for talking to the agent.
  *
@@ -47,8 +51,10 @@ import {
   CornerLeftUpIcon,
   ExternalLinkIcon,
   LinkIcon,
+  Loader2Icon,
   MessageSquareIcon,
   MoreHorizontalIcon,
+  SlidersHorizontalIcon,
   Trash2Icon,
   XIcon,
 } from 'lucide-react';
@@ -85,8 +91,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { IssueFileDrop } from '@/extensions/nocobase-issue-detail/issue-detail';
+import {
+  dateTime,
+  relativeTime,
+} from '@/extensions/nocobase-issue-detail/labels';
 import { IssueSectionInTabContext } from '@/extensions/nocobase-issue-detail/section-context';
 import { cn } from 'cn';
 
@@ -96,11 +112,21 @@ import { chatItemOf } from '../../agents/chat-items.js';
 import { useIssuePullRequests } from '../../git/api.js';
 import { useMarkSeen } from '../../follow-ups/api.js';
 import { useLiveIssue } from '../../pages/issues/detail/use-live-issue.js';
-import { IssueCodeSection } from '../detail/code-section.js';
-import { PropertyRow } from '@/components/property-fields';
+import {
+  IssueCodeAddButton,
+  IssueCodeSection,
+} from '../detail/code-section.js';
+import { PeopleAvatars, PropertyRow } from '@/components/property-fields';
+import { IssueWaitingSection } from '../../inbox/issue-waiting.js';
+import { IssueInitSection } from '../../projects/init-card.js';
+import { IssueMarks } from '../issue-marks.js';
+import { useSummaryCovered } from '../detail/use-summary-covered.js';
 
 import { PreviewPreferenceField } from '../../previews/preference-field.js';
-import { useIssuePropertyFields } from '../detail/issue-property-fields.js';
+import {
+  useIssuePropertyFields,
+  type IssuePropertyField,
+} from '../detail/issue-property-fields.js';
 import { IssueBaseContext } from '../detail/issue-base.js';
 import {
   IssueAddSection,
@@ -213,7 +239,16 @@ function LiveTask({
   const runs = useLiveIssue(detail, issueId, detailKey, 0);
   const main = useIssueMainState(pageActions);
   const prs = useIssuePullRequests(detail.id).data;
+  const covered = useSummaryCovered(detail);
   const markSeen = useMarkSeen();
+  // "Pull request" in the description's add bar opens the link input under the Code tab.
+  const [linking, setLinking] = useState(false);
+  const linkFromAddBar = (next: boolean): void => {
+    setLinking(next);
+    if (next) onTabChange('code');
+  };
+  // Design proposals earlier versions posted stay tagged, as on the issue page.
+  const kindLabels = useMemo(() => ({ proposal: t('design.tag') }), [t]);
   const entry = useMemo(
     () =>
       ({
@@ -268,11 +303,12 @@ function LiveTask({
               pageActions={pageActions}
               update={update}
             />
-            <div
+            <IssueFileDrop
+              {...(main.canUpload ? { onFiles: main.upload } : {})}
               className='@container/detail min-h-0 flex-1 overflow-y-auto overscroll-y-contain'
-              data-testid='task-detail-scroll'
             >
               <div
+                data-testid='task-detail-scroll'
                 className={cn(
                   'mx-auto flex w-full max-w-4xl flex-col gap-4 px-6 pt-5 pb-6',
                   phone && 'px-4 pt-3',
@@ -300,11 +336,12 @@ function LiveTask({
                       }
                     : {})}
                 />
+                <IssueMarks issue={detail} placement='detail' />
+                <IssueWaitingSection issue={detail} covered={covered} />
                 <PropertyChips
                   detail={detail}
                   update={update}
                   pageActions={pageActions}
-                  phone={phone}
                 />
                 <Tabs
                   value={shown}
@@ -340,6 +377,7 @@ function LiveTask({
                   <TabsContent value='feed'>
                     <IssueFeed
                       titleHidden
+                      kindLabels={kindLabels}
                       runs={runs}
                       renderRun={(runId) => (
                         <IssueRunRow issue={detail} runId={runId} />
@@ -348,7 +386,13 @@ function LiveTask({
                   </TabsContent>
                   <TabsContent value='desc' className='flex flex-col gap-6'>
                     <IssueDescriptionSection detail={detail} update={update} />
-                    <IssueAddSection detail={detail} state={main} />
+                    <IssueAddSection detail={detail} state={main}>
+                      <IssueCodeAddButton
+                        issue={detail}
+                        linking={linking}
+                        setLinking={linkFromAddBar}
+                      />
+                    </IssueAddSection>
                     <IssueFilesSection
                       detail={detail}
                       pageActions={pageActions}
@@ -360,6 +404,7 @@ function LiveTask({
                       state={main}
                     />
                     <IssuePlansSection issue={detail} />
+                    <IssueInitSection issue={detail} />
                   </TabsContent>
                   {/* A section under the tab of its name does not repeat its heading or frame. */}
                   <IssueSectionInTabContext.Provider value>
@@ -367,7 +412,11 @@ function LiveTask({
                       <IssueSubtasksSection detail={detail} />
                     </TabsContent>
                     <TabsContent value='code'>
-                      <CodeTab detail={detail} />
+                      <IssueCodeSection
+                        issue={detail}
+                        linking={linking}
+                        setLinking={setLinking}
+                      />
                     </TabsContent>
                   </IssueSectionInTabContext.Provider>
                   <TabsContent
@@ -378,7 +427,7 @@ function LiveTask({
                   </TabsContent>
                 </Tabs>
               </div>
-            </div>
+            </IssueFileDrop>
             {props.footer ? (
               props.footer(detail, update)
             ) : (
@@ -393,17 +442,6 @@ function LiveTask({
         </IssueConversation>
       </EmbeddedRuns>
     </IssueBaseContext.Provider>
-  );
-}
-
-function CodeTab({ detail }: { readonly detail: IssueDetail }): ReactElement {
-  const [linking, setLinking] = useState(false);
-  return (
-    <IssueCodeSection
-      issue={detail}
-      linking={linking}
-      setLinking={setLinking}
-    />
   );
 }
 
@@ -458,12 +496,12 @@ function StatusMenu({
       <DropdownMenuTrigger
         render={
           <Button
-            variant='ghost'
+            variant='outline'
             size='sm'
             disabled={!canEdit || update.isPending}
             aria-label={`${t('taskGroups.detail.status')}: ${name}`}
             data-testid='task-status-menu'
-            className='h-7 gap-1.5 px-2 font-normal'
+            className='h-7 gap-1.5 rounded-full px-2.5 font-normal'
           />
         }
       >
@@ -471,7 +509,7 @@ function StatusMenu({
         {name}
         <ChevronDownIcon className='size-3 text-muted-foreground/70' />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align='start' className='w-auto min-w-40'>
+      <DropdownMenuContent align='end' className='w-auto min-w-40'>
         <DropdownMenuRadioGroup
           value={detail.statusKey}
           onValueChange={(statusKey: string) => {
@@ -499,102 +537,131 @@ function StatusMenu({
   );
 }
 
-/** The properties people change most, each a compact field that edits in place. */
+/** The properties the row shows as chips; the rest are under "More properties". */
+const CHIP_FIELDS: ReadonlySet<string> = new Set([
+  'priority',
+  'owner',
+  'assignToMe',
+  'executor',
+  'project',
+  'labels',
+  'due',
+]);
+
+/**
+ * A chip around one of the issue page's property controls: its label, then the control drawn flat inside it, so the
+ * field keeps its own menu, calendar or search and only its frame changes.
+ */
+const CHIP = cn(
+  'inline-flex h-7 max-w-full min-w-0 items-center rounded-md bg-muted/60 pl-2 text-sm transition-colors hover:bg-muted',
+  '[&_[data-slot=select-trigger]]:h-7 [&_[data-slot=select-trigger]]:w-auto [&_[data-slot=select-trigger]]:max-w-56 [&_[data-slot=select-trigger]]:gap-1 [&_[data-slot=select-trigger]]:border-0 [&_[data-slot=select-trigger]]:bg-transparent [&_[data-slot=select-trigger]]:pl-1.5 [&_[data-slot=select-trigger]]:shadow-none dark:[&_[data-slot=select-trigger]]:bg-transparent [&_[data-slot=select-trigger]>svg:last-child]:size-3 [&_[data-slot=select-trigger]>svg:last-child]:opacity-60',
+  '[&_[data-slot=combobox-chips]]:min-h-7 [&_[data-slot=combobox-chips]]:w-auto [&_[data-slot=combobox-chips]]:max-w-80 [&_[data-slot=combobox-chip-input]]:w-20 [&_[data-slot=combobox-chip-input]]:flex-none [&_[data-slot=combobox-chips]]:border-0 [&_[data-slot=combobox-chips]]:bg-transparent [&_[data-slot=combobox-chips]]:py-0 [&_[data-slot=combobox-chips]]:pl-1.5 [&_[data-slot=combobox-chips]]:shadow-none dark:[&_[data-slot=combobox-chips]]:bg-transparent',
+  '[&_[data-slot=popover-trigger]]:h-7 [&_[data-slot=popover-trigger]]:border-0 [&_[data-slot=popover-trigger]]:bg-transparent [&_[data-slot=popover-trigger]]:pl-1.5 [&_[data-slot=popover-trigger]]:shadow-none dark:[&_[data-slot=popover-trigger]]:bg-transparent',
+);
+
+/**
+ * The properties as one row of chips, each changed in place, in the issue page's side-column order; "More properties"
+ * opens the ones changed now and then and what is only read: the start date, the stage, previews, who is notified and
+ * the dates.
+ */
 function PropertyChips({
   detail,
   update,
   pageActions,
-  phone,
 }: {
   readonly detail: IssueDetail;
   readonly update: IssueUpdate;
   readonly pageActions: IssuePageActions;
-  readonly phone: boolean;
 }): ReactElement {
   const { t } = useTranslation();
-  const { fields } = useIssuePropertyFields({
+  const { busy, fields } = useIssuePropertyFields({
     detail,
     update,
     pageActions,
     idPrefix: 'task-prop',
   });
-  const wording = useIssuePageWording();
-  const [open, setOpen] = usePropertiesOpen();
-  // Folded, the properties read as one quiet line; they are changed now and then, not read every time.
-  const facts = [
-    detail.owner
-      ? [t('taskGroups.detail.props.owner'), detail.owner.name]
-      : null,
-    detail.executorName
-      ? [t('taskGroups.detail.props.executor'), detail.executorName]
-      : null,
-    [
-      t('taskGroups.detail.props.priority'),
-      wording.t(`priority.${detail.priority}`),
-    ],
-    detail.project
-      ? [t('taskGroups.detail.props.project'), detail.project.name]
-      : null,
-    detail.labels.length > 0
-      ? [
-          t('taskGroups.detail.props.labels'),
-          detail.labels.map((label) => label.name).join(', '),
-        ]
-      : null,
-    detail.dueDate ? [t('taskGroups.detail.props.due'), detail.dueDate] : null,
-  ].filter((fact): fact is string[] => fact !== null);
-  const toggle = (
-    <button
-      type='button'
-      aria-expanded={open}
-      onClick={() => setOpen(!open)}
-      className='inline-flex shrink-0 items-center gap-1 rounded-md px-1 text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
-    >
-      <ChevronRightIcon
-        className={cn('size-3.5 transition-transform', open && 'rotate-90')}
-      />
-      {t('taskGroups.detail.props.label')}
-    </button>
+  const chips = fields.filter((field) => CHIP_FIELDS.has(field.key));
+  const rest = fields.filter(
+    (field) => field.key !== 'status' && !CHIP_FIELDS.has(field.key),
   );
-  if (!open)
-    return (
-      <div
-        className='flex min-w-0 items-center gap-2 text-xs'
-        data-testid='task-properties'
-      >
-        {toggle}
-        <button
-          type='button'
-          onClick={() => setOpen(true)}
-          className='min-w-0 truncate text-left text-muted-foreground hover:text-foreground'
-          title={t('taskGroups.detail.props.edit')}
-        >
-          {facts.map(([label, value], index) => (
-            <span key={label}>
-              {index > 0 ? ' · ' : ''}
-              {label} <span className='text-foreground'>{value}</span>
-            </span>
-          ))}
-        </button>
-      </div>
-    );
-  // Unfolded: the title on a line of its own, then the issue page's side-column fields with their own controls.
   return (
-    <div className='flex flex-col gap-2' data-testid='task-properties'>
-      <div>{toggle}</div>
-      <div
-        role='group'
-        aria-label={t('taskGroups.detail.props.label')}
-        // No frame of its own: the rows alone, as the issue page's side column lists them.
-        className={cn(
-          'grid gap-x-8 gap-y-2 pl-5',
-          !phone && '@xl/detail:grid-cols-2',
-        )}
+    <div
+      role='group'
+      aria-label={t('taskGroups.detail.props.label')}
+      className='flex flex-wrap items-center gap-1.5'
+      data-testid='task-properties'
+    >
+      {chips.map((field) =>
+        field.key === 'assignToMe' ? (
+          <span key={field.key} className='-ml-1'>
+            {field.control}
+          </span>
+        ) : (
+          <div key={field.key} className={CHIP} data-property={field.key}>
+            {field.htmlFor ? (
+              <label
+                htmlFor={field.htmlFor}
+                className='shrink-0 text-xs text-muted-foreground'
+              >
+                {field.label}
+              </label>
+            ) : (
+              <span className='shrink-0 text-xs text-muted-foreground'>
+                {field.label}
+              </span>
+            )}
+            <div className='flex min-w-0 items-center [&>*]:w-auto'>
+              {field.control}
+            </div>
+          </div>
+        ),
+      )}
+      <MoreProperties detail={detail} pageActions={pageActions} fields={rest} />
+      {busy ? (
+        <Loader2Icon
+          className='size-3.5 animate-spin text-muted-foreground'
+          aria-label={t('taskGroups.detail.props.saving')}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/** "More properties": the remaining fields with their own controls, who is notified, and when the task changed. */
+function MoreProperties({
+  detail,
+  pageActions,
+  fields,
+}: {
+  readonly detail: IssueDetail;
+  readonly pageActions: IssuePageActions;
+  readonly fields: readonly IssuePropertyField[];
+}): ReactElement {
+  const { t, i18n } = useTranslation();
+  const wording = useIssuePageWording();
+  const viewer = useViewer();
+  const [saving, setSaving] = useState(false);
+  const subscribed = detail.subscribers.some(
+    (subscriber) => subscriber.userId === viewer?.userId,
+  );
+  return (
+    <Popover>
+      <PopoverTrigger
+        render={
+          <Button
+            variant='ghost'
+            size='sm'
+            className='h-7 gap-1.5 px-2 font-normal text-muted-foreground hover:text-foreground'
+            data-testid='task-more-properties'
+          />
+        }
       >
-        <PreviewPreferenceField issueId={detail.id} />
-        {fields
-          .filter((field) => field.key !== 'status')
-          .map((field) => (
+        <SlidersHorizontalIcon data-icon='inline-start' />
+        {t('taskGroups.detail.props.more')}
+      </PopoverTrigger>
+      <PopoverContent align='start' className='w-96 max-w-[calc(100vw-2rem)]'>
+        <div className='flex flex-col gap-3'>
+          {fields.map((field) => (
             <PropertyRow
               key={field.key}
               label={field.label}
@@ -603,33 +670,59 @@ function PropertyChips({
               {field.control}
             </PropertyRow>
           ))}
-      </div>
-    </div>
+          <PreviewPreferenceField issueId={detail.id} />
+          <div className='border-t' />
+          <PropertyRow label={t('issueLive.notifications.title')}>
+            <div className='flex items-center justify-between gap-2'>
+              {detail.subscribers.length > 0 ? (
+                <PeopleAvatars
+                  people={detail.subscribers.map((subscriber) => ({
+                    id: subscriber.userId,
+                    name: subscriber.name,
+                    detail: wording.t(
+                      `subscribers.reason.${subscriber.reason}`,
+                      { defaultValue: subscriber.reason },
+                    ),
+                  }))}
+                  label={t('issueLive.notifications.title')}
+                />
+              ) : (
+                <span className='text-muted-foreground'>—</span>
+              )}
+              {viewer ? (
+                <Button
+                  variant='outline'
+                  size='xs'
+                  disabled={saving}
+                  data-testid='task-subscribe'
+                  onClick={() => {
+                    setSaving(true);
+                    void pageActions
+                      .setFollowing(!subscribed)
+                      .catch(() => undefined)
+                      .finally(() => setSaving(false));
+                  }}
+                >
+                  {subscribed ? <BellOffIcon /> : <BellIcon />}
+                  {subscribed
+                    ? t('issueLive.notifications.unsubscribe')
+                    : t('issueLive.notifications.subscribe')}
+                </Button>
+              ) : null}
+            </div>
+          </PropertyRow>
+          <PropertyRow label={wording.detail.dates.created}>
+            {dateTime(detail.createdAt, i18n.language)}
+          </PropertyRow>
+          <PropertyRow label={wording.detail.dates.updated}>
+            <span title={dateTime(detail.updatedAt, i18n.language)}>
+              {relativeTime(detail.updatedAt, i18n.language)}
+            </span>
+          </PropertyRow>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
-}
-
-const PROPERTIES_OPEN_KEY = 'studio:task-groups:properties-open';
-
-/** Whether the person keeps the properties unfolded, remembered in this browser; folded by default. */
-function usePropertiesOpen(): readonly [boolean, (open: boolean) => void] {
-  const [open, setOpen] = useState(() => {
-    try {
-      return window.localStorage.getItem(PROPERTIES_OPEN_KEY) === 'true';
-    } catch {
-      return false;
-    }
-  });
-  return [
-    open,
-    (next: boolean) => {
-      setOpen(next);
-      try {
-        window.localStorage.setItem(PROPERTIES_OPEN_KEY, String(next));
-      } catch {
-        // A convenience only.
-      }
-    },
-  ] as const;
 }
 
 /**
@@ -699,6 +792,45 @@ function FoldedComposer({
   );
 }
 
+/** Copies the issue's own address, from the key in the top row and from "More". */
+function useCopyIssueLink(identifier: string): () => void {
+  const { t } = useTranslation();
+  const toaster = useToaster();
+  const href = useHref(`/issues/${encodeURIComponent(identifier)}`);
+  return () => {
+    const url = new URL(href, window.location.origin).href;
+    void navigator.clipboard?.writeText(url).then(
+      () =>
+        toaster.show({
+          type: 'success',
+          title: t('taskGroups.detail.linkCopied'),
+        }),
+      () => undefined,
+    );
+  };
+}
+
+/** The key, in a fixed-width face: pressing it copies the issue's link. */
+function CopyKeyButton({
+  identifier,
+}: {
+  readonly identifier: string;
+}): ReactElement {
+  const { t } = useTranslation();
+  const copy = useCopyIssueLink(identifier);
+  return (
+    <button
+      type='button'
+      onClick={copy}
+      title={t('taskGroups.detail.copyLink')}
+      data-testid='task-key'
+      className='shrink-0 rounded-sm font-mono text-xs hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+    >
+      {identifier}
+    </button>
+  );
+}
+
 function PaneTop({
   detail,
   pageActions,
@@ -765,17 +897,26 @@ function PaneTop({
         </>
       ) : null}
       {detail && variant === 'split' ? (
-        <span className='ml-2 min-w-0 truncate text-sm text-muted-foreground'>
-          {detail.project ? `${detail.project.name} · ` : ''}
-          <span className='font-mono text-xs'>{detail.identifier}</span>
+        // The key first: always as wide, so it is found at the same place; the project after it, cut when long.
+        <span className='ml-2 flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground'>
+          <CopyKeyButton identifier={detail.identifier} />
+          {detail.project ? (
+            <>
+              <span aria-hidden>·</span>
+              <Link
+                to={`/projects/${encodeURIComponent(detail.project.id)}`}
+                className='min-w-0 truncate hover:text-foreground hover:underline'
+              >
+                {detail.project.name}
+              </Link>
+            </>
+          ) : null}
         </span>
       ) : null}
-      {detail && update ? (
-        <span className='ml-2 shrink-0'>
+      <span className='ml-auto flex shrink-0 items-center gap-1 pl-2'>
+        {detail && update ? (
           <StatusMenu detail={detail} update={update} />
-        </span>
-      ) : null}
-      <span className='ml-auto flex shrink-0 items-center gap-1'>
+        ) : null}
         {detail ? (
           <FollowToggle
             issueId={detail.id}
@@ -786,23 +927,6 @@ function PaneTop({
               variant !== 'split' && '[&>span]:sr-only',
             )}
           />
-        ) : null}
-        {detail && !phone ? (
-          <Button
-            variant='ghost'
-            size='sm'
-            nativeButton={false}
-            render={<Link to={{ pathname: issuePath, search: issueSearch }} />}
-            data-testid='task-full-page'
-            className='font-normal text-muted-foreground hover:text-foreground'
-          >
-            <ExternalLinkIcon data-icon='inline-start' />
-            <span
-              className={cn(variant === 'split' ? 'max-xl:sr-only' : 'sr-only')}
-            >
-              {t('taskGroups.detail.fullPage')}
-            </span>
-          </Button>
         ) : null}
         {detail && pageActions ? (
           <MoreMenu
@@ -847,9 +971,8 @@ function MoreMenu({
 }): ReactElement {
   const { t } = useTranslation();
   const viewer = useViewer();
-  const toaster = useToaster();
   const panel = useChatPanel();
-  const href = useHref(`/issues/${encodeURIComponent(detail.identifier)}`);
+  const copyLink = useCopyIssueLink(detail.identifier);
   const fullHref = useHref({ pathname: issuePath, search: issueSearch });
   const [confirming, setConfirming] = useState(false);
   const subscribed = detail.subscribers.some(
@@ -883,19 +1006,7 @@ function MoreMenu({
                 {t('taskGroups.detail.fullPage')}
               </DropdownMenuItem>
             ) : null}
-            <DropdownMenuItem
-              onClick={() => {
-                const url = new URL(href, window.location.origin).href;
-                void navigator.clipboard?.writeText(url).then(
-                  () =>
-                    toaster.show({
-                      type: 'success',
-                      title: t('taskGroups.detail.linkCopied'),
-                    }),
-                  () => undefined,
-                );
-              }}
-            >
+            <DropdownMenuItem onClick={copyLink}>
               <LinkIcon />
               {t('taskGroups.detail.copyLink')}
             </DropdownMenuItem>

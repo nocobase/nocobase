@@ -1,7 +1,7 @@
 /**
  * The star that adds an issue to "My follow-ups" or takes it off (`POST /api/followUps/issues/:issueId/follow` or
- * `/unfollow`), reading only what the viewer follows (`GET /api/followUps/following`). It says how many of the allowed
- * issues are followed; once that many are, an unfollowed issue's star is held, with the reason as its hint.
+ * `/unfollow`), reading only what the viewer follows (`GET /api/followUps/following`). Only at the stored bound, which
+ * nobody meets in use, is an unfollowed issue's star held, with the reason as its hint.
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { StarIcon } from 'lucide-react';
@@ -90,22 +90,14 @@ export function FollowToggle({
         data-icon='inline-start'
         className={cn(followed && 'fill-amber-400 text-amber-500')}
       />
-      {/* On a phone the star alone, with the count when followed. */}
+      {/* On a phone the star alone. */}
       <span className='max-md:sr-only'>
         {followed
-          ? t('issueLive.follow.following', {
-              count: following.length,
-              max,
-            })
+          ? t('issueLive.follow.following')
           : full
             ? t('issueLive.follow.full', { max })
             : t('issueLive.follow.follow')}
       </span>
-      {followed ? (
-        <span aria-hidden className='tabular-nums md:hidden'>
-          {following.length}/{max}
-        </span>
-      ) : null}
     </Button>
   );
 }

@@ -420,6 +420,7 @@ export function PullRequestRow({
   canLink,
   previewUrl = null,
   defaultOpen = false,
+  expanded = false,
   children,
 }: {
   readonly issue: { readonly id: string; readonly identifier: string };
@@ -430,6 +431,8 @@ export function PullRequestRow({
   readonly previewUrl?: string | null;
   /** Unfolded at first, such as when its preview needs something. */
   readonly defaultOpen?: boolean;
+  /** Always unfolded, without the chevron, such as under the task detail's Code tab. */
+  readonly expanded?: boolean;
   /** What follows from it, such as its preview and where it is deployed. */
   readonly children?: ReactNode;
 }): ReactElement {
@@ -437,7 +440,8 @@ export function PullRequestRow({
   const api = useGitApi();
   const notify = useNotify();
   const refresh = useRefresh(issue);
-  const [open, setOpen] = useState(defaultOpen);
+  const [unfolded, setUnfolded] = useState(defaultOpen);
+  const open = expanded || unfolded;
   const [unlinking, setUnlinking] = useState(false);
   const mergeActions = useMergeActions(issue, pullRequest);
   const mutate = useMutation({
@@ -486,24 +490,26 @@ export function PullRequestRow({
   const busy = mutate.isPending || mergeActions.pending;
   return (
     <li data-pull-request={pr.number}>
-      <Collapsible open={open} onOpenChange={setOpen}>
+      <Collapsible open={open} onOpenChange={setUnfolded}>
         <div className='flex flex-wrap items-center gap-x-2 gap-y-1.5 px-3 py-2'>
           <div className='flex min-w-0 flex-1 basis-60 items-center gap-1.5'>
-            <CollapsibleTrigger
-              render={
-                <Button
-                  variant='ghost'
-                  size='icon-xs'
-                  className='group/pr -ml-1 shrink-0 text-muted-foreground'
-                  aria-label={t('studioGit.section.details', { label })}
+            {expanded ? null : (
+              <CollapsibleTrigger
+                render={
+                  <Button
+                    variant='ghost'
+                    size='icon-xs'
+                    className='group/pr -ml-1 shrink-0 text-muted-foreground'
+                    aria-label={t('studioGit.section.details', { label })}
+                  />
+                }
+              >
+                <ChevronRightIcon
+                  className='transition-transform group-data-[panel-open]/pr:rotate-90'
+                  aria-hidden
                 />
-              }
-            >
-              <ChevronRightIcon
-                className='transition-transform group-data-[panel-open]/pr:rotate-90'
-                aria-hidden
-              />
-            </CollapsibleTrigger>
+              </CollapsibleTrigger>
+            )}
             <a
               href={pr.url}
               target='_blank'

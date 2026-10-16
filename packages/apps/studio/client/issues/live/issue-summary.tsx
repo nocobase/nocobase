@@ -8,6 +8,7 @@ import { usePendingCommentRun } from '../detail/use-pending-comment-run.js';
  * Reply, Merge, View changes and Send back (to In progress).
  */
 import {
+  canCloseIssue,
   canEditIssues,
   type IssueUpdate,
 } from '@nocobase/app-plugin-projects/client/issues';
@@ -15,11 +16,13 @@ import { useViewer } from '@nocobase/app-plugin-projects/client/kit';
 import type { IssueDetail } from '@nocobase/app-plugin-projects/shared/issues';
 import {
   BLOCKED_STATUS,
+  DONE_STATUS,
   IN_PROGRESS_STATUS,
   IN_REVIEW_STATUS,
 } from '@nocobase/app-plugin-projects/shared/statuses';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
+  CheckIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   ExternalLinkIcon,
@@ -593,6 +596,21 @@ function NeedsYouCard({
         <div className='flex flex-wrap items-center gap-2 max-md:flex-nowrap max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:[&_[data-slot=button]]:h-8 max-md:[&_[data-slot=button]]:shrink-0'>
           {open && pullRequests?.canMerge ? (
             <MergeButtons issue={issue} pullRequest={open} />
+          ) : null}
+          {/* Without a pull request to merge, accepting is moving it to Done. */}
+          {!(open && pullRequests?.canMerge) &&
+          canEditIssues(viewer) &&
+          canCloseIssue(viewer, issue) ? (
+            <Button
+              size='sm'
+              title={t('issueLive.summary.acceptHint')}
+              disabled={update.isPending}
+              data-testid='issue-accept'
+              onClick={() => update.mutate({ statusKey: DONE_STATUS })}
+            >
+              <CheckIcon data-icon='inline-start' />
+              {t('issueLive.summary.accept')}
+            </Button>
           ) : null}
           {shown ? (
             <Button

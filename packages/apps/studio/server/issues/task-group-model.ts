@@ -400,11 +400,10 @@ export function createTaskGroupModel(input: TaskGroupModelInput) {
     };
   }
 
-  const groupIds = ORDER.filter(
-    (group) => group === 'follow' || (groups.get(group)?.count ?? 0) > 0,
-  );
   const countOf = (group: TaskGroupId): number =>
     group === 'follow' ? followIds.length : (groups.get(group)?.count ?? 0);
+  // An empty group is not shown, the follow group included.
+  const groupIds = ORDER.filter((group) => countOf(group) > 0);
   const followWaiting = followIds.filter((id) => input.waits.has(id)).length;
 
   // What the lists hold, without what each task says about itself: unchanged while no task joins, leaves or moves

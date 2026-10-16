@@ -22,7 +22,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import enUS from '../../client/locales/en-US.js';
 import FollowUpsPage from '../../client/pages/follow-ups/index.js';
-import type { FollowUpIssue, FollowUpsView } from '../../shared/follow-ups.js';
+import {
+  FOLLOW_UPS_MAX,
+  type FollowUpIssue,
+  type FollowUpsView,
+} from '../../shared/follow-ups.js';
 import type { IssueProgress } from '../../shared/project-manager.js';
 
 const mocks = vi.hoisted(() => ({
@@ -50,6 +54,7 @@ vi.mock('@nocobase/app-plugin-projects/client/issues', () => ({
   useStatusName: () => (_statuses: unknown, key: string) => `status:${key}`,
   useIssueUpdate: () => ({ mutate: mocks.update, isPending: false }),
   canEditIssues: () => true,
+  canCloseIssue: () => true,
 }));
 // The feed and the composer have tests of their own (`issue-feed.test.tsx`).
 vi.mock('../../client/issues/live/conversation.js', () => ({
@@ -310,7 +315,7 @@ describe('My follow-ups', () => {
       'Review the release page. Confirm acceptance.',
     );
     expect(within(panel).getByTestId('follow-toggle').textContent).toContain(
-      'Following · 2/5',
+      'Following',
     );
     // In review: the structured owner request and Send back; explanation prose stays in the feed.
     const delivery = within(panel).getByTestId('issue-delivery');
@@ -392,10 +397,14 @@ describe('My follow-ups', () => {
     );
   });
 
-  it('holds the star of an unfollowed issue once five are followed', async () => {
+  it('holds the star of an unfollowed issue at the stored bound', async () => {
     view = {
       ...view,
-      following: ['r1', 'f1', 'x1', 'x2', 'x3'],
+      following: [
+        'r1',
+        'f1',
+        ...Array.from({ length: FOLLOW_UPS_MAX - 2 }, (_, n) => `x${n + 1}`),
+      ],
       issues: [
         ...view.issues,
         issue({ id: 'x1', owned: false, followed: true }),
@@ -410,7 +419,9 @@ describe('My follow-ups', () => {
     );
     const star = within(mine).getByRole('button', { name: 'Follow WEB-4' });
     expect(star.getAttribute('aria-disabled')).toBe('true');
-    expect(star.getAttribute('title')).toContain('You follow 5 issues already');
+    expect(star.getAttribute('title')).toContain(
+      `You follow ${FOLLOW_UPS_MAX} issues already`,
+    );
     fireEvent.click(star);
     expect(
       mocks.request.mock.calls.some(

@@ -27,7 +27,6 @@ import {
   type TaskGroupItem,
   type WaitReason,
 } from '../../../shared/task-groups.js';
-import { FOLLOW_UPS_MAX } from '../../../shared/follow-ups.js';
 import { statusShape } from '@/components/status-shapes';
 import { shortTime } from './format.js';
 import type { ListGroup } from './model.js';
@@ -397,9 +396,7 @@ export function TaskGroupCard({
               : 'bg-muted font-medium text-muted-foreground',
           )}
         >
-          {group.group === 'follow'
-            ? `${group.count}/${FOLLOW_UPS_MAX}`
-            : group.count}
+          {group.count}
         </span>
         <ChevronDownIcon
           aria-hidden

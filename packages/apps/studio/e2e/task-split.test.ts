@@ -71,10 +71,8 @@ test.describe('the split view', () => {
     await expect(
       list.getByRole('region', { name: '进行中' }).getByRole('option'),
     ).toContainText(working.title);
-    // Nothing followed yet: the follow group says how to follow.
-    await expect(list.getByRole('region', { name: '关注' })).toContainText(
-      '按 S',
-    );
+    // Nothing followed yet: there is no follow group.
+    await expect(list.getByRole('region', { name: '关注' })).toHaveCount(0);
 
     // The longest waiting is first and selected at once, in the address.
     const detail = page.getByTestId('task-detail');

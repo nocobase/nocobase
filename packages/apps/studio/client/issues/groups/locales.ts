@@ -22,10 +22,6 @@ export const taskGroupsEnUS = {
   },
   fold: 'Fold {{group}}',
   unfold: 'Unfold {{group}}',
-  followEmpty:
-    'Nothing followed yet. Star a task or press S to follow it: up to 5, always listed first.',
-  followEmptyPhone:
-    'Nothing followed yet. Swipe left on a task to follow it: up to 5, always listed first.',
   listLabel: 'Tasks',
   noResults: 'No task matches.',
   loadMore: 'Show more',
@@ -86,13 +82,8 @@ export const taskGroupsEnUS = {
     },
     props: {
       label: 'Properties',
-      edit: 'Show the properties to change them',
-      owner: 'Owner',
-      executor: 'Executor',
-      priority: 'Priority',
-      project: 'Project',
-      labels: 'Labels',
-      due: 'Due date',
+      more: 'More properties',
+      saving: 'Saving…',
     },
     commentOn: 'Comment on {{identifier}}',
     commentHint:
@@ -157,10 +148,6 @@ export const taskGroupsZhCN: TaskGroupsWording = {
   },
   fold: '折叠{{group}}',
   unfold: '展开{{group}}',
-  followEmpty:
-    '还没有关注的任务。在任务上点 ☆ 或按 S 关注，最多 5 个，关注的任务排在最前面。',
-  followEmptyPhone:
-    '还没有关注的任务。在任务上左滑关注，最多 5 个，关注的任务排在最前面。',
   listLabel: '任务列表',
   noResults: '没有找到匹配的任务。',
   loadMore: '再显示一些',
@@ -220,13 +207,8 @@ export const taskGroupsZhCN: TaskGroupsWording = {
     },
     props: {
       label: '属性',
-      edit: '展开属性来修改',
-      owner: '负责人',
-      executor: '执行',
-      priority: '优先级',
-      project: '项目',
-      labels: '标签',
-      due: '截止日期',
+      more: '更多属性',
+      saving: '保存中…',
     },
     commentOn: '评论到 {{identifier}}',
     commentHint: '要让会话里的 Agent 做事，在左边对话里说。',

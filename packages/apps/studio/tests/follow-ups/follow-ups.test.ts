@@ -23,6 +23,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { followUpsRoutes } from '../../server/follow-ups/routes.js';
 import {
   FOLLOWING_PREFERENCE,
+  FOLLOW_UPS_MAX,
   SEEN_MAX,
   SEEN_PREFERENCE,
   parseFollowing,
@@ -372,14 +373,14 @@ describe('following', () => {
     // By default, their in-review and blocked issues, not yet their choice.
     expect((await read()).body.data).toEqual({
       issueIds: [review.id],
-      max: 5,
+      max: FOLLOW_UPS_MAX,
       stored: false,
     });
     const theirs = await create('bob', { title: 'Theirs' });
     expect((await follow([theirs.id])).status).toBe(200);
     expect((await read()).body.data).toEqual({
       issueIds: [theirs.id],
-      max: 5,
+      max: FOLLOW_UPS_MAX,
       stored: true,
     });
     expect((await h.request('GET', '/followUps/following')).status).toBe(401);
@@ -389,14 +390,8 @@ describe('following', () => {
     ).toBe(403);
   });
 
-  it('refuses more than five issues or one the caller cannot find', async () => {
-    const issues = await Promise.all(
-      Array.from({ length: 6 }, (_, index) =>
-        create('alice', { title: `Issue ${index}` }),
-      ),
-    );
-    const tooMany = await follow(issues.map((issue) => issue.id));
-    expect(tooMany.status).toBe(400);
+  it('refuses an issue the caller cannot find', async () => {
+    const issues = [await create('alice', { title: 'Issue 0' })];
     const missing = await follow([issues[0]!.id, 'nope']);
     expect(missing.status).toBe(400);
     expect(missing.body.error.reason).toBe('FOLLOW_UP_ISSUE_NOT_FOUND');
@@ -468,21 +463,20 @@ describe('following one issue', () => {
     expect((await overview()).following).toEqual([second.id]);
   });
 
-  it('refuses a sixth issue with what to do instead', async () => {
+  it('follows more than five issues, and refuses a list past the stored bound', async () => {
     const issues = await Promise.all(
       Array.from({ length: 6 }, (_, index) =>
         create('alice', { title: `Issue ${index}` }),
       ),
     );
-    for (const issue of issues.slice(0, 5))
+    for (const issue of issues)
       expect((await star('follow', issue.id)).status).toBe(200);
-    const refused = await star('follow', issues[5]!.id);
-    expect(refused.status).toBe(400);
-    expect(refused.body.error.reason).toBe('FOLLOWING_LIMIT_REACHED');
-    expect(refused.body.error.message).toContain('Unfollow one first');
-    expect((await overview()).following).toHaveLength(5);
-    // One already followed is still fine.
-    expect((await star('follow', issues[0]!.id)).status).toBe(200);
+    expect((await overview()).following).toHaveLength(6);
+    const tooMany = Array.from(
+      { length: FOLLOW_UPS_MAX + 1 },
+      (_, index) => `issue-${index}`,
+    );
+    expect((await follow(tooMany)).status).toBe(400);
   });
 
   it('answers 404 for an issue the caller cannot find, and 403 without issue access', async () => {
@@ -548,6 +542,7 @@ describe('the stored values', () => {
       'c',
       'd',
       'e',
+      'f',
     ]);
     expect(
       parseSeen({ a: '2026-10-01T00:00:00.000Z', b: 'never', c: 1 }),

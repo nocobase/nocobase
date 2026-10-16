@@ -7,6 +7,7 @@ export const gitEnUS = {
     title: 'Pull requests',
     empty:
       'No pull request yet. Agents open theirs with nb-studio pr open; a branch the repository’s rules name, such as agent/{{identifier}}, is linked automatically.',
+    noHost: 'This task’s project has no code repository connected.',
     suggestionsTitle: 'Suggested: these name {{identifier}}',
     suggestionsHint:
       'A key in a title or description is not proof the pull request does this work: link it only if it does.',
@@ -552,6 +553,7 @@ export const gitZhCN: typeof gitEnUS = {
     title: 'Pull request',
     empty:
       '还没有 Pull request。Agent 用 nb-studio pr open 开启；仓库分支规则命名的分支（如 agent/{{identifier}}）会自动关联。',
+    noHost: '这个任务所在的项目还没有接入代码仓库。',
     suggestionsTitle: '建议：这些提到了 {{identifier}}',
     suggestionsHint:
       '标题或描述里出现任务编号不代表这个 Pull request 做的是这项工作，确认是再关联。',

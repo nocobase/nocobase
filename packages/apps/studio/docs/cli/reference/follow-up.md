@@ -6,7 +6,7 @@
 
 Follow an issue in my follow-ups
 
-Adds the issue to the ones the caller follows, after the others; following it already changes nothing. At most 5: past that the caller unfollows one first (`FOLLOWING_LIMIT_REACHED`). An issue newly followed counts what happens on it from now on. `issueId` is an id or an identifier. Needs `pm.issues` view.
+Adds the issue to the ones the caller follows, after the others; following it already changes nothing. At most 100: past that the caller unfollows one first (`FOLLOWING_LIMIT_REACHED`). An issue newly followed counts what happens on it from now on. `issueId` is an id or an identifier. Needs `pm.issues` view.
 
 ```bash
 nb-studio follow-up follow <issue>
@@ -26,7 +26,7 @@ nb-studio follow-up follow <issue>
 
 Get the issues I follow
 
-The issues the caller follows, in order, and the most one may follow (5): the ones they chose, or by default their blocked and in-review issues, newest first; issues they can no longer see are left out. Needs `pm.issues` view.
+The issues the caller follows, in order, and the most one may follow (100): the ones they chose, or by default their blocked and in-review issues, newest first; issues they can no longer see are left out. Needs `pm.issues` view.
 
 ```bash
 nb-studio follow-up following
@@ -42,7 +42,7 @@ nb-studio follow-up following
 
 Get my follow-ups
 
-The issues the caller owns that are in review, blocked, in progress or in backlog, and the issues they follow (at most five; by default their blocked and in-review issues, newest first), each with what it waits for now and, for a followed one, how many comments and changes others made since the caller last looked at it. Needs `pm.issues` view.
+The issues the caller owns that are in review, blocked, in progress or in backlog, and the issues they follow (by default their five latest blocked and in-review issues), each with what it waits for now and, for a followed one, how many comments and changes others made since the caller last looked at it. Needs `pm.issues` view.
 
 ```bash
 nb-studio follow-up list

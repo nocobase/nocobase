@@ -110,15 +110,10 @@ it('groups My tasks by what waits for the owner, then by status', async () => {
     ownerUserId: 'alice',
     follow: 'all',
   });
-  expect(groupIds(result)).toEqual([
-    'follow',
-    'wait',
-    'doing',
-    'backlog',
-    'done',
-  ]);
+  // Nothing followed: the follow group is not shown.
+  expect(groupIds(result)).toEqual(['wait', 'doing', 'backlog', 'done']);
   expect(titles(result, 'wait').sort()).toEqual(['Accept me', 'Answer me']);
-  const accept = result.groups[1]!.data.find(
+  const accept = result.groups[0]!.data.find(
     (item) => item.issue.title === 'Accept me',
   )!;
   expect(accept.waits).toEqual(['accept']);
@@ -294,9 +289,7 @@ it('pages a group and continues it with its generation', async () => {
   });
   const rest = next.groups.find((group) => group.group === 'backlog')!;
   expect(rest.data).toHaveLength(2);
-  expect(next.groups.find((group) => group.group === 'follow')!.data).toEqual(
-    [],
-  );
+  expect(next.groups.find((group) => group.group === 'follow')).toBeUndefined();
 });
 
 it('never reaches past a parent the viewer cannot see, also for a project-scoped key', async () => {

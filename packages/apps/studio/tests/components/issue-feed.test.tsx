@@ -632,7 +632,7 @@ describe('the follow star', () => {
       }),
     );
     const following = await screen.findByRole('button', {
-      name: 'Following · 2/5',
+      name: 'Following',
     });
     fireEvent.click(following);
     await waitFor(() =>

@@ -1,6 +1,6 @@
 /**
- * "My follow-ups" (`/follow-ups`, `server/follow-ups/`): the issues a person owns that are still open, and up to
- * `FOLLOW_UPS_MAX` issues they follow, each with what it waits for now and, for a followed one, how much happened on it
+ * "My follow-ups" (`/follow-ups`, `server/follow-ups/`): the issues a person owns that are still open, and the issues
+ * they follow, each with what it waits for now and, for a followed one, how much happened on it
  * since they last looked.
  *
  * | Method | Route                                      | Body                    | `data`            |
@@ -19,8 +19,14 @@
  */
 import type { IssueProgress } from './project-manager.js';
 
-/** The most issues a person follows. */
-export const FOLLOW_UPS_MAX = 5;
+/**
+ * The most issues a person follows: a bound on the stored preference and on what one overview reads, set high enough that
+ * nobody meets it in use, so the interface never counts towards it.
+ */
+export const FOLLOW_UPS_MAX = 100;
+
+/** Until a person chooses, the most of their blocked and in-review issues they follow by default. */
+export const FOLLOW_UPS_DEFAULT_MAX = 5;
 
 /** The statuses of the issues a person owns that the page lists, in the order it shows them. */
 export const FOLLOW_UP_STATUSES = [
