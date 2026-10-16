@@ -259,7 +259,8 @@ export async function updateMessageRun(
 }
 
 export function metadataOf(record: MessageRecord): MessageMetadata {
-  return jsonObject(record.metadata);
+  const { runnerContext: _private, ...metadata } = jsonObject(record.metadata);
+  return metadata;
 }
 
 function contentOf(value: unknown): MessageContent {
