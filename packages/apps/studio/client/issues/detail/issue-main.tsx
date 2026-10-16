@@ -136,6 +136,7 @@ export function IssueDescriptionSection({
   return (
     <IssueDescription
       description={detail.description}
+      revision={detail.revision}
       renderMarkdown={(content) => (
         <IssueMarkdown content={content} className='max-w-3xl' />
       )}
@@ -144,8 +145,8 @@ export function IssueDescriptionSection({
       labels={wording.detail}
       {...(canEditIssues(viewer)
         ? {
-            onSave: async (description: string) => {
-              await update.mutateAsync({ description });
+            onSave: async (description: string, revision: number) => {
+              await update.mutateAsync({ description, revision });
             },
           }
         : {})}

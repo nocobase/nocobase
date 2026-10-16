@@ -586,6 +586,7 @@ export function IssueDetailLayout({
 export function IssueHeader({
   identifier,
   title,
+  revision,
   status,
   trail,
   parent,
@@ -599,6 +600,7 @@ export function IssueHeader({
 }: {
   readonly identifier: string;
   readonly title: string;
+  readonly revision: number;
   readonly status: IssueDetailStatus;
   /** The way back, such as breadcrumbs. */
   readonly trail?: ReactNode;
@@ -611,30 +613,34 @@ export function IssueHeader({
   readonly actions?: ReactNode;
   readonly meta?: ReactNode;
   /** Saves a new title; without it the title cannot be edited. */
-  readonly onRename?: (title: string) => Promise<void>;
+  readonly onRename?: (title: string, revision: number) => Promise<void>;
   readonly maxTitleLength?: number;
   readonly link?: IssueDetailLink;
   readonly labels?: IssueDetailLabels;
 }): ReactElement {
-  const [draft, setDraft] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{
+    value: string;
+    original: string;
+    revision: number;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
   // Enter saves and then blurs the disabled input, which would save a second time without this guard.
   const savingRef = useRef(false);
   const save = (): void => {
     if (savingRef.current) return;
-    const next = draft?.trim() ?? '';
-    if (!next || next === title || !onRename) {
+    const next = draft?.value.trim() ?? '';
+    if (!draft || !next || next === draft.original || !onRename) {
       setDraft(null);
       return;
     }
     savingRef.current = true;
     setSaving(true);
-    void onRename(next)
+    void onRename(next, draft.revision)
+      .then(() => setDraft(null))
       .catch(() => undefined)
       .finally(() => {
         savingRef.current = false;
         setSaving(false);
-        setDraft(null);
       });
   };
   return (
@@ -656,13 +662,15 @@ export function IssueHeader({
           {draft !== null ? (
             <div className='flex items-center gap-2'>
               <Input
-                value={draft}
+                value={draft.value}
                 autoFocus
                 maxLength={maxTitleLength}
                 aria-label={labels.titleLabel}
                 className='h-10 text-xl font-semibold'
                 disabled={saving}
-                onChange={(event) => setDraft(event.target.value)}
+                onChange={(event) =>
+                  setDraft({ ...draft, value: event.target.value })
+                }
                 onBlur={save}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
@@ -687,7 +695,9 @@ export function IssueHeader({
                   size='icon-sm'
                   aria-label={labels.editTitle}
                   className='mt-0.5 shrink-0 opacity-60 group-hover:opacity-100 focus-visible:opacity-100'
-                  onClick={() => setDraft(title)}
+                  onClick={() =>
+                    setDraft({ value: title, original: title, revision })
+                  }
                 >
                   <PencilIcon />
                 </Button>
@@ -722,6 +732,7 @@ export function IssueHeader({
  */
 export function IssueDescription({
   description,
+  revision,
   onSave,
   renderMarkdown,
   onMentionSearch,
@@ -729,8 +740,9 @@ export function IssueDescription({
   labels = defaultIssueDetailLabels,
 }: {
   readonly description: string;
+  readonly revision: number;
   /** Without it the description cannot be edited. */
-  readonly onSave?: (markdown: string) => Promise<void>;
+  readonly onSave?: (markdown: string, revision: number) => Promise<void>;
   readonly renderMarkdown: (markdown: string) => ReactNode;
   readonly onMentionSearch?: (
     query: string,
@@ -738,12 +750,16 @@ export function IssueDescription({
   readonly richTextLabels?: RichTextLabels;
   readonly labels?: IssueDetailLabels;
 }): ReactElement {
-  const [draft, setDraft] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{
+    value: string;
+    original: string;
+    revision: number;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
   const save = (): void => {
-    if (draft === null || draft === description || !onSave) return;
+    if (draft === null || draft.value === draft.original || !onSave) return;
     setSaving(true);
-    void onSave(draft)
+    void onSave(draft.value, draft.revision)
       .then(() => setDraft(null))
       .catch(() => undefined)
       .finally(() => setSaving(false));
@@ -753,7 +769,7 @@ export function IssueDescription({
     return (
       <div className='space-y-2'>
         <RichTextEditor
-          value={draft}
+          value={draft.value}
           extensions={[PmDescriptionImage]}
           autoFocus
           aria-label={labels.description}
@@ -763,7 +779,7 @@ export function IssueDescription({
           {...(richTextLabels ? { labels: richTextLabels } : {})}
           mentionPlacement='below'
           contentClassName='min-h-40'
-          onChange={setDraft}
+          onChange={(value) => setDraft({ ...draft, value })}
           onEscape={() => {
             if (!saving) setDraft(null);
           }}
@@ -780,7 +796,7 @@ export function IssueDescription({
           </Button>
           <Button
             size='sm'
-            disabled={saving || draft === description}
+            disabled={saving || draft.value === draft.original}
             onClick={save}
           >
             {saving ? (
@@ -797,7 +813,9 @@ export function IssueDescription({
       variant='ghost'
       size='sm'
       className='text-muted-foreground'
-      onClick={() => setDraft(description)}
+      onClick={() =>
+        setDraft({ value: description, original: description, revision })
+      }
     >
       <PencilIcon data-icon='inline-start' />
       {labels.editDescription}

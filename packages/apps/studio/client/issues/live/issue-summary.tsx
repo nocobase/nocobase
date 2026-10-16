@@ -65,7 +65,7 @@ import { PersonalRunnerActions } from '../detail/personal-runner-actions.js';
 
 /** Renaming the issue from its title, with the words for the pencil and the input. */
 export interface SummaryRename {
-  readonly onRename: (title: string) => Promise<void>;
+  readonly onRename: (title: string, revision: number) => Promise<void>;
   readonly editLabel: string;
   readonly inputLabel: string;
 }
@@ -193,6 +193,7 @@ export function IssueSummary({
           <>
             <SummaryTitle
               title={issue.title}
+              revision={issue.revision}
               Title={Title}
               {...(rename ? { rename } : {})}
             />
@@ -316,45 +317,53 @@ function SummaryBar({
 /** The title on a line of its own, wrapping between words; the pencil edits it in place. */
 function SummaryTitle({
   title,
+  revision,
   Title,
   rename,
 }: {
   readonly title: string;
+  readonly revision: number;
   readonly Title: 'h1' | 'h2';
   readonly rename?: SummaryRename;
 }): ReactElement {
-  const [draft, setDraft] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{
+    value: string;
+    original: string;
+    revision: number;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
   // Enter saves and then blurs the disabled input, which would save a second time without this guard.
   const savingRef = useRef(false);
   const save = (): void => {
     if (savingRef.current) return;
-    const next = draft?.trim() ?? '';
-    if (!next || next === title || !rename) {
+    const next = draft?.value.trim() ?? '';
+    if (!draft || !next || next === draft.original || !rename) {
       setDraft(null);
       return;
     }
     savingRef.current = true;
     setSaving(true);
     void rename
-      .onRename(next)
+      .onRename(next, draft.revision)
+      .then(() => setDraft(null))
       .catch(() => undefined)
       .finally(() => {
         savingRef.current = false;
         setSaving(false);
-        setDraft(null);
       });
   };
   if (draft !== null)
     return (
       <div className='flex items-center gap-2'>
         <Input
-          value={draft}
+          value={draft.value}
           autoFocus
           aria-label={rename?.inputLabel}
           className='h-9 text-base font-semibold'
           disabled={saving}
-          onChange={(event) => setDraft(event.target.value)}
+          onChange={(event) =>
+            setDraft({ ...draft, value: event.target.value })
+          }
           onBlur={save}
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
@@ -380,7 +389,7 @@ function SummaryTitle({
           size='icon-sm'
           aria-label={rename.editLabel}
           className='shrink-0 opacity-60 group-hover:opacity-100 focus-visible:opacity-100'
-          onClick={() => setDraft(title)}
+          onClick={() => setDraft({ value: title, original: title, revision })}
         >
           <PencilIcon />
         </Button>

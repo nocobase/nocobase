@@ -259,8 +259,8 @@ function IssuePage({
             {...(canEditIssues(viewer)
               ? {
                   rename: {
-                    onRename: async (title: string) => {
-                      await update.mutateAsync({ title });
+                    onRename: async (title: string, revision: number) => {
+                      await update.mutateAsync({ title, revision });
                     },
                     editLabel: wording.detail.editTitle,
                     inputLabel: wording.detail.titleLabel,
