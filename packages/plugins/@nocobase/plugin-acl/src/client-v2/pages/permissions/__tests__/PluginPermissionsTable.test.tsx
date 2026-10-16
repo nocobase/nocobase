@@ -8,24 +8,30 @@
  */
 
 import React from 'react';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { PluginSettingsPageType } from '@nocobase/client-v2';
 import PluginPermissionsTable from '../PluginPermissionsTable';
+import SystemPermissionsTab from '../SystemPermissionsTab';
+
+type TestSettingsPage = Pick<PluginSettingsPageType, 'key' | 'title' | 'aclSnippet' | 'showTabs'> & {
+  children?: TestSettingsPage[];
+};
 
 const state = vi.hoisted(() => ({
-  settings: [] as PluginSettingsPageType[],
+  settings: [] as TestSettingsPage[],
   aclSnippets: [] as string[],
   roleSnippets: [] as string[],
   add: vi.fn(),
   remove: vi.fn(),
   list: vi.fn(),
   success: vi.fn(),
+  setSystemSnippet: vi.fn(),
 }));
 
 vi.mock('@nocobase/client-v2', async () => {
   const ReactModule = await import('react');
 
-  function renderRows(items: PluginSettingsPageType[], columns: Array<Record<string, unknown>>): React.ReactNode {
+  function renderRows(items: readonly TestSettingsPage[], columns: Array<Record<string, unknown>>): React.ReactNode {
     return items.map((item, index) =>
       ReactModule.createElement(
         'div',
@@ -37,7 +43,7 @@ vi.mock('@nocobase/client-v2', async () => {
           const dataIndex = typeof column.dataIndex === 'string' ? column.dataIndex : undefined;
           const value = dataIndex ? (item as unknown as Record<string, unknown>)[dataIndex] : undefined;
           const renderCell = column.render as
-            | ((value: unknown, record: PluginSettingsPageType, index: number) => React.ReactNode)
+            | ((value: unknown, record: TestSettingsPage, index: number) => React.ReactNode)
             | undefined;
           return ReactModule.createElement(
             'span',
@@ -57,7 +63,7 @@ vi.mock('@nocobase/client-v2', async () => {
   }
 
   return {
-    Table: ({ dataSource = [], columns = [] }: { dataSource?: PluginSettingsPageType[]; columns?: unknown[] }) =>
+    Table: ({ dataSource = [], columns = [] }: { dataSource?: TestSettingsPage[]; columns?: unknown[] }) =>
       ReactModule.createElement(
         'div',
         { 'data-testid': 'plugin-permissions-table' },
@@ -77,6 +83,7 @@ vi.mock('@nocobase/flow-engine', async () => {
           list: state.list,
           add: state.add,
           remove: state.remove,
+          setSystemSnippet: state.setSystemSnippet,
         }),
       },
       app: {
@@ -97,6 +104,7 @@ vi.mock('../../../locale', () => ({
 }));
 
 describe('PluginPermissionsTable', () => {
+  afterEach(cleanup);
   beforeEach(() => {
     state.settings = [];
     state.aclSnippets = [];
@@ -105,13 +113,21 @@ describe('PluginPermissionsTable', () => {
     state.remove.mockReset();
     state.list.mockReset();
     state.success.mockReset();
-    state.list.mockResolvedValue({
-      data: {
-        data: state.roleSnippets,
-      },
+    state.list.mockImplementation(async () => ({ data: { data: [...state.roleSnippets] } }));
+    state.add.mockImplementation(async ({ values }: { values: string[] }) => {
+      state.roleSnippets = [...new Set([...state.roleSnippets, ...values])];
     });
-    state.add.mockResolvedValue({});
-    state.remove.mockResolvedValue({});
+    state.remove.mockImplementation(async ({ values }: { values: string[] }) => {
+      state.roleSnippets = state.roleSnippets.filter((snippet) => !values.includes(snippet));
+    });
+    state.setSystemSnippet.mockReset();
+    state.setSystemSnippet.mockImplementation(async ({ values }: { values: { snippet: string; enabled: boolean } }) => {
+      state.roleSnippets = state.roleSnippets.filter(
+        (snippet) => snippet !== values.snippet && snippet !== `!${values.snippet}`,
+      );
+      state.roleSnippets.push(values.enabled ? values.snippet : `!${values.snippet}`);
+      return { data: { data: [...state.roleSnippets] } };
+    });
   });
 
   it('should hide child settings that use the same plugin ACL snippet as their parent', async () => {
@@ -136,7 +152,7 @@ describe('PluginPermissionsTable', () => {
       },
     ];
 
-    render(<PluginPermissionsTable active role={{ name: 'admin', snippets: ['pm.*'] }} />);
+    render(<PluginPermissionsTable active role={{ name: 'admin', title: 'Admin', snippets: ['pm.*'] }} />);
 
     expect(await screen.findByText('Routes')).toBeInTheDocument();
     expect(screen.queryByText('Desktop routes')).not.toBeInTheDocument();
@@ -160,7 +176,7 @@ describe('PluginPermissionsTable', () => {
       },
     ];
 
-    render(<PluginPermissionsTable active role={{ name: 'admin', snippets: ['pm.*'] }} />);
+    render(<PluginPermissionsTable active role={{ name: 'admin', title: 'Admin', snippets: ['pm.*'] }} />);
 
     expect(await screen.findByText('Data')).toBeInTheDocument();
     expect(screen.getByText('Data sources')).toBeInTheDocument();
@@ -188,7 +204,7 @@ describe('PluginPermissionsTable', () => {
       },
     ];
 
-    render(<PluginPermissionsTable active role={{ name: 'admin', snippets: ['pm.*'] }} />);
+    render(<PluginPermissionsTable active role={{ name: 'admin', title: 'Admin', snippets: ['pm.*'] }} />);
 
     const routesRow = await screen.findByTestId('row-routes');
     fireEvent.click(within(routesRow).getByRole('checkbox'));
@@ -198,5 +214,56 @@ describe('PluginPermissionsTable', () => {
         values: ['!pm.routes'],
       });
     });
+  });
+  it('keeps newly granted plugin access when subsequently saving a system permission', async () => {
+    state.settings = [{ key: 'logger', title: 'Logger', aclSnippet: 'pm.logger' }];
+    state.roleSnippets = ['ui.*', 'pm', 'pm.*', '!app', '!pm.logger', '!pm.v1-only'];
+    const onRoleChange = vi.fn();
+    render(
+      <SystemPermissionsTab
+        activeKey="general"
+        activeRole={{ name: 'admin', title: 'Admin', snippets: [...state.roleSnippets] }}
+        currentUserRole={null}
+        onRoleChange={onRoleChange}
+      />,
+    );
+    const logger = within(await screen.findByTestId('row-logger')).getByRole('checkbox');
+    await waitFor(() => expect(logger).not.toBeChecked());
+    fireEvent.click(logger);
+    await waitFor(() => expect(logger).toBeChecked());
+    expect(state.roleSnippets).not.toContain('!pm.logger');
+    // A separate editor may change a V1 permission without updating this component's role snapshot.
+    state.roleSnippets.push('!pm.another-v1-only');
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Allows to configure interface' }));
+    await waitFor(() =>
+      expect(state.setSystemSnippet).toHaveBeenCalledWith({
+        filterByTk: 'admin',
+        values: { snippet: 'ui.*', enabled: false },
+      }),
+    );
+    await waitFor(() =>
+      expect(onRoleChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ snippets: expect.arrayContaining(['!ui.*', '!pm.v1-only', '!pm.another-v1-only']) }),
+      ),
+    );
+    expect(logger).toBeChecked();
+    expect(state.roleSnippets).not.toContain('!pm.logger');
+    expect(state.roleSnippets).not.toContain('ui.*');
+  });
+
+  it('synchronizes the complete saved snippet list including settings only registered in v1', async () => {
+    state.settings = [{ key: 'logger', title: 'Logger', aclSnippet: 'pm.logger' }];
+    state.roleSnippets = ['pm.*', '!pm.v1-only'];
+    const onSnippetsChange = vi.fn();
+    render(
+      <PluginPermissionsTable
+        active
+        role={{ name: 'admin', title: 'Admin', snippets: ['pm.*'] }}
+        onSnippetsChange={onSnippetsChange}
+      />,
+    );
+    await waitFor(() => expect(onSnippetsChange).toHaveBeenCalledWith(['pm.*', '!pm.v1-only']));
+    fireEvent.click(within(screen.getByTestId('row-logger')).getByRole('checkbox'));
+    await waitFor(() => expect(onSnippetsChange).toHaveBeenLastCalledWith(['pm.*', '!pm.v1-only', '!pm.logger']));
   });
 });

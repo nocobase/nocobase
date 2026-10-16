@@ -48,6 +48,7 @@ interface DesktopRoutePayload {
 interface DesktopRouteRecord {
   id: number;
   title?: string;
+  type?: string;
   hidden?: boolean;
   parentId?: number;
   options?: DesktopRouteOptions;
@@ -60,6 +61,8 @@ interface DesktopRouteOptions {
 
 interface RoutePermissionRecord {
   id: number;
+  readOnly: boolean;
+  type?: string;
   title?: string;
   hidden?: boolean;
   routePath?: string;
@@ -90,14 +93,21 @@ function toDesktopRoutePayload(responseData: unknown): DesktopRoutePayload {
   };
 }
 
-function toRouteItems(items: DesktopRouteRecord[] | undefined, parentId?: number): RoutePermissionRecord[] {
+function toRouteItems(
+  items: DesktopRouteRecord[] | undefined,
+  parentId?: number,
+  parentReadOnly = false,
+): RoutePermissionRecord[] {
   if (!Array.isArray(items)) {
     return [];
   }
   return items.map((item) => {
-    const children = toRouteItems(item.children, item.id);
+    const readOnly = parentReadOnly || item.type === 'page';
+    const children = toRouteItems(item.children, item.id, readOnly);
     return {
       id: item.id,
+      readOnly,
+      type: item.type,
       title: item.title,
       hidden: item.hidden,
       routePath: toRoutePath(item.options),
@@ -112,15 +122,14 @@ function toRoutePath(options: DesktopRouteOptions | undefined) {
   return typeof path === 'string' && path.trim() ? path.trim() : undefined;
 }
 
-function getAllChildrenIds(items: RoutePermissionRecord[] | undefined): number[] {
-  if (!Array.isArray(items)) {
-    return [];
-  }
-  return items.flatMap((item) => [item.id, ...getAllChildrenIds(item.children)]);
-}
-
 function flattenItems(items: RoutePermissionRecord[]): RoutePermissionRecord[] {
   return items.flatMap((item) => [item, ...flattenItems(item.children ?? [])]);
+}
+
+function getEditableRouteIds(items: RoutePermissionRecord[] | undefined): number[] {
+  return flattenItems(items ?? [])
+    .filter((item) => !item.readOnly)
+    .map((item) => item.id);
 }
 
 function removeHiddenRouteItems(items: RoutePermissionRecord[]): RoutePermissionRecord[] {
@@ -130,6 +139,9 @@ function removeHiddenRouteItems(items: RoutePermissionRecord[]): RoutePermission
     }
 
     const children = removeHiddenRouteItems(item.children ?? []);
+    if (item.type === 'page' && !children.length) {
+      return visibleItems;
+    }
     visibleItems.push({
       ...item,
       children: children.length ? children : undefined,
@@ -141,7 +153,7 @@ function removeHiddenRouteItems(items: RoutePermissionRecord[]): RoutePermission
 function getRouteIdsWithAllDescendants(items: RoutePermissionRecord[], itemById: Map<number, RoutePermissionRecord>) {
   return items.flatMap((item) => {
     const sourceItem = itemById.get(item.id) ?? item;
-    return [item.id, ...getAllChildrenIds(sourceItem.children)];
+    return getEditableRouteIds([sourceItem]);
   });
 }
 
@@ -212,13 +224,13 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
   );
   const routeItems = useMemo(() => toRouteItems(routeService.data), [routeService.data]);
   const flatItems = useMemo(() => flattenItems(routeItems), [routeItems]);
-  const allIds = useMemo(() => getAllChildrenIds(routeItems), [routeItems]);
+  const allIds = useMemo(() => getEditableRouteIds(routeItems), [routeItems]);
   const displayRouteItems = useMemo(() => removeHiddenRouteItems(routeItems), [routeItems]);
   const visibleRouteItems = useMemo(
     () => filterRouteItems(displayRouteItems, routeKeyword, t),
     [displayRouteItems, routeKeyword, t],
   );
-  const visibleIds = useMemo(() => getAllChildrenIds(visibleRouteItems), [visibleRouteItems]);
+  const visibleIds = useMemo(() => getEditableRouteIds(visibleRouteItems), [visibleRouteItems]);
   const itemById = useMemo(() => new Map(flatItems.map((item) => [item.id, item])), [flatItems]);
   const visibleIdsWithDescendants = useMemo(
     () => getRouteIdsWithAllDescendants(visibleRouteItems, itemById),
@@ -263,9 +275,22 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
     if (!roleDesktopRoutesResource) {
       return;
     }
+    const nextIds = new Set(nextSelectedIds);
+    for (const item of flatItems) {
+      if (!item.readOnly || !selectedIds.includes(item.id)) {
+        continue;
+      }
+      let parent = item.parentId === undefined ? undefined : itemById.get(item.parentId);
+      while (parent) {
+        if (selectedIds.includes(parent.id)) {
+          nextIds.add(parent.id);
+        }
+        parent = parent.parentId === undefined ? undefined : itemById.get(parent.parentId);
+      }
+    }
     const changes = getLayoutScopedPermissionChanges({
       currentLayoutRouteIds: allIds,
-      nextSelectedIds,
+      nextSelectedIds: [...nextIds],
       selectedIds,
     });
     try {
@@ -280,7 +305,6 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
         });
       }
       await roleScopedRouteService.refreshAsync();
-      setSelectedIds(nextSelectedIds);
       ctx.message.success(t('Saved successfully'));
     } catch {
       await roleScopedRouteService.refreshAsync().catch(() => undefined);
@@ -315,9 +339,12 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
   });
 
   const toggleItem = useMemoizedFn(async (item: RoutePermissionRecord) => {
+    if (item.readOnly) {
+      return;
+    }
     const checked = selectedIds.includes(item.id);
     const sourceItem = itemById.get(item.id) ?? item;
-    const descendantIds = getAllChildrenIds(sourceItem.children);
+    const descendantIds = getEditableRouteIds(sourceItem.children);
     let nextIds = checked
       ? selectedIds.filter((id) => id !== item.id && !descendantIds.includes(id))
       : uniq([...selectedIds, item.id, ...descendantIds]);
@@ -325,10 +352,10 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
     if (item.parentId) {
       const parent = itemById.get(item.parentId);
       const selectedSibling = parent?.children?.some((child) => nextIds.includes(child.id));
-      if (checked && !selectedSibling) {
+      if (checked && !parent?.readOnly && !selectedSibling) {
         nextIds = nextIds.filter((id) => id !== item.parentId);
       }
-      if (!checked && !nextIds.includes(item.parentId)) {
+      if (!checked && !parent?.readOnly && !nextIds.includes(item.parentId)) {
         nextIds.push(item.parentId);
       }
     }
@@ -349,7 +376,13 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
           <Checkbox
             checked={!!visibleIds.length && visibleSelectedCount === visibleIds.length}
             indeterminate={visibleSelectedCount > 0 && visibleSelectedCount < visibleIds.length}
-            disabled={!visibleIds.length}
+            disabled={
+              !visibleIds.length ||
+              routeService.loading ||
+              roleScopedRouteService.loading ||
+              !!routeService.error ||
+              !!roleScopedRouteService.error
+            }
             onChange={setAll}
           >
             {t('Allow access')}
@@ -360,6 +393,13 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
           return (
             <Checkbox
               aria-label={t('Allow access to {{route}}', { route: routeTitle })}
+              disabled={
+                item.readOnly ||
+                routeService.loading ||
+                roleScopedRouteService.loading ||
+                !!routeService.error ||
+                !!roleScopedRouteService.error
+              }
               checked={selectedIds.includes(item.id)}
               onChange={() => toggleItem(item)}
             />
@@ -367,7 +407,18 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
         },
       },
     ],
-    [selectedIds, setAll, t, toggleItem, visibleIds.length, visibleSelectedCount],
+    [
+      selectedIds,
+      setAll,
+      t,
+      toggleItem,
+      visibleIds.length,
+      visibleSelectedCount,
+      routeService.loading,
+      routeService.error,
+      roleScopedRouteService.loading,
+      roleScopedRouteService.error,
+    ],
   );
 
   if (!role) {
@@ -398,7 +449,7 @@ function RoutePermissionsTab(props: RoutePermissionTabProps) {
         pagination={false}
         expandable={{
           defaultExpandAllRows: false,
-          expandedRowKeys: routeKeyword.trim() ? visibleIds : undefined,
+          expandedRowKeys: routeKeyword.trim() ? flattenItems(visibleRouteItems).map((item) => item.id) : undefined,
         }}
         columns={routeColumns}
         dataSource={visibleRouteItems}

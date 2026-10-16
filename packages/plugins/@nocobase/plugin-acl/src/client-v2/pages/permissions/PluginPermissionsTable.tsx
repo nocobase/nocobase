@@ -20,6 +20,7 @@ import { getSettingsChildren, toRoleSnippetsPayload, translateTitle } from './ut
 interface PluginPermissionsTableProps {
   active: boolean;
   role: Role;
+  onSnippetsChange?: (snippets: string[]) => void;
 }
 
 function normalizeSettingsItem(item: PluginSettingsPageType): PluginSettingsPageType {
@@ -36,10 +37,6 @@ function normalizeSettingsItem(item: PluginSettingsPageType): PluginSettingsPage
 
 function normalizeSettingsItems(items: PluginSettingsPageType[]): PluginSettingsPageType[] {
   return items.map((item) => normalizeSettingsItem(item));
-}
-
-function flattenSettings(items: PluginSettingsPageType[]) {
-  return items.flatMap((item) => (item.children ? [item, ...item.children] : [item]));
 }
 
 function getChildrenAclSnippets(item: PluginSettingsPageType, result: string[] = []) {
@@ -64,7 +61,6 @@ export default function PluginPermissionsTable(props: PluginPermissionsTableProp
   const t = useT();
   const settings = useMemo(() => normalizeSettingsItems(ctx.app.pluginSettingsManager.getList(false)), [ctx.app]);
   const allAclSnippets = ctx.app.pluginSettingsManager.getAclSnippets();
-  const flatSettings = useMemo(() => flattenSettings(settings), [settings]);
   const [snippets, setSnippets] = useState<string[]>(props.role.snippets ?? []);
   const resource = ctx.api.resource('roles.snippets', props.role.name);
 
@@ -77,16 +73,13 @@ export default function PluginPermissionsTable(props: PluginPermissionsTableProp
       ready: props.active && !!props.role.name,
       refreshDeps: [props.role.name],
       onSuccess(data) {
-        setSnippets(
-          data.filter((snippet) => {
-            return flatSettings.find((item) => snippet.includes(`!${item.aclSnippet}`) || !snippet.startsWith('!pm.'));
-          }),
-        );
+        setSnippets(data);
+        props.onSnippetsChange?.(data);
       },
     },
   );
 
-  const allChecked = snippets.includes('pm.*') && snippets.every((item) => !item.startsWith('!pm.'));
+  const allChecked = snippets.includes('pm.*') && allAclSnippets.every((snippet) => !snippets.includes(`!${snippet}`));
 
   const columns = useMemo<ColumnsType<PluginSettingsPageType>>(
     () => [

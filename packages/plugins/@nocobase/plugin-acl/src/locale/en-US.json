@@ -1,4 +1,6 @@
 {
+  "Invalid system permission": "Invalid system permission",
+  "Role not found": "Role not found",
   "Accessible": "Accessible",
   "Allow access": "Allow access",
   "Allow roles union": "Allow roles union",
