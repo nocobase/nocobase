@@ -28,6 +28,7 @@ export interface CliParameter {
   readonly default?: unknown;
   readonly alias?: string | undefined;
   readonly contentFile?: boolean | undefined;
+  readonly contentFileNonEmpty?: boolean | undefined;
   readonly prompt?: boolean | undefined;
   /** `--from-env` fills it from the environment variable named by the value of this field. */
   readonly fromEnv?: string | undefined;
@@ -117,6 +118,7 @@ export interface CliManifest {
     readonly runId?: string | undefined;
     /** Absent from a server older than manifest version 4. */
     readonly actions?: readonly string[] | undefined;
+    readonly settings?: readonly string[] | undefined;
   };
   readonly commands: readonly CliCommand[];
   /** Absent from a server older than manifest version 4. */

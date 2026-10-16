@@ -651,6 +651,21 @@ describe('@nocobase/app-plugin-users API routes', () => {
     });
   });
 
+  it.each(['asc', 'desc'] as const)(
+    'preserves name sorting in %s order through query validation',
+    async (order) => {
+      const service = userService();
+      const router = await apiRoutes.createRouter(
+        createApplication('allowed', service),
+      );
+      const response = await router.request(`/users?sort=name&order=${order}`);
+      expect(response.status).toBe(200);
+      expect(service.list).toHaveBeenCalledWith(
+        expect.objectContaining({ sort: 'name', order }),
+      );
+    },
+  );
+
   it('rejects an unknown body field and invalid paging before calling the service', async () => {
     const service = userService();
     const router = await apiRoutes.createRouter(

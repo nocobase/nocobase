@@ -56,8 +56,20 @@ const TOOLS = [ONLINE_TOOL, ...AGENT_TOOLS] as const;
 export const ModelPriceInputSchema: z.ZodType<ModelPriceInput> = z
   .strictObject({
     tool: z.enum(TOOLS),
-    modelService: z.string().trim().min(1).max(64).nullable().optional(),
-    model: z.string().trim().min(1).max(200),
+    modelService: z
+      .string()
+      .trim()
+      .min(1)
+      .max(64)
+      .nullable()
+      .optional()
+      .describe('The model service to use.'),
+    model: z
+      .string()
+      .trim()
+      .min(1)
+      .max(200)
+      .describe('The provider’s model identifier.'),
     inputPerM: amount,
     outputPerM: amount,
     cacheReadPerM: amount.optional(),
@@ -67,7 +79,13 @@ export const ModelPriceInputSchema: z.ZodType<ModelPriceInput> = z
       .trim()
       .regex(/^[A-Za-z]{3}$/u)
       .optional(),
-    note: z.string().trim().max(500).nullable().optional(),
+    note: z
+      .string()
+      .trim()
+      .max(500)
+      .nullable()
+      .optional()
+      .describe('A note explaining this change.'),
   })
   .refine(
     (input) => (input.tool === ONLINE_TOOL) === Boolean(input.modelService),
@@ -78,8 +96,14 @@ export const ModelPriceInputSchema: z.ZodType<ModelPriceInput> = z
   );
 
 export const ModelPricesSchema: z.ZodType<PricesInput> = z.strictObject({
-  prices: z.array(ModelPriceInputSchema).max(2000),
-  subscriptions: z.array(z.enum(AGENT_TOOLS)).max(AGENT_TOOLS.length),
+  prices: z
+    .array(ModelPriceInputSchema)
+    .max(2000)
+    .describe('Per-model pricing entries.'),
+  subscriptions: z
+    .array(z.enum(AGENT_TOOLS))
+    .max(AGENT_TOOLS.length)
+    .describe('Coding tools covered by a subscription.'),
 });
 
 function toPrice(row: PriceRecord): ModelPrice {
