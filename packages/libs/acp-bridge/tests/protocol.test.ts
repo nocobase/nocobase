@@ -27,7 +27,6 @@ describe('the wire protocol', () => {
     cwd: '/home/zhou/code',
     acpSessionId: null,
     settings: { mode: 'agent-full-access' },
-    tools: { name: 'studio', path: '/mcp/agent-sessions', token: 'abc.def' },
   };
 
   it('takes the commands it defines', () => {
@@ -65,19 +64,6 @@ describe('the wire protocol', () => {
         value: 'x',
       }).success,
     ).toBe(true);
-  });
-
-  it('refuses a tools path that is not a path of the application', () => {
-    const tools = {
-      ...session.tools,
-      path: 'https://elsewhere.example.com/mcp',
-    };
-    expect(
-      BridgeCommandSchema.safeParse({
-        type: 'cancel',
-        session: { ...session, tools },
-      }).success,
-    ).toBe(false);
   });
 
   it('refuses an update without its ACP kind', () => {

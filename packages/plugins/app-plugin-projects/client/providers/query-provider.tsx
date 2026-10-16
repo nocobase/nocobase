@@ -69,11 +69,12 @@ function RealtimeRefresh(): null {
           void queryClient.invalidateQueries({ queryKey: ['pm', 'plans'] });
           return;
         }
-        // Issue changes also move lists and project progress; an issue's own reads refresh only for the issues named.
-        for (const queryKey of [pmKeys.issues, pmKeys.projects])
-          void queryClient.invalidateQueries({ queryKey });
+        // Issue changes also move lists; an issue's own reads refresh only for the issues named. Projects count their
+        // issues by status, which only an announcement that names no issues can change (`PmChangeEvent.issueIds`).
+        void queryClient.invalidateQueries({ queryKey: pmKeys.issues });
         const named = announcedIssueIds(payload);
         if (!named) {
+          void queryClient.invalidateQueries({ queryKey: pmKeys.projects });
           void queryClient.invalidateQueries({ queryKey: ['pm', 'issue'] });
           return;
         }

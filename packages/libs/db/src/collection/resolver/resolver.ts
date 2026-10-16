@@ -22,8 +22,10 @@ import type {
   PhysicalForeignKeySchema,
   PhysicalIndexKey,
   PhysicalIndexSchema,
+  PhysicalPrimaryKeySchema,
   PhysicalReferentialAction,
   PhysicalSchemaAspect,
+  PhysicalUniqueConstraintSchema,
 } from '../../schema/inspector/types.js';
 import {
   CollectionResolutionError,
@@ -130,6 +132,7 @@ export function resolveCollection(
     db: pruneUndefined({
       schema: input.physical.schema,
       strict: input.physical.strict,
+      hasInheritedChildren: input.physical.hasInheritedChildren,
       comment: input.physical.comment,
       physicalKind:
         input.physical.kind === 'partitionedTable' ||
@@ -158,9 +161,13 @@ function addUniqueIndexConstraints(
   for (const index of indexes) {
     if (
       index.db?.unique !== true ||
+      index.db?.valid === false ||
       !index.fields?.length ||
       index.expressions?.length ||
-      index.predicate ||
+      ((index.predicate ||
+        index.db?.partial === true ||
+        index.db?.predicate !== undefined) &&
+        index.db?.predicateSatisfiedByNonNullKeys !== true) ||
       constraints.some(
         (constraint) =>
           constraint.type === 'unique' &&
@@ -174,6 +181,9 @@ function addUniqueIndexConstraints(
       fields: [...index.fields],
       name: index.name,
       mode: 'index',
+      ...(index.db?.columnEquality === false
+        ? { db: { columnEquality: false } }
+        : {}),
     });
   }
 }
@@ -567,6 +577,46 @@ function applyFieldMetadata(
   }
 }
 
+/** A unique index is only a proof for ordinary column equality when its comparisons agree. */
+function indexUsesColumnEquality(index: PhysicalIndexSchema): boolean {
+  return index.keys.every((key) => key.columnEquality !== false);
+}
+
+function constraintIndexOptions(
+  input: CollectionResolutionInput,
+  kind: 'primaryKey' | 'unique',
+  constraint: PhysicalPrimaryKeySchema | PhysicalUniqueConstraintSchema,
+): { columnEquality?: false; valid?: false } | undefined {
+  const indexes = input.physical.indexes.filter((index) => {
+    const references =
+      index.backsConstraints ??
+      (index.backsConstraint ? [index.backsConstraint] : []);
+    return references.some((reference) => {
+      if (reference.kind !== kind) return false;
+      // A named backing index can reorder constraint columns or contain extra keys.
+      if (constraint.name !== undefined && reference.name !== undefined)
+        return reference.name === constraint.name;
+      // Some inspectors omit constraint names; key order still does not identify a constraint.
+      return (
+        index.keys.length === constraint.columns.length &&
+        constraint.columns.every((column) =>
+          index.keys.some((key) => key.columnName === column),
+        )
+      );
+    });
+  });
+  const incompatible = indexes.some((index) => !indexUsesColumnEquality(index));
+  const invalid =
+    constraint.valid === false ||
+    indexes.some((index) => index.valid === false);
+  return incompatible || invalid
+    ? {
+        ...(incompatible ? { columnEquality: false } : {}),
+        ...(invalid ? { valid: false } : {}),
+      }
+    : undefined;
+}
+
 function resolveConstraints(
   input: CollectionResolutionInput,
   columns: ResolvedColumns,
@@ -586,6 +636,15 @@ function resolveConstraints(
           type: 'primary' as const,
           name: input.physical.primaryKey.name,
           fields,
+          deferrable: resolveDeferrable(
+            input.physical.primaryKey.deferrable,
+            input.physical.primaryKey.initiallyDeferred,
+          ),
+          db: constraintIndexOptions(
+            input,
+            'primaryKey',
+            input.physical.primaryKey,
+          ),
         }),
       );
     }
@@ -611,6 +670,7 @@ function resolveConstraints(
             constraint.deferrable,
             constraint.initiallyDeferred,
           ),
+          db: constraintIndexOptions(input, 'unique', constraint),
         }),
       );
     }
@@ -754,7 +814,7 @@ function resolveIndexes(
 ): IndexDefinition[] {
   const indexes: IndexDefinition[] = [];
   for (const [index, physical] of input.physical.indexes.entries()) {
-    if (physical.backsConstraint) continue;
+    if (physical.backsConstraint || physical.backsConstraints?.length) continue;
     const resolved = resolveIndex(physical, index, columns, issues);
     if (resolved) indexes.push(resolved);
   }
@@ -811,10 +871,14 @@ function resolveIndex(
     order: Object.keys(order).length > 0 ? order : undefined,
     db: pruneUndefined({
       unique: physical.unique,
+      valid: physical.valid,
+      columnEquality: indexUsesColumnEquality(physical) ? undefined : false,
       keys,
       includeFields:
         includeFields && includeFields.length > 0 ? includeFields : undefined,
       predicate: physical.predicate,
+      partial: physical.partial,
+      predicateSatisfiedByNonNullKeys: physical.predicateSatisfiedByNonNullKeys,
     }),
   });
 }

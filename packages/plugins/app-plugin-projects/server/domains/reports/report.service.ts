@@ -224,8 +224,6 @@ interface CommentRow {
   readonly createdAt: Date | string;
 }
 
-const PAGE = 200;
-
 const time = (value: Date | string | null): number | null =>
   value === null ? null : new Date(value).getTime();
 
@@ -336,6 +334,7 @@ export function createIssueReports(deps: {
 
       const created = await conn.repository<IssueRow>('pmIssues').findMany({
         filter: (f) => f.and([scope(f), inRange(f, 'createdAt', query)]),
+        select: (select) => select.fields('id', 'createdAt'),
       });
       const comments = await conn
         .repository<CommentRow>('pmComments')
@@ -346,6 +345,8 @@ export function createIssueReports(deps: {
               f.date('deletedAt').empty(),
               inRange(f, 'createdAt', query),
             ]),
+          select: (select) =>
+            select.fields('authorType', 'authorId', 'createdAt'),
         });
       const activities = await conn
         .repository<ActivityRow>('pmActivities')
@@ -388,26 +389,34 @@ export function createIssueReports(deps: {
       const cycleMs: number[] = [];
       let deliveredByAgent = 0;
       const deliveredIds = [...delivered.keys()];
-      for (let at = 0; at < deliveredIds.length; at += PAGE) {
-        const page = deliveredIds.slice(at, at + PAGE);
-        const rows = await conn.repository<IssueRow>('pmIssues').findMany({
-          filter: (f) => oneOf(f, 'id', page),
-        });
-        for (const row of rows) {
-          const doneAt = delivered.get(row.id) ?? 0;
-          const day = new Date(doneAt).toISOString().slice(0, 10);
-          const agent = row.executorType === query.agentKind;
-          daily[day] = {
-            total: (daily[day]?.total ?? 0) + 1,
-            byAgent: (daily[day]?.byAgent ?? 0) + (agent ? 1 : 0),
-          };
-          const createdAt = time(row.createdAt);
-          if (createdAt !== null) cycleMs.push(Math.max(0, doneAt - createdAt));
-          if (!agent) continue;
-          deliveredByAgent += 1;
-          if (row.executorId)
-            byAgent[row.executorId] = (byAgent[row.executorId] ?? 0) + 1;
-        }
+      const deliveredRows =
+        deliveredIds.length === 0
+          ? []
+          : await conn.query
+              .selectFrom('pmIssues')
+              .select(['id', 'executorType', 'executorId', 'createdAt'])
+              .where('id', 'in', deliveredIds)
+              .orderBy('id')
+              .execute<
+                Pick<
+                  IssueRow,
+                  'id' | 'executorType' | 'executorId' | 'createdAt'
+                >
+              >();
+      for (const row of deliveredRows) {
+        const doneAt = delivered.get(row.id) ?? 0;
+        const day = new Date(doneAt).toISOString().slice(0, 10);
+        const agent = row.executorType === query.agentKind;
+        daily[day] = {
+          total: (daily[day]?.total ?? 0) + 1,
+          byAgent: (daily[day]?.byAgent ?? 0) + (agent ? 1 : 0),
+        };
+        const createdAt = time(row.createdAt);
+        if (createdAt !== null) cycleMs.push(Math.max(0, doneAt - createdAt));
+        if (!agent) continue;
+        deliveredByAgent += 1;
+        if (row.executorId)
+          byAgent[row.executorId] = (byAgent[row.executorId] ?? 0) + 1;
       }
 
       return {
@@ -526,23 +535,32 @@ export function createIssueReports(deps: {
       const issues = new Map<string, IssueRow>();
       const history = new Map<string, ActivityRow[]>();
       const completedIds = [...doneAt.keys()];
-      for (let at = 0; at < ids.length; at += PAGE)
-        for (const row of await conn.repository<IssueRow>('pmIssues').findMany({
-          filter: (f) => oneOf(f, 'id', ids.slice(at, at + PAGE)),
-        }))
+      if (ids.length > 0)
+        for (const row of await conn.query
+          .selectFrom('pmIssues')
+          .select([
+            'id',
+            'projectId',
+            'executorType',
+            'executorId',
+            'createdAt',
+          ])
+          .where('id', 'in', ids)
+          .orderBy('id')
+          .execute<IssueRow>())
           issues.set(row.id, row);
-      for (let at = 0; at < completedIds.length; at += PAGE)
-        for (const row of await conn
-          .repository<ActivityRow>('pmActivities')
-          .findMany({
-            filter: (f) =>
-              f.and([
-                oneOf(f, 'issueId', completedIds.slice(at, at + PAGE)),
-                f.string('action').eq('status_changed'),
-              ]),
-            sort: (sort) => [sort.field('createdAt').asc()],
-          }))
-          history.set(row.issueId, [...(history.get(row.issueId) ?? []), row]);
+      if (completedIds.length > 0)
+        for (const row of await conn.query
+          .selectFrom('pmActivities')
+          .select(['issueId', 'details', 'createdAt'])
+          .where('issueId', 'in', completedIds)
+          .where('action', '=', 'status_changed')
+          .orderBy('createdAt')
+          .execute<Pick<ActivityRow, 'issueId' | 'details' | 'createdAt'>>())
+          history.set(row.issueId, [
+            ...(history.get(row.issueId) ?? []),
+            row as ActivityRow,
+          ]);
 
       const startedAt = (issue: IssueRow): string | null => {
         const changes = history.get(issue.id) ?? [];
@@ -693,32 +711,36 @@ export function createIssueReports(deps: {
     async describe(viewer, ids) {
       const conn = deps.tx.read();
       const wanted = [...new Set(ids.filter(Boolean))];
-      const rows: IssueRow[] = [];
-      const visible = new Set<string>();
-      for (let at = 0; at < wanted.length; at += PAGE) {
-        const page = wanted.slice(at, at + PAGE);
-        rows.push(
-          ...(await conn.repository<IssueRow>('pmIssues').findMany({
-            filter: (f) => oneOf(f, 'id', page),
-          })),
-        );
-        for (const row of await conn.repository<IssueRow>('pmIssues').findMany({
-          filter: (f) =>
-            f.and([oneOf(f, 'id', page), visibleIssues(f, viewer)]),
-        }))
-          visible.add(row.id);
-      }
+      if (wanted.length === 0) return new Map();
+      // Three reads whatever the number of issues: the issues, those the viewer may see, and their projects.
+      const rows = await conn.query
+        .selectFrom('pmIssues')
+        .select(['id', 'identifier', 'title', 'projectId'])
+        .where('id', 'in', wanted)
+        .execute<Pick<IssueRow, 'id' | 'identifier' | 'title' | 'projectId'>>();
+      const visible = new Set(
+        (
+          await conn.repository<IssueRow>('pmIssues').findMany({
+            filter: (f) =>
+              f.and([oneOf(f, 'id', wanted), visibleIssues(f, viewer)]),
+            select: (select) => select.fields('id'),
+          })
+        ).map((row) => row.id),
+      );
       const projectIds = [
         ...new Set(rows.map((row) => row.projectId).filter(Boolean)),
       ] as string[];
-      const projects = new Map<string, string>();
-      for (let at = 0; at < projectIds.length; at += PAGE)
-        for (const project of await conn
-          .repository<{ id: string; name: string }>('pmProjects')
-          .findMany({
-            filter: (f) => oneOf(f, 'id', projectIds.slice(at, at + PAGE)),
-          }))
-          projects.set(project.id, project.name);
+      const projects = new Map<string, string>(
+        projectIds.length === 0
+          ? []
+          : (
+              await conn.query
+                .selectFrom('pmProjects')
+                .select(['id', 'name'])
+                .where('id', 'in', projectIds)
+                .execute<{ id: string; name: string }>()
+            ).map((project) => [project.id, project.name]),
+      );
       return new Map(
         rows.map((row) => [
           row.id,

@@ -21,7 +21,7 @@ import { useState, type ReactElement } from 'react';
 import { Link, Outlet } from 'react-router';
 
 import { WorkspaceDiskTag } from './workspace-diagnostics.js';
-import type { RunnerSummary } from '../../../shared/runners.js';
+import type { RunnerListItem } from '../../../shared/runners.js';
 import { agentsKeys } from '../../api/keys.js';
 import {
   AgEmpty,
@@ -74,7 +74,7 @@ import { RunnerSheet } from './runner-sheet.js';
 
 interface Confirming {
   readonly kind: 'revoke' | 'delete';
-  readonly runner: RunnerSummary;
+  readonly runner: RunnerListItem;
 }
 
 export default function RuntimesPage(): ReactElement {
@@ -94,14 +94,14 @@ export default function RuntimesPage(): ReactElement {
     void queryClient.invalidateQueries({ queryKey: agentsKeys.agents });
   };
   const revoke = useMutation({
-    mutationFn: (runner: RunnerSummary) => api.revokeRunner(runner.id),
+    mutationFn: (runner: RunnerListItem) => api.revokeRunner(runner.id),
     onSuccess: (runner) =>
       notify.success(t('runtimes.revoke.done', { name: runner.name })),
     onError: (error) => notify.error(error),
     onSettled: settled,
   });
   const remove = useMutation({
-    mutationFn: async (runner: RunnerSummary) => {
+    mutationFn: async (runner: RunnerListItem) => {
       await api.deleteRunner(runner.id);
       return runner;
     },
@@ -144,7 +144,7 @@ export default function RuntimesPage(): ReactElement {
     const revoked = runners.data.filter(
       (runner) => runner.status === 'revoked',
     );
-    const table = (list: readonly RunnerSummary[]) => (
+    const table = (list: readonly RunnerListItem[]) => (
       <RunnerTable
         runners={list}
         onOpen={(runner) => setOpenId(runner.id)}
@@ -247,10 +247,10 @@ function RunnerTable({
   onRevoke,
   onDelete,
 }: {
-  readonly runners: readonly RunnerSummary[];
-  readonly onOpen: (runner: RunnerSummary) => void;
-  readonly onRevoke: (runner: RunnerSummary) => void;
-  readonly onDelete: (runner: RunnerSummary) => void;
+  readonly runners: readonly RunnerListItem[];
+  readonly onOpen: (runner: RunnerListItem) => void;
+  readonly onRevoke: (runner: RunnerListItem) => void;
+  readonly onDelete: (runner: RunnerListItem) => void;
 }): ReactElement {
   const { t } = useTranslation();
   const format = useFormatters();
@@ -338,7 +338,7 @@ function RunnerActions({
   onRevoke,
   onDelete,
 }: {
-  readonly runner: RunnerSummary;
+  readonly runner: RunnerListItem;
   readonly onEdit: () => void;
   readonly onRevoke: () => void;
   readonly onDelete: () => void;

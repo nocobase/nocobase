@@ -137,6 +137,19 @@ export async function findAgent(
   return toAgent(record);
 }
 
+/** Load candidate agents in one query; skills belong to run scopes. */
+export async function findAgents(
+  conn: DatabaseConnection,
+  ids: readonly string[],
+): Promise<Map<string, Agent>> {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return new Map();
+  const records = await agentsRepo(conn).findMany({
+    filter: (f) => f.or(unique.map((id) => f.string('id').eq(id))),
+  });
+  return new Map(records.map((record) => [record.id, toAgent(record)]));
+}
+
 /** Whether the agent is gone, or was removed by an earlier version (its row kept for the names in its history). */
 export async function isRemoved(
   conn: DatabaseConnection,

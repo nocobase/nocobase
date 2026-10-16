@@ -5,16 +5,22 @@ import { OFFICIAL_DIALECTS } from '../../packages/app/app-server/src/database/re
 import { dialects as smokeDialects } from '../../scripts/smoke-database-config.mjs';
 import { databases as integrationDatabases } from '../../scripts/select-db-integration-matrix.mjs';
 
-// The runtime's list is authoritative: it is typed against the loaders, so a dialect added there without a driver,
-// or a driver without a dialect, fails to compile. These scripts run under plain Node and cannot import it, so they
-// keep their own copies — and a copy that falls behind fails quietly, as a dialect CI never tests or a local
-// registry run that rejects a dialect the runtime supports. This is what notices.
-const expected = [...OFFICIAL_DIALECTS].sort();
+// Runtime loading includes optional Pro drivers. OSS smoke and integration jobs
+// exercise only driver packages owned by this repository.
+const commercialDialects = ['dameng', 'kingbase', 'oceanbase'];
+const expected = OFFICIAL_DIALECTS.filter(
+  (dialect) => !commercialDialects.includes(dialect),
+).sort();
 
-test('the unreleased smoke test offers exactly the dialects the runtime can load', () => {
+test('the runtime retains automatic loading for all commercial dialects', () => {
+  for (const dialect of commercialDialects)
+    assert.ok(OFFICIAL_DIALECTS.includes(dialect));
+});
+
+test('the unreleased OSS smoke test offers every OSS runtime dialect', () => {
   assert.deepEqual([...smokeDialects].sort(), expected);
 });
 
-test('database integration CI covers exactly the dialects the runtime can load', () => {
+test('OSS database integration CI covers every OSS runtime dialect', () => {
   assert.deepEqual([...integrationDatabases].sort(), expected);
 });

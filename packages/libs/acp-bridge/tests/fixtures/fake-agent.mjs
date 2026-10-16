@@ -251,6 +251,19 @@ acp
       await new Promise((resolve) => (session.hang = resolve));
       return { stopReason: 'cancelled' };
     }
+    if (text === 'session-env') {
+      await say(
+        client,
+        params.sessionId,
+        JSON.stringify({
+          profile: process.env.NB_STUDIO_PROFILE,
+          sessionId: process.env.NB_STUDIO_AGENT_SESSION,
+          mcpServers: session.mcpServers,
+        }),
+        'm-env',
+      );
+      return { stopReason: 'end_turn' };
+    }
     if (text === 'mcp') {
       await say(
         client,

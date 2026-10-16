@@ -1,16 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 
-export const databases = [
-  'sqlite',
-  'postgres',
-  'mysql',
-  'oceanbase',
-  'oracle',
-  'mssql',
-  'dameng',
-  'kingbase',
-];
+export const databases = ['sqlite', 'postgres', 'mysql', 'oracle', 'mssql'];
 
 // Keep whole packages covered, including their tests, manifests, and local configuration.
 const sharedDirectories = [
@@ -45,7 +36,6 @@ export const packageSuites = [
       'packages/plugins/app-plugin-agents/tests/claim-concurrency.test.ts',
       'packages/plugins/app-plugin-agents/tests/active-input.test.ts',
       'packages/plugins/app-plugin-agents/database/migrations/202610260001_ag_run_revision.ts',
-      'packages/apps/studio/server/agents/work.ts',
       'packages/plugins/app-plugin-agents/tests/harness.ts',
     ],
     dialect: 'postgres',

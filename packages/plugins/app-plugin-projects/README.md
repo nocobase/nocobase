@@ -94,6 +94,7 @@ issueId)` says where firing it would take one issue without moving it (for a con
   finished) or that are among the ids given (whatever their status), with `truncated` past the limit, and
   `subscriptions.followedBy(conn, userId, issueIds)` those of them a person follows. An application's board of work joins its own records to issues with
   them, without a query per issue.
+- **Hierarchy reads**: `issueQueries.hierarchy(viewer, query)` returns the complete independently authorized live issue scope, filtered matching IDs and internal dependency-wait facts before paging. It is an uncapped input for application-owned grouping, never a substitute for authorization. `hierarchyItems(viewer, ids)` hydrates at most 100 independently reauthorized rows with visible child/dependency counts; callers must replace raw parent IDs at unreadable boundaries. Applications own attention policy, grouping and continuation consistency. No new task statuses or persistence are required.
 - **Operation plans** (`shared/plans.ts`, `server/domains/plans/`): a short list of changes (create or update an
   issue, comment, add or remove a dependency, create a project; 1–50 rows, later rows may refer to what earlier ones
   create) that one person, the decider, reviews and executes as a whole. Creating, editing and retrying a plan
@@ -223,18 +224,14 @@ The plugin seeds no roles: the application that assembles it seeds its own (the 
 
 | Path                                  | What it shows                                               |
 | ------------------------------------- | ----------------------------------------------------------- |
-| `/my-issues/owned`, `executing`       | The viewer's issues, as owner or executor                   |
+| `/my-issues`                          | The viewer's owned or executed issues, each once            |
 | `/issues` (`?view=board` or `list`)   | Every visible issue; filters, search and order in the URL   |
 | `/issues/new` (`?tab=ai` or `manual`) | The New issue dialog: AI draft (intake) or one issue        |
 | `/issues/new?tab=ai&job=:id`          | The AI draft tab following a request to AI                  |
 | `/issues/:id`, `/issues/plans/:id`    | One issue, by id or identifier; one plan, by its id         |
 | `/projects`, `/projects/new`          | Projects; a new one (a project's page is the application's) |
 
-As the old NocoProject had it, My issues has "I own" and "I execute" only, and the New issue dialog opens on its "AI
-draft" tab (the last tab used is remembered in the browser): requirements typed or uploaded are split into a draft of
-issues, edited row by row and created together, after which the dialog closes. Its manual tab asks when the issue
-starts: "Start now" (`in_progress`) or "Later" (`backlog`), and preselects the default executor. Nothing asks "Start
-now?" any more: moving an issue to `in_progress` starts its work.
+My tasks combines owned and executed issues, and the New issue dialog opens on its "AI draft" tab (the last tab used is remembered in the browser): requirements typed or uploaded are split into a draft of issues, edited row by row and created together, after which the dialog closes. Its manual tab asks when the issue starts: "Start now" (`in_progress`) or "Later" (`backlog`), and preselects the default executor. Nothing asks "Start now?" any more: moving an issue to `in_progress` starts its work.
 
 The settings pages are exported for the application to route under its own `/config` (`client/config.ts`: the issue
 prefix and labels), and components it reuses on its member pages are exported from
@@ -279,3 +276,5 @@ Invitation emails use `notificationService.sendTransient()` so credentials never
 ## Structured issue progress
 
 `Issue` exposes nullable text `needsYou` and `next`. `PATCH /api/projects/issues/{issueId}` and `issue.update` plan rows accept them in the same transaction as `statusKey`. Both fields are optional for people, agents, plans and system events. Omitted needsYou is retained in Blocked or In review; null, empty or whitespace clears it. Applications may constrain authenticated callers at their request boundary. Leaving these states clears it. Omitted `next` is retained; nonblank text replaces it; null, an empty string or whitespace clears it. Done and Cancelled always clear it. Both fields allow at most 2,000 characters. Progress-only writes advance revision and emit the existing refresh event. System status events share the optional-field validation and clearing rules. The new reversible migration adds the two columns without backfilling comments.
+
+Manual issue descriptions accept pasted images through the existing protected attachment upload. Creation accepts optional `attachmentIds` of the caller's own unattached uploads and requires `pm.attachments` `upload` in addition to issue creation permission. Files are bound in the creation transaction before work starts, so the first agent context includes them. Descriptions remain Markdown; image nodes survive detail edits. Uploading blocks submission; cancelling leaves unattached files to the existing purge.

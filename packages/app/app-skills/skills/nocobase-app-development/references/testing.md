@@ -142,6 +142,8 @@ Then verify the affected behavior, selecting only the applicable steps below. Gr
 - Confirm the endpoint's responses for signed-out, unpermitted, and permitted callers.
 - Confirm `pnpm nocobase db apply` applies cleanly.
 
+When a change is about performance, or adds a list, a statistic or a frequently called endpoint, measure it in a realistic environment: the database the application is actually deployed on, with a realistic data volume. A small data set hides slow queries and missing indexes, and SQLite's costs differ from those of a database server, so a timing on one says little about another. After release, consider each endpoint's call count multiplied by its duration rather than a single measurement: a cheap endpoint called constantly can cost more than a slow one called rarely.
+
 ## Reporting
 
 Say what you ran, what passed, and what you did not run. If you could not verify something — no test database, a flow needing real credentials — say so rather than implying it was checked.
