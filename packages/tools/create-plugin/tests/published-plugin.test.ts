@@ -25,7 +25,7 @@ const repository = fileURLToPath(new URL('../../../../', import.meta.url));
 const uiRoot = path.join(repository, 'ui-library');
 const uiRequire = createRequire(path.join(uiRoot, 'package.json'));
 const shadcn = path.join(uiRoot, 'node_modules/shadcn/dist/index.js');
-const primitiveNames = ['collapsible', 'select', 'switch'];
+const primitiveNames = ['button', 'input', 'select', 'switch'];
 
 interface Manifest {
   name: string;
@@ -70,6 +70,7 @@ async function linkDependencies(directory: string): Promise<void> {
     'react-dom',
     '@base-ui/react',
     'cn',
+    'class-variance-authority',
     'lucide-react',
     '@types/react',
     '@nocobase/dev-config',
@@ -223,7 +224,12 @@ it('installs a real registry item, builds and packs a generated plugin, and load
         item = {
           name,
           type: 'registry:ui',
-          dependencies: ['@base-ui/react', 'cn', 'lucide-react'],
+          dependencies: [
+            '@base-ui/react',
+            'cn',
+            'lucide-react',
+            ...(name === 'button' ? ['class-variance-authority'] : []),
+          ],
           files: [
             {
               path: `${name}.tsx`,

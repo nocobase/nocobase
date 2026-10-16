@@ -21,7 +21,12 @@ const reactConfig: ViteUserConfig = {
         // Refine's React Router bindings are loaded by Node unless inlined, and Node hands them a different copy of
         // react-router than the one a test and the application import, so `useLocation()` inside Refine finds no
         // router under a test's `MemoryRouter`. Inlined, they resolve react-router the way the rest of the test does.
-        inline: [/@refinedev\/react-router/u],
+        inline: [
+          /@refinedev\/react-router/u,
+          // Published app-testing helpers own the MemoryRouter around the page. Transform
+          // their client entry too, so it shares the page's router context just as workspace sources do.
+          /@nocobase\/app-testing\/(?:dist\/)?src\/client\//u,
+        ],
       },
     },
   },
