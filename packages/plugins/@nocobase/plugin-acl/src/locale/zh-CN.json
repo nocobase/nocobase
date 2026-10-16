@@ -1,4 +1,6 @@
 {
+  "Invalid system permission": "无效的系统权限",
+  "Role not found": "角色不存在",
   "Accessible": "可访问",
   "Allow access": "允许访问",
   "Allow roles union": "允许角色并集",

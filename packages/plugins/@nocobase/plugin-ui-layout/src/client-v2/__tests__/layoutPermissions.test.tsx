@@ -79,7 +79,6 @@ describe('plugin-ui-layout route permissions', () => {
   it('should create an AdminLayout route permission filter with explicit layout ownership', () => {
     expect(createDesktopRouteLayoutPermissionFilter(DEFAULT_ADMIN_UI_LAYOUT.uid)).toEqual({
       hidden: { $ne: true },
-      type: { $ne: 'page' },
       'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid,
     });
   });
@@ -87,7 +86,6 @@ describe('plugin-ui-layout route permissions', () => {
   it('should create a layout-scoped route permission filter for non-admin layouts', () => {
     expect(createDesktopRouteLayoutPermissionFilter(MOBILE_LAYOUT_UID)).toEqual({
       hidden: { $ne: true },
-      type: { $ne: 'page' },
       'uiLayouts.uid': MOBILE_LAYOUT_UID,
     });
   });
@@ -181,7 +179,7 @@ describe('plugin-ui-layout route permissions', () => {
       );
       expect(mobileResource.roleRoutesList).toHaveBeenCalledWith(
         expect.objectContaining({
-          filter: createDesktopRouteLayoutPermissionFilter(MOBILE_LAYOUT_UID),
+          filter: { hidden: { $ne: true }, 'uiLayouts.uid': MOBILE_LAYOUT_UID },
         }),
       );
     });
@@ -226,7 +224,7 @@ describe('plugin-ui-layout route permissions', () => {
       );
       expect(resource.roleRoutesList).toHaveBeenCalledWith(
         expect.objectContaining({
-          filter: createDesktopRouteLayoutPermissionFilter(DEFAULT_ADMIN_UI_LAYOUT.uid),
+          filter: { hidden: { $ne: true }, 'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid },
         }),
       );
     });
@@ -289,7 +287,7 @@ describe('plugin-ui-layout route permissions', () => {
       );
       expect(resource.roleRoutesList).toHaveBeenCalledWith(
         expect.objectContaining({
-          filter: createDesktopRouteLayoutPermissionFilter(MOBILE_LAYOUT_UID),
+          filter: { hidden: { $ne: true }, 'uiLayouts.uid': MOBILE_LAYOUT_UID },
         }),
       );
     });
@@ -367,9 +365,124 @@ describe('plugin-ui-layout route permissions', () => {
     expect(adminRoute).toBeChecked();
     expect(resource.messageSuccess).not.toHaveBeenCalled();
   });
+
+  it('shows authorized legacy ancestors as read-only and preserves them when changing v2 routes', async () => {
+    const resource = createRoutePermissionResources({
+      selectedRouteIds: [9, 10, 11, 1],
+      desktopRoutes: [
+        { id: 9, title: 'Legacy parent', type: 'page', children: [{ id: 10, title: 'Legacy tab', type: 'tabs' }] },
+        { id: 11, title: 'V1 only', type: 'page' },
+        { id: 1, title: 'V2 page', type: 'flowPage' },
+      ],
+    });
+    flowMocks.context = resource.context;
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'route-member', title: 'Member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+    const legacy = await screen.findByRole('checkbox', { name: 'Allow access to Legacy parent' });
+    await waitFor(() => expect(legacy).toBeChecked());
+    expect(legacy).toBeDisabled();
+    expect(screen.queryByText('V1 only')).not.toBeInTheDocument();
+    const v2 = screen.getByRole('checkbox', { name: 'Allow access to V2 page' });
+    await waitFor(() => expect(v2).not.toBeDisabled());
+    expect(resource.roleRoutesAdd).not.toHaveBeenCalled();
+    expect(resource.roleRoutesRemove).not.toHaveBeenCalled();
+    await act(async () => {
+      await userEvent.click(v2);
+    });
+    await waitFor(() => expect(resource.roleRoutesRemove).toHaveBeenCalledWith({ values: [1] }));
+    expect(resource.getSelectedRouteIds()).toEqual([9, 10, 11]);
+    await act(async () => {
+      await userEvent.click(screen.getByRole('checkbox', { name: /^Allow access$/ }));
+    });
+    await waitFor(() => expect(resource.roleRoutesAdd).toHaveBeenCalledWith({ values: [1] }));
+    expect(resource.getSelectedRouteIds()).toEqual([9, 10, 11, 1]);
+    expect(legacy).toBeChecked();
+    await act(async () => {
+      await userEvent.type(screen.getByPlaceholderText('Search routes'), 'Legacy tab');
+    });
+    const tab = await screen.findByRole('checkbox', { name: 'Allow access to Legacy tab' });
+    expect(tab).toBeChecked();
+    expect(tab).toBeDisabled();
+  });
+
+  it('does not grant previously denied v1 permissions when selecting all v2 routes', async () => {
+    const resource = createRoutePermissionResources({
+      selectedRouteIds: [],
+      desktopRoutes: [
+        { id: 9, title: 'Denied V1', type: 'page', children: [{ id: 10, title: 'V1 tab', type: 'tabs' }] },
+        { id: 1, title: 'V2 page', type: 'flowPage' },
+      ],
+    });
+    flowMocks.context = resource.context;
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'route-member', title: 'Member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+    const legacy = await screen.findByRole('checkbox', { name: 'Allow access to Denied V1' });
+    expect(legacy).toBeDisabled();
+    expect(legacy).not.toBeChecked();
+    const all = screen.getByRole('checkbox', { name: /^Allow access$/ });
+    await waitFor(() => expect(all).not.toBeDisabled());
+    await act(async () => {
+      await userEvent.click(all);
+    });
+    await waitFor(() => expect(resource.roleRoutesAdd).toHaveBeenCalledWith({ values: [1] }));
+    expect(resource.getSelectedRouteIds()).toEqual([1]);
+    expect(legacy).not.toBeChecked();
+  });
+
+  it('never removes legacy descendants when toggling a shared menu group', async () => {
+    const resource = createRoutePermissionResources({
+      selectedRouteIds: [20, 9, 10, 1],
+      desktopRoutes: [
+        {
+          id: 20,
+          title: 'Shared group',
+          type: 'group',
+          children: [
+            { id: 9, title: 'Legacy parent', type: 'page', children: [{ id: 10, title: 'Legacy tab', type: 'tabs' }] },
+            { id: 1, title: 'V2 page', type: 'flowPage' },
+          ],
+        },
+      ],
+    });
+    flowMocks.context = resource.context;
+    render(
+      <LayoutAwareDesktopRoutesPermissionsTab
+        activeKey="menu"
+        activeRole={{ name: 'route-member', title: 'Member' }}
+        onRoleChange={vi.fn()}
+      />,
+    );
+    const group = await screen.findByRole('checkbox', { name: 'Allow access to Shared group' });
+    await waitFor(() => expect(group).not.toBeDisabled());
+    await act(async () => {
+      await userEvent.click(group);
+    });
+    await waitFor(() => expect(resource.roleRoutesRemove).toHaveBeenCalled());
+    expect(resource.getSelectedRouteIds()).toContain(9);
+    expect(resource.getSelectedRouteIds()).toContain(10);
+    expect(resource.getSelectedRouteIds()).toContain(20);
+  });
 });
 
+interface TestRoute {
+  id: number;
+  title: string;
+  type: string;
+  children?: TestRoute[];
+}
+
 type RoutePermissionResourceOptions = {
+  desktopRoutes?: TestRoute[];
   addError?: Error;
   removeError?: Error;
   selectedRouteIds: number[];
@@ -377,7 +490,7 @@ type RoutePermissionResourceOptions = {
 
 function createRoutePermissionResources(options: RoutePermissionResourceOptions) {
   const selectedRouteIds = new Set(options.selectedRouteIds);
-  const desktopRoutes = [
+  const desktopRoutes: TestRoute[] = options.desktopRoutes ?? [
     {
       id: 1,
       title: 'Admin route',
@@ -409,7 +522,7 @@ function createRoutePermissionResources(options: RoutePermissionResourceOptions)
       type: 'page',
     },
   ];
-  const mobileRoutes = [
+  const mobileRoutes: TestRoute[] = [
     {
       id: 3,
       title: 'Mobile route',
@@ -431,7 +544,12 @@ function createRoutePermissionResources(options: RoutePermissionResourceOptions)
       '$ne' in typeFilter &&
       (typeFilter as { $ne?: unknown }).$ne === 'page'
     ) {
-      return records.filter((route) => route.type !== 'page');
+      const filterTree = (items: TestRoute[]): TestRoute[] =>
+        items.flatMap((route) => {
+          const children = filterTree(route.children ?? []);
+          return route.type !== 'page' || children.length ? [{ ...route, children }] : [];
+        });
+      return filterTree(records);
     }
 
     return records;
@@ -443,9 +561,11 @@ function createRoutePermissionResources(options: RoutePermissionResourceOptions)
   }));
   const roleRoutesList = vi.fn(async (params?: Record<string, unknown>) => ({
     data: {
-      data: getRouteRecords(params?.filter as Record<string, unknown> | undefined).filter((route) =>
-        selectedRouteIds.has(route.id),
-      ),
+      data: getRouteRecords(params?.filter as Record<string, unknown> | undefined)
+        .flatMap(function flatten(route): TestRoute[] {
+          return [route, ...(route.children ?? []).flatMap(flatten)];
+        })
+        .filter((route) => selectedRouteIds.has(route.id)),
     },
   }));
   const roleRoutesAdd = vi.fn(async ({ values }: { values: number[] }) => {
@@ -501,6 +621,7 @@ function createRoutePermissionResources(options: RoutePermissionResourceOptions)
       },
     },
     desktopRoutesList,
+    getSelectedRouteIds: () => [...selectedRouteIds],
     messageSuccess,
     request,
     resource,
