@@ -1564,10 +1564,8 @@ export const EmployeesPage: React.FC = () => {
               showSizeChanger: true,
               showTotal: (count) => t('Total {{count}} items', { count }),
               onChange: (nextPage, nextPageSize) => {
-                refresh(category, nextPage, nextPageSize).catch((error: unknown) => {
-                  console.error(error);
-                  setLoading(false);
-                });
+                setPage(nextPage);
+                setPageSize(nextPageSize);
               },
             }}
             scroll={{ x: 'max-content', y: '100%' }}
