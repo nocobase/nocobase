@@ -671,3 +671,5 @@ Mail Example is loaded only by this template. To use real Mail providers in an a
 Open **Workflow management** in the sidebar to browse all sixteen lifecycle and office workflow definitions. The **Workflow definitions** tab opens each definition as a diagram. Clicking a configured state or transition opens the existing runtime parameter editor; changing the example persona preserves its read and write permissions, revision checks, and snapshot/live parameter semantics.
 
 The **Execution records** tab lists lifecycle-managed business records across all workflows, with workflow filtering and pagination. Open a record to see its current node, previously visited nodes and the exact traversed edges in different colors. The transition history supports step-by-step replay, including loops and repeated visits, while **Latest progress** restores the full recorded path. Effect runs and the effective record parameters are shown below the diagram. The detail URLs can be opened directly and retain the parent list's filters when closed.
+
+<!-- Quality scope test: examples template. -->
