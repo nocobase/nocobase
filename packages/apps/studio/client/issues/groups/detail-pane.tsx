@@ -6,7 +6,7 @@
  *   project (opens it), all on the left; on the right what is done to the task: the status menu, the follow star and
  *   "More" (copy link, ask the agent, notifications, delete);
  * - the summary of the issue page (`../live/issue-summary.tsx`): the title renamed in place, the pull request and its
- *   checks, "Now", and "Needs you" with its actions; then Studio's marks and "Waiting for you", the decisions the
+ *   checks, "Now", and "Needs you" with its actions; once it has scrolled away, its one-line bar stays at the top; then Studio's marks and "Waiting for you", the decisions the
  *   summary does not already hold;
  * - the properties as one row of chips, each changed in place, and "More properties" for the rest: the start date,
  *   the stage, previews, who is notified (with the viewer's own subscribe button) and the dates;
@@ -336,6 +336,9 @@ function LiveTask({
                       runsBase={props.issuePath}
                       // The key and the status menu are in the top row.
                       meta={false}
+                      // Once the summary has scrolled away, its one-line bar stays at the top of the detail.
+                      pinnedBar
+                      pinnedBarClassName='-mb-4'
                       headingLevel={props.headingLevel ?? 2}
                       {...(canEditIssues(viewer)
                         ? {
@@ -564,15 +567,12 @@ function StatusMenu({
   );
 }
 
-/** The properties the row shows as chips; the rest are under "More properties". */
+/** The properties the row shows as chips, the ones changed most; the rest are under "More properties". */
 const CHIP_FIELDS: ReadonlySet<string> = new Set([
   'priority',
   'owner',
   'assignToMe',
   'executor',
-  'project',
-  'labels',
-  'due',
 ]);
 
 /**
@@ -835,7 +835,7 @@ function useWide(ref: RefObject<HTMLElement | null>): boolean {
 
 /**
  * The task's comment box: one line naming the task until opened, so the task keeps the height, the same beside a list
- * and beside a conversation. On "My Agent", opened, it reminds that the session's agent is talked to in the
+ * and beside a conversation. Left with nothing written, a reply included, it folds back once the focus leaves it. On "My Agent", opened, it reminds that the session's agent is talked to in the
  * conversation (`agentHint`).
  */
 function FoldedComposer({
@@ -883,11 +883,13 @@ function FoldedComposer({
           next.closest('[role=listbox],[role=menu],[role=dialog]')
         )
           return;
+        // A reply with nothing written yet is let go too: the feed's Reply opens it again.
         const empty =
           !draft.read('content', '').trim() &&
-          !conversation.replyTo &&
           !rootRef.current?.querySelector('[data-pending-attachment], li');
-        if (empty) setOpen(false);
+        if (!empty) return;
+        if (conversation.replyTo) conversation.setReplyTo(null);
+        setOpen(false);
       }}
     >
       {agentHint ? (

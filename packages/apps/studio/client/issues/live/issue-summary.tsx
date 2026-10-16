@@ -158,6 +158,7 @@ export function IssueSummary({
                 pinned
                 Title={Title}
                 issue={issue}
+                update={update}
                 progress={progress ?? null}
                 ask={ask}
                 pullRequests={pullRequests}
@@ -183,6 +184,7 @@ export function IssueSummary({
             pinned={false}
             Title={Title}
             issue={issue}
+            update={update}
             progress={progress ?? null}
             ask={ask}
             pullRequests={pullRequests}
@@ -253,6 +255,31 @@ export function IssueSummary({
   );
 }
 
+/** Accepting the result without a pull request to merge: moving the task to Done, for whoever may close it. */
+function AcceptButton({
+  issue,
+  update,
+}: {
+  readonly issue: IssueDetail;
+  readonly update: IssueUpdate;
+}): ReactElement | null {
+  const { t } = useTranslation();
+  const viewer = useViewer();
+  if (!canEditIssues(viewer) || !canCloseIssue(viewer, issue)) return null;
+  return (
+    <Button
+      size='sm'
+      title={t('issueLive.summary.acceptHint')}
+      disabled={update.isPending}
+      data-testid='issue-accept'
+      onClick={() => update.mutate({ statusKey: DONE_STATUS })}
+    >
+      <CheckIcon data-icon='inline-start' />
+      {t('issueLive.summary.accept')}
+    </Button>
+  );
+}
+
 /** Opens or folds the summary. */
 function ToggleSummary({
   open,
@@ -281,6 +308,7 @@ function SummaryBar({
   pinned,
   Title,
   issue,
+  update,
   progress,
   ask,
   pullRequests,
@@ -290,6 +318,7 @@ function SummaryBar({
   readonly pinned: boolean;
   readonly Title: 'h1' | 'h2';
   readonly issue: IssueDetail;
+  readonly update: IssueUpdate;
   readonly progress: IssueProgress | null;
   readonly ask: string | null;
   readonly pullRequests: IssuePullRequests | undefined;
@@ -307,6 +336,7 @@ function SummaryBar({
       )}
       <NeedsYou
         issue={issue}
+        update={update}
         progress={progress}
         ask={ask}
         pullRequests={pullRequests}
@@ -395,11 +425,13 @@ function SummaryTitle({
 /** The bar's part of what waits on the viewer: taking over a handoff, merging, or answering. */
 function NeedsYou({
   issue,
+  update,
   progress,
   ask,
   pullRequests,
 }: {
   readonly issue: IssueDetail;
+  readonly update: IssueUpdate;
   readonly progress: IssueProgress | null;
   readonly ask: string | null;
   readonly pullRequests: IssuePullRequests | undefined;
@@ -436,6 +468,8 @@ function NeedsYou({
       open &&
       pullRequests?.canMerge ? (
         <MergeButtons issue={issue} pullRequest={open} mergeOnly />
+      ) : issue.statusKey === IN_REVIEW_STATUS ? (
+        <AcceptButton issue={issue} update={update} />
       ) : issue.statusKey === BLOCKED_STATUS &&
         progress?.explanationCommentId &&
         progress.state !== 'waitingForContinuation' &&
@@ -597,21 +631,9 @@ function NeedsYouCard({
           {open && pullRequests?.canMerge ? (
             <MergeButtons issue={issue} pullRequest={open} />
           ) : null}
-          {/* Without a pull request to merge, accepting is moving it to Done. */}
-          {!(open && pullRequests?.canMerge) &&
-          canEditIssues(viewer) &&
-          canCloseIssue(viewer, issue) ? (
-            <Button
-              size='sm'
-              title={t('issueLive.summary.acceptHint')}
-              disabled={update.isPending}
-              data-testid='issue-accept'
-              onClick={() => update.mutate({ statusKey: DONE_STATUS })}
-            >
-              <CheckIcon data-icon='inline-start' />
-              {t('issueLive.summary.accept')}
-            </Button>
-          ) : null}
+          {open && pullRequests?.canMerge ? null : (
+            <AcceptButton issue={issue} update={update} />
+          )}
           {shown ? (
             <Button
               size='sm'
