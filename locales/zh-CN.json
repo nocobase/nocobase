@@ -5981,5 +5981,6 @@
     "weekOption": "周",
     "yearOption": "年",
     "Display fields": "显示字段"
-  }
+  },
+  "rag.knowledgeBase.knowledgeBaseType.local.tag": "本地知识库"
 }
