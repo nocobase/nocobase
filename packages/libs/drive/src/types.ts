@@ -16,8 +16,10 @@ export interface S3DriveDiskConfig {
   region: string;
   endpoint?: string;
   cdnUrl?: string;
-  forcePathStyle: boolean;
-  supportsACL: boolean;
+  /** Omitted, the S3 driver's default applies. */
+  forcePathStyle?: boolean;
+  /** Omitted, the S3 driver's default applies. */
+  supportsACL?: boolean;
   encryption?: string;
   credentials: {
     accessKeyId?: string;
