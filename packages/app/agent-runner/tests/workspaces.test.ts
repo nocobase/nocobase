@@ -225,6 +225,9 @@ describe('working directories', () => {
       const done = await finishedRun('TASK-1', 'run-1');
       const dir = path.join(done.workDir, 'app');
       const child = path.join(dir, 'vendor/sub');
+      // The runner leaves submodules alone; the agent initializes them.
+      expect(existsSync(path.join(child, 'README.md'))).toBe(false);
+      git(['submodule', 'update', '--init', '--quiet'], dir);
       expect(await checkWorkspaceGit(done.workDir, meta(done.workDir))).toEqual(
         { reason: 'allowed', discardsUntracked: false },
       );
