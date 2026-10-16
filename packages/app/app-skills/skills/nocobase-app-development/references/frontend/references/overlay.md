@@ -104,7 +104,7 @@ Both take the same props:
 | `title`       | `ReactNode`, required               | Title at the top, which is also the overlay's accessible name                                                                                                                                    |
 | `description` | `ReactNode`                         | Description under the title                                                                                                                                                                      |
 | `children`    | `ReactNode`                         | Content area; scrolls internally when its content exceeds the height                                                                                                                             |
-| `footer`      | `ReactNode`                         | Fixed bottom area with the layout `flex flex-wrap justify-end gap-2`: the buttons sit together on the right and wrap on narrow screens                                                           |
+| `footer`      | `ReactNode`                         | Fixed bottom area rendered in `DialogFooter`: the buttons sit together on the right, and on narrow screens they stack with the last one on top                                                   |
 | `closeTo`     | `To`                                | Where to go after closing. Defaults to the parent route `{ pathname: '..', search: location.search, hash: '' }`, resolved by route hierarchy, keeping the query parameters and dropping the hash |
 | `beforeClose` | `() => boolean \| Promise<boolean>` | Called before closing; returning `false` keeps the overlay open                                                                                                                                  |
 | `className`   | `string`                            | Added to the panel to adjust its width: dialogs default to `sm:max-w-2xl`, drawers to `sm:max-w-xl`; a create or edit dialog of 1–4 fields passes `sm:max-w-md` (guideline I1)                   |
@@ -112,7 +112,8 @@ Both take the same props:
 What the components already do:
 
 - **Size**: a dialog is centered, is the screen width minus 2rem wide on narrow screens, and has a maximum height of `100dvh - 2rem`; a drawer sits against the right edge at full height and takes the full width on narrow screens. The title area and the bottom button area are fixed and only the content area scrolls, so the bottom buttons stay reachable on narrow screens too (guideline A4); there is no need to add `max-h` or `overflow` to the panel.
-- **Content container**: the content area already has `p-4` padding. Do not nest a `PageContainer` inside it, and do not add outer padding of your own.
+- **Content container**: the content area already has the dialog's padding. Do not nest a `PageContainer` inside it, and do not add outer padding of your own.
+- **Look**: the title, description and footer are the dialog primitives (`DialogHeader`, `DialogTitle`, `DialogDescription`, `DialogFooter` from `#components/ui/dialog`) inside the same padding, spacing and close-button position as `DialogContent`, so a route overlay looks like any other dialog of the application, and a change to the dialog primitive or its theme rules reaches both. A drawer uses the same regions against the right edge.
 - **Ways to close**: a close button is built into the top-right corner (its accessible name comes from `routeOverlay.close`); Esc and clicking the backdrop close the overlay too. Each overlay layer has its own backdrop, and when layers stack only the topmost one closes.
 - **Closing is navigation**: closing first calls `beforeClose`, then navigates to `closeTo` with `replace`. Because it uses `replace`, pressing the browser's "Forward" after closing does not reopen the overlay.
 - **Focus**: on open, focus moves into the overlay; when the focused element inside the overlay disappears (for example, a button is replaced by a skeleton after clicking "Retry"), focus returns to the overlay panel; after closing, focus returns to the element that had focus before opening (usually the link that opened it; for a row menu's "Edit", the menu's trigger). When a nested overlay closes, focus returns to the element in the parent layer that opened it, or to the parent layer's panel if that element is gone; when `/projects/12/edit` is opened directly, both layers mount at once, and after the dialog closes, focus is on the drawer panel.
@@ -371,7 +372,7 @@ The details below describe `sheet.tsx` as the registry writes it today; the file
 
 ## 6. Plain dialogs: sizes and scrolling
 
-A `Dialog` from `#components/ui/dialog` defaults to `sm:max-w-sm` and grows with its content without limit. Give it the width guideline I1 assigns to what it holds, and when its content can outgrow the screen, cap its height with the one idiom `max-h-[calc(100dvh-2rem)]` and scroll only its body, so the header and the footer's buttons stay in view (guideline A4):
+A `Dialog` from `#components/ui/dialog` defaults to `sm:max-w-lg` and grows with its content without limit. Give it the width guideline I1 assigns to what it holds, and when its content can outgrow the screen, cap its height with the one idiom `max-h-[calc(100dvh-2rem)]` and scroll only its body, so the header and the footer's buttons stay in view (guideline A4):
 
 ```tsx
 // A small form: 1–4 fields, the width alone.
@@ -380,12 +381,12 @@ A `Dialog` from `#components/ui/dialog` defaults to `sm:max-w-sm` and grows with
 // Content that can outgrow the screen: a fixed header and footer around a scrolling body.
 <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl'>
   <DialogHeader>…</DialogHeader>
-  <div className='-mx-4 min-h-0 flex-1 overflow-y-auto px-4'>…</div>
+  <div className='-mx-6 min-h-0 flex-1 overflow-y-auto px-6'>…</div>
   <DialogFooter>…</DialogFooter>
 </DialogContent>
 ```
 
-- `flex flex-col` replaces the content's grid, and `min-h-0 flex-1` lets the body shrink and scroll; `-mx-4 … px-4` runs its scrollbar along the dialog's edge. When the body is the form, put the classes on the `form` and keep the submit button in `DialogFooter` with `form='…'`.
+- `flex flex-col` replaces the content's grid, and `min-h-0 flex-1` lets the body shrink and scroll; `-mx-6 … px-6` matches the content's `p-6` and runs its scrollbar along the dialog's edge. When the body is the form, put the classes on the `form` and keep the submit button in `DialogFooter` with `form='…'`.
 - Do not cap the height any other way (`90vh`, `85dvh`, `calc(100svh-2rem)`, `min(40rem,…)`), and do not put `overflow-y-auto` on `DialogContent` itself: the footer would scroll away with the content.
 - Large read-only content (a transcript, a diff, a file preview) uses the same structure at `sm:max-w-4xl`, usually with no footer.
 - `RouteDialog` and `RouteDrawer` are built this way already; pass them only a width.

@@ -92,6 +92,8 @@ For the "More" menu in table rows, see [`table.md`](table.md).
 
 ## 3. Use shadcn
 
+For flowcharts and process diagrams, reuse UI Library `@nocobase/flow-diagram` (React Flow + ELK); for `@nocobase/lifecycle` descriptions use `@nocobase/lifecycle-diagram`. Both inherit the application theme, including its primary color. See [diagram setup and execution highlights](../../lifecycle.md#draw-an-interactive-lifecycle-diagram) and the [offline catalog](ui-library.md#diagrams) before writing a custom canvas.
+
 The template ships only the primitives its shell and compositions use ([section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)). First check whether `client/components/ui/` has the component you need. If it does not, add it from the shadcn registry:
 
 ```bash
@@ -325,6 +327,7 @@ export function DeleteProjectButton({
 - Status data needs text; do not rely on color alone to tell values apart.
 - Make each enum (for example project status) one component, shared by the list and the detail view (`ProjectStatusBadge`, see [`i18n.md`](i18n.md)).
 - Icons in a Badge also get `data-icon`; to render it as a link, use `render={<Link … />}`.
+- A badge has two sizes, which `client/styles.css` draws for every `Badge`, the plugins' included. The default one stands on its own: a status in a table's column or among a record's particulars. The small one, `data-size='sm'` (`size='sm'` on `StatusBadge`), sits beside a title or a name, on a card or a board's card, or several to a dense row. Choose between them with the attribute rather than with `h-*`, `px-*` or a `text-[11px]` on the badge, which the stylesheet overrides.
 
 ## 10. Icons
 
@@ -337,6 +340,9 @@ export function DeleteProjectButton({
 - **The application must look like one product.** Before writing a component, look at how neighboring pages handle the same problem: spacing scale, heading sizes, cards or flat sections, where actions go. Follow them.
 - **When a different look is genuinely needed, change it globally.** Change the tokens in `client/theme/themes/*.css` ([`theme.md`](theme.md)), or change the component all pages share, so the whole application changes together.
 - **Do not change only the part you are working on.** A page with its own spacing, button styling, or color scheme is a defect. If you think the application's style should change, raise it and change it globally; do not let one page's look diverge.
+- **Whatever may be clicked shows the pointer.** `client/styles.css` gives buttons, links, menu items, options, tabs, checkboxes, radios, switches, comboboxes, `summary`, `select`, `label[for]` and native checkbox, radio and file inputs the pointer cursor unless disabled. Prefer those elements; something clickable that is none of them, such as a card whose click handler sits on a `div`, adds `cursor-pointer` itself, and a disabled one keeps the arrow.
+- **A card that opens something lifts under the pointer.** It rises half a unit, takes `shadow-md` and the `--hover` grey: `transition-[translate,box-shadow,background-color] duration-200 ease-out hover:-translate-y-0.5 hover:bg-hover hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0` (the `group-hover:` forms when the card sits inside the clickable element, as the template homepage's capability cards do). The card's own frame stays as it is; an icon tile inside it takes a frame of the general border, `ring-1 ring-transparent group-hover:ring-border`. A card that only shows content does not react to the pointer, and a row in a list or table takes the `--hover` grey without lifting: the template's stylesheet gives it to every `table` row that keeps the primitive's own hover, and a list item you build takes `hover:bg-hover`.
+- **Every control shares one focus.** `client/styles.css` gives fields (the `input`, `textarea`, `select-trigger` and `input-group` slots), buttons, links, tabs, menu items, checkboxes, switches and radios, the plugins' copies included, a half-strength `--ring` border and a 2px halo at a fifth of `--ring` when focused, in place of the 3px ring the primitives draw; an invalid field keeps its red and a destructive button its own color. It is unlayered, so it wins over a control's own `focus-visible:` utilities: do not add `focus-visible:ring-*` or `focus-visible:border-*` classes to restyle one control's focus, and change the shared rule instead when the focus should look different. To give focus another color, change `--ring` in the theme ([`theme.md`](theme.md)), not the rule.
 
 ## 12. Dark mode
 

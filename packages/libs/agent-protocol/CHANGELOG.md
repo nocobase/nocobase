@@ -1,5 +1,63 @@
 # @nocobase/agent-protocol
 
+## 0.1.0-beta.8
+
+### Patch Changes
+
+- 8e4cf26: Recover runners and agent-session bridges after a protocol upgrade. Heartbeat answers now carry the server's runner protocol (`protocolVersion`), and a runner that speaks an older protocol while no newer version is offered logs what it speaks, what the application needs and how to update, instead of looking up to date. A bridge refused for its protocol now receives the protocols the application speaks in the error's `metadata`; `acp start` then updates the CLI as `update` does and exits non-zero so its launchd, systemd or Startup service starts it again on the new version, and when no update helps it still exits non-zero after a pause rather than stopping with success. A computer whose bridge was refused as too old is shown on My agents with the commands to update it.
+- f36da62: Keep a runner claiming work while it collects working directories. Collection no longer measures every directory's size by reading every file, which on runners with many directories took tens of minutes per round and held all claims meanwhile; only pruning the shared pnpm store still holds claims. Routine collection now runs an hour after the previous round ended (`WORKSPACE_REPORT_INTERVAL_MS`), still at once when the disk runs low, and the runner logs each round's start and duration. Workspace diagnostics show a directory's size only when a runner reported one.
+
+## 0.1.0-beta.7
+
+### Minor Changes
+
+- ddfe1b1: Add `RunWorkspace.key` and `RunWorkspace.readOnly` to claims, `ToolCapabilities.modelsSource` to tool reports, and the `AGENT_NOT_ENABLED` error code.
+- a2cf036: Interrupt agent runs for runner updates after stopping tools and preserving local continuation references. Requeue upgrade interruptions without consuming failure attempts or notifying project managers, retain task inputs, and report draining capacity and reasons in runner and queue views.
+
+### Patch Changes
+
+- 10e261b: Use a private linked Git worktree per run and save local continuation after stopping its tools. Fast-forward the resume reference, retain divergent heads as separately listed saved references, and preserve the directory on cleanup failure. Keep Codex state outside disposable worktrees. Other tools start fresh when their code directory changes; legacy sessions and clones are not migrated. Distinguish private local branches from task push targets and retain older runner compatibility.
+- ee24e95: Clean idle build artifacts before pushed workspaces when disk space is low, pause new work until heartbeats detect recovery, and report disk-full failures for reassignment without counting a project-manager step failure. Show current disk capacity and workspace size, type and push diagnostics.
+
+  Retry interrupted removal of verified pushed attempt directories from GC or the next run, stop their remaining processes before deleting remnants, and retain cleanup failure reasons without blocking later tasks. Preserve unpublished or uncommitted work for recovery.
+
+  Verify the actual checkout branch and HEAD before retrying removal, report disk exhaustion even when local preservation metadata or events cannot be written, and continue safe pressure cleanup when diagnostic cache writes fail.
+
+- 4748117: Allow the project manager to use an idle fallback after a configurable queue delay, exclude runners that cannot honor its workspace, and show selection and waiting reasons. Persist queue episodes through retries and restarts, withdraw unclaimed manager delegations after a configurable timeout, reliably report their cause in the dispatch thread, and publish identity-aware immediate capacity in each manager roster.
+
+## 0.1.0-beta.6
+
+### Patch Changes
+
+- 65ec64a: Preserve failures after issue status transitions, isolate background card reconciliation failures, and return a specific failed precondition for repeated retries.
+
+## 0.1.0-beta.5
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+
+## 0.1.0-beta.4
+
+### Minor Changes
+
+- 0f7ed64: Give a run's git a repository credential whenever it needs one, instead of one handed out at the claim that a long run outlives, and say why a push failed.
+
+  - Protocol version 9 adds the `gitCredentials` runner feature, `RunGit.onDemand` (repository URLs whose credential the runner asks for), `POST /api/agents/runners/runs/:runId/gitCredentials` (`GitCredentialRequest` → `GitCredential`), the reasons `REPO_ACCESS_UNAVAILABLE` and `REPO_ACCESS_DENIED`, the run failures `repoAccessUnavailable` (retried) and `repoAccessDenied`, and `RepoReport.failure` (`authFailed`, `credentialUnavailable`, `credentialDenied`, `leaseLost`, `rejected`, `error`). Nothing of version 8 changed: an application on this version still hands claim-time credentials to runners without the feature. A runner of this version is refused by an application that does not know version 9, so update the application before its runners.
+  - Repository access providers may implement `issue(request)`. For a runner with the feature the claim tells them `onDemand` (in `forRun`'s context and `prepare(run, { onDemand })`), they list their repositories in `RunGit.onDemand` and mint nothing at the claim; the plugin then calls `issue` outside any transaction, within 15 seconds, only while that runner holds that attempt of the run under a live lease, and only for a URL the claim listed, compared exactly. `issue` answers a credential with its expiry, null when the repository is not its own, or throws `RepoAccessError('unavailable' | 'denied', message)` with a message safe to show; with `refresh` it should issue a new credential rather than a cached one. Each issued credential is added to the run's redaction, and is never stored. A provider without `issue` keeps working as before.
+  - Migration `202610100002_ag_add_run_git_credentials` adds `agRuns.gitCredentialUrls` (the URLs the claim listed) and `agRunRepos.failureReason` and `failureDetail`; a run's repositories (`RunRepo`) gain optional `failure` so existing application schemas remain compatible. The server always supplies it, null when the repository was pushed or not tried. Applications should show it, since a run that completed may still have work that was not pushed.
+  - The runner keeps a run's credentials in the worker's memory and no longer puts any password in the agent's environment. The agent's git gets them through the runner's credential helper, which reaches the worker over a Unix socket private to the run; the runner's own git (checkout, submodules, the end-of-run push, which previously sent no credential) uses the same, never the host's credential helpers, and retries once with a fresh credential when the remote refuses one. The agent is told on stderr why git got no credential, and each failure is recorded as an `error` event with `meta.kind` `gitCredential`.
+  - Host-side operations in task checkouts use the safe Git wrapper, retaining its metadata and configuration checks, protected hooks and fixed push URL/refspec. Run credentials disable restoration of host helpers; the agent environment clears helpers per repository URL before installing the runner's helper. Confirmed pushes update remote-tracking refs and the protected workspace record so cleanup recognizes pushed work.
+
+- e9301ed: Check a subject’s admission policy in the claim transaction and cancel outdated issue runs without failing or retrying them. The same policy, with the subject's new optional `selectInputs`, also decides whether input may join a working run and whether pending input is delivered to it: input the subject rejects waits in a queued run for the claim to admit or cancel, and pending input it no longer admits or selects is marked handled instead of being delivered, or of holding the run's completion open. The runner completes again, rather than starting a turn with an empty prompt, when input it was told is pending never arrives. Studio permits its executor only in execution statuses and workflow agents only in their current stage; an agent mentioned by name, or answered under its own comment, runs in any stage, except the executor. Earlier stage instructions are left out of the turn rather than cancelling the run, which is cancelled only when nothing else remains. Approving a proposal now requires an eligible executor (`DESIGN_EXECUTOR_REQUIRED` otherwise). Requeue live workspace contention without consuming execution attempts, bounded by a six-hour wait, with a compatible failure fallback for older applications.
+
+  Filter obsolete stage instructions consistently from the assembled task, turn and delivered inputs. Record permission-rejected executor claims atomically and notify the owner once with the required pull request permission and reassignment options. Preserve restart after an acknowledged project move.
+
+### Patch Changes
+
+- ee217d5: Start a fresh conversation with context recovery instructions when the requested conversation no longer exists, and report its session so later runs resume it. Claude checks its session file before opening the query, preserving immediate handling of startup errors. Cancelled runs now also report their confirmed session.
+- b4c2116: Add compatible directory settlement diagnostics and repository-scoped merged head evidence. Recheck ended workspaces before cleanup, permit untracked leftovers only after commit and tracked-change checks, preserve unpushed submodule commits, cancel a removal when the follow-up report no longer confirms the work is over, and show low disk reports with permission-aware workspace diagnostics.
+
 ## 0.1.0-beta.3
 
 ### Minor Changes

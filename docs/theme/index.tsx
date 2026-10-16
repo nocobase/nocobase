@@ -30,7 +30,14 @@ import { PluginInfo } from './components/PluginInfo';
 import { PluginList } from './components/PluginList';
 import { ProvidedBy } from './components/ProvidedBy';
 import './index.scss';
+import './article.scss';
 import { transformHref, useLangPrefix } from './utils';
+import {
+  CapabilityOverview,
+  isCapabilityOverview,
+} from './components/CapabilityOverview';
+import { ArchitecturePitch } from './components/ArchitecturePitch';
+import { FullHome } from './components/FullHome';
 import { HomeHero } from './components/HomeHero';
 import { DocsAssistant } from './components/DocsAssistant/DocsAssistant';
 import { decodeTargetBlankHref } from '../shared/blankTargetLink';
@@ -150,6 +157,10 @@ export function HomeLayout(props: HomeLayoutProps) {
     page: { frontmatter, routePath },
   } = usePage();
 
+  if (frontmatter.pageName === 'home') {
+    return <FullHome />;
+  }
+
   return (
     <div
       className='rp-relative'
@@ -199,7 +210,7 @@ const getGridClass = (feature: Feature): string => {
 
 export const Layout = () => {
   const {
-    page: { routePath },
+    page: { routePath, frontmatter: pageFrontmatter },
   } = usePage();
   const { frontmatter } = useFrontmatter() as {
     frontmatter?: {
@@ -213,11 +224,18 @@ export const Layout = () => {
     routePath?.startsWith('/plugins/@'),
   );
   const pageClassName = [
+    pageFrontmatter.pageName !== 'home' ? 'docs-article' : '',
     isPluginDetailPage ? 'plugin-detail-page' : '',
     isSidebarCenteredLayout(routePath) ? 'doc-layout-sidebar-centered' : '',
   ]
     .filter(Boolean)
     .join(' ');
+
+  if (pageFrontmatter.pageName === 'home') return <FullHome />;
+  if (pageFrontmatter.pageName === 'version-comparison')
+    return <ArchitecturePitch />;
+  if (isCapabilityOverview(routePath))
+    return <CapabilityOverview key={routePath} routePath={routePath} />;
 
   return (
     <div className={pageClassName || undefined}>
@@ -398,7 +416,7 @@ export function HomeFeature() {
   );
 }
 
-export { Nav } from './components/Nav';
+export { Nav } from './components/DocsNav';
 
 export * from '@rspress/core/theme-original';
 

@@ -86,6 +86,8 @@ export const UsageSchema: z.ZodType<Usage> = z.object({
 
 export const FAILURE_REASONS = [
   'runnerOffline',
+  /** The execution machine ran out of disk space. Reassignment is decided by the project manager. */
+  'runnerDiskFull',
   'leaseExpired',
   'startTimeout',
   'cancelled',
@@ -102,6 +104,8 @@ export const FAILURE_REASONS = [
   'contextOverflow',
   /** Never claimed: the run waited in the queue longer than its subject allows (the server's sweeper decides). */
   'queuedExpired',
+  /** Server-withdrawn manager delegation that never started; not an implementation failure. */
+  'delegatedQueueTimeout',
   /**
    * The run's model is not available: on a runner, the coding tool does not know it or its account may not use it
    * (`RunTool.model`); in an online run (on the server, no runner), the model service or model is gone, disabled or
@@ -123,6 +127,10 @@ export const FAILURE_REASONS = [
    * `checkoutFailed` otherwise.
    */
   'prepareNetwork',
+  /** A live process holds the workspace lock. Requeued with backoff when announced; older applications receive checkoutFailed. */
+  'workspaceBusy',
+  /** The runner interrupted the attempt to install an update; retry without consuming the failure budget. */
+  'runnerUpgrade',
   /**
    * A repository's credential could not be had for the run's checkout because the application's code host is
    * unavailable or slow just now (protocol 9, `REPO_ACCESS_UNAVAILABLE`). Retried.
@@ -148,6 +156,8 @@ export const RETRYABLE_FAILURES: readonly FailureReason[] = [
   'toolNetwork',
   'toolRateLimit',
   'prepareNetwork',
+  'workspaceBusy',
+  'runnerUpgrade',
   'repoAccessUnavailable',
 ];
 
@@ -163,6 +173,7 @@ export const ANNOUNCED_FAILURES: Readonly<
   Partial<Record<FailureReason, FailureReason>>
 > = {
   prepareNetwork: 'checkoutFailed',
+  workspaceBusy: 'checkoutFailed',
 };
 
 /** `reason` if the application accepts it (`accepted`, from `RunHeader.acceptedFailures`), else its fallback. */

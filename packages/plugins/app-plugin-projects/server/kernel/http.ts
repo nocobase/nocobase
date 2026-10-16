@@ -32,24 +32,23 @@ export const personOrRunSecurity: Record<string, string[]>[] = [
 
 /** Refusals of a valid request because of how the application is set up. */
 const PRECONDITION_CODES: ReadonlySet<string> = new Set([
-  'APPROVAL_UNAVAILABLE',
   'FILES_UNAVAILABLE',
   'PLAN_UNAVAILABLE',
 ]);
 const ALREADY_EXISTS_CODES: ReadonlySet<string> = new Set([
   'DEPENDENCY_EXISTS',
   'LABEL_EXISTS',
-  'WORKFLOW_EXISTS',
 ]);
 /** A concurrent change won: read again and retry. */
 const ABORTED_CODES: ReadonlySet<string> = new Set([
+  'DEPENDENCY_CHANGED',
+  'DEPENDENCY_GRAPH_CHANGED',
   'REVISION_CONFLICT',
   'UNDO_STALE',
 ]);
 
 /** `notFound` names a resource in words; its reason names it in UPPER_SNAKE_CASE. */
 const NOT_FOUND_REASONS: Readonly<Record<string, string>> = {
-  'Approval request': 'APPROVAL_NOT_FOUND',
   'Deleted issue': 'ISSUE_NOT_FOUND',
   File: 'INTAKE_FILE_NOT_FOUND',
   Job: 'INTAKE_JOB_NOT_FOUND',

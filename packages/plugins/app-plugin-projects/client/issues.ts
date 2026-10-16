@@ -55,11 +55,7 @@ export {
   useExecutorOptions,
   useHasOtherExecutors,
 } from './pages/issues/use-executor-options.js';
-export {
-  myIssueFilters,
-  type MyIssuesRole,
-} from './pages/my-issues/my-issues-model.js';
-export type { StartRequest } from './pages/issues/detail/start-dialog.js';
+export { myIssueFilters } from './pages/my-issues/my-issues-model.js';
 export type { ExecutorOption } from './components/pm-executor-select.js';
 export {
   canCreateIssues,
@@ -69,8 +65,7 @@ export {
 export { useNotify, type Notify } from './hooks/use-notify.js';
 
 /**
- * A status's name in the interface language: a built-in status keeping its default name is translated in this
- * plugin's namespace; one the workflow added or renamed shows the name it was given.
+ * A status's name in the interface language, translated in this plugin's namespace.
  */
 export function useStatusName(): (
   statuses: readonly StatusDefinition[] | undefined,
@@ -104,7 +99,7 @@ export {
   type AttachmentUploads,
   type PendingUpload,
 } from './hooks/use-attachment-uploads.js';
-export { useEventTitle } from './lib/workflow-events.js';
+export { useEventTitle } from './lib/status-events.js';
 export {
   canComment,
   canDeleteComment,

@@ -69,6 +69,21 @@ interface EventRoute {
 }
 
 const ROUTES: Record<WebhookEventKey, EventRoute> = {
+  'invoicing:invoice.issued': {
+    transitions: ['issued'],
+    input: ({ data }) => ({
+      providerRequestId: text(data.providerRequestId),
+      invoiceNumber: text(data.invoiceNumber),
+      pdfUrl: text(data.pdfUrl),
+    }),
+  },
+  'invoicing:invoice.failed': {
+    transitions: ['issueFailed'],
+    input: ({ data }) => ({
+      providerRequestId: text(data.providerRequestId),
+      error: text(data.error),
+    }),
+  },
   'payments:checkout.paid': {
     transitions: ['paymentSucceeded', 'paidAfterCancel'],
     input: ({ data }) => ({ paymentRef: text(data.paymentRef) }),

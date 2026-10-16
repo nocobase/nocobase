@@ -246,6 +246,7 @@ export default function TicketsPage(): ReactElement {
                 onChange={reload}
               />
               <LifecyclePanel
+                actor={actor}
                 detail={current.detail}
                 actions={current.lifecycle}
                 onChange={reload}

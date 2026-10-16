@@ -1,4 +1,0 @@
-[
-  { "type": "file", "name": "knowledge-bases", "label": "配置和管理知识库" },
-  { "type": "file", "name": "vector-database", "label": "向量数据库" }
-]

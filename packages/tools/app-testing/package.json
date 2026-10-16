@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-testing",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.4",
   "description": "Test fixtures for NocoBase applications and plugins: an application on isolated test databases, its commands, and its pages rendered in a client application, on whichever dialect the environment selects.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -63,11 +63,8 @@
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
-    "@nocobase/db-dameng": "workspace:^",
-    "@nocobase/db-kingbase": "workspace:^",
     "@nocobase/db-mssql": "workspace:^",
     "@nocobase/db-mysql": "workspace:^",
-    "@nocobase/db-oceanbase": "workspace:^",
     "@nocobase/db-oracle": "workspace:^",
     "@nocobase/db-postgres": "workspace:^",
     "@nocobase/db-sqlite": "workspace:^",
@@ -77,7 +74,10 @@
     "@testing-library/react": "catalog:",
     "react": "catalog:",
     "react-router": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@nocobase/db-dameng": "^0.1.0-beta.4",
+    "@nocobase/db-kingbase": "^0.1.0-beta.4",
+    "@nocobase/db-oceanbase": "^0.1.0-beta.4"
   },
   "peerDependenciesMeta": {
     "@nocobase/app-cli": {
@@ -89,19 +89,10 @@
     "@nocobase/app-server": {
       "optional": true
     },
-    "@nocobase/db-dameng": {
-      "optional": true
-    },
-    "@nocobase/db-kingbase": {
-      "optional": true
-    },
     "@nocobase/db-mssql": {
       "optional": true
     },
     "@nocobase/db-mysql": {
-      "optional": true
-    },
-    "@nocobase/db-oceanbase": {
       "optional": true
     },
     "@nocobase/db-oracle": {
@@ -129,6 +120,15 @@
       "optional": true
     },
     "vitest": {
+      "optional": true
+    },
+    "@nocobase/db-dameng": {
+      "optional": true
+    },
+    "@nocobase/db-kingbase": {
+      "optional": true
+    },
+    "@nocobase/db-oceanbase": {
       "optional": true
     }
   },

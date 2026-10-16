@@ -62,6 +62,8 @@ export interface FakeRun {
   cancelRequested: boolean;
   leaseLost: boolean;
   inputs: RunInput[];
+  /** Set by `withdrawPendingOnNextComplete`. */
+  withdrawnPending: boolean;
   handled: Set<string>;
   events: Map<number, RunEvent>;
   eventRequests: number;
@@ -152,6 +154,7 @@ export class FakeServer {
   ]);
   /** While set, `events` answers 503. */
   eventsDown = false;
+  onCancelAck?: (run: FakeRun) => void;
   eventsFailures = 0;
   /** Skill bundles by slug, served at `RUNNER_ROUTES.skill`. */
   readonly skillBundles = new Map<string, SkillBundle>();
@@ -184,6 +187,8 @@ export class FakeServer {
   readonly mountFetches = new Map<string, number>();
   /** Sent with every heartbeat answer while set. */
   upgrade: UpgradeNotice | undefined;
+  /** The protocol heartbeat answers say the server speaks while set; left out otherwise, as an older server does. */
+  protocolVersion: number | undefined;
   /** Sent with every heartbeat answer while set, to a runner whose heartbeat declares the `npm` feature. */
   npmUpgrade: NpmUpgradeNotice | undefined;
   /**
@@ -325,6 +330,7 @@ export class FakeServer {
       cancelRequested: false,
       leaseLost: false,
       inputs: [...payload.inputs],
+      withdrawnPending: false,
       handled: new Set(),
       events: new Map(),
       eventRequests: 0,
@@ -391,6 +397,14 @@ export class FakeServer {
 
   cancel(id: string): void {
     this.run(id).cancelRequested = true;
+  }
+
+  /**
+   * The next `complete` answers `RUN_INPUT_PENDING` without any input to deliver, as when the server withdraws the
+   * pending input between that answer and the runner's next poll.
+   */
+  withdrawPendingOnNextComplete(id: string): void {
+    this.run(id).withdrawnPending = true;
   }
 
   addInput(id: string, text: string): RunInput {
@@ -548,6 +562,9 @@ export class FakeServer {
       return ok(c, {
         ok: true,
         serverTime: new Date().toISOString(),
+        ...(this.protocolVersion === undefined
+          ? {}
+          : { protocolVersion: this.protocolVersion }),
         ...(this.upgrade === undefined ? {} : { upgrade: this.upgrade }),
         ...(this.npmUpgrade === undefined ||
         !heartbeat.features.includes(NPM_UPGRADE_FEATURE)
@@ -841,6 +858,11 @@ export class FakeServer {
       if (!active(run)) return error(c, 400, 'RUN_NOT_ACTIVE');
       if (run.cancelRequested) return error(c, 400, 'RUN_CANCEL_REQUESTED');
       const covered = new Set(body.handledInputIds);
+      if (run.withdrawnPending) {
+        run.withdrawnPending = false;
+        run.reports.push({ kind: 'complete', body, status: 409 });
+        return error(c, 400, 'RUN_INPUT_PENDING');
+      }
       if (unhandled(run).some((input) => !covered.has(input.id))) {
         run.reports.push({ kind: 'complete', body, status: 409 });
         return error(c, 400, 'RUN_INPUT_PENDING');
@@ -867,6 +889,7 @@ export class FakeServer {
       const body = (await c.req.json()) as CancelAckRequest;
       const run = owned(c);
       if (run instanceof Response) return run;
+      this.onCancelAck?.(run);
       run.cancelAck = body;
       run.status = 'cancelled';
       run.reports.push({ kind: 'cancelAck', body, status: 200 });

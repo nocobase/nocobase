@@ -12,15 +12,7 @@ import {
   type Permissions,
   type SettingsKey,
 } from '../../shared/access.js';
-import type {
-  ApprovalRequest,
-  DecideApprovalRequest,
-} from '../../shared/approvals.js';
 import type { Attachment } from '../../shared/attachments.js';
-import type {
-  IssueChecklist,
-  UpdateChecklistItemRequest,
-} from '../../shared/checklists.js';
 import {
   REACTION_EMOJIS,
   type CommentReaction,
@@ -55,6 +47,7 @@ import type {
   InvitationResult,
 } from '../../shared/invitations.js';
 import {
+  ISSUE_IDS_MAX,
   type Activity,
   type CreateIssueRequest,
   type Executor,
@@ -64,7 +57,6 @@ import {
   type IssueListItem,
   type IssueListQuery,
   type IssueSort,
-  type IssueStarts,
   type StatusDefinition,
   type UpdateIssueRequest,
   type UpdateIssueResult,
@@ -122,14 +114,8 @@ import {
   type AddDependencyRequest,
   type DependencyType,
   type IssueDependency,
+  type UpdateDependencyRequest,
 } from '../../shared/subtasks.js';
-import type {
-  CreateWorkflowRequest,
-  UpdateWorkflowRequest,
-  WorkflowDefinition,
-  WorkflowListItem,
-  WorkflowPreview,
-} from '../../shared/workflows.js';
 
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;
@@ -173,25 +159,14 @@ export const DependencyParams: z.ZodType<{
   issueId: string;
   dependencyId: string;
 }> = z.object({ issueId: id, dependencyId: id });
-export const ChecklistItemParams: z.ZodType<{
-  issueId: string;
-  statusKey: string;
-  itemKey: string;
-}> = z.object({ issueId: id, statusKey: id, itemKey: id });
 export const CommentParams: z.ZodType<{ commentId: string }> = z.object({
   commentId: id,
 });
 export const LabelParams: z.ZodType<{ labelId: string }> = z.object({
   labelId: id,
 });
-export const WorkflowParams: z.ZodType<{ workflowId: string }> = z.object({
-  workflowId: id,
-});
 export const InvitationParams: z.ZodType<{ invitationId: string }> = z.object({
   invitationId: id,
-});
-export const ApprovalParams: z.ZodType<{ approvalId: string }> = z.object({
-  approvalId: id,
 });
 export const PlanParams: z.ZodType<{ planId: string }> = z.object({
   planId: id,
@@ -236,7 +211,7 @@ export const CreateInvitationsBody: z.ZodType<CreateInvitationsRequest> =
 export const UpdateSettingsBody: z.ZodType<UpdateSettingsRequest> =
   z.strictObject({ issuePrefix: z.string().optional() });
 
-// Labels and workflows
+// Labels
 
 export const CreateLabelBody: z.ZodType<CreateLabelRequest> = z.strictObject({
   name: z.string(),
@@ -248,29 +223,6 @@ export const UpdateLabelBody: z.ZodType<UpdateLabelRequest> = z.strictObject({
   color: z.enum(COLORS).optional(),
 });
 
-/** The definition's structure is checked by the workflow service, which reports every problem at its path. */
-const definition = z
-  .custom<WorkflowDefinition>(isObject, 'definition must be an object.')
-  .meta({
-    description:
-      'A workflow definition, shaped as `ProjectsWorkflowDefinition`: `{ states, transitions }`.',
-  });
-
-export const CreateWorkflowBody: z.ZodType<CreateWorkflowRequest> =
-  z.strictObject({ name: z.string(), copyFrom: id.nullable() });
-
-export const UpdateWorkflowBody: z.ZodType<UpdateWorkflowRequest> =
-  z.strictObject({
-    revision: z.number().int(),
-    name: z.string().optional(),
-    description: z.string().nullable().optional(),
-    definition: definition.optional(),
-  });
-
-export const PreviewWorkflowBody: z.ZodType<{
-  definition: WorkflowDefinition;
-}> = z.strictObject({ definition });
-
 // Projects
 
 const projectFields = {
@@ -281,7 +233,6 @@ const projectFields = {
   leadUserId: id.nullable().optional(),
   startDate: date.optional(),
   dueDate: date.optional(),
-  workflowId: id.nullable().optional(),
 };
 
 export const CreateProjectBody: z.ZodType<CreateProjectRequest> =
@@ -360,6 +311,29 @@ function sortOf(value: string | undefined): {
 }
 
 const issueFilters = {
+  issueIds: z
+    .string()
+    .optional()
+    .transform((value) =>
+      value === undefined
+        ? undefined
+        : [
+            ...new Set(
+              value
+                .split(',')
+                .map((id) => id.trim())
+                .filter(Boolean),
+            ),
+          ],
+    )
+    .pipe(z.array(z.string().max(64)).max(ISSUE_IDS_MAX).optional())
+    .meta({
+      description: `Only these issues, comma-separated ids, at most ${ISSUE_IDS_MAX}; the other filters still apply.`,
+    }),
+  involvesUserId: text.meta({
+    description:
+      'Owned by this user or executed by them as a person, each issue once.',
+  }),
   statusKey: text,
   projectId: text,
   ownerUserId: text,
@@ -373,6 +347,8 @@ const issueFilters = {
 };
 
 type IssueFilterInput = {
+  issueIds?: string[] | undefined;
+  involvesUserId?: string | undefined;
   statusKey?: string | undefined;
   projectId?: string | undefined;
   ownerUserId?: string | undefined;
@@ -429,6 +405,24 @@ export const CursorPageQuery: z.ZodType<CursorQuery> = z
     ...(cursor ? { cursor } : {}),
   }));
 
+/** An issue's comment threads, optionally only what was written after a time. */
+export const CommentThreadsQuery: z.ZodType<
+  CursorQuery & { readonly since?: string }
+> = z
+  .object({
+    pageSize: pageSize(),
+    pageToken,
+    since: z.iso.datetime({ offset: true }).optional().meta({
+      description:
+        'RFC 3339. Only threads with a comment written after it, each with its root and only the replies written after it.',
+    }),
+  })
+  .transform(({ pageSize: limit, pageToken: cursor, since }) => ({
+    limit,
+    ...(cursor ? { cursor } : {}),
+    ...(since ? { since } : {}),
+  }));
+
 const issueFields = {
   description: z.string().optional(),
   statusKey: z.string().optional(),
@@ -446,6 +440,10 @@ const issueFields = {
 
 export const CreateIssueBody: z.ZodType<CreateIssueRequest> = z.strictObject({
   title: z.string(),
+  attachmentIds: z.array(id).optional().meta({
+    description:
+      "The caller's unattached uploads; requires attachment upload permission. Bound before work starts.",
+  }),
   ...issueFields,
   blockedBy: z.array(id).optional(),
   projectSetup: z.boolean().optional(),
@@ -457,6 +455,14 @@ export type UpdateIssueInput = Omit<UpdateIssueRequest, 'revision'> & {
 };
 
 export const UpdateIssueBody: z.ZodType<UpdateIssueInput> = z.strictObject({
+  needsYou: z.string().nullable().optional().meta({
+    description:
+      'Optional decision or input for the owner. Omit to retain; null or whitespace clears it. Cleared outside blocked or in_review. Studio requires nonblank input only for authenticated project-manager direct status updates.',
+  }),
+  next: z.string().nullable().optional().meta({
+    description:
+      'The next step. Omit to retain; null or whitespace clears it. Terminal statuses clear it.',
+  }),
   revision: z.number().int().optional().meta({
     description:
       'The revision the change is based on; left out, the change applies to the issue as it is now.',
@@ -464,9 +470,6 @@ export const UpdateIssueBody: z.ZodType<UpdateIssueInput> = z.strictObject({
   title: z.string().optional(),
   ...issueFields,
 });
-
-export const UpdateChecklistItemBody: z.ZodType<UpdateChecklistItemRequest> =
-  z.strictObject({ checked: z.boolean() });
 
 export const AddDependencyBody: z.ZodType<AddDependencyRequest> =
   z.strictObject({
@@ -480,7 +483,16 @@ export const AddDependencyBody: z.ZodType<AddDependencyRequest> =
 export const RemoveDependencyBody: z.ZodType<AddDependencyRequest> =
   AddDependencyBody;
 
-// Comments and approvals
+export const UpdateDependencyBody: z.ZodType<UpdateDependencyRequest> =
+  z.strictObject({
+    type: z.enum(['blockedBy', 'relatedTo']),
+    expectedType: z.enum(['blockedBy', 'relatedTo']).meta({
+      description:
+        'The relationship type the caller read; a stale value is a conflict.',
+    }),
+  });
+
+// Comments
 
 export const CreateCommentBody: z.ZodType<CreateCommentRequest> =
   z.strictObject({
@@ -495,9 +507,6 @@ export const UpdateCommentBody: z.ZodType<UpdateCommentRequest> =
 export const ReactionBody: z.ZodType<{ emoji: string }> = z.strictObject({
   emoji: z.enum(REACTION_EMOJIS),
 });
-
-export const DecideApprovalBody: z.ZodType<DecideApprovalRequest> =
-  z.strictObject({ comment: z.string().optional() });
 
 // Plans and intake
 
@@ -711,6 +720,10 @@ export const ExecutorCandidateSchema: z.ZodType<ExecutorCandidate> = z.object({
   nameText: NameTextSchema.optional(),
   online: z.boolean().optional(),
   busy: z.number().int().optional(),
+  isDefault: z.boolean().optional().meta({
+    description:
+      'A new issue gets this executor when it names none, so a form preselects it.',
+  }),
 });
 
 export const MentionCandidateSchema: z.ZodType<MentionCandidate> = z.object({
@@ -778,148 +791,6 @@ export const InvitationResultsSchema: z.ZodType<{
 export const WorkspaceSettingsSchema: z.ZodType<WorkspaceSettings> = z.object({
   issuePrefix: z.string(),
 });
-
-// Workflows
-
-const ruleMessage = z
-  .union([
-    z.string(),
-    z.object({
-      key: z.string(),
-      ns: z.string().optional(),
-      defaultValue: z.string().optional(),
-    }),
-  ])
-  .meta({
-    ref: 'ProjectsRuleMessage',
-    description: 'Plain text, or an i18n key with its namespace and default.',
-  });
-
-const statusRule = z
-  .object({
-    type: z.string(),
-    config: record.optional(),
-  })
-  .meta({
-    ref: 'ProjectsWorkflowStatusRule',
-    description:
-      'What entering a status does. Built in: `checklist` (`config.items`: `{ key, label, required }[]`), `notifyOwner` (`config.message`), `subtasksDone`, `blockersDone` and `startOption` (`config.label`, `config.hint`); other plugins contribute their own types.',
-  });
-
-const WorkflowDefinitionSchema: z.ZodType<WorkflowDefinition> = z
-  .object({
-    states: z.array(
-      z.object({
-        key: z.string(),
-        name: z.string(),
-        category: statusCategory,
-        color,
-        builtIn: z.boolean().optional(),
-        rules: z.array(statusRule).optional(),
-      }),
-    ),
-    transitions: z.array(
-      z.object({
-        from: z.string().meta({ description: 'A status key, or `*`.' }),
-        to: z.string().meta({ description: 'A status key, or `*`.' }),
-        actors: z.array(z.string()),
-        approval: z
-          .object({
-            approvers: z.array(z.enum(['owner', 'projectLead', 'admin'])),
-          })
-          .optional(),
-        on: z.string().optional().meta({
-          description:
-            'An event the system takes the transition on, such as `subtasks.done`.',
-        }),
-      }),
-    ),
-  })
-  .meta({ ref: 'ProjectsWorkflowDefinition' });
-
-export const WorkflowSchema: z.ZodType<WorkflowListItem> = z
-  .object({
-    id: z.string(),
-    name: z.string(),
-    description: z.string().nullable(),
-    isDefault: z.boolean(),
-    builtInKey: z.string().nullable(),
-    definition: WorkflowDefinitionSchema,
-    revision: z.number().int(),
-    createdAt: dateTime,
-    updatedAt: dateTime,
-    projectCount: z.number().int(),
-    title: i18nKey.optional(),
-    descriptionTitle: i18nKey.optional(),
-  })
-  .meta({ ref: 'ProjectsWorkflow' });
-
-export const WorkflowPreviewSchema: z.ZodType<WorkflowPreview> = z.object({
-  rules: z.array(
-    z.object({
-      statusKey: z.string(),
-      change: z.enum(['added', 'removed']),
-      rule: statusRule,
-      available: z.boolean(),
-      summary: z.string().nullable(),
-      attention: z.boolean(),
-    }),
-  ),
-  attention: z.array(
-    z.object({
-      statusKey: z.string(),
-      rule: statusRule,
-      summary: z.string(),
-      isNew: z.boolean(),
-    }),
-  ),
-});
-
-// Approvals and checklists
-
-export const ApprovalRequestSchema: z.ZodType<ApprovalRequest> = z
-  .object({
-    id: z.string(),
-    issueId: z.string(),
-    issueIdentifier: z.string().nullable(),
-    issueTitle: z.string().nullable(),
-    fromStatus: z.string(),
-    toStatus: z.string(),
-    requestedByType: z.string(),
-    requestedById: z.string(),
-    requestedByName: z.string().nullable(),
-    approvers: z.array(z.enum(['owner', 'projectLead', 'admin'])),
-    approverUserIds: z.array(z.string()),
-    approverNames: z.array(z.string()),
-    status: z.enum(['pending', 'approved', 'rejected', 'withdrawn', 'stale']),
-    decidedById: z.string().nullable(),
-    decidedByName: z.string().nullable(),
-    decidedAt: dateTime.nullable(),
-    comment: z.string().nullable(),
-    createdAt: dateTime,
-    updatedAt: dateTime,
-  })
-  .meta({ ref: 'ProjectsApprovalRequest' });
-
-export const IssueChecklistSchema: z.ZodType<IssueChecklist> = z
-  .object({
-    statusKey: z.string(),
-    current: z.boolean(),
-    complete: z.boolean(),
-    items: z.array(
-      z.object({
-        itemKey: z.string(),
-        label: z.string(),
-        required: z.boolean(),
-        checked: z.boolean(),
-        checkedByType: z.string().nullable(),
-        checkedById: z.string().nullable(),
-        checkedByName: z.string().nullable(),
-        checkedAt: dateTime.nullable(),
-      }),
-    ),
-  })
-  .meta({ ref: 'ProjectsIssueChecklist' });
 
 // Attachments and comments
 
@@ -1072,6 +943,14 @@ const issueShape = {
   title: z.string(),
   description: z.string().meta({ description: 'Markdown.' }),
   statusKey: z.string(),
+  needsYou: z.string().nullable().meta({
+    description:
+      'The decision or input required from the owner; null outside Blocked and In review, or on historical issues.',
+  }),
+  next: z.string().nullable().meta({
+    description:
+      'The next step; null when none is recorded or the issue is Done or Cancelled.',
+  }),
   priority: z.enum(PRIORITIES),
   ownerUserId: z.string(),
   executor: ExecutorSchema.nullable(),
@@ -1127,6 +1006,7 @@ export const IssueDependencySchema: z.ZodType<IssueDependency> = z
   .meta({ ref: 'ProjectsIssueDependency' });
 
 export const IssueDetailSchema: z.ZodType<IssueDetail> = z.object({
+  progress: z.record(z.string(), z.unknown()).nullable().optional(),
   ...issueListItemShape,
   parent: z
     .object({ id: z.string(), identifier: z.string(), title: z.string() })
@@ -1144,9 +1024,6 @@ export const IssueDetailSchema: z.ZodType<IssueDetail> = z.object({
     }),
   ),
   attachments: z.array(AttachmentSchema),
-  checklist: IssueChecklistSchema.nullable(),
-  pendingApproval: ApprovalRequestSchema.nullable(),
-  recentApprovals: z.array(ApprovalRequestSchema),
   subtasks: z.array(
     z.object({
       id: z.string(),
@@ -1177,10 +1054,6 @@ export const IssueDetailSchema: z.ZodType<IssueDetail> = z.object({
 
 export const UpdateIssueResultSchema: z.ZodType<UpdateIssueResult> = z.object({
   issue: IssueSchema,
-  pendingApproval: ApprovalRequestSchema.nullable().meta({
-    description:
-      'With 202: the request holding the status change for approval; the issue is unchanged.',
-  }),
 });
 
 export const IssueBoardSchema: z.ZodType<IssueBoard> = z.object({
@@ -1191,17 +1064,6 @@ export const IssueBoardSchema: z.ZodType<IssueBoard> = z.object({
       nextCursor: z.string().nullable().meta({
         description: 'The `pageToken` of the column’s next page.',
       }),
-    }),
-  ),
-});
-
-export const IssueStartsSchema: z.ZodType<IssueStarts> = z.object({
-  initialStatus: z.string(),
-  options: z.array(
-    z.object({
-      status: StatusDefinitionSchema,
-      label: ruleMessage.nullable(),
-      hint: ruleMessage.nullable(),
     }),
   ),
 });
@@ -1218,7 +1080,6 @@ const projectShape = {
   leadUserId: z.string().nullable(),
   startDate: day.nullable(),
   dueDate: day.nullable(),
-  workflowId: z.string().nullable(),
   setupIssueId: z.string().nullable(),
   createdAt: dateTime,
   updatedAt: dateTime,
@@ -1315,7 +1176,12 @@ const PlanRowInputSchema: z.ZodType<PlanRowInput> = z
       ref: z.string().optional(),
       params: z.object({
         issue: issueTarget,
-        set: z.object({ title: z.string().optional(), ...issueFieldChanges }),
+        set: z.object({
+          title: z.string().optional(),
+          ...issueFieldChanges,
+          needsYou: z.string().nullable().optional(),
+          next: z.string().nullable().optional(),
+        }),
         start: z.boolean().optional(),
       }),
     }),
@@ -1350,7 +1216,6 @@ const PlanRowInputSchema: z.ZodType<PlanRowInput> = z
         leadUserId: z.string().nullable().optional(),
         startDate: z.string().nullable().optional(),
         dueDate: z.string().nullable().optional(),
-        workflowId: z.string().nullable().optional(),
       }),
     }),
   ])
@@ -1622,3 +1487,9 @@ export const singleFileBody: OpenAPIV3_1.RequestBodyObject = {
     },
   },
 };
+
+/** Context supplied by the session bridge, never an authentication credential. */
+export const IssueSessionHeader: z.ZodType<{ 'x-nb-agent-session'?: string }> =
+  z.object({
+    'x-nb-agent-session': z.string().min(1).max(200).optional(),
+  });

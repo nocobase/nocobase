@@ -5,7 +5,7 @@ description: Plan, build, deploy, verify, upgrade, and troubleshoot NocoBase 3 a
 
 # NocoBase production deployment
 
-Use this Skill to execute a complete deployment workflow. Read the application's `AGENTS.md` and `README.MD` before changing files or running stateful commands: the README documents this application's build targets, archive layout and configuration variables. The Deployment section of the NocoBase 3 documentation is the reference for command details and platform-specific examples; in the nocobase3 source repository it is `docs/docs/<lang>/deployment/`.
+Use this Skill to execute a complete deployment workflow. Read the application's `AGENTS.md`, the `.agents/rules/` files it indexes for building and deployment, and `README.MD` before changing files or running stateful commands: the README documents this application's build targets, archive layout and configuration variables.
 
 Do not treat a process being healthy as proof that the application is usable. A deployment is complete only after the database, configuration, application behavior, and persistence checks below have evidence.
 
@@ -38,7 +38,7 @@ Run the checks that the project actually defines; do not invent a test or lint c
 pnpm build --target linux-x64 --node-version 24 --tar
 ```
 
-`pnpm build` creates the production `dist` tree and installs or retargets production dependencies for the selected platform. The build is not tied to a mount path: the client uses relative asset URLs by default, or an absolute CDN prefix when configured below, and the server serves it at the `APP_BASE_PATH` it runs with, so one archive can be mounted at `/crm` or at the origin root. `--tar` additionally creates `storage/exports/dist.tar.gz`, containing `dist/` and `config.example.yml`; it does not contain the runtime configuration, database, uploads, or other business data. Inspect the archive before transfer:
+`pnpm build` creates the production `dist` tree and installs or retargets production dependencies for the selected platform. The build is not tied to a mount path: the client uses relative asset URLs by default, or an absolute CDN prefix when configured below, and the server serves it at the `APP_BASE_PATH` it runs with, so one archive can be mounted at `/crm` or at the origin root. `--tar` additionally creates `storage/exports/dist.tar.gz`, containing `dist/` and `config.example.yml`; it does not contain the runtime configuration, database, uploads, or other business data. Extracting it produces exactly those two paths rather than scattering `server/` and `node_modules/` into the directory you unpacked in. `config.example.yml` travels with it because a deployment has to write a `config.yml` before it can start, and the example is the only statement of what may go in it. Directories of executable shims are left out: a `.bin` entry points at a path on the machine that installed it, and a dangling one makes `pnpm install` in the extracted tree report a corrupt store rather than repair it. Without `--tar` no archive is produced, which is what you want when the build is only going to be run locally. Inspect the archive before transfer:
 
 ```bash
 tar -tzf storage/exports/dist.tar.gz | head -30
@@ -61,6 +61,8 @@ For a Docker source build, pass `--build-arg CDN_BASE_URL=https://cdn.example.co
 A deployment package carries code and production dependencies, not business data. Keep the existing database and storage mounts for an in-place update. When switching to a new database or server, perform a separate data migration or restore a coordinated backup before allowing users to write.
 
 Before an update that can change schema, take a database and file backup and confirm the restore path. Ensure the database account can perform the configured migration and seed operations. Do not point a new instance at an empty database and describe the result as a data migration.
+
+Read [database upgrades](../nocobase-app-upgrade/references/database-upgrades.md) when the update changes migrations or reports checksum drift, before starting the new runtime. It covers target-version upgrade notes, reviewed checksum repair, data prerequisites, and irreversible changes, including plugin migrations that the application's source diff does not show. `db repair` acknowledges source checksums only; it does not upgrade schema or recover a partially failed installation.
 
 The default configuration uses managed schema migrations and automatic seeds. Determine whether the deployment should run them on startup. If migrations or seeds are run separately, set the corresponding automatic options to `false` and execute the supported CLI operation before starting the application. Record the migration and seed result; a successful process start alone is insufficient.
 
@@ -93,11 +95,11 @@ Extract the archive as the service user or transfer ownership to that user. Writ
 On a server without a container platform, prefer `@nocobase/app-installer` to running the archive by hand: it installs the archive into a directory of its own, writes `config.yml` and `app.env`, applies migrations, runs the application under pm2, and later upgrades to a new archive with a backup of every SQLite database and an automatic rollback when the new release fails to start. The server needs Node.js 24 and a global pm2, nothing from the project. The global `nocobase-app-installer` Skill drives it, and its `--help` documents every flag:
 
 ```bash
-npx --registry=https://registry.npmjs.org @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com
-npx --registry=https://registry.npmjs.org @nocobase/app-installer upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz
+npx --registry=https://registry.npmjs.org @nocobase/app-installer@beta install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com
+npx --registry=https://registry.npmjs.org @nocobase/app-installer@beta upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz
 ```
 
-Published product applications can also be deployed with an app-installer version whose `--help` offers `--app`: `install /srv/nocobase/studio --app studio` is equivalent to `--app @nocobase/studio`. This route needs pnpm 11+ and builds the published package on the server without a repository checkout, preserving its identity and version. An npm installation upgrades the same package with `upgrade --dir <root>` (latest), `--to <version or tag>`, or `--rebuild` (installed version). Read `source.kind` in `status` before choosing the upgrade command; an archive installation still needs `--archive`. The same persistent configuration, backup and rollback rules apply.
+Published product applications can also be deployed with an app-installer version whose `--help` offers `--app`: `install /srv/nocobase/crm --app @acme/crm@beta` explicitly selects the beta channel. This route needs pnpm 11+ and builds the published package on the server without a repository checkout, preserving its identity and version. An npm installation upgrades the same package with `upgrade --dir <root> --to beta`, an explicitly requested `--to <version or tag>`, or `--rebuild` (installed version). Read `source.kind` in `status` before choosing the upgrade command; an archive installation still needs `--archive`. The same persistent configuration, backup and rollback rules apply.
 
 `install --base-path /crm` chooses the mount path and writes it to `app.env` as `APP_BASE_PATH`; without it the server default `/main` applies. Upgrades keep the path `app.env` names, and editing it there moves the application on its next start. The installer refuses an archive for another application, an older version or another machine. The same version built again deploys as a new release, so the version need not be bumped for each deployment. An archive from an `@nocobase/app-cli` that predates relocatable builds has its mount path compiled in and runs only at that path, so a mismatch is refused with `BASE_PATH_MISMATCH`; one older still, which records no build time, or a release whose `@nocobase/app-server` predates `APP_STORAGE_DIR`, is refused: upgrade the project's NocoBase packages and build again. Each application on the server gets its own directory, port and pm2 process.
 

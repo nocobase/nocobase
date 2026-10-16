@@ -1,5 +1,37 @@
 # @nocobase/app-installer
 
+## 0.1.0-beta.8
+
+### Minor Changes
+
+- 033a6dc: Preview migration and seed checksum changes before upgrade downtime and require explicit approval with `--repair-checksums <token>`. Back up SQLite history before repairing and restore it on failed, interrupted, or manually rolled-back upgrades, including upgrades with no pending migrations. Apply the same workflow to SSH deployments and report external databases that require operator restoration.
+
+  Upgrade preflight now requires the target application's `db repair --dry-run --json` support and refuses unreviewed checksum drift even with `--yes`. JSON errors expose `error.details.checksumRepair` with the exact changes and approval token; successful upgrades add `result.checksumRepairs`.
+
+  Checksum-repairing upgrades write installer state format 2 before modifying history, so older installers refuse recovery rather than skipping the restore. The new installer continues to read existing format 1 installations.
+
+## 0.1.0-beta.7
+
+### Minor Changes
+
+- 5f851bb: Add SSH archive deployment and remote install, upgrade, rollback and status commands with an offline installer bundle. Transfer checksums, stdin-only secret transport and structured remote outcomes allow servers without npm access to reuse the existing installation lifecycle.
+
+  Preserve remote confirmation and recovery guidance, route recovery commands to the correct host, and report locally interrupted SSH executions as an unknown remote state requiring a status check.
+
+## 0.1.0-beta.6
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/cli-envelope@0.1.0-beta.1
+
+## 0.1.0-beta.5
+
+### Minor Changes
+
+- 87b8394: Install published applications with `--app @nocobase/studio` or the official shorthand `--app studio`, preserving package identity while building and deploying on the server. Support npm application upgrades, explicit version selection and rebuilding with the existing backup and rollback workflow. Include Studio's shared sources and CLI skills in its published package so it builds outside the repository, and document the deployment route.
+
 ## 0.1.0-beta.4
 
 ### Minor Changes

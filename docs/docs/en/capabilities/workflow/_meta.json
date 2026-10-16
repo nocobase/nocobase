@@ -2,26 +2,21 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Overview"
+    "label": "Workflow overview"
   },
   {
     "type": "file",
-    "name": "quick-start",
-    "label": "Quick start"
+    "name": "definition",
+    "label": "Process definition and action control"
   },
   {
     "type": "file",
-    "name": "develop",
-    "label": "Develop with an Agent"
+    "name": "execution",
+    "label": "Waiting, timeouts and reliable execution"
   },
   {
     "type": "file",
-    "name": "scenarios",
-    "label": "Scenarios"
-  },
-  {
-    "type": "file",
-    "name": "extension",
-    "label": "Extension"
+    "name": "progress",
+    "label": "Progress and processing history"
   }
 ]

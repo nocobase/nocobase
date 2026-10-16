@@ -30,7 +30,7 @@ The template ships two presets. They share every color, font and shadow and diff
 
 | id        | Label (en-US / zh-CN) | Role                                                | `--spacing` | `--radius` | Line heights            |
 | --------- | --------------------- | --------------------------------------------------- | ----------- | ---------- | ----------------------- |
-| `compact` | Compact / 紧凑        | First in the registry: the default and the fallback | `0.2rem`    | `0.375rem` | Tighter than Tailwind's |
+| `compact` | Compact / 紧凑        | First in the registry: the default and the fallback | `0.225rem`  | `0.5rem`   | Tighter than Tailwind's |
 | `default` | Spacious / 宽松       | The roomier alternative                             | `0.25rem`   | `0.5rem`   | Tailwind's defaults     |
 
 The id `default` dates from when that preset was the default. It keeps the id because ids are saved in browsers and named in `config.yml`, and it is labeled Spacious so that the label does not claim it is the default selection. Do not relabel it "Default".
@@ -40,37 +40,39 @@ The id `default` dates from when that preset was the default. It keeps the id be
 ### Colors
 
 - Values are complete CSS colors, normally OKLCH, not HSL channels. Do not wrap them in `hsl()`.
-- Define all 31 color tokens in both the light and the dark rule.
+- Define all 32 color tokens in both the light and the dark rule.
 - Surfaces and foregrounds come in pairs: a background and the text or icons on it. A pair does not guarantee enough contrast; measure it (guideline A5 in [`../ui-guidelines.md`](../ui-guidelines.md)).
 
-| Tokens                                              | Meaning and consumers                                            |
-| --------------------------------------------------- | ---------------------------------------------------------------- |
-| `--background`, `--foreground`                      | Page surface and default text                                    |
-| `--card`, `--card-foreground`                       | Cards and panels                                                 |
-| `--popover`, `--popover-foreground`                 | Floating surfaces: menus, popovers, dialogs                      |
-| `--primary`, `--primary-foreground`                 | Primary actions                                                  |
-| `--secondary`, `--secondary-foreground`             | Secondary actions                                                |
-| `--muted`, `--muted-foreground`                     | Subtle surfaces and supporting text                              |
-| `--accent`, `--accent-foreground`                   | Interactive highlighted surfaces (hovered or focused menu items) |
-| `--destructive`                                     | Destructive actions and errors                                   |
-| `--border`, `--input`, `--ring`                     | General borders; input borders and surfaces; focus indicators    |
-| `--chart-1` through `--chart-5`                     | Five chart series colors                                         |
-| `--sidebar`, `--sidebar-foreground`                 | Navigation surface and text                                      |
-| `--sidebar-primary`, `--sidebar-primary-foreground` | Selected navigation item surface and text                        |
-| `--sidebar-accent`, `--sidebar-accent-foreground`   | Hovered navigation item surface and text                         |
-| `--sidebar-border`, `--sidebar-ring`                | Navigation dividers and focus indicators                         |
+| Tokens                                              | Meaning and consumers                                                                                                   |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `--background`, `--foreground`                      | Page surface and default text                                                                                           |
+| `--card`, `--card-foreground`                       | Cards and panels                                                                                                        |
+| `--popover`, `--popover-foreground`                 | Floating surfaces: menus, popovers, dialogs                                                                             |
+| `--primary`, `--primary-foreground`                 | Primary actions                                                                                                         |
+| `--secondary`, `--secondary-foreground`             | Secondary actions                                                                                                       |
+| `--muted`, `--muted-foreground`                     | Subtle surfaces and supporting text                                                                                     |
+| `--accent`, `--accent-foreground`                   | Interactive highlighted surfaces (hovered or focused menu items)                                                        |
+| `--hover`                                           | The light grey of what is picked out: a hovered row or button, the menu's current and hovered entries, a table's header |
+| `--destructive`                                     | Destructive actions and errors                                                                                          |
+| `--border`, `--input`, `--ring`                     | General borders; input borders and surfaces; focus indicators                                                           |
+| `--chart-1` through `--chart-5`                     | Five chart series colors                                                                                                |
+| `--sidebar`, `--sidebar-foreground`                 | Navigation surface and text                                                                                             |
+| `--sidebar-primary`, `--sidebar-primary-foreground` | Selected navigation item surface and text                                                                               |
+| `--sidebar-accent`, `--sidebar-accent-foreground`   | Hovered navigation item surface and text                                                                                |
+| `--sidebar-border`, `--sidebar-ring`                | Navigation dividers and focus indicators                                                                                |
 
 The matching classes are `bg-card text-card-foreground`, `border-input`, `ring-ring`, `bg-sidebar text-sidebar-foreground` and so on. Charts must reference the series explicitly with `fill-chart-1`, `stroke-chart-2` or `var(--chart-1)`; a chart library does not pick these variables up on its own.
 
 There is no `--destructive-foreground`. The primitives draw destructive buttons and badges as `text-destructive` on a `bg-destructive/10` tint (`/20` in dark), so `--destructive` must read as text on the page, card and popover surfaces and on its own tint.
 
-The template palette is neutral: every color has zero chroma except `--destructive` and the five chart series.
+The template's grounds, text and lines are neutral, with zero chroma: `--background`, `--card`, `--popover`, `--muted`, `--secondary`, `--hover`, `--border`, `--input` and the sidebar's grounds. Its color sits in `--primary` (the NocoBase blue) and what follows it — `--accent`, `--ring`, the current navigation entry's words — and in `--destructive`, the status colors and the five chart series.
 
 **Surface and outline tokens carry structure, not decoration.** A preset that forgets this reads as a color clash rather than as a style:
 
 - Keep `--card` and `--popover` in the hue family of `--background`, so a panel lifts off the page instead of changing color.
 - Keep `--muted` a tint close to the background.
 - Keep `--border` and `--input` low-chroma hairlines, not a second statement of `--primary`.
+- Keep `--border` fainter than `--input`. General borders — cards, tables, dividers, the sidebar's and header's rules, overlays — are the faint line that separates surfaces, so the template sets the light `--border` to `--input`'s color at 60% opacity, and the dark rule likewise keeps `--border` below `--input`. Form fields keep the firmer `--input`, so a person can still see where to type. Do not darken a border with `border-foreground/…` or a fixed color to make one panel stand out, and do not give fields `border-border`. Because that line is translucent, it is tuned to the template's very light `--background`: a preset that darkens `--background` fades its borders with it, so make `--border` opaque there (`oklch(0.9 0 0)`, `--input`'s color) or darker in step, and check a card's frame on the page before keeping the change.
 - Put the preset's actual color in `--primary`, `--secondary`, `--accent` and the chart series, which appear on small, deliberate areas.
 - Check a preset on a page that stacks several panels and dozens of dividers, not on one that shows a single card.
 
@@ -83,14 +85,16 @@ Sidebar tokens may reference the preset's general colors, as both template prese
   /* … */
   --sidebar: var(--card);
   --sidebar-foreground: var(--card-foreground);
-  --sidebar-primary: color-mix(in oklch, var(--primary) 10%, var(--sidebar));
+  --sidebar-primary: color-mix(in srgb, var(--primary) 8%, var(--sidebar));
   --sidebar-primary-foreground: var(--primary);
-  --sidebar-accent: var(--muted);
-  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-accent: var(--hover);
+  --sidebar-accent-foreground: var(--sidebar-foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
 }
 ```
+
+The current entry sits on a faint tint of `--primary` with its words and icon in `--primary`; a hovered entry takes `--hover`, the grey a table's header also takes, and keeps the menu's words. Keep the tint faint, so a menu of many entries stays quiet and the current one still stands out.
 
 They remain independently configurable: to change the sidebar, change these tokens. Do not redefine general colors such as `--card` on the sidebar to change its appearance.
 
@@ -155,14 +159,14 @@ The Spacious line heights are Tailwind's defaults.
 
 ### Spacing
 
-- `--spacing` is a positive CSS length: `0.2rem` in Compact and `0.25rem`, Tailwind's default, in Spacious. Numeric classes such as `p-4`, `gap-2`, `h-8`, `size-4` and `w-64` multiply it by their suffix, so `h-8` is 1.6rem in Compact and 2rem in Spacious.
+- `--spacing` is a positive CSS length: `0.225rem` in Compact and `0.25rem`, Tailwind's default, in Spacious. Numeric classes such as `p-4`, `gap-2`, `h-8`, `size-4` and `w-64` multiply it by their suffix, so `h-8` is 1.8rem in Compact and 2rem in Spacious.
 - Changing it moves padding, gaps, control and icon sizes and the navigation width together; the sidebar's widths are `--sidebar-width` and `--sidebar-width-icon`, set in spacing units (64 and 12) in `client/layouts/components/app-sidebar.tsx`. Check typography and spacing together: text must not be clipped, and targets must stay usable.
 - Percentages, viewport units, container widths such as `max-w-2xl` or `w-xs`, and arbitrary values such as `mt-[7px]` do not use this scale. Breakpoints do not change.
 - Use numeric classes for ordinary spacing and sizes. Keep deliberate constraints that should not scale, such as viewport limits, images and separators. Do not change the root font size to simulate density, and do not add ad hoc height tokens.
 
 ### Radius
 
-`--radius` is a nonnegative CSS length: `0.375rem` in Compact and `0.5rem` in Spacious. The `@theme inline` block in `client/styles.css` derives the public corner classes from it:
+`--radius` is a nonnegative CSS length: `0.5rem` in both presets. The `@theme inline` block in `client/styles.css` derives the public corner classes from it:
 
 | Class         | Multiplier |
 | ------------- | ---------- |
@@ -214,7 +218,7 @@ Some values stay fixed on purpose. Know which ones, and keep your own explicit.
 
 ### Constraints from the token test
 
-`tests/logic/theme-tokens.test.ts` requires `compact.css` and `default.css` to be identical, in both the light and the dark rule, except for `--spacing`, `--radius` and the `--text-*` variables, and it requires Compact's `--spacing` to be smaller than Spacious'. Today the two differ in spacing, radius and line heights; the text sizes are the same. So:
+`tests/logic/theme-tokens.test.ts` requires `compact.css` and `default.css` to be identical, in both the light and the dark rule, except for `--spacing`, `--radius` and the `--text-*` variables, and it requires Compact's `--spacing` to be smaller than Spacious'. Today the two differ in spacing and line heights; the radius and the text sizes are the same. So:
 
 - A change to colors, fonts or shadows goes into both files, light and dark rules alike.
 - Density (spacing, radius, text sizes and line heights) may differ between the two.
@@ -225,7 +229,7 @@ Some values stay fixed on purpose. Know which ones, and keep your own explicit.
 The steps below add a preset with the id `forest`.
 
 1. **Copy a file.** Copy the preset whose density the new one should share to `client/theme/themes/forest.css`: `compact.css` for the application's default density, `default.css` for the spacious one. Use a stable id of lowercase letters, digits and hyphens, and name the file after it: the token test loads `client/theme/themes/<id>.css` for every registered id.
-2. **Set the selectors and tokens.** Light uses `:root[data-theme='forest'], .theme-preview[data-theme='forest']`; dark uses `:root.dark[data-theme='forest'], :root.dark .theme-preview[data-theme='forest']`. Keep the single quotes: the token test looks the selectors up by their exact text. If you copied `default.css`, delete its bare `:root` and `:root.dark` selectors. Only `default.css` may carry them; whichever file is imported last would otherwise take over the fallback. Set `--radius` and all 31 colors, keep the fonts, sizes, spacing and shadows unless the preset is meant to change them, and repeat every color in the dark rule.
+2. **Set the selectors and tokens.** Light uses `:root[data-theme='forest'], .theme-preview[data-theme='forest']`; dark uses `:root.dark[data-theme='forest'], :root.dark .theme-preview[data-theme='forest']`. Keep the single quotes: the token test looks the selectors up by their exact text. If you copied `default.css`, delete its bare `:root` and `:root.dark` selectors. Only `default.css` may carry them; whichever file is imported last would otherwise take over the fallback. Set `--radius` and all 32 colors, keep the fonts, sizes, spacing and shadows unless the preset is meant to change them, and repeat every color in the dark rule.
 
    ```css
    /* client/theme/themes/forest.css */
@@ -239,7 +243,7 @@ The steps below add a preset with the id `forest`.
        ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI',
        'PingFang SC', 'Microsoft YaHei', sans-serif;
      /* … --font-serif through --shadow-2xl: copied from compact.css unchanged */
-     --radius: 0.375rem;
+     --radius: 0.5rem;
      --background: oklch(0.985 0.005 150);
      --foreground: oklch(0.2 0.02 150);
      --card: oklch(0.995 0.003 150);
@@ -254,8 +258,9 @@ The steps below add a preset with the id `forest`.
      --muted-foreground: oklch(0.5 0.02 150);
      --accent: oklch(0.93 0.04 130);
      --accent-foreground: oklch(0.25 0.04 150);
+     --hover: color-mix(in srgb, var(--muted) 70%, var(--card));
      --destructive: oklch(0.577 0.245 27.325);
-     --border: oklch(0.9 0.01 150);
+     --border: oklch(0.9 0.01 150 / 60%);
      --input: oklch(0.9 0.01 150);
      --ring: oklch(0.55 0.1 150);
      --chart-1: oklch(0.55 0.13 150);
@@ -265,10 +270,10 @@ The steps below add a preset with the id `forest`.
      --chart-5: oklch(0.8 0.12 90);
      --sidebar: var(--card);
      --sidebar-foreground: var(--card-foreground);
-     --sidebar-primary: color-mix(in oklch, var(--primary) 10%, var(--sidebar));
+     --sidebar-primary: color-mix(in srgb, var(--primary) 8%, var(--sidebar));
      --sidebar-primary-foreground: var(--primary);
-     --sidebar-accent: var(--muted);
-     --sidebar-accent-foreground: var(--foreground);
+     --sidebar-accent: var(--hover);
+     --sidebar-accent-foreground: var(--sidebar-foreground);
      --sidebar-border: var(--border);
      --sidebar-ring: var(--ring);
    }
@@ -289,6 +294,7 @@ The steps below add a preset with the id `forest`.
      --muted-foreground: oklch(0.7 0.02 150);
      --accent: oklch(0.3 0.04 140);
      --accent-foreground: oklch(0.97 0.005 150);
+     --hover: color-mix(in srgb, var(--muted) 70%, var(--card));
      --destructive: oklch(0.704 0.191 22.216);
      --border: oklch(1 0 0 / 10%);
      --input: oklch(1 0 0 / 15%);
@@ -300,10 +306,10 @@ The steps below add a preset with the id `forest`.
      --chart-5: oklch(0.82 0.12 90);
      --sidebar: var(--card);
      --sidebar-foreground: var(--card-foreground);
-     --sidebar-primary: color-mix(in oklch, var(--primary) 10%, var(--sidebar));
+     --sidebar-primary: color-mix(in srgb, var(--primary) 8%, var(--sidebar));
      --sidebar-primary-foreground: var(--primary);
-     --sidebar-accent: var(--muted);
-     --sidebar-accent-foreground: var(--foreground);
+     --sidebar-accent: var(--hover);
+     --sidebar-accent-foreground: var(--sidebar-foreground);
      --sidebar-border: var(--border);
      --sidebar-ring: var(--ring);
    }
@@ -426,7 +432,7 @@ Run the theme tests:
 pnpm exec vitest run tests/logic/theme-tokens.test.ts tests/logic/theme-preferences.test.ts tests/logic/client-theme.test.tsx
 ```
 
-- `theme-tokens.test.ts` checks that every registered preset defines all 31 colors and every non-color token in its light rule and every color in its dark rule, with the same declarations on the preview selectors; that Compact and Spacious differ only in dimensions, with Compact's spacing smaller; and, by compiling `client/styles.css` with Tailwind, that the color, font, size, line height, spacing, radius and shadow classes and the `body`, `h1` and `code` fonts still read the runtime variables.
+- `theme-tokens.test.ts` checks that every registered preset defines all 32 colors and every non-color token in its light rule and every color in its dark rule, with the same declarations on the preview selectors; that Compact and Spacious differ only in dimensions, with Compact's spacing smaller; and, by compiling `client/styles.css` with Tailwind, that the color, font, size, line height, spacing, radius and shadow classes and the `body`, `h1` and `code` fonts still read the runtime variables.
 - `theme-preferences.test.ts` checks that Compact is first, the storage keys for each base path, restoring both choices at startup without reading another application's keys, and the fallbacks for invalid values, removed presets and unavailable storage.
 - `client-theme.test.tsx` checks the provider and the popover: labels in en-US and zh-CN, choosing and saving, configured defaults against saved choices, startup and provider agreeing, clearing and syncing across tabs, invalid values, and unavailable storage.
 

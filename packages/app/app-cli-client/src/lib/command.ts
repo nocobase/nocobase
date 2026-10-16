@@ -135,8 +135,17 @@ export abstract class AppCommand extends Command {
       error instanceof UsageError ||
       error instanceof CliCommandError ||
       error instanceof ZodError
-    )
+    ) {
+      // oclif's JSON catch reads exitCode, whereas CLIError stores the code in oclif.exit.
+      // Preserve the public CLI exit code before oclif renders the failure envelope.
+      process.exitCode =
+        error instanceof AppApiError
+          ? error.exitCode
+          : error instanceof UsageError || error instanceof CliCommandError
+            ? error.exit
+            : EXIT_CODES.general;
       return super.catch(asCliError(error));
+    }
     return super.catch(error);
   }
 }

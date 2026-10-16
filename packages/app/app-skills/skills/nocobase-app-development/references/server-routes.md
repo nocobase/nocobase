@@ -233,6 +233,30 @@ export function createOrderRoutes(options: CreateOrderRoutesOptions): Hono {
 
 Do not write a helper that mutates a router passed in by its caller. Returning a router you own keeps the security boundary inside the thing being tested.
 
+## Lists and statistics: a fixed number of queries
+
+A route that answers many rows or figures reads them with a fixed number of queries, whatever the row count. The database API is in the `nocobase-db` Skill.
+
+- Read each kind of data once for all rows: one query with `IN (...)` over the row ids, then join the results in memory. Never call a per-item function or Repository read inside a loop or a `Promise.all` over rows.
+- When per-item database work genuinely cannot be batched, bound its concurrency to a small number rather than starting one query per item at once: an unbounded `Promise.all` can exhaust the connection pool and stall every other request, not just this one.
+- A list row carries only what the row shows. Expensive per-item work — diagnostics, "why is this waiting", full histories — belongs to the item's own detail endpoint, which the client usually reads when a detail view opens. When you add a field to a list response, check how much it adds to the response size across a full page of rows.
+- A component that needs one small fact, such as whether the viewer follows an item, gets a small endpoint answering that fact rather than reading a whole list or overview.
+- Aggregate in the database: `COUNT`, `SUM`, `GROUP BY` through the Repository's `count`/`groupBy` or the query builder. Never load rows to count or sum them in JavaScript.
+- One chart is one request, so charts load, fail, refresh and cache on their own. Each chart's request computes its figures with a fixed number of aggregate queries: one `GROUP BY` day, not a query per day or per item.
+- Bound every statistic by a time range or a limit. A column a large table is filtered or grouped by needs an index — see [migrations](migrations.md).
+- An aggregate that is expensive and read often is cached briefly with the application's cache (`cachingToken` from `@nocobase/app-server/caching`) rather than recomputed per request.
+- Test it: the number of queries a list or statistics endpoint makes stays the same when the rows or groups grow. See [testing](testing.md#what-to-test-by-change).
+
+The browser side — refreshing such a list or chart from realtime events — is in [client API requests](frontend/references/api.md#keeping-lists-and-charts-live).
+
+## Frequently called endpoints
+
+An endpoint called on a timer — polling, a heartbeat, a status badge every open page reads — costs its per-call price times its call frequency across every client, so a few milliseconds per call can add up to a large share of the database's time. Estimate both before writing one.
+
+- Usually keep it read-only, without writes or a transaction. Work that has to write, such as recording last-seen times or cleaning up, can often move to a less frequent place: a scheduled job (see [services and jobs](services-and-jobs.md#work-that-runs-on-a-schedule)), or a write only when the value actually changed.
+- Read-only code usually needs no transaction, here or anywhere else. A transaction holds a connection for its whole duration and can make reads cost more; use one only for writes that must succeed or fail together.
+- Prefer answering a small fact over a list or overview, as the section above describes, and consider caching it briefly when many clients ask the same question.
+
 ## Keep the layers apart
 
 Routes handle HTTP: parsing input, checking permission, shaping the response and status. Domain logic goes in a service under `server/providers/` — see [services and jobs](services-and-jobs.md). A service should not read a Hono context or decide status codes.
@@ -265,3 +289,5 @@ In React components and custom Hooks, use `useApiClient()` from `@nocobase/app-c
 - Middleware does not leak into other routes.
 - Every `/api` route is declared: after `app.start()`, `findUndeclaredApiRoutes(app)` is empty, and the route appears in `GET /api/swagger` with its `operationId`. See the Verify section of [HTTP API design](http-api.md#verify).
 - A public route rejects missing and invalid signatures, and handles duplicate delivery.
+- A list or statistics route makes the same number of queries for ten rows as for a thousand.
+- A frequently called route stays read-only and outside a transaction, or its writes have a reason to be there.

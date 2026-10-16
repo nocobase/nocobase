@@ -1,6 +1,6 @@
 ---
 name: nocobase-app-installer
-description: Install a built NocoBase 3 application on the machine that runs it, for production, with `@nocobase/app-installer` from the deployment archive `pnpm build --tar` writes, then upgrade, roll back and check it. Use when the user asks to deploy an application to production or a server, to upgrade or roll back such an installation, or when the directory holds an `installer.json` written by app-installer. Not for creating a project to develop, which is the `nocobase-create-app` Skill.
+description: Deploy a built NocoBase 3 application locally or over SSH to an offline Linux server, for production, with `@nocobase/app-installer` from the deployment archive `pnpm build --tar` writes, then upgrade, roll back and check it. Use when the user asks to deploy an application to production or a server, to upgrade or roll back such an installation, or when the directory holds an `installer.json` written by app-installer. Not for creating a project to develop, which is the `nocobase-create-app` Skill.
 ---
 
 # Install and run NocoBase 3 with app-installer
@@ -9,13 +9,17 @@ This Skill installs NocoBase that is already built — nothing on the machine is
 
 ## Run it
 
-Every command goes through `npx` with the registry named, and with `--json`:
+Run the installer on the machine where the Agent works, with the registry named and `--json`. For SSH deployment this is the local machine, not the server:
 
 ```bash
-npx --yes --registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" @nocobase/app-installer <command> … --json
+npx --yes --registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" @nocobase/app-installer@beta <command> … --json
 ```
 
+Use `@beta` for the published installer; do not fall back to an untagged invocation or `@latest`. Preserve an explicit version required for an existing installation or requested by the user, and use the snapshot tag when testing an unreleased local registry.
+
 NocoBase 3 publishes to the public npm registry. `NOCOBASE_REGISTRY` is set only when someone points the shell at another registry, such as an unreleased snapshot; the installer records the registry in `installer.json` and suggests commands from it. The `--yes` before the package is npx's own: it downloads the installer without asking. The installer's `--yes`, after the command, is a separate answer that only the user gives.
+
+Use the published `beta` channel unless the user specifies an exact version. An unreleased snapshot registry tags its packages `latest`; use that tag only when testing such a registry. Check `--help` before deploying to confirm the selected version supports `deploy` and `--ssh`.
 
 `--json` prints one document on stdout and progress on stderr, in the same envelope as `pnpm nocobase … --json`. Read the document, not the exit code alone: `ok`, `status` (`success`, `success-noop` or `failure`), `result`, and on failure `error.code`, `error.message`, `error.suggestions` and `error.details`. Each suggestion has a `message` and, where there is one, a `run` of `{ command, args }`: an executable and its arguments, run as given without a shell. app-installer 0.1.0-beta.1 and earlier, which a suggested command pinned to that version still runs, print `status` `error` and `run` as one shell line that runs as printed, so tell success from failure by `ok`.
 
@@ -35,15 +39,17 @@ A project is source code someone changes, created by `nocobase-create-app` and d
 | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Install, create or try NocoBase, to develop with         | The `nocobase-create-app` Skill                                                                             |
 | Deploy an application to production or a server          | This Skill, `--archive`, from the application's deployment archive                                          |
-| Run it with Docker                                       | The deployment documentation, https://github.com/nocobase/nocobase/tree/v3-develop/docs/docs/en/deployment  |
+| Run it with Docker                                       | The application's `nocobase-deployment` Skill and Docker configuration                                     |
 
 - "Install NocoBase on this server" with no project and no archive is not settled yet. Running the user's own application means creating it locally with `nocobase-create-app`, building its archive, and installing that here with `--archive`. Do not create a project on the server and run it with `pnpm dev`: that is development mode, not a deployment.
 - An `installer.json` whose `source.kind` is `template` was installed from the published Hub template by an earlier app-installer. The current one refuses it with `STATE_UNSUPPORTED`; leave it to the app-installer version that installed it.
 - When the working directory already holds `installer.json`, the installation exists: start with `status`.
 
-## Two machines
+## Choose where the installer runs
 
-An archive is built where the sources are — the user's computer or CI — and installed where NocoBase runs. An agent working on the server usually cannot reach the project: give the user the build command below and wait for the archive to be copied over, rather than trying to build it.
+When the user supplies an SSH server, keep the Agent, this Skill and the installer on the local machine. Read [Remote deployment](references/remote-deployment.md) before proceeding: it covers local orchestration, offline execution and recovery. The server needs no Agent, Skill or npm access. The `install`, `status`, `upgrade` and `rollback` guidance below still defines the lifecycle; run remote operations with the same SSH options and absolute remote `--dir`.
+
+When the Agent is already on the application server, use the local commands below. An archive is built where the sources are, not in the production installation. If the source project is available locally, follow its `AGENTS.md` and `nocobase-deployment` Skill to build; otherwise obtain the archive from the user or CI. Do not build or run a development project on the production server.
 
 ## Build the archive
 
@@ -55,7 +61,7 @@ APP_BASE_PATH=/crm pnpm build --target linux-x64 --node-version 24 --tar
 
 - `--target` and `--node-version` describe the machine that will run it, not the one building it: `node -p "process.platform + '-' + process.arch"` and `node --version` there; Alpine takes a `-musl` target. The installer refuses an archive built for another machine and names the command that fits.
 - `APP_BASE_PATH` is compiled into the client, `/main` when unset. The application is served there, and every later archive must be built for the same one.
-- A database other than SQLite needs its driver in the project before the build, such as `pnpm add @nocobase/db-postgres`: an archive carries only the drivers it was built with.
+- A database other than SQLite needs its driver in the project before the build, such as `pnpm add @nocobase/db-postgres@beta`: an archive carries only the drivers it was built with.
 
 The archive is `storage/exports/dist.tar.gz`; the user copies it to the machine that runs NocoBase, for example `scp storage/exports/dist.tar.gz user@server:/tmp/crm.tar.gz`. `ARCHIVE_TOO_OLD` or `STORAGE_IN_RELEASE` means the project's NocoBase packages are older than the installer needs: upgrade them, build again, then retry.
 
@@ -93,6 +99,12 @@ Each application is installed once, in a directory of its own, with its own `--p
 
 ## Upgrade and roll back
 
+Before upgrading an existing database, read the target application's and registered plugins' release-specific upgrade notes. Include documented checksum changes, data prerequisites, and irreversible migrations in the recovery plan. Before the installer stops the application, inspect the target application's `db repair --dry-run --json` output using its supported CLI and deployment configuration, even when no historical correction is documented. This is a read-only checksum check: the installer's own `db apply --dry-run` discovers pending tasks but does not validate checksums, even under a strict checksum policy. If the selected installer cannot perform the required check or preparation, establish the supported maintenance procedure before proceeding with the upgrade.
+
+When the checksum preview proposes changes, explain every migration or seed checksum difference before any actual repair; when it proposes none, skip repair. The installer applies migrations but does not automatically acknowledge changed historical checksums. Repair only updates history checksums; it does not change schema, fix partial tables, or replace a forward migration. Do not suppress drift by changing migration policy or repeatedly retrying the same archive.
+
+Do not run actual repair before an ordinary installer upgrade. Its SQLite backup is taken after stopping the application and would already contain the new checksums, which the previous runtime can reject under `onChecksumMismatch: error` if the upgrade rolls back. A repair procedure must stop writers, back up the original history, perform the reviewed repair and migrations, and restore that same pre-repair backup before restarting the old runtime on failure. An extra manual backup alone does not change which backup automatic rollback restores. When the selected installer cannot coordinate that sequence, finish only the read-only checks and establish the supported maintenance procedure first.
+
 Both stop the application, so the user decides:
 
 1. An upgrade takes a new archive: `upgrade --dir <root> --archive <file> --json`. It must be the same application built for the same base path, and not an older version; the same version built again is a new release and deploys normally.
@@ -101,10 +113,10 @@ Both stop the application, so the user decides:
 4. An upgrade keeps three releases, always including the new one and the one it came from, and prunes older ones once it succeeds; pass `--keep <n>` when the user wants more of them to stay available for rollback.
 5. Read the outcome:
    - Exit 0: the new release passed its health check. Report `result.fromVersion`, `result.toVersion`, the release id `result.to`, `result.migrations` and `result.backup`, and name any release in `result.pruned`, which can no longer be rolled back to.
-   - Exit 3: the previous release runs again. Report `error.message` and `error.details.log`, and leave the next attempt to the user once the cause is known.
+   - Exit 3: the previous release runs again. Report `error.message`, `error.details.log`, and whether the database was restored; an external database may still contain changes from the failed upgrade. Leave the next attempt to the user once the cause is known.
    - Exit 4: the application is down. Work through `error.suggestions` with the user, step by step.
 
-`rollback --dir <root> --json` returns to the release the last upgrade came from, or to `--to <release id or version>`. When that upgrade migrated the databases, rolling back restores the backup taken before it and loses whatever was stored since; the confirmation notes say so, and the same relay-and-confirm step applies. `--no-restore` keeps the current databases.
+`rollback --dir <root> --json` returns to the release the last upgrade came from, or to `--to <release id or version>`. When that upgrade migrated SQLite databases and the installer holds their backup, rolling back restores it and loses whatever was stored since; the confirmation notes say so, and the same relay-and-confirm step applies. External databases require a separate restore procedure: `--backup-done` does not make the installer restore them. If an irreversible migration made the schema incompatible with the previous runtime, returning to that runtime requires a compatible database backup too. `--no-restore` keeps the current databases; use it only when compatibility with the selected runtime is established.
 
 ## Recover an interrupted operation
 

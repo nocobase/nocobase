@@ -100,6 +100,7 @@ export function ConsultationCard({
         <span className='ml-auto flex shrink-0 items-center gap-1.5'>
           {running ? <Pulse /> : null}
           <Badge
+            data-size='sm'
             variant={
               notice.state === 'failed' || notice.state === 'refused'
                 ? 'destructive'

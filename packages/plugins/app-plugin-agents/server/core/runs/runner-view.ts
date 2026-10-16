@@ -49,6 +49,14 @@ export async function runsHeldByTool(
   conn: DatabaseConnection,
   runnerId: string,
 ): Promise<Partial<Record<AgentTool, number>>> {
+  return (await runsHeldSnapshot(conn, runnerId)).byTool;
+}
+
+/** Total occupancy includes runs whose tool has not been recorded. */
+export async function runsHeldSnapshot(
+  conn: DatabaseConnection,
+  runnerId: string,
+): Promise<{ runs: number; byTool: Partial<Record<AgentTool, number>> }> {
   const held = await runsRepo(conn).findMany({
     filter: (f) =>
       f.and([
@@ -61,7 +69,7 @@ export async function runsHeldByTool(
     const tool = run.tool as AgentTool | null;
     if (tool) counts[tool] = (counts[tool] ?? 0) + 1;
   }
-  return counts;
+  return { runs: held.length, byTool: counts };
 }
 
 /** How many of a runner's latest runs its page shows. */
@@ -108,16 +116,16 @@ export interface RunnerView {
 }
 
 export function createRunnerView(deps: {
-  readonly agents: Pick<AgentService, 'list'>;
+  readonly agents: Pick<AgentService, 'list' | 'names'>;
   readonly subjects: Pick<SubjectRegistry, 'get'>;
   readonly tx: TxRunner;
 }): RunnerView {
-  const agentNames = async (): Promise<ReadonlyMap<string, string>> =>
-    new Map(
-      (await deps.agents.list({ includeArchived: true })).map((agent) => [
-        agent.id,
-        agent.name,
-      ]),
+  const agentNames = (
+    runs: readonly { readonly agentId: string }[],
+  ): Promise<ReadonlyMap<string, string>> =>
+    deps.agents.names(
+      deps.tx.read(),
+      runs.map((run) => run.agentId),
     );
   /** The subject's link of `run`, or null when it has none or the viewer is not part of a private kind's run. */
   const pathOf = (run: Run, viewerUserId: string): string | null => {
@@ -133,7 +141,7 @@ export function createRunnerView(deps: {
   return {
     async takes(runners) {
       const agents = (await deps.agents.list()).filter(
-        (agent) => agent.type === 'runner',
+        (agent) => agent.status === 'enabled',
       );
       return new Map(
         runners.map((runner) => [
@@ -153,7 +161,7 @@ export function createRunnerView(deps: {
           ]),
         sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
       });
-      const names = await agentNames();
+      const names = await agentNames(records);
       return records.map(toRun).map((run) => ({
         id: run.id,
         kind: 'run' as const,
@@ -172,7 +180,7 @@ export function createRunnerView(deps: {
         ],
         limit: RECENT_RUNS,
       });
-      const names = await agentNames();
+      const names = await agentNames(records);
       return records.map(toRun).map((run) => ({
         id: run.id,
         title: names.get(run.agentId) ?? run.agentId,

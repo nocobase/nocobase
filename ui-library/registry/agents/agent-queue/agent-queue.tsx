@@ -339,9 +339,10 @@ function QueueList({
                   {view ? (
                     <Badge
                       variant='secondary'
+                      data-size='sm'
                       title={hover}
                       className={cn(
-                        'h-auto max-w-full min-w-0 justify-start rounded-md bg-muted px-1.5 py-0 text-[11px] font-normal text-muted-foreground',
+                        'max-w-full min-w-0 justify-start bg-muted font-normal text-muted-foreground',
                         blocking &&
                           'bg-amber-500/10 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300',
                       )}
@@ -401,12 +402,16 @@ function WaitingItem({
       <div className='flex min-w-0 items-center gap-1.5'>
         <Badge
           variant='outline'
-          className='h-5 shrink-0 rounded-md px-1.5 text-[11px] font-normal'
+          data-size='sm'
+          className='shrink-0 font-normal'
         >
           {labels.wait.kinds[waiting.kind]}
         </Badge>
         {item.forMe ? (
-          <Badge className='h-5 shrink-0 rounded-md bg-amber-500 px-1.5 text-[11px] text-white dark:bg-amber-400 dark:text-amber-950'>
+          <Badge
+            data-size='sm'
+            className='shrink-0 bg-amber-500 text-white dark:bg-amber-400 dark:text-amber-950'
+          >
             {labels.wait.forYou}
           </Badge>
         ) : (
@@ -589,7 +594,7 @@ function Lane({
           <div className='flex min-w-0 items-center gap-1.5'>
             <h2 className='truncate text-sm font-semibold'>{agent.name}</h2>
             {agent.archived ? (
-              <Badge variant='outline' className='h-4 px-1 text-[10px]'>
+              <Badge variant='outline' data-size='sm'>
                 {labels.lane.archived}
               </Badge>
             ) : null}

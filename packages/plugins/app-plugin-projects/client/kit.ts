@@ -6,18 +6,9 @@
 import { withNamespace } from '@nocobase/i18n/client';
 
 export {
-  StatusRuleTypesContext,
-  type StatusRuleConfig,
-  type StatusRuleEditorProps,
-  type StatusRuleGroup,
-  type StatusRuleStatus,
-  type StatusRuleSummaryProps,
-  type StatusRuleTypeUI,
-} from './lib/status-rule-types.js';
-export {
-  WorkflowEventsContext,
-  type WorkflowEventUI,
-} from './lib/workflow-events.js';
+  StatusEventsContext,
+  type StatusEventUI,
+} from './lib/status-events.js';
 /** How a queued request to AI says why it waits, such as with the agents plugin's `formatRunWait`. */
 export {
   IntakeWaitFormatContext,
@@ -44,16 +35,14 @@ import { InviteDialog as BaseInviteDialog } from './pages/config/members/invite-
 import { PlanListItem as BasePlanListItem } from './kit/plans/plan-list-item.js';
 import { SectionHeading as BaseSectionHeading } from './pages/config/section-heading.js';
 import { SettingsPageHeader as BaseSettingsPageHeader } from './pages/config/settings-page-header.js';
-import { StartDialog as BaseStartDialog } from './pages/issues/detail/start-dialog.js';
 import { NewIssueButton as BaseNewIssueButton } from './pages/issues/new-issue-button.js';
 import { PmShortcuts as BasePmShortcuts } from './components/pm-shortcuts.js';
-import { WorkflowSelect as BaseWorkflowSelect } from './pages/projects/workflow-select.js';
 
 const bound = <T>(component: T): T =>
   withNamespace(ACCESS_NAMESPACE, component as never) as T;
 
 export const DataTable: typeof BaseDataTable = bound(BaseDataTable);
-/** A compact text area for long text that expands on demand, such as a status rule's instruction in its editor. */
+/** A compact text area for long text that expands on demand. */
 export const PmExpandableTextarea: typeof BaseExpandableTextarea = bound(
   BaseExpandableTextarea,
 );
@@ -81,16 +70,11 @@ export const UnsavedChangesBoundary: typeof BaseUnsavedChangesBoundary = bound(
 );
 /** One plan in a list: title, status, source, proposer and time, linking to its page or selecting it. */
 export const PlanListItem: typeof BasePlanListItem = bound(BasePlanListItem);
-/** "Start now?", before a change hands an issue to an agent (the board's drop asks it through `useBoardMove`). */
-export const StartDialog: typeof BaseStartDialog = bound(BaseStartDialog);
 /** "New issue": opens the `new` dialog under `/issues`, with the AI and manual tabs. */
 export const NewIssueButton: typeof BaseNewIssueButton =
   bound(BaseNewIssueButton);
 /** The issues pages' keyboard shortcuts (`C` new issue, ⌘K search) and their help. */
 export const PmShortcuts: typeof BasePmShortcuts = bound(BasePmShortcuts);
-/** A project's workflow picker, as the New project form has it (`null` is the default workflow). */
-export const WorkflowSelect: typeof BaseWorkflowSelect =
-  bound(BaseWorkflowSelect);
 export { useNewIssueShortcut } from './components/use-new-issue-shortcut.js';
 export type { PlanListItemProps } from './kit/plans/plan-list-item.js';
 /**
@@ -148,5 +132,18 @@ export { IntakeAgentSlot, PageContextProvider } from './kit/page-slots.js';
 export { useViewer } from './hooks/use-viewer.js';
 export { canManageProject, canUseSetting } from './lib/permissions.js';
 export { pmKeys } from './api/keys.js';
+export {
+  announcedIssueIds,
+  changedIssueSegments,
+  isIssueRead,
+} from './api/changed-issues.js';
 export { usePmApi } from './hooks/use-pm-api.js';
 export { useApiKeyActors } from './hooks/use-api-key-actors.js';
+
+export { PmDescriptionImage } from './components/pm-description-image.js';
+
+export {
+  IntakeDraftProvider,
+  useIntakeDraft,
+  emptyIntakeDraft,
+} from './kit/intake-draft.js';

@@ -189,7 +189,7 @@ const plansEnUS = {
     count: '{{count}} / {{max}}',
     files: 'Files',
     filesHint:
-      'Up to {{count}} files, {{size}} MB each. Text, Markdown, CSV, Word, Excel, PowerPoint and PDF are read; images only add their names.',
+      'Up to {{count}} files, {{size}} MB each. Text, Markdown, CSV, Word, Excel, PowerPoint and PDF are read; Let an agent organize can read PNG/JPEG images with its image tools; if reading fails, return to edit and retry. Rule split uses image filenames only.',
     addFiles: 'Add files',
     dropFiles: 'Drop files here',
     removeFile: 'Remove {{name}}',

@@ -24,6 +24,7 @@ import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import type { SpaceRef } from '../../shared/knowledge.js';
 import { knowledgeKeys, useKnowledgeApi } from '../api.js';
 import { EntryIcon } from './file-pane.js';
+import type { KnowledgeDirectorySource } from '../hooks/use-directory.js';
 
 export function KnowledgeSearchDialog({
   open,
@@ -32,6 +33,7 @@ export function KnowledgeSearchDialog({
   inheritedLabel,
   onOpen,
   onAll,
+  directory,
 }: {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
@@ -40,6 +42,7 @@ export function KnowledgeSearchDialog({
   readonly onOpen: (docId: string) => void;
   /** Shows every result for the words on the page. */
   readonly onAll: (q: string) => void;
+  readonly directory?: KnowledgeDirectorySource;
 }): ReactElement {
   const { t } = useTranslation(ACCESS_NAMESPACE);
   const api = useKnowledgeApi();
@@ -50,8 +53,13 @@ export function KnowledgeSearchDialog({
     return () => window.clearTimeout(timer);
   }, [text]);
   const hits = useQuery({
-    queryKey: knowledgeKeys.search(space, query),
-    queryFn: ({ signal }) => api.search(space, query, signal),
+    queryKey: directory
+      ? ['knowledge', 'directory-search', query]
+      : knowledgeKeys.search(space, query),
+    queryFn: ({ signal }) =>
+      directory
+        ? directory.search(query, signal)
+        : api.search(space, query, signal),
     enabled: open && query !== '',
     placeholderData: keepPreviousData,
   });
@@ -126,6 +134,14 @@ export function KnowledgeSearchDialog({
                       ) : null}
                     </span>
                     <span className='line-clamp-2 block text-xs text-muted-foreground'>
+                      {directory
+                        ? [
+                            hit.spaceTitle ?? t('knowledge.directory.system'),
+                            ...(hit.folderPath ?? []),
+                          ].join(' / ')
+                        : null}
+                    </span>
+                    <span className='line-clamp-2 block text-xs text-muted-foreground'>
                       {hit.excerpt}
                     </span>
                   </span>
@@ -139,7 +155,12 @@ export function KnowledgeSearchDialog({
                 }}
               >
                 <ListIcon />
-                {t('knowledge.search.all', { q: query })}
+                {t(
+                  directory
+                    ? 'knowledge.directory.showResults'
+                    : 'knowledge.search.all',
+                  { q: query },
+                )}
               </CommandItem>
             </CommandGroup>
           ) : null}

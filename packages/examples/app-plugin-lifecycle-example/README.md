@@ -13,7 +13,9 @@ The help desk and expense reports each have a **Signed in as** switch over the e
 
 ## Durable flows
 
-Five more pages under the same menu show processes that stop to wait for systems outside the application and are moved on by them. While one waits it is only a state on its record — no timer, no open request, no process holding it — so a restart loses nothing, and whatever arrives late, early, twice or out of order ends in exactly one well-defined place.
+The **E-invoicing** page demonstrates one invoice per completed sandbox order: submit with up to three attempts, wait for a signed platform callback, query after 30 seconds without a callback, and retry a failed invoice under the same provider request key. Orders #1024 and #1026 are normal; #1025 fails its first three submissions. Hold the callback on #1026 to observe the timeout query. Issuing notifies the customer through an idempotent sandbox effect and enables a PDF download marked `SANDBOX INVOICE - NOT VALID FOR TAX`. These orders are a fixed demonstration catalog, independent of the Order payment page; no real invoicing or tax platform is called. New and existing installations can load the samples with `pnpm nocobase db sample`, recorded separately as `lifecycle-example/invoices`.
+
+Six more pages under the same menu show processes that stop to wait for systems outside the application and are moved on by them. While one waits it is only a state on its record — no timer, no open request, no process holding it — so a restart loses nothing, and whatever arrives late, early, twice or out of order ends in exactly one well-defined place.
 
 | Page          | Lifecycle                           | What it shows                                                                                                                                                                                                                                                                                    |
 | ------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -27,7 +29,7 @@ These pages have no persona switch, and their lifecycles no guard about who asks
 
 The outside is a sandbox in the plugin's own tables, `server/sandbox/`: a payment provider with hosted checkouts, charges and refunds, a warehouse with stock and reservations, a slow vendor and a carrier, each call keyed by an idempotency key so a repeated call answers what the first made. The sandbox sends its webhooks signed to `POST /api/lifecycleExample/webhooks/{source}` (`server/webhooks/receiver.ts`), which takes no session — a provider has none — and checks the `x-sandbox-signature` HMAC instead. The receiver fires the transitions an event maps to under the request id `<source>:<event id>`, tries the next one when the record's state does not allow the first, acknowledges what applied, replayed or can never apply, and answers an error for a conflict so the sender delivers again; the sandbox does, on a later sweep. Each page's dashed card plays those systems: pay or decline on the checkout, send the warehouse's or the carrier's event, hold a webhook and deliver it later, out of order, or twice.
 
-Every record shows the lifecycle as a Mermaid diagram drawn by `@nocobase/markdown-mermaid`, with the state it is in filled and the states it passed through outlined.
+Every record shows an interactive React Flow diagram with ELK routing, copied from the UI Library’s `flow-diagram` and `lifecycle-diagram` items. The current state has a stronger fill, visited states and actual traversed transitions share one accent color, available transitions use the action accent color, and selecting a state or transition opens its details. Each explicitly final state has its own connected end marker. The folded Mermaid source remains available for documentation and export.
 
 Try these:
 
@@ -49,7 +51,7 @@ Installed with sample data (`APP_SAMPLE_DATA=true`), the pages open on records t
 2. **See an escalation.** Leave the report alone for three minutes, or click **Run triggers now**. The approver becomes the manager's manager, the log gains an `escalate` row fired by the system, and the version goes up by one.
 3. **See retries.** Create a report with "payments that fail on purpose" set to 5 and approve it. The payment run fails three times and becomes `failed`. Click **Retry**: it gets three more attempts; the fourth and fifth fail, the sixth succeeds, the report becomes `paid` and the payment reference is written onto it.
 4. **See the concurrency guard.** Open the same waiting report in two windows. Approve it in one, then send it back in the other: the second click is refused because the version it saw is stale.
-5. **See the diagram.** The panel shows the Mermaid source of the lifecycle, its parameters, its log and its effect runs.
+5. **See the diagram.** The panel shows the interactive lifecycle diagram, its parameters, its log and its effect runs; select a state or transition for details, or expand the Mermaid source for export.
 
 ## How it is wired
 
@@ -81,7 +83,7 @@ Installed with sample data (`APP_SAMPLE_DATA=true`), the pages open on records t
 
 `tests/lifecycles.test.ts` tests both lifecycles with `@nocobase/lifecycle/testing`: a memory store, a fake clock and in-process effects, so waiting, escalating and retrying are plain function calls. `tests/provider.test.ts` runs the real Provider on the test database (SQLite by default) with the memory jobs service, `tests/routes.test.ts` covers the HTTP boundary, `tests/concurrent-edits.test.ts` covers an edit racing a submit or another edit on the test database, and `tests/error-message.test.ts` covers how a page words a refusal.
 
-`tests/durable-flows.test.ts` runs the five durable flows the same way, with the real sandbox on memory objects and the kit's clock, and the webhook receiver on the kit's runtime: replays, an early and a late webhook, polling to a deadline, compensation, signals in either order, stale carrier events and dunning. `tests/provider.test.ts` also runs them on the test database, the webhook through its HTTP route with its signature.
+`tests/durable-flows.test.ts` runs the six durable flows the same way, with the real sandbox on memory objects and the kit's clock, and the webhook receiver on the kit's runtime: replays, an early and a late webhook, polling to a deadline, compensation, signals in either order, stale carrier events and dunning. `tests/provider.test.ts` also runs them on the test database, the webhook through its HTTP route with its signature.
 
 `tests/second-layer.test.ts` runs the two hand-written second layers in `tests/fixtures/second-layer/` on memory storage and a fake clock: rounds that leave the record alone, the conclusion that moves it, and a late answer for a stay that has already ended being refused.
 
@@ -91,3 +93,27 @@ pnpm --filter @nocobase/app-plugin-lifecycle-example typecheck
 pnpm --filter @nocobase/app-plugin-lifecycle-example test
 pnpm --filter @nocobase/app-plugin-lifecycle-example build
 ```
+
+## Runtime parameter configuration
+
+The **Runtime parameters** page demonstrates code-declared configuration groups with complete immutable revisions and compare-and-swap saves. All example personas can inspect permitted settings; the finance director Zhao can save them. The persona switch is a demonstration mechanism, and every endpoint still requires an authenticated application user. Production applications derive identity and scope from their real authorization policy.
+
+Expense thresholds use a first-submission snapshot: draft previews show current values; submit freezes both thresholds, and returning, withdrawing or resubmitting retains them. Existing pre-contract expense records explicitly stay on code defaults. Ticket reopenDays and simulated notificationPrefix are live values read again per execution and retry; trigger timeouts stay in source. Parameter history shows actual values and sources separately from the effective record preview and displays “Not recorded” where no facts exist.
+
+The shared reviewer group stores simple department/role/user selections. Same-group conditions intersect and separate groups union. The seeded Finance One and Finance Two departments demonstrate precise department matching, scope-limited roles, inactive-user and applicant filtering. The separate snapshot/live reviewer demonstrations persist candidates at submission and use a finite “any candidate may decide” policy; only one concurrent decision succeeds. Snapshot fixes the selection rule, and a later task resolves it against current organization membership. Existing candidates stay fixed. These demonstrations do not change the expense workflow's single-approver semantics or validate a separate approval plugin.
+
+The central page and code-bound diagram entries use the same editor. Click bound expense nodes/transitions or the ticket reopen transition to edit current configuration; unbound entries retain their normal details. Clicking never executes a transition. Read-only users have no save control, and revision conflicts preserve their drafts while showing the current saved revision.
+
+For an embedded form, import `ParameterEditor` and `parameterApi` from this plugin's client entry, pass a group view and the authorized API, and refresh the surrounding record view after save. `boundParameterGroups(description, kind, name)` maps code bindings to stable group keys. These are reusable example exports rather than a mandatory settings page or a workflow editor.
+
+Configuration routes under `/api/lifecycleExample` include `GET /parameterGroups`, `GET/PUT /parameterGroups/{groupId}`, type-specific reviewer reference search and candidate previews, and `GET /parameterHistory/{lifecycle}/{recordId}`. PUT accepts only `{ values, expectedRevision, requestId }`; undeclared fields, incompatible group values and references outside the demo scope fail. New immutable migrations create configuration heads, versions, flat selections, request receipts, snapshots, usage facts and the reviewer demonstration tables.
+
+See the lifecycle package's [parameter contracts](../../libs/lifecycle/docs/parameters.md) and the application's configurable lifecycle parameter Skill for storage, transaction, preview and editor integration details.
+
+## Workflow management integration
+
+The Examples application provides `/workflows/definitions` and `/workflows/executions` to browse the lifecycle and office demonstrations together. Each execution is one lifecycle-managed record, with effect runs shown inside its detail. The history replay colors only recorded states and source/transition/destination pairs; selecting a history step shows the path up to that step, including repeated visits.
+
+Applications can resolve the exported `lifecycleExampleServiceToken` from the Server entry and call `workflowDefinitions()` for the registered workflow names, collections and state fields. The Client entry exports `ProcessDiagram`, `useParameterBindingEditor` and `IdentitySelect` to reuse diagram inspection and the existing permission-checked parameter editing. `ProcessDiagram` accepts `labelNamespace` for workflow-specific state and transition translations; its diagram controls retain the lifecycle example's own translations.
+
+Reviewer references are loaded only for the selected department, role or user type. Enter a name to search the scoped directory; blank searches return no candidates and pages contain at most ten matches. Saved references are resolved individually for display. Active users added to this directory become searchable without updating client code; application user accounts are a separate directory and require an application-owned integration.

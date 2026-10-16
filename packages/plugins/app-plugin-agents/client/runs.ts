@@ -6,6 +6,7 @@
  */
 export {
   useAgentNames,
+  useAgentIdentities,
   useSubjectRuns,
   type SubjectRun,
 } from './runs/subject-runs.js';

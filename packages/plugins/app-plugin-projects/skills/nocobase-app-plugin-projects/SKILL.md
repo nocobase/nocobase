@@ -1,8 +1,8 @@
 ---
 name: nocobase-app-plugin-projects
-description: Register the Projects plugin in a NocoBase App, call its /api/projects API for projects, issues, workflows, labels and members, grant its permissions, or work out why a projects request is rejected.
+description: Register the Projects plugin in a NocoBase App, call its /api/projects API for projects, issues, their fixed statuses, labels and members, grant its permissions, or work out why a projects request is rejected.
 metadata:
-  short-description: Projects, issues, workflows, labels and members
+  short-description: Projects, issues, statuses, labels and members
 ---
 
 # Projects App Plugin
@@ -16,20 +16,20 @@ for generic collection CRUD; the plugin's tables are only written through its AP
   `@nocobase/app-plugin-projects/server/tokens` resolves the services. The App must bind `projectsAccessToken`
   (`ProjectsAccess`: `permissionsOf`, `admit`, `changed`, `administrators`, and optionally `permissionsOfUser` so
   notices reach only those who may see the issue): the plugin keeps no roles of its own. It may bind
-  `projectsNoticesToken` (`ProjectsNotices`: `send`, `resolve`) to receive the plugin's notices (owner notified,
-  approval requested as a `decision`, approval decided, commented, mentioned, status changed, owner or executor
-  assigned; information carries a `group` to merge by) and keep its own inbox; otherwise they go to the in-app
+  `projectsNoticesToken` (`ProjectsNotices`: `send`) to receive the plugin's notices (owner notified, commented,
+  mentioned, status changed, owner or executor assigned; information carries a `group` to merge by) and keep its own
+  inbox; otherwise they go to the in-app
   channel `projects.inboxChannel`. Another plugin binds `projectsTriggersToken` (`IssueTriggers`) to start work when
   a person comments, and adds notice rules through `projectsNoticeRulesToken`. Operation plans (`shared/plans.ts`)
   are proposed through `projects.plans` (`PlanService`: rehearse, create, propose to someone else, execute, preview an undo and undo in one step), and
   a plugin binds `projectsPlanHooksToken` (`PlanHooks.onPlanDecided`) to hear their decisions.
 - Shared types: `@nocobase/app-plugin-projects/shared/<name>` (`access`, `attachments`, `comments`, `common`, `issues`,
-  `labels`, `members`, `plans`, `projects`, `settings`, `subscriptions`, `subtasks`, `workflows`).
+  `labels`, `members`, `plans`, `projects`, `settings`, `statuses`, `subscriptions`, `subtasks`).
 - Server routes: everything under `/api/projects`; see the package README for the list. Failures are the standard error body with domain `projects`: branch on `reason`, read details from `metadata`.
 - Client: the default export of `@nocobase/app-plugin-projects/client` adds `/projects` (the list and "New project").
   The App owns a project's page (`/projects/:projectId`, routed as that route's child) and composes it from the
   headless `@nocobase/app-plugin-projects/client/projects` (`useProjectDetail`, `useProjectUpdate`,
-  `useProjectMembership`, `useProjectResources`, `useResourceValidation`, `useDeleteProject`, `useProjectWorkflow`).
+  `useProjectMembership`, `useProjectResources`, `useResourceValidation`, `useDeleteProject`).
   The App also owns `/issues` and
   `/my-issues`: it composes them from the headless `@nocobase/app-plugin-projects/client/issues` (list and board queries,
   board moves, filters in the query string, executor options) and routes the plugin's pages under `/issues` (the New
@@ -37,9 +37,9 @@ for generic collection CRUD; the plugin's tables are only written through its AP
   issue's page (`/issues/:issueId`), presented over the same headless entry (`useIssueDetail`, `useIssuePageActions`,
   `useIssueTimeline`, `useIssueCommentActions` and the rest), and hosts the plugin's "New sub-issue" dialog under it
   (`issueDetailChildRoutes`).
-  The settings pages (issue prefix, labels, workflows) are exported from
+  The settings pages (issue prefix, labels) are exported from
   `@nocobase/app-plugin-projects/client/config` for the App to route under its own settings page, and shared page
-  components from `@nocobase/app-plugin-projects/client/kit`. Changes are announced on the realtime topic `pm:changes`.
+  components from `@nocobase/app-plugin-projects/client/kit`. Changes are announced on the realtime topic `pm:changes`, naming the changed issues in `issueIds` when they can; refresh only those issues' reads then.
 
 The NocoBase UI Library presents these headless entries; install an item rather than building the page from scratch, and read its example (`pnpm exec shadcn view @nocobase/<item>-demo`) first. `project-detail` is a block for a project's page, `issue-detail` a block for an issue's page, and `issue-table`, `kanban` and `comment-thread` the components for the issue list, the board and an issue's activity. For agents working on issues, `agent-queue` (a block) and `agent-run-history` (a component) take the runs of `@nocobase/app-plugin-agents`. Each is installed with `yes n | pnpm exec shadcn add @nocobase/<item>` and is presentational: map the hooks' data to its props and its callbacks to the hooks' mutations.
 
@@ -58,57 +58,26 @@ grants from before roles moved to the App; the App converts them (for example, `
   moderate-comments, close, change-owner, delete; `pm.attachments`: upload) reach none, related or all records. The
   plugin registers them as the `pm` resource type, one action per level (`edit.related`, `edit.all`; `create` and
   `delete` without levels; `shared/access.ts`: `levelActionsOf`), and a role grants the level's action; the App's
-  `permissionsOf` says which for each request. Settings items (`pm.general`, `pm.labels`, `pm.workflows`: read,
-  update; `pm.members`: read, invite, assign, define-roles) are registered by the plugin. Creating an issue needs `pm.issues` `create`, not `edit`. `GET /api/projects/me` returns what the caller
+  `permissionsOf` says which for each request. Settings items (`pm.general`, `pm.labels`: read, update; `pm.members`: read, invite, assign, define-roles) are registered by the plugin. Creating an issue needs `pm.issues` `create`, not `edit`. `GET /api/projects/me` returns what the caller
   holds.
 - Authorized original inviters can generate and privately deliver invitation links using an unscoped person credential, without global user creation permissions or an email channel. New accounts register from the link and remain email-unverified; existing users sign in with the matching account. Links use `app.publicOrigin` or the request origin. Generating a new link invalidates the old link; current access to every remaining project is rechecked. Other managers and scoped credentials remain email-only.
 - Issue updates need the `revision` the caller read; a stale revision is 409 `REVISION_CONFLICT` (`ABORTED`).
-- An issue cannot be created in a terminal status, and moving it to another project needs a status that project's
-  workflow has. A status change the workflow does not allow for the caller is 400 `TRANSITION_NOT_ALLOWED`.
-- Workflows (`/api/projects/workflows`) are read by every member and changed with `pm.workflows` `update`. A definition is
-  `{ states: [{ key, name, category, color, builtIn? }], transitions: [{ from, to, actors }] }` (`*` for any
-  status, actors: registered kind keys, `user` and `system` built in); the seven built-in statuses stay, each
-  transition stays within what its kinds allow (`mayEnter`, `mayTargetAny`), and people can leave every status. Problems are 400 `INVALID_WORKFLOW` with `metadata.issues`; dropping a
-  status issues are in is 400 `WORKFLOW_STATUS_CONFLICT` (`FAILED_PRECONDITION`). A project's `workflowId` (null: the default) switches only
-  when every issue keeps its status.
-- A status may carry `rules`: `{ type: 'checklist', config: { items: [{ key, label, required }] } }` and
-  `{ type: 'notifyOwner', config: { message? } }`, each at most once. Entering the status copies the checklist to the
-  issue (`GET /api/projects/issues/{issueId}/checklists`, `PATCH …/checklists/{statusKey}/items/{itemKey} { checked }` by anyone who may
-  edit the issue); leaving it for anything but a closed status is 400 `CHECKLIST_INCOMPLETE` until the required items
-  are checked. `notifyOwner` records `owner_notified` and sends an `owner_notified` notice (see `projectsNoticesToken`
-  above); nothing is sent when the owner moved the issue.
-- Another plugin adds status rule types through `projectsStatusRulesToken` (`StatusRuleTypes.add({ type, categories?,
-validate?, describe?, canEnter?, entered? })`; `entered` runs in the move's transaction with the issue after the move
-  and may `setExecutor`; `canEnter` runs before every move into the status, the system's event moves included, and
-  answers null or `{ code, message, details? }`, which refuses the move with 400 `code`) and workflows that use them through `projectsWorkflowTemplatesToken` (installed once each, marked by
-  `builtInKey`, titled by the template's `title`). What such a rule did is recorded as `stage_action_applied` or
-  `stage_action_skipped { reason }`. A rule whose type is gone stays in the definition: saving keeps it unchanged,
-  entering skips it as `unavailable`. `POST /api/projects/workflows/{workflowId}/preview { definition }` (with `pm.workflows`
-  `update`) lists the rules a save would add or remove and those that wake someone without confirmation. In the
-  browser, `StatusRuleTypesContext` from `client/kit` gives each type its title, editor and summary.
-- Another plugin registers workflow events through `projectsWorkflowEventsToken` (`WorkflowEventTypes.add({ key, from?,
-to? })`, a dotted key such as `acme.merged`; `from`/`to` are the status categories a transition on it may leave and
-  enter) and fires one with `projects.workflowEvents.fire({ event, issueIds, actor?, note?, details? }, tx?)`. Each
-  issue with a `{ from, to, actors: ['system'], on: event }` transition from its status moves as the system, inside
-  `tx` when given; the activity `status_changed { event, note, cause }` names `actor`. The answer lists one outcome
-  per issue: `moved`, `ignored { reason: 'notFound' | 'noTransition' }` or `refused { code }` (an entry condition held
-  it back, recorded as `auto_move_skipped`). Only registered, contributed events may be fired. A transition on an
-  event whose plugin is gone is kept while unchanged. In the browser, `WorkflowEventsContext` (`client/kit`) gives
-  each event its title and hint for the workflow editor and the timeline.
-- A transition may carry `approval: { approvers: ['owner' | 'projectLead' | 'admin', …] }`. A status change through
-  it answers `PATCH /api/projects/issues/{issueId}` with 202 `{ data: { issue, pendingApproval } }` (the issue unchanged) unless the
-  mover is an approver or none resolves. `GET /api/projects/approvals` lists the caller's; `POST /api/projects/approvals/{approvalId}/
-approve|reject` (403 `NOT_APPROVER`) and `/withdraw` (403 `NOT_REQUESTER`) decide; a decided request is 400
-  `APPROVAL_DECIDED`, a second pending one 400 `APPROVAL_PENDING`. Approving moves the issue, or leaves the request
-  `stale` when the move no longer passes; the issue leaving the status also makes its request stale.
-- A sub-issue may have a `stage` (0–1000, 400 `INVALID_STAGE`). `POST /api/projects/issues/{issueId}/dependencies
-{ dependsOnIssueId, type: 'blockedBy' | 'relatedTo' }` links issues (201); `DELETE …/dependencies/{dependencyId}`
-  removes a link (204). A cycle is 400 `DEPENDENCY_CYCLE`, a duplicate 409 `DEPENDENCY_EXISTS`. Issue detail carries
-  `subtasks`, `blockedBy`, `blocks`, `relatedTo`, `blockers` and `hiddenBlockerCount`; list items `subtaskCount` and
-  `blockedCount`. Finishing an issue releases the issues waiting on it (`dependency_released` notice) and tells the
-  parent's owner when a stage or all sub-issues finish (`batch_done`). A workflow transition `{ from, to, actors:
-['system'], on: 'subtasks.done' }` moves the parent then; status rules `{ type: 'subtasksDone' }` (400
-  `SUBTASKS_OPEN`) and `{ type: 'blockersDone' }` (400 `ISSUE_BLOCKED`) refuse entering a status too early.
+- Statuses are fixed (`shared/statuses.ts`): `backlog`, `in_progress`, `blocked`, `in_review`, `done`, `cancelled`, the
+  same for every project (`GET /api/projects/issues/statuses`). A new issue starts in `backlog` (nothing starts) or
+  `in_progress` (its work starts); any other `statusKey` is 400 `INVALID_STATUS`. Left without `executor`, it gets the
+  default executor a kind names (`PrincipalKind.defaultExecutor`; `GET /api/projects/executors` marks it `isDefault`).
+  People move an issue between any two statuses; a principal of another kind only along its kind's `moves`, and only
+  when its `mayMove` agrees; anything else is 400 `TRANSITION_NOT_ALLOWED`. Entering `blocked` or `in_review` records
+  `owner_notified` and sends an `owner_notified` notice, unless the owner moved it. `PATCH /api/projects/issues/{issueId}`
+  answers 200 `{ data: { issue } }`.
+- Another plugin registers status events through `projectsStatusEventsToken` (`StatusEventTypes.add({ key, from, to })`,
+  a dotted key such as `acme.merged`, the statuses it moves an issue out of and the one it moves it to) and fires one
+  with `projects.statusEvents.fire({ event, issueIds, actor?, note?, details? }, tx?)`. Each issue in one of `from`
+  moves to `to` as the system, inside `tx` when given; the activity `status_changed { event, note, cause }` names
+  `actor`. The answer lists one outcome per issue: `moved`, `ignored { reason: 'notFound' | 'noTransition' }` or
+  `refused { code }` (recorded as `auto_move_skipped`). `projects.statusEvents.target(event, issueId)` says where it
+  would take one issue. In the browser, `StatusEventsContext` (`client/kit`) titles each event for the timeline.
+- A sub-issue may have a `stage` (0–1000, 400 `INVALID_STAGE`). `POST /api/projects/issues/{issueId}/dependencies { dependsOnIssueId, type: 'blockedBy' | 'relatedTo' }` links issues (201); `DELETE …/dependencies/{dependencyId}` removes a link (204). `PATCH …/dependencies/{dependencyId} { type, expectedType }` changes its type atomically and preserves its ID (200); a stale type is 409 `DEPENDENCY_CHANGED`, and an existing target relationship is 409 `DEPENDENCY_EXISTS` with both links preserved. A related link can be converted from either end; the current issue waits when converted to `blockedBy`. A cycle is 400 `DEPENDENCY_CYCLE`, a duplicate 409 `DEPENDENCY_EXISTS`. Concurrent dependency graph changes can return 409 `DEPENDENCY_GRAPH_CHANGED`; reload and retry the whole operation, including a plan if the write belongs to one. All relationship writes, including both removal endpoints, share this protection so duplicate checks, activity and release notifications use a consistent relationship type and direction. Plans take the graph guard before their first row during rehearsal, execution and undo. Issue status/project changes, status events and deletion take the same guard before writing issue rows, so concurrent releases cannot leave unblocked work idle; automatic parent/stage completion retains it. Creation, parent/stage changes and restoration share this protection; independent creates without waits lock without changing the graph revision and do not conflict with each other; restoring a deleted issue can be rejected with `DEPENDENCY_CYCLE`. Issue detail carries `subtasks`, `blockedBy`, `blocks`, `relatedTo`, `blockers` and `hiddenBlockerCount`; list items `subtaskCount` and `blockedCount`. Finishing an issue releases the issues waiting on it (`dependency_released` notice) and tells the parent's owner when a stage or all sub-issues finish (`batch_done`, and the `onSubtasksFinished` trigger); the parent's status does not move on its own.
 - Comments (`/api/projects/issues/{issueId}/comments`, `/api/projects/comments/{commentId}…`): posting, replying and resolving need
   `pm.issues` `comment`; only the author edits a comment (403 otherwise); deleting another's needs
   `moderate-comments`. Content is 1 to 200,000 characters (400 `INVALID_COMMENT`); a reply's parent must be a comment of the
@@ -126,7 +95,7 @@ approve|reject` (403 `NOT_APPROVER`) and `/withdraw` (403 `NOT_REQUESTER`) decid
 
 ## Verification
 
-Work handlers receive the original optional `actor` on `onOwnerChanged`, `onUnblocked` and `onSubtasksFinished`, including `actor.trace.runId` when supplied. Status rule conditions and entry actions receive optional `sourceActor` for the original cause (including its full trace); `actor` remains the identity used by the workflow for permissions, so event moves still use `system`. For ordinary moves, `sourceActor` equals `actor`. Use `sourceActor` to attribute work started by a rule, and pass the real actor when firing workflow events; omitted event actors default to the system.
+Work handlers receive the original optional `actor` on `onOwnerChanged`, `onUnblocked` and `onSubtasksFinished`, including `actor.trace.runId` when supplied. A status event moves as the system but records the actor it was fired with; pass the real actor when firing one, since an omitted actor defaults to the system.
 
 `GET /api/projects/me` as a signed-in user returns 200 with `permissions`; `POST /api/projects/issues` with a `title` returns 201
 with an identifier such as `PM-1`.

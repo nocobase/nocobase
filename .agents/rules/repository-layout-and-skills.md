@@ -1,0 +1,35 @@
+# Repository Layout and Repository Skills
+
+Read this before adding a package, deciding which directory a package belongs in, or adding or editing a Skill under `skills/`.
+
+## Repository Layout
+
+Every published package lives under `packages/`, grouped into seven directories by what the package is. The grouping is a convention for readers: pnpm resolves packages by name, so which directory a package sits in changes nothing about how it is depended on or filtered.
+
+| Directory             | What belongs here                                                                                                             |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `packages/libs/`      | Runtime libraries that solve one problem and know nothing about NocoBase applications, such as `caching`, `drive`, and `i18n` |
+| `packages/app/`       | The application runtime itself — what an application is built out of, such as `app-server`, `app-client`, and `app-cli`       |
+| `packages/plugins/`   | Application plugins that ship as product features, such as `app-plugin-authentication`                                        |
+| `packages/examples/`  | Application plugins that exist to demonstrate a capability, such as `app-plugin-routes-example`                               |
+| `packages/templates/` | Complete applications that `create-app` scaffolds from: `app-template-default` and `app-template-examples`                    |
+| `packages/apps/`      | Complete product applications this repository builds and deploys itself; none at present                                      |
+| `packages/tools/`     | Development and build tooling that never ships inside an application, such as `dev-config`, `create-app`, and `create-plugin` |
+
+`packages/README.md` describes each directory in more detail and is the place to look when a new package does not obviously belong to one of them. `pnpm plugin:create` scaffolds into `packages/plugins/`.
+
+`docs/` and `ui-library/` are the workspace members outside `packages/`, and the exceptions to the table above. `docs/` is the documentation site rather than something an application depends on, so it sits at the repository root rather than under `packages/`, and like `ui-library/` it sets `private: true`. That placement is what keeps both out of `pnpm pack:check`, which discovers publishable packages by descending into `packages/<category>/` and would otherwise reject them for being private. See the "Documentation Site" section below before changing anything under `docs/`.
+
+## Repository Skills
+
+This repository's Skills are committed under the root `skills/` directory, and nowhere else. Agents do not read that path on their own — most look in `.agents/skills/`, and Claude Code discovers Skills only under `~/.claude/skills/` and `<project>/.claude/skills/` — so `pnpm install` runs `scripts/sync-skills.mjs`, which links each Skill in `skills/` into both `.agents/skills/` and `.claude/skills/` as a relative symbolic link. Both directories are therefore generated and ignored, and editing a Skill through any of the three paths edits the same committed file. `nocobase skills sync` sets up a similar arrangement inside a generated application, with two differences: an application's Skills come from its installed packages rather than being written by hand, and they are copied into `.agents/skills/`, which the next sync replaces wholesale, while only `.claude/skills/` holds links to those copies.
+
+Because a Skill is read through links one directory deeper than where it is committed, a relative Markdown link from a Skill into the rest of the repository resolves differently depending on the path it was opened through. Refer to repository files by their path from the repository root in a code span, such as `packages/app/app-cli/src/lib/skills-sync.ts`, and keep relative links for files inside the Skill itself.
+
+`skills/` holds two kinds of Skill. `nocobase-app-plugin-development` is for developing plugins in a NocoBase 3 source workspace: this checkout links it, and it can also be installed globally with `npx skills@latest add nocobase/skills-v3 --skill nocobase-app-plugin-development -g`, so it must not depend on a relative link into the repository. `nocobase-create-app` is installed globally by users, so that an agent knows how to reach NocoBase 3 before any application exists, with `npx skills@latest add nocobase/skills-v3 --skill nocobase-create-app -g`; the lightweight distribution mirrors `v3-develop/skills/`, while `--skill` names the selection explicitly. The plugin Skill uses the same name in source and distribution, avoiding the V2 global name `nocobase-plugin-development`. `nocobase-app-installer`, installed from its own directory the same way with `--skill nocobase-app-installer`, is its counterpart for the machine that runs NocoBase: `nocobase-create-app` creates a project to develop, `nocobase-app-installer` installs a built application from its deployment archive and upgrades it. Before merging a change to a global Skill, try it against the unreleased checkout with `pnpm unreleased:*`, as [skills/README.md](../../skills/README.md) describes: the published packages cannot show whether a Skill works with behavior that has not been released yet.
+
+Every Skill in `skills/` is released by merging, not by publishing. The documented `nocobase/skills-v3` distribution automatically mirrors `v3-develop/skills/` after changes land, so users receive a merged Skill after synchronization, while `pnpm create @nocobase/app` installs whatever version was last published to npm. A global Skill may therefore describe only behavior that has already been released: a change that documents a new command or flag waits until the release that ships it, and says so in its pull request. Nothing enforces this — `scripts/require-changesets.mjs` looks only at `packages/`, and there is no version to bump. Keep such a Skill to the entry point and hand over to the application's own `AGENTS.md` and `.agents/skills/` as soon as the application exists, because those are synchronized from the installed version and a global Skill is not.
+
+Skills written for generated applications, such as `nocobase-deployment` and `nocobase-app-development`, are not linked here. They live in `packages/app/app-skills/skills/` so that `nocobase skills sync` delivers them to every application, and they describe work done inside an application rather than on this repository. Editing one is a change to `@nocobase/app-skills` and needs a changeset.
+
+The sync never replaces a path that is not a symbolic link, so a Skill you keep only in `.agents/skills/` or `.claude/skills/` is reported and left alone rather than deleted, and a link whose Skill is gone from `skills/` is removed. It also never fails the install: a warning is enough, because the Skills are still readable where they are committed. Adding or removing a Skill takes effect on the next `pnpm install`, or immediately with `node ./scripts/sync-skills.mjs`.

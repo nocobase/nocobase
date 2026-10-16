@@ -11,14 +11,32 @@ import RegisterPage from '../../client/pages/auth/register.js';
 import ResetPasswordPage from '../../client/pages/auth/reset-password.js';
 import { Loading } from '../../client/components/loading.js';
 
+const resetState = vi.hoisted(() => ({
+  success: false,
+  available: true,
+  pending: false,
+  failed: false,
+  retry: vi.fn(),
+}));
+
 vi.mock('@nocobase/app-plugin-authentication/client', () => ({
   useSignUpAvailable: () => true,
+  usePasswordResetCapability: () => ({
+    data: { passwordResetAvailable: resetState.available },
+    isPending: resetState.pending,
+    isError: resetState.failed,
+    refetch: resetState.retry,
+  }),
 }));
 
 vi.mock('@nocobase/app-plugin-authentication/client/actions', () => ({
   usePasswordLogin: () => ({ isPending: false, submit: vi.fn() }),
   usePasswordRegistration: () => ({ isPending: false, submit: vi.fn() }),
-  usePasswordReset: () => ({ isPending: false, submit: vi.fn() }),
+  usePasswordReset: () => ({
+    isPending: false,
+    isSuccess: resetState.success,
+    submit: vi.fn(),
+  }),
   usePasswordResetRequest: () => ({
     isPending: false,
     isSuccess: true,
@@ -43,6 +61,46 @@ function renderPage(value: I18nRuntime, page: ReactElement) {
   );
 }
 describe('authentication translations', () => {
+  it('shows translated success and stops offering a second reset', async () => {
+    resetState.success = true;
+    try {
+      const value = await runtime();
+      renderPage(value, <ResetPasswordPage />);
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your password has been reset.',
+      );
+      expect(screen.queryByLabelText('New password')).not.toBeInTheDocument();
+      await act(() => value.changeLanguage('zh-CN'));
+      expect(screen.getByRole('status')).toHaveTextContent(
+        '密码已重置，请用新密码登录。',
+      );
+    } finally {
+      resetState.success = false;
+    }
+  });
+  it('hides the form when capability is disabled and allows retry after a failed lookup', async () => {
+    resetState.available = false;
+    try {
+      const value = await runtime();
+      const view = renderPage(value, <ResetPasswordPage />);
+      expect(screen.queryByLabelText('New password')).not.toBeInTheDocument();
+      resetState.failed = true;
+      view.rerender(
+        <I18nProvider runtime={value}>
+          <MemoryRouter>
+            <ResetPasswordPage />
+          </MemoryRouter>
+        </I18nProvider>,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+      expect(resetState.retry).toHaveBeenCalledOnce();
+    } finally {
+      resetState.available = true;
+      resetState.failed = false;
+      resetState.retry.mockReset();
+    }
+  });
+
   it('updates the login page, brand panel and visibility control on language change', async () => {
     const value = await runtime();
     renderPage(value, <LoginPage />);

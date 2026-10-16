@@ -1,3 +1,4 @@
+import { commercialDatabaseNotice } from './commercial-database.js';
 import * as clack from '@clack/prompts';
 
 import type { OfficialDialect } from '@nocobase/app-server/database';
@@ -21,7 +22,12 @@ export async function selectDialect(
 ): Promise<OfficialDialect> {
   const choice = await clack.select({
     message: 'Which database should the main connection use?',
-    options: available.map((dialect) => ({ value: dialect, label: dialect })),
+    options: available.map((dialect) => ({
+      value: dialect,
+      label: commercialDatabaseNotice(dialect)
+        ? `${dialect} (Pro · Commercial)`
+        : dialect,
+    })),
   });
 
   if (clack.isCancel(choice)) {

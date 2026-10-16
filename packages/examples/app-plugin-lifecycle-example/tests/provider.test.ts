@@ -29,6 +29,7 @@ import { LifecycleExampleProvider } from '../server/providers/lifecycle-example.
 import { apiRoutes } from '../server/routes/index.js';
 import {
   durableFlowServiceToken,
+  parameterConfigurationServiceToken,
   lifecycleExampleServiceToken,
 } from '../server/tokens.js';
 import { SIGNATURE_HEADER } from '../server/webhooks/receiver.js';
@@ -38,6 +39,389 @@ import { test } from './fixtures.js';
 let directory: string;
 
 const logger = { info: () => {}, warn: () => {}, error: () => {} };
+
+describe('parameter configuration against the real repository', () => {
+  test('searches one scoped reference type and pages newly added active users', async ({
+    database,
+  }) => {
+    const running = await start(database);
+    try {
+      const config = running.container.resolve(
+        parameterConfigurationServiceToken,
+      );
+      const people = database.repository('lifecycleExamplePeople');
+      for (let index = 0; index < 23; index++)
+        await people.createOne({
+          values: {
+            id: `search-${index}`,
+            scope: 'demo',
+            name: `Search Person ${String(index).padStart(2, '0')}`,
+            active: true,
+          },
+        });
+      await people.createOne({
+        values: {
+          id: 'search-private',
+          scope: 'other',
+          name: 'Search Person private',
+          active: true,
+        },
+      });
+      await people.createOne({
+        values: {
+          id: 'search-disabled',
+          scope: 'demo',
+          name: 'Search Person disabled',
+          active: false,
+        },
+      });
+      expect((await config.references('zhao', 'user', '   ')).data).toEqual([]);
+      const first = await config.references('zhao', 'user', 'Search Person');
+      const second = await config.references(
+        'zhao',
+        'user',
+        'Search Person',
+        2,
+      );
+      const last = await config.references('zhao', 'user', 'Search Person', 3);
+      expect(first.meta).toEqual({ page: 1, pageSize: 10, total: 23 });
+      expect(first.data).toHaveLength(10);
+      expect(second.data).toHaveLength(10);
+      expect(last.data).toHaveLength(3);
+      expect(
+        new Set([...first.data, ...second.data, ...last.data].map((p) => p.id))
+          .size,
+      ).toBe(23);
+      expect(
+        (await config.references('zhao', 'department', 'Search Person')).data,
+      ).toEqual([]);
+      expect(
+        (await config.references('zhao', 'user', 'Search Person', 1, 100)).data,
+      ).toHaveLength(10);
+      expect(await config.reference('zhao', 'user', 'search-22')).toMatchObject(
+        { name: 'Search Person 22' },
+      );
+      expect(
+        await config.reference('zhao', 'user', 'search-private'),
+      ).toBeNull();
+      expect(
+        await config.reference('zhao', 'user', 'search-disabled'),
+      ).toMatchObject({ active: false });
+      expect(() => config.authorize('lin', 'candidates')).toThrow();
+    } finally {
+      await running.stop();
+    }
+  });
+  test('retains every usage fact when string identities share a pagination timestamp', async ({
+    database,
+  }) => {
+    const running = await start(database);
+    try {
+      const config = running.container.resolve(
+        parameterConfigurationServiceToken,
+      );
+      const record = await config.createReview('reviewerDemo', 'lin');
+      for (let index = 0; index < 105; index++)
+        await config.store.saveUsage({
+          scope: 'demo',
+          lifecycle: 'reviewerDemo',
+          recordId: record.id,
+          kind: 'action',
+          associationId: 'pagination-' + index,
+          values: { observed: index },
+          sources: {},
+          at: '2026-10-01T00:00:00.000Z',
+        });
+      const facts = await config.store.listUsage(
+        'demo',
+        'reviewerDemo',
+        record.id,
+      );
+      expect(
+        facts.filter((fact) => fact.associationId.startsWith('pagination-')),
+      ).toHaveLength(105);
+    } finally {
+      await running.stop();
+    }
+  });
+  test('validates complete versions, CAS, request replay, permissions and scope', async ({
+    database,
+  }) => {
+    const running = await start(database);
+    try {
+      const config = running.container.resolve(
+        parameterConfigurationServiceToken,
+      );
+      const values = { autoApproveLimit: 100, financeLimit: 1000 };
+      expect(await config.read('expenseThresholds', 'lin')).toMatchObject({
+        revision: 0,
+        canUpdate: false,
+      });
+      expect(
+        await config.save('expenseThresholds', values, 0, 'save-1', 'zhao'),
+      ).toMatchObject({ revision: 1, values });
+      expect(
+        await config.save('expenseThresholds', values, 0, 'save-1', 'zhao'),
+      ).toMatchObject({ revision: 1 });
+      await expect(
+        config.save('expenseThresholds', values, 0, 'save-2', 'zhao'),
+      ).rejects.toMatchObject({ code: 'CONFIGURATION_CONFLICT' });
+      await expect(
+        config.save(
+          'expenseThresholds',
+          { ...values, financeLimit: 2000 },
+          1,
+          'save-1',
+          'zhao',
+        ),
+      ).rejects.toMatchObject({ code: 'CONFIGURATION_REQUEST_REUSED' });
+      await expect(
+        config.save(
+          'expenseThresholds',
+          { ...values, waitMinutes: 2 },
+          1,
+          'unknown',
+          'zhao',
+        ),
+      ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' });
+      await expect(
+        config.save(
+          'expenseThresholds',
+          { autoApproveLimit: 2000, financeLimit: 1000 },
+          1,
+          'invalid',
+          'zhao',
+        ),
+      ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' });
+      await expect(
+        config.save('expenseThresholds', values, 1, 'forbidden', 'lin'),
+      ).rejects.toMatchObject({ reason: 'PARAMETER_ACCESS_DENIED' });
+      expect(
+        await config.store.read('other-scope', 'expenseThresholds'),
+      ).toBeUndefined();
+      expect(
+        await database.repository('lifecycleExampleParameterVersions').count(),
+      ).toBe(1);
+    } finally {
+      await running.stop();
+    }
+  });
+
+  test('previews drafts and preserves a submitted snapshot after configuration changes and replay', async ({
+    database,
+  }) => {
+    const running = await start(database);
+    try {
+      const config = running.container.resolve(
+        parameterConfigurationServiceToken,
+      );
+      const service = running.container.resolve(lifecycleExampleServiceToken);
+      const record = await service.createExpense(
+        {
+          title: 'Snapshot',
+          purpose: 'Travel',
+          items: [
+            {
+              date: '2026-10-12',
+              category: 'transport',
+              description: 'Travel',
+              amountCents: 200000,
+            },
+          ],
+          failPayments: 0,
+        },
+        'lin',
+      );
+      const id = String(record.id);
+      await config.save(
+        'expenseThresholds',
+        { autoApproveLimit: 100, financeLimit: 3000 },
+        0,
+        'before-submit',
+        'zhao',
+      );
+      expect(
+        (await service.runtime.view('expenses', id, { id: 'lin' }))
+          .parameterValues,
+      ).toMatchObject({ financeLimit: 3000 });
+      expect(
+        await config.store.snapshot('demo', 'expenses', id),
+      ).toBeUndefined();
+      await service.runtime.fire('expenses', id, 'submit', {
+        actor: { id: 'lin' },
+        input: {},
+        requestId: 'submit-once',
+      });
+      await config.save(
+        'expenseThresholds',
+        { autoApproveLimit: 100, financeLimit: 1000 },
+        1,
+        'after-submit',
+        'zhao',
+      );
+      await service.runtime.fire('expenses', id, 'submit', {
+        actor: { id: 'lin' },
+        input: {},
+        requestId: 'submit-once',
+      });
+      const history = await config.history('expenses', id, 'lin');
+      expect(history.snapshot?.values).toEqual({
+        autoApproveLimit: 100,
+        financeLimit: 3000,
+      });
+      expect(history.current).toMatchObject({ financeLimit: 3000 });
+      expect(
+        history.usages.filter(
+          (usage) =>
+            usage.kind === 'transition' && usage.values.financeLimit === 3000,
+        ),
+      ).toHaveLength(1);
+      expect(
+        (await config.read('expenseThresholds', 'lin')).values.financeLimit,
+      ).toBe(1000);
+      await service.runtime.fire('expenses', id, 'withdraw', {
+        actor: { id: 'lin' },
+        input: {},
+      });
+      await service.runtime.fire('expenses', id, 'submit', {
+        actor: { id: 'lin' },
+        input: {},
+      });
+      expect(
+        (await service.runtime.view('expenses', id, { id: 'lin' }))
+          .parameterValues,
+      ).toMatchObject({ financeLimit: 3000 });
+      await service.runtime.prune({ olderThan: '2099-01-01T00:00:00.000Z' });
+      expect(
+        (await config.history('expenses', id, 'lin')).snapshot?.values
+          .financeLimit,
+      ).toBe(3000);
+      expect(
+        (await config.history('expenses', id, 'lin')).usages.length,
+      ).toBeGreaterThan(1);
+    } finally {
+      await running.stop();
+    }
+  });
+
+  test('stores flat rules, filters candidates and retains rules rather than organization membership', async ({
+    database,
+  }) => {
+    const running = await start(database);
+    try {
+      const config = running.container.resolve(
+        parameterConfigurationServiceToken,
+      );
+      const rule = {
+        reviewerRule: [
+          { group: 1, type: 'department', referenceId: 'finance-one' },
+          { group: 1, type: 'role', referenceId: 'reviewer' },
+          { group: 2, type: 'user', referenceId: 'lin' },
+          { group: 3, type: 'user', referenceId: 'disabled' },
+        ],
+      };
+      await config.save('financeReviewers', rule, 0, 'rule-1', 'zhao');
+      expect(await config.candidates(rule, 'lin', 'zhao')).toEqual(['zhao']);
+      expect(
+        await database
+          .repository('lifecycleExampleParameterSelections')
+          .count(),
+      ).toBe(4);
+      const snapshot = await config.createReview('reviewerDemo', 'lin');
+      const live = await config.createReview('reviewerLiveDemo', 'lin');
+      for (const [name, record] of [
+        ['reviewerDemo', snapshot],
+        ['reviewerLiveDemo', live],
+      ] as const) {
+        await config.runtime.fire(name, record.id, 'submit', {
+          actor: { id: 'lin' },
+          input: {},
+        });
+        expect(
+          (await config.runtime.view(name, record.id, { id: 'zhao' })).record
+            .candidates,
+        ).toEqual(['zhao']);
+      }
+      await config.save(
+        'financeReviewers',
+        {
+          reviewerRule: [
+            { group: 1, type: 'department', referenceId: 'finance-two' },
+            { group: 1, type: 'role', referenceId: 'reviewer' },
+          ],
+        },
+        1,
+        'rule-2',
+        'zhao',
+      );
+      await database.repository('lifecycleExampleMemberships').createOne({
+        values: {
+          id: 'wang-finance',
+          scope: 'demo',
+          userId: 'wang',
+          departmentId: 'finance-one',
+          roleId: 'reviewer',
+        },
+      });
+      expect(
+        (await config.runtime.view('reviewerDemo', snapshot.id, { id: 'wang' }))
+          .record.candidates,
+      ).toEqual(['zhao']);
+      for (const [name, record] of [
+        ['reviewerDemo', snapshot],
+        ['reviewerLiveDemo', live],
+      ] as const) {
+        await config.runtime.fire(name, record.id, 'withdraw', {
+          actor: { id: 'lin' },
+          input: {},
+        });
+        await config.runtime.fire(name, record.id, 'submit', {
+          actor: { id: 'lin' },
+          input: {},
+        });
+      }
+      expect(
+        (await config.runtime.view('reviewerDemo', snapshot.id, { id: 'zhao' }))
+          .record.candidates,
+      ).toEqual(['wang', 'zhao']);
+      expect(
+        (await config.runtime.view('reviewerLiveDemo', live.id, { id: 'sun' }))
+          .record.candidates,
+      ).toEqual(['sun']);
+      const outcomes = await Promise.allSettled(
+        ['wang', 'zhao'].map((id) =>
+          config.runtime.fire('reviewerDemo', snapshot.id, 'approve', {
+            actor: { id },
+            input: {},
+          }),
+        ),
+      );
+      expect(
+        outcomes.filter((outcome) => outcome.status === 'fulfilled'),
+      ).toHaveLength(1);
+      expect(
+        (
+          await config.runtime.view('reviewerDemo', snapshot.id, { id: 'lin' })
+        ).history.transitions.filter((entry) => entry.transition === 'approve'),
+      ).toHaveLength(1);
+      await database.repository('lifecycleExampleDepartments').createOne({
+        values: { id: 'foreign', scope: 'foreign', name: 'Foreign' },
+      });
+      for (const referenceId of ['foreign', 'nonexistent'])
+        await expect(
+          config.save(
+            'financeReviewers',
+            { reviewerRule: [{ group: 1, type: 'department', referenceId }] },
+            2,
+            referenceId,
+            'zhao',
+          ),
+        ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' });
+    } finally {
+      await running.stop();
+    }
+  });
+});
 
 beforeEach(async () => {
   directory = await mkdtemp(path.join(os.tmpdir(), 'lifecycle-example-'));
@@ -487,6 +871,69 @@ describe('durable flows on the provider', () => {
   });
 });
 
+describe('invoice provider integration', () => {
+  test('creates through the authenticated API, rejects duplicates, and delivers a downloadable result', async ({
+    database,
+  }) => {
+    const { container, app, stop } = await start(database, (services) =>
+      services.instance(authenticationToken, {
+        required: () => async (context, next) => {
+          context.set('auth', { user: { id: 'user-1' } });
+          await next();
+        },
+      } as unknown as Auth),
+    );
+    try {
+      const router = await apiRoutes.createRouter(app);
+      const flows = container.resolve(durableFlowServiceToken);
+      const body = {
+        orderRef: '1024',
+        title: 'Example company',
+        taxNumber: '91310000MA1K000001',
+      };
+      const create = () =>
+        router.request('/lifecycleExample/invoices', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+      const response = await create();
+      expect(response.status).toBe(201);
+      const created = (await response.json()) as {
+        data: { id: string; amountCents: number };
+      };
+      expect(created.data.amountCents).toBe(39900);
+      expect((await create()).status).toBe(409);
+      const id = String(created.data.id);
+      expect(
+        (await router.request(`/lifecycleExample/invoices/${id}/pdf`)).status,
+      ).toBe(404);
+      await flows.runtime.fire('invoices', id, 'submit', {
+        actor: { id: 'user-1' },
+      });
+      const waiting = await eventually(
+        () => flows.runtime.view('invoices', id, { id: 'user-1' }),
+        (view) => view.record.status === 'awaitingIssue',
+      );
+      expect(waiting.record.providerRequestId).toMatch(/^inv_/);
+      const completed = await router.request(
+        `/lifecycleExample/sandbox/invoices/${id}/complete`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ outcome: 'issued', hold: false }),
+        },
+      );
+      expect(completed.status).toBe(201);
+      const pdf = await router.request(`/lifecycleExample/invoices/${id}/pdf`);
+      expect(pdf.status).toBe(200);
+      expect(await pdf.text()).toContain('SANDBOX INVOICE');
+    } finally {
+      await stop();
+    }
+  });
+});
+
 describe('sample data', () => {
   test('builds sample records through the lifecycles when an install asks for it', async ({
     database,
@@ -505,11 +952,12 @@ describe('sample data', () => {
         enabled: true,
       });
       expect(await samples.run()).toMatchObject({
-        executed: ['lifecycle-example/records'],
+        executed: ['lifecycle-example/records', 'lifecycle-example/invoices'],
         failed: [],
       });
       expect(recorded).toEqual([
         'sample-data:lifecycle-example/records:executed',
+        'sample-data:lifecycle-example/invoices:executed',
       ]);
 
       const examples = container.resolve(lifecycleExampleServiceToken);
@@ -554,6 +1002,7 @@ describe('sample data', () => {
       const flows = container.resolve(durableFlowServiceToken);
       const statuses = async (flow: Parameters<typeof flows.list>[0]) =>
         (await flows.list(flow, page)).records.map((record) => record.status);
+      expect(await statuses('invoices')).toEqual(['draft', 'draft', 'draft']);
       expect(await statuses('orders')).toEqual(['draft', 'draft']);
       expect(await statuses('exports')).toEqual(['draft', 'draft']);
       expect(await statuses('purchases')).toEqual(['draft', 'draft']);

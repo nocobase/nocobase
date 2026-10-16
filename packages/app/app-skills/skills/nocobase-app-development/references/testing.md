@@ -16,15 +16,16 @@ Templates ship their tests into generated applications. Keep them runnable from 
 
 ## What to test, by change
 
-| You changed      | Test at least                                                                                                                     |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| A server route   | Anonymous → `401`, authenticated but unpermitted → `403`, permitted → expected payload; the route is declared in the API document |
-| A public webhook | Missing signature, invalid signature, valid signature, duplicate delivery                                                         |
-| A migration      | `up` produces the expected schema; `down` reverses it; against a real database                                                    |
-| A seed           | First run, run against existing data, repeat run                                                                                  |
-| A service        | Its domain behavior, with its dependencies supplied directly                                                                      |
-| A job            | `execute()` with a realistic payload; a second run is harmless; failures behave as intended                                       |
-| Frontend code    | See [frontend tests](frontend/references/testing.md): pages, components, route declarations, copy                                 |
+| You changed           | Test at least                                                                                                                           |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| A server route        | Anonymous → `401`, authenticated but unpermitted → `403`, permitted → expected payload; the route is declared in the API document       |
+| A list or stats route | Its query count does not grow with the number of rows or groups: count the reads for a few rows and for many, and assert they are equal |
+| A public webhook      | Missing signature, invalid signature, valid signature, duplicate delivery                                                               |
+| A migration           | `up` produces the expected schema; `down` reverses it; against a real database                                                          |
+| A seed                | First run, run against existing data, repeat run                                                                                        |
+| A service             | Its domain behavior, with its dependencies supplied directly                                                                            |
+| A job                 | `execute()` with a realistic payload; a second run is harmless; failures behave as intended                                             |
+| Frontend code         | See [frontend tests](frontend/references/testing.md): pages, components, route declarations, copy                                       |
 
 ## Testing a route
 
@@ -140,6 +141,8 @@ Then verify the affected behavior, selecting only the applicable steps below. Gr
 - For a frontend change, verify as [the frontend workflow](frontend/ui-workflow.md) prescribes for the workflow it took: a quick change runs the static checks and the related tests and looks at the changed element once in the browser; a theme change runs the theme tests and its browser check; the full workflow ends with its acceptance review.
 - Confirm the endpoint's responses for signed-out, unpermitted, and permitted callers.
 - Confirm `pnpm nocobase db apply` applies cleanly.
+
+When a change is about performance, or adds a list, a statistic or a frequently called endpoint, measure it in a realistic environment: the database the application is actually deployed on, with a realistic data volume. A small data set hides slow queries and missing indexes, and SQLite's costs differ from those of a database server, so a timing on one says little about another. After release, consider each endpoint's call count multiplied by its duration rather than a single measurement: a cheap endpoint called constantly can cost more than a slow one called rarely.
 
 ## Reporting
 

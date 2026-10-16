@@ -73,11 +73,16 @@ interface PostgresCollectionRow {
   readonly relkind: string;
   readonly comment: string | null;
   readonly view_definition: string | null;
+  readonly has_inherited_children?: boolean;
+  readonly columns: PostgresColumnRow[];
+  readonly constraints: PostgresConstraintRow[];
+  readonly indexes: PostgresIndexRow[];
 }
 
 interface PostgresColumnRow {
   readonly collation: string | null;
   readonly collation_schema: string | null;
+  readonly collation_oid: number;
   readonly character_set: string | null;
   readonly attnum: number;
   readonly column_name: string;
@@ -109,6 +114,7 @@ interface PostgresIndexRow {
   readonly index_oid: string | number;
   readonly index_name: string;
   readonly unique: boolean;
+  readonly valid: boolean;
   readonly primary: boolean;
   readonly method: string;
   readonly predicate: string | null;
@@ -116,8 +122,11 @@ interface PostgresIndexRow {
   readonly attribute_count: number;
   readonly attribute_numbers: string;
   readonly options: string;
+  readonly collation_oids: string;
+  readonly column_equalities: boolean[];
   readonly constraint_name: string | null;
   readonly constraint_type: 'p' | 'u' | null;
+  readonly definitions: (string | null)[];
 }
 
 export interface PostgresSchemaInspectorOptions {
@@ -163,40 +172,9 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
       return undefined;
     }
 
-    const rawColumns = rawRows<PostgresColumnRow>(
-      await knex.raw(
-        `
-          select
-            a.attnum,
-            a.attname as column_name,
-            pg_catalog.format_type(a.atttypid, a.atttypmod) as native_type,
-            t.typname as native_type_name,
-            tn.nspname as native_type_schema,
-            co.collname as collation,
-            cn.nspname as collation_schema,
-            case when t.typcategory = 'S' then current_setting('server_encoding') end as character_set,
-            not a.attnotnull as nullable,
-            pg_catalog.pg_get_expr(ad.adbin, ad.adrelid) as default_expression,
-            a.attidentity as identity_kind,
-            a.attgenerated as generated_kind,
-            pg_catalog.col_description(a.attrelid, a.attnum) as comment
-          from pg_catalog.pg_attribute a
-          join pg_catalog.pg_type t on t.oid = a.atttypid
-          join pg_catalog.pg_namespace tn on tn.oid = t.typnamespace
-          left join pg_catalog.pg_collation co on co.oid = a.attcollation
-          left join pg_catalog.pg_namespace cn on cn.oid = co.collnamespace
-          left join pg_catalog.pg_attrdef ad
-            on ad.adrelid = a.attrelid and ad.adnum = a.attnum
-          where a.attrelid = ?::oid
-            and a.attnum > 0
-            and not a.attisdropped
-          order by a.attnum
-        `,
-        [collection.oid],
-      ),
-    );
-    const constraints = await this.readConstraints(knex, collection.oid);
-    const indexes = await this.readIndexes(knex, collection.oid, rawColumns);
+    const rawColumns = collection.columns;
+    const constraints = collection.constraints;
+    const indexes = this.resolveIndexes(collection.indexes, rawColumns);
     const primary = constraints.find(
       (constraint) => constraint.constraint_type === 'p',
     );
@@ -205,6 +183,7 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
       schema: collection.schema,
       tableName: collection.table_name,
       kind: postgresKind(collection.relkind),
+      hasInheritedChildren: collection.has_inherited_children || undefined,
       comment: optionalString(collection.comment),
       viewDefinition: optionalString(collection.view_definition),
       columns: rawColumns.map((column) => {
@@ -257,6 +236,8 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
         ? {
             name: primary.constraint_name,
             columns: primary.columns,
+            deferrable: primary.deferrable,
+            initiallyDeferred: primary.initially_deferred,
           }
         : undefined,
       uniqueConstraints: constraints
@@ -385,14 +366,26 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
       schemaPredicate = 'n.nspname = ?';
       bindings.push(identifier.schema);
     }
-    return rawRows<PostgresCollectionRow>(
-      await knex.raw(
-        `
+    // Inspect every aspect in one statement on the caller's connection. This
+    // retains transaction snapshots and raw DDL detection without per-aspect
+    // round trips (or per-expression index queries).
+    const oid = knex.ref('collection.oid');
+    const rows = await knex
+      .from(
+        knex
+          .raw(
+            `
           select
             c.oid,
             n.nspname as schema,
             c.relname as table_name,
             c.relkind,
+            exists (
+              select 1
+              from pg_catalog.pg_inherits i
+              join pg_catalog.pg_class child on child.oid = i.inhrelid
+              where i.inhparent = c.oid and not child.relispartition
+            ) as has_inherited_children,
             pg_catalog.obj_description(c.oid, 'pg_class') as comment,
             case when c.relkind in ('v', 'm')
               then pg_catalog.pg_get_viewdef(c.oid, true)
@@ -408,18 +401,55 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
             and has_schema_privilege(n.oid, 'USAGE')
           limit 1
         `,
-        bindings,
-      ),
-    )[0];
+            bindings,
+          )
+          .wrap('(', ') as collection'),
+      )
+      .select('collection.*', {
+        columns: catalogRows(knex, this.columnsQuery(knex, oid)),
+        constraints: catalogRows(knex, this.constraintsQuery(knex, oid)),
+        indexes: catalogRows(knex, this.indexesQuery(knex, oid)),
+      });
+    return (rows as PostgresCollectionRow[])[0];
   }
 
-  private async readConstraints(
-    knex: Knex,
-    collectionOid: string | number,
-  ): Promise<PostgresConstraintRow[]> {
-    const rows = rawRows<PostgresConstraintRow>(
-      await knex.raw(
-        `
+  private columnsQuery(knex: Knex, collectionOid: Knex.Raw): Knex.Raw {
+    return knex.raw(
+      `
+          select
+            a.attnum,
+            a.attname as column_name,
+            pg_catalog.format_type(a.atttypid, a.atttypmod) as native_type,
+            t.typname as native_type_name,
+            tn.nspname as native_type_schema,
+            co.collname as collation,
+            cn.nspname as collation_schema,
+            a.attcollation as collation_oid,
+            case when t.typcategory = 'S' then current_setting('server_encoding') end as character_set,
+            not a.attnotnull as nullable,
+            pg_catalog.pg_get_expr(ad.adbin, ad.adrelid) as default_expression,
+            a.attidentity as identity_kind,
+            a.attgenerated as generated_kind,
+            pg_catalog.col_description(a.attrelid, a.attnum) as comment
+          from pg_catalog.pg_attribute a
+          join pg_catalog.pg_type t on t.oid = a.atttypid
+          join pg_catalog.pg_namespace tn on tn.oid = t.typnamespace
+          left join pg_catalog.pg_collation co on co.oid = a.attcollation
+          left join pg_catalog.pg_namespace cn on cn.oid = co.collnamespace
+          left join pg_catalog.pg_attrdef ad
+            on ad.adrelid = a.attrelid and ad.adnum = a.attnum
+          where a.attrelid = ?::oid
+            and a.attnum > 0
+            and not a.attisdropped
+          order by a.attnum
+        `,
+      [collectionOid],
+    );
+  }
+
+  private constraintsQuery(knex: Knex, collectionOid: Knex.Raw): Knex.Raw {
+    return knex.raw(
+      `
           select
             con.conname as constraint_name,
             con.contype as constraint_type,
@@ -454,31 +484,18 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
             and con.contype in ('p', 'u', 'f', 'c')
           order by con.conname
         `,
-        [collectionOid],
-      ),
+      [collectionOid],
     );
-    return rows.map((row) => ({
-      ...row,
-      columns: parsePostgresStringArray(row.columns),
-      referenced_columns:
-        row.referenced_columns === null
-          ? null
-          : parsePostgresStringArray(row.referenced_columns),
-    }));
   }
 
-  private async readIndexes(
-    knex: Knex,
-    collectionOid: string | number,
-    columns: readonly PostgresColumnRow[],
-  ): Promise<PhysicalIndexSchema[]> {
-    const rows = rawRows<PostgresIndexRow>(
-      await knex.raw(
-        `
+  private indexesQuery(knex: Knex, collectionOid: Knex.Raw): Knex.Raw {
+    return knex.raw(
+      `
           select
             i.indexrelid as index_oid,
             ic.relname as index_name,
             i.indisunique as unique,
+            (i.indisvalid and i.indisready) as valid,
             i.indisprimary as primary,
             am.amname as method,
             pg_catalog.pg_get_expr(i.indpred, i.indrelid) as predicate,
@@ -486,8 +503,30 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
             i.indnatts as attribute_count,
             i.indkey::text as attribute_numbers,
             i.indoption::text as options,
+            i.indcollation::text as collation_oids,
+            array(
+              select coalesce(opc.opcdefault and (
+                opc.opcintype = a.atttypid or (
+                  a.atttypid = 'pg_catalog.varchar'::regtype and
+                  opc.opcintype = 'pg_catalog.text'::regtype
+                )
+              ), false)
+              from unnest(i.indclass) with ordinality as classes(oid, position)
+              join pg_catalog.pg_opclass opc on opc.oid = classes.oid
+              left join pg_catalog.pg_attribute a
+                on a.attrelid = i.indrelid
+                and a.attnum = i.indkey[(classes.position - 1)::integer]
+              order by classes.position
+            ) as column_equalities,
             con.conname as constraint_name,
-            con.contype as constraint_type
+            con.contype as constraint_type,
+            array(
+              select case when i.indkey[position - 1] = 0
+                then pg_catalog.pg_get_indexdef(i.indexrelid, position, true)
+                else null end
+              from generate_series(1, i.indnkeyatts) as position
+              order by position
+            ) as definitions
           from pg_catalog.pg_index i
           join pg_catalog.pg_class ic on ic.oid = i.indexrelid
           join pg_catalog.pg_am am on am.oid = ic.relam
@@ -495,16 +534,25 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
           where i.indrelid = ?::oid
           order by ic.relname
         `,
-        [collectionOid],
-      ),
+      [collectionOid],
     );
+  }
+
+  private resolveIndexes(
+    rows: readonly PostgresIndexRow[],
+    columns: readonly PostgresColumnRow[],
+  ): PhysicalIndexSchema[] {
     const columnNames = new Map(
       columns.map((column) => [column.attnum, column.column_name]),
+    );
+    const columnCollations = new Map(
+      columns.map((column) => [column.attnum, Number(column.collation_oid)]),
     );
     const indexes: PhysicalIndexSchema[] = [];
     for (const row of rows) {
       const attributeNumbers = parsePostgresVector(row.attribute_numbers);
       const indexOptions = parsePostgresVector(row.options);
+      const indexCollations = parsePostgresVector(row.collation_oids);
       const keyCount = Number(row.key_count);
       const keys: PhysicalIndexKey[] = [];
       const includeColumns: string[] = [];
@@ -526,15 +574,20 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
         const nulls = (option & 2) === 2 ? 'first' : 'last';
         const columnName = columnNames.get(attributeNumber);
         if (attributeNumber !== 0 && columnName) {
-          keys.push({ columnName, order, nulls });
+          keys.push({
+            columnName,
+            order,
+            nulls,
+            // A default class for a different type (e.g. text_ops on citext)
+            // does not prove compatibility with the column's equality.
+            ...(row.column_equalities[position] === true &&
+            indexCollations[position] === columnCollations.get(attributeNumber)
+              ? {}
+              : { columnEquality: false }),
+          });
           continue;
         }
-        const definition = rawRows<{ definition: string }>(
-          await knex.raw(
-            'select pg_catalog.pg_get_indexdef(?::oid, ?, true) as definition',
-            [row.index_oid, position + 1],
-          ),
-        )[0]?.definition;
+        const definition = row.definitions[position];
         keys.push({
           expression: stripPostgresIndexOrdering(definition ?? '<unavailable>'),
           order,
@@ -546,6 +599,7 @@ export class PostgresSchemaInspector extends BaseSchemaInspector {
         keys,
         includeColumns: includeColumns.length > 0 ? includeColumns : undefined,
         unique: row.unique,
+        valid: row.valid,
         backsConstraint:
           row.constraint_type === 'p' || row.constraint_type === 'u'
             ? {
@@ -700,4 +754,12 @@ function parseTypeModifiers(nativeType: string): {
     return { precision: first, scale: second };
   }
   return { length: first };
+}
+
+/** JSON preserves catalog booleans, arrays and nulls while grouping each aspect. */
+function catalogRows(knex: Knex, query: Knex.Raw): Knex.Raw {
+  return knex.raw(
+    "coalesce((select json_agg(rows) from (?) as rows), '[]'::json)",
+    [query],
+  );
 }

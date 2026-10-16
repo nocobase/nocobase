@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { IntakeDraftProvider } from '../../client/kit/intake-draft.js';
 import { apiClientToken } from '@nocobase/app-client';
 import {
   AuthorizationClient,
@@ -29,6 +31,17 @@ import {
 import { permissionsOf } from '../permissions.js';
 
 beforeEach(() => window.localStorage.clear());
+function RemountableIntake() {
+  const [shown, setShown] = useState(true);
+  return (
+    <IntakeDraftProvider>
+      <button onClick={() => setShown((current) => !current)}>
+        Toggle intake route
+      </button>
+      {shown ? <NewIssuePage /> : <p>Chat route</p>}
+    </IntakeDraftProvider>
+  );
+}
 
 async function setup(
   locale = 'en-US',
@@ -73,7 +86,7 @@ async function setup(
         new QueryClient({ defaultOptions: { queries: { retry: false } } })
       }
     >
-      <NewIssuePage />
+      <RemountableIntake />
     </QueryClientProvider>,
     {
       namespace: '@nocobase/app-plugin-projects',
@@ -408,6 +421,81 @@ describe('requirements image paste', () => {
       );
     },
   );
+  it('restores the text and selected uploads after leaving and returning without automatically submitting', async () => {
+    const { box, requests } = await setup();
+    fireEvent.change(box, { target: { value: 'Keep the red card and retry' } });
+    paste(box, [new File(['image'], 'screen.png', { type: 'image/png' })]);
+    await screen.findByRole('button', { name: 'Preview screen.png' });
+    fireEvent.click(screen.getByText('Toggle intake route'));
+    expect(
+      screen.queryByRole('textbox', { name: 'Requirements' }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('Toggle intake route'));
+    expect(
+      await screen.findByRole('textbox', { name: 'Requirements' }),
+    ).toHaveValue('Keep the red card and retry');
+    expect(
+      screen.getByRole('button', { name: 'Preview screen.png' }),
+    ).toBeInTheDocument();
+    expect(
+      requests.mock.calls.some(
+        ([call]) => call.path === 'projects/intake/split',
+      ),
+    ).toBe(false);
+    fireEvent.click(screen.getByTestId('intake-split'));
+    await waitFor(() =>
+      expect(
+        requests.mock.calls.some(
+          ([call]) => call.path === 'projects/intake/split',
+        ),
+      ).toBe(true),
+    );
+    expect(
+      requests.mock.calls.find(
+        ([call]) => call.path === 'projects/intake/split',
+      )?.[0].json,
+    ).toMatchObject({ fileIds: ['f1'], text: 'Keep the red card and retry' });
+  });
+  it('reports a failed TXT upload and excludes it from the submitted files', async () => {
+    const { box, uploaded, requests } = await setup('en-US', {}, '', {
+      upload: async () => new Response(null, { status: 500 }),
+    });
+    fireEvent.change(box, { target: { value: 'Keep these requirements' } });
+    fireEvent.change(screen.getByTestId('intake-file-input'), {
+      target: {
+        files: [
+          new File(['PM307-UPLOAD: Owner filter'], 'notes.txt', {
+            type: 'text/plain',
+          }),
+        ],
+      },
+    });
+    expect(
+      await screen.findByText('Could not upload notes.txt.'),
+    ).toBeInTheDocument();
+    expect(uploaded).toHaveLength(1);
+    await waitFor(() =>
+      expect(screen.getByTestId('intake-split')).toBeEnabled(),
+    );
+    fireEvent.click(screen.getByTestId('intake-split'));
+    await waitFor(() =>
+      expect(
+        requests.mock.calls.some(
+          ([call]) => call.path === 'projects/intake/split',
+        ),
+      ).toBe(true),
+    );
+    expect(
+      requests.mock.calls.find(
+        ([call]) => call.path === 'projects/intake/split',
+      )?.[0].json,
+    ).toEqual({
+      text: 'Keep these requirements',
+      fileIds: [],
+      projectId: null,
+    });
+  });
+
   it.each([
     ['paste', 'en-US', ''],
     ['manual', 'zh-CN', '/studio'],

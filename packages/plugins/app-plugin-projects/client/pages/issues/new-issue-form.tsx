@@ -1,28 +1,42 @@
+import { useAttachmentUploads } from '../../hooks/use-attachment-uploads.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircleIcon } from 'lucide-react';
-import { type FormEvent, type ReactElement, useState } from 'react';
+import {
+  type FormEvent,
+  type ReactElement,
+  useState,
+  useEffect,
+  useRef,
+} from 'react';
 import { useNavigate } from 'react-router';
 
 import { PRIORITIES, type Priority } from '../../../shared/common.js';
+import { ISSUE_TITLE_MAX, type Executor } from '../../../shared/issues.js';
 import {
-  ISSUE_TITLE_MAX,
-  type Executor,
-  type IssueStartOption,
-} from '../../../shared/issues.js';
-import { INITIAL_STATUS, messageText } from '../../../shared/workflows.js';
+  BACKLOG_STATUS,
+  IN_PROGRESS_STATUS,
+} from '../../../shared/statuses.js';
 import { pmKeys } from '../../api/keys.js';
 import { PmExecutorSelect } from '../../components/pm-executor-select.js';
-import { PmRichTextEditor } from '../../components/pm-rich-text-editor.js';
+import {
+  PmRichTextEditor,
+  type PmRichTextHandle,
+} from '../../components/pm-rich-text-editor.js';
 import { Alert, AlertDescription } from '../../components/ui/alert.js';
 import { Button } from '../../components/ui/button.js';
 import {
   Field,
+  FieldContent,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldLegend,
+  FieldSet,
+  FieldTitle,
 } from '../../components/ui/field.js';
+import { RadioGroup, RadioGroupItem } from '../../components/ui/radio-group.js';
 import { Input } from '../../components/ui/input.js';
 import { Spinner } from '../../components/ui/spinner.js';
 import { useRouteOverlay } from '../../components/use-route-overlay.js';
@@ -30,10 +44,8 @@ import { useUnsavedChanges } from '@nocobase/app-client';
 import { errorText, useNotify } from '../../hooks/use-notify.js';
 import { usePmApi } from '../../hooks/use-pm-api.js';
 import { useViewer } from '../../hooks/use-viewer.js';
-import { startingExecutor, useExecutorOptions } from '../../lib/kinds.js';
-import { statusName } from '../../lib/status.js';
-import { StartDialog, type StartRequest } from './detail/start-dialog.js';
-import { canUseSetting } from '../../lib/permissions.js';
+import { useExecutorOptions } from '../../lib/kinds.js';
+import { canUseSetting, canUploadAttachments } from '../../lib/permissions.js';
 import {
   DateField,
   LabelsField,
@@ -45,18 +57,22 @@ import { usePresetProjectId } from './use-preset-project.js';
 const FORM_ID = 'pm-issue-new-form';
 
 /**
- * The new-issue form: title, description, priority, project (preselected by `usePresetProjectId`), owner (the signed-in user by default), executor (another registered kind, such as an agent, or a member),
- * labels and dates. The process is where the issue starts: when the project's workflow offers ways to start
- * (`startOption` rules, `GET /api/projects/issues/starts`), the form lists them, such as "Design first" or "Straight to
- * development", starting at the workflow's initial status; otherwise the server starts the issue there. Giving the
- * issue to an agent asks "Start now?" before creating, unless it starts in backlog, where nothing starts. Created, the
- * issue opens. Anything entered counts as unsaved for the enclosing `UnsavedChangesBoundary`.
+ * The new-issue form: title, description, when to start, priority, project (preselected by `usePresetProjectId`), owner
+ * (the signed-in user by default), executor (another registered kind, such as an agent, or a member; the default
+ * executor a kind names is preselected, `ExecutorCandidate.isDefault`), labels and dates. "Start now" creates the issue
+ * in `in_progress`, where its work starts; "Later" in `backlog`, where nothing starts until it is started from its page.
+ * Created, the issue opens. Anything entered counts as unsaved for the enclosing `UnsavedChangesBoundary`.
  */
 export function NewIssueForm({
   onSubmittingChange,
+  onUploadingChange,
+  onStartChange,
   onCreated,
 }: {
   readonly onSubmittingChange: (submitting: boolean) => void;
+  readonly onUploadingChange?: (uploading: boolean) => void;
+  /** Whether the issue starts right away, for the footer's button. */
+  readonly onStartChange?: (startNow: boolean) => void;
   /** Where to go once created; by default the issue's page. */
   readonly onCreated?: (issue: { readonly id: string }) => void;
 }): ReactElement {
@@ -67,6 +83,13 @@ export function NewIssueForm({
   const queryClient = useQueryClient();
   const viewer = useViewer();
   const candidates = useMentionCandidates();
+  const uploads = useAttachmentUploads();
+  const editorRef = useRef<PmRichTextHandle>(null);
+  const [creating, setCreating] = useState(false);
+  useEffect(() => {
+    onUploadingChange?.(uploads.uploading);
+    return () => onUploadingChange?.(false);
+  }, [uploads.uploading, onUploadingChange]);
   const otherExecutors = useExecutorOptions();
 
   const projects = useQuery({
@@ -88,43 +111,31 @@ export function NewIssueForm({
   const presetProjectId = usePresetProjectId();
   const [projectId, setProjectId] = useState<string | null>(presetProjectId);
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
-  const [executor, setExecutor] = useState<Executor | null>(null);
+  // Untouched, the executor shown is the default one and the server applies it.
+  const [chosenExecutor, setChosenExecutor] = useState<
+    Executor | null | undefined
+  >(undefined);
+  const defaultExecutor = otherExecutors.find((option) => option.isDefault);
+  const executor =
+    chosenExecutor === undefined
+      ? defaultExecutor
+        ? { type: defaultExecutor.type, id: defaultExecutor.id }
+        : null
+      : chosenExecutor;
   const [labelIds, setLabelIds] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState<string | null>(null);
-  const [chosenStatus, setChosenStatus] = useState<string | null>(null);
-  const [startRequest, setStartRequest] = useState<StartRequest | null>(null);
+  const [startNow, setStartNow] = useState(true);
   const [titleError, setTitleError] = useState<string>();
   const [formError, setFormError] = useState<string>();
   const owner = ownerUserId ?? viewer?.userId ?? null;
-  const starts = useQuery({
-    queryKey: pmKeys.starts(projectId),
-    queryFn: () => api.starts(projectId),
-  });
-  const startOptions = starts.data?.options ?? [];
-  // A process the project's workflow does not offer (the project changed) falls back to its initial status.
-  const statusKey =
-    chosenStatus !== null &&
-    startOptions.some((option) => option.status.key === chosenStatus)
-      ? chosenStatus
-      : (starts.data?.initialStatus ?? null);
-  const startLabel = (option: IssueStartOption): string =>
-    messageText(option.label, t) ??
-    statusName(
-      t,
-      startOptions.map((item) => item.status),
-      option.status.key,
-    );
-  const chosenOption = startOptions.find(
-    (option) => option.status.key === statusKey,
-  );
   const markSaved = useUnsavedChanges(
-    Boolean(title.trim() || description.trim()) ||
+    Boolean(title.trim() || description.trim() || uploads.uploads.length) ||
       priority !== 'none' ||
       projectId !== presetProjectId ||
       ownerUserId !== null ||
-      executor !== null ||
-      chosenStatus !== null ||
+      chosenExecutor !== undefined ||
+      !startNow ||
       labelIds.length > 0 ||
       startDate !== null ||
       dueDate !== null,
@@ -138,42 +149,35 @@ export function NewIssueForm({
       return;
     }
     setTitleError(undefined);
-    const starting = startingExecutor({
-      fromStatus: null,
-      toStatus: statusKey ?? INITIAL_STATUS,
-      executorBefore: null,
-      executorAfter: executor,
-      statuses: startOptions.map((option) => option.status),
-    });
-    if (starting) {
-      setStartRequest({
-        kind: starting.type,
-        names: [
-          otherExecutors.find(
-            (option) =>
-              option.type === starting.type && option.id === starting.id,
-          )?.name ?? starting.id,
-        ],
-      });
-      return;
-    }
     await create();
   }
 
-  async function create(start?: boolean): Promise<void> {
+  async function create(): Promise<void> {
+    if (uploads.uploading || creating) return;
     const trimmed = title.trim();
     setFormError(undefined);
+    setCreating(true);
     onSubmittingChange(true);
     try {
       const issue = await api.createIssue({
         title: trimmed,
-        ...(chosenOption && statusKey ? { statusKey } : {}),
-        ...(start === undefined ? {} : { start }),
+        ...(uploads.ids.length
+          ? {
+              attachmentIds: uploads.uploads.flatMap((upload) =>
+                upload.attachment &&
+                (!upload.attachment.previewable ||
+                  description.includes(upload.attachment.contentUrl))
+                  ? [upload.attachment.id]
+                  : [],
+              ),
+            }
+          : {}),
+        statusKey: startNow ? IN_PROGRESS_STATUS : BACKLOG_STATUS,
         ...(description.trim() ? { description } : {}),
         priority,
         ...(projectId ? { projectId } : {}),
         ...(owner ? { ownerUserId: owner } : {}),
-        ...(executor ? { executor } : {}),
+        ...(chosenExecutor === undefined ? {} : { executor: chosenExecutor }),
         ...(labelIds.length ? { labelIds } : {}),
         startDate,
         dueDate,
@@ -181,12 +185,14 @@ export function NewIssueForm({
       notify.success(t('issueForm.created', { identifier: issue.identifier }));
       void queryClient.invalidateQueries({ queryKey: pmKeys.issues });
       void queryClient.invalidateQueries({ queryKey: pmKeys.projects });
+      uploads.clear();
       markSaved();
       if (onCreated) onCreated(issue);
       else void navigate(`/issues/${encodeURIComponent(issue.id)}`);
     } catch (error) {
       setFormError(errorText(t, error, t('common.requestFailed')));
     } finally {
+      setCreating(false);
       onSubmittingChange(false);
     }
   }
@@ -218,6 +224,12 @@ export function NewIssueForm({
           <FieldLabel>{t('issueForm.descriptionLabel')}</FieldLabel>
           <PmRichTextEditor
             value={description}
+            images
+            disabled={creating}
+            ref={editorRef}
+            onPasteImages={
+              canUploadAttachments(viewer) ? uploads.add : undefined
+            }
             aria-label={t('issueForm.descriptionLabel')}
             placeholder={t('issueForm.descriptionPlaceholder')}
             mentionCandidates={candidates}
@@ -225,7 +237,86 @@ export function NewIssueForm({
             contentClassName='min-h-28'
             onChange={setDescription}
           />
+          {uploads.uploads.map((upload) => (
+            <div
+              key={upload.key}
+              className='flex items-center gap-2 text-sm text-muted-foreground'
+            >
+              <span className='min-w-0 flex-1 truncate'>
+                {upload.attachment
+                  ? upload.name
+                  : t('attachments.uploading', { name: upload.name })}
+              </span>
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                disabled={creating}
+                aria-label={t('attachments.remove', { name: upload.name })}
+                onClick={() => {
+                  const editor = editorRef.current?.editor();
+                  if (editor && upload.attachment) {
+                    const tr = editor.state.tr;
+                    editor.state.doc.descendants((node, position) => {
+                      if (
+                        node.type.name === 'image' &&
+                        node.attrs.src === upload.attachment?.contentUrl
+                      )
+                        tr.delete(
+                          tr.mapping.map(position),
+                          tr.mapping.map(position + node.nodeSize),
+                        );
+                    });
+                    editor.view.dispatch(tr);
+                  }
+                  uploads.remove(upload.key);
+                }}
+              >
+                {t('attachments.removeConfirm')}
+              </Button>
+            </div>
+          ))}
         </Field>
+        <FieldSet>
+          <FieldLegend variant='label'>{t('issueForm.startLabel')}</FieldLegend>
+          <RadioGroup
+            value={startNow ? IN_PROGRESS_STATUS : BACKLOG_STATUS}
+            onValueChange={(value) => {
+              const next = value === IN_PROGRESS_STATUS;
+              setStartNow(next);
+              onStartChange?.(next);
+            }}
+          >
+            <FieldLabel htmlFor='pm-issue-start-now'>
+              <Field orientation='horizontal'>
+                <RadioGroupItem
+                  value={IN_PROGRESS_STATUS}
+                  id='pm-issue-start-now'
+                />
+                <FieldContent>
+                  <FieldTitle>{t('issueForm.startNow')}</FieldTitle>
+                  <FieldDescription>
+                    {t('issueForm.startNowHint')}
+                  </FieldDescription>
+                </FieldContent>
+              </Field>
+            </FieldLabel>
+            <FieldLabel htmlFor='pm-issue-start-later'>
+              <Field orientation='horizontal'>
+                <RadioGroupItem
+                  value={BACKLOG_STATUS}
+                  id='pm-issue-start-later'
+                />
+                <FieldContent>
+                  <FieldTitle>{t('issueForm.startLater')}</FieldTitle>
+                  <FieldDescription>
+                    {t('issueForm.startLaterHint')}
+                  </FieldDescription>
+                </FieldContent>
+              </Field>
+            </FieldLabel>
+          </RadioGroup>
+        </FieldSet>
         <div className='grid gap-4 sm:grid-cols-2'>
           <Field>
             <FieldLabel htmlFor='pm-issue-priority'>
@@ -260,37 +351,6 @@ export function NewIssueForm({
               onChange={setProjectId}
             />
           </Field>
-          {startOptions.length > 0 ? (
-            <Field className='sm:col-span-2'>
-              <FieldLabel htmlFor='pm-issue-process'>
-                {t('issueForm.processLabel')}
-              </FieldLabel>
-              <PropertySelect
-                id='pm-issue-process'
-                size='default'
-                options={startOptions.map((option) => ({
-                  value: option.status.key,
-                  label: startLabel(option),
-                }))}
-                value={statusKey}
-                onChange={(value) => {
-                  if (value) setChosenStatus(value);
-                }}
-              />
-              <FieldDescription>
-                {(chosenOption ? messageText(chosenOption.hint, t) : null) ??
-                  t('issueForm.processHint', {
-                    status: statusKey
-                      ? statusName(
-                          t,
-                          startOptions.map((option) => option.status),
-                          statusKey,
-                        )
-                      : '',
-                  })}
-              </FieldDescription>
-            </Field>
-          ) : null}
           <Field>
             <FieldLabel htmlFor='pm-issue-owner'>
               {t('properties.owner')}
@@ -320,7 +380,7 @@ export function NewIssueForm({
               value={executor}
               others={otherExecutors}
               members={members.data ?? []}
-              onChange={setExecutor}
+              onChange={setChosenExecutor}
             />
           </Field>
           <Field className='sm:col-span-2'>
@@ -357,22 +417,19 @@ export function NewIssueForm({
           </Field>
         </div>
       </FieldGroup>
-      <StartDialog
-        request={startRequest}
-        onDecide={(start) => {
-          setStartRequest(null);
-          void create(start);
-        }}
-        onCancel={() => setStartRequest(null)}
-      />
     </form>
   );
 }
 
 export function NewIssueFooter({
   submitting,
+  uploading = false,
+  startNow = true,
 }: {
   readonly submitting: boolean;
+  readonly uploading?: boolean;
+  /** Whether the form starts the issue right away: the button says so. */
+  readonly startNow?: boolean;
 }): ReactElement {
   const { t } = useTranslation();
   const { close } = useRouteOverlay();
@@ -386,9 +443,13 @@ export function NewIssueFooter({
       >
         {t('actions.cancel')}
       </Button>
-      <Button type='submit' form={FORM_ID} disabled={submitting}>
+      <Button type='submit' form={FORM_ID} disabled={submitting || uploading}>
         {submitting ? <Spinner data-icon='inline-start' /> : null}
-        {submitting ? t('common.creating') : t('common.create')}
+        {submitting
+          ? t('common.creating')
+          : startNow
+            ? t('issueForm.createAndStart')
+            : t('common.create')}
       </Button>
     </>
   );

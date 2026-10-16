@@ -1,5 +1,11 @@
 import { useTranslation } from '@nocobase/i18n/client';
-import { useRef, useState, type DragEvent } from 'react';
+import {
+  useLayoutEffect,
+  useRef,
+  type DragEvent,
+  type SetStateAction,
+} from 'react';
+import { useIntakeDraft } from '../../kit/intake-draft.js';
 
 import {
   INTAKE_FILES_MAX,
@@ -39,10 +45,20 @@ export function useIntakeUploads(): IntakeUploads {
   const { t } = useTranslation();
   const api = usePlanApi();
   const notify = useNotify();
-  const [uploads, setUploads] = useState<readonly Upload[]>([]);
+  const [draft, setDraft] = useIntakeDraft();
+  const uploads = draft.uploads;
+  const setUploads = (next: SetStateAction<readonly Upload[]>) =>
+    setDraft((current) => ({
+      ...current,
+      uploads: typeof next === 'function' ? next(current.uploads) : next,
+    }));
   const counterRef = useRef(0);
-  // Keep removal decisions available to upload callbacks, including before React's next render.
-  const currentRef = useRef<readonly Upload[]>([]);
+  // Keep removal decisions available to upload callbacks, including before React's next render. The draft can outlive
+  // this component and be reset by the panel, so the ref follows it after every commit.
+  const currentRef = useRef<readonly Upload[]>(uploads);
+  useLayoutEffect(() => {
+    currentRef.current = uploads;
+  }, [uploads]);
 
   function update(
     change: (current: readonly Upload[]) => readonly Upload[],
@@ -82,7 +98,7 @@ export function useIntakeUploads(): IntakeUploads {
         continue;
       }
       counterRef.current += 1;
-      const key = `upload-${counterRef.current}`;
+      const key = `upload-${crypto.randomUUID()}-${counterRef.current}`;
       update((current) => [...current, { key, name: file.name, file: null }]);
       api
         .uploadIntakeFile(file)

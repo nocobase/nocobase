@@ -87,6 +87,44 @@ describe("a runner's working directories", () => {
     });
   });
 
+  it('announces a heartbeat disk sample only when it moves, crosses the threshold or appears', async () => {
+    h = await createHarness();
+    const runner = await h.registerRunner();
+    const changes: string[] = [];
+    h.services.events.on('runner.changed', (event) =>
+      changes.push(event.runnerId),
+    );
+    const beat = (sample: unknown) =>
+      h.request('POST', api(RUNNER_ROUTES.heartbeat), {
+        runnerKey: runner.key,
+        body: {
+          version: '0.1.0',
+          features: ['input', 'checkout'],
+          tools: [{ kind: 'claude', authenticated: true }],
+          active: [],
+          load: { slots: 1, free: 1 },
+          disk: sample,
+        },
+      });
+    expect((await beat(disk)).status).toBe(200);
+    const first = changes.length;
+    expect(first).toBeGreaterThan(0);
+    // The usual heartbeat: a few megabytes more or less, nothing to tell.
+    await beat({ ...disk, freeBytes: disk.freeBytes + 5 * 1024 ** 2 });
+    await beat(disk);
+    expect(changes).toHaveLength(first);
+    // Below the threshold, and a large move, are told.
+    await beat({ ...disk, freeBytes: disk.freeBytes - 1024 });
+    expect(changes).toHaveLength(first + 1);
+    await beat({ ...disk, freeBytes: disk.freeBytes + 4 * GB });
+    expect(changes).toHaveLength(first + 2);
+    // The newest sample is still stored for the runtimes page.
+    const stored = await h.services.runners.get(runner.runnerId);
+    expect(stored.workspaceUsage?.disk).toMatchObject({
+      freeBytes: disk.freeBytes + 4 * GB,
+    });
+  });
+
   it('answers which runs belong to subjects whose work is over, as the binding says', async () => {
     h = await createHarness();
     h.settled = new Set(['1']);
@@ -100,21 +138,29 @@ describe("a runner's working directories", () => {
     expect(response.body.data).toEqual({ remove: [ended], keep: [ongoing] });
   });
 
-  it('resolves legacy keys but requires saved execution ownership, and returns repository evidence', async () => {
+  it('resolves legacy keys on whichever runner reports them, and gives no commit evidence', async () => {
     h = await createHarness();
     h.settled = new Set(['1']);
     const { runner, runIds } = await runnerWithRuns(['1']);
     const binding = h.services.subjects.get('sample')!;
-    const commits = [
-      { repository: 'https://example.com/app.git', headSha: 'a'.repeat(40) },
-    ];
     h.services.subjects.register({
       ...binding,
       kind: 'legacySample',
       workspaces: {
         settled: async () => new Set(['1']),
         resolveKeys: async () => new Map([['SMP-1', ['1']]]),
-        commits: async () => new Map([['1', commits]]),
+        commits: async () =>
+          new Map([
+            [
+              '1',
+              [
+                {
+                  repository: 'https://example.com/app.git',
+                  headSha: 'a'.repeat(40),
+                },
+              ],
+            ],
+          ]),
       },
     });
     await h.database
@@ -133,12 +179,40 @@ describe("a runner's working directories", () => {
     };
     const response = await report(runner, body);
     expect(response.body.data.decisions).toMatchObject([
-      { settled: true, reason: 'settled', commits },
+      { settled: true, reason: 'settled', commits: [] },
     ]);
+    // Another runner keeping a directory of the same subject removes it too: the work is over everywhere.
     const other = await h.registerRunner({ name: 'other' });
     expect((await report(other, body)).body.data.decisions).toMatchObject([
-      { settled: null, reason: 'ownershipUnknown', commits: [] },
+      { settled: true, reason: 'settled', commits: [] },
     ]);
+    // A run the application no longer has falls back to the directory's key.
+    const missing = await report(other, {
+      ...body,
+      directories: [{ ...body.directories[0], runId: 'gone' }],
+    });
+    expect(missing.body.data).toMatchObject({
+      remove: ['gone'],
+      decisions: [{ runId: 'gone', settled: true, reason: 'settled' }],
+    });
+    // Nor while a run on the subject has not finished, on any runner.
+    await h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({
+        filter: { id: runIds[0] },
+        values: { status: 'queued' },
+      });
+    expect((await report(other, body)).body.data.decisions).toMatchObject([
+      { settled: false, reason: 'active' },
+    ]);
+    await h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({
+        filter: { id: runIds[0] },
+        values: { status: 'completed' },
+      });
     const cleanup = {
       reportId: 'first',
       reason: 'allowed',
@@ -170,7 +244,7 @@ describe("a runner's working directories", () => {
     ).toBeUndefined();
   });
 
-  it('distinguishes missing runs and bindings from another runner without exposing subjects', async () => {
+  it('distinguishes missing runs and bindings without exposing subjects', async () => {
     h = await createHarness();
     const { runner, runIds } = await runnerWithRuns(['1']);
     const other = await h.registerRunner();
@@ -183,7 +257,7 @@ describe("a runner's working directories", () => {
       ],
     };
     expect((await report(other, body)).body.data.decisions).toMatchObject([
-      { reason: 'ownershipUnknown' },
+      { reason: 'bindingUnavailable' },
       { reason: 'runNotFound' },
     ]);
     expect((await report(runner, body)).body.data.decisions).toMatchObject([
@@ -316,7 +390,7 @@ describe("a runner's working directories", () => {
     expect(response.body.data).toEqual({ remove: [], keep: [runIds[0]] });
   });
 
-  it("answers only for the runner's own runs", async () => {
+  it('answers for a run whichever runner reports it, and not for a run it does not know', async () => {
     h = await createHarness();
     h.settled = new Set(['1']);
     const { runIds } = await runnerWithRuns(['1']);
@@ -325,7 +399,7 @@ describe("a runner's working directories", () => {
       workspaces: [workspace(runIds[0]), workspace('unknown')],
     });
     expect(response.status).toBe(200);
-    expect(response.body.data).toEqual({ remove: [], keep: [] });
+    expect(response.body.data).toEqual({ remove: [runIds[0]], keep: [] });
   });
 
   it('refuses a report without a runner key', async () => {

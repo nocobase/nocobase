@@ -1,4 +1,5 @@
 import {
+  ApiError,
   apiErrorResponse,
   apiErrorResponses,
   apiValidator,
@@ -9,6 +10,7 @@ import {
   listResponse,
 } from '@nocobase/app-server/router';
 import type { Hono } from 'hono';
+import type { IssueSessionIntegration } from '../../tokens.js';
 
 import {
   delegatedWrite,
@@ -20,7 +22,6 @@ import {
   boundedList,
   cursorList,
   domainRouter,
-  referencedBy,
   tags,
   personOrRunSecurity,
 } from '../../kernel/http.js';
@@ -37,8 +38,7 @@ import {
   IssueListQuerySchema,
   IssueParams,
   IssueSchema,
-  IssueStartsSchema,
-  ProjectFilterQuery,
+  IssueSessionHeader,
   StatusDefinitionSchema,
   UpdateIssueBody,
   UpdateIssueResultSchema,
@@ -51,16 +51,17 @@ const notFound = apiErrorResponse(
   'When the issue does not exist or the caller cannot see it.',
 );
 const idOrKey = '`issueId` is an id or an identifier such as `PM-12`.';
-const workflowRefused =
-  'When the issue’s workflow or its rules refuse the change, such as a status the caller may not move it to, an incomplete checklist (`CHECKLIST_INCOMPLETE`), open sub-issues (`SUBTASKS_OPEN`) or a blocker (`ISSUE_BLOCKED`).';
+const statusRefused =
+  'When the change is refused, such as a status the caller may not move it to (`TRANSITION_NOT_ALLOWED`) or a status that does not exist (`INVALID_STATUS`).';
 
 /**
  * `/api/projects/issues`. `{issueId}` is an issue id or its identifier (`PM-12`); identifiers always hold a `-`, so
- * none equals a fixed segment (`board`, `statuses`, `starts`).
+ * none equals a fixed segment (`board`, `statuses`).
  */
 export function createIssueRoutes(deps: {
   readonly issues: IssueService;
   readonly queries: IssueQueries;
+  readonly session?: () => IssueSessionIntegration | undefined;
 }): Hono<ViewerEnv> {
   const routes = domainRouter<ViewerEnv>();
   routes.get(
@@ -125,12 +126,14 @@ export function createIssueRoutes(deps: {
       security: personOrRunSecurity,
       ...cliRoute({
         command: 'issue create',
+        // Session context comes from the bridge's environment, not a user-supplied CLI flag.
         bodyFile: 'file',
         flags: {
+          'x-nb-agent-session': { hidden: true },
           statusKey: {
             name: 'status',
             description:
-              'The status it starts in: analysis (design first), todo (straight to development, the default) or backlog (nothing starts).',
+              'The status it starts in: in_progress (start now) or backlog (nothing starts, the default).',
           },
           ownerUserId: { name: 'owner' },
           parentIssueId: { name: 'parent' },
@@ -139,26 +142,60 @@ export function createIssueRoutes(deps: {
           description: { contentFile: true },
         },
         action: 'pm.issues/create',
-        examples: ['issue create --file issue.json --status todo'],
+        examples: ['issue create --file issue.json --status in_progress'],
       }),
       description:
-        'Needs `create` on `pm.issues` for the issue’s project. The issue starts in `todo` unless `statusKey` names another status it may start in; the caller owns it unless `ownerUserId` says otherwise.',
+        'Needs `create` on `pm.issues` for the issue’s project. A session context header must identify an active session owned by the caller; its project is the default and successful creation is linked to it. The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one. Optional `attachmentIds` binds the caller’s own unattached uploads in the creation transaction before work starts; this also needs `upload` on `pm.attachments`.',
       responses: {
         201: dataResponse(IssueSchema),
         ...apiErrorResponses,
-        400: apiErrorResponse(400, workflowRefused),
+        400: apiErrorResponse(400, statusRefused),
+        409: apiErrorResponse(
+          409,
+          'When the dependency graph changed (`DEPENDENCY_GRAPH_CHANGED`): reload and retry.',
+        ),
       },
     }),
+    apiValidator('header', IssueSessionHeader),
     apiValidator('json', CreateIssueBody),
     async (context) => {
       const viewer = viewerOf(context);
-      const input = context.req.valid('json');
+      let input = context.req.valid('json');
+      const sessionId = context.req.valid('header')['x-nb-agent-session'];
+      let session:
+        | Awaited<ReturnType<IssueSessionIntegration['creationContext']>>
+        | undefined;
+      if (sessionId !== undefined) {
+        const integration = deps.session?.();
+        if (
+          !integration ||
+          viewer.actor.type !== 'user' ||
+          context.get('auth')?.credential
+        )
+          throw new ApiError({
+            status: 'PERMISSION_DENIED',
+            reason: 'SESSION_CONTEXT_REFUSED',
+            domain: 'projects',
+            message: 'A session context requires its signed-in owner.',
+          });
+        session = await integration.creationContext(viewer, sessionId);
+        const projectId = input.projectId ?? session.projectId;
+        if (!projectId)
+          throw new ApiError({
+            status: 'INVALID_ARGUMENT',
+            reason: 'SESSION_PROJECT_REQUIRED',
+            domain: 'projects',
+            message: 'This session has no project. Specify a project.',
+          });
+        input = { ...input, projectId };
+      }
       const delegated = await delegatedWrite(context, {
         title: `Create "${input.title}"`,
         rows: [{ op: 'issue.create', params: input }],
       });
       if (delegated) {
         const created = delegated.plan.rows[0]?.result?.created?.id;
+        if (created && session) await session.link(created);
         return context.json(
           {
             data: created ? await deps.queries.detail(viewer, created) : null,
@@ -167,10 +204,9 @@ export function createIssueRoutes(deps: {
           201,
         );
       }
-      return context.json(
-        { data: await deps.issues.create(viewer, input) },
-        201,
-      );
+      const created = await deps.issues.create(viewer, input);
+      if (session) await session.link(created.id);
+      return context.json({ data: created }, 201);
     },
   );
   // A column per status, each with its first page; the list's filters apply.
@@ -206,55 +242,16 @@ export function createIssueRoutes(deps: {
       operationId: 'projectsListIssueStatuses',
       ...cliRoute({
         command: 'issue status list',
-        flags: { projectId: { name: 'project' } },
         columns: ['key', 'name', 'category'],
-        examples: ['issue status list --project <project>'],
+        examples: ['issue status list'],
       }),
-      description:
-        'The statuses of `projectId`’s workflow, or of the default workflow without it. A `projectId` that names no project the caller sees is a 400 naming the field.',
+      description: 'The six fixed statuses, in order.',
       responses: {
         200: listResponse(StatusDefinitionSchema, BoundedListMeta),
         ...apiErrorResponses,
       },
     }),
-    apiValidator('query', ProjectFilterQuery),
-    async (context) =>
-      context.json(
-        boundedList(
-          await referencedBy('projectId', () =>
-            deps.queries.statuses(
-              viewerOf(context),
-              context.req.valid('query').projectId,
-            ),
-          ),
-        ),
-      ),
-  );
-  routes.get(
-    '/starts',
-    describeRoute({
-      tags,
-      summary: 'List the ways a new issue may start',
-      operationId: 'projectsListIssueStarts',
-      // The create form's start picker; `issue status list` and `issue create --help` name the statuses.
-      ...cliRoute(false),
-      description:
-        'The initial status and every status a `startOption` rule offers in `projectId`’s workflow, or the default workflow without it. A `projectId` that names no project the caller sees is a 400 naming the field.',
-      responses: {
-        200: dataResponse(IssueStartsSchema),
-        ...apiErrorResponses,
-      },
-    }),
-    apiValidator('query', ProjectFilterQuery),
-    async (context) =>
-      context.json({
-        data: await referencedBy('projectId', () =>
-          deps.queries.starts(
-            viewerOf(context),
-            context.req.valid('query').projectId,
-          ),
-        ),
-      }),
+    (context) => context.json(boundedList(deps.queries.statuses())),
   );
   routes.get(
     '/:issueId',
@@ -268,7 +265,7 @@ export function createIssueRoutes(deps: {
         flags: { issueId: { name: 'issue' } },
         action: 'pm.issues/view',
       }),
-      description: `The issue with its newest activities and comment threads, files, checklist, approvals, sub-issues and dependencies. ${idOrKey}`,
+      description: `The issue with its newest activities and comment threads, files, sub-issues and dependencies, and application progress when available. ${idOrKey}`,
       responses: {
         200: dataResponse(IssueDetailSchema),
         ...apiErrorResponses,
@@ -276,15 +273,20 @@ export function createIssueRoutes(deps: {
       },
     }),
     apiValidator('param', IssueParams),
-    async (context) =>
-      context.json({
-        data: await deps.queries.detail(
-          viewerOf(context),
-          context.req.valid('param').issueId,
-        ),
-      }),
+    async (context) => {
+      const viewer = viewerOf(context);
+      const issue = await deps.queries.detail(
+        viewer,
+        context.req.valid('param').issueId,
+      );
+      const integration = deps.session?.();
+      return context.json({
+        data: integration
+          ? { ...issue, progress: await integration.progress(viewer, issue) }
+          : issue,
+      });
+    },
   );
-  // `{ issue, pendingApproval }`: 202 when the status change waits for approval, the issue then unchanged.
   routes.patch(
     '/:issueId',
     describeRoute({
@@ -300,7 +302,7 @@ export function createIssueRoutes(deps: {
           statusKey: {
             name: 'status',
             description:
-              "Move it to this status, through its workflow's rules and approvals.",
+              'Move it to this status: backlog, in_progress, blocked, in_review, done or cancelled.',
           },
           revision: { hidden: true },
           ownerUserId: { name: 'owner' },
@@ -308,10 +310,12 @@ export function createIssueRoutes(deps: {
           projectId: { name: 'project' },
           labelIds: { name: 'label' },
           description: { contentFile: true },
+          needsYou: { name: 'needs-you', contentFile: true },
+          next: { contentFile: true },
         },
         action: 'pm.issues/edit',
         examples: [
-          'issue update PM-12 --status in_review',
+          'issue update PM-12 --status in_review --needs-you "Review the change and accept it or send it back."',
           'issue update PM-12 --file change.json',
         ],
       }),
@@ -321,19 +325,12 @@ export function createIssueRoutes(deps: {
           UpdateIssueResultSchema,
           'The issue after the change.',
         ),
-        202: dataResponse(
-          UpdateIssueResultSchema,
-          'The status change waits for approval: the issue is unchanged, nothing else in the request is applied, and `pendingApproval` is the request that holds it.',
-        ),
         ...apiErrorResponses,
-        400: apiErrorResponse(
-          400,
-          `${workflowRefused} Also when a status change already waits for approval (\`APPROVAL_PENDING\`).`,
-        ),
+        400: apiErrorResponse(400, statusRefused),
         404: notFound,
         409: apiErrorResponse(
           409,
-          'When the issue changed since `revision` (`REVISION_CONFLICT`): read it again.',
+          'When the issue changed since `revision` (`REVISION_CONFLICT`), or its dependency graph changed (`DEPENDENCY_GRAPH_CHANGED`): read it again and retry.',
         ),
       },
     }),
@@ -349,25 +346,15 @@ export function createIssueRoutes(deps: {
       });
       if (delegated)
         return context.json({
-          data: {
-            issue: await deps.queries.detail(viewer, issueId),
-            pendingApproval: null,
-          },
+          data: { issue: await deps.queries.detail(viewer, issueId) },
           meta: delegated.meta,
         });
-      const { pendingApproval, ...issue } = await deps.issues.update(
-        viewer,
-        issueId,
-        {
-          ...set,
-          revision:
-            revision ?? (await deps.queries.detail(viewer, issueId)).revision,
-        },
-      );
-      return context.json(
-        { data: { issue, pendingApproval: pendingApproval ?? null } },
-        pendingApproval ? 202 : 200,
-      );
+      const issue = await deps.issues.update(viewer, issueId, {
+        ...set,
+        revision:
+          revision ?? (await deps.queries.detail(viewer, issueId)).revision,
+      });
+      return context.json({ data: { issue } }, 200);
     },
   );
   routes.delete(
@@ -388,6 +375,10 @@ export function createIssueRoutes(deps: {
         204: emptyResponse(),
         ...apiErrorResponses,
         404: notFound,
+        409: apiErrorResponse(
+          409,
+          'When the dependency graph changed (`DEPENDENCY_GRAPH_CHANGED`): reload and retry the deletion.',
+        ),
       },
     }),
     apiValidator('param', IssueParams),
@@ -418,6 +409,14 @@ export function createIssueRoutes(deps: {
         200: dataResponse(IssueSchema),
         ...apiErrorResponses,
         404: apiErrorResponse(404, 'When no deleted issue has that id.'),
+        400: apiErrorResponse(
+          400,
+          'When restoring its waits would create a cycle (`DEPENDENCY_CYCLE`).',
+        ),
+        409: apiErrorResponse(
+          409,
+          'When the dependency graph changed (`DEPENDENCY_GRAPH_CHANGED`): reload and retry.',
+        ),
       },
     }),
     apiValidator('param', IssueParams),

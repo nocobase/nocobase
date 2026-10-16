@@ -1,5 +1,16 @@
 # @nocobase/app-client
 
+## 3.0.0-beta.1
+
+### Patch Changes
+
+- cf23bfe: Republish every package so the `latest` dist-tag points at its current beta release, matching `beta`.
+- Updated dependencies [cf23bfe]
+  - @nocobase/api-client@1.0.0-beta.4
+  - @nocobase/i18n@1.0.0-beta.7
+  - @nocobase/realtime@0.0.2-beta.1
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 3.0.0-beta.0
 
 ### Major Changes

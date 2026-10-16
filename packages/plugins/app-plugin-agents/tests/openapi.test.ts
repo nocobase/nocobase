@@ -85,6 +85,29 @@ function operation(method: string, path: string): OpenAPIV3_1.OperationObject {
 }
 
 describe('agents API document', () => {
+  it('derives the runtime token list command with pagination from the production routes', () => {
+    const command = deriveAllCliCommands(document).find(
+      (entry) => entry.id === 'runtime:token:list',
+    );
+    expect(command).toMatchObject({
+      method: 'GET',
+      path: '/api/agents/runners/registrationTokens',
+    });
+    expect(command?.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          field: 'page',
+          in: 'query',
+          type: 'integer',
+        }),
+        expect.objectContaining({
+          field: 'pageSize',
+          in: 'query',
+          type: 'integer',
+        }),
+      ]),
+    );
+  });
   it('declares every route and hides none', () => {
     expect(findUndeclaredApiRoutes(api)).toEqual([]);
     const routes = inspectApiRoutes(api);
@@ -324,10 +347,14 @@ describe('agents API document', () => {
     expect(cli('PATCH', '/api/agents/runs/current/conversation')).toMatchObject(
       { command: 'conversation title set', args: ['title'] },
     );
-    expect(cli('DELETE', '/api/agents/{agentId}')).toMatchObject({
-      command: 'agent delete',
-      confirm: expect.any(String),
+    expect(cli('PATCH', '/api/agents/{agentId}')).toMatchObject({
+      command: 'agent update',
+      args: ['agentId'],
     });
+    expect(cli('GET', '/api/agents')).toMatchObject({
+      command: 'agent list-all',
+    });
+    expect(cli('GET', '/api/agents/agentNames')).toBe(false);
     for (const [method, path] of [
       ['POST', '/api/agents/runners/claim'],
       ['POST', '/api/agents/runners/runs/{runId}/complete'],
