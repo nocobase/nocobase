@@ -11,10 +11,11 @@ import {
   type UpdateProjectResourceRequest,
 } from '../../../shared/projects.js';
 import type { Viewer } from '../../access/viewer.js';
-import { canManage, relationTo } from './project.access.js';
+import { canManage, relationTo, visibleProjects } from './project.access.js';
 import { invalid, notFound } from '../../kernel/errors.js';
 import type { IdSource } from '../../kernel/ids.js';
 import type { TxRunner } from '../../kernel/tx.js';
+import { oneOf } from '../../kernel/db.js';
 import { optionalText } from '../../kernel/validate.js';
 import { managed } from './project.access.js';
 import {
@@ -34,6 +35,14 @@ export interface ProjectAccessInfo {
 }
 
 export interface ProjectResources {
+  /** Names of visible projects or working directories, fetched in batches for settings displays. */
+  targetNames(
+    viewer: Viewer,
+    target: 'project' | 'workdir',
+    ids: readonly string[],
+  ): Promise<
+    ReadonlyMap<string, { readonly name: string; readonly projectId: string }>
+  >;
   /**
    * What `viewer` may do with a project, or with the project a working directory belongs to; null when it does not
    * exist. For plugins that keep settings of a project or of one of its working directories (variables, skills).
@@ -132,6 +141,48 @@ export function createProjectResources(deps: {
   readonly ids: IdSource;
 }): ProjectResources {
   return {
+    targetNames: async (viewer, target, ids) => {
+      const names = new Map<string, { name: string; projectId: string }>();
+      if (ids.length === 0) return names;
+      const conn = deps.tx.read();
+      const resources =
+        target === 'workdir'
+          ? await conn
+              .repository<ProjectResource>('pmProjectResources')
+              .findMany({
+                filter: (f) => oneOf(f, 'id', ids),
+              })
+          : [];
+      const projectIds =
+        target === 'project' ? ids : resources.map((item) => item.projectId);
+      if (projectIds.length === 0) return names;
+      const projects = await conn
+        .repository<{ id: string; name: string }>('pmProjects')
+        .findMany({
+          filter: (f) => {
+            const visible = visibleProjects(f, viewer);
+            const selected = oneOf(f, 'id', projectIds);
+            return visible ? f.and([selected, visible]) : selected;
+          },
+          select: (s) => s.fields('id', 'name'),
+        });
+      const visible = new Map(projects.map((item) => [item.id, item.name]));
+      if (target === 'project')
+        for (const project of projects)
+          names.set(project.id, { name: project.name, projectId: project.id });
+      else
+        for (const resource of resources)
+          if (visible.has(resource.projectId))
+            names.set(resource.id, {
+              name:
+                resource.label ||
+                resource.path ||
+                resource.url ||
+                visible.get(resource.projectId)!,
+              projectId: resource.projectId,
+            });
+      return names;
+    },
     accessTo: async (viewer, target) => {
       const conn = deps.tx.read();
       const projectId =

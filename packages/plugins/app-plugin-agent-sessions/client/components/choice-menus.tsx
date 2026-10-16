@@ -54,12 +54,14 @@ export function ChoiceMenus({
   choices,
   values,
   disabled,
+  loading,
   onChoose,
 }: {
   readonly choices: readonly SessionChoice[] | undefined;
   /** The values chosen so far, by choice id; a choice left out shows its current value. */
   readonly values?: Readonly<Record<string, string>>;
   readonly disabled?: boolean;
+  readonly loading?: boolean;
   readonly onChoose: (choiceId: string, value: string) => void;
 }): ReactElement {
   const { t } = useTranslation();
@@ -88,7 +90,8 @@ export function ChoiceMenus({
         .map((choice) => (
           <DropdownMenu key={choice.id}>
             <DropdownMenuTrigger
-              disabled={disabled}
+              disabled={disabled || (loading && choice.category !== 'model')}
+              aria-busy={loading && choice.category !== 'model'}
               title={choice.name}
               className={`${TRIGGER} shrink-0`}
             >
@@ -122,7 +125,8 @@ export function ChoiceMenus({
       {more.some((choice) => choice.options.length > 1) && (
         <DropdownMenu>
           <DropdownMenuTrigger
-            disabled={disabled}
+            disabled={disabled || loading}
+            aria-busy={loading}
             aria-label={t('choices.more')}
             title={t('choices.more')}
             className={`${TRIGGER} shrink-0`}

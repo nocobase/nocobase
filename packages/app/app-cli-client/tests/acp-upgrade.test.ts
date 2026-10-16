@@ -27,6 +27,7 @@ vi.mock('../src/dynamic/session.ts', async (original) => ({
   currentSession: () =>
     Promise.resolve({
       kind: 'user',
+      profile: 'default',
       server: 'https://acme.example.com',
       headers: {},
       manifestPath: '/api/cli/manifest',

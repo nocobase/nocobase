@@ -2,6 +2,8 @@
 
 These standalone benchmarks measure the current five-database numeric result contract without changing runtime code. They are not timing assertions in the normal test suite and impose no machine-dependent CI latency threshold.
 
+For the 4,000-row timestamp join and transaction catalog overhead, see [query decoding and inspection measurements](../../../packages/libs/db/docs/read-overhead.md) and `read-overhead.ts`. That benchmark provisions its own disposable PostgreSQL service or uses SQLite in memory.
+
 ## Run
 
 Use Node 24 with the installed native SQLite addon. From the repository root:

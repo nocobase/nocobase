@@ -256,6 +256,11 @@ export interface RunnerSummary extends Omit<Runner, 'hostname'> {
   readonly offersJobs: boolean;
 }
 
+/** The list carries totals only; fetch a single runner for directory diagnostics. */
+export interface RunnerListItem extends Omit<RunnerSummary, 'workspaceUsage'> {
+  readonly workspaceUsage?: Omit<RunnerWorkspaceUsage, 'workspaces'> | null;
+}
+
 /** What people change about a runner after it registered. */
 export interface RunnerPatch {
   readonly name?: string;
@@ -295,6 +300,15 @@ export interface RegistrationToken {
   /** Absent from tokens made before limits per tool, or built by other code: none. */
   readonly toolSlots?: ToolSlots | null;
   readonly expiresAt: string;
+}
+
+/** Usable token metadata; the secret and its hash are never returned by a list. */
+export interface RegistrationTokenSummary extends Omit<
+  RegistrationToken,
+  'token'
+> {
+  readonly createdById: string | null;
+  readonly createdAt: string;
 }
 
 /**
@@ -413,7 +427,7 @@ export type RunnerActivity =
 
 export function runnerActivity(
   runner: Pick<
-    RunnerSummary,
+    RunnerListItem,
     | 'status'
     | 'slots'
     | 'activeRuns'
@@ -481,7 +495,7 @@ export interface RunnerAgentFit {
  */
 /** Shared by admission, availability and the page; does not affect existing leases. */
 export function runnerLowOnDisk(
-  runner: Pick<Runner, 'workspaceUsage'>,
+  runner: Pick<RunnerListItem, 'workspaceUsage'>,
 ): boolean {
   const disk = runner.workspaceUsage?.disk;
   return (

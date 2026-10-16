@@ -1,3 +1,7 @@
+import {
+  createAppSidebarPreferenceStore,
+  SidebarPreferenceProvider,
+} from '../../client/layouts/use-sidebar-preference.js';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import {
   act,
@@ -38,11 +42,15 @@ function I18n({ children }: { readonly children: ReactNode }) {
   return <TestI18nProvider runtime={runtime}>{children}</TestI18nProvider>;
 }
 
-const preferenceKey = 'nocobase:sidebar:collapsed';
+const sidebarPreference = createAppSidebarPreferenceStore('/main');
+
+const preferenceKey = 'nocobase:sidebar:collapsed:app:/main';
 
 function setCollapsed(collapsed: boolean) {
   localStorage.setItem(preferenceKey, String(collapsed));
-  window.dispatchEvent(new Event('nocobase:sidebar-preference-change'));
+  window.dispatchEvent(
+    new Event('nocobase:sidebar-preference-change:app:/main'),
+  );
 }
 
 function page(name: string): AppClientRegisteredRoute {
@@ -69,18 +77,20 @@ function shell(
 ) {
   return (
     <MemoryRouter>
-      <AppSidebarProvider>
-        <AppSidebar label='Navigation'>
-          <NavigationMenu
-            items={items}
-            label='Menu'
-            selectedKey={selectedKey}
-            sections={sections}
-            badges={badges}
-          />
-        </AppSidebar>
-        <AppSidebarToggle />
-      </AppSidebarProvider>
+      <SidebarPreferenceProvider value={sidebarPreference}>
+        <AppSidebarProvider>
+          <AppSidebar label='Navigation'>
+            <NavigationMenu
+              items={items}
+              label='Menu'
+              selectedKey={selectedKey}
+              sections={sections}
+              badges={badges}
+            />
+          </AppSidebar>
+          <AppSidebarToggle />
+        </AppSidebarProvider>
+      </SidebarPreferenceProvider>
     </MemoryRouter>
   );
 }

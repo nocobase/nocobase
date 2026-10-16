@@ -29,7 +29,6 @@ import {
   type SessionTarget,
 } from '@nocobase/acp-bridge/protocol';
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
-import { z } from 'zod';
 
 import type {
   AgentSessionsChange,
@@ -43,18 +42,13 @@ import type {
 } from '../shared/api.js';
 import { AgentSessionsError } from './errors.js';
 import {
-  defineSessionTool,
-  TOOLS_PATH,
-  type SessionTool,
-  type ToolHost,
-  type ToolTokens,
-} from './tools.js';
-import {
   allowedFolders,
   appendEvents,
   computers,
   computerView,
   enqueue,
+  events,
+  eventView,
   isOnline,
   images,
   links,
@@ -96,7 +90,7 @@ export interface LinkResolver {
   /** Starts the work on `refIds` as the viewer, when the application lets sessions start it. */
   start?(refIds: readonly string[], viewer: Viewer): Promise<void>;
   /**
-   * What the agent should know of how each of `refIds` is going, as JSON, for the session's `list_session_work` tool:
+   * What the agent should know of how each of `refIds` is going, as JSON, for the session's `session work` command:
    * who works on it, what it waits for, and the like.
    */
   progress?(
@@ -138,8 +132,6 @@ export interface Mention {
 
 export interface AgentSessionsServiceOptions {
   readonly database: DatabaseManager;
-  /** Signs the tokens agents call the application's tools with; without it, sessions get no tools. */
-  readonly toolTokens?: ToolTokens;
   /** Tells the owner's pages what changed. */
   readonly publish?: (userId: string, change: AgentSessionsChange) => void;
   /** Where bridges' replies wait; this instance's memory by default. */
@@ -149,6 +141,11 @@ export interface AgentSessionsServiceOptions {
   /** Runs `task` after `delayMs`, as owners are told of what they did not see (`notices.ts`); a timer by default. */
   readonly schedule?: (task: () => Promise<void>, delayMs: number) => void;
   readonly now?: () => number;
+  /** Optional phase timing; excludes message bodies, credentials and user metadata. */
+  readonly diagnose?: (
+    phase: string,
+    fields: Readonly<Record<string, number | string>>,
+  ) => void;
 }
 
 export interface SessionPage {
@@ -168,11 +165,9 @@ export class AgentSessionsService {
   readonly #database: DatabaseManager;
   readonly #publish: (userId: string, change: AgentSessionsChange) => void;
   readonly #now: () => number;
+  readonly #diagnose: AgentSessionsServiceOptions['diagnose'];
   readonly #waiters = new Map<string, Set<() => void>>();
   readonly #linkKinds = new Map<string, LinkResolver>();
-  readonly #tools: SessionTool[] = [];
-  #toolServer = 'app';
-  readonly #toolTokens: ToolTokens | undefined;
   #projects: ProjectSource | undefined;
   #instructions: string | ((viewer: Viewer) => string) | undefined;
   #notices: SessionNotices | undefined;
@@ -183,13 +178,12 @@ export class AgentSessionsService {
 
   constructor(options: AgentSessionsServiceOptions) {
     this.#database = options.database;
-    this.#toolTokens = options.toolTokens;
     this.#replies = options.replies ?? memoryReplies();
     this.#images = options.images;
     this.#schedule = options.schedule ?? later;
     this.#publish = options.publish ?? (() => undefined);
     this.#now = options.now ?? Date.now;
-    this.#tools.push(this.#workTool());
+    this.#diagnose = options.diagnose;
   }
 
   /** Lets sessions show, and start, what the application ties to them under `kind`. */
@@ -227,51 +221,37 @@ export class AgentSessionsService {
     this.#projects = source;
   }
 
-  /**
-   * Offers `tools` to the agents in sessions as the MCP server `serverName`, such as `studio`. Sessions opened from
-   * then on get them.
-   */
-  registerTools(serverName: string, tools: readonly SessionTool[]): void {
-    this.#toolServer = serverName;
-    this.#tools.push(...tools);
+  /** Validates the caller's session before a CLI write; a session id is never a credential. */
+  async creationContext(
+    userId: string,
+    sessionId: string,
+  ): Promise<{ projectId: string | null }> {
+    const session = await this.#session(userId, sessionId);
+    if (session.archivedAt) throw new AgentSessionsError('sessionArchived');
+    return { projectId: session.projectId ?? null };
   }
 
-  /** The tools' side of the service, for the MCP endpoint (`tools.ts`). */
-  get toolHost(): ToolHost {
-    return {
-      serverName: this.#toolServer,
-      tools: () => this.#tools,
-      caller: async (token) => {
-        const sessionId = this.#toolTokens?.verify(token);
-        const session = sessionId
-          ? await sessions(this.#conn()).findOne({ filter: { id: sessionId } })
-          : undefined;
-        return session && !session.archivedAt
-          ? {
-              userId: session.userId,
-              sessionId: session.id,
-              projectId: session.projectId ?? null,
-            }
-          : undefined;
-      },
-      instructions: async (caller) => {
-        const viewer = await this.#ownerOf(caller);
-        const project = caller.projectId
-          ? (await this.listProjects(viewer)).find(
-              (candidate) => candidate.id === caller.projectId,
-            )
-          : undefined;
-        const work = workNote(await this.#work(viewer, caller.sessionId), null);
-        const lines = [
-          this.#instructionsFor(viewer),
-          project &&
-            `This session works for the project "${project.name}" (id ${project.id}). File and look for work there unless the person names another project.`,
-          work && `${work}\nCall \`list_session_work\` for how each is going.`,
-        ].filter(Boolean);
-        return lines.length > 0 ? lines.join('\n\n') : undefined;
-      },
-      link: (sessionId, kind, refId) => this.link(sessionId, kind, refId),
-    };
+  /** The work visible to the owner, with the application's existing batch progress resolver. */
+  async sessionWork(
+    viewer: Viewer,
+    sessionId: string,
+  ): Promise<readonly (WorkItem & { progress: unknown })[]> {
+    const session = await this.#session(viewer.userId, sessionId);
+    const reader = { ...viewer, locale: session.locale ?? viewer.locale };
+    const work = await this.#work(reader, sessionId);
+    const progress = new Map<string, unknown>();
+    for (const [kind, resolver] of this.#linkKinds) {
+      const refIds = work
+        .filter((item) => item.kind === kind)
+        .map((item) => item.refId);
+      if (!resolver.progress || refIds.length === 0) continue;
+      for (const [refId, detail] of await resolver.progress(refIds, reader))
+        progress.set(`${kind}:${refId}`, detail);
+    }
+    return work.map((item) => ({
+      ...item,
+      progress: progress.get(`${item.kind}:${item.refId}`) ?? null,
+    }));
   }
 
   /** Ties `refId` to the session, once, and tells its transcript. */
@@ -425,7 +405,9 @@ export class AgentSessionsService {
       readonly cwd: string;
       readonly settings: Readonly<Record<string, string>>;
     },
+    signal?: AbortSignal,
   ): Promise<DiscoveredChoices> {
+    signal?.throwIfAborted();
     const computer = await this.#computer(userId, computerId);
     if (!isOnline(computer, this.#now()))
       throw new AgentSessionsError('computerOffline');
@@ -458,6 +440,7 @@ export class AgentSessionsService {
     const reply = await this.#awaitReply(
       `${computer.id}:${requestId}`,
       DISCOVERY_TIMEOUT_MS + 10_000,
+      signal,
     );
     if (!reply.discovery || reply.error)
       throw new AgentSessionsError(
@@ -522,12 +505,22 @@ export class AgentSessionsService {
       : undefined;
     if (keyed && !known) throw new AgentSessionsError('computerNotFound');
     const computerId = known?.id ?? randomUUID();
-    if (known)
+    const restarted = known?.bridgeStartedAt !== request.bridgeStartedAt;
+    const viewChanged =
+      !known ||
+      restarted ||
+      !isOnline(known, this.#now()) ||
+      Object.entries(request.computer).some(
+        ([field, value]) =>
+          JSON.stringify(known[field as keyof typeof known]) !==
+          JSON.stringify(value),
+      );
+    if (known && (viewChanged || !keyed))
       await computers(this.#conn()).updateMany({
         filter: { id: computerId },
         values,
       });
-    else
+    else if (!known)
       await computers(this.#conn()).createOne({
         values: {
           id: computerId,
@@ -538,7 +531,6 @@ export class AgentSessionsService {
         },
       });
 
-    const restarted = known?.bridgeStartedAt !== request.bridgeStartedAt;
     const interrupted = !restarted
       ? []
       : await sessions(this.#conn()).findMany({
@@ -569,8 +561,8 @@ export class AgentSessionsService {
       });
       if (changed) this.#changed(changed);
     }
-    await this.#replies.take(outdatedKey(computerId));
-    this.#publish(userId, { kind: 'computers' });
+    const outdated = await this.#replies.take(outdatedKey(computerId));
+    if (viewChanged || outdated) this.#publish(userId, { kind: 'computers' });
     return { computerId, ...(key ? { key } : {}) };
   }
 
@@ -729,6 +721,7 @@ export class AgentSessionsService {
   async createSession(
     viewer: Viewer,
     input: {
+      readonly submissionId?: string | undefined;
       readonly computerId: string;
       readonly agentId: string;
       readonly cwd: string;
@@ -742,6 +735,23 @@ export class AgentSessionsService {
     },
   ): Promise<Session> {
     const { userId } = viewer;
+    const submission = input.submissionId
+      ? {
+          id: input.submissionId,
+          digest: submissionDigest({
+            operation: 'create',
+            computerId: input.computerId,
+            agentId: input.agentId,
+            cwd: input.cwd,
+            content: input.content,
+            settings: input.settings ?? {},
+            projectId: input.projectId ?? null,
+            mentions: input.mentions ?? [],
+          }),
+        }
+      : undefined;
+    const previous = await this.#submission(viewer, submission);
+    if (previous) return this.getSession(viewer, previous.sessionId);
     const computer = await this.#computer(
       userId,
       input.computerId,
@@ -767,37 +777,65 @@ export class AgentSessionsService {
     const mentioned = await this.#mentioned(viewer, input.mentions ?? []);
     const settings = input.settings ?? {};
     const now = this.#iso();
-    const sessionId = randomUUID();
-    await sessions(this.#conn()).createOne({
-      values: {
-        id: sessionId,
-        userId,
-        computerId: computer.id,
-        agentId: agent.id,
-        projectId,
-        cwd: pathsOf(computer).resolve(input.cwd),
-        title: null,
-        firstMessage: redactor.text(firstLine(input.content)),
-        acpSessionId: null,
-        state: null,
-        settings,
-        toldWork: null,
-        toldInstructions: null,
-        seenSeq: 0,
-        noticedSeq: null,
-        locale: viewer.locale ?? null,
-        running: false,
-        pendingPermissions: 0,
-        lastSeq: 0,
-        reportedBatch: 0,
-        bridgeStartedAt: null,
-        archivedAt: null,
-        lastActivityAt: now,
-        createdAt: now,
-        updatedAt: now,
-      },
-    });
-    await this.#send(viewer, sessionId, input.content, mentioned);
+    const sessionId = submission?.id ?? randomUUID();
+    try {
+      await this.#transaction(async (conn, at) => {
+        await sessions(conn).createOne({
+          values: {
+            id: sessionId,
+            userId,
+            computerId: computer.id,
+            agentId: agent.id,
+            projectId,
+            cwd: pathsOf(computer).resolve(input.cwd),
+            title: null,
+            firstMessage: redactor.text(firstLine(input.content)),
+            acpSessionId: null,
+            state: null,
+            settings,
+            toldWork: null,
+            toldInstructions: null,
+            seenSeq: 0,
+            noticedSeq: null,
+            locale: viewer.locale ?? null,
+            running: false,
+            pendingPermissions: 0,
+            lastSeq: 0,
+            reportedBatch: 0,
+            bridgeStartedAt: null,
+            archivedAt: null,
+            lastActivityAt: now,
+            createdAt: now,
+            updatedAt: now,
+          },
+        });
+        const session = (await sessions(conn).findOne({
+          filter: { id: sessionId },
+        }))!;
+        const work = mentioned.map((item) => ({
+          kind: item.kind,
+          refId: item.refId,
+          key: item.key,
+          title: item.title,
+          status: item.status?.label ?? null,
+          group: item.group,
+        }));
+        await this.#sendInTransaction(
+          conn,
+          at,
+          viewer,
+          session,
+          input.content,
+          mentioned,
+          work,
+          submission,
+        );
+      });
+    } catch (error) {
+      const winner = await this.#submission(viewer, submission);
+      if (!winner) throw error;
+      return this.getSession(viewer, winner.sessionId);
+    }
     return this.getSession(viewer, sessionId);
   }
 
@@ -897,13 +935,28 @@ export class AgentSessionsService {
     sessionId: string,
     content: readonly PromptContent[],
     mentions: readonly Mention[] = [],
+    submissionId?: string,
   ): Promise<TranscriptEvent> {
+    const submission = submissionId
+      ? {
+          id: submissionId,
+          digest: submissionDigest({
+            operation: 'prompt',
+            sessionId,
+            content,
+            mentions,
+          }),
+        }
+      : undefined;
+    const previous = await this.#submission(viewer, submission, sessionId);
+    if (previous) return previous.event;
     await this.#writable(viewer.userId, sessionId);
     return this.#send(
       viewer,
       sessionId,
       content,
       await this.#mentioned(viewer, mentions),
+      submission,
     );
   }
 
@@ -940,21 +993,78 @@ export class AgentSessionsService {
     return found.flat().slice(0, MENTION_LIMIT);
   }
 
+  async #submission(
+    viewer: Viewer,
+    submission: { readonly id: string; readonly digest: string } | undefined,
+    sessionId?: string,
+  ): Promise<{ sessionId: string; event: TranscriptEvent } | undefined> {
+    if (!submission) return undefined;
+    const event = await events(this.#conn()).findOne({
+      filter: { id: submission.id },
+    });
+    if (!event) return undefined;
+    const session = await sessions(this.#conn()).findOne({
+      filter: { id: event.sessionId },
+    });
+    if (
+      !session ||
+      session.userId !== viewer.userId ||
+      (sessionId && session.id !== sessionId) ||
+      event.kind !== 'prompt' ||
+      event.data._submission !== submission.digest
+    )
+      throw new AgentSessionsError('submissionConflict');
+    return { sessionId: session.id, event: eventView(event) };
+  }
+
   async #send(
     viewer: Viewer,
     sessionId: string,
     content: readonly PromptContent[],
     mentioned: readonly (Mention & LinkView)[],
+    submission?: { readonly id: string; readonly digest: string },
   ): Promise<TranscriptEvent> {
     const session = await this.#session(viewer.userId, sessionId);
-    const promptId = randomUUID();
     const work = await this.#work(viewer, sessionId, mentioned);
-    const note = workNote(work, session.toldWork);
+    try {
+      return await this.#transaction((conn, now) =>
+        this.#sendInTransaction(
+          conn,
+          now,
+          viewer,
+          session,
+          content,
+          mentioned,
+          work,
+          submission,
+        ),
+      );
+    } catch (error) {
+      const winner = await this.#submission(viewer, submission, sessionId);
+      if (winner) return winner.event;
+      throw error;
+    }
+  }
+
+  async #sendInTransaction(
+    conn: DatabaseConnection,
+    now: string,
+    viewer: Viewer,
+    session: SessionRecord,
+    content: readonly PromptContent[],
+    mentioned: readonly (Mention & LinkView)[],
+    work: readonly WorkItem[],
+    submission?: { readonly id: string; readonly digest: string },
+  ): Promise<TranscriptEvent> {
+    const sessionId = session.id;
+    const promptId = randomUUID();
+    const locked = (await lockSession(conn, sessionId, now))!;
+    const note = workNote(work, locked.toldWork);
     const currentInstructions = this.#instructionsFor(viewer);
     const toldInstructions =
       currentInstructions && instructionsHash(currentInstructions);
     const instructions =
-      toldInstructions !== session.toldInstructions
+      toldInstructions !== locked.toldInstructions
         ? currentInstructions
         : undefined;
     // The agent reads the application's instructions until it was told them, what the message mentions, and the
@@ -972,58 +1082,105 @@ export class AgentSessionsService {
         : []),
       ...(note ? [{ type: 'text' as const, text: note }] : []),
     ];
-    const kept = this.#images
-      ? await this.#images.keep(
-          { id: sessionId, userId: session.userId },
-          content,
-        )
-      : content;
-    const changed = await this.#transaction(async (conn, now) => {
-      const locked = (await lockSession(conn, sessionId, now))!;
-      const result = await this.#append(
-        conn,
-        locked,
-        [{ kind: 'prompt', at: now, promptId, content: kept }],
-        now,
+    const storesImages = Boolean(
+      this.#images && content.some((part) => part.type === 'image'),
+    );
+    // Reserve the unique event before any image upload. A concurrent loser rolls back without external effects.
+    // Image bytes enter only the file service (or the final fallback event), never the temporary receipt.
+    const result = await this.#append(
+      conn,
+      locked,
+      [
         {
-          ...(note ? { toldWork: workSnapshot(work) } : {}),
-          ...(instructions ? { toldInstructions } : {}),
-          ...(viewer.locale ? { locale: viewer.locale } : {}),
-        },
-      );
-      for (const item of mentioned) {
-        const filter = { sessionId, kind: item.kind, refId: item.refId };
-        if (await links(conn).findOne({ filter })) continue;
-        await links(conn).createOne({
-          values: {
-            id: randomUUID(),
-            ...filter,
-            seq: result.lastSeq,
-            decidedAt: now,
-            createdAt: now,
-          },
-        });
-      }
-      await enqueue(
-        conn,
-        session.computerId,
-        {
-          type: 'prompt',
-          session: this.#target(locked),
+          kind: 'prompt',
+          at: now,
           promptId,
-          content: told,
+          content: storesImages ? [] : content,
         },
-        now,
-      );
-      return result;
+      ],
+      now,
+      {
+        ...(note ? { toldWork: workSnapshot(work) } : {}),
+        ...(instructions ? { toldInstructions } : {}),
+        ...(viewer.locale ? { locale: viewer.locale } : {}),
+      },
+      submission,
+    );
+    const kept =
+      this.#images && storesImages
+        ? await this.#images.keep(
+            { id: sessionId, userId: session.userId },
+            content,
+            conn,
+          )
+        : content;
+    if (storesImages) {
+      await events(conn).updateMany({
+        filter: { sessionId, seq: result.lastSeq },
+        values: {
+          data: {
+            at: now,
+            promptId,
+            content: kept.map((part) =>
+              part.type === 'text'
+                ? { ...part, text: redactor.text(part.text) }
+                : part,
+            ),
+            ...(submission ? { _submission: submission.digest } : {}),
+          },
+        },
+      });
+    }
+    for (const item of mentioned) {
+      const filter = { sessionId, kind: item.kind, refId: item.refId };
+      if (await links(conn).findOne({ filter })) continue;
+      await links(conn).createOne({
+        values: {
+          id: randomUUID(),
+          ...filter,
+          seq: result.lastSeq,
+          decidedAt: now,
+          createdAt: now,
+        },
+      });
+    }
+    await enqueue(
+      conn,
+      session.computerId,
+      {
+        type: 'prompt',
+        session: this.#target(locked),
+        promptId,
+        content: told,
+      },
+      now,
+    );
+    const changed = result;
+    conn.afterCommit(() => {
+      this.#diagnose?.('promptPersisted', {
+        sessionId,
+        at: Date.now(),
+        seq: changed.lastSeq,
+        promptId,
+      });
+      this.#wake(session.computerId);
+      this.#changed(changed);
+      this.#diagnose?.('promptConfirmed', {
+        sessionId,
+        at: Date.now(),
+        seq: changed.lastSeq,
+        promptId,
+      });
     });
-    this.#wake(session.computerId);
-    this.#changed(changed);
     return {
       kind: 'prompt',
       at: changed.session.lastActivityAt,
       promptId,
-      content,
+      content: kept.map((part) =>
+        part.type === 'text'
+          ? { ...part, text: redactor.text(part.text) }
+          : part,
+      ),
       seq: changed.lastSeq,
     };
   }
@@ -1173,17 +1330,25 @@ export class AgentSessionsService {
   async #awaitReply(
     key: string,
     timeout: number = REPLY_WAIT_MS,
+    signal?: AbortSignal,
   ): Promise<ReplyRequest> {
-    for (let waited = 0; waited < timeout; waited += REPLY_CHECK_MS) {
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
+      signal?.throwIfAborted();
       const reply = await this.#replies.take<ReplyRequest>(key);
       if (reply) return reply;
       await new Promise<void>((resolve) => {
-        const timer = setTimeout(done, REPLY_CHECK_MS);
+        const timer = setTimeout(
+          done,
+          Math.min(REPLY_CHECK_MS, deadline - Date.now()),
+        );
+        signal?.addEventListener('abort', done, { once: true });
         const waiters = this.#replyWaiters;
         waiters.set(key, done);
         function done(): void {
           clearTimeout(timer);
           waiters.delete(key);
+          signal?.removeEventListener('abort', done);
           resolve();
         }
       });
@@ -1193,21 +1358,12 @@ export class AgentSessionsService {
 
   /** What the bridge needs to run a command of the session. */
   #target(session: SessionRecord): SessionTarget {
-    const tools =
-      this.#tools.length > 0 && this.#toolTokens
-        ? {
-            name: this.#toolServer,
-            path: TOOLS_PATH,
-            token: this.#toolTokens.sign(session.id),
-          }
-        : null;
     return {
       id: session.id,
       agentId: session.agentId,
       cwd: session.cwd,
       acpSessionId: session.acpSessionId,
       settings: session.settings,
-      tools,
     };
   }
 
@@ -1311,44 +1467,6 @@ export class AgentSessionsService {
     return items;
   }
 
-  /** The owner a tool is called for, in the interface language supplied with their latest message. */
-  async #ownerOf(caller: {
-    readonly userId: string;
-    readonly sessionId: string;
-  }): Promise<Viewer> {
-    const session = await sessions(this.#conn()).findOne({
-      filter: { id: caller.sessionId },
-    });
-    return { userId: caller.userId, locale: session?.locale ?? undefined };
-  }
-
-  /** The tool every session's agent has: the work tied to its session, and how each is going. */
-  #workTool(): SessionTool {
-    return defineSessionTool({
-      name: 'list_session_work',
-      description:
-        'Lists the work tied to this session, what was created in it or mentioned in its messages, with how each stands and, where the application tells, how it is going: who works on it, what it waits for, its pull request. When the person asks about the tasks or their progress without naming others, they mean these: call this first.',
-      input: z.object({}),
-      run: async (_input, caller) => {
-        const viewer = await this.#ownerOf(caller);
-        const work = await this.#work(viewer, caller.sessionId);
-        const progress = new Map<string, unknown>();
-        for (const [kind, resolver] of this.#linkKinds) {
-          const refIds = work
-            .filter((item) => item.kind === kind)
-            .map((item) => item.refId);
-          if (!resolver.progress || refIds.length === 0) continue;
-          for (const [refId, detail] of await resolver.progress(refIds, viewer))
-            progress.set(`${kind}:${refId}`, detail);
-        }
-        return work.map(({ kind, refId, ...item }) => ({
-          ...item,
-          progress: progress.get(`${kind}:${refId}`) ?? null,
-        }));
-      },
-    });
-  }
-
   /** The records mentioned, as the viewer sees them; one the viewer cannot see is refused. */
   async #mentioned(
     viewer: Viewer,
@@ -1428,8 +1546,9 @@ export class AgentSessionsService {
     added: readonly SessionEvent[],
     now: string,
     values: Partial<SessionRecord>,
+    submission?: { readonly id: string; readonly digest: string },
   ): Promise<{ readonly session: SessionRecord; readonly lastSeq: number }> {
-    const lastSeq = await appendEvents(conn, session, added, now);
+    const lastSeq = await appendEvents(conn, session, added, now, submission);
     const written = {
       ...values,
       lastSeq,
@@ -1526,6 +1645,11 @@ export class AgentSessionsService {
     readonly session: SessionRecord;
     readonly lastSeq: number;
   }): void {
+    this.#diagnose?.('eventPublishRequested', {
+      sessionId: changed.session.id,
+      at: Date.now(),
+      seq: changed.lastSeq,
+    });
     this.#publish(changed.session.userId, {
       kind: 'session',
       sessionId: changed.session.id,
@@ -1713,4 +1837,21 @@ function later(task: () => Promise<void>, delayMs: number): void {
       ),
     );
   }, delayMs).unref();
+}
+
+/** Stable object keys, ordered content/mentions, and a digest rather than a second persisted copy of the input. */
+function submissionDigest(input: unknown): string {
+  const canonical = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(canonical);
+    if (value && typeof value === 'object')
+      return Object.fromEntries(
+        Object.entries(value)
+          .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+          .map(([key, item]) => [key, canonical(item)]),
+      );
+    return value;
+  };
+  return createHash('sha256')
+    .update(JSON.stringify(canonical(input)))
+    .digest('hex');
 }

@@ -252,16 +252,13 @@ label:has(> .sr-only:focus-visible),
 :is([data-slot='dialog-description'], [data-slot='alert-dialog-description']) {
   line-height: 1.65;
 }
-:is(
-    [data-slot='dialog-footer'],
-    [data-slot='alert-dialog-footer'],
-    [data-slot='route-overlay-footer']
-  )
-  > button {
+:is([data-slot='dialog-footer'], [data-slot='alert-dialog-footer']) > button {
   min-height: calc(var(--spacing) * 10);
   padding-inline: calc(var(--spacing) * 4);
 }
-[data-slot='dialog-content'] > [data-slot='dialog-close'] {
+/* Route overlays compose the dialog primitives, so their close button sits where a dialog's does. */
+:is([data-slot='dialog-content'], [data-slot='route-overlay-content'])
+  > [data-slot='dialog-close'] {
   top: calc(var(--spacing) * 4);
   right: calc(var(--spacing) * 4);
 }
