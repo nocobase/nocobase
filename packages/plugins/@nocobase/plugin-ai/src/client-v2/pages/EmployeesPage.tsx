@@ -175,7 +175,14 @@ const readResponseMeta = (response: unknown): Record<string, unknown> => {
     return {};
   }
   const data = response.data;
-  return isRecord(data) ? data : {};
+  if (!isRecord(data)) {
+    return {};
+  }
+  // NocoBase list responses put pagination metadata under response.data.meta.
+  // Returning the whole response body makes meta.count undefined and limits the
+  // controlled table to the current page's row count, so the next-page control
+  // is disabled even when more records exist.
+  return isRecord(data.meta) ? data.meta : data;
 };
 
 const isAIEmployee = (value: unknown): value is SettingsAIEmployee =>
@@ -1322,6 +1329,9 @@ export const EmployeesPage: React.FC = () => {
   const repo = useAIConfigRepository();
   const [category, setCategory] = useState<EmployeeCategory>('business');
   const [employees, setEmployees] = useState<SettingsAIEmployee[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [knowledgeBaseEnabled, setKnowledgeBaseEnabled] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -1339,16 +1349,23 @@ export const EmployeesPage: React.FC = () => {
   );
 
   const refresh = useCallback(
-    async (nextCategory = category) => {
+    async (nextCategory = category, nextPage = page, nextPageSize = pageSize) => {
       setLoading(true);
       try {
-        const result = await listAIEmployees(app.apiClient, { category: nextCategory });
+        const result = await listAIEmployees(app.apiClient, {
+          category: nextCategory,
+          page: nextPage,
+          pageSize: nextPageSize,
+        });
         setEmployees(result.data);
+        setTotal(result.total ?? result.data.length);
+        setPage(nextPage);
+        setPageSize(nextPageSize);
       } finally {
         setLoading(false);
       }
     },
-    [app.apiClient, category],
+    [app.apiClient, category, page, pageSize],
   );
 
   useEffect(() => {
@@ -1520,7 +1537,10 @@ export const EmployeesPage: React.FC = () => {
               { label: t('Business'), value: 'business' },
               { label: t('Developer'), value: 'developer' },
             ]}
-            onChange={(event) => setCategory(event.target.value)}
+            onChange={(event) => {
+              setPage(1);
+              setCategory(event.target.value);
+            }}
           />
           <Space>
             <Button icon={<ReloadOutlined />} onClick={() => refresh()}>
@@ -1545,8 +1565,15 @@ export const EmployeesPage: React.FC = () => {
               onChange: setSelectedRowKeys,
             }}
             pagination={{
-              defaultPageSize: 20,
-              showTotal: (total) => t('Total {{count}} items', { count: total }),
+              current: page,
+              pageSize,
+              total,
+              showSizeChanger: true,
+              showTotal: (count) => t('Total {{count}} items', { count }),
+              onChange: (nextPage, nextPageSize) => {
+                setPage(nextPage);
+                setPageSize(nextPageSize);
+              },
             }}
             scroll={{ x: 'max-content', y: '100%' }}
           />
