@@ -22,6 +22,20 @@ describe('handleLinkNavigation', () => {
       isExternalLink: false,
     });
 
+    expect(navigate).toHaveBeenCalledWith('/target-page', { replace: false });
+  });
+
+  it('should replace history entry when caller requests replace', () => {
+    const navigate = vi.fn();
+
+    handleLinkNavigation({
+      link: '/target-page',
+      openInNewWindow: false,
+      router: { navigate },
+      isExternalLink: false,
+      replace: true,
+    });
+
     expect(navigate).toHaveBeenCalledWith('/target-page', { replace: true });
   });
 
