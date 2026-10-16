@@ -5982,5 +5982,6 @@
     ],
     "weekOption": "week",
     "yearOption": "year"
-  }
+  },
+  "rag.knowledgeBase.knowledgeBaseType.local.tag": "Local"
 }
