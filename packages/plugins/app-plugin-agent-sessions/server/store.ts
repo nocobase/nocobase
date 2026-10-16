@@ -17,6 +17,7 @@ import type {
   SessionEvent,
   SessionLink,
   SessionProject,
+  SessionStartup,
   SessionState,
   TranscriptEvent,
 } from '../shared/api.js';
@@ -63,6 +64,8 @@ export interface SessionRecord {
   readonly firstMessage: string;
   readonly acpSessionId: string | null;
   readonly state: SessionState | null;
+  /** What the bridge last said it is doing to open the agent, null once it is open (`SessionStartup`). */
+  readonly startup: SessionStartup | null;
   readonly settings: Readonly<Record<string, string>>;
   /** What its agent was last told about the work tied to it (`work.ts`). */
   readonly toldWork: WorkSnapshot | null;
@@ -190,6 +193,7 @@ export function sessionView(
     title: record.title ?? (agentTitle || record.firstMessage),
     titleSource: record.title ? 'owner' : agentTitle ? 'agent' : 'message',
     state: record.state,
+    startup: record.startup ?? null,
     settings: record.settings,
     running: Boolean(record.running),
     waiting: Number(record.pendingPermissions) > 0,

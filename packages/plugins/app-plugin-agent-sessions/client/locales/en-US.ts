@@ -136,6 +136,11 @@ const enUS = {
     offlineBody:
       'The conversation and its tasks are kept here to read as usual. The session continues once the computer is back.',
     working: 'The agent is working…',
+    startup: {
+      starting: 'Starting the agent on your computer…',
+      opening: 'Opening the agent’s session…',
+      configuring: 'Applying settings…',
+    },
     answering: 'Answering',
     asking: 'Needs your approval',
     stop: 'Stop',

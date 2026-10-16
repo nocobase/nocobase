@@ -401,6 +401,53 @@ describe('AgentSessionsService', () => {
     ]);
   });
 
+  test('names the new session a discovery is for, so its bridge keeps the agent for that session', async ({
+    database,
+  }) => {
+    const { service, register, take } = setup(database);
+    const { computerId } = await register();
+    const sessionId = '0f6f4bb5-3a7c-4d22-9c55-6f6c2d1a9b10';
+    const input = { agentId: 'codex', cwd: '/home/zhou/code', settings: {} };
+    void service
+      .discoverChoices('u1', computerId, { ...input, sessionId })
+      .catch(() => undefined);
+    await vi.waitFor(async () =>
+      expect(await take(computerId)).toMatchObject([
+        { type: 'discoverChoices', sessionId },
+      ]),
+    );
+    // A message sent from those choices creates the session with that id.
+    const session = await service.createSession(owner, {
+      submissionId: sessionId,
+      computerId,
+      ...input,
+      content: text('first'),
+    });
+    expect(session.id).toBe(sessionId);
+    expect(await take(computerId)).toMatchObject([
+      { type: 'prompt', session: { id: sessionId, acpSessionId: null } },
+    ]);
+  });
+
+  test('shows what the bridge is doing to open the agent until it is open', async ({
+    database,
+  }) => {
+    const { service, report, started } = setup(database);
+    const { computerId, session } = await started();
+    expect(session.startup).toBeNull();
+    await report(computerId, session.id, [], { startup: 'starting' });
+    expect((await service.getSession(owner, session.id)).startup).toBe(
+      'starting',
+    );
+    // A report that does not say, as from an older bridge, leaves it.
+    await report(computerId, session.id, []);
+    expect((await service.getSession(owner, session.id)).startup).toBe(
+      'starting',
+    );
+    await report(computerId, session.id, [], { startup: null });
+    expect((await service.getSession(owner, session.id)).startup).toBeNull();
+  });
+
   test('checks discovery ownership, installation, offline state and allowed directories before queueing', async ({
     database,
   }) => {

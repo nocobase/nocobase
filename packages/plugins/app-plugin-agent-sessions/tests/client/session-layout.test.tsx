@@ -26,6 +26,7 @@ const session: Session = {
     'A long conversation title about planning and following the mobile layout work',
   titleSource: 'owner',
   state: null,
+  startup: null,
   settings: {},
   running: false,
   waiting: false,
@@ -396,4 +397,32 @@ describe('session mobile layout', () => {
     );
     expect(document.querySelector('img')).toBeTruthy();
   });
+});
+
+it('says what the bridge is doing while the agent opens, then that the agent is working', async () => {
+  let current: Session = { ...session, running: true, startup: 'starting' };
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  await renderWithApp(
+    <QueryClientProvider client={client}>
+      <SessionView sessionId='session' />
+    </QueryClientProvider>,
+    {
+      plugins: [plugin({ routes: false })],
+      namespace: '@nocobase/app-plugin-agent-sessions',
+      fetch: answerApi(({ path, method }) =>
+        path === 'agentSessions/sessions/session' && method === 'GET'
+          ? { data: current }
+          : { data: [], meta: {} },
+      ),
+      route: '/agent-sessions/session',
+    },
+  );
+  await screen.findByText('Starting the agent on your computer…');
+  current = { ...current, startup: null };
+  await act(async () => {
+    await client.refetchQueries();
+  });
+  await screen.findByText('The agent is working…');
 });

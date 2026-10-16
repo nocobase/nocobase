@@ -8,10 +8,11 @@ import type { ResolvedAgent } from '../src/agents.js';
 import type {
   BridgeEvent,
   PromptContent,
+  SessionStartup,
   SessionTarget,
   SessionState,
 } from '../src/protocol.js';
-import { BridgeSession } from '../src/session.js';
+import { BridgeSession, type WarmAgent } from '../src/session.js';
 
 const FAKE: ResolvedAgent = {
   spec: {
@@ -47,14 +48,17 @@ function start(
     agentId: string,
     sessionId: string,
   ) => Promise<NodeJS.ProcessEnv>,
+  warm?: Promise<WarmAgent | undefined>,
 ): {
   session: BridgeSession;
   events: BridgeEvent[];
   target: SessionTarget;
   states: (SessionState | null)[];
+  startups: (SessionStartup | null)[];
 } {
   const events: BridgeEvent[] = [];
   const states: (SessionState | null)[] = [];
+  const startups: (SessionStartup | null)[] = [];
   const full: SessionTarget = {
     id: 'session-1',
     agentId: 'fake',
@@ -68,13 +72,43 @@ function start(
     env,
     discoverySignal,
     prepareSession,
+    warm,
     roots: [root],
     resolve: () => Promise.resolve(agent),
     emit: (event) => events.push(event),
-    stateChanged: () => states.push(session.state),
+    stateChanged: () => {
+      states.push(session.state);
+      if (startups.at(-1) !== session.startup) startups.push(session.startup);
+    },
   });
   sessions.push(session);
-  return { session, events, target: full, states };
+  return { session, events, target: full, states, startups };
+}
+
+async function traced(log: string): Promise<{ method: string; pid: number }[]> {
+  return (await readFile(log, 'utf8'))
+    .trim()
+    .split('\n')
+    .map((line) => JSON.parse(line) as { method: string; pid: number });
+}
+
+const prepare = async (
+  _agentId: string,
+  sessionId: string,
+): Promise<NodeJS.ProcessEnv> => ({
+  NB_STUDIO_PROFILE: 'owner',
+  NB_STUDIO_AGENT_SESSION: sessionId,
+});
+
+/** The agent a discovery started for `session-1`, handed out for that session to take over. */
+async function discovered(env: NodeJS.ProcessEnv): Promise<WarmAgent> {
+  const discovery = start({}, FAKE, env, AbortSignal.timeout(5000), prepare);
+  await discovery.session.discover();
+  const warm = discovery.session.release();
+  // Closing the discovery leaves the agent it handed out running.
+  await discovery.session.close();
+  expect(warm?.process.alive).toBe(true);
+  return warm!;
 }
 
 function prompt(
@@ -434,6 +468,96 @@ describe('BridgeSession', () => {
       error: 'Install the shared Skill first.',
     });
     expect(texts(events)).toEqual([]);
+  });
+
+  it('says what it is doing while the agent opens', async () => {
+    const { session, target, events, startups } = start({
+      settings: { mode: 'full' },
+    });
+    prompt(session, target, 'p1', 'first');
+    await until(events, ended('p1'));
+    expect(startups).toEqual(['starting', 'opening', 'configuring', null]);
+  });
+
+  it('takes over the agent its discovery started, with the session’s environment, and starts no other', async () => {
+    const log = path.join(root, 'trace.jsonl');
+    const env = { ...process.env, FAKE_LOG: log };
+    const warm = await discovered(env);
+    const { session, target, events, startups } = start(
+      { settings: { mode: 'full' } },
+      FAKE,
+      env,
+      undefined,
+      prepare,
+      Promise.resolve(warm),
+    );
+    prompt(session, target, 'p1', 'session-env');
+    expect(await until(events, ended('p1'))).toMatchObject({ error: null });
+    expect(JSON.parse(texts(events)[0]!)).toEqual({
+      profile: 'owner',
+      sessionId: 'session-1',
+      mcpServers: [],
+    });
+    const lines = await traced(log);
+    expect(new Set(lines.map((line) => line.pid))).toEqual(
+      new Set([lines[0]!.pid]),
+    );
+    expect(lines.filter((line) => line.method === 'new')).toHaveLength(1);
+    expect(session.state?.acpSessionId).toBe(warm.acpSessionId);
+    expect(startups).toEqual(['starting', 'configuring', null]);
+  });
+
+  it('applies its own choices to the agent it takes over', async () => {
+    const env = { ...process.env, FAKE_VARIANT: 'dependent' };
+    const warm = await discovered(env);
+    const { session, target, events } = start(
+      { settings: { model: 'second', effort: 'max' } },
+      FAKE,
+      env,
+      undefined,
+      prepare,
+      Promise.resolve(warm),
+    );
+    prompt(session, target, 'p1', 'first');
+    expect(await until(events, ended('p1'))).toMatchObject({ error: null });
+    expect(session.state?.choices).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'model', currentValue: 'second' }),
+        expect.objectContaining({ id: 'effort', currentValue: 'max' }),
+      ]),
+    );
+  });
+
+  it('stops a kept agent it cannot use and starts its own', async () => {
+    const log = path.join(root, 'trace.jsonl');
+    const env = { ...process.env, FAKE_LOG: log };
+    const warm = await discovered(env);
+    const { session, target, events } = start(
+      { agentId: 'other' },
+      FAKE,
+      env,
+      undefined,
+      prepare,
+      Promise.resolve(warm),
+    );
+    prompt(session, target, 'p1', 'first');
+    expect(await until(events, ended('p1'))).toMatchObject({ error: null });
+    expect(warm.process.alive).toBe(false);
+    expect(new Set((await traced(log)).map((line) => line.pid)).size).toBe(2);
+  });
+
+  it('stops the agent kept for it when it closes before its first prompt', async () => {
+    const warm = await discovered(process.env);
+    const { session } = start(
+      {},
+      FAKE,
+      process.env,
+      undefined,
+      prepare,
+      Promise.resolve(warm),
+    );
+    await session.close();
+    expect(warm.process.alive).toBe(false);
   });
 
   it('opens a session with no MCP servers', async () => {
