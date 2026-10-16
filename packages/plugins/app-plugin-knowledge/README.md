@@ -85,3 +85,4 @@ pnpm --filter @nocobase/app-plugin-knowledge build
 ```
 
 <!-- Quality scope test: leaf plugin. -->
+<!-- Quality scope test: rerun. -->
