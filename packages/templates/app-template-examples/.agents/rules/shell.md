@@ -18,6 +18,10 @@ Navigation groups retain their expanded or collapsed state while the navigation 
 
 Examples consolidates lifecycle and office demonstration pages into one Workflow sidebar entry. `client/lib/navigation-transform.ts` groups the permission-filtered entries into Business workflows and Workflow management; these are static section labels, not nested disclosure controls. Keep page URLs, route identities and plugin-owned translations intact. Parameter configuration and office configuration belong to management; business process pages belong to business workflows. This is Examples-specific navigation composition rather than a framework template change.
 
+## OnlineAgent in Examples
+
+`AppLayout` wraps the authenticated shell with the Examples-owned `OnlineAgentProvider`. Its header launcher, Cmd/Ctrl+J and homepage entry share one controller; `OnlineAgentPanelHost` lazy-loads the panel beside the route outlet with a local Suspense boundary. Route changes and closing the panel preserve the current conversation; only Stop cancels generation. The layout adds a relative flex container for docked, floating and expanded panel modes; it does not replace the business route. Keep these demonstration-specific additions local rather than installing Agents in Default. See [demonstration plugins](plugins.md) for identity isolation, model readiness and public contract requirements.
+
 ## Account menu and session
 
 The account menu checks Better Auth sign-out results before refreshing the session and shows a localized error toast for API or network failures. Preserve this behavior when upgrading the shell; navigation alone does not revoke a session.

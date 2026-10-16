@@ -117,6 +117,7 @@
     "docker-compose.yml",
     "config.example.yml",
     "README.MD",
+    "online-agent.md",
     "AGENTS.md",
     ".agents/rules",
     "CLAUDE.md",
@@ -161,6 +162,7 @@
   },
   "dependencies": {
     "zod": "catalog:",
+    "@nocobase/app-plugin-agents": "workspace:^",
     "@nocobase/app-plugin-api-keys": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",

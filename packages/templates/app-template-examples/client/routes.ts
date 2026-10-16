@@ -1,5 +1,8 @@
 import systemSettingsRoutes from './pages/settings/routes.js';
+import { modelsRoute } from '@nocobase/app-plugin-agents/client/routes';
 import {
+  BrainCircuit,
+  BotMessageSquare,
   FileText,
   Home,
   Hash,
@@ -65,6 +68,18 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     name: 'home',
     navigation: { title: 'navigation.home', icon: Home },
     path: '/',
+  },
+  {
+    name: 'agentsNavigation',
+    auth: 'required',
+    navigation: { title: 'onlineAgent.group', icon: BotMessageSquare },
+    children: [
+      {
+        ...modelsRoute,
+        navigation: { title: 'onlineAgent.models', icon: BrainCircuit },
+        breadcrumb: { title: 'onlineAgent.models' },
+      },
+    ],
   },
   {
     // Declares no navigation, so the application decides where its entry goes (for example a sidebar item with an

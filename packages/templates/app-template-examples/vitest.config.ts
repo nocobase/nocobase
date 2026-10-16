@@ -17,6 +17,7 @@ export default createReactVitestConfig({
           /@nocobase\/app-plugin-authorization\/(?:dist\/)?client\//u,
           /@nocobase\/app-plugin-(?:lifecycle-example|office-flows-example)\/(?:dist\/)?client\//u,
           /@nocobase\/app-plugin-notification-in-app\/(?:dist\/)?client\//u,
+          /@nocobase\/app-plugin-agents\/(?:dist\/)?client\//u,
         ],
       },
     },

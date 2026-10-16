@@ -1,5 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
+import agentChatEnUS from '#extensions/nocobase-agent-chat/locales/en-US';
 import systemEnUS from './system/en-US.js';
 
 const enUS = {
@@ -102,6 +103,20 @@ const enUS = {
   // The template's own copy: the shell, the sign-in pages and shared components. Keep it in `./system/` so a
   // template upgrade can replace it without touching the application's copy below.
   ...systemEnUS,
+  ...agentChatEnUS,
+  onlineAgent: {
+    group: 'Agents',
+    models: 'Models',
+    openModels: 'Open models',
+    checkingModels: 'Checking chat models…',
+    catalogFailed: 'Could not load chat models.',
+    noModels: {
+      title: 'No chat model configured',
+      description:
+        'Add a model service and enable a chat model to start chatting.',
+      readOnly: 'Ask an administrator to configure a chat model.',
+    },
+  },
   i18nExamples: {
     title: 'Internationalization',
     description:
@@ -268,6 +283,12 @@ const enUS = {
     },
   },
   examples: {
+    onlineAgent: {
+      title: 'Online Agent',
+      description:
+        'Configure a chat model and talk to Online Agent from any page.',
+      open: 'Open Agent chat',
+    },
     i18n: {
       title: 'Internationalization',
       description:

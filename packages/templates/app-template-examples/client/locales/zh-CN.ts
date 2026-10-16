@@ -1,9 +1,23 @@
 import type { AppResource } from './en-US.js';
+import agentChatZhCN from '#extensions/nocobase-agent-chat/locales/zh-CN';
 import systemZhCN from './system/zh-CN.js';
 
 const zhCN: AppResource = {
   // The template's own copy; see `./en-US.ts`.
   ...systemZhCN,
+  ...agentChatZhCN,
+  onlineAgent: {
+    group: 'Agents',
+    models: '模型',
+    openModels: '打开模型配置',
+    checkingModels: '正在检查聊天模型…',
+    catalogFailed: '无法读取聊天模型。',
+    noModels: {
+      title: '尚未配置聊天模型',
+      description: '添加模型服务并启用聊天模型，即可开始对话。',
+      readOnly: '请联系管理员配置聊天模型。',
+    },
+  },
   workflows: {
     group: '工作流',
     businessGroup: '业务流程',
@@ -257,6 +271,11 @@ const zhCN: AppResource = {
     },
   },
   examples: {
+    onlineAgent: {
+      title: 'Online Agent',
+      description: '配置聊天模型，通过全局入口与 Online Agent 实时对话。',
+      open: '打开 Agent 对话',
+    },
     i18n: {
       title: '多语言示例',
       description:

@@ -44,6 +44,25 @@ describe('app client routes', () => {
     }
   });
 
+  it('groups the exported model page under Agents without weakening settings authorization', () => {
+    const group = resolveRoutes().routes.find(
+      (route) => route.name === 'agentsNavigation',
+    )!;
+    expect(group.componentLoader).toBeUndefined();
+    expect(group.navigation?.title).toBe('onlineAgent.group');
+    expect(group.children).toHaveLength(1);
+    expect(group.children![0]).toMatchObject({
+      name: 'models',
+      path: '/models',
+      auth: 'required',
+      navigation: { title: 'onlineAgent.models' },
+      breadcrumb: { title: 'onlineAgent.models' },
+      authz: {
+        resource: { type: 'settings', id: 'agents.services' },
+        action: 'read',
+      },
+    });
+  });
   it('keeps the inbox out of the application navigation', () => {
     // The inbox is reached from the header's inbox button, so it deliberately declares no menu entry.
     expect(
@@ -61,6 +80,7 @@ describe('app client routes', () => {
     expect(pageAuthorizations(resolved.routes)).toEqual([
       // The landing page opted out of page authorization, so it is reachable by every signed-in user.
       { name: 'home', authorizedAs: null },
+      { name: 'models', authorizedAs: 'settings:agents.services' },
       { name: 'inbox', authorizedAs: null },
       { name: 'routeOverlays', authorizedAs: 'routeOverlays' },
       // Overlay children are nested under a page, so the parent's check is the only one.
