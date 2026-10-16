@@ -1,5 +1,4 @@
 ---
-"@nocobase/studio": patch
 "@nocobase/app-plugin-agents": minor
 "@nocobase/agent-protocol": minor
 "@nocobase/agent-runner": patch

@@ -8,7 +8,7 @@ Do not add content to the repository root `README.md`. Record repository develop
 
 ## Application Access URLs
 
-When reporting a running application's address or opening it for the user, use its application entry URL. In normal full-stack development, the Hono server proxies Vite, so the user-facing URL uses the server port (`APP_SERVER_PORT`, default 13000), including the application's base path. Vite's port (normally 5173) serves the frontend development process and is not the user-facing application entry. This applies to Studio as well as the application templates.
+When reporting a running application's address or opening it for the user, use its application entry URL. In normal full-stack development, the Hono server proxies Vite, so the user-facing URL uses the server port (`APP_SERVER_PORT`, default 13000), including the application's base path. Vite's port (normally 5173) serves the frontend development process and is not the user-facing application entry. This applies to every application, including the templates.
 
 Prefer the `Local:` URL printed by `pnpm dev`. For an existing run without available startup output, identify the application's process and working directory, confirm its actual server listening port and configured base path, and check the resulting URL before sharing it. Ports can advance when occupied; never infer the entry URL from defaults or a successful response on the Vite port alone. Report which checkout owns the run when it differs from the current workspace. Use a host reachable by the user; `localhost` refers to the machine where the browser runs.
 

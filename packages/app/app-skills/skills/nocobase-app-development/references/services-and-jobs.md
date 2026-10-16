@@ -222,6 +222,16 @@ await app.container
 
 See the `@nocobase/queue` README for the full contract.
 
+## Keep background work light
+
+Background and maintenance work shares the database and its connection pool with the requests users are waiting on, so it should usually not block them.
+
+- Maintenance usually should not pause the main flow. Prefer work that runs beside it over a step that holds requests or other jobs until it finishes.
+- Time-box long work or do it in batches: process a bounded number of rows per run or per transaction, and continue in the next run, rather than one long transaction or one query over a whole table.
+- When per-item work queries the database, batch it or bound its concurrency, as [server routes](server-routes.md#lists-and-statistics-a-fixed-number-of-queries) describes for lists.
+- When the inputs have not changed, consider caching the result (`cachingToken` from `@nocobase/app-server/caching`) or skipping the run rather than recomputing it.
+- Leave headroom in timeouts and leases. While a worker is alive, give it enough time to finish, for example by renewing its lease; a missed heartbeat is usually a more reliable sign that a machine is gone than a tight timeout, which can declare a slow but healthy worker dead and run its work twice.
+
 ## Verify
 
 - The service resolves from the token and behaves correctly in isolation.
