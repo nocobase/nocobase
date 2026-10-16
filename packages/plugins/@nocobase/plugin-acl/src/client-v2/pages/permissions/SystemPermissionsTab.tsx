@@ -7,33 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { type FlowContext, useFlowContext } from '@nocobase/flow-engine';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { Checkbox, Typography, theme } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useT } from '../../locale';
-import type { PermissionTabProps, Role } from '../../registries';
+import type { PermissionTabProps } from '../../registries';
 import PluginPermissionsTable from './PluginPermissionsTable';
-import { mergeRoleSnippets } from './utils';
+import { mergeRoleSnippets, toRoleSnippetsPayload } from './utils';
 
 const systemSnippets = ['ui.*', 'pm', 'pm.*', 'app'];
-
-function replaceSystemSnippet(snippets: string[], key: string, checked: boolean) {
-  const next = snippets.filter((snippet) => snippet !== key && snippet !== `!${key}`);
-  next.push(checked ? key : `!${key}`);
-  systemSnippets.forEach((snippet) => {
-    if (!next.includes(snippet) && !next.includes(`!${snippet}`)) {
-      next.push(`!${snippet}`);
-    }
-  });
-  return Array.from(new Set(next));
-}
-
-async function saveSnippets(ctx: FlowContext, role: Role, snippets: string[]) {
-  await ctx.api.resource('roles').update({
-    filterByTk: role.name,
-    values: { snippets },
-  });
-}
 
 export default function SystemPermissionsTab(props: PermissionTabProps) {
   const ctx = useFlowContext();
@@ -89,11 +71,15 @@ export default function SystemPermissionsTab(props: PermissionTabProps) {
               value={item.key}
               disabled={!!savingKey}
               onChange={async (event) => {
-                const nextSnippets = replaceSystemSnippet(snippets, item.key, event.target.checked);
-                setSnippets(nextSnippets);
+                const enabled = event.target.checked;
                 setSavingKey(item.key);
                 try {
-                  await saveSnippets(ctx, role, nextSnippets);
+                  const response = await ctx.api.resource('roles').setSystemSnippet({
+                    filterByTk: role.name,
+                    values: { snippet: item.key, enabled },
+                  });
+                  const nextSnippets = toRoleSnippetsPayload(response.data).data ?? [];
+                  setSnippets(nextSnippets);
                   props.onRoleChange(mergeRoleSnippets(role, nextSnippets));
                   ctx.message.success(t('Saved successfully'));
                 } finally {
@@ -109,7 +95,14 @@ export default function SystemPermissionsTab(props: PermissionTabProps) {
       {canConfigurePlugins ? (
         <>
           <Typography.Text strong>{t('Plugin settings')}</Typography.Text>
-          <PluginPermissionsTable active={props.activeKey === 'general'} role={mergeRoleSnippets(role, snippets)} />
+          <PluginPermissionsTable
+            active={props.activeKey === 'general'}
+            role={mergeRoleSnippets(role, snippets)}
+            onSnippetsChange={(nextSnippets) => {
+              setSnippets(nextSnippets);
+              props.onRoleChange(mergeRoleSnippets(role, nextSnippets));
+            }}
+          />
         </>
       ) : null}
     </div>
