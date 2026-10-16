@@ -3,6 +3,7 @@ import {
   mkdtemp,
   mkdir,
   realpath,
+  readFile,
   rm,
   symlink,
   writeFile,
@@ -12,6 +13,7 @@ import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import ts from 'typescript';
 import { expect, it } from 'vitest';
 
 const execute = promisify(execFile);
@@ -62,6 +64,36 @@ it('shares router context with an installed app-testing client helper', async ()
       path.join(helper, 'dist/src/client/index.js'),
       "export { MemoryRouter as TestRouter } from 'react-router';\n",
     );
+    const client = path.join(root, 'node_modules/@nocobase/app-client');
+    await mkdir(path.join(client, 'dist'), { recursive: true });
+    await writeFile(
+      path.join(client, 'package.json'),
+      JSON.stringify({
+        name: '@nocobase/app-client',
+        type: 'module',
+        exports: { '.': './dist/navigation-guard-provider.js' },
+      }),
+    );
+    // Exercise the real provider across its published JavaScript boundary too.
+    for (const file of [
+      'navigation-guard-provider.tsx',
+      'navigation-guard.ts',
+    ]) {
+      const source = await readFile(
+        path.resolve(packageRoot, '../../app/app-client/src', file),
+        'utf8',
+      );
+      const compiled = ts.transpileModule(source, {
+        compilerOptions: {
+          module: ts.ModuleKind.ESNext,
+          jsx: ts.JsxEmit.ReactJSX,
+        },
+      });
+      await writeFile(
+        path.join(client, 'dist', file.replace(/\.tsx?$/u, '.js')),
+        compiled.outputText,
+      );
+    }
     await writeFile(path.join(root, 'package.json'), '{"type":"module"}');
     await writeFile(
       path.join(root, 'vitest.config.ts'),
@@ -74,10 +106,11 @@ it('shares router context with an installed app-testing client helper', async ()
       import {render, screen} from '@testing-library/react';
       import {TestRouter} from '@nocobase/app-testing/client';
       import {useLocation} from 'react-router';
+      import {NavigationGuardProvider} from '@nocobase/app-client';
       import {expect, it} from 'vitest';
       it('reads the same router', () => {
         const Probe = () => createElement('span', null, useLocation().pathname);
-        render(createElement(TestRouter, {initialEntries:['/settings/users']}, createElement(Probe)));
+        render(createElement(TestRouter, {initialEntries:['/settings/users']}, createElement(NavigationGuardProvider, null, createElement(Probe))));
         expect(screen.getByText('/settings/users')).toBeTruthy();
       });
     `,

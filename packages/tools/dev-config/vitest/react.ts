@@ -26,6 +26,8 @@ const reactConfig: ViteUserConfig = {
           // Published app-testing helpers own the MemoryRouter around the page. Transform
           // their client entry too, so it shares the page's router context just as workspace sources do.
           /@nocobase\/app-testing\/(?:dist\/)?src\/client\//u,
+          // The client runtime also consumes router contexts in its navigation guard.
+          /@nocobase\/app-client\//u,
         ],
       },
     },
