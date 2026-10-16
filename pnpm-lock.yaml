@@ -5425,6 +5425,12 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.0.1
         version: 5.8.0(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.85.0(react@19.2.8))(zod@4.6.5)
+      '@nocobase/agent-runner':
+        specifier: workspace:^
+        version: link:../../app/agent-runner
+      '@nocobase/app-cli-client':
+        specifier: workspace:^
+        version: link:../../app/app-cli-client
       '@nocobase/app-client':
         specifier: workspace:^
         version: link:../../app/app-client

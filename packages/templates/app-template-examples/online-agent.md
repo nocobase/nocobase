@@ -1,6 +1,6 @@
 # OnlineAgent example
 
-This Examples-only integration uses the Agents plugin's public chat SDK and model configuration route. It runs OnlineAgent directly with a configured chat model, without a Runner, custom Agent, tools or Skills. It does not add a plugin API or modify the Default template.
+This Examples-only integration uses the Agents plugin's public chat SDK and model configuration route. The native example runs OnlineAgent directly with a configured chat model, without a Runner, custom Agent, tools or Skills. It does not add a plugin API or modify the Default template.
 
 ## Configure a model
 
@@ -19,6 +19,20 @@ Models is visible only with `settings:agents.services` **read** permission; serv
 The same **Agents** menu also exposes the plugin's **Agents** (`/agents`) and **Runtimes** (`/runtimes`) pages. Open Runtimes and choose **Add runtime** (`/runtimes/connect`) to configure allowed coding tools and concurrency, then follow the plugin's installation and registration instructions on the execution machine. Use Agents to manage the runner-discovered agents after connection. These pages configure Runner execution; select an available Agent in a new chat to use it through the same panel.
 
 The pages retain the plugin's `page:agents` and `page:runtimes` access grants. Agent management requires `settings:agents.agents` management access; team-runtime management requires `settings:agents.runners` management access. Personal-runtime operations remain subject to the plugin's ownership checks. Adding these menu entries does not grant permissions, register a runtime or start a local process.
+
+### Build the application business CLI
+
+Before sending Runner chat, build the Examples business CLI from this application directory:
+
+```bash
+pnpm nocobase cli build --universal
+```
+
+The declared `nocobase-examples` CLI uses `@nocobase/app-cli-client` to call this application's published business APIs. It is not the development-management command `pnpm nocobase`, and installing `nocobase-runner` does not install it. The build writes a versioned archive and checksum manifest under `storage/runners/dist/stable/nocobase-examples/`; Agents serves the archive and the Runner downloads and verifies it during preparation. The universal archive requires Node.js 24 or newer on the execution machine. For machines without host Node.js, use `pnpm nocobase cli build --targets <platform>` to bundle Node.js instead. Build the Runner separately with `pnpm nocobase cli build --runner` when its distribution is not already available.
+
+`server/config/agents.ts` aligns `agents.cli.name` with the declared CLI and keeps `agents.app` keyed by the runtime's application name (`main` by default), so introducing the CLI brand does not replace existing Runner registrations. Keep a customized `agents.app` identity unchanged when upgrading; if an existing deployment overrides `app.name` directly, explicitly preserve that name in `agents.app` as well. `config.yml` may override these defaults. The default run credential location `.nocobase-examples/run.json` matches the business client; never point a CLI override at the development CLI. No global CLI installation or Runner re-registration is needed for the served archive.
+
+After changing the CLI brand or upgrading its client package, rebuild the archive. Build distribution artifacts in CI and mount them into production storage; do not commit them. If preparation reports `cliUnavailable` and says the CLI must be preinstalled, verify that this application's distribution contains the named business CLI for the Runner's platform (or a universal archive), rather than reinstalling the Runner or changing a model. Native OnlineAgent chat does not require this CLI build.
 
 ## Chat behavior
 
