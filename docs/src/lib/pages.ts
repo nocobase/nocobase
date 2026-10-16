@@ -1,4 +1,3 @@
-import { getCollection, type CollectionEntry } from 'astro:content';
 import {
   getLanguage,
   LANGUAGES,
@@ -10,6 +9,7 @@ import {
   sourceToRoute,
 } from '../../shared/routes.ts';
 import overviewPages from '../components/CapabilityOverview/pages.en.json';
+import { getDocEntries, type DocEntry } from './collection.js';
 import { extractPageMeta } from './page-meta.ts';
 
 /**
@@ -20,7 +20,7 @@ import { extractPageMeta } from './page-meta.ts';
 export type PageKind = 'doc' | 'home' | 'comparison' | 'capability-overview';
 
 export interface DocPage {
-  entry: CollectionEntry<'docs'>;
+  entry: DocEntry;
   /** Source language key, `en` or `cn`. */
   language: string;
   /** Language-neutral route with its exact trailing-slash shape: `/capabilities/auth/`, `/capabilities/file`. */
@@ -66,7 +66,7 @@ export function getPages(): Promise<DocPage[]> {
 }
 
 async function load(): Promise<DocPage[]> {
-  const entries = await getCollection('docs');
+  const entries = await getDocEntries();
   return entries
     .map((entry) => {
       const [language, ...rest] = entry.id.split('/');

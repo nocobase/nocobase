@@ -3,7 +3,7 @@
  * A Markdown page: sidebar from `_meta.json`, the rendered body with its title and page actions, the table of
  * contents from its `##` and `###` headings, and previous and next links that follow the sidebar.
  */
-import { render } from 'astro:content';
+import { render, type CollectionEntry } from 'astro:content';
 import { localizePath } from '../../shared/languages.ts';
 import { absoluteUrl } from '../../shared/site.ts';
 import PageActions from '../components/doc/PageActions.astro';
@@ -26,7 +26,9 @@ interface Props {
 
 const { page } = Astro.props;
 const pages = await getPages();
-const { Content, headings } = await render(page.entry);
+const { Content, headings } = await render(
+  page.entry as CollectionEntry<'docs'>,
+);
 const sidebar = sidebarFor(buildSidebars(page.language, pages), page.route);
 const sequence = sidebar ? flattenLinks(sidebar.items) : [];
 const position = sequence.findIndex(({ href }) => href === page.path);
