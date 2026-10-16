@@ -107,9 +107,7 @@ describe('heartbeat capacity diagnostics', () => {
         expect.objectContaining({ used: 0, limit: 2, reportedTotalFree: 0 }),
       ],
     });
-    expect(
-      (await h.services.runs.workload({ subjectKind: 'sample' })).runs[0]?.wait,
-    ).toMatchObject({
+    expect(await h.services.runs.queueWait(run)).toMatchObject({
       reason: 'runnersBusy',
       params: { used: 0, limit: 2, reportedFree: ['0'] },
     });

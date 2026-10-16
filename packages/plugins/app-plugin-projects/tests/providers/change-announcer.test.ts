@@ -49,6 +49,8 @@ describe('change announcements', () => {
         issueId: 'c',
         changes: { status: { from: 'backlog', to: 'in_progress' } },
       },
+      // Moved to another project, parent or executor.
+      { type: 'issue.changed', issueId: 'c', moved: true },
       { type: 'member.changed' },
     ]) {
       const { it: changes, published } = announcer();

@@ -221,7 +221,16 @@ export function createIssueService(deps: IssueDeps): IssueService {
       .triggers()
       .onIssueChanged(tx, { before, after, actor, start, ownerClaimed });
     await deps.relations().changed(tx, { before, after, actor });
-    tx.emit({ type: 'issue.changed', issueId: after.id });
+    const moved =
+      before.projectId !== after.projectId ||
+      before.parentIssueId !== after.parentIssueId ||
+      before.executor?.type !== after.executor?.type ||
+      before.executor?.id !== after.executor?.id;
+    tx.emit({
+      type: 'issue.changed',
+      issueId: after.id,
+      ...(moved ? { moved: true } : {}),
+    });
     for (const parentId of new Set([before.parentIssueId, after.parentIssueId]))
       if (parentId) tx.emit({ type: 'issue.changed', issueId: parentId });
     const changes = changeSet(before, after);

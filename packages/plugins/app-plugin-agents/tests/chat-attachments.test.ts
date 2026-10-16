@@ -69,6 +69,31 @@ describe('chat attachments', () => {
       },
     );
 
+  it('sends application-started conversation attachments with the first message', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const file = await uploaded(ALICE, 'screen.png', PNG, 'image/png');
+    h.services.conversations.sources.register({
+      key: 'intake',
+      title: { key: 'intake', ns: 'test' },
+    });
+    const started = await h.request('POST', `${base}/start`, {
+      user: ALICE,
+      body: {
+        source: 'intake',
+        agentId,
+        text: 'Read the image',
+        attachmentIds: [file.id],
+      },
+    });
+    expect(started.status).toBe(200);
+    expect(started.body.data.message.attachments).toMatchObject([
+      { id: file.id, filename: 'screen.png' },
+    ]);
+    expect((await content(file.id, { user: ALICE })).status).toBe(200);
+    expect((await content(file.id, { user: BOB })).status).toBe(404);
+  });
+
   it('keeps an upload its uploader’s until it is sent, and refuses one too large', async () => {
     h = await createHarness();
     const file = await uploaded(ALICE, 'notes.txt');

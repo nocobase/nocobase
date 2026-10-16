@@ -55,10 +55,7 @@ export {
   useExecutorOptions,
   useHasOtherExecutors,
 } from './pages/issues/use-executor-options.js';
-export {
-  myIssueFilters,
-  type MyIssuesRole,
-} from './pages/my-issues/my-issues-model.js';
+export { myIssueFilters } from './pages/my-issues/my-issues-model.js';
 export type { ExecutorOption } from './components/pm-executor-select.js';
 export {
   canCreateIssues,

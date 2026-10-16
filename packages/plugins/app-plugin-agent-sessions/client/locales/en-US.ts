@@ -298,7 +298,6 @@ const enUS = {
       agent: 'Install a coding agent and sign in to it',
       agentHint:
         'Codex, Claude Code, Gemini CLI, GitHub Copilot, Cursor, Qwen Code, Kimi CLI and more: sign in with its own command. Use the strongest model you can.',
-      install: 'Install the command line',
       login: 'Sign in with your account',
       start: 'Keep this computer connected',
       startHint:

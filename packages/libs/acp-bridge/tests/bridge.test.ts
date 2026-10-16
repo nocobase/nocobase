@@ -186,7 +186,6 @@ describe('runBridge', () => {
       cwd: root,
       acpSessionId: null,
       settings: {},
-      tools: null,
     };
     commands.push({
       type: 'prompt',

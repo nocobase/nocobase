@@ -35,6 +35,7 @@ import {
   SeenInput,
   SessionParams,
   SessionSchema,
+  SessionWorkSchema,
   TranscriptEventSchema,
   UpdateSessionInput,
 } from './schemas.js';
@@ -65,6 +66,35 @@ const notWritable = apiErrorResponse(
 /** The signed-in person's computers and sessions, under `/agentSessions`. */
 export function sessionRoutes(service: AgentSessionsService): Hono<AuthEnv> {
   const router = new Hono<AuthEnv>();
+
+  router.get(
+    '/sessions/:sessionId/work',
+    describeRoute({
+      tags,
+      summary: 'Get the work tied to a session',
+      operationId: 'agentSessionsGetSessionWork',
+      ...cliRoute({
+        command: 'session work',
+        flags: {
+          sessionId: { name: 'session', env: ['NB_STUDIO_AGENT_SESSION'] },
+        },
+      }),
+      description: `Lists visible linked work and its progress. ${own}`,
+      responses: {
+        200: dataResponse(z.array(SessionWorkSchema)),
+        ...errors,
+        404: sessionNotFound,
+      },
+    }),
+    apiValidator('param', SessionParams),
+    async (context) =>
+      context.json({
+        data: await service.sessionWork(
+          viewerOf(context),
+          context.req.valid('param').sessionId,
+        ),
+      }),
+  );
 
   router.post(
     '/computers/:computerId/discoverChoices',

@@ -81,6 +81,30 @@ export async function findDependencyBetween(
   );
 }
 
+/**
+ * Every `blockedBy` link whose issue waited for is live and not in one of `finishedKeys`, of any issue: one query, for
+ * telling which of many issues wait without a query per issue.
+ */
+export async function unfinishedBlockedBy(
+  conn: DatabaseConnection,
+  finishedKeys: readonly string[],
+): Promise<DependencyRecord[]> {
+  return dependencies(conn).findMany({
+    filter: (f) =>
+      f.and([
+        f.string('type').eq('blockedBy'),
+        f
+          .relation('dependsOn')
+          .some((target) =>
+            target.and([
+              target.date('deletedAt').empty(),
+              ...finishedKeys.map((key) => target.string('statusKey').ne(key)),
+            ]),
+          ),
+      ]),
+  });
+}
+
 /** What `issueIds` depend on, oldest first. */
 export async function outgoing(
   conn: DatabaseConnection,

@@ -193,7 +193,7 @@ describe('link panels', () => {
         <AgentSessionsConfigContext.Provider
           value={{
             cli: 'nb-studio',
-            install: null,
+            connectPrompt: null,
             linkPanels: { issue: Panel },
           }}
         >

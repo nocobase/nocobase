@@ -283,7 +283,6 @@ const zhCN: AgentSessionsResource = {
       agent: '装好一个编程 Agent 并登录',
       agentHint:
         'Codex、Claude Code、Gemini CLI、GitHub Copilot、Cursor、Qwen Code、Kimi CLI 等都可以，用它自己的命令登录。建议使用你能用的最强模型。',
-      install: '安装命令行',
       login: '用你的账号登录',
       start: '让这台电脑保持在线',
       startHint: '在后台运行，以后开机自动连接；断网或休眠后会自己重连。',

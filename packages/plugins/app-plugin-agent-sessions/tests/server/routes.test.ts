@@ -485,3 +485,37 @@ describe('the agent sessions routes', () => {
     });
   });
 });
+
+test('session work authenticates its owner and returns an empty session without writes', async ({
+  database,
+}) => {
+  const router = await mount(database);
+  const service = new AgentSessionsService({ database });
+  const { computerId } = await service.register('u1', {
+    protocol: BRIDGE_PROTOCOL_VERSION,
+    computerId: null,
+    computer: {
+      name: 'Laptop',
+      platform: 'linux',
+      arch: 'x64',
+      host: 'test',
+      roots: ['/workspace'],
+      agents: [{ id: 'codex', name: 'Codex', version: 'test' }],
+    },
+  });
+  const session = await service.createSession(
+    { userId: 'u1' },
+    {
+      computerId,
+      agentId: 'codex',
+      cwd: '/workspace',
+      content: [{ type: 'text', text: 'Plan' }],
+    },
+  );
+  const path = `/sessions/${session.id}/work`;
+  expect((await call(router, 'GET', path)).status).toBe(401);
+  expect((await call(router, 'GET', path, 'u2')).status).toBe(404);
+  const own = await call(router, 'GET', path, 'u1');
+  expect(own.status).toBe(200);
+  expect(await own.json()).toEqual({ data: [] });
+});

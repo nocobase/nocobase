@@ -290,3 +290,22 @@ export const projectsPlanSourceToken: ServiceToken<PlanSourceOf> =
   createServiceToken<PlanSourceOf>('@nocobase/app-plugin-projects/plan-source');
 
 export { PLANS_USE_ACTION } from './domains/plans/index.js';
+
+/** Application integration for CLI issue creation in a person's session and issue progress. */
+export interface IssueSessionIntegration {
+  creationContext(
+    viewer: Viewer,
+    sessionId: string,
+  ): Promise<{
+    readonly projectId: string | null;
+    readonly link: (issueId: string) => Promise<void>;
+  }>;
+  progress(
+    viewer: Viewer,
+    issue: import('../shared/issues.js').IssueDetail,
+  ): Promise<Record<string, unknown> | null>;
+}
+export const projectsIssueSessionToken: ServiceToken<IssueSessionIntegration> =
+  createServiceToken<IssueSessionIntegration>(
+    '@nocobase/app-plugin-projects/issue-session',
+  );
