@@ -2358,6 +2358,7 @@
     "rag.knowledgeBase.knowledgeBaseType": "Тип",
     "rag.knowledgeBase.knowledgeBaseType.external": "Внешняя",
     "rag.knowledgeBase.knowledgeBaseType.local": "Локальная",
+    "rag.knowledgeBase.knowledgeBaseType.local.tag": "Локальная",
     "rag.knowledgeBase.knowledgeBaseType.readonly": "Только чтение",
     "rag.knowledgeBase.name": "Название",
     "rag.knowledgeBase.storageId": "Хранилище файлов",
