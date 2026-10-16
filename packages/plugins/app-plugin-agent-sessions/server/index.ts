@@ -13,8 +13,4 @@ export type {
   SessionNoticeSettle,
   SessionNoticeType,
 } from './notices.js';
-export {
-  defineSessionTool,
-  type SessionTool,
-  type SessionToolContext,
-} from './tools.js';
+export { AgentSessionsError } from './errors.js';

@@ -45,6 +45,8 @@ import { everHeld } from './run-tokens.js';
 import {
   eventsRepo,
   findRunRecord,
+  findRunStatus,
+  pendingInputs,
   inputsRepo,
   isActive,
   isTerminal,
@@ -132,7 +134,15 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
     runner: Pick<Runner, 'id'>,
     runId: string,
   ): Promise<RunRecord> {
-    const run = await findRunRecord(conn, runId);
+    return checkHeld(conn, runner, runId, await findRunRecord(conn, runId));
+  }
+
+  async function checkHeld<T extends Pick<RunRecord, 'runnerId' | 'status'>>(
+    conn: DatabaseConnection,
+    runner: Pick<Runner, 'id'>,
+    runId: string,
+    run: T | undefined,
+  ): Promise<T> {
     if (run && run.runnerId === runner.id) {
       if (isActive(run.status)) return run;
       throw new ProtocolError('RUN_NOT_ACTIVE', `The run is ${run.status}.`, {
@@ -431,8 +441,29 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         };
       }),
 
-    status: (runner, runId) =>
-      tx.run(async ({ conn }) => {
+    status: async (runner, runId) => {
+      const conn = tx.read();
+      const run = await findRunStatus(conn, runId);
+      // Terminal polls never deliver residual input.
+      if (run && run.runnerId === runner.id && isTerminal(run.status))
+        return {
+          status: run.status,
+          cancelRequested: run.cancelRequestedAt !== null,
+          inputs: [],
+          leaseExpiresAt: null,
+        };
+      const current = await checkHeld(conn, runner, runId, run);
+      const pending =
+        current.pendingInputId === null ? [] : await pendingInputs(conn, runId);
+      if (pending.every((input) => input.deliveredAt !== null))
+        return {
+          status: current.status,
+          cancelRequested: current.cancelRequestedAt !== null,
+          inputs: pending.map(toInput),
+          leaseExpiresAt: current.leaseExpiresAt,
+        };
+      // Re-read and revalidate inside the existing delivery transaction.
+      return tx.run(async ({ conn }) => {
         const run = await findRunRecord(conn, runId);
         // A runner may still ask about a run it held once it ended, to learn how.
         if (run && run.runnerId === runner.id && isTerminal(run.status))
@@ -449,7 +480,8 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           inputs: await deliver(conn, current),
           leaseExpiresAt: current.leaseExpiresAt,
         };
-      }),
+      });
+    },
 
     complete: (runner, runId, request) =>
       tx.run(async (unit) => {

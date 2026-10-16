@@ -53,6 +53,10 @@ export interface BridgeOptions {
   /** The directories sessions may work in; the home directory by default. */
   readonly roots?: readonly string[];
   readonly env?: NodeJS.ProcessEnv;
+  /** Ensures the CLI Skill is available and supplies the selected profile and session, on start and resume. */
+  readonly prepareSession?:
+    | ((agentId: string, sessionId: string) => Promise<NodeJS.ProcessEnv>)
+    | undefined;
   /**
    * Whether a computer whose key the application refuses at start, such as one removed there, connects again as the
    * person, as when they start the bridge themselves (the default); a bridge started at login stops instead.
@@ -237,6 +241,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
       );
       if (signal.aborted) return;
       for (const info of infos) agents.set(info.id, info);
+      // Registration also negotiates protocol upgrades; polls do not carry that handshake.
       await register();
     })()
       .catch((error: unknown) => {
@@ -276,6 +281,19 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
   const discover = async (
     command: Extract<BridgeCommand, { type: 'discoverChoices' }>,
   ): Promise<void> => {
+    const started = Date.now();
+    const timing = (phase: string): void => {
+      if (env.NOCOBASE_ACP_DIAGNOSTICS === '1')
+        log(
+          JSON.stringify({
+            phase,
+            at: Date.now(),
+            durationMs: Date.now() - started,
+            requestId: command.requestId,
+          }),
+        );
+    };
+    timing('discoveryReceived');
     const discoverySignal = AbortSignal.any([
       signal,
       discoveryShutdown.signal,
@@ -288,11 +306,9 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
         cwd: command.cwd,
         settings: command.settings,
         acpSessionId: null,
-        tools: null,
       },
       {
         client: options.client,
-        server: options.server,
         env,
         roots,
         resolve,
@@ -320,13 +336,23 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
           : message(error)
         ).slice(0, 2000),
       };
-    } finally {
-      await session.close();
     }
-    if (!signal.aborted)
-      await post(BRIDGE_ROUTES.reply, reply).catch((error: unknown) =>
-        log(`Could not answer the application: ${message(error)}`),
-      );
+    // Start cleanup immediately, but do not hold the answer behind the process-group grace period.
+    // This discovery remains tracked until both delivery and cleanup settle, including on shutdown.
+    timing('discoveryReady');
+    const closing = session.close().catch((error: unknown) => {
+      log(`Could not close the discovery process: ${message(error)}`);
+    });
+    try {
+      if (!signal.aborted)
+        await post(BRIDGE_ROUTES.reply, reply).catch((error: unknown) =>
+          log(`Could not answer the application: ${message(error)}`),
+        );
+      timing('discoveryReplied');
+    } finally {
+      await closing;
+      timing('discoveryClosed');
+    }
   };
   const reporter = new Reporter({
     send: (request) => post<ReportResponse>(BRIDGE_ROUTES.report, request),
@@ -384,13 +410,39 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     const sessionId = command.session.id;
     let session = sessions.get(sessionId);
     if (!session) {
+      const diagnostics = env.NOCOBASE_ACP_DIAGNOSTICS === '1';
+      let promptId: string | undefined;
+      let firstToken = false;
+      const timing = (phase: string): void => {
+        log(JSON.stringify({ phase, at: Date.now(), sessionId, promptId }));
+      };
       session = new BridgeSession(command.session, {
+        prepareSession: options.prepareSession,
         client: options.client,
-        server: options.server,
         env,
         roots,
         resolve,
-        emit: (event) => reporter.add(sessionId, event),
+        emit: (event) => {
+          if (diagnostics) {
+            if (event.kind === 'turnStarted') {
+              promptId = event.promptId;
+              firstToken = false;
+              timing('agentPromptStarted');
+            } else if (
+              event.kind === 'update' &&
+              event.update.sessionUpdate === 'agent_message_chunk' &&
+              promptId &&
+              !firstToken
+            ) {
+              firstToken = true;
+              timing('agentFirstToken');
+            } else if (event.kind === 'turnEnded') {
+              timing('agentTurnEnded');
+              promptId = undefined;
+            }
+          }
+          reporter.add(sessionId, event);
+        },
         stateChanged: () => reporter.touch(sessionId),
       });
       sessions.set(sessionId, session);

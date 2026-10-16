@@ -207,3 +207,61 @@ describe('the "New issue" button', () => {
     expect(screen.getByText('C')).toBeTruthy();
   });
 });
+
+it('pastes an image at the caret, blocks creation until upload finishes, and binds it on creation', async () => {
+  let finish!: (value: unknown) => void;
+  api.routes['POST projects/attachments'] = () =>
+    new Promise((resolve) => {
+      finish = resolve;
+    });
+  api.routes['POST projects/issues'] = () => ({
+    data: { id: 'i1', identifier: 'PM-1' },
+  });
+  renderNewIssue();
+  const description = await screen.findByRole('textbox', {
+    name: 'issueForm.descriptionLabel',
+  });
+  fireEvent.change(screen.getByLabelText('issueForm.titleLabel'), {
+    target: { value: 'Screenshot' },
+  });
+  description.focus();
+  fireEvent.paste(description, {
+    clipboardData: {
+      files: [new File(['png'], 'image.png', { type: 'image/png' })],
+      getData: () => '',
+      types: ['Files'],
+    },
+  });
+  await waitFor(() => expect(finish).toBeTypeOf('function'));
+  expect(
+    screen
+      .getByRole('button', { name: 'issueForm.createAndStart' })
+      .hasAttribute('disabled'),
+  ).toBe(true);
+  finish({
+    data: {
+      id: 'f1',
+      filename: 'shot.png',
+      contentUrl: '/api/projects/attachments/f1/content',
+      previewable: true,
+    },
+  });
+  await waitFor(() =>
+    expect(description.querySelector('img')?.getAttribute('src')).toBe(
+      '/api/projects/attachments/f1/content',
+    ),
+  );
+  fireEvent.submit(document.getElementById('pm-issue-new-form')!);
+  await waitFor(() =>
+    expect(
+      api.calls.find(
+        (call) => call.method === 'POST' && call.path === 'projects/issues',
+      )?.json,
+    ).toMatchObject({
+      attachmentIds: ['f1'],
+      description: expect.stringContaining(
+        '![shot.png](/api/projects/attachments/f1/content)',
+      ),
+    }),
+  );
+});

@@ -74,6 +74,14 @@ export interface CliCommand {
   readonly method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   readonly path: string;
   readonly parameters: readonly CliParameter[];
+  /** Read once before sending; the response field fills a body field, without a user flag. */
+  readonly readBinding?: {
+    readonly path: string;
+    /** Read-route path parameter to this command's path parameter. */
+    readonly params: Readonly<Record<string, string>>;
+    readonly responseField: string;
+    readonly bodyField: string;
+  };
   readonly body?:
     | {
         readonly media: 'application/json' | 'multipart/form-data';

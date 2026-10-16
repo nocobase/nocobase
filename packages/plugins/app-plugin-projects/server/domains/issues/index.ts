@@ -15,6 +15,7 @@ export {
   issuesOfProject,
   liveChildren,
   touchIssueActivity,
+  unfinishedStagedChildren,
   updateIssue,
 } from './issue.store.js';
 export {
@@ -32,6 +33,7 @@ export {
   type IssueMatches,
   type IssueMatchScope,
   type IssueQueries,
+  type IssueHierarchy,
 } from './issue.queries.js';
 export {
   CONTEXT_COMMENT_LIMIT,

@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BRIDGE_HEADERS, BRIDGE_PROTOCOL_VERSION } from '../src/protocol.js';
 import * as agents from '../src/agents.js';
+import { BridgeSession } from '../src/session.js';
 import { AgentProcess } from '../src/agent-process.js';
 import type { BridgeCommand } from '../src/protocol.js';
 
@@ -110,6 +111,47 @@ const registers = (): Seen[] =>
   seen.filter((request) => request.path.endsWith('/register'));
 
 describe('runBridge', () => {
+  it('delivers discovered choices before slow cleanup and awaits cleanup during shutdown', async () => {
+    let release: (() => void) | undefined;
+    vi.spyOn(BridgeSession.prototype, 'discover').mockResolvedValue({
+      status: 'available',
+      choices: [],
+    });
+    vi.spyOn(BridgeSession.prototype, 'close').mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        }),
+    );
+    answer = () => ({ data: { computerId: 'c1', key: 'k1' } });
+    commands.push({
+      type: 'discoverChoices',
+      requestId: 'd1',
+      agentId: 'opencode',
+      cwd: root,
+      settings: {},
+    });
+    const { done, stop } = await run();
+    try {
+      await until(() => seen.some((one) => one.path.endsWith('/reply')));
+      expect(release).toBeDefined();
+      expect(
+        seen.find((one) => one.path.endsWith('/reply'))?.body,
+      ).toMatchObject({ requestId: 'd1', discovery: { status: 'available' } });
+      let settled = false;
+      void done.then(() => {
+        settled = true;
+      });
+      stop();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(settled).toBe(false);
+    } finally {
+      release?.();
+      stop();
+      await done;
+    }
+  });
+
   it('refreshes with separate probe processes while an active session keeps running', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     vi.spyOn(agents, 'resolveAgent').mockImplementation(async (spec) =>
@@ -144,7 +186,6 @@ describe('runBridge', () => {
       cwd: root,
       acpSessionId: null,
       settings: {},
-      tools: null,
     };
     commands.push({
       type: 'prompt',

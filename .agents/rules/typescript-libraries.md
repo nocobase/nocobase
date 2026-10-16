@@ -15,11 +15,8 @@ Library packages that emit `.d.ts` files (`declaration: true`) enable both `isol
 | `packages/libs/db-sqlite/tsconfig.json`                    | SQLite dialect             |
 | `packages/libs/db-postgres/tsconfig.json`                  | PostgreSQL dialect         |
 | `packages/libs/db-mysql/tsconfig.json`                     | MySQL dialect              |
-| `packages/libs/db-kingbase/tsconfig.json`                  | Kingbase dialect           |
-| `packages/libs/db-oceanbase/tsconfig.json`                 | OceanBase dialect          |
 | `packages/libs/db-oracle/tsconfig.json`                    | Oracle dialect             |
 | `packages/libs/db-mssql/tsconfig.json`                     | MSSQL dialect              |
-| `packages/libs/db-dameng/tsconfig.json`                    | Dameng dialect             |
 | `packages/app/app-cli/tsconfig.json`                       | Application CLI            |
 | `packages/app/app-cli-client/tsconfig.json`                | Remote application CLI     |
 | `packages/app/agent-runner/tsconfig.json`                  | Agent runner               |

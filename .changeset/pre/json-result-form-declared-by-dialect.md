@@ -3,11 +3,8 @@
 '@nocobase/db-sqlite': patch
 '@nocobase/db-postgres': patch
 '@nocobase/db-mysql': patch
-'@nocobase/db-kingbase': patch
-'@nocobase/db-oceanbase': patch
 '@nocobase/db-oracle': patch
 '@nocobase/db-mssql': patch
-'@nocobase/db-dameng': patch
 ---
 
 Decode JSON columns according to a result form the dialect declares instead of guessing from the value.

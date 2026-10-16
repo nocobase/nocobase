@@ -403,9 +403,28 @@ function deriveOne(
     document,
     operation.requestBody,
   );
+  const binding = options.readBinding;
+  const readOperation = binding ? operations.get(binding.operation) : undefined;
+  if (
+    binding &&
+    (!readOperation || readOperation.method.toLowerCase() !== 'get')
+  )
+    throw new Error(
+      `CLI read binding requires a GET operation: ${binding.operation}`,
+    );
+  const readBinding: CliCommand['readBinding'] =
+    binding && readOperation
+      ? {
+          path: `${basePathOf(document)}${readOperation.path}`,
+          params: binding.params,
+          responseField: binding.responseField,
+          bodyField: binding.bodyField,
+        }
+      : undefined;
   const uploads = options.uploads ?? {};
   const uploadFields = new Set([
     ...Object.values(uploads).map((upload) => upload.field),
+    ...(binding ? [binding.bodyField] : []),
     ...(options.changedFiles ? [options.changedFiles.field] : []),
   ]);
   if (requestBody) {
@@ -559,6 +578,7 @@ function deriveOne(
     method: method.toUpperCase() as CliCommand['method'],
     path: `${basePathOf(document)}${path}`,
     parameters: result,
+    ...(readBinding ? { readBinding } : {}),
     ...(body ? { body } : {}),
     output: {
       kind: output,

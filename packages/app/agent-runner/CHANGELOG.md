@@ -1,5 +1,27 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.9
+
+### Patch Changes
+
+- 8e4cf26: Recover runners and agent-session bridges after a protocol upgrade. Heartbeat answers now carry the server's runner protocol (`protocolVersion`), and a runner that speaks an older protocol while no newer version is offered logs what it speaks, what the application needs and how to update, instead of looking up to date. A bridge refused for its protocol now receives the protocols the application speaks in the error's `metadata`; `acp start` then updates the CLI as `update` does and exits non-zero so its launchd, systemd or Startup service starts it again on the new version, and when no update helps it still exits non-zero after a pause rather than stopping with success. A computer whose bridge was refused as too old is shown on My agents with the commands to update it.
+- 923a8e5: Refresh installed tool versions, paths and runner login status in long-running processes using bounded, cancellable background inspections. Rediscover previously unavailable tools and keep model capabilities consistent with the latest inspection. Reprobe ACP agents every minute and allow a session to retry after an authentication-required prompt error without replaying the failed message.
+
+  Terminate ACP launcher descendants after the stop grace period even when the launcher exits first.
+
+- 4626949: Start issue runs from the earliest linked open pull request in the same repository, allow agents to manage branches and pull request associations without rewriting pushed history, and preserve shared local branches and stashes when removing run worktrees. Only published runner-created temporary branches are cleaned up. A run that ends on another branch is preserved by that branch, without a saved head or push failure on the starting target.
+- 0aca290: Save local continuation commits with the checkout's Git identity, a changed-file summary, and no attribution trailers. Retain the worktree and report recovery instructions when the identity is unavailable.
+- f36da62: Keep a runner claiming work while it collects working directories. Collection no longer measures every directory's size by reading every file, which on runners with many directories took tens of minutes per round and held all claims meanwhile; only pruning the shared pnpm store still holds claims. Routine collection now runs an hour after the previous round ended (`WORKSPACE_REPORT_INTERVAL_MS`), still at once when the disk runs low, and the runner logs each round's start and duration. Workspace diagnostics show a directory's size only when a runner reported one.
+- ca7cb55: Runs no longer force pnpm to copy packages from the shared store where the file system cannot clone, and use pnpm's default import method instead: packages are cloned where supported and hard-linked elsewhere, so a run on ext4 no longer copies its whole `node_modules`. The workspace notes tell the agent never to edit files under `node_modules` in place and to use `pnpm patch` instead.
+- 99be3d0: Use short private per-run temporary directories on Linux and macOS so Unix sockets can start, reserve TMP and TEMP alongside TMPDIR, and reclaim temporary files through the existing run lifecycle and garbage collection.
+- 9d22980: Retry failed removal of saved and pushed run worktrees without requiring recovery, clean matching legacy records on startup and GC, and allow read-only runs to continue with recovery notices. Preserve Git stderr in removal diagnostics.
+- Updated dependencies [8e4cf26]
+- Updated dependencies [e23633e]
+- Updated dependencies [1cd749c]
+- Updated dependencies [f36da62]
+  - @nocobase/agent-protocol@0.1.0-beta.8
+  - @nocobase/app-cli-client@0.1.0-beta.7
+
 ## 0.1.0-beta.8
 
 ### Minor Changes

@@ -33,6 +33,171 @@ describe('runners', () => {
     await h?.close();
   });
 
+  it('revokes every prior registration and key for the same owner, name and host', async () => {
+    h = await createHarness();
+    const register = async (owner: string, overrides = {}) => {
+      const token = await h.services.runners.createRegistrationToken(owner, {});
+      return h.services.runners.register({
+        ...registration(token.token),
+        features: [],
+        tools: [],
+        ...overrides,
+      });
+    };
+    const otherOwner = await register('bob');
+    const otherHost = await register('alice', { hostname: 'other.local' });
+    const otherName = await register('alice', { name: 'other' });
+    const old = await register('alice');
+    const runId = await h.enqueue(await h.createAgent());
+    await h.services.runners.update(old.runnerId, { trust: 'team' });
+    // Install a usable tool before the old runtime claims work.
+    await h.request('POST', '/agents/runners/heartbeat', {
+      runnerKey: old.runnerKey,
+      body: heartbeat,
+    });
+    const claimed = await h.request('POST', '/agents/runners/claim', {
+      runnerKey: old.runnerKey,
+      body: { free: 1 },
+    });
+    expect(claimed.body.data.runs[0].run.id).toBe(runId);
+    const fresh = await register('alice');
+    expect(fresh.runnerId).not.toBe(old.runnerId);
+    expect((await h.services.runners.get(old.runnerId)).status).toBe('revoked');
+    for (const request of ['/heartbeat', '/claim']) {
+      const refused = await h.request('POST', `/agents/runners${request}`, {
+        runnerKey: old.runnerKey,
+        body: request === '/heartbeat' ? heartbeat : { free: 1 },
+      });
+      expect(refused.status).toBe(401);
+      expect(refused.body.error.reason).toBe('RUNNER_REVOKED');
+    }
+    await h.services.sweeper.sweep();
+    expect((await h.services.runs.get(runId)).status).toBe('queued');
+    for (const kept of [otherOwner, otherHost, otherName, fresh])
+      expect((await h.services.runners.get(kept.runnerId)).status).toBe(
+        'online',
+      );
+  });
+
+  it('repeatedly replaces the current registration without changing already revoked records', async () => {
+    h = await createHarness();
+    const register = async () => {
+      const token = await h.services.runners.createRegistrationToken(
+        'alice',
+        {},
+      );
+      return h.services.runners.register({
+        ...registration(token.token),
+        features: [],
+        tools: [],
+      });
+    };
+    const first = await register();
+    h.clock.advance(1000);
+    const second = await register();
+    const revoked = await h.services.runners.get(first.runnerId);
+    h.clock.advance(1000);
+    const third = await register();
+    expect(await h.services.runners.get(first.runnerId)).toEqual(revoked);
+    for (const old of [first, second]) {
+      expect((await h.services.runners.get(old.runnerId)).status).toBe(
+        'revoked',
+      );
+      await expect(
+        h.services.runners.authenticate(old.runnerKey),
+      ).rejects.toMatchObject({
+        code: 'RUNNER_REVOKED',
+      });
+    }
+    expect((await h.services.runners.authenticate(third.runnerKey)).id).toBe(
+      third.runnerId,
+    );
+  });
+
+  it('cleans up multiple active records and all their keys on the next registration', async () => {
+    h = await createHarness();
+    const register = async (name = 'laptop') => {
+      const token = await h.services.runners.createRegistrationToken(
+        'alice',
+        {},
+      );
+      return h.services.runners.register({
+        ...registration(token.token),
+        name,
+        features: [],
+        tools: [],
+      });
+    };
+    const first = await register();
+    const second = await register('temporary');
+    // Reproduce the records simultaneous registrations can leave behind without relying on a race.
+    await h.database
+      .connection()
+      .repository('agRunners')
+      .updateMany({
+        filter: { id: second.runnerId },
+        values: { name: 'laptop' },
+      });
+    for (const old of [first, second])
+      expect((await h.services.runners.authenticate(old.runnerKey)).id).toBe(
+        old.runnerId,
+      );
+    const fresh = await register();
+    for (const old of [first, second]) {
+      expect((await h.services.runners.get(old.runnerId)).status).toBe(
+        'revoked',
+      );
+      const keys = await h.database
+        .connection()
+        .repository('agRunnerCredentials')
+        .findMany({
+          filter: { runnerId: old.runnerId },
+        });
+      expect(keys.length).toBeGreaterThan(0);
+      for (const key of keys) expect(key.revokedAt).toBeTruthy();
+      await expect(
+        h.services.runners.authenticate(old.runnerKey),
+      ).rejects.toMatchObject({
+        code: 'RUNNER_REVOKED',
+      });
+    }
+    expect((await h.services.runners.authenticate(fresh.runnerKey)).id).toBe(
+      fresh.runnerId,
+    );
+  });
+
+  it('leaves the current runner usable when a replacement token is invalid', async () => {
+    h = await createHarness();
+    const token = await h.services.runners.createRegistrationToken('alice', {});
+    const current = await h.services.runners.register({
+      ...registration(token.token),
+      features: [],
+      tools: [],
+    });
+    await expect(
+      h.services.runners.register({
+        ...registration(token.token),
+        features: [],
+        tools: [],
+      }),
+    ).rejects.toMatchObject({ code: 'REGISTRATION_TOKEN_INVALID' });
+    const expired = await h.services.runners.createRegistrationToken(
+      'alice',
+      {},
+    );
+    h.clock.advance(11 * 60_000);
+    await expect(
+      h.services.runners.register({
+        ...registration(expired.token),
+        features: [],
+        tools: [],
+      }),
+    ).rejects.toMatchObject({ code: 'REGISTRATION_TOKEN_INVALID' });
+    expect((await h.services.runners.authenticate(current.runnerKey)).id).toBe(
+      current.runnerId,
+    );
+  });
+
   it('advertises the protocol it speaks in every heartbeat answer', async () => {
     h = await createHarness();
     const runner = await h.registerRunner();

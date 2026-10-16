@@ -251,6 +251,7 @@ export function createProjects(deps: ProjectsDeps): Projects {
     statuses,
     triggers,
     relations: () => subtasks.relations,
+    attachments: () => attachments.links,
   });
   const subtasks: SubtaskService = createSubtaskService({
     tx,
@@ -306,7 +307,9 @@ export function createProjects(deps: ProjectsDeps): Projects {
       subscribers: (conn, issue) => subscriptions.subscribers(conn, issue.id),
       relations: (conn, viewer, issue) =>
         subtasks.extras.relations(conn, viewer, issue),
-      listCounts: (conn, issues) => subtasks.extras.listCounts(conn, issues),
+      listCounts: (conn, issues, readableIds) =>
+        subtasks.extras.listCounts(conn, issues, readableIds),
+      blockedIds: (conn, issues) => subtasks.extras.blockedIds(conn, issues),
     }),
   });
   const intakeFiles = createIntakeFileStore({

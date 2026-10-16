@@ -80,14 +80,15 @@ import {
   RUNNER_TRUST,
   type DownloadToken,
   type RegistrationToken,
+  type RegistrationTokenSummary,
   type RegistrationTokenInput,
   type Runner,
   type RunnerHeldItem,
   type RunnerRecentRun,
   type RunnerPatch,
   type RunnerSummary,
+  type RunnerListItem,
   type RunnerWorkspace,
-  type RunnerWorkspaceUsage,
 } from '../../shared/runners.js';
 import {
   RUN_REQUEST_STATUSES,
@@ -763,6 +764,7 @@ const skillDetailObject = skillObject.extend({
       scope: z.string(),
       scopeId: z.string(),
       name: z.string().nullable(),
+      href: z.string().optional(),
     }),
   ),
 });
@@ -1467,7 +1469,7 @@ const RunnerWorkspaceSchema: z.ZodType<RunnerWorkspace> = z.object({
   }),
 });
 
-const RunnerWorkspaceUsageSchema: z.ZodType<RunnerWorkspaceUsage> = z
+const RunnerWorkspaceUsageSchema = z
   .object({
     disk: z
       .object({
@@ -1551,7 +1553,7 @@ export const RunnerSchema: z.ZodType<Runner> = runnerObject.meta({
   ref: 'AgentsRunner',
 });
 
-export const RunnerSummarySchema: z.ZodType<RunnerSummary> = runnerObject
+const runnerSummaryObject = runnerObject
   .extend({
     hostname: z.string().nullable().meta({
       description:
@@ -1583,6 +1585,18 @@ export const RunnerSummarySchema: z.ZodType<RunnerSummary> = runnerObject
     }),
   })
   .meta({ ref: 'AgentsRunnerSummary' });
+
+export const RunnerSummarySchema: z.ZodType<RunnerSummary> =
+  runnerSummaryObject;
+export const RunnerListItemSchema: z.ZodType<RunnerListItem> =
+  runnerSummaryObject
+    .extend({
+      workspaceUsage: RunnerWorkspaceUsageSchema.omit({ workspaces: true })
+        .meta({ ref: 'AgentsRunnerWorkspaceTotals' })
+        .nullable()
+        .optional(),
+    })
+    .meta({ ref: 'AgentsRunnerListItem' });
 
 export const RunnerRecentRunSchema: z.ZodType<RunnerRecentRun> = z
   .object({
@@ -1617,6 +1631,26 @@ export const RegistrationTokenSchema: z.ZodType<RegistrationToken> = z.object({
   toolSlots: ToolSlotsSchema.nullable(),
   expiresAt: dateTime,
 });
+
+export const RegistrationTokenListQuery: z.ZodType<{
+  page: number;
+  pageSize: number;
+}> = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: pageSize(50, 100),
+});
+
+export const RegistrationTokenSummarySchema: z.ZodType<RegistrationTokenSummary> =
+  z.object({
+    id: z.string(),
+    createdById: z.string().nullable(),
+    trust: z.enum(RUNNER_TRUST),
+    enabledTools: z.array(AgentToolSchema).nullable(),
+    slots: z.number().int().nullable(),
+    toolSlots: ToolSlotsSchema.nullable().optional(),
+    createdAt: dateTime,
+    expiresAt: dateTime,
+  });
 
 export const DownloadTokenSchema: z.ZodType<DownloadToken> = z.object({
   token: z.string().meta({

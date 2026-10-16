@@ -38,6 +38,7 @@ import type {
   Runner,
   RunnerHeldItem,
   RunnerSummary,
+  RunnerListItem,
   RunnerWorkTarget,
 } from '../../../shared/runners.js';
 import type { Agents } from '../../composition.js';
@@ -49,12 +50,15 @@ import { tags } from '../openapi.js';
 import {
   RegistrationTokenInputSchema,
   RegistrationTokenSchema,
+  RegistrationTokenListQuery,
+  RegistrationTokenSummarySchema,
   RunnerHeldItemSchema,
   RunnerParams,
   RunnerPatchInput,
   RunnerRecentRunSchema,
   RunnerSchema,
   RunnerSummarySchema,
+  RunnerListItemSchema,
 } from '../schemas.js';
 
 /** Who is asking, and whether one of this plugin's settings grants is theirs. */
@@ -243,24 +247,78 @@ export function createAdminRoutes(
       operationId: 'agentsListRunners',
       ...cliRoute({
         command: 'runtime list',
-        columns: ['id', 'name', 'status', 'ownerName', 'trust', 'activeRuns'],
+        columns: [
+          'id',
+          'name',
+          'status',
+          'ownerName',
+          'trust',
+          'activeRuns',
+          'workspaceUsage.count',
+          'workspaceUsage.unpushedCount',
+          'workspaceUsage.disk.freeBytes',
+        ],
       }),
       description:
-        "Every runner for a reader of runners or of agents (`agents.runners` or `agents.agents` read); otherwise the caller's own.",
+        "Every runner for a reader of runners or of agents (`agents.runners` or `agents.agents` read); otherwise the caller's own. Workspace usage contains totals only; use runtime get (GET /agents/runners/:runnerId) for directory diagnostics.",
       responses: {
-        200: listResponse(RunnerSummarySchema),
+        200: listResponse(RunnerListItemSchema),
         ...apiErrorResponses,
       },
     }),
     async (context) => {
       const visible: Runner[] = [];
-      for (const runner of await services.runners.list())
+      for (const runner of await services.runners.list({
+        workspaceDetails: false,
+      }))
         if ((await runnerRights(context, runner)).see) visible.push(runner);
       const takes = await takesOf(visible);
-      const data: RunnerSummary[] = [];
-      for (const runner of visible)
-        data.push(await summarizeRunner(context, runner, takes));
+      const data = await Promise.all(
+        visible.map(async (runner): Promise<RunnerListItem> => {
+          const summary = await summarizeRunner(context, runner, takes);
+          const { workspaceUsage, ...rest } = summary;
+          if (workspaceUsage) {
+            const { workspaces: _workspaces, ...totals } = workspaceUsage;
+            return { ...rest, workspaceUsage: totals };
+          }
+          return { ...rest, workspaceUsage };
+        }),
+      );
       return context.json({ data, meta: { total: data.length } });
+    },
+  );
+  router.get(
+    '/registrationTokens',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'List usable runner registration tokens',
+      operationId: 'agentsListRunnerRegistrationTokens',
+      ...cliRoute({
+        command: 'runtime token list',
+        columns: ['id', 'createdById', 'trust', 'expiresAt'],
+      }),
+      description:
+        'Unused, unexpired token metadata, without secrets or hashes. Managers of runners see all tokens; other signed-in callers see their own.',
+      responses: {
+        200: listResponse(RegistrationTokenSummarySchema),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('query', RegistrationTokenListQuery),
+    async (context) => {
+      const who = caller(context);
+      const query = context.req.valid('query');
+      const result = await services.runners.listRegistrationTokens({
+        ...query,
+        ...((await who.can('agents.runners', 'manage'))
+          ? {}
+          : { createdById: who.userId }),
+      });
+      return context.json({
+        data: result.data,
+        meta: { total: result.total, ...query },
+      });
     },
   );
   router.post(
@@ -310,6 +368,8 @@ export function createAdminRoutes(
       tags,
       summary: 'Get a runner',
       operationId: 'agentsGetRunner',
+      description:
+        'Includes directory diagnostics in workspaceUsage.workspaces for callers allowed to see the machine; other callers receive an empty directory array and the same totals.',
       ...cliRoute({
         command: 'runtime get',
         args: ['runnerId'],
@@ -490,7 +550,8 @@ export function createAdminRoutes(
         flags: { runnerId: { name: 'runtime' } },
         confirm: 'Delete this runtime?',
       }),
-      description: 'Deletes a revoked runner; its past runs keep its id.',
+      description:
+        'Deletes a revoked runner; its past runs keep its id. First run runtime revoke <runtime>, then runtime delete <runtime>.',
       responses: {
         204: emptyResponse(),
         ...revokeErrors,

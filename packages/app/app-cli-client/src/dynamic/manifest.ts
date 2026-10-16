@@ -96,6 +96,14 @@ export const CliCommandSchema: z.ZodType<CliCommand> = z.object({
   method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']),
   path: z.string(),
   parameters: z.array(CliParameterSchema),
+  readBinding: z
+    .object({
+      path: z.string(),
+      params: z.record(z.string(), z.string()),
+      responseField: z.string(),
+      bodyField: z.string(),
+    })
+    .optional(),
   body: z
     .object({
       media: z.enum(['application/json', 'multipart/form-data']),

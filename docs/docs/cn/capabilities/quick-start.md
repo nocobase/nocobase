@@ -36,7 +36,7 @@ pnpm nocobase config check
 pnpm dev
 ```
 
-打开终端显示的应用地址，使用初始化时配置的管理员账号登录。也可以让 Agent 帮你完成上述步骤，详见[创建应用](../get-started/create-app.md)。
+打开终端显示的应用地址，使用初始化时配置的管理员账号登录。也可以让 Agent 使用已安装的 `nocobase-create-app` Skill 帮你完成上述步骤。
 
 ## 2. 用一条提示词搭建业务
 

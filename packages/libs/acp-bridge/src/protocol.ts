@@ -10,7 +10,7 @@
 import { z } from 'zod';
 
 /** Raised on every incompatible change; the server answers a bridge speaking another version with `upgradeRequired`. */
-export const BRIDGE_PROTOCOL_VERSION: number = 2;
+export const BRIDGE_PROTOCOL_VERSION: number = 3;
 
 /** Includes agent initialization and opening a prompt-free session. */
 export const DISCOVERY_TIMEOUT_MS: number = 150_000;
@@ -138,15 +138,6 @@ export interface SessionTarget {
   readonly acpSessionId: string | null;
   /** The choices the person made (`SessionChoice` id to value), applied again whenever the session reopens. */
   readonly settings: Readonly<Record<string, string>>;
-  /**
-   * The application's tools for the agent, an MCP server over HTTP at `path` of the address the bridge talks to, when
-   * the application offers any; the agent sends `token` as its bearer credential.
-   */
-  readonly tools: {
-    readonly name: string;
-    readonly path: string;
-    readonly token: string;
-  } | null;
 }
 
 const SessionTargetSchema: z.ZodType<SessionTarget> = z.object({
@@ -155,13 +146,6 @@ const SessionTargetSchema: z.ZodType<SessionTarget> = z.object({
   cwd: z.string().min(1).max(1000),
   acpSessionId: id.nullable(),
   settings: z.record(id, id),
-  tools: z
-    .object({
-      name: z.string().regex(/^[a-z][a-z0-9_-]{0,63}$/u),
-      path: z.string().regex(/^\/[\w/.-]{0,500}$/u),
-      token: z.string().min(1).max(500),
-    })
-    .nullable(),
 });
 
 /** A part of what a person sends, as ACP content blocks. */
