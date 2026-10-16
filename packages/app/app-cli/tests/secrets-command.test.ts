@@ -4,7 +4,7 @@ import {
   type SecretsService,
   type SecretsStore,
 } from '@nocobase/app-server/secrets';
-import { ServiceContainer } from '../../../libs/service-provider/src/index.ts';
+import { ServiceContainer } from '@nocobase/service-provider';
 import { describe, expect, it } from 'vitest';
 
 import SecretsRotate from '../src/commands/secrets/rotate.ts';

@@ -26,6 +26,27 @@ afterEach(async () => {
 });
 
 describe('loadAppHostConfig', () => {
+  it('accepts native OSS artifact configuration and preserves role and network settings', async () => {
+    const rootDir = await createTempDirectory();
+    const artifact = {
+      driver: 'oss',
+      bucket: 'test-artifacts',
+      region: 'oss-cn-hangzhou',
+      internal: true,
+      visibility: 'private',
+      credentials: { provider: 'aliyun-ecs-ram-role' },
+    };
+    await writeFile(
+      path.join(rootDir, 'config.json'),
+      JSON.stringify({ host: { artifact } }),
+    );
+    const config = await loadAppHostConfig({ rootDir, environment: {} });
+    expect(config.artifact).toEqual({
+      ...artifact,
+      location: path.join(rootDir, 'storage/apps/artifacts'),
+    });
+  });
+
   it('keeps managed revision roots distinct from legacy deployments', async () => {
     const rootDir = await createTempDirectory();
     const config = await loadAppHostConfig({

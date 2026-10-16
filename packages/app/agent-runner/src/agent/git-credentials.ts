@@ -24,7 +24,7 @@
 // helper answers `quit=1` with a line on stderr when there is no credential, so git stops rather than trying another
 // helper or prompting.
 //
-// The runner's own git (checkout, submodules, the end-of-run push) asks the broker directly (checkout.ts
+// The runner's own git (checkout, the end-of-run push) asks the broker directly (checkout.ts
 // `withRepoAuth`) and retries once with a fresh credential when the remote refuses the first.
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { chmod, lstat, mkdir, rename, rm, writeFile } from 'node:fs/promises';

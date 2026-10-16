@@ -23,13 +23,23 @@ const CHAT_SETTINGS_KEY = 'chat';
 
 export const ChatPreferencesPatchSchema: z.ZodType<ChatPreferencesPatch> = z
   .strictObject({
-    defaultAgentId: z.string().min(1).max(64).nullable(),
+    defaultAgentId: z
+      .string()
+      .min(1)
+      .max(64)
+      .nullable()
+      .describe('The default agent identifier.'),
   })
   .partial();
 
 export const ChatSettingsPatchSchema: z.ZodType<ChatSettingsPatch> = z
   .strictObject({
-    defaultAgentId: z.string().min(1).max(64).nullable(),
+    defaultAgentId: z
+      .string()
+      .min(1)
+      .max(64)
+      .nullable()
+      .describe('The default agent identifier.'),
   })
   .partial();
 

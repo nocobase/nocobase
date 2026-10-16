@@ -227,7 +227,7 @@ export const TIMINGS = {
   heartbeatIntervalMs: 15_000,
   /** How long a `claim?wait=1` request is held when there is no work. */
   pollTimeoutMs: 25_000,
-  /** How long a lease lasts; a runner renews it every `leaseRenewMs`. */
+  /** How long a started run’s lease lasts; a runner renews it every `leaseRenewMs`. */
   leaseMs: 45_000,
   leaseRenewMs: 15_000,
   /** A runner not heard from for this long is offline, and its runs go back to the queue. */

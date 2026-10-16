@@ -44,7 +44,7 @@ export const ComputerParams: z.ZodType<{ computerId: string }> = z.object({
   computerId: z.string().min(1),
 });
 export const SessionParams: z.ZodType<{ sessionId: string }> = z.object({
-  sessionId: z.string().min(1),
+  sessionId: z.string().min(1).describe('The agent session identifier.'),
 });
 
 export const ImageParams: z.ZodType<{ sessionId: string; file: string }> =

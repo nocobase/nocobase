@@ -63,4 +63,33 @@ it('shows every batch result with its delivery reason and complete manual link',
   expect(output.match(/https:\/\/example.test\/invite\//gu)).toHaveLength(2);
   expect(output).toContain(inviteUrl);
   expect(output).not.toContain('…');
+  expect(output).not.toContain('truncated');
+});
+
+it('hints once for truncated batch text while preserving complete invitation links', () => {
+  const inviteUrl = `https://example.test/invite/${'a'.repeat(100)}`;
+  const output = renderAnswer(
+    {
+      id: 'project:invitation:create',
+      summary: 'Invite people',
+      method: 'POST',
+      path: '/projects/invitations',
+      parameters: [],
+      identities: ['person'],
+      output: { kind: 'data', columns: ['emailError', 'inviteUrl'] },
+    },
+    {
+      data: {
+        results: [
+          { emailError: 'x'.repeat(100), inviteUrl },
+          { emailError: 'y'.repeat(100), inviteUrl },
+        ],
+      },
+    },
+  );
+  expect(output).toContain(`${'x'.repeat(79)}…`);
+  expect(output).toContain(`${'y'.repeat(79)}…`);
+  expect(output.split(inviteUrl)).toHaveLength(3);
+  expect(output.match(/Some fields were truncated/gu)).toHaveLength(1);
+  expect(output).toContain('Use --json for the complete output.');
 });

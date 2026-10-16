@@ -1,6 +1,6 @@
 import { setTimeout as abortableDelay } from 'node:timers/promises';
 import type { GitInvocationOptions } from './git.ts';
-// Retrying git's network operations (clone, fetch, the submodules' update) where they fail for a moment.
+// Retrying git's network operations (clone, fetch) where they fail for a moment.
 //
 // Only a failure whose message names a passing cause is retried: a TLS handshake cut off, a connection reset, refused
 // or timed out, a transfer that stalled (`http.lowSpeedLimit`/`Time`, which every network call sets, so a stalled

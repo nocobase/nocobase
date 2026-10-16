@@ -833,7 +833,7 @@ const pages = {
   status: {
     analysis: '分析中',
     backlog: '待规划',
-    blocked: '待确定',
+    blocked: '阻塞中',
     cancelled: '已取消',
     done: '已完成',
     in_progress: '进行中',
@@ -864,6 +864,7 @@ const pages = {
     expand: '展开 {{name}} 的已解决线程',
     replies_one: '{{count}} 条回复',
     replies_other: '{{count}} 条回复',
+    earlierReplies: '展开另外 {{count}} 条回复',
     resolve: '标记已解决',
     resolved: '已解决',
     resolvedBy: '{{name}} 标记为已解决',

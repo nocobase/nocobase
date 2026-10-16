@@ -251,7 +251,7 @@ describe('new-session composer', () => {
       'agentSessions/computers/other/discoverChoices',
     );
   });
-  it('requires discovery on a fresh computer and sends the discovered settings with a locked target', async () => {
+  it('sends the discovered settings with a locked target once discovery answers', async () => {
     const discovered: { input: unknown; resolve: (value: unknown) => void }[] =
       [];
     let creation: unknown;
@@ -295,7 +295,6 @@ describe('new-session composer', () => {
     );
     await screen.findByText('Loading settings…');
     expect(screen.getByRole('textbox')).not.toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
     await waitFor(() => expect(discovered).toHaveLength(1));
     await act(async () => discovered[0]!.resolve({ data: choices }));
     await screen.findByText('Reasoning: High');
@@ -310,7 +309,6 @@ describe('new-session composer', () => {
       settings: { model: 'chosen' },
     });
     expect(screen.getByRole('textbox')).not.toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
     await act(async () =>
       discovered[1]!.resolve({
         data: {
@@ -341,6 +339,57 @@ describe('new-session composer', () => {
       screen.getByRole('button', { name: 'Fresh computer' }).closest('[inert]'),
     ).not.toBeNull();
     await act(async () => finishCreate?.({ data: { id: 'new-session' } }));
+  });
+  it('sends before discovery answers, with only the settings the person chose', async () => {
+    let creation: unknown;
+    await renderWithApp(
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <NewSession />
+      </QueryClientProvider>,
+      {
+        plugins: [plugin({ routes: false })],
+        services: (app) => {
+          vi.spyOn(
+            app.container.resolve(realtimeClientToken),
+            'connected',
+            'get',
+          ).mockReturnValue(true);
+        },
+        namespace: '@nocobase/app-plugin-agent-sessions',
+        fetch: answerApi(({ path, method, json }) => {
+          if (path === 'agentSessions/computers')
+            return { data: [computer], meta: { total: 1 } };
+          // The agent is still starting: discovery has not answered when the message goes.
+          if (path.endsWith('/discoverChoices')) return new Promise(() => {});
+          if (path === 'agentSessions/projects') return { data: [] };
+          if (path === 'agentSessions/sessions' && method === 'POST') {
+            creation = json;
+            return { data: { id: 'new-session' } };
+          }
+          if (path === 'agentSessions/sessions') return { data: [], meta: {} };
+          return { data: [] };
+        }),
+      },
+    );
+    await screen.findByText('Loading settings…');
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: 'First message' },
+    });
+    expect(screen.getByRole('button', { name: 'Send' })).not.toBeDisabled();
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+    await waitFor(() =>
+      expect(creation).toMatchObject({
+        computerId: 'fresh',
+        agentId: 'codex',
+        cwd: '/work',
+        settings: {},
+        content: [{ type: 'text', text: 'First message' }],
+      }),
+    );
   });
 });
 
