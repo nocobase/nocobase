@@ -100,21 +100,24 @@ it('shares router context with installed test helpers and the application naviga
     }
     await writeFile(
       path.join(client, 'dist/index.js'),
-      "export {NavigationGuardProvider} from './navigation-guard-provider.js'; export {ClientApplicationContext} from './application-context.js';",
+      "export { NavigationGuardProvider } from './navigation-guard-provider.js';\nexport { ClientApplicationContext } from './application-context.js';\nexport const fixtureToken = Symbol('fixture-service');\n",
     );
-    const plugin = path.join(root, 'node_modules/installed-client-plugin');
-    await mkdir(plugin, { recursive: true });
+    const plugin = path.join(
+      root,
+      'node_modules/installed-client-plugin',
+    );
+    await mkdir(path.join(plugin, 'dist/client'), { recursive: true });
     await writeFile(
       path.join(plugin, 'package.json'),
       JSON.stringify({
         name: 'installed-client-plugin',
         type: 'module',
-        exports: './index.js',
+        exports: { './client': './dist/client/index.js' },
       }),
     );
     await writeFile(
-      path.join(plugin, 'index.js'),
-      `import {createElement, useContext} from 'react'; import {ClientApplicationContext} from '@nocobase/app-client'; export const PluginProbe = () => createElement('span', null, useContext(ClientApplicationContext)?.name ?? 'missing application context');`,
+      path.join(plugin, 'dist/client/index.js'),
+      "import { useContext } from 'react';\nimport { ClientApplicationContext } from '@nocobase/app-client';\nexport { fixtureToken as pluginToken } from '@nocobase/app-client';\nexport const useFixtureApplication = () => useContext(ClientApplicationContext);\n",
     );
     await writeFile(path.join(root, 'package.json'), '{"type":"module"}');
     await writeFile(
@@ -127,16 +130,20 @@ it('shares router context with installed test helpers and the application naviga
       import {createElement} from 'react';
       import {render, screen} from '@testing-library/react';
       import {TestRouter} from '@nocobase/app-testing/client';
-      import {NavigationGuardProvider, ClientApplicationContext} from '@nocobase/app-client';
-      import {PluginProbe} from 'installed-client-plugin';
+      import {NavigationGuardProvider, ClientApplicationContext, fixtureToken} from '@nocobase/app-client';
+      import {useFixtureApplication, pluginToken} from 'installed-client-plugin/client';
       import {useLocation} from 'react-router';
       import {expect, it} from 'vitest';
       it('reads the same router', () => {
         const Probe = () => createElement('span', null, useLocation().pathname);
         render(createElement(TestRouter, {initialEntries:['/settings/users']}, createElement(NavigationGuardProvider, null, createElement(Probe))));
         expect(screen.getByText('/settings/users')).toBeTruthy();
-        render(createElement(ClientApplicationContext.Provider, {value:{name:'shared application'}}, createElement(PluginProbe)));
-        expect(screen.getByText('shared application')).toBeTruthy();
+      });
+      it('shares application context and service tokens with installed plugins', () => {
+        expect(pluginToken).toBe(fixtureToken);
+        const Probe = () => createElement('span', null, useFixtureApplication().label);
+        render(createElement(ClientApplicationContext.Provider, {value:{label:'Shared application'}}, createElement(Probe)));
+        expect(screen.getByText('Shared application')).toBeTruthy();
       });
     `,
     );
@@ -151,7 +158,7 @@ it('shares router context with installed test helpers and the application naviga
       ],
       { cwd: root, timeout: 60_000, maxBuffer: 1024 * 1024 },
     );
-    expect(output.stdout).toContain('1 passed');
+    expect(output.stdout).toContain('2 passed');
   } catch (error) {
     const failure = error as Error & { stdout?: string; stderr?: string };
     throw new Error(
