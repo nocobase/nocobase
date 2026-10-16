@@ -74,6 +74,10 @@ const CONFIGURED_API_BASE_URL = import.meta.env.DOCS_AI_API_URL.replace(
   /\/$/,
   '',
 );
+const SITE_ORIGIN = import.meta.env.DOCS_SITE_ORIGIN;
+const SITE_HOST = new URL(SITE_ORIGIN).hostname;
+// The docs-ai-service backend may still return citations on the legacy host; they are linked on the site origin.
+const LEGACY_DOCS_HOST = 'docs.nocobase.com';
 
 export function DocsAssistant() {
   const [open, setOpen] = useState(false);
@@ -424,7 +428,7 @@ function AnswerView({
             {safeCitations.map((citation) => (
               <li key={citation.citationId}>
                 <a
-                  href={citation.url}
+                  href={toSiteUrl(citation.url)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -460,7 +464,7 @@ const MARKDOWN_COMPONENTS: Components = {
       return <span>{children}</span>;
     }
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer">
+      <a href={toSiteUrl(href)} target="_blank" rel="noopener noreferrer">
         {children}
       </a>
     );
@@ -470,15 +474,30 @@ const MARKDOWN_COMPONENTS: Components = {
   },
 };
 
-function isOfficialDocsUrl(value?: string): boolean {
+function isOfficialDocsUrl(value?: string): value is string {
   if (!value) {
     return false;
   }
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' && url.hostname === 'v2.docs.nocobase.com';
+    return (
+      url.protocol === 'https:' &&
+      (url.hostname === SITE_HOST || url.hostname === LEGACY_DOCS_HOST)
+    );
   } catch {
     return false;
+  }
+}
+
+function toSiteUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    if (url.hostname !== LEGACY_DOCS_HOST) {
+      return value;
+    }
+    return `${SITE_ORIGIN}${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return value;
   }
 }
 

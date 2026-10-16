@@ -13,6 +13,11 @@ import {
 } from './plugins/pluginCrossRef';
 import { pluginSearchSections } from './plugins/pluginSearchSections';
 import { pluginSearchIndex } from './plugins/pluginSearchIndex';
+import {
+  pluginSiteOriginLinks,
+  remarkSiteOriginLinks,
+} from './plugins/pluginSiteOriginLinks';
+import { siteHost, siteOrigin } from './shared/site';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
@@ -20,7 +25,6 @@ const lang = process.env.DOCS_LANG || 'en';
 const base = process.env.DOCS_BASE || lang === 'en' ? '/' : `/${lang}/`;
 const checkDeadLinks = process.env.CHECK_DEAD_LINKS !== 'false';
 const docsAiApiUrl = process.env.DOCS_AI_API_URL || '';
-const siteOrigin = 'https://v2.docs.nocobase.com';
 const rspressI18nAliases: Readonly<Record<string, string>> = {
   cn: 'zh',
 };
@@ -110,7 +114,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Progress',
     docsAiLoading: 'Searching the official documentation…',
     docsAiProgressSubmitted:
-      'Question submitted; limiting search to v2.docs.nocobase.com',
+      `Question submitted; limiting search to ${siteHost}`,
     docsAiProgressCallingModel: 'Calling DeepSeek',
     docsAiProgressParsingCitations:
       'Response received; parsing official documentation references',
@@ -139,7 +143,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiQuestionLabel: '你的问题',
     docsAiProgress: '处理进度',
     docsAiLoading: '正在检索官方文档…',
-    docsAiProgressSubmitted: '问题已提交，正在限定搜索 v2.docs.nocobase.com',
+    docsAiProgressSubmitted: `问题已提交，正在限定搜索 ${siteHost}`,
     docsAiProgressCallingModel: '正在调用 DeepSeek',
     docsAiProgressParsingCitations: '已收到回答，正在解析官方文档引用',
     docsAiProgressVerifyingSources: '正在验证官方文档页面',
@@ -167,7 +171,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: '処理状況',
     docsAiLoading: '公式ドキュメントを検索しています…',
     docsAiProgressSubmitted:
-      '質問を送信しました。v2.docs.nocobase.com 内を検索しています',
+      `質問を送信しました。${siteHost} 内を検索しています`,
     docsAiProgressCallingModel: 'DeepSeek を呼び出しています',
     docsAiProgressParsingCitations:
       '回答を受信しました。公式ドキュメントの参照を解析しています',
@@ -197,7 +201,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Progreso',
     docsAiLoading: 'Buscando en la documentación oficial…',
     docsAiProgressSubmitted:
-      'Pregunta enviada; buscando solo en v2.docs.nocobase.com',
+      `Pregunta enviada; buscando solo en ${siteHost}`,
     docsAiProgressCallingModel: 'Consultando DeepSeek',
     docsAiProgressParsingCitations:
       'Respuesta recibida; analizando las referencias oficiales',
@@ -228,7 +232,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Progresso',
     docsAiLoading: 'Pesquisando na documentação oficial…',
     docsAiProgressSubmitted:
-      'Pergunta enviada; pesquisando apenas em v2.docs.nocobase.com',
+      `Pergunta enviada; pesquisando apenas em ${siteHost}`,
     docsAiProgressCallingModel: 'Consultando o DeepSeek',
     docsAiProgressParsingCitations:
       'Resposta recebida; analisando as referências oficiais',
@@ -259,7 +263,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Fortschritt',
     docsAiLoading: 'Offizielle Dokumentation wird durchsucht…',
     docsAiProgressSubmitted:
-      'Frage gesendet; Suche auf v2.docs.nocobase.com beschränkt',
+      `Frage gesendet; Suche auf ${siteHost} beschränkt`,
     docsAiProgressCallingModel: 'DeepSeek wird aufgerufen',
     docsAiProgressParsingCitations:
       'Antwort erhalten; offizielle Verweise werden ausgewertet',
@@ -290,7 +294,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Progression',
     docsAiLoading: 'Recherche dans la documentation officielle…',
     docsAiProgressSubmitted:
-      'Question envoyée ; recherche limitée à v2.docs.nocobase.com',
+      `Question envoyée ; recherche limitée à ${siteHost}`,
     docsAiProgressCallingModel: 'Interrogation de DeepSeek',
     docsAiProgressParsingCitations:
       'Réponse reçue ; analyse des références officielles',
@@ -322,7 +326,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Ход выполнения',
     docsAiLoading: 'Поиск в официальной документации…',
     docsAiProgressSubmitted:
-      'Вопрос отправлен; поиск ограничен сайтом v2.docs.nocobase.com',
+      `Вопрос отправлен; поиск ограничен сайтом ${siteHost}`,
     docsAiProgressCallingModel: 'Обращение к DeepSeek',
     docsAiProgressParsingCitations:
       'Ответ получен; разбор ссылок на официальную документацию',
@@ -352,7 +356,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Progres',
     docsAiLoading: 'Mencari di dokumentasi resmi…',
     docsAiProgressSubmitted:
-      'Pertanyaan dikirim; pencarian dibatasi ke v2.docs.nocobase.com',
+      `Pertanyaan dikirim; pencarian dibatasi ke ${siteHost}`,
     docsAiProgressCallingModel: 'Menghubungi DeepSeek',
     docsAiProgressParsingCitations:
       'Jawaban diterima; mengurai referensi dokumentasi resmi',
@@ -383,7 +387,7 @@ const docsAiMessages: Record<string, Record<string, string>> = {
     docsAiProgress: 'Tiến trình',
     docsAiLoading: 'Đang tìm kiếm trong tài liệu chính thức…',
     docsAiProgressSubmitted:
-      'Đã gửi câu hỏi; chỉ tìm kiếm trên v2.docs.nocobase.com',
+      `Đã gửi câu hỏi; chỉ tìm kiếm trên ${siteHost}`,
     docsAiProgressCallingModel: 'Đang gọi DeepSeek',
     docsAiProgressParsingCitations:
       'Đã nhận câu trả lời; đang phân tích nguồn tài liệu chính thức',
@@ -457,7 +461,7 @@ function sitemap(): RspressPlugin {
       }
     },
 
-    // Generate sitemap.xml after build
+    // Generate sitemap.xml and robots.txt after build
     async afterBuild(config: any, isProd: boolean) {
       if (!isProd) {
         return;
@@ -519,6 +523,15 @@ function sitemap(): RspressPlugin {
 
       await fs.mkdir(outDir, { recursive: true });
       await fs.writeFile(sitemapPath, sitemapXml, 'utf-8');
+
+      const robotsTxt = [
+        'User-agent: *',
+        'Allow: /',
+        '',
+        `Sitemap: ${baseDomain}/sitemap.xml`,
+        '',
+      ].join('\n');
+      await fs.writeFile(path.join(outDir, 'robots.txt'), robotsTxt, 'utf-8');
     },
   };
 }
@@ -587,6 +600,7 @@ export default defineConfig({
       tsconfigPath: path.join(__dirname, 'tsconfig.json'),
       define: {
         'import.meta.env.DOCS_AI_API_URL': JSON.stringify(docsAiApiUrl),
+        'import.meta.env.DOCS_SITE_ORIGIN': JSON.stringify(siteOrigin),
       },
     },
     plugins: [pluginSass(), pluginNodePolyfill()],
@@ -611,13 +625,17 @@ export default defineConfig({
   i18nSource: (value) => withRspressI18nAliases(value),
   plugins: [
     pluginPreview(),
-    pluginLlms(),
+    // The llms.txt markdown files are generated by a separate remark pipeline, so the link rewrite is applied there too.
+    pluginLlms({
+      mdFiles: { mdxToMd: false, remarkPlugins: [remarkSiteOriginLinks] },
+    }),
     pluginSchema(),
     pluginOgDescription(),
     pluginRemoveGenerator(),
     pluginCrossRefSidebar(),
     pluginSearchSections(),
     pluginSearchIndex(),
+    pluginSiteOriginLinks(),
     sitemap(),
   ],
   search: {
