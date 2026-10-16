@@ -204,6 +204,17 @@ test('variable dialog keeps legal long values and its actions reachable', async 
     });
     await narrow.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(narrow).toBeHidden();
+    const savedToast = page
+      .locator('[data-slot="toast"]')
+      .filter({ hasText: `Saved ${name}` });
+    await expect(savedToast).toBeVisible();
+    const closeToast = savedToast.getByRole('button', {
+      name: 'Close toast',
+      exact: true,
+    });
+    await expect(closeToast).toBeVisible();
+    await closeToast.click();
+    await expect(savedToast).toBeHidden();
     const blank = await edit(name);
     await blank.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(blank).toBeHidden();
