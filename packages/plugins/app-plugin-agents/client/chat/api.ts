@@ -26,6 +26,8 @@ import {
   type SendMessageResult,
 } from '../../shared/conversations.js';
 
+import type { ModelService } from '../../shared/models.js';
+
 type Query = Readonly<Record<string, string | number | boolean | undefined>>;
 
 function tokenOf(value: unknown): string | null {
@@ -175,6 +177,11 @@ export class ChatApi {
     return (await this.page<ChatAgent>(chatPath('agents'))).data;
   }
 
+  /** The public catalog of enabled chat models, never the service-management resource. */
+  public models(signal?: AbortSignal): Promise<ModelService[]> {
+    return this.get('agents/models', { kind: 'chat' }, signal);
+  }
+
   public preferences(): Promise<ChatPreferences> {
     return this.get(chatPath('preferences'));
   }
@@ -203,15 +210,24 @@ export class ChatApi {
     return this.read(path, query);
   }
 
-  private async get<T>(path: string, query?: Query): Promise<T> {
-    return (await this.read<{ readonly data: T }>(path, query)).data;
+  private async get<T>(
+    path: string,
+    query?: Query,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    return (await this.read<{ readonly data: T }>(path, query, signal)).data;
   }
 
-  private read<T>(path: string, query?: Query): Promise<T> {
+  private read<T>(
+    path: string,
+    query?: Query,
+    signal?: AbortSignal,
+  ): Promise<T> {
     const values = query ? clean(query) : {};
     return this.api.request<T>({
       path,
       ...(Object.keys(values).length > 0 ? { query: values } : {}),
+      ...(signal ? { signal } : {}),
     });
   }
 

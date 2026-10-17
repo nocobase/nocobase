@@ -11,6 +11,7 @@ export const chatKeys: {
     id: string,
   ) => readonly ['agents', 'chat', 'conversation', string];
   readonly agents: readonly ['agents', 'chat', 'agents'];
+  readonly models: readonly ['agents', 'chat', 'models'];
   readonly preferences: readonly ['agents', 'chat', 'preferences'];
   readonly settings: readonly ['agents', 'chat', 'settings'];
   readonly presets: readonly ['agents', 'chat', 'presets'];
@@ -20,6 +21,7 @@ export const chatKeys: {
   list: (query) => ['agents', 'chat', 'conversations', query],
   conversation: (id) => ['agents', 'chat', 'conversation', id],
   agents: ['agents', 'chat', 'agents'],
+  models: ['agents', 'chat', 'models'],
   preferences: ['agents', 'chat', 'preferences'],
   settings: ['agents', 'chat', 'settings'],
   presets: ['agents', 'chat', 'presets'],

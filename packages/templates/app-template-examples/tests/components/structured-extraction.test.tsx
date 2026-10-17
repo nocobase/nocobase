@@ -1,4 +1,5 @@
 import { apiClientToken } from '@nocobase/app-client';
+import { agentsQueryClient } from '@nocobase/app-plugin-agents/client/chat';
 import {
   AuthorizationClient,
   authorizationClientToken,
@@ -200,6 +201,8 @@ async function extractContact(
 }
 
 beforeEach(() => {
+  // Standalone page mounts bypass the authenticated provider that normally resets the shared SDK cache.
+  agentsQueryClient().clear();
   refresh.mockReset();
 });
 

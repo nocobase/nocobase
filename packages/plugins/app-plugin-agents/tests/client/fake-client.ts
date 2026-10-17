@@ -11,6 +11,7 @@ export interface ApiRequest {
   readonly method: string;
   readonly query: Readonly<Record<string, unknown>>;
   readonly json: unknown;
+  readonly signal?: AbortSignal;
 }
 
 export type Routes = Record<string, (request: ApiRequest) => unknown>;
@@ -50,12 +51,14 @@ export const api = {
       method?: string;
       query?: Record<string, unknown>;
       json?: unknown;
+      signal?: AbortSignal;
     }): Promise<unknown> => {
       const request: ApiRequest = {
         path: options.path,
         method: options.method ?? 'GET',
         query: options.query ?? {},
         json: options.json,
+        ...(options.signal ? { signal: options.signal } : {}),
       };
       api.calls.push(request);
       const handler =

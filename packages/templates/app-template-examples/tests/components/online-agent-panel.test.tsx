@@ -19,6 +19,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useLayoutEffect } from 'react';
@@ -239,6 +240,215 @@ it.each(['en-US', 'zh-CN'])(
   },
 );
 
+it('preserves server-side model defaults until a model is explicitly chosen', async () => {
+  host.catalog.mockResolvedValue(models);
+  const normal = host.request.getMockImplementation()!;
+  host.request.mockImplementation(async (input) => {
+    if (input.path === 'agents/conversations' && input.method === 'POST')
+      return { data: conversation };
+    return normal(input);
+  });
+  await setup();
+  const user = userEvent.setup();
+  await user.type(
+    screen.getByRole('textbox', { name: 'Message to the agent' }),
+    'Use the configured default{Enter}',
+  );
+  await waitFor(() =>
+    expect(host.request).toHaveBeenCalledWith(
+      expect.objectContaining({ path: 'agents/conversations', method: 'POST' }),
+    ),
+  );
+  const creation = host.request.mock.calls.find(
+    ([request]) =>
+      request.path === 'agents/conversations' && request.method === 'POST',
+  )![0];
+  expect(creation.json).toMatchObject({ agentId: 'online' });
+  expect(creation.json).not.toHaveProperty('selectedModel');
+});
+
+it('groups native models by service and submits the selected service/model pair', async () => {
+  host.catalog.mockResolvedValue({
+    data: [
+      ...models.data,
+      { ...models.data[0], name: 'backup', title: 'Backup service' },
+    ],
+  });
+  const normal = host.request.getMockImplementation()!;
+  host.request.mockImplementation(async (input) => {
+    if (input.path === 'agents/conversations' && input.method === 'POST')
+      return { data: conversation };
+    return normal(input);
+  });
+  await setup();
+  await waitFor(() =>
+    expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent(
+      'Default model',
+    ),
+  );
+  const user = userEvent.setup();
+  await user.click(screen.getByTestId('chat-agent-picker'));
+  const menu = await screen.findByRole('menu');
+  expect(within(menu).queryByText('Agents')).not.toBeInTheDocument();
+  expect(within(menu).queryByText('Models')).not.toBeInTheDocument();
+  expect(within(menu).queryByText('Online Agent')).not.toBeInTheDocument();
+  expect(within(menu).queryByText('openai-compatible')).not.toBeInTheDocument();
+  const localGroup = within(menu).getByRole('group', { name: 'Local' });
+  const backupGroup = within(menu).getByRole('group', {
+    name: 'Backup service',
+  });
+  expect(within(localGroup).getByRole('menuitem')).toHaveAttribute(
+    'data-model-service',
+    'local',
+  );
+  expect(within(backupGroup).getByRole('menuitem')).toHaveAttribute(
+    'data-model-service',
+    'backup',
+  );
+  expect(within(backupGroup).getByRole('menuitem')).not.toHaveTextContent(
+    'Backup service',
+  );
+  await user.click(
+    within(menu).getByRole('menuitem', { name: /Chat.*Backup service/ }),
+  );
+  await user.type(
+    screen.getByRole('textbox', { name: 'Message to the agent' }),
+    'Use the backup{Enter}',
+  );
+  await waitFor(() =>
+    expect(host.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: 'agents/conversations',
+        method: 'POST',
+        json: expect.objectContaining({
+          agentId: 'online',
+          selectedModel: { modelService: 'backup', model: 'chat' },
+        }),
+      }),
+    ),
+  );
+});
+
+it('uses the approved Chinese hint and service grouping in the mixed picker', async () => {
+  host.catalog.mockResolvedValue(models);
+  const normal = host.request.getMockImplementation()!;
+  host.request.mockImplementation(async (input) =>
+    input.path === 'agents/chatAgents'
+      ? {
+          data: [agent, { ...agent, id: 'runner', name: 'Coding agent' }],
+          meta: {},
+        }
+      : normal(input),
+  );
+  await setup('zh-CN');
+  await userEvent.click(screen.getByTestId('chat-agent-picker'));
+  const menu = await screen.findByRole('menu');
+  expect(within(menu).getByText('Agents')).toBeVisible();
+  expect(within(menu).queryByText('Runner agents')).not.toBeInTheDocument();
+  expect(
+    within(menu).getByText('选择与在线大模型或执行机中的 Agent 对话。'),
+  ).toBeVisible();
+  const service = within(menu).getByRole('group', { name: 'Local' });
+  expect(within(service).getByRole('menuitem')).toHaveAttribute(
+    'data-model',
+    'chat',
+  );
+});
+
+it('keeps the draft when switching between a model and a Runner and omits native selection for Runner creation', async () => {
+  host.catalog.mockResolvedValue(models);
+  const normal = host.request.getMockImplementation()!;
+  host.request.mockImplementation(async (input) => {
+    if (input.path === 'agents/chatAgents')
+      return {
+        data: [
+          agent,
+          {
+            ...agent,
+            id: 'runner',
+            name: 'Coding agent',
+            description: 'Works in a repository',
+            isMyDefault: true,
+            personalOnly: true,
+          },
+        ],
+        meta: {},
+      };
+    if (input.path === 'agents/conversations' && input.method === 'POST')
+      return {
+        data: {
+          ...conversation,
+          agent: { ...conversation.agent, id: 'runner', name: 'Coding agent' },
+        },
+      };
+    return normal(input);
+  });
+  await setup();
+  const user = userEvent.setup();
+  const input = screen.getByRole('textbox', { name: 'Message to the agent' });
+  await user.type(input, 'Keep the draft');
+  await user.click(screen.getByTestId('chat-agent-picker'));
+  let menu = await screen.findByRole('menu');
+  expect(within(menu).getByText('Models')).toBeVisible();
+  expect(within(menu).getByText('Agents')).toBeVisible();
+  const runner = within(menu).getByRole('menuitem', { name: /Coding agent/ });
+  expect(runner).toHaveTextContent('Works in a repository');
+  expect(runner).toHaveTextContent('My default');
+  expect(runner).toHaveTextContent('Personal runners only');
+  await user.click(within(menu).getByRole('menuitem', { name: /Chat.*Local/ }));
+  expect(input).toHaveValue('Keep the draft');
+  await user.click(screen.getByTestId('chat-agent-picker'));
+  menu = await screen.findByRole('menu');
+  await user.click(
+    within(menu).getByRole('menuitem', { name: /Coding agent/ }),
+  );
+  expect(input).toHaveValue('Keep the draft');
+  await user.click(screen.getByTestId('chat-send'));
+  await waitFor(() =>
+    expect(host.request).toHaveBeenCalledWith(
+      expect.objectContaining({ path: 'agents/conversations', method: 'POST' }),
+    ),
+  );
+  const creation = host.request.mock.calls.find(
+    ([request]) =>
+      request.path === 'agents/conversations' && request.method === 'POST',
+  )![0];
+  expect(creation.json).toMatchObject({ agentId: 'runner' });
+  expect(creation.json).not.toHaveProperty('selectedModel');
+});
+
+it('does not silently replace a selected model that disappears on catalog refresh', async () => {
+  host.catalog.mockResolvedValue(models);
+  await setup();
+  await waitFor(() =>
+    expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent(
+      'Default model',
+    ),
+  );
+  const user = userEvent.setup();
+  await user.click(screen.getByTestId('chat-agent-picker'));
+  await user.click(
+    await screen.findByRole('menuitem', { name: /Chat.*Local/ }),
+  );
+  const input = screen.getByRole('textbox', { name: 'Message to the agent' });
+  await user.type(input, 'Do not send using another model');
+  host.catalog.mockResolvedValue({
+    data: [
+      {
+        ...models.data[0],
+        models: [
+          { value: 'other', label: 'Other', kind: 'chat', dimensions: null },
+        ],
+      },
+    ],
+  });
+  fireEvent(window, new Event('focus'));
+  await waitFor(() => expect(screen.getByTestId('chat-send')).toBeDisabled());
+  expect(input).toHaveValue('Do not send using another model');
+  expect(
+    host.request.mock.calls.filter(([request]) => request.method === 'POST'),
+  ).toHaveLength(0);
+});
 it('hides model links from non-readers and offers administrator guidance', async () => {
   host.canRead = false;
   await setup();
@@ -378,6 +588,35 @@ it.each(['empty', 'failed'])(
     expect(
       screen.queryByText('No chat model configured'),
     ).not.toBeInTheDocument();
+  },
+);
+
+it.each([false, true])(
+  'keeps model search editable inside the chat panel (mobile=%s)',
+  async (mobile) => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('max-width') ? mobile : !mobile,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    host.catalog.mockResolvedValue(models);
+    await setup();
+    await waitFor(() =>
+      expect(screen.getByTestId('chat-agent-picker')).toHaveTextContent(
+        'Default model',
+      ),
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId('chat-agent-picker'));
+    const search = await screen.findByRole('searchbox');
+    await user.click(search);
+    await user.keyboard('no matching model');
+    expect(search).toHaveFocus();
+    expect(search).toHaveValue('no matching model');
+    expect(screen.getByText('No matching models or agents')).toBeVisible();
+    await user.keyboard('{Escape}');
+    expect(screen.getByTestId('chat-panel')).toBeVisible();
+    expect(screen.getByTestId('chat-agent-picker')).toHaveFocus();
   },
 );
 

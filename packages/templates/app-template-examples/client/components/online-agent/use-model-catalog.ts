@@ -1,43 +1,9 @@
-import { useApiClient } from '@nocobase/app-client';
-import type { ModelService } from '@nocobase/app-plugin-agents/shared/models';
-import { QueryClient, useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useChatModels } from '@nocobase/app-plugin-agents/client/chat';
 
-/** An identity-local catalog, revalidated on open/focus rather than on route changes. */
+/** Share the authenticated chat catalog with the picker; failures never become an empty success. */
 export function useModelCatalog(open: boolean) {
-  const api = useApiClient();
-  const [client] = useState(() => new QueryClient());
-  const query = useQuery(
-    {
-      queryKey: ['examplesChatModels'],
-      queryFn: ({ signal }) =>
-        api.request<{ data: ModelService[] }>({
-          path: 'agents/models',
-          query: { kind: 'chat' },
-          signal,
-        }),
-      enabled: open,
-      retry: false,
-      staleTime: 0,
-      refetchOnWindowFocus: false,
-    },
-    client,
-  );
-  const { refetch } = query;
-  useEffect(() => {
-    if (!open) return;
-    const refresh = () => {
-      void refetch();
-    };
-    window.addEventListener('focus', refresh);
-    return () => {
-      window.removeEventListener('focus', refresh);
-      void client.cancelQueries();
-    };
-  }, [open, client, refetch]);
-  useEffect(() => () => client.clear(), [client]);
-
-  const services = query.data?.data ?? [];
+  const query = useChatModels(open);
+  const services = query.data ?? [];
   const phase =
     query.isFetching || query.isPending
       ? 'loading'
@@ -56,7 +22,7 @@ export function useModelCatalog(open: boolean) {
     error: query.error,
     canSend,
     refresh: () => {
-      void refetch();
+      void query.refetch({ cancelRefetch: false });
     },
   };
 }

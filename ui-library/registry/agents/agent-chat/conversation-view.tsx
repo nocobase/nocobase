@@ -12,6 +12,7 @@ import {
   timelineOrder,
   useAgentText,
   useChatAgents,
+  useChatModels,
   useChatPanel,
   useConversation,
   useConversationActions,
@@ -25,6 +26,7 @@ import type {
   ConversationDetail,
   ConversationMessage,
 } from '@nocobase/app-plugin-agents/shared/conversations';
+import type { ModelRef } from '@nocobase/app-plugin-agents/shared/models';
 import { BotMessageSquareIcon, PaperclipIcon } from 'lucide-react';
 import {
   useCallback,
@@ -187,6 +189,8 @@ function ConversationBody({
   const extensions = useContext(ChatExtensionsContext);
   const actions = useConversationActions();
   const agents = useChatAgents(panel.open);
+  const catalog = useChatModels(panel.open && !conversation);
+  const [chosenModel, setChosenModel] = useState<ModelRef | null>(null);
   const run = conversation?.run ?? null;
   const running = conversation?.execution?.status === 'running';
   const chatController = useChatController();
@@ -206,6 +210,29 @@ function ConversationBody({
     ? null
     : newConversationAgent(agents.data, panel.newAgentId);
 
+  // Leave default resolution on the server until a model is explicitly chosen.
+  const model = chosenModel;
+  const hasChatModels = Boolean(
+    catalog.data?.some((service) =>
+      service.models.some((item) => item.kind === 'chat'),
+    ),
+  );
+  // A removed explicit selection must not silently fall back to another model.
+  const modelOffered = Boolean(
+    model &&
+    catalog.data?.some(
+      (service) =>
+        service.name === model.modelService &&
+        service.models.some(
+          (item) => item.kind === 'chat' && item.value === model.model,
+        ),
+    ),
+  );
+  const nativeReady =
+    catalog.isSuccess &&
+    !catalog.isFetching &&
+    (model ? modelOffered : hasChatModels);
+
   const { selectConversation, resetSource, source, focusComposer } = panel;
   const created = useCallback(
     (detail: ConversationDetail) => {
@@ -221,6 +248,7 @@ function ConversationBody({
     source,
     dispatch: messages.dispatch,
     onCreated: created,
+    ...(target?.id === 'online' && model ? { selectedModel: model } : {}),
   });
 
   // Viewed: tell the server the agent's latest replies were read.
@@ -501,6 +529,7 @@ function ConversationBody({
         <Composer
           variant={variant}
           disabled={
+            (!conversation && target?.id === 'online' && !nativeReady) ||
             running ||
             Boolean(conversation && !conversation.availability.online) ||
             chatController.submissions.blocked(
@@ -519,6 +548,8 @@ function ConversationBody({
             if (conversationId) actions.stop.mutate(conversationId);
           }}
           onSend={(content, context, attachments) => {
+            if (!conversation && target?.id === 'online' && !nativeReady)
+              return false;
             const accepted = send({ content, context, attachments });
             if (accepted) focusComposer();
             return accepted;
@@ -530,6 +561,16 @@ function ConversationBody({
               <NewChatChoice
                 agents={agents.data ?? []}
                 agent={target}
+                services={catalog.data ?? []}
+                model={model}
+                modelsDisabled={
+                  catalog.isFetching || !catalog.isSuccess || !hasChatModels
+                }
+                onModelChange={(selected) => {
+                  setChosenModel(selected);
+                  selectConversation(null, 'online');
+                  focusComposer();
+                }}
                 onAgentChange={(agentId) => {
                   selectConversation(null, agentId);
                   focusComposer();

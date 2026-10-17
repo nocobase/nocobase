@@ -158,6 +158,15 @@ export interface AgentChatLocale {
       readonly remove: string;
     };
     readonly agents: {
+      readonly models: string;
+      readonly defaultModel: string;
+      readonly runnerAgents: string;
+      readonly modelPlaceholder: string;
+      readonly modelSwitch: string;
+      readonly modelHint: string;
+      readonly mixedHint: string;
+      readonly search: string;
+      readonly noResults: string;
       readonly switch: string;
       readonly withStatus: string;
       readonly chooseFor: string;
@@ -406,6 +415,15 @@ const agentChatEnUS: AgentChatLocale = {
       remove: 'Remove context: {{label}}',
     },
     agents: {
+      models: 'Models',
+      defaultModel: 'Default model',
+      runnerAgents: 'Agents',
+      modelPlaceholder: 'Choose a model',
+      modelSwitch: 'Model: {{name}} · {{service}}; choose a model or agent',
+      modelHint: 'Choose an online model to chat with.',
+      mixedHint: 'Choose an online model or an Agent on a runner to chat with.',
+      search: 'Search models or agents',
+      noResults: 'No matching models or agents',
       switch: 'Agent: {{name}}; choose another',
       withStatus: '{{name}}, {{status}}',
       chooseFor: 'Chat with',

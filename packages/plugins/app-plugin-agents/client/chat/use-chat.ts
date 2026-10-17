@@ -42,6 +42,7 @@ import {
   type MessageAttachment,
   type PageContext,
 } from '../../shared/conversations.js';
+import type { ModelRef, ModelService } from '../../shared/models.js';
 import { useRealtimeTopic } from '../hooks/use-realtime-topic.js';
 import { errorText } from '../hooks/use-notify.js';
 import { agentsQueryClient } from '../query.js';
@@ -103,6 +104,41 @@ export function useChatAgents(enabled = true): UseQueryResult<ChatAgent[]> {
   useEffect(() => {
     if (enabled) void refetch({ cancelRefetch: false });
   }, [enabled, refetch]);
+  return query;
+}
+
+/** Public native chat models; revalidated while open, without turning a failed read into an empty catalog. */
+export function useChatModels(enabled = true): UseQueryResult<ModelService[]> {
+  const api = useChatApi();
+  const client = agentsQueryClient();
+  const query = useQuery(
+    {
+      queryKey: chatKeys.models,
+      queryFn: ({ signal }) => api.models(signal),
+      enabled,
+      staleTime: 15_000,
+      retry: false,
+      refetchOnWindowFocus: 'always',
+    },
+    client,
+  );
+  const { refetch } = query;
+  useEffect(() => {
+    if (!enabled) {
+      // Closing the last consumer abandons stale revalidation; active consumers keep their request.
+      void client.cancelQueries({
+        queryKey: chatKeys.models,
+        exact: true,
+        type: 'inactive',
+      });
+      return;
+    }
+    // Multiple mounted consumers share any in-flight open/focus refresh instead of restarting it.
+    void refetch({ cancelRefetch: false });
+    const refresh = () => void refetch({ cancelRefetch: false });
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, [client, enabled, refetch]);
   return query;
 }
 
@@ -298,12 +334,15 @@ export function useSendMessage({
   conversationId,
   agentId,
   source,
+  selectedModel,
   dispatch,
   onCreated,
 }: {
   readonly conversationId: string | null;
   readonly agentId: string | null;
   readonly source: ConversationSource;
+  /** Snapshotted for a new, explicitly native conversation only; Runner and continuation ignore it. */
+  readonly selectedModel?: ModelRef;
   readonly dispatch: Dispatch<MessagesAction>;
   readonly onCreated: (conversation: ConversationDetail) => void;
 }): (input: SendInput) => boolean {
@@ -350,7 +389,13 @@ export function useSendMessage({
         attachments: input.attachments ?? [],
         conversationId,
         editorKey,
-        create: { ...(agentId ? { agentId } : {}), source },
+        create: {
+          ...(agentId ? { agentId } : {}),
+          source,
+          ...(!conversationId && agentId === 'online' && selectedModel
+            ? { selectedModel }
+            : {}),
+        },
       });
       if (!submitted) {
         off();
@@ -371,7 +416,15 @@ export function useSendMessage({
       });
       return true;
     },
-    [controller, conversationId, agentId, source, dispatch, onCreated],
+    [
+      controller,
+      conversationId,
+      agentId,
+      source,
+      selectedModel,
+      dispatch,
+      onCreated,
+    ],
   );
 }
 

@@ -7,6 +7,7 @@ import {
   timelineOrder,
   useAgentText,
   useChatAgents,
+  useChatModels,
   useChatPanel,
   useConversation,
   useConversationMessages,
@@ -19,6 +20,7 @@ import type {
   ConversationDetail,
   ConversationMessage,
 } from '@nocobase/app-plugin-agents/shared/conversations';
+import type { ModelRef } from '@nocobase/app-plugin-agents/shared/models';
 import { BotMessageSquareIcon, PaperclipIcon } from 'lucide-react';
 import {
   useCallback,
@@ -187,6 +189,8 @@ function ConversationBody({
   const extensions = useContext(ChatExtensionsContext);
   const actions = useConversationActions();
   const agents = useChatAgents(panel.open);
+  const catalog = useChatModels(panel.open && !conversation);
+  const [chosenModel, setChosenModel] = useState<ModelRef | null>(null);
   const run = conversation?.run ?? null;
   const running = conversation?.execution?.status === 'running';
   const chatController = useChatController();
@@ -216,10 +220,38 @@ function ConversationBody({
     ? null
     : newConversationAgent(agents.data, panel.newAgentId);
 
+  // Leave default resolution on the server until a model is explicitly chosen.
+  const model = chosenModel;
+  const hasChatModels = Boolean(
+    catalog.data?.some((service) =>
+      service.models.some((item) => item.kind === 'chat'),
+    ),
+  );
+  // A removed explicit selection must not silently fall back to another model.
+  const modelOffered = Boolean(
+    model &&
+    catalog.data?.some(
+      (service) =>
+        service.name === model.modelService &&
+        service.models.some(
+          (item) => item.kind === 'chat' && item.value === model.model,
+        ),
+    ),
+  );
+  const nativeReady =
+    catalog.isSuccess &&
+    !catalog.isFetching &&
+    (model ? modelOffered : hasChatModels);
+
   const selectedId = conversation?.agent.id ?? target?.id ?? 'online';
   const sendAvailability =
     selectedId === 'online'
-      ? inputAvailability
+      ? {
+          ...inputAvailability,
+          canSend:
+            (inputAvailability?.canSend ?? true) &&
+            (conversation !== null || nativeReady),
+        }
       : {
           canSend:
             conversation?.availability.online ??
@@ -242,6 +274,7 @@ function ConversationBody({
     source,
     dispatch: messages.dispatch,
     onCreated: created,
+    ...(target?.id === 'online' && model ? { selectedModel: model } : {}),
   });
 
   // Viewed: tell the server the agent's latest replies were read.
@@ -607,6 +640,16 @@ function ConversationBody({
               <NewChatChoice
                 agents={agents.data ?? []}
                 agent={target}
+                services={catalog.data ?? []}
+                model={model}
+                modelsDisabled={
+                  catalog.isFetching || !catalog.isSuccess || !hasChatModels
+                }
+                onModelChange={(selected) => {
+                  setChosenModel(selected);
+                  selectConversation(null, 'online');
+                  focusComposer();
+                }}
                 onAgentChange={(agentId) => {
                   selectConversation(null, agentId);
                   focusComposer();

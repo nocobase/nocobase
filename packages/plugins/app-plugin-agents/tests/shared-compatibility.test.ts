@@ -14,6 +14,16 @@ import {
 } from '@nocobase/app-plugin-agents/server';
 import { z } from 'zod';
 import type { JSONSchema7, ModelMessage } from 'ai';
+import type { UseQueryResult } from '@tanstack/react-query';
+import type {
+  ChatApi,
+  useChatModels,
+  useSendMessage,
+} from '@nocobase/app-plugin-agents/client/chat';
+import type {
+  ModelRef,
+  ModelService,
+} from '@nocobase/app-plugin-agents/shared/models';
 
 import { VariableSchema } from '../server/routes/schemas.js';
 import type {
@@ -25,6 +35,21 @@ import type {
 } from '../server/tokens.js';
 import type { RunRepo, RunWait } from '../shared/runs.js';
 import type { Variable } from '../shared/variables.js';
+
+it('exports typed chat model catalog and optional native selection through the public client entry', () => {
+  expectTypeOf<ReturnType<ChatApi['models']>>().toEqualTypeOf<
+    Promise<ModelService[]>
+  >();
+  expectTypeOf<Parameters<typeof useChatModels>>().toEqualTypeOf<
+    [enabled?: boolean]
+  >();
+  expectTypeOf<ReturnType<typeof useChatModels>>().toEqualTypeOf<
+    UseQueryResult<ModelService[]>
+  >();
+  expectTypeOf<
+    Parameters<typeof useSendMessage>[0]['selectedModel']
+  >().toEqualTypeOf<ModelRef | undefined>();
+});
 
 // Checked by tsconfig.type-tests.json as well as Vitest: applications may still construct the previous shapes.
 const wait: RunWait = {

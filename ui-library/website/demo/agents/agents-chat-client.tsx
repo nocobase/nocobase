@@ -840,6 +840,7 @@ function query<T>(data: T | undefined): never {
 export const useChatAgents: typeof Chat.useChatAgents = () =>
   query([...AGENTS]);
 
+export const useChatModels: typeof Chat.useChatModels = () => query([]);
 export const useConversation: typeof Chat.useConversation = (
   conversationId,
 ) => {

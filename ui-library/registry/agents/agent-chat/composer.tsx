@@ -18,7 +18,13 @@ import type {
   MessageAttachment,
   PageContext,
 } from '@nocobase/app-plugin-agents/shared/conversations';
-import { useMemo, type ReactElement, type ReactNode } from 'react';
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { useLocation } from 'react-router';
 
 import {
@@ -67,6 +73,16 @@ export function Composer({
 }: ComposerProps): ReactElement {
   const location = useLocation();
   const panel = useChatPanel();
+  // Upload completion must use the current model/executor and readiness, not a captured callback.
+  const currentSendRef = useRef(onSend);
+  const sendAllowedRef = useRef(false);
+  useLayoutEffect(() => {
+    currentSendRef.current = onSend;
+    sendAllowedRef.current = panel.open && !disabled;
+    return () => {
+      sendAllowedRef.current = false;
+    };
+  }, [onSend, disabled, panel.open]);
   const sources = useChatSources();
   const labels = useComposerLabels();
   const files = useChatAttachments();
@@ -109,7 +125,8 @@ export function Composer({
       registerFocus={panel.registerComposer}
       onStop={onStop}
       onSend={(content, carried, sent) => {
-        const taken = onSend(content, carried, sent);
+        if (!sendAllowedRef.current) return false;
+        const taken = currentSendRef.current(content, carried, sent);
         if (taken) panel.clearPinned();
         return taken;
       }}
