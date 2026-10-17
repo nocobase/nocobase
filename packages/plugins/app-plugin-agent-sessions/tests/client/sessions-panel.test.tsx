@@ -167,6 +167,30 @@ describe('the sessions panel', () => {
     ],
   });
 
+  it('uses the host hint without prefilling text and clears text only for a deliberate new scope', async () => {
+    const { update, requests } = await setup({
+      view: { kind: 'new' },
+      attach: { ...auto('a'), placeholder: 'Describe the task' },
+    });
+    const box = await screen.findByPlaceholderText('Describe the task');
+    expect(box).toHaveValue('');
+    fireEvent.change(box, { target: { value: 'Unsent request' } });
+    update({ attach: { ...auto('b'), placeholder: 'Describe the task' } });
+    await screen.findByText('Task b');
+    expect(box).toHaveValue('Unsent request');
+    update({
+      attach: { ...auto('c', 'new-intent'), placeholder: 'Describe the task' },
+    });
+    await screen.findByText('Task c');
+    expect(box).toHaveValue('');
+    expect(
+      requests.mock.calls.some(
+        ([call]) =>
+          call.method === 'POST' && call.path === 'agentSessions/sessions',
+      ),
+    ).toBe(false);
+  });
+
   it('replaces automatic context, keeps manual attachments, and updates the project of a mounted new draft', async () => {
     const { client, update, requests } = await setup(
       { view: { kind: 'new' }, attach: auto('a') },

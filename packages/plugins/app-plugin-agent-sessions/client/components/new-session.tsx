@@ -337,7 +337,7 @@ export function NewSession({
             draftKey='new-session'
             onEdit={begin}
             autoFocus
-            placeholder={t('newSession.placeholder')}
+            placeholder={surface.placeholder ?? t('newSession.placeholder')}
             sendDisabled={!ready}
             sending={creating}
             commands={computer && agent ? computer.commands[agent.id] : []}
