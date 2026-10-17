@@ -132,6 +132,12 @@ export function NewSession({
       ? remembered()
       : { ...remembered(), projectId: surface.projectId ?? '' },
   );
+  const [contextProject, setContextProject] = useState(surface.projectId);
+  if (contextProject !== surface.projectId) {
+    setContextProject(surface.projectId);
+    if (surface.projectId !== undefined)
+      setChoice({ ...choice, projectId: surface.projectId ?? '' });
+  }
   const sendingRef = useRef(false);
 
   const all = computers.data ?? [];

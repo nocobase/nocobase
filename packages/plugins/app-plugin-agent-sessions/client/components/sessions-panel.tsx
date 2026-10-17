@@ -10,7 +10,13 @@ import { ListIcon, Maximize2Icon, PlusIcon } from 'lucide-react';
 import { useEffect, useMemo, type ReactElement, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 
-import { attachedKey, type Attachment } from '../lib/attachments.js';
+import {
+  attachedKey,
+  automaticKey,
+  type Attachment,
+  type AutomaticAttachmentState,
+} from '../lib/attachments.js';
+import type { SessionLink } from '../../shared/api.js';
 import { NewSession } from './new-session.js';
 import { SessionList } from './session-list.js';
 import { SessionView } from './session-view.js';
@@ -22,7 +28,7 @@ import {
   type SessionSurface,
 } from '../config.js';
 import { withAgentSessions } from '../query.js';
-import { sessionMemoryKey } from '../use-session-memory.js';
+import { sessionMemoryKey, useSessionMemory } from '../use-session-memory.js';
 
 export type AgentSessionsPanelView =
   | { readonly kind: 'session'; readonly sessionId: string }
@@ -35,12 +41,18 @@ export interface AgentSessionsPanelAttach {
   readonly attachments: readonly Attachment[];
   /** The project a new session starts with; `null` for none. */
   readonly projectId?: string | null | undefined;
+  /** Replace only automatic attachments in an unsent new draft; manual attachments survive. Default: append. */
+  readonly mode?: 'append' | 'replace';
+  /** One following lifetime. Keep it stable for page changes; change it for a deliberate new start. */
+  readonly scope?: string;
 }
 
 export interface AgentSessionsPanelProps extends AgentSessionsRouteOptions {
   readonly view: AgentSessionsPanelView;
   readonly onViewChange: (view: AgentSessionsPanelView) => void;
   readonly attach?: AgentSessionsPanelAttach | undefined;
+  /** The record currently shown in the host's main page, highlighted in the panel's task list. */
+  readonly activeLink?: Pick<SessionLink, 'kind' | 'refId'> | null | undefined;
   /** After the panel's own buttons, such as the host's close button. */
   readonly actions?: ReactNode;
   /** Opens the full page at `path`; left out, it navigates there. */
@@ -54,6 +66,7 @@ function Panel({
   view,
   onViewChange,
   attach,
+  activeLink,
   actions,
   onFullScreen,
 }: Omit<
@@ -69,22 +82,55 @@ function Panel({
       : view.kind === 'new'
         ? 'new-session'
         : null;
+  const [automatic] = useSessionMemory<AutomaticAttachmentState | null>(
+    automaticKey('new-session'),
+    null,
+  );
 
   useEffect(() => {
     if (!attach || !draftKey) return;
+    // Page context never waits on a list and then leaks into a session chosen from that list.
+    if (attach.mode === 'replace' && view.kind !== 'new') return;
     const applied = sessionMemoryKey(APPLIED);
     if (client.getQueryData(applied) === attach.id) return;
+    if (attach.mode === 'replace') {
+      const key = sessionMemoryKey(automaticKey(draftKey));
+      const previous = client.getQueryData<AutomaticAttachmentState>(key);
+      const scope = attach.scope ?? attach.id;
+      if (previous?.scope === scope && previous.stopped) return;
+      // Freeze while an uncertain submission still owns this draft, even if another entry requests a new intent.
+      if (client.getQueryData(sessionMemoryKey(`submission:${draftKey}`)))
+        return;
+      client.setQueryData(key, {
+        scope,
+        stopped: false,
+        projectId: attach.projectId,
+      });
+    }
     client.setQueryData(applied, attach.id);
     client.setQueryData<Attachment[]>(
       sessionMemoryKey(attachedKey(draftKey)),
       (held = []) => [
-        ...held,
-        ...attach.attachments.filter(
-          (attachment) => !held.some((other) => other.id === attachment.id),
+        ...held.filter(
+          (attachment) => attach.mode !== 'replace' || !attachment.automatic,
         ),
+        ...attach.attachments
+          .filter(
+            (attachment) =>
+              !held.some(
+                (other) =>
+                  (attach.mode !== 'replace' || !other.automatic) &&
+                  other.id === attachment.id,
+              ),
+          )
+          .map((attachment) =>
+            attach.mode === 'replace'
+              ? { ...attachment, automatic: true }
+              : attachment,
+          ),
       ],
     );
-  }, [attach, draftKey, client]);
+  }, [attach, draftKey, client, view.kind]);
 
   const fullPath =
     view.kind === 'session'
@@ -135,7 +181,9 @@ function Panel({
     actions: buttons,
     onCreated: (sessionId) => onViewChange({ kind: 'session', sessionId }),
     onOpenSession: (sessionId) => onViewChange({ kind: 'session', sessionId }),
-    projectId: attach?.projectId,
+    projectId:
+      attach?.mode === 'replace' ? automatic?.projectId : attach?.projectId,
+    activeLink,
   };
 
   return (
