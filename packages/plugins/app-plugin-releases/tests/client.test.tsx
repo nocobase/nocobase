@@ -283,7 +283,16 @@ describe('client', () => {
       </MemoryRouter>,
     );
     fireEvent.click(await screen.findByRole('link', { name: 'Create app' }));
-    const dialog = await screen.findByRole('dialog');
+    let dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(
+      sent.filter(
+        (item) => item.method === 'POST' && item.path === 'releases/apps',
+      ),
+    ).toHaveLength(0);
+    fireEvent.click(await screen.findByRole('link', { name: 'Create app' }));
+    dialog = await screen.findByRole('dialog');
     // The list stays behind the dialog.
     expect(screen.getByText('No apps yet')).toBeInTheDocument();
     fireEvent.change(within(dialog).getByLabelText('Name'), {
@@ -292,6 +301,18 @@ describe('client', () => {
     fireEvent.change(within(dialog).getByLabelText('App ID'), {
       target: { value: 'shop' },
     });
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Advanced (optional)' }),
+    );
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add label' }));
+    fireEvent.change(
+      within(dialog).getByRole('textbox', { name: 'Name of label 1' }),
+      { target: { value: 'team' } },
+    );
+    fireEvent.change(
+      within(dialog).getByRole('textbox', { name: 'Value of label 1' }),
+      { target: { value: 'web' } },
+    );
     await waitFor(() =>
       expect(
         within(dialog).getByRole('button', { name: 'Create app' }),
@@ -304,9 +325,250 @@ describe('client', () => {
         (item) => item.method === 'POST' && item.path === 'releases/apps',
       ),
     ).toMatchObject({
-      json: { id: 'shop', name: 'Shop', environmentId: 'staging' },
+      json: {
+        id: 'shop',
+        name: 'Shop',
+        environmentId: 'staging',
+        labels: { team: 'web' },
+      },
     });
+    const create = sent.find(
+      (item) => item.method === 'POST' && item.path === 'releases/apps',
+    )!;
+    expect(create.json).not.toHaveProperty('idleStopMinutes');
+    expect(create.json).not.toHaveProperty('dormantAfterHours');
   });
+
+  it.each([
+    {
+      name: 'idle override and inherited dormancy',
+      idle: '10',
+      dormant: null,
+      expected: { idleStopMinutes: 10 },
+    },
+    {
+      name: 'inherited idle and dormant override',
+      idle: null,
+      dormant: '0.5',
+      expected: { dormantAfterHours: 0.5 },
+    },
+    {
+      name: 'idle off and inherited dormancy',
+      idle: '',
+      dormant: null,
+      expected: { idleStopMinutes: null },
+    },
+    {
+      name: 'inherited idle and dormant off',
+      idle: null,
+      dormant: '',
+      expected: { dormantAfterHours: null },
+    },
+    {
+      name: 'both overrides',
+      idle: '10',
+      dormant: '0.5',
+      expected: { idleStopMinutes: 10, dormantAfterHours: 0.5 },
+    },
+    {
+      name: 'both off',
+      idle: '',
+      dormant: '',
+      expected: { idleStopMinutes: null, dormantAfterHours: null },
+    },
+    {
+      name: 'idle override and dormancy off',
+      idle: '10',
+      dormant: '',
+      expected: { idleStopMinutes: 10, dormantAfterHours: null },
+    },
+    {
+      name: 'idle off and dormant override',
+      idle: '',
+      dormant: '0.5',
+      expected: { idleStopMinutes: null, dormantAfterHours: 0.5 },
+    },
+    {
+      name: 'conflicting idle switched to inherit',
+      idle: null,
+      dormant: '0.5',
+      discardedIdle: '60',
+      expected: { dormantAfterHours: 0.5 },
+    },
+    {
+      name: 'invalid idle switched to inherit',
+      idle: null,
+      dormant: '0.5',
+      discardedIdle: 'not a number',
+      expected: { dormantAfterHours: 0.5 },
+    },
+    {
+      name: 'invalid dormancy switched to inherit',
+      idle: '10',
+      dormant: null,
+      discardedDormant: 'not a number',
+      expected: { idleStopMinutes: 10 },
+    },
+    {
+      name: 'valid idle switched to inherit',
+      idle: null,
+      dormant: null,
+      discardedIdle: '10',
+      expected: {},
+    },
+  ])(
+    'creates with $name and preserves the choice after a capacity refusal',
+    async ({ idle, dormant, discardedIdle, discardedDormant, expected }) => {
+      const sent: unknown[] = [];
+      mocks.request.mockImplementation(
+        (options: { path: string; method?: string; json?: unknown }) => {
+          if (options.path === 'releases/me')
+            return Promise.resolve({
+              data: {
+                userId: 'u',
+                kind: 'human',
+                permissions: allPermissions(),
+              },
+            });
+          if (options.path === 'releases/environments')
+            return Promise.resolve({
+              data: [
+                {
+                  id: 'staging',
+                  name: 'Staging',
+                  defaultIdleStopMinutes: 1,
+                  defaultDormantAfterHours: 0.5,
+                  maxApps: 2,
+                },
+              ],
+              meta: { total: 1 },
+            });
+          if (options.method === 'POST' && options.path === 'releases/apps') {
+            sent.push(options.json);
+            if (sent.length === 1)
+              return Promise.reject(
+                new ApiClientError('Environment is full.', {
+                  status: 409,
+                  reason: 'ENVIRONMENT_FULL',
+                }),
+              );
+            return Promise.resolve({ data: {} });
+          }
+          return Promise.resolve({ data: [], meta: { total: 0 } });
+        },
+      );
+      function Where(): ReactElement {
+        return <span data-testid='where'>{useLocation().pathname}</span>;
+      }
+      render(
+        <MemoryRouter initialEntries={['/apps']}>
+          <Routes>
+            <Route path='/apps' element={<AppsPage />}>
+              <Route path='new' element={<NewAppPage />} />
+              <Route path=':appId' element={<Where />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>,
+      );
+      fireEvent.click(await screen.findByRole('link', { name: 'Create app' }));
+      const dialog = await screen.findByRole('dialog');
+      fireEvent.change(within(dialog).getByLabelText('Name'), {
+        target: { value: 'Shop' },
+      });
+      fireEvent.change(within(dialog).getByLabelText('App ID'), {
+        target: { value: 'shop' },
+      });
+      const advanced = within(dialog).getByRole('button', {
+        name: 'Advanced (optional)',
+      });
+      fireEvent.click(advanced);
+
+      async function mode(label: string, choice: string): Promise<void> {
+        fireEvent.click(within(dialog).getByRole('combobox', { name: label }));
+        const option = await screen.findByRole('option', { name: choice });
+        fireEvent.pointerDown(option, { pointerType: 'mouse' });
+        fireEvent.mouseUp(option);
+        fireEvent.click(option);
+      }
+      const timers = [
+        {
+          label: 'Idle timer behavior',
+          input: 'Stop when unvisited for',
+          value: idle,
+          discarded: discardedIdle,
+        },
+        {
+          label: 'Hibernate timer behavior',
+          input: 'Hibernate when unvisited for',
+          value: dormant,
+          discarded: discardedDormant,
+        },
+      ];
+      for (const timer of timers) {
+        const value = timer.discarded ?? timer.value;
+        if (value !== null) {
+          await mode(timer.label, 'Set a custom value');
+          fireEvent.change(within(dialog).getByLabelText(timer.input), {
+            target: { value },
+          });
+        }
+      }
+      const createButton = within(dialog).getByRole('button', {
+        name: 'Create app',
+      });
+      if (
+        discardedIdle === '60' ||
+        discardedIdle === 'not a number' ||
+        discardedDormant
+      )
+        expect(createButton).toBeDisabled();
+      for (const timer of timers) {
+        if (timer.discarded !== undefined)
+          await mode(timer.label, 'Use environment default');
+        const input = within(dialog).getByLabelText(timer.input);
+        expect(input).toHaveValue(timer.value ?? '');
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
+        if (timer.value === null) expect(input).toBeDisabled();
+      }
+      expect(
+        within(dialog).queryByText('Hibernation must come after the stop.'),
+      ).toBeNull();
+      expect(advanced).not.toHaveTextContent('stops after 60');
+      if (discardedIdle === '10')
+        expect(advanced).not.toHaveTextContent('stops after 10');
+      await waitFor(() => expect(createButton).toBeEnabled());
+      const payload = {
+        id: 'shop',
+        name: 'Shop',
+        environmentId: 'staging',
+        labels: {},
+        activation: 'eager',
+        ...expected,
+      };
+      fireEvent.click(createButton);
+      await waitFor(() => expect(createButton).toBeEnabled());
+      expect(sent).toEqual([payload]);
+      expect(within(dialog).getByLabelText('Name')).toHaveValue('Shop');
+      expect(within(dialog).getByLabelText('App ID')).toHaveValue('shop');
+      for (const timer of timers) {
+        expect(within(dialog).getByLabelText(timer.input)).toHaveValue(
+          timer.value ?? '',
+        );
+        expect(
+          within(dialog).getByRole('combobox', { name: timer.label }),
+        ).toHaveTextContent(
+          timer.value === null
+            ? 'Use environment default'
+            : 'Set a custom value',
+        );
+      }
+      fireEvent.click(createButton);
+      expect(await screen.findByTestId('where')).toHaveTextContent(
+        '/apps/shop',
+      );
+      expect(sent).toEqual([payload, payload]);
+    },
+  );
 
   it("shows an operator through the application's component, else by id", () => {
     const view = render(<ActorName id='u1' kind='human' />);
