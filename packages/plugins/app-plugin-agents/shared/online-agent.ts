@@ -31,3 +31,16 @@ export type OnlineAgentStreamEvent =
       status: 'idle';
       outcome: OnlineAgentOutcome;
     };
+export {
+  appUIDataSchemas,
+  appUIJsonSchema,
+  appUIMessageMetadataSchema,
+  appUIMessageText,
+  isAppUIJson,
+  validateAppUIMessages,
+  type AppUIData,
+  type AppUIJson,
+  type AppUIMessage,
+  type AppUIMessageMetadata,
+  type AppUITools,
+} from './ui-message.js';

@@ -286,6 +286,7 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
+    "@ai-sdk/react": "catalog:",
     "@base-ui/react": "catalog:",
     "@nocobase/app-cli": "workspace:^",
     "@nocobase/app-client": "workspace:^",

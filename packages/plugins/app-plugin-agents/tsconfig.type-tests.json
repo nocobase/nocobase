@@ -3,5 +3,5 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["tests/shared-compatibility.test.ts"]
+  "include": ["tests/shared-compatibility.test.ts", "tests/ui-message.test.ts"]
 }

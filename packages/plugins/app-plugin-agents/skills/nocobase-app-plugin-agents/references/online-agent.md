@@ -1,5 +1,7 @@
 # OnlineAgent chats and business tools
 
+The SDK UI message foundation is available from the shared OnlineAgent entry; see `docs/ui-messages.md` in the installed `@nocobase/app-plugin-agents` package for types, validation, dependency versions and the staged integration boundary. Existing realtime routes and consumers have not yet switched to that contract.
+
 Use `OnlineAgentService` for SDK conversations that call application services and continue answering with their results, or for lightweight background generation with a JSON Schema-constrained result. Native model execution runs inside the application process. Realtime sessions can also select a callable Runner agent through the same service; Runner output arrives as completed text blocks. The plugin owns persistence, model selection, execution control and public chat transport; the application owns its business tools, permissions and page composition.
 
 ## Obtain and configure the shared service

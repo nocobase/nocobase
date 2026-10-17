@@ -24,6 +24,15 @@ import type {
   AppClientRoutePageDefinition,
 } from '@nocobase/app-client/plugins';
 
+export type {
+  AppUIData,
+  AppUIJson,
+  AppUIMessage,
+  AppUIMessageMetadata,
+  AppUITools,
+} from '../shared/online-agent.js';
+export { appUIMessageText } from '../shared/online-agent.js';
+
 export {
   CHAT_PANEL_ATTRIBUTE,
   CHAT_PANEL_ID,

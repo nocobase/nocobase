@@ -25,3 +25,14 @@ export type {
   OnlineAgentRunnerBackend,
 } from './realtime.js';
 export { RunnerOnlineAgentAdapter } from './runner.js';
+export {
+  appUIDataSchemas,
+  appUIJsonSchema,
+  appUIMessageMetadataSchema,
+  validateAppUIMessages,
+  type AppUIData,
+  type AppUIJson,
+  type AppUIMessage,
+  type AppUIMessageMetadata,
+  type AppUITools,
+} from '../../shared/online-agent.js';
