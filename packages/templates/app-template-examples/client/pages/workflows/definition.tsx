@@ -7,7 +7,7 @@ import { ProcessDiagram } from '@nocobase/app-plugin-lifecycle-example/client';
 import { WorkflowParametersForm } from './parameters.js';
 import { WorkflowCategoryEditor, type Category } from './categories.js';
 import { WorkflowDetailPage } from './detail-page.js';
-import { Card, CardContent, CardHeader, CardTitle } from '#components/ui/card';
+import { WorkflowDefinitionDetail } from '#extensions/nocobase-workflow-management/layout';
 import type { WorkflowDefinition } from '../../../shared/workflows.js';
 import { DataState } from './shared.js';
 import { useWorkflowData, useWorkflowLabels } from './hooks.js';
@@ -125,60 +125,36 @@ export default function DefinitionPage(): ReactElement {
       {request.data && <DataState {...categories} retry={categories.reload} />}
       <DataState {...request} retry={request.reload} />
       {request.data && (
-        <div className='flex flex-col gap-4'>
-          <div className='grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-2'>
-            <Card
-              className='min-w-0'
-              role='region'
-              aria-label={t('workflows.processDiagram')}
-            >
-              <CardHeader>
-                <CardTitle>
-                  <h2>{t('workflows.processDiagram')}</h2>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className='flex flex-1 flex-col'>
-                <DefinitionDiagram
-                  key={workflowId}
-                  definition={request.data.data}
-                />
-              </CardContent>
-            </Card>
-            <Card
-              className='min-w-0'
-              role='region'
-              aria-label={t('workflows.parameterSettings')}
-            >
-              <CardHeader>
-                <CardTitle>
-                  <h2>{t('workflows.parameterSettings')}</h2>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {location.pathname.endsWith('/parameters') ? null : (
-                    request.data.data.workflow.source === 'office'
-                      ? Boolean(
-                          officeParameterFields[
-                            request.data.data.workflow.name
-                          ],
-                        )
-                      : Boolean(
-                          request.data.data.description.parameterConfiguration
-                            ?.groups.length,
-                        )
-                  ) ? (
-                  <WorkflowParametersForm key={workflowId} inline />
-                ) : (
-                  <Empty>
-                    <EmptyDescription>
-                      {t('workflows.noParameters')}
-                    </EmptyDescription>
-                  </Empty>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        <WorkflowDefinitionDetail
+          diagramTitle={t('workflows.processDiagram')}
+          parametersTitle={t('workflows.parameterSettings')}
+          diagram={
+            <DefinitionDiagram
+              key={workflowId}
+              definition={request.data.data}
+            />
+          }
+          parameters={
+            location.pathname.endsWith('/parameters') ? null : (
+                request.data.data.workflow.source === 'office'
+                  ? Boolean(
+                      officeParameterFields[request.data.data.workflow.name],
+                    )
+                  : Boolean(
+                      request.data.data.description.parameterConfiguration
+                        ?.groups.length,
+                    )
+              ) ? (
+              <WorkflowParametersForm key={workflowId} inline />
+            ) : (
+              <Empty>
+                <EmptyDescription>
+                  {t('workflows.noParameters')}
+                </EmptyDescription>
+              </Empty>
+            )
+          }
+        />
       )}
       <Outlet />
     </WorkflowDetailPage>

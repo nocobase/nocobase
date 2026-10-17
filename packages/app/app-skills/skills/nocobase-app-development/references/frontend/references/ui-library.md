@@ -408,3 +408,17 @@ A child route presented as a non-modal page covering the content area, keeping t
 - Plugin dependencies: none
 - Example: `@nocobase/route-child-page-demo` (`pnpm exec shadcn view @nocobase/route-child-page-demo`)
 - After installing: Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole.
+
+## Workflows
+
+### workflow-management
+
+Workflow administration as presentational parts: one management page with Definitions and Executions tabs, a categorized definition list, a filtered execution list, definition diagram and parameter layout, and execution history inspection beside a diagram. Wire it to application-owned routes, data and permissions.
+
+- Kind: block
+- Install: `yes n | pnpm exec shadcn add @nocobase/workflow-management`
+- Installs to: `client/extensions/nocobase-workflow-management/`
+- Plugin dependencies: none
+- Also installs: `@nocobase/page-container`, `@nocobase/page-header`
+- Example: `@nocobase/workflow-management-demo` (`pnpm exec shadcn view @nocobase/workflow-management-demo`)
+- After installing: Install @nocobase/workflow-management and read @nocobase/workflow-management-demo. Render WorkflowManagementLayout around the application Outlet with URL-controlled Definitions and Executions tabs; declare sidebar navigation only on the Workflow management parent. Pass adapted rows, translated labels, search/category controls, status/empty content and callbacks to WorkflowDefinitionList and WorkflowExecutionList. WorkflowDefinitionDetail places the diagram beside an application-owned parameter form. WorkflowExecutionDetail takes transition/effect records and a renderDiagram callback receiving the selected history prefix and current state; render with @nocobase/lifecycle-diagram or an existing compatible diagram. It never executes transitions or saves configuration. Keep API fetching, URL query state, permissions, parameter persistence, recovery actions and breadcrumbs in the application. All wording comes from props; no example plugin or backend is installed.

@@ -4,9 +4,17 @@ Use this reference for management pages built around `@nocobase/lifecycle`. Read
 
 ## Default management structure
 
-Use the existing workflow example's layout and organization as the default starting point. Adapt its business labels, data sources and supported operations to the application; do not require its example plugins as production dependencies. The sidebar has one clickable entry, System management → Workflow management. Its landing page has one Workflow management header and in-page Definitions and Executions tabs; these are two views of the same management page, not separate sidebar entries or a sidebar submenu. Definitions lead to full detail pages with a process diagram and visible parameter settings beside it; executions lead to full detail pages with a diagram, transition history, effect status and recorded parameter information. Include implemented workflows even when there is only one. Show an explicit empty state for definitions without adjustable parameters and for workflows without executions; add category management when classification is useful.
+Use the UI Library `workflow-management` block as the default starting point; it extracts the existing workflow example's layout and interactions. Adapt its business labels, data sources and supported operations to the application; do not require its example plugins as production dependencies. The sidebar has one clickable entry, System management → Workflow management. Its landing page has one Workflow management header and in-page Definitions and Executions tabs; these are two views of the same management page, not separate sidebar entries or a sidebar submenu. Definitions lead to full detail pages with a process diagram and visible parameter settings beside it; executions lead to full detail pages with a diagram, transition history, effect status and recorded parameter information. Include implemented workflows even when there is only one. Show an explicit empty state for definitions without adjustable parameters and for workflows without executions; add category management when classification is useful.
 
 Create the System management group if it is missing, or reuse the application's existing Settings group. Place Workflow management directly under that group, alongside User management, Roles and permissions, Background tasks and other applicable administration entries. Keep workflow execution inspection inside Workflow management; do not add an intermediate Operational monitoring group. Deliver real catalog and execution data, initial administrator grants and working page/API authorization alongside the process. Follow [system administration](system-administration.md) for the complete application's administration baseline and authenticated acceptance checks. Workflow configuration stays separate from business submit, approve and fulfil pages, and does not imply a visual workflow designer.
+
+## Install and connect the block
+
+Check `client/extensions/nocobase-workflow-management/` for an installed copy first. If missing, read `@nocobase/workflow-management-demo` with `pnpm exec shadcn view @nocobase/workflow-management-demo`, then install with `yes n | pnpm exec shadcn add @nocobase/workflow-management`. Follow the [UI Library installation guidance](frontend/references/styling.md#3-use-shadcn) for dependency placement. Read the installed README for component props and route integration. The block supplies source files; it registers no route, server service, database or permission.
+
+Use `WorkflowManagementLayout` for the shared header and URL-controlled tabs, `WorkflowDefinitionList` and `WorkflowExecutionList` for lists, `WorkflowDefinitionDetail` for diagram/parameter cards, and `WorkflowExecutionDetail` for the diagram/history/effects composition. Pass translated labels, adapted display rows with application router links, category/search controls, loading/error/empty content and controlled callbacks. The application owns API requests, URL query state, IME-aware search, server pagination, category CRUD, breadcrumbs and authorization. Keep parameter schemas, complete-group persistence, CAS conflict handling and effective timing in the application's editor, inserted into the definition detail's parameter slot.
+
+Render the installed `lifecycle-diagram` or an existing compatible diagram through the diagram slot/callback. If neither is installed, add the diagram with `yes n | pnpm exec shadcn add @nocobase/lifecycle-diagram`; the block accepts a caller-supplied diagram. `WorkflowExecutionDetail` supplies the selected history prefix and resulting state to `renderDiagram`; selection is display-only. Keep recorded parameters separate from current settings and pass their display through the parameter slot. Do not add business actions or recovery requests to history selection. Remount the detail on record changes or explicit refresh to clear historical selection, following the example adapter.
 
 ## Navigation and ownership
 
@@ -30,7 +38,7 @@ Keep search, workflow filter, ordering and page in query parameters, preserving 
 
 ## Definition detail
 
-Use one PageHeader with the business title, compact category assignment and execution-count link, followed by a short business description. Avoid repeated titles and demonstration hints.
+Use one PageHeader with the business title, compact category assignment and execution-count link, followed by a short business description. When categories are enabled, let administrators with update permission change or clear the assignment from the colored tag beside the title; read-only administrators see the tag without an edit control. Keep assignment and category CRUD in application adapters, following the installable demo. Category action menus use concise Edit and Delete labels. Avoid repeated titles and demonstration hints.
 
 Place the diagram and Parameter settings in two columns on wide screens, stacking on smaller screens. Use min-w-0 children, a consistent gap and items-start so cards size independently. Give each card a heading and keep wide tables or structured values scrollable within it.
 
@@ -70,9 +78,9 @@ Check installed source first, then inspect missing items through the [UI Library
 | Sections and controls    | Existing shadcn Card, Table, Tabs, Empty, Button and Tooltip |
 | Parameters               | Installed runtime's editor, or an application-owned form     |
 
-Follow [diagram integration](lifecycle.md#draw-an-interactive-lifecycle-diagram) for props and demos. Example ProcessDiagram is a wrapper, not a platform-wide API. Installing Registry source does not register a runtime or backend service.
+Follow [diagram integration](lifecycle.md#draw-an-interactive-lifecycle-diagram) for props and demos. Example ProcessDiagram remains an application adapter, not a dependency or platform-wide API of the block. Installing Registry source does not register a runtime or backend service.
 
-Keep fetching, authorization, mutations, catalog aggregation and parameter storage in the application. Extract a Registry block only when independent consumers share a stable composition contract; accept data, translated labels, navigation and callbacks. A grid wrapper alone rarely warrants another component.
+Keep fetching, authorization, mutations, catalog aggregation and parameter storage in the application. Use the workflow-management block's existing props and composition slots before creating another abstraction. Keep additional business-specific rendering in the application.
 
 ## Source examples and verification
 

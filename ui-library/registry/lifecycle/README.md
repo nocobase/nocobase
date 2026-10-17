@@ -13,3 +13,7 @@ Canvas dimensions, direction, layout errors and translation keys follow [Flow di
 Pass a translated `endLabel` (for example, `endLabel={t('diagram.end')}`) to show a separate compact end marker after each explicitly final state. These markers are decorative and never invoke state/transition handlers. A non-final state without outgoing transitions is not treated as an ending.
 
 Highlights use the application `--primary` token: current nodes have a stronger fill and ring, visited nodes a light fill, and executed/available edges an accent stroke. Ordinary edges remain subdued; labels sit directly on their routes. No “visited” text is added to nodes. The same theme tokens adapt to light/dark mode and application theme changes; do not replace them with a diagram-specific palette. Use `transitionLabel` to append `⚙` to automatic transitions when needed, rather than using dashed lines to distinguish them.
+
+## Workflow management
+
+`@nocobase/workflow-management` installs the workflow administration block: one page with Definitions and Executions tabs, definition and execution lists, diagram/parameter cards, and historical execution inspection. It takes application-owned data, labels and callbacks. See [the block contract](workflow-management/README.md) and `@nocobase/workflow-management-demo`; it imports no example plugins and installs no backend.
