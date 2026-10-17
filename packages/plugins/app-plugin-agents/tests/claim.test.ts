@@ -32,6 +32,15 @@ describe('claiming', () => {
     expect(payload.prompt.system).toMatch(
       /^You are Coder[\s\S]*AGENTS\.md, CLAUDE\.md or README[\s\S]*\{\{runner\.workspaceInit\}\}[\s\S]*Work on the sample\.\n\nSample 7[\s\S]*Be brief\.$/u,
     );
+    expect(payload.prompt.system).toContain(
+      'Use the `acme` command line for all operations on the management Acme instance hosting this task',
+    );
+    expect(payload.prompt.system).toContain(
+      'A refused command (exit code 3) must not be bypassed through a browser, HTTP, another identity or a test environment.',
+    );
+    expect(payload.prompt.system).toContain(
+      'you may use Playwright, a browser and test HTTP requests, even when the tested product is also named Acme.',
+    );
     expect(payload.cli.credential.content).toMatchObject({
       runId,
       token: expect.stringMatching(/^fgr_/u),
