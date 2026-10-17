@@ -70,6 +70,7 @@ export function useLinkOpen():
  */
 export interface SessionSurface {
   readonly panel: boolean;
+  readonly activeLink?: Pick<SessionLink, 'kind' | 'refId'> | null | undefined;
   /** At the end of a view's header, such as the panel's own buttons. */
   readonly actions?: ReactNode;
   /** A new session was created: show it. Left out, the page opens its address. */
