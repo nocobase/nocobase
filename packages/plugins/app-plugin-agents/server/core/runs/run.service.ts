@@ -271,6 +271,11 @@ export interface RunService {
     readonly source: string;
   } | null>;
   list(filter: RunFilter): Promise<Run[]>;
+  inputTriggers(
+    runIds: readonly string[],
+  ): Promise<
+    ReadonlyMap<string, readonly { type: string; payload: unknown }[]>
+  >;
   /** The newest ended run of each agent on each of the subjects (`subjectIds` of `subjectKind`), in no order. */
   lastEnded(subjectKind: string, subjectIds: readonly string[]): Promise<Run[]>;
   /** Active subject/agent pairs within this scope, once each. Callers decide visibility and approval rules. */
@@ -1774,6 +1779,21 @@ export function createRunService(deps: RunServiceDeps): RunService {
       };
     },
 
+    async inputTriggers(runIds) {
+      const result = new Map<string, { type: string; payload: unknown }[]>();
+      if (!runIds.length) return result;
+      const rows = await inputsRepo(tx.read()).findMany({
+        filter: (f) => f.or(runIds.map((id) => f.string('runId').eq(id))),
+        select: (s) => s.fields('runId', 'type', 'payload'),
+        sort: (s) => s.field('createdAt').asc(),
+      });
+      for (const row of rows) {
+        const inputs = result.get(row.runId) ?? [];
+        inputs.push({ type: row.type, payload: row.payload });
+        result.set(row.runId, inputs);
+      }
+      return result;
+    },
     async list(filter) {
       const records = await runsRepo(tx.read()).findMany({
         filter: (f) =>

@@ -10,13 +10,18 @@ import type { DatabaseConnection } from '@nocobase/db';
 import type { ClaimEligibility } from './eligibility.js';
 
 import type { Agent, AgentRunners } from '../../../shared/agents.js';
-import { runnerTakesAgent } from '../../../shared/runners.js';
+import { quotaForAgent, runnerTakesAgent } from '../../../shared/runners.js';
 
 /** How many runner names an agent's availability lists. */
 const RUNNER_NAMES = 3;
 
 /** Whether an agent could start work now, where it can run, and how busy it is. */
 export interface AgentAvailability {
+  readonly quota?: readonly {
+    runnerId: string;
+    runnerName: string;
+    resetsAt: string | null;
+  }[];
   /** An online runner would take the work now: the person's, when asked for one. */
   readonly online: boolean;
   /** Its runs not finished (queued or held). */
@@ -37,7 +42,7 @@ export type Availability = (
 export function createAvailability(deps: {
   readonly runners: Pick<RunnerService, 'online'>;
   /** Whether a runner would take a person's work. */
-  readonly eligibility: Pick<ClaimEligibility, 'canClaim'>;
+  readonly eligibility: Pick<ClaimEligibility, 'canClaim' | 'prepare'>;
   /** Per agent, the runs it has not finished. */
   readonly openRuns: (
     conn: DatabaseConnection,
@@ -50,6 +55,10 @@ export function createAvailability(deps: {
       conn,
       agents.map((agent) => agent.id),
     );
+    const variables =
+      actorUserId === undefined
+        ? undefined
+        : await deps.eligibility.prepare?.(conn, agents, {});
     const result = new Map<string, AgentAvailability>();
     for (const agent of agents) {
       const fitting = runners.filter((runner) =>
@@ -66,9 +75,11 @@ export function createAvailability(deps: {
               (await deps.eligibility.canClaim(conn, agent, {
                 actorUserId,
                 runners,
+                variableState: variables?.get(agent.id),
               }));
       result.set(agent.id, {
         online,
+        quota: quotaForAgent(runners, agent, actorUserId),
         busy: busy.get(agent.id) ?? 0,
         runners: {
           team: team.length,

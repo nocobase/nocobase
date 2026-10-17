@@ -35,6 +35,25 @@ export class RunnersApi {
     return this.list('');
   }
 
+  public clearQuota(
+    runnerId: string,
+    revision: number,
+    key: string,
+  ): Promise<void> {
+    return this.send(`${id(runnerId)}/quota/clear`, 'POST', { revision, key });
+  }
+  public runnerWorkspaces(
+    runnerId: string,
+    status = 'all',
+    offset = 0,
+  ): Promise<Runner['workspaceUsage']> {
+    return this.get(`${id(runnerId)}/workspaces`, {
+      status,
+      offset,
+      limit: 50,
+    });
+  }
+
   public runner(runnerId: string): Promise<RunnerSummary> {
     return this.get(id(runnerId));
   }

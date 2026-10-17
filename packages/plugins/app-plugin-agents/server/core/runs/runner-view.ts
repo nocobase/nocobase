@@ -162,7 +162,26 @@ export function createRunnerView(deps: {
         sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
       });
       const names = await agentNames(records);
-      return records.map(toRun).map((run) => ({
+      const labels = new Map<string, string>();
+      const runs = records.map(toRun);
+      const byKind = new Map<string, string[]>();
+      for (const run of runs)
+        if (pathOf(run, viewerUserId))
+          byKind.set(run.subject.kind, [
+            ...(byKind.get(run.subject.kind) ?? []),
+            run.subject.id,
+          ]);
+      for (const [kind, ids] of byKind) {
+        const facts = await deps.subjects
+          .get(kind)
+          ?.reports?.describe(deps.tx.read(), viewerUserId, [...new Set(ids)]);
+        for (const [id, fact] of facts ?? [])
+          if (fact.visible) labels.set(`${kind}:${id}`, fact.label);
+      }
+      return runs.map((run) => ({
+        subjectLabel:
+          labels.get(`${run.subject.kind}:${run.subject.id}`) ?? null,
+        failureReason: run.failureReason,
         id: run.id,
         kind: 'run' as const,
         title: names.get(run.agentId) ?? run.agentId,
@@ -181,7 +200,26 @@ export function createRunnerView(deps: {
         limit: RECENT_RUNS,
       });
       const names = await agentNames(records);
-      return records.map(toRun).map((run) => ({
+      const labels = new Map<string, string>();
+      const runs = records.map(toRun);
+      const byKind = new Map<string, string[]>();
+      for (const run of runs)
+        if (pathOf(run, viewerUserId))
+          byKind.set(run.subject.kind, [
+            ...(byKind.get(run.subject.kind) ?? []),
+            run.subject.id,
+          ]);
+      for (const [kind, ids] of byKind) {
+        const facts = await deps.subjects
+          .get(kind)
+          ?.reports?.describe(deps.tx.read(), viewerUserId, [...new Set(ids)]);
+        for (const [id, fact] of facts ?? [])
+          if (fact.visible) labels.set(`${kind}:${id}`, fact.label);
+      }
+      return runs.map((run) => ({
+        subjectLabel:
+          labels.get(`${run.subject.kind}:${run.subject.id}`) ?? null,
+        failureReason: run.failureReason,
         id: run.id,
         title: names.get(run.agentId) ?? run.agentId,
         status: run.status,

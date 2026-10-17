@@ -29,6 +29,7 @@ export interface RunEffortReport {
 }
 
 export interface RunExecutionSnapshot {
+  readonly quota?: import('@nocobase/agent-protocol').QuotaReport;
   readonly selection?: {
     readonly reason: 'preferredQueued' | 'preferredUnavailable';
     readonly preferredTool: string;

@@ -38,6 +38,7 @@ import {
 } from '../../components/ui/table.js';
 import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useFormatters } from '../../lib/format.js';
+import { useQuotaExpiry } from '../../hooks/use-quota-expiry.js';
 import { AgentDialog } from './agent-dialog.js';
 import { ordered, stateOf, type AgentState } from './agent-state.js';
 
@@ -76,6 +77,7 @@ export function RunnerAgentsSection(): ReactElement {
     queryKey: agentsKeys.agents,
     queryFn: () => api.agents(),
   });
+  useQuotaExpiry(agents.data ?? []);
   const groups = groupDiscoveries(agents.data ?? []);
   const discovered = groups
     .filter((group) => !group.some((agent) => agent.status === 'enabled'))
@@ -361,6 +363,9 @@ function AgentTable({
             <TableHead>{t('agents.columns.where')}</TableHead>
             <TableHead>{t('agents.columns.effort')}</TableHead>
             <TableHead>{t('agents.columns.state')}</TableHead>
+            <TableHead>
+              <span className='sr-only'>{t('agents.edit.button')}</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -428,6 +433,19 @@ function AgentRow({
       <TableCell>
         <div className='leading-tight'>
           <div>{where}</div>
+          {agent.quota?.map((quota) => (
+            <div
+              key={quota.runnerId}
+              className='text-xs text-amber-700 dark:text-amber-400'
+            >
+              {quota.runnerName}: {t('runtimes.quota.reached')} ·{' '}
+              {quota.resetsAt
+                ? t('runtimes.quota.resets', {
+                    time: format.dateTime(quota.resetsAt),
+                  })
+                : t('runtimes.quota.unknown')}
+            </div>
+          ))}
           {whereNote ? (
             <div className='text-xs text-muted-foreground'>{whereNote}</div>
           ) : null}
@@ -443,27 +461,29 @@ function AgentRow({
           <AgTag tone={STATE_TONE[state]} dot>
             {t(`agents.state.${state}`)}
           </AgTag>
-          {agent.canEdit ? (
-            <Button
-              variant={agent.status === 'pending' ? 'default' : 'ghost'}
-              size='sm'
-              onClick={() => onEdit(agent)}
-              aria-label={t(
-                agent.status === 'pending'
-                  ? 'agents.enable.buttonFor'
-                  : 'agents.edit.buttonFor',
-                { name: agent.name },
-              )}
-              data-testid={`agent-edit-${agent.id}`}
-            >
-              {t(
-                agent.status === 'pending'
-                  ? 'agents.enable.button'
-                  : 'agents.edit.button',
-              )}
-            </Button>
-          ) : null}
         </div>
+      </TableCell>
+      <TableCell className='text-right'>
+        {agent.canEdit ? (
+          <Button
+            variant={agent.status === 'pending' ? 'default' : 'ghost'}
+            size='sm'
+            onClick={() => onEdit(agent)}
+            aria-label={t(
+              agent.status === 'pending'
+                ? 'agents.enable.buttonFor'
+                : 'agents.edit.buttonFor',
+              { name: agent.name },
+            )}
+            data-testid={`agent-edit-${agent.id}`}
+          >
+            {t(
+              agent.status === 'pending'
+                ? 'agents.enable.button'
+                : 'agents.edit.button',
+            )}
+          </Button>
+        ) : null}
       </TableCell>
     </TableRow>
   );
