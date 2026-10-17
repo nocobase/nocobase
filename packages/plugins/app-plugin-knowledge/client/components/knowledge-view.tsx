@@ -787,7 +787,7 @@ export function KnowledgeView({
       docs={paneDocs}
       onMode={(mode) => view.set({ mode: mode === 'read' ? null : mode })}
       onVersion={(version) =>
-        view.set({ version: version ? String(version) : null })
+        view.set({ version: version ? String(version) : null, mode: null })
       }
       onOpen={open}
       onHome={home}
