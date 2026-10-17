@@ -1,9 +1,17 @@
 /** The skill library (`client/pages/skills/`): the list, a skill's workbench and its versions. */
 const skillsEnUS = {
   skills: {
+    attachments: 'Attachments',
+    globalMount: 'Global attachment',
+    globalMountDescription:
+      'Saves immediately. All future runs receive this skill.',
+    mountSaved: 'Attachment settings saved.',
+    mountRetry: 'Could not load settings. Retry',
+    unavailableTarget: 'Unavailable target',
+    noAttachments: 'Not attached anywhere.',
     title: 'Skills',
     description:
-      'Reusable instructions with supporting files. Attached to an agent, they are available on every run.',
+      'Reusable instructions with supporting files. Attach team defaults globally or to a project or working directory.',
     new: 'New skill',
     newTitle: 'New skill',
     newDescription:

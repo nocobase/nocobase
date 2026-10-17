@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -11,6 +12,24 @@ function alive(pid: number): boolean {
     return true;
   } catch {
     return false;
+  }
+}
+
+function processSnapshot(pid: number) {
+  try {
+    // Select only the test grandchild and omit command lines and environment data.
+    const fields = execFileSync(
+      'ps',
+      ['-p', String(pid), '-o', 'stat=,ppid=,pgid='],
+      {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      },
+    ).trim();
+    const [state, ppid, pgid] = fields.split(/\s+/);
+    return { pid, alive: alive(pid), state, ppid, pgid };
+  } catch {
+    return { pid, alive: alive(pid), state: 'unavailable' };
   }
 }
 
@@ -32,6 +51,14 @@ afterEach(() => {
 });
 
 describe('runCommand', () => {
+  it('sends input over stdin without putting it in command arguments', async () => {
+    const result = await runCommand(
+      process.execPath,
+      ['-e', 'process.stdin.pipe(process.stdout)'],
+      { input: 'private-input' },
+    );
+    expect(result.stdout).toBe('private-input');
+  });
   it('stops the whole process group on a timeout, not only the direct child', async () => {
     const pidFile = path.join(temp.dir, 'grandchild.pid');
     const pending = runCommand(
@@ -43,7 +70,17 @@ describe('runCommand', () => {
     );
     await expect(pending).rejects.toThrow(/timed out/);
     const grandchild = await waitFor(pidFile);
-    expect(alive(grandchild)).toBe(false);
+    const aliveAtClose = alive(grandchild);
+    if (aliveAtClose) {
+      const atClose = processSnapshot(grandchild);
+      // This recheck diagnoses a failure; the assertion keeps the original observation.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      console.error('Timeout grandchild diagnostic', {
+        atClose,
+        after50ms: processSnapshot(grandchild),
+      });
+    }
+    expect(aliveAtClose).toBe(false);
   });
 
   it('turns an interrupt into an INTERRUPTED failure of the running step only', async () => {

@@ -12,20 +12,129 @@ describe('admin API', () => {
     await h?.close();
   });
 
-  it('needs a signed-in caller and the settings item for agents and runners', async () => {
+  it('lists only usable registration token metadata within the caller visibility, with pagination', async () => {
+    h = await createHarness();
+    const expired = await h.services.runners.createRegistrationToken(
+      'alice',
+      {},
+    );
+    h.clock.advance(11 * 60_000);
+    const alice = await h.services.runners.createRegistrationToken('alice', {});
+    const bob = await h.services.runners.createRegistrationToken('bob', {});
+    await h.registerRunner({ ownerUserId: 'alice' });
+    const route = '/agents/runners/registrationTokens';
+    expect((await h.request('GET', route)).status).toBe(401);
+    const own = await h.request('GET', route, { user: 'alice' });
+    expect(own.status).toBe(200);
+    expect(own.body.data.map((token: { id: string }) => token.id)).toEqual([
+      alice.id,
+    ]);
+    expect(own.body.meta.total).toBe(1);
+    const page = await h.request('GET', `${route}?pageSize=1`, {
+      user: 'admin',
+      can: ADMIN,
+    });
+    expect(page.body.data).toHaveLength(1);
+    expect(page.body.meta.total).toBe(2);
+    const next = await h.request('GET', `${route}?pageSize=1&page=2`, {
+      user: 'admin',
+      can: ADMIN,
+    });
+    expect(
+      new Set(
+        [...page.body.data, ...next.body.data].map(
+          (token: { id: string }) => token.id,
+        ),
+      ),
+    ).toEqual(new Set([alice.id, bob.id]));
+    const text = JSON.stringify(own.body);
+    for (const secret of [
+      alice.token,
+      bob.token,
+      expired.token,
+      'tokenHash',
+      'runnerKey',
+    ])
+      expect(text).not.toContain(secret);
+    expect(
+      (await h.request('GET', route, { user: 'stranger' })).body.data,
+    ).toEqual([]);
+    expect(
+      (await h.request('GET', `${route}?page=0`, { user: 'alice' })).status,
+    ).toBe(400);
+  });
+
+  it('lists workspace totals and loads directory diagnostics only for an authorized detail request', async () => {
+    h = await createHarness();
+    const runner = await h.registerRunner({ ownerUserId: 'alice' });
+    const directory = {
+      workDir: '/work/PM-396',
+      subjectKey: 'PM-396',
+      lastUsedAt: h.clock.now().toISOString(),
+      unpushed: true,
+      sizeBytes: 321,
+    };
+    const report = await h.request('POST', '/agents/runners/workspaces', {
+      runnerKey: runner.key,
+      body: {
+        workspaces: [],
+        reportId: 'summary-report',
+        directories: [directory],
+        disk: { freeBytes: 500, totalBytes: 1000, minFreeBytes: 100 },
+      },
+    });
+    expect(report.status).toBe(200);
+    const list = await h.request('GET', '/agents/runners', { user: 'alice' });
+    expect(list.status).toBe(200);
+    expect(list.body.data[0].workspaceUsage).toMatchObject({
+      count: 1,
+      unpushedCount: 1,
+      measuredAt: h.clock.now().toISOString(),
+    });
+    expect(list.body.data[0].workspaceUsage).not.toHaveProperty('workspaces');
+    const detail = await h.request(
+      'GET',
+      `/agents/runners/${runner.runnerId}`,
+      { user: 'alice' },
+    );
+    expect(detail.body.data.workspaceUsage.workspaces).toEqual([
+      expect.objectContaining(directory),
+    ]);
+    const redacted = await h.request(
+      'GET',
+      `/agents/runners/${runner.runnerId}`,
+      { user: 'bob', can: ['agents.runners/read'] },
+    );
+    expect(redacted.body.data.workspaceUsage.workspaces).toEqual([]);
+    expect(
+      (
+        await h.request('GET', `/agents/runners/${runner.runnerId}`, {
+          user: 'charlie',
+        })
+      ).status,
+    ).toBe(404);
+  });
+
+  it('lets anyone signed in read agents, and only a manager of agents change them', async () => {
     h = await createHarness();
     expect((await h.request('GET', '/agents')).status).toBe(401);
-    const denied = await h.request('GET', '/agents', {
-      user: 'bob',
-    });
-    expect(denied.status).toBe(403);
-    expect(denied.body.error.reason).toBe('FORBIDDEN');
-    const reader = await h.request('POST', '/agents', {
+    const id = await h.createAgent({ source: 'runner', status: 'pending' });
+    const list = await h.request('GET', '/agents', { user: 'bob' });
+    expect(list.status).toBe(200);
+    expect(list.body.data).toEqual([
+      expect.objectContaining({ id, status: 'pending', canEdit: false }),
+    ]);
+    const reader = await h.request('PATCH', `/agents/${id}`, {
       user: 'bob',
       can: ['agents.agents/read'],
-      body: { name: 'Coder', modelEntries: [{ tool: 'claude' }] },
+      body: { description: 'Reviews', enabled: true, expectedRevision: 1 },
     });
     expect(reader.status).toBe(403);
+    const managed = await h.request('GET', '/agents', {
+      user: 'alice',
+      can: ADMIN,
+    });
+    expect(managed.body.data[0].canEdit).toBe(true);
     // Anyone signed in may add a personal runner; a team runner needs the runners item.
     const personal = await h.request(
       'POST',
@@ -44,182 +153,111 @@ describe('admin API', () => {
     ).toBe(403);
   });
 
-  it('creates, updates and archives agents', async () => {
+  it('enables an agent once it says what it is good at, and changes its effort', async () => {
     h = await createHarness();
-    const created = await h.request('POST', '/agents', {
+    const id = await h.createAgent({
+      source: 'runner',
+      status: 'pending',
+      modelEntries: [{ tool: 'codex', model: 'gpt-6-astra', effort: 'medium' }],
+    });
+    const bare = await h.request('PATCH', `/agents/${id}`, {
       user: 'alice',
       can: ADMIN,
-      body: {
-        name: 'Reviewer',
-        modelEntries: [{ tool: 'claude' }],
-        runnerIds: ['r-1', ' r-1'],
-        actions: ['crm.deals/comment'],
-        access: 'users',
-        userIds: ['bob'],
-      },
+      body: { enabled: true, expectedRevision: 1 },
     });
-    expect(created.status).toBe(201);
-    expect(created.body.data).toMatchObject({
-      name: 'Reviewer',
-      ownerUserId: 'alice',
-      runnerIds: ['r-1'],
-      skillIds: [],
-      instructions: null,
-      userIds: ['bob'],
+    expect(bare.status).toBe(400);
+    expect(bare.body.error.metadata).toMatchObject({
+      reason: 'GOOD_AT_REQUIRED',
     });
-    expect(created.body.data).not.toHaveProperty('execution');
-    const invalid = await h.request('POST', '/agents', {
+    // Neither Codex nor Claude Code takes `minimal`.
+    const effort = await h.request('PATCH', `/agents/${id}`, {
       user: 'alice',
       can: ADMIN,
-      body: { name: 'X', modelEntries: [{ tool: 'emacs' }] },
+      body: { effort: 'minimal', expectedRevision: 1 },
     });
-    expect(invalid.status).toBe(400);
-    expect(invalid.body.error.reason).toBe('INVALID_INPUT');
-    // Each entry's effort is one its tool takes: neither Codex nor Claude Code has `minimal`.
-    for (const entry of [
-      { tool: 'codex', effort: 'minimal' },
-      { tool: 'claude', effort: 'minimal' },
-    ]) {
-      const refused = await h.request('POST', '/agents', {
-        user: 'alice',
-        can: ADMIN,
-        body: { name: 'X', modelEntries: [entry] },
-      });
-      expect(refused.status).toBe(400);
-      expect(refused.body.error.metadata).toMatchObject({
-        reason: 'EFFORT_UNSUPPORTED',
-      });
-    }
-    const efforts = await h.request(
-      'PATCH',
-      `/agents/${created.body.data.id}`,
-      {
-        user: 'alice',
-        can: ADMIN,
-        body: {
-          modelEntries: [
-            { tool: 'codex', model: 'gpt-5', effort: 'ultra' },
-            { tool: 'claude', effort: 'max' },
-            { tool: 'pi', effort: '' },
-          ],
-          expectedRevision: 1,
-        },
-      },
-    );
-    expect(efforts.body.data.modelEntries).toEqual([
-      { tool: 'codex', model: 'gpt-5', effort: 'ultra' },
-      { tool: 'claude', model: null, effort: 'max' },
-      { tool: 'pi', model: null, effort: null },
-    ]);
-    const unknownSkill = await h.request(
-      'PATCH',
-      `/agents/${created.body.data.id}`,
-      {
-        user: 'alice',
-        can: ADMIN,
-        body: { skillIds: ['nope'], expectedRevision: 2 },
-      },
-    );
-    expect(unknownSkill.status).toBe(400);
-
-    const updated = await h.request(
-      'PATCH',
-      `/agents/${created.body.data.id}`,
-      {
-        user: 'alice',
-        can: ADMIN,
-        body: { maxConcurrentRuns: 5, userIds: [], expectedRevision: 2 },
-      },
-    );
-    expect(updated.body.data).toMatchObject({
-      maxConcurrentRuns: 5,
-      userIds: [],
-    });
-    await h.request('POST', `/agents/${created.body.data.id}/archive`, {
-      user: 'alice',
-      can: ADMIN,
-    });
-    const list = await h.request('GET', '/agents', {
-      user: 'alice',
-      can: ADMIN,
-    });
-    expect(list.body.data).toEqual([]);
-    const deleted = await h.request(
-      'DELETE',
-      `/agents/${created.body.data.id}`,
-      { user: 'alice', can: ADMIN },
-    );
-    expect(deleted.status).toBe(204);
-  });
-
-  it('keeps an effort its tool no longer takes until the entry changes it', async () => {
-    h = await createHarness();
-    const id = await h.createAgent({ name: 'Coder' });
-    // Saved while Codex still listed `minimal`.
-    await h.database
-      .connection()
-      .repository('agAgents')
-      .updateOne({
-        filter: { id },
-        values: {
-          modelEntries: [{ tool: 'codex', model: 'gpt-5', effort: 'minimal' }],
-        },
-      });
-    const { revision } = await h.services.agents.get(id);
-    const renamed = await h.request('PATCH', `/agents/${id}`, {
-      user: 'alice',
-      can: ADMIN,
-      body: { name: 'Builder', expectedRevision: revision },
-    });
-    expect(renamed.status).toBe(200);
-    const moved = await h.request('PATCH', `/agents/${id}`, {
-      user: 'alice',
-      can: ADMIN,
-      body: {
-        modelEntries: [{ tool: 'codex', model: 'gpt-6', effort: 'minimal' }],
-        expectedRevision: revision + 1,
-      },
-    });
-    expect(moved.status).toBe(400);
-    expect(moved.body.error.metadata).toMatchObject({
+    expect(effort.status).toBe(400);
+    expect(effort.body.error.metadata).toMatchObject({
       reason: 'EFFORT_UNSUPPORTED',
     });
+    const enabled = await h.request('PATCH', `/agents/${id}`, {
+      user: 'alice',
+      can: ADMIN,
+      body: {
+        description: 'Code review',
+        effort: 'high',
+        enabled: true,
+        expectedRevision: 1,
+      },
+    });
+    expect(enabled.status).toBe(200);
+    expect(enabled.body.data).toMatchObject({
+      status: 'enabled',
+      description: 'Code review',
+      modelEntries: [{ tool: 'codex', model: 'gpt-6-astra', effort: 'high' }],
+      revision: 2,
+    });
+    const stale = await h.request('PATCH', `/agents/${id}`, {
+      user: 'alice',
+      can: ADMIN,
+      body: { enabled: false, expectedRevision: 1 },
+    });
+    expect(stale.status).toBe(409);
+    expect(stale.body.error.reason).toBe('REVISION_CONFLICT');
+    const history = await h.request('GET', `/agents/${id}/history`, {
+      user: 'alice',
+      can: ADMIN,
+    });
+    expect(history.body.data[0]).toMatchObject({
+      action: 'enabled',
+      actorUserId: 'alice',
+    });
+    // The application's own agents are changed through the application.
+    const own = await h.createAgent({ name: 'Manager' });
+    const managed = await h.request('PATCH', `/agents/${own}`, {
+      user: 'alice',
+      can: ADMIN,
+      body: { description: 'x', expectedRevision: 1 },
+    });
+    expect(managed.status).toBe(400);
+    expect(managed.body.error.metadata).toMatchObject({
+      reason: 'AGENT_MANAGED',
+    });
   });
 
-  it('lists agents with their active runs and the runners online for them', async () => {
+  it('lists agents with their runs and where they can run', async () => {
     h = await createHarness();
-    const agentId = await h.createAgent();
+    const agentId = await h.createAgent({ source: 'runner' });
     await h.createAgent({
       name: 'Elsewhere',
+      source: 'runner',
       modelEntries: [{ tool: 'codex', model: null }],
     });
     await h.enqueue(agentId);
     const runner = await h.registerRunner();
     await claim(h, runner);
-    const list = await h.request('GET', '/agents', {
-      user: 'alice',
-      can: ['agents.agents/read'],
-    });
+    const list = await h.request('GET', '/agents', { user: 'alice' });
     expect(
       list.body.data.map(
         (agent: {
           name: string;
-          activeRuns: number;
-          onlineRunners: number;
-        }) => [agent.name, agent.activeRuns, agent.onlineRunners],
+          busy: number;
+          runners: { team: number };
+          unusable: string | null;
+        }) => [agent.name, agent.busy, agent.runners.team, agent.unusable],
       ),
     ).toEqual([
-      ['Coder', 1, 1],
-      ['Elsewhere', 0, 0],
+      ['Coder', 1, 1, null],
+      ['Elsewhere', 0, 0, 'noRunner'],
     ]);
-    // Whether the caller owns each, for the list's order.
-    const owned = await h.request('GET', '/agents', {
-      user: 'owner',
-      can: ['agents.agents/read'],
+    // Every agent's name, the application's own included, for the runs that name them.
+    await h.createAgent({ name: 'Manager' });
+    const names = await h.request('GET', '/agents/agentNames', {
+      user: 'bob',
     });
-    expect(owned.body.data[0].owned).toBe(true);
-    expect(list.body.data[0].owned).toBe(false);
-    // Runners are visible to whoever may read agents, to pick where they run.
+    expect(
+      names.body.data.map((agent: { name: string }) => agent.name),
+    ).toEqual(['Coder', 'Elsewhere', 'Manager']);
+    // Runners are visible to whoever may read agents.
     const runners = await h.request('GET', '/agents/runners', {
       user: 'alice',
       can: ['agents.agents/read'],
@@ -330,7 +368,7 @@ describe('admin API', () => {
     expect(revoked.body.data.status).toBe('revoked');
     expect(await h.services.runs.get(runId)).toMatchObject({
       status: 'queued',
-      failureReason: 'runnerOffline',
+      failureReason: 'runnerOfflineBeforeStart',
     });
     // A manager revoking someone else's runner tells its owner.
     expect(notices).toEqual([
@@ -493,6 +531,12 @@ describe('admin API', () => {
     });
     expect(early.status).toBe(400);
     expect(early.body.error.reason).toBe('RUNNER_NOT_REVOKED');
+    expect(early.body.error.message).toContain(
+      `runtime revoke ${runner.runnerId}`,
+    );
+    expect(early.body.error.message).toContain(
+      `runtime delete ${runner.runnerId}`,
+    );
     expect(
       (
         await h.request('DELETE', path, {
@@ -612,7 +656,77 @@ describe('admin API', () => {
       user: 'bob',
     });
     expect(twice.status).toBe(400);
-    expect(twice.body.error.reason).toBe('AGENT_BUSY');
+    expect(twice.body.error.status).toBe('FAILED_PRECONDITION');
+    expect(twice.body.error.reason).toBe('RUN_ALREADY_RETRIED');
+    expect(twice.body.error.metadata).toMatchObject({
+      runId: retried.body.data.id,
+    });
+    expect((await h.services.runs.detail(mine)).retriedRunId).toBe(
+      retried.body.data.id,
+    );
+    expect(retryDetail.inputs.at(-1)?.payload).toMatchObject({
+      source: 'runRecord',
+    });
+    await h.services.runs.cancel(retried.body.data.id, 'bob');
+    const cliRetry = await h.request(
+      'POST',
+      `/agents/runs/${retried.body.data.id}/retry`,
+      { user: 'bob', headers: { 'x-nocobase-client': 'cli' } },
+    );
+    expect(cliRetry.status).toBe(200);
+    expect(
+      (await h.services.runs.detail(cliRetry.body.data.id)).inputs.at(-1)
+        ?.payload,
+    ).toMatchObject({ source: 'cli' });
+  });
+
+  it('serializes simultaneous retries and remembers the retry after its replacement ends', async () => {
+    h = await createHarness();
+    const events: {
+      runId: string;
+      retryOfRunId: string;
+      previousStatus: string;
+    }[] = [];
+    h.services.events.on('run.retried', (event) => {
+      events.push(event);
+    });
+    const agentId = await h.createAgent();
+    const original = await h.enqueue(agentId);
+    await h.services.runs.cancel(original, 'owner');
+    const results = await Promise.allSettled([
+      h.services.runs.retry(original, 'owner', 'cli'),
+      h.services.runs.retry(original, 'owner', 'card'),
+    ]);
+    expect(
+      results.filter((result) => result.status === 'fulfilled'),
+    ).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'rejected')).toEqual([
+      expect.objectContaining({
+        reason: expect.objectContaining({
+          code: 'RUN_ALREADY_RETRIED',
+          status: 400,
+          apiStatus: 'FAILED_PRECONDITION',
+        }),
+      }),
+    ]);
+    const next = (await h.services.runs.detail(original)).retriedRunId!;
+    expect(events).toEqual([
+      {
+        type: 'run.retried',
+        runId: next,
+        retryOfRunId: original,
+        previousStatus: 'cancelled',
+      },
+    ]);
+    await h.services.runs.cancel(next, 'owner');
+    await expect(
+      h.services.runs.retry(original, 'owner'),
+    ).rejects.toMatchObject({
+      code: 'RUN_ALREADY_RETRIED',
+      details: { runId: next },
+    });
+    expect(await h.services.runs.list({ agentId })).toHaveLength(2);
+    expect(events).toHaveLength(1);
   });
 
   it('pages a run transcript after a seq', async () => {
@@ -651,6 +765,90 @@ describe('admin API', () => {
     expect(next.body.data).toEqual([
       expect.objectContaining({ seq: 3, content: 'e3' }),
     ]);
+  });
+
+  it('filters raw event types before paging and preserves access checks', async () => {
+    h = await createHarness();
+    const runId = await h.enqueue(await h.createAgent(), '1', {
+      actorUserId: 'bob',
+    });
+    const runner = await h.registerRunner();
+    await claim(h, runner);
+    const types = [
+      'status',
+      'text',
+      'toolUse',
+      'input',
+      'permission',
+      'text',
+      'error',
+      'usage',
+    ] as const;
+    const stored = await h.request(
+      'POST',
+      `/agents/runners/runs/${runId}/events`,
+      {
+        runnerKey: runner.key,
+        body: {
+          events: types.map((type, index) => ({
+            seq: index + 1,
+            at: 'x',
+            type,
+            content: `e${index + 1}`,
+          })),
+        },
+      },
+    );
+    expect(stored.status).toBe(200);
+    const base = `/agents/runs/${runId}/events`;
+    const filtered = `${base}?type=text&type=input&type=text&pageSize=2`;
+    const first = await h.request('GET', filtered, { user: 'bob' });
+    expect(first.status).toBe(200);
+    expect(first.body.data.map((row: { seq: number }) => row.seq)).toEqual([
+      2, 4,
+    ]);
+    expect(first.body.meta.lastSeq).toBe(4);
+    const next = await h.request(
+      'GET',
+      `${filtered}&pageToken=${first.body.meta.nextPageToken}`,
+      { user: 'bob' },
+    );
+    expect(next.body.data.map((row: { seq: number }) => row.seq)).toEqual([6]);
+    expect(next.body.meta).toEqual({ lastSeq: 6 });
+    const empty = await h.request('GET', `${base}?type=text&after=6`, {
+      user: 'bob',
+    });
+    expect(empty.body).toEqual({ data: [], meta: { lastSeq: 6 } });
+    const single = await h.request('GET', `${base}?type=permission`, {
+      user: 'bob',
+    });
+    expect(single.body.data.map((row: { seq: number }) => row.seq)).toEqual([
+      5,
+    ]);
+    const all = await h.request('GET', base, { user: 'bob' });
+    expect(all.body.data).toHaveLength(types.length);
+    expect(
+      (await h.services.runs.events(runId, 0, 2, ['text'])).events.map(
+        (row) => row.seq,
+      ),
+    ).toEqual([2, 6]);
+    expect(
+      (await h.services.runs.events(runId, 0, 100, [])).events,
+    ).toHaveLength(types.length);
+    for (const query of ['type=tools', 'type=', 'type=text&type=unknown']) {
+      expect(
+        (await h.request('GET', `${base}?${query}`, { user: 'bob' })).status,
+      ).toBe(400);
+    }
+    expect((await h.request('GET', filtered)).status).toBe(401);
+    expect((await h.request('GET', filtered, { user: 'carol' })).status).toBe(
+      404,
+    );
+    // Invisible runs remain hidden before filter validation.
+    expect(
+      (await h.request('GET', `${base}?type=unknown`, { user: 'carol' }))
+        .status,
+    ).toBe(404);
   });
 
   it("lets a personal runner's owner share it with the team", async () => {
@@ -713,7 +911,7 @@ describe('admin API', () => {
     );
     expect(unknown.status).toBe(400);
 
-    const agentId = await h.createAgent();
+    const agentId = await h.createAgent({ source: 'runner' });
     const runner = await h.registerRunner({
       trust: 'team',
       ownerUserId: 'bob',
@@ -725,8 +923,8 @@ describe('admin API', () => {
           user: 'alice',
           can: ['agents.agents/read'],
         })
-      ).body.data.find((agent: { id: string }) => agent.id === agentId)
-        .onlineRunners;
+      ).body.data.find((agent: { id: string }) => agent.id === agentId).runners
+        .team;
     expect(await online()).toBe(0);
     const listed = await h.request('GET', '/agents/runners', {
       user: 'bob',
@@ -910,21 +1108,12 @@ describe('admin API', () => {
       vocabulary.body.data.subjects.map(
         (subject: { kind: string }) => subject.kind,
       ),
-    ).toEqual(['consultation', 'conversation', 'sample']);
+    ).toEqual(['conversation', 'sample']);
     expect(vocabulary.body.data.subjects[0]).toMatchObject({
-      kind: 'consultation',
-      triggers: {
-        consultation: {
-          key: 'runs.trigger.consultation',
-          ns: '@nocobase/app-plugin-agents',
-        },
-      },
-    });
-    expect(vocabulary.body.data.subjects[1]).toMatchObject({
       kind: 'conversation',
       preview: true,
     });
-    expect(vocabulary.body.data.subjects[2]).toMatchObject({
+    expect(vocabulary.body.data.subjects[1]).toMatchObject({
       title: { key: 'subjects.sample', ns: 'test' },
       triggers: { nudge: { key: 'triggers.nudge', ns: 'test' } },
       preview: true,
@@ -1021,10 +1210,8 @@ describe('admin API', () => {
       user: 'bob',
       can: ['agents.agents/read'],
     });
-    expect(detail.body.data.attachments).toEqual([
-      { scope: 'agent', scopeId: agentId, name: 'Coder' },
-    ]);
-    expect(detail.body.data.agentCount).toBe(1);
+    expect(detail.body.data.attachments).toEqual([]);
+    expect(detail.body.data).not.toHaveProperty('agentCount');
     expect(
       (
         await h.request('DELETE', `/agents/skills/${id}`, {
@@ -1033,6 +1220,6 @@ describe('admin API', () => {
         })
       ).status,
     ).toBe(204);
-    expect((await h.services.agents.get(agentId)).skillIds).toEqual([]);
+    expect(await h.services.agents.get(agentId)).not.toHaveProperty('skillIds');
   });
 });

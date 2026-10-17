@@ -3,7 +3,6 @@
 '@nocobase/create-app': patch
 '@nocobase/app-client': patch
 '@nocobase/app-plugin-notification': minor
-'@nocobase/app-plugin-workflow': minor
 '@nocobase/app-plugin-service-provider-example': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch

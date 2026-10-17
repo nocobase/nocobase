@@ -151,6 +151,8 @@ const url = files.getUrl(record);
 
 Server repository() takes the exact logical name from createCollection, not its physical table name (for example, crmAccountFiles is not crm_account_files), and requires disk/accessPath matching its routes. getUrl is synchronous and App-local; getStorageUrl asynchronously uses the record's disk/key to obtain a public or signed storage URL. Neither queries the database. Direct Server CRUD does not decorate URLs; uploads do.
 
+A trusted server write can pass its outermost `DatabaseConnection` as `transaction` in these repository options. Uploaded rows then commit with the business write. Let errors propagate to roll back that transaction; rollback verifies ownership through the root connection before deleting uploaded objects. If ownership verification fails, objects are retained and a transaction callback warning is reported. Do not pass a savepoint connection or catch an upload error and commit the enclosing write. HTTP uploads remain independent commits and accept no transaction from the client.
+
 Client code resolves `clientFileRepositoryManagerToken` and calls `manager.repository('invoiceAttachments')` with the resource name. It reuses apiClientToken, session and base URL; do not pass disk/connection/accessPath.
 
 ```ts

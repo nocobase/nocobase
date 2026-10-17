@@ -75,7 +75,11 @@ function trackerRouter(): Hono {
         command: 'issue comment add',
         action: 'tracker.issues/comment',
         flags: {
-          content: { contentFile: true, fromEnv: 'issueId' },
+          content: {
+            contentFile: true,
+            contentFileNonEmpty: true,
+            fromEnv: 'issueId',
+          },
           parentId: {
             name: 'reply-to',
             env: ['TRACKER_PARENT', { file: 'EVENT_PATH', path: 'comment.id' }],
@@ -242,6 +246,51 @@ const byId = (commands: readonly CliCommand[], id: string): CliCommand => {
   return found;
 };
 
+describe('read bindings', () => {
+  it('resolves a GET operation below the base path and omits the automatically filled body flag', async () => {
+    const document = await trackerDocument();
+    const operation =
+      document.paths!['/api/tracker/issues/{issueId}/comments']!.post!;
+    Object.assign(
+      operation,
+      cliRoute({
+        command: 'issue decide',
+        args: ['issueId'],
+        readBinding: {
+          operation: 'trackerListIssues',
+          params: {},
+          responseField: 'data.key',
+          bodyField: 'content',
+        },
+      }),
+    );
+    const command = byId(deriveAllCliCommands(document), 'issue:decide');
+    expect(command.readBinding).toEqual({
+      path: '/main/api/tracker/issues',
+      params: {},
+      responseField: 'data.key',
+      bodyField: 'content',
+    });
+    expect(
+      command.parameters.some((parameter) => parameter.field === 'content'),
+    ).toBe(false);
+    Object.assign(
+      operation,
+      cliRoute({
+        readBinding: {
+          operation: 'missing',
+          params: {},
+          responseField: 'data.key',
+          bodyField: 'content',
+        },
+      }),
+    );
+    expect(() => deriveAllCliCommands(document)).toThrow(
+      'requires a GET operation',
+    );
+  });
+});
+
 describe('command words', () => {
   it('derive from the tag, the path and the method', () => {
     expect(deriveCommandWords('get', '/api/tracker/issues', 'Tracker')).toEqual(
@@ -335,6 +384,7 @@ describe('deriveCliCommands', () => {
         required: true,
         description: 'Markdown.',
         contentFile: true,
+        contentFileNonEmpty: true,
         fromEnv: 'issueId',
       },
       {
@@ -509,6 +559,16 @@ describe('deriveCliCommands', () => {
       actions: [],
     });
     expect(manifest.etag).toMatch(/^[0-9a-f]{32}$/u);
+    const withSettings = deriveCliCommands(document, {
+      ...run,
+      settings: ['settings/z', 'settings/a'],
+    });
+    expect(withSettings.identity.settings).toEqual([
+      'settings/a',
+      'settings/z',
+    ]);
+    expect(withSettings.commands).toEqual(manifest.commands);
+    expect(withSettings.etag).not.toBe(manifest.etag);
   });
 
   it('says why each command a caller is not offered is withheld', async () => {

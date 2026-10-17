@@ -15,10 +15,21 @@ cpSync(
   path.join(fixture, 'client/extensions/nocobase-file-component-ui'),
   { recursive: true },
 );
-for (const name of ['button', 'dialog']) {
+for (const name of ['button', 'dialog', 'spinner']) {
   cpSync(
     path.join(template, `client/components/ui/${name}.tsx`),
     path.join(fixture, `client/components/ui/${name}.tsx`),
+  );
+}
+// Include the application's Spinner implementation and its brand dependencies.
+for (const file of [
+  'brand-spinner.tsx',
+  'brand-loading-mark.tsx',
+  'brand-mark-geometry.ts',
+]) {
+  cpSync(
+    path.join(template, 'client/components', file),
+    path.join(fixture, 'client/components', file),
   );
 }
 symlinkSync(

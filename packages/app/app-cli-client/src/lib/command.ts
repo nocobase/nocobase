@@ -8,6 +8,7 @@ import { EXIT_CODES, type ExitCode } from '@nocobase/agent-protocol';
 
 import { appCliConfig, appCliPaths, type AppCliPaths } from '../config.ts';
 import {
+  apiSuggestionsOf,
   CliCommandError,
   failureEnvelope,
   successEnvelope,
@@ -31,9 +32,15 @@ export function asCliError(error: unknown): Error {
     const fieldViolations = (error.fieldViolations ?? []).map(
       ({ field, description }) => `${field}: ${description}`,
     );
-    return new Errors.CLIError(
-      [`${error.reason}: ${error.message}`, ...fieldViolations].join('\n'),
-      { exit: error.exitCode },
+    return asCliError(
+      new CliCommandError(
+        error.reason,
+        [`${error.reason}: ${error.message}`, ...fieldViolations].join('\n'),
+        {
+          exit: error.exitCode,
+          suggestions: apiSuggestionsOf(error.metadata),
+        },
+      ),
     );
   }
   if (error instanceof UsageError)
@@ -139,8 +146,17 @@ export abstract class AppCommand extends Command {
       error instanceof UsageError ||
       error instanceof CliCommandError ||
       error instanceof ZodError
-    )
+    ) {
+      // oclif's JSON catch reads exitCode, whereas CLIError stores the code in oclif.exit.
+      // Preserve the public CLI exit code before oclif renders the failure envelope.
+      process.exitCode =
+        error instanceof AppApiError
+          ? error.exitCode
+          : error instanceof UsageError || error instanceof CliCommandError
+            ? error.exit
+            : EXIT_CODES.general;
       return super.catch(asCliError(error));
+    }
     return super.catch(error);
   }
 }

@@ -55,9 +55,9 @@ export interface CreateUserManagementServiceOptions {
    */
   readonly permissionSets?: PermissionSetsApi<DatabaseConnection>;
   readonly onRoleScopesChanged?: (userId: string) => void | Promise<void>;
-  /** Sends invitation emails; without one every send fails and the inviter forwards the link. */
+  /** Sends invitation emails; without one, authorized inviters deliver links themselves. */
   readonly mailer?: InvitationMailer;
-  /** Where invitation links point; without it, links start at the origin each caller passes. */
+  /** Links use publicOrigin when configured, or the origin each caller passes. */
   readonly site?: InvitationSite;
 }
 
@@ -97,10 +97,23 @@ class DefaultUserManagementService implements UserManagementService {
     this.invitations.revokeInvitation(id);
   lookupInvitation: InvitationManager['lookupInvitation'] = (token) =>
     this.invitations.lookupInvitation(token);
-  acceptInvitation: InvitationManager['acceptInvitation'] = (input) =>
-    this.invitations.acceptInvitation(input);
+  acceptInvitation: InvitationManager['acceptInvitation'] = (
+    input,
+    authenticatedUserId,
+  ) => this.invitations.acceptInvitation(input, authenticatedUserId);
   onInvitationAccepted: InvitationManager['onInvitationAccepted'] = (handler) =>
     this.invitations.onInvitationAccepted(handler);
+
+  async get(userId: string): Promise<ManagedUser> {
+    const user = await this.services.users.get(userId);
+    if (!user)
+      throw new UserManagementError(
+        'USER_NOT_FOUND',
+        `Unknown user: ${userId}`,
+        404,
+      );
+    return this.withRoleScopes(user, this.services.database.connection());
+  }
 
   async options(): Promise<UserManagementOptions> {
     return {
@@ -141,6 +154,8 @@ class DefaultUserManagementService implements UserManagementService {
       page: input.page,
       pageSize: input.pageSize,
       search: input.search,
+      sort: input.sort,
+      order: input.order,
       status: input.status,
       userIds,
     });

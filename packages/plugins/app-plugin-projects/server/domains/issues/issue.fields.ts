@@ -7,6 +7,8 @@ import type { DatabaseConnection } from '@nocobase/db';
 import { PRIORITIES, type Priority } from '../../../shared/common.js';
 import {
   ISSUE_DESCRIPTION_MAX,
+  ISSUE_ACCEPTANCE_MAX,
+  ISSUE_PROGRESS_MAX,
   ISSUE_TITLE_MAX,
   type CreateIssueRequest,
   type Executor,
@@ -39,18 +41,57 @@ import type { KindRegistry } from '../../kernel/kinds.js';
 import type { IssueValues } from './issue.store.js';
 import { findIssue, parentOf } from './issue.store.js';
 import {
-  isTerminal,
-  type StatusCatalog,
-  type StatusCatalogs,
-} from './ports.js';
+  BACKLOG_STATUS,
+  DEFAULT_START_STATUS,
+  START_STATUSES,
+} from '../../../shared/statuses.js';
+import { isTerminal, type StatusCatalog, type StatusService } from './ports.js';
 
 const MAX_PARENT_DEPTH = 50;
+
+/** Status writes and progress-only writes share these rules, including system events. */
+export function progressValues(
+  before: Issue,
+  patch: Pick<
+    UpdateIssueRequest,
+    'statusKey' | 'needsYou' | 'next' | 'acceptance'
+  >,
+): IssueValues {
+  const target = patch.statusKey ?? before.statusKey;
+  const needsOwner = target === 'blocked' || target === 'in_review';
+  const values: {
+    needsYou?: string | null;
+    next?: string | null;
+    acceptance?: string | null;
+  } = {};
+  const text =
+    patch.needsYou === undefined
+      ? undefined
+      : optionalText(patch.needsYou, 'needsYou', ISSUE_PROGRESS_MAX);
+  if (!needsOwner) values.needsYou = null;
+  else if (text !== undefined) values.needsYou = text?.trim() ? text : null;
+  if (patch.next !== undefined)
+    values.next = optionalText(patch.next, 'next', ISSUE_PROGRESS_MAX)?.trim()
+      ? patch.next
+      : null;
+  if (target === 'done' || target === 'cancelled') values.next = null;
+  // The delivery report outlives the review; only the next one replaces it.
+  if (patch.acceptance !== undefined)
+    values.acceptance = optionalText(
+      patch.acceptance,
+      'acceptance',
+      ISSUE_ACCEPTANCE_MAX,
+    )?.trim()
+      ? patch.acceptance
+      : null;
+  return values;
+}
 
 export interface FieldDeps {
   readonly users: UserDirectory;
   readonly kinds: KindRegistry;
   readonly labels: Pick<LabelService, 'requireExisting'>;
-  readonly statuses: StatusCatalogs;
+  readonly statuses: Pick<StatusService, 'catalog'>;
 }
 
 export interface FieldContext extends FieldDeps {
@@ -198,7 +239,7 @@ function status(catalog: StatusCatalog, value: unknown): string {
   if (typeof value !== 'string' || !catalog.category(value))
     throw invalid(
       'INVALID_STATUS',
-      'statusKey is not a status of this workflow.',
+      `statusKey must be one of ${catalog.statuses.map((item) => item.key).join(', ')}.`,
     );
   return value;
 }
@@ -244,15 +285,25 @@ export async function resolveCreate(
           scopeOf(ctx.viewer, 'pm.issues', 'create') === 'all',
         );
   requireProjectInScope(ctx, projectId);
-  const catalog = await ctx.statuses.forProject(ctx.conn, projectId);
   const statusKey =
-    input.statusKey === undefined
-      ? catalog.initialStatus
-      : status(catalog, input.statusKey);
-  if (isTerminal(catalog, statusKey))
+    input.statusKey === undefined ? DEFAULT_START_STATUS : input.statusKey;
+  if (typeof statusKey !== 'string' || !START_STATUSES.includes(statusKey))
     throw invalid(
       'INVALID_STATUS',
-      'An issue cannot be created done or closed.',
+      `A new issue starts in ${START_STATUSES.join(' or ')}.`,
+    );
+  if (input.start === true && statusKey === BACKLOG_STATUS)
+    throw invalid(
+      'ISSUE_START_REQUIRES_IN_PROGRESS',
+      'An issue must be In progress to start work.',
+      {
+        suggestions: [
+          {
+            message:
+              'To start work when creating an issue, add --status in_progress with --start (statusKey: in_progress in JSON).',
+          },
+        ],
+      },
     );
   const setup = await setupOf(ctx, projectId);
   const projectSetup = input.projectSetup === true;
@@ -281,8 +332,11 @@ export async function resolveCreate(
       input.ownerUserId === undefined
         ? await defaultOwner(ctx)
         : await owner(ctx, input.ownerUserId),
+    // Left out (not null): the default executor a kind names, such as an application's coordinating agent.
     executor:
-      input.executor === undefined ? null : await executor(ctx, input.executor),
+      input.executor === undefined
+        ? await ctx.kinds.defaultExecutor(ctx.conn)
+        : await executor(ctx, input.executor),
     parentIssueId: parentIssue?.id ?? null,
     stage:
       input.stage === undefined
@@ -311,8 +365,7 @@ async function setupOf(
   if (!id) return null;
   const issue = await findIssue(ctx.conn, id);
   if (!issue || issue.deletedAt) return null;
-  const catalog = await ctx.statuses.forProject(ctx.conn, issue.projectId);
-  return isTerminal(catalog, issue.statusKey) ? null : issue;
+  return isTerminal(ctx.statuses.catalog(), issue.statusKey) ? null : issue;
 }
 
 export interface Changes {
@@ -320,7 +373,7 @@ export interface Changes {
   readonly activities: Activity[];
   /** The new label set, when the request replaces it. */
   readonly labelIds?: string[];
-  /** A status change: it goes through the workflow (`issue.status.ts`) before anything is written. */
+  /** A status change: it goes through the status machine (`issue.status.ts`) before anything is written. */
   readonly status?: { readonly to: string; readonly catalog: StatusCatalog };
   /** The parent or the stage changes: once written, the issues waiting for each other are checked again. */
   readonly placed: boolean;
@@ -384,8 +437,12 @@ export async function resolveUpdate(
       ? before.projectId
       : await project(ctx, patch.projectId);
   change('projectId', 'project_changed', projectId);
-  const catalog = await ctx.statuses.forProject(ctx.conn, projectId);
+  const catalog = ctx.statuses.catalog();
   let statusChange: Changes['status'];
+  const progress = progressValues(before, patch);
+  for (const field of ['needsYou', 'next', 'acceptance'] as const)
+    if (progress[field] !== undefined && progress[field] !== before[field])
+      values[field] = progress[field];
   if (patch.statusKey !== undefined) {
     const target = status(catalog, patch.statusKey);
     if (target !== before.statusKey) {
@@ -394,11 +451,6 @@ export async function resolveUpdate(
       change('statusKey', 'status_changed', target);
       statusChange = { to: target, catalog };
     }
-  } else if (!catalog.category(before.statusKey)) {
-    throw invalid(
-      'STATUS_REQUIRED',
-      `The new project has no status ${before.statusKey}; choose one with statusKey.`,
-    );
   }
 
   if (patch.ownerUserId !== undefined) {

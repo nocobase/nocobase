@@ -1,15 +1,14 @@
 // Copies skills from an application's direct NocoBase dependencies and registered plugins.
 //
-// Upstream is the single source of truth: every synchronized directory that
-// differs from upstream is replaced wholesale (one that matches is left
-// untouched), and a directory whose name does not start with
-// `nocobase-` is never touched, so an application can keep local skills
-// alongside the synchronized ones. The entire app-side `.agents/` tree is
-// ignored generated state, not a version-controlled source of truth.
+// Upstream is the single source of truth: every synchronized directory that differs from upstream is replaced
+// wholesale (one that matches is left untouched), and a directory whose name does not start with `nocobase-` is never
+// touched, so an application can keep local skills alongside the synchronized ones. On the application side,
+// `.agents/skills/` and the `.agents/.skills-sync.json` ownership file are ignored generated state, not a
+// version-controlled source of truth. The rest of `.agents/`, notably `.agents/rules/`, is application-owned guidance
+// that the application commits and this sync never reads, writes or removes.
 //
-// Where the packages live differs by caller. Inside this repository they sit
-// under `packages/`; in a generated application they are installed into
-// `node_modules`. Everything except that lookup is shared, so the lookup is a
+// Where the packages live differs by caller. Inside this repository they sit under `packages/`; in a generated
+// application they are installed into `node_modules`. Everything except that lookup is shared, so the lookup is a
 // parameter rather than a branch.
 import {
   createClientPluginsEditor,
@@ -111,8 +110,8 @@ export interface SkillsSyncPlan {
 
 /**
  * The skill directory prefix a plugin package owns. The prefix is the package
- * name without its scope, so `@nocobase/app-plugin-workflow` owns
- * `nocobase-app-plugin-workflow` and `nocobase-app-plugin-workflow-<suffix>`.
+ * name without its scope, so `@nocobase/app-plugin-scheduler` owns
+ * `nocobase-app-plugin-scheduler` and `nocobase-app-plugin-scheduler-<suffix>`.
  */
 export function pluginSkillPrefix(packageName: string): string {
   if (!packageName.startsWith(PACKAGE_SCOPE)) {
@@ -145,6 +144,16 @@ export async function collectPluginSkills({
 }: PluginLocation): Promise<PluginSkills> {
   const skillsDirectory = path.join(pluginDirectory, PLUGIN_SKILLS_DIRECTORY);
   const prefix = pluginSkillPrefix(packageName);
+  // A packaged application CLI (`nocobase.cli` in its manifest, such as `@nocobase/studio-cli`) ships the Skill its
+  // own users read beside the command, not one for developing the application that depends on it.
+  if (await isPackagedCli(pluginDirectory))
+    return {
+      packageName,
+      pluginDirectory,
+      prefix,
+      skills: [],
+      skillsDirectory,
+    };
   const entries = await readDirectoryEntries(skillsDirectory);
 
   const skills: SkillSource[] = [];
@@ -682,6 +691,20 @@ async function isPackageDirectory(
   try {
     const manifest = await readJson(path.join(directory, 'package.json'));
     return manifest.name === packageName;
+  } catch {
+    return false;
+  }
+}
+
+async function isPackagedCli(directory: string): Promise<boolean> {
+  try {
+    const manifest = await readJson(path.join(directory, 'package.json'));
+    const nocobase = manifest.nocobase;
+    return (
+      typeof nocobase === 'object' &&
+      nocobase !== null &&
+      typeof (nocobase as { cli?: unknown }).cli === 'object'
+    );
   } catch {
     return false;
   }

@@ -3,10 +3,12 @@
 import type { Command } from '@oclif/core';
 
 import { EnvList, EnvSet, EnvUnset } from './commands/env.ts';
+import ConfigModels from './commands/config/models.ts';
 import ConfigSet from './commands/config/set.ts';
 import Gc from './commands/gc.ts';
 import Logs from './commands/logs.ts';
 import Register from './commands/register.ts';
+import ServiceRun from './commands/service/run.ts';
 import ServiceInstall from './commands/service/install.ts';
 import ServiceUninstall from './commands/service/uninstall.ts';
 import Start from './commands/start.ts';
@@ -28,6 +30,8 @@ export const COMMANDS: Record<string, Command.Class> = {
   'env:list': EnvList,
   gc: Gc,
   'config:set': ConfigSet,
+  'config:models': ConfigModels,
+  'service:run': ServiceRun,
   'service:install': ServiceInstall,
   'service:uninstall': ServiceUninstall,
   update: Update,

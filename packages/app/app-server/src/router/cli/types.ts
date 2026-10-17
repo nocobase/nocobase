@@ -26,6 +26,8 @@ export interface CliFlagOptions {
   readonly alias?: string;
   /** Also take `--<flag>-file <path>`, whose contents become the value; for long text such as Markdown. */
   readonly contentFile?: boolean;
+  /** Reject empty or whitespace-only content files before sending a request. */
+  readonly contentFileNonEmpty?: boolean;
   /** Ask for a missing value when a terminal is attached. */
   readonly prompt?: boolean;
   /**
@@ -117,6 +119,14 @@ export interface CliRouteOptions {
   readonly bodyFile?: string;
   /** Files uploaded first, by flag name. */
   readonly uploads?: Readonly<Record<string, CliUploadOptions>>;
+  /** One GET operation whose response supplies a required body field before sending. */
+  readonly readBinding?: {
+    readonly operation: string;
+    /** Read-route path parameter to this command's path parameter. */
+    readonly params: Readonly<Record<string, string>>;
+    readonly responseField: string;
+    readonly bodyField: string;
+  };
   /** A file streamed to the upload ticket the route answers. */
   readonly ticketUpload?: CliTicketUploadOptions;
   /** Changed files of a directory, sent with the request. */
@@ -185,6 +195,8 @@ export interface CliParameter {
   readonly default?: unknown;
   readonly alias?: string;
   readonly contentFile?: boolean;
+  /** Reject empty or whitespace-only content files before sending a request. */
+  readonly contentFileNonEmpty?: boolean;
   readonly prompt?: boolean;
   /** `--from-env` fills it from the environment variable named by the value of this field (`CliFlagOptions.fromEnv`). */
   readonly fromEnv?: string;
@@ -232,6 +244,14 @@ export interface CliCommand {
   /** The request path below the server's origin, the application's base path included, with `{name}` placeholders. */
   readonly path: string;
   readonly parameters: readonly CliParameter[];
+  /** Read once before sending; the response field fills a body field, without a user flag. */
+  readonly readBinding?: {
+    readonly path: string;
+    /** Read-route path parameter to this command's path parameter. */
+    readonly params: Readonly<Record<string, string>>;
+    readonly responseField: string;
+    readonly bodyField: string;
+  };
   /** How the body travels; none for a request without one. */
   readonly body?: {
     readonly media: 'application/json' | 'multipart/form-data';
@@ -258,6 +278,8 @@ export interface CliCaller {
   readonly runId?: string;
   /** The business actions the caller holds; a command with an action outside them is left out. None when absent. */
   readonly actions?: ReadonlySet<string>;
+  /** Settings permissions for display only; absent when the application does not provide them. */
+  readonly settings?: readonly string[];
 }
 
 export interface CliManifestIdentity {
@@ -267,6 +289,8 @@ export interface CliManifestIdentity {
   readonly runId?: string;
   /** The business actions the caller holds, sorted; what decides which commands that name one it is offered. */
   readonly actions: readonly string[];
+  /** Settings permissions for display only; never used for command admission. */
+  readonly settings?: readonly string[];
 }
 
 /**

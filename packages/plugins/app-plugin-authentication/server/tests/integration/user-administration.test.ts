@@ -255,6 +255,41 @@ describe('user administration', () => {
     ]).toEqual(['inactive', 'literal', 'percent', 'plain', 'underscore']);
   });
 
+  it('sorts names before pagination and uses IDs to break ties', async () => {
+    const { users, connection } = await setupList();
+    for (const id of ['tie-b', 'tie-a'])
+      await connection.query
+        .insertInto('user')
+        .values({
+          id,
+          name: 'Tie',
+          email: `${id}@example.test`,
+          emailVerified: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .execute();
+    const ascending = await users.list({
+      sort: 'name',
+      order: 'asc',
+      pageSize: 1,
+    });
+    const descending = await users.list({
+      sort: 'name',
+      order: 'desc',
+      pageSize: 1,
+    });
+    expect(
+      ascending.items[0]?.name.localeCompare(descending.items[0]!.name),
+    ).toBeLessThan(0);
+    const ties = await users.list({
+      search: 'Tie',
+      sort: 'name',
+      order: 'asc',
+    });
+    expect(ties.items.map((user) => user.id)).toEqual(['tie-a', 'tie-b']);
+  });
+
   it('combines status and ID filters and hides soft-deleted users', async () => {
     const { users } = await setupList();
     expect((await users.list({ status: 'enabled' })).total).toBe(4);
@@ -283,5 +318,42 @@ describe('user administration', () => {
       total: 0,
       items: [],
     });
+  });
+  it('sorts names on the server before pagination and uses stable order for equal names', async () => {
+    const { users, connection } = await setupList();
+    for (const id of ['tie-b', 'tie-a'])
+      await connection.query
+        .insertInto('user')
+        .values({
+          id,
+          name: 'Tie',
+          email: `${id}@example.test`,
+          emailVerified: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .execute();
+    const first = await users.list({ sort: 'name', order: 'asc', pageSize: 2 });
+    const second = await users.list({
+      sort: 'name',
+      order: 'asc',
+      pageSize: 2,
+      page: 2,
+    });
+    const all = await users.list({ sort: 'name', order: 'asc', pageSize: 100 });
+    expect([...first.items, ...second.items].map((row) => row.id)).toEqual(
+      all.items.slice(0, 4).map((row) => row.id),
+    );
+    expect(
+      new Set([...first.items, ...second.items].map((row) => row.id)).size,
+    ).toBe(4);
+    const descending = await users.list({
+      sort: 'name',
+      order: 'desc',
+      pageSize: 100,
+    });
+    expect(descending.items.map((row) => row.name)).toEqual(
+      all.items.map((row) => row.name).reverse(),
+    );
   });
 });

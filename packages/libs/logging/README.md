@@ -20,13 +20,13 @@ logging:
     request:
       file:
         name: request
-    workflow:
+    scheduler:
       level: debug
       file:
-        name: workflow
+        name: scheduler
 ```
 
-Without `loggers`, every source shares `app.<UTC-date>.<part>.log`. The example routes request and workflow records only to their own files, without also copying them to app. Two sources using the same file name share rotation state within the process. Files contain JSON Lines regardless of terminal formatting. Applications force the directory to their persistent `storage/logs/`; library-only callers supply `file.directory`. Standalone `createLogging()` without output settings retains Pino stdout behavior.
+Without `loggers`, every source shares `app.<UTC-date>.<part>.log`. The example routes request and scheduler records only to their own files, without also copying them to app. Two sources using the same file name share rotation state within the process. Files contain JSON Lines regardless of terminal formatting. Applications force the directory to their persistent `storage/logs/`; library-only callers supply `file.directory`. Standalone `createLogging()` without output settings retains Pino stdout behavior.
 
 `file.enabled: false` disables all file output; a source cannot re-enable it. Outside a Host capture policy, a source can disable its own file output without changing console output. Source file overrides accept only `enabled` and `name`; directories and retention budgets always come from the shared file policy. Source levels override the general level. Hosted applications obey the Host level, output policy, persistent directory, and identity bindings, including when an App or source sets `enabled: false`. Their custom transports cannot bypass that policy. Outside that boundary, an explicit Pino transport owns its destinations and reports a warning when built-in file or console settings are ignored.
 
@@ -42,7 +42,7 @@ Pretty console output uses local time, readable levels and `[appId/logger]` iden
 
 New configuration omits `default`, top-level `pretty`, and `file.maxSizeMB`. Legacy `default` still chooses the no-argument logger source, with a warning. Legacy `pretty` is the terminal fallback when `console` is absent. Migrate it to `console.enabled` and `console.pretty`. Legacy runtime `maxSizeMB` means total retained size; migrate it to `file.maxTotalSizeMB`. Legacy aliases take precedence over merged new defaults until removed, with a warning, so old limits remain effective. Legacy Host App policies using flat `enabled`, `retentionDays`, and `maxSizeMB` migrate into `file`. Deployment `maxSizeMB` historically limits one deployment journal and migrates to `maxFileSizeMB`, not total size. Keep only the new spelling after migration.
 
-Existing log files are not renamed or rewritten and remain readable until retention removes them. Application composition roots use `createAppFromRuntime(runtime)` to transfer the Host logging policy into `Application.runtimeLogging`; older deployed artifacts must be upgraded to honor the Host policy. Workflow diagnostics share these outputs, while workflow execution results and deployment journals retain their separate storage roles.
+Existing log files are not renamed or rewritten and remain readable until retention removes them. Application composition roots use `createAppFromRuntime(runtime)` to transfer the Host logging policy into `Application.runtimeLogging`; older deployed artifacts must be upgraded to honor the Host policy. Deployment journals retain their separate storage role.
 
 ## Incremental reading
 

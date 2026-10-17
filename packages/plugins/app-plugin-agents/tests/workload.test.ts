@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { formatRunWait } from '../client/runs/format-wait.js';
 import type { Agent } from '../shared/agents.js';
 import type { Runner } from '../shared/runners.js';
 import { explainWait } from '../server/core/runs/workload.js';
@@ -16,6 +17,59 @@ describe('the workload', () => {
   let h: Harness;
   afterEach(async () => {
     await h?.close();
+  });
+
+  it('keeps owned incompatible runners ahead of other people personal runners', async () => {
+    h = await createHarness();
+    const mine = await h.registerRunner({
+      name: 'owned-old',
+      trust: 'ownerOnly',
+      ownerUserId: 'owner',
+    });
+    await h.registerRunner({
+      name: 'private-secret-name',
+      trust: 'ownerOnly',
+      ownerUserId: 'other',
+    });
+    const agent = await h.createAgent();
+    const run = await h.enqueue(agent);
+    await h.services.tx.run(async ({ conn }) => {
+      await conn.query
+        .updateTable('agRunners')
+        .set({ status: 'upgrade_required', protocolVersion: 0 })
+        .where('id', '=', mine.runnerId)
+        .execute();
+    });
+    const diagnostic = await h.services.claims.selectionWait(run);
+    expect(diagnostic?.entries[0]?.reason).toBe('incompatible');
+    const wait = await h.services.runs.queueWait(run);
+    expect(wait?.reason).toBe('incompatible');
+    // The list explains it by the claim's rules alone, without the diagnosis.
+    expect((await byId(h)).get(run)?.wait?.reason).toBe('noSharedRunner');
+    expect(JSON.stringify(wait)).not.toContain('private-secret-name');
+    expect(JSON.stringify(diagnostic)).not.toContain('private-secret-name');
+  });
+
+  it('reports the agent concurrency limit independently of runner slots', async () => {
+    h = await createHarness();
+    const runner = await h.registerRunner({ slots: 8 });
+    const agent = await h.createAgent({ maxConcurrentRuns: 1 });
+    await h.enqueue(agent, 'first');
+    await claim(h, runner);
+    const run = await h.enqueue(agent, 'second');
+    const wait = (await byId(h)).get(run)!.wait!;
+    expect(wait).toMatchObject({
+      reason: 'concurrencyFull',
+      params: { active: 1, limit: 1 },
+    });
+    const text = formatRunWait(
+      (key, values) =>
+        key === 'runWait.reasons.concurrencyFull'
+          ? `Concurrency full (${values?.active}/${values?.limit})`
+          : key,
+      wait,
+    );
+    expect(text).toBe('Concurrency full (1/1)');
   });
 
   it('explains why each queued run waits and what the held ones do', async () => {
@@ -145,9 +199,8 @@ describe('explainWait', () => {
   const agent = {
     id: 'a1',
     modelEntries: [{ tool: 'claude', model: null }],
-    runnerIds: [],
+    status: 'enabled',
     maxConcurrentRuns: 2,
-    archivedAt: null,
   } as unknown as Agent;
   const runner = (patch: Partial<Runner> = {}): Runner =>
     ({
@@ -243,9 +296,24 @@ describe('explainWait', () => {
       'noRunnerOnline',
     );
     expect(
-      explainWait(run, { ...context, agent: { ...agent, runnerIds: ['r9'] } })
-        .reason,
-    ).toBe('runnersOffline');
+      explainWait(run, {
+        ...context,
+        agent: { ...agent, status: 'disabled' },
+      }).reason,
+    ).toBe('agentArchived');
+    // A model the runner does not report is not taken there.
+    expect(
+      explainWait(run, {
+        ...context,
+        agent: {
+          ...agent,
+          modelEntries: [{ tool: 'claude', model: 'claude-opus-5-5' }],
+        },
+      }),
+    ).toMatchObject({
+      reason: 'toolUnavailable',
+      params: { tool: 'claude', model: 'claude-opus-5-5' },
+    });
     expect(
       explainWait(run, {
         ...context,

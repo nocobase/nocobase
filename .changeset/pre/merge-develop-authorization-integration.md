@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-workflow': patch
 '@nocobase/app-plugin-scheduler': patch
 '@nocobase/app-template-examples': patch
 ---

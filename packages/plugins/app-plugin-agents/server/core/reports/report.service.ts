@@ -11,11 +11,7 @@
  * Who sees what: a caller who may see every run (`allRuns`, which the application decides) counts every run, anyone
  * else the runs they started or own; either way only runs on subjects they may see (`SubjectReports.describe`).
  */
-import type {
-  DatabaseConnection,
-  FilterBuilder,
-  FilterNode,
-} from '@nocobase/db';
+import type { DatabaseConnection, SelectQuery } from '@nocobase/db';
 
 import {
   DEFAULT_REPORT_DAYS,
@@ -35,26 +31,81 @@ import type { Clock } from '../../kernel/clock.js';
 import { invalid } from '../../kernel/errors.js';
 import type { People } from '../../kernel/people.js';
 import type { TxRunner } from '../../kernel/tx.js';
-import { listAgents } from '../agents/index.js';
+import { agentsRepo } from '../agents/agent.store.js';
 import type { SubjectFacts, SubjectRegistry } from '../runs/index.js';
-import {
-  runsRepo,
-  usageRepo,
-  type RunRecord,
-  type UsageRecord as UsageRow,
-} from '../runs/run.store.js';
+import type { RunRecord } from '../runs/run.store.js';
 import { reliability } from './metrics.js';
 import { modelUsageRows } from './model-usage.js';
 import { listPrices } from './prices.js';
 import { aggregateUsage, type UsageRecord } from './usage.js';
 
 const DAY_MS = 24 * 3600 * 1000;
-const PAGE = 200;
+
+/** What the reports read of a run: never its texts or execution history. */
+type ReportRunRow = Pick<
+  RunRecord,
+  | 'id'
+  | 'agentId'
+  | 'agentType'
+  | 'status'
+  | 'subjectKind'
+  | 'subjectId'
+  | 'actorUserId'
+  | 'ownerUserId'
+  | 'retryOfRunId'
+  | 'failureReason'
+  | 'createdAt'
+  | 'dispatchedAt'
+  | 'startedAt'
+  | 'finishedAt'
+  | 'lastActivityAt'
+>;
+
+const RUN_COLUMNS = [
+  'id',
+  'agentId',
+  'agentType',
+  'status',
+  'subjectKind',
+  'subjectId',
+  'actorUserId',
+  'ownerUserId',
+  'retryOfRunId',
+  'failureReason',
+  'createdAt',
+  'dispatchedAt',
+  'startedAt',
+  'finishedAt',
+  'lastActivityAt',
+] as const;
+
+/** What the usage figures read of a run. */
+const USAGE_RUN_COLUMNS = [
+  'id',
+  'agentId',
+  'agentType',
+  'actorUserId',
+  'subjectKind',
+  'subjectId',
+  'startedAt',
+  'finishedAt',
+] as const;
+
+type Row = Record<string, unknown>;
+
+const text = (value: unknown): string =>
+  typeof value === 'string'
+    ? value
+    : typeof value === 'number' || typeof value === 'bigint'
+      ? String(value)
+      : '';
+const textOrNull = (value: unknown): string | null =>
+  value === null || value === undefined ? null : text(value);
 
 /** Every day of `range`, with the runs started that day by outcome and the day's cost by agent type. */
 export function runDays(
   range: Pick<ReportRange, 'start' | 'end'>,
-  runs: readonly Pick<RunRecord, 'status' | 'createdAt'>[],
+  runs: readonly { readonly status: string; readonly createdAt: string }[],
   onlineCost: ReadonlyMap<string, Costs | null>,
   runnerCost: ReadonlyMap<string, Costs | null>,
 ): RunDay[] {
@@ -162,27 +213,43 @@ const iso = (value: unknown): string | null =>
     ? null
     : new Date(value as string).toISOString();
 
-function anyOf(f: FilterBuilder, field: string, values: readonly string[]) {
-  return f.or(values.map((value) => f.string(field).eq(value)));
+/** A run as the reports read it, its times as ISO strings whichever way the driver returns them. */
+function runRow(row: Row, prefix = ''): ReportRunRow {
+  const at = (name: string) => row[`${prefix}${name}`];
+  return {
+    id: text(at('id')),
+    agentId: text(at('agentId')),
+    agentType: text(at('agentType')),
+    status: text(at('status')) as RunRecord['status'],
+    subjectKind: text(at('subjectKind')),
+    subjectId: text(at('subjectId')),
+    actorUserId: text(at('actorUserId')),
+    ownerUserId: textOrNull(at('ownerUserId')),
+    retryOfRunId: textOrNull(at('retryOfRunId')),
+    failureReason: textOrNull(at('failureReason')),
+    createdAt: iso(at('createdAt')) ?? '',
+    dispatchedAt: iso(at('dispatchedAt')),
+    startedAt: iso(at('startedAt')),
+    finishedAt: iso(at('finishedAt')),
+    lastActivityAt: iso(at('lastActivityAt')),
+  };
 }
 
-async function inPages<T>(
-  ids: readonly string[],
-  read: (page: readonly string[]) => Promise<readonly T[]>,
-): Promise<T[]> {
-  const result: T[] = [];
-  for (let at = 0; at < ids.length; at += PAGE)
-    result.push(...(await read(ids.slice(at, at + PAGE))));
-  return result;
+/** Only the runs the caller started or owns, unless they may see every run. */
+function callersRuns<Q extends SelectQuery<Row, Row>>(
+  query: Q,
+  caller: ReportCaller,
+  table = 'agRuns',
+): Q {
+  return caller.allRuns
+    ? query
+    : (query.where((eb) =>
+        eb.or([
+          eb(`${table}.actorUserId`, '=', caller.userId),
+          eb(`${table}.ownerUserId`, '=', caller.userId),
+        ]),
+      ) as Q);
 }
-
-const inRange =
-  (field: string, range: ReportRange) =>
-  (f: FilterBuilder): FilterNode =>
-    f.and([
-      f.date(field).notBefore(range.start),
-      f.date(field).before(range.end),
-    ]);
 
 export function createReportService(deps: {
   readonly tx: TxRunner;
@@ -190,16 +257,11 @@ export function createReportService(deps: {
   readonly people: People;
   readonly subjects: SubjectRegistry;
 }): ReportService {
-  const sees = (caller: ReportCaller, run: RunRecord) =>
-    caller.allRuns ||
-    run.actorUserId === caller.userId ||
-    run.ownerUserId === caller.userId;
-
   /** What the subjects' domains say of the runs' subjects, by `kind:id`; unknown kinds are visible and in no group. */
   async function factsOf(
     conn: DatabaseConnection,
     caller: ReportCaller,
-    runs: readonly RunRecord[],
+    runs: readonly Pick<ReportRunRow, 'subjectKind' | 'subjectId'>[],
   ): Promise<Map<string, SubjectFacts>> {
     const byKind = new Map<string, Set<string>>();
     for (const run of runs) {
@@ -225,16 +287,17 @@ export function createReportService(deps: {
     return facts;
   }
 
-  /** The runs the caller counts: theirs or all, on visible subjects, in the group when one is asked. */
-  async function countable(
+  /** Of runs the caller started or owns (or any, `callersRuns`), those on visible subjects, in the group when one is asked. */
+  async function countable<
+    T extends Pick<ReportRunRow, 'subjectKind' | 'subjectId'>,
+  >(
     conn: DatabaseConnection,
     caller: ReportCaller,
-    runs: readonly RunRecord[],
+    runs: readonly T[],
     groupId: string | null,
   ) {
-    const mine = runs.filter((run) => sees(caller, run));
-    const facts = await factsOf(conn, caller, mine);
-    const kept = mine.filter((run) => {
+    const facts = await factsOf(conn, caller, runs);
+    const kept = runs.filter((run) => {
       const fact = facts.get(`${run.subjectKind}:${run.subjectId}`);
       return (
         fact !== undefined &&
@@ -245,6 +308,24 @@ export function createReportService(deps: {
     return { runs: kept, facts };
   }
 
+  /** The runs queued in `[start, end)` the caller counts, in one read. */
+  async function runsQueued(
+    conn: DatabaseConnection,
+    caller: ReportCaller,
+    range: { readonly start?: Date; readonly end?: Date },
+  ): Promise<ReportRunRow[]> {
+    let query = conn.query.selectFrom('agRuns').select([...RUN_COLUMNS]);
+    if (range.start) query = query.where('createdAt', '>=', range.start);
+    if (range.end) query = query.where('createdAt', '<', range.end);
+    return (await callersRuns(query, caller).execute<Row>()).map((row) =>
+      runRow(row),
+    );
+  }
+
+  /**
+   * The usage reported in the range of the runs the caller counts, in two reads whatever its size: the usage, and the
+   * runs it was reported for.
+   */
   async function usageRecords(
     conn: DatabaseConnection,
     caller: ReportCaller,
@@ -255,40 +336,81 @@ export function createReportService(deps: {
       readonly userId?: string | null;
     },
   ) {
-    const usage = await usageRepo(conn).findMany({
-      filter: inRange('createdAt', range),
-    });
-    const runIds = [...new Set(usage.map((row) => row.runId))];
-    const runs = await inPages<RunRecord>(
-      runIds,
-      async (page) =>
-        await runsRepo(conn).findMany({ filter: (f) => anyOf(f, 'id', page) }),
-    );
+    const ofRuns = <Q extends SelectQuery<Row, Row>>(query: Q): Q => {
+      let scoped = callersRuns(query, caller, 'run');
+      if (filter.agentId)
+        scoped = scoped.where('run.agentId', '=', filter.agentId) as Q;
+      if (filter.userId)
+        scoped = scoped.where('run.actorUserId', '=', filter.userId) as Q;
+      return scoped;
+    };
+    const usage = await ofRuns(
+      conn.query
+        .selectFrom('agRunUsage as usage')
+        .innerJoin('agRuns as run', 'run.id', 'usage.runId')
+        .select([
+          'usage.runId as runId',
+          'usage.tool as tool',
+          'usage.modelService as modelService',
+          'usage.model as model',
+          'usage.inputTokens as inputTokens',
+          'usage.outputTokens as outputTokens',
+          'usage.cacheReadTokens as cacheReadTokens',
+          'usage.cacheWriteTokens as cacheWriteTokens',
+          'usage.reasoningTokens as reasoningTokens',
+          'usage.createdAt as createdAt',
+        ])
+        .where('usage.createdAt', '>=', range.start)
+        .where('usage.createdAt', '<', range.end)
+        .orderBy('usage.id'),
+    ).execute<Row>();
+    // Each run once, however many usage records it has.
+    const runs =
+      usage.length === 0
+        ? []
+        : (
+            await ofRuns(
+              conn.query
+                .selectFrom('agRuns as run')
+                .select(
+                  USAGE_RUN_COLUMNS.map(
+                    (column) => `run.${column} as ${column}`,
+                  ),
+                )
+                .where((eb) =>
+                  eb(
+                    'run.id',
+                    'in',
+                    eb
+                      .selectFrom('agRunUsage')
+                      .select('runId')
+                      .where('createdAt', '>=', range.start)
+                      .where('createdAt', '<', range.end),
+                  ),
+                ),
+            ).execute<Row>()
+          ).map((row) => runRow(row));
     const { runs: kept, facts } = await countable(
       conn,
       caller,
-      runs.filter(
-        (run) =>
-          (!filter.agentId || run.agentId === filter.agentId) &&
-          (!filter.userId || run.actorUserId === filter.userId),
-      ),
+      runs,
       filter.groupId,
     );
     const byId = new Map(kept.map((run) => [run.id, run]));
     const records: UsageRecord[] = [];
-    for (const row of usage as readonly UsageRow[]) {
-      const run = byId.get(row.runId);
+    for (const row of usage) {
+      const run = byId.get(text(row.runId));
       if (!run) continue;
-      const started = iso(run.startedAt);
-      const finished = iso(run.finishedAt);
+      const started = run.startedAt;
+      const finished = run.finishedAt;
       records.push({
         runId: run.id,
         agentId: run.agentId,
         type: run.agentType,
         userId: run.actorUserId,
-        tool: row.tool,
-        modelService: row.modelService ?? null,
-        model: row.model ?? null,
+        tool: text(row.tool),
+        modelService: textOrNull(row.modelService),
+        model: textOrNull(row.model),
         subjectKind: run.subjectKind,
         subjectId: run.subjectId,
         groupId:
@@ -312,7 +434,11 @@ export function createReportService(deps: {
     conn: DatabaseConnection,
   ): Promise<Map<string, string>> {
     return new Map(
-      (await listAgents(conn, true)).map((agent) => [agent.id, agent.name]),
+      (
+        await agentsRepo(conn).findMany({
+          select: (select) => select.fields('id', 'name'),
+        })
+      ).map((agent) => [agent.id, agent.name]),
     );
   }
 
@@ -401,26 +527,19 @@ export function createReportService(deps: {
     async runRecords(caller, query) {
       if (query.subjects && query.subjects.ids.length === 0) return [];
       const conn = deps.tx.read();
-      const when = (f: FilterBuilder): FilterNode[] => [
-        ...(query.start ? [f.date('createdAt').notBefore(query.start)] : []),
-        ...(query.end ? [f.date('createdAt').before(query.end)] : []),
-      ];
-      const found = query.subjects
-        ? await inPages<RunRecord>(
-            [...new Set(query.subjects.ids)],
-            async (page) =>
-              await runsRepo(conn).findMany({
-                filter: (f) =>
-                  f.and([
-                    f.string('subjectKind').eq(query.subjects?.kind ?? ''),
-                    anyOf(f, 'subjectId', page),
-                    ...when(f),
-                  ]),
-              }),
-          )
-        : await runsRepo(conn).findMany(
-            query.start || query.end ? { filter: (f) => f.and(when(f)) } : {},
-          );
+      let found: ReportRunRow[];
+      if (query.subjects) {
+        let select = conn.query
+          .selectFrom('agRuns')
+          .select([...RUN_COLUMNS])
+          .where('subjectKind', '=', query.subjects.kind)
+          .where('subjectId', 'in', [...new Set(query.subjects.ids)]);
+        if (query.start) select = select.where('createdAt', '>=', query.start);
+        if (query.end) select = select.where('createdAt', '<', query.end);
+        found = (await callersRuns(select, caller).execute<Row>()).map((row) =>
+          runRow(row),
+        );
+      } else found = await runsQueued(conn, caller, query);
       const { runs } = await countable(conn, caller, found, query.groupId);
       return runs
         .map((run): ReportRun => ({
@@ -431,10 +550,10 @@ export function createReportService(deps: {
           status: run.status,
           failureReason: run.failureReason,
           retryOfRunId: run.retryOfRunId,
-          createdAt: iso(run.createdAt) ?? '',
-          dispatchedAt: iso(run.dispatchedAt),
-          startedAt: iso(run.startedAt),
-          finishedAt: iso(run.finishedAt),
+          createdAt: run.createdAt,
+          dispatchedAt: run.dispatchedAt,
+          startedAt: run.startedAt,
+          finishedAt: run.finishedAt,
         }))
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     },
@@ -443,10 +562,12 @@ export function createReportService(deps: {
       const now = deps.clock.now();
       const conn = deps.tx.read();
       // Runs started in the range.
-      const started = await runsRepo(conn).findMany({
-        filter: inRange('createdAt', range),
-      });
-      const { runs } = await countable(conn, caller, started, range.groupId);
+      const { runs } = await countable(
+        conn,
+        caller,
+        await runsQueued(conn, caller, range),
+        range.groupId,
+      );
       // Cost of the usage reported in the range.
       const { records } = await usageRecords(conn, caller, range, {
         groupId: range.groupId,
@@ -468,18 +589,7 @@ export function createReportService(deps: {
         );
       const names = await agentNames(conn);
       return {
-        ...reliability(
-          runs.map((run) => ({
-            status: run.status,
-            failureReason: run.failureReason,
-            createdAt: iso(run.createdAt) ?? '',
-            dispatchedAt: iso(run.dispatchedAt),
-            startedAt: iso(run.startedAt),
-            finishedAt: iso(run.finishedAt),
-            lastActivityAt: iso(run.lastActivityAt),
-          })),
-          now,
-        ),
+        ...reliability(runs, now),
         inputTokens: usage.totals.inputTokens,
         outputTokens: usage.totals.outputTokens,
         estimatedCost: usage.totals.cost,
@@ -497,9 +607,7 @@ export function createReportService(deps: {
           cost: row.cost,
         })),
         activityDays: [
-          ...new Set(
-            runs.map((run) => (iso(run.createdAt) ?? '').slice(0, 10)),
-          ),
+          ...new Set(runs.map((run) => run.createdAt.slice(0, 10))),
         ],
         actorIds: [...new Set(runs.map((run) => run.actorUserId))],
         daily: runDays(range, runs, dailyCost('online'), dailyCost('runner')),

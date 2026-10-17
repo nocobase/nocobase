@@ -40,6 +40,7 @@ const CliParameterSchema = z
     default: z.unknown().optional(),
     alias: z.string().optional(),
     contentFile: z.boolean().optional(),
+    contentFileNonEmpty: z.boolean().optional(),
     prompt: z.boolean().optional(),
     fromEnv: z.string().optional(),
     env: z
@@ -96,6 +97,14 @@ const CliCommandSchema = z
         'The request path, the base path included, with `{name}` placeholders.',
     }),
     parameters: z.array(CliParameterSchema),
+    readBinding: z
+      .object({
+        path: z.string(),
+        params: z.record(z.string(), z.string()),
+        responseField: z.string(),
+        bodyField: z.string(),
+      })
+      .optional(),
     body: z
       .object({
         media: z.enum(['application/json', 'multipart/form-data']),
@@ -119,6 +128,10 @@ const CliManifestSchema: z.ZodType<CliManifest> = z
     version: z.number().int(),
     etag: z.string(),
     identity: z.object({
+      settings: z.array(z.string()).optional().meta({
+        description:
+          'Settings permissions for display only; absent when not provided.',
+      }),
       kind: Identity,
       userId: z.string(),
       displayName: z.string(),

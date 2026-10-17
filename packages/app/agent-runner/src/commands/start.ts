@@ -1,16 +1,9 @@
 import { Flags, type Interfaces } from '@oclif/core';
 import { spawn } from 'node:child_process';
-import { mkdirSync, openSync, closeSync } from 'node:fs';
-import path from 'node:path';
 
 import { loadAdapters } from '../agent/adapters/registry.ts';
 import { RunnerCommand, UsageError } from '../lib/command.ts';
-import {
-  readConnections,
-  readSettings,
-  writeSettings,
-  type AgentHome,
-} from '../lib/config.ts';
+import { readConnections, readSettings } from '../lib/config.ts';
 import { ensureHome } from '../lib/home.ts';
 import { detectInstallation } from '../lib/install.ts';
 import { delay } from '../lib/http.ts';
@@ -21,6 +14,7 @@ import { runnerCommandLine } from '../host.ts';
 import { EXIT_CODES } from '../protocol/index.ts';
 import { readDaemonPid, RunnerDaemon } from '../core/loop.ts';
 import { killLeftovers } from '../core/process-tree.ts';
+import { readLauncherPid } from '../core/launcher.ts';
 import { SERVICE_ENV } from '../core/service.ts';
 import type { Timings } from '../core/supervisor.ts';
 
@@ -39,7 +33,6 @@ export default class Start extends RunnerCommand {
   static override flags: {
     foreground: Interfaces.BooleanFlag<boolean>;
     slots: Interfaces.OptionFlag<string | undefined>;
-    'agent-home': Interfaces.OptionFlag<string | undefined>;
     'pass-env': Interfaces.OptionFlag<string[] | undefined>;
   } = {
     foreground: Flags.boolean({
@@ -48,12 +41,6 @@ export default class Start extends RunnerCommand {
     slots: Flags.string({
       description:
         'How many runs at once, for this start: a total (3), limits per coding tool (claude=2,codex=1), or both. Defaults to the registered ones.',
-    }),
-    'agent-home': Flags.string({
-      description:
-        "The home directory agents' tools get: isolated (a home per workspace, linking only what the tools need) or " +
-        'real (the runner user’s own). Remembered for later starts.',
-      options: ['isolated', 'real'],
     }),
     'pass-env': passEnvFlag,
   };
@@ -73,6 +60,13 @@ export default class Start extends RunnerCommand {
         `stopped ${left.processes} process(es) and ${left.groups} process group(s) left behind`,
       );
     log(`runner exiting (${code})`);
+    if (code === EXIT_CODES.auth)
+      log(
+        `Runner revoked. Run ${runnerCommandLine('register')} to register again.`,
+      );
+    await new Promise<void>((resolve) =>
+      process.stdout.write('', () => resolve()),
+    );
     process.exit(code);
   }
 
@@ -81,18 +75,32 @@ export default class Start extends RunnerCommand {
     const slotsFlag =
       flags.slots === undefined ? {} : parseSlotsFlag(flags.slots);
     const paths = this.paths;
-    const connections = await readConnections(paths);
+    const registered = await readConnections(paths);
+    const connections = registered.filter(
+      (item) => item.registration.revoked === undefined,
+    );
+    if (registered.length > 0 && connections.length === 0)
+      throw new UsageError(
+        `Runner revoked. Run ${runnerCommandLine('register')} to register again.`,
+        EXIT_CODES.auth,
+      );
     if (connections.length === 0) {
       throw new UsageError(
         `This runner is not registered. Run \`${runnerCommandLine('register')}\` first.`,
         EXIT_CODES.auth,
       );
     }
+    const launcher = await readLauncherPid(paths);
+    // A supervised foreground child belongs to this launcher; every other start must wait for it to stop.
+    if (
+      launcher !== undefined &&
+      !(flags.foreground && launcher.pid === process.ppid)
+    )
+      throw new UsageError(
+        `The runner launcher is already running (pid ${launcher.pid}).`,
+        EXIT_CODES.conflict,
+      );
     let settings = await readSettings(paths);
-    if (flags['agent-home'] !== undefined) {
-      settings.agentHome = flags['agent-home'] as AgentHome;
-      await writeSettings(settings, paths);
-    }
     settings = await rememberPassEnv(settings, flags['pass-env'], paths);
     const running = await readDaemonPid(paths);
     if (running !== undefined) {
@@ -104,23 +112,17 @@ export default class Start extends RunnerCommand {
 
     if (!flags.foreground) {
       await ensureHome(paths);
-      mkdirSync(path.dirname(paths.daemonLog), {
-        recursive: true,
-        mode: 0o700,
-      });
-      const fd = openSync(paths.daemonLog, 'a', 0o600);
       const [command = process.execPath, ...args] = selfCommand();
       const child = spawn(
         command,
         [
           ...args,
-          'start',
-          '--foreground',
+          'service',
+          'run',
           ...(flags.slots === undefined ? [] : ['--slots', flags.slots]),
         ],
-        { detached: true, stdio: ['ignore', fd, fd], env: process.env },
+        { detached: true, stdio: 'ignore', env: process.env },
       );
-      closeSync(fd);
       child.unref();
       const deadline = Date.now() + 10_000;
       while (Date.now() < deadline) {

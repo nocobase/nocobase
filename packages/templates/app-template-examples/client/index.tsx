@@ -7,6 +7,7 @@ import {
 import { resolveAppRuntime } from '@nocobase/app-client/runtime';
 import { createRoot } from 'react-dom/client';
 
+import { revealScrollbarsWhileScrolling } from './lib/scrollbar';
 import appRuntime from './runtime';
 import { AppStartupError } from './startup';
 import './styles.css';
@@ -18,6 +19,9 @@ const container = document.getElementById('root');
 if (!container) {
   throw new Error('Missing application root element.');
 }
+
+// Scrollbars show only while their element scrolls (client/styles.css).
+revealScrollbarsWhileScrolling();
 
 const root = createRoot(container);
 let app: ClientApplication | undefined;

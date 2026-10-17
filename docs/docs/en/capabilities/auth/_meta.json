@@ -5,21 +5,28 @@
     "label": "Overview"
   },
   {
-    "type": "dir",
-    "name": "methods",
-    "label": "Authentication methods",
-    "collapsed": true
+    "type": "file",
+    "name": "password",
+    "label": "Password authentication and accounts"
   },
   {
-    "type": "dir",
-    "name": "custom",
-    "label": "Customization",
-    "collapsed": true
+    "type": "file",
+    "name": "api-keys",
+    "label": "API keys"
   },
   {
-    "type": "dir",
-    "name": "advanced",
-    "label": "Advanced usage",
-    "collapsed": true
+    "type": "file",
+    "name": "sign-in-methods",
+    "label": "Adding sign-in methods"
+  },
+  {
+    "type": "file",
+    "name": "protecting-access",
+    "label": "Protecting pages and APIs"
+  },
+  {
+    "type": "file",
+    "name": "login-pages",
+    "label": "Customizing sign-in pages"
   }
 ]

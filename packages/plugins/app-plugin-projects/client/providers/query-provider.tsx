@@ -19,6 +19,11 @@ import {
   PM_REALTIME_TOPIC,
   type PmChangeEvent,
 } from '../../shared/realtime.js';
+import {
+  announcedIssueIds,
+  changedIssueSegments,
+  isIssueRead,
+} from '../api/changed-issues.js';
 import { pmKeys } from '../api/keys.js';
 
 /** A refusal (4xx) will not change on a retry; anything else gets one more try. */
@@ -64,17 +69,20 @@ function RealtimeRefresh(): null {
           void queryClient.invalidateQueries({ queryKey: ['pm', 'plans'] });
           return;
         }
-        // A workflow change renames statuses and changes which moves are allowed.
-        if (payload.domain === 'workflows')
-          for (const queryKey of [pmKeys.workflows, ['pm', 'statuses']])
-            void queryClient.invalidateQueries({ queryKey });
-        // Issue changes also move project progress.
-        for (const queryKey of [
-          pmKeys.issues,
-          ['pm', 'issue'],
-          pmKeys.projects,
-        ])
-          void queryClient.invalidateQueries({ queryKey });
+        // Issue changes also move lists; an issue's own reads refresh only for the issues named. Projects count their
+        // issues by status, which only an announcement that names no issues can change (`PmChangeEvent.issueIds`).
+        void queryClient.invalidateQueries({ queryKey: pmKeys.issues });
+        const named = announcedIssueIds(payload);
+        if (!named) {
+          void queryClient.invalidateQueries({ queryKey: pmKeys.projects });
+          void queryClient.invalidateQueries({ queryKey: ['pm', 'issue'] });
+          return;
+        }
+        const segments = changedIssueSegments(queryClient, named);
+        void queryClient.invalidateQueries({
+          queryKey: ['pm', 'issue'],
+          predicate: (query) => isIssueRead(query.queryKey, segments),
+        });
       },
     );
     return () => {

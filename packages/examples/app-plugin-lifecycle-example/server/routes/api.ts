@@ -1,13 +1,22 @@
+import type { AuthEnv } from '@nocobase/app-plugin-authentication';
 import { ApiError, type ApiErrorStatus } from '@nocobase/app-server/router';
+import type { Context } from 'hono';
 import {
   LifecycleError,
+  ParameterConfigurationError,
   lifecycleErrorFields,
   type LifecycleApiErrorOptions,
   type RecordView,
 } from '@nocobase/lifecycle';
 
 import { LIFECYCLE_ROUTES } from '../../shared/routes.js';
+import {
+  UnknownWebhookEvent,
+  WebhookEventNotFound,
+} from '../sandbox/outbox.js';
+import { SandboxError } from '../sandbox/sandbox.js';
 import { ExampleError } from '../services/lifecycle-example.js';
+import { WebhookRejected } from '../webhooks/receiver.js';
 
 /** The namespace of every route this plugin owns, and the domain of its errors. */
 export const LIFECYCLE_EXAMPLE_DOMAIN: string = LIFECYCLE_ROUTES;
@@ -33,6 +42,19 @@ export function toApiError(
   error: unknown,
   options: LifecycleApiErrorOptions = {},
 ): unknown {
+  if (error instanceof ParameterConfigurationError)
+    return new ApiError({
+      status:
+        error.code === 'CONFIGURATION_CONFLICT' ||
+        error.code === 'CONFIGURATION_REQUEST_REUSED'
+          ? 'ABORTED'
+          : error.code === 'CONFIGURATION_INVALID'
+            ? 'INVALID_ARGUMENT'
+            : 'FAILED_PRECONDITION',
+      reason: error.code,
+      domain: LIFECYCLE_EXAMPLE_DOMAIN,
+      message: error.message,
+    });
   if (error instanceof LifecycleError) {
     const fields = lifecycleErrorFields(error, options);
     // A broken definition is the server's fault: the application answers 500.
@@ -47,7 +69,52 @@ export function toApiError(
       domain: LIFECYCLE_EXAMPLE_DOMAIN,
       message: error.message,
     });
+  return sandboxApiError(error);
+}
+
+/** The sandbox's and the webhook receiver's refusals. */
+function sandboxApiError(error: unknown): unknown {
+  const refusal = (
+    status: ApiErrorStatus,
+    reason: string,
+    message: string,
+  ): ApiError =>
+    new ApiError({ status, reason, domain: LIFECYCLE_EXAMPLE_DOMAIN, message });
+  if (error instanceof WebhookRejected)
+    return refusal(
+      error.reason === 'INVALID_SIGNATURE'
+        ? 'UNAUTHENTICATED'
+        : 'INVALID_ARGUMENT',
+      error.reason,
+      error.message,
+    );
+  if (error instanceof SandboxError)
+    return refusal(
+      error.code === 'NOT_FOUND' ? 'NOT_FOUND' : 'FAILED_PRECONDITION',
+      `SANDBOX_${error.code}`,
+      error.message,
+    );
+  if (error instanceof UnknownWebhookEvent)
+    return refusal('INVALID_ARGUMENT', 'UNKNOWN_WEBHOOK_EVENT', error.message);
+  if (error instanceof WebhookEventNotFound)
+    return refusal('NOT_FOUND', 'WEBHOOK_EVENT_NOT_FOUND', error.message);
   return error;
+}
+
+/**
+ * The signed-in user's id. Every route of this plugin sits behind the
+ * session guard, so there is one; a route reached without it is refused.
+ */
+export function signedInUser(context: Context<AuthEnv>): string {
+  const user = context.get('auth')?.user;
+  if (!user)
+    throw new ApiError({
+      status: 'UNAUTHENTICATED',
+      reason: 'SIGN_IN_REQUIRED',
+      domain: LIFECYCLE_EXAMPLE_DOMAIN,
+      message: 'Sign in first.',
+    });
+  return String(user.id);
 }
 
 /** A record with its id as a string, as every id in a response is. */

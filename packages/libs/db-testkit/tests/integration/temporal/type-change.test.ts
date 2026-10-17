@@ -93,8 +93,7 @@ describeIntegrationDatabases('Temporal field type changes', (context) => {
   // PostgreSQL does not satisfy this yet, and neither does Kingbase, which inherits its casts: widening a
   // zone-free timestamp there reads each value in the session time zone, so a server that is not on UTC moves
   // every row by its offset and records nothing saying so. `ALTER ... USING (col AT TIME ZONE 'UTC')` is what
-  // makes it deterministic; until the schema layer emits that, a migration has to pin the session itself, as
-  // `202609110001_workflow_instant_columns` in `@nocobase/app-plugin-workflow` does.
+  // makes it deterministic; until the schema layer emits that, a migration has to pin the session itself.
   it.skipIf(
     unsupported ||
       context.profile.temporal.sessionTimezone === 'unsupported' ||

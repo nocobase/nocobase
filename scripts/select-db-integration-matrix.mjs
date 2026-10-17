@@ -1,16 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 
-export const databases = [
-  'sqlite',
-  'postgres',
-  'mysql',
-  'oceanbase',
-  'oracle',
-  'mssql',
-  'dameng',
-  'kingbase',
-];
+export const databases = ['sqlite', 'postgres', 'mysql', 'oracle', 'mssql'];
 
 // Keep whole packages covered, including their tests, manifests, and local configuration.
 const sharedDirectories = [
@@ -29,10 +20,61 @@ const sharedFiles = new Set([
   '.npmrc',
   '.pnpmfile.cjs',
   'pnpmfile.cjs',
-  '.github/workflows/v3-quality.yml',
   'scripts/select-db-integration-matrix.mjs',
   'tests/scripts/select-db-integration-matrix.test.mjs',
 ]);
+
+// Package tests whose subject is dialect-specific behavior, such as row locks, lock waits and indexed column changes. The
+// matrix above runs the dialect packages' own suites; these run a package's named tests on that dialect through
+// `pnpm test:db`, in the Database tests workflow, when a path they guard changes.
+export const packageSuites = [
+  {
+    // Claims, consent decisions and the sweeper must not lock or write per queued candidate; see the test's header.
+    paths: [
+      'packages/plugins/app-plugin-agents/server/core/runs/',
+      'packages/plugins/app-plugin-agents/server/core/agents/agent.store.ts',
+      'packages/plugins/app-plugin-agents/tests/claim-concurrency.test.ts',
+      'packages/plugins/app-plugin-agents/tests/active-input.test.ts',
+      'packages/plugins/app-plugin-agents/database/migrations/202610260001_ag_run_revision.ts',
+      'packages/plugins/app-plugin-agents/tests/harness.ts',
+    ],
+    dialect: 'postgres',
+    filter: '@nocobase/app-plugin-agents',
+    tests: [
+      'tests/claim-concurrency.test.ts',
+      'tests/active-input.test.ts',
+      'tests/run-revision-migration.test.ts',
+    ],
+  },
+  {
+    // SQL Server requires rebuilding the unique index before shrinking the legacy artifact-key column.
+    paths: [
+      'packages/plugins/app-plugin-releases/database/migrations/',
+      'packages/plugins/app-plugin-releases/tests/artifact-key-migration.test.ts',
+    ],
+    dialect: 'mssql',
+    filter: '@nocobase/app-plugin-releases',
+    tests: ['tests/artifact-key-migration.test.ts'],
+  },
+];
+
+const suiteOf = ({ dialect, filter, tests }) => ({
+  dialect,
+  filter,
+  tests: tests.join(' '),
+});
+
+export function selectPackageSuites(changedPaths) {
+  return packageSuites
+    .filter((suite) =>
+      changedPaths.some((file) =>
+        suite.paths.some((guarded) =>
+          guarded.endsWith('/') ? file.startsWith(guarded) : file === guarded,
+        ),
+      ),
+    )
+    .map(suiteOf);
+}
 
 export function selectDatabases(changedPaths) {
   const selected = new Set();
@@ -65,6 +107,7 @@ export function planDbIntegration({ baseSha, headSha, cwd = process.cwd() }) {
   if (!baseSha || /^0+$/.test(baseSha) || !headSha) {
     return {
       databases: [...databases],
+      suites: packageSuites.map(suiteOf),
       reason: 'No comparison range; running every database.',
     };
   }
@@ -87,6 +130,7 @@ export function planDbIntegration({ baseSha, headSha, cwd = process.cwd() }) {
   } catch {
     return {
       databases: [...databases],
+      suites: packageSuites.map(suiteOf),
       reason: 'Comparison commits unavailable; running every database.',
     };
   }
@@ -108,6 +152,7 @@ export function planDbIntegration({ baseSha, headSha, cwd = process.cwd() }) {
   const selected = selectDatabases(changedPaths);
   return {
     databases: selected,
+    suites: selectPackageSuites(changedPaths),
     reason: selected.length
       ? `Selected databases: ${selected.join(', ')}.`
       : 'No database-related changes.',
@@ -119,7 +164,7 @@ if (import.meta.main) {
     baseSha: process.env.BASE_SHA,
     headSha: process.env.HEAD_SHA,
   });
-  const output = `databases=${JSON.stringify(plan.databases)}\nshould_run=${plan.databases.length > 0}\n`;
+  const output = `databases=${JSON.stringify(plan.databases)}\nshould_run=${plan.databases.length > 0}\nsuites=${JSON.stringify(plan.suites)}\n`;
   if (process.env.GITHUB_OUTPUT) {
     appendFileSync(process.env.GITHUB_OUTPUT, output);
   }

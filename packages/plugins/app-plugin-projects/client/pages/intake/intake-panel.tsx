@@ -39,6 +39,7 @@ import { Spinner } from '../../components/ui/spinner.js';
 import { Textarea } from '../../components/ui/textarea.js';
 import { useNotify } from '../../hooks/use-notify.js';
 import { usePmApi } from '../../hooks/use-pm-api.js';
+import { emptyIntakeDraft, useIntakeDraft } from '../../kit/intake-draft.js';
 import { IntakeAgentSlot } from '../../kit/page-slots.js';
 import { planKeys, usePlanApi } from '../../kit/plans/api.js';
 import {
@@ -112,9 +113,15 @@ export function IntakePanel({
   const queryClient = useQueryClient();
   const mutations = usePlanMutations();
   const [params, setParams] = useSearchParams();
-  const [text, setText] = useState('');
+  const [input, setInput] = useIntakeDraft();
+  const text = input.text;
+  const setText = (text: string) =>
+    setInput((current) => ({ ...current, text }));
   const presetProjectId = usePresetProjectId();
-  const [projectId, setProjectId] = useState<string | null>(presetProjectId);
+  const projectId =
+    input.projectId === undefined ? presetProjectId : input.projectId;
+  const setProjectId = (projectId: string | null) =>
+    setInput((current) => ({ ...current, projectId }));
   const uploads = useIntakeUploads();
   const [split, setSplit] = useState<IntakeSplitResult | null>(null);
   const [splitting, setSplitting] = useState(false);
@@ -327,6 +334,8 @@ export function IntakePanel({
 
   const executed = (next: Plan) => {
     if (next.status !== 'executed') return;
+    setInput(emptyIntakeDraft());
+    uploads.clear();
     onCreated(next);
   };
 
@@ -381,6 +390,12 @@ export function IntakePanel({
               placeholder={t('intake.textPlaceholder')}
               aria-invalid={tooLong ? true : undefined}
               onChange={(event) => setText(event.target.value)}
+              onPaste={(event) => {
+                const images = [...event.clipboardData.files].filter((file) =>
+                  file.type.startsWith('image/'),
+                );
+                if (images.length > 0) uploads.add(images);
+              }}
               onDragOver={uploads.onDragOver}
               onDrop={uploads.onDrop}
             />
@@ -408,8 +423,8 @@ export function IntakePanel({
             ) : null}
           </Field>
           <IntakeFiles uploads={uploads} reads={split?.files ?? []} />
-          <div className='flex flex-wrap items-end gap-3'>
-            <Field className='w-full sm:max-w-xs'>
+          <div className='grid items-start gap-3 sm:grid-cols-2'>
+            <Field className='min-w-0'>
               <FieldLabel htmlFor='pm-intake-project'>
                 {t('intake.project')}
               </FieldLabel>
@@ -425,7 +440,7 @@ export function IntakePanel({
                 onChange={setProjectId}
               />
             </Field>
-            <div className='ml-auto flex flex-wrap items-center gap-2'>
+            <div className='flex min-w-0 flex-col items-stretch gap-2'>
               <IntakeAgentSlot
                 text={text}
                 fileIds={fileIds}

@@ -26,11 +26,11 @@ An agent's runs on one subject: a compact side-column log with a live timer, an 
 - Installs to: `client/components/agent-run-history.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/agent-run-history-demo` (`pnpm exec shadcn view @nocobase/agent-run-history-demo`)
-- After installing: Map your runs to AgentRunHistoryRun (newest first) and their events to RunTranscriptEvent; runHref and onOpenRun open a run, onStop and onRetry report actions for you to confirm and perform. Every word comes from the labels props, English by default.
+- After installing: Map your runs to AgentRunHistoryRun (newest first) and their events to RunTranscriptEvent; runHref and onOpenRun open a run, onStop and onRetry report actions for you to confirm and perform. Every word comes from the labels props, English by default. Pass complete events to RunTranscript; scope preferenceKey by application and user, and translate filterLabels.
 
 ### agent-composer
 
-The message box for talking to an agent: page-context chips inside it, files to send (attach, paste, drop, uploaded before sending), Enter to send, Stop while the agent works, and a toolbar slot for a model or mode picker. Use it wherever a person writes to an agent. Presentational: context chips, drafts and focus come from the agents plugin's chat hooks (@nocobase/app-plugin-agents/client/chat) through optional props.
+The message box for talking to an agent: page-context chips inside it, files to send (attach, paste, drop, uploaded before sending), Enter to send, Stop while the agent works, and a toolbar slot for a picker such as the agent's. Use it wherever a person writes to an agent. Presentational: context chips, drafts and focus come from the agents plugin's chat hooks (@nocobase/app-plugin-agents/client/chat) through optional props.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-composer`
@@ -41,18 +41,18 @@ The message box for talking to an agent: page-context chips inside it, files to 
 
 ### agent-picker
 
-The one way to pick an agent: a trigger with the agent's avatar (availability dot on its corner) and name, and a menu of the agents grouped by type (Online, Runner) with their default and personal tags and availability. Two appearances: field, which looks like a form's select, for forms and settings; toolbar, compact with the mode tag, for a composer. Presentational: pass ChatAgent records from @nocobase/app-plugin-agents/shared/conversations.
+The one way to pick an agent: a trigger with the agent's avatar (availability dot on its corner) and name, and a menu of every enabled agent with what it is good at, its default and "personal runners only" tags, and why one cannot answer the viewer now (it cannot be picked then). Two appearances: field, which looks like a form's select, for forms and settings; toolbar, compact, for a composer. Presentational: pass ChatAgent records from @nocobase/app-plugin-agents/shared/conversations.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-picker`
 - Installs to: `client/components/agent-picker.tsx`
 - Plugin dependencies: `@nocobase/app-plugin-agents`
 - Example: `@nocobase/agent-picker-demo` (`pnpm exec shadcn view @nocobase/agent-picker-demo`)
-- After installing: Pass the agents (useChatAgents from @nocobase/app-plugin-agents/client/chat for chat, or useAgentOptions().agents from @nocobase/app-plugin-agents/client/kit for a form), value and onSelect. appearance is field by default (type filters to Online or Runner, noneOption offers no agent, placeholder, disabled, id for a label); appearance='toolbar' fits a composer, and bound marks an existing conversation, whose agent cannot change. Also exports AgentIdentity (avatar, dot and name as one row, for a picker that lists agents among people), AvailabilityDot, ModeTag, AgentTags and AgentTag. Every word comes from the labels prop, English by default.
+- After installing: Pass the agents (useChatAgents from @nocobase/app-plugin-agents/client/chat for chat, or useAgentOptions().agents from @nocobase/app-plugin-agents/client/kit for a form), value and onSelect. appearance is field by default (noneOption offers no agent, placeholder, disabled, id for a label); appearance='toolbar' fits a composer, and bound marks an existing conversation, whose agent cannot change. Also exports AgentIdentity (avatar, dot and name as one row, for a picker that lists agents among people), AvailabilityDot, AgentTags and AgentTag. Every word comes from the labels prop, English by default.
 
 ### agent-chat
 
-The agents' chat: a side panel beside the content area with the conversation, live steps, a composer with page-context chips and files to send (attach, paste, drop), model and agent pickers, the history, a full-page conversation view, and header, floating and Ask agent launchers. Use it to let people talk to agents from any page. Wired to the headless hooks of @nocobase/app-plugin-agents/client/chat.
+The agents' chat: a side panel beside the content area with the conversation, live steps, a composer with page-context chips and files to send (attach, paste, drop), the agent picker, the history, a full-page conversation view, and header, floating and Ask agent launchers. Use it to let people talk to agents from any page. Wired to the headless hooks of @nocobase/app-plugin-agents/client/chat.
 
 - Kind: block
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-chat`
@@ -136,14 +136,14 @@ The /device page where a signed-in person approves or denies the sign-in of a CL
 
 ### permission-editor
 
-A role's permissions as collapsible sections of switch rows under optional subheadings, each row reaching a level picked in a fixed right column. Use it for a role editor. Presentational: map the business actions and levels @nocobase/app-plugin-authorization registers to sections of rows.
+A compact resource permission workspace with horizontal action checkboxes, adjacent data scopes and atomic visible selection.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/permission-editor`
-- Installs to: `client/components/permission-editor.tsx`
+- Installs to: `client/components/permission-editor.tsx`, `client/components/permission-filter.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/permission-editor-demo` (`pnpm exec shadcn view @nocobase/permission-editor-demo`)
-- After installing: Map your permissions to sections of groups of rows; each row has an id, a label, an optional hint, whether it is enabled, and optionally the levels it can reach and the current one. onEnabledChange and onLevelChange report changes by row id. Every word comes through props, English by default.
+- After installing: Map your permissions to sections of groups of rows; each row has an id, a label, an optional hint, whether it is enabled, and optionally the levels it can reach and the current one. onEnabledChange and onLevelChange report changes by row id. Every word comes through props, English by default. Resource groups render as compact rows with wrapping action checkboxes. Optional row.scopes bind independent scope selectors to their owning action. Pass onEnabledBatchChange to enable atomic group selection of visible toggleable permissions; omit it to keep single-action controls. Filtering never mutates the draft. Pass labels.selectVisible for the localized group checkbox name. Use group.accessOnly for a page with a single access action to show one title checkbox without redundant action text. Provide scope.configuration for parameterized scopes; PermissionFilter edits validated condition drafts and keeps role saving in the host form. Never save customFilter as a bare key: bind its native params.filter object.
 
 ## Data display
 
@@ -168,6 +168,17 @@ Markdown rendered as compact prose for descriptions and comments, with mention c
 - Plugin dependencies: none
 - Example: `@nocobase/markdown-view-demo` (`pnpm exec shadcn view @nocobase/markdown-view-demo`)
 - After installing: Pass the Markdown as content. renderCodeBlock draws a fenced block itself, such as a mermaid diagram; mentionIcon picks a mention chip's icon by its kind. remarkCjkAutolink ends a bare URL at CJK text or full-width punctuation; add it after remark-gfm wherever else you render the same Markdown.
+
+### long-text
+
+A long text shown in part, the last line fading out instead of an ellipsis. LongText is for where there is room, such as the description under a page's title or a comment: five lines that unfold in place on a click. LongTextPreview is for a narrow column, such as a record's introduction or address beside its page: three muted lines whose whole text opens in a pop-up, so the column never grows. Neither reacts unless the text overflows.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/long-text`
+- Installs to: `client/components/long-text.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/long-text-demo` (`pnpm exec shadcn view @nocobase/long-text-demo`)
+- After installing: Pass the text as children; a string keeps its line breaks, and rendered content such as MarkdownView works too. LongTextPreview needs a label, the heading of the pop-up that shows the text whole.
 
 ### comment-thread
 
@@ -196,14 +207,15 @@ Files on a record or a message: image thumbnails and file chips with download, t
 
 ### property-fields
 
-The fields of a record's property card: the titled card, label and value rows, a select, chips with creation, a date, a number, a person as a value, and a row of avatars. Use it for the side column of a detail page.
+The fields of a record's property card: the titled card, label and value rows, a select, chips with creation, a date, a number, a line of text, a long text, a link, a person as a value, and a row of avatars. Use it for the side column of a detail page. PropertyCard draws its fields one of two ways: variant form shows every value in its control, and variant inline reads first, each value plain text that a double-click, Enter or F2 edits, shaded under the pointer, with a copy button on hover; a long text opens whole on a click, and a link, which a click opens, is edited from a pencil.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/property-fields`
 - Installs to: `client/components/property-fields.tsx`
 - Plugin dependencies: none
+- Also installs: `@nocobase/long-text`
 - Example: `@nocobase/property-fields-demo` (`pnpm exec shadcn view @nocobase/property-fields-demo`)
-- After installing: Values in, changes out: each field reports a change through onChange. Pass PropertyFieldLabels built from your locale resources for the words the fields show themselves.
+- After installing: Values in, changes out: each field reports a change through onChange. Pass PropertyFieldLabels built from your locale resources for the words the fields show themselves. Set variant='inline' on PropertyCard for the read-first card, and give each field an aria-label, its name while it shows as text.
 
 ### rich-text-editor
 
@@ -215,6 +227,31 @@ A Markdown-in, Markdown-out rich text editor on official Tiptap extensions, with
 - Plugin dependencies: none
 - Example: `@nocobase/rich-text-editor-demo` (`pnpm exec shadcn view @nocobase/rich-text-editor-demo`)
 - After installing: Give value and onChange (Markdown). onMentionSearch answers candidates for @query; mentions are stored as [@Name](mention://<kind>/<id>). onUpload stores a pasted or dropped file and answers its URL. extensions adds to or overrides richTextExtensions(); toolbar takes a render function, and RichTextToolbar, RichTextToolbarButton, RichTextInlineTools and RichTextBlockTools compose your own. Every word comes from labels, English by default.
+
+## Diagrams
+
+### flow-diagram
+
+Read-only React Flow canvas with ELK orthogonal routing for directed graphs, including branches, cycles, parallel edges and self-loops. Use for interactive process views; pass nodes, edges and detail callbacks.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/flow-diagram`
+- Installs to: `client/components/flow-diagram.tsx`, `client/components/flow-layout.ts`, `client/components/flow-diagram-css.d.ts`
+- Plugin dependencies: none
+- Example: `@nocobase/flow-diagram-demo` (`pnpm exec shadcn view @nocobase/flow-diagram-demo`)
+- After installing: Pass nodes and edges with unique ids, an ariaLabel and either a bounded canvas height or autoHeight. Use direction DOWN with autoHeight for detailed page diagrams; height follows the full layout including outer routes and labels. The default node is 232×104 canvas units; set width/height for richer renderNode content. direction is RIGHT or DOWN. nodeDescription and nodeActions add supporting summaries and configuration controls. For bounded canvases, initialMinZoom=0.8 preserves initial readability and showMiniMap provides overview navigation; Fit still shows the whole graph. Translate flowDiagram.overview when using the minimap. onNodeClick/onEdgeClick open your details; onLayoutError reports invalid graph or layout failures. Translate flowDiagram.empty, loading, failed, nodeHelp and edgeHelp; see the components README. Includes React Flow CSS. Uses application primary/card/foreground/border tokens in light and dark themes. Ordinary edges are subdued, solid and labeled directly on the route. Set visited on nodes/edges for actual history and highlighted for the current node or available edges; current nodes have a stronger fill and ring. ELK optimizes port order to reduce crossings. Decorative nodes/edges are not focusable or selectable.
+
+### lifecycle-diagram
+
+Theme-aware, read-only lifecycle diagram using React Flow and ELK. Shows the current state, actual execution history, available transitions and optional end markers, with clickable state/transition details.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/lifecycle-diagram`
+- Installs to: `client/components/lifecycle-diagram.tsx`, `client/components/lifecycle-diagram-model.ts`
+- Plugin dependencies: none
+- Also installs: `@nocobase/flow-diagram`
+- Example: `@nocobase/lifecycle-diagram-demo` (`pnpm exec shadcn view @nocobase/lifecycle-diagram-demo`)
+- After installing: Pass description.description from useLifecycle/createLifecycleHook, currentState from view.record, availableTransitions filtered from view.available, and history from view.history.transitions. History matches the exact transition/source/destination; current state alone never implies a visited path. Pass a translated endLabel for separate decorative markers on explicit final states. Defaults to direction DOWN and autoHeight for vertical page reading. Override direction and autoHeight explicitly for compact canvases. stateActions supplies explicit configuration buttons; nodeDescription displays real policy summaries. Translate ariaLabel, stateLabel and transitionLabel; append a gear to automatic transition labels if needed. Edges are solid with inline labels and subdued neutral strokes; current/visited/available highlights use the application primary theme token. Current nodes have a stronger fill and ring, visited nodes a light fill, with no extra visited label. onStateClick/onTransitionClick open details and never fire transitions. Keep toMermaid for documentation/export.
 
 ## Inbox
 
@@ -303,7 +340,7 @@ One issue, compact: identifier, title, status in its workflow colour, priority, 
 
 ### issue-detail
 
-An issue's page as presentational parts: the two-column frame of cards on the page background, the header and description opening the body card, an add bar under it, the secondary parts (checklist, approvals, sub-issues, dependencies with an issue search, files) as sections sharing one heading pattern and hidden while empty, files dropped or pasted on the body, and the side column over property-fields. Use it for an issue detail page over the hooks of @nocobase/app-plugin-projects/client/issues.
+An issue's page as presentational parts: the two-column frame of cards on the page background, the header and description opening the body card, an add bar under it, the secondary parts (sub-issues, dependencies with an issue search, files) as sections sharing one heading pattern and hidden while empty, files dropped or pasted on the body, and the side column over property-fields. Use it for an issue detail page over the hooks of @nocobase/app-plugin-projects/client/issues.
 
 - Kind: block
 - Install: `yes n | pnpm exec shadcn add @nocobase/issue-detail`

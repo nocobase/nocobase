@@ -222,6 +222,16 @@ await app.container
 
 See the `@nocobase/queue` README for the full contract.
 
+## Keep background work light
+
+Background and maintenance work shares the database and its connection pool with the requests users are waiting on, so it should usually not block them.
+
+- Maintenance usually should not pause the main flow. Prefer work that runs beside it over a step that holds requests or other jobs until it finishes.
+- Time-box long work or do it in batches: process a bounded number of rows per run or per transaction, and continue in the next run, rather than one long transaction or one query over a whole table.
+- When per-item work queries the database, batch it or bound its concurrency, as [server routes](server-routes.md#lists-and-statistics-a-fixed-number-of-queries) describes for lists.
+- When the inputs have not changed, consider caching the result (`cachingToken` from `@nocobase/app-server/caching`) or skipping the run rather than recomputing it.
+- Leave headroom in timeouts and leases. While a worker is alive, give it enough time to finish, for example by renewing its lease; a missed heartbeat is usually a more reliable sign that a machine is gone than a tight timeout, which can declare a slow but healthy worker dead and run its work twice.
+
 ## Verify
 
 - The service resolves from the token and behaves correctly in isolation.
@@ -234,7 +244,7 @@ See the `@nocobase/queue` README for the full contract.
 
 ### Application code configuration
 
-Each file under `server/config/` defines one section with `defineAppConfig` from `@nocobase/app-server/config`. `server/config/index.ts` imports those sections and exports `defaultAppConfigs({ auth })`. The client uses the same helpers from `@nocobase/app-client`, in their function form only.
+Each file under `server/config/` defines one section with `defineAppConfig` from `@nocobase/app-server/config`. `server/config/index.ts` imports those sections and exports `defaultAppConfigs({ auth })`. The client uses the same helpers from `@nocobase/app-client`, in their function form only. Providers and routes read this typed configuration rather than `process.env`.
 
 On the server, `defineAppConfig((runtime) => options)` declares defaults alone. The object form adds rules:
 
@@ -282,8 +292,10 @@ Application templates configure `logging.loggers.request.file.name: request`, so
 
 Use `loggingToken` from `@nocobase/app-server/logging` and `logging.getLogger(source)` for application and plugin diagnostics. Sources without a file override share `storage/logs/app.<UTC-date>.<part>.log` containing JSON Lines. `getLogger()` uses source `system`; omit `default`. Only `logging.loggers.<source>.file.name` routes a source into a separate file, without duplicating it into app. Configure `logging.file.enabled`, `name`, `retentionDays`, `maxFileSizeMB`, and `maxTotalSizeMB` independently from `logging.console.enabled` and `logging.console.pretty`. Total retention covers all files in the directory. Both development and production capture structured files; pretty only formats the terminal. Omit legacy top-level `pretty`, `default`, and `maxSizeMB` in new configuration. Host capture policy overrides App and source enablement, output and level settings. Source file overrides accept only `name` and `enabled`; they cannot change the directory or retention budget; outside that boundary explicit custom transports own their destinations.
 
-Application composition roots call `createAppFromRuntime(runtime)` to transfer resolved configuration, paths, mode and Host logging policy and bind `runtime.app`. Preserve this when upgrading templates: Host supplies App, deployment, and runtime identities and capture policy through that boundary. Hosted runtime logs belong to the App volume, never the expanded release directory.
+Application composition roots call `createAppFromRuntime(runtime)` to transfer resolved configuration, paths, mode, `NODE_ENV` and Host logging policy and bind `runtime.app`. Preserve this when upgrading templates: Host supplies App, deployment, and runtime identities and capture policy through that boundary. Hosted runtime logs belong to the App volume, never the expanded release directory.
 
 `runtime.paths`, the configuration loader’s `context.paths`, and `app.paths` share the resolved `AppPaths` object. It exposes directory fields and `root()`, `server()`, `database()`, `client()`, `config()`, and `storage()` methods. Input `AppPathOptions` is normalized after application path policies run. Standalone declarations provide `deploymentRootDir` relative to the code root; configuration and default storage live in that deployment root, while code resources stay under `rootDir`. Server and CLI use the same declaration.
 
 Standalone environment loading reads packaged code-root `.env` defaults, then deployment-root `.env` and `.env.local`, then the process environment and explicit overrides. Packaged defaults remain effective when deployment files are absent. Embedded scopes only use their explicitly supplied environment.
+
+Server providers use `app.nodeEnv` for environment checks. `createAppFromRuntime()` copies it from `runtime.env.NODE_ENV`, so an embedded application's behavior does not depend on the hosting process's `process.env.NODE_ENV`. A manually composed `Application` can supply its own `nodeEnv` option; an omitted value remains undefined rather than inheriting the host environment.

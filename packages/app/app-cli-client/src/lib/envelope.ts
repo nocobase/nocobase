@@ -10,12 +10,32 @@ import {
   type CommandSuggestion,
 } from '@nocobase/cli-envelope';
 import { EXIT_CODES, type ExitCode } from '@nocobase/agent-protocol';
-import { ZodError } from 'zod';
+import { z, ZodError } from 'zod';
 
 import { UsageError } from './command.ts';
 import { AppApiError } from './http.ts';
 
 export type Envelope = CommandJson;
+
+// Applications can supply their next steps in the API error's existing metadata extension.
+const apiSuggestions = z.object({
+  suggestions: z.array(
+    z.object({
+      message: z.string().min(1),
+      run: z
+        .object({ command: z.string().min(1), args: z.array(z.string()) })
+        .optional(),
+    }),
+  ),
+});
+
+/** Validated next steps supplied by the application; absent or malformed metadata keeps the built-in hints. */
+export function apiSuggestionsOf(
+  metadata: unknown,
+): CommandSuggestion[] | undefined {
+  const supplied = apiSuggestions.safeParse(metadata);
+  return supplied.success ? supplied.data.suggestions : undefined;
+}
 
 /** A failure the CLI raises itself, with what the envelope says of it. */
 export class CliCommandError extends Error {
@@ -88,7 +108,8 @@ export function errorJsonOf(
       code: error.reason,
       message: error.message,
       suggestions: [
-        ...suggestionsFor(error.reason, bin),
+        ...(apiSuggestionsOf(error.metadata) ??
+          suggestionsFor(error.reason, bin)),
         ...(error.fieldViolations ?? []).map(({ field, description }) => ({
           message: `${field}: ${description}`,
         })),

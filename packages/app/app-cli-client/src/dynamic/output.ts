@@ -13,7 +13,7 @@ import {
 import type { CliCommand, CliManifest } from './manifest.ts';
 import type { ApiAnswer } from './rest.ts';
 
-function cell(value: unknown): string {
+function cell(value: unknown, truncated?: () => void): string {
   if (value === null || value === undefined) return '';
   const text =
     typeof value === 'string'
@@ -22,7 +22,12 @@ function cell(value: unknown): string {
         ? String(value)
         : JSON.stringify(value);
   const line = text.replace(/\s+/gu, ' ').trim();
-  return line.length > 80 ? `${line.slice(0, 79)}…` : line;
+  // URLs must remain usable when copied, including invitation tokens and query strings.
+  if (typeof value === 'string' && /^https?:\/\/\S+$/u.test(value))
+    return value;
+  if (line.length <= 80) return line;
+  truncated?.();
+  return `${line.slice(0, 79)}…`;
 }
 
 /** The value at a dotted path (`owner.name`, `replies.length`). */
@@ -41,10 +46,11 @@ const isScalar = (value: unknown): boolean =>
 export function renderTable(
   rows: readonly unknown[],
   columns: readonly string[],
+  truncated?: () => void,
 ): string {
   if (rows.length === 0) return '(none)';
   const cells = rows.map((row) =>
-    columns.map((column) => cell(valueAt(row, column))),
+    columns.map((column) => cell(valueAt(row, column), truncated)),
   );
   const widths = columns.map((column, index) =>
     Math.max(column.length, ...cells.map((row) => row[index].length)),
@@ -61,14 +67,17 @@ export function renderTable(
 }
 
 /** An object's fields, one per line: scalars as they are, anything else on one line. */
-export function renderFields(data: Readonly<Record<string, unknown>>): string {
+export function renderFields(
+  data: Readonly<Record<string, unknown>>,
+  truncated?: () => void,
+): string {
   const entries = Object.entries(data).filter(
     ([, value]) => value !== undefined,
   );
   if (entries.length === 0) return '(empty)';
   const width = Math.max(...entries.map(([key]) => key.length));
   return entries
-    .map(([key, value]) => `${key.padEnd(width)}  ${cell(value)}`)
+    .map(([key, value]) => `${key.padEnd(width)}  ${cell(value, truncated)}`)
     .join('\n');
 }
 
@@ -87,6 +96,20 @@ function columnsOf(
 
 /** What a person reads of an answer. */
 export function renderAnswer(command: CliCommand, answer: ApiAnswer): string {
+  let truncated = false;
+  const text = renderAnswerContent(command, answer, () => {
+    truncated = true;
+  });
+  return truncated
+    ? `${text}\n(Some fields were truncated. Use --json for the complete output.)`
+    : text;
+}
+
+function renderAnswerContent(
+  command: CliCommand,
+  answer: ApiAnswer,
+  truncated: () => void,
+): string {
   const message =
     typeof answer.meta?.message === 'string' ? answer.meta.message : undefined;
   const { data } = answer;
@@ -96,6 +119,7 @@ export function renderAnswer(command: CliCommand, answer: ApiAnswer): string {
       columnsOf(command, data).length > 0
         ? columnsOf(command, data)
         : ['value'],
+      truncated,
     );
     const more =
       typeof answer.meta?.nextPageToken === 'string'
@@ -106,7 +130,7 @@ export function renderAnswer(command: CliCommand, answer: ApiAnswer): string {
   if (message) return message;
   if (data === null || data === undefined) return 'Done.';
   if (typeof data === 'object')
-    return renderFields(data as Record<string, unknown>);
+    return renderFields(data as Record<string, unknown>, truncated);
   return typeof data === 'string' ? data : JSON.stringify(data);
 }
 

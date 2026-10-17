@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/drive",
-  "version": "0.1.0-beta.4",
+  "version": "0.1.0-beta.5",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -41,10 +41,13 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.577.0",
     "@aws-sdk/s3-request-presigner": "^3.577.0",
+    "@poppinss/utils": "^7.0.1",
+    "ali-oss": "^6.23.0",
     "flydrive": "^2.1.0"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",
+    "@types/ali-oss": "^6.23.3",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",

@@ -98,17 +98,17 @@ async function syncApp(appRoot: string, plugin?: string): Promise<void> {
 
 describe('pluginSkillPrefix', () => {
   it('drops the scope and keeps the package name', () => {
-    expect(pluginSkillPrefix('@nocobase/app-plugin-workflow')).toBe(
-      'nocobase-app-plugin-workflow',
+    expect(pluginSkillPrefix('@nocobase/app-plugin-scheduler')).toBe(
+      'nocobase-app-plugin-scheduler',
     );
   });
 
   it('rejects a package outside the scope', () => {
-    expect(() => pluginSkillPrefix('workflow')).toThrow('must start with');
+    expect(() => pluginSkillPrefix('scheduler')).toThrow('must start with');
   });
 
   it('claims its own name and its suffixed names only', () => {
-    const prefix = 'nocobase-app-plugin-workflow';
+    const prefix = 'nocobase-app-plugin-scheduler';
     expect(isOwnedSkillName(prefix, prefix)).toBe(true);
     expect(isOwnedSkillName(prefix, `${prefix}-trigger`)).toBe(true);
     expect(isOwnedSkillName(prefix, 'nocobase-app-plugin-other')).toBe(false);
@@ -454,6 +454,29 @@ describe('NocoBase dependency skills', () => {
       'nocobase-app-development': '@nocobase/app-skills',
       'nocobase-app-upgrade': '@nocobase/app-skills',
     });
+  });
+
+  it('leaves the Skill a packaged CLI ships for its own users alone', async () => {
+    const appRoot = await createApp();
+    await declareDependencies(appRoot, {
+      devDependencies: { '@nocobase/studio-cli': '1' },
+    });
+    await installPlugin(appRoot, '@nocobase/studio-cli', {
+      'nb-studio-cli': '# use nb-studio',
+    });
+    const pluginRoot = path.join(appRoot, 'node_modules/@nocobase/studio-cli');
+    await writeFile(
+      path.join(pluginRoot, 'package.json'),
+      JSON.stringify({
+        name: '@nocobase/studio-cli',
+        version: '1.0.0',
+        nocobase: { cli: { bin: 'nb-studio' } },
+      }),
+    );
+    await syncApp(appRoot);
+    await expect(
+      readFile(path.join(appRoot, '.agents/skills/nb-studio-cli/SKILL.md')),
+    ).rejects.toThrow();
   });
 
   it('removes tracked skills dropped upstream, without guessing ownership of local names', async () => {

@@ -1,5 +1,6 @@
 import type { ApiClient } from '@nocobase/app-client';
 
+import type { DurableFlow } from '../../shared/flows.js';
 import { LIFECYCLE_ROUTES } from '../../shared/routes.js';
 import {
   LifecycleRequestError,
@@ -13,11 +14,13 @@ export type {
   AvailableTransition as Available,
   Blocker,
   EffectRun,
+  RecordView,
   TransitionEntry,
 } from '@nocobase/lifecycle/react';
 
 export type Plain = Record<string, unknown>;
-export type LifecycleName = 'tickets' | 'expenses';
+export type LifecycleName =
+  'tickets' | 'expenses' | 'reviewerDemo' | 'reviewerLiveDemo' | DurableFlow;
 
 /** The transition name of the log entry that records a creation. */
 export const CREATE_TRANSITION = '$create';

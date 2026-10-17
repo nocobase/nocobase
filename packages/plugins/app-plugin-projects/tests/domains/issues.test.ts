@@ -14,7 +14,35 @@ const alice = () => h.viewer('alice');
 const admin = () => h.viewer('admin', 'admin');
 
 describe('creating issues', () => {
-  it('starts in todo, owned by the creator', async () => {
+  it('rejects an explicit start in backlog before saving or allocating a number', async () => {
+    for (const status of [{}, { statusKey: 'backlog' }])
+      await expect(
+        h.services.issues.create(alice(), {
+          title: 'Rejected',
+          start: true,
+          ...status,
+        }),
+      ).rejects.toMatchObject({
+        code: 'ISSUE_START_REQUIRES_IN_PROGRESS',
+      });
+    const issue = await h.services.issues.create(alice(), {
+      title: 'Started',
+      statusKey: 'in_progress',
+      start: true,
+    });
+    expect(issue).toMatchObject({
+      identifier: 'PM-1',
+      statusKey: 'in_progress',
+    });
+    expect((await h.services.issueQueries.page(alice(), {})).data).toHaveLength(
+      1,
+    );
+    await expect(
+      h.services.issues.create(alice(), { title: 'Deferred', start: false }),
+    ).resolves.toMatchObject({ statusKey: 'backlog' });
+  });
+
+  it('starts in backlog, owned by the creator', async () => {
     const issue = await h.services.issues.create(alice(), {
       title: '  Fix login  ',
     });
@@ -22,7 +50,7 @@ describe('creating issues', () => {
       identifier: 'PM-1',
       title: 'Fix login',
       description: '',
-      statusKey: 'todo',
+      statusKey: 'backlog',
       priority: 'none',
       ownerUserId: 'alice',
       executor: null,
@@ -40,14 +68,26 @@ describe('creating issues', () => {
     ).rejects.toMatchObject({ code: 'INVALID_OWNER' });
   });
 
-  it('cannot be created done or closed', async () => {
-    for (const statusKey of ['done', 'cancelled'])
+  it('starts only in progress or in backlog', async () => {
+    for (const statusKey of [
+      'done',
+      'cancelled',
+      'blocked',
+      'in_review',
+      'todo',
+    ])
       await expect(
         h.services.issues.create(alice(), { title: 'X', statusKey }),
       ).rejects.toMatchObject({ code: 'INVALID_STATUS' });
     await expect(
       h.services.issues.create(alice(), { title: 'X', statusKey: 'backlog' }),
     ).resolves.toMatchObject({ statusKey: 'backlog' });
+    await expect(
+      h.services.issues.create(alice(), {
+        title: 'X',
+        statusKey: 'in_progress',
+      }),
+    ).resolves.toMatchObject({ statusKey: 'in_progress' });
   });
 
   it('inherits the parent project and records the sub-issue on the parent', async () => {
@@ -377,7 +417,7 @@ describe('lists and the board', () => {
     expect(found.data.map((issue) => issue.identifier)).toEqual(['PM-3']);
   });
 
-  it('puts every status of the workflow in a column', async () => {
+  it('puts every fixed status in a column', async () => {
     const issue = await h.services.issues.create(alice(), { title: 'A' });
     await h.services.issues.create(alice(), {
       title: 'B',
@@ -390,12 +430,9 @@ describe('lists and the board', () => {
     const board = await h.services.issueQueries.board(alice(), {});
     expect(board.columns.map((column) => column.status.key)).toEqual([
       'backlog',
-      'todo',
-      'analysis',
-      'proposal_review',
       'in_progress',
-      'in_review',
       'blocked',
+      'in_review',
       'done',
       'cancelled',
     ]);
@@ -407,7 +444,7 @@ describe('lists and the board', () => {
     );
     expect(titles).toMatchObject({
       backlog: ['B'],
-      todo: [],
+      blocked: [],
       in_progress: ['A'],
     });
   });
@@ -438,65 +475,18 @@ describe('lists and the board', () => {
   });
 });
 
-describe('moving between projects', () => {
-  it('needs a status the new project has', async () => {
-    const admin = h.viewer('admin', 'admin');
-    // No workflow is the default: the plain project has the built-in statuses.
-    const qa = await h.services.workflows.create(admin, {
-      name: 'With QA',
-      copyFrom: null,
-    });
-    await h.services.workflows.update(admin, qa.id, {
-      revision: qa.revision,
-      definition: {
-        ...qa.definition,
-        states: [
-          ...qa.definition.states,
-          { key: 'qa', name: 'QA', category: 'started', color: 'blue' },
-        ],
-      },
-    });
-    const withQa = await h.services.projects.create(alice(), { name: 'QA' });
-    await h.services.projects.update(admin, withQa.id, { workflowId: qa.id });
-    const plain = await h.services.projects.create(alice(), { name: 'P' });
-    const issue = await h.services.issues.create(alice(), {
-      title: 'A',
-      projectId: withQa.id,
-    });
-    await h.services.issues.update(alice(), issue.id, {
-      revision: 1,
-      statusKey: 'qa',
-    });
-    await expect(
-      h.services.issues.update(alice(), issue.id, {
-        revision: 2,
-        projectId: plain.id,
-      }),
-    ).rejects.toMatchObject({ code: 'STATUS_REQUIRED' });
-    await expect(
-      h.services.issues.update(alice(), issue.id, {
-        revision: 2,
-        projectId: plain.id,
-        statusKey: 'todo',
-      }),
-    ).resolves.toMatchObject({ projectId: plain.id, statusKey: 'todo' });
-  });
-});
-
 describe('statuses', () => {
-  it('lists the workflow of a visible project, and hides a private one', async () => {
-    const statuses = await h.services.issueQueries.statuses(
-      h.viewer('alice'),
-      null,
-    );
-    expect(statuses.map((status) => status.key)).toContain('todo');
-    const secret = await h.services.projects.create(h.viewer('bob'), {
-      name: 'Secret',
-      visibility: 'members',
-    });
-    await expect(
-      h.services.issueQueries.statuses(h.viewer('alice'), secret.id),
-    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  it('lists the six fixed statuses', () => {
+    expect(
+      h.services.issueQueries.statuses().map((status) => status.key),
+    ).toEqual([
+      'backlog',
+      'in_progress',
+      'blocked',
+      'in_review',
+      'done',
+      'cancelled',
+    ]);
   });
 });
 

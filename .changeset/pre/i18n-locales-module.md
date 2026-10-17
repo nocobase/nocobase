@@ -12,7 +12,6 @@
 '@nocobase/app-plugin-notification-providers': patch
 '@nocobase/app-plugin-scheduler': patch
 '@nocobase/app-plugin-users': patch
-'@nocobase/app-plugin-workflow': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
 ---

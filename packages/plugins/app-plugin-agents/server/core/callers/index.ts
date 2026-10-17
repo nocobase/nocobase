@@ -4,7 +4,7 @@
  * sets the gate (`CallerGate.set`); the command manifest offers a caller only the commands whose action it holds, and
  * the application bounds a run's requests by the same answer.
  *
- * A run holds the actions of the person who woke the agent that the agent is configured with; a person holds their
+ * A run's effective actions come from the host gate and its running identity's permissions; a person holds their
  * own, kept to the scope of the API key they call with. Without a gate, a caller holds only the plugin's own
  * universal actions: `AGENTS_VIEW_ACTION`, and `RUN_SELF_ACTION` for a run.
  *
@@ -42,6 +42,8 @@ export interface CallerIdentity {
 }
 
 export interface ActionGate {
+  /** Optional manifest-only display snapshot, reusing the permission read for actions. */
+  manifestPermissions?(identity: CallerIdentity): Promise<ManifestPermissions>;
   /** The business actions `identity` may perform now. */
   allowed(identity: CallerIdentity): Promise<ReadonlySet<string>>;
   /**
@@ -63,6 +65,8 @@ export function isConsultation(identity: CallerIdentity): boolean {
 }
 
 export interface CallerGate {
+  /** The manifest's actions and optional settings display, without another permission read. */
+  manifestPermissions?(identity: CallerIdentity): Promise<ManifestPermissions>;
   /** Sets who may do what; returns what removes it. */
   set(gate: ActionGate): () => void;
   /** The business actions `identity` holds now: the gate's, and the plugin's universal ones. */
@@ -81,7 +85,35 @@ export function createCallerGate(): CallerGate {
     if (identity.kind === 'run') held.add(RUN_SELF_ACTION);
     return held;
   };
+  const allowedOf = (
+    identity: CallerIdentity,
+    actions: ReadonlySet<string>,
+    gate: ActionGate | undefined,
+  ) =>
+    universal(
+      identity,
+      new Set(
+        [...actions].filter(
+          (action) =>
+            !isConsultation(identity) ||
+            isReadingAction(action) ||
+            gate?.consultable?.(action) === true,
+        ),
+      ),
+    );
   return {
+    async manifestPermissions(identity) {
+      const gate = current;
+      const snapshot = gate?.manifestPermissions
+        ? await gate.manifestPermissions(identity)
+        : { actions: gate ? await gate.allowed(identity) : new Set<string>() };
+      return {
+        actions: allowedOf(identity, snapshot.actions, gate),
+        ...(snapshot.settings === undefined
+          ? {}
+          : { settings: identity.kind === 'run' ? [] : snapshot.settings }),
+      };
+    },
     set(gate) {
       current = gate;
       return () => {
@@ -107,4 +139,10 @@ export function createCallerGate(): CallerGate {
       );
     },
   };
+}
+
+/** Settings are display metadata and never participate in the action gate. */
+export interface ManifestPermissions {
+  readonly actions: ReadonlySet<string>;
+  readonly settings?: readonly string[];
 }

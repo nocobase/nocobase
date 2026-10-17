@@ -17,7 +17,6 @@
 '@nocobase/app-plugin-service-provider-example': patch
 '@nocobase/app-plugin-skills-example': patch
 '@nocobase/app-plugin-users': patch
-'@nocobase/app-plugin-workflow': patch
 '@nocobase/app-server': major
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch

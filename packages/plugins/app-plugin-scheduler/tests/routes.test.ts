@@ -72,7 +72,10 @@ describe('@nocobase/app-plugin-scheduler', () => {
     expect(occurrences.status).toBe(200);
     expect(await list.json()).toEqual({
       data: [
-        expect.objectContaining({ id: 'schedule-1', targetType: 'workflow' }),
+        expect.objectContaining({
+          id: 'schedule-1',
+          targetType: 'app.customer-sync',
+        }),
       ],
       meta: { page: 1, pageSize: 20, total: 1 },
     });
@@ -276,12 +279,12 @@ async function createRouter(options: {
     cron: '* * * * *',
     timezone: 'UTC',
     enabled: true,
-    targetType: 'workflow',
+    targetType: 'app.customer-sync',
     lifecycleState: 'active',
     definitionHash: 'hash',
     runCount: 1,
     scheduleStatus: 'active',
-    targetSummary: { targetLabel: 'Workflow', state: 'ready' },
+    targetSummary: { targetLabel: 'Customer sync', state: 'ready' },
   };
   const history = Array.from(
     { length: options.occurrences ?? 1 },

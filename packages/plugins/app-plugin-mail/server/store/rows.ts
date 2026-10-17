@@ -170,6 +170,27 @@ export interface MessageRow extends Row {
   draftConflict?: MailDraftConflict | string | null;
   draftSource?: string | null;
   remoteDraftFingerprint?: string | null;
+  /** IMAP only: which value backs providerMessageId. */
+  imapIdSource?: string | null;
+  providerDraftMessageIdSource?: string | null;
+  /** IMAP only: sync run that found no verified copy of this message. */
+  imapOrphanRunId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ImapLocationRow extends Row {
+  id: string;
+  accountId: string;
+  messageId: string;
+  providerFolderId: string;
+  uidValidity: string;
+  uid: number | string;
+  status: 'valid' | 'pending' | 'invalid';
+  invalidationReason?: string | null;
+  read: boolean | number;
+  starred: boolean | number;
+  receivedAt?: string | Date | null;
   createdAt: string;
   updatedAt: string;
 }

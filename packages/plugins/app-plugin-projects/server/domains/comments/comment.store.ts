@@ -105,10 +105,17 @@ export async function rootsPage(
   issueId: string,
   limit: number,
   cursor?: { readonly createdAt: string; readonly id: string },
+  /** Only these roots. */
+  rootIds?: readonly string[],
 ): Promise<CommentRecord[]> {
+  if (rootIds?.length === 0) return [];
   return comments(conn).findMany({
     filter: (f) =>
-      f.and([f.string('issueId').eq(issueId), f.string('parentId').eq(null)]),
+      f.and([
+        f.string('issueId').eq(issueId),
+        f.string('parentId').eq(null),
+        ...(rootIds ? [oneOf(f, 'id', rootIds)] : []),
+      ]),
     ...(cursor ? { cursor } : {}),
     sort: (sort) => [sort.field('createdAt').desc(), sort.field('id').desc()],
     limit: limit + 1,
@@ -150,6 +157,86 @@ export async function commentsOf(
     sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],
     ...(options.limit ? { limit: options.limit } : {}),
   });
+}
+
+/** One author's newest comments on an issue, newest first: live ones only with `live`, and none after `until`. */
+export async function newestCommentsBy(
+  conn: DatabaseConnection,
+  issueId: string,
+  author: { readonly type: string; readonly id: string },
+  options: {
+    readonly live?: boolean;
+    readonly until?: string;
+    readonly limit: number;
+  },
+): Promise<CommentRecord[]> {
+  return comments(conn).findMany({
+    filter: (f) =>
+      f.and([
+        f.string('issueId').eq(issueId),
+        f.string('authorType').eq(author.type),
+        f.string('authorId').eq(author.id),
+        ...(options.live ? [f.date('deletedAt').empty()] : []),
+        ...(options.until ? [f.date('createdAt').notAfter(options.until)] : []),
+      ]),
+    sort: (sort) => [sort.field('createdAt').desc(), sort.field('id').desc()],
+    limit: options.limit,
+  });
+}
+
+/**
+ * One author's newest comment on each of `issueIds` (only live ones with `live`), in one query: a comment no later one
+ * by the author follows, the same order `newestCommentsBy` reads. Issues without one are left out.
+ */
+export async function newestCommentEachBy(
+  conn: DatabaseConnection,
+  issueIds: readonly string[],
+  author: { readonly type: string; readonly id: string },
+  options: { readonly live?: boolean } = {},
+): Promise<
+  Pick<
+    CommentRecord,
+    'id' | 'issueId' | 'content' | 'createdAt' | 'deletedAt'
+  >[]
+> {
+  if (issueIds.length === 0) return [];
+  let query = conn.query
+    .selectFrom(`${COMMENTS} as comment`)
+    .select([
+      'comment.id as id',
+      'comment.issueId as issueId',
+      'comment.content as content',
+      'comment.createdAt as createdAt',
+      'comment.deletedAt as deletedAt',
+    ])
+    .where('comment.issueId', 'in', [...new Set(issueIds)])
+    .where('comment.authorType', '=', author.type)
+    .where('comment.authorId', '=', author.id);
+  if (options.live) query = query.where('comment.deletedAt', 'is', null);
+  return query
+    .where((outer) => {
+      let newer = outer
+        .selectFrom(`${COMMENTS} as newer`)
+        .select('newer.id')
+        .whereRef('newer.issueId', '=', 'comment.issueId')
+        .where('newer.authorType', '=', author.type)
+        .where('newer.authorId', '=', author.id);
+      if (options.live) newer = newer.where('newer.deletedAt', 'is', null);
+      return outer.not(
+        outer.exists(
+          newer.where((eb) =>
+            eb.or([
+              eb('newer.createdAt', '>', eb.ref('comment.createdAt')),
+              eb.and([
+                eb('newer.createdAt', '=', eb.ref('comment.createdAt')),
+                eb('newer.id', '>', eb.ref('comment.id')),
+              ]),
+            ]),
+          ),
+        ),
+      );
+    })
+    .execute();
 }
 
 export async function reactionsFor(

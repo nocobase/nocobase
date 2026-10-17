@@ -1,5 +1,11 @@
 # Runners
 
+## Ended workspace diagnostics
+
+For application-owned task cleanup, keep `SubjectWorkspaces.settled` conservative and optionally register `resolveKeys` for legacy directory keys and `commits` for trusted merged PR heads by repository URL. The plugin checks current or historical runner ownership and excludes nonterminal runs; directory keys alone never authorize lookup or cleanup. Use the head at merge time, not a squash merge commit. See `packages/plugins/app-plugin-agents/docs/workspace-cleanup.md` in the source repository for protocol and integration details.
+
+Runtime pages distinguish application settlement from the runner's local cleanup check. An allowed check is not a deletion receipt. Directory diagnostics require explicit `canSeeMachine: true`; disk warnings use the report's measurement time and show expired or offline readings as prior reports. An ended workspace still stays when tracked changes, unpushed submodule commits, missing local objects or insufficient evidence prevent verification. Upgrade and serve both plugin and runner before expecting new diagnostics.
+
 A runner (shown as a runtime) is `nocobase-runner` from `@nocobase/agent-runner`, running on a server, a VM or someone's own device. It registers with one or more Apps, long-polls them for work and drives a coding tool for runner agents' runs. The wire protocol is `@nocobase/agent-protocol`. The README's "What it does" section (Runners, The claim, Runs, The sweep) and `@nocobase/agent-runner`'s README are the reference.
 
 ## Registering a runner
@@ -11,6 +17,12 @@ A runner registers once per App with a one-time registration token (10 minutes):
 - From the App's checkout or deployment: `pnpm nocobase agents runner-token --trust team` or `--trust ownerOnly --owner <user id>`, optionally `--tools claude,codex`. It prints the token (`--json` for the envelope).
 
 Then on the runner's machine: `nocobase-runner register --server <App URL> --token <token>`, and `nocobase-runner start` or `nocobase-runner service install` (launchd on macOS, a systemd user unit on Linux). The install script does all of this in one line; see [Distribution](distribution.md).
+
+Registering again with the same owner, name and hostname revokes previous registrations and their keys atomically. Old runtimes take no more work, and the sweeper requeues what they held; historical records retain their ids. Hostnames are self-reported, so another owner's matching runtime is preserved. Agent configurations limited to a previous runtime id need to select the new runtime.
+
+`runtime token list` (`GET /api/agents/runners/registrationTokens`, paged with `page` and `pageSize`) lists unused, unexpired token metadata. Signed-in callers see their own tokens; managers of runners see all. Tokens and hashes are never returned: create a fresh token if the original secret is lost. To delete a runtime, run `runtime revoke <runtime>` and then `runtime delete <runtime>`; deleting a live runtime returns `RUNNER_NOT_REVOKED` with those steps.
+
+The install script requires an explicit `--server <App URL>` with `--runner` and rejects a missing or empty value before downloading or installing anything. CLI-only installation still defaults to the application that served the script.
 
 A runner authenticates afterwards with its own key. Personal runners (`ownerOnly`) run only work their owner started, and receive its variables like any runner, except those marked "Team runtimes only" (`teamRunnersOnly`): a run that gets one goes to a team runner. Their owner may share them with the team. `nocobase-runner unregister --server <url>` or "Revoke" on the Runtimes page ends a registration.
 

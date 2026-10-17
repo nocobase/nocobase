@@ -1,6 +1,7 @@
 import { createApp } from '../../server/app.js';
 import authConfig from '../../server/config/auth.js';
 // @vitest-environment node
+import { workflowRoutes } from '../../server/routes/workflows.js';
 import { articlesRoutes } from '../../server/routes/articles.ts';
 import { analyticsRoutes } from '../../server/routes/analytics.ts';
 import { externalCrmRoutes } from '../../server/routes/external-crm.ts';
@@ -275,14 +276,6 @@ describe('app server', () => {
     }
   });
 
-  it('starts without optional plugins or workflow routes', async () => {
-    const app = createTestApp();
-
-    expect(
-      app.router.routes.some((route) => route.path.includes('/workflows')),
-    ).toBe(false);
-  });
-
   it('creates embedded apps from a scope', async () => {
     const app = await createEmbeddedServer(
       await createEmbeddedTestScope({
@@ -345,6 +338,7 @@ describe('app server', () => {
         // This composition fixture deliberately omits authentication/authorization plugins.
         routes: appRuntime.routes.filter(
           (route) =>
+            route !== workflowRoutes &&
             route !== articlesRoutes &&
             route !== analyticsRoutes &&
             route !== externalCrmRoutes &&
@@ -1513,12 +1507,6 @@ function createTestApp(options: CreateTestAppOptions = {}): TestApp {
     logging: createSilentLoggingConfig(),
     queue: options.queue ?? createTestQueueConfig(),
     session: createNullSessionConfig(),
-    workflow: {
-      sourceRoot: path.resolve(process.cwd(), 'workflows'),
-      distRoot: path.resolve(process.cwd(), 'dist/workflows'),
-      artifactDisk: 'local',
-      production: false,
-    },
     snowflake: {
       workerId: 0,
     },

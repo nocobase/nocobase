@@ -10,20 +10,22 @@ import type {
 const nonEmpty = z.string().trim().min(1);
 
 export const UserParams: z.ZodObject<{ userId: z.ZodString }, z.core.$strip> =
-  z.object({ userId: z.string().min(1) });
+  z.object({ userId: z.string().min(1).describe('The user identifier.') });
 
 export const UserRoleScopeParams: z.ZodObject<
   { userId: z.ZodString; scope: z.ZodString },
   z.core.$strip
 > = z.object({
-  userId: z.string().min(1),
-  scope: z.string().min(1),
+  userId: z.string().min(1).describe('The user identifier.'),
+  scope: z.string().min(1).describe('The role scope identifier.'),
 });
 
 export const ListUsersQuery: z.ZodObject<
   {
     page: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
     pageSize: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
+    sort: z.ZodOptional<z.ZodEnum<{ name: 'name' }>>;
+    order: z.ZodOptional<z.ZodEnum<{ asc: 'asc'; desc: 'desc' }>>;
     q: z.ZodOptional<z.ZodString>;
     status: z.ZodOptional<
       z.ZodEnum<{ enabled: 'enabled'; disabled: 'disabled' }>
@@ -33,12 +35,27 @@ export const ListUsersQuery: z.ZodObject<
   },
   z.core.$strip
 > = z.object({
-  page: z.coerce.number().int().positive().optional(),
-  pageSize: z.coerce.number().int().positive().optional(),
-  q: z.string().optional(),
-  status: z.enum(['enabled', 'disabled']).optional(),
-  roleScope: z.string().min(1).optional(),
-  role: z.string().min(1).optional(),
+  page: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe('The page number, starting at 1.'),
+  pageSize: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe('The maximum number of records to return.'),
+  sort: z.enum(['name']).optional().describe('The field to sort by.'),
+  order: z.enum(['asc', 'desc']).optional().describe('The sort direction.'),
+  q: z.string().optional().describe('Text to search for.'),
+  status: z
+    .enum(['enabled', 'disabled'])
+    .optional()
+    .describe('The status to set or filter by.'),
+  roleScope: z.string().min(1).optional().describe('Filter by role scope.'),
+  role: z.string().min(1).optional().describe('Filter by role key.'),
 });
 
 /** One scope's roles: a single role, or a list that may be empty to clear an optional multi-role scope. */
@@ -61,11 +78,14 @@ export const CreateUserInput: z.ZodObject<
   },
   z.core.$strict
 > = z.strictObject({
-  name: nonEmpty,
-  username: nonEmpty.optional(),
-  email: nonEmpty,
-  password: nonEmpty,
-  roleScopes: z.record(z.string().min(1), UserRoleValueInput).optional(),
+  name: nonEmpty.describe('The name to display.'),
+  username: nonEmpty.optional().describe('The username used to sign in.'),
+  email: nonEmpty.describe('The user’s email address.'),
+  password: nonEmpty.describe('The password to set.'),
+  roleScopes: z
+    .record(z.string().min(1), UserRoleValueInput)
+    .optional()
+    .describe('Role assignments grouped by scope.'),
 });
 
 export const UpdateUserInput: z.ZodObject<
@@ -76,9 +96,12 @@ export const UpdateUserInput: z.ZodObject<
   },
   z.core.$strict
 > = z.strictObject({
-  name: nonEmpty.optional(),
-  username: nonEmpty.nullable().optional(),
-  email: nonEmpty.optional(),
+  name: nonEmpty.optional().describe('The name to display.'),
+  username: nonEmpty
+    .nullable()
+    .optional()
+    .describe('The username used to sign in.'),
+  email: nonEmpty.optional().describe('The user’s email address.'),
 });
 
 export const DeleteUserQuery: z.ZodObject<
@@ -94,14 +117,14 @@ export const ReplaceUserRoleScopeInput: z.ZodObject<
   { value: z.ZodUnion<readonly [z.ZodString, z.ZodArray<z.ZodString>]> },
   z.core.$strict
 > = z.strictObject({
-  value: UserRoleValueInput,
+  value: UserRoleValueInput.describe('The value to store.'),
 });
 
 export const ResetUserPasswordInput: z.ZodObject<
   { password: z.ZodString },
   z.core.$strict
 > = z.strictObject({
-  password: nonEmpty,
+  password: nonEmpty.describe('The password to set.'),
 });
 
 export type CreateUserInput = z.infer<typeof CreateUserInput>;
@@ -110,7 +133,9 @@ export type UpdateUserInput = z.infer<typeof UpdateUserInput>;
 export const InvitationParams: z.ZodObject<
   { invitationId: z.ZodString },
   z.core.$strip
-> = z.object({ invitationId: z.string().min(1) });
+> = z.object({
+  invitationId: z.string().min(1).describe('The invitation identifier.'),
+});
 
 export const InviteUsersInput: z.ZodObject<
   {
@@ -124,29 +149,37 @@ export const InviteUsersInput: z.ZodObject<
   },
   z.core.$strict
 > = z.strictObject({
-  emails: z.array(nonEmpty).min(1),
-  roleScopes: z.record(z.string().min(1), UserRoleValueInput).optional(),
+  emails: z.array(nonEmpty).min(1).describe('The email addresses to invite.'),
+  roleScopes: z
+    .record(z.string().min(1), UserRoleValueInput)
+    .optional()
+    .describe('Role assignments grouped by scope.'),
 });
 
 /** The token travels in the body so request logs never record it. */
 export const InvitationTokenInput: z.ZodObject<
   { token: z.ZodString },
   z.core.$strict
-> = z.strictObject({ token: nonEmpty });
+> = z.strictObject({ token: nonEmpty.describe('The personal access token.') });
 
 export const AcceptInvitationInput: z.ZodObject<
-  { token: z.ZodString; name: z.ZodString; password: z.ZodString },
+  {
+    token: z.ZodString;
+    name: z.ZodString;
+    password: z.ZodString;
+  },
   z.core.$strict
 > = z.strictObject({
-  token: nonEmpty,
-  name: nonEmpty,
-  password: nonEmpty,
+  token: nonEmpty.describe('The personal access token.'),
+  name: nonEmpty.describe('The name to display.'),
+  // Existing accounts authenticate through their session; account creation still validates password strength.
+  password: z.string().describe('The password to set.'),
 });
 
 export const PreferenceParams: z.ZodObject<
   { key: z.ZodString },
   z.core.$strip
-> = z.object({ key: z.string().min(1) });
+> = z.object({ key: z.string().min(1).describe('The preference key.') });
 
 /**
  * Several preferences by key. Keys and values are application-defined JSON, so they cannot be described here; the
@@ -159,10 +192,12 @@ export const PreferencesInput: z.ZodRecord<z.ZodString, z.ZodUnknown> =
 export const PreferenceInput: z.ZodObject<
   { value: z.ZodUnknown },
   z.core.$strict
-> = z.strictObject({ value: z.unknown() }).refine((input) => 'value' in input, {
-  message: 'A preference is { value }.',
-  path: ['value'],
-});
+> = z
+  .strictObject({ value: z.unknown().describe('The value to store.') })
+  .refine((input) => 'value' in input, {
+    message: 'A preference is { value }.',
+    path: ['value'],
+  });
 
 // Response schemas. They describe what the routes send in the API document at `/api/swagger/docs`; nothing validates a
 // response against them.
@@ -272,6 +307,18 @@ export const UserInvitationSchema: z.ZodType<UserInvitation> = z
   })
   .meta({ ref: 'UsersInvitation' });
 
+export const ResendInvitationQuery: z.ZodObject<
+  {
+    sendEmail: z.ZodOptional<z.ZodEnum<{ true: 'true'; false: 'false' }>>;
+  },
+  z.core.$strip
+> = z.object({
+  sendEmail: z.enum(['true', 'false']).optional().meta({
+    description:
+      'Defaults to true. Set false to generate a new link without sending email. The previous link stops working.',
+  }),
+});
+
 export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
   .discriminatedUnion('outcome', [
     z.object({
@@ -281,7 +328,7 @@ export const UserInvitationResultSchema: z.ZodType<UserInvitationResult> = z
       emailSent: z.boolean(),
       inviteUrl: z.string().optional().meta({
         description:
-          'Returned once when sending failed, for the inviter to forward.',
+          'Shareable invitation link, returned regardless of email delivery. Resends require the original inviter and empty plugin data.',
       }),
     }),
     z.object({
@@ -309,7 +356,7 @@ export const AcceptedInvitationSchema: z.ZodType<{
   email: z.string(),
   existingAccount: z.boolean().meta({
     description:
-      'The address had an account already: nothing was created, and it signs in with its own password.',
+      'The address had an account already: the signed-in invited account accepted it; no password was changed.',
   }),
 });
 

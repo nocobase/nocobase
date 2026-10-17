@@ -1,4 +1,4 @@
-import type { ReviewTask } from '../../client/pages/workflow-waiting-tasks/types.js';
+import { DescriptionViewSchema } from '@nocobase/app-plugin-lifecycle-example/server';
 import { z } from 'zod';
 
 export const articleStatuses = ['draft', 'published', 'archived'] as const;
@@ -98,21 +98,6 @@ export const NumericExamplesQuery = z.object({
 });
 export type NumericExamplesQuery = z.infer<typeof NumericExamplesQuery>;
 
-export const QuotationReviewParams = z.object({
-  taskId: z.coerce.number().int().positive().max(Number.MAX_SAFE_INTEGER),
-});
-export const QuotationReviewQuery = z.object({
-  page: z.coerce.number().int().min(1).max(10000).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
-  q: z.string().trim().max(64).default(''),
-  status: z
-    .enum(['all', 'pending', 'submitting', 'submitted', 'unavailable'])
-    .default('all'),
-});
-export const QuotationReviewDecision = z.strictObject({
-  decision: z.enum(['approved', 'rejected']),
-  comment: z.string().max(2000).trim(),
-});
 // Response schemas. Each carries a `ref` so the API document names it once and refers to it from every route.
 
 export const ExampleGreeting = z
@@ -184,48 +169,54 @@ export const NumericExamples = z
   })
   .meta({ ref: 'ExamplesNumericExamples' });
 
-export const QuotationReviewTask: z.ZodType<ReviewTask> = z
+export const WorkflowParams = z.object({
+  workflowId: z
+    .string()
+    .regex(/^(lifecycle|office)\.[A-Za-z][A-Za-z0-9]*$/)
+    .max(100),
+});
+export const WorkflowExecutionParams = WorkflowParams.extend({
+  recordId: z.string().regex(/^[1-9]\d{0,14}$/),
+});
+export const WorkflowPageQuery = z.object({
+  page: z.coerce.number().int().min(1).max(1000).default(1),
+  order: z.enum(['newest', 'oldest']).default('newest'),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  workflowId: WorkflowParams.shape.workflowId.optional(),
+});
+export const WorkflowPageMeta = z.object({
+  page: z.number(),
+  pageSize: z.number(),
+  total: z.number(),
+});
+export const WorkflowSummarySchema: z.ZodType<
+  import('../../shared/workflows.js').WorkflowSummary
+> = z
   .object({
     id: z.string(),
-    runId: z.string(),
-    quotationId: z.string(),
-    totalCents: z.number(),
-    route: z.enum(['standard', 'manual-follow-up']),
-    status: z.enum(['pending', 'submitting', 'submitted', 'unavailable']),
-    waitStatus: z.string(),
-    resumeRequestId: z.string().nullable(),
-    resumeRequest: z
-      .union([
-        z.object({
-          status: z.enum(['executing', 'queued', 'processing', 'consumed']),
-          reason: z.null(),
-        }),
-        z.object({
-          status: z.literal('rejected'),
-          reason: z.enum([
-            'stale',
-            'run-ended',
-            'target-missing',
-            'commit-failed',
-          ]),
-        }),
-        z.object({ status: z.literal('not-found') }),
-      ])
-      .nullable(),
-    confirmedBy: z.string().nullable(),
-    reviewerId: z.string().nullable(),
-    decision: z.enum(['approved', 'rejected']).nullable(),
-    comment: z.string().nullable(),
-    createdAt: z.iso.datetime(),
-    submittedAt: z.iso.datetime().nullable(),
+    name: z.string(),
+    source: z.enum(['lifecycle', 'office']),
+    states: z.number(),
+    transitions: z.number(),
+    executionCount: z.number().int().nonnegative(),
   })
-  .meta({ ref: 'ExamplesQuotationReviewTask' });
-
-export const QuotationReviewDetail = z
+  .meta({ ref: 'ExamplesWorkflowSummary' });
+export const WorkflowExecutionSchema: z.ZodType<
+  import('../../shared/workflows.js').WorkflowExecution
+> = z
   .object({
-    data: QuotationReviewTask,
-    meta: z.object({
-      currentReviewer: z.object({ id: z.string(), name: z.string() }),
-    }),
+    workflowId: z.string(),
+    recordId: z.string(),
+    title: z.string(),
+    state: z.string(),
+    createdAt: z.iso.datetime(),
   })
-  .meta({ ref: 'ExamplesQuotationReviewDetail' });
+  .meta({ ref: 'ExamplesWorkflowExecution' });
+export const WorkflowDefinitionSchema: z.ZodType<
+  import('../../shared/workflows.js').WorkflowDefinition
+> = z
+  .intersection(
+    z.object({ workflow: WorkflowSummarySchema }),
+    DescriptionViewSchema,
+  )
+  .meta({ ref: 'ExamplesWorkflowDefinition' });

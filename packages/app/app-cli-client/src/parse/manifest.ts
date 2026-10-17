@@ -28,6 +28,7 @@ export interface CliParameter {
   readonly default?: unknown;
   readonly alias?: string | undefined;
   readonly contentFile?: boolean | undefined;
+  readonly contentFileNonEmpty?: boolean | undefined;
   readonly prompt?: boolean | undefined;
   /** `--from-env` fills it from the environment variable named by the value of this field. */
   readonly fromEnv?: string | undefined;
@@ -73,6 +74,14 @@ export interface CliCommand {
   readonly method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   readonly path: string;
   readonly parameters: readonly CliParameter[];
+  /** Read once before sending; the response field fills a body field, without a user flag. */
+  readonly readBinding?: {
+    readonly path: string;
+    /** Read-route path parameter to this command's path parameter. */
+    readonly params: Readonly<Record<string, string>>;
+    readonly responseField: string;
+    readonly bodyField: string;
+  };
   readonly body?:
     | {
         readonly media: 'application/json' | 'multipart/form-data';
@@ -109,6 +118,7 @@ export interface CliManifest {
     readonly runId?: string | undefined;
     /** Absent from a server older than manifest version 4. */
     readonly actions?: readonly string[] | undefined;
+    readonly settings?: readonly string[] | undefined;
   };
   readonly commands: readonly CliCommand[];
   /** Absent from a server older than manifest version 4. */

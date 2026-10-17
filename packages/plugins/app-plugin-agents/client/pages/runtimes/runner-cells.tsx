@@ -13,7 +13,7 @@ import {
   toolUsage,
   type Runner,
   type RunnerActivity,
-  type RunnerSummary,
+  type RunnerListItem,
   type ToolState,
 } from '../../../shared/runners.js';
 import { AgTag, type Tone } from '../../components/ag-tag.js';
@@ -32,9 +32,12 @@ import { upgradeCommand } from '../../lib/install.js';
 const ACTIVITY_TONE: Readonly<Record<RunnerActivity, Tone>> = {
   online: 'green',
   busy: 'blue',
+  low_disk: 'amber',
   offline: 'grey',
   revoked: 'red',
   upgrade_required: 'amber',
+  updatePending: 'amber',
+  pruning: 'amber',
 };
 
 /**
@@ -46,7 +49,7 @@ export function RunnerStatusCell({
   runner,
 }: {
   readonly runner: Pick<
-    RunnerSummary,
+    RunnerListItem,
     | 'status'
     | 'slots'
     | 'activeRuns'
@@ -54,6 +57,8 @@ export function RunnerStatusCell({
     | 'lastSeenAt'
     | 'toolSlots'
     | 'activeByTool'
+    | 'workspaceUsage'
+    | 'draining'
   >;
 }): ReactElement {
   const { t } = useTranslation();
@@ -65,7 +70,7 @@ export function RunnerStatusCell({
     time: format.relative(runner.lastSeenAt),
   };
   let label: string;
-  if (activity === 'online' || activity === 'busy')
+  if (activity === 'online' || activity === 'busy' || activity === 'low_disk')
     label = t(`runtimes.activity.${activity}`, values);
   else if (activity === 'offline')
     label = runner.lastSeenAt
@@ -246,7 +251,7 @@ export function RunnerUpgradeRequired({
   runner,
 }: {
   readonly runner: Pick<
-    RunnerSummary,
+    RunnerListItem,
     | 'version'
     | 'product'
     | 'protocolVersion'

@@ -4,11 +4,14 @@
  * from the request's authorization context, and the error format. The authorization plugin is stood in by a context
  * whose decisions follow the `x-test-role` header.
  */
+import { setTimeout as delay } from 'node:timers/promises';
+
 import { Auth, authenticationToken } from '@nocobase/app-plugin-authentication';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import { createAppPaths } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  ApiError,
   findApiDocumentSchemaProblems,
   findUndeclaredApiRoutes,
   generateApiDocument,
@@ -25,6 +28,7 @@ import {
 } from '../server/routes/schemas.js';
 import {
   projectsAccessToken,
+  projectsIssueSessionToken,
   projectsDelegatedWritesToken,
   projectsRequestActorToken,
   projectsToken,
@@ -44,6 +48,23 @@ function fakeAuthorization(): { middleware(): MiddlewareHandler } {
     middleware: () => async (context, next) => {
       const role = context.req.header('x-test-role') ?? 'none';
       context.set('authz', {
+        can: ({ action }: { action: string }) =>
+          Promise.resolve(
+            role === 'admin' &&
+              context.req.header('x-deny-user-action') !== action,
+          ),
+        require: async ({ action }: { action: string }) => {
+          if (
+            role !== 'admin' ||
+            context.req.header('x-deny-user-action') === action
+          )
+            throw new ApiError({
+              status: 'PERMISSION_DENIED',
+              reason: 'DENIED',
+              domain: 'authorization',
+              message: 'Denied',
+            });
+        },
         identity: {
           principal: { type: 'user', id: 'alice' },
           subjects: [{ type: 'test-role', id: role }],
@@ -144,6 +165,232 @@ const call = (path: string, init: RequestInit & { role?: string } = {}) => {
 };
 
 describe('the /api/projects guard', () => {
+  it.each([false, true])(
+    'updates structured progress through PATCH (delegated=%s)',
+    async (delegated) => {
+      if (delegated) {
+        container.instance(projectsDelegatedWritesToken, {
+          covers: () => true,
+          write: async (viewer, request) => {
+            const plan = await h.services.plans.create(
+              viewer,
+              {
+                title: request.title,
+                source: { kind: 'test' },
+                rows: request.rows,
+              },
+              { execute: true },
+            );
+            return { plan, meta: {} };
+          },
+        });
+      }
+      const issue = await h.services.issues.create(h.viewer('alice'), {
+        title: 'Progress',
+        statusKey: 'in_progress',
+      });
+      const request = (body: unknown, role?: string) =>
+        call(`/issues/${issue.id}`, {
+          role,
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        });
+      expect(
+        (await request({ statusKey: 'blocked', needsYou: 'Choose.' })).status,
+      ).toBe(401);
+      expect(
+        (await request({ statusKey: 'blocked', needsYou: 'Choose.' }, 'none'))
+          .status,
+      ).toBe(delegated ? 400 : 404);
+      const optional = await request(
+        { statusKey: 'blocked', next: 'Not saved' },
+        'member',
+      );
+      expect(optional.status).toBe(200);
+      expect(
+        await h.services.issueQueries.detail(h.viewer('alice'), issue.id),
+      ).toMatchObject({
+        statusKey: 'blocked',
+        needsYou: null,
+        next: 'Not saved',
+      });
+      const changed = await request(
+        {
+          statusKey: 'blocked',
+          needsYou: 'Choose the source. Provide its URL.',
+          next: 'Implement the choice.',
+        },
+        'member',
+      );
+      expect(changed.status).toBe(200);
+      expect(await changed.json()).toMatchObject({
+        data: {
+          issue: {
+            statusKey: 'blocked',
+            needsYou: 'Choose the source. Provide its URL.',
+            next: 'Implement the choice.',
+          },
+        },
+      });
+      expect(
+        (
+          await request(
+            { statusKey: 'in_review', needsYou: 'Accept the result.' },
+            'member',
+          )
+        ).status,
+      ).toBe(200);
+      expect(
+        (await request({ statusKey: 'in_progress' }, 'member')).status,
+      ).toBe(200);
+      expect(
+        await h.services.issueQueries.detail(h.viewer('alice'), issue.id),
+      ).toMatchObject({ needsYou: null, next: 'Implement the choice.' });
+    },
+  );
+  it.each([true, false])(
+    'returns safe shareable links to project leads when emailSent=%s',
+    async (emailSent) => {
+      const project = await h.services.projects.create(h.viewer('alice'), {
+        name: 'Owned project',
+      });
+      const original = h.invitations.invite.bind(h.invitations);
+      // The fixture service controls email delivery; routes and project authorization remain production code.
+      vi.spyOn(h.invitations, 'invite').mockImplementation(async (input) =>
+        (await original(input)).map((result) =>
+          result.outcome === 'invited' ? { ...result, emailSent } : result,
+        ),
+      );
+      const response = await call('/invitations', {
+        role: 'member',
+        method: 'POST',
+        body: JSON.stringify({
+          emails: ['victim@example.test'],
+          projectIds: [project.id],
+        }),
+      });
+      expect(response.status).toBe(201);
+      expect(await response.json()).toEqual({
+        data: {
+          results: [
+            {
+              email: 'victim@example.test',
+              outcome: 'invited',
+              emailSent,
+              inviteUrl: expect.stringContaining('/invite/'),
+            },
+          ],
+        },
+      });
+      const id = h.invitations.rows[0]?.id ?? '';
+      const resend = vi
+        .spyOn(h.invitations, 'resendInvitation')
+        .mockResolvedValue({
+          email: 'victim@example.test',
+          outcome: 'invited',
+          invitationId: id,
+          emailSent,
+          inviteUrl: 'https://example.test/invite/registration-secret',
+        });
+      const resent = await call(`/invitations/${id}/resend`, {
+        role: 'member',
+        method: 'POST',
+      });
+      expect(resent.status).toBe(200);
+      expect(await resent.json()).toEqual({
+        data: {
+          email: 'victim@example.test',
+          outcome: 'invited',
+          emailSent,
+          inviteUrl: expect.stringContaining('/invite/'),
+        },
+      });
+      const copy = await call(`/invitations/${id}/resend?sendEmail=false`, {
+        role: 'member',
+        method: 'POST',
+      });
+      expect(copy.status).toBe(200);
+      expect(resend).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it.each(['create', 'assign-role'])(
+    'does not require global user %s permission for project administrators',
+    async (action) => {
+      await h.services.invitations.create(
+        h.viewer('alice', 'admin'),
+        { emails: ['new@example.test'] },
+        'https://example.test',
+      );
+      const id = h.invitations.rows[0]?.id ?? '';
+      const resend = vi.spyOn(h.invitations, 'resendInvitation');
+      const response = await call(`/invitations/${id}/resend?sendEmail=false`, {
+        role: 'admin',
+        method: 'POST',
+        headers: { 'x-deny-user-action': action },
+      });
+      expect(response.status).toBe(200);
+      expect(resend).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('keeps scoped credentials email-only even when their user can create accounts', async () => {
+    const response = await call('/invitations', {
+      role: 'admin',
+      method: 'POST',
+      headers: { 'x-test-scoped': 'yes' },
+      body: JSON.stringify({ emails: ['scoped@example.test'] }),
+    });
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({
+      data: {
+        results: [
+          { email: 'scoped@example.test', outcome: 'invited', emailSent: true },
+        ],
+      },
+    });
+    const id = h.invitations.rows[0]?.id ?? '';
+    const resend = vi.spyOn(h.invitations, 'resendInvitation');
+    const copy = await call(`/invitations/${id}/resend?sendEmail=false`, {
+      role: 'admin',
+      method: 'POST',
+      headers: { 'x-test-scoped': 'yes' },
+    });
+    expect(copy.status).toBe(403);
+    expect(resend).not.toHaveBeenCalled();
+  });
+
+  it('validates and forwards the mail-free invitation option', async () => {
+    await h.services.invitations.create(
+      h.viewer('alice', 'admin'),
+      { emails: ['new@example.test'] },
+      'https://example.test',
+    );
+    const id = h.invitations.rows[0]?.id ?? '';
+    const resend = vi.spyOn(h.invitations, 'resendInvitation');
+    const response = await call(`/invitations/${id}/resend?sendEmail=false`, {
+      method: 'POST',
+      role: 'admin',
+    });
+    expect(response.status).toBe(200);
+    expect(resend).toHaveBeenCalledWith(id, {
+      origin: 'http://localhost',
+      sendEmail: false,
+    });
+    expect(await response.json()).toMatchObject({
+      data: { inviteUrl: expect.stringContaining('/invite/') },
+    });
+    expect(
+      (
+        await call(`/invitations/${id}/resend?sendEmail=no`, {
+          method: 'POST',
+          role: 'admin',
+        })
+      ).status,
+    ).toBe(400);
+    expect(resend).toHaveBeenCalledTimes(1);
+  });
+
   it('refuses anonymous callers and leaves other routes alone', async () => {
     const paths = [
       '/me',
@@ -202,6 +449,30 @@ describe('scoped keys and API key identities', () => {
 });
 
 describe('errors', () => {
+  it('maps the refused start to an HTTP error with a CLI suggestion', async () => {
+    const response = await call('/issues', {
+      role: 'member',
+      method: 'POST',
+      body: JSON.stringify({
+        title: 'Must not be saved',
+        start: true,
+      }),
+    });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: {
+        status: 'INVALID_ARGUMENT',
+        reason: 'ISSUE_START_REQUIRES_IN_PROGRESS',
+        message: 'An issue must be In progress to start work.',
+        metadata: {
+          suggestions: [
+            { message: expect.stringContaining('--status in_progress') },
+          ],
+        },
+      },
+    });
+  });
+
   it('answers 403, 400, 404 and 409 in the standard error body', async () => {
     const forbidden = await call('/labels', {
       role: 'member',
@@ -265,19 +536,6 @@ describe('errors', () => {
       },
     });
   });
-
-  it('answers a project the query names but that does not exist as a bad request', async () => {
-    const response = await call('/issues/statuses?projectId=nope', {
-      role: 'member',
-    });
-    expect(response.status).toBe(400);
-    expect(await response.json()).toMatchObject({
-      error: {
-        reason: 'PROJECT_NOT_FOUND',
-        fieldViolations: [{ field: 'projectId' }],
-      },
-    });
-  });
 });
 
 describe('issues over HTTP', () => {
@@ -315,13 +573,36 @@ describe('issues over HTTP', () => {
     expect(
       (await call('/issues?orderBy=title', { role: 'member' })).status,
     ).toBe(400);
+    // Some issues by id, within the other filters; too many ids are refused.
+    const ids = (await (
+      await call('/issues?orderBy=number%20asc', { role: 'member' })
+    ).json()) as { data: { id: string; identifier: string }[] };
+    const named = (await (
+      await call(
+        `/issues?issueIds=${ids.data[0]!.id},${ids.data[2]!.id},unknown`,
+        { role: 'member' },
+      )
+    ).json()) as { data: { identifier: string }[] };
+    expect(named.data.map((issue) => issue.identifier).sort()).toEqual([
+      'PM-1',
+      'PM-3',
+    ]);
+    expect(
+      (
+        await call(
+          `/issues?issueIds=${Array.from({ length: 101 }, (_, n) => `i${n}`).join(',')}`,
+          { role: 'member' },
+        )
+      ).status,
+    ).toBe(400);
     const board = (await (
       await call('/issues/board', { role: 'member' })
     ).json()) as {
       data: { columns: { status: { key: string }; issues: unknown[] }[] };
     };
     expect(
-      board.data.columns.find((column) => column.status.key === 'todo')?.issues,
+      board.data.columns.find((column) => column.status.key === 'backlog')
+        ?.issues,
     ).toHaveLength(3);
   });
 });
@@ -416,7 +697,752 @@ describe('a caller acting for someone else', () => {
   });
 });
 
+describe('dependency graph concurrency over HTTP', () => {
+  it.each(['conversion', 'addition'] as const)(
+    'keeps related links unique when %s races a reverse addition',
+    async (operation) => {
+      const viewer = h.viewer('alice');
+      const a = await h.services.issues.create(viewer, { title: 'A' });
+      const b = await h.services.issues.create(viewer, { title: 'B' });
+      const link =
+        operation === 'conversion'
+          ? await h.services.subtasks.addDependency(viewer, a.id, {
+              dependsOnIssueId: b.id,
+            })
+          : undefined;
+      const responses = await Promise.all([
+        link
+          ? call(`/issues/${a.id}/dependencies/${link.dependencyId}`, {
+              role: 'member',
+              method: 'PATCH',
+              body: JSON.stringify({
+                expectedType: 'blockedBy',
+                type: 'relatedTo',
+              }),
+            })
+          : call(`/issues/${a.id}/dependencies`, {
+              role: 'member',
+              method: 'POST',
+              body: JSON.stringify({
+                dependsOnIssueId: b.id,
+                type: 'relatedTo',
+              }),
+            }),
+        call(`/issues/${b.id}/dependencies`, {
+          role: 'member',
+          method: 'POST',
+          body: JSON.stringify({ dependsOnIssueId: a.id, type: 'relatedTo' }),
+        }),
+      ]);
+      expect(responses.filter((response) => response.ok)).toHaveLength(1);
+      const conflict = responses.find((response) => !response.ok)!;
+      expect(conflict.status).toBe(409);
+      const error = await conflict.json();
+      expect(['DEPENDENCY_EXISTS', 'DEPENDENCY_GRAPH_CHANGED']).toContain(
+        error.error.reason,
+      );
+      const detail = await h.services.issueQueries.detail(viewer, a.id);
+      const reverse = await h.services.issueQueries.detail(viewer, b.id);
+      expect(detail.relatedTo).toHaveLength(1);
+      expect(reverse.relatedTo).toHaveLength(1);
+      expect(reverse.relatedTo[0]!.dependencyId).toBe(
+        detail.relatedTo[0]!.dependencyId,
+      );
+      if (link) {
+        if (responses[0]!.ok) {
+          expect(detail.relatedTo[0]!.dependencyId).toBe(link.dependencyId);
+          expect(detail.blockedBy).toEqual([]);
+        } else expect(detail.blockedBy).toEqual([link]);
+      }
+      expect(
+        (
+          await call(
+            `/issues/${b.id}/dependencies/${reverse.relatedTo[0]!.dependencyId}`,
+            {
+              role: 'member',
+              method: 'DELETE',
+            },
+          )
+        ).status,
+      ).toBe(204);
+      expect(
+        (await h.services.issueQueries.detail(viewer, a.id)).relatedTo,
+      ).toEqual([]);
+      expect(
+        (await h.services.issueQueries.detail(viewer, b.id)).relatedTo,
+      ).toEqual([]);
+    },
+  );
+
+  it.each(['rehearsal', 'execution'] as const)(
+    'takes the graph before issue rows throughout plan %s',
+    async (phase) => {
+      const viewer = h.viewer('alice');
+      const a = await h.services.issues.create(viewer, { title: 'A' });
+      const parent = await h.services.issues.create(viewer, {
+        title: 'Parent',
+      });
+      const c = await h.services.issues.create(viewer, { title: 'C' });
+      const d = await h.services.issues.create(viewer, { title: 'D' });
+      const propose = () =>
+        call('/plans', {
+          role: 'member',
+          method: 'POST',
+          body: JSON.stringify({
+            title: 'Edit then link',
+            source: { kind: 'manual' },
+            rows: [
+              {
+                op: 'issue.update',
+                params: { issue: a.id, set: { title: 'Updated' } },
+              },
+              {
+                op: 'dependency',
+                params: {
+                  action: 'add',
+                  issue: c.id,
+                  dependsOn: d.id,
+                  type: 'blockedBy',
+                },
+              },
+            ],
+          }),
+        });
+      let plan: { id: string; revision: number } | undefined;
+      if (phase === 'execution') {
+        const response = await propose();
+        expect(response.status).toBe(201);
+        plan = (
+          (await response.json()) as { data: { id: string; revision: number } }
+        ).data;
+      }
+      const edited = Promise.withResolvers<void>();
+      const hierarchyStarted = Promise.withResolvers<void>();
+      const hierarchyLocked = Promise.withResolvers<void>();
+      const update = h.services.issues.update.bind(h.services.issues);
+      vi.spyOn(h.services.issues, 'update').mockImplementation(
+        async (...args) => {
+          if (args[2].parentIssueId === parent.id) hierarchyStarted.resolve();
+          const result = await update(...args);
+          if (args[2].title === 'Updated') {
+            edited.resolve();
+            await hierarchyStarted.promise;
+            // Only control scheduling after real writes. With early protection, the hierarchy request waits for this
+            // plan, so allow it to finish; without it, the request takes the graph and the next row deadlocks.
+            await Promise.race([hierarchyLocked.promise, delay(150)]);
+          }
+          return result;
+        },
+      );
+      const lock = h.services.subtasks.relations.lock.bind(
+        h.services.subtasks.relations,
+      );
+      vi.spyOn(h.services.subtasks.relations, 'lock').mockImplementation(
+        async (...args) => {
+          await lock(...args);
+          hierarchyLocked.resolve();
+        },
+      );
+      const pending = plan
+        ? call(`/plans/${plan.id}/execute`, {
+            role: 'member',
+            method: 'POST',
+            body: JSON.stringify({ revision: plan.revision }),
+          })
+        : propose();
+      await edited.promise;
+      const hierarchy = call(`/issues/${a.id}`, {
+        role: 'member',
+        method: 'PATCH',
+        body: JSON.stringify({
+          revision: a.revision,
+          parentIssueId: parent.id,
+        }),
+      });
+      const [planResponse, hierarchyResponse] = await Promise.all([
+        pending,
+        hierarchy,
+      ]);
+      expect(planResponse.status).toBe(phase === 'execution' ? 200 : 201);
+      expect((await planResponse.json()).data.status).toBe(
+        phase === 'execution' ? 'executed' : 'pending',
+      );
+      expect(hierarchyResponse.status).toBe(phase === 'execution' ? 409 : 200);
+      if (phase === 'execution') {
+        expect(['DEPENDENCY_GRAPH_CHANGED', 'REVISION_CONFLICT']).toContain(
+          (await hierarchyResponse.json()).error.reason,
+        );
+      }
+      expect(await h.services.issueQueries.detail(viewer, a.id)).toMatchObject({
+        title: phase === 'execution' ? 'Updated' : 'A',
+        parentIssueId: phase === 'execution' ? null : parent.id,
+      });
+      expect(
+        (await h.services.issueQueries.detail(viewer, c.id)).blockedBy,
+      ).toHaveLength(phase === 'execution' ? 1 : 0);
+    },
+  );
+
+  const convert = (issueId: string, dependencyId: string) =>
+    call(`/issues/${issueId}/dependencies/${dependencyId}`, {
+      role: 'member',
+      method: 'PATCH',
+      body: JSON.stringify({ expectedType: 'relatedTo', type: 'blockedBy' }),
+    });
+
+  async function assertConflict(response: Response) {
+    expect([400, 409]).toContain(response.status);
+    const body = await response.json();
+    expect(['DEPENDENCY_CYCLE', 'DEPENDENCY_GRAPH_CHANGED']).toContain(
+      body.error.reason,
+    );
+    if (response.status === 409) expect(body.error.status).toBe('ABORTED');
+  }
+
+  it('keeps concurrent standalone creation successful without advancing the graph revision', async () => {
+    const graph = h.database.connection().repository('pmIssueGraph');
+    const before = await graph.findOne({ filter: { id: 'default' } });
+    const titles = ['Independent one', 'Independent two'];
+    const responses = await Promise.all(
+      titles.map((title) =>
+        call('/issues', {
+          role: 'member',
+          method: 'POST',
+          body: JSON.stringify({ title }),
+        }),
+      ),
+    );
+    expect(responses.map((response) => response.status)).toEqual([201, 201]);
+    const issues = h.database.connection().repository('pmIssues');
+    for (const title of titles)
+      expect(await issues.count({ filter: { title } })).toBe(1);
+    const rows = await issues.findMany();
+    expect(rows.map((row) => row.identifier).sort()).toEqual(['PM-1', 'PM-2']);
+    expect(await graph.findOne({ filter: { id: 'default' } })).toEqual(before);
+  });
+
+  it('uses one lock order for plans that create then link and link then create', async () => {
+    const viewer = h.viewer('alice');
+    const a = await h.services.issues.create(viewer, { title: 'A' });
+    const b = await h.services.issues.create(viewer, { title: 'B' });
+    const c = await h.services.issues.create(viewer, { title: 'C' });
+    const d = await h.services.issues.create(viewer, { title: 'D' });
+    // These are the same ambient units that execute plan rows. Both orders must acquire the graph before the counter.
+    const operations = [
+      () =>
+        h.services.tx.unit(async () => {
+          await h.services.issues.create(viewer, {
+            title: 'Created before link',
+          });
+          await h.services.subtasks.addDependency(viewer, a.id, {
+            dependsOnIssueId: b.id,
+          });
+        }),
+      () =>
+        h.services.tx.unit(async () => {
+          await h.services.subtasks.addDependency(viewer, c.id, {
+            dependsOnIssueId: d.id,
+          });
+          await h.services.issues.create(viewer, {
+            title: 'Created after link',
+          });
+        }),
+    ];
+    const results = await Promise.allSettled(operations.map((run) => run()));
+    expect(results.some((result) => result.status === 'fulfilled')).toBe(true);
+    for (const [index, result] of results.entries()) {
+      if (result.status === 'rejected') {
+        // A conflict is retryable as a whole; native lock-order deadlocks are not accepted by this regression.
+        expect(result.reason).toMatchObject({
+          code: 'DEPENDENCY_GRAPH_CHANGED',
+        });
+        const source = index === 0 ? a : c;
+        expect(
+          (await h.services.issueQueries.detail(viewer, source.id)).blockedBy,
+        ).toEqual([]);
+        await operations[index]!();
+      }
+    }
+    expect(
+      (await h.services.issueQueries.detail(viewer, a.id)).blockedBy,
+    ).toHaveLength(1);
+    expect(
+      (await h.services.issueQueries.detail(viewer, c.id)).blockedBy,
+    ).toHaveLength(1);
+    for (const title of ['Created before link', 'Created after link']) {
+      expect(
+        await h.database
+          .connection()
+          .repository('pmIssues')
+          .count({ filter: { title } }),
+      ).toBe(1);
+    }
+  });
+
+  it('rolls back restoring a deleted node when its waits would now close a cycle', async () => {
+    const viewer = h.viewer('alice', 'admin');
+    const a = await h.services.issues.create(viewer, { title: 'A' });
+    const b = await h.services.issues.create(viewer, { title: 'B' });
+    const c = await h.services.issues.create(viewer, { title: 'C' });
+    await h.services.subtasks.addDependency(viewer, b.id, {
+      dependsOnIssueId: c.id,
+    });
+    await h.services.subtasks.addDependency(viewer, c.id, {
+      dependsOnIssueId: a.id,
+    });
+    const ab = await h.services.subtasks.addDependency(viewer, a.id, {
+      dependsOnIssueId: b.id,
+      type: 'relatedTo',
+    });
+    expect(
+      (await call(`/issues/${c.id}`, { role: 'admin', method: 'DELETE' }))
+        .status,
+    ).toBe(204);
+    expect((await convert(a.id, ab.dependencyId)).status).toBe(200);
+    const events: string[] = [];
+    const off = h.services.events.on('issue.restored', (event) => {
+      events.push(event.issueId);
+    });
+    const response = await call(`/issues/${c.id}/restore`, {
+      role: 'admin',
+      method: 'POST',
+    });
+    off();
+    await assertConflict(response);
+    expect(events).toEqual([]);
+    expect(
+      await h.database
+        .connection()
+        .repository('pmIssues')
+        .findOne({ filter: { id: c.id } }),
+    ).toMatchObject({ deletedAt: expect.anything() });
+  });
+
+  it('keeps three concurrent conversions acyclic and preserves rejected links', async () => {
+    const viewer = h.viewer('alice');
+    for (let trial = 0; trial < 4; trial += 1) {
+      const issues = [];
+      for (const title of ['A', 'B', 'C'])
+        issues.push(await h.services.issues.create(viewer, { title }));
+      const links = [];
+      for (const [index, issue] of issues.entries()) {
+        links.push(
+          await h.services.subtasks.addDependency(viewer, issue.id, {
+            dependsOnIssueId: issues[(index + 1) % 3]!.id,
+            type: 'relatedTo',
+          }),
+        );
+      }
+      const responses = await Promise.all(
+        issues.map((issue, index) =>
+          convert(issue.id, links[index]!.dependencyId),
+        ),
+      );
+      expect(
+        responses.filter((response) => response.ok).length,
+      ).toBeGreaterThan(0);
+      expect(responses.filter((response) => response.ok).length).toBeLessThan(
+        3,
+      );
+      for (const [index, response] of responses.entries()) {
+        const detail = await h.services.issueQueries.detail(
+          viewer,
+          issues[index]!.id,
+        );
+        if (response.ok) {
+          expect(detail.blockedBy).toEqual([
+            expect.objectContaining({
+              dependencyId: links[index]!.dependencyId,
+            }),
+          ]);
+        } else {
+          await assertConflict(response);
+          expect(detail.blockedBy).toEqual([]);
+          expect(detail.relatedTo).toContainEqual(
+            expect.objectContaining({
+              dependencyId: links[index]!.dependencyId,
+            }),
+          );
+        }
+      }
+    }
+  });
+
+  it.each(['conversion', 'addition'] as const)(
+    'protects disjoint endpoints when racing another %s',
+    async (operation) => {
+      const viewer = h.viewer('alice');
+      const a = await h.services.issues.create(viewer, { title: 'A' });
+      const b = await h.services.issues.create(viewer, { title: 'B' });
+      const c = await h.services.issues.create(viewer, { title: 'C' });
+      const d = await h.services.issues.create(viewer, { title: 'D' });
+      await h.services.subtasks.addDependency(viewer, b.id, {
+        dependsOnIssueId: c.id,
+      });
+      await h.services.subtasks.addDependency(viewer, d.id, {
+        dependsOnIssueId: a.id,
+      });
+      const ab = await h.services.subtasks.addDependency(viewer, a.id, {
+        dependsOnIssueId: b.id,
+        type: 'relatedTo',
+      });
+      const cd =
+        operation === 'conversion'
+          ? await h.services.subtasks.addDependency(viewer, c.id, {
+              dependsOnIssueId: d.id,
+              type: 'relatedTo',
+            })
+          : undefined;
+      const responses = await Promise.all([
+        convert(a.id, ab.dependencyId),
+        cd
+          ? convert(c.id, cd.dependencyId)
+          : call(`/issues/${c.id}/dependencies`, {
+              role: 'member',
+              method: 'POST',
+              body: JSON.stringify({
+                dependsOnIssueId: d.id,
+                type: 'blockedBy',
+              }),
+            }),
+      ]);
+      expect(responses.filter((response) => response.ok)).toHaveLength(1);
+      await assertConflict(responses.find((response) => !response.ok)!);
+      const details = await Promise.all(
+        [a, c].map((issue) => h.services.issueQueries.detail(viewer, issue.id)),
+      );
+      expect(details.flatMap((detail) => detail.blockedBy)).toHaveLength(1);
+    },
+  );
+
+  it.each(['parent', 'stage', 'create'] as const)(
+    'protects implicit waits when racing a %s change',
+    async (operation) => {
+      const viewer = h.viewer('alice');
+      const parent = await h.services.issues.create(viewer, {
+        title: 'Parent',
+      });
+      const a = await h.services.issues.create(viewer, {
+        title: 'A',
+        ...(operation === 'stage'
+          ? { parentIssueId: parent.id, stage: 0 }
+          : {}),
+      });
+      const b = await h.services.issues.create(viewer, {
+        title: 'B',
+        ...(operation === 'stage'
+          ? { parentIssueId: parent.id, stage: 0 }
+          : {}),
+      });
+      const ab = await h.services.subtasks.addDependency(viewer, a.id, {
+        dependsOnIssueId: b.id,
+        type: 'relatedTo',
+      });
+      const responses = await Promise.all([
+        convert(a.id, ab.dependencyId),
+        operation === 'create'
+          ? call('/issues', {
+              role: 'member',
+              method: 'POST',
+              body: JSON.stringify({
+                title: 'Child',
+                parentIssueId: b.id,
+                blockedBy: [a.id],
+              }),
+            })
+          : call(`/issues/${operation === 'parent' ? a.id : b.id}`, {
+              role: 'member',
+              method: 'PATCH',
+              body: JSON.stringify(
+                operation === 'parent'
+                  ? { revision: a.revision, parentIssueId: b.id }
+                  : { revision: b.revision, stage: 1 },
+              ),
+            }),
+      ]);
+      expect(responses.filter((response) => response.ok)).toHaveLength(1);
+      await assertConflict(responses.find((response) => !response.ok)!);
+      const detail = await h.services.issueQueries.detail(viewer, a.id);
+      expect(detail.blockedBy).toHaveLength(responses[0]!.ok ? 1 : 0);
+      if (!responses[1]!.ok && operation === 'parent')
+        expect(detail.parentIssueId).toBeNull();
+    },
+  );
+});
+
 describe('dependencies over HTTP', () => {
+  it.each(['id', 'target'] as const)(
+    'removes converted relationships through the %s endpoint with the current direction and release effects',
+    async (endpoint) => {
+      const viewer = h.viewer('alice');
+      const a = await h.services.issues.create(viewer, { title: 'A' });
+      const b = await h.services.issues.create(viewer, { title: 'B' });
+      const released: { issueId: string; releasedBy: string }[] = [];
+      h.services.events.on('issue.dependencyReleased', (event) => {
+        released.push({
+          issueId: event.issueId,
+          releasedBy: event.releasedBy.issueId,
+        });
+      });
+      const remove = (
+        issueId: string,
+        otherId: string,
+        dependencyId: string,
+        type: 'blockedBy' | 'relatedTo',
+        role: string | undefined = 'member',
+      ) =>
+        endpoint === 'id'
+          ? call(`/issues/${issueId}/dependencies/${dependencyId}`, {
+              role,
+              method: 'DELETE',
+            })
+          : call(`/issues/${issueId}/removeDependency`, {
+              role,
+              method: 'POST',
+              body: JSON.stringify({ dependsOnIssueId: otherId, type }),
+            });
+      const convert = (dependencyId: string, type: 'blockedBy' | 'relatedTo') =>
+        call(`/issues/${b.id}/dependencies/${dependencyId}`, {
+          role: 'member',
+          method: 'PATCH',
+          body: JSON.stringify({
+            type,
+            expectedType: type === 'blockedBy' ? 'relatedTo' : 'blockedBy',
+          }),
+        });
+      const related = await h.services.subtasks.addDependency(viewer, a.id, {
+        dependsOnIssueId: b.id,
+        type: 'relatedTo',
+      });
+      expect((await convert(related.dependencyId, 'blockedBy')).status).toBe(
+        200,
+      );
+      const before = await h.services.issueQueries.detail(viewer, b.id);
+      expect(before.blockers).toEqual([
+        expect.objectContaining({ issueId: a.id }),
+      ]);
+      // Conversion from the reverse end makes B the waiting issue. Only that end may now remove the prerequisite.
+      expect(
+        (await remove(a.id, b.id, related.dependencyId, 'blockedBy')).status,
+      ).toBe(404);
+      expect(
+        (await remove(b.id, a.id, related.dependencyId, 'blockedBy', 'none'))
+          .status,
+      ).toBe(404);
+      expect(
+        (await h.services.issueQueries.detail(viewer, b.id)).activities,
+      ).toEqual(before.activities);
+      expect(released).toEqual([]);
+      expect(
+        (await remove(b.id, a.id, related.dependencyId, 'blockedBy')).status,
+      ).toBe(204);
+      const after = await h.services.issueQueries.detail(viewer, b.id);
+      expect(after.blockedBy).toEqual([]);
+      expect(after.blockers).toEqual([]);
+      expect(
+        (await h.services.issueQueries.detail(viewer, a.id)).blocks,
+      ).toEqual([]);
+      expect(
+        after.activities.filter(
+          (activity) => activity.action === 'dependency_removed',
+        ),
+      ).toEqual([
+        expect.objectContaining({
+          details: expect.objectContaining({
+            dependencyId: related.dependencyId,
+            dependsOnIssueId: a.id,
+            type: 'blockedBy',
+          }),
+        }),
+      ]);
+      expect(released).toEqual([{ issueId: b.id, releasedBy: a.id }]);
+      expect(
+        (await remove(b.id, a.id, related.dependencyId, 'blockedBy')).status,
+      ).toBe(404);
+      expect(
+        (await h.services.issueQueries.detail(viewer, b.id)).activities,
+      ).toEqual(after.activities);
+      expect(released).toHaveLength(1);
+
+      const blocker = await h.services.subtasks.addDependency(viewer, b.id, {
+        dependsOnIssueId: a.id,
+      });
+      expect((await convert(blocker.dependencyId, 'relatedTo')).status).toBe(
+        200,
+      );
+      expect(released).toHaveLength(2);
+      // Once converted back to related, either end can remove it without another release notification.
+      expect(
+        (await remove(a.id, b.id, blocker.dependencyId, 'relatedTo')).status,
+      ).toBe(204);
+      for (const issue of [a, b])
+        expect(
+          (await h.services.issueQueries.detail(viewer, issue.id)).relatedTo,
+        ).toEqual([]);
+      const final = await h.services.issueQueries.detail(viewer, b.id);
+      expect(
+        final.activities.filter(
+          (activity) =>
+            activity.action === 'dependency_removed' &&
+            activity.details.type === 'relatedTo',
+        ),
+      ).toEqual([
+        expect.objectContaining({
+          details: expect.objectContaining({
+            dependencyId: blocker.dependencyId,
+            dependsOnIssueId: a.id,
+          }),
+        }),
+      ]);
+      expect(released).toEqual([
+        { issueId: b.id, releasedBy: a.id },
+        { issueId: b.id, releasedBy: a.id },
+      ]);
+    },
+  );
+
+  it('refuses delegated conversion without changing the relationship', async () => {
+    const viewer = h.viewer('alice');
+    const a = await h.services.issues.create(viewer, { title: 'A' });
+    const b = await h.services.issues.create(viewer, { title: 'B' });
+    const link = await h.services.subtasks.addDependency(viewer, a.id, {
+      dependsOnIssueId: b.id,
+      type: 'relatedTo',
+    });
+    const write = vi.fn();
+    container.instance(projectsDelegatedWritesToken, {
+      covers: () => true,
+      write,
+    });
+    const response = await call(
+      `/issues/${a.identifier}/dependencies/${link.dependencyId}`,
+      {
+        role: 'member',
+        method: 'PATCH',
+        body: JSON.stringify({ expectedType: 'relatedTo', type: 'blockedBy' }),
+      },
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: { status: 'FAILED_PRECONDITION', reason: 'PLAN_REQUIRED' },
+    });
+    expect(write).not.toHaveBeenCalled();
+    const detail = await h.services.issueQueries.detail(viewer, a.id);
+    expect(detail.relatedTo).toEqual([link]);
+    expect(detail.blockedBy).toEqual([]);
+  });
+
+  it('changes a relationship in place and reports a stale expected type as 409', async () => {
+    const viewer = h.viewer('alice');
+    const a = await h.services.issues.create(viewer, { title: 'A' });
+    const b = await h.services.issues.create(viewer, { title: 'B' });
+    const link = await h.services.subtasks.addDependency(viewer, a.id, {
+      dependsOnIssueId: b.id,
+      type: 'relatedTo',
+    });
+    const path = `/issues/${a.identifier}/dependencies/${link.dependencyId}`;
+    const body = JSON.stringify({
+      expectedType: 'relatedTo',
+      type: 'blockedBy',
+    });
+    const changed = await call(path, { role: 'member', method: 'PATCH', body });
+    expect(changed.status).toBe(200);
+    expect(await changed.json()).toMatchObject({
+      data: {
+        dependencyId: link.dependencyId,
+        issueId: b.id,
+        type: 'blockedBy',
+      },
+    });
+    const stale = await call(path, { role: 'member', method: 'PATCH', body });
+    expect(stale.status).toBe(409);
+    expect(await stale.json()).toMatchObject({
+      error: {
+        status: 'ABORTED',
+        reason: 'DEPENDENCY_CHANGED',
+        domain: 'projects',
+      },
+    });
+    const detail = await h.services.issueQueries.detail(viewer, a.id);
+    expect(detail.blockedBy).toEqual([
+      expect.objectContaining({
+        dependencyId: link.dependencyId,
+        type: 'blockedBy',
+      }),
+    ]);
+    expect(detail.relatedTo).toEqual([]);
+  });
+
+  it('returns two conflicts and keeps both relationships for opposite concurrent changes', async () => {
+    const viewer = h.viewer('alice');
+    const a = await h.services.issues.create(viewer, { title: 'A' });
+    const b = await h.services.issues.create(viewer, { title: 'B' });
+    const blocking = await h.services.subtasks.addDependency(viewer, a.id, {
+      dependsOnIssueId: b.id,
+    });
+    const related = await h.services.subtasks.addDependency(viewer, a.id, {
+      dependsOnIssueId: b.id,
+      type: 'relatedTo',
+    });
+    const responses = await Promise.all([
+      call(`/issues/${a.identifier}/dependencies/${blocking.dependencyId}`, {
+        role: 'member',
+        method: 'PATCH',
+        body: JSON.stringify({ expectedType: 'blockedBy', type: 'relatedTo' }),
+      }),
+      call(`/issues/${a.identifier}/dependencies/${related.dependencyId}`, {
+        role: 'member',
+        method: 'PATCH',
+        body: JSON.stringify({ expectedType: 'relatedTo', type: 'blockedBy' }),
+      }),
+    ]);
+    for (const response of responses) {
+      expect(response.status).toBe(409);
+      expect(await response.json()).toMatchObject({
+        error: { reason: 'DEPENDENCY_EXISTS', domain: 'projects' },
+      });
+    }
+    const detail = await h.services.issueQueries.detail(viewer, a.id);
+    expect(detail.blockedBy).toEqual([blocking]);
+    expect(detail.relatedTo).toEqual([related]);
+    expect(detail.blockers).toHaveLength(1);
+  });
+
+  it('authenticates and authorizes conversion before validating input', async () => {
+    const path = '/issues/PM-1/dependencies/missing';
+    const anonymous = await call(path, { method: 'PATCH', body: '{}' });
+    expect(anonymous.status).toBe(401);
+    const forbidden = await call(path, {
+      role: 'none',
+      method: 'PATCH',
+      body: '[]',
+    });
+    expect(forbidden.status).toBe(403);
+    expect(await forbidden.json()).toMatchObject({
+      error: {
+        status: 'PERMISSION_DENIED',
+        reason: 'FORBIDDEN',
+        domain: 'projects',
+      },
+    });
+  });
+
+  it.each([
+    { type: 'relatedTo' },
+    { expectedType: 'blockedBy', type: 'blocks' },
+    { expectedType: 'blockedBy', type: 'relatedTo', dependsOnIssueId: 'PM-2' },
+  ])('rejects an invalid conversion body %j', async (body) => {
+    const response = await call('/issues/PM-1/dependencies/missing', {
+      role: 'member',
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: { reason: 'INVALID_INPUT', fieldViolations: expect.any(Array) },
+    });
+  });
+
   it('links with 201, refuses a cycle with 400, and unlinks with 204', async () => {
     for (const title of ['A', 'B'])
       await call('/issues', {
@@ -463,76 +1489,6 @@ describe('dependencies over HTTP', () => {
   });
 });
 
-describe('approvals over HTTP', () => {
-  it('answers 202 with the request that holds a status change, and lets an approver decide it', async () => {
-    await h.addUser('lead', 'Lead');
-    const admin = h.viewer('lead', 'admin');
-    const workflow = await h.installStandardWorkflow();
-    await h.services.workflows.update(admin, workflow.id, {
-      revision: workflow.revision,
-      definition: {
-        ...workflow.definition,
-        transitions: [
-          ...workflow.definition.transitions,
-          {
-            from: 'todo',
-            to: 'done',
-            actors: ['user'],
-            approval: { approvers: ['projectLead'] },
-          },
-        ],
-      },
-    });
-    const project = await h.services.projects.create(admin, { name: 'P' });
-    await call('/issues', {
-      role: 'member',
-      method: 'POST',
-      body: JSON.stringify({ title: 'A', projectId: project.id }),
-    });
-
-    const held = await call('/issues/PM-1', {
-      role: 'member',
-      method: 'PATCH',
-      body: JSON.stringify({ revision: 1, statusKey: 'done' }),
-    });
-    expect(held.status).toBe(202);
-    const {
-      data: { issue, pendingApproval },
-    } = (await held.json()) as {
-      data: {
-        issue: { statusKey: string };
-        pendingApproval: { id: string; approverUserIds: string[] };
-      };
-    };
-    expect(issue.statusKey).toBe('todo');
-    expect(pendingApproval.approverUserIds).toEqual(['lead']);
-
-    const lead = (path: string, init: RequestInit = {}) =>
-      router.request(`/api/projects${path}`, {
-        ...init,
-        headers: {
-          'content-type': 'application/json',
-          'x-test-user': 'lead',
-          'x-test-role': 'member',
-        },
-      });
-    const mine = (await (await lead('/approvals')).json()) as {
-      data: { id: string }[];
-    };
-    expect(mine.data.map((request) => request.id)).toEqual([
-      pendingApproval.id,
-    ]);
-    const approved = await lead(`/approvals/${pendingApproval.id}/approve`, {
-      method: 'POST',
-      body: '{}',
-    });
-    expect(approved.status).toBe(200);
-    expect(await approved.json()).toMatchObject({
-      data: { status: 'approved' },
-    });
-  });
-});
-
 describe('comments over HTTP', () => {
   it('posts, reacts with an encoded emoji, follows and lists mentions', async () => {
     await call('/issues', {
@@ -576,6 +1532,17 @@ describe('comments over HTTP', () => {
     ).json()) as { data: unknown[]; meta: object };
     expect(threads).toMatchObject({ meta: {} });
     expect(threads.data).toHaveLength(1);
+    const later = (await (
+      await call(
+        `/issues/PM-1/comments?since=${encodeURIComponent('2999-01-01T00:00:00Z')}`,
+        { role: 'member' },
+      )
+    ).json()) as { data: unknown[] };
+    expect(later.data).toEqual([]);
+    const invalid = await call('/issues/PM-1/comments?since=yesterday', {
+      role: 'member',
+    });
+    expect(invalid.status).toBe(400);
     const mentions = (await (
       await call('/mentionCandidates?q=ali&issueId=PM-1', { role: 'member' })
     ).json()) as { data: { id: string }[] };
@@ -744,7 +1711,7 @@ describe('the API document', () => {
         'projectsListIssues',
         'projectsCreateIssue',
         'projectsUpdateIssue',
-        'projectsApproveApproval',
+        'projectsListIssueStatuses',
         'projectsExecutePlan',
         'projectsUploadAttachment',
         'projectsDownloadAttachment',
@@ -776,4 +1743,102 @@ describe('the API document', () => {
     const parsed = IssueDetailSchema.safeParse((await issue.json()).data);
     expect(parsed.error).toBeUndefined();
   });
+});
+
+describe('CLI session issue integration', () => {
+  it('keeps ordinary creation unchanged and rejects a session context without integration', async () => {
+    const created = await call('/issues', {
+      role: 'admin',
+      method: 'POST',
+      body: JSON.stringify({ title: 'Ordinary task' }),
+    });
+    expect(created.status).toBe(201);
+    const refused = await call('/issues', {
+      role: 'admin',
+      method: 'POST',
+      headers: { 'x-nb-agent-session': 'foreign' },
+      body: JSON.stringify({ title: 'Refused' }),
+    });
+    expect(refused.status).toBe(403);
+  });
+
+  it.each([false, true])(
+    'defaults the project, links only successful creation and adds progress (delegated=%s)',
+    async (delegated) => {
+      const project = await h.services.projects.create(h.viewer('alice'), {
+        name: 'Session project',
+      });
+      const link = vi.fn(async (_id: string) => {});
+      const context = vi.fn(
+        async (
+          viewer: import('../server/tokens.js').Viewer,
+          sessionId: string,
+        ) => {
+          if (sessionId !== 'own' || viewer.userId !== 'alice')
+            throw new ApiError({
+              status: 'PERMISSION_DENIED',
+              reason: 'SESSION_CONTEXT_REFUSED',
+              domain: 'agentSessions',
+              message: 'Session refused.',
+            });
+          return { projectId: project.id, link };
+        },
+      );
+      container.instance(projectsIssueSessionToken, {
+        creationContext: context,
+        progress: async () => ({
+          agent: 'Sol',
+          waitingFor: { reason: 'review' },
+          pullRequest: 'https://example.test/pull/1',
+        }),
+      });
+      if (delegated)
+        container.instance(projectsDelegatedWritesToken, {
+          covers: () => true,
+          write: async (viewer, request) => ({
+            plan: await h.services.plans.create(
+              viewer,
+              {
+                title: request.title,
+                source: { kind: 'test' },
+                rows: request.rows,
+              },
+              { execute: true },
+            ),
+            meta: {},
+          }),
+        });
+      const create = (sessionId: string, role = 'admin', extra = {}) =>
+        call('/issues', {
+          role,
+          method: 'POST',
+          headers: { 'x-nb-agent-session': sessionId },
+          body: JSON.stringify({ title: 'Session task', ...extra }),
+        });
+      expect((await create('foreign')).status).toBe(403);
+      expect(link).not.toHaveBeenCalled();
+      const made = await create('own');
+      expect(made.status).toBe(201);
+      const body = await made.json();
+      expect(body.data).toMatchObject({
+        projectId: project.id,
+        statusKey: 'backlog',
+      });
+      expect(link).toHaveBeenCalledExactlyOnceWith(body.data.id);
+      const detail = await call(`/issues/${body.data.id}`, { role: 'admin' });
+      expect(await detail.json()).toMatchObject({
+        data: {
+          progress: {
+            agent: 'Sol',
+            waitingFor: { reason: 'review' },
+            pullRequest: 'https://example.test/pull/1',
+          },
+        },
+      });
+      link.mockClear();
+      const forbidden = await create('own', 'none');
+      expect(forbidden.status).not.toBe(201);
+      expect(link).not.toHaveBeenCalled();
+    },
+  );
 });

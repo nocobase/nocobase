@@ -26,7 +26,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { NavigationGuardProvider } from '../src/navigation-guard-provider.js';
 import { useNavigationGuard } from '../src/navigation-guard.js';
 
-function Editor({ decide }: { readonly decide: () => boolean }): ReactElement {
+function Editor({
+  decide,
+}: {
+  readonly decide: () => boolean | Promise<boolean>;
+}): ReactElement {
   const [draft, setDraft] = useState('');
   const navigate = useNavigate();
   useNavigationGuard(decide);
@@ -50,7 +54,11 @@ function LocationProbe(): ReactElement {
   return <output data-testid='outer-location'>{useLocation().pathname}</output>;
 }
 
-function Example({ decide }: { readonly decide: () => boolean }): ReactElement {
+function Example({
+  decide,
+}: {
+  readonly decide: () => boolean | Promise<boolean>;
+}): ReactElement {
   return (
     <NavigationGuardProvider>
       <Routes>
@@ -245,6 +253,94 @@ describe('host navigation guards', () => {
       fireEvent.click(screen.getByText('Leave'));
       expect(await screen.findByText('Open')).toBeInTheDocument();
       expect(window.location.pathname).toBe(`${prefix}/list`);
+    },
+  );
+
+  it.each(['Leave', 'Replace', 'Back'])(
+    'waits for an asynchronous %s decision and preserves a cancelled draft',
+    async (action) => {
+      let answer: (allowed: boolean) => void = () => undefined;
+      const decide = vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            answer = resolve;
+          }),
+      );
+      render(
+        <MemoryRouter initialEntries={['/list']}>
+          <LocationProbe />
+          <Example decide={decide} />
+        </MemoryRouter>,
+      );
+      fireEvent.click(screen.getByText('Open'));
+      fireEvent.change(await screen.findByRole('textbox', { name: 'Draft' }), {
+        target: { value: 'Pending draft' },
+      });
+      fireEvent.click(screen.getByText(action));
+      await waitFor(() => expect(decide).toHaveBeenCalledOnce());
+      expect(screen.getByRole('textbox', { name: 'Draft' })).toHaveValue(
+        'Pending draft',
+      );
+      await act(async () => answer(false));
+      expect(screen.getByRole('textbox', { name: 'Draft' })).toHaveValue(
+        'Pending draft',
+      );
+      await waitFor(() =>
+        expect(screen.getByTestId('outer-location')).toHaveTextContent('/edit'),
+      );
+      fireEvent.click(screen.getByText('Leave'));
+      await waitFor(() => expect(decide).toHaveBeenCalledTimes(2));
+      await act(async () => answer(true));
+      expect(await screen.findByText('Open')).toBeInTheDocument();
+    },
+  );
+
+  it('shares a pending link decision and ignores it after the boundary unmounts', async () => {
+    let answer: (allowed: boolean) => void = () => undefined;
+    const decide = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          answer = resolve;
+        }),
+    );
+    const app = (mounted: boolean) => (
+      <MemoryRouter initialEntries={['/edit']}>
+        <LocationProbe />
+        {mounted ? <Example decide={decide} /> : null}
+      </MemoryRouter>
+    );
+    const view = render(app(true));
+    fireEvent.click(screen.getByText('Leave'));
+    fireEvent.click(screen.getByText('Replace'));
+    expect(decide).toHaveBeenCalledOnce();
+    view.rerender(app(false));
+    await act(async () => answer(true));
+    expect(screen.getByTestId('outer-location')).toHaveTextContent('/edit');
+  });
+
+  it.each(['Leave', 'Back'])(
+    'keeps a draft when an asynchronous %s guard rejects',
+    async (action) => {
+      const decide = vi.fn(() =>
+        Promise.reject(new Error('Confirmation failed')),
+      );
+      render(
+        <MemoryRouter initialEntries={['/list']}>
+          <Example decide={decide} />
+        </MemoryRouter>,
+      );
+      fireEvent.click(screen.getByText('Open'));
+      fireEvent.change(await screen.findByRole('textbox', { name: 'Draft' }), {
+        target: { value: 'Keep on failure' },
+      });
+      fireEvent.click(screen.getByText(action));
+      await waitFor(() => expect(decide).toHaveBeenCalledOnce());
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(screen.getByRole('textbox', { name: 'Draft' })).toHaveValue(
+        'Keep on failure',
+      );
     },
   );
 

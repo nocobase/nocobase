@@ -11,9 +11,10 @@
  *   them whose current executor is of the given kind (an agent), by executor; day by day (the day each last entered
  *   one), and how long each took from being created to that entry (its cycle time).
  * - trust: every exit from `in_review` in the range, those to a `done`-category status (passed) and those back to
- *   `in_progress` (rework); approval requests decided in the range, approved or rejected.
- * - decisions (the human load): approval requests created in the range; those decided (approved or rejected) in it
- *   with how long each took; those still pending that were created before the end; how the decided ones ended.
+ *   `in_progress` (rework).
+ *
+ * Status keys in older activity that no fixed status has any more (`todo`, `analysis`, …) are read by the category
+ * they had (`LEGACY_CATEGORIES`).
  *
  * `wip` is not over a range: the live issues now in each status that is neither done nor closed.
  *
@@ -31,23 +32,16 @@
  * Now, not over a range: `projects`, each visible project's live issues by category and those blocked; `attention`,
  * the live issues blocked (status `blocked`) and those overdue (a due date before today, neither done nor closed).
  */
-import type {
-  DatabaseConnection,
-  FilterBuilder,
-  FilterNode,
-} from '@nocobase/db';
+import type { FilterBuilder, FilterNode } from '@nocobase/db';
 
-import {
-  BUILTIN_STATUSES,
-  type WorkflowStatus,
-} from '../../../shared/workflows.js';
+import type { StatusDefinition } from '../../../shared/issues.js';
+import { FIXED_STATUSES } from '../../../shared/statuses.js';
 import type { Viewer } from '../../access/viewer.js';
 import { oneOf } from '../../kernel/db.js';
 import type { TxRunner } from '../../kernel/tx.js';
 import { visibleIssues } from '../issues/issue.access.js';
 import { visibleProjectsFilter } from '../projects/project.access.js';
 import type { ProjectRecord } from '../projects/project.store.js';
-import { listWorkflows } from '../workflows/workflow.store.js';
 
 export interface IssueReportQuery {
   /** Inclusive. */
@@ -84,17 +78,6 @@ export interface IssueReport {
     readonly reviewExits: number;
     readonly reviewPassed: number;
     readonly reworked: number;
-    readonly approvalsApproved: number;
-    readonly approvalsRejected: number;
-  };
-  readonly decisions: {
-    readonly created: number;
-    readonly resolved: number;
-    readonly open: number;
-    /** createdAt → decidedAt of each resolved one, in milliseconds. */
-    readonly resolveMs: readonly number[];
-    /** Decided in the range, by how they ended (`approved`, `rejected`, `withdrawn`, `stale`). */
-    readonly byOutcome: Readonly<Record<string, number>>;
   };
 }
 
@@ -194,7 +177,7 @@ export interface IssueAttention {
 
 export interface IssueReports {
   report(viewer: Viewer, query: IssueReportQuery): Promise<IssueReport>;
-  /** The visible live issues (of the project, when asked) by open status, in workflow order. */
+  /** The visible live issues (of the project, when asked) by open status, in status order. */
   wip(viewer: Viewer, projectId?: string | null): Promise<WipCount[]>;
   /** The issues completed, sent back and blocked by agents in the range, one by one. */
   flow(viewer: Viewer, query: IssueReportQuery): Promise<IssueFlow>;
@@ -241,14 +224,6 @@ interface CommentRow {
   readonly createdAt: Date | string;
 }
 
-interface ApprovalRow {
-  readonly status: string;
-  readonly createdAt: Date | string;
-  readonly decidedAt: Date | string | null;
-}
-
-const PAGE = 200;
-
 const time = (value: Date | string | null): number | null =>
   value === null ? null : new Date(value).getTime();
 
@@ -268,31 +243,31 @@ function detailsOf(value: unknown): Record<string, unknown> {
     : {};
 }
 
-/** Every status key of the `done` category, across the workflows. */
-async function doneKeys(conn: DatabaseConnection): Promise<Set<string>> {
-  const keys = new Set(
-    BUILTIN_STATUSES.filter((status) => status.category === 'done').map(
+/** The categories of the statuses earlier versions had, which older activity still names. */
+const LEGACY_CATEGORIES: Readonly<Record<string, string>> = {
+  todo: 'unstarted',
+  analysis: 'started',
+  proposal_review: 'started',
+  ui_review: 'started',
+};
+
+/** Every status key's category: the fixed statuses' and the legacy ones'. */
+function statusCategories(): Map<string, Set<string>> {
+  const categories = new Map<string, Set<string>>();
+  for (const status of FIXED_STATUSES)
+    categories.set(status.key, new Set([status.category]));
+  for (const [key, category] of Object.entries(LEGACY_CATEGORIES))
+    categories.set(key, new Set([category]));
+  return categories;
+}
+
+/** Every status key of the `done` category. */
+function doneKeys(): Set<string> {
+  return new Set(
+    FIXED_STATUSES.filter((status) => status.category === 'done').map(
       (status) => status.key,
     ),
   );
-  for (const workflow of await listWorkflows(conn))
-    for (const state of workflow.definition.states)
-      if (state.category === 'done') keys.add(state.key);
-  return keys;
-}
-
-/** Every status key's categories, across the workflows (a key may mean different things in two of them). */
-async function statusCategories(
-  conn: DatabaseConnection,
-): Promise<Map<string, Set<string>>> {
-  const categories = new Map<string, Set<string>>();
-  const add = (key: string, category: string) =>
-    categories.set(key, (categories.get(key) ?? new Set()).add(category));
-  for (const status of BUILTIN_STATUSES) add(status.key, status.category);
-  for (const workflow of await listWorkflows(conn))
-    for (const state of workflow.definition.states)
-      add(state.key, state.category);
-  return categories;
 }
 
 /** The status agents ask an issue's owner with, and the one work is handed in for review in. */
@@ -359,6 +334,7 @@ export function createIssueReports(deps: {
 
       const created = await conn.repository<IssueRow>('pmIssues').findMany({
         filter: (f) => f.and([scope(f), inRange(f, 'createdAt', query)]),
+        select: (select) => select.fields('id', 'createdAt'),
       });
       const comments = await conn
         .repository<CommentRow>('pmComments')
@@ -369,6 +345,8 @@ export function createIssueReports(deps: {
               f.date('deletedAt').empty(),
               inRange(f, 'createdAt', query),
             ]),
+          select: (select) =>
+            select.fields('authorType', 'authorId', 'createdAt'),
         });
       const activities = await conn
         .repository<ActivityRow>('pmActivities')
@@ -384,7 +362,7 @@ export function createIssueReports(deps: {
           members.add(row.authorId);
 
       // Status moves: deliveries, and exits from review.
-      const done = await doneKeys(conn);
+      const done = doneKeys();
       // Each delivered issue, with when it last entered a done status.
       const delivered = new Map<string, number>();
       let reviewExits = 0;
@@ -411,62 +389,34 @@ export function createIssueReports(deps: {
       const cycleMs: number[] = [];
       let deliveredByAgent = 0;
       const deliveredIds = [...delivered.keys()];
-      for (let at = 0; at < deliveredIds.length; at += PAGE) {
-        const page = deliveredIds.slice(at, at + PAGE);
-        const rows = await conn.repository<IssueRow>('pmIssues').findMany({
-          filter: (f) => oneOf(f, 'id', page),
-        });
-        for (const row of rows) {
-          const doneAt = delivered.get(row.id) ?? 0;
-          const day = new Date(doneAt).toISOString().slice(0, 10);
-          const agent = row.executorType === query.agentKind;
-          daily[day] = {
-            total: (daily[day]?.total ?? 0) + 1,
-            byAgent: (daily[day]?.byAgent ?? 0) + (agent ? 1 : 0),
-          };
-          const createdAt = time(row.createdAt);
-          if (createdAt !== null) cycleMs.push(Math.max(0, doneAt - createdAt));
-          if (!agent) continue;
-          deliveredByAgent += 1;
-          if (row.executorId)
-            byAgent[row.executorId] = (byAgent[row.executorId] ?? 0) + 1;
-        }
-      }
-
-      // Approval requests: the decisions people take.
-      const approvals = conn.repository<ApprovalRow>('pmApprovalRequests');
-      const requested = await approvals.findMany({
-        filter: (f) => f.and([ofIssue(f), inRange(f, 'createdAt', query)]),
-      });
-      const decided = await approvals.findMany({
-        filter: (f) =>
-          f.and([
-            ofIssue(f),
-            f.date('decidedAt').notEmpty(),
-            inRange(f, 'decidedAt', query),
-          ]),
-      });
-      const open = await approvals.count({
-        filter: (f) =>
-          f.and([
-            ofIssue(f),
-            f.string('status').eq('pending'),
-            f.date('createdAt').before(query.to),
-          ]),
-      });
-      const byOutcome: Record<string, number> = {};
-      const resolveMs: number[] = [];
-      let approved = 0;
-      let rejected = 0;
-      for (const row of decided) {
-        byOutcome[row.status] = (byOutcome[row.status] ?? 0) + 1;
-        if (row.status === 'approved') approved += 1;
-        if (row.status === 'rejected') rejected += 1;
-        if (row.status !== 'approved' && row.status !== 'rejected') continue;
-        const start = time(row.createdAt);
-        const end = time(row.decidedAt);
-        if (start !== null && end !== null)
-          resolveMs.push(Math.max(0, end - start));
+      const deliveredRows =
+        deliveredIds.length === 0
+          ? []
+          : await conn.query
+              .selectFrom('pmIssues')
+              .select(['id', 'executorType', 'executorId', 'createdAt'])
+              .where('id', 'in', deliveredIds)
+              .orderBy('id')
+              .execute<
+                Pick<
+                  IssueRow,
+                  'id' | 'executorType' | 'executorId' | 'createdAt'
+                >
+              >();
+      for (const row of deliveredRows) {
+        const doneAt = delivered.get(row.id) ?? 0;
+        const day = new Date(doneAt).toISOString().slice(0, 10);
+        const agent = row.executorType === query.agentKind;
+        daily[day] = {
+          total: (daily[day]?.total ?? 0) + 1,
+          byAgent: (daily[day]?.byAgent ?? 0) + (agent ? 1 : 0),
+        };
+        const createdAt = time(row.createdAt);
+        if (createdAt !== null) cycleMs.push(Math.max(0, doneAt - createdAt));
+        if (!agent) continue;
+        deliveredByAgent += 1;
+        if (row.executorId)
+          byAgent[row.executorId] = (byAgent[row.executorId] ?? 0) + 1;
       }
 
       return {
@@ -492,15 +442,6 @@ export function createIssueReports(deps: {
           reviewExits,
           reviewPassed,
           reworked,
-          approvalsApproved: approved,
-          approvalsRejected: rejected,
-        },
-        decisions: {
-          created: requested.length,
-          resolved: resolveMs.length,
-          open,
-          resolveMs,
-          byOutcome,
         },
       };
     },
@@ -508,19 +449,9 @@ export function createIssueReports(deps: {
     async wip(viewer, projectId) {
       const conn = deps.tx.read();
       const scope = inScope(viewer, projectId);
-      // A workflow's own name wins over the built-in one, the default workflow's first, so a renamed status reads as
-      // renamed; the order stays the built-in statuses' and then the added ones'.
-      const named = new Map<string, WorkflowStatus>();
-      for (const workflow of await listWorkflows(conn))
-        for (const state of workflow.definition.states)
-          if (!named.has(state.key)) named.set(state.key, state);
-      const statuses = new Map(
-        BUILTIN_STATUSES.map(
-          (status) => [status.key, named.get(status.key) ?? status] as const,
-        ),
+      const statuses = new Map<string, StatusDefinition>(
+        FIXED_STATUSES.map((status) => [status.key, status] as const),
       );
-      for (const [key, state] of named)
-        if (!statuses.has(key)) statuses.set(key, state);
       const groups = await conn.repository<IssueRow>('pmIssues').groupBy({
         by: ['statusKey'],
         aggregate: (aggregate) => ({ count: aggregate.count() }),
@@ -547,7 +478,7 @@ export function createIssueReports(deps: {
     async flow(viewer, query) {
       const conn = deps.tx.read();
       const scope = inScope(viewer, query.projectId);
-      const categories = await statusCategories(conn);
+      const categories = statusCategories();
       const is = (key: string, category: string) =>
         categories.get(key)?.has(category) ?? false;
       const moves = await conn
@@ -604,23 +535,32 @@ export function createIssueReports(deps: {
       const issues = new Map<string, IssueRow>();
       const history = new Map<string, ActivityRow[]>();
       const completedIds = [...doneAt.keys()];
-      for (let at = 0; at < ids.length; at += PAGE)
-        for (const row of await conn.repository<IssueRow>('pmIssues').findMany({
-          filter: (f) => oneOf(f, 'id', ids.slice(at, at + PAGE)),
-        }))
+      if (ids.length > 0)
+        for (const row of await conn.query
+          .selectFrom('pmIssues')
+          .select([
+            'id',
+            'projectId',
+            'executorType',
+            'executorId',
+            'createdAt',
+          ])
+          .where('id', 'in', ids)
+          .orderBy('id')
+          .execute<IssueRow>())
           issues.set(row.id, row);
-      for (let at = 0; at < completedIds.length; at += PAGE)
-        for (const row of await conn
-          .repository<ActivityRow>('pmActivities')
-          .findMany({
-            filter: (f) =>
-              f.and([
-                oneOf(f, 'issueId', completedIds.slice(at, at + PAGE)),
-                f.string('action').eq('status_changed'),
-              ]),
-            sort: (sort) => [sort.field('createdAt').asc()],
-          }))
-          history.set(row.issueId, [...(history.get(row.issueId) ?? []), row]);
+      if (completedIds.length > 0)
+        for (const row of await conn.query
+          .selectFrom('pmActivities')
+          .select(['issueId', 'details', 'createdAt'])
+          .where('issueId', 'in', completedIds)
+          .where('action', '=', 'status_changed')
+          .orderBy('createdAt')
+          .execute<Pick<ActivityRow, 'issueId' | 'details' | 'createdAt'>>())
+          history.set(row.issueId, [
+            ...(history.get(row.issueId) ?? []),
+            row as ActivityRow,
+          ]);
 
       const startedAt = (issue: IssueRow): string | null => {
         const changes = history.get(issue.id) ?? [];
@@ -669,7 +609,7 @@ export function createIssueReports(deps: {
 
     async projects(viewer) {
       const conn = deps.tx.read();
-      const categories = await statusCategories(conn);
+      const categories = statusCategories();
       const is = (key: string, category: string) =>
         categories.get(key)?.has(category) ?? false;
       const visible = visibleProjectsFilter(viewer);
@@ -716,7 +656,7 @@ export function createIssueReports(deps: {
 
     async attention(viewer, { today, limit }) {
       const conn = deps.tx.read();
-      const categories = await statusCategories(conn);
+      const categories = statusCategories();
       const open = (key: string) =>
         ![...(categories.get(key) ?? [])].some(
           (category) => category === 'done' || category === 'closed',
@@ -771,32 +711,36 @@ export function createIssueReports(deps: {
     async describe(viewer, ids) {
       const conn = deps.tx.read();
       const wanted = [...new Set(ids.filter(Boolean))];
-      const rows: IssueRow[] = [];
-      const visible = new Set<string>();
-      for (let at = 0; at < wanted.length; at += PAGE) {
-        const page = wanted.slice(at, at + PAGE);
-        rows.push(
-          ...(await conn.repository<IssueRow>('pmIssues').findMany({
-            filter: (f) => oneOf(f, 'id', page),
-          })),
-        );
-        for (const row of await conn.repository<IssueRow>('pmIssues').findMany({
-          filter: (f) =>
-            f.and([oneOf(f, 'id', page), visibleIssues(f, viewer)]),
-        }))
-          visible.add(row.id);
-      }
+      if (wanted.length === 0) return new Map();
+      // Three reads whatever the number of issues: the issues, those the viewer may see, and their projects.
+      const rows = await conn.query
+        .selectFrom('pmIssues')
+        .select(['id', 'identifier', 'title', 'projectId'])
+        .where('id', 'in', wanted)
+        .execute<Pick<IssueRow, 'id' | 'identifier' | 'title' | 'projectId'>>();
+      const visible = new Set(
+        (
+          await conn.repository<IssueRow>('pmIssues').findMany({
+            filter: (f) =>
+              f.and([oneOf(f, 'id', wanted), visibleIssues(f, viewer)]),
+            select: (select) => select.fields('id'),
+          })
+        ).map((row) => row.id),
+      );
       const projectIds = [
         ...new Set(rows.map((row) => row.projectId).filter(Boolean)),
       ] as string[];
-      const projects = new Map<string, string>();
-      for (let at = 0; at < projectIds.length; at += PAGE)
-        for (const project of await conn
-          .repository<{ id: string; name: string }>('pmProjects')
-          .findMany({
-            filter: (f) => oneOf(f, 'id', projectIds.slice(at, at + PAGE)),
-          }))
-          projects.set(project.id, project.name);
+      const projects = new Map<string, string>(
+        projectIds.length === 0
+          ? []
+          : (
+              await conn.query
+                .selectFrom('pmProjects')
+                .select(['id', 'name'])
+                .where('id', 'in', projectIds)
+                .execute<{ id: string; name: string }>()
+            ).map((project) => [project.id, project.name]),
+      );
       return new Map(
         rows.map((row) => [
           row.id,

@@ -46,7 +46,11 @@ export interface ReplaceSubjectAssignmentsInput {
 
 export interface PermissionSetsApi<TTransaction = unknown> {
   create(input: CreatePermissionSetInput): Promise<PermissionSet>;
-  update(key: string, input: CreatePermissionSetInput): Promise<PermissionSet>;
+  update(
+    key: string,
+    input: CreatePermissionSetInput,
+    expectedRevision?: string,
+  ): Promise<PermissionSet>;
   delete(key: string): Promise<void>;
   get(key: string): Promise<PermissionSet | undefined>;
   list(): Promise<readonly PermissionSet[]>;
@@ -466,6 +470,7 @@ class PermissionSetService<
   async update(
     key: string,
     input: CreatePermissionSetInput,
+    expectedRevision?: string,
   ): Promise<PermissionSet> {
     if (!(await this.store.get(key))) {
       throw new PermissionSetNotFoundError(key);
@@ -479,6 +484,7 @@ class PermissionSetService<
     const permissionSet = await this.store.update(
       key,
       this.toPermissionSet(input),
+      expectedRevision,
     );
     await this.notifySubjectsChanged(affectedSubjects);
     return permissionSet;

@@ -32,6 +32,8 @@ const pages = {
       stageActionBlocked: 'skipped a stage action: the issue is waiting for',
       workBlocked: 'did not start work: the issue is waiting for',
       workDormant: 'did not start work while the issue is in',
+      workLimited:
+        'did not start work: agents’ comments reached the issue’s run limit',
       workWithdrawn: 'withdrew its queued work: the issue is now waiting for',
       stageActionFailed: 'could not run a rule of the status',
       created: 'created the issue',
@@ -55,7 +57,6 @@ const pages = {
       stageChanged: 'changed the stage',
       autoMoveSkipped: 'could not move the issue on automatically to',
     },
-    afterSubtasks: '(automatically, once all sub-issues were finished)',
     afterEvent: '(automatically, on “{{event}}”)',
     empty: 'No activity yet.',
     loadOlder: 'Load older activity',
@@ -70,36 +71,6 @@ const pages = {
   actor: {
     system: 'System',
     user: 'Person',
-  },
-  approvals: {
-    approve: 'Approve',
-    approved: 'Approved. The status has been changed.',
-    approvers: 'Approvers',
-    cardLabel: 'Approval request',
-    comment: 'Comment',
-    commentPlaceholder: 'Optional note for the requester',
-    nameSeparator: ', ',
-    outcomes: {
-      approved: 'Approved',
-      pending: 'Pending',
-      rejected: 'Rejected',
-      stale: 'No longer applied',
-      withdrawn: 'Withdrawn',
-    },
-    pendingTitle: 'Waiting for approval',
-    pendingToast: 'Waiting for approval',
-    pendingToastDescription:
-      'This status change needs an approver. The approvers have been notified.',
-    recentTitle: 'Recent approvals',
-    reject: 'Reject',
-    rejected: 'Rejected. The status stays as it is.',
-    requester: 'Requested by',
-    stale: 'The request no longer applies',
-    staleDescription:
-      'The issue changed since it was asked, so the status stays. Ask again if the change is still wanted.',
-    waiting: 'Only the listed approvers can decide.',
-    withdraw: 'Withdraw',
-    withdrawn: 'Withdrawn. The status stays as it is.',
   },
   board: {
     announce: {
@@ -128,15 +99,6 @@ const pages = {
     purple: 'Purple',
     red: 'Red',
     yellow: 'Yellow',
-  },
-  checklist: {
-    cardLabel: 'Checklist',
-    checkedBy: 'Checked by {{name}} · {{time}}',
-    incomplete:
-      'The issue moves on (except to a closed status) once the required items are checked.',
-    progress: '{{done}} / {{total}}',
-    required: 'Required',
-    title: 'Checklist',
   },
   common: {
     apiKey: 'API key',
@@ -241,8 +203,7 @@ const pages = {
     },
   },
   configPage: {
-    description:
-      'Members, roles, workflow templates, labels and the issue prefix of projects.',
+    description: 'Members, roles, labels and the issue prefix of projects.',
     noAccess: 'Nothing to set up here',
     noAccessDescription:
       'Your roles do not include any project setting. Ask an owner or admin if you need one.',
@@ -280,8 +241,6 @@ const pages = {
   },
   errors: {
     APPROVAL_DECIDED: 'This request has been decided already.',
-    APPROVAL_PENDING:
-      'A status change of this issue is already waiting for approval.',
     NOT_REQUESTER: 'Only whoever asked can withdraw the request.',
     CHECKLIST_INCOMPLETE:
       'Check the required items of the current status’s checklist first.',
@@ -301,7 +260,6 @@ const pages = {
     INVALID_STATUS: 'This status cannot be used here.',
     INVALID_TITLE: 'The title must be 1 to 100 characters.',
     INVALID_URL: 'The repository URL is not valid.',
-    INVALID_WORKFLOW: 'The workflow template is not valid.',
     INVITATION_CLOSED: 'The invitation is no longer pending.',
     LABEL_EXISTS: 'A label with this name already exists.',
     LAST_OWNER: 'The last owner cannot lose the owner role.',
@@ -313,18 +271,12 @@ const pages = {
     ROLE_BUILT_IN: 'Built-in roles cannot be deleted.',
     ROLE_IN_USE: 'Someone still holds this role; change their roles first.',
     ROLE_NOT_EDITABLE: 'The owner role holds everything; it cannot be edited.',
-    STATUS_REQUIRED:
-      "The new project's workflow template lacks this status; choose another one.",
-    TRANSITION_NOT_ALLOWED:
-      'The workflow template does not allow this status change.',
+    TRANSITION_NOT_ALLOWED: 'You may not move the issue to this status.',
     UNKNOWN_ROLE: 'The role no longer exists.',
     USER_DISABLED: 'A disabled account cannot be given a role.',
-    WORKFLOW_EXISTS: 'A workflow template with this name already exists.',
-    WORKFLOW_IN_USE:
-      'The default workflow template and templates that projects use cannot be deleted.',
-    WORKFLOW_STATUS_CONFLICT:
-      'Issues are still in a status this change removes; move them first.',
     DEPENDENCY_CYCLE: 'That dependency would create a cycle.',
+    DEPENDENCY_CHANGED: 'The relationship changed. Reload and retry.',
+    DEPENDENCY_GRAPH_CHANGED: 'Issue dependencies changed. Reload and retry.',
     DEPENDENCY_EXISTS: 'That dependency already exists.',
     DEPENDENCY_TOO_DEEP: 'The dependency chain is too long.',
     INVALID_DEPENDENCY: 'That issue cannot be a dependency here.',
@@ -393,6 +345,8 @@ const pages = {
     invitedBy: 'Invited by',
     link: 'Invitation link',
     linkTitle: 'Forward this link',
+    linkUnavailable:
+      'The invitation has changed. Refresh the list and try again.',
     listSeparator: ', ',
     loadFailed: 'Unable to load invitations',
     noProjects: 'No projects',
@@ -400,7 +354,7 @@ const pages = {
     outcome: {
       added: 'Has an account — added to the projects',
       alreadyMember: 'Already a member',
-      notSent: 'Email not sent — copy the link',
+      notSent: 'Email not sent',
       sent: 'Email sent',
     },
     pending: 'Waiting',
@@ -409,6 +363,13 @@ const pages = {
     projectsHint: 'Invitees join these projects as members.',
     projectsPlaceholder: 'Choose projects',
     resend: 'Send again',
+    generateLink: 'Generate new link',
+    generateDescription:
+      'The previous invitation link will stop working. No email will be sent. Copy the new link after generating it.',
+    linkReady: 'New link ready',
+    newLinkDescription:
+      'The previous link no longer works. Copy and share the new link below.',
+    copyLink: 'Copy invitation link',
     resent: 'Invitation sent again to {{email}}',
     resultsLabel: 'Invitation results',
     revoke: 'Revoke',
@@ -450,8 +411,12 @@ const pages = {
     descriptionPlaceholder: 'Markdown is supported.',
     noProject: 'No project',
     ownerHint: 'The person accountable for the issue. Defaults to you.',
-    processHint: 'The issue starts in {{status}}.',
-    processLabel: 'Process',
+    startLabel: 'When to start',
+    startNow: 'Start now',
+    startNowHint: 'The project manager starts arranging it right away.',
+    startLater: 'Later',
+    startLaterHint: 'It waits in Backlog; start it from the issue page.',
+    createAndStart: 'Create and start',
     projectLabel: 'Project',
     titleLabel: 'Title',
     titleRequired: 'Enter a title.',
@@ -530,7 +495,6 @@ const pages = {
     projects: 'Projects',
     roles: 'Roles',
     settings: 'Settings',
-    workflows: 'Workflow templates',
   },
   newIssue: {
     tabs: { ai: 'AI draft', manual: 'Manual' },
@@ -645,7 +609,6 @@ const pages = {
         'Only project members and workspace admins can see this project and its issues.',
     },
     visibilityLabel: 'Visibility',
-    workflow: 'Workflow template',
   },
   properties: {
     assignToMe: 'Assign to me',
@@ -800,10 +763,6 @@ const pages = {
         read: 'See the labels',
         update: 'Manage labels',
       },
-      workflows: {
-        read: 'View workflow templates',
-        update: 'Edit workflow templates',
-      },
       members: {
         assign: 'Change members’ roles',
         defineRoles: 'Create and edit roles',
@@ -915,14 +874,6 @@ const pages = {
     waiting_one: 'Waiting for {{count}}',
     waiting_other: 'Waiting for {{count}}',
   },
-  start: {
-    description: 'This change hands the issue to {{kind}}.',
-    descriptionFor: 'This change hands {{identifier}} to {{kind}}.',
-    later: "Don't start now",
-    start: 'Start',
-    title: 'Start now?',
-    workers: '{{kind}} to be triggered',
-  },
   states: {
     notFound: 'It does not exist or has been deleted.',
   },
@@ -933,6 +884,7 @@ const pages = {
     title: 'Discard unsaved changes?',
   },
   status: {
+    // Statuses older records may still name.
     analysis: 'Analysis',
     backlog: 'Backlog',
     blocked: 'Blocked',
@@ -966,227 +918,11 @@ const pages = {
     expand: 'Show the resolved thread by {{name}}',
     replies_one: '{{count}} reply',
     replies_other: '{{count}} replies',
+    earlierReplies: 'Show {{count}} earlier replies',
     resolve: 'Resolve',
     resolved: 'Resolved',
     resolvedBy: 'Resolved by {{name}}',
     unresolve: 'Reopen',
-  },
-  workflows: {
-    edit: 'Edit',
-    flowTitle: 'Status flow',
-    flowDescription:
-      'Left to right: unstarted → started → done, with closed apart on the right; top to bottom within a category is the order of the board’s columns. Arrows are transitions set between two statuses; rules for any status are stated above the diagram. Select a status to see where it can go.',
-    wildcardTitle: 'Transitions for any status',
-    wildcardLine: '{{actor}}: {{moves}}',
-    anyToAny: 'between any statuses',
-    moveText: '{{from}} → {{to}}',
-    moveNeedsApproval: ' (approval by {{roles}})',
-    moveSeparator: '; ',
-    reachableHint: 'Select a status to see where it can go.',
-    reachableTitle: '{{name}} can go to:',
-    reachableNone: '{{name}} cannot go anywhere else.',
-    diagramTextHint:
-      'Every transition in the diagram is also written out in the Rules card below.',
-    legendKinds: '{{names}} may move',
-    legendSystem: 'The system may move',
-    legendPeople: 'Only people may move',
-    legendApproval: 'Needs approval',
-    matrix: 'Transition matrix',
-    matrixDescription:
-      'Rows are the current status, columns the next one. Each cell shows who may make the move.',
-    rulesTitle: 'Rules',
-    rulesDescription:
-      'Who may make each move, which moves need an approval, and what entering each status does.',
-    rulesTransitions: 'Transitions',
-    rulesTransitionsHint: 'Change them in the matrix above.',
-    rulesOnEnter: 'On entering a status',
-    rulesNone: 'Entering a status does nothing automatically.',
-    rulesNoneHere: 'No rules',
-    ruleChecklistShort_one: 'Checklist: {{count}} item, {{required}} required',
-    ruleChecklistShort_other:
-      'Checklist: {{count}} items, {{required}} required',
-    ruleNotifyOwnerShort: 'Tells the owner',
-    ruleNotifyOwnerWith: 'Tells the owner: “{{message}}”',
-    ruleSubtasksDoneShort: 'Sub-issues must be finished first',
-    ruleBlockersDoneShort: 'Not while blocked',
-    ruleStartOptionShort: 'Offered when creating an issue',
-    ruleStartOptionWith: 'Offered as “{{label}}” when creating an issue',
-    autoMove: {
-      hint: 'The system makes this move even where people may not; the target’s rules still apply.',
-      rule: 'When all sub-issues are finished, the system moves {{from}} → {{to}}',
-      subtasksTitle: 'When all sub-issues are finished',
-      subtasksHint:
-        'The system moves the issue on once all its sub-issues are done or cancelled.',
-      eventTitle: 'On “{{event}}”',
-      summary: 'Moves the issue to {{to}}',
-      chooseTarget: 'Choose where the issue moves',
-      target: 'Move the issue to',
-      eventRule: 'On “{{event}}”, the system moves {{from}} → {{to}}',
-      unavailable: 'Unavailable event: {{event}} → {{to}}',
-      unavailableHint:
-        'The plugin that fired this event is no longer installed, so the move never happens. Remove it, or leave it for when the plugin comes back.',
-      unavailableShort: 'unavailable',
-      removeUnavailable: 'Remove the move on the unavailable event {{event}}',
-    },
-    peopleMatrixOnly: 'People may only make the moves the matrix lists',
-    rule: '{{actors}} can move {{from}} → {{to}}',
-    statusCount: 'Statuses: {{count}}',
-    approval: 'Approval',
-    approvalBy: 'Needs approval by {{roles}}',
-    approvalHint:
-      'Any one of them can approve; a mover who is one of them goes through at once',
-    approvalNone: 'Not needed',
-    approvalRequired: 'Needed',
-    approvalTitle: 'Approval',
-    approvers: {
-      admin: 'an admin',
-      owner: 'the issue owner',
-      projectLead: 'the project lead',
-    },
-    listSeparator: ', ',
-    actors: { system: 'The system', user: 'People' },
-    addStatus: 'Add',
-    editStatus: 'Edit {{name}}',
-    viaAnyStatus: 'Any status',
-    viaAnyStatusHint:
-      'This move comes from the "Any status" rule; to take it away, change the "Any status" row or column.',
-    whoMayMove: 'Who may move it',
-    anyStatus: 'Any status',
-    backToList: 'Back to workflow templates',
-    breadcrumb: 'Workflow template',
-    builtInHint:
-      'Every workflow template has this status: it cannot be removed, and its key and category are fixed.',
-    builtInStatus: 'Built-in',
-    builtInStatuses: 'Built-in statuses',
-    categories: {
-      closed: {
-        hint: 'Stopped without being done, such as cancelled. Leaving it for any status is never held up.',
-        title: 'Closed',
-      },
-      done: {
-        hint: 'Finished. Counts towards project progress; moving here needs the right to close issues.',
-        title: 'Done',
-      },
-      started: {
-        hint: 'Someone is working on it.',
-        title: 'Started',
-      },
-      unstarted: {
-        hint: 'Waiting to be picked up. New issues start in Todo.',
-        title: 'Not started',
-      },
-    },
-    cellLabel: 'From {{from}} to {{to}}',
-    cellTitle: '{{from}} → {{to}}',
-    conflictLine: '{{count}} in {{status}} ({{project}})',
-    conflictTitle: 'Issues are still in statuses this change removes',
-    copyFrom: 'Start from',
-    created: 'Workflow template {{name}} created.',
-    default: 'Default',
-    defaultOption: '{{name}} (default)',
-    delete: 'Delete',
-    deleteDescription: 'The workflow template is removed. No project uses it.',
-    deleteInUse:
-      '{{count}} projects use this workflow template. Move them to another workflow template before deleting it.',
-    deleteNamed: 'Delete {{name}}',
-    deleteTitle: 'Delete the workflow template {{name}}?',
-    deleted: 'Workflow template {{name}} deleted.',
-    description:
-      'A workflow template sets the statuses of a project’s issues and who may move an issue between them.',
-    discard: 'Discard changes',
-    fromTo: 'From ↓ To →',
-    impliedLegend: 'Faded: allowed through "Any status"',
-    invalid: 'The workflow template cannot be saved',
-    empty: 'No workflow templates',
-    emptyDescription:
-      'Create a workflow template to set your own statuses and rules; until then projects use the built-in statuses.',
-    emptyReadOnly:
-      'Projects use the built-in statuses; ask an administrator to create a workflow template.',
-    loadFailed: 'Unable to load workflow templates',
-    madeDefault: '{{name}} is now the default workflow template.',
-    makeDefault: 'Make {{name}} the default',
-    matrixCaption: 'Who may move an issue from each status to each other',
-    moveEarlier: 'Move {{name}} earlier',
-    moveLater: 'Move {{name}} later',
-    name: 'Name',
-    new: 'New workflow template',
-    newStatusIn: 'New status in {{category}}',
-    newStatusName: 'Name of the new status in {{category}}',
-    newStatusPlaceholder: 'New status name',
-    newTitle: 'New workflow template',
-    noProject: 'issues without a project',
-    notFound: 'This workflow template does not exist.',
-    peopleAnywhere: 'People may move an issue between any statuses',
-    peopleAnywhereHint:
-      'Turn it off to allow only the moves the matrix names. Everyone else is always limited to the matrix.',
-    readOnly:
-      'You can see this workflow template. Owners and admins change it.',
-    removeStatus: 'Remove {{name}}',
-    save: 'Save',
-    rules: {
-      add: 'Add rule',
-      addItem: 'Add an item',
-      empty:
-        'Entering this status does nothing yet. Use “Add rule” to add one.',
-      groups: {
-        action: 'When entering',
-        condition: 'Entry conditions',
-        autoMove: 'Automatic moves',
-      },
-      remove: 'Remove {{title}}',
-      checklist: 'Checklist',
-      checklistHint:
-        'The issue gets these items to check. It moves on (except to a closed status) only once the required ones are checked.',
-      description:
-        'What happens when an issue enters this status. Saved with the workflow template.',
-      done: 'Done',
-      edit: 'On entering {{name}}',
-      itemLabel: 'Item {{position}}',
-      itemPlaceholder: 'What to check',
-      message: 'Message',
-      messagePlaceholder: 'Optional: a note for the owner',
-      notifyOwner: 'Notify the owner',
-      notifyOwnerHint:
-        'The issue’s owner is told it entered this status, unless they moved it themselves.',
-      removeItem: 'Remove item {{position}}',
-      removeUnavailable: 'Remove the unavailable {{type}} rule',
-      unavailable: 'Unavailable rule: {{type}}',
-      unavailableHint:
-        'The plugin that provides this rule is not installed, so entering the status skips it. Remove it, or install the plugin again.',
-      unavailableShort: '{{type}} (unavailable)',
-      required: 'Required',
-      title: 'On entering {{name}}',
-      subtasksDone: 'Sub-issues must be finished first',
-      subtasksDoneHint:
-        'The issue enters this status only once all its sub-issues are done or cancelled.',
-      blockersDone: 'Cannot enter while blocked',
-      blockersDoneHint:
-        'The issue enters this status only once the issues blocking it, and the earlier stages, are finished.',
-      startOption: 'Offer when creating an issue',
-      startOptionHint:
-        'The New issue form offers this status as a process to start in, under your label.',
-      startLabel: 'Label',
-      startLabelPlaceholder: 'Optional: such as “Design first”',
-      startHint: 'Explanation',
-      startHintPlaceholder: 'Optional: what happens when an issue starts here',
-    },
-    saved: 'Workflow template {{name}} saved.',
-    statusColor: 'Color of {{name}}',
-    statusName: 'Name of {{name}}',
-    statusesHint:
-      'Click a status to rename, recolor, move or remove it; “Add” at the foot of a column adds a status to that category. Top to bottom within a category is the order of the board’s columns.',
-    statusProblem: '{{name}}: {{message}}',
-    title: 'Workflow templates',
-    transitionsHint:
-      'Rows are where an issue is, columns where it goes. Click a cell to choose who may make that move.',
-    usedBy: 'Used by {{count}} projects',
-    wakeConfirm: {
-      confirm: 'Save',
-      description:
-        'After this change, entering these statuses wakes someone without the owner’s confirmation.',
-      entering: 'Entering {{status}}:',
-      title: 'Save and wake without confirmation?',
-    },
   },
 };
 

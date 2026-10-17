@@ -12,15 +12,7 @@ import {
   type Permissions,
   type SettingsKey,
 } from '../../shared/access.js';
-import type {
-  ApprovalRequest,
-  DecideApprovalRequest,
-} from '../../shared/approvals.js';
 import type { Attachment } from '../../shared/attachments.js';
-import type {
-  IssueChecklist,
-  UpdateChecklistItemRequest,
-} from '../../shared/checklists.js';
 import {
   REACTION_EMOJIS,
   type CommentReaction,
@@ -55,6 +47,7 @@ import type {
   InvitationResult,
 } from '../../shared/invitations.js';
 import {
+  ISSUE_IDS_MAX,
   type Activity,
   type CreateIssueRequest,
   type Executor,
@@ -64,7 +57,6 @@ import {
   type IssueListItem,
   type IssueListQuery,
   type IssueSort,
-  type IssueStarts,
   type StatusDefinition,
   type UpdateIssueRequest,
   type UpdateIssueResult,
@@ -122,14 +114,8 @@ import {
   type AddDependencyRequest,
   type DependencyType,
   type IssueDependency,
+  type UpdateDependencyRequest,
 } from '../../shared/subtasks.js';
-import type {
-  CreateWorkflowRequest,
-  UpdateWorkflowRequest,
-  WorkflowDefinition,
-  WorkflowListItem,
-  WorkflowPreview,
-} from '../../shared/workflows.js';
 
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;
@@ -156,54 +142,52 @@ const isObject = (value: unknown): boolean =>
 // Path parameters
 
 export const ProjectParams: z.ZodType<{ projectId: string }> = z.object({
-  projectId: id,
+  projectId: id.describe('The project identifier.'),
 });
 export const ProjectMemberParams: z.ZodType<{
   projectId: string;
   userId: string;
-}> = z.object({ projectId: id, userId: id });
+}> = z.object({
+  projectId: id.describe('The project identifier.'),
+  userId: id.describe('The user identifier.'),
+});
 export const ProjectResourceParams: z.ZodType<{
   projectId: string;
   resourceId: string;
-}> = z.object({ projectId: id, resourceId: id });
+}> = z.object({
+  projectId: id.describe('The project identifier.'),
+  resourceId: id.describe('The resource identifier.'),
+});
 export const IssueParams: z.ZodType<{ issueId: string }> = z.object({
-  issueId: id,
+  issueId: id.describe('The issue identifier.'),
 });
 export const DependencyParams: z.ZodType<{
   issueId: string;
   dependencyId: string;
-}> = z.object({ issueId: id, dependencyId: id });
-export const ChecklistItemParams: z.ZodType<{
-  issueId: string;
-  statusKey: string;
-  itemKey: string;
-}> = z.object({ issueId: id, statusKey: id, itemKey: id });
+}> = z.object({
+  issueId: id.describe('The issue identifier.'),
+  dependencyId: id.describe('The dependency identifier.'),
+});
 export const CommentParams: z.ZodType<{ commentId: string }> = z.object({
-  commentId: id,
+  commentId: id.describe('The comment identifier.'),
 });
 export const LabelParams: z.ZodType<{ labelId: string }> = z.object({
-  labelId: id,
-});
-export const WorkflowParams: z.ZodType<{ workflowId: string }> = z.object({
-  workflowId: id,
+  labelId: id.describe('The label identifier.'),
 });
 export const InvitationParams: z.ZodType<{ invitationId: string }> = z.object({
-  invitationId: id,
-});
-export const ApprovalParams: z.ZodType<{ approvalId: string }> = z.object({
-  approvalId: id,
+  invitationId: id.describe('The invitation identifier.'),
 });
 export const PlanParams: z.ZodType<{ planId: string }> = z.object({
-  planId: id,
+  planId: id.describe('The plan identifier.'),
 });
 export const IntakeFileParams: z.ZodType<{ fileId: string }> = z.object({
-  fileId: id,
+  fileId: id.describe('The file identifier.'),
 });
 export const IntakeJobParams: z.ZodType<{ jobId: string }> = z.object({
-  jobId: id,
+  jobId: id.describe('The job identifier.'),
 });
 export const AttachmentParams: z.ZodType<{ attachmentId: string }> = z.object({
-  attachmentId: id,
+  attachmentId: id.describe('The attachment identifier.'),
 });
 
 // Members and mentions
@@ -217,9 +201,15 @@ export interface MentionCandidatesQuery {
 /** `GET /projects/mentionCandidates`: one short page of the `@` list, at most 20. */
 export const MentionCandidatesQuery: z.ZodType<MentionCandidatesQuery> = z
   .object({
-    q: text,
-    issueId: text,
-    pageSize: z.coerce.number().int().min(1).max(20).default(8),
+    q: text.describe('Text to search for.'),
+    issueId: text.describe('The issue identifier.'),
+    pageSize: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(20)
+      .default(8)
+      .describe('The maximum number of records to return.'),
   })
   .transform(({ q, issueId, pageSize: limit }) => ({
     ...(q ? { q } : {}),
@@ -229,69 +219,69 @@ export const MentionCandidatesQuery: z.ZodType<MentionCandidatesQuery> = z
 
 export const CreateInvitationsBody: z.ZodType<CreateInvitationsRequest> =
   z.strictObject({
-    emails: z.array(z.string()),
-    projectIds: z.array(id).optional(),
+    emails: z.array(z.string()).describe('The email addresses to invite.'),
+    projectIds: z
+      .array(id)
+      .optional()
+      .describe('Projects the invited members may join.'),
   });
 
 export const UpdateSettingsBody: z.ZodType<UpdateSettingsRequest> =
-  z.strictObject({ issuePrefix: z.string().optional() });
+  z.strictObject({
+    issuePrefix: z
+      .string()
+      .optional()
+      .describe('The prefix used for new issue identifiers.'),
+  });
 
-// Labels and workflows
+// Labels
 
 export const CreateLabelBody: z.ZodType<CreateLabelRequest> = z.strictObject({
-  name: z.string(),
-  color: z.enum(COLORS).optional(),
+  name: z.string().describe('The name to display.'),
+  color: z.enum(COLORS).optional().describe('The label color.'),
 });
 
 export const UpdateLabelBody: z.ZodType<UpdateLabelRequest> = z.strictObject({
-  name: z.string().optional(),
-  color: z.enum(COLORS).optional(),
+  name: z.string().optional().describe('The name to display.'),
+  color: z.enum(COLORS).optional().describe('The label color.'),
 });
-
-/** The definition's structure is checked by the workflow service, which reports every problem at its path. */
-const definition = z
-  .custom<WorkflowDefinition>(isObject, 'definition must be an object.')
-  .meta({
-    description:
-      'A workflow definition, shaped as `ProjectsWorkflowDefinition`: `{ states, transitions }`.',
-  });
-
-export const CreateWorkflowBody: z.ZodType<CreateWorkflowRequest> =
-  z.strictObject({ name: z.string(), copyFrom: id.nullable() });
-
-export const UpdateWorkflowBody: z.ZodType<UpdateWorkflowRequest> =
-  z.strictObject({
-    revision: z.number().int(),
-    name: z.string().optional(),
-    description: z.string().nullable().optional(),
-    definition: definition.optional(),
-  });
-
-export const PreviewWorkflowBody: z.ZodType<{
-  definition: WorkflowDefinition;
-}> = z.strictObject({ definition });
 
 // Projects
 
 const projectFields = {
-  description: z.string().nullable().optional(),
-  visibility: z.enum(PROJECT_VISIBILITIES).optional(),
-  status: z.enum(PROJECT_STATUSES).optional(),
-  priority: priority.optional(),
-  leadUserId: id.nullable().optional(),
-  startDate: date.optional(),
-  dueDate: date.optional(),
-  workflowId: id.nullable().optional(),
+  description: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('A description of the record.'),
+  visibility: z
+    .enum(PROJECT_VISIBILITIES)
+    .optional()
+    .describe('Who may see this project.'),
+  status: z
+    .enum(PROJECT_STATUSES)
+    .optional()
+    .describe('The status to set or filter by.'),
+  priority: priority.optional().describe('The priority to assign.'),
+  leadUserId: id.nullable().optional().describe('The lead user identifier.'),
+  startDate: date.optional().describe('The planned start date.'),
+  dueDate: date.optional().describe('The planned due date.'),
 };
 
 export const CreateProjectBody: z.ZodType<CreateProjectRequest> =
-  z.strictObject({ name: z.string(), ...projectFields });
+  z.strictObject({
+    name: z.string().describe('The name to display.'),
+    ...projectFields,
+  });
 
 export const UpdateProjectBody: z.ZodType<UpdateProjectRequest> =
-  z.strictObject({ name: z.string().optional(), ...projectFields });
+  z.strictObject({
+    name: z.string().optional().describe('The name to display.'),
+    ...projectFields,
+  });
 
 export const AddProjectMemberBody: z.ZodType<AddProjectMemberRequest> =
-  z.strictObject({ userId: id });
+  z.strictObject({ userId: id.describe('The user identifier.') });
 
 const binding = z
   .strictObject({
@@ -304,26 +294,60 @@ const binding = z
 
 export const CreateProjectResourceBody: z.ZodType<CreateProjectResourceRequest> =
   z.strictObject({
-    type: z.enum(PROJECT_RESOURCE_TYPES),
-    url: z.string().nullable().optional(),
-    defaultRef: z.string().nullable().optional(),
-    binding: binding.optional(),
-    runnerId: z.string().nullable().optional(),
-    path: z.string().nullable().optional(),
-    label: z.string().nullable().optional(),
-    initPrompt: z.string().nullable().optional(),
+    type: z
+      .enum(PROJECT_RESOURCE_TYPES)
+      .describe('The type of relationship or record.'),
+    url: z.string().nullable().optional().describe('The resource URL.'),
+    defaultRef: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('The default Git branch or revision.'),
+    binding: binding.optional().describe('The resource binding configuration.'),
+    runnerId: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('The runner identifier.'),
+    path: z.string().nullable().optional().describe('The path on the runner.'),
+    label: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('A label for this resource.'),
+    initPrompt: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('Instructions for initializing the project.'),
   });
 
 export const UpdateProjectResourceBody: z.ZodType<UpdateProjectResourceRequest> =
   z.strictObject({
-    url: z.string().optional(),
-    defaultRef: z.string().nullable().optional(),
-    binding: binding.optional(),
-    runnerId: z.string().optional(),
-    path: z.string().optional(),
-    label: z.string().nullable().optional(),
-    initPrompt: z.string().nullable().optional(),
-    position: z.number().int().optional(),
+    url: z.string().optional().describe('The resource URL.'),
+    defaultRef: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('The default Git branch or revision.'),
+    binding: binding.optional().describe('The resource binding configuration.'),
+    runnerId: z.string().optional().describe('The runner identifier.'),
+    path: z.string().optional().describe('The path on the runner.'),
+    label: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('A label for this resource.'),
+    initPrompt: z
+      .string()
+      .nullable()
+      .optional()
+      .describe('Instructions for initializing the project.'),
+    position: z
+      .number()
+      .int()
+      .optional()
+      .describe('The resource’s position in the ordered list.'),
   });
 
 // Issues
@@ -360,19 +384,44 @@ function sortOf(value: string | undefined): {
 }
 
 const issueFilters = {
-  statusKey: text,
-  projectId: text,
-  ownerUserId: text,
-  executorId: text,
-  labelId: text,
+  issueIds: z
+    .string()
+    .optional()
+    .transform((value) =>
+      value === undefined
+        ? undefined
+        : [
+            ...new Set(
+              value
+                .split(',')
+                .map((id) => id.trim())
+                .filter(Boolean),
+            ),
+          ],
+    )
+    .pipe(z.array(z.string().max(64)).max(ISSUE_IDS_MAX).optional())
+    .meta({
+      description: `Only these issues, comma-separated ids, at most ${ISSUE_IDS_MAX}; the other filters still apply.`,
+    }),
+  involvesUserId: text.meta({
+    description:
+      'Owned by this user or executed by them as a person, each issue once.',
+  }),
+  statusKey: text.describe('Filter by issue status key.'),
+  projectId: text.describe('The project identifier.'),
+  ownerUserId: text.describe('The owner user identifier.'),
+  executorId: text.describe('The executor identifier.'),
+  labelId: text.describe('The label identifier.'),
   /** An issue id, or `none` for top-level issues only. */
-  parentIssueId: text,
-  q: text,
-  deleted: boolean,
-  orderBy,
+  parentIssueId: text.describe('The parent issue identifier.'),
+  q: text.describe('Text to search for.'),
+  deleted: boolean.describe('Whether to include deleted records.'),
+  orderBy: orderBy.describe('The field and direction to sort by.'),
 };
 
 type IssueFilterInput = {
+  issueIds?: string[] | undefined;
+  involvesUserId?: string | undefined;
   statusKey?: string | undefined;
   projectId?: string | undefined;
   ownerUserId?: string | undefined;
@@ -397,7 +446,13 @@ function issueQueryOf(input: IssueFilterInput): IssueListQuery {
 
 /** `GET /projects/issues`: a cursor-paged list. */
 export const IssueListQuerySchema: z.ZodType<IssueListQuery> = z
-  .object({ ...issueFilters, pageSize: pageSize(), pageToken })
+  .object({
+    ...issueFilters,
+    pageSize: pageSize().describe('The maximum number of records to return.'),
+    pageToken: pageToken.describe(
+      'The continuation token returned by the previous page.',
+    ),
+  })
   .transform(({ pageSize: limit, pageToken: cursor, ...filters }) => ({
     ...issueQueryOf(filters),
     limit,
@@ -406,14 +461,17 @@ export const IssueListQuerySchema: z.ZodType<IssueListQuery> = z
 
 /** `GET /projects/issues/board`: the list's filters; `pageSize` issues per column. */
 export const IssueBoardQuery: z.ZodType<IssueListQuery> = z
-  .object({ ...issueFilters, pageSize: pageSize() })
+  .object({
+    ...issueFilters,
+    pageSize: pageSize().describe('The maximum number of records to return.'),
+  })
   .transform(({ pageSize: limit, ...filters }) => ({
     ...issueQueryOf(filters),
     limit,
   }));
 
 export const ProjectFilterQuery: z.ZodType<{ projectId: string | null }> = z
-  .object({ projectId: text })
+  .object({ projectId: text.describe('The project identifier.') })
   .transform(({ projectId }) => ({ projectId: projectId ?? null }));
 
 export interface CursorQuery {
@@ -423,32 +481,83 @@ export interface CursorQuery {
 
 /** Older activities or comment threads of an issue. */
 export const CursorPageQuery: z.ZodType<CursorQuery> = z
-  .object({ pageSize: pageSize(), pageToken })
+  .object({
+    pageSize: pageSize().describe('The maximum number of records to return.'),
+    pageToken: pageToken.describe(
+      'The continuation token returned by the previous page.',
+    ),
+  })
   .transform(({ pageSize: limit, pageToken: cursor }) => ({
     limit,
     ...(cursor ? { cursor } : {}),
   }));
 
+/** An issue's comment threads, optionally only what was written after a time. */
+export const CommentThreadsQuery: z.ZodType<
+  CursorQuery & { readonly since?: string }
+> = z
+  .object({
+    pageSize: pageSize().describe('The maximum number of records to return.'),
+    pageToken: pageToken.describe(
+      'The continuation token returned by the previous page.',
+    ),
+    since: z.iso.datetime({ offset: true }).optional().meta({
+      description:
+        'RFC 3339. Only threads with a comment written after it, each with its root and only the replies written after it.',
+    }),
+  })
+  .transform(({ pageSize: limit, pageToken: cursor, since }) => ({
+    limit,
+    ...(cursor ? { cursor } : {}),
+    ...(since ? { since } : {}),
+  }));
+
 const issueFields = {
-  description: z.string().optional(),
-  statusKey: z.string().optional(),
-  priority: priority.optional(),
-  ownerUserId: id.optional(),
-  executor: executor.optional(),
-  parentIssueId: id.nullable().optional(),
-  stage: z.number().int().nullable().optional(),
-  projectId: id.nullable().optional(),
-  startDate: date.optional(),
-  dueDate: date.optional(),
-  labelIds: z.array(id).optional(),
-  start: z.boolean().optional(),
+  description: z.string().optional().describe('A description of the record.'),
+  statusKey: z.string().optional().describe('Filter by issue status key.'),
+  priority: priority.optional().describe('The priority to assign.'),
+  ownerUserId: id.optional().describe('The owner user identifier.'),
+  executor: executor
+    .optional()
+    .describe('The executor identity, with type and id; null clears it.'),
+  parentIssueId: id
+    .nullable()
+    .optional()
+    .describe('The parent issue identifier.'),
+  stage: z
+    .number()
+    .int()
+    .nullable()
+    .optional()
+    .describe('The workflow stage to assign.'),
+  projectId: id.nullable().optional().describe('The project identifier.'),
+  startDate: date.optional().describe('The planned start date.'),
+  dueDate: date.optional().describe('The planned due date.'),
+  labelIds: z.array(id).optional().describe('Label identifiers to assign.'),
+  start: z.boolean().optional().describe('Start work after saving the issue.'),
 };
 
 export const CreateIssueBody: z.ZodType<CreateIssueRequest> = z.strictObject({
-  title: z.string(),
+  title: z.string().describe('The display title.'),
+  attachmentIds: z.array(id).optional().meta({
+    description:
+      "The caller's unattached uploads; requires attachment upload permission. Bound before work starts.",
+  }),
   ...issueFields,
-  blockedBy: z.array(id).optional(),
-  projectSetup: z.boolean().optional(),
+  start: z
+    .boolean()
+    .optional()
+    .describe(
+      'Start work after saving. Requires --status in_progress (statusKey: in_progress in JSON); explicit true with backlog or no status is rejected before saving.',
+    ),
+  blockedBy: z
+    .array(id)
+    .optional()
+    .describe('Identifiers of issues that must finish first.'),
+  projectSetup: z
+    .boolean()
+    .optional()
+    .describe('Project setup to create when starting this issue.'),
 });
 
 /** `PATCH /issues/{issueId}`: without `revision`, the change applies to the issue as it is now. */
@@ -457,47 +566,67 @@ export type UpdateIssueInput = Omit<UpdateIssueRequest, 'revision'> & {
 };
 
 export const UpdateIssueBody: z.ZodType<UpdateIssueInput> = z.strictObject({
+  needsYou: z.string().nullable().optional().meta({
+    description:
+      'Optional decision or input for the owner. Omit to retain; null or whitespace clears it. Cleared outside blocked or in_review. Studio requires nonblank input only for authenticated project-manager direct status updates.',
+  }),
+  next: z.string().nullable().optional().meta({
+    description:
+      'The next step. Omit to retain; null or whitespace clears it. Terminal statuses clear it.',
+  }),
+  acceptance: z.string().nullable().optional().meta({
+    description:
+      "The issue's delivery report, Markdown: how it was, the agreed approach, what changed, how it was checked, open issues and details, ending with the acceptance criteria the owner checks and where. Kept across status changes; the next delivery replaces it. Omit to retain; null or whitespace clears it.",
+  }),
   revision: z.number().int().optional().meta({
     description:
       'The revision the change is based on; left out, the change applies to the issue as it is now.',
   }),
-  title: z.string().optional(),
+  title: z.string().optional().describe('The display title.'),
   ...issueFields,
 });
 
-export const UpdateChecklistItemBody: z.ZodType<UpdateChecklistItemRequest> =
-  z.strictObject({ checked: z.boolean() });
-
 export const AddDependencyBody: z.ZodType<AddDependencyRequest> =
   z.strictObject({
-    dependsOnIssueId: id,
+    dependsOnIssueId: id.describe('The depends on issue identifier.'),
     type: z
       .enum(DEPENDENCY_TYPES as [DependencyType, ...DependencyType[]])
-      .optional(),
+      .optional()
+      .describe('The type of relationship or record.'),
   });
 
 /** `POST /projects/issues/{issueId}/removeDependency`: the link to another issue, by that issue and the type. */
 export const RemoveDependencyBody: z.ZodType<AddDependencyRequest> =
   AddDependencyBody;
 
-// Comments and approvals
+export const UpdateDependencyBody: z.ZodType<UpdateDependencyRequest> =
+  z.strictObject({
+    type: z
+      .enum(['blockedBy', 'relatedTo'])
+      .describe('The type of relationship or record.'),
+    expectedType: z.enum(['blockedBy', 'relatedTo']).meta({
+      description:
+        'The relationship type the caller read; a stale value is a conflict.',
+    }),
+  });
+
+// Comments
 
 export const CreateCommentBody: z.ZodType<CreateCommentRequest> =
   z.strictObject({
-    content: z.string(),
-    parentId: id.nullable().optional(),
+    content: z.string().describe('The Markdown content.'),
+    parentId: id.nullable().optional().describe('The parent identifier.'),
     attachmentIds: z.array(id).optional(),
   });
 
 export const UpdateCommentBody: z.ZodType<UpdateCommentRequest> =
-  z.strictObject({ content: z.string() });
+  z.strictObject({ content: z.string().describe('The Markdown content.') });
 
 export const ReactionBody: z.ZodType<{ emoji: string }> = z.strictObject({
-  emoji: z.enum(REACTION_EMOJIS),
+  emoji: z
+    .enum(REACTION_EMOJIS)
+    .describe('The emoji reaction to add or remove.'),
 });
-
-export const DecideApprovalBody: z.ZodType<DecideApprovalRequest> =
-  z.strictObject({ comment: z.string().optional() });
 
 // Plans and intake
 
@@ -515,15 +644,17 @@ const planRow = z
   });
 
 const planBody = z.strictObject({
-  title: z.string(),
-  description: z.string().optional(),
-  source: z.strictObject({
-    kind: z.string().min(1),
-    key: z.string().nullable().optional(),
-    issueId: id.nullable().optional(),
-    // Opaque JSON the proposer gets back untouched (`PlanSource.data`).
-    data: z.unknown().optional(),
-  }),
+  title: z.string().describe('The display title.'),
+  description: z.string().optional().describe('A description of the record.'),
+  source: z
+    .strictObject({
+      kind: z.string().min(1),
+      key: z.string().nullable().optional(),
+      issueId: id.nullable().optional(),
+      // Opaque JSON the proposer gets back untouched (`PlanSource.data`).
+      data: z.unknown().optional(),
+    })
+    .describe('The source context associated with this record.'),
   proposer: z
     .strictObject({
       agentId: id,
@@ -532,43 +663,61 @@ const planBody = z.strictObject({
     })
     .nullable()
     .optional(),
-  deciderUserId: id.optional(),
-  rows: z.array(planRow),
+  deciderUserId: id.optional().describe('The decider user identifier.'),
+  rows: z
+    .array(planRow)
+    .describe('The operations in the plan, in execution order.'),
 });
 
 export const CreatePlanBody: z.ZodType<CreatePlanRequest> = planBody;
 
 export const EditPlanBody: z.ZodType<EditPlanRequest> = z.strictObject({
-  revision: z.number().int(),
-  title: z.string().optional(),
-  description: z.string().optional(),
-  rows: z.array(
-    z.strictObject({
-      id,
-      // Replaces the row's params, checked by the plan engine as on creation.
-      params: z.unknown().optional(),
-      remove: z.boolean().optional(),
-    }),
-  ),
+  revision: z
+    .number()
+    .int()
+    .describe('The revision last read; reject if the record has changed.'),
+  title: z.string().optional().describe('The display title.'),
+  description: z.string().optional().describe('A description of the record.'),
+  rows: z
+    .array(
+      z.strictObject({
+        id,
+        // Replaces the row's params, checked by the plan engine as on creation.
+        params: z.unknown().optional(),
+        remove: z.boolean().optional(),
+      }),
+    )
+    .describe('The operations in the plan, in execution order.'),
 });
 
 export const PlanActionBody: z.ZodType<PlanActionRequest> = z.strictObject({
-  revision: z.number().int(),
+  revision: z
+    .number()
+    .int()
+    .describe('The revision last read; reject if the record has changed.'),
 });
 
 export const PlanUndoBody: z.ZodType<PlanUndoRequest> = z.strictObject({
-  dryRun: z.boolean().optional(),
+  dryRun: z
+    .boolean()
+    .optional()
+    .describe('Preview the changes without applying them.'),
 });
 
 /** `GET /projects/plans`: a cursor-paged list, newest first. */
 export const PlanListQuerySchema: z.ZodType<PlanListQuery> = z
   .object({
-    status: z.enum(['open', ...PLAN_STATUSES]).optional(),
-    sourceKind: text,
-    sourceKey: text,
-    issueId: text,
-    pageSize: pageSize(50),
-    pageToken,
+    status: z
+      .enum(['open', ...PLAN_STATUSES])
+      .optional()
+      .describe('The status to set or filter by.'),
+    sourceKind: text.describe('The kind of source to filter by.'),
+    sourceKey: text.describe('The source identifier to filter by.'),
+    issueId: text.describe('The issue identifier.'),
+    pageSize: pageSize(50).describe('The maximum number of records to return.'),
+    pageToken: pageToken.describe(
+      'The continuation token returned by the previous page.',
+    ),
   })
   .transform(({ pageSize: limit, pageToken: cursor, ...filters }) => ({
     ...Object.fromEntries(
@@ -579,9 +728,9 @@ export const PlanListQuerySchema: z.ZodType<PlanListQuery> = z
   }));
 
 export const IntakeSplitBody: z.ZodType<IntakeSplitRequest> = z.strictObject({
-  text: z.string().optional(),
+  text: z.string().optional().describe('The source text to process.'),
   fileIds: z.array(id).optional(),
-  projectId: id.nullable().optional(),
+  projectId: id.nullable().optional().describe('The project identifier.'),
 });
 
 export const IntakeTextsBody: z.ZodType<IntakeTextsRequest> = z.strictObject({
@@ -590,13 +739,16 @@ export const IntakeTextsBody: z.ZodType<IntakeTextsRequest> = z.strictObject({
 
 export const IntakeAiStartBody: z.ZodType<IntakeAiStartRequest> =
   z.strictObject({
-    mode: z.enum(INTAKE_AI_MODES),
-    text: z.string().optional(),
+    mode: z.enum(INTAKE_AI_MODES).describe('The processing mode to use.'),
+    text: z.string().optional().describe('The source text to process.'),
     fileIds: z.array(id).optional(),
-    projectId: id.nullable().optional(),
-    planId: id.nullable().optional(),
-    instruction: z.string().optional(),
-    issueId: id.optional(),
+    projectId: id.nullable().optional().describe('The project identifier.'),
+    planId: id.nullable().optional().describe('The plan identifier.'),
+    instruction: z
+      .string()
+      .optional()
+      .describe('Instructions for organizing the source text.'),
+    issueId: id.optional().describe('The issue identifier.'),
   });
 
 export const IssueAttachmentsQuery: z.ZodType<{
@@ -711,6 +863,10 @@ export const ExecutorCandidateSchema: z.ZodType<ExecutorCandidate> = z.object({
   nameText: NameTextSchema.optional(),
   online: z.boolean().optional(),
   busy: z.number().int().optional(),
+  isDefault: z.boolean().optional().meta({
+    description:
+      'A new issue gets this executor when it names none, so a form preselects it.',
+  }),
 });
 
 export const MentionCandidateSchema: z.ZodType<MentionCandidate> = z.object({
@@ -747,6 +903,18 @@ export const InvitationSchema: z.ZodType<Invitation> = z.object({
   createdAt: dateTime,
 });
 
+export const ResendInvitationQuery: z.ZodObject<
+  {
+    sendEmail: z.ZodOptional<z.ZodEnum<{ true: 'true'; false: 'false' }>>;
+  },
+  z.core.$strip
+> = z.object({
+  sendEmail: z.enum(['true', 'false']).optional().meta({
+    description:
+      'Defaults to true. Set false to generate a new link without sending email. The previous link stops working.',
+  }),
+});
+
 export const InvitationResultSchema: z.ZodType<InvitationResult> = z
   .object({
     email: z.string(),
@@ -754,7 +922,7 @@ export const InvitationResultSchema: z.ZodType<InvitationResult> = z
     emailSent: z.boolean().optional(),
     inviteUrl: z.string().optional().meta({
       description:
-        'When sending failed, the link, once, for the inviter to forward.',
+        'The new shareable invitation link, returned to an authorized original inviter using an unscoped person credential, regardless of email delivery.',
     }),
   })
   .meta({ ref: 'ProjectsInvitationResult' });
@@ -766,148 +934,6 @@ export const InvitationResultsSchema: z.ZodType<{
 export const WorkspaceSettingsSchema: z.ZodType<WorkspaceSettings> = z.object({
   issuePrefix: z.string(),
 });
-
-// Workflows
-
-const ruleMessage = z
-  .union([
-    z.string(),
-    z.object({
-      key: z.string(),
-      ns: z.string().optional(),
-      defaultValue: z.string().optional(),
-    }),
-  ])
-  .meta({
-    ref: 'ProjectsRuleMessage',
-    description: 'Plain text, or an i18n key with its namespace and default.',
-  });
-
-const statusRule = z
-  .object({
-    type: z.string(),
-    config: record.optional(),
-  })
-  .meta({
-    ref: 'ProjectsWorkflowStatusRule',
-    description:
-      'What entering a status does. Built in: `checklist` (`config.items`: `{ key, label, required }[]`), `notifyOwner` (`config.message`), `subtasksDone`, `blockersDone` and `startOption` (`config.label`, `config.hint`); other plugins contribute their own types.',
-  });
-
-const WorkflowDefinitionSchema: z.ZodType<WorkflowDefinition> = z
-  .object({
-    states: z.array(
-      z.object({
-        key: z.string(),
-        name: z.string(),
-        category: statusCategory,
-        color,
-        builtIn: z.boolean().optional(),
-        rules: z.array(statusRule).optional(),
-      }),
-    ),
-    transitions: z.array(
-      z.object({
-        from: z.string().meta({ description: 'A status key, or `*`.' }),
-        to: z.string().meta({ description: 'A status key, or `*`.' }),
-        actors: z.array(z.string()),
-        approval: z
-          .object({
-            approvers: z.array(z.enum(['owner', 'projectLead', 'admin'])),
-          })
-          .optional(),
-        on: z.string().optional().meta({
-          description:
-            'An event the system takes the transition on, such as `subtasks.done`.',
-        }),
-      }),
-    ),
-  })
-  .meta({ ref: 'ProjectsWorkflowDefinition' });
-
-export const WorkflowSchema: z.ZodType<WorkflowListItem> = z
-  .object({
-    id: z.string(),
-    name: z.string(),
-    description: z.string().nullable(),
-    isDefault: z.boolean(),
-    builtInKey: z.string().nullable(),
-    definition: WorkflowDefinitionSchema,
-    revision: z.number().int(),
-    createdAt: dateTime,
-    updatedAt: dateTime,
-    projectCount: z.number().int(),
-    title: i18nKey.optional(),
-    descriptionTitle: i18nKey.optional(),
-  })
-  .meta({ ref: 'ProjectsWorkflow' });
-
-export const WorkflowPreviewSchema: z.ZodType<WorkflowPreview> = z.object({
-  rules: z.array(
-    z.object({
-      statusKey: z.string(),
-      change: z.enum(['added', 'removed']),
-      rule: statusRule,
-      available: z.boolean(),
-      summary: z.string().nullable(),
-      attention: z.boolean(),
-    }),
-  ),
-  attention: z.array(
-    z.object({
-      statusKey: z.string(),
-      rule: statusRule,
-      summary: z.string(),
-      isNew: z.boolean(),
-    }),
-  ),
-});
-
-// Approvals and checklists
-
-export const ApprovalRequestSchema: z.ZodType<ApprovalRequest> = z
-  .object({
-    id: z.string(),
-    issueId: z.string(),
-    issueIdentifier: z.string().nullable(),
-    issueTitle: z.string().nullable(),
-    fromStatus: z.string(),
-    toStatus: z.string(),
-    requestedByType: z.string(),
-    requestedById: z.string(),
-    requestedByName: z.string().nullable(),
-    approvers: z.array(z.enum(['owner', 'projectLead', 'admin'])),
-    approverUserIds: z.array(z.string()),
-    approverNames: z.array(z.string()),
-    status: z.enum(['pending', 'approved', 'rejected', 'withdrawn', 'stale']),
-    decidedById: z.string().nullable(),
-    decidedByName: z.string().nullable(),
-    decidedAt: dateTime.nullable(),
-    comment: z.string().nullable(),
-    createdAt: dateTime,
-    updatedAt: dateTime,
-  })
-  .meta({ ref: 'ProjectsApprovalRequest' });
-
-export const IssueChecklistSchema: z.ZodType<IssueChecklist> = z
-  .object({
-    statusKey: z.string(),
-    current: z.boolean(),
-    complete: z.boolean(),
-    items: z.array(
-      z.object({
-        itemKey: z.string(),
-        label: z.string(),
-        required: z.boolean(),
-        checked: z.boolean(),
-        checkedByType: z.string().nullable(),
-        checkedById: z.string().nullable(),
-        checkedByName: z.string().nullable(),
-        checkedAt: dateTime.nullable(),
-      }),
-    ),
-  })
-  .meta({ ref: 'ProjectsIssueChecklist' });
 
 // Attachments and comments
 
@@ -1060,6 +1086,18 @@ const issueShape = {
   title: z.string(),
   description: z.string().meta({ description: 'Markdown.' }),
   statusKey: z.string(),
+  needsYou: z.string().nullable().meta({
+    description:
+      'The decision or input required from the owner; null outside Blocked and In review, or on historical issues.',
+  }),
+  acceptance: z.string().nullable().meta({
+    description:
+      "The issue's delivery report, Markdown, ending with the acceptance criteria; kept across status changes until the next delivery replaces it, null when none was written.",
+  }),
+  next: z.string().nullable().meta({
+    description:
+      'The next step; null when none is recorded or the issue is Done or Cancelled.',
+  }),
   priority: z.enum(PRIORITIES),
   ownerUserId: z.string(),
   executor: ExecutorSchema.nullable(),
@@ -1115,6 +1153,7 @@ export const IssueDependencySchema: z.ZodType<IssueDependency> = z
   .meta({ ref: 'ProjectsIssueDependency' });
 
 export const IssueDetailSchema: z.ZodType<IssueDetail> = z.object({
+  progress: z.record(z.string(), z.unknown()).nullable().optional(),
   ...issueListItemShape,
   parent: z
     .object({ id: z.string(), identifier: z.string(), title: z.string() })
@@ -1132,9 +1171,6 @@ export const IssueDetailSchema: z.ZodType<IssueDetail> = z.object({
     }),
   ),
   attachments: z.array(AttachmentSchema),
-  checklist: IssueChecklistSchema.nullable(),
-  pendingApproval: ApprovalRequestSchema.nullable(),
-  recentApprovals: z.array(ApprovalRequestSchema),
   subtasks: z.array(
     z.object({
       id: z.string(),
@@ -1165,10 +1201,6 @@ export const IssueDetailSchema: z.ZodType<IssueDetail> = z.object({
 
 export const UpdateIssueResultSchema: z.ZodType<UpdateIssueResult> = z.object({
   issue: IssueSchema,
-  pendingApproval: ApprovalRequestSchema.nullable().meta({
-    description:
-      'With 202: the request holding the status change for approval; the issue is unchanged.',
-  }),
 });
 
 export const IssueBoardSchema: z.ZodType<IssueBoard> = z.object({
@@ -1179,17 +1211,6 @@ export const IssueBoardSchema: z.ZodType<IssueBoard> = z.object({
       nextCursor: z.string().nullable().meta({
         description: 'The `pageToken` of the column’s next page.',
       }),
-    }),
-  ),
-});
-
-export const IssueStartsSchema: z.ZodType<IssueStarts> = z.object({
-  initialStatus: z.string(),
-  options: z.array(
-    z.object({
-      status: StatusDefinitionSchema,
-      label: ruleMessage.nullable(),
-      hint: ruleMessage.nullable(),
     }),
   ),
 });
@@ -1206,7 +1227,6 @@ const projectShape = {
   leadUserId: z.string().nullable(),
   startDate: day.nullable(),
   dueDate: day.nullable(),
-  workflowId: z.string().nullable(),
   setupIssueId: z.string().nullable(),
   createdAt: dateTime,
   updatedAt: dateTime,
@@ -1290,7 +1310,10 @@ const PlanRowInputSchema: z.ZodType<PlanRowInput> = z
   .discriminatedUnion('op', [
     z.object({
       op: z.literal('issue.create'),
-      ref: z.string().optional(),
+      ref: z
+        .string()
+        .optional()
+        .describe('A local reference name for this plan row.'),
       params: z.object({
         title: z.string(),
         ...issueFieldChanges,
@@ -1300,16 +1323,27 @@ const PlanRowInputSchema: z.ZodType<PlanRowInput> = z
     }),
     z.object({
       op: z.literal('issue.update'),
-      ref: z.string().optional(),
+      ref: z
+        .string()
+        .optional()
+        .describe('A local reference name for this plan row.'),
       params: z.object({
         issue: issueTarget,
-        set: z.object({ title: z.string().optional(), ...issueFieldChanges }),
+        set: z.object({
+          title: z.string().optional(),
+          ...issueFieldChanges,
+          needsYou: z.string().nullable().optional(),
+          next: z.string().nullable().optional(),
+        }),
         start: z.boolean().optional(),
       }),
     }),
     z.object({
       op: z.literal('comment.create'),
-      ref: z.string().optional(),
+      ref: z
+        .string()
+        .optional()
+        .describe('A local reference name for this plan row.'),
       params: z.object({
         issue: issueTarget,
         content: z.string(),
@@ -1319,7 +1353,10 @@ const PlanRowInputSchema: z.ZodType<PlanRowInput> = z
     }),
     z.object({
       op: z.literal('dependency'),
-      ref: z.string().optional(),
+      ref: z
+        .string()
+        .optional()
+        .describe('A local reference name for this plan row.'),
       params: z.object({
         action: z.enum(['add', 'remove']),
         issue: issueTarget,
@@ -1329,7 +1366,10 @@ const PlanRowInputSchema: z.ZodType<PlanRowInput> = z
     }),
     z.object({
       op: z.literal('project.create'),
-      ref: z.string().optional(),
+      ref: z
+        .string()
+        .optional()
+        .describe('A local reference name for this plan row.'),
       params: z.object({
         name: z.string(),
         description: z.string().nullable().optional(),
@@ -1338,7 +1378,6 @@ const PlanRowInputSchema: z.ZodType<PlanRowInput> = z
         leadUserId: z.string().nullable().optional(),
         startDate: z.string().nullable().optional(),
         dueDate: z.string().nullable().optional(),
-        workflowId: z.string().nullable().optional(),
       }),
     }),
   ])
@@ -1604,9 +1643,19 @@ export const singleFileBody: OpenAPIV3_1.RequestBodyObject = {
         type: 'object',
         required: ['file'],
         properties: {
-          file: { type: 'string', format: 'binary' },
+          file: {
+            type: 'string',
+            format: 'binary',
+            description: 'The file to upload.',
+          },
         },
       },
     },
   },
 };
+
+/** Context supplied by the session bridge, never an authentication credential. */
+export const IssueSessionHeader: z.ZodType<{ 'x-nb-agent-session'?: string }> =
+  z.object({
+    'x-nb-agent-session': z.string().min(1).max(200).optional(),
+  });

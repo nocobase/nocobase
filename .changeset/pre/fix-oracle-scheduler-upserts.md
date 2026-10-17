@@ -3,7 +3,6 @@
 '@nocobase/queue': minor
 '@nocobase/db': minor
 '@nocobase/db-oracle': patch
-'@nocobase/db-dameng': patch
 ---
 
 Add a transaction-safe physical row upsert API and use it through a unified Queue adapter accepting DatabaseConnection, with the upstream Knex client bridge kept private. Fix scheduler startup across database dialects while preserving schedule execution history.

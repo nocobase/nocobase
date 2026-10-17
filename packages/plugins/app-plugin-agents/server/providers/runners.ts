@@ -8,6 +8,8 @@
  *
  * Beside it, `SkillBlobsCollect` deletes the stored contents of skills' files no version names, hourly, sparing what
  * was stored or named in the last hour (an upload for a save still to come).
+ * `RunDataPurge` independently removes expired terminal runs' process data hourly. Multiple instances require
+ * shared Redis jobs; memory jobs and the timer fallback are for single-instance deployments.
  */
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
@@ -18,10 +20,22 @@ import { ServiceProvider } from '@nocobase/service-provider';
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import { RUNNERS_TOPIC, type RunnersChanged } from '../../shared/realtime.js';
 import type { Agents } from '../composition.js';
+import type { AgentsConfig } from './agents.js';
 import { agentsToken } from '../tokens.js';
+import { RUN_DATA_PURGE_INTERVAL_MS } from '../core/runs/run-data-purge.js';
 
-/** How often the sweeper runs. */
+/** How often the sweeper runs, unless `agents.runners.sweepIntervalMs` sets another. */
 export const SWEEP_INTERVAL_MS = 30_000;
+
+/** `agents.runners.sweepIntervalMs`, checked: `SWEEP_INTERVAL_MS` when unset. */
+export function sweepIntervalMs(value: unknown): number {
+  if (value === undefined) return SWEEP_INTERVAL_MS;
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1)
+    throw new Error(
+      'agents.runners.sweepIntervalMs must be a positive integer.',
+    );
+  return value;
+}
 
 /** The schedule's stable identity in this plugin's scope. */
 const SWEEP_SCHEDULE = 'RunnersSweep';
@@ -62,6 +76,17 @@ export class RunnersProvider extends ServiceProvider<AppPluginApplication> {
         console.error('Runners realtime announcement failed.', error);
       }
     };
+    try {
+      // Announcements name the runner by id: signed-in connections only.
+      this.releases.push(
+        realtime.registerTopic(RUNNERS_TOPIC, {
+          audience: 'public',
+          authenticated: true,
+        }),
+      );
+    } catch (error) {
+      console.error('Runners could not register their realtime topic.', error);
+    }
     this.releases.push(
       services.events.onAny((event) => {
         switch (event.type) {
@@ -80,19 +105,26 @@ export class RunnersProvider extends ServiceProvider<AppPluginApplication> {
 
   private async schedule(services: Agents): Promise<void> {
     const { container } = this.app;
+    const sweepEvery = sweepIntervalMs(
+      this.app.config.get<AgentsConfig>('agents')?.runners?.sweepIntervalMs,
+    );
     const sweep = this.guarded(() => services.sweeper.sweep());
     const collect = this.guarded(
       () => services.skills.collectGarbage(SKILL_BLOBS_COLLECT_MS),
       'Skill contents collection',
     );
     const wake = () => services.signal.notify();
+    const purge = this.guarded(
+      () => services.purgeRunData(),
+      'Run process data cleanup',
+    );
     if (container.has(jobExecutorServiceToken)) {
       const executor = container
         .resolve(jobExecutorServiceToken)
         .getScheduleExecutor(ACCESS_NAMESPACE);
       await executor.addJob({
         name: SWEEP_SCHEDULE,
-        options: { every: SWEEP_INTERVAL_MS },
+        options: { every: sweepEvery },
         payload: {},
         execute: sweep,
       });
@@ -102,19 +134,31 @@ export class RunnersProvider extends ServiceProvider<AppPluginApplication> {
         payload: {},
         execute: collect,
       });
+      await executor.addJob({
+        name: 'RunDataPurge',
+        options: { every: RUN_DATA_PURGE_INTERVAL_MS },
+        payload: {},
+        execute: purge,
+      });
       await executor.setup();
       this.executor = executor;
     } else {
-      const timer = setInterval(() => void sweep(), SWEEP_INTERVAL_MS);
+      const timer = setInterval(() => void sweep(), sweepEvery);
       timer.unref();
       const collector = setInterval(
         () => void collect(),
         SKILL_BLOBS_COLLECT_MS,
       );
       collector.unref();
+      const purger = setInterval(
+        () => void purge(),
+        RUN_DATA_PURGE_INTERVAL_MS,
+      );
+      purger.unref();
       this.releases.push(() => {
         clearInterval(timer);
         clearInterval(collector);
+        clearInterval(purger);
       });
     }
 

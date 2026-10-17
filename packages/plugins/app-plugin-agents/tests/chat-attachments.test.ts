@@ -1,13 +1,9 @@
 /**
  * Files people send with chat messages: uploading, sending them with a message, who may read them (the owner, a run
- * on the conversation by its token, nobody else), what the agent is told, the images an online agent's model is shown,
- * and the purge of uploads never sent.
+ * on the conversation by its token, nobody else), what the agent is told, and the purge of uploads never sent.
  */
-import { MockLanguageModelV4 } from 'ai/test';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { createServerExecutor } from '../server/online/index.js';
-import { scriptedSteps } from '../server/online/scripted.js';
 import { CHAT_ATTACHMENT_SIZE_MAX } from '../shared/conversations.js';
 import { claim, createHarness, type Harness } from './harness.js';
 
@@ -72,6 +68,31 @@ describe('chat attachments', () => {
         ...(options.runToken ? { runToken: options.runToken } : {}),
       },
     );
+
+  it('sends application-started conversation attachments with the first message', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const file = await uploaded(ALICE, 'screen.png', PNG, 'image/png');
+    h.services.conversations.sources.register({
+      key: 'intake',
+      title: { key: 'intake', ns: 'test' },
+    });
+    const started = await h.request('POST', `${base}/start`, {
+      user: ALICE,
+      body: {
+        source: 'intake',
+        agentId,
+        text: 'Read the image',
+        attachmentIds: [file.id],
+      },
+    });
+    expect(started.status).toBe(200);
+    expect(started.body.data.message.attachments).toMatchObject([
+      { id: file.id, filename: 'screen.png' },
+    ]);
+    expect((await content(file.id, { user: ALICE })).status).toBe(200);
+    expect((await content(file.id, { user: BOB })).status).toBe(404);
+  });
 
   it('keeps an upload its uploader’s until it is sent, and refuses one too large', async () => {
     h = await createHarness();
@@ -266,90 +287,6 @@ describe('chat attachments', () => {
     expect(payload.prompt.system).toContain('Earlier in this conversation');
     expect(payload.prompt.system).toContain(
       `- build.log (text/plain, 5 bytes) [${log.id}]`,
-    );
-  });
-
-  it('shows an online agent’s model the images sent with the message', async () => {
-    h = await createHarness();
-    await h.services.online.services.create({
-      title: 'Mock',
-      provider: 'openai-compatible',
-      baseUrl: 'http://127.0.0.1:9/v1',
-      models: [{ value: 'm1', label: 'Model one' }],
-    });
-    const prompts: unknown[] = [];
-    const port = scriptedSteps([
-      async function* () {
-        yield { type: 'text', delta: 'A red dot.' };
-        yield {
-          type: 'finish',
-          reason: 'stop',
-          model: 'm1',
-          usage: { inputTokens: 10, outputTokens: 3 },
-        };
-      },
-    ]);
-    const executor = createServerExecutor(
-      {
-        clock: h.services.clock,
-        claims: h.services.claims,
-        reports: h.services.reports,
-        runs: h.services.runs,
-        conversations: h.services.conversations,
-        commands: () => Promise.resolve(undefined),
-        skill: () => Promise.reject(new Error('No skills here.')),
-        images: (conversationId, ids, maxBytes) =>
-          h.services.chatAttachments.images(conversationId, ids, maxBytes),
-        gateway: {
-          async languageModel(ref) {
-            const inner = (await port.languageModel(
-              ref,
-            )) as MockLanguageModelV4;
-            return new MockLanguageModelV4({
-              modelId: ref.model,
-              doStream: (options) => {
-                prompts.push(options.prompt);
-                return inner.doStream(options);
-              },
-            });
-          },
-        },
-        signal: h.services.runners.signal,
-      },
-      { holderId: 'server:test' },
-    );
-    const agentId = await h.createAgent({
-      name: 'Eye',
-      type: 'online',
-      modelEntries: [{ modelService: 'mock', model: 'm1' }],
-    });
-    const id = await conversation(agentId);
-    const image = await uploaded(ALICE, 'dot.png', PNG, 'image/png');
-    const log = await uploaded(ALICE, 'build.log');
-    await h.request('POST', `${base}/${id}/messages`, {
-      user: ALICE,
-      body: { content: 'What is this?', attachmentIds: [image.id, log.id] },
-    });
-
-    expect(await executor.drain()).toBe(1);
-    const [prompt] = prompts as { role: string; content: unknown }[][];
-    const user = prompt!.find((message) => message.role === 'user')!;
-    const parts = user.content as {
-      type: string;
-      mediaType?: string;
-      text?: string;
-    }[];
-    expect(parts.filter((part) => part.type === 'file')).toEqual([
-      expect.objectContaining({ mediaType: 'image/png' }),
-    ]);
-    const text = parts.find((part) => part.type === 'text')?.text ?? '';
-    expect(text).toContain(
-      `- dot.png (image/png, ${PNG.length} bytes) [${image.id}]`,
-    );
-    expect(text).toContain(`- build.log (text/plain, 5 bytes) [${log.id}]`);
-    const system = prompt!.find((message) => message.role === 'system');
-    expect(JSON.stringify(system)).toContain(
-      'The images among them are shown to you',
     );
   });
 

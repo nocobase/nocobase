@@ -313,7 +313,7 @@ async function main(argv) {
   );
   if (unknown.length > 0) {
     console.error(
-      `Unknown template ${unknown.join(', ')}; expected ${all.map(({ name }) => name).join(', ')}.`,
+      `Unknown application ${unknown.join(', ')}; expected ${all.map(({ name }) => name).join(', ')}.`,
     );
     return 2;
   }

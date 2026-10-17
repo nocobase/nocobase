@@ -87,7 +87,7 @@ export function cliEnvPrefix(cli: string): string {
  */
 export function isReservedVariable(name: string, cli?: string): boolean {
   return (
-    ['PATH', 'HOME', 'TMPDIR', 'SHELL', 'USER'].includes(name) ||
+    ['PATH', 'HOME', 'TMPDIR', 'TMP', 'TEMP', 'SHELL', 'USER'].includes(name) ||
     /^(NOCOBASE_RUNNER_|AGENT_RUN_|GIT_)/u.test(name) ||
     (cli !== undefined && name.startsWith(cliEnvPrefix(cli)))
   );

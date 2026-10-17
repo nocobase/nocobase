@@ -16,6 +16,7 @@ on:
     branches:
       - v3-develop
       - v3-main
+      - '*/v3-*'
     paths:
       - 'docs/**'
       - '.github/workflows/v3-docs.yml'
@@ -64,23 +65,25 @@ jobs:
         working-directory: docs
         run: ./check.sh
 
-      # English builds to dist/ and every other language to dist/<lang>/, so English has to go first: building it
-      # second would write over the directory the others are already in.
+      # The docs package's own checks. Pull requests that change only docs/ skip the Quality checks, so this is the one
+      # place the site's lint, types and tests run for them.
+      - name: Lint, typecheck and test
+        working-directory: docs
+        run: |
+          pnpm lint
+          pnpm typecheck
+          pnpm test
+
+      # One Astro build writes every language: English to dist/, Simplified Chinese to dist/zh-CN/. Every page is
+      # emitted as `<path>/index.html`, the layout the CDN's back-to-origin rules map extensionless URLs to, and the
+      # build fails on a broken internal link.
       - name: Build
         working-directory: docs
         env:
           # A single build peaks well under this today, but the ceiling is what turns a runaway into a clear
           # `JavaScript heap out of memory` rather than a runner the scheduler reclaims with no error in the log.
           NODE_OPTIONS: --max-old-space-size=3072
-        run: |
-          pnpm build --lang=en
-          pnpm build --lang=cn
-
-      # Rspress emits `foo.html`, and `cleanUrls` means readers ask for `/foo`. The CDN rules resolve that to
-      # `/foo/index.html`, which is the layout this produces. The two are a pair — neither works alone.
-      - name: Normalize HTML output
-        working-directory: docs
-        run: node ./scripts/normalize-html-output.mjs --out-dir ./dist
+        run: pnpm build
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

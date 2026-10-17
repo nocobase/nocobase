@@ -4,17 +4,26 @@
  * runner reporting while the sweeper reclaims, cannot both win.
  */
 import type { FailureReason, RunStatus } from '@nocobase/agent-protocol';
+import {
+  isPreStartInterruption,
+  PRE_START_INTERRUPTION_LIMIT,
+  consecutivePreStartInterruptions,
+} from '../../../shared/runs.js';
 
 import { later, type Clock } from '../../kernel/clock.js';
 import type { Tx } from '../../kernel/tx.js';
 import type { SubjectRegistry } from './ports.js';
-import { retryDelayMs } from './policy.js';
+import {
+  retryDelayMs,
+  WORKSPACE_WAIT_LIMIT_MS,
+  workspaceBusyDelayMs,
+} from './policy.js';
 import { endExecution } from './execution.js';
 import {
-  ACTIVE,
   findRunRecord,
   runsRepo,
   tokensRepo,
+  toExecutions,
   toRun,
   type RunRecord,
 } from './run.store.js';
@@ -22,15 +31,18 @@ import {
 export interface TransitionDeps {
   readonly clock: Clock;
   readonly subjects: SubjectRegistry;
+  /** The first back-off of a failed attempt (`retryDelayMs`); 30 seconds when left out. */
+  readonly retryBaseDelayMs?: number;
 }
 
 export interface FinishOutcome {
   readonly status: 'completed' | 'failed' | 'cancelled';
-  readonly reason?: FailureReason;
+  readonly reason?: FailureReason | null;
   readonly detail?: string;
   readonly summary?: string;
   readonly sessionId?: string;
   readonly cancelledById?: string;
+  readonly failureSource?: 'sweeper';
 }
 
 /** Revokes every live token of the run. */
@@ -55,6 +67,8 @@ export async function finishRun(
   deps: TransitionDeps,
   run: RunRecord,
   outcome: FinishOutcome,
+  versioned = false,
+  afterGuard?: () => Promise<void>,
 ): Promise<RunRecord | null> {
   const now = deps.clock.now().toISOString();
   const values: Record<string, unknown> = {
@@ -64,8 +78,13 @@ export async function finishRun(
     availableAt: null,
     updatedAt: now,
   };
-  if (outcome.reason !== undefined) values.failureReason = outcome.reason;
-  if (outcome.detail !== undefined)
+  if (outcome.status === 'completed') {
+    values.failureReason = null;
+    values.failureDetail = null;
+  } else if (outcome.reason !== undefined) {
+    values.failureReason = outcome.reason;
+    values.failureDetail = outcome.detail?.slice(0, 10_000) ?? null;
+  } else if (outcome.detail !== undefined)
     values.failureDetail = outcome.detail.slice(0, 10_000);
   if (outcome.summary !== undefined) values.summary = outcome.summary;
   if (outcome.sessionId !== undefined) values.sessionId = outcome.sessionId;
@@ -76,6 +95,28 @@ export async function finishRun(
       f.and([
         f.string('id').eq(run.id),
         f.string('status').eq(run.status),
+        f.number('attempt').eq(Number(run.attempt)),
+        ...(versioned ? [f.number('revision').eq(run.revision)] : []),
+        ...(run.status === 'queued'
+          ? [
+              run.queueEnteredAt
+                ? f.and([
+                    f
+                      .date('queueEnteredAt')
+                      .notBefore(new Date(run.queueEnteredAt)),
+                    f
+                      .date('queueEnteredAt')
+                      .notAfter(new Date(run.queueEnteredAt)),
+                  ])
+                : f.date('queueEnteredAt').empty(),
+              run.availableAt
+                ? f.and([
+                    f.date('availableAt').notBefore(new Date(run.availableAt)),
+                    f.date('availableAt').notAfter(new Date(run.availableAt)),
+                  ])
+                : f.date('availableAt').empty(),
+            ]
+          : []),
         run.runnerId === null
           ? f.string('runnerId').eq(null)
           : f.string('runnerId').eq(run.runnerId),
@@ -83,7 +124,14 @@ export async function finishRun(
     values,
   });
   if (result.updatedCount !== 1) return null;
-  await endExecution(tx.conn, run, now, outcome.reason ?? null);
+  await afterGuard?.();
+  await endExecution(
+    tx.conn,
+    run,
+    now,
+    outcome.reason ?? null,
+    outcome.failureSource,
+  );
   await revokeTokens(tx, run.id, now);
   const ended = (await findRunRecord(tx.conn, run.id))!;
   tx.emit({ type: 'run.changed', runId: run.id, status: ended.status });
@@ -91,6 +139,47 @@ export async function finishRun(
     .get(ended.subjectKind)
     ?.sink?.onRunFinished?.(tx, toRun(ended));
   return ended;
+}
+
+interface WorkspaceWaits {
+  /** Attempts that found the subject's working directory held by another live run, the current one included. */
+  readonly total: number;
+  /** Those among the latest attempts, without another failure between them. */
+  readonly trailing: number;
+  /** When the first of the trailing ones was dispatched. */
+  readonly since: string | null;
+}
+
+/**
+ * Workspace waits, runner upgrades and pre-start environment interruptions do not consume maxAttempts. Include the open current attempt
+ * when reporting workspace contention; only consecutive workspace waits set the contention limit.
+ */
+function workspaceWaits(run: RunRecord, reporting: boolean): WorkspaceWaits {
+  const executions = toExecutions(run.executionHistory);
+  const current = executions.find(
+    (item) => item.attempt === Number(run.attempt) && item.finishedAt === null,
+  );
+  const ended = executions.filter((item) => item !== current);
+  let total = ended.filter(
+    (item) =>
+      item.failureReason === 'workspaceBusy' ||
+      item.failureReason === 'runnerUpgrade' ||
+      isPreStartInterruption(item),
+  ).length;
+  let trailing = 0;
+  let since: string | null = null;
+  if (reporting) {
+    total += 1;
+    trailing = 1;
+    since = current?.dispatchedAt ?? run.dispatchedAt ?? null;
+    for (let i = ended.length - 1; i >= 0; i -= 1) {
+      const item = ended[i];
+      if (item.failureReason !== 'workspaceBusy') break;
+      trailing += 1;
+      since = item.dispatchedAt;
+    }
+  }
+  return { total, trailing, since };
 }
 
 export interface RequeueOutcome {
@@ -110,8 +199,38 @@ export async function requeueRun(
   run: RunRecord,
   reason: FailureReason,
   detail?: string,
+  source: 'runner' | 'sweeper' = 'runner',
 ): Promise<RequeueOutcome> {
-  if (Number(run.attempt) >= Number(run.maxAttempts)) {
+  const now = deps.clock.now();
+  const waits = workspaceWaits(run, reason === 'workspaceBusy');
+  const preStartInterruption =
+    source === 'sweeper' &&
+    run.status === 'dispatched' &&
+    run.startedAt === null &&
+    (reason === 'runnerOfflineBeforeStart' || reason === 'startTimeout');
+  const failureSource = preStartInterruption ? ('sweeper' as const) : undefined;
+  if (
+    preStartInterruption &&
+    consecutivePreStartInterruptions(toExecutions(run.executionHistory)) + 1 >=
+      PRE_START_INTERRUPTION_LIMIT
+  ) {
+    const ended = await finishRun(tx, deps, run, {
+      status: 'failed',
+      reason: 'startTimeout',
+      failureSource,
+      detail:
+        'The runtime did not receive the run in 10 consecutive pre-start attempts.',
+    });
+    return { status: ended?.status ?? run.status, run: ended };
+  }
+  const interruption = reason === 'runnerUpgrade' || preStartInterruption;
+  const exhausted = interruption
+    ? false
+    : reason === 'workspaceBusy'
+      ? waits.since !== null &&
+        now.getTime() - Date.parse(waits.since) >= WORKSPACE_WAIT_LIMIT_MS
+      : Number(run.attempt) - waits.total >= Number(run.maxAttempts);
+  if (exhausted) {
     const ended = await finishRun(tx, deps, run, {
       status: 'failed',
       reason,
@@ -119,22 +238,32 @@ export async function requeueRun(
     });
     return { status: ended?.status ?? run.status, run: ended };
   }
-  const now = deps.clock.now();
   const nowText = now.toISOString();
-  const delay = retryDelayMs(reason, Number(run.attempt));
+  const delay = interruption
+    ? 0
+    : reason === 'workspaceBusy'
+      ? workspaceBusyDelayMs(waits.trailing)
+      : retryDelayMs(
+          reason,
+          Number(run.attempt) - waits.total,
+          deps.retryBaseDelayMs,
+        );
   const availableAt = delay > 0 ? later(now, delay) : null;
   const result = await runsRepo(tx.conn).updateMany({
     filter: (f) =>
       f.and([
         f.string('id').eq(run.id),
-        f.or(ACTIVE.map((status) => f.string('status').eq(status))),
+        f.string('status').eq(run.status),
+        f.number('attempt').eq(Number(run.attempt)),
         run.runnerId === null
           ? f.string('runnerId').eq(null)
           : f.string('runnerId').eq(run.runnerId),
       ]),
     values: {
       status: 'queued',
+      queueEnteredAt: nowText,
       teamOnlyVariables: null,
+      gitCredentialUrls: null,
       runnerId: null,
       attempt: Number(run.attempt) + 1,
       availableAt,
@@ -149,7 +278,7 @@ export async function requeueRun(
     },
   });
   if (result.updatedCount !== 1) return { status: run.status, run: null };
-  await endExecution(tx.conn, run, nowText, reason);
+  await endExecution(tx.conn, run, nowText, reason, failureSource);
   await revokeTokens(tx, run.id, nowText);
   tx.emit({ type: 'run.changed', runId: run.id, status: 'queued' });
   tx.emit({ type: 'run.requeued', runId: run.id, availableAt });

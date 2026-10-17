@@ -20,9 +20,15 @@ import {
   type ActiveJob,
   type JobPayload,
 } from './jobs.js';
-import { DIST_PRODUCT_PATTERN } from './dist.js';
+import {
+  DIST_PRODUCT_PATTERN,
+  EXACT_VERSION_PATTERN,
+  NPM_PACKAGE_PATTERN,
+} from './dist.js';
 import { RunnerPolicySchema, type RunnerPolicy } from './policy.js';
 import {
+  WorkspaceDiskSchema,
+  type WorkspaceDisk,
   WorkspaceReportingSchema,
   type WorkspaceReporting,
 } from './workspaces.js';
@@ -109,8 +115,20 @@ export const ModelsDetectionErrorSchema: z.ZodType<ModelsDetectionError> =
     'Invalid model listing response',
   ]);
 
+/**
+ * Where a tool's model list came from: asked of the tool (`detected`), or, for a tool that cannot list its models, the
+ * runner's built-in list for it (`builtin`). Either may carry the runner owner's additions and removals.
+ */
+export type ModelsSource = 'detected' | 'builtin';
+export const ModelsSourceSchema: z.ZodType<ModelsSource> = z.enum([
+  'detected',
+  'builtin',
+]);
+
 export interface ToolCapabilities {
   readonly models?: readonly ToolModel[];
+  /** Absent from runners that predate it, which only report detected lists. */
+  readonly modelsSource?: ModelsSource;
   readonly modelsDetectedAt?: string;
   readonly modelsDetectionStatus?: ModelsDetectionStatus;
   readonly modelsDetectionError?: ModelsDetectionError;
@@ -134,6 +152,7 @@ const toolInfoFields = {
 export const ToolInfoSchema: z.ZodType<ToolInfo> = z.object({
   ...toolInfoFields,
   models: z.array(ToolModelSchema).max(MAX_TOOL_MODELS).optional(),
+  modelsSource: ModelsSourceSchema.optional(),
   modelsDetectedAt: z.iso.datetime().optional(),
   modelsDetectionStatus: ModelsDetectionStatusSchema.optional(),
   modelsDetectionError: ModelsDetectionErrorSchema.optional(),
@@ -156,6 +175,7 @@ export const ReportedToolInfoSchema: z.ZodType<ToolInfo> = z
         return value.length > 0 && models.length === 0 ? undefined : models;
       })
       .optional(),
+    modelsSource: ModelsSourceSchema.optional().catch(undefined),
     modelsDetectedAt: z.iso.datetime().optional().catch(undefined),
     modelsDetectionStatus:
       ModelsDetectionStatusSchema.optional().catch(undefined),
@@ -298,6 +318,8 @@ export const ActiveRunSchema: z.ZodType<ActiveRun> = z.object({
 
 /** What a runner reports every `heartbeatIntervalMs`: what it offers now, and the runs and jobs it holds. */
 export interface HeartbeatRequest {
+  /** Disk sampled for this heartbeat; null when measurement failed. */
+  readonly disk?: WorkspaceDisk | null;
   readonly version: string;
   /** As in `RegisterRequest`: the product the runner runs as. */
   readonly product?: string;
@@ -313,6 +335,7 @@ export interface HeartbeatRequest {
    * limits per tool.
    */
   readonly load: {
+    readonly draining?: 'updatePending' | 'pruning';
     readonly slots: number;
     readonly free: number;
     readonly tools?: Readonly<Partial<Record<AgentTool, ToolLoad>>>;
@@ -324,6 +347,7 @@ export interface HeartbeatRequest {
 }
 
 export const HeartbeatRequestSchema: z.ZodType<HeartbeatRequest> = z.object({
+  disk: WorkspaceDiskSchema.nullable().optional(),
   version: z.string().max(64),
   product: z.string().regex(DIST_PRODUCT_PATTERN).optional(),
   features: z.array(RunnerFeatureSchema),
@@ -331,6 +355,7 @@ export const HeartbeatRequestSchema: z.ZodType<HeartbeatRequest> = z.object({
   active: z.array(ActiveRunSchema),
   jobs: z.array(ActiveJobSchema).optional(),
   load: z.object({
+    draining: z.enum(['updatePending', 'pruning']).optional(),
     slots: z.number().int().nonnegative(),
     free: z.number().int().nonnegative(),
     tools: z.partialRecord(AgentToolSchema, ToolLoadSchema).optional(),
@@ -351,6 +376,26 @@ export interface UpgradeNotice {
   readonly sha256?: string;
   readonly channel?: string;
 }
+
+/**
+ * A newer runner the application names on the npm registry instead of serving it as a tarball: install
+ * `<package>@<latestVersion>` (an exact version) with the Node.js the machine has, and restart on it between runs.
+ * Sent in `HeartbeatResponse.npmUpgrade`, only to a runner with the `npm` feature and never together with `upgrade`; a
+ * runner without the feature is offered no update for a product the application has no tarball of, as before.
+ */
+export interface NpmUpgradeNotice {
+  readonly latestVersion: string;
+  readonly package: string;
+  readonly reason: string;
+  readonly channel?: string;
+}
+
+export const NpmUpgradeNoticeSchema: z.ZodType<NpmUpgradeNotice> = z.object({
+  latestVersion: z.string().max(64).regex(EXACT_VERSION_PATTERN),
+  package: z.string().max(214).regex(NPM_PACKAGE_PATTERN),
+  reason: z.string(),
+  channel: z.string().optional(),
+});
 
 /**
  * The server cannot work with a runner speaking this protocol. It keeps the runner connected and shows it as needing
@@ -379,6 +424,8 @@ export interface HeartbeatResponse {
   readonly ok: true;
   readonly serverTime: string;
   readonly upgrade?: UpgradeNotice;
+  /** A newer runner to install from npm (`NpmUpgradeNotice`), for a runner with the `npm` feature only. */
+  readonly npmUpgrade?: NpmUpgradeNotice;
   /** Present when the server cannot work with the runner's protocol: claim nothing until it is gone. */
   readonly compatibility?: UpgradeRequired;
   /** Runs among `active` whose cancellation was requested: stop them and acknowledge (`cancelAck`). */
@@ -392,6 +439,11 @@ export interface HeartbeatResponse {
   };
   /** The application accepts reports of the runner's working directories (`workspaces.ts`); absent when it does not. */
   readonly workspaces?: WorkspaceReporting;
+  /**
+   * The protocol the server speaks (`PROTOCOL_VERSION`), added within version 11: a runner speaking an older one is
+   * served but not handed runs that need what it lacks, so it updates or tells its owner. Absent from older servers.
+   */
+  readonly protocolVersion?: number;
 }
 
 export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
@@ -410,6 +462,7 @@ export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
       channel: z.string().optional(),
     })
     .optional(),
+  npmUpgrade: NpmUpgradeNoticeSchema.optional(),
   compatibility: UpgradeRequiredSchema.optional(),
   cancelRequested: z.array(z.string()),
   release: z.array(z.string()),
@@ -420,6 +473,7 @@ export const HeartbeatResponseSchema: z.ZodType<HeartbeatResponse> = z.object({
     })
     .optional(),
   workspaces: WorkspaceReportingSchema.optional(),
+  protocolVersion: z.number().int().optional(),
 });
 
 export interface ClaimRequest {
@@ -538,18 +592,58 @@ export const StatusResponseSchema: z.ZodType<StatusResponse> = z.object({
   leaseExpiresAt: z.string().nullable(),
 });
 
+/**
+ * Why the runner could not push a repository at the end of a run:
+ *
+ * - `authFailed`: the remote refused the credential, also after one fresh one;
+ * - `credentialUnavailable`: the application could not issue a credential just now (its code host unavailable or slow);
+ * - `credentialDenied`: the application will not issue one (no access to the repository, an installation gone);
+ * - `leaseLost`: the run was no longer this runner's, so nothing was pushed;
+ * - `rejected`: the remote or the push guard refused the push itself (not a fast-forward, a protected branch);
+ * - `error`: anything else, such as the network.
+ */
+export const REPO_PUSH_FAILURES = [
+  'authFailed',
+  'credentialUnavailable',
+  'credentialDenied',
+  'leaseLost',
+  'rejected',
+  'error',
+] as const;
+
+export type RepoPushFailure = (typeof REPO_PUSH_FAILURES)[number];
+
+export const RepoPushFailureSchema: z.ZodType<RepoPushFailure> =
+  z.enum(REPO_PUSH_FAILURES);
+
 export interface RepoReport {
   readonly url: string;
+  /** The remote target branch, including for runners using private local branch aliases. */
   readonly branch: string;
+  readonly targetBranch?: string;
+  readonly localBranch?: string;
   readonly pushed: boolean;
   readonly headSha?: string;
+  /** Why it was not pushed, when the runner tried and failed (protocol 9); `message` is redacted and safe to show. */
+  readonly failure?: {
+    readonly reason: RepoPushFailure;
+    readonly message: string;
+  };
 }
 
 export const RepoReportSchema: z.ZodType<RepoReport> = z.object({
   url: z.string().min(1),
   branch: z.string().min(1),
+  targetBranch: z.string().min(1).optional(),
+  localBranch: z.string().min(1).optional(),
   pushed: z.boolean(),
   headSha: z.string().max(64).optional(),
+  failure: z
+    .object({
+      reason: RepoPushFailureSchema,
+      message: z.string().max(2000),
+    })
+    .optional(),
 });
 
 export interface CompleteRequest {
@@ -593,11 +687,13 @@ export const FailRequestSchema: z.ZodType<FailRequest> = z.object({
 });
 
 export interface CancelAckRequest {
+  readonly sessionId?: string;
   readonly handledInputIds?: readonly string[];
   readonly usage?: readonly Usage[];
 }
 
 export const CancelAckRequestSchema: z.ZodType<CancelAckRequest> = z.object({
+  sessionId: z.string().max(200).optional(),
   handledInputIds: z.array(z.string()).optional(),
   usage: z.array(UsageSchema).optional(),
 });

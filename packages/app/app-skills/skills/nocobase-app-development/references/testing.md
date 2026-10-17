@@ -16,15 +16,16 @@ Templates ship their tests into generated applications. Keep them runnable from 
 
 ## What to test, by change
 
-| You changed      | Test at least                                                                                                                     |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| A server route   | Anonymous → `401`, authenticated but unpermitted → `403`, permitted → expected payload; the route is declared in the API document |
-| A public webhook | Missing signature, invalid signature, valid signature, duplicate delivery                                                         |
-| A migration      | `up` produces the expected schema; `down` reverses it; against a real database                                                    |
-| A seed           | First run, run against existing data, repeat run                                                                                  |
-| A service        | Its domain behavior, with its dependencies supplied directly                                                                      |
-| A job            | `execute()` with a realistic payload; a second run is harmless; failures behave as intended                                       |
-| Frontend code    | See [frontend tests](frontend/references/testing.md): pages, components, route declarations, copy                                 |
+| You changed           | Test at least                                                                                                                           |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| A server route        | Anonymous → `401`, authenticated but unpermitted → `403`, permitted → expected payload; the route is declared in the API document       |
+| A list or stats route | Its query count does not grow with the number of rows or groups: count the reads for a few rows and for many, and assert they are equal |
+| A public webhook      | Missing signature, invalid signature, valid signature, duplicate delivery                                                               |
+| A migration           | `up` produces the expected schema; `down` reverses it; against a real database                                                          |
+| A seed                | First run, run against existing data, repeat run                                                                                        |
+| A service             | Its domain behavior, with its dependencies supplied directly                                                                            |
+| A job                 | `execute()` with a realistic payload; a second run is harmless; failures behave as intended                                             |
+| Frontend code         | See [frontend tests](frontend/references/testing.md): pages, components, route declarations, copy                                       |
 
 ## Testing a route
 
@@ -117,6 +118,20 @@ Component tests, the route test and translation checks are described in [fronten
 
 Run against a real test database. A test that only imports the migration file proves nothing about the schema it produces. `describeMigration()` from `@nocobase/app-testing/server` applies the migrations before it, applies this one, rolls it back and applies it again, and checks after each step that metadata and tables agree and that rolling back restores every table as it was; its `up` and `down` callbacks verify the fields, indexes and constraints with `expectCollection()`.
 
+## Keeping the suite fast and honest
+
+These are habits, not rules to apply mechanically; when the suite gets slow, measure where the time goes first (building, migrating, waiting, starting servers) and fix the largest part.
+
+- **Test at the cheapest layer that proves the behavior.** A browser test earns its cost for what only a real browser shows: a flow across pages, real input, history and focus. Loading, error and empty states, copy, and combinations of locale, theme or role belong in component or unit tests. When a browser test is removed, name the test that now covers it.
+- **Migrate once, not per test.** A suite whose every test needs a freshly migrated database can pass `template: true` to `createTestDatabase()`: it migrates and seeds once and gives each test a copy. Re-running every migration per test is usually most of a slow server suite.
+- **Do not wait for real time.** Make retry back-offs, sweep or poll intervals and cache lifetimes configurable and set them short in tests, or use fake timers (`vi.useFakeTimers()`, Playwright's `page.clock`). Hold a mocked response open until the step that needs it instead of adding a fixed delay, and never sleep to show that nothing happened.
+- **Keep tests independent.** Give a test its own user rather than changing a shared account's language, theme or settings. Start a separate application only for a test that changes global settings, and stop it at once afterwards. Let background work and the connection pool settle before closing a test database.
+- **Assert, do not collect evidence.** A test checks behavior; it does not save screenshots or report files or print logs. Screenshots meant for people to look at are a separate run outside routine CI, and still fail on page errors.
+- **Do not check the same thing twice.** Do not copy the framework's or the template's own tests into the application, do not snapshot what a dedicated check already compares (the API document, generated references), and replace a large snapshot nobody reads with assertions on the few figures that matter.
+- **Remove tests with what they cover, and do not guard absences.** When a feature, page, route or option goes away, delete or rewrite its tests in the same change instead of leaving them to test a stub. Do not add tests that prove something removed stays removed (a deleted route still answers 404, an old translation key never returns, a file no longer contains a string): they protect nothing anyone relies on and outlive their reason. The same goes for tests written as one-off evidence for a task, and for tests of a document's or a Skill's wording.
+- **Test behavior, not implementation details.** Assert what a user or caller observes, not exact internal call counts, private helpers, timer values patched by delay or full copy that is not the subject of the change; such tests break on every refactor and catch nothing.
+- **Match parallelism to the machine.** More workers than cores, or a server and browsers competing for the same cores, make each test slower rather than the suite faster.
+
 ## Before finishing
 
 Scope every check to the changed behavior and its affected consumers. Select relevant checks rather than running a fixed full-application checklist after each edit:
@@ -140,6 +155,8 @@ Then verify the affected behavior, selecting only the applicable steps below. Gr
 - For a frontend change, verify as [the frontend workflow](frontend/ui-workflow.md) prescribes for the workflow it took: a quick change runs the static checks and the related tests and looks at the changed element once in the browser; a theme change runs the theme tests and its browser check; the full workflow ends with its acceptance review.
 - Confirm the endpoint's responses for signed-out, unpermitted, and permitted callers.
 - Confirm `pnpm nocobase db apply` applies cleanly.
+
+When a change is about performance, or adds a list, a statistic or a frequently called endpoint, measure it in a realistic environment: the database the application is actually deployed on, with a realistic data volume. A small data set hides slow queries and missing indexes, and SQLite's costs differ from those of a database server, so a timing on one says little about another. After release, consider each endpoint's call count multiplied by its duration rather than a single measurement: a cheap endpoint called constantly can cost more than a slow one called rarely.
 
 ## Reporting
 
@@ -165,7 +182,6 @@ Do not delete or rebuild a running development server's cache. For an already co
 
 `@nocobase/app-cli` implements the application's scripts and commands: `pnpm dev`, `pnpm build` and `pnpm start` run `nocobase dev`, `nocobase build` and `nocobase start`, and every standard command is `pnpm nocobase <topic> <command>`. In the source repository, run shared implementation tests in `packages/app/app-cli` and application composition tests in each affected template. Keep tests for the application's own commands in the application. A generated application consumes the compiled package; do not edit installed package files to customize behavior.
 
-Application server source supports extensionless relative imports. Keep `module: "ESNext"`, `moduleResolution: "Bundler"`, and `tsc-alias.resolveFullPaths: true` in `tsconfig.server.json`. Development uses `tsx`; production builds run `tsc-alias` after `tsc` to complete ESM paths, before build hooks collect workflow resources. When changing this configuration, verify the compiled output with plain Node and no source files or TypeScript loader.
+Application server source supports extensionless relative imports. Keep `module: "ESNext"`, `moduleResolution: "Bundler"`, and `tsc-alias.resolveFullPaths: true` in `tsconfig.server.json`. Development uses `tsx`; production builds run `tsc-alias` after `tsc` to complete ESM paths, before build hooks run. When changing this configuration, verify the compiled output with plain Node and no source files or TypeScript loader.
 
-Application-owned workflows live in `workflows/` beside `server/` by default. Keep `workflows/**/*.ts` in the server TypeScript build and workflow client directories in the client typecheck. Point ESLint at `tsconfig.server.json` for workflow definitions and handlers so type-aware linting covers the top-level directory. The workflow CLI builds artifacts into `dist/workflows/`; verify this directory when checking a production build.
 Vite configuration imports the proxy helpers from `@nocobase/app-cli/dev/proxy`. Watcher, proxy, supervisor and build-step unit tests live in `app-cli`; templates verify their composition and Vite integration.

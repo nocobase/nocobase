@@ -2,7 +2,6 @@
 '@nocobase/logging': minor
 '@nocobase/app-server': minor
 '@nocobase/app-host': minor
-'@nocobase/app-plugin-workflow': patch
 '@nocobase/app-plugin-notification': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch

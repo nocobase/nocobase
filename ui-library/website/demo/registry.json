@@ -50,7 +50,7 @@
       "name": "agent-picker-demo",
       "type": "registry:example",
       "title": "Agent Picker Demo",
-      "description": "Usage example of @nocobase/agent-picker. Choosing who a new conversation goes to from agents grouped by mode, an existing conversation whose agent stays, and the availability dot, mode tag and a toolbar picker on their own.",
+      "description": "Usage example of @nocobase/agent-picker. Choosing who a new conversation goes to from the enabled agents, an existing conversation whose agent stays, and the availability dot, a tag and an agent's row on their own.",
       "categories": ["agents"],
       "dependencies": ["@nocobase/app-plugin-agents@^0.1.0-beta.0"],
       "registryDependencies": ["@nocobase/agent-picker"],
@@ -391,7 +391,7 @@
       "name": "property-fields-demo",
       "type": "registry:example",
       "title": "Property Fields Demo",
-      "description": "Usage example of @nocobase/property-fields. A record's property card with every field kind, each change applied to local state.",
+      "description": "Usage example of @nocobase/property-fields. The same record's property card in both variants, form and inline, over shared local state: every field kind, a copyable email and website, and a long introduction.",
       "categories": ["data-entry"],
       "registryDependencies": ["@nocobase/property-fields"],
       "files": [
@@ -433,6 +433,21 @@
           "path": "components/markdown-view.tsx",
           "type": "registry:example",
           "target": "client/extensions/nocobase-markdown-view-demo/markdown-view.tsx"
+        }
+      ]
+    },
+    {
+      "name": "long-text-demo",
+      "type": "registry:example",
+      "title": "Long Text Demo",
+      "description": "Usage example of @nocobase/long-text. A record's description and a comment that unfold in place, and its introduction and address in a narrow column opening in a pop-up.",
+      "categories": ["data-display"],
+      "registryDependencies": ["@nocobase/long-text"],
+      "files": [
+        {
+          "path": "components/long-text.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-long-text-demo/long-text.tsx"
         }
       ]
     },
@@ -629,6 +644,38 @@
           "path": "approval/fixtures.ts",
           "type": "registry:example",
           "target": "client/extensions/nocobase-approval-ui-demo/fixtures.ts"
+        }
+      ]
+    },
+    {
+      "name": "flow-diagram-demo",
+      "type": "registry:example",
+      "title": "Flow Diagram Demo",
+      "description": "Usage example of @nocobase/flow-diagram with branches, a cycle, self-transition, parallel edges and inspection callbacks.",
+      "categories": ["diagrams"],
+      "registryDependencies": ["@nocobase/flow-diagram"],
+      "dependencies": ["lucide-react@^0.487.0"],
+      "files": [
+        {
+          "path": "components/flow-diagram.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-flow-diagram-demo/flow-diagram.tsx"
+        }
+      ]
+    },
+    {
+      "name": "lifecycle-diagram-demo",
+      "type": "registry:example",
+      "title": "Lifecycle Diagram Demo",
+      "description": "Usage example of @nocobase/lifecycle-diagram with branches, a cycle, self-transition, parallel edges and inspection callbacks.",
+      "categories": ["diagrams"],
+      "registryDependencies": ["@nocobase/lifecycle-diagram"],
+      "dependencies": ["@nocobase/lifecycle@^0.1.0-beta.0"],
+      "files": [
+        {
+          "path": "lifecycle/lifecycle-diagram.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-lifecycle-diagram-demo/lifecycle-diagram.tsx"
         }
       ]
     }

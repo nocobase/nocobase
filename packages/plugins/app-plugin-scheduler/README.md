@@ -16,8 +16,9 @@ public override async boot(): Promise<void> {
     title: 'Daily sync',
     schedule: { cron: '0 0 2 * * *', timezone: 'UTC' },
     target: {
-      type: 'workflow',
-      config: { workflowKey: 'daily-sync', input: {} },
+      // A target type the application or a plugin registered with `registerTarget()`.
+      type: 'app.daily-sync',
+      config: { batchSize: 100 },
     },
   });
 }

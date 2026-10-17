@@ -25,8 +25,8 @@ const sanitizeOwnerName = (name: string): string =>
   name.replace(/^@[^/\\]+[/\\]/, '').replace(/[^A-Za-z0-9._-]/g, '-');
 
 // Walks up from the `locales/` directory to the nearest ancestor that is not a generic layout directory, so
-// both `packages/plugins/app-plugin-workflow/client/locales` and
-// `node_modules/@nocobase/app-plugin-workflow/dist/client/locales` resolve to `app-plugin-workflow`.
+// both `packages/plugins/app-plugin-scheduler/client/locales` and
+// `node_modules/@nocobase/app-plugin-scheduler/dist/client/locales` resolve to `app-plugin-scheduler`.
 const resolveLocaleOwner = (moduleId: string): string | undefined => {
   let directory = path.dirname(path.dirname(moduleId));
 

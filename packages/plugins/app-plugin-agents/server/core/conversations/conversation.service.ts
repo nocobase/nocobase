@@ -11,21 +11,11 @@
  * - The agent's text events become assistant messages (`syncRun`): as the runner reports them (a listener on
  *   `run.events`), when the run ends (inside its transaction), and when the owner reads messages of a run still open.
  * - Switching to the system default and back moves the queued work and the unanswered messages to the other agent,
- *   and bumps `thread`, so every switch starts a new session. Its mode follows the answering agent, including a
- *   runner conversation temporarily answered by the online fallback agent.
- * - An online agent's reply is drafted as it is written (`streamDraft`, from the server executor): one assistant message
- *   per run without a run event, rewritten in place, which the run's next text event makes final (`syncIn`). A draft
- *   left when the run ends is kept as what it had written, marked interrupted.
+ *   and bumps `thread`, so every switch starts a new session.
  */
 import type { DatabaseConnection } from '@nocobase/db';
 
-import {
-  onlineEntriesOrDefault,
-  sameEntry,
-  type Agent,
-  type OnlineModelEntry,
-} from '../../../shared/agents.js';
-import type { ModelCatalog, ModelRef } from '../../../shared/models.js';
+import type { Agent } from '../../../shared/agents.js';
 import {
   CONVERSATION_HISTORY_IN_PROMPT,
   CONVERSATION_PAGE_DEFAULT,
@@ -38,10 +28,8 @@ import {
   MESSAGE_CONTENT_MAX,
   MESSAGE_PAGE_DEFAULT,
   MESSAGE_PAGE_MAX,
-  chatModelChoices,
   type ChatAgent,
   type ChatAvailability,
-  type ChatSettings,
   type ConversationAgent,
   type ConversationConflict,
   type ConversationDetail,
@@ -49,12 +37,11 @@ import {
   type ConversationPage,
   type ConversationRun,
   type ConversationSummary,
-  type MessageMetadata,
   type MessagePage,
   type SendMessageRequest,
   type SendMessageResult,
 } from '../../../shared/conversations.js';
-import type { Runner } from '../../../shared/runners.js';
+import { runnerTakesAgent, type Runner } from '../../../shared/runners.js';
 import { CONSULT_MAX_DEPTH, type Run } from '../../../shared/runs.js';
 import { ACCESS_NAMESPACE } from '../../../shared/access.js';
 import { sampleValue } from '../../../shared/briefs.js';
@@ -71,13 +58,12 @@ import type { People } from '../../kernel/people.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
 import type { AgentService } from '../agents/index.js';
 import { findAgent } from '../agents/index.js';
+import { agentNamesOf } from '../agents/agent.store.js';
 import type { RunnerService } from '../../runners/index.js';
-import type { ModelGateway } from '../../online/gateway.js';
 import {
   eventsAfter,
   hasSession,
   lastSummary,
-  onlineEntryOf,
   openRunsOnEach,
   queuedRun,
   type ClaimContext,
@@ -140,7 +126,7 @@ export interface ConversationServiceDeps {
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
-  readonly agents: Pick<AgentService, 'mayInvoke' | 'create' | 'get' | 'list'>;
+  readonly agents: Pick<AgentService, 'mayInvoke' | 'get' | 'list'>;
   readonly runners: Pick<RunnerService, 'list'>;
   readonly eligibility: Pick<ClaimEligibility, 'canClaim' | 'runnersFor'>;
   readonly runs: Pick<
@@ -150,8 +136,6 @@ export interface ConversationServiceDeps {
   readonly people: People;
   readonly settings: ChatSettingsService;
   readonly contextKinds: PageContextKinds;
-  /** The models online agents use, for whether one can answer. */
-  readonly models: Pick<ModelGateway, 'catalog'>;
   /** The files people send with messages; without them a message that names files is refused. */
   readonly attachments?: ChatAttachmentLinks;
   /** The application's public base path (`/app`, or empty), for the files' URLs. */
@@ -306,7 +290,7 @@ export function createConversationService(
       name: agent?.name ?? null,
       nameText: agent?.nameText ?? null,
       avatar: agent?.avatar ?? null,
-      archived: Boolean(agent?.archivedAt),
+      archived: agent ? agent.status !== 'enabled' : false,
     };
   }
 
@@ -317,40 +301,10 @@ export function createConversationService(
       : null;
   }
 
-  /** The entry the owner chose for the conversation, if any. */
-  function chosenModel(
-    record: ConversationRecord,
-  ): OnlineModelEntry | undefined {
-    return record.modelService && record.model
-      ? { modelService: record.modelService, model: record.model }
-      : undefined;
-  }
-
-  /**
-   * The entry an online conversation answers with now (the system default chat model, `defaultModel`, for an agent
-   * that lists none); null for a runner one or a missing agent.
-   */
-  function modelOf(
-    record: ConversationRecord,
-    agent: Agent | null,
-    defaultModel: ModelRef | null,
-  ): OnlineModelEntry | null {
-    if (record.mode !== 'online' || !agent) return null;
-    return onlineEntryOf(agent, chosenModel(record), defaultModel);
-  }
-
   async function summaries(
     conn: DatabaseConnection,
     records: readonly ConversationRecord[],
-    /** The system default chat model, when the caller has read it; read here when an online one needs it. */
-    known?: ModelRef | null,
   ): Promise<ConversationSummary[]> {
-    const defaultModel =
-      known !== undefined
-        ? known
-        : records.some((record) => record.mode === 'online')
-          ? ((await deps.models.catalog()).defaultModel ?? null)
-          : null;
     const agents = new Map<string, Agent | null>();
     for (const record of records)
       for (const id of [record.agentId, record.fallbackFromAgentId])
@@ -374,7 +328,6 @@ export function createConversationService(
             agents.get(record.fallbackFromAgentId) ?? null,
           )
         : null,
-      model: modelOf(record, agents.get(record.agentId) ?? null, defaultModel),
       read: Boolean(record.read),
       lastMessageAt: record.lastMessageAt,
       archivedAt: record.archivedAt,
@@ -394,53 +347,30 @@ export function createConversationService(
     return wakeable(agent, userId, deps.agents.mayInvoke) ? agent : null;
   }
 
-  /** The configured online agent and whether its default answering model is offered now. */
-  async function onlineFallback(
-    conn: DatabaseConnection,
-    userId: string,
-    catalog: ModelCatalog,
-    settings?: ChatSettings,
-  ): Promise<{ agent: Agent | null; availability: ChatAvailability } | null> {
-    const { onlineFallbackAgentId } =
-      settings ?? (await deps.settings.settings(conn));
-    if (!onlineFallbackAgentId) return null;
-    const agent = await findAgent(conn, onlineFallbackAgentId);
-    const online = agent?.type === 'online' ? agent : null;
-    return {
-      agent: online,
-      availability: availabilityOf(
-        online,
-        userId,
-        deps.agents.mayInvoke,
-        0,
-        catalog,
-      ),
-    };
-  }
-
   /** Reads the same features and variable restrictions as claim, before any write transaction. */
   async function availabilityFor(
     conn: DatabaseConnection,
     agent: Agent | null,
     userId: string,
-    catalog: ModelCatalog,
-    wanted?: OnlineModelEntry,
     runners?: readonly Runner[],
   ): Promise<ChatAvailability> {
-    const eligible =
-      agent?.type === 'runner' && wakeable(agent, userId, deps.agents.mayInvoke)
-        ? await deps.eligibility.runnersFor(conn, agent, {
-            actorUserId: userId,
-            ...(runners ? { runners } : {}),
-          })
-        : [];
+    if (!wakeable(agent, userId, deps.agents.mayInvoke))
+      return availabilityOf(agent, userId, deps.agents.mayInvoke, 0);
+    const online =
+      runners ??
+      (await deps.runners.list()).filter(
+        (runner) => runner.status === 'online',
+      );
+    const eligible = await deps.eligibility.runnersFor(conn, agent, {
+      actorUserId: userId,
+      runners: online,
+    });
     return availabilityOf(
       agent,
       userId,
       deps.agents.mayInvoke,
       eligible.length,
-      catalog,
-      wanted,
+      online.some((runner) => runnerTakesAgent(runner, agent)),
     );
   }
 
@@ -448,87 +378,45 @@ export function createConversationService(
     conn: DatabaseConnection,
     agent: Agent | null,
     userId: string,
-    catalog: ModelCatalog,
   ): Promise<boolean> {
     if (!wakeable(agent, userId, deps.agents.mayInvoke)) return false;
-    return agent.type === 'runner'
-      ? deps.eligibility.canClaim(conn, agent, { actorUserId: userId })
-      : availabilityOf(agent, userId, deps.agents.mayInvoke, 0, catalog).online;
-  }
-
-  async function automaticFallback(
-    conn: DatabaseConnection,
-    agent: Agent,
-    userId: string,
-    catalog: ModelCatalog,
-    settings?: ChatSettings,
-  ): Promise<Awaited<ReturnType<typeof onlineFallback>>> {
-    const current = settings ?? (await deps.settings.settings(conn));
-    if (
-      !current.onlineFallbackAgentId ||
-      agent.type !== 'runner' ||
-      !wakeable(agent, userId, deps.agents.mayInvoke)
-    )
-      return null;
-    if (await deps.eligibility.canClaim(conn, agent, { actorUserId: userId }))
-      return null;
-    return onlineFallback(conn, userId, catalog, current);
+    return deps.eligibility.canClaim(conn, agent, { actorUserId: userId });
   }
 
   /**
-   * The agent `fallback` switches the conversation to: an available system default of the conversation's mode, else,
-   * for a runner conversation, the online fallback agent. Null while it already uses another agent in place of its own.
+   * The agent `fallback` switches the conversation to: the system default when it can answer. Null while the
+   * conversation already uses another agent in place of its own.
    */
   async function fallbackTarget(
     conn: DatabaseConnection,
     record: ConversationRecord,
-    catalog: ModelCatalog,
   ): Promise<Agent | null> {
     if (record.fallbackFromAgentId) return null;
     const system = await systemDefault(conn, record.userId);
     if (
       system &&
       system.id !== record.agentId &&
-      system.type === record.mode &&
-      (await canAnswer(conn, system, record.userId, catalog))
+      (await canAnswer(conn, system, record.userId))
     )
       return system;
-    if (record.mode !== 'runner') return null;
-    const online = await onlineFallback(conn, record.userId, catalog);
-    return online?.availability.online && online.agent?.id !== record.agentId
-      ? online.agent
-      : null;
+    return null;
   }
 
   async function detailOf(
     conn: DatabaseConnection,
     record: ConversationRecord,
   ): Promise<ConversationDetail> {
-    const catalog = await deps.models.catalog();
-    const [summary] = await summaries(conn, [record], catalog.defaultModel);
+    const [summary] = await summaries(conn, [record]);
     const agent = await findAgent(conn, record.agentId);
     const fallbackFrom = record.fallbackFromAgentId
       ? await findAgent(conn, record.fallbackFromAgentId)
       : null;
-    const target = await fallbackTarget(conn, record, catalog);
+    const target = await fallbackTarget(conn, record);
     return {
       ...summary,
-      availability: await availabilityFor(
-        conn,
-        agent,
-        record.userId,
-        catalog,
-        chosenModel(record),
-      ),
-      models:
-        record.mode === 'online' && agent
-          ? chatModelChoices(
-              onlineEntriesOrDefault(agent, catalog.defaultModel ?? null),
-              catalog,
-            )
-          : [],
+      availability: await availabilityFor(conn, agent, record.userId),
       canFallback: Boolean(target),
-      canRestore: await canAnswer(conn, fallbackFrom, record.userId, catalog),
+      canRestore: await canAnswer(conn, fallbackFrom, record.userId),
     };
   }
 
@@ -597,48 +485,6 @@ export function createConversationService(
     return (await deps.people.names(conn, [userId])).get(userId) ?? userId;
   }
 
-  /** Remember the last fallback failure in the transcript, across requests and application restarts. */
-  async function fallbackFailureNotice(
-    unit: Tx,
-    record: ConversationRecord,
-    value: Extract<
-      ConversationNotice,
-      { code: 'onlineFallbackUnavailable' }
-    > | null,
-  ): Promise<void> {
-    const previous = await messagesRepo(unit.conn).findOne({
-      filter: (f) =>
-        f.and([
-          f.string('conversationId').eq(record.id),
-          f.string('role').eq('system'),
-          f
-            .json('metadata')
-            .path(['notice', 'code'])
-            .eq('onlineFallbackUnavailable'),
-        ]),
-      sort: (sort) => sort.field('seq').desc(),
-    });
-    const metadata = previous ? metadataOf(previous) : null;
-    const last = metadata?.notice;
-    if (
-      value &&
-      !metadata?.onlineFallbackResolved &&
-      last?.code === 'onlineFallbackUnavailable' &&
-      last.fromAgentId === value.fromAgentId &&
-      last.reason === value.reason
-    )
-      return;
-    if (previous && !metadata?.onlineFallbackResolved)
-      await messagesRepo(unit.conn).updateMany({
-        filter: { id: previous.id },
-        values: {
-          metadata: asJson({ ...metadata, onlineFallbackResolved: true }),
-          updatedAt: now(),
-        },
-      });
-    if (value) await notice(unit, record, value);
-  }
-
   /** The run input a user message becomes: its text, its files, and its page context marked as data. */
   function inputText(message: MessageRecord): string {
     const view = toMessage(message);
@@ -681,7 +527,6 @@ export function createConversationService(
                 conversationId: record.id,
                 messageId: message.id,
                 seq: Number(message.seq),
-                // An online agent's executor shows the images among them to its model.
                 ...(files.length > 0
                   ? { attachmentIds: files.map((file) => file.id) }
                   : {}),
@@ -705,8 +550,7 @@ export function createConversationService(
 
   /**
    * Moves the conversation to `agent`: its queued work is withdrawn, the thread moves on (a new session), and the
-   * messages nobody answered go to the new agent. The mode follows the agent's type; a model chosen for an online
-   * conversation is dropped when it changes.
+   * messages nobody answered go to the new agent.
    */
   async function rebind(
     unit: Tx,
@@ -723,10 +567,9 @@ export function createConversationService(
       filter: { id: record.id },
       values: {
         agentId: agent.id,
-        mode: agent.type,
-        ...(agent.type === record.mode
-          ? {}
-          : { modelService: null, model: null }),
+        mode: 'runner',
+        modelService: null,
+        model: null,
         fallbackFromAgentId,
         thread: Number(record.thread) + 1,
         updatedAt: now(),
@@ -783,18 +626,6 @@ export function createConversationService(
           agentId: run.agentId,
           runEventSeq: Number(event.seq),
         };
-        // An online agent's draft of this text becomes the final message, where the person watched it grow.
-        const draft = await findDraft(unit.conn, record.id, run.id);
-        if (draft) {
-          await rewriteMessage(
-            unit.conn,
-            draft,
-            { text, metadata, runEventSeq: Number(event.seq) },
-            now(),
-          );
-          changed(unit, record, Number(draft.seq));
-          continue;
-        }
         await append(unit, record, {
           role: 'assistant',
           text,
@@ -825,7 +656,6 @@ export function createConversationService(
     ownerName: string,
     history: readonly HistoryLine[],
     previousSummary: string | null,
-    chosen: OnlineModelEntry | null,
   ): Promise<SubjectAssembly> {
     const key = conversationKey(conversation.id);
     const added = await Promise.all(
@@ -841,7 +671,6 @@ export function createConversationService(
           agent: claim.agent,
           ownerName,
           cli: claim.cli,
-          dialect: claim.dialect,
         }),
       ),
     );
@@ -858,7 +687,6 @@ export function createConversationService(
         key,
         cli: claim.cli,
         appName: claim.appName,
-        dialect: claim.dialect,
         rules: added.flatMap((lines) => lines.rules ?? []),
         sections: added.flatMap((lines) => lines.sections ?? []),
       }),
@@ -887,15 +715,12 @@ export function createConversationService(
       },
       dirs: [],
       scopes: [],
-      ...(chosen ? { model: chosen } : {}),
     };
   }
 
   const binding: SubjectBinding = {
     kind: CONVERSATION_SUBJECT,
     private: true,
-    // A conversation needs no working directory: online agents answer in it as well as runner agents.
-    agentTypes: ['online', 'runner'],
     title: { key: 'subjects.conversation', ns: ACCESS_NAMESPACE },
     triggers: CONVERSATION_TRIGGERS,
     // "Preview full prompt": a new conversation of the previewer's, with one message, both made up.
@@ -924,7 +749,6 @@ export function createConversationService(
           },
           await nameOf(conn, claim.run.actorUserId ?? ''),
           [],
-          null,
           null,
         );
       },
@@ -1003,7 +827,6 @@ export function createConversationService(
           ownerName,
           history,
           previousSummary,
-          chosenModel(record) ?? null,
         );
       },
     },
@@ -1119,71 +942,14 @@ export function createConversationService(
       throw invalid('This application takes no files in chat.', {
         field: 'attachmentIds',
       });
-    const before = await owned(tx.read(), userId, id);
-    const agent =
-      before.mode === 'runner'
-        ? await findAgent(tx.read(), before.agentId)
-        : null;
-    const replacement = agent
-      ? await automaticFallback(
-          tx.read(),
-          agent,
-          userId,
-          await deps.models.catalog(),
-        )
-      : null;
+    await owned(tx.read(), userId, id);
     // Resolved before the transaction: resolvers read through the services of the plugins that own the kinds.
     const context = request.context
       ? await deps.contextKinds.resolve(tx.read(), userId, request.context)
       : null;
     const sent = await tx.run(async (unit) => {
-      let record = await lockOwned(unit, userId, id);
-      let fallbackFailure: Extract<
-        ConversationNotice,
-        { code: 'onlineFallbackUnavailable' }
-      > | null = null;
-      // A concurrent switch owns its new binding; do not apply a decision made for the previous one.
-      if (
-        replacement &&
-        record.agentId === before.agentId &&
-        record.thread === before.thread &&
-        record.mode === 'runner' &&
-        record.fallbackFromAgentId === before.fallbackFromAgentId
-      ) {
-        const current = await findAgent(unit.conn, record.agentId);
-        const target = replacement.agent
-          ? await findAgent(unit.conn, replacement.agent.id)
-          : null;
-        if (
-          current?.revision === agent?.revision &&
-          replacement.availability.online &&
-          wakeable(target, userId, deps.agents.mayInvoke) &&
-          target.revision === replacement.agent?.revision
-        ) {
-          await rebind(
-            unit,
-            record,
-            target,
-            record.fallbackFromAgentId ?? record.agentId,
-            {
-              code: 'switchedToOnline',
-              agentId: target.id,
-              fromAgentId: record.agentId,
-            },
-          );
-          record = (await findConversation(unit.conn, id))!;
-        } else if (
-          current?.revision === agent?.revision &&
-          replacement.availability.reason
-        ) {
-          fallbackFailure = {
-            code: 'onlineFallbackUnavailable',
-            fromAgentId: record.agentId,
-            reason: replacement.availability.reason,
-          };
-        }
-      }
-      await fallbackFailureNotice(unit, record, fallbackFailure);
+      const record = await lockOwned(unit, userId, id);
+
       const at = now();
       if (record.archivedAt || (record.titleSource === 'auto' && !record.title))
         await conversationsRepo(unit.conn).updateMany({
@@ -1309,40 +1075,8 @@ export function createConversationService(
     },
 
     async create(userId, request) {
-      const wanted = request.model ?? null;
-      // Read before the transaction, which a read on another connection would wait for.
-      const catalog = await deps.models.catalog();
-      const fallback = catalog.defaultModel ?? null;
-      const settings = await deps.settings.settings();
-      const picked = await pickAgent(tx.read(), userId, request.agentId);
-      const replacement = !wanted
-        ? await automaticFallback(tx.read(), picked, userId, catalog, settings)
-        : null;
       const id = await tx.run(async (unit) => {
-        const current = await pickAgent(unit.conn, userId, request.agentId);
-        const target = replacement?.agent
-          ? await findAgent(unit.conn, replacement.agent.id)
-          : null;
-        const instead =
-          current.id === picked.id &&
-          current.revision === picked.revision &&
-          replacement?.availability.online &&
-          wakeable(target, userId, deps.agents.mayInvoke) &&
-          target.revision === replacement.agent?.revision
-            ? target
-            : null;
-        const agent = instead ?? current;
-        if (
-          wanted &&
-          (agent.type !== 'online' ||
-            !onlineEntriesOrDefault(agent, fallback).some((entry) =>
-              sameEntry(entry, wanted),
-            ))
-        )
-          throw invalid(
-            `The agent does not list the model ${wanted.modelService} · ${wanted.model}.`,
-            { reason: 'MODEL_NOT_LISTED' },
-          );
+        const agent = await pickAgent(unit.conn, userId, request.agentId);
         const title =
           request.title === undefined
             ? null
@@ -1357,10 +1091,10 @@ export function createConversationService(
             id: conversationId,
             userId,
             agentId: agent.id,
-            mode: agent.type,
-            fallbackFromAgentId: instead ? picked.id : null,
-            modelService: wanted?.modelService ?? null,
-            model: wanted?.model ?? null,
+            mode: 'runner',
+            fallbackFromAgentId: null,
+            modelService: null,
+            model: null,
             title,
             titleSource: title ? 'user' : 'auto',
             category: 'chat',
@@ -1377,20 +1111,7 @@ export function createConversationService(
             updatedAt: at,
           },
         });
-        const record = (await findConversation(unit.conn, conversationId))!;
-        if (instead)
-          await notice(unit, record, {
-            code: 'switchedToOnline',
-            agentId: instead.id,
-            fromAgentId: picked.id,
-          });
-        else if (replacement?.availability.reason)
-          await notice(unit, record, {
-            code: 'onlineFallbackUnavailable',
-            fromAgentId: picked.id,
-            reason: replacement.availability.reason,
-          });
-        else changed(unit, record);
+        changed(unit, (await findConversation(unit.conn, conversationId))!);
         return conversationId;
       });
       return detail(userId, id);
@@ -1399,11 +1120,6 @@ export function createConversationService(
     get: detail,
 
     async update(userId, id, patch) {
-      // Read before the transaction, which a read on another connection would wait for.
-      const fallback =
-        patch.model !== undefined && patch.model !== null
-          ? ((await deps.models.catalog()).defaultModel ?? null)
-          : null;
       await tx.run(async (unit) => {
         const record = await lockOwned(unit, userId, id);
         const values: Record<string, unknown> = {};
@@ -1415,25 +1131,6 @@ export function createConversationService(
           values.archivedAt = patch.archived
             ? (record.archivedAt ?? now())
             : null;
-        if (patch.model !== undefined) {
-          const wanted = patch.model;
-          if (wanted !== null) {
-            const agent = await findAgent(unit.conn, record.agentId);
-            if (
-              record.mode !== 'online' ||
-              !agent ||
-              !onlineEntriesOrDefault(agent, fallback).some((entry) =>
-                sameEntry(entry, wanted),
-              )
-            )
-              throw invalid(
-                `The agent does not list the model ${wanted.modelService} · ${wanted.model}.`,
-                { reason: 'MODEL_NOT_LISTED' },
-              );
-          }
-          values.modelService = wanted?.modelService ?? null;
-          values.model = wanted?.model ?? null;
-        }
         if (Object.keys(values).length === 0) return;
         await conversationsRepo(unit.conn).updateMany({
           filter: { id },
@@ -1482,8 +1179,57 @@ export function createConversationService(
         hasMore = newest.length > limit;
         rows = newest.slice(0, limit).reverse();
       }
+      const items = rows.map((row) => viewOf(row));
+      const consultationRuns = items.flatMap((item) =>
+        item.metadata?.notice?.code === 'consultation' &&
+        !item.metadata?.notice.agentId &&
+        item.metadata?.notice.runId
+          ? [item.metadata?.notice.runId]
+          : [],
+      );
+      const consultedRuns = consultationRuns.length
+        ? await conn.query
+            .selectFrom('agRuns')
+            .select(['id', 'agentId'])
+            .where('id', 'in', consultationRuns)
+            .execute()
+        : [];
+      const runAgents = new Map(
+        consultedRuns.map((run) => [String(run.id), String(run.agentId)]),
+      );
+      const ids = items.flatMap((item) =>
+        item.metadata?.notice?.code === 'consultation'
+          ? [
+              item.metadata?.notice.agentId ??
+                (item.metadata?.notice.runId
+                  ? runAgents.get(item.metadata?.notice.runId)
+                  : undefined),
+            ].filter((id): id is string => Boolean(id))
+          : [],
+      );
+      const names = await agentNamesOf(conn, ids);
       return {
-        items: rows.map((row) => viewOf(row)),
+        items: items.map((item) => {
+          if (item.metadata?.notice?.code !== 'consultation') return item;
+          const agentId =
+            item.metadata?.notice.agentId ??
+            (item.metadata?.notice.runId
+              ? (runAgents.get(item.metadata?.notice.runId) ?? null)
+              : null);
+          const name = agentId ? names.get(agentId) : undefined;
+          return {
+            ...item,
+            metadata: {
+              ...item.metadata,
+              notice: {
+                ...item.metadata.notice,
+                agentId,
+                agentName: name ?? item.metadata.notice.agentName,
+                identitySnapshot: name === undefined,
+              },
+            },
+          };
+        }),
         hasMore,
         lastSeq: Number(current.lastSeq),
       } satisfies MessagePage;
@@ -1514,6 +1260,9 @@ export function createConversationService(
       });
       return sendMessage(userId, conversation.id, {
         content: request.text,
+        ...(request.attachmentIds
+          ? { attachmentIds: request.attachmentIds }
+          : {}),
         ...(request.context ? { context: request.context } : {}),
         ...(request.clientId ? { clientId: request.clientId } : {}),
       });
@@ -1552,9 +1301,8 @@ export function createConversationService(
     },
 
     async fallback(userId, id) {
-      const catalog = await deps.models.catalog();
       const before = await owned(tx.read(), userId, id);
-      const target = await fallbackTarget(tx.read(), before, catalog);
+      const target = await fallbackTarget(tx.read(), before);
       await tx.run(async (unit) => {
         const record = await lockOwned(unit, userId, id);
         const current = target ? await findAgent(unit.conn, target.id) : null;
@@ -1571,10 +1319,7 @@ export function createConversationService(
             'This conversation cannot switch to another agent.',
           );
         await rebind(unit, record, current, record.agentId, {
-          code:
-            target.type === record.mode
-              ? 'switchedToDefault'
-              : 'switchedToOnline',
+          code: 'switchedToDefault',
           agentId: target.id,
           fromAgentId: record.agentId,
         });
@@ -1587,12 +1332,7 @@ export function createConversationService(
       const own = before.fallbackFromAgentId
         ? await findAgent(tx.read(), before.fallbackFromAgentId)
         : null;
-      const available = await canAnswer(
-        tx.read(),
-        own,
-        userId,
-        await deps.models.catalog(),
-      );
+      const available = await canAnswer(tx.read(), own, userId);
       await tx.run(async (unit) => {
         const record = await lockOwned(unit, userId, id);
         const current = own ? await findAgent(unit.conn, own.id) : null;
@@ -1672,49 +1412,6 @@ export function createConversationService(
       return refOf(record);
     },
 
-    async consultation(run, card) {
-      if (run.subject.kind !== CONVERSATION_SUBJECT) return;
-      await tx.run(async (unit) => {
-        const record = await lockConversation(unit.conn, run.subject.id, now());
-        if (!record || record.userId !== run.actorUserId) return;
-        const metadata: MessageMetadata = {
-          notice: card,
-          ...(card.agentId ? { agentId: card.agentId } : {}),
-          ...(card.state === 'running' ? { streaming: true } : {}),
-        };
-        const existing = (
-          await messagesRepo(unit.conn).findMany({
-            filter: {
-              conversationId: record.id,
-              runId: run.id,
-              role: 'system',
-            },
-          })
-        ).find((message) => {
-          const notice = metadataOf(message).notice;
-          return (
-            notice?.code === 'consultation' && notice.callId === card.callId
-          );
-        });
-        if (existing) {
-          await rewriteMessage(
-            unit.conn,
-            existing,
-            { text: noticeText(card, new Map()), metadata },
-            now(),
-          );
-          changed(unit, record, Number(existing.seq));
-          return;
-        }
-        await append(unit, record, {
-          role: 'system',
-          text: noticeText(card, new Map()),
-          metadata,
-          runId: run.id,
-        });
-      });
-    },
-
     async deliver(outer, conversationId, news) {
       const record = await lockConversation(outer.conn, conversationId, now());
       if (!record) return null;
@@ -1757,62 +1454,26 @@ export function createConversationService(
       await tx.run((unit) => syncIn(unit, run));
     },
 
-    async streamDraft(run, text) {
-      if (run.subject.kind !== CONVERSATION_SUBJECT) return;
-      await tx.run(async (unit) => {
-        const record = await lockConversation(unit.conn, run.subject.id, now());
-        if (!record || record.userId !== run.actorUserId) return;
-        const draft = await findDraft(unit.conn, record.id, run.id);
-        if (draft) {
-          await rewriteMessage(
-            unit.conn,
-            draft,
-            {
-              text,
-              metadata: { ...metadataOf(draft), streaming: true },
-            },
-            now(),
-          );
-          changed(unit, record, Number(draft.seq));
-          return;
-        }
-        if (text.trim() === '') return;
-        await append(unit, record, {
-          role: 'assistant',
-          text,
-          runId: run.id,
-          metadata: { agentId: run.agentId, streaming: true },
-        });
-      });
-    },
-
     async chatAgents(userId) {
       const conn = tx.read();
-      const [agents, runners, settings, preferences, catalog] =
-        await Promise.all([
-          deps.agents.list(),
-          deps.runners
-            .list()
-            .then((all) => all.filter((runner) => runner.status === 'online')),
-          deps.settings.settings(conn),
-          deps.settings.preferences(userId, conn),
-          deps.models.catalog(),
-        ]);
-      const replacement = await onlineFallback(conn, userId, catalog, settings);
-      const online = replacement?.availability.online
-        ? replacement.agent
-        : null;
+      const [agents, runners, settings, preferences] = await Promise.all([
+        deps.agents.list(),
+        deps.runners
+          .list()
+          .then((all) => all.filter((runner) => runner.status === 'online')),
+        deps.settings.settings(conn),
+        deps.settings.preferences(userId, conn),
+      ]);
       return Promise.all(
         agents
-          .filter((agent) => deps.agents.mayInvoke(agent, userId))
+          // People talk to the agents discovered from runners; an application's own agents do work of its own.
+          .filter(
+            (agent) =>
+              agent.source === 'runner' && deps.agents.mayInvoke(agent, userId),
+          )
           .map(async (agent): Promise<ChatAgent> => {
-            const availability = await availabilityFor(
-              conn,
-              agent,
-              userId,
-              catalog,
-              undefined,
-              runners,
+            const fitting = runners.filter((runner) =>
+              runnerTakesAgent(runner, agent),
             );
             return {
               id: agent.id,
@@ -1821,63 +1482,15 @@ export function createConversationService(
               nameText: agent.nameText,
               descriptionText: agent.descriptionText,
               avatar: agent.avatar,
-              type: agent.type,
-              models:
-                agent.type === 'online'
-                  ? chatModelChoices(
-                      onlineEntriesOrDefault(
-                        agent,
-                        catalog.defaultModel ?? null,
-                      ),
-                      catalog,
-                    )
-                  : [],
-              personal:
-                agent.ownerUserId === userId && agent.access === 'ownerOnly',
               isSystemDefault: agent.id === settings.defaultAgentId,
               isMyDefault: agent.id === preferences.defaultAgentId,
-              availability,
-              fallbackAgentId:
-                online &&
-                agent.type === 'runner' &&
-                availability.reason === 'noRunner'
-                  ? online.id
-                  : null,
+              availability: await availabilityFor(conn, agent, userId, runners),
+              personalOnly:
+                fitting.length > 0 &&
+                fitting.every((runner) => runner.trust !== 'team'),
             };
           }),
       );
-    },
-
-    async copyAgent(userId, agentId, request) {
-      const source = await deps.agents.get(agentId);
-      if (!deps.agents.mayInvoke(source, userId)) throw notFound('Agent');
-      const name = request.name?.trim() || `${source.name} (copy)`;
-      if ([...name].length > 200)
-        throw invalid('name must be at most 200 characters.');
-      const copy = await deps.agents.create(userId, {
-        name,
-        description: source.description,
-        descriptionText: source.descriptionText,
-        avatar: source.avatar,
-        type: source.type,
-        modelEntries: source.modelEntries,
-        instructions: source.instructions,
-        actions: source.actions,
-        confirmChanges: source.confirmChanges,
-        access: 'ownerOnly',
-        userIds: [],
-        ownerUserId: userId,
-        runnerIds: source.runnerIds,
-        skillIds: source.skillIds,
-        maxConcurrentRuns: source.maxConcurrentRuns,
-        maxAttempts: source.maxAttempts,
-        toolPolicy: source.toolPolicy,
-      });
-      if (request.makeDefault)
-        await deps.settings.updatePreferences(userId, {
-          defaultAgentId: copy.id,
-        });
-      return copy;
     },
   };
   return service;

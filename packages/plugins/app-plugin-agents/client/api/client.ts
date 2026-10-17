@@ -10,16 +10,15 @@ import type {
   Agent,
   AgentActionOption,
   AgentChange,
-  AgentInput,
+  AgentName,
   AgentPatch,
-  AgentSummary,
+  AgentView,
   UserRef,
 } from '../../shared/agents.js';
 import type { BriefPreview, RunBrief } from '../../shared/briefs.js';
 import type { PricesAnswer, PricesInput } from '../../shared/reports.js';
 import type {
   CreateModelServiceRequest,
-  DefaultModels,
   ModelCatalog,
   ModelCheck,
   ModelConnectionCheckRequest,
@@ -37,6 +36,7 @@ import type {
   RunnerPatch,
   RunnerRecentRun,
   RunnerSummary,
+  RunnerListItem,
 } from '../../shared/runners.js';
 import type { Run, RunDetail, RunEventPage } from '../../shared/runs.js';
 import type {
@@ -103,7 +103,7 @@ export class AgentsApi {
     return this.list('actions');
   }
 
-  /** The services and models of `kind` (chat, the ones online agents may use, by default). */
+  /** The services and models of `kind` (chat by default). */
   public async models(kind?: ModelKind): Promise<ModelCatalog> {
     const services = await this.list<ModelCatalog['services'][number]>(
       'models',
@@ -115,16 +115,6 @@ export class AgentsApi {
   /** Whether a model answers a short test request. */
   public checkModel(ref: ModelRef): Promise<ModelCheck> {
     return this.send('checkModel', 'POST', ref);
-  }
-
-  /** The system default chat model, as set and as used now. */
-  public defaultModels(): Promise<DefaultModels> {
-    return this.get('defaultModels');
-  }
-
-  /** Sets the system default chat model. */
-  public setDefaultChatModel(ref: ModelRef): Promise<DefaultModels> {
-    return this.send('defaultModels/chat', 'PUT', ref);
   }
 
   // Model services
@@ -181,19 +171,31 @@ export class AgentsApi {
     return this.list('users');
   }
 
-  public agents(includeArchived = false): Promise<AgentSummary[]> {
-    return this.list('', includeArchived ? { includeArchived: true } : {});
+  /** Every agent discovered from runners, as the Agent page shows it to the caller. */
+  public setIgnored(
+    groups: readonly { key: string; expectedRevision: number }[],
+    ignored: boolean,
+  ): Promise<unknown> {
+    return this.send('discoveryPreferences', 'PUT', { groups, ignored });
   }
 
-  public agent(agentId: string): Promise<AgentSummary> {
+  public agents(): Promise<AgentView[]> {
+    return this.list('');
+  }
+
+  public agent(agentId: string): Promise<AgentView> {
     return this.get(id(agentId));
   }
 
-  public createAgent(input: AgentInput): Promise<Agent> {
-    return this.send('', 'POST', input);
+  /** Every agent's name, removed ones and the application's own included, for the runs that name them. */
+  public agentNames(): Promise<AgentName[]> {
+    return this.list('agentNames');
   }
 
-  /** Changes the agent as it was at `patch.expectedRevision`; 409 `REVISION_CONFLICT` when it changed since. */
+  /**
+   * What the agent is good at, its default effort, whether it is enabled; against `patch.expectedRevision`, 409
+   * `REVISION_CONFLICT` when it changed since.
+   */
   public updateAgent(agentId: string, patch: AgentPatch): Promise<Agent> {
     return this.send(id(agentId), 'PATCH', patch);
   }
@@ -209,19 +211,6 @@ export class AgentsApi {
     );
   }
 
-  public archiveAgent(agentId: string): Promise<Agent> {
-    return this.send(`${id(agentId)}/archive`, 'POST');
-  }
-
-  public restoreAgent(agentId: string): Promise<Agent> {
-    return this.send(`${id(agentId)}/restore`, 'POST');
-  }
-
-  /** Deletes an archived agent; `AGENT_NOT_ARCHIVED` or `AGENT_HAS_ACTIVE_RUNS` otherwise. */
-  public deleteAgent(agentId: string): Promise<void> {
-    return this.send(id(agentId), 'DELETE');
-  }
-
   /** What a run of the agent would be sent now in `scenario` (a subject kind), on a made-up subject; the first by default. */
   public briefPreview(
     agentId: string,
@@ -235,8 +224,12 @@ export class AgentsApi {
 
   // Runners
 
-  public runners(): Promise<RunnerSummary[]> {
+  public runners(): Promise<RunnerListItem[]> {
     return this.runnersApi.runners();
+  }
+
+  public runner(runnerId: string): Promise<RunnerSummary> {
+    return this.runnersApi.runner(runnerId);
   }
 
   /** A runner's latest runs, newest first. */

@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { errorJsonOf } from '../src/lib/envelope.ts';
 import { asCliError } from '../src/lib/command.ts';
-import { ApiClient } from '../src/lib/http.ts';
+import { ApiClient, AppApiError } from '../src/lib/http.ts';
 
 describe('API field validation errors', () => {
   it('preserves field violations in JSON details and plain-text suggestions', async () => {
@@ -46,4 +46,67 @@ describe('API field validation errors', () => {
       'INVALID_FIELDS: The request contains invalid fields.\nname: Must not be empty\nexpiresAt: Must be in the future',
     );
   });
+
+  it.each([
+    undefined,
+    { suggestions: [] },
+    { suggestions: 'invalid' },
+    {
+      suggestions: [
+        {
+          message: 'Check the field requirements',
+          run: { command: 'acme', args: ['project', 'create', '--help'] },
+        },
+      ],
+    },
+  ])(
+    'keeps field errors alongside API recovery suggestions (%j)',
+    (metadata) => {
+      const fieldViolations = [
+        { field: 'project.name', description: 'Must not be empty' },
+        { field: 'members[0].email', description: 'Must be a valid email' },
+      ];
+      const error = new AppApiError(
+        400,
+        'INVALID_FIELDS',
+        'The request contains invalid fields.',
+        metadata,
+        'INVALID_ARGUMENT',
+        fieldViolations,
+      );
+      const suggestions =
+        metadata && Array.isArray(metadata.suggestions)
+          ? metadata.suggestions
+          : [];
+
+      expect(errorJsonOf(error)).toMatchObject({
+        code: 'INVALID_FIELDS',
+        message: error.message,
+        details: {
+          httpStatus: 400,
+          status: 'INVALID_ARGUMENT',
+          fieldViolations,
+        },
+        suggestions: [
+          ...suggestions,
+          ...fieldViolations.map(({ field, description }) => ({
+            message: `${field}: ${description}`,
+          })),
+        ],
+      });
+      expect(asCliError(error)).toMatchObject({
+        message: [
+          'INVALID_FIELDS: The request contains invalid fields.',
+          'project.name: Must not be empty',
+          'members[0].email: Must be a valid email',
+          ...suggestions.map(
+            ({ message, run }) =>
+              `${message} (${[run.command, ...run.args].join(' ')})`,
+          ),
+        ].join('\n'),
+        oclif: { exit: 5 },
+      });
+      expect(error.exitCode).toBe(5);
+    },
+  );
 });

@@ -15,6 +15,7 @@ export default createReactVitestConfig({
           // together with every client that resolves the authentication tokens and provider.
           /@nocobase\/app-plugin-(?:authentication|api-keys|users)\/(?:dist\/)?client\//u,
           /@nocobase\/app-plugin-authorization\/(?:dist\/)?client\//u,
+          /@nocobase\/app-plugin-(?:lifecycle-example|office-flows-example)\/(?:dist\/)?client\//u,
           /@nocobase\/app-plugin-notification-in-app\/(?:dist\/)?client\//u,
         ],
       },
@@ -24,14 +25,7 @@ export default createReactVitestConfig({
     // those tests were never run at all.
     include: ['tests/**/*.test.{ts,tsx}'],
     // Playwright runs tests/playwright/ against a built application; its files are named *.test.ts too.
-    exclude: [
-      'tests/playwright/**',
-      // TODO: Re-enable Workflow examples and page tests with the capability tests.
-      'tests/components/workflow-waiting-task.test.tsx',
-      'tests/logic/workflow-examples.test.ts',
-      'tests/logic/quotation-review-routes.test.ts',
-      'tests/logic/analytics-report-date.test.ts',
-    ],
+    exclude: ['tests/playwright/**'],
     setupFiles: ['./tests/setup/client-config.ts'],
     // Keep the command usable if an application intentionally removes all scaffold tests before adding its own.
     passWithNoTests: true,

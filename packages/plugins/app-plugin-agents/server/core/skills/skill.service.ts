@@ -1,6 +1,6 @@
 /**
  * The skill library: skills in the open Agent Skills format, every save a new version, the latest one always the one
- * runs get. An older version can be compared and restored (as a new version). Skills are attached to agents, and as
+ * runs get. An older version can be compared and restored (as a new version). Skills are team defaults, and
  * defaults to a working directory or a scope the application registers. Who may change skills is the route's concern;
  * the service checks only the values.
  *
@@ -24,6 +24,7 @@ import type { DatabaseConnection } from '@nocobase/db';
 import { z } from 'zod';
 
 import {
+  GLOBAL_SKILL_TARGET,
   SKILL_CONTENT_MAX_BYTES,
   SKILL_FILE_MAX_BYTES,
   SKILL_MAX_BYTES,
@@ -57,7 +58,6 @@ import {
 import type { IdSource } from '../../kernel/ids.js';
 import type { People } from '../../kernel/people.js';
 import type { TxRunner } from '../../kernel/tx.js';
-import { findAgent } from '../agents/agent.store.js';
 import { SizedCache, type SkillBlobs } from './blobs.js';
 import {
   bundleFiles,
@@ -70,6 +70,8 @@ import {
   attachedSkillIds,
   attachmentsRepo,
   replaceAttachments,
+  runSkillRows,
+  type RunSkillRow,
   skillsRepo,
   versionsRepo,
   type SkillRecord,
@@ -98,7 +100,10 @@ const contentField = z.string().meta({
 
 export const SkillInputSchema: z.ZodType<SkillInput> = z.strictObject({
   content: contentField,
-  files: z.array(FileSchema).optional(),
+  files: z
+    .array(FileSchema)
+    .optional()
+    .describe('The files to include, with their relative paths and content.'),
 });
 
 function revisionConflict(current: number): Error {
@@ -111,20 +116,53 @@ function revisionConflict(current: number): Error {
 
 export const SkillSaveSchema: z.ZodType<SkillSave> = z.strictObject({
   content: contentField,
-  files: z.array(FileSchema),
-  note: z.string().trim().max(500).nullable().optional(),
-  expectedRevision: z.number().int().min(1),
+  files: z
+    .array(FileSchema)
+    .describe('The files to include, with their relative paths and content.'),
+  note: z
+    .string()
+    .trim()
+    .max(500)
+    .nullable()
+    .optional()
+    .describe('A note explaining this change.'),
+  expectedRevision: z
+    .number()
+    .int()
+    .min(1)
+    .describe('The revision last read; reject if the record has changed.'),
 });
 
 export const SkillImportSchema: z.ZodType<SkillImport> = z.strictObject({
   archive: z.string().regex(HASH),
-  skillId: z.string().min(1).max(64).optional(),
-  expectedRevision: z.number().int().min(1).optional(),
-  note: z.string().trim().max(500).nullable().optional(),
+  skillId: z
+    .string()
+    .min(1)
+    .max(64)
+    .optional()
+    .describe('The skill identifier.'),
+  expectedRevision: z
+    .number()
+    .int()
+    .min(1)
+    .optional()
+    .describe('The revision last read; reject if the record has changed.'),
+  note: z
+    .string()
+    .trim()
+    .max(500)
+    .nullable()
+    .optional()
+    .describe('A note explaining this change.'),
 });
 
 export const SkillIdsSchema: z.ZodType<{ readonly skillIds: string[] }> =
-  z.strictObject({ skillIds: z.array(z.string().min(1).max(64)).max(100) });
+  z.strictObject({
+    skillIds: z
+      .array(z.string().min(1).max(64))
+      .max(100)
+      .describe('Skill identifiers to attach.'),
+  });
 
 /** A scope and its id: where skills are attached. */
 export interface SkillTarget {
@@ -155,6 +193,10 @@ export interface SkillService {
     userId: string | null,
     expectedRevision: number,
   ): Promise<SkillDetail>;
+  validateIds(
+    conn: DatabaseConnection,
+    skillIds: readonly string[],
+  ): Promise<string[]>;
   attached(target: SkillTarget): Promise<string[]>;
   /** Makes `skillIds` the skills attached to the target; unknown ids are refused. */
   attach(
@@ -164,7 +206,7 @@ export interface SkillService {
   ): Promise<string[]>;
   /**
    * For a claim: the latest version of every skill attached to `targets`, each once. Where two skills share a slug,
-   * the earlier target's wins (the claim lists the agent first).
+   * the later target wins.
    */
   forRun(
     conn: DatabaseConnection,
@@ -428,22 +470,9 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
     return record;
   };
 
-  const agentCounts = async (
-    conn: DatabaseConnection,
-  ): Promise<Map<string, number>> => {
-    const rows = await attachmentsRepo(conn).findMany({
-      filter: { scope: 'agent' },
-    });
-    const counts = new Map<string, number>();
-    for (const row of rows)
-      counts.set(row.skillId, (counts.get(row.skillId) ?? 0) + 1);
-    return counts;
-  };
-
   const summary = (
     skill: SkillRecord,
     current: SkillVersionRecord | undefined,
-    agents: number,
   ): Skill => {
     const manifest = manifestOf(current?.manifest);
     const scripts = manifest
@@ -464,7 +493,6 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
       size: current ? sizeOf(current.content, manifest) : 0,
       scriptCount: scripts.length,
       scripts,
-      agentCount: agents,
       createdById: skill.createdById,
       createdAt: skill.createdAt,
       updatedAt: skill.updatedAt,
@@ -478,7 +506,8 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
     const skill = await requireSkill(conn, id);
     const current = await versionOf(conn, id, Number(skill.currentVersion));
     const rows = await attachmentsRepo(conn).findMany({
-      filter: { skillId: id },
+      filter: (f) =>
+        f.and([f.string('skillId').eq(id), f.string('scope').ne('agent')]),
       sort: (sort) => [
         sort.field('scope').asc(),
         sort.field('createdAt').asc(),
@@ -486,21 +515,10 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
     });
     const attachments: SkillAttachment[] = [];
     for (const row of rows) {
-      const agent =
-        row.scope === 'agent' ? await findAgent(conn, row.scopeId) : null;
-      if (row.scope === 'agent' && !agent) continue;
-      attachments.push({
-        scope: row.scope,
-        scopeId: row.scopeId,
-        name: agent?.name ?? null,
-      });
+      attachments.push({ scope: row.scope, scopeId: row.scopeId, name: null });
     }
     return {
-      ...summary(
-        skill,
-        current,
-        attachments.filter((item) => item.scope === 'agent').length,
-      ),
+      ...summary(skill, current),
       content: deliveredMarkdown(
         skill.slug,
         current.description,
@@ -589,9 +607,8 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
       ]);
   }
 
-  const attachIn = async (
+  const validateIds = async (
     conn: DatabaseConnection,
-    target: SkillTarget,
     skillIds: readonly string[],
   ): Promise<string[]> => {
     const unique = [...new Set(skillIds)];
@@ -604,6 +621,16 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
           skillIds: unique.filter((id) => !found.some((s) => s.id === id)),
         });
     }
+    return unique;
+  };
+
+  const attachIn = async (
+    conn: DatabaseConnection,
+    target: SkillTarget,
+    skillIds: readonly string[],
+  ): Promise<string[]> => {
+    checkSkillTarget(target);
+    const unique = await validateIds(conn, skillIds);
     return replaceAttachments(
       conn,
       target.scope,
@@ -680,13 +707,12 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
       const skills = await skillsRepo(conn).findMany({
         sort: (sort) => [sort.field('name').asc(), sort.field('id').asc()],
       });
-      const counts = await agentCounts(conn);
       const result: Skill[] = [];
       for (const skill of skills) {
         const current = await versionsRepo(conn).findOne({
           filter: { skillId: skill.id, version: skill.currentVersion },
         });
-        result.push(summary(skill, current, counts.get(skill.id) ?? 0));
+        result.push(summary(skill, current));
       }
       return result;
     },
@@ -778,8 +804,11 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         return detail(conn, id);
       }),
 
-    attached: (target) =>
-      attachedSkillIds(tx.read(), target.scope, target.scopeId),
+    validateIds,
+    async attached(target) {
+      checkSkillTarget(target);
+      return attachedSkillIds(tx.read(), target.scope, target.scopeId);
+    },
 
     attach: (target, skillIds, conn) =>
       conn
@@ -787,41 +816,13 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         : tx.run(({ conn: inner }) => attachIn(inner, target, skillIds)),
 
     async forRun(conn, targets, runId) {
-      const seenIds = new Set<string>();
-      const seenSlugs = new Set<string>();
-      const skills: RunSkill[] = [];
-      for (const target of targets) {
-        for (const skillId of await attachedSkillIds(
+      return mergeRunSkills(
+        await runSkillRows(
           conn,
-          target.scope,
-          target.scopeId,
-        )) {
-          if (seenIds.has(skillId)) continue;
-          seenIds.add(skillId);
-          const skill = await skillsRepo(conn).findOne({
-            filter: { id: skillId },
-          });
-          if (!skill || seenSlugs.has(skill.slug)) continue;
-          seenSlugs.add(skill.slug);
-          const current = await versionOf(
-            conn,
-            skill.id,
-            Number(skill.currentVersion),
-          );
-          skills.push({
-            slug: skill.slug,
-            name: skill.name,
-            version: String(skill.currentVersion),
-            hash: current.contentHash,
-            description: skill.description,
-            bundleUrl: routePath(RUNNER_ROUTES.skill, {
-              runId,
-              slug: skill.slug,
-            }),
-          });
-        }
-      }
-      return skills;
+          targets.filter((target) => target.scope !== 'agent'),
+        ),
+        runId,
+      );
     },
 
     async bundle(conn, slug) {
@@ -997,4 +998,33 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         return named;
       }, graceMs),
   };
+}
+
+function checkSkillTarget(target: SkillTarget): void {
+  if (
+    target.scope === 'agent' ||
+    (target.scope === GLOBAL_SKILL_TARGET.scope &&
+      target.scopeId !== GLOBAL_SKILL_TARGET.scopeId)
+  )
+    throw notFound('Scope');
+}
+
+/** Rows are ordered by target priority; replacement preserves deterministic slug order. */
+export function mergeRunSkills(
+  rows: readonly RunSkillRow[],
+  runId: string,
+): RunSkill[] {
+  const skills = new Map<string, RunSkill>();
+  for (const row of rows) {
+    if (row.hash === null) throw notFound('Skill version');
+    skills.set(row.slug, {
+      slug: row.slug,
+      name: row.name,
+      version: String(row.version),
+      hash: row.hash,
+      description: row.description,
+      bundleUrl: routePath(RUNNER_ROUTES.skill, { runId, slug: row.slug }),
+    });
+  }
+  return [...skills.values()];
 }

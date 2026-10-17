@@ -1,13 +1,20 @@
 // Collecting working directories: what is counted as unpushed, which directories the application's word and a low disk
 // remove, and which are never removed.
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   acquireLock,
   cachePath,
   checkout,
+  checkWorkspaceGit,
   gcWorkspaces,
   legacyMetaPath,
   markWorkspaceEnded,
@@ -17,9 +24,11 @@ import {
   type Checkout,
   type WorkspaceMeta,
 } from '../src/core/checkout.ts';
-import { isInside } from '../src/core/command-policy.ts';
+import { isInside } from '../src/lib/paths.ts';
 import {
   collectWorkspaces,
+  applyDecisions,
+  removePlanned,
   lowOnDisk,
   planRemovals,
   readDisk,
@@ -42,7 +51,7 @@ import type {
   WorkspacesRequest,
   WorkspacesResponse,
 } from '../src/protocol/index.ts';
-import { git, makeRemote, removeDir, tempDir } from './helpers.ts';
+import { git, makeRemote, publishSeed, removeDir, tempDir } from './helpers.ts';
 
 const GB = 1024 ** 3;
 
@@ -145,6 +154,105 @@ describe('working directories', () => {
     return { requests, reporters: new Map([['acme', report]]) };
   };
 
+  it('takes a directory as ended only for this report, and then removes it whatever it holds', async () => {
+    const done = await finishedRun('TASK-1', 'run-1');
+    const dir = path.join(done.workDir, 'app');
+    writeFileSync(path.join(dir, 'scratch.txt'), 'scratch');
+    commit(dir, 'local.txt');
+    const entries = await scanWorkspaces(paths, { force: true });
+    expect(entries[0]?.unpushed).toBe(true);
+    const request = workspacesRequest(entries, 'acme', undefined, true);
+    const decision = {
+      reportId: request.reportId!,
+      workDir: done.workDir,
+      runId: 'run-1',
+      lastUsedAt: entries[0]!.lastUsedAt,
+      settled: true,
+      reason: 'settled' as const,
+      commits: [],
+    };
+    await applyDecisions(paths, entries, 'acme', {
+      remove: [],
+      keep: [],
+      decisions: [{ ...decision, reportId: 'stale' }],
+    });
+    expect(entries[0]?.status).toBe('unknown');
+    const logs: string[] = [];
+    await applyDecisions(
+      paths,
+      entries,
+      'acme',
+      { remove: [], keep: [], decisions: [decision] },
+      (message) => logs.push(message),
+    );
+    expect(entries[0]).toMatchObject({
+      status: 'ended',
+      unpushed: true,
+      cleanup: {
+        reportId: request.reportId,
+        reason: 'allowed',
+        discardsUntracked: true,
+      },
+    });
+    expect(logs).toEqual([]);
+    expect(planRemovals(entries).remove).toHaveLength(1);
+    // A run used it since it was reported: kept, whatever the decision said.
+    const record = meta(done.workDir);
+    writeFileSync(
+      workspaceRecordPath(paths, done.workDir),
+      JSON.stringify({ ...record, lastUsedAt: new Date().toISOString() }),
+    );
+    expect(await removePlanned(paths, entries[0]!)).toBe('changed');
+    expect(existsSync(done.workDir)).toBe(true);
+    writeFileSync(
+      workspaceRecordPath(paths, done.workDir),
+      JSON.stringify(record),
+    );
+    expect(await removePlanned(paths, entries[0]!)).toBeUndefined();
+    expect(existsSync(done.workDir)).toBe(false);
+    expect(existsSync(workspaceRecordPath(paths, done.workDir))).toBe(false);
+  });
+
+  it('counts submodule commits as unpushed even when the parent records their gitlink', async () => {
+    vi.stubEnv('GIT_CONFIG_COUNT', '1');
+    vi.stubEnv('GIT_CONFIG_KEY_0', 'protocol.file.allow');
+    vi.stubEnv('GIT_CONFIG_VALUE_0', 'always');
+    try {
+      const sub = makeRemote(root, 'sub-repo');
+      const seed = path.join(root, 'origin-repo-seed');
+      git(['submodule', 'add', '--quiet', sub, 'vendor/sub'], seed);
+      git([...COMMIT, 'commit', '-q', '-m', 'submodule'], seed);
+      publishSeed(root);
+      const done = await finishedRun('TASK-1', 'run-1');
+      const dir = path.join(done.workDir, 'app');
+      const child = path.join(dir, 'vendor/sub');
+      // The runner leaves submodules alone; the agent initializes them.
+      expect(existsSync(path.join(child, 'README.md'))).toBe(false);
+      git(['submodule', 'update', '--init', '--quiet'], dir);
+      expect(await checkWorkspaceGit(done.workDir, meta(done.workDir))).toEqual(
+        { reason: 'allowed', discardsUntracked: false },
+      );
+      writeFileSync(path.join(child, 'draft.md'), 'draft');
+      expect(
+        (await checkWorkspaceGit(done.workDir, meta(done.workDir))).reason,
+      ).toBe('unpushed');
+      unlinkSync(path.join(child, 'draft.md'));
+      commit(child, 'local.txt');
+      git(['add', 'vendor/sub'], dir);
+      git([...COMMIT, 'commit', '-q', '-m', 'record submodule'], dir);
+      git(['push', '--quiet', 'origin', 'HEAD:agent/TASK-1'], dir);
+      const record = {
+        ...meta(done.workDir),
+        legacy: true as const,
+      };
+      expect((await checkWorkspaceGit(done.workDir, record)).reason).toBe(
+        'unpushed',
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('records the last run, and checks unpushed work once the run is over', async () => {
     const done = await finishedRun('TASK-1', 'run-1', (dir) =>
       commit(dir, 'a.txt'),
@@ -159,7 +267,6 @@ describe('working directories', () => {
       unpushed: false,
       inUse: false,
     });
-    expect(entry).not.toHaveProperty('sizeBytes');
     expect(meta(done.workDir)).toMatchObject({ unpushed: false });
     expect(meta(done.workDir).measuredAt).toBeDefined();
   });
@@ -241,7 +348,8 @@ describe('working directories', () => {
     );
     const [entry] = await scanWorkspaces(paths, { force: true });
     expect(entry.unpushed).toBe(true);
-    const { reporters } = reporter({ remove: ['run-1'] });
+    // While its work goes on, it is kept, even on a low disk.
+    const { reporters } = reporter({ keep: ['run-1'] });
     const result = await collectWorkspaces({
       paths,
       reporters,
@@ -342,18 +450,166 @@ describe('working directories', () => {
     expect(existsSync(ongoing.workDir)).toBe(true);
   });
 
-  it('keeps a directory whose work is over but holds unpushed work, and marks it', async () => {
-    const done = await finishedRun('TASK-1', 'run-1', (dir) =>
+  it.each([
+    ['says the work goes on', 'active', false],
+    ['cannot tell whether the work is over', 'unknown', undefined],
+    ['never arrives', 'unknown', 'fail'],
+  ] as const)(
+    'keeps a settled directory and its untracked files when the confirming report %s',
+    async (_case, status, second) => {
+      const ended = await finishedRun('TASK-1', 'run-1');
+      const app = path.join(ended.workDir, 'app');
+      const headSha = git(['rev-parse', 'HEAD'], app);
+      const draft = path.join(app, 'draft.md');
+      writeFileSync(draft, 'draft\n');
+      commit(app, 'local-only.txt');
+      const requests: WorkspacesRequest[] = [];
+      const report = (
+        request: WorkspacesRequest,
+      ): Promise<WorkspacesResponse> => {
+        requests.push(request);
+        if (requests.length > 1 && second === 'fail')
+          return Promise.reject(new Error('offline'));
+        const settled = requests.length === 1 ? true : second;
+        return Promise.resolve({
+          remove: [],
+          keep: settled === false ? ['run-1'] : [],
+          decisions: request.directories?.map((directory) => ({
+            reportId: request.reportId!,
+            workDir: directory.workDir,
+            runId: directory.runId,
+            lastUsedAt: directory.lastUsedAt,
+            ...(settled === undefined ? {} : { settled }),
+            reason:
+              settled === true
+                ? 'settled'
+                : settled === false
+                  ? 'active'
+                  : 'ownershipUnknown',
+            ...(settled === true
+              ? { commits: [{ repository: remote, headSha }] }
+              : {}),
+          })),
+        });
+      };
+      const result = await collectWorkspaces({
+        paths,
+        reporters: new Map([['acme', report]]),
+        decisionApps: new Set(['acme']),
+        readDisk: fakeDisk(50 * GB),
+      });
+      expect(requests).toHaveLength(2);
+      expect(requests[1]?.directories?.[0]?.cleanup).toMatchObject({
+        reason: 'allowed',
+        discardsUntracked: true,
+      });
+      expect(result.removed).toEqual([]);
+      expect(result.entries[0]?.status).toBe(status);
+      expect(existsSync(ended.workDir)).toBe(true);
+      expect(existsSync(draft)).toBe(true);
+    },
+  );
+
+  it('removes settled dirty and unpushed legacy directories, keeping one reopened before the second report', async () => {
+    const ended = await finishedRun('TASK-1', 'run-1');
+    const unpushed = await finishedRun('TASK-2', 'run-2');
+    const reopened = await finishedRun('TASK-3', 'run-3');
+    writeFileSync(path.join(ended.workDir, 'app', 'draft.md'), 'draft\n');
+    commit(path.join(unpushed.workDir, 'app'), 'local-change.txt');
+    commit(path.join(reopened.workDir, 'app'), 'local-change.txt');
+    for (const prepared of [ended, unpushed, reopened]) {
+      const record = meta(prepared.workDir);
+      const { lastRunId: _lastRunId, ...legacy } = record;
+      forgeRecord(prepared.workDir, legacy);
+      unlinkSync(workspaceRecordPath(paths, prepared.workDir));
+    }
+    const requests: WorkspacesRequest[] = [];
+    const report = (
+      request: WorkspacesRequest,
+    ): Promise<WorkspacesResponse> => {
+      requests.push(request);
+      return Promise.resolve({
+        remove: [],
+        keep: [],
+        decisions: request.directories?.map((directory) => {
+          // The issue was reopened between the two reports.
+          const settled = !(
+            requests.length > 1 && directory.workDir === reopened.workDir
+          );
+          return {
+            reportId: request.reportId!,
+            workDir: directory.workDir,
+            lastUsedAt: directory.lastUsedAt,
+            settled,
+            reason: settled ? 'settled' : 'active',
+            commits: [],
+          };
+        }),
+      });
+    };
+    const logs: string[] = [];
+    const result = await collectWorkspaces({
+      paths,
+      reporters: new Map([['acme', report]]),
+      decisionApps: new Set(['acme']),
+      log: (message) => logs.push(message),
+      readDisk: fakeDisk(50 * GB),
+    });
+    expect(requests).toHaveLength(2);
+    expect(requests[0]?.workspaces).toEqual([]);
+    expect(requests[0]?.directories).toHaveLength(3);
+    expect(requests[1]?.directories).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          workDir: unpushed.workDir,
+          cleanup: {
+            reportId: requests[0]?.reportId,
+            reason: 'allowed',
+            discardsUntracked: true,
+          },
+        }),
+      ]),
+    );
+    expect(result.removed.map((item) => item.workDir).sort()).toEqual(
+      [ended.workDir, unpushed.workDir].sort(),
+    );
+    expect(existsSync(ended.workDir)).toBe(false);
+    expect(existsSync(unpushed.workDir)).toBe(false);
+    expect(existsSync(reopened.workDir)).toBe(true);
+    expect(logs.some((line) => line.includes('never pushed'))).toBe(true);
+  });
+
+  it('removes ended directories with untracked files or unpushed commits in routine collection, keeping active unpushed work', async () => {
+    const untracked = await finishedRun('TASK-1', 'run-1', (dir) =>
+      writeFileSync(path.join(dir, 'proposal.md'), 'draft\n'),
+    );
+    const committed = await finishedRun('TASK-2', 'run-2', (dir) =>
+      commit(dir, 'local-only.txt'),
+    );
+    // Committed after the run reported, so the cached check still says pushed.
+    commit(path.join(committed.workDir, 'app'), 'later.txt');
+    const active = await finishedRun('TASK-3', 'run-3', (dir) =>
       writeFileSync(path.join(dir, 'notes.md'), 'draft\n'),
     );
-    const { reporters } = reporter({ remove: ['run-1'] });
-    const result = await collectWorkspaces({ paths, reporters });
-    expect(result.removed).toEqual([]);
-    expect(result.kept).toEqual([
-      { workDir: done.workDir, reason: 'unpushed' },
-    ]);
-    expect(existsSync(done.workDir)).toBe(true);
-    expect(meta(done.workDir).unpushed).toBe(true);
+    const { reporters } = reporter({
+      remove: ['run-1', 'run-2'],
+      keep: ['run-3'],
+    });
+    const result = await collectWorkspaces({
+      paths,
+      reporters,
+      threshold: { bytes: 5 * GB },
+      readDisk: fakeDisk(50 * GB),
+    });
+    expect(result.removed.map((item) => item.workDir).sort()).toEqual(
+      [untracked.workDir, committed.workDir].sort(),
+    );
+    expect(existsSync(untracked.workDir)).toBe(false);
+    expect(existsSync(committed.workDir)).toBe(false);
+    expect(
+      result.entries.find((e) => e.workDir === active.workDir),
+    ).toMatchObject({ status: 'active', unpushed: true });
+    expect(existsSync(active.workDir)).toBe(true);
   });
 
   it('never touches a directory a run holds', async () => {
@@ -370,7 +626,7 @@ describe('working directories', () => {
     }
   });
 
-  it('removes nothing on its own without an application that answers, even on a low disk, and warns once', async () => {
+  it('removes clean idle work on a low disk without an application answer, and warns once', async () => {
     await finishedRun('TASK-1', 'run-1');
     await finishedRun('TASK-2', 'run-2');
     const threshold = { bytes: 5 * GB };
@@ -400,16 +656,16 @@ describe('working directories', () => {
       readDisk: fakeDisk(GB),
       log,
     });
-    expect(low.removed).toEqual([]);
+    expect(low.removed).toHaveLength(2);
     expect(low.low).toBe(true);
     const warnings = logs.filter((line) => line.includes('is low'));
     expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain('2 pushed working directories');
+    expect(warnings[0]).toContain('0 pushed working directories');
     expect(warnings[0]).toContain('0 with unpushed work');
     expect(warnings[0]).toContain('`nocobase-runner gc`');
   });
 
-  it('on a low disk removes only what the application settled, least recently used first, never work that goes on', async () => {
+  it('on a low disk removes clean pushed idle work least recently used first, keeping unpushed work', async () => {
     const settledOld = await finishedRun('TASK-1', 'run-1');
     const ongoing = await finishedRun('TASK-2', 'run-2');
     const unpushed = await finishedRun('TASK-3', 'run-3', (dir) =>
@@ -431,12 +687,13 @@ describe('working directories', () => {
     expect(result.removed).toEqual([
       { workDir: settledOld.workDir, reason: 'ended' },
       { workDir: settledNew.workDir, reason: 'ended' },
+      { workDir: ongoing.workDir, reason: 'selected' },
     ]);
-    expect(existsSync(ongoing.workDir)).toBe(true);
+    expect(existsSync(ongoing.workDir)).toBe(false);
     expect(existsSync(unpushed.workDir)).toBe(true);
     const warnings = logs.filter((line) => line.includes('is low'));
     expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain('1 pushed working directory whose');
+    expect(warnings[0]).toContain('0 pushed working directories whose');
     expect(warnings[0]).toContain('1 with unpushed work');
   });
 
@@ -488,10 +745,22 @@ describe('what goes', () => {
     status: 'unknown',
     ...options,
   });
+  const confirmed = (entry: WorkspaceEntry): WorkspaceEntry => ({
+    ...entry,
+    decision: {
+      reportId: 'report',
+      workDir: entry.workDir,
+      runId: entry.lastRunId,
+      lastUsedAt: entry.lastUsedAt,
+      settled: true,
+      reason: 'settled',
+      commits: [],
+    },
+  });
   const removed = (plan: ReturnType<typeof planRemovals>) =>
     plan.remove.map((item) => `${item.entry.subjectKey}:${item.reason}`);
 
-  it('removes ended work least recently used first, never unpushed or busy ones, and nothing else', () => {
+  it('removes ended work least recently used first, unpushed or not, never busy work', () => {
     const entries = [
       entry('old-unpushed', { unpushed: true }),
       entry('old'),
@@ -502,17 +771,26 @@ describe('what goes', () => {
         lastUsedAt: '2026-12-01T00:00:00.000Z',
       }),
       entry('ended', { status: 'ended' }),
-      entry('ended-unpushed', { status: 'ended', unpushed: true }),
+      confirmed(entry('ended-unpushed', { status: 'ended', unpushed: true })),
+      entry('legacy-ended', { status: 'ended', unpushed: true }),
       entry('newest'),
     ];
     const plan = planRemovals(entries);
-    expect(removed(plan)).toEqual(['ended:ended', 'ended-newer:ended']);
+    expect(removed(plan)).toEqual([
+      'ended:ended',
+      'ended-unpushed:ended',
+      'legacy-ended:ended',
+      'ended-newer:ended',
+    ]);
+    expect(plan.kept).toEqual([]);
     expect(
-      plan.kept.map((item) => `${item.entry.subjectKey}:${item.reason}`),
-    ).toEqual(['ended-unpushed:unpushed']);
+      planRemovals([
+        entry('ended-busy', { status: 'ended', inUse: true }),
+      ]).kept.map((item) => item.reason),
+    ).toEqual(['inUse']);
   });
 
-  it('picks by filters instead, and removes unpushed work only when forced', () => {
+  it('picks by filters instead, and removes unpushed work whose work goes on only when forced', () => {
     const now = Date.UTC(2026, 11, 1);
     const entries = [
       entry('TASK-81', { unpushed: true }),
@@ -542,6 +820,26 @@ describe('what goes', () => {
     expect(
       removed(planRemovals(entries, { now, filters: { ended: true } })),
     ).toEqual([]);
+    // Work that is over goes without --force, by a legacy ended status or a settled decision.
+    expect(
+      removed(
+        planRemovals([entry('TASK-84', { unpushed: true, status: 'ended' })], {
+          now,
+          filters: { subject: 'TASK-84' },
+        }),
+      ),
+    ).toEqual(['TASK-84:selected']);
+    expect(
+      removed(
+        planRemovals(
+          [confirmed(entry('TASK-84', { unpushed: true, status: 'ended' }))],
+          {
+            now,
+            filters: { ended: true },
+          },
+        ),
+      ),
+    ).toEqual(['TASK-84:selected']);
   });
 });
 

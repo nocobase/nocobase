@@ -268,12 +268,30 @@ Write `navigation` on the route. The application sidebar reads its menu entries 
 | `icon`  | Optional. An icon component that accepts `className`; use `lucide-react` icons directly. Give the entries of one group icons together or not at all — the collapsed icon-mode sidebar shows the label of an entry that has no icon, so a mixed group reads as inconsistent — and do not repeat a group's own icon on its first child |
 | `order` | Optional. Lower numbers come first among siblings; defaults to 0. Equal values keep registration order                                                                                                                                                                                                                               |
 
-- Add the translations to the existing `navigation` group in `client/locales/en-US.ts` and `zh-CN.ts`, for example `projects: 'Projects'` and `projects: '项目'`.
+- Add the translations to the `navigation` group in `client/locales/en-US.ts` and `zh-CN.ts`, after spreading the system group, for example `navigation: { ...systemEnUS.navigation, projects: 'Projects' }` and `navigation: { ...systemZhCN.navigation, projects: '项目' }` ([`i18n.md`](i18n.md)).
 - Pages that should not appear in the menu (details, tab content and so on) have no `navigation`. When such a page is open, the menu highlights the nearest ancestor that has a menu entry.
 - **A path with a parameter (`:projectId`) cannot have `navigation`**; registration raises an error, because a menu entry must point to a fixed URL (wildcards are rejected on every route, [section 1](#1-declare-the-route)).
 - Navigation group: write only `name`, `navigation` and `children`, without `componentLoader`. For groups and clickable parents, see [`child-routes.md`](child-routes.md).
 - Do not change the shell (`client/layouts/`) or the ServiceProvider to add a menu entry, and do not add a Refine resource for a menu. Refine resources produce no menu entries (see ["Loading data in a component" in `api.md`](api.md#loading-data-in-a-component) for what they are for); the home page entry is declared in the routes as well.
 - A new page with a menu entry usually touches four places: `client/routes.ts`, the page component, `client/locales/` and, for an App page that requires sign-in, the page grant list in `tests/logic/client-routes.test.ts` ([section 12](#12-update-the-route-test)).
+
+### A count beside an entry
+
+An entry can show how many things wait on the viewer behind it, such as unread messages or requests to decide. A count changes while the page is open, so it is not part of the route's `navigation`: the App layout reads it with the hook that keeps it current and passes it to `NavigationMenu` in `badges`, keyed by the route's `name`:
+
+```tsx
+// client/layouts/app-layout.tsx
+const { data: unread = 0 } = useInboxUnreadCount(); // @nocobase/app-plugin-notification-in-app/client/inbox
+
+<NavigationMenu
+  items={menuItems}
+  label={navigationLabel}
+  selectedKey={selectedKey}
+  badges={{ inbox: unread }}
+/>;
+```
+
+A number is something waiting; `{ count, live: true, hint }` is work under way, such as runs in progress, drawn in the primary color behind a pulsing dot, with `hint` (translated, such as "2 running") as its words. The menu does the rest: nothing at zero, "99+" above 99, the count in the entry's accessible name and tooltip, and in the collapsed sidebar a dot on the icon's corner. A count goes on a page entry the menu always shows — a top-level entry or a section's — not on a group or an entry inside a sub-menu. Which counts belong in the menu at all is guideline L8 of [`../ui-guidelines.md`](../ui-guidelines.md).
 
 ## 7. Back button and breadcrumbs
 
@@ -408,7 +426,7 @@ Do not declare a plugin's own page route a second time: registering another `/in
 - Source extensions and route overrides apply to App routes, the only kind of client route.
 - Keep the replacement page lazy, declare `componentEntry` so tools can find the source file, and default-export the component. `componentEntry` is the replacement module's path from the application root, without an extension.
 
-A route override replacing the workflow plugin's run detail page (an App route; its id is the package name and the route name):
+A route override replacing the scheduler plugin's schedule detail page (an App route; its id is the package name and the route name):
 
 ```ts
 // client/route-overrides.ts
@@ -420,9 +438,9 @@ import {
 export const routeComponentOverrides: readonly AppClientRouteComponentOverrideDefinition[] =
   defineClientRouteComponentOverrides([
     {
-      routeId: '@nocobase/app-plugin-workflow:workflow-run-detail',
-      componentEntry: './client/pages/workflow-run-detail/index',
-      componentLoader: () => import('./pages/workflow-run-detail/index.js'),
+      routeId: '@nocobase/app-plugin-scheduler:schedule-detail',
+      componentEntry: './client/pages/schedule-detail/index',
+      componentLoader: () => import('./pages/schedule-detail/index.js'),
     },
   ]);
 
@@ -432,26 +450,26 @@ export default routeComponentOverrides;
 Or, instead of that entry (one override per route), a source extension, which keeps the override together with its own files under one folder; `client/source-extensions.ts` loads every `client/extensions/*/extension.ts`:
 
 ```ts
-// client/extensions/workflow-run-ui/extension.ts
+// client/extensions/schedule-ui/extension.ts
 import {
   defineClientRouteComponentOverrides,
   defineClientSourceExtension,
   type AppClientSourceExtension,
 } from '@nocobase/app-client/plugins';
 
-const workflowRunUiExtension: AppClientSourceExtension =
+const scheduleUiExtension: AppClientSourceExtension =
   defineClientSourceExtension({
-    name: 'workflow-run-ui',
+    name: 'schedule-ui',
     routeComponentOverrides: defineClientRouteComponentOverrides([
       {
-        routeId: '@nocobase/app-plugin-workflow:workflow-run-detail',
-        componentEntry: './client/extensions/workflow-run-ui/pages/run-detail',
-        componentLoader: () => import('./pages/run-detail.js'),
+        routeId: '@nocobase/app-plugin-scheduler:schedule-detail',
+        componentEntry: './client/extensions/schedule-ui/pages/schedule-detail',
+        componentLoader: () => import('./pages/schedule-detail.js'),
       },
     ]),
   });
 
-export default workflowRunUiExtension;
+export default scheduleUiExtension;
 ```
 
 - **A route can be overridden only once across the three mechanisms**; a second override raises an error that names the route id. Pick one; do not stack them.

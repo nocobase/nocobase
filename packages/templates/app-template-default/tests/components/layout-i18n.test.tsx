@@ -13,6 +13,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import locales from '../../client/locales/index.js';
 import { AppLayout } from '../../client/layouts/app-layout.js';
+import {
+  createAppSidebarPreferenceStore,
+  SidebarPreferenceProvider,
+} from '../../client/layouts/use-sidebar-preference.js';
 vi.mock('@nocobase/app-plugin-i18n/client', () => ({
   useSyncServerLocale: () => {},
 }));
@@ -45,6 +49,7 @@ const overview: AppClientRegisteredRoute = {
 };
 
 async function setup(children: ReactNode) {
+  const sidebarPreference = createAppSidebarPreferenceStore('/test-app');
   vi.stubGlobal('matchMedia', () => ({
     matches: true,
     addEventListener: vi.fn(),
@@ -64,7 +69,9 @@ async function setup(children: ReactNode) {
   render(
     <I18nProvider runtime={runtime}>
       <ClientApplicationContext.Provider value={app}>
-        <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
+        <SidebarPreferenceProvider value={sidebarPreference}>
+          <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
+        </SidebarPreferenceProvider>
       </ClientApplicationContext.Provider>
     </I18nProvider>,
   );
@@ -81,10 +88,10 @@ describe('shell translations', () => {
     expect(screen.getByText('AI builds freely.')).toBeVisible();
     await act(() => runtime.changeLanguage('zh-CN'));
     expect(screen.getByRole('navigation', { name: '面包屑' })).toBeVisible();
-    expect(screen.getByText('AI 自由构建。')).toBeVisible();
+    expect(screen.getByText('AI 自由构建')).toBeVisible();
     expect(
       screen.getByRole('link', { name: 'NocoBase' }).parentElement,
-    ).toHaveTextContent('NocoBase 保障可靠。');
+    ).toHaveTextContent('NocoBase 保障可靠');
     expect(
       screen.getByRole('button', { name: '展开或收起导航' }),
     ).toHaveAttribute('title', '展开或收起导航');

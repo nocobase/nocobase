@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-examples",
   "displayName": "NocoBase Examples",
-  "version": "1.0.0-beta.40",
+  "version": "1.0.0-beta.50",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.40"
+    "defaultTemplateVersion": "1.0.0-beta.50"
   },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",
@@ -26,6 +26,7 @@
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/drive": "workspace:^",
     "@nocobase/logging": "workspace:^",
+    "@nocobase/markdown-mermaid": "workspace:^",
     "@nocobase/session": "workspace:^",
     "@playwright/test": "catalog:",
     "@refinedev/cli": "^2.16.48",
@@ -36,6 +37,7 @@
     "@tailwindcss/postcss": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-query": "catalog:",
+    "@tanstack/react-table": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",
@@ -93,7 +95,7 @@
     "cli",
     "client",
     "server",
-    "workflows",
+    "shared",
     "database/tsconfig.json",
     "database/*/migrations/**",
     "database/*/seeds/**",
@@ -116,6 +118,7 @@
     "config.example.yml",
     "README.MD",
     "AGENTS.md",
+    ".agents/rules",
     "CLAUDE.md",
     "playwright.config.ts"
   ],
@@ -184,7 +187,6 @@
     "@nocobase/app-plugin-service-provider-example": "workspace:^",
     "@nocobase/app-plugin-skills-example": "workspace:^",
     "@nocobase/app-plugin-users": "workspace:^",
-    "@nocobase/app-plugin-workflow": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/config": "workspace:^",
     "@nocobase/db": "workspace:^",
@@ -215,6 +217,7 @@
     "#hooks/*": "./client/hooks/*.js",
     "#lib/*": "./client/lib/*.js",
     "#extensions/*": "./client/extensions/*.js",
-    "#pages/*": "./client/pages/*.js"
+    "#pages/*": "./client/pages/*.js",
+    "#components/data-table": "./client/components/data-table/index.js"
   }
 }

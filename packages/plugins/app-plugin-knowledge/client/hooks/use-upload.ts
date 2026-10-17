@@ -14,7 +14,11 @@ import { useNotify } from './use-notify.js';
 /** Uploads files into `space` (under `parentId`) one after another; answers the last entry made. */
 export function useUpload(space: SpaceRef | null): {
   readonly pending: boolean;
-  upload(files: readonly File[], parentId: string | null): void;
+  upload(
+    files: readonly File[],
+    parentId: string | null,
+    target?: SpaceRef,
+  ): void;
 } {
   const { t } = useTranslation(ACCESS_NAMESPACE);
   const api = useKnowledgeApi();
@@ -24,10 +28,13 @@ export function useUpload(space: SpaceRef | null): {
     mutationFn: async (input: {
       readonly files: readonly File[];
       readonly parentId: string | null;
+      readonly space: SpaceRef;
     }) => {
       let made: KnowledgeDoc | null = null;
       for (const file of input.files)
-        made = await api.upload(space!, file, { parentId: input.parentId });
+        made = await api.upload(input.space, file, {
+          parentId: input.parentId,
+        });
       return made;
     },
     onSuccess: (_, input) => {
@@ -43,8 +50,9 @@ export function useUpload(space: SpaceRef | null): {
   });
   return {
     pending: mutation.isPending,
-    upload(files, parentId) {
-      if (space && files.length > 0) mutation.mutate({ files, parentId });
+    upload(files, parentId, target = space ?? undefined) {
+      if (target && files.length > 0)
+        mutation.mutate({ files, parentId, space: target });
     },
   };
 }

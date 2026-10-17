@@ -10,7 +10,6 @@
 '@nocobase/app-plugin-notification-in-app': patch
 '@nocobase/app-plugin-scheduler': patch
 '@nocobase/app-plugin-users': patch
-'@nocobase/app-plugin-workflow': patch
 '@nocobase/app-plugin-authorization-example': patch
 '@nocobase/app-plugin-file-example': patch
 '@nocobase/app-plugin-jobs-example': patch

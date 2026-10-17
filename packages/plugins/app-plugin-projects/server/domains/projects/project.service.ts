@@ -1,3 +1,4 @@
+import './project.events.js';
 /**
  * Projects: a group of issues with a lead, members, repositories and a visibility. The creator becomes a member and,
  * unless someone else is named, the lead; the lead is always a member. Deleting a project keeps its issues, detached.
@@ -83,23 +84,11 @@ export interface ProjectService extends ProjectMembers, ProjectResources {
   retract(viewer: Viewer, id: string): Promise<void>;
 }
 
-/** What projects need to know about workflows, provided by the workflows domain. */
-export interface ProjectWorkflowChoice {
-  requireExisting(conn: DatabaseConnection, id: string): Promise<void>;
-  assertCompatible(
-    conn: DatabaseConnection,
-    projectId: string,
-    workflowId: string | null,
-  ): Promise<void>;
-  switched(tx: Tx, workflowId: string | null): void;
-}
-
 export interface ProjectDeps {
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly users: UserDirectory;
   readonly issues: () => ProjectIssues;
-  readonly workflows: () => ProjectWorkflowChoice;
 }
 
 const EMPTY_COUNTS: IssueCounts = { total: 0, done: 0, byStatus: {} };
@@ -146,14 +135,6 @@ async function valuesOf(
     )
       throw invalid('INVALID_LEAD', 'leadUserId is not an active user.');
     values.leadUserId = input.leadUserId;
-  }
-  if (input.workflowId !== undefined) {
-    if (input.workflowId !== null) {
-      if (typeof input.workflowId !== 'string')
-        throw invalid('INVALID_WORKFLOW', 'workflowId names no workflow.');
-      await deps.workflows().requireExisting(conn, input.workflowId);
-    }
-    values.workflowId = input.workflowId;
   }
   return values;
 }
@@ -239,6 +220,7 @@ export function createProjectService(deps: ProjectDeps): ProjectService {
           await addMember(tx.conn, deps.ids.next(), id, viewer.userId);
         if (leadUserId && leadUserId !== viewer.userId)
           await addMember(tx.conn, deps.ids.next(), id, leadUserId);
+        tx.emit({ type: 'project.created', projectId: id });
       });
       return detail(deps, deps.tx.read(), id);
     },
@@ -247,16 +229,7 @@ export function createProjectService(deps: ProjectDeps): ProjectService {
       await managed(deps.tx, viewer, id, async (tx) => {
         const values = await valuesOf(deps, tx.conn, patch);
         if (Object.keys(values).length === 0) return;
-        const before = await findProject(tx.conn, id);
-        const switching =
-          values.workflowId !== undefined &&
-          values.workflowId !== (before?.workflowId ?? null);
-        if (switching)
-          await deps
-            .workflows()
-            .assertCompatible(tx.conn, id, values.workflowId ?? null);
         await updateProject(tx.conn, id, values);
-        if (switching) deps.workflows().switched(tx, values.workflowId ?? null);
         if (values.leadUserId)
           await addMember(tx.conn, deps.ids.next(), id, values.leadUserId);
       });

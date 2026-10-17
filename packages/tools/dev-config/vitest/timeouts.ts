@@ -6,7 +6,7 @@
 // `app-template-default` broke this way once more plugins joined its Client
 // composition: the inspection went from 1.6 to 5.1 seconds on CI while still finishing in under a second locally.
 //
-// Thirty seconds is what `app-plugin-workflow` and `app-plugin-file` had each already set for themselves for this
+// Thirty seconds is what two plugins, `app-plugin-file` among them, had each already set for themselves for this
 // reason. Raising the shared floor to it stops every package from rediscovering the problem one timeout at a time,
 // and still bounds a genuinely hung test far inside the job's 45-minute limit. A package that needs longer than this
 // still sets its own `testTimeout`; a local value always wins over the shared one.
