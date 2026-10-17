@@ -54,3 +54,54 @@ it('follows same-message layout growth, preserves up-thread reading and older-pa
   view.rerender(<Log seq={1} text='Canonical AB' />);
   expect(log.scrollTop).toBe(1600);
 });
+
+it('preserves the visible message when an older page and new output grow in one commit, including native scroll anchoring', () => {
+  let resize!: () => void;
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      constructor(callback: () => void) {
+        resize = callback;
+      }
+      observe() {}
+      disconnect() {}
+    },
+  );
+  let height = 1000;
+  let anchorTop = 20;
+  function Log({ seq }: { seq: number }) {
+    const ref = useChatScroll(seq);
+    return (
+      <div ref={ref} data-testid='log'>
+        <div>
+          <ol>
+            <li data-testid='anchor'>Reading this saved message</li>
+          </ol>
+        </div>
+      </div>
+    );
+  }
+  const view = render(<Log seq={10} />);
+  const log = view.getByTestId('log');
+  const anchor = view.getByTestId('anchor');
+  Object.defineProperties(log, {
+    scrollHeight: { get: () => height },
+    clientHeight: { value: 400 },
+  });
+  log.getBoundingClientRect = () => ({ top: 0, bottom: 400 }) as DOMRect;
+  anchor.getBoundingClientRect = () =>
+    ({ top: anchorTop, bottom: anchorTop + 30 }) as DOMRect;
+  act(() => resize());
+  log.scrollTop = 300;
+  fireEvent.scroll(log);
+  height = 1500; // 300 px prepended and 200 px appended below the reader.
+  anchorTop = 320;
+  view.rerender(<Log seq={1} />);
+  expect(log.scrollTop).toBe(600);
+  anchorTop = 20;
+  fireEvent.scroll(log);
+  height = 1700;
+  log.scrollTop = 800; // The browser already preserved the same anchor during prepend.
+  view.rerender(<Log seq={0} />);
+  expect(log.scrollTop).toBe(800);
+});
