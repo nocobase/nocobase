@@ -2183,3 +2183,80 @@ function syncRun(accountId: string, _requestedBy: string): MailSyncRunView {
     updatedAt: '2026-09-03T00:00:00.000Z',
   };
 }
+
+describe('Mail optional IMAP source folder HTTP contract', () => {
+  it('passes the decoded deletion query and move body to the business service', async () => {
+    const mail = service();
+    const deletion = vi.spyOn(mail, 'deleteMessage');
+    const moving = vi.spyOn(mail, 'moveMessage');
+    const router = await createRouter(true, mail);
+    const removed = await router.request(
+      '/api/mail/accounts/account-1/messages/message-1?sourceProviderFolderId=' +
+        encodeURIComponent('收件箱/A & B'),
+      { method: 'DELETE' },
+    );
+    expect(removed.status).toBe(204);
+    expect(deletion).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ sourceProviderFolderId: '收件箱/A & B' }),
+    );
+    const moved = await router.request(
+      '/api/mail/accounts/account-1/messages/message-1/move',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          providerFolderId: 'Trash',
+          sourceProviderFolderId: 'INBOX',
+        }),
+      },
+    );
+    expect(moved.status).toBe(200);
+    expect(moving).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        sourceProviderFolderId: 'INBOX',
+        providerFolderId: 'Trash',
+      }),
+    );
+    const invalid = await router.request(
+      '/api/mail/accounts/account-1/messages/message-1/move',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          providerFolderId: 'Trash',
+          sourceProviderFolderId: '',
+          extra: true,
+        }),
+      },
+    );
+    expect(invalid.status).toBe(400);
+    expect(moving).toHaveBeenCalledTimes(1);
+  });
+  it.each([
+    ['MAIL_IMAP_MOVE_SOURCE_REQUIRED', 'Open the source folder'],
+    ['MAIL_IMAP_MOVE_UNSUPPORTED', 'cannot safely move'],
+    ['MAIL_IMAP_TRASH_NOT_FOUND', 'no Trash folder'],
+    ['MAIL_IMAP_MOVE_OUTCOME_UNKNOWN', 'Verify the mailbox'],
+  ])(
+    'localizes %s without a generic provider failure',
+    async (reason, text) => {
+      const mail = service();
+      vi.spyOn(mail, 'deleteMessage').mockRejectedValue(
+        new MailError({
+          status: 'FAILED_PRECONDITION',
+          reason,
+          message: 'Private internal detail',
+        }),
+      );
+      const router = await createRouter(true, mail);
+      const response = await router.request(
+        '/api/mail/accounts/account-1/messages/message-1',
+        { method: 'DELETE' },
+      );
+      expect(response.status).toBe(400);
+      expect(JSON.stringify(await response.json())).toContain(text);
+    },
+  );
+});

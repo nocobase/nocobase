@@ -20,7 +20,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import type { ReactElement } from 'react';
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
 
 import { MailMessageContent } from './mail-message-content.js';
@@ -91,6 +91,9 @@ export interface MailConversationViewProps {
     readonly archive?: (message: MailMessage) => void;
     readonly delete: (message: MailMessage) => void;
     readonly canDelete?: (message: MailMessage) => boolean;
+    readonly deleteDisabledReason?: (
+      message: MailMessage,
+    ) => string | undefined;
     readonly downloadAttachment?: (
       message: MailMessage,
       attachment: MailMessage['attachments'][number],
@@ -708,6 +711,8 @@ function MessageMoreActions({
 }): ReactElement {
   const { t } = useTranslation(MAIL_PLUGIN_NS);
   const moreButtonRef = useRef<HTMLButtonElement>(null);
+  const deleteReasonId = useId();
+  const deleteDisabledReason = actions.deleteDisabledReason?.(message);
   const [labelsOpen, setLabelsOpen] = useState(false);
   const assignedLabelCount = availableLabels.filter((label) =>
     message.labelIds.includes(label.id),
@@ -799,6 +804,9 @@ function MessageMoreActions({
                 </DropdownMenuItem>
               ) : null}
               <DropdownMenuItem
+                aria-describedby={
+                  deleteDisabledReason ? deleteReasonId : undefined
+                }
                 disabled={
                   actions.canDelete ? !actions.canDelete(message) : false
                 }
@@ -808,6 +816,15 @@ function MessageMoreActions({
                 <Trash2 aria-hidden='true' />
                 {actionLabels.delete}
               </DropdownMenuItem>
+              {deleteDisabledReason ? (
+                <p
+                  className='max-w-64 px-2 py-1 text-xs text-muted-foreground'
+                  role='status'
+                  id={deleteReasonId}
+                >
+                  {deleteDisabledReason}
+                </p>
+              ) : null}
             </>
           ) : null}
         </DropdownMenuContent>

@@ -2,6 +2,19 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
   errors: {
+    imapMoveLocationChanged:
+      'The selected folder or copy changed. Synchronize and open the source folder again.',
+    imapMoveNotWritable:
+      'The selected folder does not allow this operation. Check its mailbox permissions.',
+    imapMoveSourceRequired:
+      'Open the source folder before moving or deleting this message.',
+    imapMoveUnsupported:
+      'This server cannot safely move messages. Use your mail client.',
+    imapTrashNotFound:
+      'This account has no Trash folder. Use your mail client.',
+    imapMoveOutcomeUnknown:
+      'The move is incomplete or its result is unknown. Verify the mailbox before retrying.',
+
     accessDenied: 'Mail access is required.',
     idempotencyConflict:
       'The idempotency key is already associated with another request.',

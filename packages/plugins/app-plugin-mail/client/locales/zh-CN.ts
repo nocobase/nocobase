@@ -37,6 +37,11 @@ const zhCN: MailResource = {
     refresh: '刷新',
   },
   workspace: {
+    imapSourceRequired: '请打开来源文件夹后再移动或删除这封邮件。',
+    imapTrashMissing: '此邮箱没有垃圾箱文件夹，请到邮箱客户端中操作。',
+    deleteUnsupported: '此邮箱不支持删除，请到邮箱客户端中操作。',
+    imapScheduled: '请先取消定时发送，再删除此草稿。',
+
     senderLabel: '发件人',
     attachmentNumber: '附件 {{number}}',
     pendingDelivery: '以下发送请求的结果尚未确认，邮件内容已保存在这里。',
